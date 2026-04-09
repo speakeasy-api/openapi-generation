@@ -68,7 +68,7 @@ public class OpenEnumsShould
         var jsonKnown = await Helpers.GetSerializedBodyJson(themeKnown);
         Assert.Equal("{\"color\":\"red\",\"heroWidth\":480,\"icon\":\"tick\"}", jsonKnown);
 
-        var deserializedKnown = JsonConvert.DeserializeObject<Theme>(jsonKnown);
+        var deserializedKnown = Compat.DeserializeJson<Theme>(jsonKnown);
         Assert.Equal(themeKnown.Color, deserializedKnown.Color);
         Assert.Equal(themeKnown.Icon, deserializedKnown.Icon);
         Assert.Equal(themeKnown.HeroWidth, deserializedKnown.HeroWidth);
@@ -88,7 +88,7 @@ public class OpenEnumsShould
         var jsonUnknown = await Helpers.GetSerializedBodyJson(themeUnknown);
         Assert.Equal("{\"color\":\"yellow\",\"heroWidth\":514,\"icon\":\"tick\"}", jsonUnknown);
 
-        var deserializedUnknown = JsonConvert.DeserializeObject<Theme>(jsonUnknown);
+        var deserializedUnknown = Compat.DeserializeJson<Theme>(jsonUnknown);
         Assert.Equal(themeUnknown.Color, deserializedUnknown.Color);
         Assert.Equal(themeUnknown.Icon, deserializedUnknown.Icon);
         Assert.Equal(themeUnknown.HeroWidth, deserializedUnknown.HeroWidth);

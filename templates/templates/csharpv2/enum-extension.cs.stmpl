@@ -1,0 +1,25 @@
+{{- $name := .Local.Name}}
+    public static class {{$name}}Extension
+    {
+        public static string Value(this {{$name}} value)
+        {
+            return value switch
+            {
+        {{- range $index, $scope := .Local.Scopes }}
+                {{$name}}.{{index $.Local.DedupNames $index}} => "{{$scope.Name}}",
+        {{- end}}
+                _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
+            };
+        }
+
+        public static {{$name}} ToEnum(this string value)
+        {
+            return value switch
+            {
+        {{- range $index, $scope := .Local.Scopes }}
+                "{{$scope.Name}}" => {{$name}}.{{index $.Local.DedupNames $index}},
+        {{- end}}
+                _ => throw new Exception($"Unknown value {value} for enum {{$name}}"),
+            };
+        }
+    }

@@ -1,0 +1,351 @@
+#nullable enable
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using {{getGeneratorsPackageId}};
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Enum;
+
+[Generator]
+public class EnumGenerator : IIncrementalGenerator
+{
+    private const string AttributeFullName =
+        "{{getGeneratorsPackageId}}.Enum.GenerateEnumConverterAttribute";
+    private const string JsonPropertyNameAttributeName =
+        "System.Text.Json.Serialization.JsonPropertyNameAttribute";
+    private const string EnumMemberAttributeName =
+        "System.Runtime.Serialization.EnumMemberAttribute";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var models = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                AttributeFullName,
+                predicate: static (s, _) => s is EnumDeclarationSyntax or ClassDeclarationSyntax,
+                transform: static (ctx, _) => ExtractModel(ctx)
+            )
+            .Where(static m => m is not null);
+
+        context.RegisterSourceOutput(models, static (spc, model) => Emit(model!, spc));
+    }
+
+    private static EnumModel? ExtractModel(GeneratorAttributeSyntaxContext ctx)
+    {
+        if (ctx.TargetSymbol is not INamedTypeSymbol symbol)
+            return null;
+
+        var attribute = ctx.Attributes[0];
+        var enumType = EnumType.String;
+        var open = false;
+
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == "Type" && namedArg.Value.Value is int typeValue)
+                enumType = (EnumType)typeValue;
+            else if (namedArg.Key == "Open" && namedArg.Value.Value is bool openValue)
+                open = openValue;
+        }
+
+        if (!open && symbol.TypeKind != TypeKind.Enum)
+            throw new System.InvalidOperationException(
+                $"[GenerateEnumConverter(Open=false)] applied to non-enum '{symbol.Name}'");
+
+        if (open && symbol.TypeKind != TypeKind.Class)
+            throw new System.InvalidOperationException(
+                $"[GenerateEnumConverter(Open=true)] applied to non-class '{symbol.Name}'");
+
+        var ns = symbol.ContainingNamespace;
+        var namespaceDecl = NamespaceDeclaration(ns);
+        var nsName = ns.IsGlobalNamespace ? string.Empty : ns.ToDisplayString();
+        var fqn = ns.IsGlobalNamespace
+            ? $"global::{symbol.Name}"
+            : $"global::{nsName}.{symbol.Name}";
+
+        var members = open
+            ? EquatableArray<EnumMemberModel>.Empty
+            : symbol.GetMembers()
+                .OfType<IFieldSymbol>()
+                .Where(f => f.HasConstantValue)
+                .Select(f => new EnumMemberModel(
+                    f.Name,
+                    GetSerializedName(f),
+                    System.Convert.ToInt64(f.ConstantValue ?? 0)
+                ))
+                .ToEquatableArray();
+
+        return new EnumModel(symbol.Name, namespaceDecl, nsName, enumType, open, members, fqn);
+    }
+
+    private static void Emit(EnumModel model, SourceProductionContext spc)
+    {
+        string source;
+        if (model.EnumType == EnumType.Int)
+        {
+            source = model.Open
+                ? GenerateOpenIntEnumConverter(model)
+                : GenerateClosedIntEnumConverter(model);
+        }
+        else if (model.EnumType == EnumType.String)
+        {
+            source = model.Open
+                ? GenerateOpenStringEnumConverter(model)
+                : GenerateClosedStringEnumConverter(model);
+        }
+        else
+        {
+            throw new System.NotSupportedException($"Unhandled EnumType: {model.EnumType}");
+        }
+
+        var converterName = model.Open
+            ? $"{model.Name}OpenEnumConverter"
+            : $"{model.Name}JsonConverter";
+        var nsPrefix = string.IsNullOrEmpty(model.NamespaceName)
+            ? string.Empty
+            : $"{model.NamespaceName}.";
+        spc.AddSource($"{nsPrefix}{converterName}.g.cs", source);
+    }
+
+    private static string EscapeStringLiteral(string value) =>
+        value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+
+    private static string GenerateClosedStringEnumConverter(EnumModel model)
+    {
+        var fqn = model.FullyQualifiedName;
+        var readCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}\"{EscapeStringLiteral(m.SerializedName)}\" => {fqn}.{m.Name},")
+        );
+
+        var writeCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}{fqn}.{m.Name} => \"{EscapeStringLiteral(m.SerializedName)}\",")
+        );
+
+        var extensionValueCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}{fqn}.{m.Name} => \"{EscapeStringLiteral(m.SerializedName)}\",")
+        );
+
+        var extensionToEnumCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}\"{EscapeStringLiteral(m.SerializedName)}\" => {fqn}.{m.Name},")
+        );
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}JsonConverter : System.Text.Json.Serialization.JsonConverter<{{interp "fqn"}}>
+            {
+                public override {{interp "fqn"}} Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+                {
+                    var value = reader.GetString();
+                    return value switch
+                    {
+            {{interp "readCases"}}
+                        _ => throw new System.Text.Json.JsonException($"Unknown {nameof({{interp "fqn"}})} value: {value}")
+                    };
+                }
+
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "fqn"}} value, System.Text.Json.JsonSerializerOptions options)
+                {
+                    var str = value switch
+                    {
+            {{interp "writeCases"}}
+                        _ => throw new System.ArgumentOutOfRangeException(nameof(value), value, null)
+                    };
+                    writer.WriteStringValue(str);
+                }
+            }
+
+            public static class {{interp "model.Name"}}Extension
+            {
+                public static string Value(this {{interp "fqn"}} value)
+                {
+                    return value switch
+                    {
+            {{interp "extensionValueCases"}}
+                        _ => throw new System.ArgumentOutOfRangeException(nameof(value), value, null)
+                    };
+                }
+
+                public static {{interp "fqn"}} ToEnum(this string value)
+                {
+                    return value switch
+                    {
+            {{interp "extensionToEnumCases"}}
+                        _ => throw new System.Exception($"Unknown value {value} for enum {{interp "model.Name"}}")
+                    };
+                }
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateClosedIntEnumConverter(EnumModel model)
+    {
+        var fqn = model.FullyQualifiedName;
+        var readCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}{m.ConstantValue} => {fqn}.{m.Name},")
+        );
+
+        var extensionValueCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}{fqn}.{m.Name} => {m.ConstantValue},")
+        );
+
+        var extensionToEnumCases = string.Join(
+            "\n",
+            model.Members.Select(m => $"{Indent(3)}{m.ConstantValue} => {fqn}.{m.Name},")
+        );
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}IntJsonConverter : System.Text.Json.Serialization.JsonConverter<{{interp "fqn"}}>
+            {
+                public override {{interp "fqn"}} Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+                {
+                    var value = reader.GetInt64();
+                    return value switch
+                    {
+            {{interp "readCases"}}
+                        _ => throw new System.Text.Json.JsonException($"Unknown {nameof({{interp "fqn"}})} value: {value}")
+                    };
+                }
+
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "fqn"}} value, System.Text.Json.JsonSerializerOptions options)
+                {
+                    writer.WriteNumberValue(System.Convert.ToInt64(value));
+                }
+            }
+
+            public static class {{interp "model.Name"}}Extension
+            {
+                public static long Value(this {{interp "fqn"}} value)
+                {
+                    return value switch
+                    {
+            {{interp "extensionValueCases"}}
+                        _ => throw new System.ArgumentOutOfRangeException(nameof(value), value, null)
+                    };
+                }
+
+                public static {{interp "fqn"}} ToEnum(this long value)
+                {
+                    return value switch
+                    {
+            {{interp "extensionToEnumCases"}}
+                        _ => throw new System.Exception($"Unknown value {value} for enum {{interp "model.Name"}}")
+                    };
+                }
+            }
+            """;
+        // clang-format on
+    }
+
+    // clang-format off
+    private static string GenerateOpenStringEnumConverter(EnumModel model) => $$"""
+        #nullable enable
+        {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}OpenEnumConverter : System.Text.Json.Serialization.JsonConverter<{{interp "model.FullyQualifiedName"}}>
+        {
+            public override {{interp "model.FullyQualifiedName"}}? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+            {
+                if (reader.TokenType == System.Text.Json.JsonTokenType.Null)
+                {
+                    return null;
+                }
+
+                var value = reader.GetString();
+                if (value == null)
+                {
+                    return null;
+                }
+
+                return {{interp "model.FullyQualifiedName"}}.Of(value);
+            }
+
+            public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "model.FullyQualifiedName"}}? value, System.Text.Json.JsonSerializerOptions options)
+            {
+                if (value == null)
+                {
+                    writer.WriteNullValue();
+                    return;
+                }
+
+                writer.WriteStringValue(value.Value);
+            }
+        }
+        """;
+    // clang-format on
+
+    // clang-format off
+    private static string GenerateOpenIntEnumConverter(EnumModel model) => $$"""
+        #nullable enable
+        {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}OpenEnumConverter : System.Text.Json.Serialization.JsonConverter<{{interp "model.FullyQualifiedName"}}>
+        {
+            public override {{interp "model.FullyQualifiedName"}}? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+            {
+                if (reader.TokenType == System.Text.Json.JsonTokenType.Null)
+                {
+                    return null;
+                }
+
+                var value = reader.GetInt32();
+                return {{interp "model.FullyQualifiedName"}}.Of(value);
+            }
+
+            public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "model.FullyQualifiedName"}}? value, System.Text.Json.JsonSerializerOptions options)
+            {
+                if (value == null)
+                {
+                    writer.WriteNullValue();
+                    return;
+                }
+
+                writer.WriteNumberValue(value.Value);
+            }
+        }
+        """;
+    // clang-format on
+
+    private static string GetSerializedName(IFieldSymbol member)
+    {
+        var jsonPropertyNameAttr = member
+            .GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == JsonPropertyNameAttributeName);
+
+        if (jsonPropertyNameAttr != null)
+        {
+            var value = jsonPropertyNameAttr.ConstructorArguments.FirstOrDefault().Value;
+            if (value != null)
+                return value.ToString();
+        }
+
+        var enumMemberAttr = member
+            .GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == EnumMemberAttributeName);
+
+        if (enumMemberAttr != null)
+        {
+            var namedArg = enumMemberAttr.NamedArguments.FirstOrDefault(arg => arg.Key == "Value");
+            if (namedArg.Value.Value != null)
+                return namedArg.Value.Value.ToString();
+        }
+
+        return member.Name;
+    }
+
+    private sealed record EnumMemberModel(string Name, string SerializedName, long ConstantValue);
+
+    private sealed record EnumModel(
+        string Name,
+        string NamespaceDeclaration,
+        string NamespaceName,
+        EnumType EnumType,
+        bool Open,
+        EquatableArray<EnumMemberModel> Members,
+        string FullyQualifiedName
+    );
+}

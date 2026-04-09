@@ -1,0 +1,604 @@
+#nullable enable
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using {{getGeneratorsPackageId}};
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Serialization;
+
+[Generator]
+public class SerializationGenerator : IIncrementalGenerator
+{
+    private const string AttributeFullName =
+        "{{getGeneratorsPackageId}}.Serialization.GenerateSerializerAttribute";
+    private const string MultipartFieldAttributeName =
+        "{{getGeneratorsPackageId}}.Serialization.MultipartFieldAttribute";
+    private const string FormFieldAttributeName =
+        "{{getGeneratorsPackageId}}.Serialization.FormFieldAttribute";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var models = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                AttributeFullName,
+                predicate: static (s, _) => s is ClassDeclarationSyntax or EnumDeclarationSyntax,
+                transform: static (ctx, _) => ExtractModel(ctx)
+            )
+            .Where(static m => m is not null);
+
+        var rootNamespace = context.AnalyzerConfigOptionsProvider.Select(
+            static (opts, _) =>
+            {
+                opts.GlobalOptions.TryGetValue("build_property.RootNamespace", out var ns);
+                return ns ?? "";
+            }
+        );
+
+        context.RegisterSourceOutput(models, static (spc, model) =>
+        {
+            var source = GenerateSerializer(model!);
+            spc.AddSource($"{SerializerClassName(model!)}Serializer.g.cs", source);
+        });
+
+        context.RegisterSourceOutput(
+            models.Collect().Combine(rootNamespace),
+            static (spc, pair) => EmitDispatchers(pair.Left!, pair.Right, spc)
+        );
+    }
+
+    private static SerializerModel? ExtractModel(GeneratorAttributeSyntaxContext ctx)
+    {
+        if (ctx.TargetSymbol is not INamedTypeSymbol typeSymbol)
+            return null;
+
+        var attribute = ctx.Attributes[0];
+        var format = GetFormat(attribute);
+        var mediaType = GetMediaType(attribute);
+
+        var properties = typeSymbol.TypeKind == TypeKind.Class
+            ? GetPropertyModels(typeSymbol)
+            : EquatableArray<PropertyModel>.Empty;
+
+        var ns = typeSymbol.ContainingNamespace;
+
+        return new SerializerModel(
+            ClassName: typeSymbol.Name,
+            FullClassName: typeSymbol.ToDisplayString(),
+            Namespace: ns.IsGlobalNamespace ? "" : ns.ToDisplayString(),
+            Format: format,
+            MediaType: mediaType,
+            IsValueType: typeSymbol.IsValueType,
+            Properties: properties
+        );
+    }
+
+    private static SerializationFormat GetFormat(AttributeData attribute)
+    {
+        if (attribute.ConstructorArguments.Length > 0 && attribute.ConstructorArguments[0].Value is int value)
+            return (SerializationFormat)value;
+        return SerializationFormat.Json;
+    }
+
+    private static string? GetMediaType(AttributeData attribute)
+    {
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == "MediaType" && namedArg.Value.Value is string mediaType)
+                return mediaType;
+        }
+        return null;
+    }
+
+    private static EquatableArray<PropertyModel> GetPropertyModels(INamedTypeSymbol classSymbol)
+    {
+        var list = new List<PropertyModel>();
+
+        foreach (var member in classSymbol.GetMembers())
+        {
+            if (member is not IPropertySymbol propSymbol)
+                continue;
+
+            var multipartAttr = propSymbol
+                .GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == MultipartFieldAttributeName);
+
+            var formAttr = propSymbol
+                .GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == FormFieldAttributeName);
+
+            list.Add(new PropertyModel(
+                Name: propSymbol.Name,
+                Type: propSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                MultipartFieldName: multipartAttr != null ? GetNamedArgument(multipartAttr, "Name") : null,
+                FormFieldName: formAttr != null ? GetNamedArgument(formAttr, "Name") : null,
+                FormStyle: formAttr != null ? GetNamedArgument(formAttr, "Style") : null,
+                FormExplode: formAttr == null || !HasNamedArgument(formAttr, "Explode") || GetBoolArgument(formAttr, "Explode"),
+                IsContent: multipartAttr != null && GetBoolArgument(multipartAttr, "IsContent"),
+                IsJson: (multipartAttr != null && GetBoolArgument(multipartAttr, "IsJson"))
+                     || (formAttr != null && GetBoolArgument(formAttr, "IsJson"))
+            ));
+        }
+
+        return list.ToEquatableArray();
+    }
+
+    private static string? GetNamedArgument(AttributeData attribute, string name)
+    {
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == name && namedArg.Value.Value is string value)
+                return value;
+        }
+        return null;
+    }
+
+    private static bool GetBoolArgument(AttributeData attribute, string name)
+    {
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == name && namedArg.Value.Value is bool value)
+                return value;
+        }
+        return false;
+    }
+
+    private static bool HasNamedArgument(AttributeData attribute, string name)
+    {
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == name)
+                return true;
+        }
+        return false;
+    }
+
+    private static string GenerateSerializer(SerializerModel info)
+    {
+        var serializeMethod = info.Format switch
+        {
+            SerializationFormat.Json => GenerateJsonSerializer(info),
+            SerializationFormat.Multipart => GenerateMultipartSerializer(info),
+            SerializationFormat.Form => GenerateFormSerializer(info),
+            SerializationFormat.Raw => GenerateRawSerializer(info),
+            SerializationFormat.String => GenerateStringSerializer(info),
+            _ => throw new System.NotSupportedException($"Unhandled SerializationFormat: {info.Format}"),
+        };
+
+        var deserializeMethod = info.Format switch
+        {
+            SerializationFormat.Json => GenerateJsonDeserializer(info),
+            _ => "",
+        };
+
+        var methods = deserializeMethod != ""
+            // clang-format off
+            ? $$"""
+                {{interp "serializeMethod"}}
+
+                {{interp "deserializeMethod"}}
+                """
+            // clang-format on
+            : serializeMethod;
+
+        var namespaceDecl = info.Namespace != "" ? $"namespace {info.Namespace};\n\n" : "";
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            {{interp "namespaceDecl"}}public static class {{interp "SerializerClassName(info)"}}Serializer
+            {
+                {{interp "methods"}}
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateJsonSerializer(SerializerModel info)
+    {
+        var mediaType = info.MediaType ?? "application/json";
+
+        // clang-format off
+        return $$"""
+            public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request, System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{interp "info.FullClassName"}}> jsonTypeInfo)
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(request, jsonTypeInfo);
+                return new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "{{interp "mediaType"}}");
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateMultipartSerializer(SerializerModel info)
+    {
+        var fieldsList = info.Properties.Select(prop =>
+        {
+            var fieldName = prop.MultipartFieldName ?? prop.Name;
+            string fieldCode;
+
+            if (prop.IsContent)
+            {
+                // clang-format off
+                fieldCode = $$"""
+                if (request.{{interp "prop.Name"}} != null)
+                {
+                    var fileContent = new System.Net.Http.ByteArrayContent(request.{{interp "prop.Name"}});
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                    formData.Add(fileContent, "{{interp "fieldName"}}", fileName);
+                }
+                """;
+                // clang-format on
+            }
+            else if (prop.IsJson)
+            {
+                // clang-format off
+                fieldCode = $$"""
+                if (request.{{interp "prop.Name"}} != null)
+                {
+                    var json = System.Text.Json.JsonSerializer.Serialize(request.{{interp "prop.Name"}});
+                    formData.Add(new System.Net.Http.StringContent(json), "{{interp "fieldName"}}");
+                }
+                """;
+                // clang-format on
+            }
+            // IMPROVEMENT: detects the filename field by a naming convention ("FileName" suffix).
+            // This is fragile. A dedicated attribute argument (e.g. IsFileName=true) would
+            // be explicit and resilient to naming changes.
+            else if (
+                prop.Type == "string"
+                && (
+                    prop.Name.EndsWith("FileName", System.StringComparison.Ordinal)
+                    || fieldName.EndsWith("fileName", System.StringComparison.Ordinal)
+                )
+            )
+            {
+                // clang-format off
+                fieldCode = $$"""
+                string fileName = request.{{interp "prop.Name"}};
+                """;
+                // clang-format on
+            }
+            else
+            {
+                // clang-format off
+                fieldCode = $$"""
+                if (request.{{interp "prop.Name"}} != null)
+                {
+                    formData.Add(new System.Net.Http.StringContent(request.{{interp "prop.Name"}}.ToString() ?? ""), "{{interp "fieldName"}}");
+                }
+                """;
+                // clang-format on
+            }
+
+            return Indent(2) + fieldCode.Replace("\n", $"\n{Indent(2)}");
+        }).ToList();
+
+        var fields = string.Join("\n\n", fieldsList);
+
+        // clang-format off
+        return $$"""
+            public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request)
+            {
+                var formData = new System.Net.Http.MultipartFormDataContent();
+
+            {{interp "fields"}}
+
+                return formData;
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateFormSerializer(SerializerModel info)
+    {
+        var fieldsList = info.Properties.Select(prop =>
+        {
+            var fieldName = prop.FormFieldName ?? prop.Name;
+            var explode = prop.FormExplode ? "true" : "false";
+            var isJson = prop.IsJson ? "true" : "false";
+
+            // clang-format off
+            var fieldCode = $$"""
+                AddValue(formData, "{{interp "fieldName"}}", request.{{interp "prop.Name"}}, {{interp "explode"}}, {{interp "isJson"}});
+                """;
+            // clang-format on
+
+            return Indent(2) + fieldCode.Replace("\n", $"\n{Indent(2)}");
+        }).ToList();
+
+        var fields = string.Join("\n\n", fieldsList);
+
+        // clang-format off
+        return $$"""
+            public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request)
+            {
+                var formData = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string?, string?>>();
+
+            {{interp "fields"}}
+
+                return new System.Net.Http.FormUrlEncodedContent(formData);
+            }
+
+            private static void AddValue(System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string?, string?>> formData, string name, object? value, bool explode, bool isJson)
+            {
+                if (value == null) return;
+
+                if (isJson)
+                {
+                    formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(name, System.Text.Json.JsonSerializer.Serialize(value, value.GetType())));
+                    return;
+                }
+
+                if (value is System.Collections.IDictionary dict)
+                {
+                    if (explode)
+                    {
+                        foreach (System.Collections.DictionaryEntry entry in dict)
+                        {
+                            formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(ValueToString(entry.Key), ValueToString(entry.Value)));
+                        }
+                        return;
+                    }
+
+                    var items = new System.Collections.Generic.List<string>();
+                    foreach (System.Collections.DictionaryEntry entry in dict)
+                    {
+                        items.Add(ValueToString(entry.Key));
+                        items.Add(ValueToString(entry.Value));
+                    }
+                    formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(name, string.Join(",", items)));
+                    return;
+                }
+
+                if (value is System.Collections.IEnumerable list && value is not string)
+                {
+                    if (explode)
+                    {
+                        foreach (var item in list)
+                        {
+                            formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(name, ValueToString(item)));
+                        }
+                        return;
+                    }
+
+                    var items = new System.Collections.Generic.List<string>();
+                    foreach (var item in list)
+                    {
+                        items.Add(ValueToString(item));
+                    }
+                    formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(name, string.Join(",", items)));
+                    return;
+                }
+
+                formData.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(name, ValueToString(value)));
+            }
+
+            private static string ValueToString(object? value)
+            {
+                if (value == null) return "";
+                if (value is System.DateTime dateTime) return dateTime.ToUniversalTime().ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+                if (value is System.DateOnly dateOnly) return dateOnly.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                if (value is bool boolean) return boolean ? "true" : "false";
+                return value.ToString() ?? "";
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateRawSerializer(SerializerModel info)
+    {
+        var mediaType = info.MediaType ?? "application/octet-stream";
+
+        // clang-format off
+        return $$"""
+            public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request)
+            {
+                var content = new System.Net.Http.ByteArrayContent(request);
+                content.Headers.Add("Content-Type", "{{interp "mediaType"}}");
+                return content;
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateStringSerializer(SerializerModel info)
+    {
+        var mediaType = info.MediaType ?? "text/plain";
+
+        // clang-format off
+        return $$"""
+            public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request)
+            {
+                return new System.Net.Http.StringContent(request, System.Text.Encoding.UTF8, "{{interp "mediaType"}}");
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string SerializerClassName(SerializerModel info) =>
+        info.Format == SerializationFormat.Form ? $"{info.ClassName}Form" : info.ClassName;
+
+    private static string SerializerRef(SerializerModel info) =>
+        info.Namespace != ""
+            ? $"global::{info.Namespace}.{SerializerClassName(info)}Serializer"
+            : $"global::{SerializerClassName(info)}Serializer";
+
+    /// <summary>Emits the unified <c>RequestSerializer</c> and <c>ResponseDeserializer</c>
+    /// dispatcher classes into <c>&lt;RootNamespace&gt;.Utils</c>. Each dispatcher exposes a
+    /// single overloaded <c>Serialize</c> / <c>Deserialize</c> entry point that delegates to
+    /// the per-type serializer class generated for each annotated model.</summary>
+    private static void EmitDispatchers(
+        ImmutableArray<SerializerModel?> models,
+        string rootNamespace,
+        SourceProductionContext spc
+    )
+    {
+        var infos = models.Where(m => m is not null).Select(m => m!).ToList();
+        if (infos.Count == 0)
+            return;
+
+        var utilsNamespace = rootNamespace + ".Utils";
+
+        var dispatcher = GenerateDispatcher(infos, utilsNamespace);
+        if (!string.IsNullOrEmpty(dispatcher))
+            spc.AddSource("RequestSerializer.g.cs", dispatcher);
+
+        var deserializer = GenerateDeserializerDispatcher(infos, utilsNamespace);
+        if (!string.IsNullOrEmpty(deserializer))
+            spc.AddSource("ResponseDeserializer.g.cs", deserializer);
+    }
+
+    private static string GenerateDispatcher(List<SerializerModel> infos, string utilsNamespace)
+    {
+        var overloadsList = infos.Select(info =>
+        {
+            string overloadCode;
+            if (info.Format == SerializationFormat.Json)
+            {
+                // clang-format off
+                overloadCode = $$"""
+                public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request, System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{interp "info.FullClassName"}}> jsonTypeInfo)
+                    => {{interp "SerializerRef(info)"}}.Serialize(request, jsonTypeInfo);
+                """;
+                // clang-format on
+            }
+            else
+            {
+                // clang-format off
+                overloadCode = $$"""
+                public static System.Net.Http.HttpContent Serialize({{interp "info.FullClassName"}} request)
+                    => {{interp "SerializerRef(info)"}}.Serialize(request);
+                """;
+                // clang-format on
+            }
+            return Indent(1) + overloadCode.Replace("\n", $"\n{Indent(1)}");
+        }).ToList();
+
+        var overloads = string.Join("\n\n", overloadsList);
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            namespace {{interp "utilsNamespace"}};
+
+            public static class RequestSerializer
+            {
+            {{interp "overloads"}}
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateDeserializerDispatcher(List<SerializerModel> infos, string utilsNamespace)
+    {
+        var jsonInfos = infos.Where(i => i.Format == SerializationFormat.Json).ToList();
+
+        if (jsonInfos.Count == 0)
+            return string.Empty;
+
+        var overloadsList = new List<string>();
+
+        foreach (var info in jsonInfos)
+        {
+            // clang-format off
+            var overloadCode = $$"""
+                public static {{interp "info.FullClassName"}} Deserialize(string json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{interp "info.FullClassName"}}> jsonTypeInfo)
+                    => {{interp "SerializerRef(info)"}}.Deserialize(json, jsonTypeInfo);
+                """;
+            // clang-format on
+            overloadsList.Add(Indent(1) + overloadCode.Replace("\n", $"\n{Indent(1)}"));
+        }
+
+        var overloads = string.Join("\n\n", overloadsList);
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            namespace {{interp "utilsNamespace"}};
+
+            public static class ResponseDeserializer
+            {
+            {{interp "overloads"}}
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateJsonDeserializer(SerializerModel info)
+    {
+        var nullCheck = info.IsValueType
+            ? ""
+            : "if (result == null) throw new System.InvalidOperationException(\"Deserialization returned null\");";
+
+        // clang-format off
+        return $$"""
+            public static {{interp "info.FullClassName"}} Deserialize(string json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{interp "info.FullClassName"}}> jsonTypeInfo)
+            {
+                var result = System.Text.Json.JsonSerializer.Deserialize(json, jsonTypeInfo);
+                {{interp "nullCheck"}}
+                return result;
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateFormDeserializer(SerializerModel info)
+    {
+        var assignments = info.Properties.Select(prop =>
+        {
+            var fieldName = prop.FormFieldName ?? prop.Name;
+            // clang-format off
+            return $$"""
+                    if (formData.TryGetValue("{{interp "fieldName"}}", out var {{interp "prop.Name"}}Value))
+                        result.{{interp "prop.Name"}} = {{interp "prop.Name"}}Value;
+            """;
+            // clang-format on
+        }).ToList();
+
+        var assignmentCode = string.Join("\n", assignments);
+
+        // clang-format off
+        return $$"""
+            public static {{interp "info.FullClassName"}} Deserialize(string formString)
+            {
+                var formData = new System.Collections.Generic.Dictionary<string, string>();
+                foreach (var pair in formString.Split('&'))
+                {
+                    var idx = pair.IndexOf('=');
+                    if (idx < 0) continue;
+                    var key = System.Uri.UnescapeDataString(pair[..idx]);
+                    var value = System.Uri.UnescapeDataString(pair[(idx + 1)..]);
+                    formData[key] = value;
+                }
+                var result = new {{interp "info.FullClassName"}}();
+            {{interp "assignmentCode"}}
+                return result;
+            }
+            """;
+        // clang-format on
+    }
+
+    private sealed record PropertyModel(
+        string Name,
+        string Type,
+        string? MultipartFieldName,
+        string? FormFieldName,
+        string? FormStyle,
+        bool FormExplode,
+        bool IsContent,
+        bool IsJson
+    );
+
+    private sealed record SerializerModel(
+        string ClassName,
+        string FullClassName,
+        string Namespace,
+        SerializationFormat Format,
+        string? MediaType,
+        bool IsValueType,
+        EquatableArray<PropertyModel> Properties
+    );
+}

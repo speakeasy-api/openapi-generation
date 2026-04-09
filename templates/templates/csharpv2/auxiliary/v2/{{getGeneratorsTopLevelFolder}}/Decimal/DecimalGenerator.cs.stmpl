@@ -1,0 +1,286 @@
+#nullable enable
+using System.Linq;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
+
+namespace {{getGeneratorsPackageId}}.Decimal;
+
+[Generator]
+public class DecimalGenerator : IIncrementalGenerator
+{
+    private const string AttributeFullName =
+        "{{getGeneratorsPackageId}}.Decimal.GenerateDecimalConverterAttribute";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        // This generator is triggered by an assembly-level attribute, not a type-level one.
+        // The compilation provider is used to check for the attribute on the assembly symbol.
+        // The generated converter is emitted once per assembly (not once per type).
+        var compilationProvider = context.CompilationProvider
+            .Select(static (comp, _) => HasAttribute(comp));
+
+        context.RegisterSourceOutput(
+            compilationProvider,
+            static (spc, hasAttribute) =>
+            {
+                if (hasAttribute)
+                    Execute(spc);
+            }
+        );
+    }
+
+    // Checks whether [assembly: GenerateDecimalConverter] is present.
+    private static bool HasAttribute(Compilation compilation)
+    {
+        return compilation
+            .Assembly.GetAttributes()
+            .Any(a => a.AttributeClass?.ToDisplayString() == AttributeFullName);
+    }
+
+    private static void Execute(SourceProductionContext context)
+    {
+        var source = GenerateDecimalConverters();
+        context.AddSource("DecimalJsonConverters.g.cs", SourceText.From(source, Encoding.UTF8));
+    }
+
+    private static string GenerateDecimalConverters()
+    {
+        // clang-format off
+        return $$"""
+            #nullable enable
+            namespace {{getScopeNamespace "utils" true}};
+
+            using System;
+            using System.Buffers;
+            using System.Collections.Generic;
+            using System.Globalization;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+
+            // Wire shape: JSON number. Used for OpenAPI `format: decimal`.
+            // Read accepts string OR number tokens (resilient to producers that string-encode).
+            public sealed class DecimalJsonConverter : JsonConverter<decimal>
+            {
+                public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    return DecimalConverterHelpers.ReadValue(ref reader);
+                }
+
+                public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+                {
+                    // WriteRawValue emits unescaped numeric literal preserving full decimal precision.
+                    writer.WriteRawValue(value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            // Wire shape: JSON string. Used for OpenAPI `format: decimalStr`.
+            public sealed class DecimalStringJsonConverter : JsonConverter<decimal>
+            {
+                public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    return DecimalConverterHelpers.ReadValue(ref reader);
+                }
+
+                public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
+                {
+                    writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            internal static class DecimalConverterHelpers
+            {
+                public static decimal ReadValue(ref Utf8JsonReader reader)
+                {
+                    if (reader.TokenType == JsonTokenType.String)
+                    {
+                        var s = reader.GetString();
+                        if (decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+                        {
+                            return parsed;
+                        }
+                        throw new JsonException($"Cannot parse decimal from string: {s}");
+                    }
+                    if (reader.TokenType == JsonTokenType.Number)
+                    {
+                        if (reader.TryGetDecimal(out var d))
+                        {
+                            return d;
+                        }
+                        // Fallback: read raw numeric text and parse to retain high-precision digits.
+                        var raw = System.Text.Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray());
+                        if (decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+                        {
+                            return parsed;
+                        }
+                        throw new JsonException($"Cannot parse decimal from numeric token: {raw}");
+                    }
+                    throw new JsonException($"Unexpected token type for decimal: {reader.TokenType}");
+                }
+            }
+
+            // Factory pattern. Property attribute `[JsonConverter(typeof(DecimalJsonConverterFactory))]`
+            // works for decimal, decimal?, List<decimal>, and Dictionary<TKey, decimal>.
+            public sealed class DecimalJsonConverterFactory : JsonConverterFactory
+            {
+                public override bool CanConvert(Type t) => DecimalFactoryHelpers.CanConvert(t);
+
+                public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+                {
+                    return DecimalFactoryHelpers.Create(t, useStringWire: false);
+                }
+            }
+
+            public sealed class DecimalStringJsonConverterFactory : JsonConverterFactory
+            {
+                public override bool CanConvert(Type t) => DecimalFactoryHelpers.CanConvert(t);
+
+                public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+                {
+                    return DecimalFactoryHelpers.Create(t, useStringWire: true);
+                }
+            }
+
+            internal static class DecimalFactoryHelpers
+            {
+                public static bool CanConvert(Type t)
+                {
+                    if (t == typeof(decimal) || t == typeof(decimal?))
+                        return true;
+                    if (!t.IsGenericType)
+                        return false;
+                    var def = t.GetGenericTypeDefinition();
+                    if (def == typeof(List<>) && t.GetGenericArguments()[0] == typeof(decimal))
+                        return true;
+                    if (def == typeof(Dictionary<,>) && t.GetGenericArguments()[1] == typeof(decimal))
+                        return IsSupportedDictKey(t.GetGenericArguments()[0]);
+                    return false;
+                }
+
+                private static bool IsSupportedDictKey(Type k) =>
+                    k == typeof(string) || k == typeof(int) || k == typeof(long) ||
+                    k == typeof(Guid) || k == typeof(short) || k == typeof(byte) ||
+                    k == typeof(uint) || k == typeof(ulong) || k == typeof(ushort);
+
+                public static JsonConverter Create(Type t, bool useStringWire)
+                {
+                    if (t == typeof(decimal))
+                    {
+                        return useStringWire
+                            ? (JsonConverter)new DecimalStringJsonConverter()
+                            : new DecimalJsonConverter();
+                    }
+                    if (t == typeof(decimal?))
+                    {
+                        return useStringWire
+                            ? (JsonConverter)new NullableDecimalJsonConverter(new DecimalStringJsonConverter())
+                            : new NullableDecimalJsonConverter(new DecimalJsonConverter());
+                    }
+                    var def = t.GetGenericTypeDefinition();
+                    if (def == typeof(List<>))
+                    {
+                        var inner = useStringWire
+                            ? (JsonConverter<decimal>)new DecimalStringJsonConverter()
+                            : new DecimalJsonConverter();
+                        return new ListDecimalJsonConverter(inner);
+                    }
+                    // Dictionary<TKey, decimal> — closed switch keeps AOT-safe (no MakeGenericType).
+                    var keyType = t.GetGenericArguments()[0];
+                    var innerScalar = useStringWire
+                        ? (JsonConverter<decimal>)new DecimalStringJsonConverter()
+                        : new DecimalJsonConverter();
+                    if (keyType == typeof(string)) return new DictionaryDecimalJsonConverter<string>(innerScalar);
+                    if (keyType == typeof(int))    return new DictionaryDecimalJsonConverter<int>(innerScalar);
+                    if (keyType == typeof(long))   return new DictionaryDecimalJsonConverter<long>(innerScalar);
+                    if (keyType == typeof(Guid))   return new DictionaryDecimalJsonConverter<Guid>(innerScalar);
+                    if (keyType == typeof(short))  return new DictionaryDecimalJsonConverter<short>(innerScalar);
+                    if (keyType == typeof(byte))   return new DictionaryDecimalJsonConverter<byte>(innerScalar);
+                    if (keyType == typeof(uint))   return new DictionaryDecimalJsonConverter<uint>(innerScalar);
+                    if (keyType == typeof(ulong))  return new DictionaryDecimalJsonConverter<ulong>(innerScalar);
+                    if (keyType == typeof(ushort)) return new DictionaryDecimalJsonConverter<ushort>(innerScalar);
+                    throw new NotSupportedException($"Dictionary key type not supported for decimal converter: {keyType}");
+                }
+            }
+
+            internal sealed class NullableDecimalJsonConverter : JsonConverter<decimal?>
+            {
+                private readonly JsonConverter<decimal> _inner;
+                public NullableDecimalJsonConverter(JsonConverter<decimal> inner) { _inner = inner; }
+
+                public override decimal? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType == JsonTokenType.Null) return null;
+                    return _inner.Read(ref reader, typeof(decimal), options);
+                }
+
+                public override void Write(Utf8JsonWriter writer, decimal? value, JsonSerializerOptions options)
+                {
+                    if (value is null) { writer.WriteNullValue(); return; }
+                    _inner.Write(writer, value.Value, options);
+                }
+            }
+
+            internal sealed class ListDecimalJsonConverter : JsonConverter<List<decimal>>
+            {
+                private readonly JsonConverter<decimal> _inner;
+                public ListDecimalJsonConverter(JsonConverter<decimal> inner) { _inner = inner; }
+
+                public override List<decimal> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartArray)
+                        throw new JsonException($"Expected StartArray for List<decimal>, got {reader.TokenType}");
+                    var list = new List<decimal>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        list.Add(_inner.Read(ref reader, typeof(decimal), options));
+                    }
+                    return list;
+                }
+
+                public override void Write(Utf8JsonWriter writer, List<decimal> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartArray();
+                    foreach (var v in value)
+                    {
+                        _inner.Write(writer, v, options);
+                    }
+                    writer.WriteEndArray();
+                }
+            }
+
+            internal sealed class DictionaryDecimalJsonConverter<TKey> : JsonConverter<Dictionary<TKey, decimal>>
+                where TKey : notnull
+            {
+                private readonly JsonConverter<decimal> _inner;
+                public DictionaryDecimalJsonConverter(JsonConverter<decimal> inner) { _inner = inner; }
+
+                public override Dictionary<TKey, decimal> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException($"Expected StartObject for Dictionary<,decimal>, got {reader.TokenType}");
+                    var dict = new Dictionary<TKey, decimal>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                    {
+                        var keyStr = reader.GetString()!;
+                        var key = (TKey)Convert.ChangeType(keyStr, typeof(TKey), CultureInfo.InvariantCulture);
+                        reader.Read();
+                        dict[key] = _inner.Read(ref reader, typeof(decimal), options);
+                    }
+                    return dict;
+                }
+
+                public override void Write(Utf8JsonWriter writer, Dictionary<TKey, decimal> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    foreach (var kvp in value)
+                    {
+                        writer.WritePropertyName(Convert.ToString(kvp.Key, CultureInfo.InvariantCulture)!);
+                        _inner.Write(writer, kvp.Value, options);
+                    }
+                    writer.WriteEndObject();
+                }
+            }
+            """;
+        // clang-format on
+    }
+}

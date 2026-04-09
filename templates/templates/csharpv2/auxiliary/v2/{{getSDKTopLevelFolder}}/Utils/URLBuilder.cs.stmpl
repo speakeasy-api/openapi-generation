@@ -1,0 +1,199 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+
+    internal static class URLBuilder
+    {
+        public static string ReplacePathParam(string url, string name, object? value, string style, bool explode)
+        {
+            if (value == null) return url.Replace("{" + name + "}", "");
+            var serialized = SerializePathParam(name, value, style, explode);
+            return url.Replace("{" + name + "}", Uri.EscapeDataString(serialized));
+        }
+
+        public static string ReplacePathParamJson<T>(string url, string name, T? value, JsonTypeInfo<T> typeInfo) where T : class
+        {
+            if (value is null) return url.Replace("{" + name + "}", "");
+            var serialized = JsonSerializer.Serialize(value, typeInfo);
+            return url.Replace("{" + name + "}", Uri.EscapeDataString(serialized));
+        }
+
+        public static void AppendQueryParam(List<string> qs, string name, object? value, string style, bool explode, bool allowEmpty)
+        {
+            if (value == null)
+            {
+                if (allowEmpty) qs.Add(name + "=");
+                return;
+            }
+
+            if (value is IList emptyList && !(value is string) && emptyList.Count == 0)
+            {
+                if (allowEmpty) qs.Add(name + "=");
+                return;
+            }
+
+            switch (style)
+            {
+                case "form":
+                    AppendFormQueryParam(qs, name, value, explode, ",");
+                    break;
+                case "pipeDelimited":
+                    AppendFormQueryParam(qs, name, value, explode, "|");
+                    break;
+                case "deepObject":
+                    AppendDeepObjectQueryParam(qs, name, value);
+                    break;
+                default:
+                    throw new NotSupportedException($"Unsupported query param style: {style}");
+            }
+        }
+
+        public static void AppendQueryParamJson<T>(List<string> qs, string name, T? value, JsonTypeInfo<T> typeInfo) where T : class
+        {
+            if (value is null) return;
+            var serialized = JsonSerializer.Serialize(value, typeInfo);
+            qs.Add(name + "=" + WebUtility.UrlEncode(serialized));
+        }
+
+        public static string Finalize(string url, List<string> qs)
+            => qs.Count == 0 ? url : url + "?" + string.Join("&", qs);
+
+        public static void AppendHeader(HttpRequestMessage request, string name, object? value, string style, bool explode)
+        {
+            if (value == null) return;
+            var serialized = SerializeHeader(value, explode);
+            if (string.IsNullOrEmpty(serialized)) return;
+            request.Headers.Add(name, serialized);
+        }
+
+        // ── private serializers ─────────────────────────────────────────────
+
+        private static string SerializePathParam(string name, object value, string style, bool explode)
+        {
+            if (style != "simple")
+                throw new NotSupportedException($"Unsupported path param style: {style}");
+
+            if (value is IList list && !(value is string))
+            {
+                var items = new List<string>(list.Count);
+                foreach (var item in list) items.Add(Utilities.ToString(item));
+                return string.Join(",", items);
+            }
+
+            if (value is IDictionary dict)
+            {
+                var sep = explode ? "," : ",";
+                var pairs = new List<string>();
+                foreach (DictionaryEntry e in dict)
+                {
+                    var k = Utilities.ToString(e.Key);
+                    var v = Utilities.ToString(e.Value);
+                    pairs.Add(explode ? $"{k}={v}" : $"{k},{v}");
+                }
+                return string.Join(",", pairs);
+            }
+
+            return Utilities.ToString(value);
+        }
+
+        private static void AppendFormQueryParam(List<string> qs, string name, object value, bool explode, string sep)
+        {
+            if (value is IList list && !(value is string))
+            {
+                if (explode)
+                {
+                    foreach (var item in list)
+                        qs.Add(name + "=" + WebUtility.UrlEncode(Utilities.ToString(item)));
+                }
+                else
+                {
+                    var items = new List<string>(list.Count);
+                    foreach (var item in list) items.Add(Utilities.ToString(item));
+                    qs.Add(name + "=" + WebUtility.UrlEncode(string.Join(sep, items)));
+                }
+                return;
+            }
+
+            if (value is IDictionary dict)
+            {
+                if (explode)
+                {
+                    foreach (DictionaryEntry e in dict)
+                        qs.Add(WebUtility.UrlEncode(Utilities.ToString(e.Key)) + "=" + WebUtility.UrlEncode(Utilities.ToString(e.Value)));
+                }
+                else
+                {
+                    var items = new List<string>();
+                    foreach (DictionaryEntry e in dict)
+                    {
+                        items.Add(Utilities.ToString(e.Key));
+                        items.Add(Utilities.ToString(e.Value));
+                    }
+                    qs.Add(name + "=" + WebUtility.UrlEncode(string.Join(sep, items)));
+                }
+                return;
+            }
+
+            qs.Add(name + "=" + WebUtility.UrlEncode(Utilities.ToString(value)));
+        }
+
+        private static void AppendDeepObjectQueryParam(List<string> qs, string name, object value)
+        {
+            if (value is IDictionary dict)
+            {
+                foreach (DictionaryEntry e in dict)
+                {
+                    var k = Utilities.ToString(e.Key);
+                    var v = e.Value;
+                    if (v is IList vl && !(v is string))
+                    {
+                        foreach (var item in vl)
+                            qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + WebUtility.UrlEncode(Utilities.ToString(item)));
+                    }
+                    else
+                    {
+                        qs.Add(name + "[" + WebUtility.UrlEncode(k) + "]=" + WebUtility.UrlEncode(Utilities.ToString(v)));
+                    }
+                }
+                return;
+            }
+
+            // Object shapes need per-field emission at template time (see urlbuilder.ts).
+            // Falling through means caller passed a non-dict object — likely a generation gap.
+            throw new NotSupportedException(
+                $"deepObject query param '{name}' on object of type {value.GetType().FullName} requires template-time per-field emission");
+        }
+
+        private static string SerializeHeader(object value, bool explode)
+        {
+            if (value is IList list && !(value is string))
+            {
+                var items = new List<string>(list.Count);
+                foreach (var item in list) items.Add(Utilities.ToString(item));
+                return string.Join(",", items);
+            }
+
+            if (value is IDictionary dict)
+            {
+                var pairs = new List<string>();
+                foreach (DictionaryEntry e in dict)
+                {
+                    var k = Utilities.ToString(e.Key);
+                    var v = Utilities.ToString(e.Value);
+                    pairs.Add(explode ? $"{k}={v}" : $"{k},{v}");
+                }
+                return string.Join(",", pairs);
+            }
+
+            return Utilities.ToString(value);
+        }
+    }
+}

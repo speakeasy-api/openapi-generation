@@ -1,0 +1,217 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http.Headers;
+{{- if useNodatime}}
+    using NodaTime;
+{{- end}}
+
+    public class Utilities
+    {
+        public static bool IsDictionary(object? o)
+        {
+            if (o == null)
+                return false;
+            return o is IDictionary
+                && o.GetType().IsGenericType
+                && o.GetType().GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>));
+        }
+
+        public static bool IsList(object? o)
+        {
+            if (o == null)
+                return false;
+            return o is IList
+                && o.GetType().IsGenericType
+                && o.GetType().GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>));
+        }
+
+        public static bool IsModelNamespace(string ns)
+        {
+            var modelNamespaces = new[]
+            {
+                {{- range $n := getModelNamespaces }}
+                "{{ $n }}",
+                {{- end }}
+            };
+
+            return modelNamespaces.Contains(ns);
+        }
+
+        public static bool IsClass(object? o)
+        {
+            if (o == null)
+                return false;
+            if (!o.GetType().IsClass)
+                return false;
+            return IsModelNamespace(o.GetType().Namespace ?? "");
+        }
+
+        public static bool IsDate(object? obj) =>
+            obj != null && (obj.GetType() == typeof(DateTime){{if useNodatime}} || obj.GetType() == typeof(LocalDate){{else}} || obj.GetType() == typeof(DateOnly){{end}});
+
+        public static string ValueToString(object? value)
+        {
+            if (value == null)
+            {
+                return "";
+            }
+
+            if (value.GetType() == typeof(DateTime))
+            {
+                return ((DateTime)value)
+                    .ToUniversalTime()
+                    .ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+            }
+{{- if useNodatime}}
+            else if (value.GetType() == typeof(LocalDate))
+            {
+                return ((LocalDate)value)
+                    .ToDateTimeUnspecified()
+                    .ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            }
+{{- else}}
+            else if (value.GetType() == typeof(DateOnly))
+            {
+                return ((DateOnly)value)
+                    .ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            }
+{{- end}}
+            else if (value.GetType() == typeof(bool))
+            {
+                return (bool)value ? "true" : "false";
+            }
+            else if (value is System.Numerics.BigInteger bi)
+            {
+                return bi.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else if (value.GetType() == typeof(decimal))
+            {
+                return ((decimal)value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else if (value.GetType().IsEnum)
+            {
+                return value.ToString() ?? "";
+            }
+            else if (IsDictionary(value))
+            {
+                // Dictionary-as-string for URL/form values used to round-trip via JsonSerializer
+                // with a runtime Type, which is AOT-hostile. If a target spec needs this shape,
+                // the template must emit per-entry expansion (see urlbuilder.ts handling of
+                // IDictionary in form/deepObject styles).
+                throw new NotSupportedException(
+                    $"Cannot stringify dictionary of type {value.GetType().FullName} — generation gap; dictionary shapes must be expanded per-entry at template time"
+                );
+            }
+
+            return value.ToString() ?? "";
+        }
+
+        public static string ToString(object? obj)
+        {
+            if (obj == null)
+            {
+                return "";
+            }
+
+            if (obj is string str)
+            {
+                return str;
+            }
+
+            if (obj.GetType().IsPrimitive || obj.GetType().IsEnum || IsDate(obj)
+                || obj is System.Numerics.BigInteger || obj.GetType() == typeof(decimal))
+            {
+                return ValueToString(obj);
+            }
+
+            // Object shapes need per-field emission at template time. Reaching here means
+            // a generation gap — caller passed a class instance to a path/header serializer
+            // that should have been destructured at template time.
+            throw new NotSupportedException(
+                $"Cannot stringify object of type {obj.GetType().FullName} — generation gap; object shapes must be emitted per-field at template time"
+            );
+        }
+
+        public static bool IsContentTypeMatch(string expected, string? actual)
+        {
+            if (actual == null)
+            {
+                return false;
+            }
+
+            if (expected == actual || expected == "*" || expected == "*/*")
+            {
+                return true;
+            }
+
+            try
+            {
+                var mediaType = MediaTypeHeaderValue.Parse(actual).MediaType ?? "";
+
+                if (expected == mediaType)
+                {
+                    return true;
+                }
+
+                var parts = mediaType.Split('/');
+                if (parts.Length == 2)
+                {
+                    if (parts[0] + "/*" == expected || "*/" + parts[1] == expected)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return false;
+        }
+
+        public static string PrefixBearer(string authHeaderValue)
+        {
+            if (authHeaderValue.StartsWith("bearer ", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return authHeaderValue;
+            }
+
+            return $"Bearer {authHeaderValue}";
+        }
+
+        public static string RemoveSuffix(string inputString, string suffix)
+        {
+            if (!String.IsNullOrEmpty(suffix) && inputString.EndsWith(suffix))
+            {
+                return inputString.Remove(inputString.Length - suffix.Length, suffix.Length);
+            }
+            return inputString;
+        }
+
+        public static string TemplateUrl(string template, Dictionary<string, string> paramDict)
+        {
+            foreach(KeyValuePair<string, string> entry in paramDict)
+            {
+                template = template.Replace('{' + entry.Key + '}', entry.Value);
+            }
+            return template;
+        }
+
+        public static Dictionary<string, List<string>> CollectHeaders(HttpHeaders headers)
+        {
+            var dict = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var header in headers)
+            {
+                if (!dict.ContainsKey(header.Key))
+                {
+                    dict[header.Key] = new List<string>();
+                }
+                dict[header.Key].AddRange(header.Value);
+            }
+            return dict;
+        }
+    }
+}

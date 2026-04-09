@@ -1,0 +1,695 @@
+#nullable enable
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using {{getGeneratorsPackageId}};
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Union;
+
+[Generator]
+public class OpenUnionGenerator : UnionGeneratorBase
+{
+    private const string AttributeName =
+        "{{getGeneratorsPackageId}}.Union.GenerateOpenUnionConverterAttribute";
+
+    protected override string AttributeFullName => AttributeName;
+
+    // Excludes Fallback in addition to Index; Fallback holds a raw JsonElement
+    // for values that didn't match any known variant (open union semantics).
+    protected override IEnumerable<IPropertySymbol> FilterProperties(INamedTypeSymbol classSymbol)
+    {
+        return classSymbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p =>
+                p.Type.NullableAnnotation == NullableAnnotation.Annotated
+                && p.Name != "Index"
+                && p.Name != "Fallback"
+            );
+    }
+
+    public override void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var models = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                AttributeName,
+                predicate: static (s, _) => s is ClassDeclarationSyntax,
+                transform: (ctx, _) => ExtractOpenModel(ctx)
+            )
+            .Where(static m => m is not null);
+
+        context.RegisterSourceOutput(models, static (spc, model) =>
+        {
+            var source = GenerateOpenConverter(model!);
+            spc.AddSource($"{model!.Name}Converter.g.cs", source);
+        });
+    }
+
+    private OpenUnionModel? ExtractOpenModel(GeneratorAttributeSyntaxContext ctx)
+    {
+        if (ctx.TargetSymbol is not INamedTypeSymbol classSymbol)
+            return null;
+
+        var attribute = ctx.Attributes[0];
+        var nullable = false;
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == "Nullable" && namedArg.Value.Value is bool b)
+                nullable = b;
+        }
+
+        var variantProperties = FilterProperties(classSymbol)
+            .Select(p =>
+            {
+                var variantType = p.Type is INamedTypeSymbol nt
+                    && nt.NullableAnnotation == NullableAnnotation.Annotated
+                    && nt.TypeArguments.Length > 0
+                        ? nt.TypeArguments[0] as INamedTypeSymbol
+                        : p.Type as INamedTypeSymbol;
+
+                var typeProperties = ExtractTypeProperties(variantType, 0);
+                var distinctive = typeProperties.FirstOrDefault(tp => tp.JsonName != tp.PropName || typeProperties.Length > 0)
+                    is { } first && first.JsonName != null ? first.JsonName : null;
+
+                // Use the first property that has a JsonPropertyName attribute as the distinctive hint
+                var distinctiveJsonProp = variantType?.GetMembers()
+                    .OfType<IPropertySymbol>()
+                    .Where(m => m.DeclaredAccessibility == Accessibility.Public)
+                    .Select(m => (prop: m, attr: m.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute")))
+                    .Where(x => x.attr != null)
+                    .Select(x => x.attr!.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? x.prop.Name)
+                    .FirstOrDefault();
+
+                return new OpenUnionVariantModel(
+                    Name: p.Name,
+                    FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    DistinctiveJsonPropertyName: distinctiveJsonProp,
+                    TypeProperties: typeProperties
+                );
+            })
+            .ToEquatableArray();
+
+        if (variantProperties.Length < 2)
+            return null;
+
+        var ns = classSymbol.ContainingNamespace;
+        var namespaceDecl = NamespaceDeclaration(ns);
+
+        return new OpenUnionModel(classSymbol.Name, namespaceDecl, nullable, variantProperties);
+    }
+
+    /// <summary>Recursively extracts a structural description of <paramref name="typeSymbol"/>'s
+    /// public properties for use in open-union candidate scoring. <paramref name="depth"/> tracks
+    /// recursion into nested complex types and is capped at 5 to prevent runaway analysis of
+    /// deeply nested object graphs.</summary>
+    private static EquatableArray<TypePropertyInfo> ExtractTypeProperties(INamedTypeSymbol? typeSymbol, int depth)
+    {
+        if (typeSymbol == null || depth > 5)
+            return EquatableArray<TypePropertyInfo>.Empty;
+
+        var list = new List<TypePropertyInfo>();
+
+        foreach (var member in typeSymbol.GetMembers().OfType<IPropertySymbol>()
+            .Where(p => p.DeclaredAccessibility == Accessibility.Public))
+        {
+            var hasJsonExtData = member.GetAttributes().Any(a => a.AttributeClass?.Name == "JsonExtensionDataAttribute");
+            var jsonAttr = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute");
+            var jsonName = jsonAttr?.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? member.Name;
+            var isOpenEnum = IsOpenEnumType(member.Type);
+            var isNullable = member.Type.NullableAnnotation == NullableAnnotation.Annotated;
+
+            var (isList, listElemFqType, listElemComplex, listElemOpenEnum, listElemNullable, listElemNested) =
+                TryExtractListInfo(member.Type, depth);
+            var (isDict, dictValFqType, dictValComplex, dictValNested) =
+                TryExtractDictInfo(member.Type, depth);
+            var isComplex = !isList && !isDict && IsComplexType(member.Type);
+
+            var nested = isComplex
+                ? ExtractTypeProperties(GetUnderlyingNamedType(member.Type), depth + 1)
+                : EquatableArray<TypePropertyInfo>.Empty;
+
+            list.Add(new TypePropertyInfo(
+                JsonName: jsonName,
+                PropName: member.Name,
+                IsOpenEnum: isOpenEnum,
+                HasJsonExtensionData: hasJsonExtData,
+                IsList: isList,
+                ListElemFqType: listElemFqType,
+                ListElemComplex: listElemComplex,
+                ListElemOpenEnum: listElemOpenEnum,
+                ListElemNullable: listElemNullable,
+                ListElemNested: listElemNested,
+                IsDict: isDict,
+                DictValFqType: dictValFqType,
+                DictValComplex: dictValComplex,
+                DictValNested: dictValNested,
+                IsComplex: isComplex,
+                IsNullable: isNullable,
+                NestedProperties: nested
+            ));
+        }
+
+        return list.ToEquatableArray();
+    }
+
+    private static (bool isList, string? elemFqType, bool elemComplex, bool elemOpenEnum, bool elemNullable, EquatableArray<TypePropertyInfo> elemNested)
+        TryExtractListInfo(ITypeSymbol type, int depth)
+    {
+        var actual = GetUnderlyingType(type);
+
+        ITypeSymbol? elemType = null;
+        if (actual is INamedTypeSymbol nt)
+        {
+            var name = nt.ConstructedFrom.ToDisplayString();
+            if ((name.StartsWith("System.Collections.Generic.List<") ||
+                 name.StartsWith("System.Collections.Generic.IList<") ||
+                 name.StartsWith("System.Collections.Generic.IEnumerable<") ||
+                 name.StartsWith("System.Collections.Generic.ICollection<")) &&
+                nt.TypeArguments.Length > 0)
+                elemType = nt.TypeArguments[0];
+        }
+        else if (actual is IArrayTypeSymbol arr)
+            elemType = arr.ElementType;
+
+        if (elemType == null)
+            return (false, null, false, false, false, EquatableArray<TypePropertyInfo>.Empty);
+
+        var complex = IsComplexType(elemType);
+        var nested = complex
+            ? ExtractTypeProperties(GetUnderlyingNamedType(elemType), depth + 1)
+            : EquatableArray<TypePropertyInfo>.Empty;
+
+        return (true,
+            elemType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            complex,
+            IsOpenEnumType(elemType),
+            elemType.NullableAnnotation == NullableAnnotation.Annotated,
+            nested);
+    }
+
+    private static (bool isDict, string? valFqType, bool valComplex, EquatableArray<TypePropertyInfo> valNested)
+        TryExtractDictInfo(ITypeSymbol type, int depth)
+    {
+        var actual = GetUnderlyingType(type);
+        if (actual is INamedTypeSymbol nt)
+        {
+            var name = nt.ConstructedFrom.ToDisplayString();
+            if ((name.StartsWith("System.Collections.Generic.Dictionary<") ||
+                 name.StartsWith("System.Collections.Generic.IDictionary<")) &&
+                nt.TypeArguments.Length > 1)
+            {
+                var valType = nt.TypeArguments[1];
+                var complex = IsComplexType(valType);
+                var nested = complex
+                    ? ExtractTypeProperties(GetUnderlyingNamedType(valType), depth + 1)
+                    : EquatableArray<TypePropertyInfo>.Empty;
+                return (true, valType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), complex, nested);
+            }
+        }
+        return (false, null, false, EquatableArray<TypePropertyInfo>.Empty);
+    }
+
+    /// <summary>Detects open enum classes by duck-typing: a type is treated as an open enum if
+    /// it exposes a zero-parameter <c>IsKnown()</c> method, which is the contract for generated
+    /// open enum converters (<see cref="Enum.EnumGenerator"/>).</summary>
+    private static bool IsOpenEnumType(ITypeSymbol type)
+    {
+        var actual = GetUnderlyingType(type);
+        return actual is INamedTypeSymbol ct &&
+               ct.GetMembers().OfType<IMethodSymbol>().Any(m => m.Name == "IsKnown" && m.Parameters.Length == 0);
+    }
+
+    /// <summary>Returns <c>true</c> if <paramref name="type"/> is a user-defined class or struct
+    /// whose properties should be recursively scored during open-union candidate selection.
+    /// Excluded: BCL types (except collections), primitives (<c>string</c>, <c>decimal</c>,
+    /// <c>BigInteger</c>), enums, and types with no public properties.</summary>
+    private static bool IsComplexType(ITypeSymbol type)
+    {
+        var actual = GetUnderlyingType(type);
+        if (actual is INamedTypeSymbol nt)
+        {
+            if (nt.TypeKind != TypeKind.Class && nt.TypeKind != TypeKind.Struct) return false;
+            var full = nt.ToDisplayString();
+            if (full.StartsWith("System.") && !full.StartsWith("System.Collections.")) return false;
+            if (full == "string" || full == "decimal" || full == "System.Numerics.BigInteger") return false;
+            if (nt.TypeKind == TypeKind.Enum) return false;
+            return nt.GetMembers().OfType<IPropertySymbol>().Any(p => p.DeclaredAccessibility == Accessibility.Public);
+        }
+        return false;
+    }
+
+    /// <summary>Unwraps a nullable reference type annotation (<c>T?</c> → <c>T</c>).
+    /// Roslyn represents <c>Foo?</c> as a <see cref="INamedTypeSymbol"/> with
+    /// <see cref="NullableAnnotation.Annotated"/> and a single type argument, not as a distinct
+    /// wrapper type, so unwrapping requires checking both conditions.</summary>
+    private static ITypeSymbol GetUnderlyingType(ITypeSymbol type)
+    {
+        if (type is INamedTypeSymbol { NullableAnnotation: NullableAnnotation.Annotated } nt && nt.TypeArguments.Length > 0)
+            return nt.TypeArguments[0];
+        return type;
+    }
+
+    private static INamedTypeSymbol? GetUnderlyingNamedType(ITypeSymbol type) =>
+        GetUnderlyingType(type) as INamedTypeSymbol;
+
+    // ── Code generation ──────────────────────────────────────────────────────
+
+    private static string GenerateOpenConverter(OpenUnionModel model)
+    {
+        var readBody = GenerateOpenReadMethodBody(model);
+        var writeBody = GenerateOpenWriteMethodBody(model);
+
+        var fieldDecls = string.Join("\n        ", model.Properties.Select(p =>
+        {
+            var t = p.FullyQualifiedType.TrimEnd('?');
+            return $"private readonly System.Text.Json.Serialization.Metadata.JsonTypeInfo<{t}> _ti{p.Name};";
+        }));
+        var ctorParams = string.Join(",\n            ", model.Properties.Select(p =>
+        {
+            var t = p.FullyQualifiedType.TrimEnd('?');
+            return $"System.Text.Json.Serialization.Metadata.JsonTypeInfo<{t}> ti{p.Name}";
+        }));
+        var ctorAssigns = string.Join("\n            ", model.Properties.Select(p =>
+            $"_ti{p.Name} = ti{p.Name};"));
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            using System.Linq;
+
+            {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}Converter : System.Text.Json.Serialization.JsonConverter<{{interp "model.Name"}}>
+            {
+                private struct Candidate
+                {
+                    public int Index;
+                    public object? Value;
+                    public int Matched;
+                    public int Inexact;
+                    public int Unmatched;
+                    public int AdditionalProperties;
+                }
+
+                {{interp "fieldDecls"}}
+
+                public {{interp "model.Name"}}Converter(
+                    {{interp "ctorParams"}})
+                {
+                    {{interp "ctorAssigns"}}
+                }
+
+                public override {{interp "model.Name"}}? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+                {
+                    {{interp "readBody"}}
+                }
+
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "model.Name"}}? value, System.Text.Json.JsonSerializerOptions options)
+                {
+                    {{interp "writeBody"}}
+                }
+
+                // Scoring priority:
+                //   1. Most matched known fields
+                //   2. Fewest inexact open-enum values
+                //   3. Fewest unmatched fields
+                //   4. Most AdditionalProperties (better catch-all)
+                private static Candidate PickBestCandidate(System.Collections.Generic.List<Candidate> candidates)
+                {
+                    if (candidates.Count == 1) return candidates[0];
+                    return candidates
+                        .OrderByDescending(c => c.Matched)
+                        .ThenBy(c => c.Inexact)
+                        .ThenBy(c => c.Unmatched)
+                        .ThenByDescending(c => c.AdditionalProperties)
+                        .First();
+                }
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateOpenReadMethodBody(OpenUnionModel model)
+    {
+        var nullHandling = model.Nullable
+            ? "return null;"
+            : "throw new System.Text.Json.JsonException(\"Received unexpected null JSON value\");";
+
+        var tryBlocksList = model.Properties
+            .Select((prop, i) => GenerateVariantBlock(model.Name, prop, i + 1))
+            .ToList();
+        var tryBlocks = string.Join("\n\n", tryBlocksList);
+
+        var selectionLogic = string.Join("\n", model.Properties.Select((prop, i) =>
+        {
+            var index = i + 1;
+            var propType = prop.FullyQualifiedType.TrimEnd('?');
+            return $"if (bestMatch.Index == {index}) return {model.Name}.Create{prop.Name}(({propType})bestMatch.Value!);";
+        }));
+
+        // clang-format off
+        var variantLogic = $$"""
+            var readerCopy = reader;
+            using var jsonDoc = System.Text.Json.JsonDocument.ParseValue(ref readerCopy);
+            var jsonText = jsonDoc.RootElement.GetRawText();
+
+            var candidates = new System.Collections.Generic.List<Candidate>();
+
+            {{interp "tryBlocks"}}
+
+            if (candidates.Count > 0)
+            {
+                var bestMatch = PickBestCandidate(candidates);
+                reader = readerCopy;
+
+                {{interp "selectionLogic"}}
+            }
+
+            // No known variant matched; store as raw JSON (open union fallback).
+            reader = readerCopy;
+            return {{interp "model.Name"}}.CreateFallback(jsonDoc.RootElement.Clone());
+            """;
+        // clang-format on
+
+        var indented = Indent(1) + variantLogic.Replace("\n", $"\n{Indent(1)}");
+
+        // clang-format off
+        return $$"""
+            if (reader.TokenType == System.Text.Json.JsonTokenType.Null)
+            {
+                {{interp "nullHandling"}}
+            }
+
+            {{interp "indented"}}
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateVariantBlock(string className, OpenUnionVariantModel prop, int index)
+    {
+        var propType = prop.FullyQualifiedType.TrimEnd('?');
+
+        string distinctiveCheck = "";
+        string distinctiveCheckClose = "";
+        if (prop.DistinctiveJsonPropertyName != null)
+        {
+            distinctiveCheck = $"if (jsonDoc.RootElement.TryGetProperty(\"{prop.DistinctiveJsonPropertyName}\", out _))\n" + "{\n";
+            distinctiveCheckClose = "}\n";
+        }
+
+        var countFieldsLogic = GenerateCountFieldsLogic(prop.TypeProperties, $"value{index}", "jsonDoc.RootElement", $"candidate{index}", 0);
+
+        // clang-format off
+        return $$"""
+            {{interp "distinctiveCheck"}}
+            try
+            {
+                var value{{interp "index"}} = System.Text.Json.JsonSerializer.Deserialize(jsonText, _ti{{interp "prop.Name"}});
+                if (value{{interp "index"}} != null)
+                {
+                    var candidate{{interp "index"}} = new Candidate { Index = {{interp "index"}}, Value = value{{interp "index"}} };
+                    {{interp "countFieldsLogic"}}
+                    candidates.Add(candidate{{interp "index"}});
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+            }
+            {{interp "distinctiveCheckClose"}}
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateCountFieldsLogic(
+        EquatableArray<TypePropertyInfo> properties,
+        string valuePath,
+        string jsonPath,
+        string candidateVar,
+        int depth
+    )
+    {
+        if (depth > 5) return "";
+        var indent = new string(' ', depth * 4);
+
+        var blocks = properties.Select(prop =>
+        {
+            if (prop.HasJsonExtensionData)
+            {
+                // clang-format off
+                return $$"""
+                    {{interp "indent"}}{{interp "candidateVar"}}.AdditionalProperties = {{interp "valuePath"}}.{{interp "prop.PropName"}}?.Count ?? 0;
+                    """;
+                // clang-format on
+            }
+
+            var jsonPropVar = $"jsonProp_{depth}_{prop.PropName}";
+            var innerLogic = GeneratePropertyTypeLogic(prop, $"{valuePath}.{prop.PropName}", jsonPropVar, candidateVar, depth, indent);
+
+            // clang-format off
+            return $$"""
+                {{interp "indent"}}if ({{interp "jsonPath"}}.TryGetProperty("{{interp "prop.JsonName"}}", out var {{interp "jsonPropVar"}}))
+                {{interp "indent"}}{
+                {{interp "indent"}}    {{interp "candidateVar"}}.Matched++;
+                {{interp "innerLogic"}}
+                {{interp "indent"}}}
+                {{interp "indent"}}else
+                {{interp "indent"}}{
+                {{interp "indent"}}    {{interp "candidateVar"}}.Unmatched++;
+                {{interp "indent"}}}
+                """;
+            // clang-format on
+        });
+
+        return string.Join("\n", blocks);
+    }
+
+    private static string GeneratePropertyTypeLogic(
+        TypePropertyInfo prop,
+        string valueAccess,
+        string jsonPropVar,
+        string candidateVar,
+        int depth,
+        string indent
+    )
+    {
+        if (prop.IsOpenEnum)
+        {
+            var nullCheck = prop.IsNullable ? $"{valueAccess} != null && " : "";
+            // clang-format off
+            return $$"""
+                {{interp "indent"}}    if ({{interp "nullCheck"}}!{{interp "valueAccess"}}.IsKnown()) {{interp "candidateVar"}}.Inexact++;
+                """;
+            // clang-format on
+        }
+
+        if (prop.IsList && prop.ListElemFqType != null)
+        {
+            var loopVar = $"i_{depth}_{prop.PropName}";
+            var elemVar = $"elem_{depth}_{prop.PropName}";
+            var elemJsonVar = $"jsonElem_{depth}_{prop.PropName}";
+            string itemLogic;
+            if (prop.ListElemComplex && prop.ListElemNested.Length > 0)
+            {
+                itemLogic = GenerateNestedValueLogic(prop.ListElemNested, elemVar, elemJsonVar, candidateVar, depth + 2, prop.ListElemNullable, $"{indent}                ");
+            }
+            else if (prop.ListElemOpenEnum)
+            {
+                var nullCheck = prop.ListElemNullable ? $"{elemVar} != null && " : "";
+                // clang-format off
+                itemLogic = $$"""
+                    {{interp "indent"}}                {{interp "candidateVar"}}.Matched++;
+                    {{interp "indent"}}                if ({{interp "nullCheck"}}!{{interp "elemVar"}}.IsKnown()) {{interp "candidateVar"}}.Inexact++;
+                    """;
+                // clang-format on
+            }
+            else
+            {
+                // clang-format off
+                itemLogic = $$"""
+                    {{interp "indent"}}                {{interp "candidateVar"}}.Matched++;
+                    """;
+                // clang-format on
+            }
+
+            // clang-format off
+            return $$"""
+                {{interp "indent"}}    if ({{interp "jsonPropVar"}}.ValueKind == System.Text.Json.JsonValueKind.Array && {{interp "valueAccess"}} != null)
+                {{interp "indent"}}    {
+                {{interp "indent"}}        var {{interp "loopVar"}} = 0;
+                {{interp "indent"}}        foreach (var {{interp "elemVar"}} in {{interp "valueAccess"}})
+                {{interp "indent"}}        {
+                {{interp "indent"}}            if ({{interp "loopVar"}} < {{interp "jsonPropVar"}}.GetArrayLength())
+                {{interp "indent"}}            {
+                {{interp "indent"}}                var {{interp "elemJsonVar"}} = {{interp "jsonPropVar"}}[{{interp "loopVar"}}];
+                {{interp "itemLogic"}}
+                {{interp "indent"}}            }
+                {{interp "indent"}}            {{interp "loopVar"}}++;
+                {{interp "indent"}}        }
+                {{interp "indent"}}    }
+                """;
+            // clang-format on
+        }
+
+        if (prop.IsDict && prop.DictValFqType != null)
+        {
+            var kvpVar = $"kvp_{depth}_{prop.PropName}";
+            var dictJsonVar = $"dictJson_{depth}_{prop.PropName}";
+            string valueLogic;
+            if (prop.DictValComplex && prop.DictValNested.Length > 0)
+            {
+                valueLogic = GenerateNestedValueLogic(prop.DictValNested, $"{kvpVar}.Value", dictJsonVar, candidateVar, depth + 2, false, $"{indent}                ");
+            }
+            else
+            {
+                // clang-format off
+                valueLogic = $$"""
+                    {{interp "indent"}}                {{interp "candidateVar"}}.Matched++;
+                    """;
+                // clang-format on
+            }
+
+            // clang-format off
+            return $$"""
+                {{interp "indent"}}    if ({{interp "jsonPropVar"}}.ValueKind == System.Text.Json.JsonValueKind.Object && {{interp "valueAccess"}} != null)
+                {{interp "indent"}}    {
+                {{interp "indent"}}        foreach (var {{interp "kvpVar"}} in {{interp "valueAccess"}})
+                {{interp "indent"}}        {
+                {{interp "indent"}}            if ({{interp "jsonPropVar"}}.TryGetProperty({{interp "kvpVar"}}.Key, out var {{interp "dictJsonVar"}}))
+                {{interp "indent"}}            {
+                {{interp "valueLogic"}}
+                {{interp "indent"}}            }
+                {{interp "indent"}}        }
+                {{interp "indent"}}    }
+                """;
+            // clang-format on
+        }
+
+        if (prop.IsComplex && prop.NestedProperties.Length > 0)
+        {
+            return GenerateNestedValueLogic(prop.NestedProperties, valueAccess, jsonPropVar, candidateVar, depth + 1, prop.IsNullable, $"{indent}    ");
+        }
+
+        return "";
+    }
+
+    private static string GenerateNestedValueLogic(
+        EquatableArray<TypePropertyInfo> nested,
+        string valueVar,
+        string jsonVar,
+        string candidateVar,
+        int depth,
+        bool isNullable,
+        string baseIndent
+    )
+    {
+        var nestedLogic = GenerateCountFieldsLogic(nested, valueVar, jsonVar, candidateVar, depth);
+        if (string.IsNullOrEmpty(nestedLogic))
+            return "";
+
+        if (isNullable)
+        {
+            // clang-format off
+            return $$"""
+                {{interp "baseIndent"}}if ({{interp "valueVar"}} != null && {{interp "jsonVar"}}.ValueKind != System.Text.Json.JsonValueKind.Null)
+                {{interp "baseIndent"}}{
+                {{interp "nestedLogic"}}
+                {{interp "baseIndent"}}}
+                {{interp "baseIndent"}}else if ({{interp "jsonVar"}}.ValueKind == System.Text.Json.JsonValueKind.Null)
+                {{interp "baseIndent"}}{
+                {{interp "baseIndent"}}    {{interp "candidateVar"}}.Matched++;
+                {{interp "baseIndent"}}}
+                """;
+            // clang-format on
+        }
+
+        return nestedLogic;
+    }
+
+    private static string GenerateOpenWriteMethodBody(OpenUnionModel model)
+    {
+        var nullHandling = model.Nullable
+            // clang-format off
+            ? """
+                writer.WriteNullValue();
+                return;
+                """
+            // clang-format on
+            : "throw new System.InvalidOperationException(\"Unexpected null JSON value\");";
+
+        var propertiesChecks = string.Join("\n\n", model.Properties.Select(prop =>
+        {
+            var propType = prop.FullyQualifiedType.TrimEnd('?');
+            // clang-format off
+            var checkCode = $$"""
+            if (value.{{interp "prop.Name"}} != null)
+            {
+                System.Text.Json.JsonSerializer.Serialize(writer, ({{interp "propType"}})value.{{interp "prop.Name"}}, _ti{{interp "prop.Name"}});
+                return;
+            }
+            """;
+            // clang-format on
+            return Indent(1) + checkCode.Replace("\n", $"\n{Indent(1)}");
+        }));
+
+        // clang-format off
+        var fallbackCheck = Indent(1) + """
+            if (value.Fallback != null)
+            {
+                value.Fallback.Value.WriteTo(writer);
+                return;
+            }
+            """.Replace("\n", $"\n{Indent(1)}");
+        // clang-format on
+
+        // clang-format off
+        return $$"""
+            if (value == null)
+            {
+                {{interp "nullHandling"}}
+            }
+
+            {{interp "propertiesChecks"}}
+
+            {{interp "fallbackCheck"}}
+
+            throw new System.InvalidOperationException($"No value set in {nameof({{interp "model.Name"}})}");
+            """;
+        // clang-format on
+    }
+
+    // ── Models ───────────────────────────────────────────────────────────────
+
+    private sealed record OpenUnionVariantModel(
+        string Name,
+        string FullyQualifiedType,
+        string? DistinctiveJsonPropertyName,
+        EquatableArray<TypePropertyInfo> TypeProperties
+    );
+
+    private sealed record OpenUnionModel(
+        string Name,
+        string NamespaceDeclaration,
+        bool Nullable,
+        EquatableArray<OpenUnionVariantModel> Properties
+    );
+
+    private sealed record TypePropertyInfo(
+        string JsonName,
+        string PropName,
+        bool IsOpenEnum,
+        bool HasJsonExtensionData,
+        bool IsList,
+        string? ListElemFqType,
+        bool ListElemComplex,
+        bool ListElemOpenEnum,
+        bool ListElemNullable,
+        EquatableArray<TypePropertyInfo> ListElemNested,
+        bool IsDict,
+        string? DictValFqType,
+        bool DictValComplex,
+        EquatableArray<TypePropertyInfo> DictValNested,
+        bool IsComplex,
+        bool IsNullable,
+        EquatableArray<TypePropertyInfo> NestedProperties
+    );
+}

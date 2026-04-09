@@ -1,0 +1,31 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}.Serialization
+{
+    using System;
+    using System.Net.Http;
+    using System.Text;
+
+    internal static class StringRequestSerializer
+    {
+        public const string MediaType = "text/plain";
+
+        public static HttpContent Serialize(object? body)
+        {
+            if (body is string text)
+            {
+                return SerializeString(text);
+            }
+
+            throw new Exception(
+                "Cannot serialize request body of type "
+                    + (body?.GetType().Name ?? "null")
+                    + " with serialization method string"
+            );
+        }
+
+        private static HttpContent SerializeString(string request)
+        {
+            return new StringContent(request, Encoding.UTF8, MediaType);
+        }
+    }
+}

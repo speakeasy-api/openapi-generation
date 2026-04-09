@@ -1,0 +1,338 @@
+#nullable enable
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using {{getGeneratorsPackageId}};
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Union;
+
+public abstract class UnionGeneratorBase : IIncrementalGenerator
+{
+    private const string DiscriminatorValueAttributeName =
+        "{{getGeneratorsPackageId}}.Union.DiscriminatorValueAttribute";
+
+    protected abstract string AttributeFullName { get; }
+
+    public virtual void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var models = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                AttributeFullName,
+                predicate: static (s, _) => s is ClassDeclarationSyntax,
+                transform: (ctx, _) => ExtractModel(ctx)
+            )
+            .Where(static m => m is not null);
+
+        context.RegisterSourceOutput(models, (spc, model) => Emit(model!, spc));
+    }
+
+    private UnionModel? ExtractModel(GeneratorAttributeSyntaxContext ctx)
+    {
+        if (ctx.TargetSymbol is not INamedTypeSymbol classSymbol)
+            return null;
+
+        var attribute = ctx.Attributes[0];
+        var nullable = false;
+        var discriminatorField = "type";
+
+        foreach (var namedArg in attribute.NamedArguments)
+        {
+            if (namedArg.Key == "Nullable" && namedArg.Value.Value is bool nullableValue)
+                nullable = nullableValue;
+            else if (namedArg.Key == "DiscriminatorField" && namedArg.Value.Value is string discField)
+                discriminatorField = discField;
+        }
+
+        var properties = FilterProperties(classSymbol)
+            .Select(p =>
+            {
+                var discValues = p.GetAttributes()
+                    .Where(a => a.AttributeClass?.ToDisplayString() == DiscriminatorValueAttributeName)
+                    .Select(a => a.ConstructorArguments.FirstOrDefault().Value as string)
+                    .Where(v => v != null)
+                    .Select(v => v!)
+                    .ToEquatableArray();
+
+                var distinctiveJsonProp = GetDistinctiveJsonPropertyName(p.Type);
+                var factoryMethodName = FindFactoryMethodName(classSymbol, p.Type);
+                var hasAdditionalProperties = HasAdditionalPropertiesProperty(p.Type);
+                var isValueType = UnwrapNullable(p.Type).IsValueType;
+
+                return new UnionPropertyModel(
+                    Name: p.Name,
+                    FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    DiscriminatorValues: discValues,
+                    DistinctiveJsonPropertyName: distinctiveJsonProp,
+                    FactoryMethodName: factoryMethodName,
+                    HasAdditionalProperties: hasAdditionalProperties,
+                    IsValueType: isValueType
+                );
+            })
+            .ToEquatableArray();
+
+        if (properties.Length < 1)
+            return null;
+
+        var ns = classSymbol.ContainingNamespace;
+        var namespaceDecl = NamespaceDeclaration(ns);
+        var fqn = ns.IsGlobalNamespace
+            ? $"global::{classSymbol.Name}"
+            : $"global::{ns.ToDisplayString()}.{classSymbol.Name}";
+
+        return new UnionModel(classSymbol.Name, namespaceDecl, fqn, nullable, discriminatorField, properties);
+    }
+
+    /// <summary>Returns the JSON name of the first <c>[JsonPropertyName]</c>-annotated public
+    /// property on <paramref name="type"/> (unwrapping nullable), or <c>null</c> if none exists.
+    /// Used as a structural pre-filter hint during deserialization: before attempting a full
+    /// deserialize of a variant, the converter checks that this property is present in the JSON
+    /// object, skipping variants whose distinctive field is absent.</summary>
+    private static string? GetDistinctiveJsonPropertyName(ITypeSymbol type)
+    {
+        // The prior check unwrapped any annotated INamedTypeSymbol with type
+        // arguments, which incorrectly peeled `List<One>?` → `One` and let an
+        // unrelated element-type `[JsonPropertyName]` leak through as the
+        // union variant's "distinctive" field. Restrict to `Nullable<T>` so
+        // collection variants surface no distinctive property and fall through
+        // to speculative deserialization.
+        var underlying = UnwrapNullable(type);
+
+        if (underlying is not INamedTypeSymbol namedType)
+            return null;
+
+        var prop = namedType.GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => p.DeclaredAccessibility == Accessibility.Public)
+            .FirstOrDefault(p => p.GetAttributes()
+                .Any(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute"));
+
+        if (prop == null)
+            return null;
+
+        var attr = prop.GetAttributes()
+            .First(a => a.AttributeClass?.Name == "JsonPropertyNameAttribute");
+        return attr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? prop.Name;
+    }
+
+    /// <summary>Returns the nullable-annotated properties that represent union variants.
+    /// <c>Index</c> is excluded because it is a synthetic bookkeeping property, not a variant.
+    /// Subclasses override this to additionally exclude type-specific sentinel properties
+    /// (e.g. <c>Fallback</c> in open unions, <c>Type</c> in discriminated unions).</summary>
+    protected virtual IEnumerable<IPropertySymbol> FilterProperties(INamedTypeSymbol classSymbol)
+    {
+        return classSymbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p => p.Type.NullableAnnotation == NullableAnnotation.Annotated && p.Name != "Index");
+    }
+
+    private void Emit(UnionModel model, SourceProductionContext spc)
+    {
+        var source = GenerateConverter(model);
+        spc.AddSource($"{model.Name}Converter.g.cs", source);
+    }
+
+    private protected virtual string GenerateConverter(UnionModel model)
+    {
+        var readBody = GenerateReadMethodBody(model);
+        var writeBody = GenerateWriteMethodBody(model);
+
+        // Constructor-injected JsonTypeInfo<TVariant> per variant. The SDK
+        // project wires each converter at composition time, pulling the typed
+        // metadata from the per-scope JsonSerializerContext that registered
+        // the variant. Read/Write then call the typed Deserialize/Serialize
+        // overloads — no RUC/RUDC, no IL2026/IL3050 suppression. Nested-union
+        // variants get their JsonTypeInfo.Converter assigned via the
+        // IJsonTypeInfoResolver modifier registered on JsonOptions.
+        var fieldDecls = string.Join("\n        ", model.Properties.Select(p =>
+        {
+            var t = p.FullyQualifiedType.TrimEnd('?');
+            return $"private readonly System.Text.Json.Serialization.Metadata.JsonTypeInfo<{t}> _ti{p.Name};";
+        }));
+        var ctorParams = string.Join(",\n            ", model.Properties.Select(p =>
+        {
+            var t = p.FullyQualifiedType.TrimEnd('?');
+            return $"System.Text.Json.Serialization.Metadata.JsonTypeInfo<{t}> ti{p.Name}";
+        }));
+        var ctorAssigns = string.Join("\n            ", model.Properties.Select(p =>
+            $"_ti{p.Name} = ti{p.Name};"));
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            using System.Linq;
+
+            {{interp "model.NamespaceDeclaration"}}public sealed class {{interp "model.Name"}}Converter : System.Text.Json.Serialization.JsonConverter<{{interp "model.FullyQualifiedName"}}>
+            {
+                {{interp "fieldDecls"}}
+
+                public {{interp "model.Name"}}Converter(
+                    {{interp "ctorParams"}})
+                {
+                    {{interp "ctorAssigns"}}
+                }
+
+                // STJ short-circuits to default(T) for reference types when JSON
+                // is null without invoking Read. Forcing HandleNull lets the
+                // generated Read enforce the nullable/non-nullable contract.
+                public override bool HandleNull => true;
+
+                public override {{interp "model.FullyQualifiedName"}}? Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+                {
+                    {{interp "readBody"}}
+                }
+
+                public override void Write(System.Text.Json.Utf8JsonWriter writer, {{interp "model.FullyQualifiedName"}}? value, System.Text.Json.JsonSerializerOptions options)
+                {
+                    {{interp "writeBody"}}
+                }
+            }
+            """;
+        // clang-format on
+    }
+
+    // Wraps the subclass-provided variant logic with a null-token guard.
+    private string GenerateReadMethodBody(UnionModel model)
+    {
+        var nullHandling = model.Nullable
+            ? "return null;"
+            : "throw new System.InvalidOperationException(\"Received unexpected null JSON value\");";
+
+        var variantLogic = GenerateReadVariantLogic(model);
+        var indentedVariantLogic = Indent(1) + variantLogic.Replace("\n", $"\n{Indent(1)}");
+
+        // clang-format off
+        return $$"""
+            if (reader.TokenType == System.Text.Json.JsonTokenType.Null)
+            {
+                {{interp "nullHandling"}}
+            }
+
+            {{interp "indentedVariantLogic"}}
+            """;
+        // clang-format on
+    }
+
+    private protected virtual string GenerateReadVariantLogic(UnionModel model) =>
+        throw new System.NotImplementedException($"{GetType().Name} must override GenerateReadVariantLogic");
+
+    // Generates a Write that serializes whichever variant property is non-null.
+    private protected virtual string GenerateWriteMethodBody(UnionModel model)
+    {
+        var nullHandling = model.Nullable
+            // clang-format off
+            ? """
+                writer.WriteNullValue();
+                return;
+                """
+            // clang-format on
+            : "throw new System.InvalidOperationException(\"Unexpected null JSON value\");";
+
+        var propertiesChecksList = model.Properties
+            .Select(prop =>
+            {
+                var propType = prop.FullyQualifiedType.TrimEnd('?');
+                // clang-format off
+                var checkCode = $$"""
+                if (value.{{interp "prop.Name"}} != null)
+                {
+                    System.Text.Json.JsonSerializer.Serialize(writer, ({{interp "propType"}})value.{{interp "prop.Name"}}, _ti{{interp "prop.Name"}});
+                    return;
+                }
+                """;
+                // clang-format on
+                return Indent(1) + checkCode.Replace("\n", $"\n{Indent(1)}");
+            })
+            .ToList();
+
+        var propertiesChecks = string.Join("\n\n", propertiesChecksList);
+
+        // Nullable union: a constructed instance with no variant populated is
+        // the wire-level `null` (e.g. `Union.CreateNull()`). Emit JSON null
+        // rather than throwing, matching the inverse contract on Read.
+        // clang-format off
+        var noVariantSet = model.Nullable
+            ? "writer.WriteNullValue();"
+            : $"throw new System.InvalidOperationException(\"No value set in {model.Name}\");";
+
+        return $$"""
+            if (value == null)
+            {
+                {{interp "nullHandling"}}
+            }
+
+            {{interp "propertiesChecks"}}
+
+            {{interp "noVariantSet"}}
+            """;
+        // clang-format on
+    }
+
+    // Finds the static factory method on the union class whose single parameter type matches
+    // the variant property type. Returns null if not found (fallback: derive from discriminator value).
+    private static string? FindFactoryMethodName(INamedTypeSymbol classSymbol, ITypeSymbol propertyType)
+    {
+        var unwrapped = UnwrapNullable(propertyType);
+
+        return classSymbol
+            .GetMembers()
+            .OfType<IMethodSymbol>()
+            .Where(m => m.IsStatic && m.Name.StartsWith("Create", System.StringComparison.Ordinal) && m.Parameters.Length == 1)
+            .FirstOrDefault(m => SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, unwrapped))
+            ?.Name;
+    }
+
+    private static bool HasAdditionalPropertiesProperty(ITypeSymbol propertyType)
+    {
+        var unwrapped = UnwrapNullable(propertyType);
+        if (unwrapped is not INamedTypeSymbol namedType)
+            return false;
+        return namedType.GetMembers("AdditionalProperties").OfType<IPropertySymbol>().Any();
+    }
+
+    private static ITypeSymbol UnwrapNullable(ITypeSymbol type)
+    {
+        // Only unwrap Nullable<T> value types (int?, bool?, etc.), not nullable reference types.
+        if (type is INamedTypeSymbol named
+            && named.ConstructedFrom?.SpecialType == SpecialType.System_Nullable_T
+            && named.TypeArguments.Length == 1)
+            return named.TypeArguments[0];
+        return type;
+    }
+
+    private protected sealed record UnionPropertyModel(
+        string Name,
+        string FullyQualifiedType,
+        EquatableArray<string> DiscriminatorValues,
+        string? DistinctiveJsonPropertyName,  // first [JsonPropertyName] on the variant type, for structural hinting
+        string? FactoryMethodName,            // matched static Create* method on the union class
+        bool HasAdditionalProperties,         // whether the variant type exposes AdditionalProperties
+        bool IsValueType                      // whether the unwrapped variant type is a value type
+    );
+
+    private protected sealed record UnionModel(
+        string Name,
+        string NamespaceDeclaration,
+        string FullyQualifiedName,
+        bool Nullable,
+        string DiscriminatorField,
+        EquatableArray<UnionPropertyModel> Properties
+    );
+
+    private protected static string ToPascalCase(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        var parts = value
+            .Split(new[] { '-', '_', ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 0)
+            return value;
+
+        return string.Concat(parts.Select(part =>
+            char.ToUpperInvariant(part[0]) + (part.Length > 1 ? part.Substring(1) : "")));
+    }
+}

@@ -1,0 +1,30 @@
+{{- $testGroup := .Global.AST.MainSDK.TestGroup -}}
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>{{.Global.Config.DotnetVersion}}</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591{{if $testGroup}};0618{{end}}</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+{{templateSDKDependencies}}
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="{{getGeneratorsProjectReference}}"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot"
+                      AdditionalProperties="WarningsNotAsErrors=RS1041" />
+  </ItemGroup>
+
+</Project>

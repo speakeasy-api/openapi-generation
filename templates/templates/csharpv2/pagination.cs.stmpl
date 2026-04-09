@@ -1,0 +1,86 @@
+{{- $op := .Local }}
+{{- $pagination := .Local.Extensions.Pagination }}
+{{- $paramFlattening := operationParametersFlattened .Local }}
+{{- $limitInput := getPaginationInput $pagination "limit" }}
+{{- $pageInput := getPaginationInput $pagination "page" }}
+{{- $offsetInput := getPaginationInput $pagination "offset" }}
+{{- $cursorInput := getPaginationInput $pagination "cursor" }}
+Func<Task<{{ sanitizeType .Local.Response.Type false "" }}?>> nextFunc = async delegate()
+{
+    using var __bodyDoc = System.Text.Json.JsonDocument.Parse(await httpResponse.Content.ReadAsStringAsync());
+    var body = __bodyDoc.RootElement;
+
+{{- if (eq $pagination.Type "offsetLimit") }}
+  {{- if $pageInput }}
+
+    var page = {{templatePaginationInputAccessor $op $pageInput}};
+    var newPage = page + 1;
+    {{- if $pagination.Outputs.NumPages }}
+
+    if (!{{getScopeNamespace "utils" true}}.JsonPath.TryResolve(body, "{{ sanitizeJsonPath $pagination.Outputs.NumPages }}", out var __numPages))
+    {
+        return null;
+    }
+    if (__numPages.GetInt64() <= page)
+    {
+        return null;
+    }
+
+    {{- end }}
+  {{- end }}
+
+  {{- if $offsetInput }}
+    var offset = {{templatePaginationInputAccessor $op $offsetInput}};
+  {{- end }}
+
+{{- else if (hasPaginationURL .Local) }}
+    if (!{{getScopeNamespace "utils" true}}.JsonPath.TryResolve(body, "{{ sanitizeJsonPath $pagination.Outputs.NextURL }}", out var __nextUrlEl))
+    {
+        return null;
+    }
+
+    var nextURL = __nextUrlEl.GetString();
+    if (string.IsNullOrWhiteSpace(nextURL))
+    {
+        return null;
+    }
+
+    if (nextURL!.StartsWith("/"))
+    {
+        nextURL = baseUrl + nextURL;
+    }
+{{- else }}
+    if (!{{getScopeNamespace "utils" true}}.JsonPath.TryResolve(body, "{{ sanitizeJsonPath $pagination.Outputs.NextCursor }}", out var __nextCursorEl))
+    {
+        return null;
+    }
+
+    {{ templateCursorExtraction $op }}
+{{- end }}
+
+{{- if $pagination.Outputs.Results }}
+    if (!{{getScopeNamespace "utils" true}}.JsonPath.TryResolve(body, "{{ sanitizeJsonPath $pagination.Outputs.Results }}", out var __firstResult))
+    {
+        return null;
+    }
+
+    var __firstCount = {{getScopeNamespace "utils" true}}.JsonPath.CountChildren(__firstResult);
+    if (__firstCount == 0)
+    {
+        return null;
+    }
+
+  {{- if $limitInput }}
+    var limit = {{templatePaginationInputAccessor $op $limitInput}};
+    if (__firstCount < limit)
+    {
+        return null;
+    }
+  {{- end }}
+
+  {{- if $offsetInput }}
+    var newOffset = offset + __firstCount;
+  {{- end }}
+{{- end }}
+{{templatePaginationCall $op | indentPresent 4 }}
+};

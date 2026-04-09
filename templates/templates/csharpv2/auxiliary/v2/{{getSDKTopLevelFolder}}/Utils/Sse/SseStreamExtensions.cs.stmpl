@@ -1,0 +1,170 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}.Sse
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net.Http;
+    using System.Runtime.CompilerServices;
+    using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using {{getScopeNamespace "utils"}};
+
+    /// <summary>
+    /// Extension methods for HttpResponseMessage to expose Server-Sent Events as
+    /// an AOT-safe <see cref="IAsyncEnumerable{T}"/> stream.
+    /// </summary>
+    public static class SseStreamExtensions
+    {
+        /// <summary>
+        /// Streams Server-Sent Events from an HTTP response, deserializing each event
+        /// payload to <typeparamref name="T"/> via a source-generated JSON type info.
+        /// </summary>
+        /// <typeparam name="T">The type to deserialize event data into.</typeparam>
+        /// <param name="response">The HTTP response containing event stream data.</param>
+        /// <param name="typeInfo">Source-generated JSON type info for <typeparamref name="T"/>.</param>
+        /// <param name="sentinelValue">Optional sentinel value that indicates end of stream.</param>
+        /// <param name="dataRequired">Whether to skip events without a data field.</param>
+        /// <param name="cancellationToken">Cancellation token honored by the enumerator.</param>
+        public static async IAsyncEnumerable<T> AsAsyncEnumerable<T>(
+            this HttpResponseMessage response,
+            JsonTypeInfo<T> typeInfo,
+            string? sentinelValue = null,
+            bool dataRequired = true,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            if (response == null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+            if (typeInfo == null)
+            {
+                throw new ArgumentNullException(nameof(typeInfo));
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType;
+            if (!Utilities.IsContentTypeMatch("text/event-stream", contentType))
+            {
+                throw new InvalidOperationException(
+                    $"Response content type '{contentType}' is not compatible with Server-Sent Events. Expected 'text/event-stream'.");
+            }
+
+            var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            var parser = new SseStreamParser(sentinelValue);
+
+            string? line;
+            while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var sseEvent = parser.Parse(line);
+                if (sseEvent == null)
+                {
+                    continue;
+                }
+
+                if (sseEvent.IsEndOfStream)
+                {
+                    yield break;
+                }
+
+                if (dataRequired && sseEvent.Data == null)
+                {
+                    continue;
+                }
+
+                if (TryDeserialize(sseEvent, typeInfo, out var item))
+                {
+                    yield return item!;
+                }
+            }
+
+            var finalEvent = parser.Parse(null);
+            if (finalEvent != null
+                && !finalEvent.IsEndOfStream
+                && (!dataRequired || finalEvent.Data != null))
+            {
+                if (TryDeserialize(finalEvent, typeInfo, out var item))
+                {
+                    yield return item!;
+                }
+            }
+        }
+
+        private static bool TryDeserialize<T>(SseEvent ev, JsonTypeInfo<T> typeInfo, out T? value)
+        {
+            try
+            {
+                value = DeserializeEvent(ev, typeInfo, dataIsPlainText: false);
+                return value != null;
+            }
+            catch (JsonException)
+            {
+                try
+                {
+                    value = DeserializeEvent(ev, typeInfo, dataIsPlainText: true);
+                    return value != null;
+                }
+                catch (JsonException ex)
+                {
+                    if (typeof(T) == typeof(string))
+                    {
+                        value = (T)(object)(ev.Data ?? string.Empty);
+                        return true;
+                    }
+                    throw new InvalidOperationException(
+                        $"Failed to deserialize SSE event (event={ev.Event ?? "unknown"}) " +
+                        $"as {typeof(T).Name}. Data: {Truncate(ev.Data, 200)}",
+                        ex);
+                }
+            }
+        }
+
+        private static T? DeserializeEvent<T>(SseEvent ev, JsonTypeInfo<T> typeInfo, bool dataIsPlainText)
+        {
+            using var ms = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(ms))
+            {
+                writer.WriteStartObject();
+
+                if (ev.Id != null)
+                {
+                    writer.WriteString("id", ev.Id);
+                }
+                if (ev.Event != null)
+                {
+                    writer.WriteString("event", ev.Event);
+                }
+                if (ev.Retry.HasValue)
+                {
+                    writer.WriteNumber("retry", ev.Retry.Value);
+                }
+
+                writer.WritePropertyName("data");
+                if (dataIsPlainText || string.IsNullOrWhiteSpace(ev.Data))
+                {
+                    writer.WriteStringValue(ev.Data);
+                }
+                else
+                {
+                    writer.WriteRawValue(ev.Data!);
+                }
+
+                writer.WriteEndObject();
+            }
+
+            ms.Position = 0;
+            return JsonSerializer.Deserialize(ms, typeInfo);
+        }
+
+        private static string Truncate(string? value, int maxLength)
+        {
+            if (value == null) return "(null)";
+            return value.Length <= maxLength ? value : value.Substring(0, maxLength) + "...";
+        }
+    }
+}

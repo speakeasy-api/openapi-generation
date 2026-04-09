@@ -1,0 +1,118 @@
+{{- $className := sanitizeClassName .Local.Type.Name -}}
+{{- $unionLocation := .Local.Type.OutputLocation -}}
+{{- $unionType := getUnionTypeName $className $unionLocation -}}
+{{- $isUnionOfErrors := isUnionOfErrors .Local.Type -}}
+{{- $nullable := .Local.Type.IsNullableUnion}}
+{{- $typeFieldName := sanitizeFieldName "Type" $className}}
+    public class {{$unionType}}
+    {
+        private {{$unionType}}(string value) { Value = value; }
+
+        public string Value { get; private set; }
+
+      {{- range .Local.Type.AssociatedTypes}}
+        {{- $name := sanitizeUnionTypeName .}}
+
+        public static {{$unionType}} {{sanitizeClassName $name}} { get { return new {{$unionType}}({{sanitizeEnumValue $name "string"}}); } }
+      {{- end}}
+
+    {{- if $nullable }}
+
+        public static {{$unionType}} Null { get { return new {{$unionType}}("null"); } }
+    {{- end }}
+
+        public override string ToString() { return Value; }
+        public static implicit operator String({{$unionType}} v) { return v.Value; }
+        public static {{$unionType}} FromString(string v) {
+            switch(v) {
+            {{- range .Local.Type.AssociatedTypes}}{{ $name := sanitizeUnionTypeName . }}
+                case {{sanitizeEnumValue $name "string"}}: return {{sanitizeClassName $name}};
+            {{- end}}
+            {{- if $nullable }}
+                case "null": return Null;
+            {{- end}}
+                default: throw new ArgumentException("Invalid value for {{$unionType}}");
+            }
+        }
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            return Value.Equals((({{$unionType}})obj).Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+    }
+    {{- templateComments .Local.Type.Comments 1 $className "class"}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    [GenerateSerializer(SerializationFormat.Json)]
+    [GenerateUndiscriminatedUnionConverter({{if $nullable}}Nullable = true{{end}})]
+    [System.Text.Json.Serialization.JsonConverter(typeof({{$className}}ConverterFactory))]
+    public class {{$className}}
+    {
+        public {{$className}}({{$unionType}} type)
+        {
+            {{$typeFieldName}} = type;
+        }
+
+      {{- range getUnionVariants .Local.Type}}
+
+        {{templateUnionFormAnnotation}}
+        public {{.FieldType}}? {{.FieldName}} { get; set; }
+      {{- end}}
+
+        public {{$unionType}} {{$typeFieldName}} { get; set; }
+
+  {{- range .Local.Type.AssociatedTypes}}
+    {{- $name := sanitizeUnionTypeName .}}
+    {{- $paramType := sanitizeType . false .OutputLocation}}
+    {{- $paramName := sanitizePrivateClassName $name}}
+    {{- $fieldName := sanitizeFieldName $name}}
+    {{- if $isUnionOfErrors }}
+      {{- $paramType = print $paramType "Payload"}}
+      {{- $paramName = print $paramName "Payload"}}
+      {{- $fieldName = print $fieldName "Payload"}}
+    {{- end}}
+        public static {{$className}} Create{{sanitizeClassName $name}}({{$paramType}} {{$paramName}})
+        {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName $name}};
+
+            {{$className}} res = new {{$className}}(typ);
+            res.{{$fieldName}} = {{$paramName}};
+            return res;
+        }
+  {{- end}}
+
+{{- if $nullable}}
+
+        public static {{$className}} CreateNull()
+        {
+            {{$unionType}} typ = {{$unionType}}.Null;
+            return new {{$className}}(typ);
+        }
+{{- end}}
+
+    }
+
+    // Factory must live in user source (not source-generator output) so STJ's
+    // own source generator can resolve it from the [JsonConverter] attribute
+    // and bake it into JsonTypeInfo<{{$className}}>.Converter at compile time
+    // (SYSLIB1220 otherwise).
+    public sealed class {{$className}}ConverterFactory : System.Text.Json.Serialization.JsonConverterFactory
+    {
+        public override bool CanConvert(System.Type typeToConvert) => typeToConvert == typeof({{$className}});
+
+        public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            return new {{$className}}Converter(
+              {{- range $i, $v := getUnionVariants .Local.Type}}
+                {{- if $i}},{{end}}
+                (System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{$v.CsType}}>)options.GetTypeInfo(typeof({{$v.CsType}}))!
+              {{- end}});
+        }
+    }

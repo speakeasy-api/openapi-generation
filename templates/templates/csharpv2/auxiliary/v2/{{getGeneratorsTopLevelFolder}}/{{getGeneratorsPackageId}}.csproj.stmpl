@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>{{getGeneratorsTargetFramework}}</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <PublishAot>false</PublishAot>
+    <IsAotCompatible>false</IsAotCompatible>
+    <IsTrimmable>false</IsTrimmable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>{{getGeneratorsPackageId}}</PackageId>
+    <Version>{{.Global.Config.SDKVersion}}</Version>
+    <Description>AOT-safe source generators for {{getPackageId}}</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <!-- Suppressed warnings:
+         - NU5128: no runtime DLL ships; compile-time-only tool emits AOT-safe code.
+         - RS1041: tool targets netstandard2.1: legacy .NET Framework MSBuild not supported. -->
+    <NoWarn>$(NoWarn);NU5128;RS1041</NoWarn>
+  </PropertyGroup>
+
+  <!-- Auto-detected from $(NETCoreSdkVersion): SDK >= 9.0.300 ships Roslyn >= 4.14.0 which supports
+       AddEmbeddedAttributeDefinition. Override by setting UseEmbeddedAttributeInjection explicitly. -->
+  <PropertyGroup>
+    <UseEmbeddedAttributeInjection Condition="'$(UseEmbeddedAttributeInjection)' == '' And $([MSBuild]::VersionGreaterThanOrEquals('$(NETCoreSdkVersion)', '9.0.300'))">true</UseEmbeddedAttributeInjection>
+    <UseEmbeddedAttributeInjection Condition="'$(UseEmbeddedAttributeInjection)' == ''">false</UseEmbeddedAttributeInjection>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UseEmbeddedAttributeInjection)' == 'true'">
+    <DefineConstants>$(DefineConstants);ROSLYN_4_14_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(UseEmbeddedAttributeInjection)' != 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UseEmbeddedAttributeInjection)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)$(AssemblyName).dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,87 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+
+    internal static class MultipartSerializer
+    {
+        public static MultipartFormDataContent Create() => new MultipartFormDataContent();
+
+        public static void AddFile(
+            MultipartFormDataContent form,
+            string fieldName,
+            string fileName,
+            byte[]? content
+        )
+        {
+            if (content == null) return;
+            if (string.IsNullOrEmpty(fileName))
+            {
+                throw new ArgumentException("Invalid multipart/form-data file: missing file name");
+            }
+
+            var fileContent = new ByteArrayContent(content);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetMimeType(fileName));
+            form.Add(fileContent, fieldName, fileName);
+        }
+
+        public static void AddScalar(MultipartFormDataContent form, string fieldName, object? value)
+        {
+            if (value == null) return;
+            form.Add(new StringContent(Utilities.ValueToString(value)), fieldName);
+        }
+
+        public static void AddListScalar<T>(
+            MultipartFormDataContent form,
+            string fieldName,
+            IEnumerable<T>? values
+        )
+        {
+            if (values == null) return;
+            foreach (var v in values)
+            {
+                if (v == null) continue;
+                form.Add(new StringContent(Utilities.ValueToString(v)), fieldName);
+            }
+        }
+
+        public static void AddJson<T>(
+            MultipartFormDataContent form,
+            string fieldName,
+            T? value,
+            JsonTypeInfo<T> typeInfo
+        )
+        {
+            if (value == null) return;
+            var json = JsonSerializer.Serialize(value, typeInfo);
+            form.Add(new StringContent(json), fieldName);
+        }
+
+        private static string GetMimeType(string fileName)
+        {
+            var ext = Path.GetExtension(fileName)?.ToLowerInvariant();
+            return ext switch
+            {
+                ".json" => "application/json",
+                ".xml" => "application/xml",
+                ".txt" => "text/plain",
+                ".csv" => "text/csv",
+                ".html" or ".htm" => "text/html",
+                ".pdf" => "application/pdf",
+                ".zip" => "application/zip",
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".svg" => "image/svg+xml",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream",
+            };
+        }
+    }
+}

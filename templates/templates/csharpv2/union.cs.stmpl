@@ -1,0 +1,5 @@
+{{- if .Local.Type.Discriminator}}
+  {{- templateString "union-discr.cs.stmpl" .Local}}
+{{- else}}
+  {{- templateString "union-undiscr.cs.stmpl" .Local}}
+{{- end}}

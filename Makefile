@@ -31,7 +31,7 @@ ifdef TRACE
 override EXTRA_ARGS += "--trace=grpc"
 endif
 
-ALL_TARGETS := cli csharp go javav2 mcp-typescript php postman pythonv2 ruby terraform typescriptv2 unity
+ALL_TARGETS := cli csharp csharpv2 go javav2 mcp-typescript php postman pythonv2 ruby terraform typescriptv2 unity
 # TODO: Rename TARGET to VARIANT. Not changing it so it doesn't break github and developer workflows.
 ifndef TARGET
 VARIANTS := primary \
@@ -131,7 +131,7 @@ BUILD_VARIANTS := $(VARIANTS)
 TEST_VARIANTS := $(VARIANTS)
 
 # Rules for standard SDK targets. Ideally we'd like all targets to be in this list.
-TARGETS := go pythonv2 typescriptv2 javav2 csharp ruby cli
+TARGETS := go pythonv2 typescriptv2 javav2 csharp csharpv2 ruby cli
 $(foreach TARGET,$(TARGETS),\
 	$(eval $(call target-rules,$(TARGET),\
 		$(BUILD_VARIANTS),\

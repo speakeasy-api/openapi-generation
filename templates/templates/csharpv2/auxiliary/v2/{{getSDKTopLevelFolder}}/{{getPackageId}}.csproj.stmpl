@@ -1,0 +1,120 @@
+{{- $licenseFile := getLicenseFile -}}
+{{- $iconFile := getIconFile -}}
+{{- $sourceLink := and .Global.Config.Published .Global.Config.EnableSourceLink -}}
+{{- $root := getRootLocationRelativeToPackage -}}
+{{- $comments := .Global.AST.MainSDK.Comments -}}
+{{- $testGroup := .Global.AST.MainSDK.TestGroup -}}
+{{- $projectURL := getPackageProjectURL -}}
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>{{getPackageId}}</PackageId>
+    <Version>{{.Global.Config.SDKVersion}}</Version>
+    <TargetFramework>{{.Global.Config.DotnetVersion}}</TargetFramework>
+    <Authors>{{.Global.Config.Author}}</Authors>
+    <Copyright>{{getCopyright}}</Copyright>
+
+  {{- if .Global.Config.RepoURL}}
+    <RepositoryUrl>{{.Global.Config.RepoURL}}</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  {{- end}}
+
+  {{- if .Global.Config.PackageTags}}
+    <PackageTags>{{.Global.Config.PackageTags}}</PackageTags>
+  {{- end}}
+
+{{- if $projectURL}}
+    <PackageProjectUrl>{{$projectURL}}</PackageProjectUrl>
+{{- end}}
+
+{{- if .Global.Config.Description}}
+    <Description>{{sanitizeComments .Global.Config.Description}}</Description>
+{{- else if $comments}}
+  {{- if $comments.Description}}
+    <Description>{{sanitizeComments $comments.Description}}</Description>
+  {{- else if $comments.Summary}}
+    <Description>{{sanitizeComments $comments.Summary}}</Description>
+  {{- end}}
+{{- end}}
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);1591{{if $testGroup}};0618{{end}}</NoWarn>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+  {{- if $licenseFile}}
+    <PackageLicenseFile>{{$licenseFile}}</PackageLicenseFile>
+  {{- end}}
+
+  {{- if $iconFile}}
+    <PackageIcon>{{$iconFile}}</PackageIcon>
+  {{- end}}
+  </PropertyGroup>
+
+  <ItemGroup>
+  {{- if .Global.Config.Published}}
+    <None Include="{{$root}}NUGET.md" Pack="true" PackagePath="README.md"/>
+  {{- else}}
+    <None Include="{{$root}}README.md" Pack="true" PackagePath="\"/>
+  {{- end}}
+  {{- if $licenseFile}}
+    <None Include="{{$root}}{{$licenseFile}}" Pack="true" PackagePath="\"/>
+  {{- end}}
+  {{- if $iconFile}}
+    <None Include="{{$root}}{{$iconFile}}" Pack="true" PackagePath="\"/>
+  {{- end}}
+    <None Include="{{$root}}docs\**\*" Pack="true" PackagePath="\docs"  CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+{{- if .Global.Config.IncludeDebugSymbols}}
+
+  <PropertyGroup>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+  {{- if .Global.Config.Published}}
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  {{- end}}
+  </PropertyGroup>
+{{- end}}
+
+{{- if $sourceLink}}
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedAllSources>true</EmbedAllSources>
+  </PropertyGroup>
+{{- end}}
+
+  <ItemGroup>
+{{templateSDKDependencies}}
+
+  {{- if $sourceLink}}
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  {{- end}}
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="{{getModelsProjectReference}}" />
+    <ProjectReference Include="{{getGeneratorsProjectReference}}"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot"
+                      AdditionalProperties="WarningsNotAsErrors=RS1041" />
+  </ItemGroup>
+
+</Project>

@@ -94,6 +94,46 @@ namespace TestApp
 	}
 }
 
+func TestFormatCSharp_DocumentsRawInterpolatedStringBug(t *testing.T) {
+	input := []byte(`var myVar = $$"""{{Value}}""";
+`)
+	result := formatCS(t, "RawInterpolatedString.cs", input)
+	expected := `var myVar = $$ "" "{{Value}}" "";
+`
+
+	if result != expected {
+		t.Fatalf("unexpected clang-format behavior: if this test fails, it may be relevant to remove clang-format guards around raw interpolated strings:\n%s", result)
+	}
+
+	guarded_input := `// clang-format off
+var myVar = $$"""{{Value}}""";
+// clang-format on
+`
+	if formatCS(t, "RawInterpolatedString.cs", []byte(guarded_input)) != guarded_input {
+		t.Fatalf("clang-format guards ineffective")
+	}
+}
+
+func TestFormatCSharp_DocumentsRawStringBug(t *testing.T) {
+	input := []byte(`var myVar = """Value""";
+`)
+	result := formatCS(t, "RawString.cs", input)
+	expected := `var myVar = "" "Value" "";
+`
+
+	if result != expected {
+		t.Fatalf("unexpected clang-format behavior: if this test fails, it may be relevant to remove clang-format guards around raw strings:\n%s", result)
+	}
+
+	guarded_input := `// clang-format off
+var myVar = """Value""";
+// clang-format on
+`
+	if formatCS(t, "RawString.cs", []byte(guarded_input)) != guarded_input {
+		t.Fatalf("clang-format guards ineffective")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // dotnet format conventions — these should all PASS
 // ---------------------------------------------------------------------------

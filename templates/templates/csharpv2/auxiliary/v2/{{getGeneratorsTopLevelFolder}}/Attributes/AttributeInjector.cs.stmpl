@@ -1,0 +1,303 @@
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using {{getGeneratorsPackageId}}.Enum;
+using {{getGeneratorsPackageId}}.Serialization;
+
+namespace {{getGeneratorsPackageId}}.Attributes;
+
+[Generator]
+public class AttributeInjector : IIncrementalGenerator
+{
+    // When [EmbeddedAttribute] is applied, types are invisible outside the compilation
+    // boundary — prevents CS0436 in InternalsVisibleTo scenarios.
+    //
+    // To upgrade (requires Microsoft.CodeAnalysis.CSharp >= 4.14.0 / SDK >= 9.0.300):
+    //   1. Bump Microsoft.CodeAnalysis.CSharp to 4.14.0 in Generators.csproj
+    //   2. Set <UseEmbeddedAttributeInjection>true</UseEmbeddedAttributeInjection> in Generators.csproj
+    //
+    // https://andrewlock.net/exploring-dotnet-10-preview-features-4-solving-the-source-generator-marker-attribute-problem-in-dotnet-10/#should-you-use-addembeddedattributedefinition-or-a-shared-dll-
+#if ROSLYN_4_14_OR_GREATER
+    private static readonly string EmbeddedMarker = "[global::Microsoft.CodeAnalysis.EmbeddedAttribute]\n    ";
+#else
+    private static readonly string EmbeddedMarker = "";
+#endif
+
+    private static string EnumMembers(System.Type enumType) =>
+        string.Join(
+            ",\n",
+            System.Enum.GetNames(enumType).Select(name =>
+                $"    {name} = {System.Convert.ToInt32(System.Enum.Parse(enumType, name))}"
+            )
+        );
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        context.RegisterPostInitializationOutput(ctx =>
+        {
+#if ROSLYN_4_14_OR_GREATER
+            ctx.AddEmbeddedAttributeDefinition();
+#endif
+            // clang-format off
+
+            // ── Enum converter ────────────────────────────────────────────────────
+            // EnumType: closed (enum) vs open (class), string vs int wire format.
+            // Used by: EnumGenerator
+            ctx.AddSource("EnumType.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Enum;
+
+                {{interp "EmbeddedMarker"}}internal enum EnumType
+                {
+                {{interp "EnumMembers(typeof(EnumType))"}}
+                }
+                """);
+
+            // [GenerateEnumConverter(Type = EnumType.String, Open = false)]
+            // Applied to: enum (closed) or class (open).
+            ctx.AddSource("GenerateEnumConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Enum;
+
+                [System.AttributeUsage(System.AttributeTargets.Enum | System.AttributeTargets.Class)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateEnumConverterAttribute : System.Attribute
+                {
+                    public EnumType Type { get; set; } = EnumType.String;
+                    public bool Open { get; set; } = false;
+                }
+                """);
+
+            // ── Serialization ─────────────────────────────────────────────────────
+            // SerializationFormat: wire format used by GenerateSerializer.
+            // Used by: SerializationGenerator
+            ctx.AddSource("SerializationFormat.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Serialization;
+
+                {{interp "EmbeddedMarker"}}internal enum SerializationFormat
+                {
+                {{interp "EnumMembers(typeof(SerializationFormat))"}}
+                }
+                """);
+
+            // [GenerateSerializer(SerializationFormat.Json, MediaType = "application/json")]
+            // Applied to: class or enum. Format is required (positional arg).
+            ctx.AddSource("GenerateSerializerAttribute.g.cs", $$"""
+                #nullable enable
+                using System;
+
+                namespace {{getGeneratorsPackageId}}.Serialization;
+
+                [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum, AllowMultiple = true, Inherited = false)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateSerializerAttribute : Attribute
+                {
+                    public SerializationFormat Format { get; }
+                    public string? MediaType { get; set; }
+
+                    public GenerateSerializerAttribute(SerializationFormat format)
+                    {
+                        Format = format;
+                    }
+                }
+                """);
+
+            // [FormField(Name = "field_name", IsJson = false)]
+            // Applied to: property on a Form-serialized class.
+            // clang-format off
+            ctx.AddSource("FormFieldAttribute.g.cs", $$"""
+                #nullable enable
+                using System;
+
+                namespace {{getGeneratorsPackageId}}.Serialization;
+
+                [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+                {{interp "EmbeddedMarker"}}internal sealed class FormFieldAttribute : Attribute
+                {
+                    public string? Name { get; set; }
+                    public bool IsJson { get; set; }
+                    public string Style { get; set; } = "form";
+                    public bool Explode { get; set; } = true;
+                }
+                """);
+
+            // [MultipartField(Name = "field_name", IsContent = false, IsJson = false)]
+            // Applied to: property on a Multipart-serialized class.
+            // IsContent=true → treated as binary file part; IsJson=true → JSON-encoded part.
+            ctx.AddSource("MultipartFieldAttribute.g.cs", $$"""
+                #nullable enable
+                using System;
+
+                namespace {{getGeneratorsPackageId}}.Serialization;
+
+                [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+                {{interp "EmbeddedMarker"}}internal sealed class MultipartFieldAttribute : Attribute
+                {
+                    public string? Name { get; set; }
+                    public bool IsContent { get; set; }
+                    public bool IsJson { get; set; }
+                }
+                """);
+
+            // ── Union converters ──────────────────────────────────────────────────
+            // [DiscriminatorValue("type_value")]
+            // Applied to: property on a discriminated union class, names the variant.
+            // Used by: UnionGenerator
+            ctx.AddSource("DiscriminatorValueAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Union;
+
+                [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple = true)]
+                {{interp "EmbeddedMarker"}}internal sealed class DiscriminatorValueAttribute : System.Attribute
+                {
+                    public string Value { get; }
+
+                    public DiscriminatorValueAttribute(string value) => Value = value;
+                }
+                """);
+
+            // [GenerateDiscriminatedUnionConverter(Nullable = false, DiscriminatorField = "type")]
+            // Applied to: class. Generates a converter that reads DiscriminatorField to pick the variant.
+            ctx.AddSource("GenerateDiscriminatedUnionConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Union;
+
+                [System.AttributeUsage(System.AttributeTargets.Class)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateDiscriminatedUnionConverterAttribute : System.Attribute
+                {
+                    public bool Nullable { get; set; } = false;
+                    public string DiscriminatorField { get; set; } = "type";
+                }
+                """);
+
+            // [GenerateUndiscriminatedUnionConverter(Nullable = false)]
+            // Applied to: class. Generates a converter that tries each variant in order (no discriminator).
+            ctx.AddSource("GenerateUndiscriminatedUnionConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Union;
+
+                [System.AttributeUsage(System.AttributeTargets.Class)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateUndiscriminatedUnionConverterAttribute : System.Attribute
+                {
+                    public bool Nullable { get; set; } = false;
+                }
+                """);
+
+            // [GenerateOpenUnionConverter(Nullable = false)]
+            // Applied to: class. Generates a converter for open unions (unknown variants pass through as raw JSON).
+            ctx.AddSource("GenerateOpenUnionConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Union;
+
+                [System.AttributeUsage(System.AttributeTargets.Class)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateOpenUnionConverterAttribute : System.Attribute
+                {
+                    public bool Nullable { get; set; } = false;
+                }
+                """);
+
+            // ── BigInteger converter ──────────────────────────────────────────────
+            // [assembly: GenerateBigIntegerConverter]
+            // Applied to: assembly. Generates a JsonConverter<BigInteger> for the whole assembly.
+            // Used by: BigIntegerGenerator
+            ctx.AddSource("GenerateBigIntegerConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.BigInteger;
+
+                [System.AttributeUsage(System.AttributeTargets.Assembly)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateBigIntegerConverterAttribute : System.Attribute { }
+                """);
+
+            // ── Decimal converter ─────────────────────────────────────────────────
+            // [assembly: GenerateDecimalConverter]
+            // Applied to: assembly. Generates a JsonConverter<decimal> for the whole assembly.
+            // Used by: DecimalGenerator
+            ctx.AddSource("GenerateDecimalConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Decimal;
+
+                [System.AttributeUsage(System.AttributeTargets.Assembly)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateDecimalConverterAttribute : System.Attribute { }
+                """);
+
+            // ── DateTime converter ────────────────────────────────────────────────
+            // [assembly: GenerateDateTimeConverter]
+            // Applied to: assembly. Generates a JsonConverter<DateTime> for the whole assembly.
+            // Used by: DateTimeGenerator
+            ctx.AddSource("GenerateDateTimeConverterAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.DateTime;
+
+                [System.AttributeUsage(System.AttributeTargets.Assembly)]
+                {{interp "EmbeddedMarker"}}internal sealed class GenerateDateTimeConverterAttribute : System.Attribute { }
+                """);
+
+            // ── Parameter binding ─────────────────────────────────────────────────
+            // [PathParam(Name = "id", Style = "simple", Explode = false)]
+            // Applied to: property on a request class. Binds to a path segment.
+            ctx.AddSource("PathParamAttribute.g.cs", $$"""
+                #nullable enable
+                namespace {{getGeneratorsPackageId}}.Params;
+
+                [System.AttributeUsage(System.AttributeTargets.Property)]
+                {{interp "EmbeddedMarker"}}internal sealed class PathParamAttribute : System.Attribute
+                {
+                    public string Name { get; set; } = "";
+                    public string Style { get; set; } = "simple";
+                    public bool Explode { get; set; } = false;
+                    public string? Serialization { get; set; }
+                }
+                """);
+
+            // [QueryParam(Name = "q", Style = "form", Explode = true)]
+            // Applied to: property on a request class. Binds to a query string parameter.
+            ctx.AddSource("QueryParamAttribute.g.cs", $$"""
+                #nullable enable
+                namespace {{getGeneratorsPackageId}}.Params;
+
+                [System.AttributeUsage(System.AttributeTargets.Property)]
+                {{interp "EmbeddedMarker"}}internal sealed class QueryParamAttribute : System.Attribute
+                {
+                    public string Name { get; set; } = "";
+                    public string Style { get; set; } = "form";
+                    public bool Explode { get; set; } = true;
+                    public string? Serialization { get; set; }
+                }
+                """);
+
+            // [HeaderParam(Name = "X-Foo")]
+            // Applied to: property on a request class. Binds to a request header.
+            ctx.AddSource("HeaderParamAttribute.g.cs", $$"""
+                namespace {{getGeneratorsPackageId}}.Params;
+
+                [System.AttributeUsage(System.AttributeTargets.Property)]
+                {{interp "EmbeddedMarker"}}internal sealed class HeaderParamAttribute : System.Attribute
+                {
+                    public string Name { get; set; } = "";
+                    public string Style { get; set; } = "simple";
+                    public bool Explode { get; set; } = false;
+                }
+                """);
+
+            // [SecurityParam(Scheme = true, Type = "http", SubType = "bearer", Name = "Authorization")]
+            // Applied to: property on a security class. Describes an auth credential field.
+            ctx.AddSource("SecurityParamAttribute.g.cs", $$"""
+                #nullable enable
+                namespace {{getGeneratorsPackageId}}.Params;
+
+                [System.AttributeUsage(System.AttributeTargets.Property)]
+                {{interp "EmbeddedMarker"}}internal sealed class SecurityParamAttribute : System.Attribute
+                {
+                    public bool Option { get; set; } = false;
+                    public bool Scheme { get; set; } = false;
+                    public string? Type { get; set; }
+                    public string? SubType { get; set; }
+                    public bool Composite { get; set; } = false;
+                    public string Name { get; set; } = "";
+                }
+                """);
+
+            // [RequestBody(MediaType = "application/json")]
+            // Applied to: property on a request class. Identifies the request body field.
+            ctx.AddSource("RequestBodyAttribute.g.cs", $$"""
+                #nullable enable
+                namespace {{getGeneratorsPackageId}}.Params;
+
+                [System.AttributeUsage(System.AttributeTargets.Property)]
+                {{interp "EmbeddedMarker"}}internal sealed class RequestBodyAttribute : System.Attribute
+                {
+                    public string MediaType { get; set; } = "";
+                }
+                """);
+            // clang-format on
+        });
+    }
+}

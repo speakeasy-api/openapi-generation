@@ -1,0 +1,75 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System.Diagnostics.CodeAnalysis;
+    using System.Net.Http;
+    using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+    using {{getScopeNamespace "utils"}}.Serialization;
+
+    internal static class RequestBodySerializer
+    {
+        public const string JsonMediaType = "application/json";
+
+        // Pure typed JSON serialize. AOT-safe — caller passes a source-gen
+        // JsonTypeInfo<T> and STJ never falls back to reflection. Body is
+        // assumed non-null; callers emit the null/required/optional/nullable
+        // policy at codegen time.
+        public static HttpContent SerializeJsonBody<T>(T body, JsonTypeInfo<T> typeInfo)
+        {
+            var json = JsonSerializer.Serialize(body, typeInfo);
+            return new StringContent(json, Encoding.UTF8, JsonMediaType);
+        }
+
+        // Wire-format=string for top-level decimal/BigInteger. Re-resolves the
+        // typeinfo against options that prepend the string-wire factories.
+        // The re-resolve uses runtime type lookup, so this stays AOT-hostile
+        // and is quarantined here. P1b will replace this with per-T
+        // string-format contexts and the attribute can drop.
+        [RequiresUnreferencedCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under trim.")]
+        [RequiresDynamicCode("format=\"string\" re-resolves JsonTypeInfo<T> at runtime. Avoid under AOT.")]
+        public static HttpContent SerializeJsonBodyAsString<T>(T body, JsonTypeInfo<T> typeInfo)
+        {
+            var stringTypeInfo = (JsonTypeInfo<T>)_stringFormatOptions.GetTypeInfo(typeof(T));
+            var json = JsonSerializer.Serialize(body, stringTypeInfo);
+            return new StringContent(json, Encoding.UTF8, JsonMediaType);
+        }
+
+        // JSON literal "null" content — used when the body is required but
+        // nullable and the caller passed null.
+        public static HttpContent NullJsonBody() =>
+            new StringContent("null", Encoding.UTF8, JsonMediaType);
+
+        public static HttpContent SerializeRaw(object body) =>
+            RawRequestSerializer.Serialize(body);
+
+        public static HttpContent SerializeString(object body) =>
+            StringRequestSerializer.Serialize(body);
+
+        // Reflection fallback for JSON body shapes not yet registered in a
+        // source-gen JsonSerializerContext (top-level nullable primitives:
+        // DateOnly?, DateTime?, long?, …). P1a-followup will register
+        // Nullable<T> permutations and remove this entry point.
+        [RequiresUnreferencedCode("Untyped JSON request body uses runtime reflection over the body's concrete type. Register the body type in a source-gen JsonSerializerContext to remove this warning.")]
+        [RequiresDynamicCode("Untyped JSON request body uses runtime reflection over the body's concrete type. Register the body type in a source-gen JsonSerializerContext to remove this warning.")]
+        public static HttpContent SerializeJsonBodyUntyped(object body, string format = "")
+        {
+            var options = format == "string" ? _stringFormatOptions : {{getPackageId}}.Internal.Json.JsonOptions.SerializerOptions;
+            var json = JsonSerializer.Serialize(body, body.GetType(), options);
+            return new StringContent(json, Encoding.UTF8, JsonMediaType);
+        }
+
+        private static readonly JsonSerializerOptions _stringFormatOptions = BuildStringFormatOptions();
+
+        private static JsonSerializerOptions BuildStringFormatOptions()
+        {
+            var baseOptions = {{getPackageId}}.Internal.Json.JsonOptions.SerializerOptions;
+            var options = new JsonSerializerOptions(baseOptions);
+            // Prepend so string-wire factories beat globally-registered number-wire factories.
+            options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.DecimalStringJsonConverterFactory());
+            options.Converters.Insert(0, new {{getScopeNamespace "utils" true}}.BigIntegerStringJsonConverterFactory());
+            return options;
+        }
+    }
+}

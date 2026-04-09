@@ -27,7 +27,7 @@ function templateEnums(typeDef: TypeDef): string {
     }
 
     if (typeDef.Enum.Type.Type.toString() == "string") {
-      lines.push(`[JsonProperty("${value.replaceAll(`\\`, `\\\\`)}")]`);
+      lines.push(templateJsonPropertyAttribute(`${value}`));
     }
 
     const assignment =
@@ -1550,3 +1550,24 @@ function templateAllowEmptyValue(op: Operation): string {
 }
 
 registerTemplateFunc("templateAllowEmptyValue", templateAllowEmptyValue);
+
+// @ts-ignore
+function templateSerializeRequestBody(op: Operation): string {
+  if (!op.Request || !op.SerializationMethod) return "";
+  const req = op.Request;
+  const fieldName = sanitizeFieldName(
+    req.RequestBody!.Name,
+    sanitizeClassName(req.Field!.Type!.Name, false),
+  );
+  const method = `${op.SerializationMethod}`;
+  const nullable = req.RequestBody!.Nullable ? "true" : "false";
+  const optional = req.RequestBody!.Optional ? "true" : "false";
+  const format = getDataTypeFormat(req);
+  const formatArg = format ? `, "${format}"` : "";
+  return `var serializedBody = RequestBodySerializer.Serialize(request, "${fieldName}", "${method}", ${nullable}, ${optional}${formatArg});`;
+}
+
+registerTemplateFunc(
+  "templateSerializeRequestBody",
+  templateSerializeRequestBody,
+);

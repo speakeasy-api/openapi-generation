@@ -1,0 +1,135 @@
+{{- $className := sanitizeClassName .Local.Type.Name -}}
+{{- $discriminator := .Local.Type.Discriminator -}}
+{{- $unionLocation := .Local.Type.OutputLocation -}}
+{{- $unionType := getUnionTypeName $className $unionLocation -}}
+{{- $isUnionOfErrors := isUnionOfErrors .Local.Type -}}
+{{- $nullable := .Local.Type.IsNullableUnion}}
+{{- $typeFieldName := sanitizeFieldName "Type" $className}}
+    public class {{$unionType}}
+    {
+        private {{$unionType}}(string value) { Value = value; }
+
+        public string Value { get; private set; }
+
+      {{- range $discriminator.Mapping}}
+
+        public static {{$unionType}} {{sanitizeClassName .Name}} { get { return new {{$unionType}}({{sanitizeEnumValue .Name "string"}}); } }
+      {{- end}}
+
+    {{- if $nullable }}
+
+        public static {{$unionType}} Null { get { return new {{$unionType}}("null"); } }
+    {{- end }}
+
+        public override string ToString() { return Value; }
+        public static implicit operator String({{$unionType}} v) { return v.Value; }
+        public static {{$unionType}} FromString(string v) {
+            switch(v) {
+            {{- range $discriminator.Mapping}}
+                case {{sanitizeEnumValue .Name "string"}}: return {{sanitizeClassName .Name}};
+            {{- end}}
+            {{- if $nullable }}
+                case "null": return Null;
+            {{- end}}
+                default: throw new ArgumentException("Invalid value for {{$unionType}}");
+            }
+        }
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            return Value.Equals((({{$unionType}})obj).Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+    }
+    {{- templateComments .Local.Type.Comments 1 $className "class"}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    [GenerateSerializer(SerializationFormat.Json)]
+    [GenerateDiscriminatedUnionConverter(DiscriminatorField = {{sanitizeEnumValue $discriminator.TypePropertyName "string"}}{{if $nullable}}, Nullable = true{{end}})]
+    [System.Text.Json.Serialization.JsonConverter(typeof({{$className}}ConverterFactory))]
+    public class {{$className}}
+    {
+        public {{$className}}({{$unionType}} type)
+        {
+            {{$typeFieldName}} = type;
+        }
+
+      {{- range getUnionVariants .Local.Type}}
+
+        [FormField()]
+        {{- range .DiscriminatorValues}}
+        [DiscriminatorValue({{sanitizeEnumValue . "string"}})]
+        {{- end}}
+        public {{.FieldType}}? {{.FieldName}} { get; set; }
+      {{- end}}
+
+        public {{$unionType}} {{$typeFieldName}} { get; set; }
+
+  {{- range $discriminator.Mapping}}
+      {{- $paramType := sanitizeType .Type false .Type.OutputLocation}}
+      {{- $paramName := sanitizePrivateClassName .Name}}
+      {{- $fieldName := sanitizeFieldName (sanitizeUnionTypeName .Type)}}
+      {{- if $isUnionOfErrors}}
+        {{- $paramType = print $paramType "Payload"}}
+        {{- $paramName = print $paramName "Payload"}}
+        {{- $fieldName = print $fieldName "Payload"}}
+      {{- end}}
+
+        public static {{$className}} Create{{sanitizeClassName .Name}}({{$paramType}} {{$paramName}})
+        {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName .Name}};
+      {{- if or (eq .Type.Type "class") (eq .Type.Type "error") }}
+            {{- $field := .Type.Fields.GetField $discriminator.TypePropertyName}}
+        {{- if not $field.Const }}
+            string typStr = {{$unionType}}.{{sanitizeClassName .Name}}.ToString();
+          {{- if eq $field.Type.Type "enum" }}
+            {{- if $field.Type.Enum.Open }}
+            {{$paramName}}.{{sanitizeFieldName $field.Name}} = {{sanitizeClass $field.Type $unionLocation false false $unionType}}.Of({{$unionType}}.{{sanitizeClassName .Name}}.ToString());
+            {{- else }}
+            {{$paramName}}.{{sanitizeFieldName $field.Name}} = {{sanitizeClass $field.Type $unionLocation false false $unionType "Extension"}}.ToEnum({{$unionType}}.{{sanitizeClassName .Name}}.ToString());
+            {{- end }}
+          {{- else}}
+            {{sanitizePrivateClassName .Name}}.{{sanitizeFieldName $field.Name}} = typStr;
+          {{- end}}
+        {{- end}}
+      {{- end}}
+            {{$className}} res = new {{$className}}(typ);
+            res.{{$fieldName}} = {{$paramName}};
+            return res;
+        }
+  {{- end}}
+
+{{- if $nullable}}
+
+        public static {{$className}} CreateNull()
+        {
+            {{$unionType}} typ = {{$unionType}}.Null;
+            return new {{$className}}(typ);
+        }
+{{- end}}
+
+    }
+
+    // Factory must live in user source (not source-generator output) so STJ's
+    // own source generator can resolve it from the [JsonConverter] attribute
+    // and bake it into JsonTypeInfo<{{$className}}>.Converter at compile time
+    // (SYSLIB1220 otherwise).
+    public sealed class {{$className}}ConverterFactory : System.Text.Json.Serialization.JsonConverterFactory
+    {
+        public override bool CanConvert(System.Type typeToConvert) => typeToConvert == typeof({{$className}});
+
+        public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            return new {{$className}}Converter(
+              {{- range $i, $v := getUnionVariants .Local.Type}}
+                {{- if $i}},{{end}}
+                (System.Text.Json.Serialization.Metadata.JsonTypeInfo<{{$v.CsType}}>)options.GetTypeInfo(typeof({{$v.CsType}}))!
+              {{- end}});
+        }
+    }

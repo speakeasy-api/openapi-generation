@@ -480,7 +480,7 @@ public class UnionsShould
         foreach (var test in tests)
         {
             var req = test.arg;
-            var serializedBody = RequestBodySerializer.Serialize(
+            var serializedBody = Compat.SerializeRequestBody(
                 req,
                 "Request",
                 "json",
@@ -554,7 +554,7 @@ public class UnionsShould
         foreach (var test in tests)
         {
             NullableOneOfRefInObject req = (NullableOneOfRefInObject)test.arg;
-            var serializedBody = RequestBodySerializer.Serialize(
+            var serializedBody = Compat.SerializeRequestBody(
                 req,
                 "Request",
                 "json",
@@ -867,7 +867,7 @@ public class UnionsShould
         };
 
         var req1 = UnionNestedEnumsFormRequestBody.CreateNestedEnumArray(obj1);
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "form", false, false);
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "form", false, false);
         var form1 = HttpUtility.UrlDecode(await serializedForm1.ReadAsStringAsync());
         Assert.Equal("enums[]=one&enums[]=two&tags=one,two", form1);
 
@@ -885,7 +885,7 @@ public class UnionsShould
         };
 
         var req2 = UnionNestedEnumsFormRequestBody.CreateNestedEnumMap(obj2);
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "form", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "form", false, false);
         var form2 = HttpUtility.UrlDecode(await serializedForm2.ReadAsStringAsync());
         Assert.Equal("enums={\"key2\":\"two\",\"key3\":\"three\"}&tags=two,three", form2);
 
@@ -907,7 +907,7 @@ public class UnionsShould
         };
 
         var req1 = new UnionNestedEnumsMultipartRequestBody() { Enums = Enums.CreateArrayOfEnum(enumArray) };
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "multipart", false, false);
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "multipart", false, false);
         var form1 = await serializedForm1.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form1);
         Assert.Contains("[\"one\",\"two\"]", form1);
@@ -922,7 +922,7 @@ public class UnionsShould
         };
 
         var req2 = new UnionNestedEnumsMultipartRequestBody() { Enums = Enums.CreateMapOfEnum(enumMap) };
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "multipart", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "multipart", false, false);
         var form2 = await serializedForm2.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form2);
         Assert.Contains("{\"key2\":\"two\",\"key3\":\"three\"}", form2);
@@ -1065,8 +1065,8 @@ public class UnionsShould
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         Assert.NotNull(res.Object);
         Assert.Equal(
-            JsonConvert.SerializeObject(payload),
-            JsonConvert.SerializeObject(res.Object!.Json.Value)
+            Compat.SerializeJson(payload),
+            Compat.SerializeJson(res.Object!.Json.Value)
         );
     }
 

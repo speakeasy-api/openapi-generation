@@ -1,0 +1,68 @@
+#nullable enable
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+
+namespace {{getGeneratorsPackageId}};
+
+/// <summary>
+/// A value-equatable wrapper around <see cref="ImmutableArray{T}"/> for use in Roslyn incremental
+/// generator pipeline models. <see cref="ImmutableArray{T}"/> uses reference equality, which prevents
+/// the generator driver from short-circuiting unchanged pipeline steps. This wrapper implements
+/// element-wise equality so that models containing collections can be correctly cached.
+/// </summary>
+internal readonly struct EquatableArray<T> : System.IEquatable<EquatableArray<T>>, IEnumerable<T>
+    where T : System.IEquatable<T>
+{
+    public static readonly EquatableArray<T> Empty = new(ImmutableArray<T>.Empty);
+
+    private readonly ImmutableArray<T> _array;
+
+    public EquatableArray(ImmutableArray<T> array) => _array = array;
+
+    public int Length => _array.IsDefault ? 0 : _array.Length;
+
+    public T this[int index] => _array[index];
+
+    public bool Equals(EquatableArray<T> other)
+    {
+        var a = _array.IsDefault ? ImmutableArray<T>.Empty : _array;
+        var b = other._array.IsDefault ? ImmutableArray<T>.Empty : other._array;
+        return a.SequenceEqual(b, EqualityComparer<T>.Default);
+    }
+
+    public override bool Equals(object? obj) =>
+        obj is EquatableArray<T> other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        if (_array.IsDefault) return 0;
+        unchecked
+        {
+            int hash = 17;
+            foreach (var item in _array)
+                hash = hash * 31 + (item?.GetHashCode() ?? 0);
+            return hash;
+        }
+    }
+
+    /// <summary>Returns the underlying <see cref="ImmutableArray{T}"/>, substituting
+    /// <see cref="ImmutableArray{T}.Empty"/> for a default-initialised instance.</summary>
+    public ImmutableArray<T> AsImmutableArray() =>
+        _array.IsDefault ? ImmutableArray<T>.Empty : _array;
+
+    public IEnumerator<T> GetEnumerator() =>
+        ((IEnumerable<T>)AsImmutableArray()).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public static implicit operator EquatableArray<T>(ImmutableArray<T> array) => new(array);
+}
+
+internal static class EquatableArrayExtensions
+{
+    public static EquatableArray<T> ToEquatableArray<T>(this IEnumerable<T> source)
+        where T : System.IEquatable<T>
+        => new(source.ToImmutableArray());
+}

@@ -1,0 +1,70 @@
+#nullable enable
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Union;
+
+[Generator]
+public class DiscriminatedUnionGenerator : UnionGeneratorBase
+{
+    private const string AttributeName =
+        "{{getGeneratorsPackageId}}.Union.GenerateDiscriminatedUnionConverterAttribute";
+
+    protected override string AttributeFullName => AttributeName;
+
+    // Excludes the Type property in addition to Index because Type is the discriminator
+    // field itself, not a variant container.
+    protected override IEnumerable<IPropertySymbol> FilterProperties(INamedTypeSymbol classSymbol)
+    {
+        return classSymbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p =>
+                p.Type.NullableAnnotation == NullableAnnotation.Annotated
+                && p.Name != "Index"
+                && p.Name != "Type"
+            );
+    }
+
+    private protected override string GenerateReadVariantLogic(UnionModel model)
+    {
+        var switchCasesList = model.Properties
+            .SelectMany(prop =>
+            {
+                var propType = prop.FullyQualifiedType.TrimEnd('?');
+                var values = prop.DiscriminatorValues.Length > 0
+                    ? (System.Collections.Generic.IEnumerable<string>)prop.DiscriminatorValues
+                    : new[] { prop.Name.ToLowerInvariant() };
+
+                return values.Select(discriminatorValue =>
+                {
+                    var methodName = prop.FactoryMethodName ?? $"Create{ToPascalCase(discriminatorValue)}";
+                    return $"\"{discriminatorValue}\" => {model.FullyQualifiedName}.{methodName}(System.Text.Json.JsonSerializer.Deserialize(jsonText, _ti{prop.Name})!),";
+                });
+            })
+            .ToList();
+
+        var switchCases = string.Join($"\n{Indent(2)}", switchCasesList);
+
+        // Snapshot the reader into a JsonDocument to extract the discriminator field,
+        // then re-deserialize the full JSON text into the matching variant type.
+        // clang-format off
+        return $$"""
+            var readerCopy = reader;
+            using var jsonDoc = System.Text.Json.JsonDocument.ParseValue(ref readerCopy);
+            var discriminatorProp = jsonDoc.RootElement.GetProperty("{{interp "model.DiscriminatorField"}}");
+            var discriminator = discriminatorProp.GetString();
+            var jsonText = jsonDoc.RootElement.GetRawText();
+
+            reader = readerCopy;
+            return discriminator switch
+            {
+                {{interp "switchCases"}}
+                _ => throw new System.Text.Json.JsonException($"Unknown discriminator value: {discriminator}")
+            };
+            """;
+        // clang-format on
+    }
+}

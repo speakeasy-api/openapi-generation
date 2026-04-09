@@ -1,0 +1,5 @@
+// Required for C# 9+ record types targeting netstandard2.1.
+namespace System.Runtime.CompilerServices
+{
+    internal static class IsExternalInit { }
+}

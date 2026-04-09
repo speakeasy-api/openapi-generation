@@ -283,6 +283,12 @@ jobs:
     uses: ./.github/workflows/test-csharp.yml
     with:
       test-group: "review"
+  test-csharpv2-review:
+    uses: ./.github/workflows/test-csharpv2.yml
+    with:
+      test-group: "review"
+    secrets:
+      BOT_REPO_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
   test-csharp:
     if: always() && needs.detect-targets.outputs.run-csharp == 'true'
     needs:
@@ -298,6 +304,7 @@ jobs:
       # - test-csharp-custom-http
       # - test-csharp-oauth2-password
       - test-csharp-review
+      - test-csharpv2-review
     uses: ./.github/workflows/check-variants.yml
     with:
       needs-json: ${{ toJSON(needs) }}

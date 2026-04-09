@@ -5,19 +5,12 @@ function getTestDirectory(): string {
 }
 
 // @ts-ignore
-function refNeedsNullForgive(
-  ref: ExampleReferenceValue,
-  targetField?: FieldDef,
-): boolean {
+function needsNullForgive(targetField?: FieldDef): boolean {
   if (targetField && (targetField.Nullable || targetField.Optional)) {
     return false;
   }
 
-  if (ref.source && canFieldBeNull(ref.source)) {
-    return true;
-  }
-
-  return ref.path.indexOf("?.") !== -1 || ref.path.indexOf("?[") !== -1;
+  return true;
 }
 
 // @ts-ignore
@@ -27,9 +20,7 @@ function templateExampleReferenceValue(
   _additionalContext?: TemplateValueContext,
 ): string {
   const path = exampleReferenceValue.path;
-  return refNeedsNullForgive(exampleReferenceValue, targetField)
-    ? `${path}!`
-    : path;
+  return needsNullForgive(targetField) ? `${path}!` : path;
 }
 
 // Collect refs that may be null at the source but feed non-nullable targets.
@@ -43,7 +34,7 @@ function collectNullableRefPaths(
   if (field && (field.Nullable || field.Optional)) return;
   if (isExampleReferenceValue(value)) {
     const ref = value as ExampleReferenceValue;
-    if (refNeedsNullForgive(ref, field)) {
+    if (needsNullForgive(field)) {
       paths.add(ref.path);
     }
     return;

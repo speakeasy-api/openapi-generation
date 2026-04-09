@@ -65,12 +65,7 @@
             {{- else}}
             string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
             {{- end}}
-
-            {{- if and .Local.Request .Local.Request.Params (or .Local.Request.Params.HasPathParams .Local.Request.Params.HasQueryParams)}}
-            var urlString = URLBuilder.Build(baseUrl, "{{ .Local.Path }}", request, {{templateAllowEmptyValue .Local}});
-            {{- else}}
-            var urlString = baseUrl + "{{ .Local.Path }}";
-            {{- end}}
+            {{templateBuildURL .Local}}
 
             {{- if and $pagination (hasPaginationURL .Local) }}
             if (urlOverride != null)
@@ -83,7 +78,7 @@
             httpRequest.Headers.Add({{ if .Local.UsesUserAgentHeader }}"x-speakeasy-user-agent"{{ else }}"user-agent"{{ end }}, SDKConfiguration.UserAgent);
 
             {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams }}
-            HeaderSerializer.PopulateHeaders(ref httpRequest, request);
+            {{templateApplyHeaders .Local}}
             {{- end}}
 
             if (!httpRequest.Headers.Contains("Accept"))
@@ -91,9 +86,7 @@
                 httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
             }
             {{- if and $request .Local.SerializationMethod }}
-            {{- $format := getDataTypeFormat $request }}
-
-            var serializedBody = RequestBodySerializer.Serialize(request, "{{ sanitizeFieldName $request.RequestBody.Name (sanitizeClassName $request.Field.Type.Name false) }}", "{{.Local.SerializationMethod}}", {{$request.RequestBody.Nullable}}, {{$request.RequestBody.Optional}}{{if $format}}, "{{$format}}"{{end}});
+            {{ templateSerializeRequestBody .Local }}
             if (serializedBody != null)
             {
                 httpRequest.Content = serializedBody;
@@ -105,7 +98,7 @@
             Func<{{sanitizeType .Local.Security.Type false ""}}>? securitySource = null;
             if (security != null)
             {
-                httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+                httpRequest = {{templateApplyOpSecurity .Local}};
                 securitySource = () => security;
             }
 
@@ -117,16 +110,13 @@
                 throw new ArgumentNullException(nameof(security), "security cannot be null.");
             }
 
-            httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+            httpRequest = {{templateApplyOpSecurity .Local}};
             var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, () => security{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
               {{- end}}
 
             {{- else if .Local.GlobalSecurity }}
 
-            if (SDKConfiguration.SecuritySource != null)
-            {
-                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource{{if and .Local.HoistedSecurityConfig (not .Local.HoistedSecurityConfig.Equivalent)}}, new string[] { {{range $i, $f := .Local.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}} }{{end}}).Apply(httpRequest);
-            }
+            {{templateApplyGlobalSecurity .Local}}
 
             var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, SDKConfiguration.SecuritySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
             {{- else }}
@@ -349,11 +339,7 @@
             string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
             {{- end}}
 
-            {{- if and .Local.Request .Local.Request.Params (or .Local.Request.Params.HasPathParams .Local.Request.Params.HasQueryParams)}}
-            var urlString = URLBuilder.Build(baseUrl, "{{ .Local.Path }}", request, {{templateAllowEmptyValue .Local}});
-            {{- else}}
-            var urlString = baseUrl + "{{ .Local.Path }}";
-            {{- end}}
+            {{templateBuildURL .Local}}
 
             {{- if and $pagination (hasPaginationURL .Local) }}
             if (urlOverride != null)
@@ -364,9 +350,8 @@
 
             var httpRequest = {{templateHttpRequest $op}};
             httpRequest.Headers.Add({{ if .Local.UsesUserAgentHeader }}"x-speakeasy-user-agent"{{ else }}"user-agent"{{ end }}, SDKConfiguration.UserAgent);
-
             {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams }}
-            HeaderSerializer.PopulateHeaders(ref httpRequest, request);
+            {{templateApplyHeaders .Local}}
             {{- end}}
 
             if (!httpRequest.Headers.Contains("Accept"))
@@ -374,9 +359,7 @@
                 httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
             }
             {{- if and $request .Local.SerializationMethod }}
-            {{- $format := getDataTypeFormat $request }}
-
-            var serializedBody = RequestBodySerializer.Serialize(request, "{{ sanitizeFieldName $request.RequestBody.Name (sanitizeClassName $request.Field.Type.Name false) }}", "{{.Local.SerializationMethod}}", {{$request.RequestBody.Nullable}}, {{$request.RequestBody.Optional}}{{if $format}}, "{{$format}}"{{end}});
+            {{ templateSerializeRequestBody .Local }}
             if (serializedBody != null)
             {
                 httpRequest.Content = serializedBody;
@@ -388,7 +371,7 @@
             Func<{{sanitizeType .Local.Security.Type false ""}}>? securitySource = null;
             if (security != null)
             {
-                httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+                httpRequest = {{templateApplyOpSecurity .Local}};
                 securitySource = () => security;
             }
 
@@ -400,16 +383,13 @@
                 throw new ArgumentNullException(nameof(security), "security cannot be null.");
             }
 
-            httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+            httpRequest = {{templateApplyOpSecurity .Local}};
             var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, () => security{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
               {{- end}}
 
             {{- else if .Local.GlobalSecurity }}
 
-            if (SDKConfiguration.SecuritySource != null)
-            {
-                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource{{if and .Local.HoistedSecurityConfig (not .Local.HoistedSecurityConfig.Equivalent)}}, new string[] { {{range $i, $f := .Local.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}} }{{end}}).Apply(httpRequest);
-            }
+            {{templateApplyGlobalSecurity .Local}}
 
             var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, SDKConfiguration.SecuritySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
             {{- else }}

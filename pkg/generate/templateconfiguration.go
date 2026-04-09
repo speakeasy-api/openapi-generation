@@ -6,6 +6,7 @@ import (
 	"github.com/ettle/strcase"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/configuration"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/js/template"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/templatedir"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	config "github.com/speakeasy-api/sdk-gen-config"
 )
@@ -15,13 +16,9 @@ func (g *Generator) getExecutor(ctx context.Context, target types.Target, writeF
 }
 
 func (g *Generator) getTemplateConfig(_ context.Context, target types.Target, writeFileFunc template.WriteFileFunc, readFileFunc template.ReadFileFunc) template.Config {
-	templateDir := "templates/" + target.Template
-
-	additionalSearchLocations := []string{}
-
-	// TODO we need to pull this from the template
-	if target.Target == "cli" {
-		additionalSearchLocations = append(additionalSearchLocations, "templates/go")
+	dirCfg, err := templatedir.LoadConfig(target.Template)
+	if err != nil {
+		panic(err)
 	}
 
 	watchTemplatesLocation := ""
@@ -37,21 +34,20 @@ func (g *Generator) getTemplateConfig(_ context.Context, target types.Target, wr
 	}
 
 	return template.Config{
-		TemplateDir:               templateDir,
-		AdditionalSearchLocations: additionalSearchLocations,
-		Subsystem:                 g.subsystem,
-		Bucketer:                  g.bucketer,
-		Debug:                     g.debug,
-		WriteFileFunc:             writeFileFunc,
-		ReadFileFunc:              readFileFunc,
-		FileTracker:               g.subsystem.FileTracker,
-		Ignore:                    g.ignore,
-		Comments:                  g.comments,
-		Targeter:                  g,
-		Interopter:                g,
-		OutDir:                    g.outDir, // TODO this may be an issue
-		ImportConfig:              importsConfig,
-		WatchTemplatesLocation:    watchTemplatesLocation,
+		TemplateDirConfig:      dirCfg,
+		Subsystem:              g.subsystem,
+		Bucketer:               g.bucketer,
+		Debug:                  g.debug,
+		WriteFileFunc:          writeFileFunc,
+		ReadFileFunc:           readFileFunc,
+		FileTracker:            g.subsystem.FileTracker,
+		Ignore:                 g.ignore,
+		Comments:               g.comments,
+		Targeter:               g,
+		Interopter:             g,
+		OutDir:                 g.outDir, // TODO this may be an issue
+		ImportConfig:           importsConfig,
+		WatchTemplatesLocation: watchTemplatesLocation,
 	}
 }
 

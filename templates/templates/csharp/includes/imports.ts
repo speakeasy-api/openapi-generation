@@ -31,14 +31,14 @@ registerTemplateFunc("addUsageImport", addUsageImport);
 function addImportForType(imports: Set<string>, type: TypeDef): Set<string> {
   return addImport(
     imports,
-    getModelNamespace(type.OutputLocation, false),
-    true,
+    getModelNamespace(type.OutputLocation, true),
+    false,
   );
 }
 
 // @ts-ignore
 function addUsageImportForType(type: TypeDef): string {
-  return addUsageImport(getModelNamespace(type.OutputLocation, false), true);
+  return addUsageImport(getModelNamespace(type.OutputLocation, true), false);
 }
 
 registerTemplateFunc("addUsageImportForType", addUsageImportForType);
@@ -58,7 +58,7 @@ registerTemplateFunc("templateImports", templateImports);
 function templateModelImports(model: CSharpModel): string {
   let imports = new Set<string>();
 
-  imports = addImport(imports, "Utils", true);
+  imports = getModelBaseImports(imports);
 
   if (model.Type.Type == "error") {
     imports = addImport(imports, "System", false);
@@ -67,17 +67,21 @@ function templateModelImports(model: CSharpModel): string {
     const errorsNs = getScopeNamespace("errors", true);
     const modelNs = getModelNamespace(model.Type.OutputLocation, true);
     if (errorsNs !== modelNs) {
-      imports = addImport(imports, getScopeNamespace("errors"), true);
+      imports = addImport(imports, getScopeNamespace("errors", true), false);
     }
   }
   if (model.Type.Type == "union") {
-    imports = addImport(imports, "Newtonsoft.Json", false);
-    imports = addImport(imports, "Newtonsoft.Json.Linq", false);
     imports = addImport(imports, "System", false);
-    imports = addImport(imports, "System.Collections.Generic", false);
     imports = addImport(imports, "System.Numerics", false);
-    imports = addImport(imports, "System.Reflection", false);
-    imports = addImport(imports, "Utils", true);
+    if (isCsharpV2()) {
+      imports = addImport(imports, "Generators.Serialization", true);
+      imports = addImport(imports, "Generators.Union", true);
+    } else {
+      imports = addImport(imports, "Newtonsoft.Json", false);
+      imports = addImport(imports, "Newtonsoft.Json.Linq", false);
+      imports = addImport(imports, "System.Collections.Generic", false);
+      imports = addImport(imports, "System.Reflection", false);
+    }
   }
   if (model.Type.Extensions.Pagination) {
     imports = addImport(imports, "System.Threading.Tasks", false);
@@ -88,27 +92,29 @@ function templateModelImports(model: CSharpModel): string {
     imports = getTypeImports(imports, fieldDef.Type, "", false);
 
     if (fieldDef.Type.Type == "union") {
-      imports = addImport(imports, getScopeNamespace("shared"), true);
+      imports = addImport(imports, getScopeNamespace("shared", true), false);
     }
 
-    if (containsSpeakeasyMetadataAnnotation(fieldDef)) {
-      imports = addImport(imports, "Utils", true);
-    }
+    imports = getAnnotationImports(imports, fieldDef);
 
     if (fieldDef.Type.Type == "response") {
       imports = addImport(imports, "System", false);
     }
 
     for (const anno of fieldDef.Annotations) {
-      if (anno.IsType("json")) {
+      if (anno.IsType("json") && !isCsharpV2()) {
         imports = addImport(imports, "Newtonsoft.Json", false);
       }
     }
   }
   // Add imports for event stream models
   if (getEventStreamField(model.Type)) {
-    imports = addImport(imports, "Utils.Sse", true);
-    imports = addImport(imports, "System.Threading.Tasks", false);
+    if (isCsharpV2()) {
+      imports = addImport(imports, "System.Collections.Generic", false);
+    } else {
+      imports = addImport(imports, "Utils.Sse", true);
+      imports = addImport(imports, "System.Threading.Tasks", false);
+    }
   }
 
   for (const associated of model.Type.AssociatedTypes) {
@@ -147,22 +153,26 @@ function getTypeImports(
 
   switch (typeDef.Type.toString()) {
     case "enum":
-      if (typeDef.OutputLocation != usageLocation && !topLevel) {
+      if (topLevel) {
+        if (isCsharpV2()) {
+          imports = addImport(imports, "Generators.Enum", true);
+        } else if (typeDef.Enum.Type.Type == "string") {
+          imports = addImport(imports, "Newtonsoft.Json", false);
+          imports = addImport(imports, "System", false);
+        }
+      } else if (typeDef.OutputLocation != usageLocation) {
         imports = addImportForType(imports, typeDef);
       }
 
-      if (
-        (topLevel && typeDef.Enum.Type.Type == "string") ||
-        typeDef.Enum.Open
-      ) {
-        imports = addImport(imports, "Newtonsoft.Json", false);
-        imports = addImport(imports, "System", false);
-      }
-
       if (typeDef.Enum.Open) {
+        imports = addImport(imports, "System", false);
         imports = addImport(imports, "System.Collections.Generic", false);
         imports = addImport(imports, "System.Collections.Concurrent", false);
         imports = addImport(imports, "System.Linq", false);
+
+        if (!isCsharpV2()) {
+          imports = addImport(imports, "Newtonsoft.Json", false);
+        }
       }
       break;
     case "class":
@@ -255,7 +265,9 @@ function getTypeImports(
       imports = addImport(imports, "System.Numerics", false);
       break;
     case "event-stream":
-      imports = addImport(imports, "Utils.Sse", true);
+      if (!isCsharpV2()) {
+        imports = addImport(imports, "Utils.Sse", true);
+      }
       imports = addImport(imports, "System.Collections.Generic", false);
       imports = getTypeImports(
         imports,
@@ -276,7 +288,7 @@ function templateSDKImports(sdk: SDK, main: boolean): string {
 
   imports = addImport(imports, "System", false);
   imports = addImport(imports, "Utils", true);
-  imports = addImport(imports, getScopeNamespace("errors"), true);
+  imports = addImport(imports, getScopeNamespace("errors", true), false);
 
   if (main || sdk.Operations.length > 0) {
     imports = addImport(imports, "System.Threading.Tasks", false);
@@ -339,7 +351,11 @@ function templateSDKImports(sdk: SDK, main: boolean): string {
             continue;
           }
           if (content.SerializationMethod == "eventstream") {
-            imports = addImport(imports, "Utils.Sse", true);
+            if (isCsharpV2()) {
+              imports = addImport(imports, "System.Collections.Generic", false);
+            } else {
+              imports = addImport(imports, "Utils.Sse", true);
+            }
             imports = getTypeImports(
               imports,
               content.Content.Type.ItemType,
@@ -416,6 +432,20 @@ registerTemplateFunc("templateUsageImports", templateUsageImports);
 
 function genUsageImports(): string {
   return "{{ templateUsageImports .Local }}";
+}
+
+// @ts-ignore
+function getModelBaseImports(imports: Set<string>): Set<string> {
+  return addImport(imports, "Utils", true);
+}
+
+// @ts-ignore
+function getAnnotationImports(
+  imports: Set<string>,
+  _fieldDef: FieldDef,
+): Set<string> {
+  // SpeakeasyMetadata is already imported via getModelBaseImports()
+  return imports;
 }
 
 registerTemplateFunc("genUsageImports", genUsageImports);

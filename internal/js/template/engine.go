@@ -38,6 +38,7 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/readme"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/sanitization"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/subsystem"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/templatedir"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/terraform"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/cms"
@@ -72,22 +73,21 @@ type WarningLogger interface {
 }
 
 type Config struct {
-	TemplateDir               string   // The main template directory to use
-	AdditionalSearchLocations []string // Additional directories to search for templates, templates/common is always added
-	Subsystem                 *subsystem.Subsystem
-	Debug                     bool
-	DebugGojaPort             int // DAP debug port for goja JS runtime (0 = disabled)
-	WriteFileFunc             WriteFileFunc
-	ReadFileFunc              ReadFileFunc
-	FileTracker               *filetracking.Tracker
-	Ignore                    *filetracking.Ignore
-	Comments                  *cms.CommentTracker
-	Targeter                  Targeter
-	Interopter                Interopter
-	OutDir                    string
-	ImportConfig              configuration.ImportConfig
-	WatchTemplatesLocation    string
-	Bucketer                  *buckettypes.Bucketer
+	TemplateDirConfig      templatedir.Config
+	Subsystem              *subsystem.Subsystem
+	Debug                  bool
+	DebugGojaPort          int // DAP debug port for goja JS runtime (0 = disabled)
+	WriteFileFunc          WriteFileFunc
+	ReadFileFunc           ReadFileFunc
+	FileTracker            *filetracking.Tracker
+	Ignore                 *filetracking.Ignore
+	Comments               *cms.CommentTracker
+	Targeter               Targeter
+	Interopter             Interopter
+	OutDir                 string
+	ImportConfig           configuration.ImportConfig
+	WatchTemplatesLocation string
+	Bucketer               *buckettypes.Bucketer
 }
 
 type Engine struct {
@@ -95,18 +95,6 @@ type Engine struct {
 }
 
 func New(ctx context.Context, target types.Target, cfg Config) *Engine {
-	searchLocations := []string{cfg.TemplateDir}
-	searchLocations = append(searchLocations, cfg.AdditionalSearchLocations...)
-
-	if !slices.Contains(searchLocations, "templates/common") {
-		searchLocations = append(searchLocations, "templates/common")
-	}
-
-	// Allow full paths to be used
-	if !slices.Contains(searchLocations, "") {
-		searchLocations = append(searchLocations, "")
-	}
-
 	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer("github.com/speakeasy-api/easytemplate")
 
 	var templateFS fs.FS = &templates.TemplateFileSystem{}
@@ -119,7 +107,7 @@ func New(ctx context.Context, target types.Target, cfg Config) *Engine {
 		easytemplate.WithReadFileSystem(templateFS),
 		easytemplate.WithTemplateFuncs(getTmplFuncsMap(ctx, cfg)),
 		easytemplate.WithWriteFunc(getWriteFileFunc(ctx, target, cfg)),
-		easytemplate.WithSearchLocations(searchLocations),
+		easytemplate.WithSearchLocations(cfg.TemplateDirConfig.SearchLocations()),
 		easytemplate.WithJSFuncs(getJSFuncs(ctx, target, cfg)),
 		easytemplate.WithJSFiles(map[string]string{
 			"faker":       faker.JS,
@@ -171,7 +159,7 @@ func getJSFuncs(ctx context.Context, target types.Target, cfg Config) map[string
 			return call.VM.ToValue(nil)
 		},
 		"getDirectoryFiles": func(call easytemplate.CallContext) goja.Value {
-			files, err := getDirectoryFiles(cfg.TemplateDir, call.Argument(0).String())
+			files, err := cfg.TemplateDirConfig.GetDirectoryFiles(call.Argument(0).String())
 			if err != nil {
 				panic(err)
 			}
@@ -179,11 +167,12 @@ func getJSFuncs(ctx context.Context, target types.Target, cfg Config) map[string
 			return call.VM.ToValue(files)
 		},
 		"directoryExists": func(call easytemplate.CallContext) goja.Value {
-			exists := directoryExists(cfg.TemplateDir, call.Argument(0).String())
-			return call.VM.ToValue(exists)
+			return call.VM.ToValue(cfg.TemplateDirConfig.DirectoryExists(call.Argument(0).String()))
 		},
 		"copy": func(call easytemplate.CallContext) goja.Value {
-			if err := copyFile(ctx, cfg.TemplateDir, call.Argument(0).String(), call.Argument(1).String(), cfg.WriteFileFunc); err != nil {
+			src := call.Argument(0).String()
+			base := cfg.TemplateDirConfig.ResolveFileBase(src)
+			if err := copyFile(ctx, base, src, call.Argument(1).String(), cfg.WriteFileFunc); err != nil {
 				panic(err)
 			}
 

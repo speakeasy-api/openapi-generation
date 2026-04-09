@@ -36,8 +36,8 @@ function templateDefaultError(full: boolean = true): string {
     return className;
   }
 
-  const useFull = full || hasNamespaceConflict();
-  const namespace = getScopeNamespace("errors", useFull);
+  full = full || hasNamespaceConflict() || isCsharpV2();
+  const namespace = getScopeNamespace("errors", full);
   return namespace ? `${namespace}.${className}` : className;
 }
 

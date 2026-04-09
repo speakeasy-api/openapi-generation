@@ -1,42 +1,58 @@
+function getFieldAnnotations(fieldDef: FieldDef): Annotation[] {
+  return [...fieldDef.Annotations].filter(
+    (a) => a.Type().toString() !== "needsCasing",
+  );
+}
+
+// @ts-ignore
+function templateJsonPropertyAttribute(name: string): string {
+  const escapedName = name.replaceAll(`\\`, `\\\\`).replaceAll(`"`, `\\"`);
+  return `[JsonProperty("${escapedName}")]`;
+}
+
+registerTemplateFunc(
+  "templateJsonPropertyAttribute",
+  templateJsonPropertyAttribute,
+);
+
+function templateFieldAnnotation(
+  fieldDef: FieldDef,
+  annotation: Annotation,
+): string {
+  switch (annotation.Type().toString()) {
+    case "security":
+      return templateSecurityAnnotation(annotation as SecurityAnnotation);
+    case "json":
+      return templateJSONAnnotation(fieldDef, annotation as JSONAnnotation);
+    case "param":
+      return templateParamAnnotation(annotation as ParamAnnotation);
+    case "request":
+      return templateRequestAnnotation(annotation as RequestAnnotation);
+    case "multipartForm":
+      return templateMultipartFormAnnotation(
+        annotation as MultipartFormAnnotation,
+      );
+    case "form":
+      return templateFormAnnotation(annotation as FormAnnotation);
+    case "response":
+      return "";
+    case "encoding":
+      // For event-stream fields, encoding annotations are typically used to specify
+      // how the data should be serialized (e.g., "application/json")
+      // For C#, we can return an empty string as the encoding is handled elsewhere
+      return "";
+    default:
+      throw new Error(`unimplemented ${annotation.Type().toString()}`);
+  }
+}
+
 // @ts-ignore
 function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
-  let resolved = [];
-  let speakeasyMetadata = [];
+  let resolved: string[] = [];
+  let speakeasyMetadata: string[] = [];
 
-  for (const annotation of fieldDef.Annotations) {
-    // This annotation is only used by TypeScript templates
-    if (annotation.Type().toString() === "needsCasing") {
-      continue;
-    }
-
-    let anno = (() => {
-      switch (annotation.Type().toString()) {
-        case "security":
-          return templateSecurityAnnotation(annotation as SecurityAnnotation);
-        case "json":
-          return templateJSONAnnotation(fieldDef, annotation as JSONAnnotation);
-        case "param":
-          return templateParamAnnotation(annotation as ParamAnnotation);
-        case "request":
-          return templateRequestAnnotation(annotation as RequestAnnotation);
-        case "multipartForm":
-          return templateMultipartFormAnnotation(
-            annotation as MultipartFormAnnotation,
-          );
-        case "form":
-          return templateFormAnnotation(annotation as FormAnnotation);
-        case "response":
-          return "";
-        case "encoding":
-          // For event-stream fields, encoding annotations are typically used to specify
-          // how the data should be serialized (e.g., "application/json")
-          // For C#, we can return an empty string as the encoding is handled elsewhere
-          return "";
-        default:
-          throw new Error(`unimplemented ${annotation.Type().toString()}`);
-      }
-    })();
-
+  for (const annotation of getFieldAnnotations(fieldDef)) {
+    const anno = templateFieldAnnotation(fieldDef, annotation);
     if (anno.startsWith("[")) {
       resolved.push(anno);
     } else {
@@ -64,6 +80,38 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
 }
 
 registerTemplateFunc("templateFieldAnnotations", templateFieldAnnotations);
+
+// @ts-ignore
+function templateClassAnnotations(_typeDef: TypeDef, _indent: number): string {
+  return "";
+}
+
+registerTemplateFunc("templateClassAnnotations", templateClassAnnotations);
+
+// @ts-ignore
+function templateUnionConverterAnnotation(
+  className: string,
+  discriminator: any,
+  nullable: boolean,
+): string {
+  if (isCsharpV2()) {
+    if (discriminator) {
+      return `[GenerateDiscriminatedUnionConverter(Nullable = ${nullable}, DiscriminatorField = ${sanitizeEnumValue(
+        discriminator.TypePropertyName,
+        dataType("string"),
+      )})]`;
+    }
+
+    return `[GenerateUndiscriminatedUnionConverter(Nullable = ${nullable})]`;
+  }
+
+  return `[JsonConverter(typeof(${className}.${className}Converter))]`;
+}
+
+registerTemplateFunc(
+  "templateUnionConverterAnnotation",
+  templateUnionConverterAnnotation,
+);
 
 // @ts-ignore
 function containsSpeakeasyMetadataAnnotation(fieldDef: FieldDef): boolean {
