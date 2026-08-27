@@ -368,11 +368,13 @@ func (b *ContextStackBuilder) WithRefName(refName string) *ContextStackBuilder {
 	return b
 }
 
-// WithComponent adds a component context frame
+// WithComponent adds a component context frame. The frame is marked used to
+// match the walker, which consumes it under any non-legacy name resolution mode.
 func (b *ContextStackBuilder) WithComponent() *ContextStackBuilder {
 	b.stack = append(b.stack, ast.ContextFrame{
 		Type:       ast.ContextTypeComponent,
 		Identifier: "true",
+		Used:       true,
 	})
 	return b
 }

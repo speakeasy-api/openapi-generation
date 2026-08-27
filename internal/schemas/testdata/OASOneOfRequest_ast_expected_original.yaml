@@ -11,6 +11,7 @@ type:
           identifier: OASOneOfRequest
         - type: component
           identifier: "true"
+          used: true
     type: class
     fields:
         - name: optional_discriminator_request_and_response
@@ -898,6 +899,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -925,6 +927,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -971,6 +974,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -998,6 +1002,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -1951,6 +1956,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -1978,6 +1984,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -2023,6 +2030,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -2050,6 +2058,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number

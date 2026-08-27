@@ -195,22 +195,22 @@ func (s *ContextStack) AppendWithHumanized(typ ContextType, identifier string, i
 
 const HumanizedRequestBody = "RequestBody"
 
-func (s *ContextStack) AppendRequestBody(fixes *config.Fixes) {
+func (s *ContextStack) AppendRequestBody() {
 	s.AppendWithHumanized(ContextTypeRequestBody, "requestBody", HumanizedRequestBody)
 }
 
 const HumanizedResponseBody = "ResponseBody"
 
-func (s *ContextStack) AppendResponseBody(fixes *config.Fixes) {
+func (s *ContextStack) AppendResponseBody() {
 	s.AppendWithHumanized(ContextTypeResponseBody, "responseBody", HumanizedResponseBody)
 }
 
-func (s *ContextStack) AppendResponseStatusCode(statusCode string, fixes *config.Fixes) {
+func (s *ContextStack) AppendResponseStatusCode(statusCode string) {
 	s.AppendWithHumanized(ContextTypeResponseStatusCode, statusCode, sanitization.HumanizeStatusCode(statusCode))
 }
 
-func (s *ContextStack) AppendResponseMediaType(identifier string, fixes *config.Fixes) {
-	if !fixes.NameResolutionFeb2025 {
+func (s *ContextStack) AppendResponseMediaType(identifier string, mode config.NameResolutionMode) {
+	if !mode.AtLeast(config.NameResolutionShortest) {
 		s.Append(ContextTypeResponseMediaType, oldSanitizeMediaType(identifier))
 		return
 	}
@@ -234,8 +234,8 @@ func (s *ContextStack) Update(typ ContextType, identifier string, humanizedIdent
 	}
 }
 
-func (s *ContextStack) AppendRequestMediaType(mediaType string, fixes *config.Fixes) {
-	if !fixes.NameResolutionFeb2025 {
+func (s *ContextStack) AppendRequestMediaType(mediaType string, mode config.NameResolutionMode) {
+	if !mode.AtLeast(config.NameResolutionShortest) {
 		s.Append(ContextTypeRequestMediaType, oldSanitizeMediaType(mediaType))
 		return
 	}

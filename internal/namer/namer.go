@@ -12,6 +12,7 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/subsystem"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
 	"github.com/speakeasy-api/openapi/references"
+	config "github.com/speakeasy-api/sdk-gen-config"
 )
 
 type Features interface {
@@ -94,7 +95,7 @@ func (n *Namer) GetTypeName(ctx context.Context, s *oas3.JSONSchema[oas3.Referen
 	if lastFrame != nil {
 		name := lastFrame.Identifier
 
-		if n.Subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+		if n.Subsystem.Config.NameResolutionAtLeast(config.NameResolutionShortest) {
 			name = lastFrame.DisplayName()
 		}
 

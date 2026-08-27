@@ -29,8 +29,8 @@ type CommonTestSetup struct {
 
 func DefaultFixes() *config.Fixes {
 	return &config.Fixes{
+		NameResolutionDec2023:                true,
 		NameResolutionFeb2025:                true,
-		NameResolutionDec2023:                false,
 		RequestResponseComponentNamesFeb2024: false,
 		NameOverrideFeb2026:                  true,
 	}

@@ -15,6 +15,12 @@ type Config struct {
 	config.Configuration
 	target  string
 	overlay map[string]any
+
+	// EagerInlineNaming preemptively prefixes inline schemas that are object
+	// properties of a component with their parent component name, so names stay
+	// stable when later spec additions would otherwise introduce conflicts.
+	// Wired from a gen.yaml fixes flag once available in sdk-gen-config.
+	EagerInlineNaming bool
 }
 
 func New(cfg *config.Configuration, target string) *Config {
@@ -34,6 +40,11 @@ func New(cfg *config.Configuration, target string) *Config {
 func (c *Config) AddOverlay(overlay map[string]any) {
 	transformImportsConfig(overlay)
 	c.overlay = overlay
+}
+
+// NameResolutionAtLeast reports whether the effective name resolution mode is min or newer.
+func (c *Config) NameResolutionAtLeast(mode config.NameResolutionMode) bool {
+	return c.Generation.GetNameResolution().AtLeast(mode)
 }
 
 func (c *Config) MaintainOpenAPIOrder() bool {
