@@ -12,7 +12,7 @@ def test_discriminated_union_of_errors_post():
 
     req1 = operations.TaggedError1RequestBody(tag="tag1", error="Error1")
     with pytest.raises(
-        errors.ErrorUnionDiscriminatedPostResponseBody,
+        errors.ErrorUnionDiscriminatedPostClientError,
         match='{"error":"Error1","tag":"tag1"}',
     ) as error1:
         s.errors.error_union_discriminated_post(request=req1)
@@ -23,11 +23,11 @@ def test_discriminated_union_of_errors_post():
         tagged_error2_message=operations.TaggedError2Message(message="Error2"),
     )
     with pytest.raises(
-        errors.ErrorUnionDiscriminatedPostResponseBody,
+        errors.ErrorUnionDiscriminatedPostClientError,
         match='{"error":{"message":"Error2"},"tag":"tag2"}',
     ) as error2:
         s.errors.error_union_discriminated_post(request=req2)
-    assert isinstance(error2.value.data.error, errors.SchemasTaggedError2Error)
+    assert isinstance(error2.value.data.error, errors.TaggedError2Error)
     assert error2.value.data.error.message == "Error2"
 
 

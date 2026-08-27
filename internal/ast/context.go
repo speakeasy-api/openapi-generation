@@ -37,6 +37,39 @@ const (
 	ContextTypeModelNamespace     ContextType = "modelNamespace" // x-speakeasy-model-namespace extension value
 )
 
+// QualificationClass describes how a context frame participates when the namer
+// walks the stack from a component down to an unnamed inline property to build a
+// qualified name (see qualifyInlineName).
+type QualificationClass int
+
+const (
+	// QualificationBarrier breaks the plain-property descent: encountering the
+	// frame abandons qualification and falls back to shortest naming. It is the
+	// zero value so an unclassified kind fails safe rather than leaking into a
+	// qualified name.
+	QualificationBarrier QualificationClass = iota
+	// QualificationContributes: the frame's DisplayName is appended to the
+	// qualified name chain (and the frame is consumed by the resolver).
+	QualificationContributes
+	// QualificationStructural: the frame is part of a plain property descent but
+	// contributes no name token (e.g. component/model-namespace grouping).
+	QualificationStructural
+)
+
+// qualificationClasses classifies the frame kinds that take part in a qualified
+// name. Every other kind is a QualificationBarrier by omission (the zero value).
+var qualificationClasses = map[ContextType]QualificationClass{
+	ContextTypeProperty:       QualificationContributes,
+	ContextTypeComponent:      QualificationStructural,
+	ContextTypeModelNamespace: QualificationStructural,
+}
+
+// QualificationClass reports how the frame kind participates in inline-name
+// qualification. An unclassified kind fails safe as a barrier.
+func (t ContextType) QualificationClass() QualificationClass {
+	return qualificationClasses[t]
+}
+
 type ContextFrame struct {
 	Type                ContextType `yaml:",omitempty"` // The Type of the context which represents things like whether it came from a request or response etc
 	Identifier          string      `yaml:",omitempty"` // The identifier of the context, e.g. the operation id or parent schema ref
@@ -93,13 +126,21 @@ func (s ContextStack) Match(matchers Matchers) error {
 }
 
 func (s ContextStack) FindLastFrameOfType(typ ContextType) *ContextFrame {
-	for i := len(s) - 1; i >= 0; i-- {
-		if (s)[i].Type == typ {
-			return &(s)[i]
-		}
+	if i := s.FindLastFrameIndexOfType(typ); i >= 0 {
+		return &(s)[i]
 	}
 
 	return nil
+}
+
+func (s ContextStack) FindLastFrameIndexOfType(typ ContextType) int {
+	for i := len(s) - 1; i >= 0; i-- {
+		if (s)[i].Type == typ {
+			return i
+		}
+	}
+
+	return -1
 }
 
 func (s ContextStack) LastFrame() *ContextFrame {

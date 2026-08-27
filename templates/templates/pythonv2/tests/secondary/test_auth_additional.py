@@ -55,7 +55,7 @@ def test_multiple_mixed_options_auth():
 
     s.auth_new.multiple_mixed_options_auth(
         request=shared.AuthServiceRequestBody(
-            basic_auth=shared.BasicAuth(
+            basic_auth=shared.AuthServiceRequestBodyBasicAuth(
                 username="testUser",
                 password="testPass",
             )

@@ -1,10 +1,10 @@
 configVersion: 2.0.0
 generation:
+  nameResolution: legacy
   sdkClassName: SDK
   usageSnippets:
     optionalPropertyRendering: withExample
   fixes:
-    nameResolutionDec2023: false
     requestResponseComponentNamesFeb2024: false
   auth:
     oAuth2ClientCredentialsEnabled: true

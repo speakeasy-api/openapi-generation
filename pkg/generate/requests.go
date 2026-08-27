@@ -22,7 +22,6 @@ import (
 	oas "github.com/speakeasy-api/openapi/openapi"
 	"github.com/speakeasy-api/openapi/references"
 	"github.com/speakeasy-api/openapi/sequencedmap"
-	config "github.com/speakeasy-api/sdk-gen-config"
 )
 
 type handleReqParams struct {
@@ -82,7 +81,7 @@ func (g *Generator) handleRequests(ctx context.Context, contextStack ast.Context
 			if frame.Type == ast.ContextTypeOperation {
 				id = frame.Identifier
 				if len(reqBodyFields) > 1 && reqBody.field != nil && reqBody.field.SerializationMethod != nil {
-					if !g.subsystem.Config.NameResolutionAtLeast(config.NameResolutionShortest) || *reqBody.field.SerializationMethod != ast.SerializationMethodJSON {
+					if !g.subsystem.Config.Generation.NameResolutionAtLeastShortest() || *reqBody.field.SerializationMethod != ast.SerializationMethodJSON {
 						// Only prefix if it's not a JSON request body
 						id = fmt.Sprintf("%s_%s", id, *reqBody.field.SerializationMethod)
 					}
@@ -219,7 +218,7 @@ func (g *Generator) handleRequests(ctx context.Context, contextStack ast.Context
 		req.Field.Type.Fields = g.flattenRequest(fields)
 
 		if len(req.Field.Type.Fields) == 0 && req.RequestBody != nil {
-			if g.subsystem.Config.NameResolutionAtLeast(config.NameResolutionShortest) {
+			if g.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 				// Avoid conflict with the request body name
 				g.subsystem.Register.UnregisterType(req.Field.Type)
 			}
@@ -227,7 +226,7 @@ func (g *Generator) handleRequests(ctx context.Context, contextStack ast.Context
 			req.IsRequestBody = true
 			req.Field.Name = "request" // Reset to a default name this doesn't get used for a fully flattened request at serialization time but will provide less confusion in generated code
 			req.Field.OriginalName = ""
-			if g.subsystem.Config.NameResolutionAtLeast(config.NameResolutionShortest) && req.Field.Type.Name == ast.HumanizedRequestBody {
+			if g.subsystem.Config.Generation.NameResolutionAtLeastShortest() && req.Field.Type.Name == ast.HumanizedRequestBody {
 				g.subsystem.Register.UnregisterType(req.Field.Type)
 				// Update the request body to be called just "request" since it's flat
 				req.Field.Type.Name = ast.InternalTypeRequest

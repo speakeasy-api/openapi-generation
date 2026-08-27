@@ -51,10 +51,6 @@ func (g *Generator) LoadConfig(ctx context.Context, outDir string, targets ...st
 		}
 	}
 
-	if nr := cfg.Config.Generation.NameResolution; nr != "" && !nr.IsValid() {
-		return nil, fmt.Errorf("invalid generation.nameResolution %q: must be one of %v", nr, config.NameResolutionModes())
-	}
-
 	g.mergeAbsentObjectDefaults(cfg)
 
 	logging.From(ctx).Info("Found config file", zap.String("path", cfg.ConfigPath))

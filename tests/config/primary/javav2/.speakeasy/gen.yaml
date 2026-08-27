@@ -1,11 +1,11 @@
 configVersion: 2.0.0
 generation:
+  nameResolution: legacy
   sdkClassName: SDK
   maintainOpenAPIOrder: false
   usageSnippets:
     optionalPropertyRendering: withExample
   fixes:
-    nameResolutionDec2023: false
     parameterOrderingFeb2024: false
     requestResponseComponentNamesFeb2024: false
     securityFeb2025: true

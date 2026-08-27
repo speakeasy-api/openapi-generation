@@ -1,5 +1,6 @@
 # generator changes
 
+- 2026-08-28 - feat: add qualified name resolution mode to improve stability for inline property schemas
 - 2026-08-24 - feat: require an explicit license election for generation — --license agpl-3.0-only (or SPEAKEASY_GENERATED_LICENSE) accepts AGPL output, a commercial license token establishes commercial output, and bare runs are refused
 - 2026-08-18 - feat: validate registry-signed license tokens to establish commercial generation access
 - 2026-08-20 - fix: skip inaccessible directories instead of aborting when walking the filesystem

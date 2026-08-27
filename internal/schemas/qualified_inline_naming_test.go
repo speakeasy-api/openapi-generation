@@ -17,14 +17,15 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// TestEagerInlineNaming covers the eager inline naming strategy: inline schemas
-// that are (possibly nested) object properties of a component are preemptively
-// prefixed with their parent component name, so that names stay stable when
-// later spec additions introduce conflicts.
+// This file covers the `qualified` name resolution mode (config.NameResolutionQualified,
+// one rung above `shortest` on the nameResolution ladder): an inline schema (i.e. not
+// a $ref and containing no title or x-speakeasy-name-override) is named after its property
+// path from the nearest enclosing named schema, e.g.: Order.settings.level -> OrderSettingsLevel.
+// The path prefix is applied even without a conflict, so names stay stable as the spec grows.
 //
 // Scenario matrix:
 //
-//	prefixed when enabled:
+//	prefixed under `qualified`:
 //	  S1  enum property of a component                  Order.status          -> OrderStatus
 //	  S2  inline object property of a component         Order.settings      -> OrderSettings
 //	  S3  nested inline property (full chain)           Order.settings.level -> OrderSettingsLevel
@@ -42,9 +43,23 @@ import (
 //	      the parent component name)
 //	  S12 inline schemas without a component ancestor   operation requestBody/response/parameter
 //	      (no refName frame; covered by the pre-seeded operation stack test below)
-//	  S13 structurally deduplicated inline schemas shared by several parents (open decision, skipped)
-//	  S14 flag has no effect without nameResolutionFeb2025
-const eagerInlineNamingSchemasYAML = `Root:
+//
+//	rooted at the nearest explicit name:
+//	  S13 children of titled/overridden inline objects  TitledParent.settings(title: Preferences).tier
+//	      -> PreferencesTier (the explicit name, not the component, is the root)
+//
+// S14 covers structurally identical inline schemas shared by several parents:
+// under qualified they split into per-parent prefixed types instead of merging
+// into one bare-named rename-prone type (decision: stability over dedup; see
+// TestQualifiedInlineNaming_StructuralDeduplication).
+//
+// S15 is a prerequisite guard, not a naming scenario: qualified prefixing must
+// never run without the `shortest` label machinery it builds on. When the
+// toggle was a standalone boolean this needed a runtime test (flag on, Feb 2025
+// fixes off -> inert); as a mode it is structural — `qualified` ranks above
+// `shortest` on the ladder, so the combination cannot be configured. Reduced to
+// the ladder assertion in TestQualifiedInlineNaming_ModeLadder.
+const qualifiedInlineNamingSchemasYAML = `Root:
   type: object
   properties:
     order:
@@ -113,6 +128,15 @@ TitledParent:
       enum:
         - active
         - inactive
+    settings:
+      title: Preferences
+      type: object
+      properties:
+        tier:
+          type: string
+          enum:
+            - low
+            - high
 OverriddenParent:
   type: object
   properties:
@@ -122,6 +146,15 @@ OverriddenParent:
       enum:
         - open
         - closed
+    config:
+      x-speakeasy-name-override: RenamedConfig
+      type: object
+      properties:
+        depth:
+          type: string
+          enum:
+            - shallow
+            - deep
 Redundant:
   type: object
   properties:
@@ -130,6 +163,14 @@ Redundant:
       enum:
         - one
         - two
+    redundantSettings:
+      type: object
+      properties:
+        inner:
+          type: string
+          enum:
+            - a
+            - b
 Unioned:
   type: object
   properties:
@@ -142,19 +183,18 @@ Unioned:
         - type: string
 `
 
-// runEagerInlineNamingSpec walks the Root schema (cascading through the $ref
+// runQualifiedInlineNamingSpec walks the Root schema (cascading through the $ref
 // properties so each component is processed with its component context), then
 // runs full name resolution and returns the set of normalized registered names.
-func runEagerInlineNamingSpec(t *testing.T, eager bool, fixes *config.Fixes) map[string]bool {
+func runQualifiedInlineNamingSpec(t *testing.T, mode config.NameResolutionMode) map[string]bool {
 	t.Helper()
 
 	common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{
-		OpenAPIYAML: testutils.CreateOpenAPIDoc(eagerInlineNamingSchemasYAML),
-		Fixes:       fixes,
+		OpenAPIYAML: testutils.CreateOpenAPIDoc(qualifiedInlineNamingSchemasYAML),
 	})
 	require.NoError(t, err)
 
-	common.Config.EagerInlineNaming = eager
+	common.Config.Generation.NameResolution = mode
 
 	schemas := &Schemas{
 		Config:    common.Config,
@@ -215,8 +255,8 @@ func normalizeTestName(name string) string {
 	return b.String()
 }
 
-func TestEagerInlineNaming_Enabled(t *testing.T) {
-	names := runEagerInlineNamingSpec(t, true, nil)
+func TestQualifiedInlineNaming(t *testing.T) {
+	names := runQualifiedInlineNamingSpec(t, config.NameResolutionQualified)
 
 	// S1: enum property of a component
 	assert.True(t, names["orderstatus"], "S1: Order.status should be prefixed, got names: %v", names)
@@ -262,9 +302,25 @@ func TestEagerInlineNaming_Enabled(t *testing.T) {
 	assert.True(t, names["renamedstatus"], "S10: overridden schemas keep their override")
 	assert.False(t, names["overriddenparentrenamedstatus"], "S10: overridden schemas are not prefixed")
 
+	// S13: a titled/overridden inline object becomes the naming root for its
+	// own unnamed children — the nearest enclosing named schema, not the
+	// component further up
+	assert.True(t, names["preferences"], "S13: titled inline object keeps its title")
+	assert.True(t, names["preferencestier"], "S13: child of titled object is rooted at the title")
+	assert.False(t, names["titledparentsettingstier"], "S13: component chain must not bypass the titled root")
+	assert.True(t, names["renamedconfig"], "S13: overridden inline object keeps its override")
+	assert.True(t, names["renamedconfigdepth"], "S13: child of overridden object is rooted at the override")
+	assert.False(t, names["overriddenparentconfigdepth"], "S13: component chain must not bypass the overridden root")
+
 	// S11: no redundant prefix when the name already starts with the parent name
 	assert.True(t, names["redundantstatus"], "S11: already-parent-prefixed property keeps its name")
 	assert.False(t, names["redundantredundantstatus"], "S11: no doubled parent prefix")
+
+	// S11 nested: the redundant component element is stripped, not the whole
+	// chain — children of an already-parent-prefixed object stay qualified
+	assert.True(t, names["redundantsettingsinner"], "S11: nested chain keeps qualification after stripping the redundant prefix")
+	assert.False(t, names["inner"], "S11: bare leaf name must not survive")
+	assert.False(t, names["redundantredundantsettingsinner"], "S11: no doubled parent prefix in nested chains")
 
 	// Parent components themselves are never renamed
 	for _, parent := range []string{"order", "account", "titledparent", "overriddenparent", "redundant", "unioned"} {
@@ -272,16 +328,19 @@ func TestEagerInlineNaming_Enabled(t *testing.T) {
 	}
 }
 
-func TestEagerInlineNaming_Disabled(t *testing.T) {
-	names := runEagerInlineNamingSpec(t, false, nil)
+// Baseline contrast: under `shortest` (one rung below `qualified`) the same
+// spec keeps its bare inline names, proving the prefixes above come from the
+// qualified mode alone.
+func TestQualifiedInlineNaming_ShortestBaseline(t *testing.T) {
+	names := runQualifiedInlineNamingSpec(t, config.NameResolutionShortest)
 
-	// Non-conflicting inline property schemas keep their bare names today
-	assert.True(t, names["settings"], "current behavior: bare 'settings', got names: %v", names)
-	assert.True(t, names["level"], "current behavior: bare 'level'")
-	assert.True(t, names["tag"], "current behavior: singularized bare 'tag' for array items")
-	assert.True(t, names["attributes"], "current behavior: bare 'attributes'")
-	assert.True(t, names["choice"], "current behavior: bare 'choice'")
-	assert.True(t, names["redundantstatus"], "current behavior: bare 'redundantStatus'")
+	// Non-conflicting inline property schemas keep their bare names under shortest
+	assert.True(t, names["settings"], "shortest behavior: bare 'settings', got names: %v", names)
+	assert.True(t, names["level"], "shortest behavior: bare 'level'")
+	assert.True(t, names["tag"], "shortest behavior: singularized bare 'tag' for array items")
+	assert.True(t, names["attributes"], "shortest behavior: bare 'attributes'")
+	assert.True(t, names["choice"], "shortest behavior: bare 'choice'")
+	assert.True(t, names["redundantstatus"], "shortest behavior: bare 'redundantStatus'")
 
 	// The conflicting 'status' pair is renamed reactively via the refName label
 	assert.True(t, names["orderstatus"], "reactive rename on conflict")
@@ -294,10 +353,10 @@ func TestEagerInlineNaming_Disabled(t *testing.T) {
 }
 
 // S12: inline schemas without a component ancestor (operation requestBody,
-// response body, parameter payloads) are untouched by the flag. Simulated by
-// pre-seeding the context stack with operation/requestBody frames, which is the
-// stack shape those walks produce — no refName frame is present.
-func TestEagerInlineNaming_NoComponentAncestor(t *testing.T) {
+// response body, parameter payloads) are untouched by the qualified mode.
+// Simulated by pre-seeding the context stack with operation/requestBody frames,
+// which is the stack shape those walks produce — no refName frame is present.
+func TestQualifiedInlineNaming_NoComponentAncestor(t *testing.T) {
 	const schemasYAML = `Payload:
   type: object
   properties:
@@ -313,7 +372,7 @@ func TestEagerInlineNaming_NoComponentAncestor(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	common.Config.EagerInlineNaming = true
+	common.Config.Generation.NameResolution = config.NameResolutionQualified
 
 	schemas := &Schemas{
 		Config:    common.Config,
@@ -347,25 +406,115 @@ func TestEagerInlineNaming_NoComponentAncestor(t *testing.T) {
 		names[normalizeTestName(td.Name)] = true
 	}
 
-	assert.True(t, names["status"], "operation-scoped inline schemas are untouched by the flag, got names: %v", names)
+	assert.True(t, names["status"], "operation-scoped inline schemas are untouched by the qualified mode, got names: %v", names)
 }
 
-// S13: a structurally deduplicated inline schema shared by several parents has
-// no single parent to prefix with. Desired behavior is an open decision:
-// either keep the merged type with its bare (rename-prone) name, or stop
-// deduplicating under the flag so each parent gets its own stably named copy.
-func TestEagerInlineNaming_StructuralDeduplication(t *testing.T) {
-	t.Skip("pending decision: keep merged bare name vs split per parent under the flag")
+// S14: structurally identical inline schemas shared by several parents split
+// into per-parent types under qualified (decision: stability over dedup).
+// Registration IDs include the parent refName frame, so the split needs no
+// extra suppression; this locks that behavior in.
+func TestQualifiedInlineNaming_StructuralDeduplication(t *testing.T) {
+	const schemasYAML = `Root:
+  type: object
+  properties:
+    first:
+      $ref: '#/components/schemas/First'
+    second:
+      $ref: '#/components/schemas/Second'
+First:
+  type: object
+  properties:
+    shared:
+      type: object
+      properties:
+        value:
+          type: string
+Second:
+  type: object
+  properties:
+    shared:
+      type: object
+      properties:
+        value:
+          type: string
+`
+
+	common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{
+		OpenAPIYAML: testutils.CreateOpenAPIDoc(schemasYAML),
+	})
+	require.NoError(t, err)
+
+	common.Config.Generation.NameResolution = config.NameResolutionQualified
+
+	schemas := &Schemas{
+		Config:    common.Config,
+		Target:    common.Target,
+		Subsystem: common.Subsystem,
+		Namer:     common.Namer,
+	}
+
+	rootSchema, exists := common.DocInfo.Doc.GetComponents().GetSchemas().Get("Root")
+	require.True(t, exists)
+
+	ctx := logging.With(context.Background(), logging.NewLogger(zapcore.ErrorLevel))
+
+	params := CreateTestParams(rootSchema, common.DocInfo)
+	params.ContextStack = ast.ContextStack{
+		{Type: ast.ContextTypeOperation, Identifier: "root"},
+	}
+	_, err = schemas.HandleSchema(ctx, params)
+	require.NoError(t, err)
+
+	resolver, err := namer.NewResolver(common.Subsystem, nil)
+	require.NoError(t, err)
+
+	resolver.ResolveNames(ctx, common.Subsystem.Register, testImportConfig(), false, false)
+
+	names := map[string]bool{}
+	for _, td := range common.Subsystem.Register.AllTypes() {
+		names[normalizeTestName(td.Name)] = true
+	}
+
+	assert.True(t, names["firstshared"], "each parent gets its own prefixed copy, got names: %v", names)
+	assert.True(t, names["secondshared"], "each parent gets its own prefixed copy")
+	assert.False(t, names["shared"], "no merged bare-named copy remains")
 }
 
-// S14: the flag builds on the Feb 2025 label machinery and must be inert without it.
-func TestEagerInlineNaming_RequiresNameResolutionFeb2025(t *testing.T) {
-	fixes := testutils.DefaultFixes()
-	fixes.NameResolutionFeb2025 = false
-	fixes.NameResolutionDec2023 = true
+// S15: qualified builds on the shortest-mode label machinery; the mode ladder
+// makes the prerequisite structural — qualified always implies shortest.
+func TestQualifiedInlineNaming_ModeLadder(t *testing.T) {
+	assert.True(t, config.NameResolutionQualified.AtLeast(config.NameResolutionShortest))
+}
 
-	names := runEagerInlineNamingSpec(t, true, fixes)
+// Legacy is the mode the primary test variant (and most pinned configs) actually
+// generate under, yet every other unit test here runs at shortest or above, so
+// the !AtLeast(ordered) else-branches in schemas.go / resolution.go would only
+// regress in the expensive SDK snaptests. This pins the legacy name set so those
+// branches have cheap coverage.
+func TestQualifiedInlineNaming_LegacyBaseline(t *testing.T) {
+	legacy := runQualifiedInlineNamingSpec(t, config.NameResolutionLegacy)
 
-	assert.True(t, names["settings"], "flag is inert without nameResolutionFeb2025, got names: %v", names)
-	assert.False(t, names["ordersettings"], "flag is inert without nameResolutionFeb2025")
+	// Legacy keeps the first-registered conflicting type's bare name and only
+	// renames the loser via the refName label — it never prefixes both sides the
+	// way shortest/qualified do.
+	assert.True(t, legacy["status"], "legacy: first-registered 'status' keeps its bare name, got: %v", legacy)
+	assert.True(t, legacy["orderstatus"], "legacy: the losing 'status' is renamed with its refName label")
+	assert.False(t, legacy["accountstatus"], "legacy: only one side of the conflict is prefixed")
+
+	// Inline property schemas are never proactively qualified below shortest.
+	for _, bare := range []string{"settings", "level", "attributes", "choice", "redundantstatus"} {
+		assert.Truef(t, legacy[bare], "legacy: inline %q keeps its bare name", bare)
+	}
+
+	// Explicit names (title/anchor/override) are honored in every mode.
+	for _, explicit := range []string{"customstatus", "renamedstatus", "filecontent", "preferences", "renamedconfig"} {
+		assert.Truef(t, legacy[explicit], "legacy: explicit name %q respected", explicit)
+	}
+
+	// Ordered is the first rung that takes the if-side of the AtLeast(ordered)
+	// gates; on this spec it converges on the same names as legacy, so the gate
+	// divergence is name-neutral here. Pinning the equality documents that and
+	// still fails if either branch regresses independently.
+	ordered := runQualifiedInlineNamingSpec(t, config.NameResolutionOrdered)
+	assert.Equal(t, legacy, ordered, "legacy and ordered name sets should match on this spec")
 }

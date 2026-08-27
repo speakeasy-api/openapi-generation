@@ -8,7 +8,6 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/features"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/errors"
 	"github.com/speakeasy-api/openapi/openapi"
-	config "github.com/speakeasy-api/sdk-gen-config"
 )
 
 type handleOpParams struct {
@@ -76,7 +75,7 @@ func (g *Generator) handleOperation(ctx context.Context, params handleOpParams) 
 		id := params.OpID
 		serializationMethodSuffix := ""
 		if len(reqs) > 1 && req != nil && req.RequestBody != nil && req.RequestBody.SerializationMethod != nil {
-			if !g.subsystem.Config.NameResolutionAtLeast(config.NameResolutionShortest) || *req.RequestBody.SerializationMethod != ast.SerializationMethodJSON {
+			if !g.subsystem.Config.Generation.NameResolutionAtLeastShortest() || *req.RequestBody.SerializationMethod != ast.SerializationMethodJSON {
 				// Only add the serialization method suffix if it's not JSON
 				id = fmt.Sprintf("%s_%s", id, *req.RequestBody.SerializationMethod)
 				serializationMethodSuffix = fmt.Sprintf("_%s", *req.RequestBody.SerializationMethod)

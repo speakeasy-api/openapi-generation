@@ -18,13 +18,14 @@ import (
 // TestHandleAnyOfOneOf tests the handleAnyOfOneOf method with various oneOf/anyOf scenarios
 func TestHandleAnyOfOneOf(t *testing.T) {
 	tests := []struct {
-		name         string
-		schemasYAML  string
-		schemaName   string
-		fixes        *config.Fixes                        // nil means use default
-		mockFeatures func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
-		isRequest    *bool                                // nil means use default (false), otherwise use specified value
-		expected     *ast.FieldDef
+		name           string
+		schemasYAML    string
+		schemaName     string
+		nameResolution config.NameResolutionMode            // empty means derive from fixes
+		fixes          *config.Fixes                        // nil means use default
+		mockFeatures   func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
+		isRequest      *bool                                // nil means use default (false), otherwise use specified value
+		expected       *ast.FieldDef
 	}{
 		{
 			name: "StringOrNull",
@@ -621,7 +622,8 @@ TestSchema:
 				Build(),
 		},
 		{
-			name: "OneOfWithDescriptionMerging",
+			name:           "OneOfWithDescriptionMergingShortest",
+			nameResolution: config.NameResolutionShortest,
 			schemasYAML: `PersonObject:
   type: object
   properties:
@@ -672,6 +674,64 @@ TestSchema:
 					WithContextStack(
 						testutils.NewContextStack().WithOneOf("Test Schema").Build(),
 					).
+					Build()).
+				WithNullable(true).
+				WithOptional(true).
+				Build(),
+		},
+		{
+			name:           "OneOfWithDescriptionMergingLegacy",
+			nameResolution: config.NameResolutionLegacy,
+			schemasYAML: `PersonObject:
+  type: object
+  properties:
+    name:
+      type: string
+    age:
+      type: integer
+  required:
+    - name
+TestSchema:
+  description: "A test schema with description"
+  title: "Test Schema"
+  properties:
+    extraField:
+      type: string
+  oneOf:
+    - $ref: "#/components/schemas/PersonObject"
+    - type: "null"`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("object",
+				testutils.NewTypeDef(ast.DataTypeClass).
+					WithName("Schemas").
+					WithFields(
+						testutils.NewFieldDef("age", testutils.NewTypeDef(ast.DataTypeInteger).WithLocation(&yaml.Node{Line: 14, Column: 11}).Build()).
+							WithOriginalName("age").
+							WithOptional(true).
+							WithJSONAnnotation("age").
+							Build(),
+						testutils.NewFieldDef("extraField", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 22, Column: 11}).Build()).
+							WithOriginalName("extraField").
+							WithOptional(true).
+							WithJSONAnnotation("extraField").
+							Build(),
+						testutils.NewFieldDef("name", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 11}).Build()).
+							WithOriginalName("name").
+							WithOptional(false).
+							WithJSONAnnotation("name").
+							Build(),
+					).
+					WithExtensions(map[string]interface{}{
+						"x-speakeasy-reference-override": "#/components/schemas/PersonObject",
+					}).
+					WithScope(ast.ScopeShared).
+					WithRegistered().
+					WithOriginalNameFrozen().
+					WithIsComponent(false).
+					WithContextStack(
+						testutils.NewContextStack().WithRefType("PersonObject").WithIdentifierForNaming(pointer.From("PersonObject")).Build(),
+					).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
 					Build()).
 				WithNullable(true).
 				WithOptional(true).
@@ -759,7 +819,8 @@ TestSchema:
 				Build(),
 		},
 		{
-			name: "OneOfWithMergedReferencesNameResolution",
+			name:           "OneOfWithMergedReferencesNameResolutionShortest",
+			nameResolution: config.NameResolutionShortest,
 			schemasYAML: `PersonObject:
   type: object
   properties:
@@ -836,6 +897,124 @@ TestSchema:
 							WithLocation(&yaml.Node{Line: 18, Column: 7}).
 							WithContextStack(
 								testutils.NewContextStack().WithOneOf("Test Schema").Build(),
+							).
+							WithFields(
+								testutils.NewFieldDef("companyName", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 21, Column: 11}).Build()).
+									WithOriginalName("companyName").
+									WithOptional(false).
+									WithJSONAnnotation("companyName").
+									Build(),
+								testutils.NewFieldDef("employees", testutils.NewTypeDef(ast.DataTypeInteger).WithLocation(&yaml.Node{Line: 23, Column: 11}).Build()).
+									WithOriginalName("employees").
+									WithOptional(true).
+									WithJSONAnnotation("employees").
+									Build(),
+								testutils.NewFieldDef("extraField", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 31, Column: 11}).Build()).
+									WithOriginalName("extraField").
+									WithOptional(true).
+									WithJSONAnnotation("extraField").
+									Build(),
+							).
+							WithExtensions(map[string]interface{}{
+								"x-speakeasy-reference-override": "#/components/schemas/CompanyObject",
+							}).
+							WithScope(ast.ScopeShared).
+							WithRegistered().
+							WithOriginalNameFrozen().
+							WithIsComponent(false).
+							WithUsedInUnion().
+							Build(),
+					).
+					WithComments(&ast.Comment{
+						Description:      "A test schema with merged references",
+						ExtendedComments: make(map[string]*ast.ExtendedComment),
+					}).
+					WithScope(ast.ScopeShared).
+					WithRegistered().
+					WithOriginalNameFrozen().
+					WithContextStack(ast.ContextStack{}).
+					Build()).
+				Build(),
+		},
+		{
+			name:           "OneOfWithMergedReferencesNameResolutionLegacy",
+			nameResolution: config.NameResolutionLegacy,
+			schemasYAML: `PersonObject:
+  type: object
+  properties:
+    name:
+      type: string
+    age:
+      type: integer
+  required:
+    - name
+CompanyObject:
+  type: object
+  properties:
+    companyName:
+      type: string
+    employees:
+      type: integer
+  required:
+    - companyName
+TestSchema:
+  description: "A test schema with merged references"
+  title: "Test Schema"
+  properties:
+    extraField:
+      type: string
+  oneOf:
+    - $ref: "#/components/schemas/PersonObject"
+    - $ref: "#/components/schemas/CompanyObject"`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("Test Schema",
+				testutils.NewTypeDef(ast.DataTypeUnion).
+					WithName("Test Schema").
+					WithOriginalName("Test Schema").
+					WithLocation(&yaml.Node{Line: 32, Column: 7}).
+					WithContextStack(
+						testutils.NewContextStack().WithOneOf("Test Schema").Build(),
+					).
+					WithAssociatedTypes(
+						testutils.NewTypeDef(ast.DataTypeClass).
+							WithName("Schemas").
+							WithOriginalName("Schemas").
+							WithLocation(&yaml.Node{Line: 9, Column: 7}).
+							WithContextStack(
+								testutils.NewContextStack().WithRefType("PersonObject").WithIdentifierForNaming(pointer.From("PersonObject")).Build(),
+							).
+							WithFields(
+								testutils.NewFieldDef("age", testutils.NewTypeDef(ast.DataTypeInteger).WithLocation(&yaml.Node{Line: 14, Column: 11}).Build()).
+									WithOriginalName("age").
+									WithOptional(true).
+									WithJSONAnnotation("age").
+									Build(),
+								testutils.NewFieldDef("extraField", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 31, Column: 11}).Build()).
+									WithOriginalName("extraField").
+									WithOptional(true).
+									WithJSONAnnotation("extraField").
+									Build(),
+								testutils.NewFieldDef("name", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 11}).Build()).
+									WithOriginalName("name").
+									WithOptional(false).
+									WithJSONAnnotation("name").
+									Build(),
+							).
+							WithExtensions(map[string]interface{}{
+								"x-speakeasy-reference-override": "#/components/schemas/PersonObject",
+							}).
+							WithScope(ast.ScopeShared).
+							WithRegistered().
+							WithOriginalNameFrozen().
+							WithIsComponent(false).
+							WithUsedInUnion().
+							Build(),
+						testutils.NewTypeDef(ast.DataTypeClass).
+							WithName("Schemas").
+							WithOriginalName("Schemas").
+							WithLocation(&yaml.Node{Line: 18, Column: 7}).
+							WithContextStack(
+								testutils.NewContextStack().WithRefType("CompanyObject").WithIdentifierForNaming(pointer.From("CompanyObject")).Build(),
 							).
 							WithFields(
 								testutils.NewFieldDef("companyName", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 21, Column: 11}).Build()).
@@ -2445,9 +2624,10 @@ TestSchema:
 			}
 
 			opts := testutils.TestEnvironmentOptions{
-				OpenAPIYAML:  fullYAML,
-				Fixes:        tt.fixes,
-				MockFeatures: mockFeatures,
+				OpenAPIYAML:    fullYAML,
+				NameResolution: tt.nameResolution,
+				Fixes:          tt.fixes,
+				MockFeatures:   mockFeatures,
 			}
 
 			common, err := testutils.SetupTestEnvironment(opts)

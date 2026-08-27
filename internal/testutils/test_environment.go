@@ -50,6 +50,10 @@ type TestEnvironmentOptions struct {
 	// Configuration fixes
 	Fixes *config.Fixes
 
+	// Name resolution mode. When set, takes precedence over the deprecated
+	// fixes booleans (empty means derive the mode from Fixes).
+	NameResolution config.NameResolutionMode
+
 	// Feature configuration - can use either feature maps OR MockFeaturesConfig
 	SupportedFeatures map[features.Feature]bool
 	EnabledFeatures   map[features.Feature]bool
@@ -165,6 +169,7 @@ func SetupTestEnvironment(opts TestEnvironmentOptions) (*CommonTestSetup, error)
 	baseConfig := &config.Configuration{
 		Generation: config.Generation{
 			MaintainOpenAPIOrder: maintainOrder,
+			NameResolution:       opts.NameResolution,
 			Fixes:                fixes,
 			Schemas:              *schemas,
 		},
