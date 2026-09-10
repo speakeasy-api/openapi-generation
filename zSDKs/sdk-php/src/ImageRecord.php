@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace OpenAPI\OpenAPI;
 
 
-/** ImageRecord - An image record request */
+/** ImageRecord - An image record */
 class ImageRecord
 {
     /**

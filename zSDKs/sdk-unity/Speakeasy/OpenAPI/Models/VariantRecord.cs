@@ -16,18 +16,18 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System;
     using UnityEngine;
-
+    
 
     public class VariantRecordType
     {
         private VariantRecordType(string value) { Value = value; }
 
         public string Value { get; private set; }
-
+        
         public static VariantRecordType DollarText { get { return new VariantRecordType("$text"); } }
-
+        
         public static VariantRecordType DollarImage { get { return new VariantRecordType("$image"); } }
-
+        
         public static VariantRecordType Null { get { return new VariantRecordType("null"); } }
 
         public override string ToString() { return Value; }
@@ -54,7 +54,7 @@ namespace Speakeasy.OpenAPI
             return Value.GetHashCode();
         }
     }
-
+    
 /// <summary>
 /// A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides
 /// </summary>
@@ -63,17 +63,17 @@ namespace Speakeasy.OpenAPI
         public VariantRecord(VariantRecordType type) {
             Type = type;
         }
-        public TextRecord? TextRecord { get; set; }
-        public ImageRecord? ImageRecord { get; set; }
+        public TextRecord? TextRecord { get; set; } 
+        public ImageRecord? ImageRecord { get; set; } 
 
         public VariantRecordType Type {get; set; }
 
 
         public static VariantRecord CreateDollarText(TextRecord dollarText) {
             VariantRecordType typ = VariantRecordType.DollarText;
-
+        
             string typStr = VariantRecordType.DollarText.ToString();
-
+            
             dollarText.Type = typStr;
             VariantRecord res = new VariantRecord(typ);
             res.TextRecord = dollarText;
@@ -81,9 +81,9 @@ namespace Speakeasy.OpenAPI
         }
         public static VariantRecord CreateDollarImage(ImageRecord dollarImage) {
             VariantRecordType typ = VariantRecordType.DollarImage;
-
+        
             string typStr = VariantRecordType.DollarImage.ToString();
-
+            
             dollarImage.Type = typStr;
             VariantRecord res = new VariantRecord(typ);
             res.ImageRecord = dollarImage;

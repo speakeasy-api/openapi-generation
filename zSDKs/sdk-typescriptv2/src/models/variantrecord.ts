@@ -9,7 +9,7 @@ import * as types from "../types/primitives.js";
 import { SDKValidationError } from "./sdkvalidationerror.js";
 
 /**
- * An image record request
+ * An image record
  */
 export type ImageRecord = {
   /**
@@ -21,7 +21,7 @@ export type ImageRecord = {
 };
 
 /**
- * A text record request
+ * A text record
  */
 export type TextRecord = {
   /**
@@ -40,14 +40,12 @@ export type VariantRecord =
   | (ImageRecord & { type: "$image" });
 
 /** @internal */
-export const ImageRecord$inboundSchema: z.ZodMiniType<
-  ImageRecord,
-  unknown
-> = z.object({
-  type: types.string(),
-  imageId: types.string(),
-  caption: types.optional(types.string()),
-});
+export const ImageRecord$inboundSchema: z.ZodMiniType<ImageRecord, unknown> = z
+  .object({
+    type: types.string(),
+    imageId: types.string(),
+    caption: types.optional(types.string()),
+  });
 /** @internal */
 export type ImageRecord$Outbound = {
   type: string;
@@ -65,12 +63,8 @@ export const ImageRecord$outboundSchema: z.ZodMiniType<
   caption: z.optional(z.string()),
 });
 
-export function imageRecordToJSON(
-  imageRecord: ImageRecord,
-): string {
-  return JSON.stringify(
-    ImageRecord$outboundSchema.parse(imageRecord),
-  );
+export function imageRecordToJSON(imageRecord: ImageRecord): string {
+  return JSON.stringify(ImageRecord$outboundSchema.parse(imageRecord));
 }
 export function imageRecordFromJSON(
   jsonString: string,
@@ -83,14 +77,12 @@ export function imageRecordFromJSON(
 }
 
 /** @internal */
-export const TextRecord$inboundSchema: z.ZodMiniType<
-  TextRecord,
-  unknown
-> = z.object({
-  type: types.string(),
-  text: types.string(),
-  note: types.optional(types.string()),
-});
+export const TextRecord$inboundSchema: z.ZodMiniType<TextRecord, unknown> = z
+  .object({
+    type: types.string(),
+    text: types.string(),
+    note: types.optional(types.string()),
+  });
 /** @internal */
 export type TextRecord$Outbound = {
   type: string;
@@ -108,12 +100,8 @@ export const TextRecord$outboundSchema: z.ZodMiniType<
   note: z.optional(z.string()),
 });
 
-export function textRecordToJSON(
-  textRecord: TextRecord,
-): string {
-  return JSON.stringify(
-    TextRecord$outboundSchema.parse(textRecord),
-  );
+export function textRecordToJSON(textRecord: TextRecord): string {
+  return JSON.stringify(TextRecord$outboundSchema.parse(textRecord));
 }
 export function textRecordFromJSON(
   jsonString: string,

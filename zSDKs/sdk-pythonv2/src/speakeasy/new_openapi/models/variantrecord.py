@@ -10,7 +10,7 @@ from typing_extensions import Annotated, NotRequired, TypeAliasType, TypedDict
 
 
 class ImageRecordTypedDict(TypedDict):
-    r"""An image record request"""
+    r"""An image record"""
 
     type: str
     r"""Record type discriminator"""
@@ -19,7 +19,7 @@ class ImageRecordTypedDict(TypedDict):
 
 
 class ImageRecord(BaseModel):
-    r"""An image record request"""
+    r"""An image record"""
 
     type: str
     r"""Record type discriminator"""
@@ -46,7 +46,7 @@ class ImageRecord(BaseModel):
 
 
 class TextRecordTypedDict(TypedDict):
-    r"""A text record request"""
+    r"""A text record"""
 
     type: str
     r"""Record type discriminator"""
@@ -55,14 +55,14 @@ class TextRecordTypedDict(TypedDict):
 
 
 class TextRecord(BaseModel):
-    r"""A text record request"""
+    r"""A text record"""
 
     type: str
     r"""Record type discriminator"""
 
-    text: Annotated[str, pydantic.Field(alias="text")]
+    text: str
 
-    note: Annotated[Optional[str], pydantic.Field(alias="note")] = None
+    note: Optional[str] = None
 
     @model_serializer(mode="wrap")
     def serialize_model(self, handler):
@@ -82,17 +82,13 @@ class TextRecord(BaseModel):
 
 
 VariantRecordTypedDict = TypeAliasType(
-    "VariantRecordTypedDict",
-    Union[TextRecordTypedDict, ImageRecordTypedDict],
+    "VariantRecordTypedDict", Union[TextRecordTypedDict, ImageRecordTypedDict]
 )
 r"""A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides"""
 
 
 VariantRecord = Annotated[
-    Union[
-        Annotated[TextRecord, Tag("$text")],
-        Annotated[ImageRecord, Tag("$image")],
-    ],
+    Union[Annotated[TextRecord, Tag("$text")], Annotated[ImageRecord, Tag("$image")]],
     Discriminator(lambda m: get_discriminator(m, "type", "type")),
 ]
 r"""A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides"""
@@ -100,9 +96,5 @@ r"""A discriminated union with $-prefixed keys and x-speakeasy-discriminator ove
 
 try:
     ImageRecord.model_rebuild()
-except NameError:
-    pass
-try:
-    TextRecord.model_rebuild()
 except NameError:
     pass

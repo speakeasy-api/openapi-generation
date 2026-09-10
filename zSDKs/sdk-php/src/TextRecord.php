@@ -9,7 +9,7 @@ declare(strict_types=1);
 namespace OpenAPI\OpenAPI;
 
 
-/** TextRecord - A text record request */
+/** TextRecord - A text record */
 class TextRecord
 {
     /**

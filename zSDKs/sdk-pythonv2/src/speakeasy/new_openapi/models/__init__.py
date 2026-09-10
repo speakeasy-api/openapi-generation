@@ -267,14 +267,6 @@ if TYPE_CHECKING:
     from .requesttimeouterror import RequestTimeoutError, RequestTimeoutErrorData
     from .responsevalidationerror import ResponseValidationError
     from .reviewtask import ReviewTask, ReviewTaskTypedDict
-    from .variantrecord import (
-        ImageRecord,
-        ImageRecordTypedDict,
-        TextRecord,
-        TextRecordTypedDict,
-        VariantRecord,
-        VariantRecordTypedDict,
-    )
     from .sdkerror import SDKError
     from .security import (
         MyAPIKey,
@@ -334,6 +326,14 @@ if TYPE_CHECKING:
     from .updateuserop import UpdateUserRequest, UpdateUserRequestParam
     from .user import User, UserParam
     from .validateop import ValidateResponse, ValidateResponseTypedDict
+    from .variantrecord import (
+        ImageRecord,
+        ImageRecordTypedDict,
+        TextRecord,
+        TextRecordTypedDict,
+        VariantRecord,
+        VariantRecordTypedDict,
+    )
     from . import bar, baz, foo, internal  # Pydantic models with forward references
 RecursiveFormFieldArray.model_rebuild()
 
@@ -373,8 +373,6 @@ __all__ = [
     "BinaryAndStringUploadRequestParam",
     "Boole",
     "BooleParam",
-    "ImageRecord",
-    "ImageRecordTypedDict",
     "ChatAgentRequest",
     "ChatAgentRequestParam",
     "ChatModelRequest",
@@ -466,6 +464,8 @@ __all__ = [
     "GetUserRequestParam",
     "HeroWidth",
     "Icon",
+    "ImageRecord",
+    "ImageRecordTypedDict",
     "Int32Enum",
     "IntEnum",
     "IntegerMapFormat",
@@ -482,8 +482,6 @@ __all__ = [
     "ListTest1ResponseTypedDict",
     "LoginResponse",
     "LoginResponseTypedDict",
-    "TextRecord",
-    "TextRecordTypedDict",
     "MCPPolicy",
     "MCPPolicyTypedDict",
     "Metadata",
@@ -571,8 +569,6 @@ __all__ = [
     "ResultArrayTypedDict",
     "ReviewTask",
     "ReviewTaskTypedDict",
-    "VariantRecord",
-    "VariantRecordTypedDict",
     "SDKBaseError",
     "SDKError",
     "Security",
@@ -628,6 +624,8 @@ __all__ = [
     "TestEnumFormatsRequestParam",
     "TestEnumFormatsResponse",
     "TestEnumFormatsResponseTypedDict",
+    "TextRecord",
+    "TextRecordTypedDict",
     "TripleNamespaceConflictTest",
     "TripleNamespaceConflictTestTypedDict",
     "Type",
@@ -644,6 +642,8 @@ __all__ = [
     "UserPassAuthTypedDict",
     "ValidateResponse",
     "ValidateResponseTypedDict",
+    "VariantRecord",
+    "VariantRecordTypedDict",
 ]
 
 _dynamic_imports: dict[str, str] = {
@@ -869,12 +869,6 @@ _dynamic_imports: dict[str, str] = {
     "ResponseValidationError": ".responsevalidationerror",
     "ReviewTask": ".reviewtask",
     "ReviewTaskTypedDict": ".reviewtask",
-    "ImageRecord": ".variantrecord",
-    "ImageRecordTypedDict": ".variantrecord",
-    "TextRecord": ".variantrecord",
-    "TextRecordTypedDict": ".variantrecord",
-    "VariantRecord": ".variantrecord",
-    "VariantRecordTypedDict": ".variantrecord",
     "SDKError": ".sdkerror",
     "MyAPIKey": ".security",
     "MyAPIKeyTypedDict": ".security",
@@ -942,6 +936,12 @@ _dynamic_imports: dict[str, str] = {
     "UserParam": ".user",
     "ValidateResponse": ".validateop",
     "ValidateResponseTypedDict": ".validateop",
+    "ImageRecord": ".variantrecord",
+    "ImageRecordTypedDict": ".variantrecord",
+    "TextRecord": ".variantrecord",
+    "TextRecordTypedDict": ".variantrecord",
+    "VariantRecord": ".variantrecord",
+    "VariantRecordTypedDict": ".variantrecord",
 }
 
 _sub_packages = ["bar", "baz", "foo", "internal"]

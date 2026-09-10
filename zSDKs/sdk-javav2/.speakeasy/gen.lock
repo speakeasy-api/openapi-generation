@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -322,8 +322,6 @@ trackedFiles:
     last_write_checksum: sha1:64a322eec7eb792f2bbe9d05cda5b5288d2658d7
   docs/models/shared/Boole.md:
     last_write_checksum: sha1:d65c6501b48dae9d42b4f960329a5007c27f7cfa
-  docs/models/shared/ImageRecord.md:
-    last_write_checksum: sha1:6f7e753b396cc4351ed7a08b03560fc1bd575f28
   docs/models/shared/ChatAgentRequest.md:
     last_write_checksum: sha1:a9252b27bc81e6fda83d202cc31c8497eb44accf
   docs/models/shared/ChatModelRequest.md:
@@ -356,12 +354,12 @@ trackedFiles:
     last_write_checksum: sha1:bc156d1a81a69a4293980eb4dc94565269d7dce6
   docs/models/shared/Icon.md:
     last_write_checksum: sha1:636ecd88613b08d316706ec2e00467eabf3ade9c
+  docs/models/shared/ImageRecord.md:
+    last_write_checksum: sha1:bedd5296acc03f0415582800b5398af085484df1
   docs/models/shared/Int32Enum.md:
     last_write_checksum: sha1:040fbe3a1822b4f2f8718d9ba551320d32ee972c
   docs/models/shared/IntEnum.md:
     last_write_checksum: sha1:715ddef0e68ca4b99dcd8bad9ecc10c7c9da164d
-  docs/models/shared/TextRecord.md:
-    last_write_checksum: sha1:648531354478b3b51f92bb050c8717d28cde65e1
   docs/models/shared/MCPPolicy.md:
     last_write_checksum: sha1:1bdfb8a67179fd2b2226f5922af9db050ce540c8
   docs/models/shared/Metadata.md:
@@ -416,8 +414,6 @@ trackedFiles:
     last_write_checksum: sha1:9235f47765a20f881059cd16f7e03975255bf1dd
   docs/models/shared/ReviewTask.md:
     last_write_checksum: sha1:bcbb8d1ab883c59ce03023fb8878b75f448a05fe
-  docs/models/shared/VariantRecord.md:
-    last_write_checksum: sha1:d42ed102315c1c7c7b925918157d843f0307fd18
   docs/models/shared/Security.md:
     last_write_checksum: sha1:6ed6a8c376c1ca0c3479f81bd4ee3eca0f070d18
   docs/models/shared/SecurityOption2.md:
@@ -450,6 +446,8 @@ trackedFiles:
     last_write_checksum: sha1:b4ce1e75556fc29705b9d72361e90f7cf4696455
   docs/models/shared/Test2Response.md:
     last_write_checksum: sha1:8a36c768f699c8b8d8b68e14efe75074a209a01b
+  docs/models/shared/TextRecord.md:
+    last_write_checksum: sha1:ba59739aa229326706e349a2482c611809f399de
   docs/models/shared/TripleNamespaceConflictTest.md:
     last_write_checksum: sha1:0340d2151868d4822a451a75810a965c3bd11cda
   docs/models/shared/Type.md:
@@ -458,6 +456,8 @@ trackedFiles:
     last_write_checksum: sha1:aa290b3fb6acd59d8d571db2112efd30eded1e62
   docs/models/shared/UserPassAuth.md:
     last_write_checksum: sha1:50f92b3174a7680ae992f39b8596f244e3afd4ea
+  docs/models/shared/VariantRecord.md:
+    last_write_checksum: sha1:d42ed102315c1c7c7b925918157d843f0307fd18
   docs/models/webhooks/PaymentCreatedRequest.md:
     last_write_checksum: sha1:c540ad1549e379272f65b75507d8475bfddc8ca7
   docs/models/webhooks/PaymentCreatedResponse.md:
@@ -1146,8 +1146,6 @@ trackedFiles:
     last_write_checksum: sha1:baef9ecec330336f469170b2d9606b98ee174939
   src/main/java/org/openapis/openapi/models/shared/Boole.java:
     last_write_checksum: sha1:4035b570aa65bd3b284c9383b15f3be5f0eb7585
-  src/main/java/org/openapis/openapi/models/shared/ImageRecord.java:
-    last_write_checksum: sha1:1c66c98ac1a31f4e161c0674984079f06e029343
   src/main/java/org/openapis/openapi/models/shared/ChatAgentRequest.java:
     last_write_checksum: sha1:64f3da33bfe62041ab29fde56d77b7c6ce772bd3
   src/main/java/org/openapis/openapi/models/shared/ChatModelRequest.java:
@@ -1184,12 +1182,12 @@ trackedFiles:
     last_write_checksum: sha1:791a2b0c39677dbba227e7f2189ff0f501d25c08
   src/main/java/org/openapis/openapi/models/shared/Icon.java:
     last_write_checksum: sha1:be2175c15370c383bf18ee9dcd327469121f4b5f
+  src/main/java/org/openapis/openapi/models/shared/ImageRecord.java:
+    last_write_checksum: sha1:3d0c6a7349e119dc863a3a9f26358e1cadc8702f
   src/main/java/org/openapis/openapi/models/shared/Int32Enum.java:
     last_write_checksum: sha1:3176f305528abae14e62a9eff32a43a87115d2d9
   src/main/java/org/openapis/openapi/models/shared/IntEnum.java:
     last_write_checksum: sha1:d1187aef410afb15ad58eb537da603ca95ca1b5a
-  src/main/java/org/openapis/openapi/models/shared/TextRecord.java:
-    last_write_checksum: sha1:5783b985980c72e71c3232c7ae86fc96bcd0fee3
   src/main/java/org/openapis/openapi/models/shared/MCPPolicy.java:
     last_write_checksum: sha1:c17ddd732b4ac5252990e559924bbbac6a1e444c
   src/main/java/org/openapis/openapi/models/shared/Metadata.java:
@@ -1246,10 +1244,6 @@ trackedFiles:
     last_write_checksum: sha1:064c1d896742445634a6efdc71b4ab3f28333680
   src/main/java/org/openapis/openapi/models/shared/ReviewTask.java:
     last_write_checksum: sha1:857e5d3a63df3594c9b2a1546860a37d2c7d4b33
-  src/main/java/org/openapis/openapi/models/shared/VariantRecord.java:
-    last_write_checksum: sha1:6ba6bd54da58f617aa4c901eab94c969729b90a5
-  src/main/java/org/openapis/openapi/models/shared/VariantRecordTypeIdResolver.java:
-    last_write_checksum: sha1:d1bff5d4aed840572c4e7b51db623d380d6c6b5d
   src/main/java/org/openapis/openapi/models/shared/Security.java:
     last_write_checksum: sha1:2a9355536b0f14cfb12aee28933e41cb1ac59c11
   src/main/java/org/openapis/openapi/models/shared/SecurityOption2.java:
@@ -1286,6 +1280,8 @@ trackedFiles:
     last_write_checksum: sha1:93907b14a92d07d8b9aceed0e14376370aea5b96
   src/main/java/org/openapis/openapi/models/shared/Test2Response.java:
     last_write_checksum: sha1:b4374422cc6694731315c615a5e356fd5ff42787
+  src/main/java/org/openapis/openapi/models/shared/TextRecord.java:
+    last_write_checksum: sha1:6d48c417f9bfa119734f21427654341ed7a93404
   src/main/java/org/openapis/openapi/models/shared/TripleNamespaceConflictTest.java:
     last_write_checksum: sha1:dc698e8324c0454e13a0ecc71d56761809dbfa6c
   src/main/java/org/openapis/openapi/models/shared/Type.java:
@@ -1296,16 +1292,20 @@ trackedFiles:
     last_write_checksum: sha1:667e66d3adf071f75f99dadb02aa95b5c1de3404
   src/main/java/org/openapis/openapi/models/shared/UnknownRecursiveFormField.java:
     last_write_checksum: sha1:89d70e75e73e4d6db6bdf961a1a0027a41e4ca5a
-  src/main/java/org/openapis/openapi/models/shared/UnknownVariantRecord.java:
-    last_write_checksum: sha1:23a02009a039d93a5f94d2b75bc7dee825162dd5
   src/main/java/org/openapis/openapi/models/shared/UnknownShape.java:
     last_write_checksum: sha1:7b414adbadecd8c64c6d8ed9f12878adfed57d5f
   src/main/java/org/openapis/openapi/models/shared/UnknownStep.java:
     last_write_checksum: sha1:4d6aeb585c9a333f3e9ccf41a226bb16d9d25abe
+  src/main/java/org/openapis/openapi/models/shared/UnknownVariantRecord.java:
+    last_write_checksum: sha1:1bdd3bd306c13890896e7b60825dd928f03b42e1
   src/main/java/org/openapis/openapi/models/shared/User.java:
     last_write_checksum: sha1:d8b00fa629e94ef8817127cb85bc453bdee417aa
   src/main/java/org/openapis/openapi/models/shared/UserPassAuth.java:
     last_write_checksum: sha1:81dbc389c3dfecc8516cf35622e6ef6a3355bdcc
+  src/main/java/org/openapis/openapi/models/shared/VariantRecord.java:
+    last_write_checksum: sha1:09e43152e5da535e64b68b871b77f6cf8418ba2d
+  src/main/java/org/openapis/openapi/models/shared/VariantRecordTypeIdResolver.java:
+    last_write_checksum: sha1:50a04d68acf2d5f897d8fae48ea1340834b3e7bb
   src/main/java/org/openapis/openapi/models/webhooks/PaymentCreatedRequest.java:
     last_write_checksum: sha1:971af8875a47debac5c6c8b1cdf3f884479ead9c
   src/main/java/org/openapis/openapi/models/webhooks/PaymentCreatedResponse.java:
@@ -1782,8 +1782,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   tests/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  tests/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   tests/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   tests/mockserver/internal/sdk/models/components/shape.go:
@@ -1810,6 +1808,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   tests/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  tests/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   tests/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   tests/mockserver/internal/sdk/models/foo/cat.go:

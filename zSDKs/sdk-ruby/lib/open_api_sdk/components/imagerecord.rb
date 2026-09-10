@@ -5,7 +5,7 @@
 
 module OpenApiSDK
   module Components
-    # An image record request
+    # An image record
     class ImageRecord
       extend T::Sig
       include Crystalline::MetadataFields

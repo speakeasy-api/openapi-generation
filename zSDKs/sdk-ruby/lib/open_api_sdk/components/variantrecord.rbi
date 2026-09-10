@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class OpenApiSDK::Components::VariantRecord
-  extend ::Crystalline::MetadataFields::ClassCaptions
+  extend ::Crystalline::MetadataFields::ClassMethods
 end
 
 class OpenApiSDK::Components::VariantRecord

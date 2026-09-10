@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
 
     /// <summary>
-    /// A text record request.
+    /// A text record.
     /// </summary>
     public class TextRecord
     {

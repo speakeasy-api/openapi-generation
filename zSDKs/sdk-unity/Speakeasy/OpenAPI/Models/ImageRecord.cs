@@ -13,9 +13,9 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using System;
     using UnityEngine;
-
+    
     /// <summary>
-    /// An image record request
+    /// An image record
     /// </summary>
     [Serializable]
     public class ImageRecord

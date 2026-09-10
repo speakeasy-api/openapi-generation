@@ -13,9 +13,9 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using System;
     using UnityEngine;
-
+    
     /// <summary>
-    /// A text record request
+    /// A text record
     /// </summary>
     [Serializable]
     public class TextRecord

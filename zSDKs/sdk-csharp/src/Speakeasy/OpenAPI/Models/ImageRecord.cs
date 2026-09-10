@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
 
     /// <summary>
-    /// An image record request.
+    /// An image record.
     /// </summary>
     public class ImageRecord
     {

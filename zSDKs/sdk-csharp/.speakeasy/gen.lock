@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -273,8 +273,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   Tests/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  Tests/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   Tests/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   Tests/mockserver/internal/sdk/models/components/shape.go:
@@ -301,6 +299,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   Tests/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  Tests/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   Tests/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   Tests/mockserver/internal/sdk/models/foo/cat.go:
@@ -561,8 +561,6 @@ trackedFiles:
     last_write_checksum: sha1:666a0f0d55ca744b00cc632df96132d6c32c3616
   docs/Models/Boole.md:
     last_write_checksum: sha1:4556580cc8afaa79a36836ffd7ae8edaaa4040f0
-  docs/Models/ImageRecord.md:
-    last_write_checksum: sha1:23b0061a75e4ce238dd73016478975d5efe7001d
   docs/Models/ChatAgentRequest.md:
     last_write_checksum: sha1:5757c356e54f516ae20686f0170a92156dc4a924
   docs/Models/ChatModelRequest.md:
@@ -711,6 +709,8 @@ trackedFiles:
     last_write_checksum: sha1:f104e1348c469fc75e17ed25e883d33d7b558f79
   docs/Models/Icon.md:
     last_write_checksum: sha1:c653afcdc7d242b0a5844ed317003bd7ea2bec7a
+  docs/Models/ImageRecord.md:
+    last_write_checksum: sha1:5b80e7ae9a49f9368394632bb018e9646a9e0d46
   docs/Models/Int32Enum.md:
     last_write_checksum: sha1:c9490c92092a06e8163d8031a1ae94208c81b9f9
   docs/Models/IntEnum.md:
@@ -729,8 +729,6 @@ trackedFiles:
     last_write_checksum: sha1:0fef8613d90744811fdb6bd98fbd2f6e179e58d8
   docs/Models/LoginResponseBody.md:
     last_write_checksum: sha1:03a9dbaad9f6ecb6c6d9f225157a75eb9ff36091
-  docs/Models/TextRecord.md:
-    last_write_checksum: sha1:817e7d09241cb2223c4347161e210d8c0e7790d6
   docs/Models/MCPPolicy.md:
     last_write_checksum: sha1:de2e9f148c2606f248897369c011d06a0cce456e
   docs/Models/Metadata.md:
@@ -841,8 +839,6 @@ trackedFiles:
     last_write_checksum: sha1:f3361232c5cb9128bd6941cc7868a291156dda34
   docs/Models/ReviewTask.md:
     last_write_checksum: sha1:b70a04a7e3df24a264c18b60a6b70a20ef64264e
-  docs/Models/VariantRecord.md:
-    last_write_checksum: sha1:fed274508204809b3e5ef6a65a7d460475a2641c
   docs/Models/RootGroupOpResponse.md:
     last_write_checksum: sha1:016a6ab75441f9ce601e5308d3e5c9e53ff47325
   docs/Models/Security.md:
@@ -909,6 +905,8 @@ trackedFiles:
     last_write_checksum: sha1:f13580cc4c099e8f8c3ea68ad8d94c0557e46a7d
   docs/Models/TestEnumFormatsResponseBody.md:
     last_write_checksum: sha1:f4f6b5d9b479e5b98ef331d95c193bca6cebf96c
+  docs/Models/TextRecord.md:
+    last_write_checksum: sha1:0425028852755b70895c07857b48063fe572468d
   docs/Models/TripleNamespaceConflictTest.md:
     last_write_checksum: sha1:0d77b7589046a4da2e7456f865862ad034394639
   docs/Models/Type.md:
@@ -927,6 +925,8 @@ trackedFiles:
     last_write_checksum: sha1:337d4862bc2aa21c4cb6c5f134823787bb2b6798
   docs/Models/ValidateResponseBody.md:
     last_write_checksum: sha1:1b4ecb85c1fa40e40efeb1fb65b605cd52e027bc
+  docs/Models/VariantRecord.md:
+    last_write_checksum: sha1:fed274508204809b3e5ef6a65a7d460475a2641c
   docs/sdks/conflicts/README.md:
     last_write_checksum: sha1:0f0a3a0240de6b7fa1b95eadf827466d1ae42bfa
   docs/sdks/group/README.md:
@@ -1045,8 +1045,6 @@ trackedFiles:
     last_write_checksum: sha1:4989fe16fb6e3a08f68d553664cafa92b3524450
   src/Speakeasy/OpenAPI/Models/Boole.cs:
     last_write_checksum: sha1:a5931be48c3cdc64711613d7258bb0b6603178c6
-  src/Speakeasy/OpenAPI/Models/ImageRecord.cs:
-    last_write_checksum: sha1:1398bb388fe7362cae39030946b75c9fc1543668
   src/Speakeasy/OpenAPI/Models/ChatAgentRequest.cs:
     last_write_checksum: sha1:7d342cecff7595fda0ac92fe077a1d7596f43975
   src/Speakeasy/OpenAPI/Models/ChatModelRequest.cs:
@@ -1195,6 +1193,8 @@ trackedFiles:
     last_write_checksum: sha1:8818401aeb311e94c4031e3c43857c4028d47384
   src/Speakeasy/OpenAPI/Models/Icon.cs:
     last_write_checksum: sha1:881840a63cf9eb041f8d5453c45b5117ce733922
+  src/Speakeasy/OpenAPI/Models/ImageRecord.cs:
+    last_write_checksum: sha1:89375187b8309eefc9fece537837e62caaa18726
   src/Speakeasy/OpenAPI/Models/Int32Enum.cs:
     last_write_checksum: sha1:91b79360c0af7f17c0f6aa47c83dad1c8938d18c
   src/Speakeasy/OpenAPI/Models/IntEnum.cs:
@@ -1213,8 +1213,6 @@ trackedFiles:
     last_write_checksum: sha1:438bc352f59d25a357cda7ecb09d70302cf9f712
   src/Speakeasy/OpenAPI/Models/LoginResponseBody.cs:
     last_write_checksum: sha1:7e275411595147460fef42d31429ddad892e416d
-  src/Speakeasy/OpenAPI/Models/TextRecord.cs:
-    last_write_checksum: sha1:82e1231c4e38eda4152ff1775d7c8c1b5825113c
   src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
     last_write_checksum: sha1:6197af49fb06149db1b4b3b4e7948642d97130dc
   src/Speakeasy/OpenAPI/Models/Metadata.cs:
@@ -1327,8 +1325,6 @@ trackedFiles:
     last_write_checksum: sha1:f0598d16b43efb2a173b38e14b1dd920e422c69b
   src/Speakeasy/OpenAPI/Models/ReviewTask.cs:
     last_write_checksum: sha1:6c2d3552b40e24a2dc568d1746c6494c29b0d801
-  src/Speakeasy/OpenAPI/Models/VariantRecord.cs:
-    last_write_checksum: sha1:6e5cea447bb7a6c65c76304434694ef419065ec1
   src/Speakeasy/OpenAPI/Models/RootGroupOpResponse.cs:
     last_write_checksum: sha1:bf2713c3af82cd42ad066170cef2b78a2413e690
   src/Speakeasy/OpenAPI/Models/SDKBaseException.cs:
@@ -1399,6 +1395,8 @@ trackedFiles:
     last_write_checksum: sha1:4b931a5a7d92e92a57e08faa0bf575bec276296f
   src/Speakeasy/OpenAPI/Models/TestEnumFormatsResponseBody.cs:
     last_write_checksum: sha1:e6053a7f9639c7f917f031d3f87b3c28a67e265e
+  src/Speakeasy/OpenAPI/Models/TextRecord.cs:
+    last_write_checksum: sha1:23a484ae5d9b9a3c8950e65b2c8f83955c878941
   src/Speakeasy/OpenAPI/Models/TripleNamespaceConflictTest.cs:
     last_write_checksum: sha1:49b4eedc84064cbb06e133d633291d1e695cafa3
   src/Speakeasy/OpenAPI/Models/Type.cs:
@@ -1417,6 +1415,8 @@ trackedFiles:
     last_write_checksum: sha1:c03fcef1b6e381d9e7bef98c75de904daf9e3cfb
   src/Speakeasy/OpenAPI/Models/ValidateResponseBody.cs:
     last_write_checksum: sha1:05af8d70d4d813828bf504f5f84581d885894ecc
+  src/Speakeasy/OpenAPI/Models/VariantRecord.cs:
+    last_write_checksum: sha1:0c8d1666057c3595b17fc8941bc7ee277f5ee3b1
   src/Speakeasy/OpenAPI/NamespaceTests.cs:
     last_write_checksum: sha1:7e2aaee5b76ff1439cef9b4d3bb5e389d0d46916
   src/Speakeasy/OpenAPI/Obsolete.cs:
