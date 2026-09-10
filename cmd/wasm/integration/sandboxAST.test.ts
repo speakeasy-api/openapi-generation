@@ -47,6 +47,7 @@ const testCases: TestCase[] = [
     extension: '.json',
     assertFn: (ast: any) => {
       expect(ast.openAPIVersion).toBe('3.0.3');
+      expect(ast.docInfo.title).toBe('Example Asset API');
       expect(ast.operations.map(op => op.operationID)).toEqual([
         'listAssets',
         'createAsset',
