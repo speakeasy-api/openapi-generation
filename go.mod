@@ -5,7 +5,7 @@ go 1.26.2
 tool github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
 
 require (
-	github.com/KimMachineGun/automemlimit v0.7.5
+	github.com/KimMachineGun/automemlimit v1.0.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/bits-and-blooms/bitset v1.25.0
 	github.com/dop251/goja v0.0.0
