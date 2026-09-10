@@ -192,37 +192,12 @@ artifacts, is described in [LICENSING.md](LICENSING.md).
 
 ### License tokens
 
-Commercially-entitled Speakeasy customers receive a signed license token (an
-Ed25519 JWT minted by the Speakeasy platform, also usable as an offline license
-file). Callers attach the raw token to the generation context with
-`licensetoken.WithToken` (or `cmd/generate --license-token <path>`, or the
-`SPEAKEASY_LICENSE_TOKEN` environment variable — how CI and review builds
-supply the credential from secrets); they never validate it themselves.
-Generation always requires an explicit license election: pass
-`--license agpl-3.0-only` (or set `SPEAKEASY_GENERATED_LICENSE=agpl-3.0-only`,
-or use `generation-context/access.ElectAGPL` as a library caller) to accept
-AGPL-3.0-only licensing for the generated output, or supply a license token
-for commercial output. With neither, generation refuses to run — output is
-never silently licensed — and supplying both is an error. There is no
-synthetic commercial mode: commercial output always requires a
-registry-signed token validated in the same run. Authenticated state that
-merely asserts a commercial license (for example, state a caller built with
-`generation-context/access.WithAuthenticated`) is rejected with
-`ErrUnprovenCommercialLicense`. Validation happens inside generator
-initialization, behind a private validator bound to the JWK set embedded in
-this repository — there is no caller-side path around it. A valid token
-establishes the authenticated commercial generation context; a
-present-but-invalid token fails the run. The embedded JWK set contains the
-production public keys only. Possession of a structurally valid token is not
-commercial proof by itself — the token's `license` claim must be exactly
-`type: "commercial"` and pass the full validation contract documented in
-`pkg/licensetoken`. A token's required `targets` claim limits its commercial
-coverage: paid plans use `"*"`, while free workspaces receive one named target
-with `licensetool fetch --target <target>`; generating an uncovered target
-requires an AGPL-3.0-only election or a token that covers it. The claim may
-also carry an optional free-text `message`
-signed by the issuer (for example, the agreement a hand-issued license was
-granted under); it is informational and never affects validation.
+With a commercial license token, your generated SDK is yours to use, modify,
+distribute, and license on your own terms—even though the generator itself is
+AGPL-3.0. This includes Speakeasy code copied into the output, and these rights
+continue after your token expires. Third-party content, including any supplied
+through the input API specification, remains subject to its existing licenses.
+See [Licensing](LICENSING.md).
 
 ### Local development: `./zero`
 
