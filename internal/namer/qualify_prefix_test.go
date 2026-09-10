@@ -24,6 +24,7 @@ func TestRedundantPrefixIsTokenWise(t *testing.T) {
 		{"pluralized parent is not a prefix", "Order", []string{"orders"}, false},
 		{"suffixed parent is not a prefix", "Account", []string{"accountable"}, false},
 		{"equal name is not a strict prefix", "Order", []string{"order"}, false},
+		{"equal first segment with a child keeps the qualifier", "Order", []string{"order", "status"}, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

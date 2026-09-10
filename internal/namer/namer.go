@@ -100,7 +100,7 @@ func (n *Namer) GetTypeName(ctx context.Context, s *oas3.JSONSchema[oas3.Referen
 			name = lastFrame.DisplayName()
 		}
 
-		if n.Subsystem.Config.Generation.NameResolutionAtLeastQualified() {
+		if s.GetRef() == "" && n.Subsystem.Config.Generation.NameResolutionAtLeastQualified() {
 			if qualifiedName, qualifiedStack, ok := qualifyInlineName(contextStack); ok {
 				return qualifiedName, "", qualifiedStack, nil
 			}
@@ -179,14 +179,16 @@ func qualifyInlineName(contextStack ast.ContextStack) (string, ast.ContextStack,
 	return strings.Join(chain, "_"), qualifiedStack, true
 }
 
-// stripRedundantParent drops chain[0] when the property path already leads with
-// the parent as a whole-word prefix (Redundant.redundantStatus stays
-// RedundantStatus; Order.order keeps the qualifier -> OrderOrder). Returns the
-// chain to emit and whether the refName frame was consumed.
+// stripRedundantParent drops chain[0] when the first property segment already
+// leads with the parent as a whole-word prefix (Redundant.redundantStatus stays
+// RedundantStatus; Order.order.status keeps the qualifier -> OrderOrderStatus so
+// it never collides with Order.status). Only the first segment is compared: a
+// deeper leaf that happens to start with the parent must not fold away the whole
+// chain. Returns the chain to emit and whether the refName frame was consumed.
 func stripRedundantParent(chain []string) ([]string, bool) {
 	parent := strcase.ToSnake(sanitization.SanitizeName(chain[0]))
-	prop := strcase.ToSnake(sanitization.SanitizeName(strings.Join(chain[1:], "_")))
-	if parent != "" && strings.HasPrefix(prop, parent+"_") {
+	firstProp := strcase.ToSnake(sanitization.SanitizeName(chain[1]))
+	if parent != "" && strings.HasPrefix(firstProp, parent+"_") {
 		return chain[1:], false
 	}
 	return chain, true

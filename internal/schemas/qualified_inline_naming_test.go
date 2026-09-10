@@ -183,14 +183,15 @@ Unioned:
         - type: string
 `
 
-// runQualifiedInlineNamingSpec walks the Root schema (cascading through the $ref
-// properties so each component is processed with its component context), then
-// runs full name resolution and returns the set of normalized registered names.
-func runQualifiedInlineNamingSpec(t *testing.T, mode config.NameResolutionMode) map[string]bool {
+// resolveInlineNamingSpec is the shared harness for the naming scenarios in this
+// file: it walks rootName in yaml under the given mode, scope and pre-seeded
+// context stack, runs full name resolution and returns the set of normalized
+// registered names. Callers vary only in the spec, mode and entry stack.
+func resolveInlineNamingSpec(t *testing.T, yaml, rootName string, mode config.NameResolutionMode, scope ast.Scope, contextStack ast.ContextStack) map[string]bool {
 	t.Helper()
 
 	common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{
-		OpenAPIYAML: testutils.CreateOpenAPIDoc(qualifiedInlineNamingSchemasYAML),
+		OpenAPIYAML: testutils.CreateOpenAPIDoc(yaml),
 	})
 	require.NoError(t, err)
 
@@ -203,18 +204,16 @@ func runQualifiedInlineNamingSpec(t *testing.T, mode config.NameResolutionMode) 
 		Namer:     common.Namer,
 	}
 
-	rootSchema, exists := common.DocInfo.Doc.GetComponents().GetSchemas().Get("Root")
+	rootSchema, exists := common.DocInfo.Doc.GetComponents().GetSchemas().Get(rootName)
 	require.True(t, exists)
 
 	ctx := logging.With(context.Background(), logging.NewLogger(zapcore.ErrorLevel))
 
 	params := CreateTestParams(rootSchema, common.DocInfo)
-	// The Root wrapper is anonymous; give it a context frame so the legacy
-	// (Dec 2023) naming path can name it. Component processing resets the
-	// stack, so this does not affect the names under test.
-	params.ContextStack = ast.ContextStack{
-		{Type: ast.ContextTypeOperation, Identifier: "root"},
+	if scope != "" {
+		params.Scope = scope
 	}
+	params.ContextStack = contextStack
 	_, err = schemas.HandleSchema(ctx, params)
 	require.NoError(t, err)
 
@@ -228,6 +227,20 @@ func runQualifiedInlineNamingSpec(t *testing.T, mode config.NameResolutionMode) 
 		names[normalizeTestName(td.Name)] = true
 	}
 	return names
+}
+
+// runQualifiedInlineNamingSpec walks the Root schema (cascading through the $ref
+// properties so each component is processed with its component context), then
+// runs full name resolution and returns the set of normalized registered names.
+func runQualifiedInlineNamingSpec(t *testing.T, mode config.NameResolutionMode) map[string]bool {
+	t.Helper()
+
+	// The Root wrapper is anonymous; give it a context frame so the legacy
+	// (Dec 2023) naming path can name it. Component processing resets the
+	// stack, so this does not affect the names under test.
+	return resolveInlineNamingSpec(t, qualifiedInlineNamingSchemasYAML, "Root", mode, "", ast.ContextStack{
+		{Type: ast.ContextTypeOperation, Identifier: "root"},
+	})
 }
 
 func testImportConfig() configuration.ImportConfig {
@@ -367,44 +380,11 @@ func TestQualifiedInlineNaming_NoComponentAncestor(t *testing.T) {
         - shipped
 `
 
-	common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{
-		OpenAPIYAML: testutils.CreateOpenAPIDoc(schemasYAML),
-	})
-	require.NoError(t, err)
-
-	common.Config.Generation.NameResolution = config.NameResolutionQualified
-
-	schemas := &Schemas{
-		Config:    common.Config,
-		Target:    common.Target,
-		Subsystem: common.Subsystem,
-		Namer:     common.Namer,
-	}
-
-	payload, exists := common.DocInfo.Doc.GetComponents().GetSchemas().Get("Payload")
-	require.True(t, exists)
-
-	ctx := logging.With(context.Background(), logging.NewLogger(zapcore.ErrorLevel))
-
-	params := CreateTestParams(payload, common.DocInfo)
-	params.Scope = ast.ScopeOperations
-	params.ContextStack = ast.ContextStack{
+	names := resolveInlineNamingSpec(t, schemasYAML, "Payload", config.NameResolutionQualified, ast.ScopeOperations, ast.ContextStack{
 		{Type: ast.ContextTypeOperation, Identifier: "createOrder"},
 		{Type: ast.ContextTypeRequestBody, Identifier: "requestBody"},
 		{Type: ast.ContextTypeRequestMediaType, Identifier: "application/json"},
-	}
-	_, err = schemas.HandleSchema(ctx, params)
-	require.NoError(t, err)
-
-	resolver, err := namer.NewResolver(common.Subsystem, nil)
-	require.NoError(t, err)
-
-	resolver.ResolveNames(ctx, common.Subsystem.Register, testImportConfig(), false, false)
-
-	names := map[string]bool{}
-	for _, td := range common.Subsystem.Register.AllTypes() {
-		names[normalizeTestName(td.Name)] = true
-	}
+	})
 
 	assert.True(t, names["status"], "operation-scoped inline schemas are untouched by the qualified mode, got names: %v", names)
 }
@@ -439,45 +419,51 @@ Second:
           type: string
 `
 
-	common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{
-		OpenAPIYAML: testutils.CreateOpenAPIDoc(schemasYAML),
-	})
-	require.NoError(t, err)
-
-	common.Config.Generation.NameResolution = config.NameResolutionQualified
-
-	schemas := &Schemas{
-		Config:    common.Config,
-		Target:    common.Target,
-		Subsystem: common.Subsystem,
-		Namer:     common.Namer,
-	}
-
-	rootSchema, exists := common.DocInfo.Doc.GetComponents().GetSchemas().Get("Root")
-	require.True(t, exists)
-
-	ctx := logging.With(context.Background(), logging.NewLogger(zapcore.ErrorLevel))
-
-	params := CreateTestParams(rootSchema, common.DocInfo)
-	params.ContextStack = ast.ContextStack{
+	names := resolveInlineNamingSpec(t, schemasYAML, "Root", config.NameResolutionQualified, "", ast.ContextStack{
 		{Type: ast.ContextTypeOperation, Identifier: "root"},
-	}
-	_, err = schemas.HandleSchema(ctx, params)
-	require.NoError(t, err)
-
-	resolver, err := namer.NewResolver(common.Subsystem, nil)
-	require.NoError(t, err)
-
-	resolver.ResolveNames(ctx, common.Subsystem.Register, testImportConfig(), false, false)
-
-	names := map[string]bool{}
-	for _, td := range common.Subsystem.Register.AllTypes() {
-		names[normalizeTestName(td.Name)] = true
-	}
+	})
 
 	assert.True(t, names["firstshared"], "each parent gets its own prefixed copy, got names: %v", names)
 	assert.True(t, names["secondshared"], "each parent gets its own prefixed copy")
 	assert.False(t, names["shared"], "no merged bare-named copy remains")
+}
+
+// A first property that equals its parent must keep the qualifier: stripping it
+// would fold Parent.parent.status into ParentStatus and collide with
+// Parent.status. Only a first segment that leads with the parent as a whole word
+// (Redundant.redundantStatus) is redundant.
+func TestQualifiedInlineNaming_FirstPropertyEqualsParent(t *testing.T) {
+	const schemasYAML = `Root:
+  type: object
+  properties:
+    parent:
+      $ref: '#/components/schemas/Parent'
+Parent:
+  type: object
+  properties:
+    status:
+      type: string
+      enum:
+        - a
+        - b
+    parent:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - c
+            - d
+`
+
+	names := resolveInlineNamingSpec(t, schemasYAML, "Root", config.NameResolutionQualified, "", ast.ContextStack{
+		{Type: ast.ContextTypeOperation, Identifier: "root"},
+	})
+
+	assert.True(t, names["parentstatus"], "Parent.status stays ParentStatus, got names: %v", names)
+	assert.True(t, names["parentparent"], "Parent.parent keeps the qualifier")
+	assert.True(t, names["parentparentstatus"], "Parent.parent.status keeps the full chain, no collision with Parent.status")
+	assert.False(t, names["status"], "no bare leaf survives")
 }
 
 // S15: qualified builds on the shortest-mode label machinery; the mode ladder
