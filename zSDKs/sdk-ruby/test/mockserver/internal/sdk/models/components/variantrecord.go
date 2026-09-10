@@ -17,12 +17,12 @@ type ImageRecord struct {
 	Caption *string `json:"caption,omitempty"`
 }
 
-func (c ImageRecord) MarshalJSON() ([]byte, error) {
-	return utils.MarshalJSON(c, "", false)
+func (i ImageRecord) MarshalJSON() ([]byte, error) {
+	return utils.MarshalJSON(i, "", false)
 }
 
-func (c *ImageRecord) UnmarshalJSON(data []byte) error {
-	if err := utils.UnmarshalJSON(data, &c, "", false, []string{"type", "imageId"}); err != nil {
+func (i *ImageRecord) UnmarshalJSON(data []byte) error {
+	if err := utils.UnmarshalJSON(data, &i, "", false, []string{"type", "imageId"}); err != nil {
 		return err
 	}
 	return nil
@@ -57,12 +57,12 @@ type TextRecord struct {
 	Note *string `json:"note,omitempty"`
 }
 
-func (l TextRecord) MarshalJSON() ([]byte, error) {
-	return utils.MarshalJSON(l, "", false)
+func (t TextRecord) MarshalJSON() ([]byte, error) {
+	return utils.MarshalJSON(t, "", false)
 }
 
-func (l *TextRecord) UnmarshalJSON(data []byte) error {
-	if err := utils.UnmarshalJSON(data, &l, "", false, []string{"type", "text"}); err != nil {
+func (t *TextRecord) UnmarshalJSON(data []byte) error {
+	if err := utils.UnmarshalJSON(data, &t, "", false, []string{"type", "text"}); err != nil {
 		return err
 	}
 	return nil

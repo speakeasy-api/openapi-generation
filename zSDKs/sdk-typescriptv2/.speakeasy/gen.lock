@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -146,8 +146,6 @@ trackedFiles:
     last_write_checksum: sha1:7d3367fdd30a14de75741256d70906371f39b430
   docs/models/boole.mdx:
     last_write_checksum: sha1:e295b4cbd58efa315a18fa74d1335293fb85bc3b
-  docs/models/imagerecord.mdx:
-    last_write_checksum: sha1:0b4420257c7bd1fe3510a4632788a8afb9140efa
   docs/models/chatagentrequest.mdx:
     last_write_checksum: sha1:95a22301d52a2e52debdcc84234a4e23e60889f4
   docs/models/chatmodelrequest.mdx:
@@ -244,6 +242,8 @@ trackedFiles:
     last_write_checksum: sha1:b03bbe25b9fb2c7230adb25412b2c68e23b5fcd3
   docs/models/icon.mdx:
     last_write_checksum: sha1:0c9d8520009fb78b497db5048d6d5cf875674fac
+  docs/models/imagerecord.mdx:
+    last_write_checksum: sha1:0099ff90036eac67522cfaac1afbe5405ea981ad
   docs/models/int32enum.mdx:
     last_write_checksum: sha1:609327c527ceb0e8faec7dcc436ccb265b1a8c42
   docs/models/integermapformat.mdx:
@@ -262,8 +262,6 @@ trackedFiles:
     last_write_checksum: sha1:0be84d9dca9a78eead7c43f1767e8f9c3196e486
   docs/models/loginresponse.mdx:
     last_write_checksum: sha1:69a66f4dc39f1b08d0e39bd0e742bec2833003c8
-  docs/models/textrecord.mdx:
-    last_write_checksum: sha1:8c4a1b4e8caac793d3749d89db5f8fc20df39a33
   docs/models/mcppolicy.mdx:
     last_write_checksum: sha1:53a5f8692dc1ccf2999a1f4da6940cc236c232af
   docs/models/metadata.mdx:
@@ -358,8 +356,6 @@ trackedFiles:
     last_write_checksum: sha1:e752ce5b5336ce1ed7b467c3605ebdd7d7a52a4e
   docs/models/reviewtask.mdx:
     last_write_checksum: sha1:483ab1a066d36cd50e3c9351bab3d6ef326f86cd
-  docs/models/variantrecord.mdx:
-    last_write_checksum: sha1:ab63ee9109f7b9ba43a932e94606704ca4bd0d4a
   docs/models/security.mdx:
     last_write_checksum: sha1:d35c694649af90328dd25c173308d78f2a9f25b2
   docs/models/securityoption2.mdx:
@@ -418,6 +414,8 @@ trackedFiles:
     last_write_checksum: sha1:89d587c3e0e8e0df6836c352bca03e7774f5875d
   docs/models/testenumformatsresponse.mdx:
     last_write_checksum: sha1:c8fe8f91ee627752713ac8e0cb392836442f310f
+  docs/models/textrecord.mdx:
+    last_write_checksum: sha1:1a2b45f497e61a70171496b2ec4e1b3e03dc3373
   docs/models/triplenamespaceconflicttest.mdx:
     last_write_checksum: sha1:5dc0f43eeae2a3f07898d2cecbccd1bfae8b6485
   docs/models/type.mdx:
@@ -430,6 +428,8 @@ trackedFiles:
     last_write_checksum: sha1:4e51165d1afb0013413b26b40a2efb0fa81c5333
   docs/models/validateresponse.mdx:
     last_write_checksum: sha1:49d5bb6b09ccf50ff7068d82e9f4cc47acdd8a62
+  docs/models/variantrecord.mdx:
+    last_write_checksum: sha1:084f6d56a5122738ac51264f6e6bd0bdf19cb512
   docs/patch-files/created-by-patch.mdx:
     last_write_checksum: sha1:bc67e0d8a24574af670f21d4b48c641231d41150
   docs/sdks/conflicts/README.mdx:
@@ -676,8 +676,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   src/__tests__/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  src/__tests__/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   src/__tests__/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   src/__tests__/mockserver/internal/sdk/models/components/shape.go:
@@ -704,6 +702,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   src/__tests__/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  src/__tests__/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   src/__tests__/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   src/__tests__/mockserver/internal/sdk/models/foo/cat.go:
@@ -1169,7 +1169,7 @@ trackedFiles:
   src/models/httpclienterrors.ts:
     last_write_checksum: sha1:994ced121c54fecd0af038ccfb7855fbfd3868ec
   src/models/index.ts:
-    last_write_checksum: sha1:4ea077d5be4ae09451eef3dee7cc706255f693c5
+    last_write_checksum: sha1:8f2a33b878023f18f88433189ece428044f1a98a
   src/models/listtest1op.ts:
     last_write_checksum: sha1:057b21fef4bca0e285352558405880593b57992d
   src/models/loginop.ts:
@@ -1216,8 +1216,6 @@ trackedFiles:
     last_write_checksum: sha1:1b3c504c0fc66df1d695da22366400d951b2c477
   src/models/reviewtask.ts:
     last_write_checksum: sha1:1b132a91f1420883b4638efa2a22bd29f80180ba
-  src/models/variantrecord.ts:
-    last_write_checksum: sha1:4d1ff0e8310da62f83ebe22160f2fdbbb916b2fc
   src/models/sdkbaseerror.ts:
     last_write_checksum: sha1:eb9317e1a7da88d84353ee2cbe9dc1a092f83f50
   src/models/sdkerror.ts:
@@ -1260,6 +1258,8 @@ trackedFiles:
     last_write_checksum: sha1:e90b6409e3dce9998d09628ff3032ef6d0fee75f
   src/models/validateop.ts:
     last_write_checksum: sha1:1bb9a59f916a30a21d550680d269f8767539fd80
+  src/models/variantrecord.ts:
+    last_write_checksum: sha1:37e540dce13a956045ffb13d5ebe55971b90b426
   src/react-query/_context.tsx:
     last_write_checksum: sha1:4527db5f15fd9ab5796f6b657f6770ceaa24cb2b
   src/react-query/_types.ts:

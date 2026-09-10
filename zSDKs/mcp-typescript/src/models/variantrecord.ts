@@ -5,7 +5,7 @@
 import * as z from "zod";
 
 /**
- * An image record request
+ * An image record
  */
 export type ImageRecord = {
   type: string;
@@ -13,15 +13,14 @@ export type ImageRecord = {
   caption?: string | undefined;
 };
 
-export const ImageRecord$zodSchema: z.ZodType<ImageRecord> = z
-  .object({
-    imageId: z.string(),
-    caption: z.string().optional(),
-    type: z.string().describe("Record type discriminator"),
-  }).describe("An image record request");
+export const ImageRecord$zodSchema: z.ZodType<ImageRecord> = z.object({
+  caption: z.string().optional(),
+  imageId: z.string(),
+  type: z.string().describe("Record type discriminator"),
+}).describe("An image record");
 
 /**
- * A text record request
+ * A text record
  */
 export type TextRecord = {
   type: string;
@@ -29,13 +28,11 @@ export type TextRecord = {
   note?: string | undefined;
 };
 
-export const TextRecord$zodSchema: z.ZodType<TextRecord> = z.object(
-  {
-    text: z.string(),
-    type: z.string().describe("Record type discriminator"),
-    note: z.string().optional(),
-  },
-).describe("A text record request");
+export const TextRecord$zodSchema: z.ZodType<TextRecord> = z.object({
+  note: z.string().optional(),
+  text: z.string(),
+  type: z.string().describe("Record type discriminator"),
+}).describe("A text record");
 
 /**
  * A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides

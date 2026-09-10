@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -94,8 +94,6 @@ trackedFiles:
     last_write_checksum: sha1:86d8c16ca00cae77910cda082bd69e0e30f04b2b
   docs/components/boole.md:
     last_write_checksum: sha1:80b926abc8942b95f14c52589bd8cad99a5b29eb
-  docs/components/imagerecord.md:
-    last_write_checksum: sha1:f3a0ac3e6a12d0dc045d5635cc3e1193d6127e44
   docs/components/chatagentrequest.md:
     last_write_checksum: sha1:792b587b23d807336b618f3a9a8cdfe5f62ff010
   docs/components/chatmodelrequest.md:
@@ -152,12 +150,12 @@ trackedFiles:
     last_write_checksum: sha1:21b533d8d78c4df6a9b0524804e4f9a5db079678
   docs/components/icon.md:
     last_write_checksum: sha1:813e7ac201bc5374bedfe0c6332d8dcf33e0c031
+  docs/components/imagerecord.md:
+    last_write_checksum: sha1:49a95f95a22610560ee5ccd0bc59c982d8a3ccb7
   docs/components/int32enum.md:
     last_write_checksum: sha1:5518112898efda01992c58b37b0958525dfaebd1
   docs/components/intenum.md:
     last_write_checksum: sha1:561100d1b3be9c090d04bfde2bf4fe3aa35634af
-  docs/components/textrecord.md:
-    last_write_checksum: sha1:7928d9170bfd54d52e84a9bf1e07baafe2e4b61d
   docs/components/mcppolicy.md:
     last_write_checksum: sha1:60b354d9fd7391dfc2b8951b7312cc96d9635ec1
   docs/components/metadata.md:
@@ -212,8 +210,6 @@ trackedFiles:
     last_write_checksum: sha1:f01d923f433e794b4434a7e0c9222cfc4f8558b6
   docs/components/reviewtask.md:
     last_write_checksum: sha1:a522de21b6f3d37eb5ba20496fb15181cf41c853
-  docs/components/variantrecord.md:
-    last_write_checksum: sha1:be8aa94c1b2444d15e3f1650a4669e9fdeb7af80
   docs/components/security.md:
     last_write_checksum: sha1:e81b41695a8517ef893d87bd2eb604fd59de21f0
   docs/components/securityoption2.md:
@@ -246,6 +242,8 @@ trackedFiles:
     last_write_checksum: sha1:ef53091b1742147a12d21406a860581dab7ca947
   docs/components/test2response.md:
     last_write_checksum: sha1:d73c56cebb76d85daa5a3c40c6ef00a6ecc623fd
+  docs/components/textrecord.md:
+    last_write_checksum: sha1:c34e641c39e8f5f6f0315f4b7c4c01e7eb0471be
   docs/components/triplenamespaceconflicttest.md:
     last_write_checksum: sha1:3232c484b5e80ab6b9cabe32e25b2ccfc2208840
   docs/components/type.md:
@@ -254,6 +252,8 @@ trackedFiles:
     last_write_checksum: sha1:74bb76c1d9b42c8686a10e6aa14bf6ac143fa0f0
   docs/components/userpassauth.md:
     last_write_checksum: sha1:b95be44d564d7638bdd69df1b7751c0647e631cb
+  docs/components/variantrecord.md:
+    last_write_checksum: sha1:2825c5f694426cc1f9491b33246ee624f59083ac
   docs/components/webhooks/paymentcreatedrequest.md:
     last_write_checksum: sha1:7733bd100c4e4dd9e003303d9e977cd28cd5ba86
   docs/components/webhooks/paymentcreatedresponse.md:
@@ -509,7 +509,7 @@ trackedFiles:
   lib/crystalline/utils.rb:
     last_write_checksum: sha1:b32469851da6f9f729e484ade6a23b38639a652a
   lib/open_api_sdk/components.rb:
-    last_write_checksum: sha1:6428aca9bc5b97e52098f30745af2a38cdbca90d
+    last_write_checksum: sha1:e29606b1076bb65040992bb42b7546a9e617c9ed
   lib/open_api_sdk/components/aloof.rb:
     last_write_checksum: sha1:86782a9b16ced61ae4468ee4d1cf9126f8e0ab18
   lib/open_api_sdk/components/aloof.rbi:
@@ -586,10 +586,6 @@ trackedFiles:
     last_write_checksum: sha1:1e2588284aa7e022cf1a6dcfa036ae9bfeffba07
   lib/open_api_sdk/components/boole.rbi:
     last_write_checksum: sha1:f3a2fbcb772e15820a6b4bea3e5f6f64749bcb03
-  lib/open_api_sdk/components/imagerecord.rb:
-    last_write_checksum: sha1:ee3e99ec00581debd29b3cf4bfd8981992f50909
-  lib/open_api_sdk/components/imagerecord.rbi:
-    last_write_checksum: sha1:7d14b1251da0c23b77da33fb0e63e96ffd18494a
   lib/open_api_sdk/components/chatagentrequest.rb:
     last_write_checksum: sha1:8e2d561843e972bcb5dffb153d20be8f3569acc6
   lib/open_api_sdk/components/chatagentrequest.rbi:
@@ -704,6 +700,10 @@ trackedFiles:
     last_write_checksum: sha1:6e9d55441e6693405b18c191452962d3c583250a
   lib/open_api_sdk/components/icon.rbi:
     last_write_checksum: sha1:464196a947159628af8bd5df810069908e4734af
+  lib/open_api_sdk/components/imagerecord.rb:
+    last_write_checksum: sha1:bce11cc10a6a4f645da5fbd884a2e08300634e78
+  lib/open_api_sdk/components/imagerecord.rbi:
+    last_write_checksum: sha1:c20da0e4cbb9e920e08c654dcb079b1b33ce8058
   lib/open_api_sdk/components/int32enum.rb:
     last_write_checksum: sha1:a2156663b2bd68e27c21fc33bd579a19ef29edf0
   lib/open_api_sdk/components/int32enum.rbi:
@@ -712,10 +712,6 @@ trackedFiles:
     last_write_checksum: sha1:dec83f2e7b646d3d4162acbafc82b380f42a5025
   lib/open_api_sdk/components/intenum.rbi:
     last_write_checksum: sha1:ea3e179db33e768dc044dac20988c1cae2ac1a9b
-  lib/open_api_sdk/components/textrecord.rb:
-    last_write_checksum: sha1:6109648bae16cfe14ff0e5a8bb01b0b3cfde581d
-  lib/open_api_sdk/components/textrecord.rbi:
-    last_write_checksum: sha1:5f905cd2df243a5eb845e4d9408ff324965dfebd
   lib/open_api_sdk/components/mcppolicy.rb:
     last_write_checksum: sha1:01bf7d46b213f5d34043c363c6451fdaa34ea072
   lib/open_api_sdk/components/mcppolicy.rbi:
@@ -824,10 +820,6 @@ trackedFiles:
     last_write_checksum: sha1:3ac7a2c6f69a8af8928af4bed1393cccc80d15bb
   lib/open_api_sdk/components/reviewtask.rbi:
     last_write_checksum: sha1:273f03cd10a627497585cd8b3692f13d7e5b3963
-  lib/open_api_sdk/components/variantrecord.rb:
-    last_write_checksum: sha1:37eeb06862c9e02e9c6c54a2f641d2d0a3e410cf
-  lib/open_api_sdk/components/variantrecord.rbi:
-    last_write_checksum: sha1:eb3f3601c89b141c49b475bed3aea0b3a66f9791
   lib/open_api_sdk/components/security.rb:
     last_write_checksum: sha1:633bc752f6a45ec2623dfd2599e20212239f9561
   lib/open_api_sdk/components/security.rbi:
@@ -896,6 +888,10 @@ trackedFiles:
     last_write_checksum: sha1:4a11ce687bda41fbc37738b990fb424803d38441
   lib/open_api_sdk/components/test2response.rbi:
     last_write_checksum: sha1:ad93d49e584b9ba54bdb1ac9e5e5c46cf2553c2f
+  lib/open_api_sdk/components/textrecord.rb:
+    last_write_checksum: sha1:4c3ee50f9f43b98d1eb77062de8b6f2d1decebea
+  lib/open_api_sdk/components/textrecord.rbi:
+    last_write_checksum: sha1:ad9db0a347f8b89b4dacfbf2628197270eed0dec
   lib/open_api_sdk/components/triplenamespaceconflicttest.rb:
     last_write_checksum: sha1:d0fc9e92fa64b88a3e1538222a7a583a0b88db67
   lib/open_api_sdk/components/triplenamespaceconflicttest.rbi:
@@ -912,6 +908,10 @@ trackedFiles:
     last_write_checksum: sha1:2879e86200af249b267811ffeb0f0218a67da515
   lib/open_api_sdk/components/userpassauth.rbi:
     last_write_checksum: sha1:d2de5f8c7b7cd2d317a54db42d0446924aafa761
+  lib/open_api_sdk/components/variantrecord.rb:
+    last_write_checksum: sha1:37eeb06862c9e02e9c6c54a2f641d2d0a3e410cf
+  lib/open_api_sdk/components/variantrecord.rbi:
+    last_write_checksum: sha1:4d05a72d9f7c5cb36f1b9fb6ae59a27ea21e949a
   lib/open_api_sdk/components/webhooks.rb:
     last_write_checksum: sha1:907b082837193a9049c6171dfbbd6d000d9d17a9
   lib/open_api_sdk/components/webhooks/paymentcreated_request.rb:
@@ -1638,8 +1638,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   test/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  test/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   test/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   test/mockserver/internal/sdk/models/components/shape.go:
@@ -1666,6 +1664,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   test/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  test/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   test/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   test/mockserver/internal/sdk/models/foo/cat.go:

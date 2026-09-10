@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -88,8 +88,6 @@ trackedFiles:
     last_write_checksum: sha1:77c8c08102eb95168372cd467069f9aa6da846e2
   docs/Boole.md:
     last_write_checksum: sha1:a0ac380a11ec6f435f9b84267dca32ff56d62c63
-  docs/ImageRecord.md:
-    last_write_checksum: sha1:08128d754e8ad9366d028689c6dabd5372bff216
   docs/Circle.md:
     last_write_checksum: sha1:f5c7c7298b514c10abe57f7a4fd7627af15443d5
   docs/CircularUnion.md:
@@ -240,6 +238,8 @@ trackedFiles:
     last_write_checksum: sha1:a6661319dddd2d853883c4684267d8c333cdad65
   docs/Icon.md:
     last_write_checksum: sha1:88bf9dda405cbdf6ecae2b64ba247a84cc342405
+  docs/ImageRecord.md:
+    last_write_checksum: sha1:2c9165c3104986cb331bbeaef12eecfb04fef805
   docs/Int32Enum.md:
     last_write_checksum: sha1:711d54665ec63b3ce384bf4e9e005b003f340e14
   docs/IntEnum.md:
@@ -258,8 +258,6 @@ trackedFiles:
     last_write_checksum: sha1:ad9132589c7febc279bf5e387019c786126e2973
   docs/LoginResponseBody.md:
     last_write_checksum: sha1:36164abbbed8aecde6f06e56f16be4c33071ee3c
-  docs/TextRecord.md:
-    last_write_checksum: sha1:a0376e6003ed8aeecd078b7e23c816c5536682c2
   docs/MCPPolicy.md:
     last_write_checksum: sha1:e61d10176cf4ec96dde8ec81685c3ea0ce51268b
   docs/Metadata.md:
@@ -364,8 +362,6 @@ trackedFiles:
     last_write_checksum: sha1:05a70cca29832cd2e7ad6a156664df09a0ab9151
   docs/ReviewTask.md:
     last_write_checksum: sha1:754c3806d88ec8a47940ca4a4f1f4c330848361a
-  docs/VariantRecord.md:
-    last_write_checksum: sha1:879b9bb3cc7f34d3072ab52ddeabe1442ba63b34
   docs/RootGroupOpResponse.md:
     last_write_checksum: sha1:07d4d6d228783ddb75afaeb1c5e488e6d2d22a74
   docs/Security.md:
@@ -428,6 +424,8 @@ trackedFiles:
     last_write_checksum: sha1:1ca65100b56ebb7ee03804ebe6e5c7a956a92392
   docs/TestEnumFormatsResponseBody.md:
     last_write_checksum: sha1:fddef11b37090a46df8d0670ea10ca6c62abc64b
+  docs/TextRecord.md:
+    last_write_checksum: sha1:d64903e6a21ce0860c9aa31bea504d17af67f18a
   docs/TripleNamespaceConflictTest.md:
     last_write_checksum: sha1:0c8c2cc4a02d052ae40cec1275e4e6db37dc37a5
   docs/Type.md:
@@ -446,6 +444,8 @@ trackedFiles:
     last_write_checksum: sha1:c735e0557a7bb6971150b2f561ba87bb4dcce65d
   docs/ValidateResponseBody.md:
     last_write_checksum: sha1:59b4bf48c373dfc3823bac42cb31de1fc2baa2b6
+  docs/VariantRecord.md:
+    last_write_checksum: sha1:c5e2b512a0b0e0458bc1aebd77df240f9d3ebea2
   docs/sdks/conflicts/README.md:
     last_write_checksum: sha1:878c5b62599ab91ccbbdb9cb4100d3c8327626ee
   docs/sdks/group/README.md:
@@ -516,8 +516,6 @@ trackedFiles:
     last_write_checksum: sha1:235204e2d227400f3f836d80c71da6f976a3796b
   src/Boole.php:
     last_write_checksum: sha1:573e414aa99ef545b6de2d971e4c14d14daf9e93
-  src/ImageRecord.php:
-    last_write_checksum: sha1:30cbb6e12bc7ea05808860a4b9e1f0c3f485ec5f
   src/Circle.php:
     last_write_checksum: sha1:b4c139b3cf43d666bb0cc6d8699f27430af7ea5b
   src/Color.php:
@@ -706,6 +704,8 @@ trackedFiles:
     last_write_checksum: sha1:f20a859f61b771558f5ac68ca9154a487517a4ab
   src/Icon.php:
     last_write_checksum: sha1:51c35886b2c590fb8ad305aee74f90a03df1c6e9
+  src/ImageRecord.php:
+    last_write_checksum: sha1:bb89e8d9a1603e6e8766a63cd8a22c13bcd553f6
   src/Int32Enum.php:
     last_write_checksum: sha1:eedef7ba5069fc06cbad2661333c72297751452f
   src/IntEnum.php:
@@ -724,8 +724,6 @@ trackedFiles:
     last_write_checksum: sha1:51e38ead730e23689ca5ec0eb462df8519a5c8b5
   src/LoginResponseBody.php:
     last_write_checksum: sha1:9f1855cb79bcf86c632fb85cd9b42e83a55b11cb
-  src/TextRecord.php:
-    last_write_checksum: sha1:b39e37fcdff81bca09f0c24ff99ea9317d80810d
   src/MCPPolicy.php:
     last_write_checksum: sha1:224d8b941d65b660792a4625c808175b8e1f3f6d
   src/Metadata.php:
@@ -920,6 +918,8 @@ trackedFiles:
     last_write_checksum: sha1:7dce9b14ddace1338c99c7c77ba30988654c16f5
   src/TestGroup.php:
     last_write_checksum: sha1:b7b19db5b9c923c04acd58bf95f48dec889446e6
+  src/TextRecord.php:
+    last_write_checksum: sha1:a89a0789f6ab5d749e1e5b5021554a7d5e043528
   src/TripleNamespaceConflictTest.php:
     last_write_checksum: sha1:ff3e64017f095c86e75984fffee53ebbaa97d127
   src/Type.php:

@@ -5,7 +5,7 @@
 
 module OpenApiSDK
   module Components
-    # A text record request
+    # A text record
     class TextRecord
       extend T::Sig
       include Crystalline::MetadataFields
@@ -13,11 +13,7 @@ module OpenApiSDK
       # Record type discriminator
       field :type, ::String, {'format_json': {'letter_case': ::OpenApiSDK::Utils.field_name("type"), required: true}}
 
-      field(
-        :text,
-        ::String,
-        {'format_json': {'letter_case': ::OpenApiSDK::Utils.field_name("text"), required: true}}
-      )
+      field :text, ::String, {'format_json': {'letter_case': ::OpenApiSDK::Utils.field_name("text"), required: true}}
 
       field(
         :note,

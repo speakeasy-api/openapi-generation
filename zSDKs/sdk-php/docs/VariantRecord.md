@@ -22,3 +22,4 @@ OpenAPI\TextRecord $value = /* values here */
 */
 OpenAPI\ImageRecord $value = /* values here */
 ```
+

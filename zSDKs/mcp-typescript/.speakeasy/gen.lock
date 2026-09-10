@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -227,8 +227,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   src/__tests__/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  src/__tests__/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   src/__tests__/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   src/__tests__/mockserver/internal/sdk/models/components/shape.go:
@@ -255,6 +253,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   src/__tests__/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  src/__tests__/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   src/__tests__/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   src/__tests__/mockserver/internal/sdk/models/foo/cat.go:
@@ -881,8 +881,6 @@ trackedFiles:
     last_write_checksum: sha1:7b9f11dbe2e1f74a602150893b23a261ff202c26
   src/models/reviewtask.ts:
     last_write_checksum: sha1:025864309dfa6b2e2449b18ed315d2b30eee5862
-  src/models/variantrecord.ts:
-    last_write_checksum: sha1:3574ce02779b0eafcf9156aa13a9ff76de70eaa3
   src/models/rootgroupopop.ts:
     last_write_checksum: sha1:2fb1a46bb0ff2d528cff7af198eb80186af63200
   src/models/security.ts:
@@ -923,6 +921,8 @@ trackedFiles:
     last_write_checksum: sha1:c1dd027095ae470a69cf5c2465c5bf0f632cfb6b
   src/models/validateop.ts:
     last_write_checksum: sha1:25143532692f9709528d5084bba245731b90bf01
+  src/models/variantrecord.ts:
+    last_write_checksum: sha1:470f96753b20bcc4cf789c7e4e3c86cfe224aa62
   src/tool-names.ts:
     last_write_checksum: sha1:740ae4584f0f9d83325d31fa99ddaf1e887569ba
   src/types/async.ts:

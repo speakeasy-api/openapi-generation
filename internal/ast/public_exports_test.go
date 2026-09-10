@@ -755,25 +755,3 @@ func (s publicExportShape) add(path []string) {
 	}
 	child.add(path[1:])
 }
-
-func publicExportShapeNestedPaths(shape publicExportShape) []string {
-	return publicExportShapePaths(shape, nil, true)
-}
-
-func publicExportShapePaths(shape publicExportShape, prefix []string, nestedOnly bool) []string {
-	var paths []string
-	keys := make([]string, 0, len(shape))
-	for key := range shape {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
-
-	for _, key := range keys {
-		path := append(slices.Clone(prefix), key)
-		if !nestedOnly || len(path) > 1 {
-			paths = append(paths, strings.Join(path, "."))
-		}
-		paths = append(paths, publicExportShapePaths(shape[key], path, nestedOnly)...)
-	}
-	return paths
-}

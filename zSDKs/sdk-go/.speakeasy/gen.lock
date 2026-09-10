@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -182,8 +182,6 @@ trackedFiles:
     last_write_checksum: sha1:1dec0d8d3d492289243938bb7db3ba4b9b4d5d4d
   docs/boole.md:
     last_write_checksum: sha1:22044a36616e227cff1852396eddc1a40a42ba77
-  docs/imagerecord.md:
-    last_write_checksum: sha1:b23f00290b34cbd3f7bffdda950e1ef76be1b893
   docs/chatagentrequest.md:
     last_write_checksum: sha1:83cd351ccf9cdf48f1b6d12aa8523eab663d201e
   docs/chatmodelrequest.md:
@@ -358,6 +356,8 @@ trackedFiles:
     last_write_checksum: sha1:7c40945dac218ce5e5e11e7c907d27a3ea14c417
   docs/icon.md:
     last_write_checksum: sha1:7db7538415a31811352b94ec23da94aa99f938f4
+  docs/imagerecord.md:
+    last_write_checksum: sha1:f0b5a62dfc21032c5627221430a66b761d030c04
   docs/int32enum.md:
     last_write_checksum: sha1:78a1c00d76baac33d393cf88aec0b72c01b58405
   docs/integermapformat.md:
@@ -378,8 +378,6 @@ trackedFiles:
     last_write_checksum: sha1:3547791d02cc9dde4807488bb8fcced6a3e5b33d
   docs/loginresponsebody.md:
     last_write_checksum: sha1:a53ea89dd4b46a4bb05fb57187771e9e41b7010f
-  docs/textrecord.md:
-    last_write_checksum: sha1:061169f40e1b4dfe637a03d19d2c23085fcf42e6
   docs/mcppolicy.md:
     last_write_checksum: sha1:fadc418ef41054170eea4aa2b4ddafcb2585990e
   docs/metadata.md:
@@ -494,8 +492,6 @@ trackedFiles:
     last_write_checksum: sha1:62bc2d7f47f84c004e8e583185cf26c8b587f168
   docs/reviewtask.md:
     last_write_checksum: sha1:0ca83360679edf5792b91b803367f0a33a6e1018
-  docs/variantrecord.md:
-    last_write_checksum: sha1:b26763d4524276bc183fabd7087dde71491e50a8
   docs/rootgroupopresponse.md:
     last_write_checksum: sha1:ad457c206c0341765d6ed24d4d08ffd389ba945b
   docs/sdks/conflicts/README.md:
@@ -586,6 +582,8 @@ trackedFiles:
     last_write_checksum: sha1:6c3ef90cfb9d50231adc38fc79992a0c94cb008e
   docs/testenumformatsresponsebody.md:
     last_write_checksum: sha1:9f2f514b4ff0cd447dd777ef11ada38481c0fe25
+  docs/textrecord.md:
+    last_write_checksum: sha1:fe202d49f3f7cf4c9ab2531ff4ef9db3713efb2d
   docs/triplenamespaceconflicttest.md:
     last_write_checksum: sha1:9e795de538a628623e509dfd1c7b58692f8bb6d9
   docs/type.md:
@@ -606,6 +604,8 @@ trackedFiles:
     last_write_checksum: sha1:8e30f44af4628b099ddd4d844a08fd41b9ae8f67
   docs/validateresponsebody.md:
     last_write_checksum: sha1:3f13dd1c44f776ac5ebf5257ea34f92c298c2d0f
+  docs/variantrecord.md:
+    last_write_checksum: sha1:b26763d4524276bc183fabd7087dde71491e50a8
   empty.go:
     last_write_checksum: sha1:7f935e653801d59398398e335b0859c66d08dca8
   enum.go:
@@ -784,8 +784,6 @@ trackedFiles:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   reviewtask.go:
     last_write_checksum: sha1:546595f1bbba266d52eeb86a6efb46b28199b657
-  variantrecord.go:
-    last_write_checksum: sha1:8009ceee7150c4223621b86cfdc3071a1c1b725b
   rootgroupopop.go:
     last_write_checksum: sha1:ae99efa01cd9e9c3c8c17c273155a99cfbb69d95
   sdk.go:
@@ -1042,8 +1040,6 @@ trackedFiles:
     last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
   tests/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
-  tests/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
   tests/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   tests/mockserver/internal/sdk/models/components/shape.go:
@@ -1070,6 +1066,8 @@ trackedFiles:
     last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
   tests/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  tests/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
   tests/mockserver/internal/sdk/models/foo/animal.go:
     last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
   tests/mockserver/internal/sdk/models/foo/cat.go:
@@ -1290,6 +1288,8 @@ trackedFiles:
     last_write_checksum: sha1:d00bd2d41c7d92fe902840f68fee905f400e7ebb
   validateop.go:
     last_write_checksum: sha1:3eb8a49675263e5021361a4b9bdf190f6a96dac5
+  variantrecord.go:
+    last_write_checksum: sha1:1aedd293e93deed7080ca24b5a9e6b6e056403f5
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:
