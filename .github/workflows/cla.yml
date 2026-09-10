@@ -43,6 +43,6 @@ jobs:
           PERSONAL_ACCESS_TOKEN: ${{ steps.app-token.outputs.token }}
         with:
           path-to-signatures: signatures/version1/cla.json
-          path-to-document: https://github.com/speakeasy-api/openapi-generation-release/blob/main/CLA.md
+          path-to-document: https://github.com/speakeasy-api/openapi-generation/blob/main/CLA.md
           branch: cla-signatures
           allowlist: speakeasy-api/*,dependabot[bot],renovate[bot],speakeasy-generator-bot[bot],speakeasybot,cubic-dev-ai[bot],cursoragent,claude,linear-code,linear-code[bot]

@@ -27,7 +27,7 @@ jobs:
   dispatch:
     if: >-
       ${{
-        github.repository_id == '1364456527' && github.repository == 'speakeasy-api/openapi-generation-release'
+        github.repository_id == '1364456527' && github.repository == 'speakeasy-api/openapi-generation'
       }}
     name: Snapshot tests dispatch
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
               repo: 'openapi-generation-snapshots',
             };
             const allowedGeneratorRepositories = new Map([
-              [1364456527, 'speakeasy-api/openapi-generation-release'],
+              [1364456527, 'speakeasy-api/openapi-generation'],
             ]);
             const approvalAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
             // Only generic selectors cross the repository boundary. Customer/repository

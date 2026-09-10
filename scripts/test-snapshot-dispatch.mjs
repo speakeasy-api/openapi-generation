@@ -33,7 +33,7 @@ const archiveRepository = {
 };
 const canonicalRepository = {
   id: 1364456527,
-  full_name: 'speakeasy-api/openapi-generation-release',
+  full_name: 'speakeasy-api/openapi-generation',
 };
 const privateRepository = canonicalRepository;
 const basePullRequest = {
@@ -107,7 +107,7 @@ async function execute({
   const context = {
     actor: 'contributor',
     eventName,
-    repo: { owner: 'speakeasy-api', repo: 'openapi-generation-release', ...contextRepo },
+    repo: { owner: 'speakeasy-api', repo: 'openapi-generation', ...contextRepo },
     runId: 987,
     payload: eventName === 'issue_comment' ? {
       action,
@@ -161,7 +161,7 @@ async function captureRejection(promise, pattern) {
 
 test('workflow is metadata-only and least-privileged', () => {
   assert.match(workflow, /pull_request_target:/);
-  assert.match(workflow, /github\.repository_id == '1364456527' && github\.repository == 'speakeasy-api\/openapi-generation-release'/);
+  assert.match(workflow, /github\.repository_id == '1364456527' && github\.repository == 'speakeasy-api\/openapi-generation'/);
   assert.doesNotMatch(workflow, /github\.repository_id == '525818195'/);
   assert.doesNotMatch(workflow, /github\.repository_id == '1327468509'/);
   assert.match(workflow, /permission-contents: write/);
@@ -306,7 +306,7 @@ test('only exact private repository identity pairs are active for every event sh
     },
     {
       repository: { id: archiveRepository.id, full_name: canonicalRepository.full_name },
-      contextRepo: { repo: 'openapi-generation-release' },
+      contextRepo: { repo: 'openapi-generation' },
       pullRequest: { labels: labels('snapshot-go') },
     },
     {
@@ -345,7 +345,7 @@ test('only exact private repository identity pairs are active for every event sh
 test('the canonical repository identity dispatches trusted metadata', async () => {
   const result = await execute({
     repository: canonicalRepository,
-    contextRepo: { repo: 'openapi-generation-release' },
+    contextRepo: { repo: 'openapi-generation' },
     pullRequest: {
       labels: labels('snapshot-go'),
       base: { repo: canonicalRepository },
