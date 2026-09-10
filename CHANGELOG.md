@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.937.11] - 2026-09-10
+### :bug: Bug Fixes
+- [`7da072e`](https://github.com/speakeasy-api/openapi-generation/commit/7da072e66516c8d32e8f1bcba35b38ca4e7c6ca3) - skip releases without new commits *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.937.10] - 2026-09-10
 ### :wrench: Chores
 - [`adb393e`](https://github.com/speakeasy-api/openapi-generation-release/commit/adb393e4911274911e7845b844d9b7b91d031130) - refresh SDK fixture expectations ([#3](https://github.com/speakeasy-api/openapi-generation-release/pull/3)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -20084,3 +20089,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.937.9]: https://github.com/speakeasy-api/openapi-generation-release/releases/tag/v2.937.9
 
 [v2.937.10]: https://github.com/speakeasy-api/openapi-generation-release/compare/v2.937.9...v2.937.10
+[v2.937.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.10...v2.937.11
