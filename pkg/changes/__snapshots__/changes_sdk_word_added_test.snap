@@ -1,0 +1,72 @@
+
+[TestChanges_MethodNamesWithSdkWord/field_added_request - 1]
+# Test: field_added_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      tags:
+      - abc.xyz
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        existingField:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      tags:
+      - abc.xyz
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        existingField:
+                          type: string
+                        c:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.Abc.Xyz.CreateUser(): **Added** request.Request.A.B.ExistingField
+
+---

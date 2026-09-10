@@ -1,0 +1,9 @@
+{{- $typeDef := .Local -}}
+{{- $snippet := templateModelSnippet $typeDef -}}
+{{- if $snippet}}
+## Example Usage
+
+```ruby
+{{ $snippet }}
+```
+{{end}}

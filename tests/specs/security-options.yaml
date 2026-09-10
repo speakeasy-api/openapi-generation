@@ -1,0 +1,159 @@
+openapi: 3.1.0
+info:
+  title: Security Options Test
+  version: 0.1.0
+  summary: |
+    Minimal spec to test that operation-level security ordering is preserved
+    when maintainOpenAPIOrder is enabled. Exercises hoisting logic where the
+    SDK must respect the declared order of security alternatives.
+servers:
+  - url: http://localhost:35123
+    description: The default server (httpbin)
+    x-speakeasy-server-id: default-server
+  - url: http://localhost:35456
+    description: API test server (speakeasy-api-test-service)
+    x-speakeasy-server-id: api-test-service
+security:
+  - apiKeyAuth: []
+  - authCode: [edit:user]
+    projectId: []
+  - basicHttp: []
+  - accessToken: []
+tags:
+  - name: auth
+    description: Endpoints for testing authentication.
+paths:
+  /auth/token#apiKeyFirst:
+    get:
+      operationId: hoistedSecurityOptionApiKeyFirst
+      summary: ApiKey or AccessToken
+      tags:
+        - auth
+      servers:
+        - url: http://localhost:35456
+      security:
+        - apiKeyAuth: []
+        - accessToken: []
+      responses:
+        "200":
+          $ref: "#/components/responses/tokenAuthResponse"
+        "401":
+          description: Unsuccessful authentication.
+  /auth/token#hoistedAccessTokenFirst:
+    get:
+      operationId: hoistedSecurityOptionAccessTokenFirst
+      description: AccessToken or ApiKey
+      tags:
+        - auth
+      servers:
+        - url: http://localhost:35456
+      security:
+        - accessToken: []
+        - apiKeyAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/tokenAuthResponse"
+        "401":
+          description: Unsuccessful authentication.
+  /basic-auth/testUser/testPass#basicHttpGlobal:
+    get:
+      operationId: globalSecurityOptionBasicHttp
+      tags:
+        - auth
+      responses:
+        "200":
+          description: Successful authentication.
+          content:
+            application/json:
+              schema:
+                title: basicAuth
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    type: string
+                required:
+                  - authenticated
+                  - user
+        "401":
+          description: Unsuccessful authentication.
+  /basic-auth/testUser/testPass#basicHttpOnly:
+    get:
+      operationId: hoistedSecurityOptionBasicHttpOnly
+      tags:
+        - auth
+      security:
+        - basicHttp: []
+      responses:
+        "200":
+          description: Successful authentication.
+          content:
+            application/json:
+              schema:
+                title: basicAuth
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    type: string
+                required:
+                  - authenticated
+                  - user
+        "401":
+          description: Unsuccessful authentication.
+components:
+  responses:
+    tokenAuthResponse:
+      description: Successful authentication.
+      content:
+        application/json:
+          schema:
+            title: token
+            type: object
+            properties:
+              authenticated:
+                type: boolean
+              token:
+                type: string
+            required:
+              - authenticated
+              - token
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Authenticate using an API Key generated via our platform.
+      x-speakeasy-example: Token YOUR_API_KEY
+      x-speakeasy-name-override: ApiKeyAuth
+    accessToken:
+      type: http
+      scheme: bearer
+      x-speakeasy-example: ghp_xxxx
+      x-speakeasy-name-override: AccessToken
+    basicHttp:
+      type: http
+      scheme: basic
+      x-speakeasy-example: testUser;testPass
+      x-speakeasy-name-override: BasicHttp
+    authCode:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            add:user: Allows adding new user
+            edit:user: Allows modifying user information
+            delete:user: Allows deleting user
+    projectId:
+      type: apiKey
+      in: header
+      name: X-Project-ID
+      description: Identifies the project for usage tracking
+    bearerAuth:
+      type: http
+      scheme: bearer
+      x-speakeasy-example: <YOUR_JWT>

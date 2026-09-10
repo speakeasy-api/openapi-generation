@@ -1,0 +1,1365 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	{{- if isAnyInteractiveEnabled}}
+	"io"
+	{{- end}}
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	{{- if and (isInteractiveModeEnabled) (not (interactiveByDefault))}}
+	"github.com/stretchr/testify/require"
+	{{- end}}
+
+	"{{getGolangPackage}}/internal/cli"
+	{{- if and (isInteractiveModeEnabled) (not (interactiveByDefault))}}
+	"{{getGolangPackage}}/internal/clierrors"
+	{{- end}}
+	"{{getGolangPackage}}/internal/config"
+	{{- if and (isInteractiveModeEnabled) (not (interactiveByDefault))}}
+	"{{getGolangPackage}}/internal/flagutil"
+	{{- end}}
+	{{- if isInteractiveModeEnabled}}
+	"{{getGolangPackage}}/internal/interactive"
+	{{- end}}
+	"{{getGolangPackage}}/internal/output"
+)
+
+// CLITestHarness executes CLI commands in-process for testing.
+type CLITestHarness struct {
+	t            *testing.T
+	stdout       *bytes.Buffer
+	stderr       *bytes.Buffer
+	testName     string
+	instanceID   string
+	envOverrides map[string]string
+}
+
+// NewCLITestHarness creates a new test harness for CLI command execution.
+func NewCLITestHarness(t *testing.T) *CLITestHarness {
+	t.Helper()
+	return &CLITestHarness{
+		t:          t,
+		stdout:     new(bytes.Buffer),
+		stderr:     new(bytes.Buffer),
+		instanceID: genTestInstanceID(),
+	}
+}
+
+{{- if and (isInteractiveModeEnabled) (not (interactiveByDefault))}}
+
+type interactionGatePrompter struct {
+	calls int
+	value string
+	err   error
+}
+
+func (p *interactionGatePrompter) Prompt(_ *cobra.Command, fields []interactive.PromptField) ([]interactive.PromptAnswer, error) {
+	p.calls++
+	if p.err != nil {
+		return nil, p.err
+	}
+	answers := make([]interactive.PromptAnswer, len(fields))
+	for i, field := range fields {
+		if field.Required {
+			answers[i] = interactive.PromptAnswer{Set: true, Values: []string{p.value}}
+		}
+	}
+	return answers, nil
+}
+
+// TestNonInteractiveDefaultRequiresExplicitOptIn covers the false-default
+// runtime contract even for generated variants that do not copy a group-specific
+// test directory. An injected prompter bypasses only the TTY check, so the
+// --interactive flag remains the required opt-in and --no-interactive still wins.
+func TestNonInteractiveDefaultRequiresExplicitOptIn(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	assert.NoError(t, err)
+	ctx := interactive.WithPrompter(context.Background(), &interactionGatePrompter{})
+	root.SetContext(ctx)
+
+	assert.False(t, interactive.IsInteractive(root))
+	assert.NoError(t, root.PersistentFlags().Set("interactive", "true"))
+	assert.True(t, interactive.IsInteractive(root))
+	assert.NoError(t, root.PersistentFlags().Set("no-interactive", "true"))
+	assert.False(t, interactive.IsInteractive(root))
+}
+
+func TestExplorerHandoffPreservesInteractionIntent(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+
+	t.Run("opts the selected command into prompting", func(t *testing.T) {
+		sourceRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+		freshRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+
+		var executedArgs []string
+		selectedCmd := &cobra.Command{
+			Use:  "selected-command <value>",
+			Args: cobra.ExactArgs(1),
+			Run: func(_ *cobra.Command, args []string) {
+				executedArgs = append([]string(nil), args...)
+			},
+		}
+		argSpecs := []interactive.ArgSpec{
+			{Name: "value", Required: true},
+		}
+		assert.NoError(t, interactive.Declare(selectedCmd, interactive.CommandSpec{Args: argSpecs}))
+		freshRoot.AddCommand(selectedCmd)
+		interactive.Intercept(selectedCmd)
+
+		prompter := &interactionGatePrompter{value: "prompted-value"}
+		selected := []string{"selected-command"}
+		ctx := interactive.WithPrompter(context.Background(), prompter)
+		err = cli.ExecuteRoot(ctx, freshRoot, cli.ExplorerHandoffArgs(sourceRoot, selected))
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, prompter.calls)
+		assert.Equal(t, []string{"prompted-value"}, executedArgs)
+		assert.Equal(t, []string{"selected-command"}, selected, "handoff must not mutate explorer-owned args")
+	})
+
+	t.Run("selected no-interactive override suppresses prompting", func(t *testing.T) {
+		sourceRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+		freshRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+
+		executed := false
+		selectedCmd := &cobra.Command{
+			Use:  "selected-command <value>",
+			Args: cobra.ExactArgs(1),
+			Run: func(_ *cobra.Command, _ []string) {
+				executed = true
+			},
+		}
+		argSpecs := []interactive.ArgSpec{
+			{Name: "value", Required: true},
+		}
+		assert.NoError(t, interactive.Declare(selectedCmd, interactive.CommandSpec{Args: argSpecs}))
+		freshRoot.AddCommand(selectedCmd)
+		interactive.Intercept(selectedCmd)
+
+		prompter := &interactionGatePrompter{value: "prompted-value"}
+		ctx := interactive.WithPrompter(context.Background(), prompter)
+		err = cli.ExecuteRoot(ctx, freshRoot, cli.ExplorerHandoffArgs(sourceRoot, []string{
+			"selected-command", "--no-interactive",
+		}))
+
+		assert.Error(t, err)
+		assert.Zero(t, prompter.calls)
+		assert.False(t, executed)
+	})
+
+	t.Run("source no-interactive override survives handoff", func(t *testing.T) {
+		sourceRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+		assert.NoError(t, sourceRoot.PersistentFlags().Set("no-interactive", "true"))
+		freshRoot, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+
+		executed := false
+		selectedCmd := &cobra.Command{
+			Use:  "selected-command <value>",
+			Args: cobra.ExactArgs(1),
+			Run: func(_ *cobra.Command, _ []string) {
+				executed = true
+			},
+		}
+		argSpecs := []interactive.ArgSpec{
+			{Name: "value", Required: true},
+		}
+		assert.NoError(t, interactive.Declare(selectedCmd, interactive.CommandSpec{Args: argSpecs}))
+		freshRoot.AddCommand(selectedCmd)
+		interactive.Intercept(selectedCmd)
+
+		prompter := &interactionGatePrompter{value: "prompted-value"}
+		ctx := interactive.WithPrompter(context.Background(), prompter)
+		err = cli.ExecuteRoot(ctx, freshRoot, cli.ExplorerHandoffArgs(sourceRoot, []string{"selected-command"}))
+
+		assert.Error(t, err)
+		assert.Zero(t, prompter.calls)
+		assert.False(t, executed)
+	})
+}
+
+// The explore hand-off executes the selected command on a fresh command tree
+// in the same process. Rendering flags given to the explore invocation must
+// still shape the selected command's output: ExplorerHandoffArgs forwards
+// them in argv and the fresh ExecuteRoot captures them again. The source
+// root's flags are set directly (as the other hand-off tests do) so the test
+// never launches explore and stays independent of whether a TTY is attached.
+func TestExplorerHandoffPreservesRenderingFlags(t *testing.T) {
+	h := NewCLITestHarness(t)
+
+	handoff := func(t *testing.T, sourceFlags map[string]string, selected []string) (string, []string) {
+		t.Helper()
+		sourceRoot, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		for name, value := range sourceFlags {
+			require.NoError(t, sourceRoot.PersistentFlags().Set(name, value))
+		}
+
+		freshRoot, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		var stdout bytes.Buffer
+		freshRoot.SetOut(&stdout)
+		freshRoot.SetErr(io.Discard)
+		freshRoot.AddCommand(&cobra.Command{
+			Use: "selected-command",
+			RunE: func(cmd *cobra.Command, _ []string) error {
+				return output.Result(cmd, map[string]interface{}{"name": "selected", "count": 2})
+			},
+		})
+		args := cli.ExplorerHandoffArgs(sourceRoot, selected)
+		require.NoError(t, cli.ExecuteRoot(context.Background(), freshRoot, args))
+		return stdout.String(), args
+	}
+
+	t.Run("output-format json reaches the selected command", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		stdout, args := handoff(t, map[string]string{"output-format": "json"}, []string{"selected-command"})
+		assert.Contains(t, args, "--output-format=json")
+		var decoded map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(stdout), &decoded), stdout)
+		assert.Equal(t, "selected", decoded["name"])
+	})
+
+	t.Run("jq projection reaches the selected command", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		stdout, args := handoff(t, map[string]string{"output-format": "json", "jq": ".count"}, []string{"selected-command"})
+		assert.Contains(t, args, "--jq=.count")
+		assert.Equal(t, "2", strings.TrimSpace(stdout))
+	})
+
+	t.Run("raw-output reaches the selected command", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		quoted, _ := handoff(t, map[string]string{"output-format": "json", "jq": ".name"}, []string{"selected-command"})
+		assert.Equal(t, `"selected"`, strings.TrimSpace(quoted))
+
+		h.resetAndSetupEnv()
+		raw, args := handoff(t, map[string]string{"output-format": "json", "jq": ".name", "raw-output": "true"}, []string{"selected-command"})
+		assert.Contains(t, args, "--raw-output=true")
+		assert.Equal(t, "selected", strings.TrimSpace(raw))
+	})
+
+	t.Run("color reaches the selected command", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		_, args := handoff(t, map[string]string{"color": "never"}, []string{"selected-command"})
+		assert.Contains(t, args, "--color=never")
+	})
+
+	t.Run("no rendering flags leaves the selected command untouched", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		_, args := handoff(t, nil, []string{"selected-command"})
+		for _, arg := range args {
+			assert.NotContains(t, arg, "--output-format")
+			assert.NotContains(t, arg, "--jq")
+			assert.NotContains(t, arg, "--raw-output")
+			assert.NotContains(t, arg, "--color")
+		}
+	})
+
+	t.Run("a later invocation does not inherit earlier rendering flags", func(t *testing.T) {
+		h.resetAndSetupEnv()
+		projected, _ := handoff(t, map[string]string{"output-format": "json", "jq": ".count"}, []string{"selected-command"})
+		assert.Equal(t, "2", strings.TrimSpace(projected))
+		// Same process, no harness reset: the next parse must start clean.
+		plain, _ := handoff(t, nil, []string{"selected-command"})
+		assert.NotEqual(t, "2", strings.TrimSpace(plain))
+		assert.Contains(t, plain, "selected")
+	})
+}
+
+// These command-specific cases pin the review fixture contract and skip on other generated APIs.
+func skipUnlessCommand(t *testing.T, name string) {
+	t.Helper()
+	root, err := cli.NewRootCommand()
+	if err != nil {
+		t.Fatalf("build command tree: %v", err)
+	}
+	if _, _, err := root.Find([]string{name}); err != nil {
+		t.Skipf("command %q is not generated", name)
+	}
+}
+
+func TestNonInteractiveDefaultDoesNotCallPrompterForRequiredOperation(t *testing.T) {
+	skipUnlessCommand(t, "update-user")
+	p := &interactionGatePrompter{}
+	h := NewCLITestHarness(t)
+	err := h.RunWithPrompter([]string{"update-user"}, p)
+	require.Error(t, err)
+	var missing *flagutil.MissingRequiredFlagError
+	require.ErrorAs(t, err, &missing)
+	assert.Equal(t, "missing required flag: --id", missing.Error())
+	assert.Zero(t, p.calls)
+}
+
+func TestNonInteractiveDefaultBareRequiredIntentIsUsageError(t *testing.T) {
+	skipUnlessCommand(t, "invite")
+	p := &interactionGatePrompter{}
+	h := NewCLITestHarness(t)
+	err := h.RunWithPrompter([]string{"invite"}, p)
+	// A bare required-input intent that cannot prompt is a usage failure:
+	// help goes to stderr, stdout stays empty, and the process exits 2.
+	require.Error(t, err)
+	assert.Zero(t, p.calls)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Contains(t, h.GetStderr(), "Usage:")
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+}
+
+func TestExplicitInteractivePromptsForRequiredOperation(t *testing.T) {
+	skipUnlessCommand(t, "update-user")
+	stop := fmt.Errorf("stop after prompt")
+	p := &interactionGatePrompter{err: stop}
+	h := NewCLITestHarness(t)
+	err := h.RunWithPrompter([]string{"--interactive", "update-user"}, p)
+	require.ErrorIs(t, err, stop)
+	assert.Equal(t, 1, p.calls)
+}
+
+func TestExplicitInteractiveUsageDoesNotPrompt(t *testing.T) {
+	skipUnlessCommand(t, "update-user")
+	p := &interactionGatePrompter{}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithPrompter([]string{"--interactive", "update-user", "--usage"}, p))
+	assert.Zero(t, p.calls)
+	assert.Contains(t, h.GetStdout(), `cmd "update-user"`)
+}
+
+type countingReader struct {
+	reads int
+}
+
+func (r *countingReader) Read(_ []byte) (int, error) {
+	r.reads++
+	return 0, io.EOF
+}
+
+func TestNonInteractiveDefaultConfigureUsesFlagOnlyPath(t *testing.T) {
+	t.Run("no flags never reads stdin or writes config", func(t *testing.T) {
+		in := &countingReader{}
+		h := NewCLITestHarness(t)
+		err := h.RunPolicyDefaultWithInput([]string{"configure"}, in)
+		require.Error(t, err)
+		assert.Zero(t, in.reads)
+		{{- if isInteractiveAuthEnabled}}
+		assert.Contains(t, err.Error(), "--interactive")
+		{{- end}}
+		assert.Contains(t, err.Error(), config.GetConfigPath())
+		_, statErr := os.Stat(config.GetConfigPath())
+		assert.True(t, os.IsNotExist(statErr), "configure without values must not create a config file")
+	})
+
+	{{- if and (hasGlobalSecurity) (templatePolicyTestSecurityFlag)}}
+	t.Run("credential flag stores", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunPolicyDefault([]string{"configure", "--{{templatePolicyTestSecurityFlag}}", "configured-value"}))
+		_, err := os.Stat(config.GetConfigPath())
+		require.NoError(t, err)
+	})
+	{{- end}}
+}
+
+{{- if and (isInteractiveAuthEnabled) (hasGlobalSecurity)}}
+func TestNonInteractiveDefaultAuthLoginUsesFlagOnlyPath(t *testing.T) {
+	t.Run("no flags never reads stdin", func(t *testing.T) {
+		in := &countingReader{}
+		h := NewCLITestHarness(t)
+		err := h.RunPolicyDefaultWithInput([]string{"auth", "login"}, in)
+		require.Error(t, err)
+		assert.Zero(t, in.reads)
+		assert.Contains(t, err.Error(), "--interactive")
+		assert.Contains(t, err.Error(), config.GetConfigPath())
+	})
+
+	{{- if templatePolicyTestSecurityFlag}}
+	t.Run("credential flag stores", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunPolicyDefault([]string{"auth", "login", "--{{templatePolicyTestSecurityFlag}}", "auth-value"}))
+		_, err := os.Stat(config.GetConfigPath())
+		require.NoError(t, err)
+	})
+	{{- end}}
+
+	t.Run("agent mode no flags uses the ordinary structured usage error", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunPolicyDefault([]string{"--agent-mode", "auth", "login"})
+		require.Error(t, err)
+		assert.Contains(t, h.GetStderr(), `"error_reason": "CLI_VALIDATION"`)
+		assert.Contains(t, h.GetStderr(), "--interactive")
+		assert.NotContains(t, h.GetStderr(), "auth_login_blocked")
+	})
+
+	{{- if templatePolicyTestSecurityFlag}}
+	t.Run("agent mode credential flag stores", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunPolicyDefault([]string{"--agent-mode", "auth", "login", "--{{templatePolicyTestSecurityFlag}}", "agent-auth-value"}))
+		_, err := os.Stat(config.GetConfigPath())
+		require.NoError(t, err)
+	})
+	{{- end}}
+}
+{{- end}}
+
+func TestAgentModeConfigureUsesFlagOnlyPath(t *testing.T) {
+	t.Run("no flags uses the ordinary structured usage error", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunPolicyDefault([]string{"--agent-mode", "configure"})
+		require.Error(t, err)
+		assert.Contains(t, h.GetStderr(), `"error_reason": "CLI_VALIDATION"`)
+		{{- if isInteractiveAuthEnabled}}
+		assert.Contains(t, h.GetStderr(), "--interactive")
+		{{- end}}
+		assert.NotContains(t, h.GetStderr(), "configure_blocked")
+	})
+
+	{{- if and (hasGlobalSecurity) (templatePolicyTestSecurityFlag)}}
+	t.Run("credential flag stores", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunPolicyDefault([]string{"--agent-mode", "configure", "--{{templatePolicyTestSecurityFlag}}", "agent-value"}))
+		_, err := os.Stat(config.GetConfigPath())
+		require.NoError(t, err)
+	})
+	{{- end}}
+}
+
+func TestExploreGuardsBeforeBubbleTea(t *testing.T) {
+	for name, args := range map[string][]string{
+		"no-interactive":    {"--no-interactive", "explore"},
+		"interactive-false": {"--interactive=false", "explore"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunPolicyDefault(args)
+			require.EqualError(t, err, "explore conflicts with --no-interactive/--interactive=false")
+		})
+	}
+
+	t.Run("non-terminal", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunPolicyDefault([]string{"explore"})
+		require.EqualError(t, err, "explore requires an interactive terminal (stdin and stdout must be a TTY)")
+	})
+
+	t.Run("usage", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunPolicyDefault([]string{"explore", "--usage"}))
+		assert.Contains(t, h.GetStdout(), `cmd "explore"`)
+	})
+}
+{{- end}}
+
+{{- if not (agentEnvironmentDetection)}}
+
+// TestAgentEnvironmentVariablesDoNotEnableAgentMode verifies that explicit-only
+// builds never infer caller identity from the built-in compatibility allowlist.
+func TestAgentEnvironmentVariablesDoNotEnableAgentMode(t *testing.T) {
+	for _, envVar := range []string{
+		"CLAUDECODE", "CLAUDE_CODE", "CURSOR_AGENT", "CODEX", "AIDER", "CLINE",
+		"WINDSURF_AGENT", "GITHUB_COPILOT", "AMAZON_Q", "GEMINI_CODE_ASSIST",
+		"SRC_CODY", "FORCE_AGENT_MODE",
+	} {
+		t.Run(envVar, func(t *testing.T) {
+			h := NewCLITestHarness(t).WithEnv(envVar, "1")
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			assert.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+
+			err = cli.ExecuteRoot(context.Background(), root, []string{"no-such-command"})
+			assert.Error(t, err)
+			assert.False(t, output.IsAgentMode())
+			{{- if classifiedErrors}}
+			assert.True(t, output.IsRendered(err))
+			assert.Contains(t, h.stderr.String(), "Error (validation_error):")
+			assert.NotContains(t, h.stderr.String(), `"error_type"`,
+				"ignored environment variables must not select the agent JSON renderer")
+			{{- else}}
+			assert.False(t, output.IsRendered(err))
+			assert.Empty(t, strings.TrimSpace(h.stderr.String()))
+			{{- end}}
+		})
+	}
+}
+
+// TestExplicitAgentModeRendersPreparseErrors verifies that removing environment
+// detection does not weaken the explicit flag's early-error contract.
+func TestExplicitAgentModeRendersPreparseErrors(t *testing.T) {
+	h := NewCLITestHarness(t)
+	t.Cleanup(output.ResetAgentMode)
+	err := h.RunRaw([]string{"--agent-mode", "no-such-command"})
+	assert.Error(t, err)
+	assert.True(t, output.IsRendered(err))
+	assert.Contains(t, h.stderr.String(), `"error_reason": "CLI_VALIDATION"`)
+}
+{{- end}}
+
+// TestUsageHelpErrorPreservesWriterInheritance verifies that rendering help to
+// stderr does not pin a resolved parent writer onto a child that inherits its
+// output: after the root's writer is re-pointed, the child must follow it.
+func TestUsageHelpErrorPreservesWriterInheritance(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root := &cobra.Command{Use: "root"}
+	child := &cobra.Command{Use: "child", RunE: func(*cobra.Command, []string) error { return nil }}
+	root.AddCommand(child)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+
+	rendered := output.UsageHelpError(child, fmt.Errorf("missing required argument"))
+	assert.Error(t, rendered)
+	assert.Contains(t, h.stderr.String(), "Usage:")
+	assert.Empty(t, h.stdout.String())
+
+	redirected := new(bytes.Buffer)
+	root.SetOut(redirected)
+	assert.NoError(t, child.Help())
+	assert.Contains(t, redirected.String(), "Usage:")
+	assert.Empty(t, h.stdout.String())
+}
+
+// nonComparableWriter is a func-adapter io.Writer whose dynamic type is not
+// comparable. Interface equality between two values of such a type panics at
+// runtime, so writer bookkeeping must never compare them with ==.
+type nonComparableWriter func(p []byte) (int, error)
+
+func (w nonComparableWriter) Write(p []byte) (int, error) { return w(p) }
+
+// TestUsageHelpErrorNonComparableWriter verifies that resolving the local
+// output writer does not panic when a child inherits a writer whose dynamic
+// type is non-comparable: both sides of the inheritance check then hold the
+// same non-comparable type, which raw interface equality cannot handle.
+func TestUsageHelpErrorNonComparableWriter(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root := &cobra.Command{Use: "root"}
+	child := &cobra.Command{Use: "child", RunE: func(*cobra.Command, []string) error { return nil }}
+	root.AddCommand(child)
+	root.SetOut(nonComparableWriter(h.stdout.Write))
+	root.SetErr(h.stderr)
+
+	rendered := output.UsageHelpError(child, fmt.Errorf("missing required argument"))
+	assert.Error(t, rendered)
+	assert.Contains(t, h.stderr.String(), "Usage:")
+	assert.Empty(t, h.stdout.String())
+}
+
+type machineOutputTestError struct {
+	Body       string
+	StatusCode int
+}
+
+func (e *machineOutputTestError) Error() string { return "test API error" }
+
+{{- if classifiedErrors}}
+
+// TestMachineOutputClassifiesCLIError verifies that explicit JSON, TOON, and
+// jq requests receive reason-first errors without identifying the caller.
+func TestMachineOutputClassifiesCLIError(t *testing.T) {
+	cases := [][]string{
+		{"--output-format", "json", "no-such-command"},
+		{"--output-format", "toon", "no-such-command"},
+		{"--jq", ".error_type", "no-such-command"},
+	}
+	for _, args := range cases {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(args)
+			assert.Error(t, err)
+			assert.True(t, output.IsRendered(err))
+			assert.Contains(t, h.stderr.String(), `"error_type": "validation_error"`)
+			assert.Contains(t, h.stderr.String(), `"error_reason": "CLI_VALIDATION"`)
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+
+{{- $carrier := cliErrorReasonCarrier}}
+{{- $typedRule := cliErrorFirstTypedRule}}
+{{- if $typedRule}}
+
+// TestMachineOutputClassifiesDeclaredReason verifies the first type-bearing
+// x-speakeasy-cli-errors rule fires from the reason carrier
+// ({{$carrier.Display}}) ahead of HTTP status classification.
+func TestMachineOutputClassifiesDeclaredReason(t *testing.T) {
+	for _, format := range []string{"json", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			assert.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+			target := &cobra.Command{Use: "target"}
+			root.AddCommand(target)
+			target.InheritedFlags()
+			assert.NoError(t, root.PersistentFlags().Set("output-format", format))
+
+			body := {{goStringLiteral (cliErrorCarrierTestBody $typedRule.Reason)}}
+			rendered := output.Error(target, &machineOutputTestError{
+				Body:       body,
+				StatusCode: 400,
+			})
+			assert.Error(t, rendered)
+
+			var envelope map[string]interface{}
+			assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+			assert.Equal(t, float64(400), envelope["status_code"])
+			assert.Equal(t, {{goStringLiteral $typedRule.Type}}, envelope["error_type"])
+			assert.Equal(t, {{goStringLiteral $typedRule.Reason}}, envelope["error_reason"])
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+{{- end}}
+{{- if $carrier.Declared}}
+
+// TestMachineOutputPromotesDeclaredCarrierReason verifies that, because this
+// document declares its reason carrier ({{$carrier.Display}}), a reason code
+// found there is surfaced verbatim as error_reason even without a matching
+// declared rule, while the type still comes from the HTTP status.
+func TestMachineOutputPromotesDeclaredCarrierReason(t *testing.T) {
+	for _, format := range []string{"json", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			assert.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+			target := &cobra.Command{Use: "target"}
+			root.AddCommand(target)
+			target.InheritedFlags()
+			assert.NoError(t, root.PersistentFlags().Set("output-format", format))
+
+			body := {{goStringLiteral (cliErrorCarrierTestBody "TEST_REASON_CODE")}}
+			rendered := output.Error(target, &machineOutputTestError{
+				Body:       body,
+				StatusCode: 401,
+			})
+			assert.Error(t, rendered)
+
+			var envelope map[string]interface{}
+			assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+			assert.Equal(t, float64(401), envelope["status_code"])
+			assert.Equal(t, "authentication_error", envelope["error_type"])
+			assert.Equal(t, "TEST_REASON_CODE", envelope["error_reason"])
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+{{- else}}
+
+// TestMachineOutputDoesNotPromoteUndeclaredReasons verifies a reason code
+// found at the default carrier ({{$carrier.Display}}) is not surfaced as
+// error_reason: without a matching x-speakeasy-cli-errors rule or a declared
+// reasonPointer, the type comes from the HTTP status and no reason is
+// promoted from the body.
+func TestMachineOutputDoesNotPromoteUndeclaredReasons(t *testing.T) {
+	for _, format := range []string{"json", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			assert.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+			target := &cobra.Command{Use: "target"}
+			root.AddCommand(target)
+			target.InheritedFlags()
+			assert.NoError(t, root.PersistentFlags().Set("output-format", format))
+
+			body := {{goStringLiteral (cliErrorCarrierTestBody "TEST_REASON_CODE")}}
+			rendered := output.Error(target, &machineOutputTestError{
+				Body:       body,
+				StatusCode: 401,
+			})
+			assert.Error(t, rendered)
+
+			var envelope map[string]interface{}
+			assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+			assert.Equal(t, float64(401), envelope["status_code"])
+			assert.Equal(t, "authentication_error", envelope["error_type"])
+			assert.NotContains(t, envelope, "error_reason",
+				"an undeclared body reason must not be promoted under the http profile")
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+{{- end}}
+
+{{- $probeRule := cliErrorFirstProbeTypedRule}}
+{{- if $probeRule}}
+
+// TestMachineOutputClassifiesProbeReason verifies the additional declared
+// reason carrier ({{$probeRule.Display}}) classifies: its first typed rule
+// fires ahead of HTTP status classification.
+func TestMachineOutputClassifiesProbeReason(t *testing.T) {
+	for _, format := range []string{"json", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			assert.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+			target := &cobra.Command{Use: "target"}
+			root.AddCommand(target)
+			target.InheritedFlags()
+			assert.NoError(t, root.PersistentFlags().Set("output-format", format))
+
+			rendered := output.Error(target, &machineOutputTestError{
+				Body:       {{goStringLiteral $probeRule.Body}},
+				StatusCode: 400,
+			})
+			assert.Error(t, rendered)
+
+			var envelope map[string]interface{}
+			assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+			assert.Equal(t, float64(400), envelope["status_code"])
+			assert.Equal(t, {{goStringLiteral $probeRule.Type}}, envelope["error_type"])
+			assert.Equal(t, {{goStringLiteral $probeRule.Reason}}, envelope["error_reason"])
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+{{- end}}
+
+// TestMachineOutputDoesNotClassifyMultipleInlineErrors verifies ambiguous
+// arrays never inherit a reason from only their first error object.
+func TestMachineOutputDoesNotClassifyMultipleInlineErrors(t *testing.T) {
+	assertAmbiguousBodyUsesStatusClassification(t,
+		`{"error":[{"details":[{"reason":"FIRST_REASON"}]},{"details":[{"reason":"SECOND_REASON"}]}]}`)
+}
+{{- if cliErrorUnwrapDeclared}}
+
+// TestMachineOutputUnwrapsArrayWrappedErrors verifies the declared
+// unwrapErrorArray normalization: a single-element [{"error": {...}}] body
+// is unwrapped to its sole element, so its nested message is extracted and
+// no compatibility body split remains.
+func TestMachineOutputUnwrapsArrayWrappedErrors(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	assert.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	target := &cobra.Command{Use: "target"}
+	root.AddCommand(target)
+	target.InheritedFlags()
+	assert.NoError(t, root.PersistentFlags().Set("output-format", "json"))
+
+	rendered := output.Error(target, &machineOutputTestError{
+		Body:       `[{"error":{"message":"wrapped failure"}}]`,
+		StatusCode: 400,
+	})
+	assert.Error(t, rendered)
+
+	var envelope map[string]interface{}
+	assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+	assert.Equal(t, "wrapped failure", envelope["message"],
+		"the unwrapped error object's message must be extracted")
+	assert.NotContains(t, envelope, "body")
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.False(t, output.IsAgentMode())
+}
+
+// TestMachineOutputDoesNotUnwrapMultipleErrorEnvelopes verifies the declared
+// unwrap stays limited to single-element arrays: a multi-element array is
+// ambiguous and never supplies a reason.
+func TestMachineOutputDoesNotUnwrapMultipleErrorEnvelopes(t *testing.T) {
+	assertAmbiguousBodyUsesStatusClassification(t,
+		`[{"error":{"details":[{"reason":"FIRST_REASON"}]}},{"error":{"details":[{"reason":"SECOND_REASON"}]}}]`)
+}
+{{- else}}
+
+// TestMachineOutputDoesNotUnwrapArrayWrappedErrors verifies array-wrapped
+// bodies are preserved as-is: this document does not declare the
+// unwrapErrorArray normalization, so the array is kept as the body and
+// classification uses the status.
+func TestMachineOutputDoesNotUnwrapArrayWrappedErrors(t *testing.T) {
+	assertAmbiguousBodyUsesStatusClassification(t,
+		`[{"error":{"details":[{"reason":"FIRST_REASON"}]}}]`)
+}
+{{- end}}
+
+func assertAmbiguousBodyUsesStatusClassification(t *testing.T, body string) {
+	t.Helper()
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	assert.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	target := &cobra.Command{Use: "target"}
+	root.AddCommand(target)
+	target.InheritedFlags()
+	assert.NoError(t, root.PersistentFlags().Set("output-format", "json"))
+
+	rendered := output.Error(target, &machineOutputTestError{Body: body, StatusCode: 400})
+	assert.Error(t, rendered)
+
+	var envelope map[string]interface{}
+	assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.NotContains(t, envelope, "error_reason",
+		"HTTP 400 is an API validation failure, not local CLI_VALIDATION")
+	if strings.HasPrefix(body, "[") {
+		var expectedBody interface{}
+		assert.NoError(t, json.Unmarshal([]byte(body), &expectedBody))
+		assert.Equal(t, expectedBody, envelope["body"])
+		assert.Equal(t, float64(400), envelope["status_code"])
+	}
+}
+{{- else}}
+
+// TestMachineOutputKeepsUnclassifiedErrors verifies the compatibility default: JSON
+// remains structured but unclassified, while TOON does not change error output.
+func TestMachineOutputKeepsUnclassifiedErrors(t *testing.T) {
+	t.Run("json", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--output-format", "json", "no-such-command"})
+		assert.Error(t, err)
+		assert.True(t, output.IsRendered(err))
+		classification, ok := output.ClassificationFrom(err)
+		assert.True(t, ok)
+		assert.Equal(t, output.ErrorTypeValidation, classification.Type)
+		assert.Equal(t, output.ErrorOriginCLI, classification.Origin)
+		assert.Contains(t, h.stderr.String(), `"error":`)
+		assert.NotContains(t, h.stderr.String(), `"error_type":`)
+		assert.NotContains(t, h.stderr.String(), `"error_reason":`)
+	})
+
+	t.Run("toon", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--output-format", "toon", "no-such-command"})
+		assert.Error(t, err)
+		assert.False(t, output.IsRendered(err))
+		classification, ok := output.ClassificationFrom(err)
+		assert.True(t, ok)
+		assert.Equal(t, output.ErrorTypeValidation, classification.Type)
+		assert.Equal(t, output.ErrorOriginCLI, classification.Origin)
+		assert.Empty(t, strings.TrimSpace(h.stderr.String()))
+	})
+
+	t.Run("jq", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--jq", ".x", "no-such-command"})
+		assert.Error(t, err)
+		assert.Contains(t, h.stderr.String(), `"error":`)
+		assert.NotContains(t, h.stderr.String(), `"error_type":`)
+		assert.NotContains(t, h.stderr.String(), `"error_reason":`)
+	})
+
+	t.Run("api 401 keeps the configure hint", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		h.resetAndSetupEnv()
+		root, err := cli.NewRootCommand()
+		assert.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+		target := &cobra.Command{Use: "target"}
+		root.AddCommand(target)
+		target.InheritedFlags()
+		assert.NoError(t, root.PersistentFlags().Set("output-format", "json"))
+
+		rendered := output.Error(target, &machineOutputTestError{Body: `{"error":"unauthorized"}`, StatusCode: 401})
+		assert.Error(t, rendered)
+
+		var envelope map[string]interface{}
+		assert.NoError(t, json.Unmarshal(h.stderr.Bytes(), &envelope))
+		assert.Contains(t, envelope, "_hint")
+		assert.NotContains(t, envelope, "error_type")
+		assert.NotContains(t, envelope, "error_reason")
+	})
+}
+{{- end}}
+
+// WithTestName sets the test name for mock server routing.
+func (h *CLITestHarness) WithTestName(name string) *CLITestHarness {
+	h.testName = name
+	return h
+}
+
+// WithEnv sets environment variable overrides that are applied after
+// resetAndSetupEnv clears the environment. This ensures env vars survive
+// the harness cleanup and are present when the command executes.
+func (h *CLITestHarness) WithEnv(key, value string) *CLITestHarness {
+	if h.envOverrides == nil {
+		h.envOverrides = make(map[string]string)
+	}
+	h.envOverrides[key] = value
+	return h
+}
+
+// resetAndSetupEnv resets output buffers, config state, and agent mode,
+// then configures test environment variables. It also isolates from the
+// user's real HOME directory to prevent stale config files from interfering
+// with tests. Uses t.Setenv for automatic cleanup and to panic loudly if
+// t.Parallel() is ever added (env mutations are not parallel-safe).
+func (h *CLITestHarness) resetAndSetupEnv() {
+	h.t.Helper()
+	h.stdout.Reset()
+	h.stderr.Reset()
+	config.Reset()
+	output.ResetAgentMode()
+	output.ResetPreparsedRendering()
+
+	for _, envVar := range []string{
+		{{- if agentEnvironmentDetection}}
+		"CLAUDECODE",
+		"CLAUDE_CODE",
+		"CURSOR_AGENT",
+		"CODEX",
+		"AIDER",
+		"CLINE",
+		"WINDSURF_AGENT",
+		"GITHUB_COPILOT",
+		"AMAZON_Q",
+		"GEMINI_CODE_ASSIST",
+		"SRC_CODY",
+		"FORCE_AGENT_MODE",
+		{{- end}}
+		"{{.Global.Config.EnvVarPrefix}}_OUTPUT_FORMAT",
+	} {
+		h.t.Setenv(envVar, "")
+	}
+
+	// Isolate from user config: point HOME at a temp directory so
+	// config.Init does not read ~/.config/<cli>/config.yaml.
+	tmpHome, _ := os.MkdirTemp("", "cli-test-home-*")
+	h.t.Cleanup(func() { os.RemoveAll(tmpHome) })
+	h.t.Setenv("HOME", tmpHome)
+
+	if h.testName != "" {
+		h.t.Setenv("SPEAKEASY_TEST_NAME", h.testName)
+		h.t.Setenv("SPEAKEASY_TEST_INSTANCE_ID", h.instanceID)
+	}
+
+	for k, v := range h.envOverrides {
+		h.t.Setenv(k, v)
+	}
+}
+
+// getTestServerURL returns the mock server URL from env or the default.
+func getTestServerURL() string {
+	serverURL := os.Getenv("TEST_SERVER_URL")
+	if serverURL == "" {
+		return "http://localhost:18080"
+	}
+	return serverURL
+}
+
+// baseArgs returns the standard test arguments. Compatibility-mode fixtures
+// still disable their interactive default explicitly; non-interactive-by-default
+// fixtures exercise that default without injecting either interaction flag.
+func baseArgs() []string {
+	args := []string{}
+	{{- if and (isAnyInteractiveEnabled) (interactiveByDefault)}}
+	args = append(args, "--no-interactive")
+	{{- end}}
+	return args
+}
+
+// Run executes a CLI command with the given args.
+func (h *CLITestHarness) Run(args []string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	fullArgs := append(append(baseArgs(), "--server-url", getTestServerURL(), "--output-format", "json", "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunPolicyDefault executes exactly the supplied arguments, without injecting
+// an interaction override or output-format flag.
+func (h *CLITestHarness) RunPolicyDefault(args []string) error {
+	h.resetAndSetupEnv()
+	if args == nil {
+		args = []string{}
+	}
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	return cli.ExecuteRoot(context.Background(), rootCmd, args)
+}
+
+{{- if isAnyInteractiveEnabled}}
+// RunPolicyDefaultWithInput is RunPolicyDefault with an observable command
+// input stream for proving disabled forms never read stdin.
+func (h *CLITestHarness) RunPolicyDefaultWithInput(args []string, in io.Reader) error {
+	h.resetAndSetupEnv()
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(in)
+	return cli.ExecuteRoot(context.Background(), rootCmd, args)
+}
+{{- end}}
+
+{{- if isInteractiveModeEnabled}}
+// RunWithPrompter executes exactly the supplied arguments with a context-scoped
+// semantic prompter. The prompter supplies terminal capability only; it does
+// not opt the invocation into interaction.
+func (h *CLITestHarness) RunWithPrompter(args []string, prompter interactive.Prompter) error {
+	h.resetAndSetupEnv()
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	ctx := interactive.WithPrompter(context.Background(), prompter)
+	return cli.ExecuteRoot(ctx, rootCmd, args)
+}
+
+// RunInteractive executes with a context-scoped semantic prompter and the
+// explicit --interactive opt-in. The injected prompter substitutes only for
+// the terminal check; --no-interactive and agent mode still suppress prompting.
+func (h *CLITestHarness) RunInteractive(args []string, prompter interactive.Prompter) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	fullArgs := append([]string{"--interactive", "--server-url", getTestServerURL(), "--output-format", "json", "--color", "never"}, args...)
+	ctx := interactive.WithPrompter(context.Background(), prompter)
+	return cli.ExecuteRoot(ctx, rootCmd, fullArgs)
+}
+{{- end}}
+
+// RunWithServer executes a CLI command with a custom server URL (e.g., httptest.Server).
+// Used by hand-written tests that need their own echo/reflect server.
+func (h *CLITestHarness) RunWithServer(customServerURL string, args []string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	fullArgs := append(append(baseArgs(), "--server-url", customServerURL, "--output-format", "json", "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunBare executes a CLI command without injecting --server-url.
+// Used by tests that need to exercise --server flag or other server selection
+// without the --server-url override taking precedence.
+func (h *CLITestHarness) RunBare(args []string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	fullArgs := append(append(baseArgs(), "--output-format", "json", "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunRaw executes a CLI command without forcing JSON output format.
+// Used for testing non-JSON response types (text, binary, XML).
+func (h *CLITestHarness) RunRaw(args []string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	// No --output-format json: raw output mode for non-JSON response assertions
+	fullArgs := append(append(baseArgs(), "--server-url", getTestServerURL(), "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunWithStdin executes a CLI command with the given args and piped stdin data.
+// This enables testing the stdin + flags merge behavior.
+// Uses cmd.SetIn() instead of replacing os.Stdin, making it safe for parallel tests.
+func (h *CLITestHarness) RunWithStdin(args []string, stdinData string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(strings.NewReader(stdinData))
+
+	fullArgs := append(append(baseArgs(), "--server-url", getTestServerURL(), "--output-format", "json", "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunWithStdinServer executes a CLI command with piped stdin data and a custom server URL.
+// Combines RunWithServer and RunWithStdin for tests that need both.
+// Uses cmd.SetIn() instead of replacing os.Stdin, making it safe for parallel tests.
+func (h *CLITestHarness) RunWithStdinServer(customServerURL string, args []string, stdinData string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(strings.NewReader(stdinData))
+
+	fullArgs := append(append(baseArgs(), "--server-url", customServerURL, "--output-format", "json", "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunWithStdinRaw executes a CLI command with piped stdin data without forcing JSON output.
+// Used for testing non-JSON response types (binary, text) that accept stdin input.
+func (h *CLITestHarness) RunWithStdinRaw(args []string, stdinData string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(strings.NewReader(stdinData))
+
+	// No --output-format json: raw output mode for non-JSON response assertions
+	fullArgs := append(append(baseArgs(), "--server-url", getTestServerURL(), "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+// RunWithStdinServerRaw combines RunWithStdinRaw and RunWithServer for non-JSON responses.
+func (h *CLITestHarness) RunWithStdinServerRaw(customServerURL string, args []string, stdinData string) error {
+	h.resetAndSetupEnv()
+
+	rootCmd, err := cli.NewRootCommand()
+	if err != nil {
+		return err
+	}
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(strings.NewReader(stdinData))
+
+	// No --output-format json: raw output mode for non-JSON response assertions
+	fullArgs := append(append(baseArgs(), "--server-url", customServerURL, "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+func genTestInstanceID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
+// GetStdout returns captured stdout.
+func (h *CLITestHarness) GetStdout() string {
+	return h.stdout.String()
+}
+
+// GetStderr returns captured stderr.
+func (h *CLITestHarness) GetStderr() string {
+	return h.stderr.String()
+}
+
+// jsonGet parses a JSON string and navigates a dot-separated path.
+// Supports map key access and array index access (numeric path segments).
+// Returns nil if the path doesn't exist or the JSON is invalid.
+func jsonGet(jsonStr string, path string) interface{} {
+	if path == "" {
+		return nil
+	}
+	var data interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return nil
+	}
+	parts := strings.Split(path, ".")
+	for _, part := range parts {
+		switch v := data.(type) {
+		case map[string]interface{}:
+			data = v[part]
+		case []interface{}:
+			idx, err := strconv.Atoi(part)
+			if err != nil || idx < 0 || idx >= len(v) {
+				return nil
+			}
+			data = v[idx]
+		default:
+			return nil
+		}
+	}
+	return data
+}
+
+// jsonGetString extracts a string value from a JSON string at the given dot-path.
+func jsonGetString(jsonStr string, path string) string {
+	v := jsonGet(jsonStr, path)
+	if v == nil {
+		return ""
+	}
+	switch val := v.(type) {
+	case string:
+		return val
+	case float64:
+		// Handle numbers stored as JSON numbers but expected as strings
+		if val == float64(int64(val)) {
+			return strconv.FormatInt(int64(val), 10)
+		}
+		return strconv.FormatFloat(val, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(val)
+	default:
+		b, _ := json.Marshal(val)
+		return string(b)
+	}
+}
+
+// jsonGetFloat64 extracts a float64 value from a JSON string at the given dot-path.
+func jsonGetFloat64(jsonStr string, path string) float64 {
+	v := jsonGet(jsonStr, path)
+	if v == nil {
+		return 0
+	}
+	if f, ok := v.(float64); ok {
+		return f
+	}
+	return 0
+}
+
+// jsonGetBool extracts a boolean value from a JSON string at the given dot-path.
+func jsonGetBool(jsonStr string, path string) bool {
+	v := jsonGet(jsonStr, path)
+	if v == nil {
+		return false
+	}
+	if b, ok := v.(bool); ok {
+		return b
+	}
+	return false
+}
+
+// jsonExists checks if a value exists (is non-nil) at the given dot-path in the JSON string.
+func jsonExists(jsonStr string, path string) bool {
+	return jsonGet(jsonStr, path) != nil
+}
+
+// toJSON marshals a value to a JSON string for use with assert.JSONEq.
+func toJSON(v interface{}) string {
+	if v == nil {
+		return "null"
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "null"
+	}
+	return string(b)
+}
+
+// jsonSet sets a top-level field in a JSON object string and returns the modified JSON.
+func jsonSet(jsonStr string, key string, value interface{}) string {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(strings.TrimSpace(jsonStr)), &data); err != nil {
+		return jsonStr
+	}
+	data[key] = value
+	result, err := json.Marshal(data)
+	if err != nil {
+		return jsonStr
+	}
+	return string(result)
+}
+
+// jsonMarshal marshals a value to a JSON string. Convenience wrapper for tests.
+func jsonMarshal(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+// jsonContains checks that every key/value in expectedJSON exists in actualJSON.
+// Used for responses with additional properties where the actual response may have
+// extra fields not in the expected data.
+func jsonContains(t *testing.T, expectedJSON, actualJSON string) {
+	t.Helper()
+	var expected, actual interface{}
+	if err := json.Unmarshal([]byte(expectedJSON), &expected); err != nil {
+		t.Fatalf("jsonContains: failed to parse expected JSON: %v", err)
+	}
+	if err := json.Unmarshal([]byte(actualJSON), &actual); err != nil {
+		t.Fatalf("jsonContains: failed to parse actual JSON: %v", err)
+	}
+	assertContains(t, "", expected, actual)
+}
+
+func assertContains(t *testing.T, path string, expected, actual interface{}) {
+	t.Helper()
+	switch e := expected.(type) {
+	case map[string]interface{}:
+		a, ok := actual.(map[string]interface{})
+		if !ok {
+			t.Errorf("at %s: expected object, got %T", path, actual)
+			return
+		}
+		for k, v := range e {
+			p := path + "." + k
+			av, exists := a[k]
+			if !exists {
+				t.Errorf("at %s: key %q missing in actual", p, k)
+				continue
+			}
+			assertContains(t, p, v, av)
+		}
+	case []interface{}:
+		a, ok := actual.([]interface{})
+		if !ok {
+			t.Errorf("at %s: expected array, got %T", path, actual)
+			return
+		}
+		if len(e) != len(a) {
+			t.Errorf("at %s: expected array length %d, got %d", path, len(e), len(a))
+			return
+		}
+		for i, v := range e {
+			assertContains(t, fmt.Sprintf("%s[%d]", path, i), v, a[i])
+		}
+	default:
+		assert.Equal(t, expected, actual, "at path %s", path)
+	}
+}

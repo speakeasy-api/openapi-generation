@@ -1,0 +1,54 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestTelemetryUserAgentGet(t *testing.T) {
+	recordTest("telemetry-user-agent-get")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"telemetry", "telemetry-user-agent-get"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// The SDK sets X-Speakeasy-User-Agent on every request
+	speakeasyUA := jsonGetString(output, "headers.X-Speakeasy-User-Agent")
+	assert.NotEmpty(t, speakeasyUA)
+	assert.Contains(t, speakeasyUA, "speakeasy-sdk/go")
+}
+
+func TestTelemetrySpeakeasyUserAgentGet(t *testing.T) {
+	recordTest("telemetry-speakeasy-user-agent-get")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"telemetry", "telemetry-speakeasy-user-agent-get",
+		"--user-agent", "test user agent",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// The custom User-Agent header parameter should be set
+	userAgent := jsonGetString(output, "headers.User-Agent")
+	assert.Equal(t, "test user agent", userAgent)
+
+	// The SDK also sets X-Speakeasy-User-Agent
+	speakeasyUA := jsonGetString(output, "headers.X-Speakeasy-User-Agent")
+	assert.NotEmpty(t, speakeasyUA)
+	assert.Contains(t, speakeasyUA, "speakeasy-sdk/go")
+}

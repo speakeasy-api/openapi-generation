@@ -1,0 +1,50 @@
+{{- $usageLocation := .Local.OutputLocation -}}
+{{- $className := sanitizeClassName .Local.Name false }}
+
+{{- templateComments .Local.Comments 1 "class" false }}
+{{- $replacement := "" }}
+{{- if .Local.Comments }}
+{{- $replacement = sanitizeDeprecationReplacement .Local.Comments.DeprecationReplacement "class" }}
+{{- end }}
+{{- if (and .Local.Comments .Local.Comments.Deprecated) }}[Obsolete("This class will be removed in a future release, please migrate away from it as soon as possible{{ if $replacement }}. Use {{ $replacement }} instead{{ end }}")]{{- end }}
+    [Serializable]
+    public class {{ $className }}{{if isResponseModel .Local}}: IDisposable{{end}}
+    {
+        {{- if .Local.Extensions.Pagination }}
+        public Func<Task<{{ $className }}?>>? Next {get;set;}
+        {{- end }}
+        {{- ""}}{{range .Local.Fields}}
+        {{- $fieldName := sanitizeFieldName .Name -}}
+        {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType")}}
+        {{- $anno := templateAnnotations .}}
+{{- templateComments .Comments 2 "field" true true}}
+        {{- if $anno}}
+        {{$anno}}{{end}}
+        public {{ sanitizeType .Type false $usageLocation }}{{ if $optional }}?{{ end }} {{ sanitizeFieldName .Name $className }} { get; set; }{{if not .Optional}} = default!;{{end}}
+        {{- if eq .Type.Type "union" -}}
+        {{- if .Type.Discriminator -}}
+        {{- range .Type.Discriminator.Mapping }}
+        public {{sanitizeType .Type true $usageLocation false}}? Get{{$fieldName}}{{sanitizeFieldName .Name}}()
+        {
+            {{- if $optional }}
+            if (this.{{$fieldName}} != null)
+            {
+                return this.{{$fieldName}}.{{sanitizeFieldName .Type.Name}};
+            }
+            return null;
+            {{- else }}
+            return this.{{$fieldName}}.{{sanitizeFieldName .Type.Name}};
+            {{- end }} {{/* endif optional */}}
+        }
+        {{- end -}} {{/* endrange .Type.Discriminator.Mapping */}}
+        {{- end -}} {{/* endif .Type.Discriminator exists */}}
+        {{- end -}} {{/* endif union */}}
+        {{- end -}} {{/* endrange .Local.Fields */}}
+        {{- if isResponseModel .Local}}
+        public void Dispose() {
+            if (RawResponse != null) {
+                RawResponse.Dispose();
+            }
+        }
+        {{- end}}
+    }

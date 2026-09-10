@@ -1,0 +1,926 @@
+arazzo: 1.0.0
+info:
+  title: Test Suite
+  summary: Migrated from .speakeasy/tests.yaml
+  version: 0.0.1
+sourceDescriptions:
+  - name: ./tests/specs/review.yaml
+    url: https://TBD.com
+    type: openapi
+workflows:
+  - workflowId: testEndpoint
+    steps:
+      - stepId: test
+        operationId: testEndpoint
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-group: SDK
+  - workflowId: getUser-testWithStatusCodeOnly
+    steps:
+      - stepId: test
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: test123
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-group: SDK
+  - workflowId: getUser-testWithResponseBody
+    steps:
+      - stepId: test
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: test123
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "id": "test123",
+                "email": "Trystan_Crooks@hotmail.com",
+                "first_name": "Trystan",
+                "last_name": "Crooks",
+                "age": 32,
+                "postal_code": 94110,
+                "metadata": {
+                  "allergies": "none",
+                  "color": "red",
+                  "height": 182,
+                  "weight": 77,
+                  "is_smoking": true
+                }
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+  - workflowId: getUser-testWithResponseBodyFields
+    steps:
+      - stepId: test
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: test123
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body#/metadata/allergies
+            condition: "none"
+            type: simple
+          - context: $response.body#/metadata/color
+            condition: "red"
+            type: simple
+          - context: $response.body#/associatedIds/1
+            condition: "test123"
+            type: simple
+  - workflowId: getFullyFlattenedRequest-namedExampleThatIsntMatchedAcrossDifferentExamples
+    steps:
+      - stepId: test
+        operationId: getFullyFlattenedRequest
+        parameters:
+          - name: lang
+            in: query
+            value: en
+        requestBody:
+          contentType: application/json
+          payload:
+            name: <value>
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-server:
+      baseUrl: "x-env: TEST_URL"
+    x-speakeasy-test-group: SDK
+  - workflowId: postTest2
+    steps:
+      - stepId: test
+        operationId: postTest2
+        parameters:
+          - name: deprecatedQueryParam2
+            in: query
+            value: some example query param
+        requestBody:
+          contentType: application/json
+          payload:
+            obj:
+              any: <value>
+              anything: <value>
+              arr:
+                - str: example
+              bigint: 702830
+              bigintStr: "12345678901234567890"
+              bool: true
+              boolOpt: true
+              color: green
+              date: "2020-01-01"
+              dateTime: "2020-01-01T00:00:00Z"
+              decimal: 3.141592653589
+              decimalStr: "3858.6"
+              enumProp: First
+              float32: 2940.96
+              heroWidth: 480
+              icon: tick
+              int: 999999
+              int32: 1
+              int32Enum: 69
+              intEnum: 3
+              intOptNull: 999999
+              map:
+                key:
+                  str: example
+              nullableIntEnum: 3
+              nullableStringEnum: Second
+              num: 1.1
+              numOptNull: 1.1
+              obj:
+                str: example
+              str: example
+              type: "0"
+            type: type1
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == multipart/form-data
+          - context: $response.body
+            condition: |
+              "0x920D83Acf0"
+            type: simple
+    x-speakeasy-test-group: tag2
+    x-speakeasy-test-rebuild: true
+  - workflowId: postFile
+    steps:
+      - stepId: test
+        operationId: postFile
+        requestBody:
+          contentType: multipart/form-data
+          payload:
+            file: "x-file: postfiletest.txt"
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/octet-stream
+          - context: $response.body
+            condition: |
+              "0x8fBAEeAAE7"
+            type: simple
+    x-speakeasy-test-group: SDK
+  - workflowId: getPolymorphism
+    x-speakeasy-test-targets-exclude: [javav2] # all these targets are not capable of correctly selecting the right union type
+    steps:
+      - stepId: test
+        operationId: getPolymorphism
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "oneOfWithUnionDescription": {
+                  "str": "example",
+                  "bool": true,
+                  "int": 999999,
+                  "int32": 1,
+                  "num": 1.1,
+                  "float32": 7754.37,
+                  "enumProp": "First",
+                  "date": "2022-04-06",
+                  "dateTime": "2020-01-01T00:00:00Z",
+                  "anything": "\u003cvalue\u003e",
+                  "boolOpt": true,
+                  "intOptNull": 999999,
+                  "numOptNull": 1.1,
+                  "intEnum": 3,
+                  "int32Enum": 69,
+                  "bigint": 815677,
+                  "decimal": 3.141592653589,
+                  "decimalStr": "7753.11",
+                  "obj": {
+                    "str": "example"
+                  },
+                  "map": {},
+                  "arr": [
+                    {
+                      "str": "example"
+                    },
+                    {
+                      "str": "example"
+                    },
+                    {
+                      "str": "example"
+                    }
+                  ],
+                  "any": "\u003cvalue\u003e",
+                  "nullableIntEnum": 3,
+                  "nullableStringEnum": "First",
+                  "color": "green",
+                  "icon": "tick",
+                  "heroWidth": 480,
+                  "bigintStr": "12345678901234567890",
+                  "type": "0"
+                },
+                "oneOfWithFactoredOutProperties": {
+                  "str": "example",
+                  "anExtraProperty": "example"
+                },
+                "simpleAllOf": {
+                  "str": "example",
+                  "bool": true
+                },
+                "allOfWithFactoredOutProperties": {
+                  "anOverridingProperty": "example",
+                  "anotherProperty": "example",
+                  "anExtraProperty": "example"
+                }
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+  - workflowId: getUnionErrors
+    steps:
+      - stepId: test
+        operationId: getUnionErrors
+        parameters:
+          - name: page
+            in: query
+            value: 12
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "pages": []
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+  - workflowId: getRequestBodyFlattenedAway
+    steps:
+      - stepId: test
+        operationId: getRequestBodyFlattenedAway
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-group: SDK
+  - workflowId: getUser-success
+    steps:
+      - stepId: test
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: <id>
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"8ffac18c-7d88-4879-b057-e5f45b9ce7dg","email":"Trystan_Crooks@hotmail.com"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: chat
+    steps:
+      - stepId: test
+        operationId: chat
+        requestBody:
+          contentType: application/json
+          payload:
+            prompt: What is the largest city in the world?
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-group: SDK
+  - workflowId: getBinaryDefaultResponse
+    steps:
+      - stepId: test
+        operationId: getBinaryDefaultResponse
+        successCriteria:
+          - condition: $statusCode == default
+          - condition: $response.header.Content-Type == application/octet-stream
+          - context: $response.body
+            condition: |
+              "0xf58AcDF799"
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: deprecated1
+    steps:
+      - stepId: test
+        operationId: deprecated1
+        successCriteria:
+          - condition: $statusCode == 200
+    x-speakeasy-test-group: tag1
+  - workflowId: listTest1
+    steps:
+      - stepId: test
+        operationId: listTest1
+        parameters:
+          - name: page
+            in: path
+            value: 100
+          - name: queryParam1
+            in: query
+            value: some example query param
+          - name: queryParam2
+            in: query
+            value: 1
+          - name: headerParam1
+            in: header
+            value: some example header param
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "resultArray": [
+                  {
+                    "test1": "some example response"
+                  }
+                ],
+                "totalCount": 100,
+                "type": "First"
+              }
+            type: simple
+        x-speakeasy-test-security:
+          value:
+            apiKey: "some-api-key"
+    x-speakeasy-test-group: tag1
+  - workflowId: authenticate
+    x-speakeasy-test: false
+    steps:
+      - stepId: login
+        operationId: login
+        x-speakeasy-test-security:
+          value:
+            customSchemeAppId:
+              appId: app-speakeasy-123
+              secret: MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/token != ""
+        outputs:
+          token: $response.body#/token
+      - stepId: validate
+        operationId: validate
+        x-speakeasy-test-security:
+          value:
+            apiKey: $steps.login.outputs.token
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/valid == true
+    outputs:
+      token: $steps.login.outputs.token
+  - workflowId: user-lifecycle
+    x-speakeasy-test-security:
+      value:
+        apiKey: $steps.authenticate.outputs.token
+    steps:
+      - stepId: authenticate
+        workflowId: authenticate
+        successCriteria:
+          - condition: $workflows.authenticate.outputs.token != ""
+        outputs:
+          token: $workflows.authenticate.outputs.token
+      - stepId: create
+        operationId: createUser
+        requestBody:
+          contentType: application/json
+          payload: {"email": "Trystan_Crooks@hotmail.com", "first_name": "Trystan", "last_name": "Crooks", "age": 32, "postal_code": 94110, "metadata": {"allergies": "none", "color": "red", "height": 182, "weight": 77, "is_smoking": true}}
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/postal_code == 94110
+        outputs:
+          id: $response.body#/id
+      - stepId: get
+        operationId: getUser
+        parameters:
+          - name: id
+            in: path
+            value: $steps.create.outputs.id
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/first_name == Trystan
+          - condition: $response.body#/last_name == Crooks
+          - condition: $response.body#/age == 32
+          - condition: $response.body#/postal_code == 94110
+        outputs:
+          user: $response.body
+          age: $response.body#/age
+      - stepId: update
+        operationId: updateUser
+        parameters:
+          - name: id
+            in: path
+            value: $steps.create.outputs.id
+        requestBody:
+          contentType: application/json
+          payload: $steps.get.outputs.user
+          replacements:
+            - target: /postal_code
+              value: 94107
+            - target: /age
+              value: $steps.get.outputs.age
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/first_name == Trystan
+          - condition: $response.body#/last_name == Crooks
+          - condition: $response.body#/age == 32
+          - condition: $response.body#/postal_code == 94107
+        outputs:
+          email: $response.body#/email
+          first_name: $response.body#/first_name
+          last_name: $response.body#/last_name
+          metadata: $response.body#/metadata
+      - stepId: updateAgain
+        operationId: updateUser
+        parameters:
+          - name: id
+            in: path
+            value: $steps.create.outputs.id
+        requestBody:
+          contentType: application/json
+          payload: {"id": "$steps.create.outputs.id", "email": "$steps.update.email", "first_name": "$steps.update.first_name", "last_name": "$steps.update.last_name", "age": 33, "postal_code": 94110, "metadata": "$steps.update.metadata"}
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/first_name == Trystan
+          - condition: $response.body#/last_name == Crooks
+          - condition: $response.body#/age == 33
+          - condition: $response.body#/postal_code == 94110
+      - stepId: delete
+        operationId: deleteUser
+        parameters:
+          - name: id
+            in: path
+            value: $steps.create.outputs.id
+        successCriteria:
+          - condition: $statusCode == 200
+  - workflowId: userSetup
+    x-speakeasy-test: false
+    steps:
+      - stepId: create
+        operationId: createUser
+        requestBody:
+          contentType: application/json
+          payload: {"email": "Trystan_Crooks@hotmail.com", "first_name": "Trystan", "last_name": "Crooks", "age": 32, "postal_code": 94110, "metadata": {"allergies": "none", "color": "red", "height": 182, "weight": 77, "is_smoking": true}}
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/postal_code == 94110
+        outputs:
+          user: $response.body
+    outputs:
+      user: $steps.create.outputs.user
+  - workflowId: userTeardown
+    x-speakeasy-test: false
+    inputs:
+      type: object
+      properties:
+        id:
+          type: string
+      required:
+        - id
+    steps:
+      - stepId: delete
+        operationId: deleteUser
+        parameters:
+          - name: id
+            in: path
+            value: $inputs.id
+        successCriteria:
+          - condition: $statusCode == 200
+  - workflowId: updateUser
+    steps:
+      - stepId: setup
+        workflowId: userSetup
+        successCriteria:
+          - condition: $workflows.userSetup.outputs.user != null
+        outputs:
+          user: $workflows.userSetup.outputs.user
+      - stepId: test
+        operationId: updateUser
+        parameters:
+          - name: id
+            in: path
+            value: $steps.setup.outputs.user#/id
+        requestBody:
+          contentType: application/json
+          payload: $steps.setup.outputs.user
+          replacements:
+            - target: /postal_code
+              value: 94107
+            - target: /age
+              value: 33
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/email == Trystan_Crooks@hotmail.com
+          - condition: $response.body#/first_name == Trystan
+          - condition: $response.body#/last_name == Crooks
+          - condition: $response.body#/age == 33
+          - condition: $response.body#/postal_code == 94107
+      - stepId: teardown
+        workflowId: userTeardown
+        parameters:
+          - name: id
+            value: $steps.setup.outputs.user#/id
+  # Test that integer:"string" tag is correctly handled in nested structs
+  - workflowId: getNestedIntegerString
+    steps:
+      - stepId: test
+        operationId: getNestedIntegerString
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "task": {
+                  "id": "task-123",
+                  "name": "Review Task",
+                  "policy": {
+                    "policyId": "policy-456",
+                    "steps": [
+                      {
+                        "stepId": "step-1",
+                        "approval": {
+                          "approvers": ["user-1", "user-2"],
+                          "escalation": {
+                            "enabled": true,
+                            "expiration": "86400",
+                            "fallbackApprovers": ["admin-1"]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+  - workflowId: createWithUnion
+    steps:
+      - stepId: test
+        operationId: createWithUnion
+        requestBody:
+          contentType: application/json
+          payload:
+            name: <value>
+            shape:
+              height: 3125.73
+              type: rectangle
+              width: 922.51
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: createUser-request-only
+    steps:
+      - stepId: test
+        operationId: createUser
+        requestBody:
+          contentType: application/json
+          payload:
+            email: request-only@example.com
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"8ffac18c-7d88-4879-b057-e5f45b9ce7de","email":"Aglae92@gmail.com","gender":"other"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: createUser-paired-example
+    steps:
+      - stepId: test
+        operationId: createUser
+        requestBody:
+          contentType: application/json
+          payload:
+            email: paired@example.com
+            first_name: John
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"user-paired","email":"paired@example.com","first_name":"John"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: createUser-response-only
+    steps:
+      - stepId: test
+        operationId: createUser
+        requestBody:
+          contentType: application/json
+          payload:
+            email: Virginie47@gmail.com
+            gender: other
+            id: 8ffac18c-7d88-4879-b057-e5f45b9ce7de
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"user-response","email":"response-only@example.com"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: testEnumFormats
+    steps:
+      - stepId: test
+        operationId: testEnumFormats
+        requestBody:
+          contentType: application/json
+          payload:
+            integerMapFormat: 200
+            integerPartialMapFormat: 1
+            stringArrayFormat: pending_review
+            stringMapFormat: medium_priority
+            stringPartialMapFormat: draft_mode
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"message":"Enum formats processed successfully"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: getDuplicateExportCollision
+    steps:
+      - stepId: test
+        operationId: getDuplicateExportCollision
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamedPrimitiveUnion
+    steps:
+      - stepId: test
+        operationId: getNamedPrimitiveUnion
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              true
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: getEmptyObjectError
+    steps:
+      - stepId: test
+        operationId: getEmptyObjectError
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"success":true}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: parenthesesInPathAllowed
+    steps:
+      - stepId: test
+        operationId: parenthesesInPathAllowed
+        parameters:
+          - name: id
+            in: path
+            value: <id>
+        requestBody:
+          contentType: application/json
+          payload:
+            fieldWithBracesInConst: |
+              A string with {{ double braces }} and { single braces }
+              and \{\{ escaped curlies \}\} and `backticks`.
+              and \`escaped backticks\` and double slashes\\
+              and 'single quotes' and "double quotes".
+              and  \'escaped single quotes\' and \"escaped double quotes\".
+            fieldWithBracesInDefault: |
+              A string with {{ double braces }} and { single braces }
+              and \{\{ escaped curlies \}\} and `backticks`.
+              and \`escaped backticks\` and double slashes\\
+              and 'single quotes' and "double quotes".
+              and  \'escaped single quotes\' and \"escaped double quotes\".
+            fieldWithBracesInExample: |
+              A string with {{ double braces }} and { single braces }
+              and \{\{ escaped curlies \}\} and `backticks`.
+              and \`escaped backticks\` and double slashes\\
+              and 'single quotes' and "double quotes".
+              and  \'escaped single quotes\' and \"escaped double quotes\".
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fieldWithBracesInDefault":"A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n","fieldWithBracesInConst":"A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n","fieldWithBracesInExample":"A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: getErrorOnlyExample
+    steps:
+      - stepId: test
+        operationId: getErrorOnlyExample
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"<id>","name":"<value>"}
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-rebuild: true
+  - workflowId: postFileWithEncoding
+    steps:
+      - stepId: test
+        operationId: postFileWithEncoding
+        requestBody:
+          contentType: multipart/form-data
+          payload:
+            file: 'x-file: example.file'
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fileName":"example.file","size":905827}
+            type: simple
+    x-speakeasy-test-group: tag1
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamespaceConflict
+    steps:
+      - stepId: test
+        operationId: getNamespaceConflict
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fooPet":{"id":"pet-foo-123","name":"Fluffy","species":"cat"},"barPet":{"id":"pet-bar-456","name":"Buddy","owner":"John Doe"}}
+            type: simple
+    x-speakeasy-test-group: conflicts
+    x-speakeasy-test-rebuild: true
+  - workflowId: createNamespaceConflict
+    steps:
+      - stepId: test
+        operationId: createNamespaceConflict
+        requestBody:
+          contentType: application/json
+          payload:
+            id: pet-foo-123
+            name: Fluffy
+            species: cat
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"pet-bar-456","name":"Buddy","owner":"John Doe"}
+            type: simple
+    x-speakeasy-test-group: conflicts
+    x-speakeasy-test-rebuild: true
+  - workflowId: getTripleNamespaceConflict
+    steps:
+      - stepId: test
+        operationId: getTripleNamespaceConflict
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fooPet":{"id":"pet-foo-123","name":"Fluffy","species":"cat"},"barPet":{"id":"pet-bar-456","name":"Buddy","owner":"John Doe"},"bazPet":{"petId":789,"petName":"Rex","adoptedAt":"2024-01-15T10:30:00Z"}}
+            type: simple
+    x-speakeasy-test-group: conflicts
+    x-speakeasy-test-rebuild: true
+  - workflowId: getPetOwners
+    steps:
+      - stepId: test
+        operationId: getPetOwners
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fooPetOwner":{"id":"owner-123","name":"Jane Doe","pets":[{"id":"pet-foo-123","name":"Fluffy","species":"cat"}]},"barPetOwner":{"ownerId":456,"fullName":"Bob Smith","pet":{"id":"pet-bar-456","name":"Buddy","owner":"John Doe"}}}
+            type: simple
+    x-speakeasy-test-group: conflicts
+    x-speakeasy-test-rebuild: true
+  - workflowId: getSingleNamespaceFooPet
+    steps:
+      - stepId: test
+        operationId: getSingleNamespaceFooPet
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"pet-foo-123","name":"Fluffy","species":"cat"}
+            type: simple
+    x-speakeasy-test-group: singleFoo
+    x-speakeasy-test-rebuild: true
+  - workflowId: createSingleNamespaceFooPet
+    steps:
+      - stepId: test
+        operationId: createSingleNamespaceFooPet
+        requestBody:
+          contentType: application/json
+          payload:
+            id: pet-foo-123
+            name: Fluffy
+            species: cat
+        successCriteria:
+          - condition: $statusCode == 201
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"pet-foo-123","name":"Fluffy","species":"cat"}
+            type: simple
+    x-speakeasy-test-group: singleFoo
+    x-speakeasy-test-rebuild: true
+  - workflowId: getSingleNamespaceBarPet
+    steps:
+      - stepId: test
+        operationId: getSingleNamespaceBarPet
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"id":"pet-bar-456","name":"Buddy","owner":"John Doe"}
+            type: simple
+    x-speakeasy-test-group: singleBar
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamespaceTypes
+    steps:
+      - stepId: test
+        operationId: getNamespaceTypes
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"fooSpecies":"cat","barStatus":"available","fooAnimal":{"animalType":"dog","breed":"Labrador"},"barVehicle":{"wheels":4,"engineType":"V8"},"fooOrg":{"name":"Acme Corp","address":{"street":"123 Main St","city":"Springfield","location":{"latitude":37.7749,"longitude":-122.4194}},"departments":[{"deptName":"Engineering","headCount":50}]}}
+            type: simple
+    x-speakeasy-test-group: types
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamespaceAnimal
+    steps:
+      - stepId: test
+        operationId: getNamespaceAnimal
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"animalType":"cat","furLength":"short"}
+            type: simple
+    x-speakeasy-test-group: types
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamespaceVehicle
+    steps:
+      - stepId: test
+        operationId: getNamespaceVehicle
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"wheels":2,"hasPedals":true}
+            type: simple
+    x-speakeasy-test-group: types
+    x-speakeasy-test-rebuild: true
+  - workflowId: getNamespaceOrganization
+    steps:
+      - stepId: test
+        operationId: getNamespaceOrganization
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {"name":"Acme Corp","address":{"street":"123 Main St","city":"Springfield","location":{"latitude":37.7749,"longitude":-122.4194}},"departments":[{"deptName":"Engineering","headCount":50}]}
+            type: simple
+    x-speakeasy-test-group: types
+    x-speakeasy-test-rebuild: true

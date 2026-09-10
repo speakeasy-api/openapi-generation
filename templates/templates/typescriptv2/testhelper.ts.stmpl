@@ -1,0 +1,22 @@
+{{- $helper := .Local -}}
+{{/*- if $helper.Inputs}}
+{{templateString "model.ts.stmpl" (dict "Type" $helper.Inputs.Type)}}
+{{end}}
+{{- if $helper.Outputs}}
+{{templateString "model.ts.stmpl" (dict "Type" $helper.Outputs.Type)}}
+{{end*/}}
+export async function {{sanitizePrivateMethodName $helper.Name}}({{if $helper.Inputs}}inputs: any{{/*sanitizeClassName $helper.Inputs.Type.Name*/}}{{end}}){{if $helper.Outputs}}: Promise<any{{/* sanitizeClassName $helper.Outputs.Type.Name */}}>{{end}} {
+{{- addTestImport "../index.js" (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+{{- addTestImport (print "./" (getTestClientFileName) ".js") "createTestHTTPClient" -}}
+  const testHttpClient = createTestHTTPClient("{{$helper.Name}}");
+{{range $helper.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" .UsageContext | trim | indent 2}}
+
+{{templateString "usage/call-unguarded.stmpl" .UsageContext | trim | indent 2}}
+{{templateAssertions .UsageContext | trim | indent 2}}
+{{- else}}
+{{templateWorkflow $helper . | trim | indent 2}}
+{{end}}{{end}}
+{{templateHelperOutputs $helper | indentPresent 4}}
+}

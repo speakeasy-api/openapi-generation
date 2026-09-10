@@ -1,0 +1,124 @@
+{{if sdkHasTests .Global.AST}}{{if not (empty .Global.AST.MainSDK.TestGroup)}}
+import json
+from urllib.parse import parse_qs, quote
+from pydantic import BaseModel
+from pydantic.fields import FieldInfo
+import re
+from typing import Any, Dict, List
+
+
+def sort_keys(x: str) -> str:
+    return json.dumps(json.loads(x), separators=(",", ":"), sort_keys=True)
+
+
+def sort_query_parameters(url: str, json_params: List[str] = []) -> str:
+    parts = url.split("?")
+
+    if len(parts) == 1:
+        return url
+
+    query = parts[1]
+    params = query.split("&")
+    if len(json_params) > 0:
+        for i, param in enumerate(params):
+            key, value = param.split("=")
+            if key in json_params:
+                parsed = parse_qs(f"q={value}")["q"][0]
+                sorted = sort_keys(parsed)
+                sanitized = quote(sorted, safe='/{}[]"')
+                params[i] = f"{key}={sanitized}"
+
+    params.sort(key=lambda x: x.split("=")[0])
+
+    return parts[0] + "?" + "&".join(params)
+
+
+def sort_serialized_maps(inp: Any, regex: str, delim: str):
+
+    def sort_map(m):
+        entire_match = m.group(0)
+
+        groups = m.groups()
+
+        for group in groups:
+            pairs = []
+            if "=" in group:
+                pairs = group.split(delim)
+
+                pairs.sort(key=lambda x: x.split("=")[0])
+            else:
+                values = group.split(delim)
+
+                if len(values) == 1:
+                    pairs = values
+                else:
+                    pairs = [""] * int(len(values) / 2)
+                    # loop though every 2nd item
+                    for i in range(0, len(values), 2):
+                        pairs[int(i / 2)] = values[i] + delim + values[i + 1]
+
+                pairs.sort(key=lambda x: x.split(delim)[0])
+
+            entire_match = entire_match.replace(group, delim.join(pairs))
+
+        return entire_match
+
+    if isinstance(inp, str):
+        return re.sub(regex, sort_map, inp)
+    if isinstance(inp, list):
+        for i, v in enumerate(inp):
+            inp[i] = sort_serialized_maps(v, regex, delim)
+        return inp
+    if isinstance(inp, dict):
+        for k, v in inp.items():
+            inp[k] = sort_serialized_maps(v, regex, delim)
+        return inp
+    
+    raise Exception("Unsupported type")
+
+
+def sort_json_object_keys(value: Any, fields: List[str] = []) -> Any:
+    if isinstance(value, str):
+        return sort_keys(value)
+    elif isinstance(value, dict):
+        return {
+            k: (sort_keys(v) if k in fields and isinstance(v, str) else v)
+            for k, v in value.items()
+        }
+    else:
+        raise Exception(f"Unsupported type: {type(value)}")
+
+
+def sanitize_timestamp(value: Any) -> Any:
+    if isinstance(value, str):
+        v = re.sub(
+            r".*?(\d{4}-\d{2}-\d{2}T\d{2}.*?\d{2}.*?\d{2}\.*\d*Z*).*",
+            lambda m: truncate_timestamp(m.group()),
+            value,
+        )
+        return v
+    if isinstance(value, list):
+        for i, v in enumerate(value):
+            value[i] = sanitize_timestamp(v)
+        return value
+    if isinstance(value, dict):
+        for k, v in value.items():
+            value[k] = sanitize_timestamp(v)
+        return value
+    if isinstance(value, BaseModel):
+        obj_fields: Dict[str, FieldInfo] = value.__class__.model_fields
+        for name in obj_fields:
+            setattr(value, name, sanitize_timestamp(getattr(value, name)))
+        return value
+    
+    return value
+
+
+def truncate_timestamp(timestamp: str) -> str:
+    v = re.sub(
+        r"(.*?\.\d*?)(0*)(Z)",
+        lambda m: m.group(1) + m.group(3),
+        timestamp,
+    )
+    return v
+{{end}}{{end}}

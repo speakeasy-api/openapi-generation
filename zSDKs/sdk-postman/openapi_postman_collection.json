@@ -1,0 +1,232 @@
+{
+    "info": {
+        "name": "openapi",
+        "description": "This document will show case as many of our features as possible in as little operations/models as possible.\nThis will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "tag1",
+            "item": [
+                {
+                    "name": "Deprecated Operation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "",
+                                "type": "string"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:12345/deprecated",
+                            "protocol": "http",
+                            "host": [
+                                "localhost:12345"
+                            ],
+                            "path": [
+                                "deprecated"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "This operation aims at testing available OAuth2 scopes collection:\n - only operation with oauth2 authorizationCode security flow\n - belongs to a subSDK\n",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "",
+                                "type": "string"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "Get Test1",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "headerParam1",
+                                "value": "some example header param",
+                                "type": "string"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "string"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:35123/test1/{page}",
+                            "protocol": "http",
+                            "host": [
+                                "localhost:35123"
+                            ],
+                            "path": [
+                                "test1",
+                                ":page"
+                            ],
+                            "query": [
+                                {
+                                    "key": "queryParam1",
+                                    "value": "{{queryParam1}}",
+                                    "type": "string"
+                                },
+                                {
+                                    "key": "queryParam2",
+                                    "value": "2",
+                                    "type": "enum"
+                                }
+                            ],
+                            "variable": [
+                                {
+                                    "key": "page",
+                                    "value": 548814,
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "description": "This is a {{test}} endpoint.\nIt has a description."
+                    }
+                },
+                {
+                    "name": "Post File With Encoding",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data",
+                                "type": "string"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "string"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": []
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/fileWithEncoding",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "fileWithEncoding"
+                            ]
+                        },
+                        "description": "This endpoint tests the encoding field with multipart/form-data content type.\nAccording to OpenAPI 3.0.3 spec, the encoding field is valid for both\napplication/x-www-form-urlencoded and multipart/* media types.\n\nThis test includes multiple content types for the file field to verify\nhandling of comma-separated content types in encoding."
+                    }
+                }
+            ],
+            "description": "The first tag."
+        },
+        {
+            "name": "obsolete",
+            "item": [
+                {
+                    "name": "Deprecated Operation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "",
+                                "type": "string"
+                            }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:12345/deprecated",
+                            "protocol": "http",
+                            "host": [
+                                "localhost:12345"
+                            ],
+                            "path": [
+                                "deprecated"
+                            ]
+                        },
+                        "description": ""
+                    }
+                }
+            ],
+            "description": "A subSDK in which all operations are deprecated."
+        },
+        {
+            "name": "testGroup",
+            "item": []
+        },
+        {
+            "name": "Group",
+            "item": [
+                {
+                    "name": "An operation at the group's root level",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "",
+                                "type": "string"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/group/root",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "group",
+                                "root"
+                            ]
+                        },
+                        "description": "'group' differs from 'TestGroup' in that it not only contains subgroups,\nbut also an operation.\n"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "namespaceTests",
+            "item": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "queryParam1",
+            "value": "some example query param"
+        },
+        {
+            "key": "deprecatedQueryParam1",
+            "value": "some example query param"
+        },
+        {
+            "key": "deprecatedQueryParam2",
+            "value": "some example query param"
+        },
+        {
+            "key": "loneQueryParam",
+            "value": "<value>"
+        },
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:35123"
+        }
+    ]
+}

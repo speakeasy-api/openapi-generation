@@ -1,0 +1,6 @@
+* @speakeasy-api/dev-sdks
+.github/workflows/snapshot-dispatch.yml @speakeasy-api/speakeasy-maintainers
+.github/workflows/no-private-snapshot-machinery.yml @speakeasy-api/speakeasy-maintainers
+scripts/test-snapshot-dispatch.mjs @speakeasy-api/speakeasy-maintainers
+scripts/check-no-private-snapshot-machinery.sh @speakeasy-api/speakeasy-maintainers
+internal/snapshotdispatch/workflow_test.go @speakeasy-api/speakeasy-maintainers

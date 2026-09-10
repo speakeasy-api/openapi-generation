@@ -1,0 +1,506 @@
+package tests
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/output"
+	"{{getGolangPackage}}/internal/sdk/models/sdkerrors"
+)
+
+type hintedTaxonomyError struct {
+	Body       string
+	StatusCode int
+	hints      []string
+}
+
+func (e *hintedTaxonomyError) Error() string     { return "taxonomy test error" }
+func (e *hintedTaxonomyError) CLIHints() []string { return e.hints }
+
+type oddHTTPMetaTaxonomyError struct {
+	HTTPMeta struct{ Response string }
+}
+
+func (*oddHTTPMetaTaxonomyError) Error() string { return "odd HTTP metadata" }
+
+type oddRawResponseTaxonomyError struct {
+	RawResponse string
+}
+
+func (*oddRawResponseTaxonomyError) Error() string { return "odd raw response" }
+
+func newTaxonomyCommand(t *testing.T, format string) (*cobra.Command, *bytes.Buffer) {
+	t.Helper()
+	cmd := &cobra.Command{}
+	cmd.Flags().String("output-format", "pretty", "")
+	cmd.Flags().String("jq", "", "")
+	cmd.Flags().String("color", "never", "")
+	cmd.Flags().Bool("include-headers", false, "")
+	require.NoError(t, cmd.Flags().Set("output-format", format))
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	return cmd, &stderr
+}
+
+func taxonomyBody(message, status string, reasons ...string) string {
+	details := make([]map[string]interface{}, 0, len(reasons))
+	for _, reason := range reasons {
+		details = append(details, map[string]interface{}{
+			"@type":  "type.example.dev/error-detail",
+			"domain": "api.example.dev",
+			"reason": reason,
+		})
+	}
+	body := map[string]interface{}{"error": map[string]interface{}{
+		"message": message,
+		"status":  status,
+		"details": details,
+	}}
+	encoded, _ := json.Marshal(body)
+	return string(encoded)
+}
+
+func TestErrorTaxonomyPrettyJSONAgentParity(t *testing.T) {
+	recordTest("error-taxonomy-pretty-json-agent-parity")
+	cases := []struct {
+		reason   string
+		wantType string
+		wantHint string
+	}{
+		{reason: "ACCOUNT_KEY_REVOKED", wantType: "authentication_error", wantHint: "Replace the revoked account key before retrying"},
+		{{- if or (cliEmitsServiceDisabledErrorType) (cliEmitsBillingDisabledErrorType)}}
+		// The account-state types are declared (not built in); their guidance
+		// is the neutral generated fallback for declared account-state types.
+		{{- end}}
+		{{- if cliEmitsServiceDisabledErrorType}}
+		{reason: "ACCOUNT_SERVICE_PAUSED", wantType: "service_disabled", wantHint: "The API reports this service as disabled for the calling account — enable it before retrying (this is not a credential problem)"},
+		{{- end}}
+		{{- if cliEmitsBillingDisabledErrorType}}
+		{reason: "ACCOUNT_BILLING_PAUSED", wantType: "billing_disabled", wantHint: "The API reports billing as disabled for the calling account — enable billing before retrying (this is not a credential problem)"},
+		{{- end}}
+	}
+	for _, tc := range cases {
+		t.Run(tc.reason, func(t *testing.T) {
+			body := taxonomyBody("request cannot proceed", "REQUEST_REJECTED", tc.reason)
+
+			resetAgentMode(t)
+			prettyCmd, prettyStderr := newTaxonomyCommand(t, "pretty")
+			prettyErr := output.Error(prettyCmd, &agentModeTestError{Body: body, StatusCode: http.StatusBadRequest})
+			require.Error(t, prettyErr)
+			assert.True(t, output.IsRendered(prettyErr))
+			pretty := prettyStderr.String()
+			assert.Contains(t, pretty, "Error ("+tc.wantType+"): request cannot proceed\n")
+			assert.Contains(t, pretty, "Reason: "+tc.reason+" (HTTP 400)\n")
+			assert.Contains(t, pretty, "  - "+tc.wantHint)
+			assert.Equal(t, 1, strings.Count(pretty, "request cannot proceed"))
+
+			resetAgentMode(t)
+			jsonCmd, jsonStderr := newTaxonomyCommand(t, "json")
+			jsonErr := output.Error(jsonCmd, &agentModeTestError{Body: body, StatusCode: http.StatusBadRequest})
+			require.Error(t, jsonErr)
+			jsonEnvelope := agentEnvelope(t, jsonStderr.String())
+
+			resetAgentMode(t)
+			t.Setenv("FORCE_AGENT_MODE", "1")
+			agentCmd, agentStderr := newTaxonomyCommand(t, "pretty")
+			output.InitAgentMode(agentCmd)
+			agentErr := output.Error(agentCmd, &agentModeTestError{Body: body, StatusCode: http.StatusBadRequest})
+			require.Error(t, agentErr)
+			agentEnvelope := agentEnvelope(t, agentStderr.String())
+
+			for _, envelope := range []map[string]interface{}{jsonEnvelope, agentEnvelope} {
+				assert.Equal(t, tc.wantType, envelope["error_type"])
+				assert.Equal(t, tc.reason, envelope["error_reason"])
+				assert.Equal(t, "request cannot proceed", envelope["message"])
+				assert.Contains(t, envelope["hints"], tc.wantHint)
+				assert.Equal(t, float64(http.StatusBadRequest), envelope["status_code"])
+			}
+			assert.Equal(t, jsonEnvelope["error_type"], agentEnvelope["error_type"])
+			assert.Equal(t, jsonEnvelope["hints"], agentEnvelope["hints"])
+		})
+	}
+}
+
+func TestErrorTaxonomyDeclaredRulesAndOrdering(t *testing.T) {
+	recordTest("error-taxonomy-declared-rules-and-ordering")
+	cmd, _ := newTaxonomyCommand(t, "pretty")
+
+	invalidKey := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("bad credential", "REQUEST_REJECTED", "ACCOUNT_KEY_REVOKED"),
+		StatusCode: http.StatusBadRequest,
+	})
+	assert.Equal(t, output.ErrorTypeAuthentication, invalidKey.Type)
+	assert.Equal(t, []string{"Replace the revoked account key before retrying"}, invalidKey.Hints,
+		"reason hints replace type hints")
+
+	suspended := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("access suspended", "ACCESS_DENIED", "WORKSPACE_SUSPENDED"),
+		StatusCode: http.StatusForbidden,
+	})
+	assert.Equal(t, output.ErrorTypeAuthorization, suspended.Type)
+	assert.Equal(t, "WORKSPACE_SUSPENDED", suspended.Reason)
+	assert.Equal(t, []string{"Ask a workspace owner to restore access before retrying"}, suspended.Hints)
+
+	{{- if cliEmitsBillingDisabledErrorType}}
+
+	first := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("two failures", "ACCESS_DENIED", "FIRST_DECLARED", "SECOND_DECLARED"),
+		StatusCode: http.StatusForbidden,
+	})
+	assert.Equal(t, output.ErrorTypeBillingDisabled, first.Type)
+	assert.Equal(t, "FIRST_DECLARED", first.Reason)
+	assert.Equal(t, []string{"Resolve the first declared failure before retrying"}, first.Hints)
+	{{- end}}
+
+	firstHintOnly := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("two failures", "REQUEST_REJECTED", "TARGET_MISSING", "ACCOUNT_KEY_REVOKED"),
+		StatusCode: http.StatusBadRequest,
+	})
+	assert.Equal(t, output.ErrorTypeAuthentication, firstHintOnly.Type)
+	assert.Equal(t, "ACCOUNT_KEY_REVOKED", firstHintOnly.Reason,
+		"a hints-only rule must not block a later typed reason")
+	assert.Equal(t, []string{"Replace the revoked account key before retrying"}, firstHintOnly.Hints)
+
+	statusBeforeHTTP := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("missing", "TARGET_MISSING"),
+		StatusCode: http.StatusInternalServerError,
+	})
+	assert.Equal(t, output.ErrorTypeNotFound, statusBeforeHTTP.Type)
+	assert.Equal(t, "TARGET_MISSING", statusBeforeHTTP.Reason)
+	assert.Equal(t, []string{"Check that the resource exists and that its identifier is correct"}, statusBeforeHTTP.Hints,
+		"the declared status probe classifies with its own rules, falling back to declared type hints")
+
+	detailReason := output.Classify(cmd, &agentModeTestError{
+		Body:       taxonomyBody("missing", "REQUEST_REJECTED", "TARGET_MISSING"),
+		StatusCode: http.StatusBadRequest,
+	})
+	assert.Equal(t, output.ErrorTypeValidation, detailReason.Type)
+	assert.Equal(t, "TARGET_MISSING", detailReason.Reason)
+	assert.Equal(t, []string{"This hint applies only to a detail-carrier reason"}, detailReason.Hints,
+		"the same reason value carries hints alone at the detail carrier and a type at the status probe")
+}
+
+func TestErrorTaxonomyHintPrecedenceAndDedupe(t *testing.T) {
+	recordTest("error-taxonomy-hint-precedence-and-dedupe")
+	cmd, _ := newTaxonomyCommand(t, "pretty")
+	cmd.Annotations = map[string]string{
+		"speakeasy_command_hints": `{"ACCOUNT_KEY_REVOKED":["typed hint","command hint","command hint"]}`,
+	}
+	err := &hintedTaxonomyError{
+		Body: `{"error":{"message":"bad credential","details":[{"reason":"ACCOUNT_KEY_REVOKED"}],"hints":["server hint","server hint"]}}`,
+		StatusCode: http.StatusBadRequest,
+		hints:      []string{"reason-independent typed hint", "typed hint"},
+	}
+	classification := output.Classify(cmd, err)
+	assert.Equal(t, []string{
+		"server hint",
+		"Replace the revoked account key before retrying",
+		"reason-independent typed hint",
+		"typed hint",
+		"command hint",
+	}, classification.Hints)
+
+	err.Body = `{"error":{"message":"bad credential","details":[{"reason":"ACCOUNT_KEY_REVOKED"}],"hints":"malformed"}}`
+	classification = output.Classify(cmd, err)
+	assert.Equal(t, "Replace the revoked account key before retrying", classification.Hints[0],
+		"malformed server hints must not suppress local remediation")
+}
+
+func TestErrorTaxonomyReservedKeysAndRenderedClassification(t *testing.T) {
+	recordTest("error-taxonomy-reserved-keys-and-rendered-classification")
+	resetAgentMode(t)
+	cmd, stderr := newTaxonomyCommand(t, "json")
+	body := `{"error_type":"server_value","error_reason":"server_value","message":"server value","hints":["server hint"],"status_code":999,"_hint":"legacy","error":{"message":"actual message","details":[{"reason":"ACCOUNT_KEY_REVOKED"}]}}`
+	rendered := output.Error(cmd, &agentModeTestError{Body: body, StatusCode: http.StatusBadRequest})
+	require.Error(t, rendered)
+
+	classification, ok := output.ClassificationFrom(rendered)
+	require.True(t, ok)
+	assert.Equal(t, output.ErrorTypeAuthentication, classification.Type)
+	assert.Equal(t, "ACCOUNT_KEY_REVOKED", classification.Reason)
+	assert.Equal(t, output.ErrorOriginAPI, classification.Origin)
+	assert.Equal(t, http.StatusBadRequest, classification.StatusCode)
+
+	envelope := agentEnvelope(t, stderr.String())
+	assert.Equal(t, "authentication_error", envelope["error_type"])
+	assert.Equal(t, "ACCOUNT_KEY_REVOKED", envelope["error_reason"])
+	assert.Equal(t, "actual message", envelope["message"])
+	assert.Equal(t, float64(http.StatusBadRequest), envelope["status_code"])
+	assert.NotContains(t, envelope, "_hint")
+}
+
+func TestErrorTaxonomyPrettyResidualDetails(t *testing.T) {
+	recordTest("error-taxonomy-pretty-residual-details")
+	cmd, stderr := newTaxonomyCommand(t, "pretty")
+	body := `{"error":{"code":400,"message":"invalid field","status":"REQUEST_REJECTED","details":[{"@type":"type.example.dev/error-detail","reason":"ACCOUNT_KEY_REVOKED","domain":"api.example.dev","metadata":{"field":"token"}}]}}`
+	err := output.Error(cmd, &agentModeTestError{Body: body, StatusCode: http.StatusBadRequest})
+	require.Error(t, err)
+	pretty := stderr.String()
+	assert.Contains(t, pretty, "Details:\n")
+	assert.Contains(t, pretty, `"metadata"`)
+	assert.Contains(t, pretty, `"field": "token"`)
+	details := strings.SplitN(pretty, "Details:\n", 2)
+	require.Len(t, details, 2)
+	assert.NotContains(t, details[1], `"error"`, "a sole residual error object must be unwrapped")
+	assert.Equal(t, 1, strings.Count(pretty, "invalid field"), "message must not be repeated in Details")
+	assert.NotContains(t, details[1], `"reason"`,
+		"the carrier member surfaced on the Reason: line is stripped from Details")
+	assert.Contains(t, details[1], `"status": "REQUEST_REJECTED"`,
+		"a carrier value that was not rendered stays in Details")
+	assert.Contains(t, details[1], `"@type"`, "non-carrier detail members are preserved")
+	assert.Contains(t, details[1], `"domain"`, "non-carrier detail members are preserved")
+
+	inlineCmd, inlineStderr := newTaxonomyCommand(t, "pretty")
+	inlineBody := `{"error":[{"message":"invalid inline field","details":[{"reason":"ACCOUNT_KEY_REVOKED","metadata":{"field":"token"}}]}]}`
+	inlineErr := output.Error(inlineCmd, &agentModeTestError{Body: inlineBody, StatusCode: http.StatusBadRequest})
+	require.Error(t, inlineErr)
+	inlinePretty := inlineStderr.String()
+	assert.Equal(t, 1, strings.Count(inlinePretty, "invalid inline field"),
+		"a singleton inline error message must not be repeated in Details")
+	assert.NotContains(t, inlinePretty, `"reason": "ACCOUNT_KEY_REVOKED"`)
+	assert.Contains(t, inlinePretty, `"metadata"`)
+
+	// The same reason string at two declared carriers: only the carrier that
+	// selected the rendered reason ($.details[*].reason, first in declaration
+	// order) is stripped; the $.status member holding the same string was
+	// never surfaced and must stay visible under Details.
+	sharedCmd, sharedStderr := newTaxonomyCommand(t, "pretty")
+	sharedBody := `{"error":{"code":429,"message":"quota exhausted","status":"RESOURCE_EXHAUSTED","details":[{"@type":"type.example.dev/error-info","reason":"RESOURCE_EXHAUSTED","domain":"api.example.dev"}]}}`
+	sharedErr := output.Error(sharedCmd, &agentModeTestError{Body: sharedBody, StatusCode: http.StatusTooManyRequests})
+	require.Error(t, sharedErr)
+	sharedPretty := sharedStderr.String()
+	assert.Contains(t, sharedPretty, "Reason: RESOURCE_EXHAUSTED")
+	sharedDetails := strings.SplitN(sharedPretty, "Details:\n", 2)
+	require.Len(t, sharedDetails, 2)
+	assert.NotContains(t, sharedDetails[1], `"reason"`,
+		"the carrier that selected the rendered reason is stripped from Details")
+	assert.Contains(t, sharedDetails[1], `"status": "RESOURCE_EXHAUSTED"`,
+		"an un-selected carrier holding the same reason string stays in Details")
+	assert.Contains(t, sharedDetails[1], `"domain"`, "sibling detail members are preserved")
+
+	// The same reason code at several entries of the wildcard carrier: only
+	// the occurrence that supplied the rendered reason (first in array order)
+	// is stripped; the later entry sharing the code, and the entry carrying a
+	// different code, were never surfaced and keep their members.
+	multiCmd, multiStderr := newTaxonomyCommand(t, "pretty")
+	multiBody := `{"error":{"code":429,"message":"quota exhausted","details":[` +
+		`{"reason":"RESOURCE_EXHAUSTED","domain":"first.example.dev"},` +
+		`{"reason":"RESOURCE_EXHAUSTED","domain":"second.example.dev"},` +
+		`{"reason":"QUOTA_POLICY","domain":"third.example.dev"}]}}`
+	multiErr := output.Error(multiCmd, &agentModeTestError{Body: multiBody, StatusCode: http.StatusTooManyRequests})
+	require.Error(t, multiErr)
+	multiPretty := multiStderr.String()
+	assert.Contains(t, multiPretty, "Reason: RESOURCE_EXHAUSTED")
+	multiDetails := strings.SplitN(multiPretty, "Details:\n", 2)
+	require.Len(t, multiDetails, 2)
+	assert.Equal(t, 1, strings.Count(multiDetails[1], `"reason": "RESOURCE_EXHAUSTED"`),
+		"only the occurrence that supplied the rendered reason is stripped; the duplicate survives")
+	assert.Contains(t, multiDetails[1], `"reason": "QUOTA_POLICY"`,
+		"an entry with a different code keeps its member")
+	assert.True(t, strings.Index(multiDetails[1], `"first.example.dev"`) <
+		strings.Index(multiDetails[1], `"reason": "RESOURCE_EXHAUSTED"`),
+		"the stripped member belongs to the first entry, the one that supplied the reason")
+	assert.Contains(t, multiDetails[1], `"second.example.dev"`)
+}
+
+func TestErrorTaxonomyFallbackMessageOmitsRawBody(t *testing.T) {
+	recordTest("error-taxonomy-fallback-message-omits-raw-body")
+	resetAgentMode(t)
+	rawBody := "<html><body>upstream unavailable</body></html>"
+	newError := func() error {
+		return sdkerrors.NewSDKDefaultError(
+			"API error occurred",
+			http.StatusBadGateway,
+			rawBody,
+			&http.Response{Header: http.Header{"Content-Type": []string{"text/html"}}},
+		)
+	}
+
+	t.Run("pretty", func(t *testing.T) {
+		cmd, stderr := newTaxonomyCommand(t, "pretty")
+		rendered := output.Error(cmd, newError())
+		require.Error(t, rendered)
+		pretty := stderr.String()
+		assert.Contains(t, pretty, "Error (server_error): API error occurred: Status 502\n")
+		assert.Equal(t, 1, strings.Count(pretty, rawBody), "raw body must appear only under Details")
+	})
+
+	t.Run("json", func(t *testing.T) {
+		cmd, stderr := newTaxonomyCommand(t, "json")
+		apiErr := newError()
+		rendered := output.Error(cmd, apiErr)
+		require.Error(t, rendered)
+		envelope := agentEnvelope(t, stderr.String())
+		assert.Equal(t, "API error occurred: Status 502", envelope["message"])
+		assert.Equal(t, apiErr.Error(), envelope["error"], "the compatibility error field stays untouched")
+		assert.Equal(t, rawBody, envelope["body"])
+		assert.NotContains(t, envelope["message"], rawBody)
+	})
+}
+
+func TestErrorTaxonomyOddBodiesUseFallbackEnvelope(t *testing.T) {
+	recordTest("error-taxonomy-odd-bodies-use-fallback-envelope")
+	cases := []struct {
+		name       string
+		body       string
+		assertBody func(*testing.T, interface{}, bool)
+	}{
+		{
+			name: "invalid JSON with a classifiable prefix",
+			body: `{"error":{"details":[{"reason":"ACCOUNT_KEY_REVOKED"}]}} trailing`,
+			assertBody: func(t *testing.T, body interface{}, exists bool) {
+				assert.True(t, exists)
+				assert.Equal(t, `{"error":{"details":[{"reason":"ACCOUNT_KEY_REVOKED"}]}} trailing`, body)
+			},
+		},
+		{
+			name: "singleton array with a non-object error",
+			body: `[{"error":"plain failure"}]`,
+			assertBody: func(t *testing.T, body interface{}, exists bool) {
+				require.True(t, exists)
+				items, ok := body.([]interface{})
+				require.True(t, ok)
+				require.Len(t, items, 1)
+			},
+		},
+		{
+			name: "JSON null",
+			body: `null`,
+			assertBody: func(t *testing.T, body interface{}, exists bool) {
+				assert.True(t, exists)
+				assert.Nil(t, body, "JSON null must not become the string \"null\"")
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			cmd, stderr := newTaxonomyCommand(t, "json")
+			rendered := output.Error(cmd, &agentModeTestError{Body: tc.body, StatusCode: http.StatusBadRequest})
+			require.Error(t, rendered)
+			envelope := agentEnvelope(t, stderr.String())
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.NotContains(t, envelope, "error_reason")
+			body, exists := envelope["body"]
+			tc.assertBody(t, body, exists)
+		})
+	}
+}
+
+func TestErrorTaxonomyOddReflectionFieldsDoNotPanic(t *testing.T) {
+	recordTest("error-taxonomy-odd-reflection-fields-do-not-panic")
+	for _, tc := range []struct {
+		name string
+		err  error
+	}{
+		{name: "non-pointer HTTPMeta response", err: &oddHTTPMetaTaxonomyError{}},
+		{name: "non-pointer raw response", err: &oddRawResponseTaxonomyError{}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			cmd, _ := newTaxonomyCommand(t, "pretty")
+			require.NoError(t, cmd.Flags().Set("include-headers", "true"))
+			var rendered error
+			assert.NotPanics(t, func() {
+				rendered = output.Error(cmd, tc.err)
+			})
+			require.Error(t, rendered)
+			classification, ok := output.ClassificationFrom(rendered)
+			require.True(t, ok)
+			// No status, no body, no transport evidence: an untyped local failure
+			// is a runtime error, never guessed to be usage.
+			assert.Equal(t, output.ErrorTypeRuntime, classification.Type)
+		})
+	}
+}
+
+func TestErrorTaxonomyPrettyHTTPStatusWithoutReason(t *testing.T) {
+	recordTest("error-taxonomy-pretty-http-status-without-reason")
+	cmd, stderr := newTaxonomyCommand(t, "pretty")
+	err := output.Error(cmd, &agentModeTestError{
+		Body:       `{"error":{"message":"request rejected"}}`,
+		StatusCode: http.StatusBadRequest,
+	})
+	require.Error(t, err)
+	pretty := stderr.String()
+	assert.Contains(t, pretty, "Error (validation_error): request rejected\n")
+	assert.Contains(t, pretty, "HTTP status: 400\n")
+	assert.NotContains(t, pretty, "Reason:")
+}
+
+func TestErrorTaxonomyJQUsesStructuredEnvelope(t *testing.T) {
+	recordTest("error-taxonomy-jq-uses-structured-envelope")
+	resetAgentMode(t)
+	cmd, stderr := newTaxonomyCommand(t, "pretty")
+	require.NoError(t, cmd.Flags().Set("jq", ".message"))
+	err := output.Error(cmd, &agentModeTestError{
+		Body:       taxonomyBody("missing", "TARGET_MISSING"),
+		StatusCode: http.StatusNotFound,
+	})
+	require.Error(t, err)
+	envelope := agentEnvelope(t, stderr.String())
+	assert.Equal(t, "not_found", envelope["error_type"])
+	assert.Equal(t, "TARGET_MISSING", envelope["error_reason"])
+}
+
+func TestErrorTaxonomyOriginSemantics(t *testing.T) {
+	recordTest("error-taxonomy-origin-semantics")
+	cmd, _ := newTaxonomyCommand(t, "pretty")
+	cases := []struct {
+		name string
+		err  error
+		want output.ErrorOrigin
+	}{
+		{name: "statusless validation is local", err: errors.New("request serialization failed"), want: output.ErrorOriginCLI},
+		{name: "transport stays api", err: errors.New("error sending request: no response"), want: output.ErrorOriginAPI},
+		{name: "protocol stays api", err: errors.New("error unmarshaling json response body: wrong type"), want: output.ErrorOriginAPI},
+		{name: "http response is api", err: &agentModeTestError{StatusCode: http.StatusBadRequest}, want: output.ErrorOriginAPI},
+		{name: "stream event", err: &output.StreamEventError{Body: `{"error":{"message":"failed"}}`}, want: output.ErrorOriginStream},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, output.Classify(cmd, tc.err).Origin)
+		})
+	}
+}
+
+func TestErrorTaxonomyEveryClosedTypeHasAHint(t *testing.T) {
+	recordTest("error-taxonomy-every-closed-type-has-a-hint")
+	cmd, _ := newTaxonomyCommand(t, "pretty")
+	cases := []struct {
+		name string
+		err  error
+		want output.ErrorType
+	}{
+		{name: "authentication", err: &agentModeTestError{StatusCode: http.StatusUnauthorized}, want: output.ErrorTypeAuthentication},
+		{name: "authorization", err: &agentModeTestError{StatusCode: http.StatusForbidden}, want: output.ErrorTypeAuthorization},
+		{{- if cliEmitsServiceDisabledErrorType}}
+		{name: "service disabled", err: &agentModeTestError{Body: taxonomyBody("disabled", "REQUEST_REJECTED", "ACCOUNT_SERVICE_PAUSED"), StatusCode: http.StatusBadRequest}, want: output.ErrorTypeServiceDisabled},
+		{{- end}}
+		{{- if cliEmitsBillingDisabledErrorType}}
+		{name: "billing disabled", err: &agentModeTestError{Body: taxonomyBody("disabled", "REQUEST_REJECTED", "ACCOUNT_BILLING_PAUSED"), StatusCode: http.StatusBadRequest}, want: output.ErrorTypeBillingDisabled},
+		{{- end}}
+		{name: "not found", err: &agentModeTestError{StatusCode: http.StatusNotFound}, want: output.ErrorTypeNotFound},
+		{name: "validation", err: &agentModeTestError{StatusCode: http.StatusBadRequest}, want: output.ErrorTypeValidation},
+		{name: "rate limit", err: &agentModeTestError{StatusCode: http.StatusTooManyRequests}, want: output.ErrorTypeRateLimit},
+		{name: "server", err: &agentModeTestError{StatusCode: http.StatusInternalServerError}, want: output.ErrorTypeServer},
+		{name: "connection", err: errors.New("error sending request: no response"), want: output.ErrorTypeConnection},
+		{name: "protocol", err: errors.New("error unmarshaling json response body: wrong type"), want: output.ErrorTypeProtocol},
+		{name: "api", err: &agentModeTestError{StatusCode: http.StatusTeapot}, want: output.ErrorTypeAPI},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			classification := output.Classify(cmd, tc.err)
+			assert.Equal(t, tc.want, classification.Type)
+			assert.NotEmpty(t, classification.Hints)
+		})
+	}
+}

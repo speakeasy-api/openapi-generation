@@ -1,0 +1,113 @@
+overlay: 1.0.0
+info:
+  title: C# Open Enum Union Test Overlay
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  - target: $.components.schemas
+    update:
+      SimpleContentType:
+        type: string
+        description: A simple content type enum.
+        x-speakeasy-unknown-values: allow
+        enum:
+          - text
+          - image
+      TextContent:
+        type: object
+        properties:
+          type:
+            $ref: "#/components/schemas/SimpleContentType"
+          message:
+            type: string
+        required:
+          - type
+          - message
+      ImageContent:
+        type: object
+        properties:
+          type:
+            $ref: "#/components/schemas/SimpleContentType"
+          url:
+            type: string
+        required:
+          - type
+          - url
+      SimpleContent:
+        type: object
+        oneOf:
+          - $ref: "#/components/schemas/TextContent"
+          - $ref: "#/components/schemas/ImageContent"
+        discriminator:
+          propertyName: type
+          mapping:
+            text: "#/components/schemas/TextContent"
+            image: "#/components/schemas/ImageContent"
+      UnknownRaw:
+        type: object
+        x-speakeasy-name-override: UnknownRaw
+        required:
+          - raw
+        properties:
+          raw:
+            type: string
+      IsUnknown:
+        type: object
+        x-speakeasy-name-override: IsUnknown
+        required:
+          - flag
+        properties:
+          flag:
+            type: boolean
+      Unknown:
+        type: object
+        x-speakeasy-name-override: Unknown
+        required:
+          - value
+        properties:
+          value:
+            type: string
+      OpenUnionHelperNameCollision:
+        oneOf:
+          - $ref: "#/components/schemas/UnknownRaw"
+          - $ref: "#/components/schemas/IsUnknown"
+          - $ref: "#/components/schemas/Unknown"
+        x-speakeasy-unknown-values: allow
+  - target: $.paths
+    update:
+      /anything/openEnumUnion:
+        post:
+          operationId: openEnumUnionPost
+          tags:
+            - unions
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/SimpleContent"
+            required: true
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    title: res
+                    type: object
+                    properties:
+                      json:
+                        $ref: "#/components/schemas/SimpleContent"
+                    required:
+                      - json
+      /anything/openUnionHelperNameCollision:
+        get:
+          operationId: openUnionHelperNameCollisionGet
+          tags:
+            - unions
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: "#/components/schemas/OpenUnionHelperNameCollision"

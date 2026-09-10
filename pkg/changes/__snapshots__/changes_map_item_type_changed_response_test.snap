@@ -1,0 +1,76 @@
+
+[TestChanges_MapItemTypeChangedResponse - 1]
+# Test: map_item_type_changed_response
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          c:
+                            type: object
+                            additionalProperties:
+                              type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          c:
+                            type: object
+                            additionalProperties:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getUser()`:  `response.a.b.c.Map<c>` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getUser()`:  `response.a.b.c.Map<c>` **Changed** (Breaking ⚠️)
+
+---

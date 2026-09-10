@@ -1,0 +1,22 @@
+{{- $serversName := templateConstName "SERVERS" (sanitizeClassName .Local.ID) -}}
+{{- $serverName := templateConstName "SERVER" (sanitizeClassName .Local.ID) -}}
+{{- $className := sanitizeClassName .Local.OwningSDK.Type.Name -}}
+{{- if .Local.Servers.ServerMap}}
+{{- range .Local.Servers.Servers}}
+{{templateComments .Comments (templateConstName .ID $serverName) nil 1}}
+    public const {{templateConstName .ID $serverName}} = '{{.ID}}';
+{{end}}{{/* end server range */}}
+    public const {{$serversName}} = [
+        {{- range .Local.Servers.Servers}}
+{{templateComments .Comments nil nil 2}}
+        {{$className}}::{{templateConstName .ID $serverName}} => '{{ .URL }}',
+        {{- end}}{{/* end server range */}}
+    ];
+{{- else}}{{/* else ServerMap */}}
+    public const {{$serversName}} = [
+        {{- range .Local.Servers.Servers}}
+{{templateComments .Comments nil nil 2}}
+        '{{ .URL }}',
+        {{- end}}{{/* end server range */}}
+    ];
+{{- end}}{{/* end ServerMap */}}

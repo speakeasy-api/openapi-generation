@@ -1,0 +1,6 @@
+test-org:
+  name: org
+  in: path
+  required: true
+  schema:
+    type: string

@@ -1,0 +1,69 @@
+components:
+  schemas:
+    Product:
+      type: object
+      required: [id, name, description, price, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Products:
+      type: object
+      required: [nextCursor, products]
+      properties:
+        nextCursor:
+          type: [string, "null"]
+        products:
+          type: array
+          itemType:
+            $ref: "#/components/schemas/Product"
+    NewProductForm:
+      type: object
+      required: [name, description, price]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+    ProductUpdateForm:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+    ProductInventoryUpdateForm:
+      type: object
+      required: [quantityDelta]
+      properties:
+        quantityDelta:
+          type: integer
+    ProductInventoryStatus:
+      type: object
+      required: [productId, quantity, updatedAt]
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time

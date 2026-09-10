@@ -1,0 +1,253 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+    sdk "{{getRootModulePath}}"
+	"github.com/stretchr/testify/require"
+)
+
+
+func TestOptionalNullable_Full(t *testing.T) {
+	recordTest("object-with-optional-nullable-full")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "full"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalTrueNullableTrueField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalTrueNullableTrueField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalTrueNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalTrueNullableTrueField.GetType())
+
+	// Verify MedicalRecord is set with a value
+	medicalRecord := res.ObjectWithOptionalTrueNullableTrueField.GetMedicalRecord()
+	require.True(t, medicalRecord.IsSet(), "MedicalRecord should be set")
+	require.False(t, medicalRecord.IsNull(), "MedicalRecord should not be null")
+
+	record, ok := medicalRecord.Get()
+	require.True(t, ok, "Should be able to get MedicalRecord")
+	require.NotNil(t, record, "MedicalRecord should not be nil")
+	require.Equal(t, "fluffy is sick", *record.GetDiagnosis())
+}
+
+func TestOptionalNullable_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-nullable-field-absent")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordAbsent"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalTrueNullableTrueField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalTrueNullableTrueField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalTrueNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalTrueNullableTrueField.GetType())
+
+	// Verify MedicalRecord is NOT set (field is omitted from JSON)
+	medicalRecord := res.ObjectWithOptionalTrueNullableTrueField.GetMedicalRecord()
+	require.Nil(t, medicalRecord, "MedicalRecord should be nil")
+}
+
+func TestOptionalNullable_MedicalRecordNull(t *testing.T) {
+	recordTest("object-with-optional-nullable-field-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordNull"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalTrueNullableTrueField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalTrueNullableTrueField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalTrueNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalTrueNullableTrueField.GetType())
+
+	// Verify MedicalRecord is set to null (explicitly null in JSON)
+	medicalRecord := res.ObjectWithOptionalTrueNullableTrueField.GetMedicalRecord()
+	require.True(t, medicalRecord.IsSet(), "MedicalRecord should be set")
+	require.True(t, medicalRecord.IsNull(), "MedicalRecord should be explicitly null")
+
+	record, ok := medicalRecord.Get()
+	require.True(t, ok, "Should be able to get MedicalRecord (even when null)")
+	require.Nil(t, record, "MedicalRecord value should be nil")
+}
+
+func TestOptionalFalseNullableTrue_Full(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-full")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "full"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalFalseNullableTrueField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalFalseNullableTrueField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalFalseNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalFalseNullableTrueField.GetType())
+
+	// Verify MedicalRecord is set with a value (required field, so it's a plain pointer)
+	medicalRecord := res.ObjectWithOptionalFalseNullableTrueField.GetMedicalRecord()
+	require.NotNil(t, medicalRecord, "MedicalRecord should not be nil")
+	require.Equal(t, "fluffy is sick", *medicalRecord.GetDiagnosis())
+}
+
+func TestOptionalFalseNullableTrue_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-field-absent")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordAbsent"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalFalseNullableTrueField(context.Background(), &scenario)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Equal(t, int64(1), res.ObjectWithOptionalFalseNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalFalseNullableTrueField.GetType())
+	require.Nil(t, err)
+
+	medicalRecord := res.ObjectWithOptionalFalseNullableTrueField.GetMedicalRecord()
+	require.Nil(t, medicalRecord, "MedicalRecord should be nil (explicitly null in JSON)")
+}
+
+func TestOptionalFalseNullableTrue_MedicalRecordNull(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-field-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordNull"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalFalseNullableTrueField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalFalseNullableTrueField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalFalseNullableTrueField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalFalseNullableTrueField.GetType())
+
+	// Verify MedicalRecord is set to null (explicitly null in JSON)
+	// Since it's required but nullable, the pointer should be nil
+	medicalRecord := res.ObjectWithOptionalFalseNullableTrueField.GetMedicalRecord()
+	require.Nil(t, medicalRecord, "MedicalRecord should be nil (explicitly null in JSON)")
+}
+
+// Tests for OptionalTrueNullableFalse (optional: true, nullable: false)
+func TestOptionalTrueNullableFalse_Full(t *testing.T) {
+	recordTest("object-with-optional-true-nullable-false-full")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "full"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalTrueNullableFalseField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalTrueNullableFalseField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalTrueNullableFalseField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalTrueNullableFalseField.GetType())
+
+	// Verify MedicalRecord is set with a value
+	medicalRecord := res.ObjectWithOptionalTrueNullableFalseField.GetMedicalRecord()
+	require.NotNil(t, medicalRecord, "MedicalRecord should not be nil")
+	require.Equal(t, "fluffy is sick", *medicalRecord.GetDiagnosis())
+}
+
+func TestOptionalTrueNullableFalse_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-true-nullable-false-field-absent")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordAbsent"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalTrueNullableFalseField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalTrueNullableFalseField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalTrueNullableFalseField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalTrueNullableFalseField.GetType())
+
+	// Verify MedicalRecord is NOT set (field is omitted from JSON)
+	// Since it's optional, it should be nil when absent
+	medicalRecord := res.ObjectWithOptionalTrueNullableFalseField.GetMedicalRecord()
+	require.Nil(t, medicalRecord, "MedicalRecord should be nil when absent")
+}
+
+// Tests for OptionalFalseNullableFalse (optional: false, nullable: false)
+func TestOptionalFalseNullableFalse_Full(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-false-full")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "full"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalFalseNullableFalseField(context.Background(), &scenario)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalFalseNullableFalseField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify ID and Type fields
+	require.Equal(t, int64(1), res.ObjectWithOptionalFalseNullableFalseField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalFalseNullableFalseField.GetType())
+
+	// Verify MedicalRecord is set with a value (required field)
+	medicalRecord := res.ObjectWithOptionalFalseNullableFalseField.GetMedicalRecord()
+	require.NotNil(t, medicalRecord, "MedicalRecord should not be nil")
+	require.Equal(t, "fluffy is sick", *medicalRecord.GetDiagnosis())
+}
+
+func TestOptionalFalseNullableFalse_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-false-field-absent")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	scenario := "medicalRecordAbsent"
+	res, err := s.OptionalNullableFields.ObjectWithOptionalFalseNullableFalseField(context.Background(), &scenario)
+
+	// Without RespectRequiredFields enabled, missing required fields don't cause errors
+	// The field will be zero-valued instead
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.ObjectWithOptionalFalseNullableFalseField)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Equal(t, int64(1), res.ObjectWithOptionalFalseNullableFalseField.GetID())
+	require.Equal(t, "mammal", *res.ObjectWithOptionalFalseNullableFalseField.GetType())
+
+	// MedicalRecord will be zero-valued since it's missing from response
+	medicalRecord := res.ObjectWithOptionalFalseNullableFalseField.GetMedicalRecord()
+	require.Nil(t, medicalRecord.GetDiagnosis())
+}

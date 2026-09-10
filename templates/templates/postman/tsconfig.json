@@ -1,0 +1,16 @@
+{
+    "extends": "../../../tsconfig",
+    "include": [
+        "../common/common/*",
+        "../common/readme/includes/*.ts",
+        "../common/readme/sections/*.ts",
+        "auth.ts",
+        "features.ts",
+        "items.ts",
+        "path.ts",
+        "includes/*.ts",
+        "main.ts",
+        "serialization.ts",
+        "variables.ts"
+    ]
+}

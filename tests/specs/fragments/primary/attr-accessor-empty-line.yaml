@@ -1,0 +1,75 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+tags:
+  - name: integrations
+    description: Manage integrations and their delivery providers.
+  - name: integrations.webhooks
+    description: Manage webhooks for a specific integration.
+paths:
+  /primary/integrations:
+    get:
+      operationId: listIntegrations
+      description: >-
+        Tests that service classes with sub-SDK attr_accessor declarations
+        include the required blank line after the attr_accessor statement.
+        When an API has path-based sub-resource grouping, the generated Ruby
+        service class emits attr_accessor for sub-resource accessors.
+        RuboCop's Layout/EmptyLinesAroundAttributeAccessor rule requires
+        a blank line after attr_accessor.
+      tags:
+        - integrations
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Integration"
+  /primary/integrations/{integration_id}/webhooks:
+    get:
+      operationId: listIntegrationWebhooks
+      description: >-
+        Sub-resource endpoint that triggers attr_accessor generation in
+        the parent Integrations service class.
+      tags:
+        - integrations.webhooks
+      parameters:
+        - in: path
+          name: integration_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Webhook"
+components:
+  schemas:
+    Integration:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string

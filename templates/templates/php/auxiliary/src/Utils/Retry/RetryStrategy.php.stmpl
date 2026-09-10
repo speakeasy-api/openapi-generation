@@ -1,0 +1,25 @@
+{{- skipFormat "preserve static retry runtime formatting while gating attempt-count retry support" }}
+{{- if hasAttemptCountRetries -}}
+
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}}\Utils\Retry;
+
+enum RetryStrategy: string
+{
+    case NONE = 'none';
+    case BACKOFF = 'backoff';
+    case ATTEMPT_COUNT_BACKOFF = 'attempt-count-backoff';
+}
+{{- else }}
+
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}}\Utils\Retry;
+
+enum RetryStrategy: string
+{
+    case NONE = 'none';
+    case BACKOFF = 'backoff';
+}
+{{- end }}

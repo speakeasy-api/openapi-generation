@@ -1,0 +1,24 @@
+Json Streaming ([jsonl][jsonl-format] / [x-ndjson][x-ndjson]) content type can be used to stream content from certain operations. These operations expose a stream that can used for consuming the events in Java. The events will terminate when the server no longer has any events to send and closes the underlying connection.
+
+Here's an example of consuming a JSONL stream:
+{{templateUsageSection "jsonl"}}
+
+{{- if asyncEnabled}}
+  {{- if useOkHttp}}
+#### Asynchronous JSONL Streaming
+An asynchronous SDK client is also available for JSONL streaming. It returns a [`CompletableFuture`][comp-fut] that completes with the same blocking `JsonLStream<T>` iterator once the stream is connected. See [Asynchronous Support](#asynchronous-support) for more details.
+{{templateUsageSection "jsonl" "" nil nil nil true}}
+
+[jsonl-format]: https://jsonlines.org/
+[x-ndjson]: https://github.com/ndjson/ndjson-spec
+[comp-fut]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
+  {{- else}}
+#### Reactive Streams Interoperability
+An asynchronous SDK client is also available for JSONL streaming that returns a [`Flow.Publisher<T>`][flow-pub]. See [Asynchronous Support](#asynchronous-support) for more details on async benefits and reactive library integration.
+{{templateUsageSection "jsonl" "" nil nil nil true}}
+
+[jsonl-format]: https://jsonlines.org/
+[x-ndjson]: https://github.com/ndjson/ndjson-spec
+[flow-pub]: https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.Publisher.html
+  {{- end}}
+{{- end}}

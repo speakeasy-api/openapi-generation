@@ -1,0 +1,2 @@
+{{- $source := templateString "validate-webhook-func-source.ts.stmpl" }}
+{{- rewriteFuncLocals $opState $source }}

@@ -1,0 +1,135 @@
+{{- $usageLocation := .Local.OutputLocation }}
+{{- $className := sanitizeClassName .Local.Name false }}
+{{- $baseErrorName := getBaseErrorClassName }}
+{{- $isErrorEnvelope := eq getResponseFormat "envelope-http" }}
+    public class {{$className}}Payload
+    {
+{{- range $index, $field := .Local.Fields }}
+  {{- with $field}}
+    {{- templateComments .Comments 2 "field" (ne $index 0)}}
+    {{- templateFieldAnnotations . 2}}
+    {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType") }}
+    {{- $name := sanitizeFieldName .Name $className }}
+    {{- if $.Global.Config.PresenceAwareJSONSerialization }}
+        public {{templateFieldType . $optional $usageLocation}} {{$name}} { get; set; }{{templateFieldDefault .}}
+        {{- templateShouldSerialize . $className}}
+    {{- else }}
+        {{- $type := sanitizeType .Type false $usageLocation }}
+        public {{$type}}{{if $optional}}?{{end}} {{$name}} { get; set; }{{if not .Optional}} = default!;{{end}}
+    {{- end }}
+  {{- end }}
+{{- end}}
+    }
+
+    {{- templateComments .Local.Comments 1 "class"}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    public class {{$className}} : {{$baseErrorName}}
+    {
+        /// <summary>
+        ///  The original data that was passed to this exception.
+        /// </summary>
+        public {{$className}}Payload Payload { get; }
+{{- if schemaValidationLenient}}
+
+        /// <summary>
+        ///  The schema validation error for this response body.
+        ///  Null if the body matched the expected schema.
+        /// </summary>
+        public ResponseValidationException? DeserializationException { get; }
+{{- end}}
+
+    {{- if .Local.Extensions.Pagination }}
+
+        public Func<Task<{{$className}}?>>? Next {get;set;}
+    {{- end }}
+
+    {{- /* Legacy error fields */}}
+    {{- range .Local.Fields }}
+      {{- $name := sanitizeFieldName .Name $className }}
+      {{- if and (isReservedErrorField $name) (ne $name "Message")}}
+        {{- continue }}
+      {{- end}}
+
+      {{- $type := sanitizeType .Type false $usageLocation }}
+      {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType") }}
+
+        [Obsolete("This field will be removed in a future release, please migrate away from it as soon as possible. Use {{$className}}.Payload.{{$name}} instead.")]
+      {{- if eq $name "Message" }}
+        {{- if eq $type "string" }}
+        private string? _message { get; set; }
+        {{- else }}
+        public {{$type}}{{if $optional}}?{{ end }} {{$name}}P { get; set; }{{if not .Optional}} = default!;{{end}}
+        {{- end }}
+      {{- else }}
+        public {{$type}}{{if $optional}}?{{end}} {{$name}} { get; set; }{{if not .Optional}} = default!;{{end}}
+      {{- end}}
+    {{- end}}
+
+    {{- $errorMessageAccessor := getErrorMessageAccessorString .Local $className $usageLocation}}
+    {{- $fallbackErrorMessage := "\"API error occurred\"" }}
+    {{- $errorMessage := $fallbackErrorMessage }}
+    {{- if $errorMessageAccessor }}
+        {{- $methodName := "ErrorMessage"}}
+        {{- if eq $className $methodName}}
+          {{- $methodName = "DisplayMessage"}}
+        {{- end}}
+        {{- $errorMessage = printf "%s(payload, body)" $methodName}}
+
+        private static string {{$methodName}}({{$className}}Payload payload, string body)
+        {
+            string? message = {{$errorMessageAccessor}};
+            if (!string.IsNullOrEmpty(message))
+            {
+                return message;
+            }
+
+            return {{$fallbackErrorMessage}};
+        }
+    {{- end}}
+
+    {{- if $isErrorEnvelope }}
+
+        public {{$className}}(
+            {{$className}}Payload payload,
+            HttpRequestMessage request,
+            HttpResponseMessage response,
+            string body{{if schemaValidationLenient}},
+            ResponseValidationException? deserializationException = null{{end}}
+        ): base({{$errorMessage}}, request, response, body)
+    {{- else}}
+
+        public {{$className}}(
+            {{$className}}Payload payload,
+            HttpResponseMessage rawResponse,
+            string body{{if schemaValidationLenient}},
+            ResponseValidationException? deserializationException = null{{end}}
+        ): base({{$errorMessage}}, rawResponse, body)
+    {{- end}}
+        {
+           Payload = payload;
+{{- if schemaValidationLenient}}
+           DeserializationException = deserializationException;
+{{- end}}
+
+           #pragma warning disable CS0618
+    {{- range .Local.Fields }}
+      {{- $fieldName := sanitizeFieldName .Name $className }}
+      {{- $legacyFieldName := $fieldName }}
+      {{- if eq $fieldName "Message" }}
+        {{- if eq (sanitizeType .Type false $usageLocation) "string" }}
+          {{- $legacyFieldName = "_message" }}
+        {{- else }}
+          {{- $legacyFieldName = "MessageP" }}
+        {{- end}}
+      {{- else if isReservedErrorField $fieldName }}
+        {{- continue }}
+      {{- end}}
+      {{- if needsOptionalNullableWrapper . }}
+           {{$legacyFieldName}} = payload.{{$fieldName}}.IsSet ? payload.{{$fieldName}}.Value : default;
+      {{- else }}
+           {{$legacyFieldName}} = payload.{{$fieldName}};
+      {{- end}}
+    {{- end}}
+           #pragma warning restore CS0618
+        }
+    }

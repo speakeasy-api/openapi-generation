@@ -1,0 +1,27 @@
+{{- if sdkHasTests .Global.AST -}}
+# frozen_string_literal: true
+
+require 'faraday'
+require 'securerandom'
+
+class TestMiddleware < Faraday::Middleware
+  def initialize(app, test_name)
+    super(app)
+    @test_name = test_name
+    @test_instance_id = SecureRandom.uuid
+  end
+
+  def call(env)
+    env.request_headers['x-speakeasy-test-name'] = @test_name
+    env.request_headers['x-speakeasy-test-instance-id'] = @test_instance_id
+    @app.call(env)
+  end
+end
+
+def create_test_http_client(test_name)
+  Faraday.new(request: { params_encoder: Faraday::FlatParamsEncoder }) do |f|
+    f.use TestMiddleware, test_name
+    f.request :multipart, { flat_encode: true }
+  end
+end
+{{- end}}

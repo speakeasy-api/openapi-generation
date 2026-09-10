@@ -1,0 +1,345 @@
+# CLI-only overlay for the primary variant.
+#
+# (1) Declares the x-speakeasy-cli-commands manifest at the document root (a
+#     joined fragment cannot carry root-level extensions); the bound operations
+#     live in tests/specs/fragments/primary/cli-*.yaml.
+# (2) Adds SSE streaming operations served by httptest servers inside the CLI
+#     test templates (the API test service and the generated mock server do
+#     not emit SSE), so no other target needs them.
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => primary CLI intent commands
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+- target: $
+  update:
+    x-speakeasy-cli-errors:
+      version: 1
+      reasonPointer: $.details[*].reason
+      unwrapErrorArray: true
+      reasons:
+        ACCOUNT_KEY_REVOKED:
+          type: authentication_error
+          hints: Replace the revoked account key before retrying
+        TOKEN_SCOPE_MISSING:
+          type: authorization_error
+        QUOTA_EXHAUSTED:
+          type: rate_limit_error
+        ACCOUNT_SERVICE_PAUSED:
+          type: service_disabled
+        ACCOUNT_BILLING_PAUSED:
+          type: billing_disabled
+        WORKSPACE_SUSPENDED:
+          type: authorization_error
+          hints: Ask a workspace owner to restore access before retrying
+        TARGET_MISSING:
+          hints: This hint applies only to a detail-carrier reason
+        FIRST_DECLARED:
+          type: billing_disabled
+          hints: Resolve the first declared failure before retrying
+        SECOND_DECLARED:
+          type: service_disabled
+          hints: Resolve the second declared failure before retrying
+        CLI_PROTOCOL:
+          hints: Report the response payload and CLI version to the API operator
+      probes:
+        - pointer: $.status
+          reasons:
+            AUTH_MISSING:
+              type: authentication_error
+            ACCESS_DENIED:
+              type: authorization_error
+            OVERLOADED:
+              type: rate_limit_error
+            TARGET_MISSING:
+              type: not_found
+      types:
+        not_found:
+          hints: Check that the resource exists and that its identifier is correct
+    x-speakeasy-cli-commands:
+      version: 1
+      categories:
+      - Create
+      operations:
+        cliInteract:
+          output:
+            stream:
+              select: $.data.content
+          flags:
+            stream:
+              to: $.stream
+              type: bool
+              defaultFrom: schema
+              summary: Stream events as they arrive
+      commands:
+        generate:
+          category: Create
+          summary: Generate a reply from a prompt
+          description: 'Send a prompt to the default model. Full request control:
+
+            "cli request-bodies cli-interact".'
+          op: cliInteract#CliModelInteraction
+          args:
+            prompt:
+              to: $.input
+              variadic: true
+              summary: Prompt to send to the model
+          flags:
+            model:
+              to: $.model
+              summary: Model to use
+              defaultFrom: schema
+            background:
+              to: $.background
+              summary: Return immediately and run in the background
+            stream:
+              to: $.stream
+              type: bool
+              defaultFrom: schema
+              summary: Stream events as they arrive
+          preset:
+            $.stream: true
+          output:
+            stream:
+              select: $.data.content
+          examples:
+            basic:
+              summary: Generate with the default model
+              command: cli generate "Explain concurrency in one sentence"
+        render:
+          category: Create
+          summary: Run the render model
+          help:
+            learn: cli docs render
+          op: cliIntentRun#CliIntentModelRequest
+          args:
+            prompt:
+              to: $.input
+              variadic: true
+              summary: Prompt text
+          flags:
+            model:
+              to: $.model
+              shorthand: m
+              summary: Model to run
+              defaultFrom: schema
+          preset:
+            $.model: render-1
+            $.output_modalities: image
+          hints:
+            CLI_VALIDATION: Print the exact request schema with --schema
+          examples:
+            basic:
+              summary: Render with the pinned model
+              command: cli render "A small cabin beneath the stars"
+        cli-intents cli-intent-run:
+          category: Create
+          summary: Run an interaction
+          override: true
+          routes:
+            model:
+              label: Model
+              op: cliIntentRun#CliIntentModelRequest
+              default: true
+              selector: model
+              preset:
+                $.output_modalities: image
+            agent:
+              label: Agent
+              op: cliIntentRun#CliIntentAgentRequest
+              preset:
+                $.token_budget: 512
+          args:
+            input:
+              to: $.input
+              variadic: true
+              required: true
+              summary: Prompt text
+          flags:
+            model:
+              to: $.model
+              shorthand: m
+              defaultFrom: schema
+              summary: Model to run
+            agent:
+              to: $.agent
+              summary: Agent to run
+            agent-profile:
+              to: $.agent_profile
+              summary: Agent profile name
+            background:
+              to: $.background
+              summary: Run in the background
+          preset:
+            $.background: true
+          examples:
+            model:
+              summary: Run the model variant
+              command: cli cli-intents cli-intent-run "Describe a lighthouse" --model text-1
+        model-job:
+          category: Create
+          summary: Run a model job (discriminated variant)
+          op: bodyVariantOverloadsDiscriminated#BodyVariantModel
+          args:
+            prompt:
+              to: $.input
+              variadic: true
+              summary: Prompt text
+          preset:
+            $.kind: model
+            $.model: fixed-model
+        archive:
+          category: Create
+          summary: Archive a generated record
+          planned: This command needs an archive operation that is not part of this build.
+          help:
+            learn: cli docs archive
+            escalate: use cli resource --help
+        nested:
+          category: Create
+          group: true
+          help:
+            learn: cli docs nested
+- target: $.paths
+  update:
+    /eventstreams/discriminated:
+      post:
+        tags:
+        - eventstreams
+        operationId: discriminatedEvents
+        description: SSE stream whose data member is a discriminated union carrying an in-band error variant
+          (event_type == error). Exercises the CLI's stream error-event handling and stream decode-failure
+          classification.
+        servers:
+        - url: http://localhost:35456
+        responses:
+          '200':
+            description: Ok
+            content:
+              text/event-stream:
+                schema:
+                  $ref: '#/components/schemas/discriminatedStreamEvent'
+    /eventstreams/undiscriminated:
+      post:
+        tags:
+        - eventstreams
+        operationId: undiscriminatedEvents
+        description: SSE stream whose data member is an undiscriminated oneOf with an error-shaped variant.
+          Nothing on the wire declares an error, so the CLI must keep printing every event as data (negative
+          case for in-band error-event detection).
+        servers:
+        - url: http://localhost:35456
+        responses:
+          '200':
+            description: Ok
+            content:
+              text/event-stream:
+                schema:
+                  $ref: '#/components/schemas/undiscriminatedStreamEvent'
+- target: $.components.schemas
+  update:
+    undiscriminatedStreamEvent:
+      description: SSE envelope whose data is an undiscriminated oneOf with an error-shaped variant
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          oneOf:
+          - $ref: '#/components/schemas/undiscriminatedDeltaEvent'
+          - $ref: '#/components/schemas/undiscriminatedErrorEvent'
+    undiscriminatedDeltaEvent:
+      type: object
+      required:
+      - text
+      properties:
+        text:
+          type: string
+    undiscriminatedErrorEvent:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          $ref: '#/components/schemas/discriminatedStreamError'
+    discriminatedStreamEvent:
+      description: SSE envelope whose data is a discriminated union with an error variant
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/discriminatedStreamData'
+    discriminatedStreamData:
+      oneOf:
+      - $ref: '#/components/schemas/discriminatedDeltaEvent'
+      - $ref: '#/components/schemas/discriminatedErrorEvent'
+      discriminator:
+        propertyName: event_type
+        mapping:
+          delta: '#/components/schemas/discriminatedDeltaEvent'
+          error: '#/components/schemas/discriminatedErrorEvent'
+    discriminatedDeltaEvent:
+      type: object
+      required:
+      - event_type
+      - text
+      properties:
+        event_type:
+          type: string
+          const: delta
+        text:
+          type: string
+        seq:
+          type: integer
+          description: int64 sequence number (may exceed 2^53)
+        big:
+          type: integer
+          format: bigint
+          description: integer beyond int64
+        precise:
+          type: number
+          format: decimal
+          description: decimal beyond float64 precision
+        when:
+          type: string
+          format: date
+          description: a date, so a malformed value fails decode without an encoding/json error type
+    discriminatedErrorEvent:
+      type: object
+      required:
+      - event_type
+      - error
+      properties:
+        event_type:
+          type: string
+          const: error
+        error:
+          $ref: '#/components/schemas/discriminatedStreamError'
+    discriminatedStreamError:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    cliInteractionStreamEvent:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            content:
+              type: string

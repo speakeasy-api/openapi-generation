@@ -1,0 +1,45 @@
+# Options
+
+## Global Options
+
+Global options are passed when initializing the SDK client and apply to all operations.
+{{- range getGlobalOptionDocs }}
+
+### {{ .Name }}
+
+{{ .Description }}
+
+```go
+{{ .Example }}
+```
+{{- if ne .ExtraDescription "" }}
+
+{{ .ExtraDescription }}
+
+```go
+{{ .ExtraExample }}
+```
+{{- end }}
+{{- end }}
+
+## Per-Method Options
+
+Per-method options are passed as the last argument to individual methods and override any global settings for that request.
+{{- range getOperationOptionDocs }}
+
+### {{ .Name }}
+
+{{ .Description }}
+
+```go
+{{ .Example }}
+```
+{{- if ne .ExtraDescription "" }}
+
+{{ .ExtraDescription }}
+
+```go
+{{ .ExtraExample }}
+```
+{{- end }}
+{{- end -}}

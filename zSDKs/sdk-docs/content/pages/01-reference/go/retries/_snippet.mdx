@@ -1,0 +1,185 @@
+{/* Start Go Retries */}
+Some of the endpoints in this SDK support retries. If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API. However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+
+To change the default retry strategy for a single API call, simply provide a `RetryConfig` object to the call by using the `WithRetries` option:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"math/big"
+	"models/operations"
+	"openapi"
+	"openapi/internal/utils"
+	"openapi/models/components"
+	"openapi/types"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	test2Request := components.Test2Request{
+		Obj: components.ExhaustiveObject{
+			Str:        "example",
+			Bool:       true,
+			Int:        999999,
+			Int32:      1,
+			Num:        1.1,
+			Float32:    4344.96,
+			EnumProp:   components.EnumFirst.ToPointer(),
+			Date:       types.MustDateFromString("2024-10-11"),
+			DateTime:   types.MustTimeFromString("2020-01-01T00:00:00Z"),
+			Anything:   "<value>",
+			BoolOpt:    openapi.Bool(true),
+			IntOptNull: openapi.Int64(999999),
+			NumOptNull: openapi.Float64(1.1),
+			IntEnum:    components.IntEnumThird.ToPointer(),
+			Int32Enum:  components.Int32EnumSixtyNine,
+			Bigint:     big.NewInt(370331),
+			DecimalStr: types.MustNewDecimalFromString("4105.06"),
+			Obj: components.SimpleObject{
+				Str: "example",
+			},
+			Map: map[string]components.SimpleObject{
+				"key": components.SimpleObject{
+					Str: "example",
+				},
+			},
+			Arr: []components.SimpleObject{
+				components.SimpleObject{
+					Str: "example",
+				},
+			},
+			Any: components.CreateAnySimpleObject(
+				components.SimpleObject{
+					Str: "example",
+				},
+			),
+			NullableIntEnum:    components.NullableIntEnumThird.ToPointer(),
+			NullableStringEnum: components.NullableStringEnumSecond,
+			Color:              components.ColorGreen.ToPointer(),
+			Icon:               components.IconTick,
+			HeroWidth:          components.HeroWidthFourHundredAndEighty.ToPointer(),
+		},
+		Type: components.TypeSuperType1.ToPointer(),
+	}
+
+	var deprecatedQueryParam1 *string = openapi.String("some example query param")
+
+	var deprecatedQueryParam2 *string = openapi.String("some example query param")
+	ctx := context.Background()
+	res, err := s.TestGroup.Tag2.PostTest(ctx, test2Request, deprecatedQueryParam1, deprecatedQueryParam2, operations.WithRetries(
+		utils.RetryConfig{
+			Strategy: "backoff",
+			Backoff: &utils.BackoffStrategy{
+				InitialInterval: 1,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  100,
+			},
+			RetryConnectionErrors: false,
+		}))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.Body != nil {
+		// handle response
+	}
+}
+
+```
+
+If you'd like to override the default retry strategy for all operations that support retries, you can use the `WithRetryConfig` option at SDK initialization:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"math/big"
+	"openapi"
+	"openapi/internal/utils"
+	"openapi/models/components"
+	"openapi/types"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithRetryConfig(
+			utils.RetryConfig{
+				Strategy: "backoff",
+				Backoff: &utils.BackoffStrategy{
+					InitialInterval: 1,
+					MaxInterval:     50,
+					Exponent:        1.1,
+					MaxElapsedTime:  100,
+				},
+				RetryConnectionErrors: false,
+			}),
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	test2Request := components.Test2Request{
+		Obj: components.ExhaustiveObject{
+			Str:        "example",
+			Bool:       true,
+			Int:        999999,
+			Int32:      1,
+			Num:        1.1,
+			Float32:    4344.96,
+			EnumProp:   components.EnumFirst.ToPointer(),
+			Date:       types.MustDateFromString("2024-10-11"),
+			DateTime:   types.MustTimeFromString("2020-01-01T00:00:00Z"),
+			Anything:   "<value>",
+			BoolOpt:    openapi.Bool(true),
+			IntOptNull: openapi.Int64(999999),
+			NumOptNull: openapi.Float64(1.1),
+			IntEnum:    components.IntEnumThird.ToPointer(),
+			Int32Enum:  components.Int32EnumSixtyNine,
+			Bigint:     big.NewInt(370331),
+			DecimalStr: types.MustNewDecimalFromString("4105.06"),
+			Obj: components.SimpleObject{
+				Str: "example",
+			},
+			Map: map[string]components.SimpleObject{
+				"key": components.SimpleObject{
+					Str: "example",
+				},
+			},
+			Arr: []components.SimpleObject{
+				components.SimpleObject{
+					Str: "example",
+				},
+			},
+			Any: components.CreateAnySimpleObject(
+				components.SimpleObject{
+					Str: "example",
+				},
+			),
+			NullableIntEnum:    components.NullableIntEnumThird.ToPointer(),
+			NullableStringEnum: components.NullableStringEnumSecond,
+			Color:              components.ColorGreen.ToPointer(),
+			Icon:               components.IconTick,
+			HeroWidth:          components.HeroWidthFourHundredAndEighty.ToPointer(),
+		},
+		Type: components.TypeSuperType1.ToPointer(),
+	}
+
+	var deprecatedQueryParam1 *string = openapi.String("some example query param")
+
+	var deprecatedQueryParam2 *string = openapi.String("some example query param")
+	ctx := context.Background()
+	res, err := s.TestGroup.Tag2.PostTest(ctx, test2Request, deprecatedQueryParam1, deprecatedQueryParam2)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.Body != nil {
+		// handle response
+	}
+}
+
+```
+{/* End Go Retries */}

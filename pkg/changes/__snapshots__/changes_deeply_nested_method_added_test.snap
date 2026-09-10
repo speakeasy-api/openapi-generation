@@ -1,0 +1,122 @@
+
+[TestChanges_DeeplyNestedMethods_DeeplyNestedMethodAdded - 1]
+# Test: deeply_nested_method_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+x-speakeasy-globals:
+  parameters:
+    - name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+paths:
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments:
+    get:
+      operationId: listDeployments
+      x-speakeasy-group: organizations.projects.environments.deployments
+      x-speakeasy-name-override: list
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+x-speakeasy-globals:
+  parameters:
+    - name: orgId
+      in: path
+      required: true
+      schema:
+        type: string
+paths:
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments:
+    get:
+      operationId: listDeployments
+      x-speakeasy-group: organizations.projects.environments.deployments
+      x-speakeasy-name-override: list
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments/{deploymentId}/logs:
+    get:
+      operationId: getDeploymentLogs
+      x-speakeasy-group: organizations.projects.environments.deployments.logs
+      x-speakeasy-name-override: get
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.organizations.projects.environments.deployments.logs.get()`: **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.organizations.projects.environments.deployments.logs.get()`: **Added**
+
+---

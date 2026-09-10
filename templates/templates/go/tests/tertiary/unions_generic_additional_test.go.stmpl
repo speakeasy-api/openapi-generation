@@ -1,0 +1,286 @@
+package tests
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"reflect"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// Generic New<Union> constructor tests (unionGenerics: true)
+
+// Non-discriminated union of primitives: the generic New<Union> dispatches each
+// primitive Go type to its field (both take the address branch -> &v). Round-
+// trips as the value type of a map (unionMap), also exercising the reference-type
+// (`v`, no address) member branch of the map itself.
+func TestUnionGenerics_GenericPrimitives(t *testing.T) {
+	b := shared.NewOneOfPrimitives(true)
+	require.NotNil(t, b.Boolean)
+	assert.True(t, *b.Boolean)
+	assert.Equal(t, shared.OneOfPrimitivesTypeBoolean, b.Type)
+
+	str := shared.NewOneOfPrimitives("hi")
+	require.NotNil(t, str.Str)
+	assert.Equal(t, "hi", *str.Str)
+	assert.Equal(t, shared.OneOfPrimitivesTypeStr, str.Type)
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	res, err := s.Unions.UnionMap(context.Background(), operations.UnionMapRequestBody{
+		Input: map[string]shared.OneOfPrimitives{"b": b, "s": str},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	require.NotNil(t, res.Res.JSON.Input["b"].Boolean)
+	assert.Equal(t, shared.OneOfPrimitivesTypeBoolean, res.Res.JSON.Input["b"].Type)
+	assert.True(t, *res.Res.JSON.Input["b"].Boolean)
+	require.NotNil(t, res.Res.JSON.Input["s"].Str)
+	assert.Equal(t, shared.OneOfPrimitivesTypeStr, res.Res.JSON.Input["s"].Type)
+	assert.Equal(t, "hi", *res.Res.JSON.Input["s"].Str)
+}
+
+// Non-discriminated union mixing a primitive and an array: covers both switch
+// branches — string -> &v and []T -> v — and round-trips each.
+func TestUnionGenerics_GenericMixedCollection(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+
+	str := shared.NewOneOfCollectionEnum("hi")
+	require.NotNil(t, str.Str)
+	assert.Equal(t, shared.OneOfCollectionEnumTypeStr, str.Type)
+
+	res, err := s.Unions.OneOfCollectionEnum(ctx, &str)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.Str)
+	assert.Equal(t, "hi", *res.Res.JSON.Str)
+
+	arr := shared.NewOneOfCollectionEnum([]shared.Nestedenum{shared.NestedenumAbc})
+	require.NotNil(t, arr.ArrayOfNestedenum)
+	assert.Nil(t, arr.Str)
+	assert.Equal(t, shared.OneOfCollectionEnumTypeArrayOfNestedenum, arr.Type)
+
+	res, err = s.Unions.OneOfCollectionEnum(ctx, &arr)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, shared.OneOfCollectionEnumTypeArrayOfNestedenum, res.Res.JSON.Type)
+	assert.Equal(t, []shared.Nestedenum{shared.NestedenumAbc}, res.Res.JSON.ArrayOfNestedenum)
+}
+
+// Injective discriminated union — each discriminator value maps to a distinct
+// member Go type (explicit 3-way mapping) — so generics apply. The generic
+// switch dispatches on the member Go type and SETS the discriminator property
+// (Tag) on the member: a non-const enum field marshals empty unless set. Round-
+// trips to prove the tag survives the wire.
+func TestUnionGenerics_DiscriminatedSetsTag(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+
+	t1 := shared.NewStronglyTypedOneOfDiscriminatedObject(shared.TaggedObject1{ImageURL: "https://example.com/a.png"})
+	require.NotNil(t, t1.TaggedObject1)
+	assert.Equal(t, shared.TaggedObject1TagTag1, t1.TaggedObject1.Tag) // discriminator set by constructor
+	assert.Equal(t, shared.StronglyTypedOneOfDiscriminatedObjectTypeTag1, t1.Type)
+
+	res, err := s.Unions.StronglyTypedOneOfDiscriminatedPost(ctx, t1)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.TaggedObject1)
+	assert.Equal(t, shared.TaggedObject1TagTag1, res.Res.JSON.TaggedObject1.Tag)
+
+	t3 := shared.NewStronglyTypedOneOfDiscriminatedObject(shared.TaggedObject3{Phone: "555"})
+	require.NotNil(t, t3.TaggedObject3)
+	assert.Equal(t, "tag3", t3.TaggedObject3.GetTag())
+	assert.Equal(t, shared.StronglyTypedOneOfDiscriminatedObjectTypeTag3, t3.Type)
+
+	res, err = s.Unions.StronglyTypedOneOfDiscriminatedPost(ctx, t3)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.TaggedObject3)
+	assert.Equal(t, "tag3", res.Res.JSON.TaggedObject3.GetTag())
+	assert.Equal(t, "555", res.Res.JSON.TaggedObject3.Phone)
+}
+
+// Injective discriminated union keyed off const properties: generics apply and
+// the constructor does NOT set the discriminator — a const field is unexported
+// and always marshals to its fixed value, so there is nothing to set.
+func TestUnionGenerics_DiscriminatedConst(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+
+	tag1 := shared.NewConstDiscriminatedOneOf(shared.ConstObject1{ImageURL: "https://example.com/a.png"})
+	require.NotNil(t, tag1.ConstObject1)
+	assert.Nil(t, tag1.ConstObject2)
+	assert.Equal(t, shared.ConstDiscriminatedOneOfTypeTag1, tag1.Type)
+
+	res, err := s.Unions.ConstDiscriminatedOneOf(ctx, tag1)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.ConstObject1)
+	assert.Equal(t, "https://example.com/a.png", res.Res.JSON.ConstObject1.ImageURL)
+
+	tag2 := shared.NewConstDiscriminatedOneOf(shared.ConstObject2{ProfileID: "p"})
+	require.NotNil(t, tag2.ConstObject2)
+	assert.Equal(t, shared.ConstDiscriminatedOneOfTypeTag2, tag2.Type)
+
+	res, err = s.Unions.ConstDiscriminatedOneOf(ctx, tag2)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.ConstObject2)
+	assert.Equal(t, "p", res.Res.JSON.ConstObject2.ProfileID)
+}
+
+// Injective discriminated union whose discriminator property is OPTIONAL: the
+// generic switch SETS the discriminator as a pointer (v.Kind = &typStr) because
+// the field is a pointer type, exercising the optional/nullable set branch.
+// Round-trips to prove the pointer-set tag marshals.
+func TestUnionGenerics_OptionalDiscriminatorPointer(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+
+	k1 := shared.NewStronglyTypedOneOfOptionalDiscriminator(shared.OptionalDiscriminatorObject1{Value: "x"})
+	require.NotNil(t, k1.OptionalDiscriminatorObject1)
+	require.NotNil(t, k1.OptionalDiscriminatorObject1.Kind) // discriminator set as pointer
+	assert.Equal(t, shared.KindKind1, *k1.OptionalDiscriminatorObject1.Kind)
+	assert.Equal(t, shared.StronglyTypedOneOfOptionalDiscriminatorTypeKind1, k1.Type)
+
+	res, err := s.Unions.StronglyTypedOneOfOptionalDiscriminator(ctx, k1)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.OptionalDiscriminatorObject1)
+	require.NotNil(t, res.Res.JSON.OptionalDiscriminatorObject1.Kind)
+	assert.Equal(t, shared.KindKind1, *res.Res.JSON.OptionalDiscriminatorObject1.Kind)
+}
+
+// Nested union: a generic discriminated union whose member TypeA
+// is itself a generic union. Exercises a generic constructor nested inside
+// another generic constructor, and round-trips the nested value.
+func TestUnionGenerics_NestedUnion(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+
+	inner := shared.NewTypeA(shared.TypeA1{Value: "x"})
+	require.NotNil(t, inner.TypeA1)
+	assert.Equal(t, shared.TypeATypeTypeA1, inner.Type)
+
+	a := shared.NewNestedDiscUnion(inner)
+	require.NotNil(t, a.TypeA)
+	require.NotNil(t, a.TypeA.TypeA1)
+	assert.Equal(t, shared.NestedDiscUnionTypeA, a.Type)
+
+	res, err := s.Unions.NestedDiscUnion(ctx, a)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.TypeA)
+	require.NotNil(t, res.Res.JSON.TypeA.TypeA1)
+	assert.Equal(t, "x", res.Res.JSON.TypeA.TypeA1.Value)
+
+	b := shared.NewNestedDiscUnion(shared.TypeB{Data: "y"})
+	require.NotNil(t, b.TypeB)
+	assert.Equal(t, shared.NestedDiscUnionTypeB, b.Type)
+
+	res, err = s.Unions.NestedDiscUnion(ctx, b)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.TypeB)
+	assert.Equal(t, "y", res.Res.JSON.TypeB.Data)
+}
+
+// Non-injective discriminated union — two discriminator values map to the same
+// member Go type, so generics cannot recover the value from the type. It stays
+// on the per-member fallback: each mapping key gets its own constructor. Round-
+// trips each to confirm the fallback constructors set the discriminator.
+func TestUnionGenerics_NonInjectiveDiscriminatedFallback(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	ctx := context.Background()
+	obj := shared.ObjectWithOpenEnumStatus1{Status: shared.ObjectWithOpenEnumStatus1StatusActive, UserID: "u"}
+
+	active := shared.NewDiscriminatedOpenEnumUnionActive(obj)
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypeActive, active.Type)
+	require.NotNil(t, active.ObjectWithOpenEnumStatus1)
+	assert.Equal(t, shared.ObjectWithOpenEnumStatus1StatusActive, active.ObjectWithOpenEnumStatus1.Status)
+
+	res, err := s.Unions.DiscriminatedOpenEnum(ctx, active)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypeActive, res.Res.JSON.Type)
+	require.NotNil(t, res.Res.JSON.ObjectWithOpenEnumStatus1)
+	assert.Equal(t, "u", res.Res.JSON.ObjectWithOpenEnumStatus1.UserID)
+
+	pending := shared.NewDiscriminatedOpenEnumUnionPending(obj)
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypePending, pending.Type)
+	require.NotNil(t, pending.ObjectWithOpenEnumStatus1)
+	assert.Equal(t, shared.ObjectWithOpenEnumStatus1StatusPending, pending.ObjectWithOpenEnumStatus1.Status)
+
+	res, err = s.Unions.DiscriminatedOpenEnum(ctx, pending)
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypePending, res.Res.JSON.Type)
+	require.NotNil(t, res.Res.JSON.ObjectWithOpenEnumStatus1)
+	assert.Equal(t, shared.ObjectWithOpenEnumStatus1StatusPending, res.Res.JSON.ObjectWithOpenEnumStatus1.Status)
+}
+
+// Interface (any) member makes the union ineligible for generics; it stays on
+// the per-member fallback, including New<Union>Any(any) for the any member.
+// Round-trips to confirm the any member marshals.
+func TestUnionGenerics_InterfaceMemberFallback(t *testing.T) {
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	a := shared.NewInfectedWithAnyDataAny(map[string]any{"k": "v"})
+	require.NotNil(t, a.Any)
+	assert.Equal(t, shared.InfectedWithAnyDataTypeAny, a.Type)
+
+	res, err := s.Unions.InfectedWithAny(context.Background(), shared.InfectedWithAny{Data: a})
+	require.NoError(t, err)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.Data.Any)
+	outMap, ok := res.Res.JSON.Data.Any.(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "v", outMap["k"])
+}
+
+// Numeric union whose members are non-plain `int` (int64/float64/*big.Int/*decimal.Big)
+// Under the generic constructor T is inferred from the passed argument so callers must
+// explicitly cast the literal to a member type to satisfy the generic constraint.
+func TestUnionGenerics_NumericUntypedLiteralCast(t *testing.T) {
+	// Premise: an untyped int constant defaults to `int`...
+	assert.Equal(t, "int", reflect.TypeOf(3).String())
+
+	i := shared.NewNumericUnion(int64(3)) // explicit int64() required; NewNumericUnion(3) would not compile
+	require.NotNil(t, i.Integer)
+	// ...but the integer member is *int64, so bare `3` (int) cannot satisfy the constraint.
+	assert.Equal(t, "*int64", reflect.TypeOf(i.Integer).String())
+	assert.Equal(t, int64(3), *i.Integer)
+	assert.Equal(t, shared.NumericUnionTypeInteger, i.Type)
+
+	f := shared.NewNumericUnion(3.5) // untyped float defaults to float64, a member — no cast
+	require.NotNil(t, f.Number)
+	assert.Equal(t, 3.5, *f.Number)
+	assert.Equal(t, shared.NumericUnionTypeNumber, f.Type)
+
+	data, err := json.Marshal(i)
+	require.NoError(t, err)
+	assert.JSONEq(t, "3", string(data))
+}
+
+// Open unions still emit a separate New<Union>Unknown(raw) constructor; the
+// resulting value marshals back to the raw payload.
+func TestUnionGenerics_UnknownConstructor(t *testing.T) {
+	raw := json.RawMessage(`{"unexpected":true}`)
+	u := shared.NewOneOfCollectionEnumUnknown(raw)
+	assert.True(t, u.IsUnknown())
+	assert.Equal(t, shared.OneOfCollectionEnumTypeUnknown, u.Type)
+	assert.Equal(t, raw, u.GetUnknownRaw())
+
+	data, err := json.Marshal(u)
+	require.NoError(t, err)
+	assert.JSONEq(t, string(raw), string(data))
+}

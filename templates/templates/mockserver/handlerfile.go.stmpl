@@ -1,0 +1,110 @@
+{{- recurse 1 -}}
+{{- $handler := .Local -}}
+{{- addImport "net/http" -}}
+{{- addImport "fmt" -}}
+{{- addImport "log" -}}
+{{- addImport "mockserver/internal/logging" -}}
+{{- addImport "mockserver/internal/tracking" -}}
+package handler
+
+{{genImports}}
+
+func {{ $handler.FunctionName }}(dir *logging.HTTPFileDirectory, rt *tracking.RequestTracker) http.HandlerFunc {
+    return func(w http.ResponseWriter, req *http.Request) {
+        {{- if (eq (len $handler.HandlerContexts) 0) }}
+        http.Error(w, "Not Implemented", http.StatusNotImplemented)
+        {{- else }}
+            test := req.Header.Get("x-speakeasy-test-name")
+            instanceID := req.Header.Get("x-speakeasy-test-instance-id")
+
+            count := rt.GetRequestCount(test, instanceID)
+
+            switch fmt.Sprintf("%s[%d]", test, count) {
+            {{- range $idx, $context := $handler.HandlerContexts }}
+            case "{{ $context.TestName }}[{{$context.OperationCount}}]":
+                dir.HandlerFunc("{{$context.Operation.ID}}", {{$context.FunctionName}})(w, req)
+            {{- end}}
+            default:
+                http.Error(w, fmt.Sprintf("Unknown test: %s[%d]", test, count), http.StatusBadRequest)
+            }
+        {{- end}}
+    }
+}
+{{range $idx, $context := $handler.HandlerContexts }}
+func {{ $context.FunctionName }}(w http.ResponseWriter, req *http.Request) {
+        {{- range $name, $headerSecurity := $context.Request.HeaderSecurity }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+            {{- if eq $name "Authorization" }}
+    if err := assert.SecurityAuthorizationHeader(req, {{ $headerSecurity.Optional }}, "{{ if ne $headerSecurity.HttpAuthorizationScheme nil }}{{ $headerSecurity.HttpAuthorizationScheme }}{{ end }}"); err != nil {
+            {{- else }}
+    if err := assert.SecurityHeader(req, "{{ $name }}", {{ $headerSecurity.Optional }}); err != nil {
+            {{- end }}
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusUnauthorized)
+        return
+    }
+        {{- end }}
+        {{- if $context.Request.ContentType }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+    if err := assert.ContentType(req, "{{ $context.Request.ContentType }}", {{$context.Request.IsRequestBodyRequired}}); err != nil {
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end }}
+        {{- if $context.Request.AcceptValues }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+    if err := assert.AcceptHeader(req, {{ $context.Request.AcceptValues }}); err != nil {
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end }}
+        {{- /* TODO: Have disabled parameter validation for now as it needs to be more sophisticated and for example not rely on the sorting of a map serialized to a header. Prob needs to deserialize and compare against the expected type*/}}
+        {{- /*- range $key, $value := $context.Request.HeaderParameters }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+    if err := assert.ParameterHeaderValues(req, "{{ $key }}", {{ $value }}); err != nil {
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end }}
+        {{- range $key, $value := $context.Request.PathParameters }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+    if err := assert.ParameterPathValue(req, "{{ $key }}", "{{ $value }}"); err != nil {
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end }}
+        {{- range $key, $value := $context.Request.QueryParameters }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+    if err := assert.ParameterQueryValues(req, "{{ $key }}", {{ $value }}); err != nil {
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end */}}
+        {{- range $name, $header := $context.Request.Headers }}
+            {{- addImport "mockserver/internal/handler/assert" }}
+            {{- if $header.Exists }}
+    if err := assert.HeaderExists(req, "{{ $name }}"); err != nil {
+            {{- else }}
+    if err := assert.HeaderValues(req, "{{ $name }}", {{ $header.Values }}); err != nil {
+            {{- end }}
+        log.Printf("assertion error: %s\n", err)
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+        {{- end }}
+    {{- $respBody := templateResponse $context.Response}}
+    {{$respBody | indent 4}}    
+        {{- range $key, $value := $context.Response.Headers }}
+    w.Header().Set("{{ $key }}", "{{ $value }}")
+        {{- end }}
+    w.WriteHeader({{ $context.Response.Status }})
+            {{- if $respBody }}
+    _, _ = w.Write(respBodyBytes)
+            {{- end }}
+}
+{{ end }}

@@ -1,0 +1,24 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestFollowRedirects(t *testing.T) {
+	recordTest("redirects-are-followed")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"redirects", "are-followed"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"John Doe"`)
+}

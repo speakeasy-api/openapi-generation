@@ -1,0 +1,901 @@
+//go:generate go run ../../cmd/features/generate
+package features
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/speakeasy-api/openapi/arazzo"
+)
+
+type Test int
+
+const (
+	TestAuthFunctionCallbacksOauthGlobalSecurity Test = iota
+	TestAuthNoAuth
+	TestAuthHoistedNoAuthRetained
+	TestAuthBasicAuth
+	TestAuthHoistedBasicAuth
+	TestAuthBasicAuthEmpty
+	TestAuthBasicAuthUsernameOnly
+	TestAuthBasicAuthPasswordOnly
+	TestAuthBasicAuthFlattenedGlobal
+	TestAuthBasicAuthFlattenedHoisted
+	TestAuthBasicAuthOperationOptional
+	TestAuthAPIKeyAuthGlobal
+	TestAuthBasicHttpGlobalOption
+	TestAuthHoistedSecurityAccessTokenFirst
+	TestAuthHoistedSecurityAccessTokenOnly
+	TestAuthHoistedSecurityApiKeyFirst
+	TestAuthHoistedSecurityBasicHttpOnly
+	TestAuthHoistedSecurityOptionAccessTokenFirst
+	TestAuthHoistedSecurityOptionApiKeyFirst
+	TestAuthHoistedSecurityOptionBasicHttpOnly
+	TestAuthHoistedSecurityInvalidOption
+	TestAuthHoistedSecurityInvalidField
+	TestAuthBearerAuthOperationWithPrefix
+	TestAuthBearerAuthOperationWithoutPrefix
+	TestAuthGlobalSecurityFieldsOrdering
+	TestAuthGlobalSecurityOptionFieldsOrdering
+	TestAuthOauth2Auth
+	TestAuthOpenIDConnectAuth
+	TestAuthMultipleSimpleSchemeAuth
+	TestAuthMultipleMixedSchemeAuth
+	TestAuthMultipleSimpleOptionsAuthFirstOption
+	TestAuthMultipleSimpleOptionsAuthSecondOption
+	TestAuthMultipleMixedOptionsAuthFirstOption
+	TestAuthMultipleMixedOptionsAuthSecondOption
+	TestAuthMultipleOptionsWithSimpleSchemesAuthFirstOption
+	TestAuthMultipleOptionsWithSimpleSchemesAuthSecondOption
+	TestAuthMultipleOptionsWithMixedSchemesAuthFirstOption
+	TestAuthMultipleOptionsWithMixedSchemesAuthSecondOption
+	TestAuthGlobalSecurityFlattening
+	TestAuthGlobalSecurityFlatteningCallback
+	TestAuthGlobalSecurityFlatteningEnvVarFallback
+	TestAuthHoistedOperationAuthRetained
+	TestAuthCustomSecurityOptionAppId
+	TestAuthCustomSecuritySchemeAppId
+	TestAuthCustomSecuritySchemeOnly
+	TestAuthOperationLevelOauth2
+	TestCustomclientRequestParametersRetained
+	TestCustomCodeRegionSdkMethodWithImports
+	TestCustomCodeRegionSubSdkMethodWithImports
+	TestCustomCodeRegionModelMethodWithImports
+	TestFlatteningComponentBodyAndParamNoConflict
+	TestFlatteningComponentBodyAndParamNoConflictFlattenRequests
+	TestFlatteningComponentBodyAndParamConflict
+	TestFlatteningComponentBodyAndParamConflictFlattenRequests
+	TestFlatteningInlineBodyAndParamConflict
+	TestFlatteningInlineBodyAndParamConflictFlattenRequests
+	TestFlatteningInlineBodyAndParamNoConflict
+	TestFlatteningInlineBodyAndParamNoConflictFlattenRequests
+	TestFlatteningConflictingParams
+	TestFlatteningConflictingParamsFlattenRequests
+	TestFlatteningRequiredBodyAllOptionalFlattenRequests
+	TestFlatteningRequiredBodyAllOptional
+	TestFlatteningNullableBodyWithRequiredParamOrdering
+	TestGlobalsQueryParameterGetUsesGlobal
+	TestGlobalsQueryParameterGetUsesLocal
+	TestGlobalsPathParameterGetUsesGlobal
+	TestGlobalsPathParameterGetUsesLocal
+	TestGlobalsHeaderGetUsesGlobal
+	TestGlobalsHeaderGetUsesLocal
+	TestGlobalsHeaderKeepsCustomClientHeaders
+	TestGlobalsHiddenPost
+	TestGlobalsOperationParamsOnly
+	TestGlobalsOptionalHiddenPathParameterOperationRequired
+	TestGlobalsOptionalHiddenPathParameterPathRequired
+	TestGlobalsOptionalPathParameterOperationRequired
+	TestGlobalsOptionalPathParameterPathRequired
+	TestGlobalsKebabCaseParamGet
+	TestHeadersOverrideRequestHeaders
+	TestHeadersEmptyResponseBodyWithHeaders
+	TestHeadersErrorResponseHeadersNone
+	TestHeadersErrorResponseHeadersOptional
+	TestHeadersResponseHeadersNone
+	TestHeadersResponseHeadersOptional
+	TestHeadersResponseBodyWithHeadersFlat
+	TestHeadersEmptyResponseBodyWithHeadersFlat
+	TestRawResponseHelpersStripInternalHeader
+	TestParametersMixedPrimitives
+	TestParametersSimplePathParameterPrimitives
+	TestParametersSimplePathParameterObjects
+	TestParametersSimplePathParameterArrays
+	TestParametersSimplePathParameterMaps
+	TestParametersPathEncoding
+	TestParametersQueryEncoding
+	TestParametersPathParameterJSON
+	TestParametersOpenEnum
+	TestParametersFormQueryParamsPrimitive
+	TestParametersFormQueryParamsObject
+	TestParametersFormQueryParamsCamelObject
+	TestParametersFormQueryParamsRefParamObject
+	TestParametersFormQueryParamsArray
+	TestParametersFormQueryParamsMap
+	TestParametersFormQueryParamsUnions
+	TestParametersDeepObjectQueryParamsObject
+	TestParametersDeepObjectQueryParamsDeepObject
+	TestParametersDeepObjectQueryParamsMap
+	TestParametersJSONQueryParamsObject
+	TestParametersMixedQueryParams
+	TestParametersHeaderParamsPrimitive
+	TestParametersHeaderParamsObject
+	TestParametersHeaderParamsMap
+	TestParametersHeaderParamsArray
+	TestParametersHeaderParamsNil
+	TestParametersPipeQueryParamsArray
+	TestParametersCamelCase
+	TestParametersConstQueryParams
+	TestParametersDefaultQueryParams
+	TestMultiLevelGrouping
+	TestRequestBodiesPostEmptyObject
+	TestRequestBodiesPostApplicationJSONSimple
+	TestRequestBodiesPostApplicationJSONSimpleCamelCase
+	TestRequestBodiesPostApplicationJSONDeep
+	TestRequestBodiesPostApplicationJSONDeepCamelCase
+	TestRequestBodiesPostApplicationJSONMultipleJSONFiltered
+	TestRequestBodiesPostMultipleContentTypesComponentFilteredApplicationJson
+	TestRequestBodiesPostMultipleContentTypesComponentFilteredMultipartFormData
+	TestRequestBodiesPostMultipleContentTypesInlineFiltered
+	TestRequestBodiesPostMultipleContentTypesSplitJSON
+	TestRequestBodiesPostMultipleContentTypesSplitMultipart
+	TestRequestBodiesPostMultipleContentTypesSplitForm
+	TestRequestBodiesPostMultipleContentTypesSplitJSONWithParam
+	TestRequestBodiesPostMultipleContentTypesSplitMultipartWithParam
+	TestRequestBodiesPostMultipleContentTypesSplitFormWithParam
+	TestRequestBodiesPostApplicationJSONArray
+	TestRequestBodiesPostApplicationJSONArrayCamelCase
+	TestRequestBodiesPostApplicationJSONArrayOfArray
+	TestRequestBodiesPostApplicationJSONArrayOfArrayCamelCase
+	TestRequestBodiesPostApplicationJSONMap
+	TestRequestBodiesPostApplicationJSONMapCamelCase
+	TestRequestBodiesPostApplicationJSONMapOfMap
+	TestRequestBodiesPostApplicationJSONMapOfMapCamelCase
+	TestRequestBodiesPostApplicationJSONMapOfAny
+	TestRequestBodiesPostApplicationJSONMapOfArray
+	TestRequestBodiesPostApplicationJSONMapOfArrayCamelCase
+	TestRequestBodiesPostApplicationJSONArrayOfMap
+	TestRequestBodiesPostApplicationJSONArrayOfMapCamelCase
+	TestRequestBodiesPostApplicationJSONArrayOfPrimitive
+	TestRequestBodiesPostApplicationJSONMapOfPrimitive
+	TestRequestBodiesPostApplicationJSONMapOfMapOfPrimitive
+	TestRequestBodiesPostApplicationJSONArrayOfArrayOfPrimitive
+	TestRequestBodiesPostApplicationJSONArrayObject
+	TestRequestBodiesPostApplicationJSONArrayObjectCamelCase
+	TestRequestBodiesPostApplicationJSONMapObject
+	TestRequestBodiesPostApplicationJSONMapObjectCamelCase
+	TestRequestBodiesPostNullableRequiredEmptyObjectNullableSet
+	TestRequestBodiesPostNullableRequiredEmptyObjectOptionalSet
+	TestRequestBodiesPostNullableRequiredEmptyObjectAllSet
+	TestRequestBodiesPutMultipartSimple
+	TestRequestBodiesPostJsonOptionalNullable
+	TestRequestBodiesPostFormOptionalNullable
+	TestRequestBodiesPutMultipartOptionalNullable
+	TestRequestBodiesPostFormOptionalNullableJsonShared
+	TestRequestBodiesPutMultipartOptionalNullableJsonShared
+	TestRequestBodiesPostJsonOptionalNullableBodyAndParam
+	TestRequestBodiesPutMultipartDeep
+	TestRequestBodiesPutDifferentFileName
+	TestRequestBodiesPutMultipartFile
+	TestRequestBodiesPutMultipartFileRef
+	TestRequestBodiesPutMultipartFileStreaming
+	TestRequestBodiesPutMultipartFileBytesio
+	TestRequestBodiesPutMultipartFileStringio
+	TestRequestBodiesPutMultipartFileHandle
+	TestRequestBodiesPostMultipartFilesArray
+	TestRequestBodiesPostFormSimple
+	TestRequestBodiesPostFormDeep
+	TestRequestBodiesPostFormMapPrimitive
+	TestRequestBodiesPutString
+	TestRequestBodiesPutBytes
+	TestRequestBodiesPutBytesStreaming
+	TestRequestBodiesPutStringWithParams
+	TestRequestBodiesPutBytesWithParams
+	TestRequestBodiesReadAndWrite
+	TestRequestBodiesReadOnlyInput
+	TestRequestBodiesWriteOnly
+	TestRequestBodiesWriteOnlyOutput
+	TestRequestBodiesReadOnlyUnion
+	TestRequestBodiesWriteOnlyUnion
+	TestRequestBodiesReadWriteOnlyUnion
+	TestRequestBodiesComplexNumberTypes
+	TestRequestBodiesComplexNumberTypesOptionalPopulated
+	TestRequestBodiesComplexNumberTypesOptionalUnpopulated
+	TestRequestBodiesComplexNumberTypesNullableSet
+	TestRequestBodiesComplexNumberTypesNullableNull
+	TestRequestBodiesComplexNumberTypesRequiredMissing
+	TestRequestBodiesComplexNumberTypesBigintOverflow
+	TestRequestBodiesDefaultsAndConsts
+	TestRequestBodiesDefaultEmptyString
+	TestRequestBodiesDeprecatedRequestBodyRef
+	TestRequestBodiesPostJSONDataTypesBigintStr
+	TestRequestBodiesPostJSONDataTypesBoolean
+	TestRequestBodiesPostJSONDataTypesDateTime
+	TestRequestBodiesPostJSONDataTypesInt32
+	TestRequestBodiesPostJSONDataTypesString
+	TestRequestBodiesPostJSONDataTypesDate
+	TestRequestBodiesPostJSONDataTypesDecimalStr
+	TestRequestBodiesPostJSONDataTypesFloat32
+	TestRequestBodiesPostJSONDataTypesNumber
+	TestRequestBodiesPostJSONDataTypesArrayDate
+	TestRequestBodiesPostJSONDataTypesArrayBigint
+	TestRequestBodiesPostJSONDataTypesArrayDecimalStr
+	TestRequestBodiesPostJSONDataTypesInteger
+	TestRequestBodiesPostJSONDataTypesDecimal
+	TestRequestBodiesPostJSONDataTypesMapDecimal
+	TestRequestBodiesPostJSONDataTypesBigint
+	TestRequestBodiesPostJSONDataTypesMapDateTime
+	TestRequestBodiesPostJSONDataTypesMapBigintStr
+	TestRequestBodiesPostJSONDataTypesComplexNumberArrays
+	TestRequestBodiesPostJSONDataTypesComplexNumberMaps
+	TestRequestBodiesPostNullableNotRequiredStringBody
+	TestRequestBodiesPostNullableRequiredStringBody
+	TestRequestBodiesPostNotNullableNotRequiredStringBody
+	TestRequestBodiesPostNullableRequiredPropertyAllSet
+	TestRequestBodiesPostNullableRequiredSharedObjectAllNull
+	TestRequestBodiesPostNullableRequiredSharedObjectAllSet
+	TestRequestBodiesPostNullableRequiredSharedObjectRequiredNull
+	TestRequestBodiesPostNullableRequiredSharedObjectOptionalNonNull
+	TestRequestBodiesPostNullableRequiredPropertyAllNull
+	TestRequestBodiesPostNullableOptionalFields
+	TestRequestBodiesGetInferredOptionalRequestWrapper
+	TestRequestBodiesNoBodyNoContentType
+	TestRequestBodiesWildcardNoContentType
+	TestRequestBodiesFileUploadExtractContentType
+	TestRequestBodiesFormEncodedStringArray
+	TestRequestBodiesBase64InputModeFileSplitComponents
+	TestRequestBodiesBase64InputModeFileSharedComponent
+	TestRequestBodiesBase64FileInputIdempotent
+	TestRequestBodiesUUIDFormat
+	TestRequestBodiesDurationFormat
+	TestResponseBodiesJSONGet
+	TestResponseBodiesStringGet
+	TestResponseBodiesXMLGet
+	TestResponseBodiesBytesGet
+	TestResponseBodiesReadOnly
+	TestResponseBodiesAcceptHeaderDefault
+	TestResponseBodiesAcceptHeaderOverride
+	TestResponseBodiesAdditionalPropertiesString
+	TestResponseBodiesAdditionalPropertiesDate
+	TestResponseBodiesAdditionalPropertiesComplexNumbers
+	TestResponseBodiesAdditionalPropertiesObject
+	TestResponseBodiesAdditionalPropertiesAnyValues
+	TestResponseBodiesEmptyObjectFreeform
+	TestResponseBodiesDecimalString
+	TestResponseBodiesDefaultEmptyString
+	TestResponseBodiesOverriddenFieldNames
+	TestResponseBodiesMultilineString
+	TestResponseBodies2xxJSONObjectAllOptionalProperties
+	TestServersSelectGlobalServerValid
+	TestServersSelectGlobalServerBroken
+	TestServersSelectServerWithIDDefault
+	TestServersSelectServerWithIDValid
+	TestServersSelectServerWithIDBroken
+	TestServersSelectGlobalServerByNameDefault
+	TestServersSelectGlobalServerByNameDefaultUsingBuilder
+	TestServersSelectGlobalServerByNameValid
+	TestServersSelectGlobalServerByNameValidUsingBuilder
+	TestServersSelectGlobalServerByNameInvalid
+	TestServersSelectGlobalServerByNameBroken
+	TestServersSelectGlobalServerByNameBrokenUsingBuilder
+	TestServersSelectGlobalServerByIDDefault
+	TestServersSelectGlobalServerByIDDefaultUsingBuilder
+	TestServersSelectGlobalServerByIDValid
+	TestServersSelectGlobalServerByIDValidUsingBuilder
+	TestServersSelectGlobalServerByIDInvalid
+	TestServersSelectGlobalServerByIDInvalidUsingBuilder
+	TestServersSelectGlobalServerByIDBroken
+	TestServersSelectGlobalServerByIDBrokenUsingBuilder
+	TestServersSelectGlobalServerByNameWithTemplatesDefaults
+	TestServersSelectGlobalServerByNameWithTemplatesDefaultsUsingBuilder
+	TestServersSelectGlobalServerByNameWithTemplatesValid
+	TestServersSelectGlobalServerByNameWithTemplatesValidUsingBuilder
+	TestServersSelectGlobalServerByNameWithTemplatesBroken
+	TestServersSelectGlobalServerByNameWithTemplatesBrokenUsingBuilder
+	TestServersServerWithTemplatesGlobal
+	TestServersServerWithTemplatesGlobalDefaults
+	TestServersServerWithTemplatesGlobalEnum
+	TestServersServerWithTemplates
+	TestServersServerWithTemplatesDefaults
+	TestServersServerByIDWithTemplates
+	TestServersGlobalServerWithTemplatedProtocol
+	TestServersGlobalServerWithInvalidTemplatedProtocol
+	TestServersServerWithProtocolTemplate
+	TestServersServerWithInvalidProtocolTemplate
+	TestServersOverrideGlobalServerURL
+	TestServersOverrideOperationServerURL
+	TestTransformJqRequestResponse
+	TestUnionsStronglyTypedOneOfPostBasic
+	TestUnionsStronglyTypedNullableOneOfPost
+	TestUnionsStronglyTypedOneOfPostDeep
+	TestUnionsStronglyTypedOneOfPostWithNonStandardDiscriminatorName
+	TestUnionsStronglyTypedOneOfDiscriminatedPost
+	TestUnionsConflictingDiscriminatorMappingKey
+	TestUnionsWeaklyTypedOneOfPostBasic
+	TestUnionsWeaklyTypedOneOfPostDeep
+	TestUnionsTypedObjectOneOfPostObj1
+	TestUnionsTypedObjectOneOfPostObj2
+	TestUnionsTypedObjectOneOfPostObj3
+	TestUnionsTypedObjectOneOfPostNull
+	TestUnionsTypedObjectOneOfPostBodyLessThrows
+	TestUnionsTypedObjectNullableOneOfPostObj1
+	TestUnionsTypedObjectNullableOneOfPostObj2
+	TestUnionsTypedObjectNullableOneOfPostNull
+	TestUnionsFlattenedTypedObjectPostObj1
+	TestUnionsNullableTypedObjectPostObj1
+	TestUnionsNullableTypedObjectPostNull
+	TestUnionsNullableOneofSchemaPostObj1
+	TestUnionsNullableOneofSchemaPostObj2
+	TestUnionsNullableOneofSchemaPostNull
+	TestUnionsNullableOneofTypeInObjectPost
+	TestUnionsNullableOneofRefInObjectPost
+	TestUnionsPrimitiveTypeOneOfPostString
+	TestUnionsPrimitiveTypeOneOfPostInteger
+	TestUnionsPrimitiveTypeOneOfPostNumber
+	TestUnionsPrimitiveTypeOneOfPostBoolean
+	TestUnionsMixedTypeOneOfPostString
+	TestUnionsMixedTypeOneOfPostInteger
+	TestUnionsMixedTypeOneOfPostObject
+	TestUnionsDateNull
+	TestUnionsDatetimeNull
+	TestUnionsBigintStrDecimal
+	TestUnionsDatetimeBigint
+	TestUnionsCollectionsOneOfPost
+	TestUnionsUnionMap
+	TestUnionsUnionOfArrays
+	TestUnionsExtraJsonProperties
+	TestUnionsNestedEnumsForm
+	TestUnionsNestedEnumsMultipart
+	TestUnionsArrayOfDiscriminatedUnions
+	TestUnionsArrayOfDiscriminatedUnionsMap
+	TestUnionsNestedArrayOfDiscriminatedUnions
+	TestUnionsMixedUnionTypes
+	TestUnionsOptionalUnionMap
+	TestUnionsNestedDiscriminatedUnion
+	TestUnionEnumNestedInArrayInUnion
+	TestUnionEnumArrayDeserialization
+	TestUnionsOneOfBooleanAndStringEnumWithResponseBoolean
+	TestUnionsOneOfBooleanAndStringEnumWithResponseEnum
+	TestUnionsDiscriminatedOpenEnum
+	TestUnionsConstDiscriminator
+	TestUnionsDiscriminatedMultipleMemberships
+	TestUnionsCircularReferenceRecursiveOneOf
+	TestCollectionsContainingNull
+	TestCollectionsParameterAnnotationsAdvertiseIterables
+	TestCollectionsParametersAcceptIterablesDirect
+	TestCollectionsParametersAcceptIterables
+	TestCollectionsMapInputAcceptsNonDictMapping
+	TestErrorsStatusGetError300NonError
+	TestErrorsStatusGetErrorDefaultErrorCodes
+	TestErrorsStatusGetErrorXSpeakeasyErrors
+	TestErrorsStatusGetErrorXSpeakeasyErrorsNone
+	TestErrorsStatusGetErrorXSpeakeasyErrorsDefault
+	TestErrorsConnectionError
+	TestErrorsUnionOfErrors
+	TestErrorsUnionOfErrorsDiscriminated
+	TestErrorsAdditionalProperties
+	TestErrorsCustomErrorInheritance
+	TestErrorsErrorBodyValidationEnabled
+	TestErrorsErrorBodyValidationDisabled
+	TestErrorsResponseBodyValidationEnabled
+	TestErrorsResponseBodyValidationDisabled
+	TestErrorsResponseBodyValidationLenient
+	TestErrorsErrorBodyValidationLenient
+	TestErrorsResponseBodyValidationLenientUnionVariant
+	TestErrorsResponseBodyValidationLenientNonJson
+	TestErrorsOptionalNullableErrorMessage
+	TestErrorsOptionalNullableErrorMessageNested
+	TestTelemetryUserAgentGet
+	TestTelemetrySpeakeasyUserAgentGet
+	TestPaginationLimitOffsetPageBody
+	TestPaginationLimitOffsetPageBodyNullable
+	TestPaginationLimitOffsetPageBodyOptionalNullable
+	TestPaginationLimitOffsetDeepOutputsPageBody
+	TestPaginationLimitOffsetPageParams
+	TestPaginationLimitOffsetPageParamsFlat
+	TestPaginationLimitOffsetPageParamsConst
+	TestPaginationLimitOffsetUnionOutputPageParams
+	TestPaginationLimitOffsetUnionOutputPageParamsFlat
+	TestPaginationLimitOffsetNilPageParams
+	TestPaginationLimitOffsetOffsetBody
+	TestPaginationLimitOffsetOffsetParams
+	TestPaginationLimitOffsetDefaultOffsetBody
+	TestPaginationLimitOffsetDefaultOffsetParams
+	TestPaginationLimitOffsetNilOffsetParams
+	TestPaginationLimitOffsetZeroPageParams
+	TestPaginationLimitOffsetNullable
+	TestPaginationCursorBody
+	TestPaginationCursorResponseEnvelope
+	TestPaginationCursorParams
+	TestPaginationWithRetries
+	TestPaginationURL
+	TestPaginationCursorNonNumeric
+	TestPaginationCursorNonNumericWithLimit
+	TestPaginationCursorNonNumericNullable
+	TestPaginationCursorNonNumericEmptyString
+	TestPaginationBodyWrappedRequest
+	TestPaginationParamsWrappedRequest
+	TestPaginationBodyFlattenedWithSecurity
+	TestPaginationBodyFlattenedOptionalSecurity
+	TestPaginationAmbiguousInput
+	TestPaginationWrappedOptionalBody
+	TestPaginationEncapsulatedParameter
+	TestPaginationCursorNullableLimit
+	TestPaginationCursorNullableResults
+	TestPaginationCursorDeepNestedOutputs
+	TestPaginationCursorDeepNestedOutputsIterator
+	TestPollingDelaySeconds
+	TestPollingDelaySecondsOverride
+	TestPollingFailureCriteriaResponseBody
+	TestPollingFailureCriteriaResponseBodyNested
+	TestPollingFailureCriteriaResponseBodyOptional
+	TestPollingFailureCriteriaResponseBodyRegex
+	TestPollingFailureCriteriaStatusCode
+	TestPollingFailureCriteriaStatusCodeRegex
+	TestPollingIntervalSeconds
+	TestPollingIntervalSecondsOverride
+	TestPollingLimitCount
+	TestPollingLimitCountOverride
+	TestPollingSuccessCriteriaResponseBody
+	TestPollingSuccessCriteriaResponseBodyNested
+	TestPollingSuccessCriteriaResponseBodyOptional
+	TestPollingSuccessCriteriaResponseBodyRegex
+	TestPollingSuccessCriteriaStatusCode
+	TestPollingSuccessCriteriaStatusCodeErrorKnown
+	TestPollingSuccessCriteriaStatusCodeErrorRegex
+	TestPollingSuccessCriteriaStatusCodeErrorUnknown
+	TestPollingSuccessCriteriaStatusCodeRegex
+	TestRetriesBinaryRequestBody
+	TestRetriesSucceeds
+	TestRetriesSucceedsWithBody
+	TestRetriesTimeout
+	TestRetriesTimeoutFreshSignal
+	TestRetriesRequestTimeout
+	TestRetriesHeader
+	TestRetriesHeaderHTTPDateBeyondMaxInterval
+	TestRetriesHeaderRateLimitReset
+	TestRetriesAttemptCountBackoff
+	TestRetriesAttemptCountZero
+	TestRetriesConnectError
+	TestRetriesGlobalConfigDisable
+	TestRetriesGlobalConfigTimeout
+	TestRetriesGlobalConfigSuccess
+	TestRetriesRetryConnectionErrorsReject
+	TestRetriesRetryConnectionErrorsReset
+	TestRetriesStatusCodesOverride
+	TestRetriesStatusCodesOverrideDefault
+	TestRetriesStatusCodesOverrideGlobal
+	TestEventStreamJSONData
+	TestEventStreamTextData
+	TestEventStreamMultilineData
+	TestEventStreamRichEvents
+	TestEventStreamChatSentinelEvent
+	TestEventStreamChatJSON
+	TestEventStreamChatSkipSentinel
+	TestEventStreamChatHeartbeatSkipsDataless
+	TestEventStreamLargeEventSmallChunks
+	TestEventStreamSplitBoundaries
+	TestEventStreamSSEOverloadStreamingResponse
+	TestEventStreamSSEOverloadJSONResponse
+	TestEventStreamDifferentDataSchemas
+	TestEventStreamErrorResponse
+	TestEventStreamStayOpenBreakEarly
+	TestEventStreamStayOpenSentinel
+	TestEventStreamPartialWithComments
+	TestEventStreamUnionWithStandaloneComments
+	TestEventStreamWithAbortSignal
+	TestEventStreamOptionalDataField
+	TestEventStreamWPTCompliance
+	TestEventStreamMixedData
+	TestEventStreamMalformedFrameStrict
+	TestEventStreamMalformedFrameLenient
+	TestTestHooks
+	TestTestHooksError
+	TestTestHooksBeforeCreateRequest
+	TestTestHooksAfterResponse
+	TestHooksTriggerRetries
+	TestHooksTerminateRetryLoop
+	TestHooksAccessRetryConfig
+	TestHooksAccessOperationMetadata
+	TestHooksAuthorizationHeaderModification
+	TestHooksCustomUserAgent
+	TestHooksClientCredentialsNoScopes
+	TestHooksClientCredentialsSuccess
+	TestHooksClientCredentialsSuccessGlobalServer
+	TestHooksClientCredentialsSuccessAltTokenURL
+	TestHooksClientCredentialsOptionSuccess
+	TestHooksClientCredentialsOptionSuccessAltTokenURL
+	TestHooksClientCredentialsBasicSuccess
+	TestHooksClientCredentialsBasicSuccessGlobalServer
+	TestHooksClientCredentialsBasicSuccessAltTokenURL
+	TestHooksClientCredentialsLowercaseBearer
+	TestHooksOauth2PasswordWithCredentials
+	TestHooksOauth2PasswordWithToken
+	TestHooksOauth2PasswordBadCredentials
+	TestHooksOauth2PasswordOperationScope
+	TestHooksOauth2PasswordTokenRenewal
+	TestHooksOauth2PasswordNotRequired
+	TestHooksOauth2PasswordOperationSecurityOption
+	TestHooksAvailableOauth2Scopes
+	TestOpenEnumsRoundTrip
+	TestOpenEnumsRoundTripStringUnion
+	TestOpenEnumsResponseUsage
+	TestMethodDelete
+	TestMethodGet
+	TestMethodHead
+	TestMethodOptions
+	TestMethodPatch
+	TestMethodPost
+	TestMethodPut
+	TestMethodTrace
+	TestStatusCode2XX
+	TestStatusCode4XX
+	TestStatusCode5XX
+	TestStatusCodeDefault
+	TestWebhooksConsume
+	TestWebhooksConsumeCustomSecurity
+	TestWebhooksConsumeBadData
+	TestWebhooksConsumeBadSignature
+	TestDuplicatePathParameterAtOperationLevelDoesNotError
+	TestDuplicatePathParameterAtPathLevelDoesNotError
+	TestDuplicateQueryParameterAtOperationLevelDoesNotError
+	TestDuplicateQueryParameterAtPathLevelDoesNotError
+	TestDuplicateHeaderParameterAtOperationLevelDoesNotError
+	TestDuplicateHeaderParameterAtPathLevelDoesNotError
+	TestNoServers
+	TestRelativeServers
+	TestJsonlStreamDataAsyncEnvelopeHttpResponses
+	TestJsonlStreamDataChunksEnvelopeHttpResponses
+	TestJsonlStreamDataFlatResponses
+	TestJsonlStreamDataAsyncChunksFlatResponse
+	TestJsonlStreamDataEnvelopeHttpResponses
+	TestJsonlStreamDataAsyncFlatResponse
+	TestJsonlStreamDataChunksFlatResponse
+	TestXNdjsonStreamDataEnvelopeHttpResponses
+	TestXNdjsonStreamDataAsyncEnvelopeHttpResponses
+	TestXNdjsonStreamDataChunksEnvelopeHttpResponses
+	TestXNdjsonStreamDataAsyncChunksEnvelopeHttpResponses
+	TestJsonlDeserializationCamelCaseProperties
+	TestParametersAllowEmptyValue
+	TestParametersOrderingWithLegacyFlatteningOrder
+	TestParametersOrderingParametersFirst
+	TestParametersOrderingBodyFirst
+	TestParametersOrderingUsingOptionalRequestBodyWithLegacyFlatteningOrder
+	TestParametersOrderingUsingOptionalRequestBodyParametersFirst
+	TestParametersOrderingUsingOptionalRequestBodyBodyFirst
+	TestRedirectsAreFollowed
+	TestPaginationCursorSnake
+	TestPaginationCursorParamsSnake
+	TestPaginationLimitOffsetSnake
+	TestPaginationLimitOffsetParamsSnake
+	TestPaginationSimpleObjectSnake
+	TestCancellationTokenNoCancellation
+	TestCancellationTokenCancelledBeforeRequest
+	TestCancellationTokenCancelledDuringRequest
+	TestCancellationTokenCancelledInsideHook
+	TestCustomclientRequestParametersRetainedLegacy
+	TestCustomClientHttpProxy
+	TestObjectWithOptionalNullableFull
+	TestObjectWithOptionalNullableFieldAbsent
+	TestObjectWithOptionalNullableFieldNull
+	TestObjectWithOptionalFalseNullableTrueFull
+	TestObjectWithOptionalFalseNullableTrueFieldNull
+	TestObjectWithOptionalTrueNullableFalseFull
+	TestObjectWithOptionalTrueNullableFalseFieldAbsent
+	TestObjectWithOptionalTrueNullableFalseFieldNull
+	TestObjectWithOptionalFalseNullableFalseFull
+	TestObjectWithOptionalFalseNullableFalseFieldAbsent
+	TestObjectWithOptionalFalseNullableFalseFieldNull
+	TestObjectWithOptionalFalseNullableTrueFieldAbsent
+	TestSmartUnionNestedUnionVsNestedUnion
+	TestSmartUnionOpenEnums
+	TestSmartUnionOpenEnumsAndSize
+	TestSmartUnionDeeplyNestedArray
+	TestSmartUnionEmptyString
+	TestSmartUnionNestedUnion
+	TestSmartUnionAllConsts
+	TestSmartUnionSelectsMoreMatchedFields
+	TestSmartUnionPrefersFewerUnmatchedFields
+	TestSmartUnionNestedStructs
+	TestSmartUnionArrayFields
+	TestSmartUnionPreservesOrderOnTie
+	TestSmartUnionOptionalPointerFields
+	TestSmartUnionOptionalPointerStructs
+	TestSmartUnionThreeWayFieldDiscrimination
+	TestSmartUnionConstFieldDiscrimination
+	TestSmartUnionAnyFieldType
+	TestSmartUnionNestedUnionVsFlatStruct
+	TestSmartUnionUnionVsUnion
+	TestSmartUnionNullableUnionNullableFields
+	TestSmartUnionNullableCollectionItem
+	TestSmartUnionWrappedComplexFields
+	TestOpenUnionKnownVariant
+	TestOpenUnionUnknownDiscriminator
+	TestOpenUnionMissingDiscriminator
+	TestOpenUnionInvalidPayload
+	TestOpenUnionKnownDiscInvalidSchema
+	TestOpenUnionEmbedded
+	TestOpenUnionSmartUnionInterop
+	TestTimeoutMsOverrideIsRespected
+	TestTimeoutMsOverrideAllowsCompletion
+	TestRequestExtrasExtraQueryAppended
+	TestRequestExtrasExtraQueryMerged
+	TestRequestExtrasExtraQueryNullishArrays
+	TestRequestExtrasExtraQueryOverrides
+	TestRequestExtrasExtraQueryObjectJson
+	TestRequestExtrasExtraQueryPreservesServerUrlQuery
+	TestRequestExtrasExtraQuerySecurityOverrides
+	TestRequestExtrasExtraBodyMerged
+	TestRequestExtrasExtraBodyOverrides
+	TestRequestExtrasExtraBodyRejectsNonJson
+	TestReactQueryKeyIncludesRequestBody
+	TestReactQueryKeyOptInInfersQueryType
+	TestReactQueryKeyIncludesParametersAndRequestBody
+	TestReactQueryBuildersKeyDistinctBodies
+
+	// Custom CLI-target behaviour tests recorded by the generated CLI test
+	// suite (exit codes, pre-request classification, catalogs, intents,
+	// dispatch, streams, artifacts, security ranking, request shape).
+	TestAgentModeDoesNotLeakBetweenInvocations
+	TestCatalogListsValues
+	TestCatalogRejectsPositionalArgument
+	TestCatalogStructuredOutput
+	TestCliExitCodeBareIntent
+	TestCliExitCodeConnectionAndAgentBlock
+	TestCliExitCodeMappingTables
+	TestCliExitCodeReasonFirst
+	TestCliExitCodeRootUnknownMessage
+	TestCliExitCodeSingleEnvelope
+	TestCliExitCodeSuccessAndDiscovery
+	TestCliExitCodesRenderingModes
+	TestClientCredentialsDryRunTokenAndApi
+	TestClierrorsAgentModeExplicitlyDisabled
+	TestClierrorsAgentModeFromEnvironment
+	TestClierrorsAgentModeMatrix
+	TestClierrorsApiErrorNotDoubleWrapped
+	TestClierrorsDeclaredHintsFire
+	TestClierrorsFlagValuesNotRenderingFlags
+	TestClierrorsInvalidValuesDoNotStopPreparse
+	TestClierrorsJsonOutputEnvelope
+	TestClierrorsPlainModeClassified
+	TestClierrorsTypedReasons
+	TestErrorTaxonomyDeclaredRulesAndOrdering
+	TestErrorTaxonomyEveryClosedTypeHasAHint
+	TestErrorTaxonomyFallbackMessageOmitsRawBody
+	TestErrorTaxonomyHintPrecedenceAndDedupe
+	TestErrorTaxonomyJqUsesStructuredEnvelope
+	TestErrorTaxonomyOddBodiesUseFallbackEnvelope
+	TestErrorTaxonomyOddReflectionFieldsDoNotPanic
+	TestErrorTaxonomyOriginSemantics
+	TestErrorTaxonomyPrettyHttpStatusWithoutReason
+	TestErrorTaxonomyPrettyJsonAgentParity
+	TestErrorTaxonomyPrettyResidualDetails
+	TestErrorTaxonomyReservedKeysAndRenderedClassification
+	TestEventStreamConnectionRefusedStaysConnectionError
+	TestEventStreamDecodeFailureIsProtocolError
+	TestEventStreamDecodeFailureWithoutJsonErrorType
+	TestEventStreamErrorEventAgentMode
+	TestEventStreamErrorEventAgentModeFallback
+	TestEventStreamErrorEventExitsNonZero
+	TestEventStreamErrorEventPretty
+	TestEventStreamNumbersKeepPrecision
+	TestEventStreamServerErrorMentioningDecodeIsNotProtocolError
+	TestEventStreamTimeoutStillBoundsSlowStream
+	TestEventStreamUndiscriminatedErrorShapedVariantIsData
+	TestEventStreamUnionEventsRenderWireShape
+	TestEventStreamWithTimeoutStreamsToCompletion
+	TestIntentDispatchResolvesStdinOnce
+	TestIntentDispatchSelectMatrix
+	TestIntentInteractivePipedBodySkipsPrompts
+	TestIntentRouteDispatchAgentEnvelope
+	TestIntentRouteDispatchBareHelp
+	TestIntentRouteDispatchBodyEvidence
+	TestIntentRouteDispatchConflictingEvidence
+	TestIntentRouteDispatchDefaultRequired
+	TestIntentRouteDispatchFlagPaths
+	TestIntentRouteDispatchHelpUsage
+	TestIntentRouteDispatchInteractivePlan
+	TestIntentRouteDispatchOverrideOnce
+	TestIntentsBothBodySurfacesMerged
+	TestIntentsDiscriminatedPartialBody
+	TestIntentsForeignSelectorAgentEnvelope
+	TestIntentsForeignSelectorUsageError
+	TestIntentsNonObjectBodyFallsThrough
+	TestIntentsPartialBodyKeepsPresets
+	TestIntentsPartialBodyUserKeysWin
+	TestIntentsPresetFromArgs
+	TestIntentsPresetMergeMatrix
+	TestIntentsUndeclaredNestedGroupOrder
+	TestPreRequestConnectionClassifierTypedTable
+	TestPreRequestDiscriminatedRootUnionMessages
+	TestPreRequestDryRunUnresolvableHost
+	TestPreRequestGeneratedRequiredUnionPathsAndOptionality
+	TestPreRequestGeneratedRequiredUnionPositiveEchoes
+	TestPreRequestRealConnectionFailures
+	TestPreRequestSilentStdinTimesOutOnRootUnion
+	TestPreRequestValidationEnvelopeMatrix
+	TestRequestShapeBodyAgentVariant
+	TestRequestShapeBodyAndWholeBodyFlagRejected
+	TestRequestShapeBodyBothSelectorsRejected
+	TestRequestShapeBodyDefaultSelectorMerges
+	TestRequestShapeBodyNullOptionalKeyAllowed
+	TestRequestShapeBodyTypoKeyRejected
+	TestRequestShapeExpandedBodyTypoKeyLenientWarning
+	TestRequestShapeExpandedBodyTypoKeyRejected
+	TestRequestShapeIntentBareUsage
+	TestRequestShapeIntentEmptyStdinUsage
+	TestRequestShapeIntentFlagAndBodyConflict
+	TestRequestShapeIntentFlagMergedIntoBody
+	TestRequestShapeIntentPositionalAndBodyConflict
+	TestRequestShapeIntentPositionalMergedIntoBody
+	TestRequestShapeIntentPositionalMergedIntoWholeBodyFlag
+	TestRequestShapeIntentStdinRunsRequest
+	TestRequestShapeIntentStdinTypoKeyRejected
+	TestRequestShapeIntentStdinWithPositional
+	TestRequestShapeIntentSynthesizedBody
+	TestRequestShapeIntentZeroValueFlagMerged
+	TestRequestShapeNestedUnionAgentSelectorNoDefault
+	TestRequestShapeNestedUnionBodyDefaultSelectorMerges
+	TestRequestShapeNestedUnionOwnFlagDefaultSelectorMerges
+	TestRequestShapeNestedUnionStdinDefaultSelectorMerges
+	TestRequestShapeOpenSchemaKeepsUnknownKeys
+	TestRequestShapeStdinTypoKeyRejected
+	TestRequestShapeWholeBodyFlagTypoKeyRejected
+	TestRequestShapeWholeBodyFlagWinsOverStdin
+	TestSecurityRankingBothFlags
+	TestSecurityRankingEnvOnly
+	TestSecurityRankingEnvTie
+	TestSecurityRankingFlagBeatsEnv
+	TestSecurityRankingOperationRestriction
+	TestSecurityRankingPickMatrix
+	TestSecurityRankingSourceRank
+
+	// Go-target streaming behaviour tests recorded by the generated Go test
+	// suite.
+	TestEventStreamWithOperationTimeoutStreamsToCompletion
+	TestJsonlStreamTimeoutStillBoundsSlowStream
+	TestJsonlStreamWithTimeoutStreamsToCompletion
+)
+
+func GetAllTests() []Test {
+	return testList
+}
+
+func (f *Features) GetTestRecords(ctx context.Context) ([]string, error) {
+	recordsList := []string{}
+
+	path := filepath.Join("templates/templates", f.target.Template, "tests")
+
+	files := []string{}
+
+	_ = filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		files = append(files, path)
+
+		return nil
+	})
+
+	if len(files) == 0 {
+		return recordsList, nil
+	}
+
+	jobs := make(chan string, len(files))
+	results := make(chan result, len(files))
+
+	for w := 0; w < 5; w++ {
+		go worker(jobs, results)
+	}
+
+	for _, file := range files {
+		jobs <- file
+	}
+	close(jobs)
+
+	for r := 0; r < len(files); r++ {
+		recordsList = append(recordsList, (<-results).foundTests...)
+	}
+
+	foundArazzoTests, err := getTestsFromTestsArazzo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tests from tests.arazzo.yaml: %w", err)
+	}
+
+	recordsList = append(recordsList, foundArazzoTests...)
+
+	return recordsList, nil
+}
+
+type result struct {
+	foundTests []string
+}
+
+func worker(jobs <-chan string, results chan<- result) {
+	for file := range jobs {
+		foundTests, err := scanFileForTests(file)
+		if err != nil {
+			continue
+		}
+		results <- result{foundTests}
+	}
+}
+
+func scanFileForTests(file string) ([]string, error) {
+	foundTests := []string{}
+	allTests := GetAllTests()
+
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", file, err)
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		for _, test := range allTests {
+			if strings.Contains(line, test.String()) {
+				foundTests = append(foundTests, test.String())
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to scan file %s: %w", file, err)
+	}
+
+	return foundTests, nil
+}
+
+func (f *Features) IsTestSkipped(ctx context.Context, test Test) bool {
+	return f.executor.IsTestSkipped(ctx, test)
+}
+
+func getTestsFromTestsArazzo(ctx context.Context) ([]string, error) {
+	arazzoFiles, err := filepath.Glob("tests/tests/*/tests.arazzo.yaml")
+	if err != nil {
+		return nil, fmt.Errorf("failed to glob arazzo files: %w", err)
+	}
+
+	var foundTests []string
+
+	for _, arazzoFile := range arazzoFiles {
+		data, err := os.ReadFile(arazzoFile)
+		if err != nil {
+			return nil, err
+		}
+
+		arazzoDoc, _, err := arazzo.Unmarshal(ctx, bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+
+		for _, workflow := range arazzoDoc.Workflows {
+			// Extract internal ID from workflow extensions
+			if workflow.Extensions != nil {
+				if extValue, exists := workflow.Extensions.Get("x-speakeasy-test-internal-id"); exists && extValue != nil {
+					var internalID string
+					if err := extValue.Decode(&internalID); err == nil && internalID != "" {
+						foundTests = append(foundTests, internalID)
+					}
+				}
+			}
+		}
+	}
+
+	return foundTests, nil
+}

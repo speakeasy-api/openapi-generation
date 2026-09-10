@@ -1,0 +1,24 @@
+---
+title: "IntEnum"
+---
+
+An integer enum property.
+
+## Example Usage
+
+```typescript
+import { IntEnum } from "openapi";
+
+let value: IntEnum = IntEnum.Third;
+
+// Open enum: unrecognized values are captured as Unrecognized<number>
+```
+
+## Values
+
+| Name                   | Value                  |
+| ---------------------- | ---------------------- |
+| `First`                | 1                      |
+| `Second`               | 2                      |
+| `Third`                | 3                      |
+| -                      | `Unrecognized<number>` |

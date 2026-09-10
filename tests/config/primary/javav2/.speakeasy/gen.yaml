@@ -1,0 +1,59 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: false
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+    operationScopedParamsNov2025: true
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+java:
+  inferUnionDiscriminators: false
+  forwardCompatibleUnionsByDefault: true
+  version: 0.0.1
+  additionalDependencies:
+    - "implementation:org.apache.httpcomponents.client5:httpclient5:5.4.2"
+  additionalPlugins: []
+  artifactID: openapi
+  clientServerStatusCodesAsErrors: true
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  enableCustomCodeRegions: true
+  enableFormatting: true
+  flattenGlobalSecurity: true
+  githubURL: github.com/owner/repo
+  groupID: org.openapis
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/shared
+      webhooks: models/webhooks
+  inputModelSuffix: input
+  license:
+    name: The MIT License (MIT)
+    shortName: MIT
+    url: https://mit-license.org/
+  maxMethodParams: 4
+  ossrhURL: https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+  outputModelSuffix: output
+  prefixModeMethodNames: false
+  projectName: openapi
+  nullFriendlyParameters: true
+  showSetterGetterTypesInDocs: true
+  asyncMode: enabled
+  enableStreamingUploads: true
+  templateVersion: v2

@@ -1,0 +1,4 @@
+{{- $sdkVar := lower (sanitizeFieldName .Global.AST.MainSDK.Type.Name) }}
+{{- $funcName := sanitizeFuncName .Local.Operation }}
+{{- addTestImport (printf "../funcs/%s.js" $funcName) $funcName }}
+{{- if .Local.Operation.Response.Type}}const {{getResponseVariableName .Local.StepID}} = {{end}}await {{$funcName}}({{$sdkVar}}{{ templateUsageMethodParameters .Local 0 }});

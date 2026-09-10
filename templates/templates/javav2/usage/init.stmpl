@@ -1,0 +1,13 @@
+{{- $usageCtx := .Local.Context}}
+{{- $isAsync := .Local.Async}}
+{{- $mode := .Local.Mode}}
+{{- if not $usageCtx.SkipSDKInstantiation}}
+{{- $pkg := templatePackageName}}
+        {{if eq $usageCtx.ContextIndex 0}}{{javaImportBaseSDK $isAsync}} {{end}}sdk = {{javaImportBaseSDK}}.builder(){{templateUsageSDKOptions $usageCtx}}
+        {{- if $isAsync}}
+            .build()
+            .{{modeMethodBaseName "async"}}();
+        {{- else}}
+            .build();
+        {{- end}}
+{{- end}}

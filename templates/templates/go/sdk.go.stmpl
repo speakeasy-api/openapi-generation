@@ -1,0 +1,309 @@
+{{- recurse 1 -}}
+{{- $dg := sanitizeSDKPackageName false -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $sdk := .Local -}}
+{{- $hasServers := (and .Local.Servers .Local.Servers.HasAbsoluteURL) -}}
+{{- $hasAnyServers := or $hasServers .Global.AST.MainSDK.HasAnyOperationServers -}}
+{{- addImport "net/http" -}}
+{{- addImport "time" -}}
+{{- addImport "hooks" -}}
+{{- addImport "retry" -}}
+{{- addImport "config" -}}
+package {{$dg}}
+// Generated from {{if ne .Global.Config.DocVersion ""}}OpenAPI doc version {{.Global.Config.DocVersion}} and{{end}} generator version {{.Global.Config.GenVersion}}
+
+{{genImports}}
+// #region imports
+// #endregion imports
+
+{{ if $hasServers }}
+{{- if $serverMap}}
+const (
+	{{- range .Local.Servers.Servers}}
+{{templateComments .Comments $dg (templateConstName .ID "Server") 1 "const" -}}
+	{{templateConstName .ID "Server"}} string = "{{ .ID }}"
+	{{- end}}
+)
+
+{{ templateBuiltinComment $dg "ServerList" "contains the list of servers available to the SDK" -}}
+var ServerList = map[string]string{
+	{{- range .Local.Servers.Servers}}
+	{{templateConstName .ID "Server"}}: "{{ .URL }}",
+	{{- end}}
+}
+{{- else if .Local.Servers}}
+{{ templateBuiltinComment $dg "ServerList" "contains the list of servers available to the SDK" -}}
+var ServerList = []string{
+	{{- range .Local.Servers.Servers}}
+{{templateComments .Comments $dg (print "ServerList[" .URL "]") 1 "var" -}}
+	"{{ .URL }}",
+	{{- end}}
+}
+{{- end}}
+{{- end }}
+
+{{ templateBuiltinComment $dg "HTTPClient" "provides an interface for supplying the SDK with a custom HTTP client" -}}
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+{{ templateBuiltinComment $dg "String" "provides a helper function to return a pointer to a string" -}}
+func String(s string) *string { return &s }
+
+{{ templateBuiltinComment $dg "Bool" "provides a helper function to return a pointer to a bool" -}}
+func Bool(b bool) *bool { return &b }
+
+{{ templateBuiltinComment $dg "Int" "provides a helper function to return a pointer to an int" -}}
+func Int(i int) *int { return &i }
+
+{{ templateBuiltinComment $dg "Int64" "provides a helper function to return a pointer to an int64" -}}
+func Int64(i int64) *int64 { return &i }
+
+{{ templateBuiltinComment $dg "Float32" "provides a helper function to return a pointer to a float32" -}}
+func Float32(f float32) *float32 { return &f }
+
+{{ templateBuiltinComment $dg "Float64" "provides a helper function to return a pointer to a float64" -}}
+func Float64(f float64) *float64 { return &f }
+
+{{ templateBuiltinComment $dg "Pointer" "provides a helper function to return a pointer to a type" -}}
+func Pointer[T any](v T) *T { return &v }
+
+
+
+{{templateComments .Local.Comments $dg $sdkClassName 0 "type" -}}
+type {{$sdkClassName}} struct {
+	SDKVersion 		string
+  	{{- range $subSDK := .Local.SubSDKs -}}
+	{{- $subSDKName := .Type.Name -}}
+  	{{if ne $subSDKName ""}}
+{{templateComments $subSDK.Comments $dg (sanitizeSDKFieldName $subSDKName) 1 "field" -}}
+  	{{sanitizeSDKFieldName .FieldName}} *{{sanitizeClassName $subSDKName}};{{end}}{{end}}	
+
+    sdkConfiguration config.SDKConfiguration
+	hooks *hooks.Hooks
+}
+
+{{- $opt := getOptionNames }}
+
+type SDKOption func(*{{$sdkClassName}})
+
+{{ templateBuiltinComment $dg $opt.GlobalServerURL "allows providing an alternative server URL" -}}
+func {{$opt.GlobalServerURL}}(serverURL string) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.ServerURL = serverURL
+	}
+}
+
+{{ templateBuiltinComment $dg $opt.GlobalTemplatedServerURL "allows the overriding of the default server URL with a templated URL populated with the provided parameters" -}}
+{{- addImport "utils" -}}
+func {{$opt.GlobalTemplatedServerURL}}(serverURL string, params map[string]string) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		if params != nil {
+			serverURL = utils.ReplaceParameters(serverURL, params)
+		}
+
+		sdk.sdkConfiguration.ServerURL = serverURL
+	}
+}
+{{ if $hasServers -}}
+{{- addImport "fmt"}}
+{{- if $serverMap}}
+{{ templateBuiltinComment $dg $opt.GlobalServer "allows the overriding of the default server by name" -}}
+func {{$opt.GlobalServer}}(server string) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		_, ok := ServerList[server]
+		if !ok {
+			panic(fmt.Errorf("server %s not found", server))
+		}
+
+		sdk.sdkConfiguration.Server = server
+	}
+}
+{{else}}
+{{ templateBuiltinComment $dg $opt.GlobalServerIndex "allows the overriding of the default server by index" -}}
+func {{$opt.GlobalServerIndex}}(serverIndex int) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		if serverIndex < 0 || serverIndex >= len(ServerList) {
+			panic(fmt.Errorf("server index %d out of range", serverIndex))
+		}
+
+		sdk.sdkConfiguration.ServerIndex = serverIndex
+	}
+}
+{{end}}
+{{range $variable := .Local.Servers.GetVariables}}
+{{if eq $variable.Type.Type "enum"}}
+{{- addImport "encoding/json"}}
+{{templateString "enum.go.stmpl" (getDocGroupedType $variable.Type $dg)}}
+{{end}}
+{{ templateBuiltinComment $dg (templateSDKOptionName $variable.Name) (print "allows setting the " $variable.Name " variable for url substitution") -}}
+func {{templateSDKOptionName $variable.Name}}({{sanitizePrivateFieldName $variable.Name}} {{sanitizeType $variable.Type false ""}}) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		{{- addImport "fmt"}}
+		{{- if $serverMap}}
+		for server := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[server]["{{$variable.Name}}"]; !ok {
+				continue
+			}
+
+			sdk.sdkConfiguration.ServerVariables[server]["{{$variable.Name}}"] = fmt.Sprintf("%v", {{sanitizePrivateFieldName $variable.Name}})
+		}
+		{{- else}}
+		for idx := range sdk.sdkConfiguration.ServerVariables {
+			if _, ok := sdk.sdkConfiguration.ServerVariables[idx]["{{$variable.Name}}"]; !ok {
+				continue
+			}
+
+			sdk.sdkConfiguration.ServerVariables[idx]["{{$variable.Name}}"] = fmt.Sprintf("%v", {{sanitizePrivateFieldName $variable.Name}})
+		}
+		{{- end}}
+	}
+}
+{{end}}{{end}}
+{{ templateBuiltinComment $dg $opt.GlobalClient "allows the overriding of the default HTTP client used by the SDK" -}}
+func {{$opt.GlobalClient}}(client HTTPClient) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.Client = client
+	}
+}
+{{if .Local.Security}}
+{{addImport "utils"}}
+{{ templateBuiltinComment $dg $opt.GlobalSecurity "configures the SDK to use the provided security details" -}}
+{{ if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity -}}
+func {{$opt.GlobalSecurity}}({{sanitizePrivateFieldName (first .Local.Security.Type.Fields).Name}} {{sanitizeType (first .Local.Security.Type.Fields).Type false ""}}) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		security := {{sanitizeType .Local.Security.Type false ""}}{ {{sanitizeFieldName (first .Local.Security.Type.Fields).Name}}: {{if (first .Local.Security.Type.Fields).Optional}}&{{end}}{{sanitizePrivateFieldName (first .Local.Security.Type.Fields).Name}} }
+		sdk.sdkConfiguration.Security = utils.AsSecuritySource(&security)
+	}
+}
+{{- else -}}
+func {{$opt.GlobalSecurity}}(security {{sanitizeType .Local.Security.Type false ""}}) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.Security = utils.AsSecuritySource(security)
+	}
+}
+{{- end}}
+{{ templateBuiltinComment $dg $opt.GlobalSecuritySource "configures the SDK to invoke the Security Source function on each method call to determine authentication" -}}
+func {{$opt.GlobalSecuritySource}}(security func(context.Context) ({{sanitizeType .Local.Security.Type false ""}}, error)) SDKOption {
+	{{- addImport "context"}}
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.Security = func(ctx context.Context) (interface{}, error) {
+			return security(ctx)
+		}
+	}
+}
+{{end}}
+{{if .Local.Globals}}
+{{- range .Local.Globals.Fields}}
+{{ templateBuiltinComment $dg (templateSDKOptionName .Name) (print "allows setting the " (sanitizeFieldName .Name) " parameter for all supported operations") -}}
+func {{templateSDKOptionName .Name}}({{sanitizePrivateFieldName .Name}} {{sanitizeType .Type false ""}}) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.Globals.{{sanitizeFieldName .Name}} = {{if .Optional}}&{{end}}{{sanitizePrivateFieldName .Name}}
+	}
+}
+{{end}}
+{{- end}}
+func {{$opt.GlobalRetryConfig}}(retryConfig retry.Config) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.RetryConfig = &retryConfig
+	}
+}
+{{ templateBuiltinComment $dg $opt.GlobalTimeout "Optional request timeout applied to each operation" -}}
+func {{$opt.GlobalTimeout}}(timeout time.Duration) SDKOption {
+	return func(sdk *{{$sdkClassName}}) {
+		sdk.sdkConfiguration.Timeout = &timeout
+	}
+}
+
+{{ if not $hasAnyServers -}}
+{{ templateBuiltinComment $dg "New" "creates a new instance of the SDK with the provided serverURL and options" -}}
+func New(serverURL string, opts ...SDKOption) *{{$sdkClassName}} {
+{{- else -}}
+{{ templateBuiltinComment $dg "New" "creates a new instance of the SDK with the provided options" -}}
+func New(opts ...SDKOption) *{{$sdkClassName}} {
+{{- end }}
+	sdk := &{{$sdkClassName}}{
+		SDKVersion: 		"{{.Global.Config.SDKVersion}}",
+		sdkConfiguration: config.SDKConfiguration{
+			UserAgent:			"{{ GetUserAgentHeader }} {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{getRootModulePath}}",
+			SDKVersion:			"{{.Global.Config.SDKVersion}}",
+			GenVersion:			"{{.Global.Config.GenVersion}}",
+			OpenAPIDocVersion:	"{{.Global.Config.DocVersion}}",
+			{{- if .Local.Globals}}
+			Globals: {{sanitizeClass .Local.Globals "" false}}{},
+			{{- end}}
+			{{- if $hasServers }}
+			ServerList: ServerList,
+			{{- end }}
+			{{- if $serverVariables}}
+			{{- if $serverMap}}
+			ServerVariables: 	map[string]map[string]string{
+				{{- range .Local.Servers.Servers}}
+				"{{.ID}}": {
+					{{- range $variable := .Variables}}
+					"{{$variable.Name}}": "{{$variable.Default}}",
+					{{- end}}
+				},
+				{{- end}}
+			},
+			{{- else}}
+			ServerVariables: 	[]map[string]string{
+				{{- range .Local.Servers.Servers}}
+				{
+					{{- range $variable := .Variables}}
+					"{{$variable.Name}}": "{{$variable.Default}}",
+					{{- end}}
+				},
+				{{- end}}
+			},
+			{{- end}}{{end}}
+		},
+		hooks: hooks.New(),
+	}
+	for _, opt := range opts {
+		opt(sdk)
+	}
+	{{ if (and .Global.Config.EnvVarPrefix .Local.Globals)}}
+	sdk.sdkConfiguration.FillGlobalsFromEnv()
+	{{- end }}
+	{{ if (and .Global.Config.EnvVarPrefix .Local.Security)}}
+    	if sdk.sdkConfiguration.Security == nil {
+    	    var envVarSecurity {{sanitizeType .Local.Security.Type false ""}}
+    	    if utils.PopulateSecurityFromEnv(&envVarSecurity) {
+    	        sdk.sdkConfiguration.Security = utils.AsSecuritySource(envVarSecurity)
+    	    }
+    	}
+    {{- end }}
+
+	// Use WithClient to override the default client if you would like to customize the timeout
+	if sdk.sdkConfiguration.Client == nil {
+		sdk.sdkConfiguration.Client = &http.Client{Timeout: 60 * time.Second}
+	}
+  	{{ if not $hasAnyServers }}
+	sdk.sdkConfiguration.ServerURL = serverURL
+	{{- end }}
+	{{if .Global.Config.SDKHooksConfigAccess}}
+	sdk.sdkConfiguration = sdk.hooks.SDKInit(sdk.sdkConfiguration)
+	{{else}}
+	currentServerURL, _ := sdk.sdkConfiguration.GetServerDetails()
+	serverURL {{ if $hasAnyServers }}:{{end}}= currentServerURL
+	serverURL, sdk.sdkConfiguration.Client = sdk.hooks.SDKInit(currentServerURL, sdk.sdkConfiguration.Client)
+	if currentServerURL != serverURL {
+		sdk.sdkConfiguration.ServerURL = serverURL
+	}
+	{{end}}
+	{{range .Local.SubSDKs}}
+	{{- $subSDKName := .Type.Name}}
+    {{- if ne $subSDKName ""}}
+    sdk.{{sanitizeSDKFieldName .FieldName}} = new{{sanitizeClassName $subSDKName}}(sdk, sdk.sdkConfiguration, sdk.hooks){{end}}{{end}}
+
+	return sdk
+}
+
+{{range .Local.Operations}}
+{{templateString "method.go.stmpl" (dict "Operation" . "TopLevelSDK" true "DocGroup" $dg)}}
+{{end}}
+// #region sdk-class-body
+// #endregion sdk-class-body

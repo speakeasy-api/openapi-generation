@@ -1,0 +1,69 @@
+{{- recurse 1 -}}
+{{- addImport "testing" -}}
+{{- addImport "github.com/stretchr/testify/assert" -}}
+{{- addImport "github.com/stretchr/testify/require" -}}
+package tests
+
+{{genImports}}
+
+{{- if templateIntentUsageArgsTestEnabled }}
+
+// A variadic intent command joins every positional into its argument, so
+// "--dry-run false" sets --dry-run and demotes "false" to a positional that
+// silently lands in the request. No structural fix exists (the command is
+// variadic by design); the CLI names the mistake on stderr instead.
+func TestIntentSpacedBoolFlagValueHint(t *testing.T) {
+    h := NewCLITestHarness(t)
+    err := h.RunRaw([]string{ {{templateIntentUsagePathArgs}}, "example-input", "--dry-run", "false" })
+    require.NoError(t, err)
+
+    stderr := h.GetStderr()
+    assert.Contains(t, stderr, `"false" was treated as a positional argument`)
+    assert.Contains(t, stderr, "--dry-run=false")
+}
+
+func TestIntentInlineBoolFlagValueNoHint(t *testing.T) {
+    h := NewCLITestHarness(t)
+    err := h.RunRaw([]string{ {{templateIntentUsagePathArgs}}, "example-input", "--dry-run=true" })
+    require.NoError(t, err)
+
+    assert.NotContains(t, h.GetStderr(), "was treated as a positional argument")
+}
+
+func TestIntentSpacedBoolFlagValueHintIsSilentInMachineMode(t *testing.T) {
+	for name, mode := range map[string][]string{
+		"json":  {"--output-format", "json"},
+		"agent": {"--agent-mode"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			args := []string{ {{templateIntentUsagePathArgs}}, "example-input", "--dry-run", "false" }
+			args = append(args, mode...)
+			err := h.RunRaw(args)
+			require.NoError(t, err)
+			assert.NotContains(t, h.GetStderr(), "was treated as a positional argument")
+		})
+	}
+}
+{{- end }}
+{{- if templateIntentEmptyBackingFlagTestEnabled }}
+
+// A whole --body plus the backing operation flag explicitly empty must be a
+// validation error, not an empty override of the body's required key.
+func TestIntentBodyWithEmptyBackingFlagIsRejected(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		args        []string
+		backingFlag string
+	}{
+		{{templateIntentEmptyBackingFlagTestCases}}
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.Run(tc.args)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--"+tc.backingFlag+" must not be empty")
+		})
+	}
+}
+{{- end }}

@@ -1,0 +1,120 @@
+{{- if isFeatureUsed "jsonlResponses"}}
+package {{templatePackageName}}.utils;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public final class JsonLStream<T> implements Iterable<T>, AutoCloseable {
+
+    private static final SpeakeasyLogger logger = SpeakeasyLogger.getLogger(JsonLStream.class);
+
+    private final BlockingParser<String> parser;
+    private final TypeReference<T> typeReference;
+    private final ObjectMapper mapper;
+
+    public JsonLStream(InputStream in, TypeReference<T> typeReference, ObjectMapper mapper) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8), 8192);
+        this.parser = BlockingParser.forJsonLines(reader);
+        this.typeReference = typeReference;
+        this.mapper = mapper;
+        logger.debug("JsonLStream initialized for type: {}", typeReference.getType().getTypeName());
+    }
+
+    public Optional<T> next() throws IOException {
+        Optional<String> line = parser.next();
+        if ({{if isJava8}}!line.isPresent(){{else}}line.isEmpty(){{end}}) {
+            return Optional.empty();
+        }
+        try {
+            T result = mapper.readValue(line.get(), typeReference);
+            if (logger.isTraceEnabled()) {
+                logger.trace("JsonLStream item processed");
+            }
+            return Optional.of(result);
+        } catch (Exception e) {
+            logger.debug("Failed to parse JSONL line: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public List<T> toList() {
+        try {
+            return stream().collect(Collectors.toList());
+        } finally {
+            try {
+                close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
+    public Stream<T> stream() {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new JSONLIterator(), Spliterator.ORDERED), false).onClose(() -> {
+            try {
+                JsonLStream.this.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new JSONLIterator();
+    }
+
+    private class JSONLIterator implements Iterator<T> {
+        private Optional<T> next = null;
+
+        @Override
+        public boolean hasNext() {
+            load();
+            return next.isPresent();
+        }
+
+        @Override
+        public T next() {
+            load();
+            if (!next.isPresent()) {
+                throw new NoSuchElementException();
+            }
+            T v = next.get();
+            next = null;
+            return v;
+        }
+
+        private void load() {
+            if (next == null) {
+                try {
+                    next = JsonLStream.this.next();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        logger.debug("JsonLStream closed");
+        parser.close();
+    }
+}
+{{end}}

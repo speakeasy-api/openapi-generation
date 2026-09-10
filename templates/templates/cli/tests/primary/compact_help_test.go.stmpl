@@ -1,0 +1,174 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+)
+
+const compactMachineLine = "Machine interface: --output-format json · --jq <expr> · --dry-run · --usage"
+
+func helpLineCount(output string) int {
+	trimmed := strings.TrimRight(output, "\n")
+	if trimmed == "" {
+		return 0
+	}
+	return strings.Count(trimmed, "\n") + 1
+}
+
+func runBareHelp(t *testing.T, args ...string) string {
+	t.Helper()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare(args))
+	return h.GetStdout()
+}
+
+func TestCompactIntentHelpFitsBudget(t *testing.T) {
+	for _, name := range []string{"generate", "render"} {
+		t.Run(name, func(t *testing.T) {
+			output := runBareHelp(t, name, "--help")
+			assert.LessOrEqual(t, helpLineCount(output), 40, "%s", output)
+			assert.Contains(t, output, "Just works:")
+			assert.Contains(t, output, compactMachineLine)
+			assert.Contains(t, output, "Globals (auth, network, output): cli --help-global")
+			assert.NotContains(t, output, "Global Flags:")
+			assert.NotContains(t, output, "Diagnostics:")
+		})
+	}
+
+	generate := runBareHelp(t, "generate", "--help")
+	// Presets render first in manifest order (the stream default precedes the
+	// schema-derived model default), then declared schema defaults.
+	assert.Contains(t, generate, "Defaults: stream true · model model-default-1")
+
+	render := runBareHelp(t, "render", "--help")
+	assert.Contains(t, render, "Defaults: model render-1 · output_modalities image")
+	assert.Contains(t, render, "Learn: cli docs render · escalate: full request control via cli cli-intents cli-intent-run")
+	assert.Contains(t, render, `cli render "A small cabin beneath the stars"`)
+}
+
+func TestCompactOperationAndGroupHelp(t *testing.T) {
+	operationPath := strings.Fields("{{templateReadmeShowcasePath}}")
+	require.NotEmpty(t, operationPath)
+	operation := runBareHelp(t, append(operationPath, "--help")...)
+	assert.LessOrEqual(t, helpLineCount(operation), 40, "%s", operation)
+	assert.Contains(t, operation, compactMachineLine)
+	assert.Contains(t, operation, "Globals (auth, network, output): cli --help-global")
+
+	synthesized := runBareHelp(t, "collision", "parameter-shadowing-test", "--help")
+	assert.NotContains(t, synthesized, "Just works:")
+	assert.NotContains(t, synthesized, "<value>")
+
+	group := runBareHelp(t, "nested", "--help")
+	assert.LessOrEqual(t, helpLineCount(group), 40, "%s", group)
+	assert.Contains(t, group, compactMachineLine)
+	assert.Contains(t, group, "Globals (auth, network, output): cli --help-global")
+	assert.Contains(t, group, "Learn: cli docs nested")
+
+	planned := runBareHelp(t, "archive", "--help")
+	assert.LessOrEqual(t, helpLineCount(planned), 40, "%s", planned)
+	assert.Contains(t, planned, compactMachineLine)
+	assert.Contains(t, planned, "Learn: cli docs archive · escalate: use cli resource --help")
+
+	builtIn := runBareHelp(t, "version", "--help")
+	assert.Contains(t, builtIn, compactMachineLine)
+	assert.NotContains(t, builtIn, "Learn:")
+}
+
+func TestCompactRootHelp(t *testing.T) {
+	output := runBareHelp(t, "--help")
+	assert.Contains(t, output, compactMachineLine)
+	assert.Contains(t, output, "Globals (auth, network, output): cli --help-global")
+	assert.Contains(t, output, "Setup: export ")
+	assert.Contains(t, output, "   or   cli configure")
+	assert.Contains(t, output, `Use "cli [command] --help" for more information about a command.`)
+	assert.NotContains(t, output, "Diagnostics:")
+	assert.NotContains(t, output, "Print global flags shared by every command")
+}
+
+func TestCompactHelpGlobalBypassesBrokenConfig(t *testing.T) {
+	home := t.TempDir()
+	configDir := filepath.Join(home, ".config", "cli")
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte("security: ["), 0o600))
+
+	h := NewCLITestHarness(t).WithEnv("HOME", home)
+	err := h.RunBare([]string{"version"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to parse config file")
+
+	require.NoError(t, h.RunBare([]string{"--help-global"}))
+	output := h.GetStdout()
+	assert.True(t, strings.HasPrefix(output, "Global flags (apply to every command):\n\n"), "%s", output)
+	assert.Contains(t, output, "Output:")
+	assert.Contains(t, output, "Diagnostics:")
+
+	h = NewCLITestHarness(t)
+	err = h.RunBare([]string{"generate", "--help-global"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown flag: --help-global")
+}
+
+func TestCompactHelpCommandMatchesFlag(t *testing.T) {
+	flagHelp := runBareHelp(t, "generate", "--help")
+	commandHelp := runBareHelp(t, "help", "generate")
+	assert.Equal(t, flagHelp, commandHelp)
+}
+
+func TestCompactMachineInterfaceDoesNotDependOnFlagMergeOrder(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	if root.PersistentFlags().Lookup("json") == nil {
+		root.PersistentFlags().Bool("json", false, "Emit JSON output")
+	}
+
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stdout)
+	require.NoError(t, root.Help())
+	assert.Contains(t, stdout.String(), "Machine interface: --json · --jq <expr> · --dry-run · --usage")
+}
+
+func TestCompactUsageIncludesRootLocalHelpGlobal(t *testing.T) {
+	output := runBareHelp(t, "--usage")
+	assert.Contains(t, output, `flag "--help-global"`)
+	assert.NotContains(t, output, `flag "--help-global" global=#true`)
+}
+
+func TestCompactCustomCommandCanOptOutOfFooter(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	custom := &cobra.Command{
+		Use:     "custom-item",
+		Short:   "Run a custom action",
+		Example: "  cli custom-item <interaction-id> # -> ./item-<ts>.json",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+		Annotations: map[string]string{
+			"speakeasy_help_footer": "false",
+		},
+	}
+	root.AddCommand(custom)
+
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stdout)
+	root.SetArgs([]string{"custom-item", "--help"})
+	require.NoError(t, root.ExecuteContext(context.Background()))
+	output := stdout.String()
+	assert.Contains(t, output, "Just works:")
+	assert.Contains(t, output, "<interaction-id>")
+	assert.Contains(t, output, "<ts>")
+	assert.NotContains(t, output, "Machine interface:")
+	assert.NotContains(t, output, "Globals (auth, network, output):")
+}

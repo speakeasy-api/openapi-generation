@@ -1,0 +1,174 @@
+package tests
+
+import (
+	"encoding/json"
+	"math/big"
+	"net/http"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/types"
+	"github.com/stretchr/testify/require"
+)
+
+type teapotClient struct {
+	format string
+	client *http.Client
+}
+
+func newJSONTeapotClient() *teapotClient {
+	return &teapotClient{format: "json", client: &http.Client{}}
+}
+
+func newTextTeapotClient() *teapotClient {
+	return &teapotClient{format: "text", client: &http.Client{}}
+}
+
+func (tc *teapotClient) Do(req *http.Request) (*http.Response, error) {
+	req.Header.Set("x-teapot", tc.format)
+	return tc.client.Do(req)
+}
+
+func createSimpleObject() shared.SimpleObject {
+	return shared.SimpleObject{
+		Str:        "test",
+		Bool:       true,
+		Int:        1,
+		Int32:      1,
+		IntEnum:    shared.IntEnumSecond,
+		Int32Enum:  shared.Int32EnumFiftyFive,
+		Num:        1.1,
+		Float32:    1.1,
+		Enum:       shared.EnumOne,
+		Any:        "any",
+		Date:       types.Date{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+		DateTime:   time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC),
+		BoolOpt:    sdk.Bool(true),
+		StrOpt:     sdk.String("testOptional"),
+		IntOptNull: nil,
+		NumOptNull: nil,
+		Bigint:     big.NewInt(8821239038968084),
+		BigintStr:  types.MustNewBigIntFromString("9223372036854775808"),
+	}
+}
+
+func createSimpleObjectCamelCase() shared.SimpleObjectCamelCase {
+	return shared.SimpleObjectCamelCase{
+		StrVal:        "test",
+		BoolVal:       true,
+		IntVal:        1,
+		Int32Val:      1,
+		IntEnumVal:    shared.IntEnumValSecond,
+		Int32EnumVal:  shared.Int32EnumValFiftyFive,
+		NumVal:        1.1,
+		Float32Val:    1.1,
+		EnumVal:       shared.EnumOne,
+		AnyVal:        "any",
+		DateVal:       types.Date{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+		DateTimeVal:   time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC),
+		BoolOptVal:    sdk.Bool(true),
+		StrOptVal:     sdk.String("testOptional"),
+		IntOptNullVal: nil,
+		NumOptNullVal: nil,
+		BigintVal:     big.NewInt(8821239038968084),
+		BigintStrVal:  types.MustNewBigIntFromString("9223372036854775808"),
+	}
+}
+
+func createDeepObject() shared.DeepObject {
+	return shared.DeepObject{
+		Any: shared.CreateAnySimpleObject(createSimpleObject()),
+		Arr: []shared.SimpleObject{
+			createSimpleObject(), createSimpleObject(),
+		},
+		Bool: true,
+		Int:  1,
+		Map: map[string]shared.SimpleObject{
+			"key": createSimpleObject(),
+		},
+		Num: 1.1,
+		Obj: createSimpleObject(),
+		Str: "test",
+	}
+}
+
+func createDeepObjectCamelCase() shared.DeepObjectCamelCase {
+	return shared.DeepObjectCamelCase{
+		AnyVal: shared.CreateAnyValSimpleObjectCamelCase(createSimpleObjectCamelCase()),
+		ArrVal: []shared.SimpleObjectCamelCase{
+			createSimpleObjectCamelCase(), createSimpleObjectCamelCase(),
+		},
+		BoolVal: true,
+		IntVal:  1,
+		MapVal: map[string]shared.SimpleObjectCamelCase{
+			"key": createSimpleObjectCamelCase(),
+		},
+		NumVal: 1.1,
+		ObjVal: createSimpleObjectCamelCase(),
+		StrVal: "test",
+	}
+}
+
+
+func createSimpleObjectWithType() shared.SimpleObjectWithType {
+	return shared.SimpleObjectWithType{
+		Str:        "test",
+		Bool:       true,
+		Int:        1,
+		Int32:      1,
+		IntEnum:    shared.SimpleObjectWithTypeIntEnumSecond,
+		Int32Enum:  shared.SimpleObjectWithTypeInt32EnumFiftyFive,
+		Num:        1.1,
+		Float32:    1.1,
+		Enum:       shared.EnumOne,
+		Any:        "any",
+		Date:       types.Date{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+		DateTime:   time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC),
+		BoolOpt:    sdk.Bool(true),
+		StrOpt:     sdk.String("testOptional"),
+		IntOptNull: nil,
+		NumOptNull: nil,
+		Type:       "simpleObjectWithType",
+	}
+}
+
+func createDeepObjectWithType() shared.DeepObjectWithType {
+	return shared.DeepObjectWithType{
+		Any: shared.CreateDeepObjectWithTypeAnySimpleObject(createSimpleObject()),
+		Arr: []shared.SimpleObject{
+			createSimpleObject(), createSimpleObject(),
+		},
+		Bool: true,
+		Int:  1,
+		Map: map[string]shared.SimpleObject{
+			"key": createSimpleObject(),
+		},
+		Num:  1.1,
+		Obj:  createSimpleObject(),
+		Str:  "test",
+		Type: sdk.String("deepObjectWithType"),
+	}
+}
+
+func marshalJSON(t *testing.T, v interface{}) string {
+	d, err := json.Marshal(v)
+	require.NoError(t, err)
+	return string(d)
+}
+
+type CustomHeaderClient struct {
+	http.Client
+}
+
+func NewCustomHeaderClient() *CustomHeaderClient {
+	return &CustomHeaderClient{
+		Client: http.Client{},
+	}
+}
+
+func (c *CustomHeaderClient) Do(req *http.Request) (*http.Response, error) {
+	req.Header.Add("X-Custom-Header", "someValue")
+	return c.Client.Do(req)
+}

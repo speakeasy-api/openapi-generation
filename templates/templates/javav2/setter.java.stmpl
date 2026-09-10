@@ -1,0 +1,73 @@
+{{- $class := .Local.Class}}
+{{- $isAsync := .Local.IsAsync}}
+{{- with .Local.Field}}
+    {{- if and (not .IsAdditionalProperties) (and .Optional .Nullable)}}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}({{javaImportFieldBase . $isAsync}} {{sanitizeFieldName .Name}}) {
+        {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+        this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{sanitizeFieldName .Name}});
+        return this;
+    }
+
+        {{- "\n"}}{{ if (isBigint .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(long {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{javaImport "java.math.BigInteger"}}.valueOf({{sanitizeFieldName .Name}}));
+        return this;
+    }
+        {{- "\n"}}{{ else if (isDecimal .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(double {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{javaImport "java.math.BigDecimal"}}.valueOf({{sanitizeFieldName .Name}}));
+        return this;
+    }
+        {{- end}}
+    {{- else if and (not .IsAdditionalProperties) (or .Optional .Nullable)}}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}({{javaImportFieldBase . $isAsync}} {{sanitizeFieldName .Name}}) {
+        {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+        this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.ofNullable({{sanitizeFieldName .Name}});
+        return this;
+    }
+        {{- "\n"}}{{ if (isBigint .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(long {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.of({{javaImport "java.math.BigInteger"}}.valueOf({{sanitizeFieldName .Name}}));
+        return this;
+    }
+        {{- "\n"}}{{ else if (isDecimal .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(double {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.of({{javaImport "java.math.BigDecimal"}}.valueOf({{sanitizeFieldName .Name}}));
+        return this;
+    }
+        {{- end}}
+        {{- "\n"}}{{ else if (isBigint .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(long {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImport "java.math.BigInteger"}}.valueOf({{sanitizeFieldName .Name}});
+        return this;
+    }
+    {{- "\n"}}{{ else if (isDecimal .Type) }}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}(double {{sanitizeFieldName .Name}}) {
+        this.{{sanitizeFieldName .Name}} = {{javaImport "java.math.BigDecimal"}}.valueOf({{sanitizeFieldName .Name}});
+        return this;
+    }
+    {{- end}}
+    {{- if .IsAdditionalProperties}}
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonAnySetter"}}
+    public {{$class}} withAdditionalProperty({{javaImportString}} key, {{javaImportType .Type.ItemType}} value) {
+        // note that value can be null because of the way JsonAnySetter works
+        {{javaImportUtils}}.checkNotNull(key, "key");
+        {{sanitizeFieldName .Name}}.put(key, value); 
+        return this;
+    }
+    {{- end}}
+    {{- templateCommentsForField .}}
+    public {{$class}} with{{sanitizeClassName .Name}}({{javaImportField . $isAsync}} {{sanitizeFieldName .Name}}) {
+        {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+        this.{{sanitizeFieldName .Name}} = {{sanitizeFieldName .Name}};
+        return this;
+    }
+{{- end}}

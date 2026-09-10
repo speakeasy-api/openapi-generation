@@ -1,0 +1,17 @@
+export class APIError extends Error {
+  constructor(
+    message: string,
+    public readonly httpMeta: {
+      response: Response;
+      request: Request;
+      body: string;
+    },
+  ) {
+    super(
+      `${message}: Status ${httpMeta.response.status} Content-Type ${
+        httpMeta.response.headers.get("content-type") || ""
+      } Body: ${httpMeta.body}`,
+    );
+    this.name = "APIError";
+  }
+}

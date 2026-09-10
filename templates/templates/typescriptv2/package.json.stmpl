@@ -1,0 +1,37 @@
+{
+  "name": "{{.Global.Config.PackageName}}",
+  "version": "{{.Global.Config.SDKVersion}}",
+  "author": "{{.Global.Config.Author}}",
+  {{- if eq .Global.Config.GeneratedLicense "agpl"}}
+  "license": "AGPL-3.0-only",
+  {{- end}}
+  {{- templateAdditionalPackageJSON}}
+  "sideEffects": false,
+  {{- if .Global.Config.RepoURL}}
+  "repository": {
+    "type": "git",
+    "url": "{{.Global.Config.RepoURL}}"
+    {{- if .Global.Config.RepoSubDirectory}},
+    "directory": "{{.Global.Config.RepoSubDirectory}}"
+    {{- end}}
+  },
+  {{- end}}
+  "scripts": {
+    {{templateScripts | indent 4 | trim}}
+  },
+  "peerDependencies": {
+    {{templatePeerDependencies | indent 4 | trim}}
+  },
+  {{- $peerDepsMeta := templatePeerDependenciesMeta | indent 4 | trim}}
+  {{- if $peerDepsMeta}}
+  "peerDependenciesMeta": {
+    {{$peerDepsMeta}}
+  },
+  {{- end}}
+  "devDependencies": {
+    {{templateDevDependencies | indent 4 | trim}}
+  },
+  "dependencies": {
+    {{templateDependencies | indent 4 | trim}}
+  }
+}

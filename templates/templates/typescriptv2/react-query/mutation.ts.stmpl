@@ -1,0 +1,108 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup }}
+{{- $op := .Local.Operation }}
+{{- $usageLocation := "react-query" }}
+{{- $opState := opTemplateState .Local.Operation $usageLocation }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $hookName := sanitizeReactQueryHookName $op }}
+{{- $coreName := sanitizeCoreSDKName }}
+{{- $args := $op.Arguments }}
+{{- $signature := $opState.signature }}
+{{- $returnType := $opState.valueType }}
+{{- $responseTypes := $opState.inboundResponse }}
+{{- $errorType := $opState.errorType }}
+{{- callImportTypesFunc $opState.importErrorTypes }}
+{{- $funcOptions := templateMethodOptions $op false }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- $useSDK := sanitizeReactContextName "hook" }}
+{{- $tupleType := reactQueryTupleType $op $usageLocation }}
+{{- $argTypes := reactQueryOperationArgTypes $op $usageLocation }}
+import {
+  MutationKey,
+  useMutation,
+  UseMutationResult,
+} from "@tanstack/react-query";
+{{genImports}}
+{{- addImport "../core.js" $coreName }}
+{{- addImport "./_context.js" $useSDK }}
+{{- addImport "./_types.js" "MutationHookOptions" }}
+{{- addFuncImport $op $usageLocation}}
+{{- addInternalImport "sdks" "RequestOptions" $usageLocation}}
+{{- callImportTypesFunc $responseTypes.importOutputTypes }}
+{{- $builderFuncName := sanitizeReactQueryName $op "mutation-factory" }}
+{{- $varTypeName := sanitizeClassName (print $hookName "_MutationVariables") }}
+{{- $mutationKeyFuncName := sanitizeReactQueryName $op "mutation-key" }}
+{{- $mutationDataType := sanitizeClassName (print $hookName "_MutationData") }}
+{{- $mutationErrorType := sanitizeClassName (print $hookName "_MutationError") }}
+
+{{ if shouldTemplateAcceptHeaderEnum $op }}
+{{- addFuncAcceptEnumImport $op $usageLocation }}
+export { {{sanitizeAcceptEnumName $op}} } from "{{getFuncImportPath $op $usageLocation}}";
+{{- end }}
+
+export type {{$varTypeName}} = {
+  {{$argTypes -}}
+  options?: {{ $funcOptions }},
+}
+
+export type {{$mutationDataType}} = {{$returnType}};
+
+export type {{$mutationErrorType}} = {{$errorType}};
+
+{{$mutationName := sanitizeReactQueryName $op "mutation"}}
+{{templateComments $op.Comments $dg $mutationName 0 "method"}}
+export function {{$mutationName}}(
+  options?: MutationHookOptions<{{$mutationDataType}}, {{$mutationErrorType}}, {{$varTypeName}}>
+): UseMutationResult<{{$mutationDataType}}, {{$mutationErrorType}}, {{$varTypeName}}> {
+  const client = {{$useSDK}}();
+  return useMutation({
+    ...{{$builderFuncName}}(client, options),
+    ...options,
+  });
+}
+
+export function {{$mutationKeyFuncName}}(): MutationKey {
+  return {{$tupleType.prefix}};
+}
+
+export function {{$builderFuncName}}(
+  client$: {{$coreName}},
+  hookOptions?: {{$funcOptions}},
+): {
+  mutationKey: MutationKey;
+  mutationFn: (variables: {{$varTypeName}}) => Promise<{{$mutationDataType}}>;
+} {
+  return {
+    mutationKey: {{$mutationKeyFuncName}}(),
+    mutationFn: function {{$hookName}}MutationFn({
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    }): Promise<{{$mutationDataType}}> {
+      const mergedOptions = {
+        ...hookOptions,
+        ...options,
+        {{constants.fetchOptions}}: {
+          ...hookOptions?.{{constants.fetchOptions}},
+          ...options?.{{constants.fetchOptions}},
+          {{- addInternalImport "primitives" "combineSignals" $usageLocation}}
+          signal: combineSignals(
+            hookOptions?.{{constants.fetchOptions}}?.signal,
+            options?.{{constants.fetchOptions}}?.signal,
+          ),
+        },
+      };
+
+      {{- addTypeImport "fp" "unwrapAsync" $usageLocation}}
+      return unwrapAsync({{$funcName}}(
+        client$,
+        {{- range $field := $args.Sorted }}
+        {{sanitizeFieldName $field.Name}},
+        {{- end }}
+        mergedOptions,
+      ));
+    }
+  };
+};

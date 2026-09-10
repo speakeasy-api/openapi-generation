@@ -1,0 +1,869 @@
+package tests
+
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/optionalnullable"
+	"{{getRootModulePath}}/pkg/types"
+	"{{getRootModulePath}}/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// Enable debug logging for conversion process
+var enableConversionLogging = false
+
+// TestOmitEmptyCustomBehaviourVsBuiltinMarshaller compares the behavior of omitzero vs omitempty
+// tags when using the custom marshaller vs the builtin JSON marshaller
+func TestOmitEmptyCustomBehaviourVsBuiltinMarshaller(t *testing.T) {
+	tests := []struct {
+		name    string
+		request shared.OptionalFieldTestObject
+	}{
+		{
+			name: "AllFieldsNilOrDefault",
+			request: shared.OptionalFieldTestObject{
+				// Required fields must be set
+				RequiredString: "test-required",
+				RequiredInt:    42,
+				RequiredBool:   true,
+				RequiredFloat:  3.14,
+				RequiredTime:   getTestTime(),
+				RequiredObject: shared.NonEmptyObject{RequiredField: "required-object"},
+
+				// All optional fields left nil/unset - should be omitted
+				OptionalString:            nil,
+				OptionalInt:               nil,
+				OptionalBool:              nil,
+				OptionalFloat:             nil,
+				OptionalTime:              nil,
+				OptionalBigDecimal:        nil,
+				OptionalNonEmptyObject:    nil,
+				OptionalAlwaysEmptyObject: nil,
+				OptionalNestedObject:      nil,
+				OptionalComplexObject:     nil,
+				OptionalStringArray:       nil,
+				OptionalObjectArray:       nil,
+				OptionalStringMap:         nil,
+				OptionalObjectMap:         nil,
+				// OptionalNullable fields unset (nil map)
+			},
+		},
+		{
+			name: "PointersToZeroValuesIncluded",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0.0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Optional fields set to pointers to zero values - should be INCLUDED
+				OptionalString:     stringPtr(""),
+				OptionalInt:        int64Ptr(0),
+				OptionalBool:       boolPtr(false),
+				OptionalFloat:      float64Ptr(0.0),
+				OptionalTime:       timePtr(time.Time{}),
+				OptionalBigDecimal: types.MustNewDecimalFromString("0"),
+			},
+		},
+		{
+			name: "PointersToEmptyContainersIncluded",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Pointers to empty containers - should be INCLUDED per omitzero behavior
+				OptionalStringArray: []string{},                         // Empty array should be included
+				OptionalObjectArray: []shared.NonEmptyObject{},          // Empty object array should be included
+				OptionalStringMap:   map[string]string{},                // Empty map should be included
+				OptionalObjectMap:   map[string]shared.NonEmptyObject{}, // Empty object map should be included
+
+				// Empty objects - should be included as {}
+				OptionalAlwaysEmptyObject: &shared.AlwaysEmptyObject{},     // Always empty object
+				OptionalNestedObject:      &shared.NestedObject{},          // NestedObject with nil fields = empty
+				OptionalComplexObject:     &shared.ComplexOptionalObject{}, // ComplexObject with nil fields = empty
+			},
+		},
+		{
+			name: "OptionalFieldsSetToNonZeroValue",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "test-required",
+				RequiredInt:    999,
+				RequiredBool:   true,
+				RequiredFloat:  9.99,
+				RequiredTime:   getTestTime(),
+				RequiredObject: shared.NonEmptyObject{RequiredField: "required"},
+
+				// Optional fields with values - should all be included
+				OptionalString:     stringPtr("hello"),
+				OptionalInt:        int64Ptr(456),
+				OptionalBool:       boolPtr(true),
+				OptionalFloat:      float64Ptr(6.78),
+				OptionalTime:       timePtr(getTestTime()),
+				OptionalBigDecimal: types.MustNewDecimalFromString("999"),
+
+				// Objects with content
+				OptionalNonEmptyObject: &shared.NonEmptyObject{RequiredField: "non-empty"},
+				OptionalNestedObject: &shared.NestedObject{
+					Name:   stringPtr("nested-name"),
+					Nested: &shared.NestedObject{Name: stringPtr("deep-nested")},
+				},
+
+				// Containers with content
+				OptionalStringArray: []string{"item1", "item2"},
+				OptionalStringMap:   map[string]string{"key": "value"},
+			},
+		},
+		{
+			name: "NestedObjectRecursiveBehavior",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Test nested object recursive behavior
+				OptionalNestedObject: &shared.NestedObject{
+					Name: stringPtr("level1"),
+					Nested: &shared.NestedObject{
+						Name: nil, // This should be omitted
+						Nested: &shared.NestedObject{
+							Name:   stringPtr("level3"),
+							Nested: &shared.NestedObject{}, // Empty nested - should be included as {}
+						},
+					},
+				},
+
+				// Test complex object with mixed empty/non-empty containers
+				OptionalComplexObject: &shared.ComplexOptionalObject{
+					OptionalMap:    map[string]string{},    // Empty map - should be included
+					OptionalArray:  nil,                    // Nil pointer - should be omitted
+					OptionalNested: &shared.NestedObject{}, // Empty nested object - should be included as {}
+				},
+			},
+		},
+		{
+			name: "OptionalNullableUnsetState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// All OptionalNullable fields left unset (default nil map state)
+				// OptionalNullableInt: not set
+				// OptionalNullableArray: not set
+			},
+		},
+		{
+			name: "OptionalNullableNullState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// OptionalNullable fields explicitly set to null
+				OptionalNullableInt:   optionalnullable.From[int64](nil),    // Explicitly null
+				OptionalNullableArray: optionalnullable.From[[]string](nil), // Explicitly null
+			},
+		},
+		{
+			name: "OptionalNullableValueState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// OptionalNullable fields set to actual values
+				OptionalNullableInt:   optionalnullable.From(int64Ptr(42)),                         // Value
+				OptionalNullableArray: optionalnullable.From(arrayPtr([]string{"item1", "item2"})), // Array value
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Testing: %s", tt.name)
+
+			// Enable logging for this test
+			// enableConversionLogging = true
+			// defer func() { enableConversionLogging = false }()
+
+			// Compare marshalling behavior: custom omitempty vs builtin omitempty
+			comparison := compareMarshallingBehavior(tt.request, "omitempty")
+
+			// Log the results for debugging
+			// t.Logf("Custom Marshaller:  %s", comparison.CustomJSON)
+			// t.Logf("Builtin JSON: %s", comparison.BuiltinJSON)
+
+			// Check for errors
+			require.NoError(t, comparison.CustomError, "Custom marshalling should not error")
+			require.NoError(t, comparison.BuiltinError, "Builtin marshalling should not error")
+
+			// Analyze differences
+			assert.True(t, comparison.AreEqual,
+				"Expected no differences between custom and builtin omitempty behavior.\nCustom: %s\nBuiltin: %s",
+				comparison.CustomJSON, comparison.BuiltinJSON)
+
+			comparison = compareMarshallingBehavior(tt.request, "omitzero")
+			require.NoError(t, comparison.CustomError, "Custom marshalling should not error")
+			require.NoError(t, comparison.BuiltinError, "Builtin marshalling should not error")
+
+			// Analyze differences
+			assert.True(t, comparison.AreEqual,
+				"Expected no differences between custom and builtin omitzero behavior.\nCustom: %s\nBuiltin: %s",
+				comparison.CustomJSON, comparison.BuiltinJSON)
+		})
+	}
+}
+
+// CompareMarshalling compares custom vs builtin JSON marshalling results
+type marshallingComparison struct {
+	CustomJSON   string
+	BuiltinJSON  string
+	AreEqual     bool
+	CustomError  error
+	BuiltinError error
+}
+
+// compareMarshallingBehavior compares the custom marshaller vs builtin marshaller
+// for structs with the specified optionalTag (omitempty or omitzero)
+func compareMarshallingBehavior(original interface{}, optionalTag string) *marshallingComparison {
+	result := &marshallingComparison{}
+
+	if enableConversionLogging {
+		fmt.Printf("CompareMarshallingBehavior: Starting comparison for %T with %s tags\n", original, optionalTag)
+	}
+
+	// Initialize explicit mirror types for the specified tag
+	registry, err := createExplicitMirrorTypes(optionalTag)
+	if err != nil {
+		result.CustomError = err
+		result.BuiltinError = err
+		return result
+	}
+
+	// Step 1: Create builtin version (no custom marshallers)
+	mirrorWithBuiltinMarshaller, err := convertToExplicitMirrorType(original, false, registry)
+	if err != nil {
+		result.CustomError = err
+		result.BuiltinError = err
+		return result
+	}
+
+	// Step 2: Create custom version (with custom marshallers)
+	mirrorWithCustomMarshaller, err := convertToExplicitMirrorType(original, true, registry)
+	if err != nil {
+		result.CustomError = err
+		result.BuiltinError = err
+		return result
+	}
+
+	if enableConversionLogging {
+		fmt.Printf("CompareMarshallingBehavior: Builtin value type: %T\n", mirrorWithBuiltinMarshaller)
+		fmt.Printf("CompareMarshallingBehavior: Custom value type: %T\n", mirrorWithCustomMarshaller)
+	}
+
+	// Step 3: Marshal the builtin version with builtin marshaller
+	builtinBytes, builtinErr := json.Marshal(mirrorWithBuiltinMarshaller)
+	result.BuiltinError = builtinErr
+	if builtinErr == nil {
+		result.BuiltinJSON = string(builtinBytes)
+	}
+
+	// Step 4: Marshal the custom version with json.Marshal (which will find our custom MarshalJSON)
+	customBytes, customErr := json.Marshal(mirrorWithCustomMarshaller)
+	result.CustomError = customErr
+	if customErr == nil {
+		result.CustomJSON = string(customBytes)
+	}
+
+	if enableConversionLogging {
+		fmt.Printf("CompareMarshallingBehavior: Builtin JSON: %s\n", result.BuiltinJSON)
+		fmt.Printf("CompareMarshallingBehavior: Custom JSON: %s\n", result.CustomJSON)
+	}
+
+	// Compare results
+	result.AreEqual = result.CustomJSON == result.BuiltinJSON &&
+		result.CustomError == nil && result.BuiltinError == nil
+
+	return result
+}
+
+// shouldWrapWithCustomMarshaller determines if a type should be wrapped with CustomMarshallerWrapper
+func shouldWrapWithCustomMarshaller(t reflect.Type) bool {
+	// Only wrap struct types that aren't built-in types
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+
+	// Don't wrap built-in types
+	if isBuiltinType(t) {
+		return false
+	}
+
+	// Wrap ALL struct types, including those from the shared package
+	// This ensures we capture original types that couldn't be fully mirrored due to circular references
+	return true
+}
+
+// mirrorTypeRegistry stores explicit mirror types by name
+type mirrorTypeRegistry struct {
+	types    map[string]reflect.Type
+	creating map[string]bool // Track types currently being created to avoid circular references
+}
+
+// newMirrorTypeRegistry creates a new registry instance
+func newMirrorTypeRegistry() *mirrorTypeRegistry {
+	return &mirrorTypeRegistry{
+		types:    make(map[string]reflect.Type),
+		creating: make(map[string]bool),
+	}
+}
+
+// get retrieves a mirror type by name
+func (r *mirrorTypeRegistry) get(name string) (reflect.Type, bool) {
+	t, exists := r.types[name]
+	return t, exists
+}
+
+// set stores a mirror type with the given name
+func (r *mirrorTypeRegistry) set(name string, t reflect.Type) {
+	if enableConversionLogging {
+		fmt.Printf("MirrorTypeRegistry: Registering type %s: %s\n", name, formatTypeDetails(t))
+	}
+	r.types[name] = t
+}
+
+// isCreating checks if a type is currently being created
+func (r *mirrorTypeRegistry) isCreating(name string) bool {
+	return r.creating[name]
+}
+
+// startCreating marks a type as being created
+func (r *mirrorTypeRegistry) startCreating(name string) {
+	r.creating[name] = true
+}
+
+// finishCreating marks a type as finished being created
+func (r *mirrorTypeRegistry) finishCreating(name string) {
+	delete(r.creating, name)
+}
+
+// formatTypeDetails returns a detailed string representation of a reflect.Type
+func formatTypeDetails(t reflect.Type) string {
+	if t == nil {
+		return "<nil>"
+	}
+
+	switch t.Kind() {
+	case reflect.Struct:
+		return formatStructTypeDetails(t)
+	case reflect.Ptr:
+		return fmt.Sprintf("*%s", formatTypeDetails(t.Elem()))
+	case reflect.Slice:
+		return fmt.Sprintf("[]%s", formatTypeDetails(t.Elem()))
+	case reflect.Map:
+		return fmt.Sprintf("map[%s]%s", formatTypeDetails(t.Key()), formatTypeDetails(t.Elem()))
+	default:
+		return t.String()
+	}
+}
+
+// formatStructTypeDetails returns detailed information about a struct type
+func formatStructTypeDetails(t reflect.Type) string {
+	if t.Kind() != reflect.Struct {
+		return t.String()
+	}
+
+	var fields []string
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldInfo := fmt.Sprintf("  %s %s", field.Name, field.Type.String())
+
+		// Add tag information if present
+		if field.Tag != "" {
+			fieldInfo += fmt.Sprintf(" `%s`", field.Tag)
+		}
+
+		fields = append(fields, fieldInfo)
+	}
+
+	if len(fields) == 0 {
+		return fmt.Sprintf("struct{} // %s", t.String())
+	}
+
+	return fmt.Sprintf("struct {\n%s\n} // %s", strings.Join(fields, "\n"), t.String())
+}
+
+// transformStructTag converts omitzero/omitempty tag to specified optionalTag
+func transformStructTag(tag reflect.StructTag, optionalTag string) reflect.StructTag {
+	// Get the json tag
+	jsonTag := tag.Get("json")
+	if jsonTag == "" {
+		return tag
+	}
+
+	// Split the json tag by commas
+	parts := strings.Split(jsonTag, ",")
+
+	// Transform omitzero to omitempty
+	for i, part := range parts {
+		if part == "omitzero" || part == "omitempty" {
+			parts[i] = optionalTag
+		}
+	}
+
+	// Rebuild the json tag
+	newJsonTag := strings.Join(parts, ",")
+
+	// Rebuild the entire tag, replacing the json part
+	return reflect.StructTag(strings.ReplaceAll(string(tag), `json:"`+jsonTag+`"`, `json:"`+newJsonTag+`"`))
+}
+
+// isBuiltinType checks if a type is a built-in Go type that shouldn't be transformed
+func isBuiltinType(t reflect.Type) bool {
+	switch t.String() {
+	case "time.Time":
+		return true
+	case "decimal.Big":
+		return true
+	case "big.Int":
+		return true
+	default:
+		// Check if it's from a third-party package we shouldn't transform
+		pkgPath := t.PkgPath()
+		if strings.Contains(pkgPath, "github.com/") ||
+			strings.Contains(pkgPath, "optionalnullable") ||
+			strings.Contains(pkgPath, "types") {
+			return true
+		}
+
+		// Also check type name patterns for OptionalNullable
+		typeName := t.String()
+		if strings.Contains(typeName, "OptionalNullable") {
+			return true
+		}
+
+		return false
+	}
+}
+
+// getMirrorTypeName returns a descriptive name for debugging
+func getMirrorTypeName(originalType reflect.Type, includeCustomMarshaller bool) string {
+	return fmt.Sprintf("Mirror_%v_%v", originalType.Name(), includeCustomMarshaller)
+}
+
+// createExplicitMirrorTypes creates explicit mirror types for known types to handle circular references
+func createExplicitMirrorTypes(optionalTag string) (*mirrorTypeRegistry, error) {
+	registry := newMirrorTypeRegistry()
+
+	typesToMirror := []reflect.Type{
+		reflect.TypeOf(shared.AlwaysEmptyObject{}),
+		reflect.TypeOf(shared.NonEmptyObject{}),
+		reflect.TypeOf(shared.NestedObject{}),
+		reflect.TypeOf(shared.ComplexOptionalObject{}),
+		reflect.TypeOf(shared.OptionalFieldTestObject{}),
+	}
+
+	// First pass: create all builtin mirror types
+	for _, originalType := range typesToMirror {
+		name := getMirrorTypeName(originalType, false)
+		// if enableConversionLogging {
+		// 	fmt.Printf("CreateExplicitMirrorTypes: Creating builtin mirror for %s\n", name)
+		// }
+		mirrorType, err := createExplicitMirrorType(originalType, optionalTag, name, false, registry)
+		if err != nil {
+			return nil, err
+		}
+		registry.set(name, mirrorType)
+
+		name = getMirrorTypeName(originalType, true)
+		// if enableConversionLogging {
+		// 	fmt.Printf("CreateExplicitMirrorTypes: Pre-registering custom mirror for %s\n", name)
+		// }
+		mirrorType, err = createExplicitMirrorType(originalType, optionalTag, name, true, registry)
+		if err != nil {
+			return nil, err
+		}
+		registry.set(name, mirrorType)
+	}
+
+	return registry, nil
+}
+
+// createExplicitMirrorType creates a mirror type with proper cross-references
+func createExplicitMirrorType(originalType reflect.Type, optionalTag string, mirrorName string, withCustomMarshaller bool, registry *mirrorTypeRegistry) (reflect.Type, error) {
+	// Mark this type as being created to prevent circular references
+	registry.startCreating(mirrorName)
+	defer registry.finishCreating(mirrorName)
+
+	var mirrorFields []reflect.StructField
+
+	for i := 0; i < originalType.NumField(); i++ {
+		field := originalType.Field(i)
+
+		// Transform the field type to point to mirror types
+		mirrorFieldType, err := transformFieldTypeToMirror(field.Type, withCustomMarshaller, registry)
+		if err != nil {
+			return nil, err
+		}
+
+		// Create mirror field with transformed tags and types
+		mirrorField := reflect.StructField{
+			Name:    field.Name,
+			Type:    mirrorFieldType,
+			Tag:     transformStructTag(field.Tag, optionalTag),
+			PkgPath: field.PkgPath,
+		}
+
+		mirrorFields = append(mirrorFields, mirrorField)
+	}
+
+	// Create the mirror struct type
+	mirrorType := reflect.StructOf(mirrorFields)
+
+	return mirrorType, nil
+}
+
+// transformFieldTypeToMirror transforms field types to reference mirror types instead of originals
+func transformFieldTypeToMirror(fieldType reflect.Type, withCustomMarshaller bool, registry *mirrorTypeRegistry) (reflect.Type, error) {
+	// Early check for OptionalNullable types - preserve them as-is
+	if isOptionalNullableType(fieldType) {
+		if enableConversionLogging {
+			fmt.Printf("transformFieldTypeToMirror: Preserving OptionalNullable type: %s\n", fieldType.String())
+		}
+		return fieldType, nil
+	}
+
+	switch fieldType.Kind() {
+	case reflect.Ptr:
+		elemType := fieldType.Elem()
+		mirrorElemType, err := transformFieldTypeToMirror(elemType, withCustomMarshaller, registry)
+		if err != nil {
+			return nil, err
+		}
+		return reflect.PtrTo(mirrorElemType), nil
+
+	case reflect.Slice:
+		elemType := fieldType.Elem()
+		mirrorElemType, err := transformFieldTypeToMirror(elemType, withCustomMarshaller, registry)
+		if err != nil {
+			return nil, err
+		}
+		return reflect.SliceOf(mirrorElemType), nil
+
+	case reflect.Map:
+		keyType := fieldType.Key()
+		valueType := fieldType.Elem()
+		mirrorValueType, err := transformFieldTypeToMirror(valueType, withCustomMarshaller, registry)
+		if err != nil {
+			return nil, err
+		}
+		return reflect.MapOf(keyType, mirrorValueType), nil
+
+	case reflect.Struct:
+		// Check if this is a known type that should be mirrored
+		registryName := getMirrorTypeName(fieldType, withCustomMarshaller)
+		if mirrorType, exists := registry.get(registryName); exists {
+			return mirrorType, nil
+		}
+
+		// For unknown struct types, check if they're built-in
+		if isBuiltinType(fieldType) {
+			return fieldType, nil
+		}
+
+		// Check if this type is currently being created (circular reference)
+		if registry.isCreating(registryName) {
+			if enableConversionLogging {
+				fmt.Printf("transformFieldTypeToMirror: Circular reference detected for %s, using interface{}\n", fieldType.String())
+			}
+
+			// I couldn't find a way to properly handle circular references with reflection
+			// Using interface{} means that recursive types actually end up using the original type
+			// so our test is not perfect as our NestedObject will end up using the custom marshaller
+			// even when we want it to use the builtin marshaller.
+			return reflect.TypeOf((*interface{})(nil)).Elem(), nil
+		}
+
+		// Error case: unknown struct type
+		return nil, fmt.Errorf("Could not find mirror type for %s", registryName)
+
+	default:
+		return fieldType, nil
+	}
+}
+
+// isOptionalNullableType checks if a type is an OptionalNullable type
+func isOptionalNullableType(t reflect.Type) bool {
+	if t == nil {
+		return false
+	}
+
+	typeString := t.String()
+	pkgPath := t.PkgPath()
+
+	// Check for OptionalNullable in type string or package path
+	return strings.Contains(typeString, "OptionalNullable") ||
+		strings.Contains(pkgPath, "optionalnullable") ||
+		(t.Kind() == reflect.Map && t.Key().Kind() == reflect.Bool)
+}
+
+// customMarshallerWrapper enables dynamic injection of MarshalJSON behavior
+type customMarshallerWrapper struct {
+	Value interface{}
+	Type  reflect.Type
+}
+
+// MarshalJSON implements json.Marshaler interface using the custom marshaller
+func (w customMarshallerWrapper) MarshalJSON() ([]byte, error) {
+	if enableConversionLogging {
+		fmt.Printf("CustomMarshallerWrapper.MarshalJSON called for type: %s\n", w.Type)
+	}
+	return utils.MarshalJSON(w.Value, "", false)
+}
+
+// String provides a readable representation for debugging
+func (w customMarshallerWrapper) String() string {
+	return fmt.Sprintf("customMarshallerWrapper{Type: %s, Value: %+v}", w.Type, w.Value)
+}
+
+// convertToExplicitMirrorType converts data to explicit mirror types using the registries
+func convertToExplicitMirrorType(original interface{}, addCustomMarshallers bool, registry *mirrorTypeRegistry) (interface{}, error) {
+	if original == nil {
+		return nil, nil
+	}
+
+	if enableConversionLogging {
+		fmt.Printf("ConvertToExplicitMirrorType: Converting %T, addCustomMarshallers=%t\n", original, addCustomMarshallers)
+	}
+
+	originalValue := reflect.ValueOf(original)
+	originalType := originalValue.Type()
+
+	// Look for explicit mirror type
+	registryName := getMirrorTypeName(originalType, addCustomMarshallers)
+	if mirrorType, exists := registry.get(registryName); exists {
+		// Convert using explicit mirror type
+		result, err := convertToExplicitType(originalValue, mirrorType, addCustomMarshallers, registry)
+		if err != nil {
+			return nil, err
+		}
+
+		// If we need custom marshallers, wrap the result
+		if addCustomMarshallers && shouldWrapWithCustomMarshaller(mirrorType) {
+			wrapper := customMarshallerWrapper{
+				Value: result.Interface(),
+				Type:  mirrorType,
+			}
+			if enableConversionLogging {
+				fmt.Printf("convertToExplicitMirrorType: Wrapping %T with customMarshallerWrapper\n", result.Interface())
+			}
+			return wrapper, nil
+		}
+
+		return result.Interface(), nil
+	}
+
+	// Error on unknown type
+	return nil, fmt.Errorf("convertToExplicitMirrorType: No explicit mirror type found for %s", registryName)
+}
+
+// convertToExplicitType converts a value to a specific mirror type
+func convertToExplicitType(originalValue reflect.Value, targetType reflect.Type, addCustomMarshallers bool, registry *mirrorTypeRegistry) (reflect.Value, error) {
+	if !originalValue.IsValid() {
+		return reflect.Zero(targetType), nil
+	}
+
+	// Create new instance of target type
+	result := reflect.New(targetType).Elem()
+	originalType := originalValue.Type()
+
+	if enableConversionLogging {
+		fmt.Printf("convertToExplicitType: Converting %s to %s\n", originalType.Name(), targetType.String())
+	}
+
+	// Copy fields by name
+	for i := 0; i < targetType.NumField(); i++ {
+		targetField := targetType.Field(i)
+		targetFieldValue := result.Field(i)
+
+		// Skip unexported fields
+		if !targetFieldValue.CanSet() {
+			continue
+		}
+
+		// Find corresponding field in original type
+		_, found := originalType.FieldByName(targetField.Name)
+		if !found {
+			continue
+		}
+
+		originalFieldValue := originalValue.FieldByName(targetField.Name)
+		if !originalFieldValue.IsValid() {
+			continue
+		}
+
+		// Convert the field value recursively
+		convertedValue, err := convertFieldToExplicitType(originalFieldValue, targetField.Type, addCustomMarshallers, registry)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		if convertedValue.IsValid() && convertedValue.Type().AssignableTo(targetField.Type) {
+			targetFieldValue.Set(convertedValue)
+		}
+	}
+
+	return result, nil
+}
+
+// convertFieldToExplicitType converts a field value to the target type, handling nested mirrors
+func convertFieldToExplicitType(originalValue reflect.Value, targetType reflect.Type, addCustomMarshallers bool, registry *mirrorTypeRegistry) (reflect.Value, error) {
+	if !originalValue.IsValid() {
+		return reflect.Zero(targetType), nil
+	}
+
+	switch originalValue.Kind() {
+	case reflect.Ptr:
+		if originalValue.IsNil() {
+			return reflect.Zero(targetType), nil
+		}
+
+		if targetType.Kind() != reflect.Ptr {
+			// Converting from pointer to non-pointer
+			elem := originalValue.Elem()
+			return convertFieldToExplicitType(elem, targetType, addCustomMarshallers, registry)
+		}
+
+		// Both are pointers, convert the element
+		elemValue := originalValue.Elem()
+		targetElemType := targetType.Elem()
+
+		convertedElem, err := convertFieldToExplicitType(elemValue, targetElemType, addCustomMarshallers, registry)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		// Create new pointer to the converted value
+		ptr := reflect.New(targetElemType)
+		ptr.Elem().Set(convertedElem)
+		return ptr, nil
+
+	case reflect.Struct:
+		// Check if this is a known mirror type
+		registryName := getMirrorTypeName(originalValue.Type(), addCustomMarshallers)
+		if mirrorType, exists := registry.get(registryName); exists && mirrorType == targetType {
+			return convertToExplicitType(originalValue, targetType, addCustomMarshallers, registry)
+		}
+
+		// For other struct types, use direct assignment if compatible
+		if originalValue.Type().AssignableTo(targetType) {
+			return originalValue, nil
+		}
+
+		// Create new instance and copy compatible fields
+		return convertToExplicitType(originalValue, targetType, addCustomMarshallers, registry)
+
+	case reflect.Slice:
+		if originalValue.IsNil() {
+			return reflect.Zero(targetType), nil
+		}
+
+		if targetType.Kind() != reflect.Slice {
+			return originalValue, nil
+		}
+
+		// Convert slice elements
+		length := originalValue.Len()
+		result := reflect.MakeSlice(targetType, length, length)
+
+		for i := 0; i < length; i++ {
+			originalElem := originalValue.Index(i)
+			convertedElem, err := convertFieldToExplicitType(originalElem, targetType.Elem(), addCustomMarshallers, registry)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+
+			if convertedElem.IsValid() && convertedElem.Type().AssignableTo(targetType.Elem()) {
+				result.Index(i).Set(convertedElem)
+			}
+		}
+
+		return result, nil
+
+	case reflect.Map:
+		if originalValue.IsNil() {
+			return reflect.Zero(targetType), nil
+		}
+
+		if targetType.Kind() != reflect.Map {
+			return originalValue, nil
+		}
+
+		// Convert map values
+		result := reflect.MakeMap(targetType)
+
+		for _, key := range originalValue.MapKeys() {
+			originalMapValue := originalValue.MapIndex(key)
+			convertedValue, err := convertFieldToExplicitType(originalMapValue, targetType.Elem(), addCustomMarshallers, registry)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+
+			if convertedValue.IsValid() && convertedValue.Type().AssignableTo(targetType.Elem()) {
+				result.SetMapIndex(key, convertedValue)
+			}
+		}
+
+		return result, nil
+
+	default:
+		// For basic types that should be compatible
+		if originalValue.Type().AssignableTo(targetType) {
+			return originalValue, nil
+		}
+		if originalValue.Type().ConvertibleTo(targetType) {
+			return originalValue.Convert(targetType), nil
+		}
+		return originalValue, nil
+	}
+}
+
+func getFieldNames(differences map[string]interface{}) []string {
+	var names []string
+	for name := range differences {
+		names = append(names, name)
+	}
+	return names
+}

@@ -1,0 +1,24 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System.Linq;
+
+    public interface IOpenEnum
+    {
+        bool IsKnown();
+    }
+
+    public interface IOpenEnum<T> : IOpenEnum
+    {
+        T Value { get; }
+    }
+
+    internal static class OpenEnumType
+    {
+        // Returns T from the IOpenEnum<T> implemented by every generated open enum.
+        public static System.Type GetUnderlyingType(System.Type type) =>
+            type.GetInterfaces()
+                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IOpenEnum<>))
+                .GetGenericArguments()[0];
+    }
+}

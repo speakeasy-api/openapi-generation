@@ -1,0 +1,13 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+csharp:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  enableFormatting: true
+  version: 0.0.1
+  packageName: Speakeasy.BasicHttp
+  responseFormat: envelope-http

@@ -1,0 +1,49 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+csharp:
+  additionalDependencies:
+    - package: FluentAssertions
+      version: 6.12.0
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  author: Speakeasy
+  dotnetVersion: net10.0
+  targetFramework: net8.0
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  presenceAwareJsonSerialization: true
+  unionStrategy: populated-fields
+  forwardCompatibleUnionsByDefault: tagged-and-untagged
+  forwardCompatibleEnumsByDefault: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks
+  maxMethodParams: 5
+  responseFormat: envelope-http
+  methodArguments: infer-optional-args
+  flatteningOrder: ""
+  defaultErrorName: APIException
+  baseErrorName: APIBaseException
+  httpClientPrefix: Default
+  enableCancellationToken: true
+  enableFormatting: true
+  useNodatime: false

@@ -1,0 +1,157 @@
+import { expect, test } from "vitest";
+
+import { SDKCore } from "../core.js";
+import { recordTest } from "./common_helpers.js";
+import { authGlobalSecurityBasicHttp } from "../funcs/authGlobalSecurityBasicHttp.js";
+import { authHoistedSecurityAccessTokenOnly } from "../funcs/authHoistedSecurityAccessTokenOnly.js";
+import { authHoistedSecurityAccessTokenFirst } from "../funcs/authHoistedSecurityAccessTokenFirst.js";
+import { authHoistedSecurityApiKeyFirst } from "../funcs/authHoistedSecurityApiKeyFirst.js";
+import { authHoistedSecurityBasicHttpOnly } from "../funcs/authHoistedSecurityBasicHttpOnly.js";
+
+test("Global Security Fields Ordering", async () => {
+  recordTest("auth-global-security-fields-ordering");
+
+  // When `maintainOpenApiOrder: false` is set, security fields are sorted in alphabetical order.
+  // Since the first non-nil field is selected ApiKeyAuth takes precedence over BasicHttp,
+  // which is not valid authentication for this endpoint.
+  const sdk = new SDKCore({
+    security: {
+      apiKeyAuth: "testApiKey",
+      basicHttp: {
+        username: "testUser",
+        password: "testPass",
+      },
+    },
+  });
+
+  const res = await authGlobalSecurityBasicHttp(sdk);
+  if (!res.ok) throw res.error;
+
+
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(401);
+{{- else }}
+  expect(res.value.status).toBe(401);
+{{- end }}
+});
+
+test("Hoisted Security Access Token Only", async () => {
+  recordTest("auth-hoisted-security-access-token-only");
+
+  const sdk = new SDKCore({
+    security: {
+      apiKeyAuth: "testApiKey",
+      basicHttp: {
+        username: "testUser",
+        password: "testPass",
+      },
+      accessToken: "Bearer ghp_xxxx",
+    },
+  });
+
+  const res = await authHoistedSecurityAccessTokenOnly(sdk);
+  if (!res.ok) throw res.error;
+
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(200);
+  expect(res.value.token).toBeDefined();
+  expect(res.value.token!.token).toBe("Bearer ghp_xxxx");
+{{- else }}
+  expect(res.value.status).toBe(200);
+{{- end }}
+});
+
+test("Hoisted Security Access Token First", async () => {
+  recordTest("auth-hoisted-security-access-token-first");
+
+  const sdk = new SDKCore({
+    security: {
+      apiKeyAuth: "testApiKey",
+      accessToken: "Bearer ghp_xxxx",
+    },
+  });
+
+  const res = await authHoistedSecurityAccessTokenFirst(sdk);
+  if (!res.ok) throw res.error;
+
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(200);
+  expect(res.value.token).toBeDefined();
+  expect(res.value.token!.token).toBe("Bearer ghp_xxxx");
+{{- else }}
+  expect(res.value.status).toBe(200);
+{{- end }}
+});
+
+test("Hoisted Security Api Key First", async () => {
+  recordTest("auth-hoisted-security-api-key-first");
+
+  const sdk = new SDKCore({
+    security: {
+      apiKeyAuth: "testApiKey",
+      accessToken: "Bearer ghp_xxxx",
+    },
+  });
+
+  const res = await authHoistedSecurityApiKeyFirst(sdk);
+  if (!res.ok) throw res.error;
+
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(200);
+  expect(res.value.token).toBeDefined();
+  expect(res.value.token!.token).toBe("testApiKey");
+{{- else }}
+  expect(res.value.status).toBe(200);
+{{- end }}
+});
+
+test("Hoisted Security Basic Http Only", async () => {
+  recordTest("auth-hoisted-security-basic-http-only");
+
+  const sdk = new SDKCore({
+    security: {
+      basicHttp: {
+        username: "testUser",
+        password: "testPass",
+      },
+      apiKeyAuth: "testApiKey",
+      accessToken: "Bearer ghp_xxxx",
+    },
+  });
+
+  const res = await authHoistedSecurityBasicHttpOnly(sdk);
+  if (!res.ok) throw res.error;
+
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(200);
+  expect(res.value.basicAuth).toBeDefined();
+  expect(res.value.basicAuth!.authenticated).toBe(true);
+  expect(res.value.basicAuth!.user).toBe("testUser");
+{{- else }}
+  expect(res.value.status).toBe(200);
+{{- end }}
+});
+
+test("Hoisted Security Invalid Field", async () => {
+  recordTest("auth-hoisted-security-invalid-field");
+
+  // Provide only basicHttp — not valid for accessTokenFirst which expects bearer/apiKey
+  const sdk = new SDKCore({
+    security: {
+      basicHttp: {
+        username: "user",
+        password: "pass",
+      },
+    },
+  });
+
+  const res = await authHoistedSecurityAccessTokenFirst(sdk);
+  if (!res.ok) throw res.error;
+
+  // Provide only basicHttp — the endpoint returns 401 when security is invalid
+{{- if isStrictMCPServer }}
+  expect(res.value.StatusCode).toBe(401);
+{{- else }}
+  expect(res.value.status).toBe(401);
+{{- end }}
+});

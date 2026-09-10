@@ -1,0 +1,59 @@
+{{- $usageLocation := getModelsLocation .Local.Type.OutputLocation -}}
+{{- $typeName := sanitizeClass .Local.Type $usageLocation true -}}
+{{- $tsType := sanitizeEnumTSType .Local.Type $usageLocation true}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+{{- $dataType := getEnumDataType .Local.Type }}
+
+{{- if isNoZod -}}
+{{- /* No-zod: enum runtime schemas are dead code — no caller. Matchers use
+       a singleton passthrough; custom-shape parent recursion skips enum
+       fields. Emit nothing here. */ -}}
+{{- else -}}
+{{- if shouldIncludeInboundOrOutboundSchema .Local.Type -}}
+{{- addZodPackageImport }}
+{{- end }}
+
+{{- /* 🟢 START open enum */ -}}
+{{- if .Local.Type.Enum.Open }}
+
+{{- if shouldIncludeInboundSchema .Local.Type }}
+/** @internal */
+export const {{$zodName}}inboundSchema: {{zodType $tsType "unknown"}} = {{templateOpenEnumInboundSchema .Local.Type $typeName $usageLocation}};
+{{- end }}
+
+{{- if shouldIncludeOutboundSchema .Local.Type }}
+/** @internal */
+export const {{$zodName}}outboundSchema: {{zodType $dataType $tsType}} = {{templateOpenEnumOutboundSchema .Local.Type $typeName $usageLocation}};
+{{- end }}
+
+{{- /* 🟢 START closed enum */ -}}
+{{- else }}
+
+{{- if shouldIncludeInboundSchema .Local.Type }}
+/** @internal */
+export const {{$zodName}}inboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = {{zodEnum $typeName}};
+{{- end }}
+
+{{- if shouldIncludeOutboundSchema .Local.Type }}
+/** @internal */
+export const {{$zodName}}outboundSchema: {{zodEnumType (printf "typeof %s" $typeName)}} = {{- if shouldIncludeInboundSchema .Local.Type }}{{$zodName}}inboundSchema{{- else }}{{zodEnum $typeName}}{{- end }};
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if shouldIncludeSchemaNamespace .Local.Type }}
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace {{$zodName}} {
+  {{- if shouldIncludeInboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}inboundSchema` instead. */
+  export const inboundSchema = {{$zodName}}inboundSchema;
+  {{- end }}
+  {{- if shouldIncludeOutboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}outboundSchema` instead. */
+  export const outboundSchema = {{$zodName}}outboundSchema;
+  {{- end }}
+}
+{{- end }}

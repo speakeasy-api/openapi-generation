@@ -1,0 +1,98 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGlobalSecurityOptionBasicHttp(t *testing.T) {
+	recordTest("auth-basic-http-global-option")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "global-security-option-basic-http",
+		"--username", "testUser",
+		"--password", "testPass",
+		"--access-token", "Bearer ignored",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+}
+
+func TestGlobalSecurityOptionFieldsOrdering(t *testing.T) {
+	recordTest("auth-global-security-option-fields-ordering")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "global-security-option-basic-http",
+		"--api-key-auth", "Bearer test_api_key",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.Error(t, err)
+}
+
+func TestHoistedSecurityOptionAccessTokenFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-option-access-token-first")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-option-access-token-first",
+		"--api-key-auth", "testApiKey",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, "Bearer ghp_xxxx", jsonGetString(output, "token"))
+}
+
+func TestHoistedSecurityOptionApiKeyFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-option-api-key-first")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-option-api-key-first",
+		"--api-key-auth", "testApiKey",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, "testApiKey", jsonGetString(output, "token"))
+}
+
+func TestHoistedSecurityOptionBasicHTTPOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-option-basic-http-only")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-option-basic-http-only",
+		"--username", "testUser",
+		"--password", "testPass",
+		"--api-key-auth", "testApiKey",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+}
+
+func TestHoistedSecurityOptionsInvalidOption(t *testing.T) {
+	recordTest("auth-hoisted-security-invalid-option")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-option-access-token-first",
+		"--username", "user",
+		"--password", "pass",
+	})
+	require.Error(t, err)
+}

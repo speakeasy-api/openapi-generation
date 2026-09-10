@@ -1,0 +1,28 @@
+---
+title: "VariantRecord"
+---
+
+A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides
+
+
+## Supported Types
+
+### `models.TextRecord`
+
+```typescript
+const value: models.TextRecord = {
+  type: "<value>",
+  text: "sample text",
+  note: "sample note",
+};
+```
+
+### `models.ImageRecord`
+
+```typescript
+const value: models.ImageRecord = {
+  type: "<value>",
+  imageId: "image-001",
+  caption: "sample caption",
+};
+```

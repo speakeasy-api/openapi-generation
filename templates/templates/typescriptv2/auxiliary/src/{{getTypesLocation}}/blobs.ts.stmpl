@@ -1,0 +1,39 @@
+{{- recurse 1 -}}
+{{- genImports -}}
+{{- if isNoZod }}
+{{- /* No-zod: only `isBlobLike` is used (lib/encodings.ts for multipart). The
+       former `blobLikeSchema` passthrough wasn't actually called anywhere —
+       dropped. */ -}}
+{{- else }}
+{{- addZodPackageImport }}
+
+export const blobLikeSchema: {{zodType "Blob" "Blob"}} =
+  z.custom<Blob>(isBlobLike, {
+    message: "expected a Blob, File or Blob-like object",
+    {{- if isZodV4 }}
+    abort: true,
+    {{- else}}
+    fatal: true
+    {{- end}}
+  });
+{{- end }}
+
+export function isBlobLike(val: unknown): val is Blob {
+  if (val instanceof Blob) {
+    return true;
+  }
+
+  if (typeof val !== "object" || val == null || !(Symbol.toStringTag in val)) {
+    return false;
+  }
+
+  const name = val[Symbol.toStringTag];
+  if (typeof name !== "string") {
+    return false;
+  }
+  if (name !== "Blob" && name !== "File") {
+    return false;
+  }
+
+  return "stream" in val && typeof val.stream === "function";
+}

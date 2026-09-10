@@ -1,0 +1,47 @@
+{{- recurse 1 -}}
+{{- $root := .Local.Root -}}
+{{- $cmdName := sanitizeCommandName $root.Type.Name -}}
+{{- $filename := sanitizeCLIPkgName $root.Type.Name -}}
+{{- $currLoc := .Local.Loc -}}
+{{- $parentGroupName := .Local.ParentGroupName -}}
+{{- $currSubSDKAccessor := print .Local.SubSDKAccessor "." (sanitizeSDKFieldName $root.FieldName) -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "internal/usage" true -}}
+package {{ $filename }}
+
+{{genImports}}
+
+func {{sanitizeInitFuncName (print ($root.Type.Name) "Root") false}}(parent *cobra.Command) error {
+    var {{$cmdName}} = &cobra.Command{
+        Use:   "{{getDeStutteredCommandName $parentGroupName (getSDKGroupName $root)}}",
+        Short: {{templateGroupShort $root}},
+        Long:  {{templateGroupLong $root}},
+        Args:  cobra.NoArgs,
+        Annotations: map[string]string{"speakeasy_cli_group": "true"},
+        RunE: func(cmd *cobra.Command, args []string) error {
+            if usage.UsageRequested(cmd) {
+                return usage.EmitSchema(cmd, cmd.OutOrStdout())
+            }
+            return cmd.Help()
+        },
+        {{- if .Local.Aliases}}
+        Aliases: []string{ {{- range $i, $a := .Local.Aliases}}{{if $i}}, {{end}}"{{$a}}"{{end -}} },
+        {{- end}}
+    }
+    {{range $root.SubSDKs}}
+    {{- $subrootFileName := sanitizeCLIPkgName .Type.Name}}
+    {{- $subrootLoc := (print $currLoc "/" $subrootFileName)}}
+    {{- addImport $subrootLoc true }}
+    if err := {{$subrootFileName}}.{{sanitizeInitFuncName (print (.Type.Name) "Root") false}}({{$cmdName}}); err != nil {
+        return err
+    }{{end}}
+    {{range $root.Operations}}
+    {{if not (isOperationOverridden .)}}
+    if err := {{sanitizeInitFuncName (sanitizeCommandName .GetID)}}({{$cmdName}}); err != nil {
+        return err
+    }
+    {{end}}
+    {{end}}
+    parent.AddCommand({{$cmdName}})
+    return nil
+}

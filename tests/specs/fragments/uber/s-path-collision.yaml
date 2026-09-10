@@ -1,0 +1,24 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /items/{s}:
+    get:
+      operationId: getItemByS
+      tags:
+        - tests
+      parameters:
+        - name: s
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK

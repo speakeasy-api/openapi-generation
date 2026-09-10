@@ -1,0 +1,8 @@
+{{- recurse 1 -}}
+package {{sanitizeFileName .Local.Operation.OwningSDK.Type.Name}}
+
+{{genImports}}
+
+func {{sanitizeMethodName .Local.Operation}}() {
+{{templateString "usage/block.stmpl" .Local}}
+}

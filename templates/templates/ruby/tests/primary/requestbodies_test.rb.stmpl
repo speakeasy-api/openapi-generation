@@ -1,0 +1,1056 @@
+# frozen_string_literal: true
+# typed: true
+
+require_relative '../lib/openapi'
+require_relative '../lib/crystalline'
+require_relative 'common_helper_test'
+require_relative 'helper_test'
+
+require 'minitest/autorun'
+require 'minitest/focus'
+require 'rack'
+
+module OpenApiSDK
+  class TestRequestBody < Minitest::Test
+    def setup
+      @sdk = OpenApiSDK::SDK.new
+    end
+
+    def test_request_body_post_application_json_simple
+      record_test('request-bodies-post-application-json-simple')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_simple(request: obj)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res.json)
+    end
+
+    def test_request_body_post_application_json_array
+      record_test('request-bodies-post-application-json-array')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_array(request: [obj])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res[0])
+    end
+
+
+    def test_request_body_post_application_json_array_of_array
+      record_test('request-bodies-post-application-json-array-of-array')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_array_of_array(request: [[obj], [obj]])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res[0][0])
+      assert_equal(obj, res.res[1][0])
+    end
+
+
+    def test_request_body_post_application_json_map
+      record_test('request-bodies-post-application-json-map')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_map(request: {
+            "mapElem1": obj,
+            "mapElem2": obj,
+        })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res['mapElem1'])
+      assert_equal(obj, res.res['mapElem2'])
+    end
+
+    def test_request_body_post_application_json_map_of_map
+      record_test('request-bodies-post-application-json-map-of-map')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_of_map(request: {
+        "mapElem1": {
+          "subMapElem1": obj,
+          "subMapElem2": obj,
+        },
+        "mapElem2": {
+            "subMapElem1": obj,
+            "subMapElem2": obj,
+        },
+      })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res['mapElem1']['subMapElem1'])
+      assert_equal(obj, res.res['mapElem1']['subMapElem2'])
+      assert_equal(obj, res.res['mapElem2']['subMapElem1'])
+      assert_equal(obj, res.res['mapElem2']['subMapElem2'])
+    end
+
+    def test_request_body_post_application_json_map_of_any
+      record_test('request-bodies-post-application-json-map-of-any')
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_of_any(request: {
+        "mapElemArray": ['array-test'],
+        "mapElemBool": true,
+        "mapElemNumber": 123,
+        "mapElemObject": {
+          "property": 'property-test',
+        },
+        "mapElemString": 'string-test',
+      })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal('array-test', res.res['mapElemArray'][0])
+      assert(res.res['mapElemBool'])
+      assert_equal(123, res.res['mapElemNumber'])
+      assert_equal('property-test', res.res['mapElemObject']['property'])
+      assert_equal('string-test', res.res['mapElemString'])
+    end
+
+    def test_request_body_post_application_json_map_of_array
+      record_test('request-bodies-post-application-json-map-of-array')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_of_array(request: {
+        "mapElem1": [obj, obj],
+        "mapElem2": [obj, obj],
+      })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res['mapElem1'][0])
+      assert_equal(obj, res.res['mapElem1'][1])
+      assert_equal(obj, res.res['mapElem2'][0])
+      assert_equal(obj, res.res['mapElem2'][1])
+    end
+
+    def test_request_body_post_application_json_array_of_map
+      record_test('request-bodies-post-application-json-array-of-map')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_array_of_map(request: [
+                                                                                  {
+                                                                                      "mapElem1": obj,
+                                                                                      "mapElem2": obj,
+                                                                                  },
+                                                                                  {
+                                                                                      "mapElem1": obj,
+                                                                                      "mapElem2": obj,
+                                                                                  },
+                                                                                ])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(obj, res.res[0]['mapElem1'])
+      assert_equal(obj, res.res[0]['mapElem1'])
+      assert_equal(obj, res.res[1]['mapElem2'])
+      assert_equal(obj, res.res[1]['mapElem2'])
+    end
+
+    def test_request_body_post_application_json_map_of_primitive
+      record_test('request-bodies-post-application-json-map-of-primitive')
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_of_primitive(request: {
+        "mapElem1": 'hello',
+        "mapElem2": 'world',
+    })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal('hello', res.res['mapElem1'])
+      assert_equal('world', res.res['mapElem2'])
+    end
+
+    def test_request_body_post_application_json_array_of_primitive
+      record_test('request-bodies-post-application-json-array-of-primitive')
+
+      res = @sdk.request_bodies.request_body_post_application_json_array_of_primitive(request: ['hello', 'world'])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(['hello', 'world'], res.res)
+    end
+
+    def test_request_body_post_application_json_map_of_map_of_primitive
+      record_test('request-bodies-post-application-json-map-of-map-of-primitive')
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_of_map_of_primitive(request: {
+        "mapElem1": {
+            "subMapElem1": 'foo',
+            "subMapElem2": 'bar',
+        },
+        "mapElem2": {
+            "subMapElem1": 'buzz',
+            "subMapElem2": 'bazz',
+        },
+      })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal('foo', res.res['mapElem1']['subMapElem1'])
+      assert_equal('bar', res.res['mapElem1']['subMapElem2'])
+      assert_equal('buzz', res.res['mapElem2']['subMapElem1'])
+      assert_equal('bazz', res.res['mapElem2']['subMapElem2'])
+    end
+
+    def test_request_body_post_application_json_array_of_array_of_primitive
+      record_test('request-bodies-post-application-json-array-of-array-of-primitive')
+
+      res = @sdk.request_bodies.request_body_post_application_json_array_of_array_of_primitive(request: [
+                                                                                                 ['foo', 'bar'],
+                                                                                                 ['buzz', 'bazz'],
+                                                                                               ])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal([['foo', 'bar'], ['buzz', 'bazz']], res.res)
+    end
+
+    def test_request_body_post_application_json_array_object
+      record_test('request-bodies-post-application-json-array-object')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_array_obj(request: [obj, obj])
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.arr_obj_value)
+      assert_equal(2, res.arr_obj_value.json.length)
+      assert_equal(obj, res.arr_obj_value.json[0])
+      assert_equal(obj, res.arr_obj_value.json[1])
+    end
+
+    def test_request_body_post_application_json_map_object
+      record_test('request-bodies-post-application-json-map-object')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_map_obj(request: {
+        "mapElem1": obj,
+        "mapElem2": obj,
+      })
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.map_obj_value)
+      assert_equal(2, res.map_obj_value.json.length)
+      assert_equal(obj, res.map_obj_value.json['mapElem1'])
+      assert_equal(obj, res.map_obj_value.json['mapElem2'])
+    end
+
+    def test_request_body_post_application_json_deep
+      record_test('request-bodies-post-application-json-deep')
+
+      obj = create_deep_object
+
+      res = @sdk.request_bodies.request_body_post_application_json_deep(request: obj)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      assert_equal(res.res.json, obj)
+      assert_equal(res.res.json.any, obj.any)
+    end
+
+    def test_request_body_post_application_json_multiple_json_filtered
+      record_test('request-bodies-post-application-json-multiple-json-filtered')
+
+      obj = create_simple_object
+      res = @sdk.request_bodies.request_body_post_application_json_multiple_json_filtered(request: obj)
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.json, obj)
+    end
+
+
+    def test_request_body_post_multiple_content_types_component_filtered
+      record_test('request-bodies-post-multiple-content-types-component-filtered-application-json')
+      record_test('request-bodies-post-multiple-content-types-component-filtered-multipart-form-data')
+
+      obj = create_simple_object
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_component_filtered(request: obj)
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.json, obj)
+    end
+
+
+    def test_request_body_post_multiple_content_types_inline_filtered
+      record_test('request-bodies-post-multiple-content-types-inline-filtered')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_inline_filtered(request: Models::Operations::RequestBodyPostMultipleContentTypesInlineFilteredRequestBody.new(
+        bool: true,
+        num: 1.1,
+        str_: 'test'
+      ))
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.json, {
+        'bool' => true,
+        'num' => 1.1,
+        'str' => 'test'
+      })
+    end
+
+
+    def test_request_body_post_multiple_content_types_split_json
+      record_test('request-bodies-post-multiple-content-types-split-json')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_json(request: Models::Operations::RequestBodyPostMultipleContentTypesSplitJsonRequestBody.new(
+        bool: true,
+        num: 1.1,
+        str_: 'test'
+      ))
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.json, {
+        'bool' => true,
+        'num' => 1.1,
+        'str' => 'test'
+      })
+    end
+
+    def test_request_body_post_multiple_content_types_split_multipart
+      record_test('request-bodies-post-multiple-content-types-split-multipart')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_multipart(request: Models::Operations::RequestBodyPostMultipleContentTypesSplitMultipartRequestBody.new(
+        bool2: true,
+        num2: 1.1,
+        str2: 'test'
+      ))
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.form, {
+        'bool2' => true,
+        'num2' => 1.1,
+        'str2' => 'test'
+      })
+    end
+
+    def test_request_body_post_multiple_content_types_split_form
+      record_test('request-bodies-post-multiple-content-types-split-form')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_form(request: Models::Operations::RequestBodyPostMultipleContentTypesSplitFormRequestBody.new(
+        bool3: true,
+        num3: 1.1,
+        str3: 'test'
+      ))
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.form, {
+        'bool3' => true,
+        'num3' => 1.1,
+        'str3' => 'test'
+      })
+    end
+
+    def test_request_body_post_multiple_content_types_split_json_param
+      record_test('request-bodies-post-multiple-content-types-split-json-with-param')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_param_json(
+        request_body: Models::Operations::RequestBodyPostMultipleContentTypesSplitParamJsonRequestBody.new(
+          bool: true,
+          num: 1.1,
+          str_: 'test body'
+        ),
+        param_str: 'test param'
+      )
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.json, {
+        'bool' => true,
+        'num' => 1.1,
+        'str' => 'test body'
+        })
+      assert_equal(res.res.args, {'paramStr' => 'test param'})
+
+    end
+
+    def test_request_body_post_multiple_content_types_split_multipart_param
+      record_test('request-bodies-post-multiple-content-types-split-multipart-with-param')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_param_multipart(
+        request_body: Models::Operations::RequestBodyPostMultipleContentTypesSplitParamMultipartRequestBody.new(
+          bool2: true,
+          num2: 1.1,
+          str2: 'test body'
+        ),
+        param_str: 'test param'
+      )
+
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.form, {
+        'bool2' => true,
+        'num2' => 1.1,
+        'str2' => 'test body'
+        })
+      assert_equal(res.res.args, {'paramStr' => 'test param'})
+
+    end
+
+    def test_request_body_post_multiple_content_types_split_form_param
+      record_test('request-bodies-post-multiple-content-types-split-form-with-param')
+
+      res = @sdk.request_bodies.request_body_post_multiple_content_types_split_param_form(
+        request_body: Models::Operations::RequestBodyPostMultipleContentTypesSplitParamFormRequestBody.new(
+          bool3: true,
+          num3: 1.1,
+          str3: 'test body'
+        ),
+        param_str: 'test param'
+      )
+      assert_equal(res.res.form, {
+        'bool3' => true,
+        'num3' => 1.1,
+        'str3' => 'test body'
+        })
+      assert_equal(res.res.args, {'paramStr' => 'test param'})
+
+    end
+
+    def test_request_body_put_multipart_simple
+      record_test('request-bodies-put-multipart-simple')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_put_multipart_simple(request: obj)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      assert_equal('any', res.res.form.any)
+      assert_equal('true', res.res.form.bool_opt)
+      assert_equal('true', res.res.form.bool)
+      assert_equal('2020-01-01T00:00:00.000000001Z', res.res.form.date_time)
+      assert_equal('2020-01-01', res.res.form.date)
+      assert_equal('one', res.res.form.enum)
+      assert_equal('1.1', res.res.form.float32)
+      assert_equal('1', res.res.form.int)
+      assert_equal('1', res.res.form.int32)
+      assert_equal('1.1', res.res.form.num)
+      assert_equal('testOptional', res.res.form.str_opt)
+      assert_equal('test', res.res.form.str_)
+    end
+
+    def test_request_body_put_multipart_deep
+      record_test('request-bodies-put-multipart-deep')
+
+      obj = create_deep_object
+
+      res = @sdk.request_bodies.request_body_put_multipart_deep(request: obj)
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      assert_equal(::Crystalline.to_json(obj.arr), JSON.parse(res.res.form.arr))
+      assert_equal('true', res.res.form.bool)
+      assert_equal('1', res.res.form.int)
+      assert_equal(::Crystalline.to_json(obj.map), JSON.parse(res.res.form.map))
+      assert_equal('1.1', res.res.form.num)
+      assert_equal(::Crystalline.to_json(obj.obj), JSON.parse(res.res.form.obj))
+      assert_equal('test', res.res.form.str_)
+    end
+
+    def test_request_body_put_multipart_file
+      record_test('request-bodies-put-multipart-file')
+
+      data = File.open('test/testdata/testUpload.json').read
+
+      res = @sdk.request_bodies.request_body_put_multipart_file(
+        request: Models::Operations::RequestBodyPutMultipartFileRequestBody.new(
+          file: Models::Operations::File.new(
+            content: data,
+            file_name: 'test/testdata/testUpload.json'
+          )
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal({'file' => data.to_s}, res.res.files)
+    end
+
+    def test_request_body_put_multipart_file_ref
+      record_test('request-bodies-put-multipart-file-ref')
+
+      data = File.open('test/testdata/testUpload.json').read
+
+      res = @sdk.request_bodies.request_body_put_multipart_file_ref(
+        request: Models::Operations::RequestBodyPutMultipartFileRefRequestBody.new(
+          file: Models::Shared::BinaryString.new(
+            content: data,
+            file_name: 'test/testdata/testUpload.json'
+          )
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal({'file' => data.to_s}, res.res.files)
+    end
+
+    def test_request_body_post_form_simple
+      record_test('request-bodies-post-form-simple')
+
+      obj = create_simple_object
+
+      res = @sdk.request_bodies.request_body_post_form_simple(request: obj)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      assert_equal('any', res.res.form.any)
+      assert_equal('true', res.res.form.bool)
+      assert_equal('true', res.res.form.bool_opt)
+      assert_equal('2020-01-01', res.res.form.date)
+      assert_equal('2020-01-01T00:00:00.000000001Z', res.res.form.date_time)
+      assert_equal('one', res.res.form.enum)
+      assert_equal('1.1', res.res.form.float32)
+      assert_equal('1', res.res.form.int)
+      assert_equal('1', res.res.form.int32)
+      assert_equal('1.1', res.res.form.num)
+      assert_equal('test', res.res.form.str_)
+      assert_equal('testOptional', res.res.form.str_opt)
+
+    end
+
+    def test_request_body_post_form_deep
+      record_test('request-bodies-post-form-deep')
+
+      obj = create_deep_object
+
+      res = @sdk.request_bodies.request_body_post_form_deep(request: obj)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      assert_equal(::Crystalline.to_json(obj.arr), res.res.form.arr)
+      assert_equal('true', res.res.form.bool)
+      assert_equal('1', res.res.form.int)
+      assert_equal(::Crystalline.to_json(obj.map), res.res.form.map)
+      assert_equal('1.1', res.res.form.num)
+      assert_equal(::Crystalline.to_json(obj.obj), res.res.form.obj)
+      assert_equal('test', res.res.form.str_)
+
+    end
+
+    def test_request_body_post_form_map_primitive
+      record_test('request-bodies-post-form-map-primitive')
+
+      m = {
+        'key1' => 'value1',
+        'key2' => 'value2',
+        'key3' => 'value3',
+      }
+      res = @sdk.request_bodies.request_body_post_form_map_primitive(request: m)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      compare_hashes(m, res.res.form)
+    end
+
+    def test_request_body_put_string
+      record_test('request-bodies-put-string')
+
+      str = 'Hello World'
+      res = @sdk.request_bodies.request_body_put_string(request: str)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(str, res.res.data)
+    end
+
+
+    def test_request_body_put_bytes
+      record_test('request-bodies-put-bytes')
+
+      data = File.open('test/testdata/testUpload.json').read
+
+      res = @sdk.request_bodies.request_body_put_bytes(request: data)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(data.to_s, res.res.data)
+    end
+
+
+    def test_request_body_put_string_with_params
+      record_test('request-bodies-put-string-with-params')
+
+      str = 'Hello World'
+      res = @sdk.request_bodies.request_body_put_string_with_params(request_body: str, query_string_param: 'test param')
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(str, res.res.data)
+      assert_equal('test param', res.res.args.query_string_param)
+    end
+
+
+    def test_request_body_put_bytes_with_params
+      record_test('request-bodies-put-bytes-with-params')
+
+      data = File.open('test/testdata/testUpload.json').read
+
+      res = @sdk.request_bodies.request_body_put_bytes_with_params(request_body: data, query_string_param: 'test param')
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(data.to_s, res.res.data)
+      assert_equal('test param', res.res.args.query_string_param)
+    end
+
+    def test_request_body_post_empty_object
+      record_test('request-bodies-post-empty-object')
+
+      res = @sdk.request_bodies.request_body_post_empty_object(
+        request: Models::Operations::RequestBodyPostEmptyObjectRequestBody.new(
+          empty: Models::Operations::Empty.new,
+          empty_with_empty_properties: Models::Operations::EmptyWithEmptyProperties.new
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+    end
+
+    def test_request_body_read_only_input
+      record_test('request-bodies-read-only-input')
+
+      res = @sdk.request_bodies.request_body_read_only_input(
+        request: Models::Shared::ReadOnlyObjectInput.new
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.read_only_object)
+      assert(res.read_only_object.bool)
+      assert_equal(1.0, res.read_only_object.num)
+      assert_equal('hello', res.read_only_object.string)
+    end
+
+    def test_request_body_write_only_output
+      record_test('request-bodies-write-only-output')
+
+      res = @sdk.request_bodies.request_body_write_only_output(
+        request: Models::Shared::WriteOnlyObject.new(
+          bool: true,
+          num: 1.0,
+          string: 'hello'
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.write_only_object)
+    end
+
+    def test_request_body_write_only
+      record_test('request-bodies-write-only')
+
+      res = @sdk.request_bodies.request_body_write_only(
+        request: Models::Shared::WriteOnlyObject.new(
+          bool: true,
+          num: 1.0,
+          string: 'hello'
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.read_only_object)
+      assert(res.read_only_object.bool)
+      assert_equal(1.0, res.read_only_object.num)
+      assert_equal('hello', res.read_only_object.string)
+    end
+
+    def test_request_body_read_and_write
+      record_test('request-bodies-read-and-write')
+
+      res = @sdk.request_bodies.request_body_read_and_write(
+        request: Models::Shared::ReadWriteObject.new(
+          num1: 1,
+          num2: 2,
+          num3: 4
+        )
+      )
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.read_write_object)
+      assert_equal(4, res.read_write_object.num3)
+      assert_equal(7, res.read_write_object.sum)
+    end
+
+    def test_request_body_post_not_nullable_not_required_string_body
+      record_test('request-bodies-post-not-nullable-not-required-string-body')
+
+      res = @sdk.request_bodies.request_body_post_not_nullable_not_required_string_body(
+        request: nil
+      )
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.object)
+      assert_equal('', res.object.data)
+    end
+
+    def test_request_body_post_nullable_not_required_string_body
+      record_test('request-bodies-post-nullable-not-required-string-body')
+
+      res = @sdk.request_bodies.request_body_post_nullable_not_required_string_body(
+        request: nil
+      )
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.object)
+      assert_equal('null', res.object.data) # TODO: is this the correct assertion value?
+    end
+
+    def test_request_body_post_nullable_required_empty_object
+      tests = [
+        {
+          'name' => 'Required field initialized only',
+          'arg' => Models::Operations::NullableRequiredEmptyObjectPostRequestBody.new(
+            required_obj: Models::Operations::RequiredObj.new
+          ),
+          'want' => '{"NullableRequiredObj":null,"RequiredObj":{}}',
+          'test_id' => 'request-bodies-post-nullable-required-empty-object-nullable-set'
+        },
+        {
+          'name' => 'Optional field initialized only',
+          'arg' => Models::Operations::NullableRequiredEmptyObjectPostRequestBody.new(
+            required_obj: Models::Operations::RequiredObj.new,
+            nullable_optional_obj: Models::Operations::NullableOptionalObj.new
+          ),
+          'want' => '{"NullableOptionalObj":{},"NullableRequiredObj":null,"RequiredObj":{}}',
+          'test_id' => 'request-bodies-post-nullable-required-empty-object-optional-set'
+        },
+        {
+          'name' => 'All fields initialized',
+          'arg' => Models::Operations::NullableRequiredEmptyObjectPostRequestBody.new(
+            required_obj: Models::Operations::RequiredObj.new,
+            nullable_optional_obj: Models::Operations::NullableOptionalObj.new,
+            nullable_required_obj: Models::Operations::NullableRequiredObj.new
+          ),
+          'want' => '{"NullableOptionalObj":{},"NullableRequiredObj":{},"RequiredObj":{}}',
+          'test_id' => 'request-bodies-post-nullable-required-empty-object-all-set'
+        }
+      ]
+
+      @sdk = OpenApiSDK::SDK.new
+      tests.each do |test|
+        if !(!test.key?('test_id') && test['test_id'].empty?)
+          record_test(test['test_id'])
+        end
+
+        req = test['arg']
+
+        res = @sdk.request_bodies.nullable_required_empty_object_post(request: req)
+
+        refute_nil(res)
+        assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+        _, body, = OpenApiSDK::Utils.serialize_request_body(req, true, true, :request, :json)
+        assert_equal(test['want'], body)
+      end
+    end
+
+    def test_request_body_post_nullable_required_string_body
+      record_test('request-bodies-post-nullable-required-string-body')
+
+      res = @sdk.request_bodies.request_body_post_nullable_required_string_body(
+        request: nil
+      )
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.object)
+      assert_equal('null', res.object.data)
+    end
+
+    def test_request_body_post_nullable_required_property
+      tests = [
+        {
+          'name' => 'Empty initializer',
+          'arg' => Models::Operations::NullableRequiredPropertyPostRequestBody.new,
+          'want' => '{"NullableRequiredArray":null,"NullableRequiredBigIntStr":null,"NullableRequiredDateTime":null,"NullableRequiredDecimalStr":null,"NullableRequiredEnum":null,"NullableRequiredInt":null}',
+          'test_id' => 'request-bodies-post-nullable-optional-fields'
+        },
+        {
+          'name' => 'All fields set to null',
+          'arg' => Models::Operations::NullableRequiredPropertyPostRequestBody.new(
+            nullable_optional_int: nil,
+            nullable_required_array: nil,
+            nullable_required_enum: nil,
+            nullable_required_int: nil,
+            nullable_required_date_time: nil,
+            nullable_required_big_int_str: nil,
+            nullable_required_decimal_str: nil
+          ),
+          'want' => '{"NullableRequiredArray":null,"NullableRequiredBigIntStr":null,"NullableRequiredDateTime":null,"NullableRequiredDecimalStr":null,"NullableRequiredEnum":null,"NullableRequiredInt":null}',
+          'test_id' => 'request-bodies-post-nullable-required-property-all-null'
+        },
+        {
+          'name' => 'Optional field initialized',
+          'arg' => Models::Operations::NullableRequiredPropertyPostRequestBody.new(
+            nullable_optional_int: 0
+          ),
+          'want' => '{"NullableOptionalInt":0,"NullableRequiredArray":null,"NullableRequiredBigIntStr":null,"NullableRequiredDateTime":null,"NullableRequiredDecimalStr":null,"NullableRequiredEnum":null,"NullableRequiredInt":null}'
+        },
+        # TODO: need bigint and decimal support
+        # {
+        #   'name' => 'All fields set to non-null value',
+        #   'arg' => Models::Operations::NullableRequiredPropertyPostRequestBody.new(
+        #     nullable_optional_int: 0,
+        #     nullable_required_array: [1.1, 2.2, 3.3],
+        #     nullable_required_enum: Models::Operations::NullableRequiredEnum::Second,
+        #     nullable_required_int: 1,
+        #     nullable_required_date_time: DateTime.parse('2020-01-01T00:00:00.000001Z'),
+        #     nullable_required_big_int_str: Brick::Math::BigInteger.of('9223372036854775807'),
+        #     nullable_required_decimal_str: Brick::Math::BigDecimal.of('3.1415926535897932384626433833')
+        #   ),
+        #   'test_id' => "request-bodies-post-nullable-required-property-all-set"
+        # }
+      ]
+      @sdk = OpenApiSDK::SDK.new
+      tests.each do |test|
+        if test.key?('test_id') && !test['test_id'].empty?
+          record_test(test['test_id'])
+        end
+
+        req = test['arg']
+
+        _, body, __ = OpenApiSDK::Utils.serialize_request_body(req, true, true, :request, :json)
+        assert_equal(test['want'], body)
+
+        res = @sdk.request_bodies.nullable_required_property_post(request: req)
+        refute_nil(res)
+        assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      end
+    end
+
+    def test_required_body_post_nullable_required_shared_object
+      tests = [
+        {
+          'name' => 'Required field set to null',
+          'arg' => Models::Operations::NullableRequiredSharedObjectPostRequestBody.new,
+          'want' => '{"NullableRequiredObj":null}',
+          'test_id' => 'request-bodies-post-nullable-required-shared-object-required-null'
+        },
+        {
+          'name' => 'Both fields set to null',
+          'arg' => Models::Operations::NullableRequiredSharedObjectPostRequestBody.new(
+            nullable_optional_obj: nil,
+            nullable_required_obj: nil
+          ),
+          'want' => '{"NullableRequiredObj":null}',
+          'test_id' => 'request-bodies-post-nullable-required-shared-object-all-null'
+        },
+        {
+          'name' => 'Optional field set to non-null value',
+          'arg' => Models::Operations::NullableRequiredSharedObjectPostRequestBody.new(
+            nullable_optional_obj: Models::Shared::NullableOptionalObject.new(
+              required: 1
+            )
+          ),
+          'want' => '{"NullableOptionalObj":{"required":1},"NullableRequiredObj":null}',
+          'test_id' => 'request-bodies-post-nullable-required-shared-object-optional-non-null'
+        },
+        {
+          'name' => 'Both fields set to non-null value',
+          'arg' => Models::Operations::NullableRequiredSharedObjectPostRequestBody.new(
+            nullable_optional_obj: Models::Shared::NullableOptionalObject.new(
+              required: 1,
+              optional: 'test'
+            ),
+            nullable_required_obj: Models::Shared::NullableObject.new(
+              required: 2
+            )
+          ),
+          'want' => '{"NullableOptionalObj":{"optional":"test","required":1},"NullableRequiredObj":{"required":2}}',
+          'test_id' => 'request-bodies-post-nullable-required-shared-object-all-set'
+        }
+      ]
+      @sdk = OpenApiSDK::SDK.new
+      tests.each do |test|
+        if test.key?('test_id') && !test['test_id'].empty?
+          record_test(test['test_id'])
+        end
+
+        req = test['arg']
+
+        _, body, __ = OpenApiSDK::Utils.serialize_request_body(req, true, true, :request, :json)
+        assert_equal(test['want'], body)
+
+        res = @sdk.request_bodies.nullable_required_shared_object_post(request: req)
+        refute_nil(res)
+        assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      end
+    end
+
+    def test_request_body_default_and_consts
+      record_test('request-bodies-defaults-and-consts')
+
+      req = Models::Shared::DefaultsAndConsts.new(
+        normal_field: 'normal',
+        default_str: 'not default',
+        const_big_int: 9_007_199_254_740_991,
+        const_big_int_str: '9223372036854775807',
+        const_bool: true,
+        const_date: Date.new(2020, 1, 1),
+        const_date_time: DateTime.new(2020, 1, 1, 0, 0, 1 / 1_000_000_000.0),
+        const_decimal: 3.141592653589793,
+        const_decimal_str: '3.141592653589793238462643383279',
+        const_enum_int: Models::Shared::ConstEnumInt::TWO,
+        const_enum_str: Models::Shared::ConstEnumStr::TWO,
+        const_int: 123,
+        const_num: 123.456,
+        const_str: 'const',
+        const_str_backticks: 'const with `backticks`',
+        const_str_brackets: 'const with ${<brackets>}',
+        const_str_d_quotes: 'const with "double quotes"',
+        const_str_null: nil,
+        const_str_s_quotes: 'const with \'single quotes\''
+      )
+      res = @sdk.request_bodies.request_body_post_defaults_and_consts(request: req)
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.object)
+      assert_equal('normal', res.object.json.normal_field)
+      assert_equal(9_007_199_254_740_991, res.object.json.const_big_int)
+      # assert_equal(9_223_372_036_854_775_807, res.object.json.const_big_int_str) TODO: requires bigint support
+      assert(res.object.json.const_bool)
+      assert_equal(Date.new(2020, 1, 1), res.object.json.const_date)
+      assert_in_delta(DateTime.new(2020, 1, 1, 0, 0, 1 / 1_000_000_000.0), res.object.json.const_date_time, 1)
+      assert_equal(3.141592653589793, res.object.json.const_decimal)
+      # assert_equal(3.141592653589793238462643383279, res.object.json.const_decimal_str) TODO: requires decimal support
+      assert_equal(Models::Shared::ConstEnumInt::TWO, res.object.json.const_enum_int)
+      assert_equal(Models::Shared::ConstEnumStr::TWO, res.object.json.const_enum_str)
+      assert_equal(123, res.object.json.const_int)
+      assert_equal(123.456, res.object.json.const_num)
+      assert_nil(res.object.json.const_str_null)
+
+      assert_equal(9_007_199_254_740_991, res.object.json.default_big_int)
+      # assert_equal(9_223_372_036_854_775_807, res.object.json.default_big_int_str) TODO: requires bigint support
+      assert(res.object.json.default_bool)
+      assert_equal(Date.new(2020, 1, 1), res.object.json.default_date)
+      assert_in_delta(DateTime.new(2020, 1, 1, 0, 0, 1 / 1_000_000_000.0), res.object.json.default_date_time, 1)
+      assert_equal(3.141592653589793, res.object.json.default_decimal)
+      # assert_equal(3.141592653589793238462643383279, res.object.json.default_decimal_str) TODO: requires decimal support
+      assert_equal(Models::Shared::DefaultEnumInt::TWO, res.object.json.default_enum_int)
+      assert_equal(Models::Shared::DefaultEnumStr::TWO, res.object.json.default_enum_str)
+      assert_equal(123, res.object.json.default_int)
+      assert_equal(123.456, res.object.json.default_num)
+      assert_equal('not default', res.object.json.default_str)
+      assert_nil(res.object.json.default_str_nullable)
+      assert_equal('default', res.object.json.default_str_optional)
+    end
+
+    def test_request_body_post_default_empty_string
+      record_test('request-bodies-default-empty-string')
+
+      res = @sdk.request_bodies.request_body_post_default_empty_string(request: Models::Operations::RequestBodyPostDefaultEmptyStringRequestBody.new(
+        optional_string: ''
+      ))
+
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.object)
+      assert_equal('', res.object.json.optional_string)
+    end
+
+    def test_request_body_put_multipart_files_array
+      record_test('request-bodies-post-multipart-files-array')
+
+      # Load test file content
+      data = File.open('test/testdata/testUpload.json').read
+
+      # Create SDK instance with specific server URL (matching Go test)
+      sdk = OpenApiSDK::SDK.new(
+        server_url: CommonHelpers.api_test_service_url
+      )
+
+      # Create request with array of files
+      res = sdk.request_bodies.request_body_put_multipart_files_array(
+        request: Models::Operations::RequestBodyPutMultipartFilesArrayRequestBody.new(
+          files: [
+            Models::Operations::Files.new(
+              content: data,
+              file_name: 'testUpload.json'
+            ),
+            Models::Operations::Files.new(
+              content: data,
+              file_name: 'some-other-name.json'
+            )
+          ]
+        )
+      )
+
+      # Assertions
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+
+      # Verify response structure
+      assert_equal(2, res.res.files.length)
+
+      # Verify first file
+      first_file = res.res.files[0]
+      assert_equal('ewogICJzb21lIjogImpzb24iLAogICJ0byI6ICJiZSIsCiAgInVwbG9hZGVkIjogImluIiwKICAiYSI6ICJmaWxlIgp9Cg==', first_file.content)
+      assert_equal('application/octet-stream', first_file.content_type)
+      assert_equal({{if eq .Global.Config.MultipartArrayFormat "legacy"}}"files[]"{{else}}'files'{{end}}, first_file.field_name)
+      assert_equal('testUpload.json', first_file.filename)
+      assert_equal(70, first_file.size)
+
+      # Verify second file
+      second_file = res.res.files[1]
+      assert_equal('ewogICJzb21lIjogImpzb24iLAogICJ0byI6ICJiZSIsCiAgInVwbG9hZGVkIjogImluIiwKICAiYSI6ICJmaWxlIgp9Cg==', second_file.content)
+      assert_equal({{if eq .Global.Config.MultipartArrayFormat "legacy"}}"files[]"{{else}}'files'{{end}}, second_file.field_name)
+      assert_equal('application/octet-stream', second_file.content_type)
+      assert_equal('some-other-name.json', second_file.filename)
+      assert_equal(70, second_file.size)
+
+      # Verify form fields
+      assert_empty(res.res.form_fields)
+    end
+  end
+end

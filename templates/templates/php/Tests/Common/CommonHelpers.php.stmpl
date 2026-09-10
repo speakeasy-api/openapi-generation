@@ -1,0 +1,154 @@
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}}\Tests;
+
+use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+
+//fwrite(STDERR, print_r($metadata, TRUE));
+
+class CommonHelpers
+{
+    // Test service URLs - read from environment with defaults for local development
+    public const HTTPBIN_PORT = 'HTTPBIN_PORT';
+    public const API_TEST_SERVICE_PORT = 'API_TEST_SERVICE_PORT';
+
+    public static function getHttpBinPort(): string
+    {
+        return getenv(self::HTTPBIN_PORT) ?: '35123';
+    }
+
+    public static function getApiTestServicePort(): string
+    {
+        return getenv(self::API_TEST_SERVICE_PORT) ?: '35456';
+    }
+
+    public static function getHttpBinUrl(): string
+    {
+        return 'http://localhost:' . self::getHttpBinPort();
+    }
+
+    public static function getApiTestServiceUrl(): string
+    {
+        return 'http://localhost:' . self::getApiTestServicePort();
+    }
+
+    public static function recordTest(string $id): void
+    {
+        file_put_contents('test-php-record.txt', $id."\n", FILE_APPEND | LOCK_EX);
+    }
+
+    public static function sanitizeQueryParameters(string $url): string
+    {
+        return CommonHelpers::sanitizeTimestamp(CommonHelpers::sortQueryParameters($url));
+    }
+
+    public static function sortQueryParameters(string $url): string
+    {
+        $parts = explode('?', $url);
+
+        if (count($parts) == 1) {
+            return $url;
+        }
+
+        $query = $parts[1];
+        $params = explode('&', $query);
+
+        usort($params, function ($a, $b) {
+            $one = explode('=', $a)[0];
+            $two = explode('=', $b)[0];
+
+            if ($one == $two) {
+                return explode('=', $a)[1] < explode('=', $b)[1] ? -1 : 1;
+            }
+
+            return ($one < $two) ? -1 : 1;
+        });
+
+        return $parts[0].'?'.implode('&', $params);
+    }
+
+    public static function sanitizeTimestamp(string $timestamp): string
+    {
+        return preg_replace_callback(
+            '/(\d{4}-\d{2}-\d{2}T\d{2}.*?\d{2}.*?\d{2}\.*\d*\+\d*:\d*)/',
+            function ($matches) {
+                return CommonHelpers::truncateTimestamp($matches[1]);
+            },
+            $timestamp,
+        );
+    }
+
+    public static function truncateTimestamp(string $timestamp): string
+    {
+        return preg_replace_callback(
+            '/(.*?)\.\d*\+\d*:\d*/',
+            function ($matches) {
+                return $matches[1];
+            },
+            $timestamp,
+        );
+    }
+
+    public static function randSequence(int $length): string
+    {
+        $chars = str_split("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        $randKeys = array_rand($chars, $length);
+        return implode('', array_intersect_key($chars, $randKeys));
+    }
+}
+
+class RequestLogEntry
+{
+    public ?string $requestUri = null;
+    public ?string $requestBody = null;
+    public int $statusCode = 200;
+
+    public function __construct(?string $requestUri = null, ?string $requestBody = null, int $statusCode = 200)
+    {
+        $this->requestUri = $requestUri;
+        $this->requestBody = $requestBody;
+        $this->statusCode = $statusCode;
+    }
+}
+
+class RequestRecorderMiddleware
+{
+    /** @var RequestLogEntry[] */
+    private array $log;
+
+    /** @param RequestLogEntry[] $log */
+    public function __construct(array &$log)
+    {
+        $this->log = &$log;
+    }
+
+    public function __invoke(callable $handler): callable
+    {
+        return function (RequestInterface $request, array $options) use ($handler) {
+            $requestBody = (string) $request->getBody();
+
+            return $handler($request, $options)->then(
+                function (ResponseInterface $response) use ($request, $requestBody) {
+                    $this->log[] = new RequestLogEntry(
+                        requestUri: (string) $request->getUri(),
+                        requestBody: $requestBody,
+                        statusCode: $response->getStatusCode()
+                    );
+                    return $response;
+                }
+            );
+        };
+    }
+}
+
+function createRequestRecorderClient(array &$log): Client
+{
+    $middleware = new RequestRecorderMiddleware($log);
+    $handlerStack = HandlerStack::create();
+    $handlerStack->push($middleware, 'request_recorder');
+
+    return new Client(['handler' => $handlerStack]);
+}

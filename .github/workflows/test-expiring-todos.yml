@@ -1,0 +1,93 @@
+name: TODO Date Checker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  check-todo-dates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Find TODOs and Validate Dates
+        id: todo-check
+        run: |
+          #!/bin/bash
+
+          set -e  # Exit immediately if a command exits with a non-zero status
+          set -u  # Treat unset variables as an error
+          set -o pipefail  # Prevent errors in a pipeline from being masked
+
+          echo "----- TODO Date Checker Started -----"
+
+          # Get current date in YYYY-MM-DD format
+          CURRENT_DATE=$(date +%Y-%m-%d)
+          echo "Current Date: $CURRENT_DATE"
+
+          # Initialize failure flag
+          FAIL=0
+
+          # Define TODO regex pattern
+          TODO_REGEX='TODO \[([0-9]{4}-[0-9]{2}-[0-9]{2})\]:'
+
+          echo "Searching for TODOs matching pattern: $TODO_REGEX"
+
+          # Search all source files (e.g., .js, .ts, .py, etc.)
+          # Adjust the file extensions as needed
+          FILES=$(git grep -l -E "TODO \[[0-9]{4}-[0-9]{2}-[0-9]{2}\]:" || true)
+
+          echo "Files found with TODOs:"
+          echo "$FILES"
+
+          if [ -z "$FILES" ]; then
+            echo "No TODOs with dates found."
+            echo "----- TODO Date Checker Completed Successfully -----"
+            exit 0
+          fi
+
+          for FILE in $FILES; do
+            echo "----------------------------------------"
+            echo "Checking file: $FILE"
+
+            LINE_NUMBER=0
+            while IFS= read -r LINE; do
+              LINE_NUMBER=$((LINE_NUMBER + 1))
+              if [[ $LINE =~ $TODO_REGEX ]]; then
+                TODO_DATE="${BASH_REMATCH[1]}"
+                echo "Found TODO with date: $TODO_DATE in $FILE at line $LINE_NUMBER"
+
+                # Compare dates
+                if [[ "$CURRENT_DATE" > "$TODO_DATE" ]]; then
+                  echo "::error::TODO in $FILE at line $LINE_NUMBER has an expired date: $TODO_DATE"
+                  FAIL=1
+                fi
+              else
+                echo "No date found in this line."
+              fi
+            done < "$FILE"
+          done
+
+          echo "----------------------------------------"
+          if [ "$FAIL" -eq 1 ]; then
+            echo "One or more TODO dates have expired."
+            echo "----- TODO Date Checker Completed with Errors -----"
+            exit 1
+          else
+            echo "All TODO dates are valid."
+            echo "----- TODO Date Checker Completed Successfully -----"
+            exit 0
+          fi
+
+      - name: Fail if TODOs are expired
+        if: steps.todo-check.outcome == 'failure'
+        run: |
+          echo "Workflow failed due to expired TODO dates."
+          exit 1

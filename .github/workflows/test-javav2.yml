@@ -1,0 +1,80 @@
+name: Test Java V2
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: false
+        default: "javav2"
+        type: string
+      test-group:
+        required: true
+        type: string
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  setup-matrix:
+    runs-on: ubicloud-standard-2
+    outputs:
+      java_versions: ${{ steps.compute.outputs.java_versions }}
+    steps:
+      - name: Compute Java version matrix
+        id: compute
+        shell: bash
+        # Spring Boot test groups only run on Java 17 (skip Java 11). The matrix
+        # context is not available in a job-level `if`, so the version list is
+        # computed here and consumed via fromJSON below.
+        run: |
+          if [ "${{ inputs.test-group }}" = "review" ] || [ "${{ inputs.test-group }}" = "security-options" ]; then
+            echo 'java_versions=["17"]' >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.test-group }}" = "tertiary" ]; then
+            # tertiary is the languageVersion: 8 variant. Compile it with a real
+            # JDK 8 compiler to catch Java-11 artifacts leaking into a java8 SDK
+            # (javac 11/17 read major-55 class files fine, so they miss this).
+            echo 'java_versions=["8","11","17"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'java_versions=["11","17"]' >> "$GITHUB_OUTPUT"
+          fi
+  test-javav2:
+    needs: [setup-matrix]
+    strategy:
+      fail-fast: false
+      matrix:
+        java_version: ${{ fromJSON(needs.setup-matrix.outputs.java_versions) }}
+    timeout-minutes: 15
+    name: Test Java V2 - ${{ inputs.test-group }} - ${{ matrix.java_version }}
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: "corretto"
+          java-version: ${{ matrix.java_version }}
+      - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+        with:
+          gradle-version: ${{ (matrix.java_version == '8' || matrix.java_version == '11') && '8.14' || 'current' }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+            services/**/go.sum
+      - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: TARGET=${{ inputs.test-group }} make test-${{ inputs.target }}
+      - name: git diff
+        run: ./scripts/check-generated-diff.sh
+      - name: Upload test report
+        if: inputs.test-group != 'review' && (matrix.java_version == '11' || (inputs.test-group == 'security-options' && matrix.java_version == '17'))
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-javav2-${{ inputs.test-group }}-test-report
+          path: ./testSDKs/sdk-javav2-${{ inputs.test-group }}/**/test-javav2-record.txt
+          if-no-files-found: error

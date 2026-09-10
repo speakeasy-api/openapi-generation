@@ -1,0 +1,28 @@
+# This overlay setups the tertiary SDK which is mainly trying to test the outcome when no security or server variables are defined
+# When no global security is defined and `auth.hoistGlobalSecurity=false` is set in all targets so no operation security will get hoisted to the global level.
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/tertiary.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with simple servers
+  - target: $["servers"]
+    update:
+      - url: http://localhost:35123
+        description: The default server.
+      - url: http://broken
+        description: A server url to a non-existent server.
+  # Remove global security as we want to test an SDK with no security at all
+  - target: $["security"]
+    remove: true
+  # Delete the testHooks operation as the hook required for it is only added in the primary test
+  # TODO: should we look at always adding all the hooks?
+  - target: $.paths.*.*[?(@.operationId == 'testHooks')]
+    remove: true
+  - target: $["x-speakeasy-webhooks.security"]
+    update:
+      signatureTextEncoding: hex

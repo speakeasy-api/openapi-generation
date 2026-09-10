@@ -1,0 +1,60 @@
+{{- $sdk := .Global.AST.MainSDK }}
+{{- if $sdk.Servers}}
+  {{- $also := "" }}
+  {{- $setter := .Local.ServerVariableSetter }}
+  {{- $withSetter := not (eq $setter "parameter") }}
+  {{- $withServerSelection := true }}
+  {{- $variables := $sdk.Servers.GetVariables }}
+  {{- if $sdk.Servers.ServerMap -}}
+### Select Server by Name
+
+You can override the default server globally {{if $withSetter}}using the `{{.Local.ServerByName}}` {{$setter}}{{else}}by passing a server name to the `{{.Local.ServerByName}}` optional parameter{{end}} when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the names associated with the available servers:
+
+{{ templateServersTable $sdk }}
+
+    {{- if $variables }}
+
+If the selected server has variables, you may override its default values {{if not $withSetter}}through the additional parameters made available in the SDK constructor{{else}}using the associated {{$setter}}(s){{end}}:
+
+{{ templateServerVariablesTable $sdk }}
+    {{- end }}
+
+{{ templateUsageSection "server" "#### Example" "server_selection" true true }}{{ $also = "also "}}
+  {{- else if gt (len $sdk.Servers.Servers) 1 }}
+### Select Server by Index
+
+You can override the default server globally {{if $withSetter}}using the `{{.Local.ServerByIndex}}` {{$setter}}{{else}}by passing a server index to the `{{.Local.ServerByIndex}}` optional parameter{{end}} when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the indexes associated with the available servers:
+
+{{ templateServersTable $sdk }}
+
+    {{- if $variables }}
+
+If the selected server has variables, you may override its default values {{if not $withSetter}}through the additional parameters made available in the SDK constructor{{else}}using the associated {{$setter}}(s){{end}}:
+
+{{ templateServerVariablesTable $sdk }}
+    {{- end }}
+
+{{ templateUsageSection "server" "#### Example" "server_selection" true true }}{{ $also = "also "}}
+  {{- else if $variables }}
+### Server Variables
+
+The default server `{{$sdk.Servers.GetDefaultURL false}}` contains variables and is set to `{{$sdk.Servers.GetDefaultURL true}}` by default. To override default values, the following {{if not $withSetter}}parameter{{else}}{{$setter}}{{end}}s are available when initializing the SDK client instance:
+
+{{ templateServerVariablesTable $sdk }}
+
+{{ templateUsageSection "server" "#### Example" "server_selection" true true }}
+  {{- end }}
+
+### Override Server URL Per-Client
+
+The default server can {{$also}}be overridden globally {{if $withSetter}}using the `{{.Local.ServerByUrl}}` {{$setter}}{{else}}by passing a URL to the `{{.Local.ServerByUrl}}` optional parameter{{end}} when initializing the SDK client instance. For example:
+{{ templateUsageSection "server" "" "server_url" true }}
+  {{- $opServerUrlSection := templateUsageSection "server" "" "server_url" false }}
+  {{- if not (eq $opServerUrlSection "") }}
+
+### Override Server URL Per-Operation
+
+The server URL can also be overridden on a per-operation basis, provided a server list was specified for the operation. For example:
+{{ $opServerUrlSection }}
+  {{- end }}
+{{- end }}

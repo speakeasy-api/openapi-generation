@@ -1,0 +1,11 @@
+{{- $namespace := getScopeNamespace "hooks" true}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+use Psr\Http\Message\ResponseInterface;
+
+interface AfterSuccessHook
+{
+    public function afterSuccess(AfterSuccessContext $context, ResponseInterface $response): ResponseInterface;
+}

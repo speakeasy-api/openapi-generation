@@ -1,0 +1,25 @@
+{{- $renderAsync := false}}
+{{- $usageCtx := .Local -}}
+{{- $op := $usageCtx.Operation -}}
+
+{{- /* Mode Detection Logic */ -}}
+{{- $mode := "default" -}}
+{{- $pagination := getPaginationMetadata $op -}}
+{{- $paginationScope := (and (gt (len $usageCtx.Scopes) 0) (eq (index $usageCtx.Scopes 0).OpFilter "pagination")) -}}
+
+{{- if and $pagination (not $usageCtx.Test) -}}
+    {{- $mode = "pagination" -}}
+{{- else if and $op (operationUsesEventStreams $op) -}}
+    {{- $mode = "eventstream" -}}
+{{- else if and $op (operationUsesJsonLStreams $op) -}}
+    {{- $mode = "jsonl" -}}
+{{- else if and $op (operationHasFileUpload $op) -}}
+    {{- $mode = "file-upload" -}}
+{{- else if and $op (operationHasResponseStream $op) -}}
+    {{- $mode = "file-download" -}}
+{{- end -}}
+
+{{- /* Create context for mode templates */ -}}
+{{- $modeContext := dict "Context" $usageCtx "Async" $usageCtx.AsyncMode "Mode" $mode "Pagination" $pagination "PaginationScope" $paginationScope -}}
+
+{{templateString "usage/block.stmpl" $modeContext}}

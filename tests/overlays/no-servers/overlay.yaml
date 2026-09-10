@@ -1,0 +1,13 @@
+# This overlay adds operation-level servers to the no-servers spec to test the
+# scenario where serverURL should be optional because operations have their own servers.
+overlay: 1.0.0
+info:
+  title: Add operation-level servers to no-servers spec
+  version: 0.0.0
+  x-base-spec: ./tests/specs/no-servers.yaml
+actions:
+  - target: $.paths["/objects"].get
+    update:
+      servers:
+        - url: http://localhost:35123
+          description: Operation-level server

@@ -1,0 +1,53 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    labels:
+      - dependencies
+      - github_actions
+      - skip changelog
+      - skip linear
+    commit-message:
+      prefix: chore
+    directories:
+      - "/"
+    groups:
+      # Group minor and patch updates for less toil
+      github-actions-minor-and-patch:
+        applies-to: version-updates
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
+    labels:
+      - dependencies
+      - go
+      - skip changelog
+      - skip linear
+    commit-message:
+      prefix: chore
+    directories:
+      - "/"
+      # Keep every maintained Go module in the same dependency update PR so
+      # their module graphs can be tidied together.
+      - "/cmd/wasm"
+      - "/cmd/wasm/ast"
+      - "/cmd/wasm/full-stack"
+      - "/cmd/wasm/overlay"
+      - "/services/speakeasy-api-test-service"
+    groups:
+      # Group speakeasy updates as they may be co-dependent.
+      gomod-speakeasy:
+        applies-to: version-updates
+        patterns:
+          - "github.com/speakeasy-api/*"
+      # Group other minor and patch updates for less toil
+      gomod-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    schedule:
+      interval: daily

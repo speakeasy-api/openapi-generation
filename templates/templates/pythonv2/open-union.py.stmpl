@@ -1,0 +1,19 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{- $suffixForTypes := "" -}}
+{{- if isUnionOfErrors $type }}{{ $suffixForTypes = "Data" }}{{ end -}}
+{{- openUnionAddImports $type $usageLocation $local $suffixForTypes -}}
+
+class {{openUnionUnknownClassName $type}}(BaseModel):
+    r"""A {{sanitizeClassName $type.Name}} variant the SDK doesn't recognize. Preserves the raw payload."""
+    {{openUnionDiscriminatorFieldName $type}}: Literal["{{openUnionUnknownDiscriminatorValue $type}}"] = "{{openUnionUnknownDiscriminatorValue $type}}"
+    raw: Any
+    is_unknown: Literal[True] = True
+
+    model_config = ConfigDict(frozen=True)
+
+
+{{openUnionVariantsDictName $type}}: dict[str, Any] = {
+{{openUnionVariantEntries $type $usageLocation $local $suffixForTypes}}
+}

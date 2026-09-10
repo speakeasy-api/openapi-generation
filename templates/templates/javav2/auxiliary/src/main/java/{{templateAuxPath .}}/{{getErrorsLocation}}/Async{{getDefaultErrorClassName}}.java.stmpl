@@ -1,0 +1,30 @@
+{{- $className := (print "Async" getDefaultErrorClassName) -}}
+package {{getErrorsPackage}};
+
+import jakarta.annotation.Nullable;
+import {{javaHttpResponseFqn}};
+import {{templatePackageName}}.utils.Blob;
+
+/**
+ * Thrown by an async service call when an error response occurs. Contains details about the response.
+ * This is an unchecked exception suitable for use in CompletableFuture chains.
+ */
+@SuppressWarnings("serial")
+public class {{$className}} extends {{getBaseErrorClassName}} {
+
+    public {{$className}}(
+            String message,
+            int code,
+            @Nullable byte[] body,
+            HttpResponse<Blob> rawResponse,
+            @Nullable Throwable cause) {
+        super(message, code, body, rawResponse, cause);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public HttpResponse<Blob> rawResponse() {
+        return (HttpResponse<Blob>) super.rawResponse();
+    }
+
+}

@@ -1,0 +1,33 @@
+{{- recurse 1 -}}
+{{- if isLaxMode }}
+{{genImports}}
+{{- addZodPackageImport }}
+import { defaultToZeroValue } from "./{{ getDefaultToZeroValueFileName }}.js";
+import { unrecognized } from "./{{ getUnrecognizedFileName }}.js";
+
+{{templateSmartString}}
+
+{{templateSmartBoolean}}
+
+{{templateSmartNumber}}
+
+{{- if isFeatureUsed "bigint"}}
+
+{{templateSmartBigint}}
+{{- end}}
+
+{{templateSmartDate}}
+
+{{templateSmartLiteral}}
+
+{{- if isFeatureUsed "bigint"}}
+
+{{templateSmartLiteralBigInt}}
+{{- end}}
+
+{{templateSmartOptional}}
+
+{{templateSmartNullable}}
+
+{{templateZodDefaultToZeroValue}}
+{{- end}}

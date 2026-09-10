@@ -1,0 +1,31 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test -}}
+{{- $workflow := $test.Workflow -}}
+{{- if $test.Incomplete}}
+    def test_{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}
+      skip '{{templateTestIncompleteMessage $test.Incomplete}}'
+    end
+{{- else}}
+    def test_{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}
+{{- templateTestID $test}}
+{{- templateTestEnvVars $test}}
+      test_http_client = create_test_http_client('{{$test.Name}}')
+{{- if $workflow}}
+{{range $idx, $step := $workflow.Steps}}
+{{- if eq $step.Type "operation"}}
+{{templateString "usage/init.stmpl" $step.UsageContext | indentPresent 6}}
+      refute_nil(s)
+
+{{templateString "usage/call.stmpl" $step.UsageContext | indentPresent 6}}
+{{- if operationHasResponseBody $step.UsageContext}}
+      refute_nil({{getResponseVariableName $step.UsageContext.StepID}})
+{{templateAssertions $step.UsageContext | indentPresent 6}}
+{{- else}}
+      _ = {{getResponseVariableName $step.UsageContext.StepID}}
+{{- end}}
+{{- else}}
+{{templateWorkflow $workflow $step | indentPresent 6}}
+{{- end}}{{- end}}
+{{- end}}
+    end
+{{- end}}

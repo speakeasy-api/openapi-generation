@@ -1,0 +1,27 @@
+{{typedDirective}}
+# frozen_string_literal: true
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  module SDKHooks
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $className := getOAuth2ScopeClassName $schemeKey}}
+    {{- $dedupNames := getDeduplicatedScopeEnumNames $config.AvailableScopes}}
+
+{{templateComments $config.Comments $className 2 "class"}}
+    class {{$className}}{{if sorbetEnabled}} < T::Enum{{end}}
+{{if not sorbetEnabled}}      include ::Crystalline::Enum{{end}}
+      enums do
+    {{- range $i, $scope := $config.AvailableScopes }}
+      {{- $enumName := index $dedupNames $i}}
+      {{- if gt $i 0}}{{"\n"}}{{end}}
+{{templateComments $scope.Comments $enumName 4 "field"}}
+        {{$enumName}} = new('{{$scope.Name}}')
+    {{- end}}
+      end
+    end
+  {{- end}}
+{{- end}}
+  end
+end

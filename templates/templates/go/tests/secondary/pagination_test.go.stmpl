@@ -1,0 +1,58 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPaginationLimitOffsetPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params-flat")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	var page int64 = 1
+	res, err := s.Pagination.PaginationLimitOffsetPageParams(context.Background(), page)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.NotNil(t, res.Result)
+	assert.Equal(t, serverLimit, len(res.Result.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 0, len(nextRes.Result.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetUnionOutputPageParamsFlat(t *testing.T) {
+	recordTest("pagination-limit-offset-union-output-page-params-flat")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	res, err := s.Pagination.PaginationLimitOffsetUnionOutputPageParams(
+		context.Background(),
+		sdk.Int64(0),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.NotNil(t, res.Result.ResultObject)
+	assert.Equal(t, serverLimit, len(res.Result.ResultObject.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.NotNil(t, nextRes.Result.ResultObject)
+	assert.Equal(t, 20, len(nextRes.Result.ResultObject.ResultArray))
+}

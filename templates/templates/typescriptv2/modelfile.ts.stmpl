@@ -1,0 +1,56 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $modelName := .Local.Name -}}
+{{genImports}}
+{{"\n"}}
+{{- if .Local.Servers}}
+{{- if .Local.Servers.ServerMap}}
+{{- range .Local.Servers.Servers}}
+{{- templateComments .Comments $dg (templateConstName .ID (print (sanitizeFieldName $modelName) "Server")) 0 "const"}}
+export const {{templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}} = "{{ .ID }}";
+{{- end}}
+
+export const {{templateConstName $modelName ""}}ServerList = {
+  {{- range .Local.Servers.Servers}}
+  [{{templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}}]: "{{ .URL }}",
+  {{- end}}
+};
+{{- else}}
+{{- $constName := (print (templateConstName $modelName "") "ServerList")}}
+export const {{$constName}} = [
+  {{- range .Local.Servers.Servers}}
+{{- templateComments .Comments $dg (print $constName "[" .URL "]") 1 "var"}}
+  "{{ .URL }}",
+  {{- end}}
+] as const;
+{{- end}}
+{{- end}}
+
+{{- range .Local.Types }}
+{{-   $dgt := getDocGroupedType . $dg -}}
+{{"\n"}}
+{{-   if eq .Type "enum" }}
+{{-      templateString "enum.ts.stmpl" $dgt }}
+{{-   else if eq .Type "union" }}
+{{-      templateString "union.ts.stmpl" $dgt }}
+{{-   else if eq .Type "error" }}
+{{-      templateString "error.ts.stmpl" $dgt }}
+{{-   else }}
+{{-      templateString "model.ts.stmpl" $dgt }}
+{{-   end }}
+{{- end }}
+
+{{- if gt (len .Local.Types) 0 }}{{"\n"}}{{ end }}
+{{- range .Local.Types}}
+{{-   $dgt := getDocGroupedType . $dg -}}
+{{"\n"}}
+{{-   if eq .Type "enum" }}
+{{-      templateString "zod-enum.ts.stmpl" $dgt }}
+{{-   else if eq .Type "union" }}
+{{-      templateString "zod-union.ts.stmpl" $dgt }}
+{{-   else if eq .Type "error" -}}
+{{-     templateString "zod-error.ts.stmpl" $dgt -}}
+{{-   else if eq .Type "class" -}}
+{{-     templateString "zod-model.ts.stmpl" $dgt -}}
+{{-   end -}}
+{{- end -}}

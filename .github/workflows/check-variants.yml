@@ -1,0 +1,21 @@
+name: Check Variants
+on:
+  workflow_call:
+    inputs:
+      needs-json:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure every selected test variant completed successfully
+        env:
+          NEEDS_JSON: ${{ inputs.needs-json }}
+        run: |
+          if jq -e 'any(.[]; .result != "success")' <<< "$NEEDS_JSON" > /dev/null; then
+            echo "::error::One or more selected variants did not succeed:"
+            jq -r 'to_entries[] | select(.value.result != "success") | "  - \(.key): \(.value.result)"' <<< "$NEEDS_JSON"
+            exit 1
+          fi

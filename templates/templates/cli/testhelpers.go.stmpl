@@ -1,0 +1,10 @@
+{{- recurse 1 -}}
+{{- addImport "testing" -}}
+{{- addImport "github.com/stretchr/testify/require" -}}
+package tests
+
+{{genImports}}
+
+{{range .Local.Helpers}}
+{{templateString "testhelper.go.stmpl" .}}
+{{end}}

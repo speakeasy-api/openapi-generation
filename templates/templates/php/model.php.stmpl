@@ -1,0 +1,66 @@
+{{- recurse 1 -}}
+{{- $type := .Local.Type}}
+{{- $sortedFields := sortFields $type.Fields}}
+{{- $class := (sanitizeClass $type $type.OutputLocation true)}}
+{{getModelImports .Local}}
+{{- if $type.Comments}}
+{{templateClassComments $type.Comments $class (getModelNamespace $type.OutputLocation) 0}}
+{{- end}}
+class {{$class}}
+{
+{{- range $sortedFields}}
+  {{- if needsFieldComments .Comments .}}
+{{templateFieldComments .Comments . $type.OutputLocation 1}}
+  {{- end}}
+{{ templateModelField . $type.OutputLocation | indentPresent 4}}
+{{end}}{{/* end range $sortedFields */}}
+{{- $pagination := .Local.Type.Extensions.Pagination }}
+{{- if $pagination }}
+    /**
+     * @var \Closure(string): ?{{sanitizeClass $type $type.OutputLocation true}} $next
+     */
+    public \Closure $next;
+{{- end }}
+{{templateModelConstructorComments $type | indentPresent 4}}
+    public function __construct({{templateModelConstructorArgs $type}})
+    {
+        {{- range $sortedFields}}
+        {{- if and (not .Optional) (not .Nullable)}}
+        $this->{{sanitizeFieldName .Name}} = ${{sanitizeFieldName .Name}};
+        {{- else}}
+        $this->{{sanitizeFieldName .Name}} = ${{sanitizeFieldName .Name}};
+        {{- end}}
+        {{- end}}
+    }
+{{- range $sortedFields}}
+  {{- if and (or (eq .Type.Type "bigint") (eq .Type.Type "decimal")) (eq .Type.Format "string") }}
+    public function {{sanitizeFieldName .Name}}Accessor(): ?string
+    {
+        if ($this->{{sanitizeFieldName .Name}} != null) {
+        {{- if eq .Type.Type "bigint"}}
+            return $this->{{sanitizeFieldName .Name}}->toBase(10);
+        {{- else}}{{/* decimal */}}
+            return $this->{{sanitizeFieldName .Name}}->__toString();
+        {{- end}}
+        }
+
+        return null;
+    }
+  {{- end}}
+{{- end}}
+{{- if $pagination }}
+    /**
+     * @param  string  $name
+     * @param  array<mixed>  $args
+     * @return ?{{sanitizeClass $type $type.OutputLocation true}}
+     */
+    public function __call($name, $args): ?{{sanitizeClass $type $type.OutputLocation true}}
+    {
+        if ($name === 'next') {
+            return call_user_func_array($this->next, $args);
+        }
+
+        return null;
+    }
+{{- end }}
+}

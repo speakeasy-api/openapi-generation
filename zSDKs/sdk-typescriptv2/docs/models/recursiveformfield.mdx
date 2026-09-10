@@ -1,0 +1,40 @@
+---
+title: "RecursiveFormField"
+---
+
+A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items.
+
+
+## Supported Types
+
+### `models.RecursiveFormFieldText`
+
+```typescript
+const value: models.RecursiveFormFieldText = {
+  type: "text",
+  label: "<value>",
+};
+```
+
+### `models.RecursiveFormFieldNumber`
+
+```typescript
+const value: models.RecursiveFormFieldNumber = {
+  type: "number",
+  label: "<value>",
+};
+```
+
+### `models.RecursiveFormFieldArray`
+
+```typescript
+const value: models.RecursiveFormFieldArray = {
+  type: "array",
+  label: "<value>",
+  itemType: {
+    type: "number",
+    label: "<value>",
+  },
+};
+```
+

@@ -1,0 +1,29 @@
+{{- if isFeatureUsed "jsonlResponses"}}
+package {{templatePackageName}}.utils;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+public class JsonLStreamReader implements AutoCloseable {
+    private static final int BUFFER_SIZE = 8192;
+    private final BufferedReader reader;
+
+    public JsonLStreamReader(InputStream in) {
+        this.reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8), BUFFER_SIZE);
+    }
+
+    public Optional<String> readLine() throws IOException {
+        String line = reader.readLine();
+        return Optional.ofNullable(line);
+    }
+
+    @Override
+    public void close() throws IOException {
+        reader.close();
+    }
+}
+{{end}}

@@ -1,0 +1,1214 @@
+{{- recurse 1 -}}
+{{- $java8 := isJava8 -}}
+{{- $okHttp := useOkHttp -}}
+{{- if hasAttemptCountRetries -}}
+{{- $sdk := .Local.SDK -}}
+{{- $op := .Local.Operation -}}
+{{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent) -}}
+{{- $responses := $op.Response.Responses -}}
+{{- $defaultError := (printf "%s.%s" getErrorsPackage getDefaultErrorClassName) -}}
+{{- $reqParam := getRequestParameter $op -}}
+{{- $defaultAsyncError := (printf "%s.Async%s" getErrorsPackage getDefaultErrorClassName) -}}
+{{- $asyncReqParam := getRequestParameter $op true -}}
+{{- $resType := $op.Response.Type -}}
+{{- $className := templateOperationSimpleClassName $op -}}
+{{- $pkg := (print templatePackageName ".operations") -}}
+{{- $fullClassName := (print $pkg "." $className) -}}
+{{- $options := supportedMethodOptions $op -}}
+{{- $hasOptions := gt (len $options) 0 -}}
+{{- $globalServerVariables := and .Global.AST.MainSDK.Servers (gt (len .Global.AST.MainSDK.Servers.GetVariables) 0) -}}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil) -}}
+{{- $scope := $op.Scope -}}
+{{- $retries := $op.Extensions.Retries -}}
+{{- $hooks := "sdkConfiguration.hooks()" -}}
+{{- $operationId := $op.ID -}}
+{{- $oauthScopes := templateOAuth2Scopes $op -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{- $methodParams := operationParameters $op false -}}
+{{- $asyncMethodParams := operationParameters $op true -}}
+
+package {{$pkg}};
+{{genImports $fullClassName}}
+public class {{$className}} {
+    {{- if $op.Servers }}
+    {{templateString "servers.java.stmpl" $op}}
+    {{- end}}
+
+    static abstract class Base {
+        final {{javaImportLocal "SDKConfiguration"}} sdkConfiguration;
+        final {{javaImportString}} baseUrl;
+        {{- if $op.Security}}
+        final {{javaImport (sanitizeClass $op.Security.Type "operation" false)}} security;
+        {{- end}}
+        final {{javaImportLocal "SecuritySource"}} securitySource;
+        {{- if $retries}}
+        final {{javaImportList}}<{{javaImportString}}> retryStatusCodes;
+        final {{javaImportLocal "utils.RetryConfig"}} retryConfig;
+        {{- end}}
+        final {{javaImportLocal "utils.HTTPClient"}} client;
+        final {{javaImportLocal "utils.Headers"}} _headers;
+        {{- if and $op.Globals .Global.Config.OperationScopedParams}}
+        final {{javaImportLocal "utils.Globals"}} operationGlobals;
+        {{- end}}
+
+        public Base({{templateMethodParams $methodParams true 16 2}}) {
+            this.sdkConfiguration = sdkConfiguration;
+            this._headers =_headers;
+            {{- if $op.Servers }}
+            this.baseUrl = {{wrapOptional "serverURL"}}
+                    .filter(u -> {{if $java8}}!{{javaImport (print (templatePackageName) ".utils.Java8Compat")}}.isBlank(u){{else}}!u.isBlank(){{end}})
+                    .orElse({{templateServerUrlInitialization $op}});
+            {{- else if $globalServerVariables}}
+            this.baseUrl = {{javaImportUtils}}.templateUrl(
+                    this.sdkConfiguration.serverUrl(), this.sdkConfiguration.getServerVariableDefaults());
+            {{- else}}
+            this.baseUrl = this.sdkConfiguration.serverUrl();
+            {{- end}}
+            {{- if $op.Security}}
+            this.security = security;
+            // hooks will be passed method level security only
+            this.securitySource = {{javaImportLocal "SecuritySource"}}.of(security);
+            {{- else if $op.GlobalSecurity}}
+            this.securitySource = this.sdkConfiguration.securitySource();
+            {{- else }}
+            this.securitySource = null;
+            {{- end}}
+            {{- if $retries}}
+            {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{javaImportLocal "utils.Options"}}.Option.RETRY_CONFIG)));
+            this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
+                    "{{$v}}"{{if lt $i (sub (len $retries.StatusCodes) 1)}}, {{end}}
+                {{- end -}});
+            this.retryConfig = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.or({{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .flatMap({{javaImportLocal "utils.Options"}}::retryConfig), sdkConfiguration::retryConfig)
+                    .orElse({{javaImportLocal "utils.RetryConfig"}}.builder(){{else}}{{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .flatMap({{javaImportLocal "utils.Options"}}::retryConfig)
+                    .or(sdkConfiguration::retryConfig)
+                    .orElse({{javaImportLocal "utils.RetryConfig"}}.builder(){{end}}
+                {{- if or (eq $retries.Strategy "backoff") (eq $retries.Strategy "attempt-count-backoff") -}}
+                    {{- if eq $retries.Strategy "attempt-count-backoff" -}}
+                            .attemptCountBackoff({{$retries.MaxRetries}}, {{javaImportLocal "utils.BackoffStrategy"}}.builder()
+                    {{- else -}}
+                            .backoff({{javaImportLocal "utils.BackoffStrategy"}}.builder()
+                    {{- end -}}
+                    {{- if $retries.Backoff}}
+                                    .initialInterval({{$retries.Backoff.InitialInterval}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                                    .maxInterval({{$retries.Backoff.MaxInterval}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                                    .baseFactor((double) ({{$retries.Backoff.Exponent}}))
+                                    .maxElapsedTime({{$retries.Backoff.MaxElapsedTime}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                    {{- end }}
+                                    .retryConnectError({{$retries.RetryConnectionErrors}})
+                                    .build())
+                {{- else -}}
+                            .noRetries()
+                {{- end}}
+                            .build());
+            {{- end}}
+            this.client = this.sdkConfiguration.client();
+            {{- if and $op.Globals .Global.Config.OperationScopedParams}}
+            this.operationGlobals = new {{javaImportLocal "utils.Globals"}}();
+            {{- range $op.Globals.Fields}}
+            {{ templateGlobalParamAccess .}}
+            {{- end}}
+            {{- end}}
+        }
+
+        {{javaImportOptional}}<{{javaImportLocal "SecuritySource"}}> securitySource() {
+            return {{javaImportOptional}}.ofNullable(this.securitySource);
+        }
+
+        {{javaImportLocal "utils.Hook.BeforeRequestContextImpl"}} createBeforeRequestContext() {
+            return new {{javaImportLocal "utils.Hook.BeforeRequestContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{javaImportLocal "utils.Hook.AfterSuccessContextImpl"}} createAfterSuccessContext() {
+            return new {{javaImportLocal "utils.Hook.AfterSuccessContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{- if hasPaginationURL $op}}
+
+        public {{javaImportString}} baseUrl() {
+            return this.baseUrl;
+        }
+        {{- end}}
+
+        {{javaImportLocal "utils.Hook.AfterErrorContextImpl"}} createAfterErrorContext() {
+            return new {{javaImportLocal "utils.Hook.AfterErrorContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{- $brp := getBuildRequestParams $op }}
+        {{- if $brp}}
+        <{{groupArgs $brp.typeParams | join ", "}}>{{javaHttpRequestType}} buildRequest({{groupArgs $brp.params | join ", "}}) throws {{javaImportException}} {
+        {{- else}}
+        {{javaHttpRequestType}} buildRequest() throws {{javaImportException}} {
+        {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams}}
+            {{javaImportString}} url = {{javaImportUtils}}.generateURL(
+                    klass,
+                    this.baseUrl,
+                    "{{$op.Path}}",
+                    request, {{templateGlobalsReference $op}});
+            {{- else}}
+            {{javaImportString}} url = {{javaImportUtils}}.generateURL(
+                    this.baseUrl,
+                    "{{$op.Path}}");
+            {{- end}}
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{- if and $op.Request $op.SerializationMethod }}
+            {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
+                    request,
+                    {{javaImportLocal "utils.Utils.JsonShape"}}.{{ if (hasShapeString $op.Request.RequestBody.Type) }}STRING{{else}}DEFAULT{{end}},
+                    typeReference);
+            {{javaImportLocal "utils.SerializedBody"}} serializedRequestBody = {{javaImportUtils}}.serializeRequestBody(
+                    convertedRequest,
+                    "{{if not $op.Request.IsRequestBody}}{{sanitizeFieldName $op.Request.RequestBody.Name}}{{end}}",
+                    "{{$op.SerializationMethod}}",
+                    {{$op.Request.RequestBody.Nullable}});
+            {{- if and $op.Request $op.Request.IsRequestBodyRequired}}
+            if (serializedRequestBody == null) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("Request body is required");
+            }
+            {{- end}}
+            req.setBody({{javaImportOptional}}.ofNullable(serializedRequestBody));
+            {{- end}}
+            req.addHeader("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+                    .addHeader("{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}", {{javaImportLocal "SDKConfiguration"}}.USER_AGENT);
+            _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+
+            req.addQueryParams({{javaImportUtils}}.getQueryParams(
+                    klass,
+                    request,
+                    {{templateGlobalsReference $op}}));
+
+            {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HeaderParams }}
+            req.addHeaders({{javaImportUtils}}.getHeadersFromMetadata(request, {{templateGlobalsReference $op}}));
+            {{- end}}
+
+            {{- if $op.Security}}
+            {{javaImportUtils}}.configureSecurity(req, security);
+            {{- else if $op.GlobalSecurity}}
+            {{javaImportUtils}}.configureSecurity(req, this.sdkConfiguration.securitySource().getSecurity(){{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}});
+            {{- end}}
+
+            return req.build();
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Builds an HTTP request using the given URL override instead of the
+         * default base URL + path. Used by pagination to follow next-page URLs
+         * without mutating any operation state.
+         */
+        {{- $brp := getBuildRequestParams $op }}
+        {{- if $brp}}
+        <{{groupArgs $brp.typeParams | join ", "}}>{{javaHttpRequestType}} buildRequest({{groupArgs $brp.params | join ", "}}, {{javaImportString}} urlOverride) throws {{javaImportException}} {
+        {{- else}}
+        {{javaHttpRequestType}} buildRequest({{javaImportString}} urlOverride) throws {{javaImportException}} {
+        {{- end}}
+            {{javaImportString}} url = urlOverride;
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{- if and $op.Request $op.SerializationMethod }}
+            {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
+                    request,
+                    {{javaImportLocal "utils.Utils.JsonShape"}}.{{ if (hasShapeString $op.Request.RequestBody.Type) }}STRING{{else}}DEFAULT{{end}},
+                    typeReference);
+            {{javaImportLocal "utils.SerializedBody"}} serializedRequestBody = {{javaImportUtils}}.serializeRequestBody(
+                    convertedRequest,
+                    "{{if not $op.Request.IsRequestBody}}{{sanitizeFieldName $op.Request.RequestBody.Name}}{{end}}",
+                    "{{$op.SerializationMethod}}",
+                    {{$op.Request.RequestBody.Nullable}});
+            {{- if and $op.Request $op.Request.IsRequestBodyRequired}}
+            if (serializedRequestBody == null) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("Request body is required");
+            }
+            {{- end}}
+            req.setBody({{javaImportOptional}}.ofNullable(serializedRequestBody));
+            {{- end}}
+            req.addHeader("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+                    .addHeader("{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}", {{javaImportLocal "SDKConfiguration"}}.USER_AGENT);
+            _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+
+            req.addQueryParams({{javaImportUtils}}.getQueryParams(
+                    klass,
+                    request,
+                    {{templateGlobalsReference $op}}));
+
+            {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HeaderParams }}
+            req.addHeaders({{javaImportUtils}}.getHeadersFromMetadata(request, {{templateGlobalsReference $op}}));
+            {{- end}}
+
+            {{- if $op.Security}}
+            {{javaImportUtils}}.configureSecurity(req, security);
+            {{- else if $op.GlobalSecurity}}
+            {{javaImportUtils}}.configureSecurity(req, this.sdkConfiguration.securitySource().getSecurity(){{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}});
+            {{- end}}
+
+            return req.build();
+        }
+        {{- end}}
+    }
+
+    public static class Sync extends Base
+            {{- if $reqParam}}
+            implements {{javaImportStatic "operations.Operations.RequestOperation" true}}
+            {{- if $nullFriendlyParameters -}}
+            <{{javaImportBoxed (javaImportNullableIfRequired $reqParam true)}}, {{javaImportTypeMandatoryNonPrimitive $resType}}> {
+            {{- else -}}
+            <{{javaImportBoxed $reqParam.EnhancedType}}, {{javaImportTypeMandatoryNonPrimitive $resType}}> {
+            {{- end}}
+            {{- else}}
+            implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
+            {{- end}}
+        public Sync({{templateMethodParams $methodParams true 16 2}}) {
+            super({{templateMethodCallArgs $methodParams true 18 2}});
+        }
+
+        private {{javaHttpRequestType}} onBuildRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request{{end}}) throws {{javaImportException}} {
+            {{- $brp := getBuildRequestParams $op $reqParam }}
+            {{- if $brp}}
+            {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}});
+            {{- else}}
+            {{javaHttpRequestType}} req = buildRequest();
+            {{- end}}
+            return {{$hooks}}.beforeRequest(createBeforeRequestContext(), req);
+        }
+
+        private {{javaHttpResponseType "java.io.InputStream"}} onError({{javaHttpResponseType "java.io.InputStream"}} response, {{javaImportException}} error) throws {{javaImportException}} {
+            return {{$hooks}}.afterError(
+                    createAfterErrorContext(),
+                    {{javaImportOptional}}.ofNullable(response),
+                    {{javaImportOptional}}.ofNullable(error));
+        }
+
+        private {{javaHttpResponseType "java.io.InputStream"}} onSuccess({{javaHttpResponseType "java.io.InputStream"}} response) throws {{javaImportException}} {
+            return {{$hooks}}.afterSuccess(createAfterSuccessContext(), response);
+        }
+
+        @Override
+        public {{javaHttpResponseType "java.io.InputStream"}} doRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request{{end}}) {
+            {{- if $retries}}
+            {{javaImportLocal "utils.Retries"}} retries = {{javaImportLocal "utils.Retries"}}.builder()
+                    .action((attempt) -> {
+                        {{javaHttpRequestType}} r;
+                        try {
+                            r = onBuildRequest({{if $reqParam}}request{{end}});
+                        } catch ({{javaImportException}} e) {
+                            throw new {{javaImportNonRetryableException}}(e);
+                        }
+                        try {
+                            {{javaHttpResponseType "java.io.InputStream"}} httpRes = client.send(r);
+                            if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                                return onError(httpRes, null);
+                            }
+                            return httpRes;
+                        } catch ({{javaImportException}} e) {
+                            return onError(null, e);
+                        }
+                    })
+                    .retryConfig(retryConfig)
+                    .statusCodes(retryStatusCodes)
+                    .build();
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onSuccess(retries.run())).get();
+            {{- else}}
+            {{javaHttpRequestType}} r = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $reqParam}}request{{end}})).get();
+            {{javaHttpResponseType "java.io.InputStream"}} httpRes;
+            try {
+                httpRes = client.send(r);
+                if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                    httpRes = onError(httpRes, null);
+                } else {
+                    httpRes = onSuccess(httpRes);
+                }
+            } catch ({{javaImportException}} e) {
+                httpRes = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onError(null, e)).get();
+            }
+
+            return httpRes;
+            {{- end}}
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Performs the request using the given URL override for pagination.
+         * This is a pure alternative to mutating state — the URL is passed as
+         * a parameter and threaded through to request building.
+         *
+         * @param urlOverride the full URL to use instead of the default, or null for the default URL
+         */
+        public {{javaHttpResponseType "java.io.InputStream"}} doRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request, {{end}}{{javaImportString}} urlOverride) {
+            if (urlOverride == null) {
+                return doRequest({{if $reqParam}}request{{end}});
+            }
+            {{javaHttpRequestType}} r = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> {
+                {{- $brp := getBuildRequestParams $op $reqParam }}
+                {{- if $brp}}
+                {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}}, urlOverride);
+                {{- else}}
+                {{javaHttpRequestType}} req = buildRequest(urlOverride);
+                {{- end}}
+                return {{$hooks}}.beforeRequest(createBeforeRequestContext(), req);
+            }).get();
+            {{javaHttpResponseType "java.io.InputStream"}} httpRes;
+            try {
+                httpRes = client.send(r);
+                if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                    httpRes = onError(httpRes, null);
+                } else {
+                    httpRes = onSuccess(httpRes);
+                }
+            } catch ({{javaImportException}} e) {
+                httpRes = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onError(null, e)).get();
+            }
+
+            return httpRes;
+        }
+        {{- end}}
+
+
+        @Override
+{{templateString "response.java.stmpl" (dict "Operation" $op "Scope" $scope "AsyncOkHttp" false) | indentPresent 8}}
+    }
+
+    {{- if asyncEnabled}}
+    public static class Async extends Base
+            {{- if $asyncReqParam}}
+            implements {{javaImportStatic "operations.Operations.AsyncRequestOperation" true}}
+            {{- if $nullFriendlyParameters -}}
+            <{{javaImportBoxed (javaImportNullableIfRequired $asyncReqParam true)}}, {{javaImportTypeAsync $resType}}> {
+            {{- else -}}
+            <{{javaImportBoxed $asyncReqParam.EnhancedType}}, {{javaImportTypeAsync $resType}}> {
+            {{- end}}
+            {{- else}}
+            implements {{javaImportStatic "operations.Operations.AsyncRequestlessOperation" true}}<{{javaImportTypeAsync $resType}}> {
+            {{- end}}
+
+        {{- if $retries}}
+        private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
+        {{- end}}
+
+        public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
+            super({{templateMethodCallArgs $methodParams true 18 2}});
+            {{- if $retries}}
+            this.retryScheduler = retryScheduler;
+            {{- end}}
+        }
+        {{- if $okHttp}}
+
+        private final Operations.CancellationRelay cancellationRelay = new Operations.CancellationRelay();
+
+        @Override
+        public Operations.CancellationRelay cancellationRelay() {
+            return cancellationRelay;
+        }
+        {{- end}}
+
+        private {{javaImport "java.util.concurrent.CompletableFuture"}}<{{javaHttpRequestType}}> onBuildRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request{{end}}) throws {{javaImportException}} {
+            {{- $brp := getBuildRequestParams $op $asyncReqParam }}
+            {{- if $brp}}
+            {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}});
+            {{- else}}
+            {{javaHttpRequestType}} req = buildRequest();
+            {{- end}}
+            return this.sdkConfiguration.asyncHooks().beforeRequest(createBeforeRequestContext(), req);
+        }
+
+        private {{javaAsyncResponseFutureType}} onError({{javaAsyncHttpResponseType}} response, {{javaImport "java.lang.Throwable"}} error) {
+            return this.sdkConfiguration.asyncHooks().afterError(createAfterErrorContext(), response, error);
+        }
+
+        private {{javaAsyncResponseFutureType}} onSuccess({{javaAsyncHttpResponseType}} response) {
+            return this.sdkConfiguration.asyncHooks().afterSuccess(createAfterSuccessContext(), response);
+        }
+
+        @Override
+        public {{javaAsyncResponseFutureType}} doRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request{{end}}) {
+            {{- if $retries}}
+            {{javaImportLocal "utils.AsyncRetries"}} retries = {{javaImportLocal "utils.AsyncRetries"}}.builder()
+                    .retryConfig(retryConfig)
+                    .statusCodes(retryStatusCodes)
+                    .scheduler(retryScheduler)
+                    .build();
+            return retries.retry((attempt) -> {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $asyncReqParam}}request{{end}})).get()
+                            .thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                            .handle((resp, err) -> {
+                                if (err != null) {
+                                    return onError(null, err);
+                                }
+                                if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                                    return onError(resp, null);
+                                }
+                                return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                            })
+                            .thenCompose({{javaImport "java.util.function.Function"}}.identity()))
+                    .thenCompose(this::onSuccess);
+            {{- else}}
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $asyncReqParam}}request{{end}})).get().thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                    .handle((resp, err) -> {
+                        if (err != null) {
+                            return onError(null, err);
+                        }
+                        if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                            return onError(resp, null);
+                        }
+                        return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                    })
+                    .thenCompose({{javaImport "java.util.function.Function"}}.identity())
+                    .thenCompose(this::onSuccess);
+            {{- end}}
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Performs the async request using the given URL override for pagination.
+         * This is a pure alternative to mutating state — the URL is passed as
+         * a parameter and threaded through to request building.
+         *
+         * @param urlOverride the full URL to use instead of the default, or null for the default URL
+         */
+        public {{javaAsyncResponseFutureType}} doRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request, {{end}}{{javaImportString}} urlOverride) {
+            if (urlOverride == null) {
+                return doRequest({{if $asyncReqParam}}request{{end}});
+            }
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> {
+                {{- $brp := getBuildRequestParams $op $asyncReqParam }}
+                {{- if $brp}}
+                {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}}, urlOverride);
+                {{- else}}
+                {{javaHttpRequestType}} req = buildRequest(urlOverride);
+                {{- end}}
+                return this.sdkConfiguration.asyncHooks().beforeRequest(createBeforeRequestContext(), req);
+            }).get().thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                    .handle((resp, err) -> {
+                        if (err != null) {
+                            return onError(null, err);
+                        }
+                        if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                            return onError(resp, null);
+                        }
+                        return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                    })
+                    .thenCompose({{javaImport "java.util.function.Function"}}.identity())
+                    .thenCompose(this::onSuccess);
+        }
+        {{- end}}
+
+        @Override
+        {{- if $okHttp}}
+{{templateString "response.java.stmpl" (dict "Operation" $op "Scope" $scope "AsyncOkHttp" true) | indentPresent 8}}
+        {{- else}}
+        public {{javaImport "java.util.concurrent.CompletableFuture"}}<{{javaImportTypeAsync $resType}}> handleResponse(
+                {{javaImport "java.net.http.HttpResponse"}}<{{javaImportLocal "utils.Blob"}}> response) {
+            {{javaImportString}} contentType = response
+                    .headers()
+                    .firstValue("Content-Type")
+                    .orElse("application/octet-stream");
+            {{javaImportTypeAsync $resType }}.Builder resBuilder =
+                    {{javaImportTypeAsync $resType}}
+                            .builder()
+                            .contentType(contentType)
+                            .statusCode(response.statusCode())
+                            .rawResponse(response);
+
+            {{- if gt (len $op.Response.Responses) 0 -}}
+                {{- range $subResp := $op.Response.Responses -}}
+                    {{- range $i, $code := $subResp.Code -}}
+                        {{- range $subResp.Content -}}
+                            {{- if (and (eq .SerializationMethod "raw") (eq .Content.Type.Type "response-stream"))}}
+            if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $subResp}}) && {{javaImportUtils}}.contentTypeMatches(contentType, "{{.ContentType}}")) {
+                resBuilder.{{sanitizeFieldName .Content.Name}}(response.body());
+            }
+                            {{- end}}
+                        {{- end}}
+                    {{- end}}
+                {{- end}}
+            {{- end}}
+
+            {{javaImportTypeAsync $resType}} res = resBuilder.build();
+            {{- if gt (len $responses) 0 }}
+            {{ range $index, $response := $responses }}
+            if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $response}})) {
+                {{- if $response.Headers }}
+                res.withHeaders(response.headers().map());
+                {{- end }}
+                {{- if eq (len $response.Content) 0 }}
+                // no content
+                {{- if $response.Error}}
+                return {{javaImportUtils}}.createAsyncApiError(response, "API error occurred");
+                {{- else }}
+                return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- end }}
+                {{- else -}}
+                {{- range $index, $content := $response.Content}}
+                {{- if eq $content.SerializationMethod "json"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    {{- if $response.Error}}
+                    return {{javaImportTypeAsync $content.Content.Type}}.fromAsync(response)
+                            .thenCompose({{templateJdkMethodRef "CompletableFuture.failedFuture"}});
+                    {{- else}}
+                    return Utils.unmarshalAsync(response, new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{javaImportTypeAsync $content.Content.Type true}}>() {})
+                            .thenApply(res::with{{sanitizeClassName $content.Content.Name}});
+                    {{- end}}
+                {{- else if eq $content.SerializationMethod "eventstream"}}
+                {{if (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    {{javaImportUtils}}.setSseSentinel(res, "{{$content.SSESentinel}}");
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "jsonl"}}
+                {{if (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "raw"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "string"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return response.body().toByteArray().thenApply(bodyBytes -> {
+                        try {
+                            {{javaImportString}} out = new {{javaImportString}}(bodyBytes, {{javaImport "java.nio.charset.StandardCharsets"}}.UTF_8);
+                            {{- if not $response.Error}}
+                            res.with{{sanitizeClassName $content.Content.Name}}(out);
+                            return res;
+                            {{- else }}
+                            return {{javaImportLocal "utils.Exceptions"}}.rethrow(
+                                    new {{javaImport $defaultAsyncError}}(out, response.statusCode(), bodyBytes, response, null));
+                            {{- end}}
+                        } catch ({{javaImportException}} e) {
+                            return {{javaImportLocal "utils.Exceptions"}}.rethrow(e);
+                        }
+                    });
+                {{- end}}
+                {{- end }}
+                } else {
+                    return {{javaImportUtils}}.createAsyncApiError(response, "Unexpected content-type received: " + contentType);
+                }
+            {{- end }}
+            }
+            {{- end }}
+            {{- end}}
+            return {{javaImportUtils}}.createAsyncApiError(response, "Unexpected status code received: " + response.statusCode());
+        }
+        {{- end}}
+    }
+    {{- end}}
+}
+{{- else -}}
+{{- $sdk := .Local.SDK -}}
+{{- $op := .Local.Operation -}}
+{{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent) -}}
+{{- $responses := $op.Response.Responses -}}
+{{- $defaultError := (printf "%s.%s" getErrorsPackage getDefaultErrorClassName) -}}
+{{- $reqParam := getRequestParameter $op -}}
+{{- $defaultAsyncError := (printf "%s.Async%s" getErrorsPackage getDefaultErrorClassName) -}}
+{{- $asyncReqParam := getRequestParameter $op true -}}
+{{- $resType := $op.Response.Type -}}
+{{- $className := templateOperationSimpleClassName $op -}}
+{{- $pkg := (print templatePackageName ".operations") -}}
+{{- $fullClassName := (print $pkg "." $className) -}}
+{{- $options := supportedMethodOptions $op -}}
+{{- $hasOptions := gt (len $options) 0 -}}
+{{- $globalServerVariables := and .Global.AST.MainSDK.Servers (gt (len .Global.AST.MainSDK.Servers.GetVariables) 0) -}}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil) -}}
+{{- $scope := $op.Scope -}}
+{{- $retries := $op.Extensions.Retries -}}
+{{- $hooks := "sdkConfiguration.hooks()" -}}
+{{- $operationId := $op.ID -}}
+{{- $oauthScopes := templateOAuth2Scopes $op -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{- $methodParams := operationParameters $op false -}}
+{{- $asyncMethodParams := operationParameters $op true -}}
+
+package {{$pkg}};
+{{genImports $fullClassName}}
+public class {{$className}} {
+    {{- if $op.Servers }}
+    {{templateString "servers.java.stmpl" $op}}
+    {{- end}}
+
+    static abstract class Base {
+        final {{javaImportLocal "SDKConfiguration"}} sdkConfiguration;
+        final {{javaImportString}} baseUrl;
+        {{- if $op.Security}}
+        final {{javaImport (sanitizeClass $op.Security.Type "operation" false)}} security;
+        {{- end}}
+        final {{javaImportLocal "SecuritySource"}} securitySource;
+        {{- if $retries}}
+        final {{javaImportList}}<{{javaImportString}}> retryStatusCodes;
+        final {{javaImportLocal "utils.RetryConfig"}} retryConfig;
+        {{- end}}
+        final {{javaImportLocal "utils.HTTPClient"}} client;
+        final {{javaImportLocal "utils.Headers"}} _headers;
+        {{- if and $op.Globals .Global.Config.OperationScopedParams}}
+        final {{javaImportLocal "utils.Globals"}} operationGlobals;
+        {{- end}}
+
+        public Base({{templateMethodParams $methodParams true 16 2}}) {
+            this.sdkConfiguration = sdkConfiguration;
+            this._headers =_headers;
+            {{- if $op.Servers }}
+            this.baseUrl = {{wrapOptional "serverURL"}}
+                    .filter(u -> {{if $java8}}!{{javaImport (print (templatePackageName) ".utils.Java8Compat")}}.isBlank(u){{else}}!u.isBlank(){{end}})
+                    .orElse({{templateServerUrlInitialization $op}});
+            {{- else if $globalServerVariables}}
+            this.baseUrl = {{javaImportUtils}}.templateUrl(
+                    this.sdkConfiguration.serverUrl(), this.sdkConfiguration.getServerVariableDefaults());
+            {{- else}}
+            this.baseUrl = this.sdkConfiguration.serverUrl();
+            {{- end}}
+            {{- if $op.Security}}
+            this.security = security;
+            // hooks will be passed method level security only
+            this.securitySource = {{javaImportLocal "SecuritySource"}}.of(security);
+            {{- else if $op.GlobalSecurity}}
+            this.securitySource = this.sdkConfiguration.securitySource();
+            {{- else }}
+            this.securitySource = null;
+            {{- end}}
+            {{- if $retries}}
+            {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{javaImportLocal "utils.Options"}}.Option.RETRY_CONFIG)));
+            this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
+                    "{{$v}}"{{if lt $i (sub (len $retries.StatusCodes) 1)}}, {{end}}
+                {{- end -}});
+            this.retryConfig = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.or({{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .flatMap({{javaImportLocal "utils.Options"}}::retryConfig), sdkConfiguration::retryConfig)
+                    .orElse({{javaImportLocal "utils.RetryConfig"}}.builder(){{else}}{{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
+                    .flatMap({{javaImportLocal "utils.Options"}}::retryConfig)
+                    .or(sdkConfiguration::retryConfig)
+                    .orElse({{javaImportLocal "utils.RetryConfig"}}.builder(){{end}}
+                {{- if eq $retries.Strategy "backoff" -}}
+                            .backoff({{javaImportLocal "utils.BackoffStrategy"}}.builder()
+                    {{- if $retries.Backoff}}
+                                    .initialInterval({{$retries.Backoff.InitialInterval}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                                    .maxInterval({{$retries.Backoff.MaxInterval}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                                    .baseFactor((double) ({{$retries.Backoff.Exponent}}))
+                                    .maxElapsedTime({{$retries.Backoff.MaxElapsedTime}}, {{javaImport "java.util.concurrent.TimeUnit"}}.MILLISECONDS)
+                    {{- end }}
+                                    .retryConnectError({{$retries.RetryConnectionErrors}})
+                                    .build())
+                {{- else -}}
+                            .noRetries()
+                {{- end}}
+                            .build());
+            {{- end}}
+            this.client = this.sdkConfiguration.client();
+            {{- if and $op.Globals .Global.Config.OperationScopedParams}}
+            this.operationGlobals = new {{javaImportLocal "utils.Globals"}}();
+            {{- range $op.Globals.Fields}}
+            {{ templateGlobalParamAccess .}}
+            {{- end}}
+            {{- end}}
+        }
+
+        {{javaImportOptional}}<{{javaImportLocal "SecuritySource"}}> securitySource() {
+            return {{javaImportOptional}}.ofNullable(this.securitySource);
+        }
+
+        {{javaImportLocal "utils.Hook.BeforeRequestContextImpl"}} createBeforeRequestContext() {
+            return new {{javaImportLocal "utils.Hook.BeforeRequestContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{javaImportLocal "utils.Hook.AfterSuccessContextImpl"}} createAfterSuccessContext() {
+            return new {{javaImportLocal "utils.Hook.AfterSuccessContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{- if hasPaginationURL $op}}
+
+        public {{javaImportString}} baseUrl() {
+            return this.baseUrl;
+        }
+        {{- end}}
+
+        {{javaImportLocal "utils.Hook.AfterErrorContextImpl"}} createAfterErrorContext() {
+            return new {{javaImportLocal "utils.Hook.AfterErrorContextImpl"}}(
+                    this.sdkConfiguration,
+                    this.baseUrl,
+                    "{{$operationId}}",
+                    {{$oauthScopes}},
+                    securitySource());
+        }
+
+        {{- $brp := getBuildRequestParams $op }}
+        {{- if $brp}}
+        <{{groupArgs $brp.typeParams | join ", "}}>{{javaHttpRequestType}} buildRequest({{groupArgs $brp.params | join ", "}}) throws {{javaImportException}} {
+        {{- else}}
+        {{javaHttpRequestType}} buildRequest() throws {{javaImportException}} {
+        {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams}}
+            {{javaImportString}} url = {{javaImportUtils}}.generateURL(
+                    klass,
+                    this.baseUrl,
+                    "{{$op.Path}}",
+                    request, {{templateGlobalsReference $op}});
+            {{- else}}
+            {{javaImportString}} url = {{javaImportUtils}}.generateURL(
+                    this.baseUrl,
+                    "{{$op.Path}}");
+            {{- end}}
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{- if and $op.Request $op.SerializationMethod }}
+            {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
+                    request,
+                    {{javaImportLocal "utils.Utils.JsonShape"}}.{{ if (hasShapeString $op.Request.RequestBody.Type) }}STRING{{else}}DEFAULT{{end}},
+                    typeReference);
+            {{javaImportLocal "utils.SerializedBody"}} serializedRequestBody = {{javaImportUtils}}.serializeRequestBody(
+                    convertedRequest,
+                    "{{if not $op.Request.IsRequestBody}}{{sanitizeFieldName $op.Request.RequestBody.Name}}{{end}}",
+                    "{{$op.SerializationMethod}}",
+                    {{$op.Request.RequestBody.Nullable}});
+            {{- if and $op.Request $op.Request.IsRequestBodyRequired}}
+            if (serializedRequestBody == null) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("Request body is required");
+            }
+            {{- end}}
+            req.setBody({{javaImportOptional}}.ofNullable(serializedRequestBody));
+            {{- end}}
+            req.addHeader("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+                    .addHeader("{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}", {{javaImportLocal "SDKConfiguration"}}.USER_AGENT);
+            _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+
+            req.addQueryParams({{javaImportUtils}}.getQueryParams(
+                    klass,
+                    request,
+                    {{templateGlobalsReference $op}}));
+
+            {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HeaderParams }}
+            req.addHeaders({{javaImportUtils}}.getHeadersFromMetadata(request, {{templateGlobalsReference $op}}));
+            {{- end}}
+
+            {{- if $op.Security}}
+            {{javaImportUtils}}.configureSecurity(req, security);
+            {{- else if $op.GlobalSecurity}}
+            {{javaImportUtils}}.configureSecurity(req, this.sdkConfiguration.securitySource().getSecurity(){{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}});
+            {{- end}}
+
+            return req.build();
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Builds an HTTP request using the given URL override instead of the
+         * default base URL + path. Used by pagination to follow next-page URLs
+         * without mutating any operation state.
+         */
+        {{- $brp := getBuildRequestParams $op }}
+        {{- if $brp}}
+        <{{groupArgs $brp.typeParams | join ", "}}>{{javaHttpRequestType}} buildRequest({{groupArgs $brp.params | join ", "}}, {{javaImportString}} urlOverride) throws {{javaImportException}} {
+        {{- else}}
+        {{javaHttpRequestType}} buildRequest({{javaImportString}} urlOverride) throws {{javaImportException}} {
+        {{- end}}
+            {{javaImportString}} url = urlOverride;
+            {{javaImportLocal "utils.HTTPRequest"}} req = new {{javaImportLocal "utils.HTTPRequest"}}(url, "{{upper $op.Method}}");
+            {{- if and $op.Request $op.SerializationMethod }}
+            {{javaImport "java.lang.Object"}} convertedRequest = {{javaImportUtils}}.convertToShape(
+                    request,
+                    {{javaImportLocal "utils.Utils.JsonShape"}}.{{ if (hasShapeString $op.Request.RequestBody.Type) }}STRING{{else}}DEFAULT{{end}},
+                    typeReference);
+            {{javaImportLocal "utils.SerializedBody"}} serializedRequestBody = {{javaImportUtils}}.serializeRequestBody(
+                    convertedRequest,
+                    "{{if not $op.Request.IsRequestBody}}{{sanitizeFieldName $op.Request.RequestBody.Name}}{{end}}",
+                    "{{$op.SerializationMethod}}",
+                    {{$op.Request.RequestBody.Nullable}});
+            {{- if and $op.Request $op.Request.IsRequestBodyRequired}}
+            if (serializedRequestBody == null) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("Request body is required");
+            }
+            {{- end}}
+            req.setBody({{javaImportOptional}}.ofNullable(serializedRequestBody));
+            {{- end}}
+            req.addHeader("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+                    .addHeader("{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}", {{javaImportLocal "SDKConfiguration"}}.USER_AGENT);
+            _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+
+            req.addQueryParams({{javaImportUtils}}.getQueryParams(
+                    klass,
+                    request,
+                    {{templateGlobalsReference $op}}));
+
+            {{- end}}
+            {{- if and $op.Request $op.Request.Params $op.Request.Params.HeaderParams }}
+            req.addHeaders({{javaImportUtils}}.getHeadersFromMetadata(request, {{templateGlobalsReference $op}}));
+            {{- end}}
+
+            {{- if $op.Security}}
+            {{javaImportUtils}}.configureSecurity(req, security);
+            {{- else if $op.GlobalSecurity}}
+            {{javaImportUtils}}.configureSecurity(req, this.sdkConfiguration.securitySource().getSecurity(){{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}});
+            {{- end}}
+
+            return req.build();
+        }
+        {{- end}}
+    }
+
+    public static class Sync extends Base
+            {{- if $reqParam}}
+            implements {{javaImportStatic "operations.Operations.RequestOperation" true}}
+            {{- if $nullFriendlyParameters -}}
+            <{{javaImportBoxed (javaImportNullableIfRequired $reqParam true)}}, {{javaImportTypeMandatoryNonPrimitive $resType}}> {
+            {{- else -}}
+            <{{javaImportBoxed $reqParam.EnhancedType}}, {{javaImportTypeMandatoryNonPrimitive $resType}}> {
+            {{- end}}
+            {{- else}}
+            implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
+            {{- end}}
+        public Sync({{templateMethodParams $methodParams true 16 2}}) {
+            super({{templateMethodCallArgs $methodParams true 18 2}});
+        }
+
+        private {{javaHttpRequestType}} onBuildRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request{{end}}) throws {{javaImportException}} {
+            {{- $brp := getBuildRequestParams $op $reqParam }}
+            {{- if $brp}}
+            {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}});
+            {{- else}}
+            {{javaHttpRequestType}} req = buildRequest();
+            {{- end}}
+            return {{$hooks}}.beforeRequest(createBeforeRequestContext(), req);
+        }
+
+        private {{javaHttpResponseType "java.io.InputStream"}} onError({{javaHttpResponseType "java.io.InputStream"}} response, {{javaImportException}} error) throws {{javaImportException}} {
+            return {{$hooks}}.afterError(
+                    createAfterErrorContext(),
+                    {{javaImportOptional}}.ofNullable(response),
+                    {{javaImportOptional}}.ofNullable(error));
+        }
+
+        private {{javaHttpResponseType "java.io.InputStream"}} onSuccess({{javaHttpResponseType "java.io.InputStream"}} response) throws {{javaImportException}} {
+            return {{$hooks}}.afterSuccess(createAfterSuccessContext(), response);
+        }
+
+        @Override
+        public {{javaHttpResponseType "java.io.InputStream"}} doRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request{{end}}) {
+            {{- if $retries}}
+            {{javaImportLocal "utils.Retries"}} retries = {{javaImportLocal "utils.Retries"}}.builder()
+                    .action(() -> {
+                        {{javaHttpRequestType}} r;
+                        try {
+                            r = onBuildRequest({{if $reqParam}}request{{end}});
+                        } catch ({{javaImportException}} e) {
+                            throw new {{javaImportNonRetryableException}}(e);
+                        }
+                        try {
+                            {{javaHttpResponseType "java.io.InputStream"}} httpRes = client.send(r);
+                            if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                                return onError(httpRes, null);
+                            }
+                            return httpRes;
+                        } catch ({{javaImportException}} e) {
+                            return onError(null, e);
+                        }
+                    })
+                    .retryConfig(retryConfig)
+                    .statusCodes(retryStatusCodes)
+                    .build();
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onSuccess(retries.run())).get();
+            {{- else}}
+            {{javaHttpRequestType}} r = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $reqParam}}request{{end}})).get();
+            {{javaHttpResponseType "java.io.InputStream"}} httpRes;
+            try {
+                httpRes = client.send(r);
+                if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                    httpRes = onError(httpRes, null);
+                } else {
+                    httpRes = onSuccess(httpRes);
+                }
+            } catch ({{javaImportException}} e) {
+                httpRes = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onError(null, e)).get();
+            }
+
+            return httpRes;
+            {{- end}}
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Performs the request using the given URL override for pagination.
+         * This is a pure alternative to mutating state — the URL is passed as
+         * a parameter and threaded through to request building.
+         *
+         * @param urlOverride the full URL to use instead of the default, or null for the default URL
+         */
+        public {{javaHttpResponseType "java.io.InputStream"}} doRequest({{if $reqParam}}{{javaImportRequest $reqParam}} request, {{end}}{{javaImportString}} urlOverride) {
+            if (urlOverride == null) {
+                return doRequest({{if $reqParam}}request{{end}});
+            }
+            {{javaHttpRequestType}} r = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> {
+                {{- $brp := getBuildRequestParams $op $reqParam }}
+                {{- if $brp}}
+                {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}}, urlOverride);
+                {{- else}}
+                {{javaHttpRequestType}} req = buildRequest(urlOverride);
+                {{- end}}
+                return {{$hooks}}.beforeRequest(createBeforeRequestContext(), req);
+            }).get();
+            {{javaHttpResponseType "java.io.InputStream"}} httpRes;
+            try {
+                httpRes = client.send(r);
+                if ({{templateErrorStatusCodesCheck $op.Response "httpRes"}}) {
+                    httpRes = onError(httpRes, null);
+                } else {
+                    httpRes = onSuccess(httpRes);
+                }
+            } catch ({{javaImportException}} e) {
+                httpRes = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onError(null, e)).get();
+            }
+
+            return httpRes;
+        }
+        {{- end}}
+
+
+        @Override
+{{templateString "response.java.stmpl" (dict "Operation" $op "Scope" $scope "AsyncOkHttp" false) | indentPresent 8}}
+    }
+
+
+    {{- if asyncEnabled}}
+    public static class Async extends Base
+            {{- if $asyncReqParam}}
+            implements {{javaImportStatic "operations.Operations.AsyncRequestOperation" true}}
+            {{- if $nullFriendlyParameters -}}
+            <{{javaImportBoxed (javaImportNullableIfRequired $asyncReqParam true)}}, {{javaImportTypeAsync $resType}}> {
+            {{- else -}}
+            <{{javaImportBoxed $asyncReqParam.EnhancedType}}, {{javaImportTypeAsync $resType}}> {
+            {{- end}}
+            {{- else}}
+            implements {{javaImportStatic "operations.Operations.AsyncRequestlessOperation" true}}<{{javaImportTypeAsync $resType}}> {
+            {{- end}}
+
+        {{- if $retries}}
+        private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
+        {{- end}}
+
+        public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
+            super({{templateMethodCallArgs $methodParams true 18 2}});
+            {{- if $retries}}
+            this.retryScheduler = retryScheduler;
+            {{- end}}
+        }
+        {{- if $okHttp}}
+
+        private final Operations.CancellationRelay cancellationRelay = new Operations.CancellationRelay();
+
+        @Override
+        public Operations.CancellationRelay cancellationRelay() {
+            return cancellationRelay;
+        }
+        {{- end}}
+
+        private {{javaImport "java.util.concurrent.CompletableFuture"}}<{{javaHttpRequestType}}> onBuildRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request{{end}}) throws {{javaImportException}} {
+            {{- $brp := getBuildRequestParams $op $asyncReqParam }}
+            {{- if $brp}}
+            {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}});
+            {{- else}}
+            {{javaHttpRequestType}} req = buildRequest();
+            {{- end}}
+            return this.sdkConfiguration.asyncHooks().beforeRequest(createBeforeRequestContext(), req);
+        }
+
+        private {{javaAsyncResponseFutureType}} onError({{javaAsyncHttpResponseType}} response, {{javaImport "java.lang.Throwable"}} error) {
+            return this.sdkConfiguration.asyncHooks().afterError(createAfterErrorContext(), response, error);
+        }
+
+        private {{javaAsyncResponseFutureType}} onSuccess({{javaAsyncHttpResponseType}} response) {
+            return this.sdkConfiguration.asyncHooks().afterSuccess(createAfterSuccessContext(), response);
+        }
+
+        @Override
+        public {{javaAsyncResponseFutureType}} doRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request{{end}}) {
+            {{- if $retries}}
+            {{javaImportLocal "utils.AsyncRetries"}} retries = {{javaImportLocal "utils.AsyncRetries"}}.builder()
+                    .retryConfig(retryConfig)
+                    .statusCodes(retryStatusCodes)
+                    .scheduler(retryScheduler)
+                    .build();
+            return retries.retry(() -> {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $asyncReqParam}}request{{end}})).get().thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                            .handle((resp, err) -> {
+                                if (err != null) {
+                                    return onError(null, err);
+                                }
+                                if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                                    return onError(resp, null);
+                                }
+                                return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                            })
+                            .thenCompose({{javaImport "java.util.function.Function"}}.identity()))
+                    .thenCompose(this::onSuccess);
+            {{- else}}
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> onBuildRequest({{if $asyncReqParam}}request{{end}})).get().thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                    .handle((resp, err) -> {
+                        if (err != null) {
+                            return onError(null, err);
+                        }
+                        if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                            return onError(resp, null);
+                        }
+                        return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                    })
+                    .thenCompose({{javaImport "java.util.function.Function"}}.identity())
+                    .thenCompose(this::onSuccess);
+            {{- end}}
+        }
+        {{- if hasPaginationURL $op}}
+
+        /**
+         * Performs the async request using the given URL override for pagination.
+         * This is a pure alternative to mutating state — the URL is passed as
+         * a parameter and threaded through to request building.
+         *
+         * @param urlOverride the full URL to use instead of the default, or null for the default URL
+         */
+        public {{javaAsyncResponseFutureType}} doRequest({{if $asyncReqParam}}{{javaImportRequest $asyncReqParam}} request, {{end}}{{javaImportString}} urlOverride) {
+            if (urlOverride == null) {
+                return doRequest({{if $asyncReqParam}}request{{end}});
+            }
+            return {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> {
+                {{- $brp := getBuildRequestParams $op $asyncReqParam }}
+                {{- if $brp}}
+                {{javaHttpRequestType}} req = buildRequest({{groupArgs $brp.args | join ", "}}, urlOverride);
+                {{- else}}
+                {{javaHttpRequestType}} req = buildRequest(urlOverride);
+                {{- end}}
+                return this.sdkConfiguration.asyncHooks().beforeRequest(createBeforeRequestContext(), req);
+            }).get().thenCompose({{if $okHttp}}req -> cancellationRelay.track(client.sendAsync(req)){{else}}client::sendAsync{{end}})
+                    .handle((resp, err) -> {
+                        if (err != null) {
+                            return onError(null, err);
+                        }
+                        if ({{templateErrorStatusCodesCheck $op.Response "resp"}}) {
+                            return onError(resp, null);
+                        }
+                        return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(resp);
+                    })
+                    .thenCompose({{javaImport "java.util.function.Function"}}.identity())
+                    .thenCompose(this::onSuccess);
+        }
+        {{- end}}
+
+        @Override
+        {{- if $okHttp}}
+{{templateString "response.java.stmpl" (dict "Operation" $op "Scope" $scope "AsyncOkHttp" true) | indentPresent 8}}
+        {{- else}}
+        public {{javaImport "java.util.concurrent.CompletableFuture"}}<{{javaImportTypeAsync $resType}}> handleResponse(
+                {{javaImport "java.net.http.HttpResponse"}}<{{javaImportLocal "utils.Blob"}}> response) {
+            {{javaImportString}} contentType = response
+                    .headers()
+                    .firstValue("Content-Type")
+                    .orElse("application/octet-stream");
+            {{javaImportTypeAsync $resType }}.Builder resBuilder =
+                    {{javaImportTypeAsync $resType}}
+                            .builder()
+                            .contentType(contentType)
+                            .statusCode(response.statusCode())
+                            .rawResponse(response);
+
+            {{- if gt (len $op.Response.Responses) 0 -}}
+                {{- range $subResp := $op.Response.Responses -}}
+                    {{- range $i, $code := $subResp.Code -}}
+                        {{- range $subResp.Content -}}
+                            {{- if (and (eq .SerializationMethod "raw") (eq .Content.Type.Type "response-stream"))}}
+            if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $subResp}}) && {{javaImportUtils}}.contentTypeMatches(contentType, "{{.ContentType}}")) {
+                resBuilder.{{sanitizeFieldName .Content.Name}}(response.body());
+            }
+                            {{- end}}
+                        {{- end}}
+                    {{- end}}
+                {{- end}}
+            {{- end}}
+
+            {{javaImportTypeAsync $resType}} res = resBuilder.build();
+            {{- if gt (len $responses) 0 }}
+            {{ range $index, $response := $responses }}
+            if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $response}})) {
+                {{- if $response.Headers }}
+                res.withHeaders(response.headers().map());
+                {{- end }}
+                {{- if eq (len $response.Content) 0 }}
+                // no content
+                {{- if $response.Error}}
+                return {{javaImportUtils}}.createAsyncApiError(response, "API error occurred");
+                {{- else }}
+                return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- end }}
+                {{- else -}}
+                {{- range $index, $content := $response.Content}}
+                {{- if eq $content.SerializationMethod "json"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    {{- if $response.Error}}
+                    return {{javaImportTypeAsync $content.Content.Type}}.fromAsync(response)
+                            .thenCompose({{templateJdkMethodRef "CompletableFuture.failedFuture"}});
+                    {{- else}}
+                    return Utils.unmarshalAsync(response, new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{javaImportTypeAsync $content.Content.Type true}}>() {})
+                            .thenApply(res::with{{sanitizeClassName $content.Content.Name}});
+                    {{- end}}
+                {{- else if eq $content.SerializationMethod "eventstream"}}
+                {{if (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    {{javaImportUtils}}.setSseSentinel(res, "{{$content.SSESentinel}}");
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "jsonl"}}
+                {{if (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "raw"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return {{javaImport "java.util.concurrent.CompletableFuture"}}.completedFuture(res);
+                {{- else if eq $content.SerializationMethod "string"}}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+                    return response.body().toByteArray().thenApply(bodyBytes -> {
+                        try {
+                            {{javaImportString}} out = new {{javaImportString}}(bodyBytes, {{javaImport "java.nio.charset.StandardCharsets"}}.UTF_8);
+                            {{- if not $response.Error}}
+                            res.with{{sanitizeClassName $content.Content.Name}}(out);
+                            return res;
+                            {{- else }}
+                            return {{javaImportLocal "utils.Exceptions"}}.rethrow(
+                                    new {{javaImport $defaultAsyncError}}(out, response.statusCode(), bodyBytes, response, null));
+                            {{- end}}
+                        } catch ({{javaImportException}} e) {
+                            return {{javaImportLocal "utils.Exceptions"}}.rethrow(e);
+                        }
+                    });
+                {{- end}}
+                {{- end }}
+                } else {
+                    return {{javaImportUtils}}.createAsyncApiError(response, "Unexpected content-type received: " + contentType);
+                }
+            {{- end }}
+            }
+            {{- end }}
+            {{- end}}
+            return {{javaImportUtils}}.createAsyncApiError(response, "Unexpected status code received: " + response.statusCode());
+        }
+        {{- end}}
+    }
+    {{- end}}
+}
+{{- end }}

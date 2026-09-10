@@ -1,0 +1,129 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation }}
+{{- $className := sanitizeClass $rootType $usageLocation true -}}
+{{- $zodName := sanitizeZodName $rootType.Name -}}
+{{- importBaseError $usageLocation -}}
+
+{{- $additionalPropsName := false }}
+{{- $additionalProps := false }}
+{{- $additionalPropsField := false }}
+
+{{- /* ------ */}}
+{{- /* NOTE: if you update this type then you most likely should update the Outbound type in zod-error.ts.stmpl */}}
+{{- /* ------ */}}
+{{- templateComments .Local.Type.Comments $dg $className 0 "class"}}
+export type {{$className}}Data = {
+{{- range .Local.Type.Fields}}
+  {{- if .IsAdditionalProperties }}
+  {{- $additionalPropsName = sanitizeModelField . }}
+  {{- $additionalPropsField = . }}
+  {{- $additionalProps = resolveInbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" .Type
+      "rootTypeDef" $rootType
+  ) }}
+  {{- continue }}
+  {{- end }}
+
+  {{- $fieldName := sanitizeModelField . -}}
+  {{- $isOptional := isErrorFieldOptional . }}
+  {{- $fieldType := resolveInbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" .Type
+      "rootTypeDef" $rootType
+      "optional" $isOptional
+      "nullable" .Nullable
+      "constValue" .Const
+      "defaultValue" .Default
+  ) -}}
+  {{""}}
+  {{- templateComments .Comments $dg (printf "%s.%s" $className $fieldName) 1 "field" true}}
+  {{declareModelField .}}{{ if $isOptional }}?{{end}}: {{callImportTypesFunc $fieldType.importOutputTypes}}{{$fieldType.outputType}};
+{{- end}}
+{{ if $additionalProps }}
+  {{- if (shouldFlattenAdditionalProperties $additionalPropsField) }}
+  [additionalProperties: string]: unknown;
+  {{- else }}
+  {{- callImportTypesFunc $additionalProps.importOutputTypes }}
+  {{$additionalPropsName}}: {{$additionalProps.outputType}};
+  {{- end }}
+{{- end }}
+}
+
+
+{{ templateComments .Local.Type.Comments $dg $className 0 "class"}}
+export class {{$className}} extends {{ getBaseErrorClassName}} {
+  {{- range .Local.Type.Fields}}
+  {{- if .IsAdditionalProperties }}
+  {{- if (shouldFlattenAdditionalProperties .) }}
+  {{- continue }}
+  {{- else}}
+  {{declareModelField .}}: {{callImportTypesFunc $additionalProps.importOutputTypes}}{{$additionalProps.outputType}} = {};
+  {{- continue }}
+  {{- end }}
+  {{- end }}
+  {{- $fieldName := sanitizeModelField .}}
+
+  {{- /* Certain reserved field names from the Error class and subclasses */}}
+  {{- /* must not be shadowed because that results in type-checking error. */}}
+  {{- /* If we encounter these field names in a type then skip over them. */}}
+  {{- if isReservedErrorField $fieldName }}{{continue}}{{ end }}
+
+  {{- $qualifier := "" }}
+  {{- $isOptional := and (isErrorFieldOptional .) (ne $fieldName "message") }}
+  {{- $fieldType := resolveInbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" .Type
+      "rootTypeDef" $rootType
+      "optional" $isOptional
+      "nullable" .Nullable
+      "constValue" .Const
+      "defaultValue" .Default
+  ) -}}
+  {{- $type := $fieldType.outputType }}
+  {{- templateComments .Comments $dg (printf "%s.%s" $className $fieldName) 1 "field" true}}
+  {{$qualifier}}{{declareModelField .}}{{ if $isOptional }}?{{end}}: {{callImportTypesFunc $fieldType.importOutputTypes}}{{$type}};
+  {{- end}}
+
+  /** The original data that was passed to this error instance. */
+  data$: {{$className}}Data;
+
+  constructor(err: {{$className}}Data, httpMeta: { response: Response; request: Request; body: string }) {
+    {{- $errorMessageAccessor := getErrorMessageAccessorString .Local.Type}}
+    {{- if $errorMessageAccessor}}
+    const message = err.{{$errorMessageAccessor}} || `API error occurred: ${JSON.stringify(err)}`;
+    {{- else }}
+    {{- /* When the data type has a flattened index signature ([k: string]: unknown) */}}
+    {{- /* and no explicit message property, bracket notation is required to satisfy */}}
+    {{- /* noPropertyAccessFromIndexSignature (TS4111). */}}
+    {{- if and $additionalPropsField (shouldFlattenAdditionalProperties $additionalPropsField) }}
+    const message = "message" in err && typeof err["message"] === "string" ? err["message"] : `API error occurred: ${JSON.stringify(err)}`;
+    {{- else }}
+    const message = "message" in err && typeof err.message === "string" ? err.message : `API error occurred: ${JSON.stringify(err)}`;
+    {{- end }}
+    {{- end }}
+    super(message, httpMeta);
+    this.data$ = err;
+
+    {{- range .Local.Type.Fields}}
+    {{- if shouldFlattenAdditionalProperties . }}
+    {{continue}}
+    {{- end}}
+    {{- $fieldName := sanitizeModelField .}}
+
+    {{- if isReservedErrorField $fieldName }}{{ continue }}{{ end }}
+    {{- $isOptional := isErrorFieldOptional . }}
+    {{- if $isOptional }}
+    if (err{{accessModelField .}} != null) { this{{accessModelField .}} = err{{accessModelField .}} }
+    {{- else}}
+    this{{accessModelField .}} = err{{accessModelField .}}
+    {{- end}}
+    {{- end}}
+    {{""}}
+    this.name = "{{$className}}";
+  }
+}

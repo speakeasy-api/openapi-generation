@@ -1,0 +1,40 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/merged-nullable-datetime-allof:
+    get:
+      operationId: primaryMergedNullableDatetimeAllOf
+      responses:
+        "200":
+          description: A response that exercises a merged allOf schema with nullable date-time fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrimaryMergedNullableDatetimeAllOfTransaction"
+components:
+  schemas:
+    PrimaryMergedNullableDatetimeAllOfTransaction:
+      allOf:
+        - type: object
+          properties:
+            id:
+              type: string
+          required:
+            - id
+        - type: object
+          properties:
+            authorized_datetime:
+              type: string
+              format: date-time
+              nullable: true
+            datetime:
+              type: string
+              format: date-time
+              nullable: true

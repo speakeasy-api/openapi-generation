@@ -1,0 +1,21 @@
+package {{templatePackageName}}.utils;
+
+import java.lang.reflect.Field;
+
+class SecurityMetadata {
+
+    String type;
+    String subtype;
+    boolean option;
+    boolean scheme;
+    boolean composite;
+    String name;
+
+    private SecurityMetadata() {
+    }
+
+    // security:scheme=true,type=apiKey,subtype=header
+    static SecurityMetadata parse(Field field) throws IllegalArgumentException, IllegalAccessException {
+       return Metadata.parse("security", new SecurityMetadata(), field);
+    }
+}

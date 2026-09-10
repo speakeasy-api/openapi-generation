@@ -1,0 +1,30 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    hoistGlobalSecurity: false
+unity:
+  inferUnionDiscriminators: false
+  version: 0.0.1
+  author: Speakeasy
+  clientServerStatusCodesAsErrors: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks
+  maxMethodParams: 5
+  packageName: No_Security.API
+  disableNamespacePascalCasingApr2024: true
+  defaultErrorName: SDKException

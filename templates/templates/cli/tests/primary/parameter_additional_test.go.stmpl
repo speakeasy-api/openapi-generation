@@ -1,0 +1,164 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestParametersHeaderParamsNil(t *testing.T) {
+	recordTest("parameters-header-params-nil")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Call without setting any optional header flags — they should be absent from the request.
+	err := h.RunWithServer(s.URL, []string{"parameters", "header-params-nil"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// The response echoes headers back. None of the optional/nullable headers
+	// should be present since we didn't set them.
+	headersRaw := jsonGet(output, "headers")
+	if headersRaw != nil {
+		headers, ok := headersRaw.(map[string]interface{})
+		if ok {
+			for k := range headers {
+				hdr := strings.ToLower(k)
+				assert.NotEqual(t, "optional-header", hdr, "Optional-Header should not be present")
+				assert.NotEqual(t, "nullable-header", hdr, "Nullable-Header should not be present")
+				assert.NotEqual(t, "optional-nullable-header", hdr, "Optional-Nullable-Header should not be present")
+			}
+		}
+	}
+}
+
+func TestParametersDefaultQueryParamAppliedOnBareInvocation(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// No flags at all — the schema default must still be sent as a query param.
+	err := h.RunWithServer(s.URL, []string{"parameters", "default-query-params"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "defaultvalue", jsonGetString(output, "args.defaultParam"),
+		"schema default must be sent when no flags are passed")
+}
+
+func TestParametersAllowEmptyValue(t *testing.T) {
+	recordTest("parameters-allow-empty-value")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test with non-empty values — verify params appear in echoed args
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "allow-empty-value-query-params",
+		"--str-param", "test",
+		"--num-param", "123",
+		"--arr-param", "a",
+		"--arr-param", "b",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Echo server puts query params in "args" as strings
+	assert.Equal(t, "test", jsonGetString(output, "args.strParam"))
+	assert.Equal(t, "123", jsonGetString(output, "args.numParam"))
+}
+
+func TestParametersFormQueryParamsUnions(t *testing.T) {
+	recordTest("parameters-form-query-params-unions")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "form-query-params-union",
+		"--str-param", "test3",
+		"--union-param", `["test1","test2"]`,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "test3", jsonGetString(output, "args.strParam"))
+	// Union array param should be echoed
+	assert.Contains(t, output, `"test1"`)
+	assert.Contains(t, output, `"test2"`)
+}
+
+var simpleObjectJSON = `{"any":"any","bigint":8821239038968084,"bigintStr":"9223372036854775808","bool":true,"boolOpt":true,"date":"2020-01-01","dateTime":"2020-01-01T00:00:00.001Z","decimal":3.141592653589793,"decimalStr":"3.14159265358979344719667586","enum":"one","float32":1.1,"float64Str":"1.1","int":1,"int32":1,"int32Enum":55,"int64Str":"100","intEnum":2,"num":1.1,"str":"test","strOpt":"testOptional"}`
+
+func TestParametersJsonQueryParamsObject(t *testing.T) {
+	recordTest("parameters-json-query-params-object")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	deepObjJSON := `{"any":"any","arr":[` + simpleObjectJSON + `],"bool":true,"int":1,"map":{"key":` + simpleObjectJSON + `},"num":1.1,"obj":` + simpleObjectJSON + `,"str":"test"}`
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "json-query-params-object-smaller",
+		"--deep-obj-param", deepObjJSON,
+		"--simple-obj-param", simpleObjectJSON,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Echo server puts JSON-serialized query params in "args" as strings
+	assert.Contains(t, output, `"simpleObjParam"`)
+	assert.Contains(t, output, `"deepObjParam"`)
+}
+
+func TestParametersMixedQueryParams(t *testing.T) {
+	recordTest("parameters-mixed-query-params")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "mixed-query-params",
+		"--json-param", simpleObjectJSON,
+		"--form-param", simpleObjectJSON,
+		"--deep-object-param", simpleObjectJSON,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the args contain parameters from all three serialization styles
+	assert.Contains(t, output, `"jsonParam"`)
+	// Form-exploded params appear as flat keys
+	assert.Contains(t, output, `"str"`)
+	assert.Contains(t, output, `"bool"`)
+}
+
+func TestParametersPathParameterJson(t *testing.T) {
+	recordTest("parameters-path-parameter-json")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "path-parameter-json",
+		"--json-obj", simpleObjectJSON,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	url := jsonGetString(output, "url")
+	// The JSON object should be embedded in the URL path
+	assert.Contains(t, url, "/pathParams/json/")
+}

@@ -1,0 +1,190 @@
+{{typedDirective}}
+# frozen_string_literal: true
+{{- $ctx := . -}}
+{{- $global := .Global -}}
+{{- $subsdks := .Local.SubSDKs -}}
+{{- $moduleName := sanitizeModuleName .Global.Config.Module -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $hasSubSDKs := (gt (len .Local.SubSDKs) 0)}}
+{{- $hasServerVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverVariables := .Local.Servers.GetVariables }}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $globals := .Local.Globals}}
+
+{{ getSDKImports .Local}}
+
+module {{ $moduleName }}
+  {{sorbetTSig}}
+
+  class {{$sdkClassName}}
+    {{sorbetTSig}}
+
+    {{$n := len $subsdks}}{{if gt $n 0}}attr_accessor {{ range $index, $subsdk := $subsdks}}:{{sanitizeFieldName $subsdk.Type.Name}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}}{{end}}
+    {{- range .Local.Operations}}
+    {{- if .Servers}}
+    {{templateString "servers.rb.stmpl" .}}{{end}}
+    {{- end}}
+
+    # Instantiates the SDK, configuring it with the provided parameters.
+    #
+    # @param client [Faraday::Connection, nil] The faraday HTTP client to use for all operations
+    # @param retry_config [::{{ $moduleName }}::Utils::RetryConfig, nil] The retry configuration to use for all operations
+    # @param timeout_ms [Integer, nil] Request timeout in milliseconds for all operations
+    {{- if .Local.Security}}
+    {{- $securityType := sanitizeYardocType .Local.Security.Type true false ""}}
+    {{- $securityName := sanitizeFieldName .Local.Security.Type.Name}}
+    {{- if eq (len .Local.Security.Type.Fields) 1}}
+    {{- $securityType := sanitizeYardocType (first .Local.Security.Type.Fields).Type false false}}
+    {{- $securityName := sanitizeFieldName (first .Local.Security.Type.Fields).Name}}
+    {{- end}}
+    # @param {{ $securityName }} [{{ $securityType }}] The security details required for authentication
+    # @param security_source [Proc{|| {{ $securityType -}} }] A function that returns security details required for authentication{{end}}{{if .Local.Globals}}{{range .Local.Globals.Fields}}
+    # @param {{templateSDKInitFieldName .Name "global"}} [{{ sanitizeYardocType .Type true false }}] Configures the {{sanitizeFieldName .Name}} parameter for all supported operations{{end}}{{end}}{{if $hasServerVariables}}{{range $variable := $serverVariables}}
+    # @param {{templateSDKInitFieldName $variable.Name "server"}} [{{ sanitizeYardocType $variable.Type true false }}] Allows setting the {{$variable.Name}} variable for url substitution{{end}}{{end}}
+    {{- if $serverMap}}
+    # @param server [Symbol, nil] The server identifier to use for all operations
+    {{- else if .Local.Servers}}
+    # @param server_idx [Integer, nil] The index of the server to use for all operations
+    {{- end}}
+    # @param server_url [String, nil] The server URL to use for all operations
+    # @param url_params [Hash{Symbol => String}, nil] Parameters to optionally template the server URL with
+    {{- if sorbetEnabled }}{{/* ensure no blank line when sorbet is disabled */}}
+{{sanitizeSDKConstructorSorbet .Local}}
+    {{- end }}
+{{sanitizeSDKConstructorSignature .Local}}
+
+      connection_options = {
+        request: {
+          params_encoder: Faraday::FlatParamsEncoder
+        }
+      }
+      connection_options[:request][:timeout] = (timeout_ms.to_f / 1000) unless timeout_ms.nil?
+
+      client ||= Faraday.new(**connection_options) do |f|
+        {{if ne .Global.Config.MultipartArrayFormat "legacy"}}f.request :multipart, { flat_encode: true }{{else}}f.request :multipart, {}{{end}}
+        # f.response :logger, nil, { headers: true, bodies: true, errors: true }
+      end
+      {{if $hasServerVariables}}has_custom_server_variable = {{- range $idx, $variable := $serverVariables }}
+          {{-   if eq $idx 0 }} {{ else if ne $idx (len $serverVariables) }} || {{ end -}}
+          !{{   templateSDKInitFieldName $variable.Name "server" }}.nil?
+      {{- end }}{{end}}
+      {{- range $variable := $serverVariables }}
+      {{templateSDKInitFieldName $variable.Name "server"}} = {{templateSDKInitFieldName $variable.Name "server"}}.nil? ? '{{$variable.Default}}' : {{templateSDKInitFieldName $variable.Name "server"}}{{- if eq $variable.Type.Type "enum"}}.serialize{{end}}
+      {{- end }}
+      if !server_url.nil?
+        if !url_params.nil?
+          server_url = Utils.template_url(server_url, url_params)
+        {{ if $hasServerVariables -}}
+        elsif has_custom_server_variable
+          url_params = {
+            {{- range $variable := $serverVariables }}
+            {{$variable.Name}}: {{templateSDKInitFieldName $variable.Name "server"}},
+            {{- end }}
+          }
+          server_url = Utils.template_url(server_url, url_params)
+        {{ end -}}
+        end
+      end
+
+    {{- if $serverMap }}
+
+      raise StandardError, "Invalid server \"#{server}\"" if !server.nil? && !SERVERS.key?(server)
+    {{- else if .Local.Servers }}
+
+      server_idx = 0 if server_idx.nil?
+    {{- end}}
+
+    {{- if $hasServerVariables}}
+      {{- if $serverMap}}
+
+      server_params = {
+        {{- range .Local.Servers.Servers}}
+        {{sanitizeHashKey .ID}}: {
+          {{- range $variable := .Variables}}
+          {{$variable.Name}}: {{templateSDKInitFieldName $variable.Name "server"}},
+          {{- end}}
+        },
+        {{- end}}
+      }
+      {{- else}}
+
+      server_params = [
+        {{- range .Local.Servers.Servers}}
+        {
+          {{- range $variable := .Variables}}{{ if $variable.Name }}
+            {{$variable.Name}}: {{templateSDKInitFieldName $variable.Name "server"}},
+          {{- end}}{{end}}
+        },{{- end}}
+      ]
+      {{- end}}
+    {{- end}}
+
+    {{- if .Local.Globals}}
+
+      globals = {
+        {{- if ne (len .Local.Globals.Fields) 0}}
+        'parameters': {
+          'queryParam': {
+            {{- range .Local.Globals.Fields}}
+            {{- if eq (getParameterType .) "queryParam"}}
+            '{{sanitizeFieldName .Name}}': {{templateSDKInitFieldName .Name "global"}},
+            {{- end}}
+            {{- end}}
+          },
+          'pathParam': {
+            {{- range .Local.Globals.Fields}}
+            {{- if eq (getParameterType .) "pathParam"}}
+            '{{sanitizeFieldName .Name}}': {{templateSDKInitFieldName .Name "global"}},
+            {{- end}}
+            {{- end}}
+          },
+          'header': {
+            {{- range .Local.Globals.Fields}}
+            {{- if eq (getParameterType .) "header"}}
+            '{{sanitizeFieldName .Name}}': {{templateSDKInitFieldName .Name "global"}},
+            {{- end}}
+            {{- end}}
+          }
+        }
+        {{- end}}
+      }
+    {{- end}}
+      hooks = SDKHooks::Hooks.new
+      @sdk_configuration = {{templateSDKConfigurationConstructor .Local}}
+      @sdk_configuration = hooks.sdk_init(config: @sdk_configuration)
+      {{if $hasSubSDKs}}init_sdks{{end}}
+    end
+
+    {{- if $hasSubSDKs}}
+
+    {{ if sorbetEnabled}}sig { void }{{end}}
+    def init_sdks
+      {{- range .Local.SubSDKs}}
+      {{- if ne .Type.Name ""}}
+      @{{sanitizeFieldName .FieldName}} = {{sanitizeClassName .Type.Name}}.new(@sdk_configuration){{end}}{{end}}
+    end
+    {{- end}}
+
+    {{if sorbetEnabled}}sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }{{end}}
+    def get_url(base_url:, url_variables: nil)
+      sd_base_url, sd_options = @sdk_configuration.get_server_details
+
+      if base_url.nil?
+        base_url = sd_base_url
+      end
+
+      if url_variables.nil?
+        url_variables = sd_options
+      end
+
+      return Utils.template_url base_url, url_variables
+    end
+
+{{ if .Local.Operations }}
+{{ range .Local.Operations }}
+
+    {{templateString "method.rb.stmpl" . | trimSuffix "\n"}}
+{{- end }}
+{{ end -}}
+  end
+end

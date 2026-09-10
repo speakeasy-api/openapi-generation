@@ -1,0 +1,35 @@
+{{- $deprecated := (and .Local.Comments .Local.Comments.Deprecated) -}}
+# {{if $deprecated}}~~{{end}}{{sanitizeClassName .Local.Name}}{{if $deprecated}}~~{{end}}
+{{if .Local.Comments}}{{if .Local.Comments.Description}}
+{{.Local.Comments.Description}}
+{{else if .Local.Comments.Summary}}
+{{.Local.Comments.Summary}}
+{{end}}{{if .Local.Comments.ExternalDocs}}{{if .Local.Comments.ExternalDocs.Description}}
+{{.Local.Comments.ExternalDocs.Description}}{{end}}
+<{{.Local.Comments.ExternalDocs.URL}}>
+{{end}}{{if $deprecated}}
+{{- $deprecationReplacement := sanitizeDeprecationReplacement .Local.Comments.DeprecationReplacement "type"}}
+> :warning: **DEPRECATED**: {{.Local.Comments.DeprecationMessage}}.{{if $deprecationReplacement}} Use `{{$deprecationReplacement}}` instead.{{end}}
+{{end}}{{end}}
+{{- if ne .Local.Type "union"}}{{templateString "usage/model_snippet.stmpl" .Local}}{{end}}
+{{- if or (eq .Local.Type "class") (eq .Local.Type "error")}}
+{{- $fieldDocumentation := templateObjectFieldDocs .Local}}
+{{if $fieldDocumentation}}
+## Fields
+
+{{$fieldDocumentation}}
+{{- end}}
+{{- else if eq .Local.Type "enum"}}
+{{- $enumDocumentation := templateEnumDocs .Local}}
+{{if $enumDocumentation}}
+## Values
+
+{{$enumDocumentation}}
+{{- end}}
+{{- else if eq .Local.Type "union"}}
+{{- $unionDocumentation := templateUnionDocs .Local}}
+{{if $unionDocumentation}}
+## Supported Types
+
+{{$unionDocumentation}}
+{{- end}}{{end}}

@@ -1,0 +1,1288 @@
+
+[TestChanges_DeeplyNestedFields/deeply_nested_field_added - 1]
+# Test: deeply_nested_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: object
+                  properties:
+                    personal:
+                      type: object
+                      properties:
+                        details:
+                          type: object
+                          properties:
+                            contact:
+                              type: object
+                              properties:
+                                primary:
+                                  type: object
+                                  properties:
+                                    email:
+                                      type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: object
+                  properties:
+                    personal:
+                      type: object
+                      properties:
+                        details:
+                          type: object
+                          properties:
+                            contact:
+                              type: object
+                              properties:
+                                primary:
+                                  type: object
+                                  properties:
+                                    email:
+                                      type: string
+                                    phone:
+                                      type: string
+                                    address:
+                                      type: object
+                                      properties:
+                                        street:
+                                          type: string
+                                        city:
+                                          type: string
+                                        country:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.createUser(): **Added** request.profile.personal.details.contact.primary.email
+
+---
+
+[TestChanges_DeeplyNestedFields/deeply_nested_field_removed - 1]
+# Test: deeply_nested_field_removed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      operationId: getProduct
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catalog:
+                    type: object
+                    properties:
+                      inventory:
+                        type: object
+                        properties:
+                          warehouse:
+                            type: object
+                            properties:
+                              locations:
+                                type: object
+                                properties:
+                                  primary:
+                                    type: object
+                                    properties:
+                                      shelf:
+                                        type: object
+                                        properties:
+                                          row:
+                                            type: string
+                                          column:
+                                            type: integer
+                                          level:
+                                            type: integer
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      operationId: getProduct
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catalog:
+                    type: object
+                    properties:
+                      inventory:
+                        type: object
+                        properties:
+                          warehouse:
+                            type: object
+                            properties:
+                              locations:
+                                type: object
+                                properties:
+                                  primary:
+                                    type: object
+                                    properties:
+                                      shelf:
+                                        type: object
+                                        properties:
+                                          row:
+                                            type: string
+```
+
+## Changes Detected:
+* sdk.get_product(): **Removed** response.catalog.inventory.warehouse.locations.primary.shelf.row [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFields/deeply_nested_field_type_changed - 1]
+# Test: deeply_nested_field_type_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /config:
+    put:
+      operationId: updateConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                system:
+                  type: object
+                  properties:
+                    modules:
+                      type: object
+                      properties:
+                        authentication:
+                          type: object
+                          properties:
+                            providers:
+                              type: object
+                              properties:
+                                oauth:
+                                  type: object
+                                  properties:
+                                    settings:
+                                      type: object
+                                      properties:
+                                        timeout:
+                                          type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /config:
+    put:
+      operationId: updateConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                system:
+                  type: object
+                  properties:
+                    modules:
+                      type: object
+                      properties:
+                        authentication:
+                          type: object
+                          properties:
+                            providers:
+                              type: object
+                              properties:
+                                oauth:
+                                  type: object
+                                  properties:
+                                    settings:
+                                      type: object
+                                      properties:
+                                        timeout:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.updateConfig(): **Changed** request.system.modules.authentication.providers.oauth.settings.timeout [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFields/deeply_nested_array_and_map_changes - 1]
+# Test: deeply_nested_array_and_map_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /data:
+    post:
+      operationId: processData
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                datasets:
+                  type: object
+                  properties:
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          metadata:
+                            type: object
+                            properties:
+                              tags:
+                                type: object
+                                additionalProperties:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      value:
+                                        type: string
+                                      priority:
+                                        type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /data:
+    post:
+      operationId: processData
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                datasets:
+                  type: object
+                  properties:
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          metadata:
+                            type: object
+                            properties:
+                              tags:
+                                type: object
+                                additionalProperties:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      value:
+                                        type: string
+                                      priority:
+                                        type: number
+                                      category:
+                                        type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.processData(): **Changed** request.datasets.collections.[].metadata.tags.{}.[] [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFields/deeply_nested_union_changes - 1]
+# Test: deeply_nested_union_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /events:
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        payload:
+                          type: object
+                          properties:
+                            content:
+                              type: object
+                              properties:
+                                body:
+                                  oneOf:
+                                    - type: string
+                                    - type: object
+                                      properties:
+                                        text:
+                                          type: string
+                                        format:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /events:
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        payload:
+                          type: object
+                          properties:
+                            content:
+                              type: object
+                              properties:
+                                body:
+                                  oneOf:
+                                    - type: string
+                                    - type: object
+                                      properties:
+                                        text:
+                                          type: string
+                                        format:
+                                          type: string
+                                    - type: array
+                                      items:
+                                        type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.CreateEvent(): **Added** request.Event.Data.Payload.Content.Body.[string]
+
+---
+
+[TestChanges_DeeplyNestedFields/multiple_deeply_nested_changes - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.complexOperation(): **Changed** request.level1.level2.level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_go - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.Inner.ComplexOperation(): **Changed** request.Request.Level1.Level2.Level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_php - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk->inner->complexOperation(): **Changed** request->level1->level2->level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_typescript - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.inner.complexOperation(): **Changed** request.level1.level2.level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_python - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.inner.complex_operation(): **Changed** request.level1.level2.level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_ruby - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.inner.complex_operation(): **Changed** request.level1.level2.level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_java - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.inner.complexOperation(): **Changed** request.level1.level2.level3 [breaking]
+
+---
+
+[TestChanges_DeeplyNestedFieldsAndMethods_All_Languages/multiple_deeply_nested_changes_csharp - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.Inner.ComplexOperation(): **Changed** request.Level1.Level2.Level3 [breaking]
+
+---

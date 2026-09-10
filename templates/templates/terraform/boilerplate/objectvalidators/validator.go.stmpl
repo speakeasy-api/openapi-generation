@@ -1,0 +1,35 @@
+package objectvalidators
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+)
+{{- $validatorName := sanitizeClassName .Local.ValidatorName}}
+var _ validator.Object = Object{{$validatorName}}Validator{}
+
+type Object{{$validatorName}}Validator struct{}
+
+// Description describes the validation in plain text formatting.
+func (v Object{{$validatorName}}Validator) Description(_ context.Context) string {
+	return "TODO: add validator description"
+}
+
+// MarkdownDescription describes the validation in Markdown formatting.
+func (v Object{{$validatorName}}Validator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+// Validate performs the validation.
+func (v Object{{$validatorName}}Validator) ValidateObject(ctx context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
+    resp.Diagnostics.AddAttributeError(
+        req.Path,
+        "TODO: implement objectvalidator {{$validatorName}} logic",
+        req.Path.String()+": "+v.Description(ctx),
+    )
+}
+
+
+func {{$validatorName}}() validator.Object {
+	return Object{{$validatorName}}Validator{}
+}

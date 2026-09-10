@@ -1,0 +1,40 @@
+---
+title: "MCPPolicy"
+---
+
+A policy object with steps
+
+## Example Usage
+
+```typescript
+import { MCPPolicy } from "openapi";
+
+let value: MCPPolicy = {
+  policyId: "policy-456",
+  steps: [
+    {
+      stepId: "step-1",
+      approval: {
+        approvers: [
+          "user-1",
+          "user-2",
+        ],
+        escalation: {
+          enabled: true,
+          expiration: 86400,
+          fallbackApprovers: [
+            "admin-1",
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+## Fields
+
+| Field                                          | Type                                           | Required                                       | Description                                    | Example                                        |
+| ---------------------------------------------- | ---------------------------------------------- | ---------------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `policyId`                                     | *string*                                       | :heavy_check_mark:                             | N/A                                            | policy-456                                     |
+| `steps`                                        | [models.PolicyStep](../models/policystep.mdx)[] | :heavy_check_mark:                             | N/A                                            |                                                |

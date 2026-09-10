@@ -1,0 +1,11 @@
+{{- $sdkName := (sanitizeSDKName .Global.AST.MainSDK.Type.Name) -}}
+{{- $useBuilderInit := (eq .Global.Config.SDKInitStyle "builder") -}}
+{{- if not .Local.SkipSDKInstantiation -}}
+{{- if $useBuilderInit -}}
+{{- if eq .Local.ContextIndex 0}}var {{end}}sdk = {{ $sdkName }}.Builder()
+{{templateUsageSDKParams .Local true 1}}
+    .Build();
+{{- else -}}
+{{- if eq .Local.ContextIndex 0}}var {{end}}sdk = new {{ $sdkName }}({{templateUsageSDKParams .Local}});
+{{- end -}}
+{{- end -}}

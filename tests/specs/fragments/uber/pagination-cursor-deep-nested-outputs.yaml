@@ -1,0 +1,106 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/cursor/deep_nested_outputs:
+    get:
+      operationId: paginationCursorDeepNestedOutputs
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests cursor pagination whose outputs live several levels deep in the
+        response body, across a mixed required/optional/nullable hierarchy:
+        results at $.data.items (data and items both required and
+        non-nullable), and the next cursor at $.meta.paging.next_cursor where
+        meta is optional, paging is required but nullable, and next_cursor is
+        both optional and nullable. These simple dot-notation JSONPath outputs
+        are evaluated with inlined null-safe member access generated at SDK
+        generation time, so this exercises chained access through multiple
+        nested objects and every stop-condition shape on the final page: the
+        optional intermediate absent entirely, the nullable intermediate
+        explicitly null, or the leaf cursor explicitly null (selected via the
+        final_page_style parameter).
+      tags:
+        - pagination
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: final_page_style
+          required: false
+          description: >-
+            Controls how the final page terminates the cursor chain: omit-meta
+            leaves out the optional meta object, null-paging sets the required
+            but nullable paging object to null, null-cursor sets the optional
+            nullable next_cursor leaf to null.
+          schema:
+            type: string
+            enum:
+              - omit-meta
+              - null-paging
+              - null-cursor
+            default: omit-meta
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginationCursorDeepNestedOutputsResult"
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          results: $.data.items
+          nextCursor: $.meta.paging.next_cursor
+components:
+  schemas:
+    PaginationCursorDeepNestedOutputsResult:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          required:
+            - items
+          properties:
+            items:
+              type: array
+              items:
+                type: string
+        meta:
+          type: object
+          required:
+            - paging
+          properties:
+            paging:
+              anyOf:
+                - type: object
+                  properties:
+                    next_cursor:
+                      anyOf:
+                        - type: string
+                        - type: "null"
+                - type: "null"

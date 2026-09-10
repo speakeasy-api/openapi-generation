@@ -1,0 +1,16 @@
+{
+  "name": "openapi-generation",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "check:format": "prettier --check ."
+  },
+  "devDependencies": {
+    "@faker-js/faker": "9.0.1",
+    "@sagold/json-pointer": "6.0.1",
+    "@types/node": "^22.7.7",
+    "@typescript/native-preview": "latest",
+    "prettier": "^3.0.3",
+    "typescript": "^5.6.3"
+  }
+}

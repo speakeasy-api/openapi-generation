@@ -1,0 +1,33 @@
+{{- $errorsNS := getErrorsLocation }}
+{{- $sharedNS := getSharedLocation }}
+{{- $operationsNS := getOperationsLocation }}
+{{- $nss := list $errorsNS $sharedNS $operationsNS | uniq }}
+
+{
+  "name": "{{.Global.Config.PackageName}}",
+  "version": "{{.Global.Config.SDKVersion}}",
+  "exports": {
+    ".": "./src/index.ts",
+    {{- range $ns := $nss }}    
+    "./{{$ns}}": "./src/{{$ns}}/index.ts",
+    {{- end }}
+    "./lib/config": "./src/lib/config.ts",
+    "./lib/http": "./src/lib/http.ts",
+    "./lib/retries": "./src/lib/retries.ts",
+    "./lib/sdks": "./src/lib/sdks.ts",
+{{- if isFeatureUsed "serverEvents"}}
+    "./lib/event-streams": "./src/lib/event-streams.ts",
+{{- end}}
+    "./types": "./src/{{getTypesLocation}}/index.ts"
+  },
+  "publish": {
+    "include": [
+      "LICENSE",
+      "README.md",
+      "RUNTIMES.md",
+      "USAGE.md",
+      "jsr.json",
+      "src/**/*.ts"
+    ]
+  }
+}

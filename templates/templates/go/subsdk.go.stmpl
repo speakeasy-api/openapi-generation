@@ -1,0 +1,39 @@
+{{- recurse 1 -}}
+{{- $dg := sanitizeSDKPackageName false -}}
+{{- $rootSDKClassName := (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- addImport "hooks" -}}
+{{- addImport "config" -}}
+package {{$dg}}
+
+{{genImports}}
+// #region imports
+// #endregion imports
+
+{{templateComments .Local.Comments $dg $sdkClassName 0 "type" -}}
+type {{$sdkClassName}} struct {
+  	{{- range $subSDK := .Local.SubSDKs -}}
+	{{- $subSDKName := $subSDK.Type.Name -}}
+  	{{if ne $subSDKName ""}}
+{{templateComments $subSDK.Comments $dg (sanitizeSDKFieldName $subSDKName) 1 "field" -}}
+  	{{sanitizeSDKFieldName $subSDK.FieldName}} *{{sanitizeClassName $subSDKName}};{{end}}{{end}}
+
+	rootSDK *{{$rootSDKClassName}}
+    sdkConfiguration config.SDKConfiguration
+	hooks *hooks.Hooks
+}
+
+func new{{$sdkClassName}}(rootSDK *{{$rootSDKClassName}}, sdkConfig config.SDKConfiguration, hooks *hooks.Hooks) *{{$sdkClassName}} {
+	return &{{$sdkClassName}}{
+		rootSDK: rootSDK,
+        sdkConfiguration:  sdkConfig,
+		hooks: hooks,{{range .Local.SubSDKs}}{{$subSDKName := .Type.Name}}{{if ne $subSDKName ""}}
+        {{sanitizeSDKFieldName .FieldName}}: new{{sanitizeClassName $subSDKName}}(rootSDK, sdkConfig, hooks),{{end}}{{end}}
+	}
+}
+
+{{range .Local.Operations}}
+{{templateString "method.go.stmpl" (dict "Operation" . "TopLevelSDK" false "DocGroup" $dg)}}
+{{end}}
+// #region sdk-class-body
+// #endregion sdk-class-body

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>{{getExecutableFramework}}</TargetFramework>
+    <Nullable>enable</Nullable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+{{templateDependencies}}
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="{{getUsageSourceFilePath .Global.Config.Usage.SourceDir}}"/>
+  </ItemGroup>
+
+</Project>

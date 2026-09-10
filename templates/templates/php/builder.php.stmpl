@@ -1,0 +1,224 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $builderClassName := (print $sdkClassName "Builder") -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $namespace := .Global.Config.Namespace -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+{{genImports}}
+
+/**
+ * {{$builderClassName}} is used to configure and build an instance of the SDK.
+ */
+class {{$builderClassName}}
+{
+    public function __construct(
+        private SDKConfiguration $sdkConfig = new SDKConfiguration(),
+    ) {
+    }
+
+    /**
+     * setClient allows setting a custom Guzzle client for the SDK to make requests with.
+     *
+     * @param  \GuzzleHttp\ClientInterface  $client
+     * @return {{$builderClassName}}
+     */
+    public function setClient(\GuzzleHttp\ClientInterface $client): {{$builderClassName}}
+    {
+        $this->sdkConfig->client = $client;
+
+        return $this;
+    }
+{{if .Local.Security}}
+    {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+    {{- $flatType := sanitizeType (index .Local.Security.Type.Fields 0).Type false false ""}}
+    {{- $flatName := sanitizeFieldName (first .Local.Security.Type.Fields).Name}}
+    /**
+     * setSecurity is used to configure the security required for the SDK.
+     *
+     * @param  {{$flatType}}  ${{$flatName}}
+     * @return {{$builderClassName}}
+     */
+    public function setSecurity({{$flatType}} ${{$flatName}}): {{$builderClassName}}
+    {
+        $security = new {{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}}(
+            {{$flatName}}: ${{$flatName}}
+        );
+        $this->sdkConfig->securitySource = fn () => $security;
+
+        return $this;
+    }
+    {{- else}}
+    /**
+     * setSecurity is used to configure the security required for the SDK.
+     *
+     * @param  {{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}}  $security
+     * @return {{$builderClassName}}
+     */
+    public function setSecurity({{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}} $security): {{$builderClassName}}
+    {
+        $this->sdkConfig->securitySource = fn () => $security;
+
+        return $this;
+    }
+    {{- end}}
+
+    /**
+     * setSecuritySource is usd to configure the security required for the SDK.
+     * unlike setSecurity, setSecuritySource accepts a closure that will be called to retrieve the security information.
+     *
+     {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+     * @param  pure-Closure(): {{sanitizeType (index .Local.Security.Type.Fields 0).Type false false ""}}  $securitySource
+     {{- else}}
+     * @param  pure-Closure(): {{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}}  $securitySource
+     {{- end}}
+     * @return {{$builderClassName}}
+     */
+    public function setSecuritySource(\Closure $securitySource): {{$builderClassName}}
+    {
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+        {{- $flatName := sanitizeFieldName (first .Local.Security.Type.Fields).Name}}
+        $this->sdkConfig->securitySource = fn () => new {{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}}({{$flatName}}: $securitySource());
+        {{- else}}
+        $this->sdkConfig->securitySource = $securitySource;
+        {{- end}}
+
+        return $this;
+    }
+{{end}}
+    /**
+     * setServerUrl is used to configure the server URL for the SDK, and optionally template any parameters in the URL.
+     *
+     * @param  string  $serverUrl
+     * @param  array<string, string>  $params
+     * @return {{$builderClassName}}
+     */
+    public function setServerUrl(string $serverUrl, ?array $params = null): {{$builderClassName}}
+    {
+        $this->sdkConfig->serverUrl = Utils\Utils::templateUrl($serverUrl, $params);
+
+        return $this;
+    }
+{{if .Local.Servers}}
+    {{- if $serverMap}}
+    /**
+     * setServer is used to configure the server for the SDK
+     *
+     * @param  string  $server
+     * @return {{$builderClassName}}
+     */
+    public function setServer(string $server): {{$builderClassName}}
+    {
+        $this->sdkConfig->server = $server;
+
+        return $this;
+    }
+{{- else}}
+    /**
+     * setServer is used to configure the server for the SDK
+     *
+     * @param  int  $serverIdx
+     * @return {{$builderClassName}}
+     */
+    public function setServerIndex(int $serverIdx): {{$builderClassName}}
+    {
+        $this->sdkConfig->serverIndex = $serverIdx;
+
+        return $this;
+    }
+{{- end}}
+    {{- range $variable := .Local.Servers.GetVariables}}
+    {{- if eq $variable.Type.Type "enum"}}{{templateFile "serverenumfile.php.stmpl" (print "src/" (sanitizeFileName $variable.Type.Name) ".php") $variable}}{{end}}
+
+    /**
+     * {{templateSDKBuilderName $variable.Name}} is used to configure the {{$variable.Name}} variable for url substitution
+     *
+     * @param  {{sanitizeType $variable.Type false false ""}}  ${{sanitizeFieldName $variable.Name}}
+     * @return {{$builderClassName}}
+     */
+    public function {{templateSDKBuilderName $variable.Name}}({{sanitizeType $variable.Type false false ""}} ${{sanitizeFieldName $variable.Name}}): {{$builderClassName}}
+    {
+        {{- if $serverMap}}
+        foreach ($this->sdkConfig->serverVariables as $server => $serverVariables) {
+            if (! array_key_exists('{{$variable.Name}}', $serverVariables)) {
+                continue;
+            }
+            {{- if eq $variable.Type.Type "enum"}}
+            $this->sdkConfig->serverVariables[$server]['{{$variable.Name}}'] = ${{sanitizeFieldName $variable.Name}}->value;
+            {{- else}}
+            $this->sdkConfig->serverVariables[$server]['{{$variable.Name}}'] = ${{sanitizeFieldName $variable.Name}};
+            {{- end}}
+        }
+        {{- else}}
+        foreach ($this->sdkConfig->serverVariables as $idx => $serverVariables) {
+            if (! array_key_exists('{{$variable.Name}}', $serverVariables)) {
+                continue;
+            }
+            {{- if eq $variable.Type.Type "enum"}}
+            $this->sdkConfig->serverVariables[$idx]['{{$variable.Name}}'] = ${{sanitizeFieldName $variable.Name}}->value;
+            {{- else}}
+            $this->sdkConfig->serverVariables[$idx]['{{$variable.Name}}'] = ${{sanitizeFieldName $variable.Name}};
+            {{- end}}
+        }
+        {{- end}}
+
+        return $this;
+    }
+    {{- end}}
+{{- end}}
+
+{{- if $globals}}
+    {{- range .Local.Globals.Fields}}
+    /**
+     * {{templateSDKBuilderName .Name}} is used to configure the {{.Name}} parameter for the SDK.
+     *
+     * @param  {{sanitizeType .Type false false ""}}  ${{sanitizeFieldName .Name}}
+     * @return {{$builderClassName}}
+     */
+    public function {{templateSDKBuilderName .Name}}({{sanitizeType .Type false false ""}} ${{sanitizeFieldName .Name}}): {{$builderClassName}}
+    {
+        if (! array_key_exists('{{getParameterType .}}', $this->sdkConfig->globals['parameters'])) {
+            $this->sdkConfig->globals['parameters']['{{getParameterType .}}'] = [];
+        }
+
+        $this->sdkConfig->globals['parameters']['{{getParameterType .}}']['{{sanitizeFieldName .Name}}'] = ${{sanitizeFieldName .Name}};
+
+        return $this;
+    }
+    {{- end}}
+{{- end}}
+{{ addImportInline (getScopeNamespace "retry" true) }}
+    public function setRetryConfig(Retry\RetryConfig $config): {{$builderClassName}}
+    {
+        $this->sdkConfig->retryConfig = $config;
+
+        return $this;
+    }
+
+    /**
+     * build is used to build the SDK with any of the configured options.
+     *
+     * @return {{$sdkClassName}}
+     */
+    public function build(): {{$sdkClassName}}
+    {
+        if ($this->sdkConfig->client === null) {
+            $this->sdkConfig->client = new \GuzzleHttp\Client([
+                'timeout' => 60,
+            ]);
+        }
+
+        $this->sdkConfig->defaultClient = $this->sdkConfig->client;
+
+        {{- if .Local.Security}}
+        if ($this->sdkConfig->hasSecurity()) {
+            $this->sdkConfig->client = Utils\Utils::configureSecurityClient($this->sdkConfig->client, $this->sdkConfig->getSecurity());
+        }
+        {{- end}}
+
+        return new {{$sdkClassName}}($this->sdkConfig);
+    }
+}

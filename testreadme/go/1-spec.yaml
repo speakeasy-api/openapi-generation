@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Minimal document for testing README sections insertion, removal and editing.
+  version: 1.0.0
+  summary: |-
+    - retries are disabled at the global level
+servers:
+  - url: http://localhost:12345
+security: []
+x-speakeasy-retries:
+  disabled: true
+paths:
+  /operation/1:
+    get:
+      operationId: op1
+      tags:
+        - tag1
+      responses:
+        "200":
+          description: OK

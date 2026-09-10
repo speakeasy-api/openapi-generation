@@ -1,0 +1,43 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/hooks/customUserAgent:
+    get:
+      operationId: hooksCustomUserAgent
+      description: >
+        Exercises SDK hook access to generation metadata carried on the SDK
+        configuration: the SDK version, the generator version and the OpenAPI
+        document version. A custom hook replaces the `User-Agent` request header
+        with a `product/version product/version` string built from the SDK
+        version and the language runtime version, and echoes the generator and
+        document versions as `X-Test-Gen-Version` and `X-Test-Doc-Version`
+        request headers. The server reflects the request headers in the response
+        body so a test can assert that the values the hook observed match the
+        values baked into the generated SDK.
+      tags:
+        - hooks
+      responses:
+        "200":
+          description: The reflected request, including the headers the hook set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomUserAgentEcho"
+components:
+  schemas:
+    CustomUserAgentEcho:
+      type: object
+      properties:
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - headers

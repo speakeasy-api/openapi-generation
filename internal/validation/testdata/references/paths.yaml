@@ -1,0 +1,23 @@
+test-2:
+  parameters:
+    - $ref: "./parameters.yaml#/test-org"
+  post:
+    summary: Test
+    description: Test
+    operationId: test-2
+    parameters:
+      - $ref: "./components.yaml#/components/parameters/test-team"
+    requestBody:
+      $ref: "./components.yaml#/components/requestBodies/test-request-body"
+    tags:
+      - Test
+    responses:
+      "200":
+        $ref: "./components.yaml#/components/responses/test-response"
+      default:
+        $ref: "./components.yaml#/components/responses/default-response"
+    callbacks:
+      test:
+        $ref: "./components.yaml#/components/callbacks/test-callback-4"
+      test-2:
+        $ref: "./components.yaml#/components/callbacks/test-callback-5"

@@ -1,0 +1,58 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $sdk := .Local -}}
+{{- $pkg := templatePackageName -}}
+{{- $fullClassName := (print $pkg "." $sdkClassName) -}}
+{{- $asyncSDKClassName := (print "Async" $sdkClassName) -}}
+package {{$pkg}};
+{{genImports $fullClassName -}}
+// #region imports
+// #endregion imports{{"\n"}}{{templateCommentsStripped .Local.Comments nil 0}}
+public class {{$sdkClassName}} {
+    private static final {{javaImportLocal "utils.Headers"}} _headers = {{javaImportLocal "utils.Headers"}}.EMPTY;
+    private final SDKConfiguration sdkConfiguration;
+    {{- if asyncEnabled}}
+    private final {{$asyncSDKClassName}} asyncSDK;
+    {{- end}}
+    {{- range .Local.SubSDKs}}
+    {{- if ne .Type.Name "" -}}
+{{templateCommentsStripped .Comments nil 1}}
+    private final {{sanitizeClassName .Type.Name}} {{sanitizeFieldName .FieldName}};{{end}}{{end}}
+
+    {{$sdkClassName}}(SDKConfiguration sdkConfiguration) {
+        this.sdkConfiguration = sdkConfiguration;
+        {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+        this.{{sanitizeFieldName .FieldName}} = new {{sanitizeClassName .Type.Name}}(this.sdkConfiguration);{{end}}{{end}}
+        {{- if asyncEnabled}}
+        this.asyncSDK = new {{$asyncSDKClassName}}(this, sdkConfiguration);
+        {{- end}}
+    }
+    {{- "\n"}}
+    {{- range .Local.SubSDKs}}
+    {{- if ne .Type.Name "" -}}
+{{templateCommentsStripped .Comments nil 1}}
+    public final {{sanitizeClassName .Type.Name}} {{sanitizeFieldName .FieldName}}() {
+        return {{sanitizeFieldName .FieldName}};
+    }
+    {{- "\n"}}
+    {{- end}}{{end}}
+    // #region sdk-class-body
+    // #endregion sdk-class-body
+    // #region class-body
+    // #endregion class-body
+    {{- if asyncEnabled}}
+    /**
+     * Switches to the async SDK.
+     * 
+     * @return The async SDK
+     */
+    public {{$asyncSDKClassName}} {{sanitizeModeMethodName "async" $sdk}}() {
+        return asyncSDK;
+    }
+    {{- "\n"}}
+    {{- end}}
+{{- range .Local.Operations}}
+{{templateString "method.java.stmpl" (dict "Operation" . "SDK" $sdk)}}
+{{- end}}
+}

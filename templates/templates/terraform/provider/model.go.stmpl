@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+
+{{- range $import := .Local.Imports -}}
+{{- addGenImport $import -}}
+{{- end -}}
+
+package {{ .Local.PackageName }}
+
+{{ genImports }}
+
+{{ .Local.Content }}

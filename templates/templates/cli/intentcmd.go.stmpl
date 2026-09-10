@@ -1,0 +1,566 @@
+{{- recurse 1 -}}
+{{- $c := .Local -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "fmt" -}}
+{{- if and $c.BodyFlag (not $c.Dispatch)}}
+{{- addImport "encoding/json" -}}
+{{- end}}
+{{- if and $c.Args $c.BodyFlag (not $c.Dispatch)}}
+{{- addImport "strings" -}}
+{{- end}}
+{{- if or $c.Args $c.AsyncJSON}}
+{{- addImport "internal/output" true -}}
+{{- end}}
+{{- if or $c.HasMeta $c.BodyFlag $c.Flags $c.ArtifactJSON $c.AsyncJSON}}
+{{- addImport "internal/flagutil" true -}}
+{{- end}}
+{{- if $c.AsyncJSON}}
+{{- addImport "context" -}}
+{{- addImport "internal/client" true -}}
+{{- addImport "operations" -}}
+{{- end}}
+{{- addImport "internal/usage" true -}}
+{{- if $c.Args}}
+{{- addImport "internal/client" true -}}
+{{- end}}
+package {{$c.PkgName}}
+
+{{genImports}}
+
+func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
+	cmd := &cobra.Command{
+		Use:     "{{$c.Use}}",
+		Short:   "{{escapeGoString $c.Summary}}",
+		{{- if $c.Description}}
+		Long:    "{{escapeGoString $c.Description}}{{if $c.ArgsHelp}}\n\nArguments:\n{{escapeGoString $c.ArgsHelp}}{{end}}{{if $c.VariantHelp}}\n\n{{escapeGoString $c.VariantHelp}}{{end}}",
+		{{- else if $c.ArgsHelp}}
+		Long:    "Arguments:\n{{escapeGoString $c.ArgsHelp}}{{if $c.VariantHelp}}\n\n{{escapeGoString $c.VariantHelp}}{{end}}",
+		{{- else if $c.VariantHelp}}
+		Long:    "{{escapeGoString $c.VariantHelp}}",
+		{{- end}}
+		Example: "{{escapeGoString $c.Example}}",
+		{{- if $c.Args}}
+		Args:    cobra.ArbitraryArgs,
+		{{- else}}
+		Args:    cobra.NoArgs,
+		{{- end}}
+		RunE:    runIntent{{$c.FuncName}}Cmd,
+		Annotations: map[string]string{
+			"speakeasy_operation": "{{escapeGoString $c.OpID}}",
+			{{- if $c.BodyFlag}}
+			flagutil.AnnotationWholeBodyFlag: "{{$c.BodyFlag}}",
+			{{- end}}
+			"speakeasy_strict_body_keys": "true",
+			{{- if eq (helpStyle) "compact"}}
+			{{- if $c.HelpDefaults}}
+			"speakeasy_help_defaults": "{{escapeGoString $c.HelpDefaults}}",
+			{{- end}}
+			{{- if $c.HelpLearn}}
+			"speakeasy_help_learn": "{{escapeGoString $c.HelpLearn}}",
+			{{- end}}
+			{{- if $c.HelpEscalate}}
+			"speakeasy_help_escalate": "{{escapeGoString $c.HelpEscalate}}",
+			{{- end}}
+			{{- end}}
+			{{- if $c.HintsJSON}}
+			"speakeasy_command_hints": "{{escapeGoString $c.HintsJSON}}",
+			{{- end}}
+			{{- if $c.ArtifactJSON}}
+			"speakeasy_artifact": "{{escapeGoString $c.ArtifactJSON}}",
+			{{- end}}
+			{{- if $c.AsyncJSON}}
+			"speakeasy_async": "{{escapeGoString $c.AsyncJSON}}",
+			{{- end}}
+			{{- if $c.StreamSelect}}
+			"speakeasy_stream_select": "{{escapeGoString $c.StreamSelect}}",
+			{{- end}}
+		},
+	}
+	{{- if $c.HasMeta}}
+	{{- if $c.Dispatch}}
+	intentMeta := flagutil.NonBodyMeta({{$c.MetaVar}}, "{{$c.BodyFieldPath}}")
+	flagutil.RegisterFlags(cmd, intentMeta)
+	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
+	{{- else}}
+	flagutil.RegisterFlags(cmd, {{$c.MetaVar}})
+	flagutil.SetMetaPromptOptional(cmd, {{$c.MetaVar}}, false)
+	{{- if $c.HasBody}}
+	flagutil.ClearBodyRequirements(cmd, {{$c.MetaVar}}, "{{$c.BodyFieldPath}}")
+	{{- end}}
+	{{- range $c.Args}}
+	{{- if .BackingFlag}}
+	_ = flagutil.OverridePromptRequirement(cmd, "{{.BackingFlag}}", false, false)
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- if $c.SecurityFlags}}
+	{{$c.SecurityFlags}}
+	{{- end}}
+	{{- if eq $c.BodyFlag "body"}}
+	cmd.Flags().String("body", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
+	_ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
+	{{- else if $c.BodyFlag}}
+	cmd.Flags().String("{{$c.BodyFlag}}", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
+	_ = flagutil.AnnotatePromptFlag(cmd, "{{$c.BodyFlag}}", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
+	{{- end}}
+	{{- if and $c.HasMeta $c.BodyFlag (not $c.Dispatch)}}
+	if err := flagutil.AnnotateBodyFields(cmd, {{$c.MetaVar}}, "{{$c.BodyFieldPath}}", "{{$c.BodyFlag}}"{{if $c.BodyParamFlag}}, "{{$c.BodyParamFlag}}"{{end}}); err != nil {
+		return fmt.Errorf("annotate body fields for intent {{$c.ID}}: %w", err)
+	}
+	{{- end}}
+	{{- if $c.BodyParamFlag}}
+	_ = flagutil.MarkBodyFlag(cmd, "{{$c.BodyParamFlag}}")
+	{{- end}}
+	{{- if $c.HasSchema}}
+	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
+	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
+	{{- end}}
+	{{- range $index, $flag := $c.Flags}}
+	{{- if eq .Type "bool"}}
+	cmd.Flags().BoolP("{{.Name}}", "{{.Shorthand}}", false, "{{escapeGoString .Summary}}")
+	{{- else if eq .Type "int"}}
+	cmd.Flags().Int64P("{{.Name}}", "{{.Shorthand}}", 0, "{{escapeGoString .Summary}}")
+	{{- else if eq .Type "float"}}
+	cmd.Flags().Float64P("{{.Name}}", "{{.Shorthand}}", 0, "{{escapeGoString .Summary}}")
+	{{- else}}
+	cmd.Flags().StringP("{{.Name}}", "{{.Shorthand}}", "", "{{escapeGoString .Summary}}")
+	{{- end}}
+	_ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
+		Required: {{if and .Required (not .PresetCovered)}}true{{else}}false{{end}},
+		Kind: "{{if eq .Type "bool"}}bool{{else if eq .Type "int"}}int64{{else if eq .Type "float"}}float64{{else}}string{{end}}",
+		Order: {{$index}},
+		{{- if .SatisfiedBy}}
+		// A supplied whole body carries this flag's bound key (and the
+		// backing operation flag supplies it directly): no prompt then.
+		BodySources: []string{ {{- range $i, $name := .SatisfiedBy}}{{if $i}}, {{end}}"{{escapeGoString $name}}"{{end -}} },
+		{{- end}}
+	})
+	{{- if .Group}}
+	_ = cmd.Flags().SetAnnotation("{{.Name}}", "speakeasy:group", []string{"{{escapeGoString .Group}}"})
+	{{- if .GroupOrder}}
+	_ = cmd.Flags().SetAnnotation("{{.Name}}", "speakeasy:group-order", []string{"{{.GroupOrder}}"})
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- if and (isInteractiveModeEnabled) $c.Args}}
+	{{- addImport "internal/interactive" true}}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{{- range $c.Args}}
+		{
+			Name: "{{escapeGoString .Name}}", Summary: "{{escapeGoString .Summary}}",
+			Required: {{if and .Required (not .PresetCovered)}}true{{else}}false{{end}}, Variadic: {{if .Variadic}}true{{else}}false{{end}},
+			BodyKey: "{{escapeGoString .Key}}",
+			SatisfiedBy: []string{ {{- range $index, $name := .SatisfiedBy}}{{if $index}}, {{end}}"{{escapeGoString $name}}"{{end -}} },
+		},
+		{{- end}}
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for intent {{$c.ID}}: %w", err)
+	}
+	{{- end}}
+	{{- if $c.ArtifactJSON}}
+	cmd.Flags().String("out", "", "Write the {{$c.ArtifactKind}} to this file (or into this directory). Default: ./{{escapeGoString $c.ArtifactDefaultPath}}")
+	_ = flagutil.AnnotatePromptFlag(cmd, "out", flagutil.PromptFlagSpec{
+		PromptDirect: true,
+		Label: "Output file",
+		Kind: "string",
+	})
+	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the {{$c.ArtifactKind}} to a file")
+	{{- end}}
+	{{- if $c.AsyncJSON}}
+	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
+	cmd.Flags().String("poll-interval", "", "Override the initial polling interval (positive Go duration, for example 500ms or 2s)")
+	cmd.Flags().String("poll-timeout", "", "Override the overall polling deadline (positive Go duration, at least the effective poll interval)")
+	_ = flagutil.AnnotatePromptFlag(cmd, "async", flagutil.PromptFlagSpec{Kind: "bool"})
+	_ = flagutil.AnnotatePromptFlag(cmd, "poll-interval", flagutil.PromptFlagSpec{Kind: "string"})
+	_ = flagutil.AnnotatePromptFlag(cmd, "poll-timeout", flagutil.PromptFlagSpec{Kind: "string"})
+	{{- end}}
+	for _, sibling := range parent.Commands() {
+		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {
+			return fmt.Errorf("intent command %q collides with the name or alias of an existing %q command; rename the declared command", "{{$c.ID}}", sibling.Name())
+		}
+	}
+	parent.AddCommand(cmd)
+	return nil
+}
+
+{{- if and $c.BodyFlag $c.HasPresetMerge}}
+
+var intent{{$c.FuncName}}Preset = flagutil.PresetMerge{
+	Command: "{{escapeGoString $c.CommandDisplay}}",
+	{{- if $c.VariantLabel}}
+	Variant: "{{escapeGoString $c.VariantLabel}}",
+	{{- end}}
+	{{- if $c.PresetJSON}}
+	Preset:  "{{escapeGoString $c.PresetJSON}}",
+	{{- end}}
+	{{- if $c.ForeignSelectors}}
+	Foreign: []string{ {{- range $i, $k := $c.ForeignSelectors}}{{if $i}}, {{end}}"{{escapeGoString $k}}"{{end -}} },
+	{{- end}}
+	{{- if and $c.DiscriminatorKey $c.DiscriminatorValueJSON}}
+	DiscriminatorKey:   "{{escapeGoString $c.DiscriminatorKey}}",
+	DiscriminatorValue: "{{escapeGoString $c.DiscriminatorValueJSON}}",
+	{{- if $c.DiscriminatorAliasesJSON}}
+	DiscriminatorAliases: []string{ {{- range $i, $v := $c.DiscriminatorAliasesJSON}}{{if $i}}, {{end}}"{{escapeGoString $v}}"{{end -}} },
+	{{- end}}
+	{{- end}}
+	Escape: "{{escapeGoString $c.EscapeCommand}}",
+}
+{{- end}}
+
+{{- if $c.Dispatch}}
+var intent{{$c.FuncName}}Dispatch = flagutil.DispatchTable{
+	Command:  "{{escapeGoString $c.CommandDisplay}}",
+	BodyFlag: "{{$c.BodyFlag}}",
+	Escape:   "{{escapeGoString $c.EscapeCommand}}",
+	Routes: []flagutil.DispatchRoute{
+		{{- range $route := $c.DispatchRoutes}}
+		{
+			ID: "{{escapeGoString $route.ID}}", Label: "{{escapeGoString $route.Label}}",
+			SelectorFlag: "{{escapeGoString $route.SelectorFlag}}", Default: {{if $route.Default}}true{{else}}false{{end}},
+			PresetJSON: "{{escapeGoString $route.PresetJSON}}",
+			PresetMerge: flagutil.PresetMerge{
+				Command: "{{escapeGoString $c.CommandDisplay}}", Variant: "{{escapeGoString $route.VariantLabel}}",
+				Preset: "{{escapeGoString $route.PresetJSON}}",
+				Foreign: []string{ {{- range $i, $key := $route.ForeignSelectors}}{{if $i}}, {{end}}"{{escapeGoString $key}}"{{end -}} },
+				Escape: "{{escapeGoString $c.EscapeCommand}}",
+			},
+		},
+		{{- end}}
+	},
+	Inputs: []flagutil.DispatchInput{
+		{{- range $input := $c.DispatchInputs}}
+		{
+			Name: "{{escapeGoString $input.Name}}", BodyKey: "{{escapeGoString $input.Key}}",
+			Kind: flagutil.{{intentFlagKind $input.Type}}, Positional: {{if $input.Positional}}true{{else}}false{{end}},
+			RouteIDs: []string{ {{- range $i, $id := $input.RouteIDs}}{{if $i}}, {{end}}"{{escapeGoString $id}}"{{end -}} },
+			RequiredRouteIDs: []string{ {{- range $i, $id := $input.RequiredRouteIDs}}{{if $i}}, {{end}}"{{escapeGoString $id}}"{{end -}} },
+		},
+		{{- end}}
+	},
+	Keys: []flagutil.DispatchKey{
+		{{- range $key := $c.DispatchKeys}}
+		{
+			BodyKey: "{{escapeGoString $key.BodyKey}}",
+			RouteIDs: []string{ {{- range $i, $id := $key.RouteIDs}}{{if $i}}, {{end}}"{{escapeGoString $id}}"{{end -}} },
+			UnroutedVariants: []string{ {{- range $i, $label := $key.UnroutedVariants}}{{if $i}}, {{end}}"{{escapeGoString $label}}"{{end -}} },
+		},
+		{{- end}}
+	},
+}
+{{- end}}
+
+func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
+	if usage.UsageRequested(cmd) {
+		return usage.EmitSchema(cmd, cmd.OutOrStdout())
+	}
+	{{- if $c.HasSchema}}
+	if requested, _ := cmd.Flags().GetBool("schema"); requested {
+		return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $c.OpID}})
+	}
+	{{- end}}
+	{{- if $c.ArtifactJSON}}
+	if flagutil.FlagChanged(cmd, "raw-response") && flagutil.FlagChanged(cmd, "out") {
+		return flagutil.WithCLIValidation(fmt.Errorf("--raw-response prints the raw API response and cannot be combined with --out"))
+	}
+	{{- end}}
+	{{- if $c.Dispatch}}
+	{{- if or (gt $c.MinArgs 0) $c.PromptFlags}}
+	if len(args) == 0{{range $c.Flags}} && !flagutil.FlagChanged(cmd, "{{.Name}}"){{end}} {
+		bodySupplied, err := flagutil.PrimeDispatchBody(cmd, "{{$c.BodyFlag}}")
+		if err != nil {
+			return err
+		}
+		if !bodySupplied {
+			{{- addImport "internal/output" true}}
+			{{- $dispatchMissing := "missing required input"}}
+			{{- $dispatchFound := false}}
+			{{- range $c.Args}}
+			{{- if and (not $dispatchFound) .Required (not .PresetCovered)}}
+			{{- $dispatchMissing = printf "missing required argument <%s> (or pass a full request with --%s)" .Name $c.BodyFlag}}
+			{{- $dispatchFound = true}}
+			{{- end}}
+			{{- end}}
+			return output.UsageHelpError(cmd, fmt.Errorf("%s", "{{escapeGoString $dispatchMissing}}"))
+		}
+	}
+	{{- end}}
+	{{- if $c.Args}}
+	if hint := flagutil.SpacedBoolValueHint(cmd, args); hint != "" && !client.IsJSONDryRun(cmd) && !output.IsMachineMode(cmd) {
+		fmt.Fprintln(cmd.ErrOrStderr(), hint)
+	}
+	{{- end}}
+	if _, err := flagutil.Select(cmd, args, intent{{$c.FuncName}}Dispatch); err != nil {
+		return err
+	}
+	{{- else}}
+	{{- if $c.BodyFlag}}
+	bodySurfaces := []string{"{{$c.BodyFlag}}"{{if $c.BodyParamFlag}}, "{{$c.BodyParamFlag}}"{{end}}}
+	for _, surface := range bodySurfaces {
+		if flagutil.FlagChanged(cmd, surface) {
+			if err := flagutil.ResolveBodyFlag(cmd, surface); err != nil {
+				return err
+			}
+		}
+	}
+	suppliedBodyFlag := ""
+	{{- if $c.BodyParamFlag}}
+	if flagutil.FlagChanged(cmd, "{{$c.BodyParamFlag}}") {
+		suppliedBodyFlag = "{{$c.BodyParamFlag}}"
+	}
+	{{- end}}
+	if flagutil.FlagChanged(cmd, "{{$c.BodyFlag}}") {
+		suppliedBodyFlag = "{{$c.BodyFlag}}"
+	}
+	bodySupplied := suppliedBodyFlag != ""
+	if !bodySupplied {
+		attached, err := flagutil.AttachStdinBody(cmd, "{{$c.BodyFlag}}")
+		if err != nil {
+			return err
+		}
+		bodySupplied = attached
+	}
+	{{- if $c.Args}}
+	if hint := flagutil.SpacedBoolValueHint(cmd, args); hint != "" && !client.IsJSONDryRun(cmd) && !output.IsMachineMode(cmd) {
+		fmt.Fprintln(cmd.ErrOrStderr(), hint)
+	}
+	{{- end}}
+	{{- if or $c.Args $c.Flags}}
+	if bodySupplied {
+		{{- range $c.Args}}
+		{{- if and .Required (not .PresetCovered) .BackingFlag}}
+		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
+			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
+			}
+		}
+		{{- end}}
+		{{- end}}
+		{{- range $c.Flags}}
+		{{- if and .Required (not .PresetCovered) .BackingFlag (or (not .Type) (eq .Type "string") (eq .Type ""))}}
+		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
+			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
+			}
+		}
+		{{- end}}
+		{{- end}}
+		{{- range $c.Args}}
+		if len(args) > 0 {
+			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "{{escapeGoString .Key}}", "the <{{escapeGoString .Name}}> argument", strings.Join(args, " ")); err != nil {
+				return flagutil.WithCLIValidation(err)
+			}
+		}
+		{{- end}}
+		{{- range $c.Flags}}
+		if flagutil.FlagChanged(cmd, "{{.Name}}") {
+			{{- if eq .Type "bool"}}
+			v, _ := cmd.Flags().GetBool("{{.Name}}")
+			{{- else if eq .Type "int"}}
+			v, _ := cmd.Flags().GetInt64("{{.Name}}")
+			{{- else if eq .Type "float"}}
+			v, _ := cmd.Flags().GetFloat64("{{.Name}}")
+			{{- else}}
+			v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}")
+			{{- if and .Required (not .PresetCovered)}}
+			if v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.Name}} must not be empty"))
+			}
+			{{- end}}
+			{{- end}}
+			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "{{escapeGoString .Key}}", "--{{.Name}}", v); err != nil {
+				return flagutil.WithCLIValidation(err)
+			}
+		}
+		{{- end}}
+	}
+	{{- end}}
+{{- if or (gt $c.MinArgs 0) $c.PromptFlags}}
+	if len(args) == 0 && !bodySupplied{{range $c.Args}}{{range .SatisfiedBy}} && !flagutil.FlagChanged(cmd, "{{.}}"){{end}}{{end}}{{range $c.Flags}} && !flagutil.FlagChanged(cmd, "{{.Name}}"){{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}}{{end}} {
+		{{- addImport "internal/output" true}}
+		{{- $missingMessage := "missing required input"}}
+		{{- $foundMissing := false}}
+		{{- range $c.Args}}
+		{{- if and (not $foundMissing) .Required (not .PresetCovered)}}
+		{{- if $c.BodyFlag}}
+		{{- $missingMessage = printf "missing required argument <%s> (or pass a full request with --%s)" .Name $c.BodyFlag}}
+		{{- else}}
+		{{- $missingMessage = printf "missing required argument <%s>" .Name}}
+		{{- end}}
+		{{- $foundMissing = true}}
+		{{- end}}
+		{{- end}}
+		{{- range $c.Flags}}
+		{{- if and (not $foundMissing) .Required (not .PresetCovered)}}
+		{{- if $c.BodyFlag}}
+		{{- $missingMessage = printf "required flag --%s not set (or pass a full request with --%s)" .Name $c.BodyFlag}}
+		{{- else}}
+		{{- $missingMessage = printf "required flag --%s not set" .Name}}
+		{{- end}}
+		{{- $foundMissing = true}}
+		{{- end}}
+		{{- end}}
+		return output.UsageHelpError(cmd, fmt.Errorf("%s", "{{escapeGoString $missingMessage}}"))
+	}
+	{{- end}}
+	if !bodySupplied {
+		body := map[string]any{}
+		{{- if $c.PresetJSON}}
+		if err := json.Unmarshal([]byte(intent{{$c.FuncName}}Preset.Preset), &body); err != nil {
+			return err
+		}
+		{{- end}}
+		{{- range $c.Args}}
+		{{- if and .Required (not .PresetCovered)}}
+		if len(args) == 0{{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}} {
+			return flagutil.WithCLIValidation(fmt.Errorf("missing required argument (or pass a full request with --{{$c.BodyFlag}})"))
+		}
+		{{- if .BackingFlag}}
+		// An explicitly empty backing-flag value must not stand in for the
+		// required positional — nor override a supplied one at the request
+		// layer — and bypass required-string validation.
+		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
+			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
+			}
+		}
+		{{- end}}
+		{{- end}}
+		if len(args) > 0 {
+			body["{{escapeGoString .Key}}"] = strings.Join(args, " ")
+		}
+		{{- end}}
+		{{- range $c.Flags}}
+		{{- if and .Required (not .PresetCovered)}}
+		if !flagutil.FlagChanged(cmd, "{{.Name}}"){{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}} {
+			return flagutil.WithCLIValidation(fmt.Errorf("required flag --{{.Name}} not set (or pass a full request with --{{$c.BodyFlag}})"))
+		}
+		{{- end}}
+		{{- if and .Required (not .PresetCovered) (or (not .Type) (eq .Type "string") (eq .Type ""))}}
+		// An explicitly empty required input must not synthesize a body that
+		// bypasses the backing operation's required-string validation.
+		if flagutil.FlagChanged(cmd, "{{.Name}}") {
+			if v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}"); v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.Name}} must not be empty"))
+			}
+		}
+		{{- if .BackingFlag}}
+		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
+			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
+				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
+			}
+		}
+		{{- end}}
+		{{- end}}
+		if flagutil.FlagChanged(cmd, "{{.Name}}") {
+			{{- if eq .Type "bool"}}
+			v, _ := cmd.Flags().GetBool("{{.Name}}")
+			{{- else if eq .Type "int"}}
+			v, _ := cmd.Flags().GetInt64("{{.Name}}")
+			{{- else if eq .Type "float"}}
+			v, _ := cmd.Flags().GetFloat64("{{.Name}}")
+			{{- else}}
+			v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}")
+			{{- end}}
+			body["{{escapeGoString .Key}}"] = v
+		}
+		{{- end}}
+		encoded, err := json.Marshal(body)
+		if err != nil {
+			return err
+		}
+		if err := cmd.Flags().Set("{{$c.BodyFlag}}", string(encoded)); err != nil {
+			return err
+		}
+	}
+	{{- if $c.HasPresetMerge}} else {
+		for _, surface := range bodySurfaces {
+			if !flagutil.FlagChanged(cmd, surface) {
+				continue
+			}
+			raw, _ := flagutil.GetStringFlag(cmd, surface)
+			merged, err := flagutil.MergePresetBody(raw, intent{{$c.FuncName}}Preset)
+			if err != nil {
+				return err
+			}
+			if err := cmd.Flags().Set(surface, merged); err != nil {
+				return err
+			}
+		}
+	}
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- if $c.AsyncJSON}}
+	if err := output.ValidateAsyncFlags(cmd); err != nil {
+		return err
+	}
+	res, err := {{$c.ExecuteFunc}}(cmd, nil, true)
+	if err != nil {
+		return err
+	}
+	if client.IsDryRun(cmd) {
+		return nil
+	}
+	{{- if $c.JQ}}
+	escapeAsync, _ := flagutil.GetBoolFlag(cmd, "async")
+	if !escapeAsync {
+		if f := cmd.Flag("jq"); f != nil && !f.Changed {
+			_ = f.Value.Set("{{escapeGoString $c.JQ}}")
+		}
+	}
+	{{- end}}
+	return output.AsyncResult(cmd, res, newPollIntent{{$c.FuncName}})
+	{{- else}}
+	{{- if $c.JQ}}
+	if f := cmd.Flag("jq"); f != nil && !f.Changed {
+		_ = f.Value.Set("{{escapeGoString $c.JQ}}")
+	}
+	{{- end}}
+	return {{$c.RunFunc}}(cmd, nil)
+	{{- end}}
+}
+
+{{- if $c.AsyncJSON}}
+func newPollIntent{{$c.FuncName}}(cmd *cobra.Command, id string, params []output.AsyncParameter) (output.AsyncPollFunc, error) {
+	request := &{{sanitizeClass $c.PollOp.Request.Field.Type "" false}}{}
+	if err := flagutil.SetRequestParameter(request, {{goStringLiteral $c.PollOp.GetID}}, {{goStringLiteral $c.AsyncParameterIn}}, {{goStringLiteral $c.AsyncParameterName}}, id); err != nil {
+		return nil, err
+	}
+	for _, param := range params {
+		if err := flagutil.SetRequestParameter(request, {{goStringLiteral $c.PollOp.GetID}}, param.In, param.Name, param.Value); err != nil {
+			return nil, err
+		}
+	}
+	s, err := client.NewClient(cmd)
+	if err != nil {
+		return nil, err
+	}
+	sdkOpts, err := output.PrepareCallOpts(cmd)
+	if err != nil {
+		return nil, err
+	}
+	{{- if cliDefaultTimeout}}
+	sdkOpts = append(sdkOpts, output.DefaultTimeoutOpts(cmd)...)
+	{{- end}}
+	sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+	{{- if operationHasServers $c.PollOp}}
+	if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
+		sdkOpts = append(sdkOpts, operations.WithServerURL(serverURL))
+	{{- if ne (serverSelectionFlag) "none"}}
+	} else if serverFlag, _ := flagutil.GetStringFlag(cmd, "server"); serverFlag != "" {
+		{{templateOperationServerResolution $c.PollOp "nil, " | indent 2 | trim}}
+	{{- end}}
+	}
+	{{- else if and sdkHasServers (ne (serverSelectionFlag) "none")}}
+	{{templateGlobalServerValidation "nil, " | indent 1 | trim}}
+	{{- end}}
+	return func(ctx context.Context) (interface{}, error) {
+		res, err := s{{$c.PollSDKAccessor}}.{{sanitizeMethodName $c.PollOp}}({{templateSDKCallArgsWithContext $c.PollOp "request" "ctx"}})
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	}, nil
+}
+{{- end}}

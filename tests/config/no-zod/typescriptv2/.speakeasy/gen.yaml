@@ -1,0 +1,63 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    # Disabled: new-test-gen assumes zod-based inbound parsing. With
+    # zodVersion: none the auto-generated tests assert response shapes that
+    # the no-zod runtime never builds. Hand-rolled templates in
+    # templates/templates/typescriptv2/tests/no-zod/ cover this variant.
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+  # SSE-overload emits 3 signatures referencing flat stream return type but
+  # the no-zod runtime still emits the envelope ChatResponse. Disable until
+  # the overload+envelope codegen mismatch is fixed.
+  inferSSEOverload: false
+typescript:
+  version: 0.0.1
+  author: Speakeasy
+  packageName: openapi
+  additionalDependencies:
+    devDependencies:
+      'undici': ^7.21.0
+  defaultErrorName: APIError
+  envVarPrefix: SPEAKEASY
+  responseFormat: envelope-http
+  maxMethodParams: 5
+  flatteningOrder: parameters-first
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  sseFlatResponse: true
+  # TODO(no-zod): MCP server schema generation is heavily coupled to zod.
+  # Disabled for the no-zod variant until that integration is rewritten.
+  enableMCPServer: false
+  enableReactQuery: true
+  enableCustomCodeRegions: true
+  # Preserve the OpenAPI spec's property names verbatim. Without zod we have
+  # no inbound/outbound key remap step, so the wire shape is exactly whatever
+  # the spec declares — `date_time`, `pathParam`, etc. preserved as-is.
+  preserveModelFieldNames: true
+  webhooks:
+    enabled: true
+  # The new "none" runtime: no zod, no transforms. JSON.parse / JSON.stringify only.
+  zodVersion: none
+  # Align file layout with secondary/primary variants so hand-rolled test
+  # templates resolve their `../sdk/models/...` imports.
+  legacyFileNaming: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: sdk/models/callbacks
+      errors: sdk/models/errors
+      operations: sdk/models/operations
+      shared: sdk/models/shared
+      webhooks: sdk/models/webhooks

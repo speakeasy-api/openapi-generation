@@ -1,0 +1,30 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test }}
+{{- $workflow := $test.Workflow }}
+    [Fact{{templateTestSkipAnnotation $test}}]
+    public async Task Test{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}()
+    {
+{{- if or $test.Incomplete (isTestGenerationSkipped $test)}}
+        await Task.CompletedTask;
+{{- else}}
+{{templateTestID $test}}{{templateTestEnvVars $test}}
+        var testHttpClient = CommonHelpers.CreateTestHTTPClient("{{$test.Name}}");
+  {{- if $workflow}}
+    {{- range $idx, $step := $workflow.Steps}}
+      {{- if eq $step.Type "operation"}}
+{{templateString "usage/init.stmpl" $step.UsageContext}}
+      {{- $preCallAssertions := templatePreCallAssertions $workflow $idx}}
+      {{- if $preCallAssertions}}
+        {{ $preCallAssertions | indentPresent 8}}
+      {{- end}}
+{{templateString "usage/call.stmpl" $step.UsageContext}}
+        {{- if not $step.UsageContext.Operation.Extensions.Pagination}}
+{{templateAssertions $step.UsageContext | indentPresent 8 }}
+        {{- end}}
+      {{- else}}
+{{templateWorkflow $workflow $step | indentPresent 8 }}
+      {{- end}}
+    {{- end}}
+  {{- end}}
+{{- end}}
+    }

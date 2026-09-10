@@ -1,0 +1,17 @@
+{{- $sdk := .Global.AST.MainSDK }}
+{{- $noServers := not (and $sdk.Servers $sdk.Servers.HasAbsoluteURL) }}
+{{- $sdkClassName := (sanitizeClassName $sdk.Type.Name) -}}
+You can setup your SDK to emit debug logs for SDK requests and responses.
+
+You can pass your own logger class directly into your SDK.
+```python
+from {{ getModuleImport }} import {{$sdkClassName}}
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+s = {{$sdkClassName}}({{- if $noServers }}server_url="https://example.com", {{ end }}debug_logger=logging.getLogger("{{ getAbsoluteModuleImport }}"))
+```
+{{- if .Global.Config.EnvVarPrefix }}
+
+You can also enable a default debug logger by setting an environment variable `{{ templateDebugEnvVar }}` to true.
+{{- end }}

@@ -1,0 +1,89 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestOutputFormatToonSingleObject verifies that --output-format toon produces
+// TOON-encoded output for a single object response.
+// TOON serialises objects with indentation-based key-value pairs instead of
+// JSON braces, and encodes arrays with explicit length headers (e.g. items[3]:).
+func TestOutputFormatToonSingleObject(t *testing.T) {
+	// Custom server returns a simple JSON object with known fields.
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"token": "test-token"})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"response-headers", "response-headers",
+		"--status-code", "200",
+		"--include-required-header",
+		"--output-format", "toon",
+	})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// TOON encodes objects as indented key-value pairs — not JSON braces.
+	assert.NotContains(t, stdout, `{"token"`, "expected TOON output, not a JSON object literal")
+	assert.Contains(t, stdout, "token", "expected 'token' field in TOON output")
+	assert.Contains(t, stdout, "test-token", "expected token value in TOON output")
+}
+
+// TestOutputFormatToonStreamingItems verifies that --output-format toon
+// produces TOON-encoded output for each item in a JSONL streaming response.
+// Items are separated by a blank line (matching the pretty-format convention).
+func TestOutputFormatToonStreamingItems(t *testing.T) {
+	h := NewCLITestHarness(t)
+	// RunWithServer prepends --output-format json; --output-format toon placed
+	// after overwrites it because cobra uses last-flag-wins for repeated flags.
+	err := h.RunWithServer(getAPITestServiceURL(), []string{
+		"jsonl", "jsonl-stream",
+		"--output-format", "toon",
+	})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// Both streamed events must appear in the output.
+	assert.Contains(t, stdout, "Peter", "expected first event name in TOON output")
+	assert.Contains(t, stdout, "John", "expected second event name in TOON output")
+
+	// TOON does not wrap individual top-level objects in JSON braces.
+	assert.NotContains(t, stdout, `{"name"`, "expected TOON output, not raw JSON object literals")
+}
+
+// TestOutputFormatToonPaginatedItems verifies that --output-format toon
+// produces TOON-encoded output when --all is used to collect all pages.
+func TestOutputFormatToonPaginatedItems(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+		"--output-format", "toon",
+	})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout, "expected paginated TOON output")
+
+	// TOON output should not contain raw JSON object literals.
+	assert.NotContains(t, stdout, `{"numPages"`, "expected TOON output, not JSON objects")
+}

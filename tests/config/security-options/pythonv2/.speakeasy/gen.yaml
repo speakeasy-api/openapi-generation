@@ -1,0 +1,33 @@
+configVersion: 2.0.0
+generation:
+  maintainOpenAPIOrder: true
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: true
+    nameOverrideFeb2026: true
+python:
+  fixFlags:
+    conflictResistantModelImportsFeb2026: true
+  forwardCompatibleEnumsByDefault: true
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  version: 0.0.1
+  responseFormat: envelope-http
+  templateVersion: v2
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/shared
+      webhooks: models/webhooks

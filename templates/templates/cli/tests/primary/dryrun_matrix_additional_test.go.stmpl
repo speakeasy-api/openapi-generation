@@ -1,0 +1,205 @@
+package tests
+
+import (
+	"encoding/json"
+	"io"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/config"
+)
+
+type primaryDryRunPreview struct {
+	DryRun  bool `json:"dry_run"`
+	Request struct {
+		Method  string              `json:"method"`
+		URL     string              `json:"url"`
+		Headers map[string][]string `json:"headers"`
+		Body    interface{}         `json:"body"`
+	} `json:"request"`
+}
+
+func primaryDryRunPreviews(t *testing.T, stdout string) []primaryDryRunPreview {
+	t.Helper()
+	decoder := json.NewDecoder(strings.NewReader(stdout))
+	var previews []primaryDryRunPreview
+	for {
+		var preview primaryDryRunPreview
+		err := decoder.Decode(&preview)
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err)
+		require.True(t, preview.DryRun)
+		previews = append(previews, preview)
+	}
+	return previews
+}
+
+func TestDryRunPrimaryCommandKinds(t *testing.T) {
+	base64Payload := strings.Repeat("QUJD", 32)
+	cases := []struct {
+		name        string
+		args        []string
+		stdin       string
+		catalog     bool
+		base64Body  bool
+		paginated   bool
+		streaming   bool
+	}{
+		{name: "GET operation", args: []string{"methods", "method-get"}},
+		{name: "JSON body operation", args: []string{"request-bodies", "request-body-post-application-json-map-of-any"}, stdin: `{"data":"` + base64Payload + `"}`, base64Body: true},
+		{name: "paginated operation", args: []string{"pagination", "pagination-cursor-non-numeric", "--all"}, paginated: true},
+		{name: "streaming operation", args: []string{"eventstreams", "text"}, streaming: true},
+		{name: "intent preset", args: []string{"render", "a lighthouse at dusk"}},
+		{name: "catalog", args: []string{"hygiene-models"}, catalog: true},
+	}
+
+	for _, tc := range cases {
+		for _, machine := range []bool{false, true} {
+			mode := "human"
+			if machine {
+				mode = "json"
+			}
+			t.Run(tc.name+"/"+mode, func(t *testing.T) {
+				recorder := &recordingKeyring{}
+				config.SetKeyringBackend(recorder)
+				t.Cleanup(config.ResetKeyring)
+
+				server, requests := newRequestTracker()
+				t.Cleanup(server.Close)
+				args := append([]string{"--dry-run", "--no-interactive"}, tc.args...)
+				h := NewCLITestHarness(t)
+				if machine {
+					require.NoError(t, h.RunWithStdinServer(server.URL, args, tc.stdin))
+				} else {
+					require.NoError(t, h.RunWithStdinServerRaw(server.URL, args, tc.stdin))
+				}
+
+				assert.Zero(t, *requests, "dry-run must not reach the HTTP server")
+				assert.Zero(t, recorder.gets, "dry-run must not read the OS keyring")
+				combined := h.GetStdout() + h.GetStderr()
+				if tc.catalog {
+					assert.Contains(t, h.GetStdout(), "standard")
+					assert.Contains(t, h.GetStdout(), "fast")
+					if machine {
+						// Machine mode renders the catalog as structured data with the
+						// default flagged as a field rather than a human "(default)" marker.
+						assert.Contains(t, h.GetStdout(), `"default":true`)
+						assert.Empty(t, h.GetStderr())
+					} else {
+						assert.Contains(t, h.GetStdout(), "(default)")
+					}
+					assert.NotContains(t, combined, "[DRY-RUN]", "a local catalog remains its normal deliverable")
+					return
+				}
+
+				if machine {
+					assert.Empty(t, h.GetStderr())
+					previews := primaryDryRunPreviews(t, h.GetStdout())
+					require.Len(t, previews, 1, "each representative command makes one would-be request")
+					if tc.streaming {
+						assert.Contains(t, strings.Join(previews[0].Request.Headers["Accept"], ","), "text/event-stream")
+					}
+				} else {
+					assert.Empty(t, h.GetStdout())
+					assert.Equal(t, 1, strings.Count(h.GetStderr(), "[DRY-RUN] Would send:"), "each representative command makes one would-be request")
+					assert.Contains(t, h.GetStderr(), "[DRY-RUN] Would send:")
+					assert.Contains(t, h.GetStderr(), "[DRY-RUN] Network call skipped.")
+					if tc.streaming {
+						assert.Contains(t, h.GetStderr(), "Accept: text/event-stream")
+					}
+				}
+				if tc.base64Body {
+					assert.NotContains(t, combined, base64Payload)
+					assert.Contains(t, combined, "<bytes:96>")
+				}
+				if tc.paginated {
+					assert.NotContains(t, combined, "more pages available")
+				}
+			})
+		}
+	}
+}
+
+func TestDryRunJSONPreviewIsDeterministic(t *testing.T) {
+	recorder := &recordingKeyring{}
+	config.SetKeyringBackend(recorder)
+	t.Cleanup(config.ResetKeyring)
+	server, requests := newRequestTracker()
+	t.Cleanup(server.Close)
+	args := []string{"--dry-run", "--no-interactive", "methods", "method-get"}
+
+	first := NewCLITestHarness(t)
+	require.NoError(t, first.RunWithStdinServer(server.URL, args, ""))
+	second := NewCLITestHarness(t)
+	require.NoError(t, second.RunWithStdinServer(server.URL, args, ""))
+
+	assert.Equal(t, first.GetStdout(), second.GetStdout())
+	assert.Empty(t, first.GetStderr())
+	assert.Empty(t, second.GetStderr())
+	assert.Zero(t, *requests)
+	assert.Zero(t, recorder.gets)
+}
+
+func TestDryRunComposesWithClassifiedMachineErrors(t *testing.T) {
+	for _, selector := range [][]string{
+		{"--output-format", "json"},
+		{"--jq", ".x"},
+	} {
+		t.Run(strings.Join(selector, " "), func(t *testing.T) {
+			recorder := &recordingKeyring{}
+			config.SetKeyringBackend(recorder)
+			t.Cleanup(config.ResetKeyring)
+			server, requests := newRequestTracker()
+			t.Cleanup(server.Close)
+			args := []string{"--dry-run", "--no-interactive", "--agent-mode"}
+			args = append(args, selector...)
+			args = append(args, "request-bodies", "request-body-post-application-json-map-of-any", "--body", "{not json")
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithStdinServerRaw(server.URL, args, "")
+			require.Error(t, err)
+			assert.Empty(t, h.GetStdout(), "validation failure must not emit a request preview")
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Zero(t, *requests)
+			assert.Zero(t, recorder.gets)
+		})
+	}
+}
+
+func TestDryRunExplicitAgentModeKeepsHumanPreview(t *testing.T) {
+	recorder := &recordingKeyring{}
+	config.SetKeyringBackend(recorder)
+	t.Cleanup(config.ResetKeyring)
+	server, requests := newRequestTracker()
+	t.Cleanup(server.Close)
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithStdinServerRaw(server.URL, []string{
+		"--dry-run", "--no-interactive", "--agent-mode", "methods", "method-get",
+	}, ""))
+	assert.Empty(t, h.GetStdout())
+	assert.Contains(t, h.GetStderr(), "[DRY-RUN] Would send:")
+	assert.Contains(t, h.GetStderr(), "[DRY-RUN] Network call skipped.")
+	assert.Zero(t, *requests)
+	assert.Zero(t, recorder.gets)
+}
+
+func TestExplorerHandoffPreservesDiagnosticsFlags(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	require.NoError(t, root.PersistentFlags().Set("dry-run", "true"))
+	require.NoError(t, root.PersistentFlags().Set("debug", "true"))
+
+	selected := []string{"methods", "method-get"}
+	assert.Equal(t, []string{"--interactive", "--dry-run", "--debug", "methods", "method-get"}, cli.ExplorerHandoffArgs(root, selected))
+	assert.Equal(t, []string{"methods", "method-get"}, selected, "handoff must not mutate explorer-owned args")
+}

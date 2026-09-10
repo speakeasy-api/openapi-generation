@@ -1,0 +1,3 @@
+## core: 3.4.8 - 2024-09-26
+### :bug: Bug Fixes
+- update readme generation to replace welcome to new sdk section with new markdown notice *(commit by [@adaam2](https://github.com/adaam2))*

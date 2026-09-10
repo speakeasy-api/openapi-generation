@@ -1,0 +1,17 @@
+test-webhook:
+  post:
+    summary: Test
+    description: Test
+    operationId: test-webhook
+    parameters:
+      - $ref: "./parameters.yaml#/test-org"
+    requestBody:
+      $ref: "./request-bodies.yaml#/test-request-body"
+    responses:
+      "200":
+        $ref: "./responses.yaml#/test-response"
+    callbacks:
+      test:
+        $ref: "./components.yaml#/components/callbacks/test-callback-6"
+      test-2:
+        $ref: "./components.yaml#/components/callbacks/test-callback-7"

@@ -1,0 +1,305 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/body-variant-overloads/discriminated/{variant_id}:
+    post:
+      operationId: bodyVariantOverloadsDiscriminated
+      description: >-
+        Exercises pythonv2 `bodyVariantOverloads` for a discriminated oneOf-of-classes
+        request body. The generator must emit one `@overload` per variant carrying
+        the variant's required fields (including a `Literal["..."]` discriminator),
+        a merged-kwarg impl signature with all args defaulted to UNSET, and runtime
+        XOR guards for variant-exclusive fields. Independent of other targets.
+      tags:
+        - requestBodies
+      parameters:
+        - in: path
+          name: variant_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: include_meta
+          required: false
+          schema:
+            type: boolean
+        - in: header
+          name: X-Trace-ID
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/non-discriminated:
+    post:
+      operationId: bodyVariantOverloadsNonDiscriminated
+      description: >-
+        Exercises the AssociatedTypes fallback path: oneOf-of-classes body without an
+        explicit discriminator. Variants are detected via `Type.AssociatedTypes` and
+        overload kwargs are emitted without `Literal[...]` discriminator narrowing.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NonDiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/{id}/stream:
+    post:
+      operationId: bodyVariantOverloadsSSEWithPath
+      description: >-
+        Exercises composition between pythonv2 `bodyVariantOverloads`,
+        `x-speakeasy-sse-overload`, and positional path parameters.
+      tags:
+        - requestBodies
+      x-speakeasy-sse-overload: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamingVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/BodyVariantStreamEvent"
+
+components:
+  schemas:
+    DiscriminatedVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/BodyVariantModel"
+        - $ref: "#/components/schemas/BodyVariantAgent"
+      discriminator:
+        propertyName: kind
+
+    BodyVariantModel:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - model
+        - input
+      properties:
+        kind:
+          type: string
+          enum:
+            - model
+        model:
+          type: string
+        input:
+          type: string
+        # Sanitizes to `type_`; the impl must map it back to the OAS key before
+        # unmarshalling.
+        type:
+          type: string
+        # Variant-exclusive: must produce an XOR guard against `agent_config`.
+        generation_config:
+          type: object
+          properties:
+            temperature:
+              type: number
+        # Shared optional field: should appear once in the merged impl
+        # signature; required in neither variant.
+        background:
+          type: boolean
+
+    BodyVariantAgent:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - agent
+        - input
+      properties:
+        kind:
+          type: string
+          enum:
+            - agent
+        agent:
+          type: string
+        input:
+          type: string
+        type:
+          type: string
+        # Variant-exclusive: pairs with `generation_config` for XOR guard.
+        agent_config:
+          type: object
+          properties:
+            tools:
+              type: array
+              items:
+                type: string
+        background:
+          type: boolean
+
+    NonDiscriminatedVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/NonDiscriminatedVariantA"
+        - $ref: "#/components/schemas/NonDiscriminatedVariantB"
+        - $ref: "#/components/schemas/NonDiscriminatedVariantC"
+
+    NonDiscriminatedVariantA:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - alpha
+      properties:
+        alpha:
+          type: string
+        shared:
+          type: integer
+        # Present in A and B, absent from C; should still conflict with C-only
+        # fields even though it is not unique to a single variant.
+        shared_subset:
+          type: string
+
+    NonDiscriminatedVariantB:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - beta
+      properties:
+        beta:
+          type: string
+        shared:
+          type: integer
+        shared_subset:
+          type: string
+
+    NonDiscriminatedVariantC:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - gamma
+      properties:
+        gamma:
+          type: string
+        c_only:
+          type: boolean
+
+    StreamingVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/StreamingBodyVariantModel"
+        - $ref: "#/components/schemas/StreamingBodyVariantAgent"
+      discriminator:
+        propertyName: kind
+
+    StreamingBodyVariantModel:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - model
+        - input
+      properties:
+        kind:
+          type: string
+          enum:
+            - model
+        model:
+          type: string
+        input:
+          type: string
+        stream:
+          type: boolean
+        generation_config:
+          type: object
+          properties:
+            temperature:
+              type: number
+
+    StreamingBodyVariantAgent:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - agent
+        - input
+      properties:
+        kind:
+          type: string
+          enum:
+            - agent
+        agent:
+          type: string
+        input:
+          type: string
+        stream:
+          type: boolean
+        agent_config:
+          type: object
+          properties:
+            tools:
+              type: array
+              items:
+                type: string
+
+    BodyVariantStreamEvent:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        event:
+          type: string
+        data:
+          type: string
+      required:
+        - data

@@ -1,0 +1,7 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2PasswordEnabled: true
+  fixes:
+    securityFeb2025: true

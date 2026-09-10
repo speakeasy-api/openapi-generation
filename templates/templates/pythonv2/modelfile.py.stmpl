@@ -1,0 +1,47 @@
+{{- recurse 1 -}}
+{{- $modelName := .Local.Name -}}
+from __future__ import annotations
+{{ genImports }}
+{{ genCircularImports }}
+{{- if .Local.Servers }}
+{{- if .Local.Servers.ServerMap}}
+{{- range .Local.Servers.Servers}}
+{{- $constName := templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}}
+{{$constName}} = "{{ .ID }}"
+{{- templateComments .Comments 0}}
+{{end}}
+{{upper (sanitizeFieldName $modelName)}}_SERVERS = {
+	{{- range .Local.Servers.Servers}}
+	{{templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}}: "{{ .URL }}",
+	{{- end}}
+}
+{{- else}}
+
+{{ $serverList := print (upper (sanitizeFieldName $modelName)) "_SERVERS" -}}
+{{$serverList}} = [
+	{{range .Local.Servers.Servers}}
+	{{templateComments .Comments 1 false }}
+	"{{ .URL }}",
+	{{end}}
+]
+{{- end}}
+{{- end}}
+{{range sortModelTypes .Local.Types}}
+{{- if eq .Type.Type "enum"}}
+{{templateString "enum.py.stmpl" .}}
+{{- else if or (eq .Type.Type "error") (isUnionOfErrors .Type)}}
+{{templateString "error.py.stmpl" .}}
+{{- else if eq .Type.Type "union"}}
+{{templateString "uniontype.py.stmpl" .}}
+{{templateString "union.py.stmpl" .}}
+{{- else}}
+{{templateString "type.py.stmpl" .}}
+{{templateString "model.py.stmpl" .}}
+{{- end}}{{end}}
+{{range sortModelTypes .Local.Types}}
+{{- if needsModelRebuild .Type}}
+try:
+    {{sanitizeClassName .Type.Name}}.model_rebuild()
+except NameError:
+    pass
+{{- end}}{{end}}

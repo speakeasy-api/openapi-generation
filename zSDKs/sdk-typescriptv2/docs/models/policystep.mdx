@@ -1,0 +1,35 @@
+---
+title: "PolicyStep"
+---
+
+A step in the policy
+
+## Example Usage
+
+```typescript
+import { PolicyStep } from "openapi";
+
+let value: PolicyStep = {
+  stepId: "step-1",
+  approval: {
+    approvers: [
+      "user-1",
+      "user-2",
+    ],
+    escalation: {
+      enabled: true,
+      expiration: 86400,
+      fallbackApprovers: [
+        "admin-1",
+      ],
+    },
+  },
+};
+```
+
+## Fields
+
+| Field                                                | Type                                                 | Required                                             | Description                                          | Example                                              |
+| ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| `stepId`                                             | *string*                                             | :heavy_check_mark:                                   | N/A                                                  | step-1                                               |
+| `approval`                                           | [models.ApprovalConfig](../models/approvalconfig.mdx) | :heavy_check_mark:                                   | Approval configuration with escalation               |                                                      |

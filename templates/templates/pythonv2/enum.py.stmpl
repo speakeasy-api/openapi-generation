@@ -1,0 +1,31 @@
+{{- $type := .Local -}}
+{{- $enum := $type.Type.Enum -}}
+{{- $outputLocation := $type.Type.OutputLocation -}}
+{{- $className := sanitizeClass $type.Type $type.Type.OutputLocation true -}}
+{{- if eq (getEnumFormat $type.Type) "union"}}
+{{- addImport "typing" "Literal" -}}
+{{- if $enum.Open }}
+{{- addImport "typing" "Union"}}
+{{$className}} = Union[
+    Literal[
+{{templateEnums $type.Type | indent 8}}
+    ],
+    {{templateUnrecognizedEnumType $type.Type}}
+]
+{{- templateComments $type.Type.Comments 0}}
+{{- else}}
+{{$className}} = Literal[
+{{templateEnums $type.Type | indent 4}}
+]
+{{- templateComments $type.Type.Comments 0}}
+{{- end}}{{else}}
+{{- addImport "enum" "Enum" -}}
+
+{{- if $enum.Open }}
+{{- addUtilsImport }}
+{{- end }}
+{{- templateDeprecated $type.Type.Comments }}
+class {{$className}}({{templateSimpleType $enum.Type $type.Type.OutputLocation}}, Enum{{if $enum.Open}}, metaclass=utils.OpenEnumMeta{{end}}):
+{{- templateComments $type.Type.Comments 1}}
+{{templateEnums $type.Type}}
+{{- end}}

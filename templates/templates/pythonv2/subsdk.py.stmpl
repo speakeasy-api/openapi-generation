@@ -1,0 +1,183 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil) -}}
+{{- $globalConfig := .Global.Config -}}
+{{- $hasSubSDKs := (gt (len .Local.SubSDKs) 0) -}}
+{{- $hasOperations := (gt (len .Local.Operations) 0) -}}
+{{- $hasRawResponseHelpers := and (pythonRawResponseHelpersEnabled) (or $hasSubSDKs $hasOperations) -}}
+{{- addImport ".basesdk" "BaseSDK" -}}
+{{- if and $hasRawResponseHelpers $hasOperations }}
+{{- addImport "utils" "response_helpers" true -}}
+{{- end }}
+{{if isSplitMode }}
+{{- addImport ".basesdk" "AsyncBaseSDK" -}}
+{{ end }}
+{{- precomputeModuleCollisions .Local.Operations }}
+{{ genImports }}
+# region imports
+# endregion imports
+{{range .Local.Operations}}
+{{- if and (gt (len .GetAcceptTypes) 1) (not .Extensions.SSEOverload) }}
+{{- addImport "enum" "Enum" }}
+class {{sanitizeAcceptEnumClass .}}(str, Enum):
+    {{- range .GetAcceptTypes}}
+    {{sanitizeAcceptEnumMember . }}
+    {{- end}}
+{{end}}
+{{- end}}
+class {{$sdkClassName}}(BaseSDK):
+{{- templateComments .Local.Comments 1 -}}
+    {{- if $hasRawResponseHelpers}}
+    @property
+    def with_raw_response(self):
+        return {{$sdkClassName}}WithRawResponse(self)
+
+    @property
+    def with_streaming_response(self):
+        return {{$sdkClassName}}WithStreamingResponse(self)
+
+    {{- end}}
+    {{range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    {{sanitizeSubSDKFieldName .FieldName}}: {{sanitizeClassName .Type.Name}}
+{{- templateComments .Comments 1 -}}{{end}}{{end}}
+    {{- if $hasSubSDKs}}
+    {{- addImport ".sdkconfiguration" "SDKConfiguration"}}
+    {{- addImport "typing" "Optional"}}
+    def __init__(self, sdk_config: SDKConfiguration, parent_ref: Optional[object] = None) -> None:
+        BaseSDK.__init__(self, sdk_config, parent_ref=parent_ref)
+        self.sdk_configuration = sdk_config
+        self._init_sdks()
+    
+    def _init_sdks(self):
+        {{- range .Local.SubSDKs}}{{- if ne .Type.Name ""}}{{- addSubSDKImport .}}
+        self.{{sanitizeSubSDKFieldName .FieldName}} = {{sanitizeClassName .Type.Name}}(self.sdk_configuration, parent_ref=self.parent_ref)
+        {{- end}}{{- end}}
+    {{- end}}
+
+
+    # region sdk-class-body
+    # endregion sdk-class-body
+
+
+    {{range .Local.Operations}}
+    {{- $src := rewriteMethodLocals . (templateString "method.py.stmpl" (dict "Operation" .)) }}
+    {{ sanitizeSynchronousMethod $src }}
+    {{if includeAsyncProp}}
+    {{- if and .Extensions.Pagination isAsyncPaginationSep2025Fix}}{{addImport "typing" "Awaitable"}}{{end}}
+    {{ sanitizeAsynchronousMethod $src }}
+    {{- end}}
+    {{end}}
+
+
+{{- if $hasRawResponseHelpers}}
+class {{$sdkClassName}}WithRawResponse:
+    def __init__(self, sdk: {{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- if and includeAsyncProp (not isSplitMode)}}
+        self.{{sanitizeMethodName .}}_async = response_helpers.async_to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}_async, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_raw_response
+
+    {{- end}}{{end}}
+
+
+class {{$sdkClassName}}WithStreamingResponse:
+    def __init__(self, sdk: {{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- if and includeAsyncProp (not isSplitMode)}}
+        self.{{sanitizeMethodName .}}_async = response_helpers.async_to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}_async, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_streaming_response
+
+    {{- end}}{{end}}
+{{- end}}
+
+
+{{/* 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 */}}
+{{ if isSplitMode }}
+class Async{{$sdkClassName}}(AsyncBaseSDK):
+{{- templateComments .Local.Comments 1 -}}
+    {{- if $hasRawResponseHelpers}}
+    @property
+    def with_raw_response(self):
+        return Async{{$sdkClassName}}WithRawResponse(self)
+
+    @property
+    def with_streaming_response(self):
+        return Async{{$sdkClassName}}WithStreamingResponse(self)
+
+    {{- end}}
+    {{range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    {{sanitizeSubSDKFieldName .FieldName}}: Async{{sanitizeClassName .Type.Name}}
+{{- templateComments .Comments 1 -}}{{end}}{{end}}
+    {{- if $hasSubSDKs}}
+    {{- addImport ".sdkconfiguration" "SDKConfiguration"}}
+    {{- addImport "typing" "Optional"}}
+    def __init__(self, sdk_config: SDKConfiguration, parent_ref: Optional[object] = None) -> None:
+        AsyncBaseSDK.__init__(self, sdk_config, parent_ref=parent_ref)
+        self.sdk_configuration = sdk_config
+        self._init_sdks()
+    
+    def _init_sdks(self):
+        {{- range .Local.SubSDKs}}{{- if ne .Type.Name ""}}{{- addSubSDKImportAsync .}}
+        self.{{sanitizeSubSDKFieldName .FieldName}} = Async{{sanitizeClassName .Type.Name}}(self.sdk_configuration, parent_ref=self.parent_ref)
+        {{- end}}{{- end}}
+    {{- end}}
+
+
+    # region sdk-class-body
+    # endregion sdk-class-body
+
+
+    {{range .Local.Operations}}
+    {{- $src := rewriteMethodLocals . (templateString "method.py.stmpl" (dict "Operation" .)) }}
+    {{- if and .Extensions.Pagination isAsyncPaginationSep2025Fix}}{{addImport "typing" "Awaitable"}}{{end}}
+    {{ sanitizeAsynchronousMethod $src }}
+    {{end}}
+
+
+{{- if $hasRawResponseHelpers}}
+class Async{{$sdkClassName}}WithRawResponse:
+    def __init__(self, sdk: Async{{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.async_to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_raw_response
+
+    {{- end}}{{end}}
+
+
+class Async{{$sdkClassName}}WithStreamingResponse:
+    def __init__(self, sdk: Async{{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.async_to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_streaming_response
+
+    {{- end}}{{end}}
+{{- end}}
+{{ end }}

@@ -1,0 +1,23 @@
+{{- $helper := .Local -}}
+{{- if $helper.Inputs}}
+{{templateString "model.go.stmpl" (dict "Type" $helper.Inputs.Type)}}
+{{end}}
+{{- if $helper.Outputs}}
+{{templateString "model.go.stmpl" (dict "Type" $helper.Outputs.Type)}}
+{{end}}
+func {{sanitizePrivateMethodName $helper.Name}}(t *testing.T{{if $helper.Inputs}}, inputs {{sanitizeClassName $helper.Inputs.Type.Name}}{{end}}){{if $helper.Outputs}} *{{sanitizeClassName $helper.Outputs.Type.Name}}{{end}} {
+    ctx := context.Background()
+    {{ addImport "context"}}
+    testHTTPClient := createTestHTTPClient("{{$helper.Name}}")
+{{range $helper.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" .UsageContext}}
+{{templateString "usage/call.stmpl" .UsageContext}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+{{templateAssertions .UsageContext | indentPresent 4}}
+{{else}}
+{{templateWorkflow $helper . | indentPresent 4}}    
+{{end}}{{end}}
+{{- templateHelperOutputs $helper | indentPresent 4}}
+}

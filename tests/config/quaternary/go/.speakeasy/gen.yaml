@@ -1,0 +1,30 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+go:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: pkg/models/callbacks
+      errors: pkg/models/sdkerrors
+      operations: pkg/models/operations
+      shared: pkg/models/shared
+      webhooks: pkg/models/webhooks
+  includeEmptyObjects: false
+  maxMethodParams: 5
+  # Verify modulePath with legacy packageName
+  modulePath: openapi
+  packageName: openapi
+  responseFormat: envelope

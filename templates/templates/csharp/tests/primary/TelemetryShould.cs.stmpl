@@ -1,0 +1,36 @@
+using Xunit;
+using Openapi;
+using System.Threading.Tasks;
+using System.Net;
+
+public class TelemetryShould
+{
+    [Fact]
+    public async Task UserAgentGet()
+    {
+        CommonHelpers.RecordTest("telemetry-user-agent-get");
+
+        var sdk = new SDK();
+
+        var res = await sdk.Telemetry.TelemetryUserAgentGetAsync();
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal("speakeasy-sdk/csharp {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} Openapi", res.Res.Headers["X-Speakeasy-User-Agent"]);
+    }
+
+    [Fact]
+    public async Task SpeakeasyUserAgentGet()
+    {
+        CommonHelpers.RecordTest("telemetry-speakeasy-user-agent-get");
+
+        var sdk = new SDK();
+
+        var userAgent = "test user agent";
+
+        var res = await sdk.Telemetry.TelemetrySpeakeasyUserAgentGetAsync(userAgent);
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.Equal(userAgent, res.Res.Headers["User-Agent"]);
+        Assert.Equal("speakeasy-sdk/csharp {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} Openapi", res.Res.Headers["X-Speakeasy-User-Agent"]);
+    }
+}

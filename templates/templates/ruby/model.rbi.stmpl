@@ -1,0 +1,24 @@
+{{- $type := .Local.Type -}}
+{{typedDirective}}
+# frozen_string_literal: true
+{{- $modelName := .Local.Name }}
+
+{{- $module := "" }}
+{{- if .Local.IsCustomNamespace }}
+{{- $module = (getModuleFQN .Local.OutputLocation) }}
+{{- else }}
+{{- $module = (getModuleFQN (getScopePath .Local.Scope)) }}
+{{- end }}
+
+
+class {{$module}}::{{sanitizeClass $type "" true}}
+  extend ::Crystalline::MetadataFields::ClassMethods
+end
+
+
+class {{$module}}::{{sanitizeClass $type "" true}}
+  {{- $fields := (sortFields $type.Fields)}}{{range $fields}}
+  def {{deduplicatedFieldName .Name $fields}}(); end
+  def {{deduplicatedFieldName .Name $fields}}=(str_); end
+  {{- end}}
+end

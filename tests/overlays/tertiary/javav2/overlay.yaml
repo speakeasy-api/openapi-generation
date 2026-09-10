@@ -1,0 +1,9 @@
+# This overlay updates a few of the examples that aren't quite compatible with javav2 yet
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/tertiary.yaml
+  version: 0.0.0
+actions:
+  # Remove operation incompatible with generated tests (non-discriminated unions)
+  - target: $.paths.*.*[?(@.operationId == 'smartUnionPreservesOrderOnTie')]
+    remove: true

@@ -1,0 +1,370 @@
+{{- recurse 1 -}}
+{{- $globalSecurity := .Global.AST.MainSDK.Security -}}
+{{- $securityTypes := false -}}
+{{- if and $globalSecurity -}}{{- $securityTypes = resolveOutbound (dict "usageLocation" "lib" "typeDef" $globalSecurity.Type "rootTypeDef" $globalSecurity.Type) -}}{{- end -}}
+{{- if $globalSecurity}}{{addLibImport $globalSecurity.Type}}{{end -}}
+{{genImports}}
+{{- if isFeatureUsed "oauth2Password"}}
+import { isPlainObject } from "./primitives.js";
+{{- end}}
+
+type OAuth2PasswordFlow = {
+  {{constants.credentials.username}}: string;
+  {{constants.credentials.password}}: string;
+  {{constants.credentials.clientID}}?: string | undefined;
+  {{constants.credentials.clientSecret}}?: string | undefined;
+  {{constants.credentials.tokenURL}}: string;
+}
+
+export const SecurityErrorCode = {
+  Incomplete: "incomplete",
+  UnrecognisedSecurityType: "unrecognized_security_type",
+} as const;
+export type SecurityErrorCode =
+  (typeof SecurityErrorCode)[keyof typeof SecurityErrorCode];
+
+export class SecurityError extends Error {
+  public code: SecurityErrorCode;
+
+  constructor(
+    code: SecurityErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.code = code;
+    this.name = "SecurityError";
+  }
+
+  static incomplete(): SecurityError {
+    return new SecurityError(
+      SecurityErrorCode.Incomplete,
+      "Security requirements not met in order to perform the operation"
+    );
+  }
+  static unrecognizedType(type: string): SecurityError {
+    return new SecurityError(
+      SecurityErrorCode.UnrecognisedSecurityType,
+      `Unrecognised security type: ${type}`
+    );
+  }
+}
+
+export type SecurityState = {
+  basic: { username?: string | undefined; password?: string | undefined };
+  headers: Record<string, string>;
+  queryParams: Record<string, string>;
+  cookies: Record<string, string>;
+  oauth2: ({ type: "password" } & OAuth2PasswordFlow) | { type: "none" };
+};
+
+type SecurityInputBasic = {
+  type: "http:basic";
+  value:
+    | { username?: string | undefined; password?: string | undefined }
+    | null
+    | undefined;
+};
+
+type SecurityInputBearer = {
+  type: "http:bearer";
+  value: string | null | undefined;
+  fieldName: string;
+};
+
+type SecurityInputAPIKey = {
+  type: "apiKey:header" | "apiKey:query" | "apiKey:cookie";
+  value: string | null | undefined;
+  fieldName: string;
+};
+
+type SecurityInputOIDC = {
+  type: "openIdConnect";
+  value: string | null | undefined;
+  fieldName: string;
+};
+
+type SecurityInputOAuth2 = {
+  type: "oauth2";
+  value: string | null | undefined;
+  fieldName: string;
+};
+
+type SecurityInputOAuth2ClientCredentials = {
+  type: "oauth2:client_credentials";
+  value:
+    | {
+        {{constants.credentials.clientID}}?: string | undefined;
+        {{constants.credentials.clientSecret}}?: string | undefined;
+{{- $fields := collectClientCredentialsAdditionalFields }}
+{{- range $i, $f := (sortOptionalFieldDefs $fields) }}
+        {{ sanitizeFieldName (originalFieldName $f) }}?: string | undefined;
+{{- end }}
+    }
+    | null
+    | string
+    | undefined;
+  fieldName?: string;
+};
+
+type SecurityInputOAuth2PasswordCredentials = {
+  type: "oauth2:password";
+  value:
+    | string
+{{- if isFeatureUsed "oauth2Password"}}
+    | ({ type: "password" } & OAuth2PasswordFlow)
+{{- end }}
+    | null
+    | undefined;
+  fieldName?: string;
+};
+
+type SecurityInputCustom = {
+  type: "http:custom";
+  value: any | null | undefined;
+  fieldName?: string;
+};
+
+export type SecurityInput =
+  | SecurityInputBasic
+  | SecurityInputBearer
+  | SecurityInputAPIKey
+  | SecurityInputOAuth2
+  | SecurityInputOAuth2ClientCredentials
+  | SecurityInputOAuth2PasswordCredentials
+  | SecurityInputOIDC
+  | SecurityInputCustom;
+  
+
+export function resolveSecurity(
+  ...options: SecurityInput[][]
+): SecurityState | null {
+  const state: SecurityState = {
+    basic: {},
+    headers: {},
+    queryParams: {},
+    cookies: {},
+    oauth2: { type: "none" },
+  };
+
+  const option = options.find((opts) => {
+    return opts.every((o) => {
+      if (o.value == null) {
+        return false;
+      } else if (o.type === "http:basic") {
+        return o.value.username != null || o.value.password != null;
+      } else if (o.type === "http:custom") {
+        return null;
+      } else if (o.type === "oauth2:password") {
+        return (
+          (typeof o.value === "string" && !!o.value){{if isFeatureUsed "oauth2Password"}} || isPlainObject(o.value){{end}}
+        );
+      } else if (o.type === "oauth2:client_credentials") {
+          if (typeof o.value == "string") {
+            return !!o.value;
+          }
+          return o.value.{{constants.credentials.clientID}} != null || o.value.{{constants.credentials.clientSecret}} != null;
+      } else if (typeof o.value === "string") {
+        return !!o.value;
+      } else {
+        throw new Error(
+          `Unrecognized security type: ${o.type} (value type: ${typeof o.value})`
+        );
+      }
+    });
+  });
+  if (option == null) {
+    return null;
+  }
+
+  option.forEach((spec) => {
+    if (spec.value == null) {
+      return;
+    }
+
+    const { type } = spec;
+
+    switch (type) {
+      case "apiKey:header":
+        state.headers[spec.fieldName] = spec.value;
+        break;
+      case "apiKey:query":
+        state.queryParams[spec.fieldName] = spec.value;
+        break;
+      case "apiKey:cookie":
+        state.cookies[spec.fieldName] = spec.value;
+        break;
+      case "http:basic":
+        applyBasic(state, spec);
+        break;
+      case "http:custom":
+        break;
+      case "http:bearer":
+        applyBearer(state, spec);
+        break;
+      case "oauth2":
+        applyBearer(state, spec);
+        break;
+      case "oauth2:password":
+        {{- if isFeatureUsed "oauth2Password"}}
+        applyOAuth2Password(state, spec);
+        {{- else}}
+        applyBearer(state, spec);
+        {{- end}}
+        break;
+      case "oauth2:client_credentials":
+        break;
+      case "openIdConnect":
+        applyBearer(state, spec);
+        break;
+      default:
+        throw SecurityError.unrecognizedType((spec satisfies never, type));
+    }
+  });
+
+  return state;
+}
+
+function applyBasic(
+  state: SecurityState,
+  spec: SecurityInputBasic
+) {
+  if (spec.value == null) {
+    return;
+  }
+  
+  state.basic = spec.value;
+}
+
+function applyBearer(
+  state: SecurityState,
+  spec: SecurityInputBearer | SecurityInputOAuth2 | SecurityInputOIDC | SecurityInputOAuth2PasswordCredentials
+) {
+  if (typeof spec.value !== "string" || !spec.value) {
+    return;
+  }
+
+  let value = spec.value;
+  if (value.slice(0, 7).toLowerCase() !== "bearer ") {
+    value = `Bearer ${value}`;
+  }
+
+  if (spec.fieldName !== undefined) {
+    state.headers[spec.fieldName] = value;
+  }
+}
+
+{{ if $globalSecurity }}
+export function resolveGlobalSecurity(security: Partial<{{callImportTypesFunc $securityTypes.importInputTypes }}{{$securityTypes.inputType}}> | null | undefined, allowedFields?: number[]): SecurityState | null {
+  {{- $securitySpecs := genSecuritySpecs $globalSecurity.Type "security" "lib" .Global.Config.EnvVarPrefix }}
+
+  let inputs: SecurityInput[][] = [
+  {{- range $requirements := $securitySpecs }}
+    [
+      {{- range $opt := $requirements }}
+      {
+        {{ if $opt.fieldName }}fieldName: "{{$opt.fieldName}}",{{ end }}
+        type: "{{ $opt.type }}",
+        value: {{ $opt.value }},
+      },
+      {{- end }}
+    ],
+  {{- end }}
+  ];
+
+  if (allowedFields) {
+    inputs = allowedFields.map((i) => {
+      if (i < 0 || i >= inputs.length) {
+        throw new RangeError(`invalid allowedFields index ${i}`);
+      }
+      return inputs[i]!;
+    });
+  }
+
+  return resolveSecurity(...inputs);
+}
+
+export async function extractSecurity<
+  T extends string | Record<string, unknown>,
+>(sec: T | (() => Promise<T>) | undefined): Promise<T | undefined> {
+  if (sec == null) {
+    return;
+  }
+
+  return typeof sec === "function" ? sec() : sec;
+}
+{{- end}}
+
+{{ if hasOAuth2PasswordFlow}}
+function applyOAuth2Password(
+  state: SecurityState,
+  spec: SecurityInputOAuth2PasswordCredentials
+) {
+  if (isPlainObject(spec.value)) {
+    state.oauth2 = spec.value;
+    return;
+  }
+
+  return applyBearer(state, spec);
+}
+
+export function resolveOAuth2Password(
+  value:
+    | string
+{{- if .Global.Config.EnvVarPrefix}}
+    {{- addInternalImport "primitives" "ExactPartial" "lib" }}
+    | ExactPartial<OAuth2PasswordFlow>
+{{- else }}
+    | Omit<OAuth2PasswordFlow, "tokenURL"> & { tokenURL?: string | undefined }
+{{- end }}
+    | null
+    | undefined,
+    options: {
+      {{- if .Global.Config.EnvVarPrefix}}
+      defaults: ExactPartial<OAuth2PasswordFlow & { token: string }>,
+      {{- else }}
+      defaults: Pick<OAuth2PasswordFlow, "tokenURL"> & { token?: string | undefined },
+      {{- end}}
+    }
+): SecurityInputOAuth2PasswordCredentials["value"] {
+  const { defaults } = options;
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (defaults.token) {
+    return defaults.token
+  }
+
+  {{ if .Global.Config.EnvVarPrefix}}
+  if (isPlainObject(value) || (defaults.username && defaults.password && defaults.tokenURL)) {
+    {{- addInternalImport "primitives" "invariant" "lib" }}
+    const username = value?.username || defaults.username;
+    invariant(!!username, "OAuth2 password flow requires a username");
+    const password = value?.password || defaults.password;
+    invariant(!!password, "OAuth2 password flow requires a password");
+    const tokenURL = value?.tokenURL || defaults.tokenURL;
+    invariant(!!tokenURL, "OAuth2 password flow requires a token URL");
+
+    return {
+      ...value,
+      type: "password",
+      username,
+      password,
+      {{constants.credentials.clientID}}: value?.{{constants.credentials.clientID}} || defaults.{{constants.credentials.clientID}},
+      {{constants.credentials.clientSecret}}: value?.{{constants.credentials.clientSecret}} || defaults.{{constants.credentials.clientSecret}},
+      tokenURL,
+    };
+  }
+  {{ else }}
+  if (isPlainObject(value)) {
+    const tokenURL = value?.tokenURL || defaults.tokenURL;
+    {{- addInternalImport "primitives" "invariant" "lib" }}
+    invariant(!!tokenURL, "OAuth2 password flow requires a token URL");
+    return { ...value, type: "password", tokenURL };
+  }
+  {{ end}}
+
+  return null;
+}
+{{end}}

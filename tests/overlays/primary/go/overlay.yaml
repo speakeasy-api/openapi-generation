@@ -1,0 +1,35 @@
+# Go-only additions to the primary spec: compile fixtures for Go SDK template
+# paths no shared spec exercises.
+overlay: 1.0.0
+info:
+  title: Go-only primary spec additions
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  - target: $.paths
+    update:
+      /eventstreams/polled:
+        post:
+          tags:
+            - eventstreams
+          operationId: polledEvents
+          description: >-
+            SSE stream behind x-speakeasy-polling. Compile fixture: polling
+            splits the method into a public wrapper and a private request
+            method, and the timeout's cancel must still be handed to the
+            returned stream (see method.go.stmpl / responses.ts).
+          servers:
+            - url: http://localhost:35456
+          responses:
+            "200":
+              description: Ok
+              content:
+                text/event-stream:
+                  schema:
+                    $ref: "components.yaml#/components/schemas/jsonEvent"
+            "202":
+              description: Not ready yet
+          x-speakeasy-polling:
+            - name: WaitForStream
+              successCriteria:
+                - condition: $statusCode == 200

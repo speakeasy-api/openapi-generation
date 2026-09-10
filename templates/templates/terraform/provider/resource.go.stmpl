@@ -1,0 +1,243 @@
+{{- recurse 1 -}}
+package provider
+
+{{genImports}}
+{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "imports" }}
+{{- addGenImport "context" -}}
+{{- addGenImport "fmt" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/resource" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/resource/schema" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types/basetypes" -}}
+{{- addGenImport (getSDKPackage) -}}
+
+{{- $resourceTypeName := .Local.Resource.GoTypeName }}
+{{- $resourceDataModelTypeName := .Local.Resource.GoDataModelTypeName }}
+{{- $sdkClassName := (sanitizeClassName .Global.AST.MainSDK.Type.Name)}}
+
+// Ensure provider defined types fully satisfy framework interfaces.
+var _ resource.Resource = &{{ $resourceTypeName }}{}
+var _ resource.{{generateExpectedInterface .Local.Resource}} = &{{ $resourceTypeName }}{}
+
+func New{{ $resourceTypeName }}() resource.Resource {
+	return &{{ $resourceTypeName }}{}
+}
+
+// {{ $resourceTypeName }} defines the resource implementation.
+type {{ $resourceTypeName }} struct {
+	{{ templateManagedResourceStructFields .Local }}
+}
+
+// {{ $resourceDataModelTypeName }} describes the resource data model.
+type {{ $resourceDataModelTypeName }} struct { {{templateEntityDataModelFields .Local.Resource}}
+}
+
+func (r *{{ $resourceTypeName }}) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_{{sanitizeTFStateName .Local.Resource.Name}}"
+}
+
+func (r *{{ $resourceTypeName }}) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: {{ quote .Local.Resource.SchemaDescription }},
+		{{ generateSchemaVersion .Local.Resource -}}
+
+		Attributes: map[string]schema.Attribute{
+		    {{(generateSchema .Local.Resource "managed")}}
+		},
+	}
+}
+
+func (r *{{ $resourceTypeName }}) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	{{ if .Local.ProviderContext.HasConfigureData -}}
+	providerData, ok := req.ProviderData.(*{{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *{{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	{{ templateManagedResourceConfigureProviderData .Local }}
+	{{ else -}}
+	client, ok := req.ProviderData.(*sdk.{{$sdkClassName}})
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			fmt.Sprintf("Expected *sdk.{{$sdkClassName}}, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+	{{ end -}}
+}
+
+func (r *{{ $resourceTypeName }}) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	{{- if .Local.Resource.IncludeSDKMethodOptions }}
+	var (
+		configData {{ $resourceDataModelTypeName }}
+		data       {{ $resourceDataModelTypeName }}
+		plan       types.Object
+	)
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	opts := &{{ $resourceDataModelTypeName }}Options {
+	  Config: &configData,
+	}
+	{{- else }}
+	var data *{{ $resourceDataModelTypeName }}
+	var plan types.Object
+	{{- end }}
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(plan.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.Resource.GlobalFields) 0 -}}
+	{{   templateManagedResourceOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{(generateSDKCall .Local.Resource .Local.Resource.Operations.Create "create")}}
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "post-create" }}
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *{{ $resourceTypeName }}) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data *{{ $resourceDataModelTypeName }}
+	var item types.Object
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &item)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(item.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{(generateSDKCall .Local.Resource .Local.Resource.Operations.Read "read")}}
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "post-read" }}
+
+	{{ generateResourceSoftDeletePropertiesRemovals .Local.Resource }}
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *{{ $resourceTypeName }}) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	{{- if .Local.Resource.IncludeSDKMethodOptions }}
+	var (
+		configData {{ $resourceDataModelTypeName }}
+		data       {{ $resourceDataModelTypeName }}
+		plan       types.Object
+		stateData  {{ $resourceDataModelTypeName }}
+	)
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configData)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &stateData)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	opts := &{{ $resourceDataModelTypeName }}Options {
+	  Config: &configData,
+	  State:  &stateData,
+	}
+	{{- else }}
+	var data *{{ $resourceDataModelTypeName }}
+	var plan types.Object
+	{{- end }}
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	merge(ctx, req, resp, &data)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.Resource.GlobalFields) 0 -}}
+	{{   templateManagedResourceOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{(generateSDKCall .Local.Resource .Local.Resource.Operations.Update "update")}}
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "post-update" }}
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *{{ $resourceTypeName }}) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data *{{ $resourceDataModelTypeName }}
+	var item types.Object
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &item)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(item.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.Resource.GlobalFields) 0 -}}
+	{{   templateManagedResourceOperationGlobals .Local }}
+
+	{{ end -}}
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "pre-delete" }}
+
+	{{(generateSDKCall .Local.Resource .Local.Resource.Operations.Delete "delete")}}
+}
+
+func (r *{{ $resourceTypeName }}) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+    {{ generateImportState .Local.Resource }}
+}
+
+{{ generateUpgradeState .Local.Resource -}}

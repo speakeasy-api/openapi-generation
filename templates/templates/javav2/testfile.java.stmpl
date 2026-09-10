@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+{{- $testGroup := .Local.Name -}}
+{{- $pkg := templatePackageName -}}
+{{- $class := (getTestSimpleClassName $testGroup) -}}
+{{- $fullClassName := (print $pkg "." $class) -}}
+package {{$pkg}};
+{{genImports $fullClassName}}public class {{$class}} { 
+{{- range .Local.Tests}}
+{{templateString "test.java.stmpl" (dict "TestGroup" $testGroup "Test" .)}}
+{{- end}}
+}

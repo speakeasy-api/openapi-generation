@@ -1,0 +1,3 @@
+[merge "openapi-generated"]
+	name = A custom merge driver used to resolve conflicts in generated test files
+	driver = scripts/merge-generated.sh %O %A %B %P

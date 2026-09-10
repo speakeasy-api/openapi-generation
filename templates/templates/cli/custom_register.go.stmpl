@@ -1,0 +1,11 @@
+// Package custom hosts hand-written commands that register into the generated CLI.
+package custom
+
+import "github.com/spf13/cobra"
+
+// Register receives the fully assembled root after every generated command has
+// been attached. This file is generated once and is never overwritten on
+// regeneration.
+func Register(root *cobra.Command) {
+	_ = root
+}

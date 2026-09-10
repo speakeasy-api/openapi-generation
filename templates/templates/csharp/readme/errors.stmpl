@@ -1,0 +1,52 @@
+{{- $groups := groupGlobalErrorsByErrorType}}
+{{- $totalCount := $groups.TotalOperationCount}}
+{{- $primaryCount := $groups.PrimaryErrorCount}}
+{{- $builtInCount := 2}}{{/* HttpRequestException, ResponseValidationError*/}}
+{{- $secondaryCount := $groups.LessCommonErrorCount}}
+{{- $baseErrorLink := templateErrorMarkdownLink getBaseErrorClassName}}
+{{$baseErrorLink}} is the base exception class for all HTTP error responses. It has the following properties:
+
+| Property      | Type                  | Description           |
+|---------------|-----------------------|-----------------------|
+| `Message`     | *string*              | Error message         |
+{{- if eq getResponseFormat "envelope-http" }}
+| `Request`     | *HttpRequestMessage*  | HTTP request object   |
+| `Response`    | *HttpResponseMessage* | HTTP response object  |
+{{- else}}
+| `StatusCode`  | *int*                 | HTTP status code      |
+| `Headers`     | *HttpResponseHeaders* | HTTP headers          |
+| `ContentType` | *string?*             | HTTP content type     |
+| `RawResponse` | *HttpResponseMessage* | HTTP response object  |
+| `Body`        | *string*              | HTTP response body    |
+{{- end}}
+
+{{- if gt (add $primaryCount $secondaryCount) 0 }}
+
+Some exceptions in this SDK include an additional `Payload` field, which will contain deserialized custom error data when present. Possible exceptions are listed in the [Error Classes](#error-classes) section.
+{{- end}}
+
+{{templateUsageExample .Local.UsageContext "### Example"}}
+
+### Error Classes
+
+**Primary exception{{if gt $primaryCount 0}}s{{end}}:**
+* {{$baseErrorLink}}: The base class for HTTP error responses.
+{{- range $groups.PrimaryErrors }}
+  * {{templateErrorGroup . $totalCount}}
+{{- end }}
+
+<details><summary>Less common exceptions ({{add $builtInCount $secondaryCount}})</summary>
+{{""}}
+* [`System.Net.Http.HttpRequestException`](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httprequestexception): Network connectivity error. For more details about the underlying cause, inspect the `ex.InnerException`.
+
+* Inheriting from {{$baseErrorLink}}:
+{{- range $groups.LessCommonErrors}}
+  * {{templateErrorGroup . $totalCount}}
+{{- end }}
+  * {{templateErrorMarkdownLink "ResponseValidationError"}}: Thrown when the response data could not be deserialized into the expected type.
+</details>
+
+{{- if $groups.HasErrorsApplicableToNotAllOperations}}
+
+\* Refer to the [relevant documentation](#available-resources-and-operations) to determine whether an exception applies to a specific operation.
+{{- end}}

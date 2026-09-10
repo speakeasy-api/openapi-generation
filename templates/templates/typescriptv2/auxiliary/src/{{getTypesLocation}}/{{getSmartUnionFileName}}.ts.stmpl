@@ -1,0 +1,101 @@
+{{- recurse 1 -}}
+{{- if useSmartUnion -}}
+{{- $typesLocation := getTypesLocation -}}
+{{- $hasOpenDiscriminatedUnion := shouldTemplateOpenDiscriminatedUnion -}}
+{{- addZodPackageImport }}
+{{- addTypeImport (getUnrecognizedFileName) "startCountingUnrecognized" $typesLocation }}
+{{- if $hasOpenDiscriminatedUnion }}
+{{- addTypeImport (getDiscriminatedUnionFileName) "isUnknown as isDiscriminatedUnionUnknown" $typesLocation }}
+{{- end}}
+{{- if isLaxMode}}
+{{- addTypeImport (getDefaultToZeroValueFileName) "startCountingDefaultToZeroValue" $typesLocation }}
+{{- end}}
+{{- $hasDecimal := isFeatureUsed "decimal" }}
+{{- $hasRFCDate := true }} // Not needed if lax mode
+{{genImports}}
+
+interface Candidate {
+  data: unknown;
+  /** Total number of fields in the parsed data */
+  fieldCount: number;
+  /** Number of fields which only matched due to lax parsing */
+  inexactCount: number;
+  /** Number of fields which defaulted to zero values */
+  zeroDefaultCount: number;
+}
+
+{{templateSmartUnionFunc}}
+
+
+function better(a: Candidate, b: Candidate): Candidate {
+  // First prefer exact matches over inexact ones
+  const aIsExact = a.inexactCount === 0;
+  const bIsExact = b.inexactCount === 0;
+  if (aIsExact !== bIsExact) {
+    return aIsExact ? a : b;
+  }
+
+  // Then compare field counts
+  const actualFieldCountA = a.fieldCount - a.zeroDefaultCount;
+  const actualFieldCountB = b.fieldCount - b.zeroDefaultCount;
+  if (actualFieldCountA !== actualFieldCountB) {
+    return actualFieldCountA > actualFieldCountB ? a : b;
+  }
+  return a.inexactCount < b.inexactCount ? a : b;
+}
+
+/**
+ * Counts the number of fields in a parsed value recursively.
+ * @param `parsed` assumed to *not* contain cycles
+ * fieldCount: total number of fields found
+ * inexactCount: number of primitive values that are not unrecognized enum values
+ */
+function countFieldsRecursive(parsed: unknown): number {
+  let fieldCount = 0;
+
+  const queue: unknown[] = [parsed];
+  let index = 0;
+
+  while (index < queue.length) {
+    const value = queue[index++];
+    if (value === undefined{{if $hasOpenDiscriminatedUnion}} || isDiscriminatedUnionUnknown(value){{end}}) {
+      continue;
+    }
+
+    // Check if it's a primitive value
+    const type = typeof value;
+    if (
+      value === null ||
+      type === 'number' ||
+      type === 'string' ||
+      type === 'boolean' ||
+      type === 'bigint' ||
+      value instanceof Date
+{{- if $hasRFCDate }}
+{{- addTypeImport "rfcdate" "RFCDate" $typesLocation }}
+      || value instanceof RFCDate
+{{- end }}
+{{- if $hasDecimal }}
+{{- addTypeImport "decimal" "Decimal" $typesLocation }}
+      || value instanceof Decimal
+{{- end }}
+    ) {
+      fieldCount++;
+      continue;
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      queue.push(...value);
+      continue;
+    }
+
+    // Handle objects
+    if (type === 'object') {
+      queue.push(...Object.values(value))
+    }
+  }
+
+  return fieldCount;
+}
+{{- end -}}

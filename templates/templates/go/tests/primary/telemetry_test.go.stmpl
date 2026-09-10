@@ -1,0 +1,38 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestTelemetryUserAgentGet(t *testing.T) {
+	recordTest("telemetry-user-agent-get")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Telemetry.TelemetryUserAgentGet(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "speakeasy-sdk/go {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.ModulePath}}", res.Res.Headers["X-Speakeasy-User-Agent"])
+}
+
+func TestTelemetrySpeakeasyUserAgentGet(t *testing.T) {
+	recordTest("telemetry-speakeasy-user-agent-get")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	userAgent := "test user agent"
+
+	res, err := s.Telemetry.TelemetrySpeakeasyUserAgentGet(context.Background(), userAgent)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, userAgent, res.Res.Headers["User-Agent"])
+	assert.Equal(t, "speakeasy-sdk/go {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.ModulePath}}", res.Res.Headers["X-Speakeasy-User-Agent"])
+}

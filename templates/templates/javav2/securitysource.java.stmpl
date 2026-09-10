@@ -1,0 +1,25 @@
+{{- recurse 1 -}}
+{{- $pkg := templatePackageName -}}
+{{- $className := (print "SecuritySource") -}}
+{{- $fullClassName := (print $pkg "." $className ) -}}
+package {{$pkg}};
+{{genImports $fullClassName}}public interface {{$className}} {
+
+    {{$hasSecurity := javaImportLocal "utils.HasSecurity" }}{{$hasSecurity}} getSecurity();
+    
+    public static {{$className}} of({{$hasSecurity}} security) {
+        return new DefaultSecuritySource(security);
+    }
+
+    public static class DefaultSecuritySource implements {{$className}} {
+        private {{$hasSecurity}} security;
+
+        public DefaultSecuritySource({{$hasSecurity}} security) {
+            this.security = security;
+        }
+
+        public {{$hasSecurity}} getSecurity() {
+            return security;
+        }
+    }
+}

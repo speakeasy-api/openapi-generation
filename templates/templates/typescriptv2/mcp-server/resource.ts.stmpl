@@ -1,0 +1,43 @@
+{{- recurse 1 -}}
+{{- $op := .Local.Operation }}
+{{- $usageLocation := "mcp-server/resources" }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $customPath := printf "%s/%s.custom.ts" .Local.Dir .Local.Filename }}
+{{- $hasCustomFile := fileExists $customPath }}
+{{- $isTemplate := isResourceTemplate $op }}
+{{ genImports }}
+{{- addImport "../resources.js" "ResourceDefinition" }}
+{{- addImport "../resources.js" "formatResult" }}
+
+{{- if $hasCustomFile }}
+{{- addImport (printf "./%s.custom.js" .Local.Filename) "customizer" "aliasImport" }}
+{{- end }}
+
+export const {{sanitizeMCPPrimitiveExport $op}}: ResourceDefinition = {
+  name: "{{ sanitizeMCPPrimitiveName $op }}",
+  description: `{{ sanitizeMCPPrimitiveDescription $op }}`,
+  {{- if and $op.Extensions.MCP $op.Extensions.MCP.Scope }}
+  scopes: {{ $op.Extensions.MCP.Scopes | toJson }},
+  {{- end }}
+  resource: "{{ resourceURITemplate $op }}",
+  read: async (client, uri, extra) => {
+    {{- addFuncImport $op $usageLocation }}
+    const [result, apiCall] = await {{$funcName}}(
+      client,
+      { {{constants.fetchOptions}}: { signal: extra.signal } },
+    ).$inspect();
+
+    if (!result.ok) {
+      throw result.error;
+    }
+
+    {{- if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(result.value, uri, {response: apiCall.response});
+    }
+    {{- end }}
+
+    return formatResult(result.value, uri, {response: apiCall.response});
+  }
+}

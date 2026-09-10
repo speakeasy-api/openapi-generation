@@ -1,0 +1,5 @@
+*.wasm*
+/full-stack/full-stack
+/ast/ast
+/overlay/overlay
+assets/wasm

@@ -1,0 +1,17 @@
+{{- $handleErrors := .Local.RenderFeature "errors" false -}}
+{{- $asyncCallContext := dict "Context" .Local "Async" true -}}
+
+async def main():
+{{templateString "usage/init.stmpl" $asyncCallContext | indentPresent 4}}
+{{- if $handleErrors}}
+        {{if .Local.Operation.Response.Type}}res = None{{end}}
+        try:
+{{templateString "usage/call.stmpl" $asyncCallContext | indentPresent 12}}
+{{templateString "usage/result.stmpl" $asyncCallContext | indentPresent 12}}
+{{templateString "usage/errors.stmpl" .Local | indentPresent 12}}
+{{- else}}
+{{templateString "usage/call.stmpl" $asyncCallContext | indentPresent 8}}
+{{templateString "usage/result.stmpl" $asyncCallContext | indentPresent 8}}
+{{- end}}
+
+asyncio.run(main())

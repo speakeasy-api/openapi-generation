@@ -1,0 +1,272 @@
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    OASOneOfDiscriminatorObjectString:
+      type: object
+      properties:
+        discriminator:
+          type: string
+        nondiscriminator:
+          type: string
+      required:
+        - discriminator
+
+    OASOneOfDiscriminatorObjectNumber:
+      type: object
+      properties:
+        discriminator:
+          type: string
+        nondiscriminator:
+          type: string
+      required:
+        - discriminator
+
+    OASOneOfDiscriminatorObjectAllOf:
+      type: object
+      properties:
+        discriminator:
+          type: string
+        nondiscriminator:
+          type: string
+      required:
+        - discriminator
+
+    OASOneOfObjectString:
+      type: object
+      properties:
+        object_string:
+          type: string
+
+    OASOneOfObjectNumber:
+      type: object
+      properties:
+        object_number:
+          type: number
+
+    OASOneOfString:
+      type: string
+
+    OASOneOfNumber:
+      type: number
+
+    OASOneOfResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        optional_discriminator_request_and_response:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        optional_discriminator_request_required_response:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        optional_discriminator_response_only:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        optional_inline_object_request_and_response:
+          type: object
+          oneOf:
+            - type: object
+              properties:
+                object_string:
+                  type: string
+            - type: object
+              properties:
+                object_number:
+                  type: number
+        optional_inline_object_response_only:
+          type: object
+          oneOf:
+            - type: object
+              properties:
+                object_string:
+                  type: string
+            - type: object
+              properties:
+                object_number:
+                  type: number
+        optional_inline_primitives_request_and_response:
+          oneOf:
+            - type: string
+            - type: number
+        optional_inline_primitives_response_only:
+          oneOf:
+            - type: string
+            - type: number
+        optional_ref_object_request_and_response:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfObjectString'
+            - $ref: '#/components/schemas/OASOneOfObjectNumber'
+        optional_ref_object_response_only:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfObjectString'
+            - $ref: '#/components/schemas/OASOneOfObjectNumber'
+        optional_ref_primitives_request_and_response:
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfString'
+            - $ref: '#/components/schemas/OASOneOfNumber'
+        optional_ref_primitives_response_only:
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfString'
+            - $ref: '#/components/schemas/OASOneOfNumber'
+        required_discriminator_request_and_response:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        required_discriminator_request_optional_response:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        required_discriminator_response_only:
+          type: object
+          properties:
+            discriminator:
+              type: string
+            nondiscriminator:
+              type: string
+          discriminator:
+            propertyName: discriminator
+            mapping:
+              string: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+              number: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+              allof: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectString'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectNumber'
+            - $ref: '#/components/schemas/OASOneOfDiscriminatorObjectAllOf'
+        required_inline_object_request_and_response:
+          type: object
+          oneOf:
+            - type: object
+              properties:
+                object_string:
+                  type: string
+            - type: object
+              properties:
+                object_number:
+                  type: number
+        required_inline_object_response_only:
+          type: object
+          oneOf:
+            - type: object
+              properties:
+                object_string:
+                  type: string
+            - type: object
+              properties:
+                object_number:
+                  type: number
+        required_inline_primitives_request_and_response:
+          oneOf:
+            - type: string
+            - type: number
+        required_inline_primitives_response_only:
+          oneOf:
+            - type: string
+            - type: number
+        required_ref_object_request_and_response:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfObjectString'
+            - $ref: '#/components/schemas/OASOneOfObjectNumber'
+        required_ref_object_response_only:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfObjectString'
+            - $ref: '#/components/schemas/OASOneOfObjectNumber'
+        required_ref_primitives_request_and_response:
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfString'
+            - $ref: '#/components/schemas/OASOneOfNumber'
+        required_ref_primitives_response_only:
+          oneOf:
+            - $ref: '#/components/schemas/OASOneOfString'
+            - $ref: '#/components/schemas/OASOneOfNumber'
+      required:
+        - optional_discriminator_request_required_response
+        - required_discriminator_request_and_response
+        - required_discriminator_response_only
+        - required_inline_object_request_and_response
+        - required_inline_object_response_only
+        - required_inline_primitives_request_and_response
+        - required_inline_primitives_response_only
+        - required_ref_object_request_and_response
+        - required_ref_object_response_only
+        - required_ref_primitives_request_and_response
+        - required_ref_primitives_response_only
+    TestSchema:
+      $ref: "#/components/schemas/OASOneOfResponse"

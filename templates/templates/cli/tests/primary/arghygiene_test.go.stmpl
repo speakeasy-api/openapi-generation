@@ -1,0 +1,249 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// CLI-owned enum flags (--output-format, --color) are validated before any
+// command runs: a typo is an error with the options and a suggestion, not a
+// silent fall-through to the default renderer.
+func TestOutputFormatTypoRejected(t *testing.T) {
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"-o", "jsno", "methods", "method-get"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value "jsno" for --output-format`)
+	assert.Contains(t, err.Error(), "pretty, json, yaml, table, toon")
+	assert.Contains(t, err.Error(), `did you mean "json"`)
+	assert.Equal(t, 0, *count, "an invalid output format must fail before the request is sent")
+}
+
+func TestOutputFormatAmbiguousTypoHasNoSuggestion(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"-o", "t", "methods", "method-get"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value "t" for --output-format`)
+	assert.NotContains(t, err.Error(), "did you mean")
+}
+
+func TestColorValueRejected(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"--color", "banana", "methods", "method-get"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value "banana" for --color`)
+	assert.Contains(t, err.Error(), "auto, always, never")
+}
+
+func TestOutputFormatValidValuesAccepted(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	for _, format := range []string{"pretty", "json", "yaml", "table", "toon"} {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{"-o", format, "methods", "method-get"})
+		require.NoError(t, err, "format %q", format)
+	}
+}
+
+// Enum-typed request flags reject an explicitly empty value ("--model=")
+// instead of sending "" as the enum member.
+func TestEnumFlagEmptyValueRejected(t *testing.T) {
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--model="})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --model: empty")
+	assert.Contains(t, err.Error(), "standard, fast")
+	assert.Equal(t, 0, *count)
+}
+
+func TestEnumFlagUnknownValueRejected(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--model", "banana"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --model: "banana"`)
+}
+
+// A string flag whose schema declares minLength rejects an explicitly empty
+// value on strict surfaces (explicit agent mode, manifest commands); an
+// unconstrained string still accepts "" (some APIs clear fields with it), so
+// the schema — not the CLI — decides.
+func TestStringFlagEmptyRejectedWhenSchemaForbids(t *testing.T) {
+	resetAgentMode(t)
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode", "cli-hygiene", "cli-arg-hygiene-post", "--code="})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --code: empty")
+	assert.Contains(t, err.Error(), "at least 1 character")
+	assert.Equal(t, 0, *count)
+}
+
+// Outside strict surfaces the minLength violation is advisory: warn and let
+// the server decide, preserving the merge-base acceptance contract.
+func TestStringFlagEmptyWarnsAndSendsWithoutAgentMode(t *testing.T) {
+	resetAgentMode(t)
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code="})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStderr(), "Warning:")
+	assert.Contains(t, h.GetStderr(), "invalid value for --code: empty")
+}
+
+func TestStringFlagEmptyAcceptedWhenSchemaAllows(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--label="})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.True(t, jsonExists(output, "json.label"), "explicit empty label must be sent: %s", output)
+	assert.Equal(t, "", jsonGetString(output, "json.label"))
+}
+
+// Schema-declared minimum/maximum reject before the request only on strict
+// surfaces (explicit agent mode, manifest commands); undeclared bounds stay
+// with the server.
+func TestNumericFlagBelowMinimumRejected(t *testing.T) {
+	resetAgentMode(t)
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode", "cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--page-size", "0"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --page-size: 0 is below the minimum 1")
+	assert.Equal(t, 0, *count)
+}
+
+func TestNumericFlagAboveMaximumRejected(t *testing.T) {
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"--agent-mode", "cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--page-size", "101"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --page-size: 101 is above the maximum 100")
+}
+
+func TestFloatFlagOutsideBoundsRejected(t *testing.T) {
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"--agent-mode", "cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--ratio", "1.5"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --ratio: 1.5 is above the maximum 1")
+}
+
+// Outside strict surfaces a bound violation is advisory: the CLI warns on
+// stderr and sends the request, preserving the merge-base acceptance
+// contract for regenerated legacy CLIs — the server stays authoritative.
+func TestNumericFlagOutOfBoundsWarnsAndSendsWithoutAgentMode(t *testing.T) {
+	resetAgentMode(t)
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--page-size", "0"})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStderr(), "Warning:")
+	assert.Contains(t, h.GetStderr(), "below the minimum 1")
+	assert.Contains(t, h.GetStdout(), "\"json\"")
+}
+
+// The float parser accepts NaN/Inf; neither is a JSON number.
+func TestFloatFlagNonFiniteRejected(t *testing.T) {
+	for _, v := range []string{"NaN", "Inf", "-Inf"} {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer("http://127.0.0.1:1", []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--ratio", v})
+		require.Error(t, err, v)
+		assert.Contains(t, err.Error(), "is not a finite number", v)
+	}
+}
+
+// A required string with no length constraint: an explicitly empty value is
+// present, not missing — the schema allows "", so it is sent.
+func TestRequiredStringExplicitEmptyAcceptedWhenSchemaAllows(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-required-string-post", "--tag="})
+	require.NoError(t, err)
+	assert.True(t, jsonExists(h.GetStdout(), "json.tag"))
+	assert.Equal(t, "", jsonGetString(h.GetStdout(), "json.tag"))
+}
+
+func TestNumericFlagWithinBoundsAccepted(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--page-size", "5"})
+	require.NoError(t, err)
+	assert.Equal(t, "5", jsonGetString(h.GetStdout(), "args.pageSize"))
+}
+
+func TestReservedSchemaFieldFlagRenamed(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "abc", "--schema-param", "s1"})
+	require.NoError(t, err)
+	assert.Equal(t, "s1", jsonGetString(h.GetStdout(), "json.schema"))
+}
+
+func TestSchemaFlagStillPrintsBodySchema(t *testing.T) {
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--schema"})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStdout(), `"code"`)
+	assert.Equal(t, 0, *count, "printing the body schema must not send a request")
+}
+
+func TestGroupCommandNamesUseSourceSegments(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "top level", args: []string{"first", "get", "--help"}},
+		{name: "nested", args: []string{"nested", "first", "get", "--help"}},
+		{name: "nested with colliding parent", args: []string{"nest", "first", "get", "--help"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunBare(tc.args))
+		})
+	}
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"nested", "SDK-first"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown command "SDK-first" for "cli nested"`)
+}
+
+func TestRootOperationExampleOmitsSDKClassName(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"ambiguous-query-param", "--help"}))
+
+	help := h.GetStdout()
+	assert.Contains(t, help, "cli ambiguous-query-param")
+	assert.NotContains(t, help, "cli SDK ")
+}

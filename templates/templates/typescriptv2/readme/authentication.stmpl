@@ -1,0 +1,49 @@
+{{- $options := collectGlobalSecurityOptions }}
+### Per-Client Security Schemes
+{{ if gt (len $options) 1 }}
+This SDK supports multiple security scheme combinations globally. You can choose from one of the alternatives by setting the `security` optional parameter when initializing the SDK client instance. The selected option will be used by default to authenticate with the API for all operations that support it.
+{{- range $index, $option := $options }}
+
+#### {{ $option.Name }}
+{{ if gt (len $option.Schemes) 1 }}
+All of the following schemes must be satisfied to use the `{{$option.Name}}` alternative:
+{{- else }}
+The `{{$option.Name}}` alternative relies on the following scheme:
+{{- end }}
+
+{{ templateSecurityTable $option }}
+
+Example:
+{{ templateUsageSection "security" "" "security" true (dict "index" $index) }}
+{{- end }}
+
+{{- else if (eq (len $options) 1) }}
+{{- $option := (first $options) }}
+{{- if eq (len $option.Schemes) 1 }}
+This SDK supports the following security scheme globally:
+
+{{ templateSecurityTable $option }}
+{{ if canFlattenGlobalSecurity }}
+To authenticate with the API the {{templateSecurityParametersToSet (first $option.Schemes)}} must be set when initializing the SDK client instance. For example:
+{{- else }}
+You can set the security parameters through the `security` optional parameter when initializing the SDK client instance. For example:
+{{- end }}
+
+{{- else }}
+This SDK supports the following security schemes globally:
+
+{{ templateSecurityTable $option }}
+
+You can set the security parameters through the `security` optional parameter when initializing the SDK client instance. The selected scheme will be used by default to authenticate with the API for all operations that support it. For example:
+{{- end }}
+{{ templateUsageSection "security" "" "security" true (dict "index" 0) }}
+{{- end }}
+
+{{- $opSecuritySection := templateUsageSection "security" "" "security" false (dict "index" 0) }}
+{{- if not (eq $opSecuritySection "") }}
+
+### Per-Operation Security Schemes
+
+Some operations in this SDK require the security scheme to be specified at the request level. For example:
+{{ $opSecuritySection }}
+{{- end }}

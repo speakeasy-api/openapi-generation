@@ -1,0 +1,9 @@
+{{- recurse 1 -}}
+{{- addImport "testing" -}}
+package tests
+
+{{genImports}}
+
+{{range .Local.Helpers}}
+{{templateString "testhelper.go.stmpl" .}}
+{{end}}

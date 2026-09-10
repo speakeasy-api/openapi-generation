@@ -1,0 +1,48 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	basichttp "basicHttp"
+	"basicHttp/models/components"
+	"basicHttp/models/operations"
+	"basicHttp/types"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestBasicAuthOptional(t *testing.T) {
+	recordTest("auth-basic-auth-operation-optional")
+
+	ctx := context.Background()
+
+	s := basichttp.New(
+		basichttp.WithSecurity(components.Security{
+			Username: "wrongUser",
+			Password: "wrongPass",
+		}),
+	)
+
+	res, err := s.Auth.BasicAuthOptional(ctx, &operations.BasicAuthOptionalSecurity{
+		Username: types.String("testUser"),
+		Password: types.String("testPass"),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.BasicAuthResponse)
+	assert.True(t, res.BasicAuthResponse.Authenticated)
+	assert.Equal(t, "testUser", res.BasicAuthResponse.User)
+
+	s2 := basichttp.New(
+		basichttp.WithSecurity(components.Security{
+			Username: "testUser",
+			Password: "testPass",
+		}),
+	)
+
+	_, err = s2.Auth.BasicAuthOptional(ctx, &operations.BasicAuthOptionalSecurity{})
+	require.Error(t, err)
+}

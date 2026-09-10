@@ -1,0 +1,126 @@
+import { expect, test } from "vitest";
+import { SDKCore as SDK } from "../core.js";
+import { recordTest } from "./common_helpers.js";
+import { createSimpleObject } from "./primary_helpers.js";
+import { flatteningComponentBodyAndParamNoConflict } from "../funcs/flatteningComponentBodyAndParamNoConflict.js";
+import { flatteningComponentBodyAndParamConflict } from "../funcs/flatteningComponentBodyAndParamConflict.js";
+import { flatteningInlineBodyAndParamConflict } from "../funcs/flatteningInlineBodyAndParamConflict.js";
+import { flatteningInlineBodyAndParamNoConflict } from "../funcs/flatteningInlineBodyAndParamNoConflict.js";
+import { flatteningConflictingParams } from "../funcs/flatteningConflictingParams.js";
+import { flatteningRequiredBodyAllOptional } from "../funcs/flatteningRequiredBodyAllOptional.js";
+
+test("Test Component Body and Param No Conflict", async () => {
+  recordTest("flattening-component-body-and-param-no-conflict");
+
+  const s = new SDK();
+  const obj = createSimpleObject();
+  const result = await flatteningComponentBodyAndParamNoConflict(s, {
+    paramStr: "param test",
+    simpleObject: obj,
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.args["paramStr"]).toEqual("param test");
+  expect(result.value.res!.json).toEqual(obj);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Component Body and Param Conflict", async () => {
+  recordTest("flattening-component-body-and-param-conflict");
+
+  const s = new SDK();
+  const obj = createSimpleObject();
+  const result = await flatteningComponentBodyAndParamConflict(s, {
+    str: "param test",
+    simpleObject: obj,
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.args["str"]).toEqual("param test");
+  expect(result.value.res!.json).toEqual(obj);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Inline Body and Param Conflict", async () => {
+  recordTest("flattening-inline-body-and-param-conflict");
+
+  const s = new SDK();
+  const result = await flatteningInlineBodyAndParamConflict(s, {
+    str: "param test",
+    RequestBody: { str: "body test" },
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.args["str"]).toEqual("param test");
+  expect(result.value.res!.json.str).toEqual("body test");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Inline Body and Param No Conflict", async () => {
+  recordTest("flattening-inline-body-and-param-no-conflict");
+
+  const s = new SDK();
+  const result = await flatteningInlineBodyAndParamNoConflict(s, {
+    paramStr: "param test",
+    RequestBody: { bodyStr: "body test" },
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.args["paramStr"]).toEqual("param test");
+  expect(result.value.res!.json.bodyStr).toEqual("body test");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Conflicting Params", async () => {
+  recordTest("flattening-conflicting-params");
+
+  const s = new SDK();
+  const result = await flatteningConflictingParams(s, {
+    strPathParameter: "pathParam",
+    strQueryParameter: "queryParam",
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.url).toContain("/pathParam?");
+  expect(result.value.res!.args["str"]).toEqual("queryParam");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Required Body All Optional", async () => {
+  recordTest("flattening-required-body-all-optional");
+
+  const s = new SDK();
+  const result = await flatteningRequiredBodyAllOptional(s, {
+    optStr: "body test",
+    optInt: 1,
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res!.json.optStr).toEqual("body test");
+  expect(result.value.res!.json.optInt).toEqual(1);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});

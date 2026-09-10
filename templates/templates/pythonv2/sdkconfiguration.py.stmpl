@@ -1,0 +1,127 @@
+{{- recurse 1 -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $hasServers := (and .Local.Servers .Local.Servers.HasAbsoluteURL) -}}
+{{- $hasAnyServers := or $hasServers .Global.AST.MainSDK.HasAnyOperationServers -}}
+{{- addImport "dataclasses" "dataclass"}}
+{{- if $serverVariables }}{{addImport "dataclasses" "field"}}{{end}}
+{{- addImport "typing" "Dict"}}
+{{- addImport "typing" "Tuple"}}
+{{- addImport "typing" "Optional"}}
+{{- addImport "._version" "__version__" }}
+{{ if ne .Global.Config.DocVersion ""}}
+{{- addImport "._version" "__openapi_doc_version__" }}
+{{ end}}
+{{- addImport "._version" "__gen_version__" }}
+{{- addImport "._version" "__user_agent__" }}
+{{- if and (not $serverMap) $serverVariables}}{{addImport "typing" "List"}}{{end}}
+{{- if .Local.Security}}{{addImport "typing" "Callable"}}{{end}}
+{{- addImport ".utils" "RetryConfig"}}
+{{- addImport ".utils" "Logger" -}}
+{{- addImport ".utils" "remove_suffix"}}
+{{addImport ".httpclient" "HttpClient"}}
+{{addImport ".httpclient" "AsyncHttpClient"}}
+{{- addImport "typing" "Union"}}
+{{ genImports }}
+
+{{ if $hasServers }}
+{{if $serverMap}}
+{{- range .Local.Servers.Servers}}
+{{- $serverConst := templateConstName .ID "Server"}}
+{{$serverConst}} = "{{ .ID }}"
+{{- templateComments .Comments 0}}
+{{- end}}
+SERVERS = {
+	{{- range .Local.Servers.Servers}}
+	{{templateConstName .ID "Server"}}: "{{ .URL }}",
+	{{- end}}
+}
+"""Contains the list of servers available to the SDK"""
+{{else}}
+SERVERS = [
+	{{- range .Local.Servers.Servers}}
+    "{{ .URL }}",
+{{- templateComments .Comments 1 false}}{{end}}
+]
+"""Contains the list of servers available to the SDK"""
+{{- end}}
+{{if $serverVariables}}
+{{range .Local.Servers.GetVariables}}{{if eq .Type.Type "enum"}}{{templateString "enum.py.stmpl" .}}{{end}}{{end}}
+{{end}}
+{{end}}
+@dataclass
+class SDKConfiguration:
+    client: Union[HttpClient, None]
+    client_supplied: bool
+    async_client: Union[AsyncHttpClient, None]
+    async_client_supplied: bool
+    debug_logger: Logger
+{{- if .Local.Globals}}
+    globals: {{sanitizePydanticType (typeDefToFieldDef .Local.Globals)}}
+{{- end}}
+{{- if .Local.Security}}
+    {{- $securityType := (sanitizePydanticType (typeDefToFieldDef .Local.Security.Type)) }}
+    security: Optional[Union[{{$securityType}},Callable[[], {{$securityType}}]]] = None
+{{- end}}
+{{- if not $hasAnyServers }}
+    server_url: str = ""
+{{- else }}
+    server_url: Optional[str] = ""
+{{- end }}
+{{- if $hasServers }}
+  {{- if $serverMap}}
+    server: Optional[str] = ""
+  {{- else }}
+    server_idx: Optional[int] = 0
+  {{- end}}
+  {{- if $serverVariables}}
+	  {{- if $serverMap}}
+    server_defaults: Dict[str, Dict[str, str]] = field(default_factory=Dict)
+	  {{- else}}
+    server_defaults: List[Dict[str, str]] = field(default_factory=List)
+	  {{- end}}
+  {{- end}}
+{{- end }}
+    language: str = "python"
+    {{- if ne .Global.Config.DocVersion ""}}
+    openapi_doc_version: str = __openapi_doc_version__
+    {{- end}}
+    sdk_version: str = __version__
+    gen_version: str = __gen_version__
+    user_agent: str = __user_agent__
+    {{- addImport "types" "UNSET" true}}
+    {{- addImport "types" "OptionalNullable" true}}
+    {{- addImport "pydantic" "Field"}}
+    retry_config: OptionalNullable[RetryConfig] = Field(default_factory=lambda: UNSET)
+    timeout_ms: Optional[int] = None
+
+    def get_server_details(self) -> Tuple[str, Dict[str, str]]:
+      {{- if not $hasServers }}
+        return remove_suffix(self.server_url or "", "/"), {}
+      {{- else }}
+        {{- if .Local.Servers}}
+        if self.server_url is not None and self.server_url:
+            return remove_suffix(self.server_url, "/"), {}
+
+        {{- if $serverMap}}
+        if not self.server:
+            self.server = {{templateConstName .Local.Servers.Default "Server"}}
+
+        if self.server not in SERVERS:
+            raise ValueError(f"Invalid server \"{self.server}\"")
+
+        return SERVERS[self.server], {{if $serverVariables}}self.server_defaults.get(self.server, {}){{else}}{}{{end}}
+        {{- else}}
+        if self.server_idx is None:
+            self.server_idx = 0
+
+        return SERVERS[self.server_idx], {{if $serverVariables}}self.server_defaults[self.server_idx]{{else}}{}{{end}}
+        {{- end}}
+        {{- else}}
+        
+        if self.server_url is None:
+            return "", {}
+            
+        return remove_suffix(self.server_url, "/"), {}
+        {{- end}}
+      {{- end}}

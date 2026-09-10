@@ -1,0 +1,33 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /documents/{document_id}/certificate:
+    get:
+      operationId: getDocumentCertificate
+      description: >-
+        Tests that binary (response-stream) responses produce a valid zero
+        value (nil) in generated Go code. Without the fix the generator
+        emits an invalid composite literal for io.ReadCloser.
+      tags:
+        - responseBodies
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF certificate
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary

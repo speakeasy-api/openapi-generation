@@ -1,0 +1,51 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/cursor/numeric-coercion:
+    get:
+      operationId: paginationCursorNumericCoercion
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests that a numeric response cursor is coerced to the declared integer
+        request cursor before pagination cycle detection.
+      tags:
+        - pagination
+      parameters:
+        - in: query
+          name: cursor
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - next_cursor
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: integer
+                  next_cursor:
+                    type: number
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+        outputs:
+          nextCursor: $.next_cursor

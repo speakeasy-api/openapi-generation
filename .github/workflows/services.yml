@@ -1,0 +1,39 @@
+name: Services
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+      - hotfixes
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  test-api-test-service:
+    name: Test API Test Service
+    if: ${{ github.event.action != 'closed' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Set up gotestfmt
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
+      - name: Build
+        run: go build ./...
+        working-directory: services/speakeasy-api-test-service
+      - name: Test
+        run: go test -json -v -p 1 ./... | gotestfmt
+        working-directory: services/speakeasy-api-test-service

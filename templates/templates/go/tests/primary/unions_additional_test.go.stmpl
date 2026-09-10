@@ -1,0 +1,1656 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"math/big"
+	"net/http"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/optionalnullable"
+	"{{getRootModulePath}}/pkg/types"
+	"{{getRootModulePath}}/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestStronglyTypedOneOfPost_Basic(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-basic")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.SimpleObjectWithType{
+		Str:        "test",
+		Bool:       true,
+		Int:        1,
+		Int32:      1,
+		IntEnum:    shared.SimpleObjectWithTypeIntEnumSecond,
+		Int32Enum:  shared.SimpleObjectWithTypeInt32EnumFiftyFive,
+		Num:        1.1,
+		Float32:    1.1,
+		Enum:       shared.EnumOne,
+		Any:        "any",
+		Date:       types.Date{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
+		DateTime:   time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC),
+		BoolOpt:    sdk.Bool(true),
+		StrOpt:     sdk.String("testOptional"),
+		IntOptNull: nil,
+		NumOptNull: nil,
+	}
+
+	req := shared.CreateStronglyTypedOneOfObjectSimpleObjectWithType(obj)
+
+	res, err := s.Unions.StronglyTypedOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeSimpleObjectWithType, res.Res.JSON.Type)
+
+	obj.Type = "simpleObjectWithType"
+	assert.Equal(t, obj, *res.Res.JSON.SimpleObjectWithType)
+}
+
+func TestCollectionOneOfPost(t *testing.T) {
+	recordTest("unions-collections-one-of-post")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := shared.CollectionOneOfObject{
+		ArrayOfAny: []interface{}{"one", "two"},
+	}
+
+	res, err := s.Unions.CollectionOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, req.ArrayOfAny, res.Res.JSON.ArrayOfAny)
+
+	req2 := shared.CollectionOneOfObject{
+		MapOfAny: map[string]interface{}{
+			"1": "one",
+			"2": "two",
+		},
+	}
+
+	res2, err := s.Unions.CollectionOneOfPost(context.Background(), req2)
+	require.NoError(t, err)
+	require.NotNil(t, res2)
+	assert.Equal(t, http.StatusOK, res2.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, req2.MapOfAny, res2.Res.JSON.MapOfAny)
+}
+
+func TestStronglyTypedOneOfPostWithNonStandardDiscriminatorName(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-with-non-standard-discriminator-name")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.SimpleObjectWithNonStandardTypeName{
+		Str:        "test",
+		Bool:       true,
+		Int:        1,
+		Int32:      1,
+		IntEnum:    shared.SimpleObjectWithNonStandardTypeNameIntEnumSecond,
+		Int32Enum:  shared.SimpleObjectWithNonStandardTypeNameInt32EnumFiftyFive,
+		Num:        1.1,
+		Float32:    1.1,
+		Enum:       shared.EnumOne,
+		Any:        "any",
+		Date:       types.MustDateFromString("2020-01-01"),
+		DateTime:   time.Date(2020, 1, 1, 0, 0, 0, 1, time.UTC),
+		BoolOpt:    sdk.Bool(true),
+		StrOpt:     sdk.String("testOptional"),
+		IntOptNull: nil,
+		NumOptNull: nil,
+	}
+
+	req := shared.CreateStronglyTypedOneOfObjectWithNonStandardDiscriminatorNameSimpleObjectWithNonStandardTypeName(obj)
+
+	res, err := s.Unions.StronglyTypedOneOfPostWithNonStandardDiscriminatorName(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectWithNonStandardDiscriminatorNameTypeSimpleObjectWithNonStandardTypeName, res.Res.JSON.Type)
+
+	obj.ObjType = "simpleObjectWithNonStandardTypeName"
+	assert.Equal(t, obj, *res.Res.JSON.SimpleObjectWithNonStandardTypeName)
+}
+
+func TestStronglyTypedOneOfPost_Deep(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-deep")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.DeepObjectWithType{
+		Any: shared.CreateDeepObjectWithTypeAnySimpleObject(createSimpleObject()),
+		Arr: []shared.SimpleObject{
+			createSimpleObject(), createSimpleObject(),
+		},
+		Bool: true,
+		Int:  1,
+		Map: map[string]shared.SimpleObject{
+			"key": createSimpleObject(),
+		},
+		Num:  1.1,
+		Obj:  createSimpleObject(),
+		Str:  "test",
+		Type: sdk.String("deepObjectWithType"),
+	}
+
+	req := shared.CreateStronglyTypedOneOfObjectDeepObjectWithType(obj)
+
+	res, err := s.Unions.StronglyTypedOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeDeepObjectWithType, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.DeepObjectWithType)
+}
+
+func TestWeaklyTypedOneOfPost_Basic(t *testing.T) {
+	recordTest("unions-weakly-typed-one-of-post-basic")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := createSimpleObject()
+
+	req := shared.CreateWeaklyTypedOneOfObjectSimpleObject(obj)
+
+	res, err := s.Unions.WeaklyTypedOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.WeaklyTypedOneOfObjectTypeSimpleObject, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.SimpleObject)
+}
+
+func TestWeaklyTypedOneOfPost_Deep(t *testing.T) {
+	recordTest("unions-weakly-typed-one-of-post-deep")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := createDeepObject()
+
+	req := shared.CreateWeaklyTypedOneOfObjectDeepObject(obj)
+
+	res, err := s.Unions.WeaklyTypedOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.WeaklyTypedOneOfObjectTypeDeepObject, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.DeepObject)
+}
+
+func TestTypedObjectOneOfPost_Obj1(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj1")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject1{
+		Type: shared.TypedObject1TypeObj1,
+	}
+
+	req := shared.CreateTypedObjectOneOfObj1(obj)
+
+	res, err := s.Unions.TypedObjectOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.TypedObjectOneOfTypeObj1, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject1)
+}
+
+func TestTypedObjectOneOfPost_Obj2(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj2")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject2{
+		Type: shared.TypedObject2TypeObj2,
+	}
+
+	req := shared.CreateTypedObjectOneOfObj2(obj)
+
+	res, err := s.Unions.TypedObjectOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.TypedObjectOneOfTypeObj2, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject2)
+}
+
+func TestTypedObjectOneOfPost_Obj3(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj3")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject3{
+		Type: shared.TypedObject3TypeObj3,
+	}
+
+	req := shared.CreateTypedObjectOneOfObj3(obj)
+
+	res, err := s.Unions.TypedObjectOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.TypedObjectOneOfTypeObj3, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject3)
+}
+
+func TestTypedObjectOneOfPost_Null(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := shared.TypedObjectOneOf{}
+	_, err := s.Unions.TypedObjectOneOfPost(context.Background(), req)
+	require.Error(t, err)
+	assert.Equal(t, err.Error(), "error serializing request body: json: error calling MarshalJSON for type shared.TypedObjectOneOf: could not marshal union type TypedObjectOneOf: all fields are null")
+}
+
+func TestTypedObjectNullableOneOfPost_Obj1(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-obj1")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject1{
+		Value: "one",
+		Type:  shared.TypedObject1TypeObj1,
+	}
+
+	req := shared.CreateTypedObjectNullableOneOfObj1(obj)
+
+	res, err := s.Unions.TypedObjectNullableOneOfPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.TypedObjectNullableOneOfTypeObj1, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject1)
+}
+
+func TestTypedObjectNullableOneOfPost_Obj2(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-obj2")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject2{
+		Value: "two",
+		Type:  shared.TypedObject2TypeObj2,
+	}
+
+	req := shared.CreateTypedObjectNullableOneOfObj2(obj)
+
+	res, err := s.Unions.TypedObjectNullableOneOfPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.TypedObjectNullableOneOfTypeObj2, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject2)
+}
+
+func TestTypedObjectNullableOneOfPost_Null(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Unions.TypedObjectNullableOneOfPost(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Nil(t, res.Res.JSON)
+}
+
+func TestFlattenedTypedObject_Obj1(t *testing.T) {
+	recordTest("unions-flattened-typed-object-post-obj1")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.CreateFlattenedTypedObject1TypedObject1(shared.TypedObject1{
+		Value: "one",
+		Type:  shared.TypedObject1TypeObj1,
+	})
+
+	res, err := s.Unions.FlattenedTypedObjectPost(context.Background(), obj)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, obj, res.Res.JSON)
+}
+
+func TestNullableTypedObjectPost_Obj1(t *testing.T) {
+	recordTest("unions-nullable-typed-object-post-obj1")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject1{
+		Value: "one",
+		Type:  shared.TypedObject1TypeObj1,
+	}
+
+	res, err := s.Unions.NullableTypedObjectPost(context.Background(), &obj)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, obj, *res.Res.JSON)
+}
+
+func TestNullableTypedObjectPost_Null(t *testing.T) {
+	recordTest("unions-nullable-typed-object-post-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Unions.NullableTypedObjectPost(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Nil(t, res.Res.JSON)
+}
+
+func TestNullableOneOfSchemaPost_Obj1(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-obj1")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject1{
+		Value: "one",
+		Type:  shared.TypedObject1TypeObj1,
+	}
+
+	req := operations.CreateNullableOneOfSchemaPostRequestBodyObj1(obj)
+
+	res, err := s.Unions.NullableOneOfSchemaPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.NullableOneOfSchemaPostJSONTypeObj1, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject1)
+}
+
+func TestNullableOneOfSchemaPost_Obj2(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-obj2")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := shared.TypedObject2{
+		Value: "two",
+		Type:  shared.TypedObject2TypeObj2,
+	}
+
+	req := operations.CreateNullableOneOfSchemaPostRequestBodyObj2(obj)
+
+	res, err := s.Unions.NullableOneOfSchemaPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.NullableOneOfSchemaPostJSONTypeObj2, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.TypedObject2)
+}
+
+func TestNullableOneOfSchemaPost_Null(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Unions.NullableOneOfSchemaPost(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Nil(t, res.Res.JSON)
+}
+
+func TestNullableOneOfTypeInObject(t *testing.T) {
+	recordTest("unions-nullable-oneof-type-in-object-post")
+
+	nullableOneOfTwoInt2 := shared.CreateNullableOneOfTypeInObjectNullableOneOfTwoInteger(2)
+
+	tests := []struct {
+		name     string
+		obj      shared.NullableOneOfTypeInObject
+		wantJson string
+	}{
+		{
+			name: "Non-nullable field set only",
+			obj: shared.NullableOneOfTypeInObject{
+				OneOfOne: true,
+			},
+			wantJson: "{\"NullableOneOfOne\":null,\"NullableOneOfTwo\":null,\"OneOfOne\":true}",
+		},
+		{
+			name: "Nullable fields set to null",
+			obj: shared.NullableOneOfTypeInObject{
+				NullableOneOfOne: nil,
+				NullableOneOfTwo: nil,
+				OneOfOne:         true,
+			},
+			wantJson: "{\"NullableOneOfOne\":null,\"NullableOneOfTwo\":null,\"OneOfOne\":true}",
+		},
+		{
+			name: "All fields set to non-null values",
+			obj: shared.NullableOneOfTypeInObject{
+				NullableOneOfOne: sdk.Bool(true),
+				NullableOneOfTwo: &nullableOneOfTwoInt2,
+				OneOfOne:         true,
+			},
+			wantJson: "{\"NullableOneOfOne\":true,\"NullableOneOfTwo\":2,\"OneOfOne\":true}",
+		},
+	}
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, _, err := utils.SerializeRequestBody(context.Background(), tt.obj, false, false, "Request", "json", "")
+			require.NoError(t, err)
+			serializedBody := new(bytes.Buffer)
+			serializedBody.ReadFrom(reader)
+			assert.Equal(t, tt.wantJson, serializedBody.String())
+			res, err := s.Unions.NullableOneOfTypeInObjectPost(context.Background(), tt.obj)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+			assert.Equal(t, tt.obj, res.Res.JSON)
+		})
+	}
+}
+
+func TestNullableOneOfRefInObject(t *testing.T) {
+	recordTest("unions-nullable-oneof-ref-in-object-post")
+
+	nullableOneOfTwoObj2 := shared.CreateNullableOneOfTwoObj2(shared.TypedObject2{Value: "two", Type: shared.TypedObject2TypeObj2})
+
+	tests := []struct {
+		name     string
+		obj      shared.NullableOneOfRefInObject
+		wantJson string
+	}{
+		{
+			name: "Non-nullable field set only",
+			obj: shared.NullableOneOfRefInObject{
+				OneOfOne: shared.CreateOneOfOneTypedObject1(shared.TypedObject1{Value: "one", Type: shared.TypedObject1TypeObj1}),
+			},
+			wantJson: "{\"NullableOneOfOne\":null,\"NullableOneOfTwo\":null,\"OneOfOne\":{\"type\":\"obj1\",\"value\":\"one\"}}",
+		},
+		{
+			name: "Nullable fields set to null",
+			obj: shared.NullableOneOfRefInObject{
+				NullableOneOfOne: nil,
+				NullableOneOfTwo: nil,
+				OneOfOne:         shared.CreateOneOfOneTypedObject1(shared.TypedObject1{Value: "one", Type: shared.TypedObject1TypeObj1}),
+			},
+			wantJson: "{\"NullableOneOfOne\":null,\"NullableOneOfTwo\":null,\"OneOfOne\":{\"type\":\"obj1\",\"value\":\"one\"}}",
+		},
+		{
+			name: "All fields set to non-null values",
+			obj: shared.NullableOneOfRefInObject{
+				NullableOneOfOne: &shared.TypedObject1{Value: "one", Type: shared.TypedObject1TypeObj1},
+				NullableOneOfTwo: &nullableOneOfTwoObj2,
+				OneOfOne:         shared.CreateOneOfOneTypedObject1(shared.TypedObject1{Type: shared.TypedObject1TypeObj1}),
+			},
+			wantJson: "{\"NullableOneOfOne\":{\"type\":\"obj1\",\"value\":\"one\"},\"NullableOneOfTwo\":{\"type\":\"obj2\",\"value\":\"two\"},\"OneOfOne\":{\"type\":\"obj1\",\"value\":\"\"}}",
+		},
+	}
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, _, err := utils.SerializeRequestBody(context.Background(), tt.obj, false, false, "Request", "json", "")
+			require.NoError(t, err)
+			serializedBody := new(bytes.Buffer)
+			serializedBody.ReadFrom(reader)
+			assert.Equal(t, tt.wantJson, serializedBody.String())
+			res, err := s.Unions.NullableOneOfRefInObjectPost(context.Background(), tt.obj)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+			assert.Equal(t, tt.obj, res.Res.JSON)
+		})
+	}
+}
+
+func TestPrimitiveTypeOneOfPost_String(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-string")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreatePrimitiveTypeOneOfPostRequestBodyStr("test")
+
+	res, err := s.Unions.PrimitiveTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.PrimitiveTypeOneOfPostJSONTypeStr, res.Res.JSON.Type)
+	assert.Equal(t, "test", *res.Res.JSON.Str)
+}
+
+func TestPrimitiveTypeOneOfPost_Integer(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-integer")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreatePrimitiveTypeOneOfPostRequestBodyInteger(111)
+
+	res, err := s.Unions.PrimitiveTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.PrimitiveTypeOneOfPostJSONTypeInteger, res.Res.JSON.Type)
+	assert.Equal(t, int64(111), *res.Res.JSON.Integer)
+}
+
+func TestPrimitiveTypeOneOfPost_Number(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-number")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreatePrimitiveTypeOneOfPostRequestBodyNumber(22.2)
+
+	res, err := s.Unions.PrimitiveTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.PrimitiveTypeOneOfPostJSONTypeNumber, res.Res.JSON.Type)
+	assert.Equal(t, float64(22.2), *res.Res.JSON.Number)
+}
+
+func TestPrimitiveTypeOneOfPost_Boolean(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-boolean")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreatePrimitiveTypeOneOfPostRequestBodyBoolean(true)
+
+	res, err := s.Unions.PrimitiveTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.PrimitiveTypeOneOfPostJSONTypeBoolean, res.Res.JSON.Type)
+	assert.Equal(t, true, *res.Res.JSON.Boolean)
+}
+
+func TestMixedTypeOneOfPost_String(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-string")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreateMixedTypeOneOfPostRequestBodyStr("test")
+
+	res, err := s.Unions.MixedTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.MixedTypeOneOfPostJSONTypeStr, res.Res.JSON.Type)
+	assert.Equal(t, "test", *res.Res.JSON.Str)
+}
+
+func TestMixedTypeOneOfPost_Integer(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-integer")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreateMixedTypeOneOfPostRequestBodyInteger(111)
+
+	res, err := s.Unions.MixedTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.MixedTypeOneOfPostJSONTypeInteger, res.Res.JSON.Type)
+	assert.Equal(t, int64(111), *res.Res.JSON.Integer)
+}
+
+func TestMixedTypeOneOfPost_Object(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-object")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	obj := createSimpleObject()
+
+	req := operations.CreateMixedTypeOneOfPostRequestBodySimpleObject(obj)
+
+	res, err := s.Unions.MixedTypeOneOfPost(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.MixedTypeOneOfPostJSONTypeSimpleObject, res.Res.JSON.Type)
+	assert.Equal(t, obj, *res.Res.JSON.SimpleObject)
+}
+
+func TestDateNullUnion(t *testing.T) {
+	recordTest("unions-date-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	date := types.MustDateFromString("2020-01-01")
+	res, err := s.Unions.UnionDateNull(context.Background(), &date)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, types.MustDateFromString("2020-01-01"), *res.Res.JSON)
+}
+
+func TestDateTimeNullUnion(t *testing.T) {
+	recordTest("unions-datetime-null")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	dateTime := types.MustTimeFromString("2020-01-01T00:00:00Z")
+	res, err := s.Unions.UnionDateTimeNull(context.Background(), &dateTime)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, types.MustTimeFromString("2020-01-01T00:00:00Z"), *res.Res.JSON)
+}
+
+func TestDateTimeBigintUnion(t *testing.T) {
+	recordTest("unions-datetime-bigint")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreateUnionDateTimeBigIntRequestBodyDateTime(types.MustTimeFromString("2020-01-01T00:00:00Z"))
+
+	res, err := s.Unions.UnionDateTimeBigInt(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.UnionDateTimeBigIntJSONTypeDateTime, res.Res.JSON.Type)
+	assert.Equal(t, types.MustTimeFromString("2020-01-01T00:00:00Z"), *res.Res.JSON.DateTime)
+
+	nextReq := operations.CreateUnionDateTimeBigIntRequestBodyBigint(big.NewInt(9007199254740991))
+
+	nextRes, nextErr := s.Unions.UnionDateTimeBigInt(context.Background(), nextReq)
+	require.NoError(t, nextErr)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, http.StatusOK, nextRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.UnionDateTimeBigIntJSONTypeBigint, nextRes.Res.JSON.Type)
+	assert.Equal(t, big.NewInt(9007199254740991), nextRes.Res.JSON.Bigint)
+}
+
+func TestUnionBigintStrDecimal(t *testing.T) {
+	recordTest("unions-bigint-str-decimal")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.CreateUnionBigIntStrDecimalRequestBodyDecimal(types.MustNewDecimalFromString("3.141592653589793"))
+
+	res, err := s.Unions.UnionBigIntStrDecimal(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.UnionBigIntStrDecimalJSONTypeDecimal, res.Res.JSON.Type)
+	assert.Equal(t, types.MustNewDecimalFromString("3.141592653589793"), res.Res.JSON.Decimal)
+
+	nextReq := operations.CreateUnionBigIntStrDecimalRequestBodyBigint(big.NewInt(9223372036854775807))
+
+	nextRes, nextErr := s.Unions.UnionBigIntStrDecimal(context.Background(), nextReq)
+	require.NoError(t, nextErr)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, http.StatusOK, nextRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, operations.UnionBigIntStrDecimalJSONTypeBigint, nextRes.Res.JSON.Type)
+	assert.Equal(t, big.NewInt(9223372036854775807), nextRes.Res.JSON.Bigint)
+}
+
+func TestUnionMap(t *testing.T) {
+	recordTest("unions-union-map")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	req := operations.UnionMapRequestBody{
+		Input: map[string]shared.OneOfPrimitives{
+			"str":  shared.CreateOneOfPrimitivesStr("test"),
+			"bool": shared.CreateOneOfPrimitivesBoolean(true),
+		},
+	}
+
+	res, err := s.Unions.UnionMap(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "test", *res.Res.JSON.Input["str"].Str)
+	assert.Equal(t, true, *res.Res.JSON.Input["bool"].Boolean)
+}
+
+func TestUnionExtraJsonProperties(t *testing.T) {
+	recordTest("unions-extra-json-properties")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Unions.OneOfOverlappingObjects(context.Background(), operations.OneOfOverlappingObjectsRequestBody{
+		Field1: "test1",
+		Field3: sdk.Float64(1),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res.JSON)
+	assert.Equal(t, shared.OneOfOverlappingObjectsTypeObj1, res.Res.JSON.Type)
+	assert.Equal(t, "test1", res.Res.JSON.Obj1.Field1)
+
+	res, err = s.Unions.OneOfOverlappingObjects(context.Background(), operations.OneOfOverlappingObjectsRequestBody{
+		Field1: "test2",
+		Field2: sdk.Bool(true),
+		Field3: sdk.Float64(1),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res.JSON)
+	assert.Equal(t, shared.OneOfOverlappingObjectsTypeObj2, res.Res.JSON.Type)
+	assert.Equal(t, "test2", res.Res.JSON.Obj2.Field1)
+	assert.Equal(t, true, res.Res.JSON.Obj2.Field2)
+}
+
+func TestUnionNestedEnumsForm(t *testing.T) {
+	recordTest("unions-nested-enums-form")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Test with array of enums
+	obj1 := shared.NestedEnumArray{
+		Tags:  "one,two",
+		Enums: []shared.Enum{shared.EnumOne, shared.EnumTwo},
+	}
+	req1 := operations.CreateUnionNestedEnumsFormRequestBodyNestedEnumArray(obj1)
+	res1, err := s.Unions.UnionNestedEnumsForm(context.Background(), req1)
+	require.NoError(t, err)
+	require.NotNil(t, res1)
+	assert.Equal(t, http.StatusOK, res1.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res1.Res.Form)
+
+	// Test with map of enums
+	obj2 := shared.NestedEnumMap{
+		Tags: "two,three",
+		Enums: map[string]shared.Enum{
+			"key2": shared.EnumTwo,
+			"key3": shared.EnumThree,
+		},
+	}
+	req2 := operations.CreateUnionNestedEnumsFormRequestBodyNestedEnumMap(obj2)
+	res2, err := s.Unions.UnionNestedEnumsForm(context.Background(), req2)
+	require.NoError(t, err)
+	require.NotNil(t, res2)
+	assert.Equal(t, http.StatusOK, res2.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res2.Res.Form)
+}
+
+func TestArrayOfDiscriminatedUnions(t *testing.T) {
+	recordTest("unions-array-of-discriminated-unions")
+	
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	
+	simpleObject := createSimpleObjectWithType()
+	deepObject := createDeepObjectWithType()
+	
+	req := []shared.StronglyTypedOneOfObject{
+		shared.CreateStronglyTypedOneOfObjectSimpleObjectWithType(simpleObject),
+		shared.CreateStronglyTypedOneOfObjectDeepObjectWithType(deepObject),
+	}
+	
+	res, err := s.Unions.ArrayOfDiscriminatedUnions(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON)
+	assert.Len(t, res.Res.JSON, 2)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeSimpleObjectWithType, res.Res.JSON[0].Type)
+	assert.Equal(t, simpleObject, *res.Res.JSON[0].SimpleObjectWithType)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeDeepObjectWithType, res.Res.JSON[1].Type)
+	assert.Equal(t, deepObject, *res.Res.JSON[1].DeepObjectWithType)
+}
+
+func TestArrayOfDiscriminatedUnionsMap(t *testing.T) {
+	recordTest("unions-array-of-discriminated-unions-map")
+	
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	
+	simpleObject := createSimpleObjectWithType()
+	deepObject := createDeepObjectWithType()
+	
+	req := shared.ArrayOfDiscriminatedUnionsMap{
+		ArrayMap: map[string][]shared.StronglyTypedOneOfObject{
+			"item": {
+				shared.CreateStronglyTypedOneOfObjectSimpleObjectWithType(simpleObject),
+				shared.CreateStronglyTypedOneOfObjectDeepObjectWithType(deepObject),
+			},
+		},
+	}
+	
+	res, err := s.Unions.ArrayOfDiscriminatedUnionsMap(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.ArrayMap)
+	
+	arrayMap := res.Res.JSON.ArrayMap
+	require.Contains(t, arrayMap, "item")
+	assert.Len(t, arrayMap["item"], 2)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeSimpleObjectWithType, arrayMap["item"][0].Type)
+	assert.Equal(t, simpleObject, *arrayMap["item"][0].SimpleObjectWithType)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeDeepObjectWithType, arrayMap["item"][1].Type)
+	assert.Equal(t, deepObject, *arrayMap["item"][1].DeepObjectWithType)
+}
+
+func TestNestedArrayOfDiscriminatedUnions(t *testing.T) {
+	recordTest("unions-nested-array-of-discriminated-unions")
+	
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	
+	simpleObject := createSimpleObjectWithType()
+	deepObject := createDeepObjectWithType()
+	
+	req := shared.NestedArrayOfDiscriminatedUnions{
+		NestedArray: [][]shared.StronglyTypedOneOfObject{
+			{shared.CreateStronglyTypedOneOfObjectSimpleObjectWithType(simpleObject)},
+			{
+				shared.CreateStronglyTypedOneOfObjectDeepObjectWithType(deepObject),
+				shared.CreateStronglyTypedOneOfObjectSimpleObjectWithType(simpleObject),
+			},
+		},
+	}
+	
+	res, err := s.Unions.NestedArrayOfDiscriminatedUnions(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.JSON.NestedArray)
+	
+	nestedArray := res.Res.JSON.NestedArray
+	assert.Len(t, nestedArray, 2)
+	
+	// First sub-array has 1 element (simpleObject)
+	assert.Len(t, nestedArray[0], 1)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeSimpleObjectWithType, nestedArray[0][0].Type)
+	assert.Equal(t, simpleObject, *nestedArray[0][0].SimpleObjectWithType)
+	
+	// Second sub-array has 2 elements (deepObject, simpleObject)
+	assert.Len(t, nestedArray[1], 2)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeDeepObjectWithType, nestedArray[1][0].Type)
+	assert.Equal(t, deepObject, *nestedArray[1][0].DeepObjectWithType)
+	assert.Equal(t, shared.StronglyTypedOneOfObjectTypeSimpleObjectWithType, nestedArray[1][1].Type)
+	assert.Equal(t, simpleObject, *nestedArray[1][1].SimpleObjectWithType)
+}
+
+func TestEnumNestedInArrayInUnion(t *testing.T) {
+	recordTest("union-enum-nested-in-array-in-union")
+	
+	// Create a OneOfCollectionEnum with an array containing Nestedenum.ABC
+	enumArray := shared.CreateOneOfCollectionEnumArrayOfNestedenum([]shared.Nestedenum{shared.NestedenumAbc})
+	
+	val := operations.OneOfCollectionEnumRes{
+		JSON: &enumArray,
+	}
+	
+	// Test JSON serialization
+	jsonBytes, err := json.Marshal(val)
+	require.NoError(t, err)
+	
+	expected := `{"json":["abc"]}`
+	assert.Equal(t, expected, string(jsonBytes))
+}
+
+func TestOpenEnumsRoundTripStringUnion(t *testing.T) {
+	recordTest("open-enums-round-trip-string-union")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Enums.EnumsPostOpenEnumUnrecognized(context.Background(), shared.ThemeRequestOpaque{
+		Color:     sdk.String("purple"),
+		Icon:      sdk.String("tick"),
+		HeroWidth: sdk.Int64(2160),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	body := res.ThemeResponse
+	require.NotNil(t, body)
+
+	theme := body.JSON
+	require.NotNil(t, theme)
+	wantColor := shared.Color("purple")
+	assert.Equal(t, &wantColor, theme.Color)
+	wantIcon := shared.IconTick
+	assert.Equal(t, &wantIcon, theme.Icon)
+	wantHeroWidth := shared.HeroWidth(2160)
+	assert.Equal(t, &wantHeroWidth, theme.HeroWidth)
+
+	// Test round trip: pass the received values back to the same endpoint
+	roundTripRes, err := s.Enums.EnumsPostOpenEnumUnrecognized(context.Background(), shared.ThemeRequestOpaque{
+		Color:     sdk.String(string(*theme.Color)),
+		Icon:      sdk.String(string(*theme.Icon)),
+		HeroWidth: sdk.Int64(int64(*theme.HeroWidth)),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, roundTripRes.HTTPMeta.Response.StatusCode)
+
+	roundTripBody := roundTripRes.ThemeResponse
+	require.NotNil(t, roundTripBody)
+
+	roundTripTheme := roundTripBody.JSON
+	require.NotNil(t, roundTripTheme)
+	assert.Equal(t, &wantColor, roundTripTheme.Color)
+	assert.Equal(t, &wantIcon, roundTripTheme.Icon)
+	assert.Equal(t, &wantHeroWidth, roundTripTheme.HeroWidth)
+}
+
+func TestMixedUnionTypes(t *testing.T) {
+	recordTest("unions-mixed-union-types")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Test 1: Array of Bike objects
+	bike1 := shared.Bike{
+		Colour: "white",
+	}
+	bike2 := shared.Bike{
+		Colour: "brown",
+	}
+	
+	req := shared.CreateMixedUnionTypesArrayOfBike([]shared.Bike{bike1, bike2})
+	res, err := s.Unions.MixedUnionTypes(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.MixedUnionTypesTypeArrayOfBike, res.Res.JSON.Type)
+	assert.Equal(t, []shared.Bike{bike1, bike2}, res.Res.JSON.ArrayOfBike)
+
+	// Test 2: Single Bike object
+	req = shared.CreateMixedUnionTypesBike(bike1)
+	res, err = s.Unions.MixedUnionTypes(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.MixedUnionTypesTypeBike, res.Res.JSON.Type)
+	assert.Equal(t, bike1, *res.Res.JSON.Bike)
+}
+
+
+func TestOneOfBooleanAndStringEnumWithResponseBoolean(t *testing.T) {
+	recordTest("unions-one-of-boolean-and-string-enum-with-response-boolean")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Create request with boolean value
+	activeValue := operations.CreateActiveBoolean(true)
+	req := &operations.OneOfBooleanAndStringEnumRequestBody{
+		Active: optionalnullable.From(&activeValue),
+	}
+
+	res, err := s.Unions.OneOfBooleanAndStringEnum(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify response contains active field
+	responseActive := res.Res.JSON.GetActive()
+	require.NotNil(t, responseActive)
+	require.True(t, responseActive.IsSet())
+
+	responseActiveValuePtr, isSet := responseActive.Get()
+	require.True(t, isSet)
+	require.NotNil(t, responseActiveValuePtr)
+	
+	responseActiveValue := *responseActiveValuePtr
+
+	// Verify it's a boolean type
+	assert.Equal(t, operations.OneOfBooleanAndStringEnumActiveTypeBoolean, responseActiveValue.Type)
+	require.NotNil(t, responseActiveValue.Boolean)
+	assert.Equal(t, true, *responseActiveValue.Boolean)
+}
+
+func TestOneOfBooleanAndStringEnumWithResponseEnum(t *testing.T) {
+	recordTest("unions-one-of-boolean-and-string-enum-with-response-enum")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Create request with string enum value
+	activeValue := operations.CreateActiveOneOfBooleanAndStringEnum2(operations.OneOfBooleanAndStringEnum2True)
+	req := &operations.OneOfBooleanAndStringEnumRequestBody{
+		Active: optionalnullable.From(&activeValue),
+	}
+
+	res, err := s.Unions.OneOfBooleanAndStringEnum(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Verify response contains active field
+	responseActive := res.Res.JSON.GetActive()
+	require.NotNil(t, responseActive)
+	require.True(t, responseActive.IsSet())
+
+	responseActiveValuePtr, isSet := responseActive.Get()
+	require.True(t, isSet)
+	require.NotNil(t, responseActiveValuePtr)
+	
+	responseActiveValue := *responseActiveValuePtr
+
+	// Verify it's a string enum type
+	assert.Equal(t, operations.OneOfBooleanAndStringEnumActiveTypeOneOfBooleanAndStringEnumUnions2, responseActiveValue.Type)
+	require.NotNil(t, responseActiveValue.OneOfBooleanAndStringEnumUnions2)
+	assert.Equal(t, operations.OneOfBooleanAndStringEnumUnions2True, *responseActiveValue.OneOfBooleanAndStringEnumUnions2)
+}
+
+func TestOptionalUnionMap(t *testing.T) {
+	recordTest("unions-optional-union-map")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Test 1: With union map data
+	req := operations.UnionMapOptionalRequestBody{
+		Input: map[string]shared.OneOfPrimitives{
+			"str":  shared.CreateOneOfPrimitivesStr("test"),
+			"bool": shared.CreateOneOfPrimitivesBoolean(true),
+		},
+	}
+
+	res, err := s.Unions.UnionMapOptional(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	// Verify the input map is echoed back correctly
+	responseInput := res.Res.JSON.GetInput()
+	require.NotNil(t, responseInput)
+	require.Contains(t, responseInput, "str")
+	require.Contains(t, responseInput, "bool")
+	
+	// Check string value
+	strValue := responseInput["str"]
+	assert.Equal(t, shared.OneOfPrimitivesTypeStr, strValue.Type)
+	require.NotNil(t, strValue.Str)
+	assert.Equal(t, "test", *strValue.Str)
+	
+	// Check boolean value
+	boolValue := responseInput["bool"]
+	assert.Equal(t, shared.OneOfPrimitivesTypeBoolean, boolValue.Type)
+	require.NotNil(t, boolValue.Boolean)
+	assert.Equal(t, true, *boolValue.Boolean)
+
+	// Test 2: With nil/empty input (optional behavior)
+	req = operations.UnionMapOptionalRequestBody{
+		Input: nil,
+	}
+
+	res, err = s.Unions.UnionMapOptional(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	// Verify the input is nil when passed as nil
+	responseInput = res.Res.JSON.GetInput()
+	assert.Nil(t, responseInput)
+}
+
+func TestSmartUnionOpenEnumsAndSize(t *testing.T) {
+	recordTest("smart-union-open-enums-and-size")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Test with unrecognized enum value "bat" and additional field "name"
+	// This should match the cat variant because:
+	// 1. "bat" is not a recognized enum value for either variant
+	// 2. Smart resolution falls back to structural matching
+	// 3. The cat variant has both "kind" and "name" fields, dog only has "kind"
+	// 4. Since payload has both fields, it should match the more specific variant (cat)
+	
+	// We need to test this by creating a cat variant but with the unrecognized enum value
+	req := shared.SmartUnionOpenEnumsAndSizeCatWithName{
+		Kind: shared.SmartUnionOpenEnumsAndSizeCatWithNameKind("bat"), // Unrecognized value
+		Name: "asdf",
+	}
+
+	requestBody := operations.CreateSmartUnionOpenEnumsAndSizeRequestBodySmartUnionOpenEnumsAndSizeCatWithName(req)
+
+	res, err := s.Unions.SmartUnionOpenEnumsAndSize(context.Background(), requestBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	// Verify the response matches the cat variant (with name field)
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionOpenEnumsAndSizeJSONTypeSmartUnionOpenEnumsAndSizeCatWithName, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionOpenEnumsAndSizeCatWithName)
+
+	// Verify the payload is echoed back correctly
+	catResponse := responseJSON.SmartUnionOpenEnumsAndSizeCatWithName
+	assert.Equal(t, shared.SmartUnionOpenEnumsAndSizeCatWithNameKind("bat"), catResponse.GetKind()) // Unrecognized enum preserved
+	assert.Equal(t, "asdf", catResponse.GetName())
+}
+
+func TestStronglyTypedNullableOneOfPost(t *testing.T) {
+	recordTest("unions-strongly-typed-nullable-one-of-post")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Test 1: NestedEnumArray
+	obj1 := shared.Schemas{
+		Enums: []shared.Enum{
+			shared.EnumOne,
+			shared.EnumTwo,
+		},
+		Tags: "nestedEnumArray",
+	}
+
+	req := shared.CreateStronglyTypedNullableOneOfObjectNestedEnumArray(obj1)
+	res, err := s.Unions.StronglyTypedNullableOneOfPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.StronglyTypedNullableOneOfObjectTypeNestedEnumArray, res.Res.JSON.Type)
+	assert.Equal(t, obj1, *res.Res.GetJSONNestedEnumArray())
+
+	// Test 2: NestedEnumMap
+	obj2 := shared.NestedEnumMapSchemas{
+		Enums: map[string]shared.Enum{
+			"key2": shared.EnumTwo,
+			"key3": shared.EnumThree,
+		},
+		Tags: "nestedEnumMap",
+	}
+
+	req = shared.CreateStronglyTypedNullableOneOfObjectNestedEnumMap(obj2)
+	res, err = s.Unions.StronglyTypedNullableOneOfPost(context.Background(), &req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, shared.StronglyTypedNullableOneOfObjectTypeNestedEnumMap, res.Res.JSON.Type)
+	assert.Equal(t, obj2, *res.Res.GetJSONNestedEnumMap())
+
+	// Test 3: Null
+	res, err = s.Unions.StronglyTypedNullableOneOfPost(context.Background(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Nil(t, res.Res.JSON)
+}
+
+func TestSmartUnionNestedUnion(t *testing.T) {
+	recordTest("smart-union-nested-union")
+	// This test verifies that nested unions only count the winning inner option's
+	// unrecognized values, not the accumulated count from all tried options.
+	//
+	// Outer union structure:
+	//   Option A: { data: InnerUnion }
+	//     where InnerUnion is:
+	//       - cat:  { kind: OpenEnum["cat"] }                (1 open enum field)
+	//       - dog:  { kind: OpenEnum["dog"] }                (1 open enum field)
+	//       - bird: { kind: OpenEnum["bird"] }               (1 open enum field)
+	//   Option B: { data: { kind: OpenEnum, name: OpenEnum } } (2 open enum fields)
+	//
+	// The api-test-service returns a response with unknown enum values:
+	// { json: { data: { kind: "unknown", name: "also_unknown" } } }
+	//
+	// Expected: Option B should win because:
+	//   - Option A: Inner union tries all variants (cat/dog/bird), but none match perfectly
+	//     The response has 2 fields (kind, name), but each variant only has 1 field (kind)
+	//     Best match would still count the extra 'name' field as unmatched
+	//   - Option B: Has both kind and name fields as open enums, perfect structural match
+	//     Counts 2 unrecognized (both kind and name are unknown enum values)
+	//   - Option B wins because it has better field coverage despite more unrecognized enum values
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Unions.SmartUnionNestedUnion(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	require.NotNil(t, res.Res, "Server should have returned a valid response")
+
+	// The response contains unknown enum values that were correctly parsed.
+	// Option B should have won, meaning the data field contains:
+	// - kind: "unknown" (an unrecognized enum value)
+	// - name: "also_unknown" (an unrecognized enum value)
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionNestedUnionJSONTypeSmartUnionNestedOuterBWrapper, responseJSON.Type)
+
+	// Verify it's Option B that won
+	require.NotNil(t, responseJSON.SmartUnionNestedOuterBWrapper)
+
+	// Get the data from Option B
+	responseData := responseJSON.SmartUnionNestedOuterBWrapper.GetData()
+	assert.Equal(t, shared.SmartUnionNestedOuterBKind("unknown"), responseData.Kind)
+	assert.Equal(t, shared.Name("also_unknown"), responseData.Name)
+}
+
+func TestSmartUnionOpenEnums(t *testing.T) {
+	recordTest("smart-union-open-enums")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"kind": "dog"}`)
+	var reqBody operations.SmartUnionOpenEnumsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionOpenEnums(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionOpenEnumsJSONTypeSmartUnionOpenEnumsDog, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionOpenEnumsDog)
+}
+
+func TestSmartUnionDeeplyNestedArray(t *testing.T) {
+	recordTest("smart-union-deeply-nested-array")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`[{"x": {"a": "", "b": false}}]`)
+	var reqBody operations.SmartUnionDeeplyNestedArrayRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionDeeplyNestedArray(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionDeeplyNestedArrayJSONTypeArrayOfSmartUnionDeeplyNestedArrayObjectB, responseJSON.Type)
+	require.Len(t, responseJSON.ArrayOfSmartUnionDeeplyNestedArrayObjectB, 1)
+	assert.Equal(t, "", responseJSON.ArrayOfSmartUnionDeeplyNestedArrayObjectB[0].X.A)
+	assert.Equal(t, false, responseJSON.ArrayOfSmartUnionDeeplyNestedArrayObjectB[0].X.B)
+}
+
+func TestSmartUnionEmptyString(t *testing.T) {
+	recordTest("smart-union-empty-string")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"b": ""}`)
+	var reqBody operations.SmartUnionEmptyStringRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionEmptyString(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionEmptyStringJSONTypeSmartUnionEmptyStringObjectB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionEmptyStringObjectB)
+	assert.Equal(t, "", responseJSON.SmartUnionEmptyStringObjectB.B)
+}
+
+func TestSmartUnionSelectsMoreMatchedFields(t *testing.T) {
+	recordTest("smart-union-selects-more-matched-fields")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"foo": "test", "bar": "value"}`)
+	var reqBody operations.SmartUnionSelectsMoreMatchedFieldsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionSelectsMoreMatchedFields(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionSelectsMoreMatchedFieldsJSONTypeSmartUnionMoreFieldsB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionMoreFieldsB)
+	assert.Equal(t, "test", responseJSON.SmartUnionMoreFieldsB.Foo)
+	assert.Equal(t, "value", responseJSON.SmartUnionMoreFieldsB.Bar)
+}
+
+func TestSmartUnionNestedStructs(t *testing.T) {
+	recordTest("smart-union-nested-structs")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"nested": {"value": "test", "extra": "data"}}`)
+	var reqBody operations.SmartUnionNestedStructsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionNestedStructs(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionNestedStructsJSONTypeSmartUnionNestedStructsB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionNestedStructsB)
+	assert.Equal(t, "test", responseJSON.SmartUnionNestedStructsB.Nested.Value)
+	assert.Equal(t, "data", responseJSON.SmartUnionNestedStructsB.Nested.Extra)
+}
+
+func TestSmartUnionConstFieldDiscrimination(t *testing.T) {
+	recordTest("smart-union-const-field-discrimination")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"b": "1", "c": "1"}`)
+	var reqBody operations.SmartUnionConstFieldDiscriminationRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionConstFieldDiscrimination(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionConstFieldDiscriminationJSONTypeSmartUnionConstFieldC, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionConstFieldC)
+	assert.Equal(t, "1", responseJSON.SmartUnionConstFieldC.GetB())
+	assert.Equal(t, "1", responseJSON.SmartUnionConstFieldC.GetC())
+}
+
+func TestSmartUnionThreeWayFieldDiscrimination(t *testing.T) {
+	recordTest("smart-union-three-way-field-discrimination")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"b": "test", "c": "value"}`)
+	var reqBody operations.SmartUnionThreeWayFieldDiscriminationRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionThreeWayFieldDiscrimination(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionThreeWayFieldDiscriminationJSONTypeSmartUnionThreeWayC, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionThreeWayC)
+	assert.Equal(t, "test", responseJSON.SmartUnionThreeWayC.B)
+	assert.Equal(t, "value", responseJSON.SmartUnionThreeWayC.C)
+}
+
+func TestSmartUnionPrefersFewerUnmatchedFields(t *testing.T) {
+	recordTest("smart-union-prefers-fewer-unmatched-fields")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"foo": "test"}`)
+	var reqBody operations.SmartUnionPrefersFewerUnmatchedFieldsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionPrefersFewerUnmatchedFields(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionPrefersFewerUnmatchedFieldsJSONTypeSmartUnionFewerUnmatchedB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionFewerUnmatchedB)
+	assert.Equal(t, "test", responseJSON.SmartUnionFewerUnmatchedB.Foo)
+}
+
+func TestSmartUnionPreservesOrderOnTie(t *testing.T) {
+	recordTest("smart-union-preserves-order-on-tie")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"foo": "test"}`)
+	var reqBody operations.SmartUnionPreservesOrderOnTieRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionPreservesOrderOnTie(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionPreservesOrderOnTieJSONTypeSmartUnionTieA, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionTieA)
+	assert.Equal(t, "test", responseJSON.SmartUnionTieA.Foo)
+}
+
+func TestSmartUnionArrayFields(t *testing.T) {
+	recordTest("smart-union-array-fields")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`[{"name": "a", "value": "1"}, {"name": "b", "value": "2"}]`)
+	var reqBody operations.SmartUnionArrayFieldsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionArrayFields(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionArrayFieldsJSONTypeArrayOfSmartUnionArrayItemB, responseJSON.Type)
+	require.Len(t, responseJSON.ArrayOfSmartUnionArrayItemB, 2)
+	assert.Equal(t, "a", responseJSON.ArrayOfSmartUnionArrayItemB[0].Name)
+	assert.Equal(t, "1", responseJSON.ArrayOfSmartUnionArrayItemB[0].Value)
+	assert.Equal(t, "b", responseJSON.ArrayOfSmartUnionArrayItemB[1].Name)
+	assert.Equal(t, "2", responseJSON.ArrayOfSmartUnionArrayItemB[1].Value)
+}
+
+func TestSmartUnionOptionalPointerFields(t *testing.T) {
+	recordTest("smart-union-optional-pointer-fields")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"foo": "test", "bar": "value"}`)
+	var reqBody operations.SmartUnionOptionalPointerFieldsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionOptionalPointerFields(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionOptionalPointerFieldsJSONTypeSmartUnionOptionalPointerB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionOptionalPointerB)
+	require.NotNil(t, responseJSON.SmartUnionOptionalPointerB.Foo)
+	assert.Equal(t, "test", *responseJSON.SmartUnionOptionalPointerB.Foo)
+	require.NotNil(t, responseJSON.SmartUnionOptionalPointerB.Bar)
+	assert.Equal(t, "value", *responseJSON.SmartUnionOptionalPointerB.Bar)
+}
+
+func TestSmartUnionOptionalPointerStructs(t *testing.T) {
+	recordTest("smart-union-optional-pointer-structs")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"nested": {"name": "test", "value": "data"}}`)
+	var reqBody operations.SmartUnionOptionalPointerStructsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionOptionalPointerStructs(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionOptionalPointerStructsJSONTypeSmartUnionOptionalPointerStructsB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionOptionalPointerStructsB)
+	require.NotNil(t, responseJSON.SmartUnionOptionalPointerStructsB.Nested)
+	assert.Equal(t, "test", responseJSON.SmartUnionOptionalPointerStructsB.Nested.Name)
+	assert.Equal(t, "data", responseJSON.SmartUnionOptionalPointerStructsB.Nested.Value)
+}
+
+func TestSmartUnionAllConsts(t *testing.T) {
+	recordTest("smart-union-all-consts")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"b": "B", "c": "C"}`)
+	var reqBody operations.SmartUnionAllConstsRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionAllConsts(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionAllConstsJSONTypeSmartUnionAllConstsB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionAllConstsB)
+	assert.Equal(t, "B", responseJSON.SmartUnionAllConstsB.GetB())
+	assert.Equal(t, "C", responseJSON.SmartUnionAllConstsB.GetC())
+}
+
+func TestSmartUnionAnyFieldType(t *testing.T) {
+	recordTest("smart-union-any-field-type")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"b": "asdf"}`)
+	var reqBody operations.SmartUnionAnyFieldTypeRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionAnyFieldType(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionAnyFieldTypeJSONTypeSmartUnionAnyFieldB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionAnyFieldB)
+	assert.Equal(t, "asdf", responseJSON.SmartUnionAnyFieldB.B)
+}
+
+func TestSmartUnionNestedUnionVsFlatStruct(t *testing.T) {
+	recordTest("smart-union-nested-union-vs-flat-struct")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"data": {"x": "", "y": ""}}`)
+	var reqBody operations.SmartUnionNestedUnionVsFlatStructRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionNestedUnionVsFlatStruct(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionNestedUnionVsFlatStructJSONTypeSmartUnionNestedUnionVsFlatStructSmartUnionNestedVsFlatOuterB, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionNestedUnionVsFlatStructSmartUnionNestedVsFlatOuterB)
+	assert.Equal(t, "", responseJSON.SmartUnionNestedUnionVsFlatStructSmartUnionNestedVsFlatOuterB.Data.X)
+	assert.Equal(t, "", responseJSON.SmartUnionNestedUnionVsFlatStructSmartUnionNestedVsFlatOuterB.Data.Y)
+}
+
+func TestSmartUnionUnionVsUnion(t *testing.T) {
+	recordTest("smart-union-union-vs-union")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	reqJSON := []byte(`{"a": "", "b": "", "c": ""}`)
+	var reqBody operations.SmartUnionUnionVsUnionRequestBody
+	err := json.Unmarshal(reqJSON, &reqBody)
+	require.NoError(t, err)
+
+	res, err := s.Unions.SmartUnionUnionVsUnion(ctx, reqBody)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	responseJSON := res.Res.GetJSON()
+	assert.Equal(t, operations.SmartUnionUnionVsUnionJSONTypeSmartUnionUnionVsUnionUnions2, responseJSON.Type)
+	require.NotNil(t, responseJSON.SmartUnionUnionVsUnionUnions2)
+	// Inner union should resolve to B2 (has fields a, b, c)
+	assert.Equal(t, operations.SmartUnionUnionVsUnionUnions2TypeSmartUnionVsUnionB2, responseJSON.SmartUnionUnionVsUnionUnions2.Type)
+	require.NotNil(t, responseJSON.SmartUnionUnionVsUnionUnions2.SmartUnionVsUnionB2)
+	assert.Equal(t, "", responseJSON.SmartUnionUnionVsUnionUnions2.SmartUnionVsUnionB2.A)
+	assert.Equal(t, "", responseJSON.SmartUnionUnionVsUnionUnions2.SmartUnionVsUnionB2.B)
+	assert.Equal(t, "", responseJSON.SmartUnionUnionVsUnionUnions2.SmartUnionVsUnionB2.C)
+}
+
+func TestConstDiscriminator(t *testing.T) {
+	recordTest("unions-const-discriminator")
+
+	s := sdk.New()
+
+	obj := shared.ConstObject1{ImageURL: "http://boo"}
+	req := shared.CreateConstDiscriminatedOneOfTag1(obj)
+
+	res, err := s.Unions.ConstDiscriminatedOneOf(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, obj, *res.Res.JSON.ConstObject1)
+}
+
+func TestDiscriminatedOpenEnum(t *testing.T) {
+	recordTest("unions-discriminated-open-enum")
+
+	s := sdk.New()
+	ctx := context.Background()
+
+	// Test 1: active status
+	activeReqBytes := []byte(`{"status": "active", "userId": "user-123", "activeAt": "2024-01-15T10:30:00Z"}`)
+	var activeReq shared.DiscriminatedOpenEnumUnion
+	err := json.Unmarshal(activeReqBytes, &activeReq)
+	require.NoError(t, err)
+
+	activeRes, err := s.Unions.DiscriminatedOpenEnum(ctx, activeReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, activeRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, activeRes.Res)
+
+	activeJSON := activeRes.Res.GetJSON()
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypeActive, activeJSON.Type)
+	require.NotNil(t, activeJSON.ObjectWithOpenEnumStatus1)
+	assert.Equal(t, "user-123", activeJSON.ObjectWithOpenEnumStatus1.UserID)
+
+	// Test 2: inactive status
+	inactiveReqBytes := []byte(`{"status": "inactive", "reason": "User requested deactivation", "inactiveSince": "2024-01-10T15:45:00Z"}`)
+	var inactiveReq shared.DiscriminatedOpenEnumUnion
+	err = json.Unmarshal(inactiveReqBytes, &inactiveReq)
+	require.NoError(t, err)
+
+	inactiveRes, err := s.Unions.DiscriminatedOpenEnum(ctx, inactiveReq)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, inactiveRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, inactiveRes.Res)
+
+	inactiveJSON := inactiveRes.Res.GetJSON()
+	assert.Equal(t, shared.DiscriminatedOpenEnumUnionTypeInactive, inactiveJSON.Type)
+	require.NotNil(t, inactiveJSON.ObjectWithOpenEnumStatus2)
+	assert.Equal(t, "User requested deactivation", inactiveJSON.ObjectWithOpenEnumStatus2.Reason)
+}
+
+func TestCircularReferenceRecursiveOneOf(t *testing.T) {
+	recordTest("unions-circular-reference-recursive-one-of")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	payload := shared.CreateRecursiveOneOfValueArrayOfRecursiveOneOfValue(
+		[]shared.RecursiveOneOfValue{
+			shared.CreateRecursiveOneOfValueStr("hello"),
+			shared.CreateRecursiveOneOfValueMapOfRecursiveOneOfValue(
+				map[string]shared.RecursiveOneOfValue{
+					"nested": shared.CreateRecursiveOneOfValueArrayOfRecursiveOneOfValue(
+						[]shared.RecursiveOneOfValue{
+							shared.CreateRecursiveOneOfValueStr("world"),
+						},
+					),
+				},
+			),
+		},
+	)
+
+	res, err := s.Unions.CircularReferenceRecursiveOneOf(
+		context.Background(),
+		operations.CircularReferenceRecursiveOneOfRequestBody{
+			Value: sdk.Pointer(payload),
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Object)
+	assert.Equal(t, payload, res.Object.JSON.Value)
+}

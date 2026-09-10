@@ -1,0 +1,18 @@
+{{- recurse 1 -}}
+{{- $namespace := getScopeNamespace "hooks" true}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+{{- if .Global.Config.SDKHooksConfigAccess }}
+
+{{genImports}}{{end}}
+
+interface SDKInitHook
+{
+	{{- if .Global.Config.SDKHooksConfigAccess }}
+    {{- addSDKConfigurationImport}}
+    public function sdkInit(SDKConfiguration $config): SDKConfiguration;
+    {{- else}}
+    public function sdkInit(string $baseUrl, \GuzzleHttp\ClientInterface $client): SDKRequestContext;
+    {{- end }}
+}

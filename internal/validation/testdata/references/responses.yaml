@@ -1,0 +1,12 @@
+test-response:
+  description: Test
+  content:
+    application/json:
+      schema:
+        $ref: "./components.yaml#/components/schemas/test-response"
+  headers:
+    test:
+      $ref: "./components.yaml#/components/headers/test"
+  links:
+    test:
+      $ref: "./components.yaml#/components/links/test"

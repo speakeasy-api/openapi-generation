@@ -1,0 +1,86 @@
+{{- $op := .Local }}
+{{- $pagination := .Local.Extensions.Pagination }}
+{{- $paramFlattening := operationParametersFlattened .Local }}
+{{- $limitInput := getPaginationInput $pagination "limit" }}
+{{- $pageInput := getPaginationInput $pagination "page" }}
+{{- $offsetInput := getPaginationInput $pagination "offset" }}
+{{- $cursorInput := getPaginationInput $pagination "cursor" }}
+Func<Task<{{ sanitizeType .Local.Response.Type false "" }}?>> nextFunc = async delegate()
+{
+    var body = JObject.Parse({{if isNetstandard2}}httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : "{}"{{else}}await httpResponse.Content.ReadAsStringAsync(){{end}});
+
+{{- if (eq $pagination.Type "offsetLimit") }}
+  {{- if $pageInput }}
+
+    var page = {{templatePaginationInputAccessor $op $pageInput}};
+    var newPage = page + 1;
+    {{- if $pagination.Outputs.NumPages }}
+
+    var numPages = body.SelectToken("{{ sanitizeJsonPath $pagination.Outputs.NumPages }}");
+
+    if (numPages == null || numPages.Value<long>() <= page)
+    {
+        return null;
+    }
+
+    {{- end }}
+  {{- end }}
+
+  {{- if $offsetInput }}
+    var offset = {{templatePaginationInputAccessor $op $offsetInput}};
+  {{- end }}
+
+{{- else if (hasPaginationURL .Local) }}
+    var nextURLToken = body.SelectToken("{{ sanitizeJsonPath $pagination.Outputs.NextURL }}");
+    if (nextURLToken == null)
+    {
+        return null;
+    }
+
+    var nextURL = nextURLToken.Value<string>();
+    if (string.IsNullOrWhiteSpace(nextURL))
+    {
+        return null;
+    }
+
+    if (nextURL.StartsWith("/"))
+    {
+        nextURL = baseUrl + nextURL;
+    }
+{{- else }}
+    var nextCursorToken = body.SelectToken("{{ sanitizeJsonPath $pagination.Outputs.NextCursor }}");
+
+    if(nextCursorToken == null)
+    {
+        return null;
+    }
+
+    {{ templateCursorExtraction $op }}
+{{- end }}
+
+{{- if $pagination.Outputs.Results }}
+    var firstResult = body.SelectToken("{{ sanitizeJsonPath $pagination.Outputs.Results }}");
+    if (firstResult == null)
+    {
+        return null;
+    }
+
+    if (firstResult.Children().Count() == 0)
+    {
+        return null;
+    }
+
+  {{- if $limitInput }}
+    var limit = {{templatePaginationInputAccessor $op $limitInput}};
+    if (firstResult.Children().Count() < limit)
+    {
+        return null;
+    }
+  {{- end }}
+
+  {{- if $offsetInput }}
+    var newOffset = offset + firstResult.Children().Count();
+  {{- end }}
+{{- end }}
+{{templatePaginationCall $op | indentPresent 4 }}
+};

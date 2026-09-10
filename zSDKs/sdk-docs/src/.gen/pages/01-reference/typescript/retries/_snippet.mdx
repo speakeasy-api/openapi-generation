@@ -1,0 +1,195 @@
+{/* Start Typescript Retries */}
+Some of the endpoints in this SDK support retries.  If you use the SDK without any configuration, it will fall back to the default retry strategy provided by the API.  However, the default retry strategy can be overridden on a per-operation basis, or across the entire SDK.
+
+To change the default retry strategy for a single API call, simply provide a retryConfig object to the call:
+```typescript
+import { SDK } from "openapi";
+import {
+    Color,
+    Enum,
+    ExhaustiveObject,
+    HeroWidth,
+    Icon,
+    Int32Enum,
+    IntEnum,
+    NullableIntEnum,
+    NullableStringEnum,
+    SimpleObject,
+    Test2Request,
+    TypeT,
+} from "openapi/dist/models/components";
+import { PostTest2Request } from "openapi/dist/models/operations";
+import { RFCDate } from "openapi/dist/types";
+
+async function run() {
+    const sdk = new SDK({
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const test2Request: Test2Request = {
+        obj: {
+            str: "example",
+            bool: true,
+            int: 999999,
+            int32: 1,
+            num: 1.1,
+            float32: 4344.96,
+            enumProp: Enum.First,
+            date: new RFCDate("2024-10-11"),
+            dateTime: new Date("2020-01-01T00:00:00Z"),
+            anything: "<value>",
+            boolOpt: true,
+            intOptNull: 999999,
+            numOptNull: 1.1,
+            intEnum: IntEnum.Third,
+            int32Enum: Int32Enum.SixtyNine,
+            bigint: 370331,
+            decimalStr: 4105.06,
+            obj: {
+                str: "example",
+            },
+            map: {
+                key: {
+                    str: "example",
+                },
+            },
+            arr: [
+                {
+                    str: "example",
+                },
+            ],
+            any: "<value>",
+            type: "<value>",
+            nullableIntEnum: NullableIntEnum.Third,
+            nullableStringEnum: NullableStringEnum.First,
+            color: Color.Green,
+            icon: Icon.Tick,
+            heroWidth: HeroWidth.FourHundredAndEighty,
+        },
+        type: TypeT.SuperType1,
+    };
+    const deprecatedQueryParam1: string = "some example query param";
+    const deprecatedQueryParam2: string = "some example query param";
+
+    const res = await sdk.testGroup.tag2.postTest(
+        test2Request,
+        deprecatedQueryParam1,
+        deprecatedQueryParam2,
+        {
+            strategy: "backoff",
+            backoff: {
+                initialInterval: 1,
+                maxInterval: 50,
+                exponent: 1.1,
+                maxElapsedTime: 100,
+            },
+            retryConnectionErrors: false,
+        }
+    );
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+If you'd like to override the default retry strategy for all operations that support retries, you can provide a retryConfig at SDK initialization:
+```typescript
+import { SDK } from "openapi";
+import {
+    Color,
+    Enum,
+    ExhaustiveObject,
+    HeroWidth,
+    Icon,
+    Int32Enum,
+    IntEnum,
+    NullableIntEnum,
+    NullableStringEnum,
+    SimpleObject,
+    Test2Request,
+    TypeT,
+} from "openapi/dist/models/components";
+import { PostTest2Request } from "openapi/dist/models/operations";
+import { RFCDate } from "openapi/dist/types";
+
+async function run() {
+    const sdk = new SDK({
+        retry_config: {
+            strategy: "backoff",
+            backoff: {
+                initialInterval: 1,
+                maxInterval: 50,
+                exponent: 1.1,
+                maxElapsedTime: 100,
+            },
+            retryConnectionErrors: false,
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const test2Request: Test2Request = {
+        obj: {
+            str: "example",
+            bool: true,
+            int: 999999,
+            int32: 1,
+            num: 1.1,
+            float32: 4344.96,
+            enumProp: Enum.First,
+            date: new RFCDate("2024-10-11"),
+            dateTime: new Date("2020-01-01T00:00:00Z"),
+            anything: "<value>",
+            boolOpt: true,
+            intOptNull: 999999,
+            numOptNull: 1.1,
+            intEnum: IntEnum.Third,
+            int32Enum: Int32Enum.SixtyNine,
+            bigint: 370331,
+            decimalStr: 4105.06,
+            obj: {
+                str: "example",
+            },
+            map: {
+                key: {
+                    str: "example",
+                },
+            },
+            arr: [
+                {
+                    str: "example",
+                },
+            ],
+            any: "<value>",
+            type: "<value>",
+            nullableIntEnum: NullableIntEnum.Third,
+            nullableStringEnum: NullableStringEnum.First,
+            color: Color.Green,
+            icon: Icon.Tick,
+            heroWidth: HeroWidth.FourHundredAndEighty,
+        },
+        type: TypeT.SuperType1,
+    };
+    const deprecatedQueryParam1: string = "some example query param";
+    const deprecatedQueryParam2: string = "some example query param";
+
+    const res = await sdk.testGroup.tag2.postTest(
+        test2Request,
+        deprecatedQueryParam1,
+        deprecatedQueryParam2
+    );
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+{/* End Typescript Retries */}

@@ -1,0 +1,29 @@
+---
+title: "PetOwner"
+---
+
+A pet owner in the bar namespace
+
+## Example Usage
+
+```typescript
+import { PetOwner } from "openapi/bar";
+
+let value: PetOwner = {
+  ownerId: 456,
+  fullName: "Bob Smith",
+  pet: {
+    id: "pet-bar-456",
+    name: "Buddy",
+    owner: "John Doe",
+  },
+};
+```
+
+## Fields
+
+| Field                      | Type                       | Required                   | Description                | Example                    |
+| -------------------------- | -------------------------- | -------------------------- | -------------------------- | -------------------------- |
+| `ownerId`                  | *number*                   | :heavy_check_mark:         | N/A                        | 456                        |
+| `fullName`                 | *string*                   | :heavy_check_mark:         | N/A                        | Bob Smith                  |
+| `pet`                      | [bar.Pet](../bar/pet.mdx)   | :heavy_minus_sign:         | A pet in the bar namespace |                            |

@@ -1,0 +1,48 @@
+package org.openapis.quaternary.openapi;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+
+import org.openapis.quaternary.openapi.models.operations.ApiKeyAuthGlobalResponse;
+import org.openapis.quaternary.openapi.models.shared.Security;
+
+public class AuthAdditionalTest {
+    @Test
+    void testGlobalSecurityFlattening() throws Exception {
+        CommonHelpers.recordTest("auth-global-security-flattening");
+
+        SDK s = SDK.builder().serverURL(Helpers.HTTPBIN_URL)
+                .apiKeyAuth("Bearer testToken")
+                .build();
+        assertNotNull(s);
+
+        ApiKeyAuthGlobalResponse res = s.auth().apiKeyAuthGlobal().call();
+        assertNotNull(res);
+        assertEquals(200, res.statusCode());
+        assertTrue(res.token().authenticated());
+        assertEquals("testToken", res.token().token());
+    }
+
+    @Test
+    void testGlobalSecurityFlatteningCallback() throws Exception {
+        CommonHelpers.recordTest("auth-global-security-flattening-callback");
+
+        SDK s = SDK.builder().serverURL(Helpers.HTTPBIN_URL)
+                .securitySource(
+                        SecuritySource.of(
+                                Security.builder()
+                                        .apiKeyAuth("Bearer testToken")
+                                        .build()))
+                .build();
+        assertNotNull(s);
+
+        ApiKeyAuthGlobalResponse res = s.auth().apiKeyAuthGlobal().call();
+        assertNotNull(res);
+        assertEquals(200, res.statusCode());
+        assertTrue(res.token().authenticated());
+        assertEquals("testToken", res.token().token());
+    }
+}

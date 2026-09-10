@@ -1,0 +1,2493 @@
+name: OASOneOfRequest
+type:
+    name: OASOneOfRequest
+    originalname: OASOneOfRequest
+    originalnamefrozen: true
+    contextstack:
+        - type: refType
+          identifier: Schemas
+          identifierfornaming: ""
+        - type: refName
+          identifier: OASOneOfRequest
+        - type: component
+          identifier: "true"
+    type: class
+    fields:
+        - name: optional_discriminator_request_and_response
+          originalname: optional_discriminator_request_and_response
+          type:
+            name: optional_discriminator_request_and_response
+            originalname: optional_discriminator_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allof
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: optional_discriminator_request_and_response
+              type: json
+          optional: true
+        - name: optional_discriminator_request_only
+          originalname: optional_discriminator_request_only
+          type:
+            name: optional_discriminator_request_only
+            originalname: optional_discriminator_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allOf
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: optional_discriminator_request_only
+              type: json
+          optional: true
+        - name: optional_discriminator_request_required_response
+          originalname: optional_discriminator_request_required_response
+          type:
+            name: optional_discriminator_request_required_response
+            originalname: optional_discriminator_request_required_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allof
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: optional_discriminator_request_required_response
+              type: json
+          optional: true
+        - name: optional_inline_object_request_and_response
+          originalname: optional_inline_object_request_and_response
+          type:
+            name: optional_inline_object_request_and_response
+            originalname: optional_inline_object_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: optional_inline_object_request_and_response
+                    - type: oneOfPosition
+                      identifier: "1"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: optional_inline_object_request_and_response
+                    - type: oneOfPosition
+                      identifier: "2"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_inline_object_request_and_response
+              type: json
+          optional: true
+        - name: optional_inline_object_request_only
+          originalname: optional_inline_object_request_only
+          type:
+            name: optional_inline_object_request_only
+            originalname: optional_inline_object_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: optional_inline_object_request_only
+                    - type: oneOfPosition
+                      identifier: "1"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: optional_inline_object_request_only
+                    - type: oneOfPosition
+                      identifier: "2"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_inline_object_request_only
+              type: json
+          optional: true
+        - name: optional_inline_primitives_request_and_response
+          originalname: optional_inline_primitives_request_and_response
+          type:
+            name: optional_inline_primitives_request_and_response
+            originalname: optional_inline_primitives_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_inline_primitives_request_and_response
+              type: json
+          optional: true
+        - name: optional_inline_primitives_request_only
+          originalname: optional_inline_primitives_request_only
+          type:
+            name: optional_inline_primitives_request_only
+            originalname: optional_inline_primitives_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_inline_primitives_request_only
+              type: json
+          optional: true
+        - name: optional_ref_object_request_and_response
+          originalname: optional_ref_object_request_and_response
+          type:
+            name: optional_ref_object_request_and_response
+            originalname: optional_ref_object_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfObjectString
+                  originalname: OASOneOfObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfObjectNumber
+                  originalname: OASOneOfObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_ref_object_request_and_response
+              type: json
+          optional: true
+        - name: optional_ref_object_request_only
+          originalname: optional_ref_object_request_only
+          type:
+            name: optional_ref_object_request_only
+            originalname: optional_ref_object_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfObjectString
+                  originalname: OASOneOfObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfObjectNumber
+                  originalname: OASOneOfObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_ref_object_request_only
+              type: json
+          optional: true
+        - name: optional_ref_primitives_request_and_response
+          originalname: optional_ref_primitives_request_and_response
+          type:
+            name: optional_ref_primitives_request_and_response
+            originalname: optional_ref_primitives_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfString
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - name: OASOneOfNumber
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_ref_primitives_request_and_response
+              type: json
+          optional: true
+        - name: optional_ref_primitives_request_only
+          originalname: optional_ref_primitives_request_only
+          type:
+            name: optional_ref_primitives_request_only
+            originalname: optional_ref_primitives_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfString
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - name: OASOneOfNumber
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: optional_ref_primitives_request_only
+              type: json
+          optional: true
+        - name: required_discriminator_request_and_response
+          originalname: required_discriminator_request_and_response
+          type:
+            name: required_discriminator_request_and_response
+            originalname: required_discriminator_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allof
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: required_discriminator_request_and_response
+              type: json
+        - name: required_discriminator_request_only
+          originalname: required_discriminator_request_only
+          type:
+            name: required_discriminator_request_only
+            originalname: required_discriminator_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allof
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: required_discriminator_request_only
+              type: json
+        - name: required_discriminator_request_optional_response
+          originalname: required_discriminator_request_optional_response
+          type:
+            name: required_discriminator_request_optional_response
+            originalname: required_discriminator_request_optional_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfDiscriminatorObjectString
+                  originalname: OASOneOfDiscriminatorObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectNumber
+                  originalname: OASOneOfDiscriminatorObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfDiscriminatorObjectAllOf
+                  originalname: OASOneOfDiscriminatorObjectAllOf
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfDiscriminatorObjectAllOf
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: discriminator
+                      originalname: discriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: discriminator
+                          type: json
+                    - name: nondiscriminator
+                      originalname: nondiscriminator
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: nondiscriminator
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+            discriminator:
+                typepropertyname: discriminator
+                mapping:
+                    - name: allof
+                      type:
+                        name: OASOneOfDiscriminatorObjectAllOf
+                        originalname: OASOneOfDiscriminatorObjectAllOf
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectAllOf
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: number
+                      type:
+                        name: OASOneOfDiscriminatorObjectNumber
+                        originalname: OASOneOfDiscriminatorObjectNumber
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectNumber
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+                    - name: string
+                      type:
+                        name: OASOneOfDiscriminatorObjectString
+                        originalname: OASOneOfDiscriminatorObjectString
+                        originalnamefrozen: true
+                        contextstack:
+                            - type: refType
+                              identifier: Schemas
+                              identifierfornaming: ""
+                            - type: refName
+                              identifier: OASOneOfDiscriminatorObjectString
+                            - type: component
+                              identifier: "true"
+                        type: class
+                        fields:
+                            - name: discriminator
+                              originalname: discriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: discriminator
+                                  type: json
+                            - name: nondiscriminator
+                              originalname: nondiscriminator
+                              type:
+                                originalnamefrozen: false
+                                contextstack: []
+                                type: string
+                                validations: {}
+                                extensions: {}
+                              annotations:
+                                - fieldname: nondiscriminator
+                                  type: json
+                              optional: true
+                        scope: shared
+                        iscomponent: true
+                        extensions: {}
+                        usedinunion: true
+          annotations:
+            - fieldname: required_discriminator_request_optional_response
+              type: json
+        - name: required_inline_object_request_and_response
+          originalname: required_inline_object_request_and_response
+          type:
+            name: required_inline_object_request_and_response
+            originalname: required_inline_object_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: required_inline_object_request_and_response
+                    - type: oneOfPosition
+                      identifier: "1"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: required_inline_object_request_and_response
+                    - type: oneOfPosition
+                      identifier: "2"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_inline_object_request_and_response
+              type: json
+        - name: required_inline_object_request_only
+          originalname: required_inline_object_request_only
+          type:
+            name: required_inline_object_request_only
+            originalname: required_inline_object_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: required_inline_object_request_only
+                    - type: oneOfPosition
+                      identifier: "1"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+                - originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfRequest
+                    - type: oneOf
+                      identifier: required_inline_object_request_only
+                    - type: oneOfPosition
+                      identifier: "2"
+                      identifierfornaming: ""
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_inline_object_request_only
+              type: json
+        - name: required_inline_primitives_request_and_response
+          originalname: required_inline_primitives_request_and_response
+          type:
+            name: required_inline_primitives_request_and_response
+            originalname: required_inline_primitives_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_inline_primitives_request_and_response
+              type: json
+        - name: required_inline_primitives_request_only
+          originalname: required_inline_primitives_request_only
+          type:
+            name: required_inline_primitives_request_only
+            originalname: required_inline_primitives_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_inline_primitives_request_only
+              type: json
+        - name: required_ref_object_request_and_response
+          originalname: required_ref_object_request_and_response
+          type:
+            name: required_ref_object_request_and_response
+            originalname: required_ref_object_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfObjectString
+                  originalname: OASOneOfObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfObjectNumber
+                  originalname: OASOneOfObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_ref_object_request_and_response
+              type: json
+        - name: required_ref_object_request_only
+          originalname: required_ref_object_request_only
+          type:
+            name: required_ref_object_request_only
+            originalname: required_ref_object_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfObjectString
+                  originalname: OASOneOfObjectString
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectString
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_string
+                      originalname: object_string
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: string
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_string
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+                - name: OASOneOfObjectNumber
+                  originalname: OASOneOfObjectNumber
+                  originalnamefrozen: true
+                  contextstack:
+                    - type: refType
+                      identifier: Schemas
+                      identifierfornaming: ""
+                    - type: refName
+                      identifier: OASOneOfObjectNumber
+                    - type: component
+                      identifier: "true"
+                  type: class
+                  fields:
+                    - name: object_number
+                      originalname: object_number
+                      type:
+                        originalnamefrozen: false
+                        contextstack: []
+                        type: number
+                        validations: {}
+                        extensions: {}
+                      annotations:
+                        - fieldname: object_number
+                          type: json
+                      optional: true
+                  scope: shared
+                  iscomponent: true
+                  extensions: {}
+                  usedinunion: true
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_ref_object_request_only
+              type: json
+        - name: required_ref_primitives_request_and_response
+          originalname: required_ref_primitives_request_and_response
+          type:
+            name: required_ref_primitives_request_and_response
+            originalname: required_ref_primitives_request_and_response
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfString
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - name: OASOneOfNumber
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_ref_primitives_request_and_response
+              type: json
+        - name: required_ref_primitives_request_only
+          originalname: required_ref_primitives_request_only
+          type:
+            name: required_ref_primitives_request_only
+            originalname: required_ref_primitives_request_only
+            originalnamefrozen: true
+            contextstack:
+                - type: refType
+                  identifier: Schemas
+                  identifierfornaming: ""
+                - type: refName
+                  identifier: OASOneOfRequest
+            type: union
+            associatedtypes:
+                - name: OASOneOfString
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: string
+                  validations: {}
+                  extensions: {}
+                - name: OASOneOfNumber
+                  originalnamefrozen: false
+                  contextstack: []
+                  type: number
+                  validations: {}
+                  extensions: {}
+            scope: shared
+            extensions: {}
+          annotations:
+            - fieldname: required_ref_primitives_request_only
+              type: json
+    scope: shared
+    iscomponent: true
+    extensions: {}

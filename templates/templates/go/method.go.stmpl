@@ -1,0 +1,1216 @@
+{{- if hasAttemptCountRetries -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $op := .Local.Operation -}}
+{{- $topLevelSDK := .Local.TopLevelSDK -}}
+{{- $methodState := methodTemplateState $op }}
+{{- $args := $methodState.arguments }}
+{{- $optionMetadata := getGoOperationOptionMetadata $op }}
+{{- $commonOptions := getGoCommonOptionsExpression $op }}
+{{- $hasPaginationURL := hasPaginationURL $op }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $opsNamespace := getAccessNamespace "" "operations"}}
+{{- $methodName := sanitizeMethodName $op }}
+{{- $privateMethodName := sanitizePrivateMethodName $methodName }}
+{{- addImport "context"}}
+{{- addImport "fmt"}}
+{{templateComments $op.Comments $dg $methodName 0 "method" false (getGoMethodAdditionalNotes $op) -}}
+func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{$methodName}}(ctx context.Context{{range $optionMetadata.requiredArguments}}, {{sanitizePrivateFieldName .Name}} {{sanitizeFieldType . ""}}{{end}}, opts ...{{$opsNamespace}}{{getGoMethodOptionType $op}}) ({{if $op.Response.Type}}{{sanitizeResponseType $op.Response.Type}}, {{end}}error) {
+    {{- addImport "hooks"}}
+    {{- addImport "operations"}}
+    {{- if not (eq $optionMetadata.mode "pointers") }}
+    {{templateString "method_options_setup.go.stmpl" .Local}}
+    {{- end }}
+    {{- if (and .Global.Config.EnvVarPrefix $op.Security $op.Security.Optional)}}
+        if security == nil {
+            var envVarSecurity {{sanitizeType $op.Security.Type false ""}}
+            if utils.PopulateSecurityFromEnv(&envVarSecurity) {
+                security = &envVarSecurity
+            }
+        }
+
+    {{ end -}}
+    {{if $args.flattenedRequest}}
+    request := {{sanitizeType $op.Request.Field.Type false ""}}{
+        {{- range $args.request }}
+        {{sanitizeFieldName .Name}}: {{sanitizePrivateFieldName .Name}},
+        {{- end}}
+    }
+    {{end}}
+    {{- if $op.Globals}}
+    globals := {{sanitizeClass $op.Globals "" false}}{
+        {{- range $op.Globals.Fields}}
+        {{sanitizeFieldName .Name}}: {{templateGlobalParamAccess .}},
+        {{- end}}
+    }
+    {{end}}
+    {{- if eq $optionMetadata.mode "pointers" }}
+    {{- addImport "operations"}}
+    o := {{$opsNamespace}}Options{}
+    supportedOptions := []string{
+        {{- if $op.Extensions.Polling }}
+        {{$opsNamespace}}SupportedOptionPolling,
+        {{- end }}
+        {{- if $op.Extensions.Retries}}
+        {{$opsNamespace}}SupportedOptionRetries,
+        {{- end}}
+        {{$opsNamespace}}SupportedOptionTimeout,
+        {{- if gt (len $op.GetAcceptTypes) 1}}
+        {{$opsNamespace}}SupportedOptionAcceptHeaderOverride,
+        {{- end}}
+        {{- if $hasPaginationURL}}
+        {{$opsNamespace}}SupportedOptionURLOverride,
+        {{- end}}
+        {{- if isSkipDeserializationEnabled }}
+        {{$opsNamespace}}SupportedOptionSkipDeserialization,
+        {{- end}}
+    }
+
+    for _, opt := range opts {
+        if err := opt(&o, supportedOptions...); err != nil {
+            {{templateErrorReturn $op "fmt.Errorf(\"error applying option: %w\", err)"}}
+        }
+    }
+    {{- end }}
+
+    {{ if $op.Servers -}}
+    {{- addImport "utils"}}
+    {{- addImport "operations"}}
+    {{- if $op.Servers.ServerMap}}
+    baseURL := utils.ReplaceParameters({{$opsNamespace}}{{sanitizeFieldName (getOperationModelName $op)}}ServerList[{{$opsNamespace}}{{templateConstName $op.Servers.Default (print (sanitizeFieldName (getOperationModelName $op)) "Server")}}], map[string]string{{"{"}}{{- range $variable := $op.Servers.GetVariables}}
+        "{{$variable.Name}}": "{{$variable.Default}}",{{end}}
+    {{"}"}})
+    if o.ServerURL != nil {
+        baseURL = *o.ServerURL
+    }
+    {{- else}}
+    baseURL := utils.ReplaceParameters({{$opsNamespace}}{{sanitizeFieldName (getOperationModelName $op)}}ServerList[0], map[string]string{{"{"}}{{- range $variable := $op.Servers.GetVariables}}
+        "{{$variable.Name}}": "{{$variable.Default}}",{{end}}
+    {{"}"}})
+    if o.ServerURL != nil {
+        baseURL = *o.ServerURL
+    }
+    {{- end}}
+    {{else}}
+    {{- addImport "utils"}}
+    var baseURL string
+    if o.ServerURL == nil {
+        baseURL = utils.ReplaceParameters(s.sdkConfiguration.GetServerDetails())
+    } else {
+        baseURL = *o.ServerURL
+    }
+    {{- end}}
+    {{- if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams}}
+    {{- addImport "utils"}}
+    opURL, err := utils.GenerateURL(ctx, baseURL, "{{sanitizeURLPath $op.Path}}", request, {{if $op.Globals}}globals{{else}}nil{{end}})
+    if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error generating URL: %w\", err)"}}
+    }
+    {{else}}
+    {{- addImport "net/url"}}
+    opURL, err := url.JoinPath(baseURL, "{{sanitizeURLPath $op.Path}}")
+    if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error generating URL: %w\", err)"}}
+    }
+    {{end}}
+
+    {{- if $hasPaginationURL}}
+    if o.URLOverride != nil {
+        opURL = *o.URLOverride
+    }
+    {{- end}}
+
+    hookCtx := hooks.HookContext{
+        SDK: {{if $topLevelSDK}}s{{else}}s.rootSDK{{end}},
+        SDKConfiguration: s.sdkConfiguration,
+        BaseURL: baseURL,
+        Context: ctx,
+        OperationID: "{{$op.ID}}",{{if (accountHasFeatureAccess "sdkHooks")}}
+        OAuth2Scopes: {{templateOAuth2Scopes $op}},{{end}}
+        SecuritySource: {{if $op.Security}}{{addImport "utils"}}utils.AsSecuritySource(security){{else if $op.GlobalSecurity}}s.sdkConfiguration.Security{{else}}nil{{end}},
+    }
+    {{- if and $op.Request $op.SerializationMethod }}
+    {{- addImport "utils"}}
+    bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, {{$op.Request.RequestBody.Nullable}}, {{$op.Request.RequestBody.Optional}}, "{{sanitizeFieldName $op.Request.RequestBody.Name}}", "{{$op.SerializationMethod}}", {{templateAnnotations $op.Request.RequestBody true}})
+    if err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+    {{- end}}
+    {{addImport "net/http"}}
+    timeout := o.Timeout
+    if timeout == nil {
+        timeout = s.sdkConfiguration.Timeout
+    }
+
+    {{- if and $pagination (not $op.Extensions.Polling)}}
+    paginationCtx := ctx
+    {{- end}}
+
+    {{if $op.Extensions.Timeout -}}
+    {{- addImport "time" -}}
+    if timeout == nil {
+        defaultTimeout := time.Duration({{$op.Extensions.Timeout}} * time.Millisecond)
+        timeout = &defaultTimeout
+    }{{end}}
+
+    {{- if operationOwnsTimeoutCancel $op}}
+    var streamCancel context.CancelFunc
+    {{- end}}
+
+    if timeout != nil {
+        var cancel context.CancelFunc
+        ctx, cancel = context.WithTimeout(ctx, *timeout)
+        {{- if operationOwnsTimeoutCancel $op}}
+        streamCancel = cancel
+        defer func() {
+            if streamCancel != nil {
+                streamCancel()
+            }
+        }()
+        {{- else}}
+        defer cancel()
+        {{- end}}
+    }
+
+    req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
+	if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error creating request: %w\", err)"}}
+	}
+{{- if gt (len $op.GetAcceptTypes) 1}}
+    if (o.AcceptHeaderOverride != nil) {
+      req.Header.Set("Accept", string(*o.AcceptHeaderOverride))
+    } else {
+      req.Header.Set("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+    }
+{{else}}
+    req.Header.Set("Accept", "{{first $op.GetAcceptTypes}}")
+{{- end}}
+    req.Header.Set("{{if $op.UsesUserAgentHeader}}X-Speakeasy-User-Agent{{else}}User-Agent{{end}}", s.sdkConfiguration.UserAgent)
+    {{- if and $op.Request $op.Request.RequestBody }}
+    if reqContentType != "" {
+        req.Header.Set("Content-Type", reqContentType)
+    }
+    {{end}}
+    {{ if and $op.Request $op.Request.Params $op.Request.Params.HasHeaderParams }}
+    {{- addImport "utils"}}
+    utils.PopulateHeaders(ctx, req, request, {{if $op.Globals}}globals{{else}}nil{{end}})
+    {{- end}}
+    {{ if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+    {{- addImport "utils"}}
+    if err := utils.PopulateQueryParams(ctx, req, request, {{if $op.Globals}}globals{{else}}nil{{end}}, {{templateAllowEmptyValue $op}}); err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error populating query params: %w\", err)"}}
+    }
+    {{- end}}
+    {{if or $op.Security $op.GlobalSecurity}}
+    {{- addImport "utils"}}
+    {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+    if err := utils.PopulateSecurity(ctx, req, {{if $op.Security}}utils.AsSecuritySource(security){{else}}s.sdkConfiguration.Security{{end}}{{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}}); err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+    {{end}}
+
+    for k, v := range o.SetHeaders {
+        req.Header.Set(k, v)
+    }
+
+{{- if $op.Extensions.Polling }}
+{{- $streamCancelArg := "" }}
+{{- $streamCancelParam := "" }}
+{{- if operationOwnsTimeoutCancel $op }}
+{{- $streamCancelArg = ", &streamCancel" }}
+{{- $streamCancelParam = ", streamCancel *context.CancelFunc" }}
+{{- end }}
+
+    if o.Polling != nil {
+        switch o.Polling.Name {
+        {{- range $op.Extensions.Polling.Options }}
+        {{-   $pollingPrivateMethodName := print $privateMethodName (sanitizeClassName .Name) }}
+        case "{{ .Name }}":
+            return s.{{ $pollingPrivateMethodName }}(ctx, hookCtx, req, {{$commonOptions}}{{$streamCancelArg}})
+        {{- end }}
+        }
+    }
+
+    return s.{{ $privateMethodName }}(ctx, hookCtx, req, {{$commonOptions}}{{$streamCancelArg}})
+}
+
+{{- if operationOwnsTimeoutCancel $op }}
+{{- end }}
+func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{ $privateMethodName }}(ctx context.Context, hookCtx hooks.HookContext, req *http.Request, o {{$opsNamespace}}Options{{$streamCancelParam}}) ({{ if $op.Response.Type }}{{ sanitizeResponseType $op.Response.Type }}, {{ end }}error) {
+
+{{- end }}
+
+    {{- if $op.Extensions.Retries }}
+    {{- addImport "utils" }}
+
+    globalRetryConfig := s.sdkConfiguration.RetryConfig
+    retryConfig := o.Retries
+    if retryConfig == nil {
+        if globalRetryConfig != nil {
+            retryConfig = globalRetryConfig
+        }{{ if not $op.Extensions.Retries.DefaultApplied }} else {
+            retryConfig = &retry.Config{
+                Strategy: "{{$op.Extensions.Retries.Strategy}}",
+                {{- if $op.Extensions.Retries.Backoff}}
+                {{- addImport "retry" -}}
+                Backoff: &retry.BackoffStrategy{
+                    InitialInterval: {{$op.Extensions.Retries.Backoff.InitialInterval}},
+                    MaxInterval: {{$op.Extensions.Retries.Backoff.MaxInterval}},
+                    Exponent: {{$op.Extensions.Retries.Backoff.Exponent}},
+                    MaxElapsedTime: {{$op.Extensions.Retries.Backoff.MaxElapsedTime}},
+                },{{end}}
+                RetryConnectionErrors: {{$op.Extensions.Retries.RetryConnectionErrors}},
+                {{- if eq $op.Extensions.Retries.Strategy "attempt-count-backoff"}}
+                MaxRetries: func(i int) *int { return &i }({{$op.Extensions.Retries.MaxRetries}}),
+                {{- end}}
+            }
+        }{{ end }}
+    }
+
+    var httpRes *http.Response
+    if retryConfig != nil {
+        {{- if $op.Extensions.Polling }}
+        var err error
+        {{- end }}
+        httpRes, err = utils.Retry(ctx, utils.Retries{
+            Config: retryConfig,
+            StatusCodes: []string{
+                {{- range $i, $statusCode := $op.Extensions.Retries.StatusCodes}}
+                "{{$statusCode}}",{{end}}
+            },
+        }, func(attempt int) (*http.Response, error) {
+            if req.Body != nil && req.Body != http.NoBody && req.GetBody != nil {
+                copyBody, err := req.GetBody()
+
+                if err != nil {
+                    return nil, err
+                }
+
+                req.Body = copyBody
+            }
+
+            req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+            if err != nil {
+                {{- addImport "retry" }}
+                if retry.IsPermanentError(err) || retry.IsTemporaryError(err) {
+                    return nil, err
+                }
+
+                return nil, retry.Permanent(err)
+            }
+
+            httpRes, err := s.sdkConfiguration.Client.Do(req)
+            if err != nil || httpRes == nil {
+                if err != nil {
+                    err = fmt.Errorf("error sending request: %w", err)
+                } else {
+                    err = fmt.Errorf("error sending request: no response")
+                }
+
+                _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+            }
+            return httpRes, err
+        })
+
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        } else {
+            httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            }
+        }
+    } else {
+        {{- if $op.Extensions.Polling }}
+        var err error
+        {{- end }}
+        req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+
+        httpRes, err = s.sdkConfiguration.Client.Do(req)
+        if err != nil || httpRes == nil {
+            if err != nil {
+                err = fmt.Errorf("error sending request: %w", err)
+            } else {
+                err = fmt.Errorf("error sending request: no response")
+            }
+
+            _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+            {{templateErrorReturn $op "err"}}
+        } else if ({{templateErrorStatusCodesCheck $op.Response}}) {
+            _httpRes, err := s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, httpRes, nil)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            } else if _httpRes != nil {
+                httpRes = _httpRes
+            }
+        } else {
+                  httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+                  if err != nil {
+                      {{templateErrorReturn $op "err"}}
+                  }
+        }
+    }
+    {{else}}
+    {{- if $op.Extensions.Polling }}
+    var err error
+    {{- end }}
+
+    req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+    if err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+
+    httpRes, err := s.sdkConfiguration.Client.Do(req)
+    if err != nil || httpRes == nil {
+        if err != nil {
+            err = fmt.Errorf("error sending request: %w", err)
+        } else {
+            err = fmt.Errorf("error sending request: no response")
+        }
+
+        _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+        {{templateErrorReturn $op "err"}}
+    } else if ({{templateErrorStatusCodesCheck $op.Response}}) {
+        _httpRes, err := s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, httpRes, nil)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        } else if _httpRes != nil {
+            httpRes = _httpRes
+        }
+    } else {
+        httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+    }
+    {{end -}}
+    {{- $responseFormat := getResponseFormat }}
+    {{- if eq $responseFormat "envelope" }}
+
+	res := &{{sanitizeClass $op.Response.Type "" false}}{
+		StatusCode: httpRes.StatusCode,
+        ContentType: httpRes.Header.Get("Content-Type"),
+        RawResponse: httpRes,
+	}
+    {{- else if eq $responseFormat "envelope-http" }}
+    {{addImport "shared"}}
+	res := &{{sanitizeClass $op.Response.Type "" false}}{
+        HTTPMeta: {{getAccessNamespace "" "shared"}}HTTPMetadata{
+            Request: req,
+            Response: httpRes,
+        },
+    }
+    {{- else if and (eq $responseFormat "flat") $op.Response.Type $op.Response.Type.ResponseEnvelope}}
+
+	res := &{{sanitizeClass $op.Response.Type "" false}}{}
+    {{- end}}
+
+    {{- $rawBody := canUseRawBody $op}}
+    {{- /* Pagination with polling is unsupported: polling private helpers own a
+           request-scoped context, so a Next closure there cannot outlive the call. */}}
+    {{- if and $pagination (not $op.Extensions.Polling) }}
+    res.Next = {{ templateString "pagination.go.stmpl" $op | trim }}
+    {{- end }}
+    {{- if gt (len $op.Response.Responses) 0}}
+
+	switch {
+    {{- $hasDefault := false}}
+    {{- range $subResp := $op.Response.Responses}}
+    {{- $lastCode := (len $subResp.Code | add -1)}}
+    {{- range $i, $code := $subResp.Code }}
+    {{if eq $code "default"}}{{$hasDefault = true}}default:{{else}}case {{templateStatusCode $code}}:{{end}}{{if not (eq $i $lastCode)}}
+		fallthrough{{end}}{{end}}
+        {{- if $subResp.Headers}}
+        res.Headers = httpRes.Header
+        {{end}}
+        {{- if ne (len $subResp.Content) 0}}
+        switch {
+        {{- range $subResp.Content }}
+        {{- addImport "utils"}}
+        case utils.MatchContentType(httpRes.Header.Get("Content-Type"), `{{.ContentType}}`):
+            {{templateResponseHandler $op $subResp . | indent 8}}
+        {{- end}}
+        default:
+            {{- addImport "apierrors"}}
+            rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            }
+            {{templateDefaultErrorReturn $op "fmt.Sprintf(\"unknown content-type received: %s\", httpRes.Header.Get(\"Content-Type\"))"}}
+        }
+        {{- else if $subResp.Error -}}
+        rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+        {{- addImport "apierrors"}}
+        {{templateDefaultErrorReturn $op "\"API error occurred\"" }}
+        {{- else -}}
+        {{- if isSkipDeserializationEnabled}}
+        if o.SkipDeserialization == nil || !*o.SkipDeserialization {
+            {{addImport "utils"}}utils.DrainBody(httpRes)
+        }
+        {{- else}}
+        {{addImport "utils"}}utils.DrainBody(httpRes)
+        {{- end}}
+        {{- end -}}
+    {{- end -}}
+    {{- if not $hasDefault}}
+    default:
+        rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+        {{- addImport "apierrors"}}
+        {{templateDefaultErrorReturn $op "\"unknown status code returned\""}}{{end}}
+	}
+    {{- end }}
+    {{if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}
+	return res, nil
+    {{else if and (eq $responseFormat "flat") $op.Response.Type}}
+    return nil, nil
+    {{else if eq $responseFormat "flat"}}
+    return nil
+    {{- end}}
+}
+
+{{- if $op.Extensions.Polling }}
+{{-   addImport "polling" }}
+{{-   range $op.Extensions.Polling.Options }}
+{{-     $pollingMethodName := print $methodName (sanitizeClassName .Name) }}
+{{-     $pollingPrivateMethodName := print $privateMethodName (sanitizeClassName .Name) }}
+// Use with {{ $methodName }} by adding the {{ $opsNamespace }}WithPolling option.
+// Responses are returned when enabling polling, however additional errors may
+// be returned:
+//   - polling.FailureCriteriaError: If the polling option has explicit failure
+//     criteria defined, polling will immediately stop and return this error.
+//   - polling.LimitCountError: When polling has reached the maximum number of
+//     attempts. Use the polling.{{ (getOptionNames).PollingLimitCountOverride }} polling option to
+//     override the predefined limit.
+func (s *{{ sanitizeClassName $op.OwningSDK.Type.Name }}) {{ $pollingMethodName }}() polling.ConfigFunc {
+    return func(pollingOpts ...polling.Option) (*polling.Config, error) {
+        {{- if .DelaySeconds }}
+        defaultDelaySeconds := {{ .DelaySeconds }}
+        {{- end }}
+        {{- if .IntervalSeconds }}
+        defaultIntervalSeconds := {{ .IntervalSeconds }}
+        {{- end }}
+        {{- if .LimitCount }}
+        defaultLimitCount := {{ .LimitCount }}
+        {{- end }}
+        result := &polling.Config{
+            {{- if .DelaySeconds }}
+            DelaySeconds: &defaultDelaySeconds,
+            {{- end }}
+            {{- if .IntervalSeconds }}
+            IntervalSeconds: &defaultIntervalSeconds,
+            {{- end }}
+            {{- if .LimitCount }}
+            LimitCount: &defaultLimitCount,
+            {{- end }}
+            Name: "{{ .Name }}",
+        }
+
+        for _, pollingOpt := range pollingOpts {
+            if err := pollingOpt(result); err != nil {
+                return nil, err
+            }
+        }
+
+        return result, nil
+    }
+}
+
+func (s *{{ sanitizeClassName $op.OwningSDK.Type.Name }}) {{ $pollingPrivateMethodName }}(ctx context.Context, hookCtx hooks.HookContext, req *http.Request, o {{$opsNamespace}}Options{{ if operationOwnsTimeoutCancel $op }}, streamCancel *context.CancelFunc{{ end }}) ({{ sanitizeResponseType $op.Response.Type }}, error) {
+    if o.Polling == nil || o.Polling.LimitCount == nil {
+        return s.{{ $privateMethodName }}(ctx, hookCtx, req, o{{ if operationOwnsTimeoutCancel $op }}, streamCancel{{ end }})
+    }
+
+    if o.Polling.DelaySeconds != nil {
+        {{- addImport "time" }}
+        time.Sleep(time.Duration(*o.Polling.DelaySeconds) * time.Second)
+    }
+
+    var res {{ sanitizeResponseType $op.Response.Type }}
+
+    {{- if operationOwnsTimeoutCancel $op }}
+
+    sharedStreamCancel := *streamCancel
+    var attemptCancel context.CancelFunc
+    {{- end }}
+
+    for i := 1; i <= *o.Polling.LimitCount; i++ {
+        {{- if operationOwnsTimeoutCancel $op }}
+        if attemptCancel != nil {
+            attemptCancel()
+        }
+        {{- end }}
+        // Ensure request body, if exists, is not empty on subsequent requests.
+        if i > 1 && req.Body != nil && req.Body != http.NoBody && req.GetBody != nil {
+            copyBody, err := req.GetBody()
+
+            if err != nil {
+                return nil, err
+            }
+
+            req.Body = copyBody
+        }
+
+        {{- if operationOwnsTimeoutCancel $op }}
+
+        attemptCtx, cancel := context.WithCancel(ctx)
+        attemptCancel = cancel
+        req = req.WithContext(attemptCtx)
+        attemptStreamCancel := cancel
+        if sharedStreamCancel != nil {
+            attemptStreamCancel = func() {
+                cancel()
+                sharedStreamCancel()
+            }
+        }
+        *streamCancel = attemptStreamCancel
+        {{- end }}
+
+        var err error
+
+        res, err = s.{{ $privateMethodName }}({{ if operationOwnsTimeoutCancel $op }}attemptCtx{{ else }}ctx{{ end }}, hookCtx, req, o{{ if operationOwnsTimeoutCancel $op }}, streamCancel{{ end }})
+
+        {{- templatePollingSuccessCriteriaErrorAssertions .SuccessCriteria $op }}
+
+        if err != nil {
+            return res, err
+        }
+
+        {{ templatePollingFailureCriteriaAssertions .FailureCriteria $op }}
+
+        {{ templatePollingSuccessCriteriaAssertions .SuccessCriteria $op }}
+
+        if o.Polling.IntervalSeconds != nil {
+            {{- addImport "time" }}
+            time.Sleep(time.Duration(*o.Polling.IntervalSeconds) * time.Second)
+        }
+    }
+
+    {{- if operationOwnsTimeoutCancel $op }}
+
+    if attemptCancel != nil {
+        attemptCancel()
+    }
+    if sharedStreamCancel != nil {
+        sharedStreamCancel()
+    }
+    {{- end }}
+
+    return res, &polling.LimitCountError{Limit: *o.Polling.LimitCount}
+}
+{{-   end }}
+{{- end }}
+{{- else -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $op := .Local.Operation -}}
+{{- $topLevelSDK := .Local.TopLevelSDK -}}
+{{- $methodState := methodTemplateState $op }}
+{{- $args := $methodState.arguments }}
+{{- $optionMetadata := getGoOperationOptionMetadata $op }}
+{{- $commonOptions := getGoCommonOptionsExpression $op }}
+{{- $hasPaginationURL := hasPaginationURL $op }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $opsNamespace := getAccessNamespace "" "operations"}}
+{{- $methodName := sanitizeMethodName $op }}
+{{- $privateMethodName := sanitizePrivateMethodName $methodName }}
+{{- addImport "context"}}
+{{- addImport "fmt"}}
+{{templateComments $op.Comments $dg $methodName 0 "method" false (getGoMethodAdditionalNotes $op) -}}
+func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{$methodName}}(ctx context.Context{{range $optionMetadata.requiredArguments}}, {{sanitizePrivateFieldName .Name}} {{sanitizeFieldType . ""}}{{end}}, opts ...{{$opsNamespace}}{{getGoMethodOptionType $op}}) ({{if $op.Response.Type}}{{sanitizeResponseType $op.Response.Type}}, {{end}}error) {
+    {{- addImport "hooks"}}
+    {{- addImport "operations"}}
+    {{- if not (eq $optionMetadata.mode "pointers") }}
+    {{templateString "method_options_setup.go.stmpl" .Local}}
+    {{- end }}
+    {{- if (and .Global.Config.EnvVarPrefix $op.Security $op.Security.Optional)}}
+        if security == nil {
+            var envVarSecurity {{sanitizeType $op.Security.Type false ""}}
+            if utils.PopulateSecurityFromEnv(&envVarSecurity) {
+                security = &envVarSecurity
+            }
+        }
+
+    {{ end -}}
+    {{if $args.flattenedRequest}}
+    request := {{sanitizeType $op.Request.Field.Type false ""}}{
+        {{- range $args.request }}
+        {{sanitizeFieldName .Name}}: {{sanitizePrivateFieldName .Name}},
+        {{- end}}
+    }
+    {{end}}
+    {{- if $op.Globals}}
+    globals := {{sanitizeClass $op.Globals "" false}}{
+        {{- range $op.Globals.Fields}}
+        {{sanitizeFieldName .Name}}: {{templateGlobalParamAccess .}},
+        {{- end}}
+    }
+    {{end}}
+    {{- if eq $optionMetadata.mode "pointers" }}
+    {{- addImport "operations"}}
+    o := {{$opsNamespace}}Options{}
+    supportedOptions := []string{
+        {{- if $op.Extensions.Polling }}
+        {{$opsNamespace}}SupportedOptionPolling,
+        {{- end }}
+        {{- if $op.Extensions.Retries}}
+        {{$opsNamespace}}SupportedOptionRetries,
+        {{- end}}
+        {{$opsNamespace}}SupportedOptionTimeout,
+        {{- if gt (len $op.GetAcceptTypes) 1}}
+        {{$opsNamespace}}SupportedOptionAcceptHeaderOverride,
+        {{- end}}
+        {{- if $hasPaginationURL}}
+        {{$opsNamespace}}SupportedOptionURLOverride,
+        {{- end}}
+        {{- if isSkipDeserializationEnabled }}
+        {{$opsNamespace}}SupportedOptionSkipDeserialization,
+        {{- end}}
+    }
+
+    for _, opt := range opts {
+        if err := opt(&o, supportedOptions...); err != nil {
+            {{templateErrorReturn $op "fmt.Errorf(\"error applying option: %w\", err)"}}
+        }
+    }
+    {{- end }}
+
+    {{ if $op.Servers -}}
+    {{- addImport "utils"}}
+    {{- addImport "operations"}}
+    {{- if $op.Servers.ServerMap}}
+    baseURL := utils.ReplaceParameters({{$opsNamespace}}{{sanitizeFieldName (getOperationModelName $op)}}ServerList[{{$opsNamespace}}{{templateConstName $op.Servers.Default (print (sanitizeFieldName (getOperationModelName $op)) "Server")}}], map[string]string{{"{"}}{{- range $variable := $op.Servers.GetVariables}}
+        "{{$variable.Name}}": "{{$variable.Default}}",{{end}}
+    {{"}"}})
+    if o.ServerURL != nil {
+        baseURL = *o.ServerURL
+    }
+    {{- else}}
+    baseURL := utils.ReplaceParameters({{$opsNamespace}}{{sanitizeFieldName (getOperationModelName $op)}}ServerList[0], map[string]string{{"{"}}{{- range $variable := $op.Servers.GetVariables}}
+        "{{$variable.Name}}": "{{$variable.Default}}",{{end}}
+    {{"}"}})
+    if o.ServerURL != nil {
+        baseURL = *o.ServerURL
+    }
+    {{- end}}
+    {{else}}
+    {{- addImport "utils"}}
+    var baseURL string
+    if o.ServerURL == nil {
+        baseURL = utils.ReplaceParameters(s.sdkConfiguration.GetServerDetails())
+    } else {
+        baseURL = *o.ServerURL
+    }
+    {{- end}}
+    {{- if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams}}
+    {{- addImport "utils"}}
+    opURL, err := utils.GenerateURL(ctx, baseURL, "{{sanitizeURLPath $op.Path}}", request, {{if $op.Globals}}globals{{else}}nil{{end}})
+    if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error generating URL: %w\", err)"}}
+    }
+    {{else}}
+    {{- addImport "net/url"}}
+    opURL, err := url.JoinPath(baseURL, "{{sanitizeURLPath $op.Path}}")
+    if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error generating URL: %w\", err)"}}
+    }
+    {{end}}
+
+    {{- if $hasPaginationURL}}
+    if o.URLOverride != nil {
+        opURL = *o.URLOverride
+    }
+    {{- end}}
+
+    hookCtx := hooks.HookContext{
+        SDK: {{if $topLevelSDK}}s{{else}}s.rootSDK{{end}},
+        SDKConfiguration: s.sdkConfiguration,
+        BaseURL: baseURL,
+        Context: ctx,
+        OperationID: "{{$op.ID}}",{{if (accountHasFeatureAccess "sdkHooks")}}
+        OAuth2Scopes: {{templateOAuth2Scopes $op}},{{end}}
+        SecuritySource: {{if $op.Security}}{{addImport "utils"}}utils.AsSecuritySource(security){{else if $op.GlobalSecurity}}s.sdkConfiguration.Security{{else}}nil{{end}},
+    }
+    {{- if and $op.Request $op.SerializationMethod }}
+    {{- addImport "utils"}}
+    bodyReader, reqContentType, err := utils.SerializeRequestBody(ctx, request, {{$op.Request.RequestBody.Nullable}}, {{$op.Request.RequestBody.Optional}}, "{{sanitizeFieldName $op.Request.RequestBody.Name}}", "{{$op.SerializationMethod}}", {{templateAnnotations $op.Request.RequestBody true}})
+    if err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+    {{- end}}
+    {{addImport "net/http"}}
+    timeout := o.Timeout
+    if timeout == nil {
+        timeout = s.sdkConfiguration.Timeout
+    }
+
+    {{- if and $pagination (not $op.Extensions.Polling)}}
+    paginationCtx := ctx
+    {{- end}}
+
+    {{if $op.Extensions.Timeout -}}
+    {{- addImport "time" -}}
+    if timeout == nil {
+        defaultTimeout := time.Duration({{$op.Extensions.Timeout}} * time.Millisecond)
+        timeout = &defaultTimeout
+    }{{end}}
+
+    {{- if operationOwnsTimeoutCancel $op}}
+    var streamCancel context.CancelFunc
+    {{- end}}
+
+    if timeout != nil {
+        var cancel context.CancelFunc
+        ctx, cancel = context.WithTimeout(ctx, *timeout)
+        {{- if operationOwnsTimeoutCancel $op}}
+        streamCancel = cancel
+        defer func() {
+            if streamCancel != nil {
+                streamCancel()
+            }
+        }()
+        {{- else}}
+        defer cancel()
+        {{- end}}
+    }
+
+    req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
+	if err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error creating request: %w\", err)"}}
+	}
+{{- if gt (len $op.GetAcceptTypes) 1}}
+    if (o.AcceptHeaderOverride != nil) {
+      req.Header.Set("Accept", string(*o.AcceptHeaderOverride))
+    } else {
+      req.Header.Set("Accept", "{{ $op.GetAcceptTypes | join ", " }}")
+    }
+{{else}}
+    req.Header.Set("Accept", "{{first $op.GetAcceptTypes}}")
+{{- end}}
+    req.Header.Set("{{if $op.UsesUserAgentHeader}}X-Speakeasy-User-Agent{{else}}User-Agent{{end}}", s.sdkConfiguration.UserAgent)
+    {{- if and $op.Request $op.Request.RequestBody }}
+    if reqContentType != "" {
+        req.Header.Set("Content-Type", reqContentType)
+    }
+    {{end}}
+    {{ if and $op.Request $op.Request.Params $op.Request.Params.HasHeaderParams }}
+    {{- addImport "utils"}}
+    utils.PopulateHeaders(ctx, req, request, {{if $op.Globals}}globals{{else}}nil{{end}})
+    {{- end}}
+    {{ if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+    {{- addImport "utils"}}
+    if err := utils.PopulateQueryParams(ctx, req, request, {{if $op.Globals}}globals{{else}}nil{{end}}, {{templateAllowEmptyValue $op}}); err != nil {
+        {{templateErrorReturn $op "fmt.Errorf(\"error populating query params: %w\", err)"}}
+    }
+    {{- end}}
+    {{if or $op.Security $op.GlobalSecurity}}
+    {{- addImport "utils"}}
+    {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+    if err := utils.PopulateSecurity(ctx, req, {{if $op.Security}}utils.AsSecuritySource(security){{else}}s.sdkConfiguration.Security{{end}}{{if $needsAllowedFields}}, {{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}{{end}}); err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+    {{end}}
+
+    for k, v := range o.SetHeaders {
+        req.Header.Set(k, v)
+    }
+
+{{- if $op.Extensions.Polling }}
+{{- $streamCancelArg := "" }}
+{{- $streamCancelParam := "" }}
+{{- if operationOwnsTimeoutCancel $op }}
+{{- $streamCancelArg = ", &streamCancel" }}
+{{- $streamCancelParam = ", streamCancel *context.CancelFunc" }}
+{{- end }}
+
+    if o.Polling != nil {
+        switch o.Polling.Name {
+        {{- range $op.Extensions.Polling.Options }}
+        {{-   $pollingPrivateMethodName := print $privateMethodName (sanitizeClassName .Name) }}
+        case "{{ .Name }}":
+            return s.{{ $pollingPrivateMethodName }}(ctx, hookCtx, req, {{$commonOptions}}{{$streamCancelArg}})
+        {{- end }}
+        }
+    }
+
+    return s.{{ $privateMethodName }}(ctx, hookCtx, req, {{$commonOptions}}{{$streamCancelArg}})
+}
+
+{{- if operationOwnsTimeoutCancel $op }}
+{{- end }}
+func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{ $privateMethodName }}(ctx context.Context, hookCtx hooks.HookContext, req *http.Request, o {{$opsNamespace}}Options{{$streamCancelParam}}) ({{ if $op.Response.Type }}{{ sanitizeResponseType $op.Response.Type }}, {{ end }}error) {
+
+{{- end }}
+
+    {{- if $op.Extensions.Retries }}
+    {{- addImport "utils" }}
+
+    globalRetryConfig := s.sdkConfiguration.RetryConfig
+    retryConfig := o.Retries
+    if retryConfig == nil {
+        if globalRetryConfig != nil {
+            retryConfig = globalRetryConfig
+        }{{ if not $op.Extensions.Retries.DefaultApplied }} else {
+            retryConfig = &retry.Config{
+                Strategy: "{{$op.Extensions.Retries.Strategy}}",
+                {{- if $op.Extensions.Retries.Backoff}}
+                {{- addImport "retry" -}}
+                Backoff: &retry.BackoffStrategy{
+                    InitialInterval: {{$op.Extensions.Retries.Backoff.InitialInterval}},
+                    MaxInterval: {{$op.Extensions.Retries.Backoff.MaxInterval}},
+                    Exponent: {{$op.Extensions.Retries.Backoff.Exponent}},
+                    MaxElapsedTime: {{$op.Extensions.Retries.Backoff.MaxElapsedTime}},
+                },{{end}}
+                RetryConnectionErrors: {{$op.Extensions.Retries.RetryConnectionErrors}},
+            }
+        }{{ end }}
+    }
+
+    var httpRes *http.Response
+    if retryConfig != nil {
+        {{- if $op.Extensions.Polling }}
+        var err error
+        {{- end }}
+        httpRes, err = utils.Retry(ctx, utils.Retries{
+            Config: retryConfig,
+            StatusCodes: []string{
+                {{- range $i, $statusCode := $op.Extensions.Retries.StatusCodes}}
+                "{{$statusCode}}",{{end}}
+            },
+        }, func() (*http.Response, error) {
+            if req.Body != nil && req.Body != http.NoBody && req.GetBody != nil {
+                copyBody, err := req.GetBody()
+
+                if err != nil {
+                    return nil, err
+                }
+
+                req.Body = copyBody
+            }
+
+            req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+            if err != nil {
+                {{- addImport "retry" }}
+                if retry.IsPermanentError(err) || retry.IsTemporaryError(err) {
+                    return nil, err
+                }
+
+                return nil, retry.Permanent(err)
+            }
+
+            httpRes, err := s.sdkConfiguration.Client.Do(req)
+            if err != nil || httpRes == nil {
+                if err != nil {
+                    err = fmt.Errorf("error sending request: %w", err)
+                } else {
+                    err = fmt.Errorf("error sending request: no response")
+                }
+
+                _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+            }
+            return httpRes, err
+        })
+
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        } else {
+            httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            }
+        }
+    } else {
+        {{- if $op.Extensions.Polling }}
+        var err error
+        {{- end }}
+        req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+
+        httpRes, err = s.sdkConfiguration.Client.Do(req)
+        if err != nil || httpRes == nil {
+            if err != nil {
+                err = fmt.Errorf("error sending request: %w", err)
+            } else {
+                err = fmt.Errorf("error sending request: no response")
+            }
+
+            _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+            {{templateErrorReturn $op "err"}}
+        } else if ({{templateErrorStatusCodesCheck $op.Response}}) {
+            _httpRes, err := s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, httpRes, nil)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            } else if _httpRes != nil {
+                httpRes = _httpRes
+            }
+        } else {
+                  httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+                  if err != nil {
+                      {{templateErrorReturn $op "err"}}
+                  }
+        }
+    }
+    {{else}}
+    {{- if $op.Extensions.Polling }}
+    var err error
+    {{- end }}
+
+    req, err = s.hooks.BeforeRequest(hooks.BeforeRequestContext{HookContext: hookCtx}, req)
+    if err != nil {
+        {{templateErrorReturn $op "err"}}
+    }
+
+    httpRes, err := s.sdkConfiguration.Client.Do(req)
+    if err != nil || httpRes == nil {
+        if err != nil {
+            err = fmt.Errorf("error sending request: %w", err)
+        } else {
+            err = fmt.Errorf("error sending request: no response")
+        }
+
+        _, err = s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, nil, err)
+        {{templateErrorReturn $op "err"}}
+    } else if ({{templateErrorStatusCodesCheck $op.Response}}) {
+        _httpRes, err := s.hooks.AfterError(hooks.AfterErrorContext{HookContext: hookCtx}, httpRes, nil)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        } else if _httpRes != nil {
+            httpRes = _httpRes
+        }
+    } else {
+        httpRes, err = s.hooks.AfterSuccess(hooks.AfterSuccessContext{HookContext: hookCtx}, httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+    }
+    {{end -}}
+    {{- $responseFormat := getResponseFormat }}
+    {{- if eq $responseFormat "envelope" }}
+
+	res := &{{sanitizeClass $op.Response.Type "" false}}{
+		StatusCode: httpRes.StatusCode,
+        ContentType: httpRes.Header.Get("Content-Type"),
+        RawResponse: httpRes,
+	}
+    {{- else if eq $responseFormat "envelope-http" }}
+    {{addImport "shared"}}
+	res := &{{sanitizeClass $op.Response.Type "" false}}{
+        HTTPMeta: {{getAccessNamespace "" "shared"}}HTTPMetadata{
+            Request: req,
+            Response: httpRes,
+        },
+    }
+    {{- else if and (eq $responseFormat "flat") $op.Response.Type $op.Response.Type.ResponseEnvelope}}
+
+	res := &{{sanitizeClass $op.Response.Type "" false}}{}
+    {{- end}}
+
+    {{- $rawBody := canUseRawBody $op}}
+    {{- /* Pagination with polling is unsupported: polling private helpers own a
+           request-scoped context, so a Next closure there cannot outlive the call. */}}
+    {{- if and $pagination (not $op.Extensions.Polling) }}
+    res.Next = {{ templateString "pagination.go.stmpl" $op | trim }}
+    {{- end }}
+    {{- if gt (len $op.Response.Responses) 0}}
+
+	switch {
+    {{- $hasDefault := false}}
+    {{- range $subResp := $op.Response.Responses}}
+    {{- $lastCode := (len $subResp.Code | add -1)}}
+    {{- range $i, $code := $subResp.Code }}
+    {{if eq $code "default"}}{{$hasDefault = true}}default:{{else}}case {{templateStatusCode $code}}:{{end}}{{if not (eq $i $lastCode)}}
+		fallthrough{{end}}{{end}}
+        {{- if $subResp.Headers}}
+        res.Headers = httpRes.Header
+        {{end}}
+        {{- if ne (len $subResp.Content) 0}}
+        switch {
+        {{- range $subResp.Content }}
+        {{- addImport "utils"}}
+        case utils.MatchContentType(httpRes.Header.Get("Content-Type"), `{{.ContentType}}`):
+            {{templateResponseHandler $op $subResp . | indent 8}}
+        {{- end}}
+        default:
+            {{- addImport "apierrors"}}
+            rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+            if err != nil {
+                {{templateErrorReturn $op "err"}}
+            }
+            {{templateDefaultErrorReturn $op "fmt.Sprintf(\"unknown content-type received: %s\", httpRes.Header.Get(\"Content-Type\"))"}}
+        }
+        {{- else if $subResp.Error -}}
+        rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+        {{- addImport "apierrors"}}
+        {{templateDefaultErrorReturn $op "\"API error occurred\"" }}
+        {{- else -}}
+        {{- if isSkipDeserializationEnabled}}
+        if o.SkipDeserialization == nil || !*o.SkipDeserialization {
+            {{addImport "utils"}}utils.DrainBody(httpRes)
+        }
+        {{- else}}
+        {{addImport "utils"}}utils.DrainBody(httpRes)
+        {{- end}}
+        {{- end -}}
+    {{- end -}}
+    {{- if not $hasDefault}}
+    default:
+        rawBody, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes)
+        if err != nil {
+            {{templateErrorReturn $op "err"}}
+        }
+        {{- addImport "apierrors"}}
+        {{templateDefaultErrorReturn $op "\"unknown status code returned\""}}{{end}}
+	}
+    {{- end }}
+    {{if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}
+	return res, nil
+    {{else if and (eq $responseFormat "flat") $op.Response.Type}}
+    return nil, nil
+    {{else if eq $responseFormat "flat"}}
+    return nil
+    {{- end}}
+}
+
+{{- if $op.Extensions.Polling }}
+{{-   addImport "polling" }}
+{{-   range $op.Extensions.Polling.Options }}
+{{-     $pollingMethodName := print $methodName (sanitizeClassName .Name) }}
+{{-     $pollingPrivateMethodName := print $privateMethodName (sanitizeClassName .Name) }}
+// Use with {{ $methodName }} by adding the {{ $opsNamespace }}WithPolling option.
+// Responses are returned when enabling polling, however additional errors may
+// be returned:
+//   - polling.FailureCriteriaError: If the polling option has explicit failure
+//     criteria defined, polling will immediately stop and return this error.
+//   - polling.LimitCountError: When polling has reached the maximum number of
+//     attempts. Use the polling.{{ (getOptionNames).PollingLimitCountOverride }} polling option to
+//     override the predefined limit.
+func (s *{{ sanitizeClassName $op.OwningSDK.Type.Name }}) {{ $pollingMethodName }}() polling.ConfigFunc {
+    return func(pollingOpts ...polling.Option) (*polling.Config, error) {
+        {{- if .DelaySeconds }}
+        defaultDelaySeconds := {{ .DelaySeconds }}
+        {{- end }}
+        {{- if .IntervalSeconds }}
+        defaultIntervalSeconds := {{ .IntervalSeconds }}
+        {{- end }}
+        {{- if .LimitCount }}
+        defaultLimitCount := {{ .LimitCount }}
+        {{- end }}
+        result := &polling.Config{
+            {{- if .DelaySeconds }}
+            DelaySeconds: &defaultDelaySeconds,
+            {{- end }}
+            {{- if .IntervalSeconds }}
+            IntervalSeconds: &defaultIntervalSeconds,
+            {{- end }}
+            {{- if .LimitCount }}
+            LimitCount: &defaultLimitCount,
+            {{- end }}
+            Name: "{{ .Name }}",
+        }
+
+        for _, pollingOpt := range pollingOpts {
+            if err := pollingOpt(result); err != nil {
+                return nil, err
+            }
+        }
+
+        return result, nil
+    }
+}
+
+func (s *{{ sanitizeClassName $op.OwningSDK.Type.Name }}) {{ $pollingPrivateMethodName }}(ctx context.Context, hookCtx hooks.HookContext, req *http.Request, o {{$opsNamespace}}Options{{ if operationOwnsTimeoutCancel $op }}, streamCancel *context.CancelFunc{{ end }}) ({{ sanitizeResponseType $op.Response.Type }}, error) {
+    if o.Polling == nil || o.Polling.LimitCount == nil {
+        return s.{{ $privateMethodName }}(ctx, hookCtx, req, o{{ if operationOwnsTimeoutCancel $op }}, streamCancel{{ end }})
+    }
+
+    if o.Polling.DelaySeconds != nil {
+        {{- addImport "time" }}
+        time.Sleep(time.Duration(*o.Polling.DelaySeconds) * time.Second)
+    }
+
+    var res {{ sanitizeResponseType $op.Response.Type }}
+
+    {{- if operationOwnsTimeoutCancel $op }}
+
+    sharedStreamCancel := *streamCancel
+    var attemptCancel context.CancelFunc
+    {{- end }}
+
+    for i := 1; i <= *o.Polling.LimitCount; i++ {
+        {{- if operationOwnsTimeoutCancel $op }}
+        if attemptCancel != nil {
+            attemptCancel()
+        }
+        {{- end }}
+        // Ensure request body, if exists, is not empty on subsequent requests.
+        if i > 1 && req.Body != nil && req.Body != http.NoBody && req.GetBody != nil {
+            copyBody, err := req.GetBody()
+
+            if err != nil {
+                return nil, err
+            }
+
+            req.Body = copyBody
+        }
+
+        {{- if operationOwnsTimeoutCancel $op }}
+
+        attemptCtx, cancel := context.WithCancel(ctx)
+        attemptCancel = cancel
+        req = req.WithContext(attemptCtx)
+        attemptStreamCancel := cancel
+        if sharedStreamCancel != nil {
+            attemptStreamCancel = func() {
+                cancel()
+                sharedStreamCancel()
+            }
+        }
+        *streamCancel = attemptStreamCancel
+        {{- end }}
+
+        var err error
+
+        res, err = s.{{ $privateMethodName }}({{ if operationOwnsTimeoutCancel $op }}attemptCtx{{ else }}ctx{{ end }}, hookCtx, req, o{{ if operationOwnsTimeoutCancel $op }}, streamCancel{{ end }})
+
+        {{- templatePollingSuccessCriteriaErrorAssertions .SuccessCriteria $op }}
+
+        if err != nil {
+            return res, err
+        }
+
+        {{ templatePollingFailureCriteriaAssertions .FailureCriteria $op }}
+
+        {{ templatePollingSuccessCriteriaAssertions .SuccessCriteria $op }}
+
+        if o.Polling.IntervalSeconds != nil {
+            {{- addImport "time" }}
+            time.Sleep(time.Duration(*o.Polling.IntervalSeconds) * time.Second)
+        }
+    }
+
+    {{- if operationOwnsTimeoutCancel $op }}
+
+    if attemptCancel != nil {
+        attemptCancel()
+    }
+    if sharedStreamCancel != nil {
+        sharedStreamCancel()
+    }
+    {{- end }}
+
+    return res, &polling.LimitCountError{Limit: *o.Polling.LimitCount}
+}
+{{-   end }}
+{{- end }}
+{{- end }}

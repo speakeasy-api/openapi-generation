@@ -1,0 +1,6 @@
+{{- $fieldName := getResponseFieldName .Local.Operation "jsonl" }}
+        for {{getResponseVariableName .Local.StepID}}.{{$fieldName}}.Next() {
+            event, _ := {{getResponseVariableName .Local.StepID}}.{{$fieldName}}.Value()
+            log.Print(event)
+            // Handle the event
+	      }

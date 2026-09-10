@@ -1,0 +1,22 @@
+export * from "./sdk/sdk.js";
+export * from "./lib/config.js";
+export { HTTPClient } from "./lib/http.js";
+export type { Fetcher, HTTPClientOptions } from "./lib/http.js";
+export * as files from "./lib/files.js";
+{{- if withAPIPromiseHelpers }}
+export { APIPromise } from "./{{getTypesLocation}}/async.js";
+{{- end }}
+{{if hasPublicExports }}
+{{- if and usingGlobalImports .Global.Config.UseIndexModules }}
+export type { {{range $i, $n := tsPublicExportNamespaceNames}}{{if $i}}, {{end}}{{$n}}{{end}} } from "./{{tsResourcesModulePath}}.js";
+{{- else }}
+export * from "./{{tsResourcesModulePath}}.js";
+{{- end }}
+{{end}}
+{{if and usingGlobalImports .Global.Config.UseIndexModules }}
+export * from "./models/index.js";
+export * as types from "./types/index.js";
+{{end}}
+{{if fileExists "src/index.extras.ts"}}
+export * from "./index.extras.js";
+{{end}}

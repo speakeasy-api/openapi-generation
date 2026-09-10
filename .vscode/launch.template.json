@@ -1,0 +1,166 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "target",
+      "description": "The target to run code generation for",
+      "type": "pickString",
+      "default": "typescriptv2",
+      "options": [
+        "typescriptv2",
+        "csharp",
+        "go",
+        "java",
+        "php",
+        "pythonv2",
+        "ruby",
+        "terraform",
+        "unity"
+      ]
+    },
+    {
+      "id": "openapiSpec",
+      "description": "Path to OpenAPI specification",
+      "type": "promptString",
+      "default": "${userHome}/openapi.yaml"
+    },
+    {
+      "id": "outputDir",
+      "description": "Output directory for generated SDK",
+      "type": "promptString",
+      "default": "${workspaceFolder}/testSDKs/sdk-output"
+    },
+    {
+      "id": "gojaDebug",
+      "description": "Whether to debug with Goja",
+      "type": "promptString",
+      "default": "true"
+    },
+    {
+      "id": "sdkDir",
+      "description": "Path to an already-bootstrapped SDK directory (for regen)",
+      "type": "promptString",
+      "default": "${workspaceFolder}/zSDKs/sdk-go"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Generate SDK",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "cmd/generate/main.go",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "-s", "${input:openapiSpec}",
+        "-o", "${input:outputDir}",
+        "-l", "${input:target}"
+      ],
+      "env": {
+        "SPEAKEASY_DEBUG_GOJA": "${input:gojaDebug}"
+      }
+    },
+    {
+      "name": "review-mcp",
+      "type": "go",
+      "request": "launch",
+      "program": "cmd/generate/main.go",
+      "args": [
+        "-s", "${workspaceFolder}/tests/specs/review.yaml",
+        "-o", "${workspaceFolder}/zSDKs/${input:target}",
+        "-l", "${input:target}"
+      ],
+      "env": {
+        "SPEAKEASY_DEBUG_GOJA": "${input:gojaDebug}"
+      }
+    },
+    {
+      "name": "review-sdk",
+      "type": "go",
+      "request": "launch",
+      "program": "cmd/generate/main.go",
+      "args": [
+        "-s", "${workspaceFolder}/tests/specs/review.yaml",
+        "-o", "${workspaceFolder}/zSDKs/sdk-${input:target}",
+        "-l", "${input:target}"
+      ],
+      "env": {
+        "SPEAKEASY_DEBUG_GOJA": "${input:gojaDebug}"
+      }
+    },
+    {
+      "name": "primary-sdk",
+      "type": "go",
+      "request": "launch",
+      "program": "cmd/generate/main.go",
+      "args": [
+        "-s", "${workspaceFolder}/tests/specs/uber.yaml",
+        "-o", "${workspaceFolder}/testSDKs/sdk-${input:target}-uber",
+        "-l", "${input:target}"
+      ],
+      "env": {
+        "SPEAKEASY_DEBUG_GOJA": "${input:gojaDebug}"
+      }
+    },
+    {
+      "name": "minimal-sdk",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "cmd/generate/main.go",
+      "args": [
+        "-s", "${input:openapiSpec}",
+        "-o", "${workspaceFolder}/testSDKs/sdk-${input:target}-minimal",
+        "-l", "${input:target}",
+        "--watch-templates-location", "${workspaceFolder}/templates/"
+      ]
+    },
+    {
+      "name": "Regen SDK",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "cmd/regen/main.go",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "${input:sdkDir}"
+      ],
+      "env": {
+        "SPEAKEASY_DEBUG_GOJA": "${input:gojaDebug}"
+      }
+    },
+    {
+      "name": "Attach to Goja DAP",
+      "type": "goja",
+      "request": "attach",
+      "port": 4711
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Generate SDK + Goja Debug",
+      "configurations": ["Generate SDK", "Attach to Goja DAP"],
+      "stopAll": true
+    },
+    {
+      "name": "review-mcp + Goja Debug",
+      "configurations": ["review-mcp", "Attach to Goja DAP"],
+      "stopAll": true
+    },
+    {
+      "name": "review-sdk + Goja Debug",
+      "configurations": ["review-sdk", "Attach to Goja DAP"],
+      "stopAll": true
+    },
+    {
+      "name": "primary-sdk + Goja Debug",
+      "configurations": ["primary-sdk", "Attach to Goja DAP"],
+      "stopAll": true
+    },
+    {
+      "name": "Regen SDK + Goja Debug",
+      "configurations": ["Regen SDK", "Attach to Goja DAP"],
+      "stopAll": true
+    }
+  ]
+}

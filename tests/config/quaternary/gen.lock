@@ -1,0 +1,4 @@
+lockVersion: 2.0.0
+id: test-simple-security-id
+management:
+  releaseVersion: 0.0.0

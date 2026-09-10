@@ -1,0 +1,19 @@
+{{- $helper := .Local -}}
+{{- if $helper.Inputs}}
+{{templateString "model.java.stmpl" (dict "Type" $helper.Inputs.Type "Scope" "usage") | indentPresent 4}}
+{{- end}}
+{{- if $helper.Outputs}}
+{{templateString "model.java.stmpl" (dict "Type" $helper.Outputs.Type "Scope" "usage") | indentPresent 4}}
+{{- end}}
+    public static {{if $helper.Outputs}}{{javaImportOptional}}<{{sanitizeClassName $helper.Outputs.Type.Name}}>{{else}}void{{end}} {{sanitizePrivateMethodName $helper.Name}}({{if $helper.Inputs}}{{sanitizeClassName $helper.Inputs.Type.Name}} inputs{{end}}) throws {{javaImportException}} {
+        {{templateJdkVar (print (templatePackageName) ".utils.HTTPClient") "testHttpClient"}} = {{javaImportUtils}}.createTestHTTPClient("{{$helper.Name}}");
+{{- range $helper.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" (dict "Context" .UsageContext)}}
+{{templateString "usage/call.stmpl" (dict "Context" .UsageContext)}}
+{{templateAssertions .UsageContext | indentPresent 8}}
+{{else}}
+{{templateWorkflow $helper . | indentPresent 8}}    
+{{- end}}{{end}}
+{{- templateHelperOutputs $helper | indentPresent 8}}
+    }

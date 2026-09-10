@@ -1,0 +1,504 @@
+{{- if templateArtifactTestEnabled}}
+package tests
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	{{- if and (isInteractiveModeEnabled) (templateArtifactInteractiveTestEnabled)}}
+	"github.com/spf13/cobra"
+	{{- end}}
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+	{{- if and (isInteractiveModeEnabled) (templateArtifactInteractiveTestEnabled)}}
+	"{{getGolangPackage}}/internal/interactive"
+	{{- end}}
+)
+
+// Artifact commands (x-speakeasy-cli-commands output.artifact) write the
+// declared media content to a file and report the path. These tests drive the
+// "{{templateArtifactTestArgs}}" command against a stub server that returns
+// content shaped to the command's declared content pointer.
+
+const artifactTestBytes = "artifact-bytes" // base64: YXJ0aWZhY3QtYnl0ZXM=
+
+func artifactTestServer(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader({{templateArtifactTestStatus}})
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// runArtifact executes the artifact command with the working directory set to
+// dir (default filenames resolve against it) and no forced output format.
+func runArtifact(t *testing.T, h *CLITestHarness, serverURL, dir string, extra ...string) error {
+	t.Helper()
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+	args := append([]string{ {{templateArtifactTestArgs}} }, extra...)
+	return h.RunWithStdinServerRaw(serverURL, args, "")
+}
+
+func TestArtifact_DefaultPathPrintsAbsolutePathOnly(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir))
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout, "stdout must carry the artifact path")
+	assert.Len(t, strings.Split(stdout, "\n"), 1, "stdout must be exactly one path line")
+	assert.True(t, filepath.IsAbs(stdout), "printed path must be absolute: %q", stdout)
+	assert.True(t, strings.HasSuffix(stdout, "{{templateArtifactTestExt}}"), "extension must follow the returned MIME type: %q", stdout)
+	written, err := os.ReadFile(stdout)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+	assert.Contains(t, h.GetStderr(), "Wrote {{templateArtifactTestKind}} to ")
+
+	// A second run must not overwrite the first artifact.
+	h2 := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, h2, server.URL, dir))
+	second := strings.TrimSpace(h2.GetStdout())
+	assert.NotEqual(t, stdout, second, "default filenames must never collide")
+	_, err = os.Stat(stdout)
+	assert.NoError(t, err, "first artifact must survive a second run")
+}
+
+func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "nested", "asset{{templateArtifactTestExt}}")
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+	assert.Equal(t, target, strings.TrimSpace(h.GetStdout()))
+	written, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+	assert.NotContains(t, h.GetStderr(), "Note: wrote", "an unchanged extension needs no rewrite note")
+
+	// Explicit destinations replace an existing file (matching the reference UX).
+	require.NoError(t, os.WriteFile(target, []byte("stale"), 0o644))
+	h2 := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, h2, server.URL, dir, "--out", target))
+	written, err = os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+}
+
+func TestArtifact_OutExtensionFollowsReturnedMime(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", filepath.Join(dir, "photo{{templateArtifactTestWrongExt}}")))
+	printed := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, filepath.Join(dir, "photo{{templateArtifactTestExt}}"), printed)
+	_, err := os.Stat(printed)
+	assert.NoError(t, err)
+	assert.Contains(t, h.GetStderr(), "Note: wrote {{templateArtifactTestMime}} as photo{{templateArtifactTestExt}} (requested photo{{templateArtifactTestWrongExt}})")
+}
+
+func TestArtifact_OutWithoutExtensionAppendsSilently(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+	target := filepath.Join(dir, "photo")
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+	assert.Equal(t, target+"{{templateArtifactTestExt}}", strings.TrimSpace(h.GetStdout()))
+	assert.NotContains(t, h.GetStderr(), "Note: wrote", "plain extension appends are not rewrites")
+}
+
+func TestArtifact_ExtensionRewriteNoteIsSilentInAgentMode(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+	target := filepath.Join(dir, "photo.wrong")
+
+	// Machine modes keep stderr silent on success; the final path is already
+	// the deliverable on stdout, so the human rewrite note is suppressed.
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--agent-mode", "--out", target))
+	assert.Empty(t, strings.TrimSpace(h.GetStderr()), "machine-mode success must keep stderr silent")
+	assert.Contains(t, h.GetStdout(), "photo{{templateArtifactTestExt}}")
+}
+
+func TestArtifact_OutDirectoryUsesDefaultName(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	outDir := filepath.Join(dir, "renders")
+	require.NoError(t, os.MkdirAll(outDir, 0o755))
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", outDir))
+	printed := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, outDir, filepath.Dir(printed))
+	assert.True(t, strings.HasSuffix(printed, "{{templateArtifactTestExt}}"))
+}
+
+func TestArtifact_StructuredModesReportEnvelopeAndWriteFile(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+
+	h := NewCLITestHarness(t)
+	target := filepath.Join(dir, "json{{templateArtifactTestExt}}")
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target, "--output-format", "json"))
+	stdout := h.GetStdout()
+	assert.Equal(t, target, jsonGetString(stdout, "path"))
+	assert.Equal(t, "{{templateArtifactTestKind}}", jsonGetString(stdout, "kind"))
+	assert.Equal(t, "{{templateArtifactTestMime}}", jsonGetString(stdout, "mime_type"))
+	assert.Equal(t, float64(len(artifactTestBytes)), jsonGetFloat64(stdout, "size_bytes"))
+	assert.NotContains(t, stdout, base64.StdEncoding.EncodeToString([]byte(artifactTestBytes)), "structured output must not carry payload bytes")
+	assert.Empty(t, h.GetStderr(), "machine-mode success must keep stderr silent")
+	_, err := os.Stat(target)
+	assert.NoError(t, err)
+
+	// --jq projects the artifact envelope, not the raw API response.
+	h2 := NewCLITestHarness(t)
+	target2 := filepath.Join(dir, "jq{{templateArtifactTestExt}}")
+	require.NoError(t, runArtifact(t, h2, server.URL, dir, "--out", target2, "--jq", ".path"))
+	assert.Equal(t, `"`+target2+`"`, strings.TrimSpace(h2.GetStdout()))
+	assert.Empty(t, h2.GetStderr(), "--jq success must keep stderr silent")
+	_, err = os.Stat(target2)
+	assert.NoError(t, err)
+
+	// Explicit agent mode reports the compact envelope too.
+	h3 := NewCLITestHarness(t)
+	target3 := filepath.Join(dir, "agent{{templateArtifactTestExt}}")
+	require.NoError(t, runArtifact(t, h3, server.URL, dir, "--agent-mode", "--out", target3))
+	assert.Contains(t, h3.GetStdout(), target3)
+	assert.NotContains(t, h3.GetStdout(), "YXJ0aWZhY3QtYnl0ZXM=")
+	assert.Empty(t, h3.GetStderr(), "agent-mode success must keep stderr silent")
+	_, err = os.Stat(target3)
+	assert.NoError(t, err)
+
+	for _, format := range []string{"yaml", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			target := filepath.Join(dir, format+"{{templateArtifactTestExt}}")
+			require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target, "--output-format", format))
+			assert.Contains(t, h.GetStdout(), target)
+			assert.Empty(t, h.GetStderr(), "structured success must keep stderr silent")
+		})
+	}
+}
+
+func TestArtifact_RawResponseBypassesFile(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--raw-response", "--output-format", "json"))
+	assert.Contains(t, h.GetStdout(), "YXJ0aWZhY3QtYnl0ZXM=", "raw response must include the API payload")
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "--raw-response must not write a file")
+
+	h2 := NewCLITestHarness(t)
+	err = runArtifact(t, h2, server.URL, dir, "--raw-response", "--out", filepath.Join(dir, "x"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot be combined with --out")
+}
+
+func TestArtifact_DryRunWritesNothing(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	target := filepath.Join(dir, "new", "nested", "asset{{templateArtifactTestExt}}")
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--dry-run", "--out", target))
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "--dry-run must not write a file")
+	assert.Empty(t, h.GetStdout(), "human dry-run must not print a synthetic artifact")
+	assert.Contains(t, h.GetStderr(), "[DRY-RUN]")
+	_, err = os.Stat(filepath.Dir(target))
+	assert.True(t, os.IsNotExist(err), "--dry-run must not create output directories")
+
+	jsonDir := t.TempDir()
+	jsonTarget := filepath.Join(jsonDir, "new", "nested", "asset{{templateArtifactTestExt}}")
+	jsonHarness := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, jsonHarness, server.URL, jsonDir, "--dry-run", "--out", jsonTarget, "--output-format", "json"))
+	assert.Empty(t, jsonHarness.GetStderr(), "successful JSON dry-run must keep stderr empty")
+	stdout := jsonHarness.GetStdout()
+	assert.Equal(t, 1, strings.Count(stdout, string(rune(10))), "JSON dry-run must emit exactly one preview line")
+	var preview struct {
+		DryRun bool `json:"dry_run"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(stdout)), &preview))
+	assert.True(t, preview.DryRun)
+	entries, err = os.ReadDir(jsonDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "JSON dry-run must not write a file")
+	_, err = os.Stat(filepath.Dir(jsonTarget))
+	assert.True(t, os.IsNotExist(err), "JSON dry-run must not create output directories")
+}
+
+func TestArtifact_MissingContentIsAnError(t *testing.T) {
+	dir := t.TempDir()
+
+	for name, body := range map[string]string{
+		"empty":     `{{templateArtifactTestMockJSON "empty" templateArtifactTestMime}}`,
+		"wrongkind": `{{templateArtifactTestMockJSON "wrongkind" templateArtifactTestMime}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := artifactTestServer(t, body)
+			h := NewCLITestHarness(t)
+			err := runArtifact(t, h, server.URL, dir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "no {{templateArtifactTestKind}} content")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()), "stdout must stay empty on failure")
+		})
+	}
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestArtifact_URIDeliveryIsUnsupported(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "uri" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	err := runArtifact(t, h, server.URL, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "delivered by URI")
+	assert.Contains(t, err.Error(), "https://media.example.test/asset")
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+}
+
+// The content-block and job-identity shape is declaration-driven: the
+// annotation below is the real command's generated annotation with every
+// binding renamed at generation time (a fixed prefix on each declared or
+// defaulted member name, so the synthetic shape is guaranteed distinct from
+// the real one whatever the document declares). Injecting it over the
+// generated command and serving a body in that shape proves the runtime
+// reads the declared members — a runtime that assumed the default names
+// would find no content.
+const artifactCustomShapeAnnotation = "{{escapeGoString templateArtifactTestCustomAnnotation}}"
+
+// runArtifactCustomShape mirrors runArtifact but rebinds the artifact
+// command's speakeasy_artifact annotation to artifactCustomShapeAnnotation
+// on a fresh command tree before executing.
+func runArtifactCustomShape(t *testing.T, h *CLITestHarness, serverURL, dir string, extra ...string) error {
+	t.Helper()
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+	h.resetAndSetupEnv()
+	rootCmd, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	rootCmd.SetIn(strings.NewReader(""))
+
+	target := rootCmd
+	for _, segment := range []string{ {{templateArtifactTestPathArgs}} } {
+		found := false
+		for _, child := range target.Commands() {
+			if child.Name() == segment {
+				target = child
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "artifact command segment %q not found", segment)
+	}
+	require.Contains(t, target.Annotations, "speakeasy_artifact")
+	annotations := map[string]string{}
+	for key, value := range target.Annotations {
+		annotations[key] = value
+	}
+	annotations["speakeasy_artifact"] = artifactCustomShapeAnnotation
+	target.Annotations = annotations
+
+	args := append([]string{ {{templateArtifactTestArgs}} }, extra...)
+	fullArgs := append(append(baseArgs(), "--server-url", serverURL, "--color", "never"), args...)
+	return cli.ExecuteRoot(context.Background(), rootCmd, fullArgs)
+}
+
+func TestArtifact_DeclaredShapeDrivesExtraction(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestCustomMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactCustomShape(t, h, server.URL, dir, "--output-format", "json"))
+	stdout := h.GetStdout()
+	written := jsonGetString(stdout, "path")
+	require.NotEmpty(t, written, "envelope must carry the artifact path")
+	payload, err := os.ReadFile(written)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(payload))
+	assert.Equal(t, "{{templateArtifactTestMime}}", jsonGetString(stdout, "mime_type"))
+	{{- if templateArtifactTestRootIsObject}}
+	assert.Equal(t, "task-123", jsonGetString(stdout, "response_id"), "identity idField binding must feed response_id")
+	assert.Equal(t, {{goStringLiteral templateArtifactTestCustomTerminalStatus}}, jsonGetString(stdout, "status"), "identity statusField binding must feed status")
+	{{- end}}
+
+	// The same custom-shaped body must NOT satisfy the default-shape command:
+	// the declaration, not a hardcoded probe, decides the member names.
+	h2 := NewCLITestHarness(t)
+	err = runArtifact(t, h2, server.URL, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no {{templateArtifactTestKind}} content")
+}
+
+{{- if templateArtifactTestRootIsObject}}
+
+func TestArtifact_DeclaredShapeNotReadyDiagnostics(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestCustomMockJSON "notready" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	err := runArtifactCustomShape(t, h, server.URL, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no {{templateArtifactTestKind}} content")
+	assert.Contains(t, err.Error(), `status "artifact_test_pending"`, "the declared statusField and terminalStatus drive the not-ready diagnostic")
+	assert.Contains(t, err.Error(), `id "task-123"`, "the declared idField feeds the not-ready diagnostic")
+	assert.Contains(t, err.Error(), "may not be ready yet")
+}
+{{- end}}
+
+{{- if and (isInteractiveModeEnabled) (templateArtifactInteractiveTestEnabled)}}
+type artifactPrompter struct {
+	answers map[string][]string
+	fields  []interactive.PromptField
+	calls   int
+}
+
+func (p *artifactPrompter) Prompt(_ *cobra.Command, fields []interactive.PromptField) ([]interactive.PromptAnswer, error) {
+	p.calls++
+	p.fields = append([]interactive.PromptField(nil), fields...)
+	answers := make([]interactive.PromptAnswer, len(fields))
+	for i, field := range fields {
+		if values, ok := p.answers[field.ID]; ok {
+			answers[i] = interactive.PromptAnswer{Set: true, Values: values}
+		}
+	}
+	return answers, nil
+}
+
+func runArtifactInteractive(t *testing.T, h *CLITestHarness, serverURL, dir string, p interactive.Prompter, extra ...string) error {
+	t.Helper()
+	orig, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() { _ = os.Chdir(orig) })
+	h.resetAndSetupEnv()
+	rootCmd, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+	// Prompting is opt-in at runtime (--interactive; interactiveByDefault may be false).
+	args := []string{"--interactive", "--server-url", serverURL, "--color", "never", {{templateArtifactTestPathArgs}}}
+	args = append(args, extra...)
+	ctx := interactive.WithPrompter(context.Background(), p)
+	return cli.ExecuteRoot(ctx, rootCmd, args)
+}
+
+func TestArtifact_InteractiveOutputFileIsDirect(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "chosen{{templateArtifactTestExt}}")
+	p := &artifactPrompter{answers: map[string][]string{
+		"arg:" + {{templateArtifactTestPromptArg}}: {"interactive artifact"},
+		"flag:out": {target},
+	}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, runArtifactInteractive(t, h, server.URL, dir, p))
+	assert.Equal(t, target, strings.TrimSpace(h.GetStdout()))
+	require.GreaterOrEqual(t, len(p.fields), 2)
+	assert.Equal(t, "arg:"+{{templateArtifactTestPromptArg}}, p.fields[0].ID)
+	assert.Equal(t, "flag:out", p.fields[1].ID)
+	assert.True(t, p.fields[1].Direct)
+	assert.Equal(t, "Output file", p.fields[1].Name)
+	assert.Contains(t, p.fields[1].Summary, "into this directory")
+	assert.Contains(t, p.fields[1].Summary, "{{templateArtifactTestDefaultPath}}")
+	assert.Contains(t, p.fields[1].Summary, "optional; leave empty for the default")
+}
+
+func TestArtifact_InteractiveEmptyOutputUsesDefault(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	p := &artifactPrompter{answers: map[string][]string{
+		"arg:" + {{templateArtifactTestPromptArg}}: {"default artifact"},
+	}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, runArtifactInteractive(t, h, server.URL, dir, p))
+	printed := strings.TrimSpace(h.GetStdout())
+	realDir, err := filepath.EvalSymlinks(dir)
+	require.NoError(t, err)
+	assert.Equal(t, realDir, filepath.Dir(printed))
+	assert.True(t, strings.HasSuffix(printed, "{{templateArtifactTestExt}}"))
+}
+
+func TestArtifact_InteractivePresetOutIsNotPrompted(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "preset{{templateArtifactTestExt}}")
+	p := &artifactPrompter{answers: map[string][]string{
+		"arg:" + {{templateArtifactTestPromptArg}}: {"preset output"},
+	}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, runArtifactInteractive(t, h, server.URL, dir, p, "--out", target))
+	for _, field := range p.fields {
+		assert.NotEqual(t, "flag:out", field.ID)
+	}
+}
+
+func TestArtifact_InteractiveCompleteArgDoesNotPromptOutputFile(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	dir := t.TempDir()
+	p := &artifactPrompter{}
+	h := NewCLITestHarness(t)
+	require.NoError(t, runArtifactInteractive(t, h, server.URL, dir, p, "complete artifact prompt"))
+	assert.Zero(t, p.calls, "a direct output field must not create a form when argv already satisfies required inputs")
+	printed := strings.TrimSpace(h.GetStdout())
+	realDir, err := filepath.EvalSymlinks(dir)
+	require.NoError(t, err)
+	assert.Equal(t, realDir, filepath.Dir(printed))
+	assert.True(t, strings.HasSuffix(printed, "{{templateArtifactTestExt}}"))
+}
+
+func TestArtifact_InteractiveSuppressedByNonInteractiveAndAgentModes(t *testing.T) {
+	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)
+	// (A flat slice: a nested-slice literal opens with a double brace, which
+	// the template engine reads as an action delimiter.)
+	for _, mode := range []string{"--no-interactive", "--agent-mode"} {
+		t.Run(strings.TrimPrefix(mode, "--"), func(t *testing.T) {
+			dir := t.TempDir()
+			p := &artifactPrompter{}
+			h := NewCLITestHarness(t)
+			err := runArtifactInteractive(t, h, server.URL, dir, p, mode)
+			assert.Zero(t, p.calls)
+			if err == nil {
+				assert.Contains(t, h.GetStdout(), "Usage:")
+			} else {
+				assert.NotEmpty(t, err.Error(), "a suppressed bare invocation may return its established usage error")
+			}
+			entries, readErr := os.ReadDir(dir)
+			require.NoError(t, readErr)
+			assert.Empty(t, entries, "a suppressed prompt must not write an artifact")
+		})
+	}
+}
+{{- end}}
+{{- end}}

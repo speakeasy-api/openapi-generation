@@ -1,0 +1,40 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestTransform_GoTransformers(t *testing.T) {
+	recordTest("transform-jq-request-response")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	before := time.Now().Unix()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"transform", "go-transformers",
+		"--api-key-auth", "Token test",
+		"--initial-request", "mirror this payload",
+	})
+	require.NoError(t, err)
+	after := time.Now().Unix()
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Response transform should have added copy_of_initial_request
+	assert.Contains(t, output, "copy_of_initial_request")
+	assert.Contains(t, output, "mirror this payload")
+
+	// Request transform should have added created_at (unix timestamp).
+	// The echo server mirrors it back, so it appears in the response.
+	createdAt := jsonGetFloat64(output, "json.created_at")
+	assert.GreaterOrEqual(t, createdAt, float64(before))
+	assert.LessOrEqual(t, createdAt, float64(after))
+}

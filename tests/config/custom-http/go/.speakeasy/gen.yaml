@@ -1,0 +1,7 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+go:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  packageName: github.com/speakeasy/customhttp

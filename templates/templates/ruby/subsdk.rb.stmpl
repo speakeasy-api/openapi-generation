@@ -1,0 +1,58 @@
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) }}
+{{- $hasSubSDKs := (gt (len .Local.SubSDKs) 0)}}
+{{- $module := sanitizeModuleName .Global.Config.Module}}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil) -}}
+{{typedDirective}}
+# frozen_string_literal: true
+
+{{ getSDKImports .Local}}
+
+module {{$module}}
+  {{sorbetTSig}}
+  class {{$sdkClassName}}
+    {{sorbetTSig}}
+    {{$n := len .Local.SubSDKs}}{{if gt $n 0}}attr_accessor {{ range $index, $subsdk := .Local.SubSDKs}}:{{sanitizeFieldName $subsdk.FieldName}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}}{{end}}
+{{- if $hasSubSDKs}}
+{{end -}}
+    {{- range .Local.Operations}}
+    {{- if .Servers}}
+    {{templateString "servers.rb.stmpl" .}}{{end}}
+    {{- end}}
+{{ templateComments .Local.Comments nil 2 }}
+
+    {{if sorbetEnabled}}sig { params(sdk_config: SDKConfiguration).void }{{end}}
+    def initialize(sdk_config)
+      @sdk_configuration = sdk_config
+      {{if $hasSubSDKs}}init_sdks{{end}}
+    end
+
+    {{- if $hasSubSDKs}}
+    {{if sorbetEnabled}}sig { void }{{end}}
+    def init_sdks
+      {{- range .Local.SubSDKs}}
+      {{- if ne .Type.Name ""}}
+      @{{sanitizeFieldName .FieldName}} = ::{{$module}}::{{sanitizeClassName .Type.Name}}.new(@sdk_configuration){{end}}{{end}}
+    end
+    {{- end}}
+
+    {{if sorbetEnabled}}sig { params(base_url: String, url_variables: T.nilable(T::Hash[Symbol, T.any(String, T::Enum)])).returns(String) }{{end}}
+    def get_url(base_url:, url_variables: nil)
+      sd_base_url, sd_options = @sdk_configuration.get_server_details
+
+      if base_url.nil?
+        base_url = sd_base_url
+      end
+
+      if url_variables.nil?
+        url_variables = sd_options
+      end
+
+      return Utils.template_url base_url, url_variables
+    end
+{{ if .Local.Operations }}
+{{ range .Local.Operations }}
+
+{{ templateString "method.rb.stmpl" . | trimSuffix "\n" }}{{- end }}
+{{ end -}}
+  end
+end

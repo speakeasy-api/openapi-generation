@@ -1,0 +1,93 @@
+{{- recurse 1 -}}
+{{- $coreName := sanitizeCoreSDKName }}
+{{ genImports }}
+{{- addImport "./console-logger.js" "ConsoleLogger" }}
+{{- addImport "../core.js" $coreName }}
+{{- addImport "./scopes.js" "MCPScope" }}
+{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
+{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "GetPromptResult" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
+{{- addImport "@modelcontextprotocol/sdk/server/zod-compat.js" "ShapeOutput" }}
+{{- addImport "@modelcontextprotocol/sdk/server/zod-compat.js" "ZodRawShapeCompat" }}
+
+export type PromptDefinition<Args extends undefined | ZodRawShapeCompat = undefined> =
+  Args extends ZodRawShapeCompat ? {
+      name: string;
+      description?: string;
+      scopes?: MCPScope[];
+      args: Args;
+      prompt: (
+        client: {{ $coreName }},
+        args: ShapeOutput<Args>,
+        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+      ) => GetPromptResult | Promise<GetPromptResult>;
+    }
+    : {
+      name: string;
+      description?: string;
+      scopes?: MCPScope[];
+      args?: undefined;
+      prompt: (
+        client: {{ $coreName }},
+        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+      ) => GetPromptResult | Promise<GetPromptResult>;
+    };
+
+// Optional function to assist with formatting prompt results
+export async function formatResult(value: string): Promise<GetPromptResult> {
+  return {
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: value,
+        },
+      },
+    ],
+  };
+}
+
+export function createRegisterPrompt(
+  logger: ConsoleLogger,
+  server: McpServer,
+  getSDK: () => {{ $coreName }},
+  allowedScopes: Set<MCPScope>,
+): <A extends ZodRawShapeCompat | undefined>(prompt: PromptDefinition<A>) => void {
+  return <A extends ZodRawShapeCompat | undefined>(prompt: PromptDefinition<A>): void => {
+    const scopes = prompt.scopes ?? [];
+    if (allowedScopes.size > 0 && scopes.length === 0) {
+      return;
+    }
+    
+    if (allowedScopes.size > 0 && !scopes.every((s: MCPScope) => allowedScopes.has(s))) {
+      return;
+    }
+
+    if (prompt.args) {
+      if (prompt.description) {
+        server.prompt(prompt.name, prompt.description, prompt.args, async (args, ctx) =>
+          prompt.prompt(getSDK(), args, ctx)
+        );
+      } else {
+        server.prompt(prompt.name, prompt.args, async (args, ctx) =>
+          prompt.prompt(getSDK(), args, ctx)
+        );
+      }
+    } else {
+      if (prompt.description) {
+        server.prompt(prompt.name, prompt.description, async (ctx) =>
+          prompt.prompt(getSDK(), ctx)
+        );
+      } else {
+        server.prompt(prompt.name, async (ctx) =>
+          prompt.prompt(getSDK(), ctx)
+        );
+      }
+    }
+
+    logger.debug("Registered prompt", { name: prompt.name });
+  };
+}

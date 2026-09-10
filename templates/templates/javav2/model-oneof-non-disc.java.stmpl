@@ -1,0 +1,90 @@
+{{- $scope := .Local.Scope -}}
+{{- $type := .Local.Type -}}
+{{- $class := (sanitizeClass $type $scope true) -}}
+{{templateComments $type.Comments $class 0 "class" -}}{{if and $type.Comments $type.Comments.Deprecated}}@Deprecated
+{{end}}@{{javaImport "com.fasterxml.jackson.databind.annotation.JsonDeserialize"}}(using = {{$class}}._Deserializer.class)
+public class {{$class}}{{modelImplements .Local.Type $scope false}} {
+
+    @{{javaImportJacksonAnn "JsonValue"}}
+    private final {{javaImportLocal "utils.TypedObject"}} value;
+    
+    private {{$class}}({{javaImportLocal "utils.TypedObject"}} value) {
+        this.value = value;
+    }
+{{ templateOneOfNonDiscFactoryMethods $class .Local.Type }}
+{{- if .Global.Config.GenerateOptionalUnionAccessors }}
+{{- $members := getUnionMemberMetadata .Local.Type }}
+{{- range $members }}
+    
+    /**
+     * Returns an {@link {{javaImportOptional}}} containing the value if it is of type {@code {{.javaType}}},
+     * otherwise returns an empty {@link {{javaImportOptional}}}.
+     *
+     * @return an {@link {{javaImportOptional}}} containing the {@code {{.javaType}}} value, or empty if not of this type
+     */
+     {{- if .needsSuppressWarnings}}
+    @{{javaImportSuppressWarnings}}("unchecked")
+    {{- end}}
+    public {{javaImportOptional}}<{{.nonPrimitiveType}}> {{.accessorMethodName}}() {
+        if (value.value() instanceof {{.rawType}}) {
+            return {{javaImportOptional}}.of(({{.nonPrimitiveType}}) value.value());
+        }
+        return {{javaImportOptional}}.empty();
+    }
+{{- end }}
+   
+   {{- if isForwardCompatibleUnions}}
+   /**
+    * Returns an {@link {{javaImportOptional}}} containing the value as a {@code JsonNode}.
+    * This accessor returns the raw JSON when the value doesn't match any of the defined union types.
+    *
+    * @return an {@link {{javaImportOptional}}} containing the {@code JsonNode} value, or empty if value matched a known type
+    */
+   public {{javaImportOptional}}<{{javaImport "com.fasterxml.jackson.databind.JsonNode"}}> asJson() {
+       if (value.value() instanceof {{javaImport "com.fasterxml.jackson.databind.JsonNode"}}) {
+           return {{javaImportOptional}}.of(({{javaImport "com.fasterxml.jackson.databind.JsonNode"}}) value.value());
+       }
+       return {{javaImportOptional}}.empty();
+   }
+   {{- end }}
+{{- else }}
+    
+{{templateOneOfValueJavadoc .Local.Type $scope}}    public java.lang.Object value() {
+        return value.value();
+    }
+{{- end }}
+    
+    @{{javaImportOverride}}
+    public boolean equals(java.lang.Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        {{$class}} other = ({{$class}}) o;
+        return {{javaImportUtils}}.enhancedDeepEquals(this.value.value(), other.value.value());
+    }
+    
+    @{{javaImportOverride}}
+    public int hashCode() {
+        return {{javaImportUtils}}.enhancedHash(value.value());
+    }
+    
+    @{{javaImportSuppressWarnings}}("serial")
+    public static final class _Deserializer extends {{javaImportLocal "utils.OneOfDeserializer"}}<{{$class}}> {
+
+        public _Deserializer() {
+            super({{$class}}.class, false{{templateMemberTypeReferencesCommaDelimited .Local.Type }});
+        }
+    }
+    
+    @{{javaImportOverride}}
+    public {{javaImportString}} toString() {
+        return {{javaImportUtils}}.toString({{$class}}.class,
+                "value", value);
+    }
+{{generateAllDiscriminatorGetters .Local.Type}}
+    // #region class-body
+    // #endregion class-body
+}

@@ -1,0 +1,84 @@
+version: "2"
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - containedctx
+    - copyloopvar
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - exptostd
+    # - forcetypeassert
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    # - gosec
+    - govet
+    - iface
+    - importas
+    - ineffassign
+    # - intrange
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - nilerr
+    - nilnesserr
+    - nolintlint
+    # - paralleltest // Worthy to introduce but requires a lot of work
+    - perfsprint
+    - prealloc
+    - predeclared
+    - reassign
+    # - spancheck
+    - staticcheck
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - wastedassign
+  exclusions:
+    paths:
+      - zSDKs
+      - testSDKs
+    rules:
+      - path: (.+)_test.go
+        linters:
+          - gosec
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (io.ReadCloser).Close
+        - (*os.File).Close
+        - os.Remove
+        - (io/fs.File).Close
+        - (*github.com/fsnotify/fsnotify.Watcher).Close
+    gocritic:
+      disabled-checks:
+        - appendAssign
+    staticcheck:
+      checks:
+        - all
+        - "-ST1000" # disabled by default
+        - "-ST1003" # disabled by default
+        - "-ST1005" # very pedantic (e.g. error strings should not be capitalized)
+        - "-ST1016" # disabled by default
+        - "-ST1020" # disabled by default
+        - "-ST1021" # disabled by default
+        - "-ST1022" # disabled by default
+    testifylint:
+      disable:
+        - encoded-compare

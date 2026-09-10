@@ -1,0 +1,150 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestStatusGetError_400(t *testing.T) {
+	recordTest("errors-status-get-error-default-error-codes")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	output := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	// CLI outputs the error body JSON to stderr
+	assert.Contains(t, output, `"error"`)
+	assert.Contains(t, output, `"status_code"`)
+	statusCode := jsonGetFloat64(output, "status_code")
+	assert.Equal(t, float64(400), statusCode)
+}
+
+func TestStatusGetError_500(t *testing.T) {
+	recordTest("errors-status-get-error-default-error-codes")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-error", "--status-code", "500"})
+	assert.Error(t, err)
+
+	output := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"error"`)
+	statusCode := jsonGetFloat64(output, "status_code")
+	assert.Equal(t, float64(500), statusCode)
+}
+
+func TestStatusGetError_300_NonError(t *testing.T) {
+	recordTest("errors-status-get-error300-non-error")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-error", "--status-code", "300"})
+	require.NoError(t, err)
+}
+
+func TestStatusGetXSpeakeasyErrors_400(t *testing.T) {
+	recordTest("errors-status-get-error-x-speakeasy-errors")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-X-speakeasy-errors", "--status-code", "400"})
+	assert.Error(t, err)
+
+	output := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	// 400 goes through generic APIError path - raw JSON body is output directly
+	assert.Contains(t, output, `"message"`)
+}
+
+func TestStatusGetXSpeakeasyErrors_500(t *testing.T) {
+	recordTest("errors-status-get-error-x-speakeasy-errors")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-X-speakeasy-errors", "--status-code", "500"})
+	assert.Error(t, err)
+
+	output := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	// 500 goes through sdkerrors.Error deserialization — output.Error wraps it as {"error": "..."}
+	assert.Contains(t, output, `"error"`)
+}
+
+func TestStatusGetNonError(t *testing.T) {
+	recordTest("errors-status-get-error-x-speakeasy-errors-none")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-non-error", "--status-code", "200"})
+	require.NoError(t, err)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"errors", "status-get-non-error", "--status-code", "400"})
+	require.NoError(t, err)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"errors", "status-get-non-error", "--status-code", "500"})
+	require.NoError(t, err)
+}
+
+func TestStatusGetDefaultError(t *testing.T) {
+	recordTest("errors-status-get-error-x-speakeasy-errors-default")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"errors", "status-get-default-error", "--status-code", "200"})
+	require.NoError(t, err)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"errors", "status-get-default-error", "--status-code", "400"})
+	require.NoError(t, err)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"errors", "status-get-default-error", "--status-code", "404"})
+	assert.Error(t, err)
+	output := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"status_code"`)
+	statusCode := jsonGetFloat64(output, "status_code")
+	assert.Equal(t, float64(404), statusCode)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"errors", "status-get-default-error", "--status-code", "500"})
+	assert.Error(t, err)
+	output = strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"status_code"`)
+	statusCode = jsonGetFloat64(output, "status_code")
+	assert.Equal(t, float64(500), statusCode)
+}
+
+func TestConnectionError(t *testing.T) {
+	recordTest("errors-connection-error")
+
+	// RunBare uses no server override, so the command uses its operation-level
+	// server list which points to a non-existent server, causing a connection error.
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"errors", "connection-error-get"})
+	assert.Error(t, err)
+}

@@ -1,0 +1,71 @@
+{{- $partialPydanticTypes := .Local.PartialPydanticTypes -}}
+{{- $hasLazyModels := gt (len .Local.LazilyExportedModels) 0 -}}
+{{- $hasSubPackages := and .Local.SubPackages (gt (len .Local.SubPackages) 0) -}}
+{{- $needsLazyInfra := or $hasLazyModels $hasSubPackages -}}
+
+{{- if gt (len .Local.EagerlyExportedModels) 0 }}
+{{- range .Local.EagerlyExportedModels }}
+from .{{.Name}} import {{join ", " .Types}}
+{{- end}}
+{{- end }}
+
+{{- if $needsLazyInfra }}
+from typing import Any, TYPE_CHECKING
+
+from {{getModuleImport "utils.dynamic_imports"}} import lazy_getattr, lazy_dir
+
+if TYPE_CHECKING:
+{{- range .Local.LazilyExportedModels }}
+    from .{{.Name}} import {{join ", " .Types}}
+{{- end}}
+{{- if $hasSubPackages }}
+    from . import {{join ", " .Local.SubPackages}}
+{{- end }}
+{{- end }}
+
+{{- if $partialPydanticTypes -}}
+{{templatePartialPydanticTypes $partialPydanticTypes}}
+{{ end }}
+{{if .Local.Exports }}
+{{.Local.Exports}}
+{{else}}
+# package
+{{end}}
+
+{{- if $needsLazyInfra }}
+
+{{- if $hasLazyModels }}
+_dynamic_imports: dict[str, str] = {
+{{- range .Local.LazilyExportedModels }}
+    {{- $model := . }}
+    {{- range .Types }}
+    '{{.}}': '.{{$model.Name}}',
+    {{- end }}
+{{- end }}
+}
+{{- end }}
+
+{{- if $hasSubPackages }}
+
+_sub_packages = [{{range $i, $sp := .Local.SubPackages}}{{if $i}}, {{end}}"{{$sp}}"{{end}}]
+{{- end }}
+
+
+def __getattr__(attr_name: str) -> Any:
+{{- if and $hasLazyModels $hasSubPackages }}
+    return lazy_getattr(attr_name, package=__package__, dynamic_imports=_dynamic_imports, sub_packages=_sub_packages)
+{{- else if $hasLazyModels }}
+    return lazy_getattr(attr_name, package=__package__, dynamic_imports=_dynamic_imports)
+{{- else }}
+    return lazy_getattr(attr_name, package=__package__, dynamic_imports={}, sub_packages=_sub_packages)
+{{- end }}
+
+def __dir__():
+{{- if and $hasLazyModels $hasSubPackages }}
+    return lazy_dir(dynamic_imports=_dynamic_imports, sub_packages=_sub_packages)
+{{- else if $hasLazyModels }}
+    return lazy_dir(dynamic_imports=_dynamic_imports)
+{{- else }}
+    return lazy_dir(dynamic_imports={}, sub_packages=_sub_packages)
+{{- end }}
+{{- end }}

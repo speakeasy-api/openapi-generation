@@ -1,0 +1,189 @@
+{{- $c := .Local -}}
+{{- $cli := $c.CliName -}}
+This CLI is built to be driven by AI coding agents as well as people: everything an agent needs is discoverable from the binary itself, and every command can be validated without credentials. Work down this ladder:
+
+| Run | You get |
+|-----|---------|
+| `{{$cli}} --help`, `{{$cli}} {{$c.ShowcasePath}} --help` | Commands by category, runnable examples, flags |
+| `{{$cli}} --usage`, `{{$cli}} {{$c.ShowcasePath}} --usage` | The command surface as machine-readable [KDL](https://kdl.dev): commands, aliases, flags, defaults, env vars, config keys |
+{{- if $c.Schema}}
+| `{{$c.Schema}} --schema` | The exact JSON Schema of the command's request body (all `$ref`s bundled) — build a valid `--body` from it |
+{{- end}}
+| `{{$c.Showcase}} --dry-run` | The exact HTTP request (method, URL, headers, body), with no credentials or network call |
+| `{{$c.Showcase}} --output-format json` (or `--jq`) | Machine-readable output |
+
+### Discover the command surface
+
+```bash
+# Every command, flag, default, env var and config key, as KDL
+{{$cli}} --usage
+
+# One command's subtree only
+{{$cli}} {{$c.ShowcasePath}} --usage
+```
+{{- if $c.Schema}}
+
+### Read the exact request schema
+
+`--schema` is available on every command that accepts a request body (`--body`, stdin, or a whole-body flag where the command has one), including intent commands. It prints the JSON Schema the request is validated against and exits without calling the API.
+
+```bash
+# JSON Schema (draft 2020-12) of the request body, with every $ref bundled under $defs
+{{$c.Schema}} --schema
+```
+{{- end}}
+
+### Probe before you spend
+
+Start quota-spending commands with `--dry-run`. It validates inputs, resolves the request, redacts secrets and binary payloads, makes no network call, and exits 0. It never reads the OS keychain; credentials supplied by flag, environment, or config file are included only as `[REDACTED]`.
+
+```bash
+# Human preview: the [DRY-RUN] block is on stderr and stdout is empty
+{{$c.Showcase}} --dry-run
+{{- if $c.Intent}}
+{{$c.Intent}} --dry-run
+{{- end}}
+
+# Machine preview: compact JSON on stdout and silent stderr
+{{$c.Showcase}} --dry-run --output-format json
+```
+
+The machine form writes one object per would-be request, one per line (NDJSON for multi-request commands), with exactly this shape:
+
+```json
+{"dry_run":true,"request":{"method":"POST","url":"https://…","headers":{"Accept":["application/json"],…},"body":<JSON value | string | null>}}
+```
+
+`body` is a parsed JSON value when the body is JSON, a string for text, `"<bytes:N>"` for binary data, and `null` when absent. An explicit caller `--jq` also selects this JSON preview protocol, but the filter is not applied to preview objects. Command-declared jq presets do not select or filter the preview.
+
+Local mutation commands make no request under `--dry-run`: instead of a preview they emit one `{"dry_run":true,"local":true,"command":"…","message":"…"}` object. `select(.request)` keeps only would-be requests; `select(.local)` keeps the local no-ops.
+
+### Machine-readable output
+
+```bash
+# JSON on stdout
+{{$c.Showcase}} --output-format json
+
+# Filter or reshape with a jq expression (always emits JSON, overrides --output-format)
+{{$c.Showcase}} --jq '.'
+
+# Print jq string results as plain text instead of JSON strings (like jq -r)
+{{$c.Showcase}} --jq '.' --raw-output
+```
+
+`--output-format toon` emits [TOON](https://github.com/toon-format/spec), a compact line-oriented format that uses fewer tokens than JSON; it is the default in agent mode.
+
+{{- if isAnyInteractiveEnabled}}
+
+### Interactive mode
+
+{{- if interactiveByDefault}}
+{{- if and (isInteractiveModeEnabled) (isInteractiveAuthEnabled)}}
+Required-input prompts and guided `configure` / `auth login` forms are enabled by default. Required-input prompts require an interactive terminal; off-TTY forms read line input from stdin. Use `--no-interactive` to force flag-only execution.
+{{- else if isInteractiveModeEnabled}}
+Required-input prompts are enabled by default when stdin and stdout are interactive terminals. Use `--no-interactive` to disable prompting.
+{{- else}}
+Guided `configure` / `auth login` forms are enabled by default; off-TTY forms read line input from stdin. Use `--no-interactive` to force flag-only execution.
+{{- end}}
+{{- else}}
+{{- if and (isInteractiveModeEnabled) (isInteractiveAuthEnabled)}}
+This CLI is non-interactive by default. Pass `--interactive` to prompt for missing inputs or open guided `configure` / `auth login` forms. Required-input prompts require an interactive terminal; off-TTY forms read line input from stdin.
+{{- else if isInteractiveModeEnabled}}
+This CLI is non-interactive by default. Pass `--interactive` to prompt for missing inputs when stdin and stdout are interactive terminals.
+{{- else}}
+This CLI is non-interactive by default. Pass `--interactive` to open guided `configure` / `auth login` forms; off-TTY forms read line input from stdin.
+{{- end}}
+{{- end}}
+
+```bash
+{{- if isInteractiveModeEnabled}}
+# Prompt for missing command inputs
+{{- if $c.HasIntents}}
+{{$cli}} {{$c.IntentName}} --interactive
+{{- else}}
+{{$cli}} {{$c.ShowcasePath}} --interactive
+{{- end}}
+{{- end}}
+{{- if isInteractiveAuthEnabled}}
+
+# Open the guided configuration form
+{{$cli}} configure --interactive
+{{- end}}
+{{- if isInteractiveModeEnabled}}
+
+# Explicitly launch the terminal command explorer
+{{$cli}} explore
+{{- end}}
+```
+{{- end}}
+
+### Agent mode and structured errors
+
+{{- if agentEnvironmentDetection}}
+Agent mode turns on automatically when a known agent environment is detected (`CLAUDECODE`, `CURSOR_AGENT`, `CODEX`, `AIDER`, `CLINE`, `WINDSURF_AGENT`, `GITHUB_COPILOT`, `AMAZON_Q`, `GEMINI_CODE_ASSIST`, `SRC_CODY`) or with `--agent-mode` (`--agent-mode=false` disables detection).
+{{- else}}
+Agent mode turns on only when explicitly requested with `--agent-mode`; environment variables do not identify the caller.
+{{- end}}
+In agent mode interactive prompts never launch, output defaults to TOON, and every failure — API errors and CLI usage errors alike — is one JSON envelope on stderr:
+
+{{- if classifiedErrors}}
+`--output-format json` and `--jq` use the same error envelope without requiring agent mode.
+{{- else}}
+Outside agent mode, explicit JSON and `--jq` preserve the compatibility envelope without classification; enable agent mode to request the classified contract.
+{{- end}}
+
+```json
+{
+  "error": "...",
+  "error_type": "validation_error",
+  "error_reason": "CLI_VALIDATION",
+  "exit_code": 2,
+  "message": "human-readable message",
+  "hints": ["what to try next"]
+}
+```
+
+{{- $carriers := cliErrorCarrierDisplayList}}
+
+`error_type` is one of `authentication_error`, `authorization_error`, `not_found`, `validation_error`, `rate_limit_error`, `server_error`, `api_error`, `connection_error`, `protocol_error`, {{if cliEmitsServiceDisabledErrorType}}`service_disabled`, {{end}}{{if cliEmitsBillingDisabledErrorType}}`billing_disabled`, {{end}}`runtime_error`, `unsupported_error`, `async_failed`, `async_timeout`, `async_unknown_state`. {{if $carriers}}Classification reads the structured reason code at {{$carriers}} in the error body (resolved against the nested `error` object when the body has one) before HTTP status, so a declared credential reason sent with HTTP 400 is not mistaken for request validation. {{if cliErrorAnyCarrierDeclared}}`error_reason` carries the reason code found there, verbatim from a declared carrier when no declared rule matches it{{else}}`error_reason` carries the reason code found there when a declared rule matches it (an undeclared body reason is never promoted){{end}}; it is absent for status-only API errors.{{else}}Classification derives from the HTTP status and transport evidence; `error_reason` is absent for API errors.{{end}} Status-less local failures may use `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, or the async polling reasons `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, and `CLI_ASYNC_UNKNOWN_STATE`. `hints` preserves server guidance first, adds the most specific local taxonomy guidance, then typed CLI and command-specific guidance, removing exact duplicates. `exit_code` is always the code for the final `error_type` shown in the envelope: 1 runtime, 2 usage, or 3 authentication/authorization.
+{{- if $c.Hints}}
+
+```bash
+# "{{$c.HintsIntentName}}" declares hints for {{$c.HintsReasons}}; a failing request returns them in the envelope
+{{$c.Hints}}
+```
+{{- end}}
+{{- if or $c.Paginated $c.Streaming $c.Artifact $c.Async}}
+
+### Lists, streams, and files
+{{- if $c.Paginated}}
+
+List commands accept `--all` to fetch every page and stream results as they arrive (one JSON value per line with `--output-format json`; `--max-pages N` bounds the walk).
+
+Structured output and agent mode never write pagination hints to stderr; if a later page fails or the server repeats a cursor, the command exits non-zero after the pages already written.
+
+```bash
+{{$c.Paginated}} --all --output-format json
+```
+{{- end}}
+{{- if $c.Streaming}}
+
+Streaming commands write each event as it arrives (one JSON object per line with `--output-format json`; a declared streamed projection prints just the selected text{{if $c.StreamSelectPointer}}, e.g. `{{$c.StreamSelectPointer}}`{{end}}):
+
+```bash
+{{$c.Streaming}} --output-format json
+```
+{{- end}}
+{{- if $c.Artifact}}
+
+Commands that produce media write the file and print only its path on stdout (`--out <path-or-dir>` chooses the location{{if $c.ArtifactDefaultPath}}, default `./{{$c.ArtifactDefaultPath}}`{{end}}; `--raw-response` prints the API response instead):
+
+```bash
+{{$c.Artifact}} --out ./output/
+```
+{{- end}}
+{{- if $c.Async}}
+
+Long-running commands poll to a terminal response; human progress goes to stderr and machine-mode success keeps stderr silent. Add `--async` to `{{$c.Async}}` to return its handle immediately, or tune foreground polling with `--poll-interval <duration>` and `--poll-timeout <duration>`. Resume an escaped or timed-out operation with `{{$c.AsyncResume}} <id>`.
+{{- end}}
+{{- end}}

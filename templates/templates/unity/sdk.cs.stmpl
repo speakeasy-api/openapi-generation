@@ -1,0 +1,265 @@
+{{- $sdkName := (sanitizeSDKName .Local.Type.Name) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $sdkSecurity := .Local.Security -}}
+#nullable enable
+namespace {{ getSDKNamespace }}
+{
+{{ templateSDKImports .Local true }}{{"\n"}}
+
+{{- if $serverVariables}}
+{{ range .Local.Servers.GetVariables}}{{if eq .Type.Type "enum"}}{{templateString "enum.cs.stmpl" .Type}}{{end}}{{end -}}
+{{- end}}
+
+{{- templateComments .Local.Comments 1 "class" false}}
+    public interface I{{ $sdkName }}
+    {
+        {{- ""}}{{range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+{{- templateComments .Comments 2 "field"}}
+        public I{{sanitizeSDKName .Type.Name}} {{sanitizeFieldName .FieldName}} { get; }{{end}}{{end}}
+        {{- range .Local.Operations}}
+{{- templateComments .Comments 2 "method"}}
+        Task<{{ sanitizeType .Response.Type false "" }}> {{ sanitizeMethodName . true }}({{ templateMethodArguments . "" }});
+        {{- end }}
+    }
+    {{ $globals := (ne .Global.AST.MainSDK.Globals nil) }}
+
+    public class SDKConfig
+    {
+
+    {{- if $serverMap }}
+        /// <summary>
+        /// Identifiers for the servers available to the SDK.
+        /// </summary>
+        public enum Server {
+          {{- range .Local.Servers.Servers}}
+            {{ sanitizeClassName .ID  false}},
+          {{- end}}
+        }
+
+        /// <summary>
+        /// Server URLs available to the SDK.
+        /// </summary>
+        public static readonly Dictionary<Server, string> ServerMap = new Dictionary<Server, string>()
+        {
+          {{- range .Local.Servers.Servers}}
+            { Server.{{ sanitizeClassName .ID false }}, "{{ .URL }}" },
+          {{- end}}
+        };
+    {{- else if .Local.Servers}}
+        /// <summary>
+        /// List of server URLs available to the SDK.
+        /// </summary>
+        public static readonly string[] ServerList = {
+          {{- range .Local.Servers.Servers}}
+            "{{ .URL }}",
+          {{- end}}
+        };
+    {{- end}}
+
+        public string serverUrl = "";
+        {{- if $serverMap}}
+        public Server? server = null;
+        {{- else if .Local.Servers}}
+        public int serverIndex = 0;
+        {{- end}}
+        {{- if $serverVariables}}
+        {{- if $serverMap}}
+        public Dictionary<Server, Dictionary<string, string>> ServerDefaults = new Dictionary<Server, Dictionary<string, string>>();
+        {{- else}}
+        public List<Dictionary<string, string>> ServerDefaults = new List<Dictionary<string, string>>();
+        {{- end}}{{end}}
+
+        {{- if .Local.Globals }}
+        {{- range .Local.Globals.Fields }}
+        public {{ sanitizeType .Type .Optional "" }}? {{ sanitizeFieldName .Name }};
+        {{- end }}
+        {{- end }}
+
+        public string GetTemplatedServerDetails()
+        {
+        {{- if .Local.Servers}}
+            if (!String.IsNullOrEmpty(this.serverUrl))
+            {
+                return Utilities.TemplateUrl(Utilities.RemoveSuffix(this.serverUrl, "/"), new Dictionary<string, string>());
+            }
+
+          {{- if $serverMap}}
+            if (this.server is null)
+            {
+                this.server = SDKConfig.Server.{{sanitizeClassName .Local.Servers.Default false}};
+            }
+            else if (!SDKConfig.ServerMap.ContainsKey(this.server.Value))
+            {
+                throw new Exception($"Invalid server \"{this.server.Value}\"");
+            }
+            Dictionary<string, string> serverDefault = new Dictionary<string, string>();
+            {{- if $serverVariables}}
+
+            if (this.ServerDefaults.ContainsKey(this.server.Value))
+            {
+                serverDefault = this.ServerDefaults[this.server.Value];
+            }
+            {{- end}}
+
+            return Utilities.TemplateUrl(SDKConfig.ServerMap[this.server.Value], serverDefault);
+          {{- else if .Local.Servers}}
+            return Utilities.TemplateUrl(SDKConfig.ServerList[this.serverIndex], {{if $serverVariables}}this.ServerDefaults[this.serverIndex]{{else}}new Dictionary<string, string>(){{end}});
+          {{- end}}
+        {{- else}}
+            return Utilities.TemplateUrl(Utilities.RemoveSuffix(this.serverUrl, "/"), new Dictionary<string, string>());
+        {{- end}}
+        }
+    }
+{{templateComments .Local.Comments 1 "class" false}}
+    public class {{ $sdkName }}: I{{ $sdkName }}
+    {
+        {{- range .Local.Operations }}
+        {{- if .Servers}}
+{{- templateString "servers.cs.stmpl" . }}
+        {{- end }}
+        {{- end }}
+        public SDKConfig SDKConfiguration { get; private set; }
+
+        private const string _target = "unity";
+        private const string _sdkVersion = "{{.Global.Config.SDKVersion}}";
+        private const string _sdkGenVersion = "{{.Global.Config.GenVersion}}";
+        {{- if ne .Global.Config.DocVersion ""}}
+        private const string _openapiDocVersion = "{{.Global.Config.DocVersion}}";
+        {{- end}}
+        private const string _userAgent = "speakeasy-sdk/unity {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{getPackageId}}";
+        private string _serverUrl = "";
+        {{- if  $serverMap }}
+        private SDKConfig.Server? _server = null;
+        {{- else if .Local.Servers}}
+        private int _serverIndex = 0;
+        {{- end }}
+        private ISpeakeasyHttpClient _defaultClient;
+        {{- if $sdkSecurity }}
+        private Func<Security>? _securitySource;
+        {{- end }}
+
+        {{- range .Local.SubSDKs -}}
+        {{- if ne .Type.Name ""}}
+        public I{{sanitizeSDKName .Type.Name}} {{ sanitizeFieldName .FieldName }} { get; private set; }
+        {{- end }}
+        {{- end }}
+
+        public {{ $sdkName }}({{templateSDKConstructor .Local}})
+        {
+          {{- if $serverMap }}
+            if (server != null)
+            {
+                _server = server;
+            }
+          {{- else if .Local.Servers }}
+            if (serverIndex != null)
+            {
+                if (serverIndex.Value < 0 || serverIndex.Value >= SDKConfig.ServerList.Length)
+                {
+                    throw new Exception($"Invalid server index {serverIndex.Value}");
+                }
+                _serverIndex = serverIndex.Value;
+            }
+          {{- end}}
+
+            if (serverUrl != null)
+            {
+                if (urlParams != null)
+                {
+                    serverUrl = Utilities.TemplateUrl(serverUrl, urlParams);
+                }
+                _serverUrl = serverUrl;
+            }
+          {{- if $serverVariables}}
+            {{- if $serverMap}}
+            Dictionary<SDKConfig.Server, Dictionary<string, string>> serverDefaults = new Dictionary<SDKConfig.Server, Dictionary<string, string>>()
+            {
+              {{- range .Local.Servers.Servers}}
+                {SDKConfig.Server.{{sanitizeClassName .ID false}}, new Dictionary<string, string>()
+                {
+                {{- range $variable := .Variables}}
+                  {{- if eq $variable.Type.Type "enum"}}
+                    {"{{$variable.Name}}", {{sanitizePrivateFieldName $variable.Name}} == null ? "{{$variable.Default}}" : {{sanitizeType $variable.Type}}Extension.Value({{sanitizePrivateFieldName $variable.Name}}.Value)},
+                  {{- else}}
+                    {"{{$variable.Name}}", {{sanitizePrivateFieldName $variable.Name}} == null ? "{{$variable.Default}}" : {{sanitizePrivateFieldName $variable.Name}}},
+                  {{- end}}
+                {{- end}}
+                }},
+              {{- end}}
+            };
+            {{- else}}
+            List<Dictionary<string, string>> serverDefaults = new List<Dictionary<string, string>>()
+            {
+              {{- range .Local.Servers.Servers}}
+                new Dictionary<string, string>()
+                {
+                {{- range $variable := .Variables}}
+                  {{- if eq $variable.Type.Type "enum"}}
+                    {"{{$variable.Name}}", {{sanitizePrivateFieldName $variable.Name}} == null ? "{{$variable.Default}}" : {{sanitizeType $variable.Type}}Extension.Value({{sanitizePrivateFieldName $variable.Name}}.Value)},
+                  {{- else}}
+                    {"{{$variable.Name}}", {{sanitizePrivateFieldName $variable.Name}} == null ? "{{$variable.Default}}" : {{sanitizePrivateFieldName $variable.Name}}},
+                  {{- end}}
+                {{- end}}
+                },
+              {{- end}}
+            };
+            {{- end}}
+          {{- end}}
+
+            _defaultClient = new SpeakeasyHttpClient(client);
+          {{- if $sdkSecurity }}
+            {{- $secParam := getSecurityParam .Local}}
+
+            if({{$secParam.Source}} != null)
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _securitySource = () => new Security() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Source}}() };
+                {{- else }}
+                _securitySource = {{$secParam.Source}};
+                {{- end }}
+            }
+            else if({{$secParam.Name}} != null)
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _securitySource = () => new Security() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Name}} };
+                {{- else }}
+                _securitySource = () => {{$secParam.Name}};
+                {{- end }}
+            }
+            {{- if not $secParam.Optional }}
+            else
+            {
+                throw new Exception("{{$secParam.Name}} and {{$secParam.Source}} cannot both be null");
+            }
+            {{- end}}
+          {{- end}}
+
+            SDKConfiguration = new SDKConfig()
+            {
+                {{- if .Local.Globals }}
+                {{- range .Local.Globals.Fields }}
+                {{ sanitizeFieldName .Name }} = {{ sanitizePrivateFieldName .Name }},
+                {{- end }}
+                {{- end }}
+                {{- if $serverVariables}}
+                ServerDefaults = serverDefaults,
+                {{- end}}
+                {{- if  $serverMap }}
+                server = _server,
+                {{- else if .Local.Servers}}
+                serverIndex = _serverIndex,
+                {{- end}}
+                serverUrl = _serverUrl
+            };{{"\n"}}
+            {{- range .Local.SubSDKs }}
+            {{- if ne .Type.Name "" }}
+            {{ sanitizeFieldName .FieldName }} = new {{ sanitizeSDKName .Type.Name }}(_defaultClient{{if $sdkSecurity}}, _securitySource{{end}}, _serverUrl, SDKConfiguration);
+            {{- end }}{{- end }}
+        }
+        {{- range .Local.Operations}}
+{{ templateString "method.cs.stmpl" .}}
+        {{- end}}
+    }
+}

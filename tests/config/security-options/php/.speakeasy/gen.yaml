@@ -1,0 +1,30 @@
+configVersion: 2.0.0
+generation:
+  maintainOpenAPIOrder: true
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: true
+    nameOverrideFeb2026: true
+php:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  responseFormat: envelope-http
+  namespace: Speakeasy\SecurityOptions
+  packageName: speakeasy/security-options
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks

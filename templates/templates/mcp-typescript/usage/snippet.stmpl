@@ -1,0 +1,47 @@
+{{- recurse 1 -}}
+{{- $op := .Local.Operation -}}
+{{- $hasArgs := gt (len $op.Arguments.Sorted) 0 -}}
+{{- if $hasArgs }}
+{
+  "type": "object",
+  "properties": {
+    {{- range $i, $field := $op.Arguments.Sorted }}
+    {{-   $fieldType := resolveInbound (
+            dict
+              "constValue" $field.Const
+              "defaultValue" $field.Default
+              "nullable" $field.Nullable
+              "optional" $field.Optional
+              "rootTypeDef" $op.OwningSDK.Type
+              "streamable" (isMultipartFileField $field)
+              "typeDef" $field.Type
+              "usageLocation" "mcp-server/tools"
+            ) }}
+    {{-   if gt $i 0 }},{{ end }}
+    "{{ sanitizeFieldName $field.Name }}": {{ if eq $field.Type.Type "class" }}{
+      "type": "object",
+      "properties": {
+        {{- range $i, $f := $field.Type.Fields }}
+        {{-   if gt $i 0 }},{{ end }}
+        "{{ sanitizeFieldName $f.Name }}": {
+          "type": "{{ $f.Type.Type }}"
+        }
+        {{- end }}
+      }
+    }{{ else }}{
+      "type": "{{ $field.Type.Type }}"
+    }{{ end }}
+    {{- end }}
+  },
+  "required": [
+    {{- range $i, $field := $op.Arguments.Sorted }}
+    {{-   if not $field.Optional }}
+    {{-     if gt $i 0 }},{{ end }}
+    "{{ sanitizeFieldName $field.Name }}"
+    {{-   end }}
+    {{- end }}
+  ]
+}
+{{- else }}
+{}
+{{- end }}

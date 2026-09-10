@@ -1,0 +1,328 @@
+from openapi import SDK, SERVERS, ServerSomething
+from openapi.models.operations import *
+from openapi.utils import template_url
+
+from .common_helpers import record_test, HTTPBIN_URL, API_TEST_SERVICE_URL, HTTPBIN_PORT
+
+
+def test_select_global_server_valid():
+    record_test("servers-select-global-server-valid")
+
+    s = SDK(server_url=SERVERS[0])
+    assert s is not None
+
+    res = s.servers.select_global_server()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_select_global_server_broken():
+    record_test("servers-select-global-server-broken")
+
+    s = SDK(server_idx=1)
+    assert s is not None
+
+    error = None
+
+    try:
+        s.servers.select_global_server()
+    except Exception as err:
+        error = err
+
+    assert error is not None
+
+
+def test_select_server_with_id_default():
+    record_test("servers-select-server-with-id-default")
+
+    s = SDK()
+    assert s is not None
+
+    res = s.servers.select_server_with_id()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_select_server_with_id_valid():
+    record_test("servers-select-server-with-id-valid")
+
+    s = SDK(server_url="http://broken")  # overridden by operation
+    assert s is not None
+
+    res = s.servers.select_server_with_id(
+        server_url=SELECT_SERVER_WITH_ID_SERVERS[SELECT_SERVER_WITH_ID_SERVER_VALID]
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_select_server_with_id_broken():
+    record_test("servers-select-server-with-id-broken")
+
+    s = SDK()
+    assert s is not None
+
+    error = None
+
+    try:
+        s.servers.select_server_with_id(
+            server_url=SELECT_SERVER_WITH_ID_SERVERS[
+                SELECT_SERVER_WITH_ID_SERVER_BROKEN
+            ]
+        )
+    except Exception as e:
+        error = e
+
+    assert error is not None
+
+
+def test_server_with_templates_global():
+    record_test("servers-server-with-templates-global")
+
+    s = SDK(server_idx=2, hostname="localhost", port=HTTPBIN_PORT)
+    assert s is not None
+
+    res = s.servers.server_with_templates_global()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_server_with_templates_global_defaults():
+    record_test("servers-server-with-templates-global-defaults")
+
+    s = SDK(server_idx=2)
+    assert s is not None
+
+    res = s.servers.server_with_templates_global()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_server_with_templates_global_enum():
+    record_test("servers-server-with-templates-global-enum")
+
+    s = SDK(server_idx=3, something=ServerSomething.SOMETHING_ELSE_AGAIN)
+    assert s is not None
+
+    res = s.servers.server_with_templates_global()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_server_with_templates():
+    record_test("servers-server-with-templates")
+
+    s = SDK()
+    assert s is not None
+
+    res = s.servers.server_with_templates(
+        server_url=template_url(
+            SERVER_WITH_TEMPLATES_SERVERS[0], {"hostname": "localhost", "port": HTTPBIN_PORT}
+        )
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_server_with_templates_defaults():
+    record_test("servers-server-with-templates-defaults")
+
+    s = SDK()
+    assert s is not None
+
+    res = s.servers.server_with_templates()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_servers_by_id_with_templates():
+    record_test("servers-server-by-id-with-templates")
+
+    s = SDK()
+    assert s is not None
+
+    res = s.servers.servers_by_id_with_templates()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_global_server_with_invalid_templated_protocol():
+    record_test("servers-global-server-with-invalid-templated-protocol")
+
+    s = SDK(
+        server_idx=4,
+        protocol="invalid",
+        hostname="localhost",
+        port=HTTPBIN_PORT,
+    )
+    assert s is not None
+
+    error = None
+
+    try:
+        s.servers.select_global_server()
+    except Exception as e:
+        error = e
+
+    assert error is not None
+
+
+def test_global_server_with_templated_protocol():
+    record_test("servers-global-server-with-templated-protocol")
+
+    s = SDK(
+        server_idx=4,
+        protocol="http",
+        hostname="localhost",
+        port=HTTPBIN_PORT,
+    )
+    assert s is not None
+
+    res = s.servers.select_global_server()
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_server_with_invalid_protocol_template():
+    record_test("servers-server-with-invalid-protocol-template")
+
+    s = SDK()
+    assert s is not None
+
+    error = None
+
+    try:
+        s.servers.server_with_templates(
+            server_url=template_url(
+                SERVER_WITH_PROTOCOL_TEMPLATE_SERVERS[
+                    SERVER_WITH_PROTOCOL_TEMPLATE_SERVER_MAIN
+                ],
+                {"protocol": "invalid", "hostname": "localhost", "port": HTTPBIN_PORT},
+            )
+        )
+    except Exception as e:
+        error = e
+
+    assert error is not None
+
+
+def test_server_with_protocol_template():
+    record_test("servers-server-with-protocol-template")
+
+    s = SDK()
+    assert s is not None
+
+    res = s.servers.server_with_protocol_template(
+        server_url=template_url(
+            SERVER_WITH_PROTOCOL_TEMPLATE_SERVERS[
+                SERVER_WITH_PROTOCOL_TEMPLATE_SERVER_MAIN
+            ],
+            {
+                "protocol": "http",
+                "hostname": "localhost",
+                "port": HTTPBIN_PORT,
+            },
+        )
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_servers_override_global_server_url():
+    record_test("servers-override-global-server-url")
+
+    s = SDK()
+
+    res = s.servers.servers_override_global_server_url(
+        server_url=f"{HTTPBIN_URL}/anything"
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.request is not None
+    assert (
+        res.http_meta.request.url
+        == f"{HTTPBIN_URL}/anything/ping#serversOverrideGlobalServerURL"
+    )
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    res = s.servers.servers_override_global_server_url(
+        server_url=API_TEST_SERVICE_URL
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.request is not None
+    assert (
+        res.http_meta.request.url
+        == f"{API_TEST_SERVICE_URL}/ping#serversOverrideGlobalServerURL"
+    )
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+
+def test_servers_override_operation_server_url():
+    record_test("servers-override-operation-server-url")
+
+    s = SDK()
+
+    res = s.servers.servers_override_operation_server_url(
+        server_url=f"{HTTPBIN_URL}/anything"
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.request is not None
+    assert (
+        res.http_meta.request.url
+        == f"{HTTPBIN_URL}/anything/ping#serversOverrideOperationServerURL"
+    )
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    res = s.servers.servers_override_operation_server_url(
+        server_url=API_TEST_SERVICE_URL
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.request is not None
+    assert (
+        res.http_meta.request.url
+        == f"{API_TEST_SERVICE_URL}/ping#serversOverrideOperationServerURL"
+    )
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200

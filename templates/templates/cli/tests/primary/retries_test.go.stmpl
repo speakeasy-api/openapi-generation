@@ -1,0 +1,311 @@
+package tests
+
+import (
+	"encoding/json"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newRetryServer creates a test server that simulates retry behavior.
+// It returns 503 for the first numRetries requests per request-id, then 200 with {"retries": N}.
+func newRetryServer() *httptest.Server {
+	requestCounts := make(map[string]int)
+	var mu sync.Mutex
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := r.URL.Query().Get("request-id")
+		numRetries := 2
+		if n := r.URL.Query().Get("num-retries"); n != "" {
+			parsed, err := strconv.Atoi(n)
+			if err == nil {
+				numRetries = parsed
+			}
+		}
+
+		mu.Lock()
+		requestCounts[requestID]++
+		count := requestCounts[requestID]
+		mu.Unlock()
+
+		if r.URL.Path == "/retries/after" {
+			retryAfterVal := "0"
+			if v := r.URL.Query().Get("retry-after-val"); v != "" {
+				retryAfterVal = v
+			}
+			if count <= numRetries {
+				w.Header().Set("Retry-After", retryAfterVal)
+				w.WriteHeader(503)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]int{"retries": count - 1})
+			return
+		}
+
+		if r.URL.Path == "/retries/attempt-count" {
+			if count <= numRetries {
+				if v := r.URL.Query().Get("retry-after-ms-val"); v != "" {
+					w.Header().Set("retry-after-ms", v)
+				}
+				w.WriteHeader(503)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]int{"retries": count - 1})
+			return
+		}
+
+		// /retries path
+		if count <= numRetries {
+			w.WriteHeader(503)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{"retries": count - 1})
+	}))
+}
+
+// newDelayServer creates a test server that delays before responding.
+// Used to test --timeout flag behavior.
+func newDelayServer(delay time.Duration) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(delay)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{"retries": 0})
+	}))
+}
+
+// newFaultServer creates a test server that simulates connection-level faults.
+// The first faultCount requests are terminated at the TCP level (connection close or reset),
+// then subsequent requests succeed normally with 200 and {"retries": N}.
+func newFaultServer(faultCount int, faultType string) *httptest.Server {
+	var count int32
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		current := atomic.AddInt32(&count, 1)
+		if int(current) <= faultCount {
+			hj, ok := w.(http.Hijacker)
+			if !ok {
+				w.WriteHeader(500)
+				return
+			}
+			conn, _, _ := hj.Hijack()
+			if faultType == "reset" {
+				// Set SO_LINGER to 0 to force a RST on close
+				if tc, ok := conn.(*net.TCPConn); ok {
+					tc.SetLinger(0)
+				}
+			}
+			conn.Close()
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]int{"retries": int(current) - 1})
+	}))
+}
+
+func TestRetriesSucceeds(t *testing.T) {
+	recordTest("retries-succeeds")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-succeeds",
+		"--num-retries", "2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRetriesWithBodySucceeds(t *testing.T) {
+	recordTest("retries-succeeds-with-body")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-post",
+		"--request-id", "test-with-body",
+		"--num-retries", "2",
+		"--field-one", "one",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRespectRetryAfter(t *testing.T) {
+	recordTest("retries-header")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Use retry-after-val=0 to avoid delays — operation-level maxElapsedTime is only 1s
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-after",
+		"--request-id", "test-retry-after",
+		"--num-retries", "2",
+		"--retry-after-val", "0",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRetriesAttemptCountBackoff(t *testing.T) {
+	recordTest("retries-attempt-count-backoff")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-attempt-count",
+		"--request-id", "test-attempt-count",
+		"--num-retries", "2",
+		"--retry-after-ms-val", "1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRetriesAttemptCountBackoffZero(t *testing.T) {
+	recordTest("retries-attempt-count-zero")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-attempt-count-zero",
+		"--request-id", "test-attempt-count-zero",
+		"--num-retries", "2",
+		"--retry-after-ms-val", "1",
+	})
+	assert.Error(t, err)
+}
+
+func TestRetriesConnectError(t *testing.T) {
+	recordTest("retries-connect-error")
+	// Create and immediately close a server to get a guaranteed non-listening port
+	closedServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	closedServer.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"retries", "retries-connect-error-get", "--server-url", closedServer.URL})
+	assert.Error(t, err)
+}
+
+func TestRetriesGlobalConfigDisable(t *testing.T) {
+	recordTest("retries-global-config-disable")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// --no-retries disables all retries, so the first 503 should be returned as an error
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-global-disable",
+		"--num-retries", "2",
+		"--no-retries",
+	})
+	assert.Error(t, err)
+}
+
+func TestRetriesGlobalConfigSuccess(t *testing.T) {
+	recordTest("retries-global-config-success")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Override retry config via --retry-config JSON with generous maxElapsedTime
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-global-success",
+		"--num-retries", "20",
+		"--retry-config", `{"strategy":"backoff","backoff":{"initialInterval":1,"maxInterval":50,"exponent":1.1,"maxElapsedTime":1000}}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRetriesGlobalConfigTimeout(t *testing.T) {
+	recordTest("retries-global-config-timeout")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Override retry config with a very short maxElapsedTime — retries should time out
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-global-timeout",
+		"--num-retries", "30",
+		"--retry-config", `{"strategy":"backoff","backoff":{"initialInterval":1,"maxInterval":50,"exponent":1.1,"maxElapsedTime":100}}`,
+	})
+	assert.Error(t, err)
+}
+
+func TestRetriesTimeout(t *testing.T) {
+	recordTest("retries-timeout")
+	s := newRetryServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Very short maxElapsedTime with huge num-retries — retries should time out
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-timeout",
+		"--num-retries", "1000000000",
+		"--retry-config", `{"strategy":"backoff","backoff":{"initialInterval":1,"maxInterval":50,"exponent":1.1,"maxElapsedTime":100}}`,
+	})
+	assert.Error(t, err)
+}
+
+func TestRetriesRequestTimeout(t *testing.T) {
+	recordTest("retries-request-timeout")
+	// Server delays 2s before responding — the 1ms timeout should fire first
+	s := newDelayServer(2 * time.Second)
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get",
+		"--request-id", "test-request-timeout",
+		"--timeout", "1ms",
+	})
+	assert.Error(t, err)
+}
+
+func TestRetriesRetryConnectionErrorsReject(t *testing.T) {
+	recordTest("retries-retry-connection-errors-reject")
+	// Fault server rejects 1 connection then succeeds.
+	// The retriesGetRetryConnectionErrors operation has retryConnectionErrors: true in the spec,
+	// so the SDK will automatically retry on connection errors.
+	s := newFaultServer(1, "reject")
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get-retry-connection-errors",
+		"--num-retries", "2",
+		"--request-id", "test-reject",
+		"--request-id-query-parameter", "test-reject",
+		"--fault-settings", `{"reject_count": 1}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}
+
+func TestRetriesRetryConnectionErrorsReset(t *testing.T) {
+	recordTest("retries-retry-connection-errors-reset")
+	// Fault server resets 1 connection then succeeds.
+	s := newFaultServer(1, "reset")
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"retries", "retries-get-retry-connection-errors",
+		"--num-retries", "2",
+		"--request-id", "test-reset",
+		"--request-id-query-parameter", "test-reset",
+		"--fault-settings", `{"reset_count": 1}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"retries"`)
+}

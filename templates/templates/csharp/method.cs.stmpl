@@ -1,0 +1,566 @@
+{{- if hasAttemptCountRetries -}}
+{{- $op := .Local}}
+{{- $paramFlattening := operationParametersFlattened .Local}}
+{{- $responses := $op.Response.Responses}}
+{{- $pagination := .Local.Extensions.Pagination}}
+{{- $retries := .Local.Extensions.Retries}}
+{{- $utils := getScopeNamespace "utils"}}
+{{- $owningClassName := sanitizeClassName $.Local.OwningSDK.Type.Name}}
+
+        {{- templateComments (getMethodComments .Local) 2 "method"}}
+        {{- templateMethodDefinition .Local $owningClassName 2}}
+        {
+            {{- $firstLine := true}}
+            {{- $nullChecks := templateMethodArgumentsNullCheck $op 3}}
+            {{- if $nullChecks }}
+              {{- $nullChecks}}
+              {{- $firstLine = false}}
+            {{- end}}
+
+            {{- $request := .Local.Request }}
+            {{- $optional := isRequestOptional $request }}
+            {{- if $paramFlattening }}
+              {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine = false}}
+            var request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}()
+            {
+              {{- range (sortMethodParams $request.Field.Type.Fields) }}
+                {{ sanitizeFieldName .Name (sanitizeClassName $request.Field.Type.Name false) }} = {{ sanitizeMethodParamName .Name }},
+              {{- end }}
+            };
+            {{- end }}
+
+            {{- $globalParamsToSet := getGlobalParametersToSet $request -}}
+            {{- if gt (len $globalParamsToSet) 0 }}
+              {{- if and (not $paramFlattening) $optional}}
+            {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine = false}}
+            if (request == null)
+            {
+                request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}();
+            }
+              {{- end}}
+              {{- range $globalParamsToSet }}
+            request.{{ . }} ??= SDKConfiguration.{{ . }};
+              {{- end}}
+            {{- end}}
+
+            {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine := false}}
+            {{- if .Local.Servers }}
+              {{- if .Local.Servers.ServerMap}}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerMap" .Local.ID}}[{{print (sanitizeFieldName .Local.ID) "Servers"}}.{{getEnumName .Local.Servers.Default}}], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+                {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (serverUrl != null)
+            {
+                baseUrl = serverUrl;
+            }
+              {{- else}}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerList" .Local.ID}}[0], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+            {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (serverUrl != null)
+            {
+                baseUrl = serverUrl;
+            }
+              {{- end}}
+            {{- else}}
+            string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
+            {{- end}}
+
+            {{- if and .Local.Request .Local.Request.Params (or .Local.Request.Params.HasPathParams .Local.Request.Params.HasQueryParams)}}
+            var urlString = URLBuilder.Build(baseUrl, "{{ .Local.Path }}", request, {{templateAllowEmptyValue .Local}});
+            {{- else}}
+            var urlString = baseUrl + "{{ .Local.Path }}";
+            {{- end}}
+
+            {{- if and $pagination (hasPaginationURL .Local) }}
+            if (urlOverride != null)
+            {
+                urlString = urlOverride;
+            }
+            {{- end }}
+
+            var httpRequest = {{templateHttpRequest $op}};
+            httpRequest.Headers.Add({{ if .Local.UsesUserAgentHeader }}"x-speakeasy-user-agent"{{ else }}"user-agent"{{ end }}, SDKConfiguration.UserAgent);
+
+            {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams }}
+            HeaderSerializer.PopulateHeaders(ref httpRequest, request);
+            {{- end}}
+
+            if (!httpRequest.Headers.Contains("Accept"))
+            {
+                httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
+            }
+            {{- if and $request .Local.SerializationMethod }}
+            {{- $format := getDataTypeFormat $request }}
+
+            var serializedBody = RequestBodySerializer.Serialize(request, "{{ sanitizeFieldName $request.RequestBody.Name (sanitizeClassName $request.Field.Type.Name false) }}", "{{.Local.SerializationMethod}}", {{$request.RequestBody.Nullable}}, {{$request.RequestBody.Optional}}{{if $format}}, "{{$format}}"{{end}});
+            if (serializedBody != null)
+            {
+                httpRequest.Content = serializedBody;
+            }
+            {{- end}}
+            {{- if .Local.Security }}
+              {{- if .Local.Security.Optional}}
+
+            Func<{{sanitizeType .Local.Security.Type false ""}}>? securitySource = null;
+            if (security != null)
+            {
+                httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+                securitySource = () => security;
+            }
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, securitySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+              {{- else}}
+
+            if (security == null)
+            {
+                throw new ArgumentNullException(nameof(security), "security cannot be null.");
+            }
+
+            httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, () => security{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+              {{- end}}
+
+            {{- else if .Local.GlobalSecurity }}
+
+            if (SDKConfiguration.SecuritySource != null)
+            {
+                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource{{if and .Local.HoistedSecurityConfig (not .Local.HoistedSecurityConfig.Equivalent)}}, new string[] { {{range $i, $f := .Local.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}} }{{end}}).Apply(httpRequest);
+            }
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, SDKConfiguration.SecuritySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+            {{- else }}
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, null{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+            {{- end }}
+
+            httpRequest = await this.SDKConfiguration.Hooks.BeforeRequestAsync(new BeforeRequestContext(hookCtx), httpRequest);
+
+            {{- if $retries }}
+            if (retryConfig == null)
+            {
+                if (this.SDKConfiguration.RetryConfig != null)
+                {
+                    retryConfig = this.SDKConfiguration.RetryConfig;
+                }
+                else
+                {
+                    {{- if or (eq $retries.Strategy "backoff") (eq $retries.Strategy "attempt-count-backoff")}}
+                    var backoff = new BackoffStrategy(
+                        initialIntervalMs: {{ $retries.Backoff.InitialInterval }}L,
+                        maxIntervalMs: {{ $retries.Backoff.MaxInterval }}L,
+                        maxElapsedTimeMs: {{ $retries.Backoff.MaxElapsedTime }}L,
+                        exponent: {{ $retries.Backoff.Exponent }}
+                    );
+                    retryConfig = new RetryConfig(
+                        strategy: RetryConfig.RetryStrategy.{{if eq $retries.Strategy "attempt-count-backoff"}}ATTEMPT_COUNT_BACKOFF{{else}}BACKOFF{{end}},
+                        backoff: backoff,
+                        retryConnectionErrors: {{ $retries.RetryConnectionErrors }}{{if eq $retries.Strategy "attempt-count-backoff"}},
+                        maxRetries: {{ $retries.MaxRetries }}{{end}}
+                    );
+                    {{- else }}
+                    retryConfig = new RetryConfig(RetryConfig.RetryStrategy.NONE, null, false);
+                    {{- end}}
+                }
+            }
+
+            List<string> statusCodes = new List<string>
+            {
+            {{- range $retries.StatusCodes }}
+                "{{.}}",
+            {{- end}}
+            };
+
+            Func<int, Task<HttpResponseMessage>> retrySend = async (attempt) =>
+            {
+                var _httpRequest = await SDKConfiguration.Client.CloneAsync(httpRequest);
+            {{- if .Global.Config.EnableCancellationToken}}
+                return await SDKConfiguration.Client.SendAsync(_httpRequest, cancellationToken);
+            {{- else}}
+                return await SDKConfiguration.Client.SendAsync(_httpRequest);
+            {{- end}}
+            };
+            var retries = new {{$utils}}.Retries.Retries(retrySend, retryConfig, statusCodes);
+            {{- end}}
+
+            HttpResponseMessage httpResponse;
+            try
+            {
+                {{- if $retries }}
+                httpResponse = await retries.Run();
+                {{- else }}
+                    {{- if .Global.Config.EnableCancellationToken}}
+                httpResponse = await SDKConfiguration.Client.SendAsync(httpRequest, cancellationToken);
+                    {{- else}}
+                httpResponse = await SDKConfiguration.Client.SendAsync(httpRequest);
+                    {{- end}}
+                {{- end}}
+                int _statusCode = (int)httpResponse.StatusCode;
+
+                if ({{templateErrorStatusCodesCheck "_statusCode" $op.Response}})
+                {
+                    var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), httpResponse, null);
+                    if (_httpResponse != null)
+                    {
+                        httpResponse = _httpResponse;
+                    }
+                }
+            }
+            catch (Exception _hookError)
+            {
+                var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), null, _hookError);
+                if (_httpResponse != null)
+                {
+                    httpResponse = _httpResponse;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            httpResponse = await this.SDKConfiguration.Hooks.AfterSuccessAsync(new AfterSuccessContext(hookCtx), httpResponse);
+            {{- if $pagination }}
+{{ templateIndentedString "pagination.cs.stmpl" .Local 3}}
+            {{- end}}
+
+            {{- $responseFormat := getResponseFormat }}
+            {{- $responseBody := "await httpResponse.Content.ReadAsStringAsync()" }}
+            {{- if isNetstandard2 }}{{ $responseBody = "(httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty)" }}{{ end }}
+            {{- $errorArgs := print "httpResponse, " $responseBody }}
+            {{- $defaultError := templateDefaultError false}}
+            {{- if eq $responseFormat "envelope-http"}}
+                {{- $errorArgs = print "httpRequest, httpResponse, " $responseBody }}
+            {{- end}}
+
+            var contentType = httpResponse.Content{{if isNetstandard2}}?{{end}}.Headers.ContentType?.MediaType;
+            int responseStatusCode = (int)httpResponse.StatusCode;
+            {{- $nullValueHandling := "NullValueHandling.Ignore" }}
+            {{- if isRequestOptional $request }}{{ $nullValueHandling = "NullValueHandling.Include" }}{{end}}
+            {{- $hasDefault := false}}
+      {{- if gt (len $op.Response.Responses) 0 }}{{/* if there are multiple responses to handle */}}
+        {{- range $index, $response := .Local.Response.Responses }}
+          {{- if or (gt (len $responses) 1) (.Headers) (gt (len $response.Content) 0)}}
+            {{- if includes $response.Code "default"}}
+              {{- $hasDefault = true}}
+            {{if gt (len $responses) 1 }}else{{else}}if (true){{end -}}
+            {{- else}}
+            {{if gt $index 0}}else if{{else}}if{{end -}}({{templateStatusCodeCheck "responseStatusCode" $response.Code}})
+            {{- end}}
+            {
+            {{- if ne (len $response.Content) 0}}
+              {{- range $index, $content := $response.Content }}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}else if{{else}}if{{end}}(Utilities.IsContentTypeMatch("{{ .ContentType }}", contentType))
+                {
+{{templateResponseHandler $op $nullValueHandling $response $content  | indentPresent 20}}
+                }
+              {{- end}}{{/* end content range */}}
+
+                throw new {{$defaultError}}("Unknown content type received", {{$errorArgs}});
+            {{- else if $response.Error}}{{/* if empty response content and strongly typed error */}}
+                throw new {{$defaultError}}("API error occurred", {{$errorArgs}});
+            {{- else }}{{/* empty response content, with no error */}}
+              {{- templateResponseHandler $op $nullValueHandling | indentPresent 16}}
+            {{- end }}
+            }
+          {{- else}}{{/* if only one response */}}
+            if (responseStatusCode == 200)
+            {
+            {{- if (or (eq .SerializationMethod "json") (eq .SerializationMethod "event-stream")) }}
+{{templateResponseHandler $op $nullValueHandling $response | indentPresent 16}}
+            {{- else }}
+                throw new {{$defaultError}}("API returned unexpected status code or content type", {{$errorArgs}});
+            {{- end}}
+            {{- if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}return response;{{end}}
+            }
+          {{- end }}
+        {{- end }}{{/* end response range */}}
+        {{- if not $hasDefault}}
+
+            throw new {{$defaultError}}("Unknown status code received", {{$errorArgs}});
+        {{- end}}
+      {{- end}}
+        }
+{{- else -}}
+{{- $op := .Local}}
+{{- $paramFlattening := operationParametersFlattened .Local}}
+{{- $responses := $op.Response.Responses}}
+{{- $pagination := .Local.Extensions.Pagination}}
+{{- $retries := .Local.Extensions.Retries}}
+{{- $utils := getScopeNamespace "utils"}}
+{{- $owningClassName := sanitizeClassName $.Local.OwningSDK.Type.Name}}
+
+        {{- templateComments (getMethodComments .Local) 2 "method"}}
+        {{- templateMethodDefinition .Local $owningClassName 2}}
+        {
+            {{- $firstLine := true}}
+            {{- $nullChecks := templateMethodArgumentsNullCheck $op 3}}
+            {{- if $nullChecks }}
+              {{- $nullChecks}}
+              {{- $firstLine = false}}
+            {{- end}}
+
+            {{- $request := .Local.Request }}
+            {{- $optional := isRequestOptional $request }}
+            {{- if $paramFlattening }}
+              {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine = false}}
+            var request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}()
+            {
+              {{- range (sortMethodParams $request.Field.Type.Fields) }}
+                {{ sanitizeFieldName .Name (sanitizeClassName $request.Field.Type.Name false) }} = {{ sanitizeMethodParamName .Name }},
+              {{- end }}
+            };
+            {{- end }}
+
+            {{- $globalParamsToSet := getGlobalParametersToSet $request -}}
+            {{- if gt (len $globalParamsToSet) 0 }}
+              {{- if and (not $paramFlattening) $optional}}
+            {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine = false}}
+            if (request == null)
+            {
+                request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}();
+            }
+              {{- end}}
+              {{- range $globalParamsToSet }}
+            request.{{ . }} ??= SDKConfiguration.{{ . }};
+              {{- end}}
+            {{- end}}
+
+            {{- if not $firstLine}}{{"\n"}}{{end}}{{$firstLine := false}}
+            {{- if .Local.Servers }}
+              {{- if .Local.Servers.ServerMap}}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerMap" .Local.ID}}[{{print (sanitizeFieldName .Local.ID) "Servers"}}.{{getEnumName .Local.Servers.Default}}], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+                {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (serverUrl != null)
+            {
+                baseUrl = serverUrl;
+            }
+              {{- else}}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerList" .Local.ID}}[0], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+            {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (serverUrl != null)
+            {
+                baseUrl = serverUrl;
+            }
+              {{- end}}
+            {{- else}}
+            string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
+            {{- end}}
+
+            {{- if and .Local.Request .Local.Request.Params (or .Local.Request.Params.HasPathParams .Local.Request.Params.HasQueryParams)}}
+            var urlString = URLBuilder.Build(baseUrl, "{{ .Local.Path }}", request, {{templateAllowEmptyValue .Local}});
+            {{- else}}
+            var urlString = baseUrl + "{{ .Local.Path }}";
+            {{- end}}
+
+            {{- if and $pagination (hasPaginationURL .Local) }}
+            if (urlOverride != null)
+            {
+                urlString = urlOverride;
+            }
+            {{- end }}
+
+            var httpRequest = {{templateHttpRequest $op}};
+            httpRequest.Headers.Add({{ if .Local.UsesUserAgentHeader }}"x-speakeasy-user-agent"{{ else }}"user-agent"{{ end }}, SDKConfiguration.UserAgent);
+
+            {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams }}
+            HeaderSerializer.PopulateHeaders(ref httpRequest, request);
+            {{- end}}
+
+            if (!httpRequest.Headers.Contains("Accept"))
+            {
+                httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
+            }
+            {{- if and $request .Local.SerializationMethod }}
+            {{- $format := getDataTypeFormat $request }}
+
+            var serializedBody = RequestBodySerializer.Serialize(request, "{{ sanitizeFieldName $request.RequestBody.Name (sanitizeClassName $request.Field.Type.Name false) }}", "{{.Local.SerializationMethod}}", {{$request.RequestBody.Nullable}}, {{$request.RequestBody.Optional}}{{if $format}}, "{{$format}}"{{end}});
+            if (serializedBody != null)
+            {
+                httpRequest.Content = serializedBody;
+            }
+            {{- end}}
+            {{- if .Local.Security }}
+              {{- if .Local.Security.Optional}}
+
+            Func<{{sanitizeType .Local.Security.Type false ""}}>? securitySource = null;
+            if (security != null)
+            {
+                httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+                securitySource = () => security;
+            }
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, securitySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+              {{- else}}
+
+            if (security == null)
+            {
+                throw new ArgumentNullException(nameof(security), "security cannot be null.");
+            }
+
+            httpRequest = new SecurityMetadata(() => security).Apply(httpRequest);
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, () => security{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+              {{- end}}
+
+            {{- else if .Local.GlobalSecurity }}
+
+            if (SDKConfiguration.SecuritySource != null)
+            {
+                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource{{if and .Local.HoistedSecurityConfig (not .Local.HoistedSecurityConfig.Equivalent)}}, new string[] { {{range $i, $f := .Local.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}} }{{end}}).Apply(httpRequest);
+            }
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, SDKConfiguration.SecuritySource{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+            {{- else }}
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "{{ .Local.ID }}", {{templateOAuth2Scopes .Local}}, null{{if .Global.Config.EnableCancellationToken}}, cancellationToken{{end}});
+            {{- end }}
+
+            httpRequest = await this.SDKConfiguration.Hooks.BeforeRequestAsync(new BeforeRequestContext(hookCtx), httpRequest);
+
+            {{- if $retries }}
+            if (retryConfig == null)
+            {
+                if (this.SDKConfiguration.RetryConfig != null)
+                {
+                    retryConfig = this.SDKConfiguration.RetryConfig;
+                }
+                else
+                {
+                    {{- if eq $retries.Strategy "backoff"}}
+                    var backoff = new BackoffStrategy(
+                        initialIntervalMs: {{ $retries.Backoff.InitialInterval }}L,
+                        maxIntervalMs: {{ $retries.Backoff.MaxInterval }}L,
+                        maxElapsedTimeMs: {{ $retries.Backoff.MaxElapsedTime }}L,
+                        exponent: {{ $retries.Backoff.Exponent }}
+                    );
+                    retryConfig = new RetryConfig(
+                        strategy: RetryConfig.RetryStrategy.BACKOFF,
+                        backoff: backoff,
+                        retryConnectionErrors: {{ $retries.RetryConnectionErrors }}
+                    );
+                    {{- else }}
+                    retryConfig = new RetryConfig(RetryConfig.Strategy.NONE, null, false);
+                    {{- end}}
+                }
+            }
+
+            List<string> statusCodes = new List<string>
+            {
+            {{- range $retries.StatusCodes }}
+                "{{.}}",
+            {{- end}}
+            };
+
+            Func<Task<HttpResponseMessage>> retrySend = async () =>
+            {
+                var _httpRequest = await SDKConfiguration.Client.CloneAsync(httpRequest);
+            {{- if .Global.Config.EnableCancellationToken}}
+                return await SDKConfiguration.Client.SendAsync(_httpRequest, cancellationToken);
+            {{- else}}
+                return await SDKConfiguration.Client.SendAsync(_httpRequest);
+            {{- end}}
+            };
+            var retries = new {{$utils}}.Retries.Retries(retrySend, retryConfig, statusCodes);
+            {{- end}}
+
+            HttpResponseMessage httpResponse;
+            try
+            {
+                {{- if $retries }}
+                httpResponse = await retries.Run();
+                {{- else }}
+                    {{- if .Global.Config.EnableCancellationToken}}
+                httpResponse = await SDKConfiguration.Client.SendAsync(httpRequest, cancellationToken);
+                    {{- else}}
+                httpResponse = await SDKConfiguration.Client.SendAsync(httpRequest);
+                    {{- end}}
+                {{- end}}
+                int _statusCode = (int)httpResponse.StatusCode;
+
+                if ({{templateErrorStatusCodesCheck "_statusCode" $op.Response}})
+                {
+                    var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), httpResponse, null);
+                    if (_httpResponse != null)
+                    {
+                        httpResponse = _httpResponse;
+                    }
+                }
+            }
+            catch (Exception _hookError)
+            {
+                var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), null, _hookError);
+                if (_httpResponse != null)
+                {
+                    httpResponse = _httpResponse;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            httpResponse = await this.SDKConfiguration.Hooks.AfterSuccessAsync(new AfterSuccessContext(hookCtx), httpResponse);
+            {{- if $pagination }}
+{{ templateIndentedString "pagination.cs.stmpl" .Local 3}}
+            {{- end}}
+
+            {{- $responseFormat := getResponseFormat }}
+            {{- $responseBody := "await httpResponse.Content.ReadAsStringAsync()" }}
+            {{- if isNetstandard2 }}{{ $responseBody = "(httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty)" }}{{ end }}
+            {{- $errorArgs := print "httpResponse, " $responseBody }}
+            {{- $defaultError := templateDefaultError false}}
+            {{- if eq $responseFormat "envelope-http"}}
+                {{- $errorArgs = print "httpRequest, httpResponse, " $responseBody }}
+            {{- end}}
+
+            var contentType = httpResponse.Content{{if isNetstandard2}}?{{end}}.Headers.ContentType?.MediaType;
+            int responseStatusCode = (int)httpResponse.StatusCode;
+            {{- $nullValueHandling := "NullValueHandling.Ignore" }}
+            {{- if isRequestOptional $request }}{{ $nullValueHandling = "NullValueHandling.Include" }}{{end}}
+            {{- $hasDefault := false}}
+      {{- if gt (len $op.Response.Responses) 0 }}{{/* if there are multiple responses to handle */}}
+        {{- range $index, $response := .Local.Response.Responses }}
+          {{- if or (gt (len $responses) 1) (.Headers) (gt (len $response.Content) 0)}}
+            {{- if includes $response.Code "default"}}
+              {{- $hasDefault = true}}
+            {{if gt (len $responses) 1 }}else{{else}}if (true){{end -}}
+            {{- else}}
+            {{if gt $index 0}}else if{{else}}if{{end -}}({{templateStatusCodeCheck "responseStatusCode" $response.Code}})
+            {{- end}}
+            {
+            {{- if ne (len $response.Content) 0}}
+              {{- range $index, $content := $response.Content }}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}else if{{else}}if{{end}}(Utilities.IsContentTypeMatch("{{ .ContentType }}", contentType))
+                {
+{{templateResponseHandler $op $nullValueHandling $response $content  | indentPresent 20}}
+                }
+              {{- end}}{{/* end content range */}}
+
+                throw new {{$defaultError}}("Unknown content type received", {{$errorArgs}});
+            {{- else if $response.Error}}{{/* if empty response content and strongly typed error */}}
+                throw new {{$defaultError}}("API error occurred", {{$errorArgs}});
+            {{- else }}{{/* empty response content, with no error */}}
+              {{- templateResponseHandler $op $nullValueHandling | indentPresent 16}}
+            {{- end }}
+            }
+          {{- else}}{{/* if only one response */}}
+            if (responseStatusCode == 200)
+            {
+            {{- if (or (eq .SerializationMethod "json") (eq .SerializationMethod "event-stream")) }}
+{{templateResponseHandler $op $nullValueHandling $response | indentPresent 16}}
+            {{- else }}
+                throw new {{$defaultError}}("API returned unexpected status code or content type", {{$errorArgs}});
+            {{- end}}
+            {{- if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}return response;{{end}}
+            }
+          {{- end }}
+        {{- end }}{{/* end response range */}}
+        {{- if not $hasDefault}}
+
+            throw new {{$defaultError}}("Unknown status code received", {{$errorArgs}});
+        {{- end}}
+      {{- end}}
+        }
+{{- end }}

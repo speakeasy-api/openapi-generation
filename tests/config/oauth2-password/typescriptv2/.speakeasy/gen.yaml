@@ -1,0 +1,23 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2PasswordEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+typescript:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  responseFormat: envelope-http
+  moduleFormat: dual
+  templateVersion: v2
+  enableReactQuery: true
+  enableMCPServer: true
+  defaultErrorName: APIError
+  constFieldsAlwaysOptional: false
+  modelPropertyCasing: "camel"
+  acceptHeaderEnum: true
+  legacyFileNaming: true

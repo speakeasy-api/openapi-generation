@@ -1,0 +1,9 @@
+    while(true)
+    {
+        res = await res.Next();
+        // handle items
+        if (res != null)
+        {
+            break;
+        }
+    }

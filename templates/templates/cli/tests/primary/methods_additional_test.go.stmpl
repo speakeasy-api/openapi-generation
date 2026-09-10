@@ -1,0 +1,29 @@
+package tests
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestMethodTrace(t *testing.T) {
+	recordTest("method-trace")
+
+	// Custom server needed: MethodTrace expects message/http content type which echo server can't provide
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "message/http")
+		w.WriteHeader(200)
+		w.Write([]byte("TRACE /method/trace HTTP/1.1\r\nHost: example.com\r\n"))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "method-trace"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}

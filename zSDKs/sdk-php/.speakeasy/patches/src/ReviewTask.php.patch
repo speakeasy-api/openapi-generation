@@ -1,0 +1,15 @@
+diff --git a/src/ReviewTask.php b/src/ReviewTask.php
+index 878ca47c22..41a49b7139 100644
+--- a/src/ReviewTask.php
++++ b/src/ReviewTask.php
+@@ -47,4 +47,9 @@ class ReviewTask
+         $this->name = $name;
+         $this->policy = $policy;
+     }
++
++    public function __toString(): string
++    {
++        return $this->name.' ('.$this->id.')';
++    }
+ }
+\ No newline at end of file

@@ -1,0 +1,12 @@
+{{- $sdkClassName := sanitizeCoreSDKName }}
+{{- $sdk := sanitizeClassName .Global.AST.MainSDK.Type.Name }}
+{{- if not .Local.SkipSDKInstantiation}}
+{{- addTestImport "../core.js" (printf "%s as %s" $sdkClassName $sdk) }}
+{{- $options := templateUsageSDKOptions .Local }}
+{{- $qualifier := templateSDKQualifier .Local }}
+{{- if $options}}
+{{$qualifier}}sdk = new {{$sdk}}({ httpClient: testHttpClient, ...{{$options}} });
+{{- else}}
+{{$qualifier}}sdk = new {{$sdk}}({ httpClient: testHttpClient });
+{{- end}}
+{{- end}}

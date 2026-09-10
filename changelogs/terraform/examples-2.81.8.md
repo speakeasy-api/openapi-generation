@@ -1,0 +1,3 @@
+## examples: 2.81.8 - 2025-01-14
+### :bug: Bug Fixes
+- escape template sensitive characters in examples *(commit by [@idbentley](https://github.com/idbentley))*

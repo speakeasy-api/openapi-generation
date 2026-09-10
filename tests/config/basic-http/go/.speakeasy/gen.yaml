@@ -1,0 +1,13 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+go:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  responseFormat: envelope-http
+  modulePath: basicHttp
+  sdkPackageName: basicHttp
+  version: 0.0.1

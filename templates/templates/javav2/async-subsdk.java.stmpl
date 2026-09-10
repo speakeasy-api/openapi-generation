@@ -1,0 +1,54 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $sdk := .Local -}}
+{{- $pkg := templatePackageName -}}
+{{- $fullClassName := (print $pkg "." $sdkClassName) -}}
+{{- $asyncSDKClassName := (print "Async" $sdkClassName) -}}
+package {{$pkg}};
+{{genImports $fullClassName -}}
+// #region imports
+// #endregion imports{{"\n"}}{{templateCommentsStripped .Local.Comments nil 0}}
+public class {{$asyncSDKClassName}} {
+    private static final {{javaImportLocal "utils.Headers"}} _headers = {{javaImportLocal "utils.Headers"}}.EMPTY;
+    private final SDKConfiguration sdkConfiguration;
+    {{- range .Local.SubSDKs}}
+    {{- if ne .Type.Name "" -}}
+{{templateCommentsStripped .Comments nil 1}}
+    private final {{print "Async" (sanitizeClassName .Type.Name)}} {{sanitizeFieldName .FieldName}};
+    {{- end}}{{end}}
+    private final {{$sdkClassName}} syncSDK;
+
+    {{$asyncSDKClassName}}({{$sdkClassName}} syncSDK, SDKConfiguration sdkConfiguration) {
+        this.sdkConfiguration = sdkConfiguration;
+        {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+        this.{{sanitizeFieldName .FieldName}} = new {{print "Async" (sanitizeClassName .Type.Name)}}(syncSDK.{{sanitizeFieldName .FieldName}}(), this.sdkConfiguration);
+        {{- end}}{{end}}
+        this.syncSDK = syncSDK;
+    }
+    {{- "\n"}}
+    {{- range .Local.SubSDKs}}
+    {{- if ne .Type.Name "" -}}
+{{templateCommentsStripped .Comments nil 1}}
+    public final {{print "Async" (sanitizeClassName .Type.Name)}} {{sanitizeFieldName .FieldName}}() {
+        return {{sanitizeFieldName .FieldName}};
+    }
+    {{- "\n"}}
+    {{- end}}{{end}}
+    // #region sdk-class-body
+    // #endregion sdk-class-body
+    // #region class-body
+    // #endregion class-body
+    /**
+     * Switches to the sync SDK.
+     * 
+     * @return The sync SDK
+     */
+    public {{$sdkClassName}} {{sanitizeModeMethodName "sync" $sdk}}() {
+        return syncSDK;
+    }
+    {{- "\n"}}
+{{- range .Local.Operations}}
+{{templateString "async-method.java.stmpl" (dict "Operation" . "SDK" $sdk)}}
+{{- end}}
+}

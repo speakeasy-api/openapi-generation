@@ -1,0 +1,78 @@
+{{- $op := .Local.operation }}
+{{- $clientVar := .Local.clientVar }}
+{{- $inputVar := .Local.inputVar }}
+{{- $reqOptionsVar := .Local.reqOptionsVar }}
+{{- $nextPage := .Local.nextPageAccessor }}
+{{- $nextOffset := .Local.nextOffsetAccessor }}
+{{- $nextCursor := .Local.nextCursorAccessor }}
+{{- $nextURL := .Local.nextURLAccessor }}
+
+{{- $args := $op.Arguments }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $canSimplify := $pagination.Outputs.CanUseDotNotation }}
+{{- $limitInput := getPaginationInput $pagination "limit" }}
+{{- $pageInput := getPaginationInput $pagination "page" }}
+{{- $offsetInput := getPaginationInput $pagination "offset" }}
+{{- $cursorInput := getPaginationInput $pagination "cursor" }}
+{{- $hasPaginationURL := hasPaginationURL $op }}
+{{ sanitizeFuncName $op }}(
+  {{$clientVar}},
+  {{- range $field := $args.Sorted }}
+  {{-   if hasAnnotation $field "opSecurity" }}
+  security,
+  {{-   else if hasAnnotation $field "requestWrapper" }}
+  {
+  ...{{   $inputVar}}{{if $field.Optional}}!{{end}},
+  {{-     range $child := $field.Type.Fields }}
+  {{-       if and $pageInput (eq $pageInput.In "parameters") (eq $child.Name $pageInput.Name) }}
+  {{          declareModelField $child }}: {{$nextPage}},
+  {{-       else if and $offsetInput (eq $offsetInput.In "parameters") (eq $child.Name $offsetInput.Name) }}
+  {{          declareModelField $child }}: {{$nextOffset}},
+  {{-       else if and $cursorInput (eq $cursorInput.In "parameters") (eq $child.Name $cursorInput.Name) }}
+  {{          declareModelField $child }}: {{$nextCursor}},
+  {{-       else if and (isPaginationInputInBody $op) (hasAnnotation $child "request") }}
+  {{          sanitizeFieldName $child.Name }}: {
+      ...{{   sanitizeAccessor $inputVar (sanitizeFieldName $child.Name) true}},
+  {{-         range $reqField := $child.Type.Fields }}
+  {{-           if and $pageInput (eq $pageInput.In "requestBody") (eq $reqField.Name $pageInput.Name) }}
+  {{              declareModelField $reqField }}: {{$nextPage}},
+  {{-           else if and $offsetInput (eq $offsetInput.In "requestBody") (eq $reqField.Name $offsetInput.Name) }}
+  {{              declareModelField $reqField }}: {{$nextOffset}},
+  {{-           else if and $cursorInput (eq $cursorInput.In "requestBody") (eq $reqField.Name $cursorInput.Name) }}
+  {{              declareModelField $reqField }}: {{$nextCursor}},
+  {{-           end }}
+  {{-         end }}
+      },
+  {{-       end}}
+  {{-     end }}
+  },
+  {{-   else if and $pageInput (eq $pageInput.In "parameters") (eq $field.Name $pageInput.Name) }}
+  {{$nextPage}},
+  {{-   else if and $offsetInput (eq $offsetInput.In "parameters") (eq $field.Name $offsetInput.Name) }}
+  {{$nextOffset}},
+  {{-   else if and $cursorInput (eq $cursorInput.In "parameters") (eq $field.Name $cursorInput.Name) }}
+  {{$nextCursor}},
+  {{-   else if and (isPaginationInputInBody $op) (hasAnnotation $field "request") }}
+  {
+  ...{{   sanitizeFieldName $field.Name}}{{if $field.Optional}}!{{end}},
+  {{-     range $reqField := $field.Type.Fields }}
+  {{-       if and $pageInput (eq $pageInput.In "requestBody") (eq $reqField.Name $pageInput.Name) }}
+  {{          declareModelField $reqField }}: {{$nextPage}},
+  {{-       else if and $offsetInput (eq $offsetInput.In "requestBody") (eq $reqField.Name $offsetInput.Name) }}
+  {{          declareModelField $reqField }}: {{$nextOffset}},
+  {{-       else if and $cursorInput (eq $cursorInput.In "requestBody") (eq $reqField.Name $cursorInput.Name) }}
+  {{          declareModelField $reqField }}: {{$nextCursor}},
+  {{-       end }}
+  {{-     end }}
+  },
+  {{-   else }}
+  {{      sanitizeFieldName .Name }},
+  {{-   end }}
+  {{- end }}
+
+  {{- if $hasPaginationURL }}
+  {...{{$reqOptionsVar}}, [URL_OVERRIDE]: new URL({{$nextURL}})}
+  {{- else}}
+  {{$reqOptionsVar}}
+  {{- end }}
+)

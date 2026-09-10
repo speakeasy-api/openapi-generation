@@ -1,0 +1,7 @@
+test-request-body:
+  summary: Test
+  description: Test
+  value: |
+    {
+      "test": "test"
+    }

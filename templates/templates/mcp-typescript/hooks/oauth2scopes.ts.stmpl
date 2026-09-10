@@ -1,0 +1,14 @@
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $constType := getOAuth2ScopeClassName $schemeKey}}
+
+{{templateComments $config.Comments "hooks" $constType 0 "enum"}}
+export type {{$constType}} =
+    {{- range $idx, $scope := $config.AvailableScopes }}
+      {{- $scopeName := getEnumName .Name}}
+  {{- templateComments .Comments "hooks" $scopeName 0 "field"}}
+  | "{{.Name}}"{{if eq (add $idx 1) (len $config.AvailableScopes)}};{{end}}
+    {{- end}}
+  {{- end}}
+{{- end}}

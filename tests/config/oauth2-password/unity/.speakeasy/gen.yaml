@@ -1,0 +1,15 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2PasswordEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+unity:
+  inferUnionDiscriminators: false
+  version: 0.0.1
+  author: speakeasy
+  packageName: Speakeasy.Client.Credentials

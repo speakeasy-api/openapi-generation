@@ -1,0 +1,9 @@
+{{- range .Local.Models -}}
+export * from "./{{.}}.js";
+{{end -}}
+{{- range .Local.NamespaceReexports -}}
+export * as {{.Name}} from "./{{.Path}}/index.js";
+{{end -}}
+{{- range .Local.BuiltinExportLines -}}
+{{.}}
+{{end -}}

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["es2021", "DOM"],
+    "module": "commonjs",
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "downlevelIteration": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false
+  }
+}

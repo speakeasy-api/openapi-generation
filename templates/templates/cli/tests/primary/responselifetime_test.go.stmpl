@@ -1,0 +1,70 @@
+package tests
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// slowJSONServer sends response headers immediately, then delivers the JSON
+// body in two chunks with a pause in between. The pause lands after the SDK
+// method has returned, so a body left unread at return would be read only
+// after the operation's deferred context cancel has fired.
+func slowJSONServer(body string, pause time.Duration) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fl := w.(http.Flusher)
+		half := len(body) / 2
+		fmt.Fprint(w, body[:half])
+		fl.Flush()
+		time.Sleep(pause)
+		fmt.Fprint(w, body[half:])
+	}))
+}
+
+// A per-operation timeout arms a context that is cancelled when the SDK method
+// returns. The skip-deserialized JSON body must be consumed before that —
+// otherwise a body still in flight at return is read against a cancelled
+// context and the response is lost even though the server delivered it well
+// within the timeout.
+func TestSkipDeserializedBodySurvivesSlowDeliveryUnderTimeout(t *testing.T) {
+	body := `{"message":"slow but complete"}`
+	s := slowJSONServer(body, 400*time.Millisecond)
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "--timeout", "10s",
+		"--output-format", "json", "methods", "method-get"})
+	require.NoError(t, err, "stderr: %s", h.GetStderr())
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stdout), &parsed), "stdout: %s", stdout)
+	assert.Equal(t, "slow but complete", parsed["message"])
+}
+
+// When the body genuinely exceeds the timeout, the failure must carry the
+// real cause. "response body is empty" is a lie — the server responded and
+// the read was cancelled.
+func TestTimedOutBodyReadReportsTheRealCause(t *testing.T) {
+	body := `{"message":"never arrives in time"}`
+	s := slowJSONServer(body, 3*time.Second)
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "--timeout", "300ms",
+		"--output-format", "json", "methods", "method-get"})
+	require.Error(t, err)
+
+	combined := h.GetStdout() + h.GetStderr() + err.Error()
+	assert.NotContains(t, combined, "response body is empty")
+	assert.Contains(t, combined, "context deadline exceeded")
+}

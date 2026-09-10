@@ -1,0 +1,40 @@
+{{- $usageLocation := .Local.OutputLocation}}
+{{- $local := .Local.Type}}
+{{- $className := sanitizeClassName .Local.Name false}}
+
+    {{- templateComments .Local.Comments 1 "class" false}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    public class {{ $className }}
+    {
+      {{- if .Local.Extensions.Pagination }}
+        public Func<Task<{{ $className }}?>>? Next {get;set;}
+      {{- end }}
+      {{- range $index, $field := .Local.Fields }}
+        {{- with $field}}
+        {{- $fieldName := sanitizeFieldName .Name $className }}
+        {{- $optional := or .Nullable (and (not .Const) (or .Optional (eq .Name "ContentType"))) }}
+        {{- templateComments .Comments 2 "field" (ne $index 0)}}
+        {{- templateFieldAnnotations . 2}}
+        public {{templateFieldType . $optional $usageLocation}} {{sanitizeFieldName .Name $className}} { get;{{if not .Const}} set;{{end}} }{{templateFieldDefault .}}
+        {{- templateShouldSerialize . $className}}
+        {{- if eq .Type.Type "union"}}
+          {{- if .Type.Discriminator}}
+            {{- $unionClassName := sanitizeClassName .Type.Name}}
+            {{- range .Type.Discriminator.Mapping}}
+
+        public {{sanitizeType .Type true $usageLocation false}} Get{{$fieldName}}{{sanitizeFieldName .Name $className}}()
+        {
+          {{- if needsOptionalNullableWrapper $field }}
+            return {{$fieldName}}.IsSet && !{{$fieldName}}.IsNull ? {{$fieldName}}.Value!.{{sanitizeFieldName .Type.Name $unionClassName}} : null;
+          {{- else if $optional }}
+            return {{$fieldName}} != null ? {{$fieldName}}.{{sanitizeFieldName .Type.Name $unionClassName}} : null;
+          {{- else }}
+            return {{$fieldName}}.{{sanitizeFieldName .Type.Name $unionClassName}};
+          {{- end -}} {{/* endif optional */}}
+        }
+        {{- end -}} {{/* endrange .Type.Discriminator.Mapping */}}
+        {{- end -}} {{/* endif .Type.Discriminator exists */}}
+        {{- end -}} {{/* endif union */}}
+        {{- end -}} {{/* endwith $field */}}
+      {{- end -}} {{/* endrange .Local.Fields */}}
+    }

@@ -1,0 +1,72 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSelectGlobalServerValid(t *testing.T) {
+	recordTest("servers-select-global-server-valid")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "select-global"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerBroken(t *testing.T) {
+	recordTest("servers-select-global-server-broken")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://broken", []string{"servers", "select-global"})
+	assert.Error(t, err)
+}
+
+func TestSelectGlobalServerByIdDefault(t *testing.T) {
+	recordTest("servers-select-global-server-by-id-default")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// No --server flag: uses default server (index 0), --server-url redirects to echo
+	err := h.RunWithServer(s.URL, []string{"servers", "select-global"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerByIdValid(t *testing.T) {
+	recordTest("servers-select-global-server-by-id-valid")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// --server 0 is a valid index, --server-url redirects to echo
+	err := h.RunWithServer(s.URL, []string{"servers", "select-global", "--server", "0"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerByIdInvalid(t *testing.T) {
+	recordTest("servers-select-global-server-by-id-invalid")
+
+	h := NewCLITestHarness(t)
+	// Server index 2 is out of range (only 0 and 1 exist) — expect validation error
+	err := h.RunBare([]string{"servers", "select-global", "--server", "2"})
+	assert.Error(t, err)
+}
+
+func TestSelectGlobalServerByIdBroken(t *testing.T) {
+	recordTest("servers-select-global-server-by-id-broken")
+
+	h := NewCLITestHarness(t)
+	// Server index 1 is "http://broken" — expect connection error
+	err := h.RunBare([]string{"servers", "select-global", "--server", "1"})
+	assert.Error(t, err)
+}

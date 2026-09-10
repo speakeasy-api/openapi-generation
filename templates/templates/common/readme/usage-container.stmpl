@@ -1,0 +1,2 @@
+{{- $examples := collectAllUsageExamples}}
+{{- templateUsageSectionWithContexts $examples "### Example"}}

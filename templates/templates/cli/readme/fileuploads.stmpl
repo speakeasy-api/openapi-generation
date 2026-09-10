@@ -1,0 +1,11 @@
+{{- $c := .Local -}}
+Operations that accept file uploads take the path to a local file in a file flag{{if $c.UploadCommand}} (`--{{$c.UploadFlag}}` on `{{$c.UploadCommand}}`):{{else}}.{{end}}
+{{- if $c.UploadCommand}}
+
+<!-- readme-examples: skip (needs a local file) -->
+```bash
+{{$c.UploadCommand}} --{{$c.UploadFlag}} ./photo.jpg
+```
+{{- end}}
+
+The file is uploaded as a multipart form request. The CLI automatically detects the content type from the file extension.

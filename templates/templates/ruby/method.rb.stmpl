@@ -1,0 +1,694 @@
+{{- if hasAttemptCountRetries -}}
+  {{- $responses := .Local.Response.Responses -}}
+  {{- $responseFormat := getResponseFormat -}}
+  {{- $globals := (ne .Global.AST.MainSDK.Globals nil)}}
+  {{- $op := .Local}}
+  {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent) -}}
+  {{- $paramFlattening := operationParametersFlattened $op }}
+    {{ sanitizeSorbetOperationMethodSignature .Local $paramFlattening }}
+    {{ sanitizeOperationMethodSignature .Local $paramFlattening }}
+{{templateComments .Local.Comments (sanitizeMethodName .Local) 3 "method" (getHoistedSecurityRemark .Local)}}
+      {{- if $paramFlattening }}
+      {{- $n := len .Local.Request.Field.Type.Fields}}
+      request = {{sanitizeClass .Local.Request.Field.Type false}}.new{{if gt $n 0}}(
+        {{- range $index, $field := (sortMethodParams .Local.Request.Field.Type.Fields)}}
+        {{sanitizeFieldName $field.Name}}: {{sanitizeMethodArgumentName $field.Name}}{{if not (eq (add1 $index) $n)}},{{end}}
+        {{- end}}
+      ){{end}}{{end}}
+      {{- if .Local.Servers}}
+      {{- if .Local.Servers.ServerMap}}
+      base_url = Utils.template_url({{upper (sanitizeFieldName .Local.ID)}}_SERVERS[{{templateConstName .Local.Servers.Default (print (sanitizeFieldName .Local.ID) "Servers")}}], {{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+            '{{$variable.Name}}': '{{$variable.Default}}',{{end}}
+      {{"}"}})
+      base_url = server_url if !server_url.nil?
+      {{- else}}
+      base_url = Utils.template_url({{upper (sanitizeFieldName .Local.ID)}}_SERVERS[0], {{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+          '{{$variable.Name}}': '{{$variable.Default}}',{{end}}
+      {{"}"}})
+      base_url = server_url if !server_url.nil?
+      {{- end}}
+      {{- else}}
+      url, params = @sdk_configuration.get_server_details
+      base_url = Utils.template_url(url, params)
+      {{- end}}
+      {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasPathParams }}
+      url = Utils.generate_url(
+        {{sanitizeClass .Local.Request.Field.Type false}},
+        base_url,
+        '{{.Local.Path}}',
+        request{{ if $globals}},
+        @sdk_configuration.globals{{end}}
+      )
+      {{- else }}
+      url = "#{base_url}{{.Local.Path}}"
+      {{- end}}
+      {{- if hasPaginationURL $op }}
+      if !url_override.nil?
+        url = url_override
+      end
+
+      {{- end}}
+      headers = {{if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams}}Utils.get_headers(request{{if $globals}}, @sdk_configuration.globals{{end}}){{else}}{}{{end}}
+      {{sorbetCast "headers" "T::Hash[String, String]" true}}
+      {{- if and .Local.Request .Local.Request.RequestBody }}
+      req_content_type, data, form = Utils.serialize_request_body(request, {{$op.Request.Field.Nullable}}, {{$op.Request.Field.Optional}}, :{{sanitizeFieldName .Local.Request.RequestBody.Name}}, :{{.Local.SerializationMethod}})
+      headers['content-type'] = req_content_type
+      {{- if and $op.Request (and $op.Request.IsRequestBodyRequired (not (isRequestBodyOptional $op.Request)))}}
+      raise StandardError, 'request body is required' if data.nil? && form.nil?
+      {{-   end}}
+
+      if form && !form.empty?
+        body = Utils.encode_form(form)
+      elsif Utils.match_content_type(req_content_type, 'application/x-www-form-urlencoded')
+        body = URI.encode_www_form({{sorbetCast "data" "T::Hash[Symbol, Object]"}})
+      else
+        body = data
+      end
+      {{- end}}
+
+      {{- $hasQueryParams := and .Local.Request .Local.Request.Params .Local.Request.Params.HasQueryParams}}
+      {{- if $hasQueryParams }}
+      query_params = Utils.get_query_params({{sanitizeClass .Local.Request.Field.Type false}}, request, {{if hasPaginationURL $op}}url_override{{else}}nil{{end}}{{if $globals}}, @sdk_configuration.globals{{end}})
+      {{- end}}
+      {{- if gt (len .Local.GetAcceptTypes) 1}}
+      headers['Accept'] = accept_header_override || '{{ .Local.GetAcceptTypes | join ", " }}'
+      {{- else}}
+      headers['Accept'] = '{{ .Local.GetAcceptTypes | join ", " }}'
+      {{- end}}
+      headers['{{if .Local.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}'] = @sdk_configuration.user_agent
+
+      {{- if .Local.Extensions.Retries }}
+      {{-   if .Local.Extensions.Retries.DefaultApplied }}
+      retries ||= @sdk_configuration.retry_config if @sdk_configuration.retry_config
+      {{-   else }}
+      retries ||= @sdk_configuration.retry_config
+      retries ||= Utils::RetryConfig.new(
+        {{- if .Local.Extensions.Retries.Backoff }}
+        backoff: Utils::BackoffStrategy.new(
+          exponent: {{ templateFloatLiteral .Local.Extensions.Retries.Backoff.Exponent }},
+          initial_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.InitialInterval }},
+          max_elapsed_time: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxElapsedTime }},
+          max_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxInterval }}
+        ),
+        {{- end }}
+        retry_connection_errors: {{ .Local.Extensions.Retries.RetryConnectionErrors }},
+        strategy: '{{ .Local.Extensions.Retries.Strategy }}'{{ if eq .Local.Extensions.Retries.Strategy "attempt-count-backoff" }},
+        max_retries: {{ .Local.Extensions.Retries.MaxRetries }}{{ end }}
+      )
+      {{-   end }}
+      retry_options = retries.to_faraday_retry_options(initial_time: Time.now)
+      {{-   if gt (len .Local.Extensions.Retries.StatusCodes) 0 }}
+      retry_options[:retry_statuses] = [{{ templateFaradayRetryStatuses .Local.Extensions.Retries.StatusCodes }}]
+      {{-   end }}
+      {{- end }}
+      {{- if .Local.GlobalSecurity }}
+
+      security = @sdk_configuration.security_source&.call
+      {{- end }}
+
+      timeout = (timeout_ms.to_f / 1000) unless timeout_ms.nil?
+      {{- if .Local.Extensions.Timeout }}
+      timeout ||= ({{ templateNumericLiteral .Local.Extensions.Timeout }}.to_f / 1000)
+      {{- else}}
+      timeout ||= @sdk_configuration.timeout
+      {{- end }}
+
+
+      connection = @sdk_configuration.client{{ if .Local.Extensions.Retries }}.dup{{ end }}
+      {{- if .Local.Extensions.Retries }}
+      connection.use Utils::RetryMiddleware, retry_options
+      {{- end }}
+
+      hook_ctx = SDKHooks::HookContext.new(
+        config: @sdk_configuration,
+        base_url: base_url,
+        oauth2_scopes: {{ templateOAuth2Scopes .Local }},
+        operation_id: '{{ .Local.ID }}',
+        security_source: {{ if .Local.GlobalSecurity }}@sdk_configuration.security_source{{ else if .Local.Security }}-> { security }{{ else }}nil{{ end }}
+      )
+
+      error = {{sorbetLet "nil" "T.nilable(StandardError)"}}
+      http_response = {{sorbetLet "nil" "T.nilable(Faraday::Response)"}}
+      {{if eq $responseFormat "envelope-http" }}http_request = {{sorbetLet "nil" "T.nilable(Faraday::Request)"}}{{end}}
+
+      begin
+{{- if containsStreamingResponse $op.Response }}
+        stream_rd, stream_wr = ::IO.pipe
+        stream_rd.binmode
+        stream_wr.binmode
+        stream_ready = ::Queue.new
+        stream_env = {{sorbetLet "nil" "T.untyped"}}
+        stream_signaled = {{sorbetLet "false" "T::Boolean"}}
+
+        stream_thread = ::Thread.new do
+          thread_response = {{sorbetMust "connection"}}.{{.Local.Method}}(url) do |req|
+            {{- if and .Local.Request .Local.Request.RequestBody }}
+            req.body = body
+            {{- end }}
+            req.headers.merge!(headers)
+            req.options.timeout = timeout unless timeout.nil?
+            {{- if $hasQueryParams }}
+            req.params = query_params
+            {{- end }}
+            {{- if or .Local.Security .Local.GlobalSecurity }}
+            Utils.configure_request_security(req, security{{if $needsAllowedFields}}, %i[{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}} {{end}}{{sanitizeFieldName $f.Name}}{{end}}]{{end}})
+            {{- end }}
+            http_headers&.each do |key, value|
+              req.headers[key.to_s] = value
+            end
+
+            req.options.on_data = proc do |chunk, _overall_size, env|
+              unless stream_env
+                stream_env = env
+                stream_ready.push(:ok)
+                stream_signaled = true
+              end
+              begin
+                stream_wr.write(chunk)
+              rescue ::IOError, ::Errno::EPIPE
+                # Reader closed the pipe, stop writing
+              end
+            end
+
+            {{if eq $responseFormat "envelope-http" }}http_request = {{end}}@sdk_configuration.hooks.before_request(
+              hook_ctx: SDKHooks::BeforeRequestHookContext.new(
+                hook_ctx: hook_ctx
+              ),
+              request: req
+            )
+          end
+
+          if stream_env.nil? && !thread_response.nil? && thread_response.respond_to?(:env)
+            stream_env = thread_response.env
+            stream_ready.push(:ok)
+            stream_signaled = true
+          end
+        rescue StandardError => e
+          if stream_env
+            stream_env[:stream_error] = e
+          else
+            stream_ready.push(e)
+            stream_signaled = true
+          end
+        ensure
+          stream_wr.close unless stream_wr.closed?
+          stream_ready.push(::StandardError.new('no streaming response received')) unless stream_env || stream_signaled
+        end
+
+        hdr_result = stream_ready.pop
+        raise hdr_result if hdr_result.is_a?(::StandardError)
+
+        stream_content_type = stream_env[:response_headers]&.fetch('Content-Type', nil)
+        stream_content_type ||= 'application/octet-stream'
+        live_stream_content_types = {{ templateLiveStreamContentTypes $op.Response }}
+        if Utils.error_status?(stream_env[:status]) ||
+           live_stream_content_types.none? { |live_content_type| Utils.match_content_type(stream_content_type, live_content_type) }
+          # Only bodies decoded as a whole (JSON, text, error payloads) are
+          # buffered; SSE, JSONL and raw stream bodies stay live below.
+          stream_env[:body] = stream_rd.read
+          stream_rd.close
+        else
+          # Preserve a live stream body for incremental consumers.
+          stream_env[:body] = stream_rd
+          stream_env[:stream_thread] = stream_thread
+        end
+
+        http_response = ::Faraday::Response.new
+        http_response.finish(stream_env)
+{{- else }}
+        http_response = {{sorbetMust "connection"}}.{{.Local.Method}}(url) do |req|
+          {{- if and .Local.Request .Local.Request.RequestBody }}
+          req.body = body
+          {{- end }}
+          req.headers.merge!(headers)
+          req.options.timeout = timeout unless timeout.nil?
+          {{- if $hasQueryParams }}
+          req.params = query_params
+          {{- end }}
+          {{- if or .Local.Security .Local.GlobalSecurity }}
+          Utils.configure_request_security(req, security{{if $needsAllowedFields}}, %i[{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}} {{end}}{{sanitizeFieldName $f.Name}}{{end}}]{{end}})
+          {{- end }}
+          http_headers&.each do |key, value|
+            req.headers[key.to_s] = value
+          end
+
+          {{if eq $responseFormat "envelope-http" }}http_request = {{end}}@sdk_configuration.hooks.before_request(
+            hook_ctx: SDKHooks::BeforeRequestHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            request: req
+          )
+        end
+{{- end }}
+      rescue StandardError => e
+        error = e
+      ensure
+        if http_response.nil? || Utils.error_status?(http_response.status)
+          http_response = @sdk_configuration.hooks.after_error(
+            error: error,
+            hook_ctx: SDKHooks::AfterErrorHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+        else
+          http_response = @sdk_configuration.hooks.after_success(
+            hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+        end
+
+        if http_response.nil?
+          raise error if !error.nil?
+          raise 'no response'
+        end
+      end
+
+      {{ if or (anyResponseUsesContentType $responses) (eq $responseFormat "envelope") }}content_type = http_response.headers.fetch('Content-Type', 'application/octet-stream'){{end}}
+      {{- if gt (len $responses) 0 }}
+      {{-   $hasDefault := false }}
+      {{-       $nResponses := len $responses}}
+      {{-   range $index, $response := $responses }}
+      {{-     if includes $response.Code "default"}}
+      {{-       $hasDefault = true }}
+      {{-       if gt (len $responses) 1}}
+      else
+      {{-       else }}
+      if true
+      {{-       end }}
+      {{-     else }}
+      {{-       if gt $index 0}}
+      elsif
+      {{-       else }}
+      if
+      {{-       end}} {{templateStatusCodeCheck "http_response.status" $response.Code}}
+      {{-     end }}{{/* end include response.Code default */}}
+      {{-     if ne (len $response.Content) 0 }}
+      {{-       $nContents := len $response.Content}}
+      {{-       range $index, $content := $response.Content }}
+      {{-         if and (gt (len $response.Content) 0) (gt $index 0)}}
+        elsif {{- else }}
+        if{{- end }} Utils.match_content_type(content_type, '{{ escapeString $content.ContentType }}')
+          {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+            hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+{{templateResponseHandler $op $response $content | indentPresent 10}}
+      {{-       end}}{{/* end content range */}}
+      {{-       if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}
+        else
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 10}}
+        end
+      {{-       else }}
+        else
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 10}}
+        end
+      {{-       end }}
+      {{-     else if $response.Error}}{{/* if empty response content and strongly typed error */}}
+{{templateErrorHandler "API error occurred" $responseFormat  | indent 8}}
+      {{-     else }}{{/* empty response content, with no error */}}
+        {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+          hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+            hook_ctx: hook_ctx
+          ),
+          response: http_response
+        )
+{{templateResponseHandler $op | indentPresent 8}}
+      {{-     end }}
+      {{-     if and (eq (add1 $index) $nResponses) $hasDefault }}
+      end
+      {{-     end}}
+      {{-   else}}{{/* if only one response */}}
+      if responseStatusCode == 200
+      {{-     if (eq .SerializationMethod "json") }}
+        {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+          hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+            hook_ctx: hook_ctx
+          ),
+          response: http_response
+        )
+{{templateResponseHandler $op $response | indent 8}}
+      {{-     else }}
+{{templateErrorHandler "API returned unexpected status code or content type" $responseFormat | indent 8}}
+      {{-     end }}
+      {{-     if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnveloper)}}return response{{end}}
+      {{-   end}}
+      {{-   if not $hasDefault}}
+      else
+{{templateErrorHandler "Unknown status code received" $responseFormat | indent 8}}
+
+      end
+      {{-   end }}
+      {{- end }}
+    end
+{{- else -}}
+  {{- $responses := .Local.Response.Responses -}}
+  {{- $responseFormat := getResponseFormat -}}
+  {{- $globals := (ne .Global.AST.MainSDK.Globals nil)}}
+  {{- $op := .Local}}
+  {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent) -}}
+  {{- $paramFlattening := operationParametersFlattened $op }}
+    {{ sanitizeSorbetOperationMethodSignature .Local $paramFlattening }}
+    {{ sanitizeOperationMethodSignature .Local $paramFlattening }}
+{{templateComments .Local.Comments (sanitizeMethodName .Local) 3 "method" (getHoistedSecurityRemark .Local)}}
+      {{- if $paramFlattening }}
+      {{- $n := len .Local.Request.Field.Type.Fields}}
+      request = {{sanitizeClass .Local.Request.Field.Type false}}.new{{if gt $n 0}}(
+        {{- range $index, $field := (sortMethodParams .Local.Request.Field.Type.Fields)}}
+        {{sanitizeFieldName $field.Name}}: {{sanitizeMethodArgumentName $field.Name}}{{if not (eq (add1 $index) $n)}},{{end}}
+        {{- end}}
+      ){{end}}{{end}}
+      {{- if .Local.Servers}}
+      {{- if .Local.Servers.ServerMap}}
+      base_url = Utils.template_url({{upper (sanitizeFieldName .Local.ID)}}_SERVERS[{{templateConstName .Local.Servers.Default (print (sanitizeFieldName .Local.ID) "Servers")}}], {{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+            '{{$variable.Name}}': '{{$variable.Default}}',{{end}}
+      {{"}"}})
+      base_url = server_url if !server_url.nil?
+      {{- else}}
+      base_url = Utils.template_url({{upper (sanitizeFieldName .Local.ID)}}_SERVERS[0], {{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+          '{{$variable.Name}}': '{{$variable.Default}}',{{end}}
+      {{"}"}})
+      base_url = server_url if !server_url.nil?
+      {{- end}}
+      {{- else}}
+      url, params = @sdk_configuration.get_server_details
+      base_url = Utils.template_url(url, params)
+      {{- end}}
+      {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasPathParams }}
+      url = Utils.generate_url(
+        {{sanitizeClass .Local.Request.Field.Type false}},
+        base_url,
+        '{{.Local.Path}}',
+        request{{ if $globals}},
+        @sdk_configuration.globals{{end}}
+      )
+      {{- else }}
+      url = "#{base_url}{{.Local.Path}}"
+      {{- end}}
+      {{- if hasPaginationURL $op }}
+      if !url_override.nil?
+        url = url_override
+      end
+
+      {{- end}}
+      headers = {{if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams}}Utils.get_headers(request{{if $globals}}, @sdk_configuration.globals{{end}}){{else}}{}{{end}}
+      {{sorbetCast "headers" "T::Hash[String, String]" true}}
+      {{- if and .Local.Request .Local.Request.RequestBody }}
+      req_content_type, data, form = Utils.serialize_request_body(request, {{$op.Request.Field.Nullable}}, {{$op.Request.Field.Optional}}, :{{sanitizeFieldName .Local.Request.RequestBody.Name}}, :{{.Local.SerializationMethod}})
+      headers['content-type'] = req_content_type
+      {{- if and $op.Request (and $op.Request.IsRequestBodyRequired (not (isRequestBodyOptional $op.Request)))}}
+      raise StandardError, 'request body is required' if data.nil? && form.nil?
+      {{-   end}}
+
+      if form && !form.empty?
+        body = Utils.encode_form(form)
+      elsif Utils.match_content_type(req_content_type, 'application/x-www-form-urlencoded')
+        body = URI.encode_www_form({{sorbetCast "data" "T::Hash[Symbol, Object]"}})
+      else
+        body = data
+      end
+      {{- end}}
+
+      {{- $hasQueryParams := and .Local.Request .Local.Request.Params .Local.Request.Params.HasQueryParams}}
+      {{- if $hasQueryParams }}
+      query_params = Utils.get_query_params({{sanitizeClass .Local.Request.Field.Type false}}, request, {{if hasPaginationURL $op}}url_override{{else}}nil{{end}}{{if $globals}}, @sdk_configuration.globals{{end}})
+      {{- end}}
+      {{- if gt (len .Local.GetAcceptTypes) 1}}
+      headers['Accept'] = accept_header_override || '{{ .Local.GetAcceptTypes | join ", " }}'
+      {{- else}}
+      headers['Accept'] = '{{ .Local.GetAcceptTypes | join ", " }}'
+      {{- end}}
+      headers['{{if .Local.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}'] = @sdk_configuration.user_agent
+
+      {{- if .Local.Extensions.Retries }}
+      {{-   if .Local.Extensions.Retries.DefaultApplied }}
+      retries ||= @sdk_configuration.retry_config if @sdk_configuration.retry_config
+      {{-   else }}
+      retries ||= @sdk_configuration.retry_config
+      retries ||= Utils::RetryConfig.new(
+        {{- if .Local.Extensions.Retries.Backoff }}
+        backoff: Utils::BackoffStrategy.new(
+          exponent: {{ .Local.Extensions.Retries.Backoff.Exponent }},
+          initial_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.InitialInterval }},
+          max_elapsed_time: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxElapsedTime }},
+          max_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxInterval }}
+        ),
+        {{- end }}
+        retry_connection_errors: {{ .Local.Extensions.Retries.RetryConnectionErrors }},
+        strategy: '{{ .Local.Extensions.Retries.Strategy }}'
+      )
+      {{-   end }}
+      retry_options = retries.to_faraday_retry_options(initial_time: Time.now)
+      {{-   if gt (len .Local.Extensions.Retries.StatusCodes) 0 }}
+      retry_options[:retry_statuses] = [{{ templateFaradayRetryStatuses .Local.Extensions.Retries.StatusCodes }}]
+      {{-   end }}
+      {{- end }}
+      {{- if .Local.GlobalSecurity }}
+
+      security = @sdk_configuration.security_source&.call
+      {{- end }}
+
+      timeout = (timeout_ms.to_f / 1000) unless timeout_ms.nil?
+      {{- if .Local.Extensions.Timeout }}
+      timeout ||= ({{ templateNumericLiteral .Local.Extensions.Timeout }}.to_f / 1000)
+      {{- else}}
+      timeout ||= @sdk_configuration.timeout
+      {{- end }}
+
+
+      connection = @sdk_configuration.client{{ if .Local.Extensions.Retries }}.dup{{ end }}
+      {{- if .Local.Extensions.Retries }}
+      connection.use Utils::RetryMiddleware, retry_options
+      {{- end }}
+
+      hook_ctx = SDKHooks::HookContext.new(
+        config: @sdk_configuration,
+        base_url: base_url,
+        oauth2_scopes: {{ templateOAuth2Scopes .Local }},
+        operation_id: '{{ .Local.ID }}',
+        security_source: {{ if .Local.GlobalSecurity }}@sdk_configuration.security_source{{ else if .Local.Security }}-> { security }{{ else }}nil{{ end }}
+      )
+
+      error = {{sorbetLet "nil" "T.nilable(StandardError)"}}
+      http_response = {{sorbetLet "nil" "T.nilable(Faraday::Response)"}}
+      {{if eq $responseFormat "envelope-http" }}http_request = {{sorbetLet "nil" "T.nilable(Faraday::Request)"}}{{end}}
+
+      begin
+{{- if containsStreamingResponse $op.Response }}
+        stream_rd, stream_wr = ::IO.pipe
+        stream_rd.binmode
+        stream_wr.binmode
+        stream_ready = ::Queue.new
+        stream_env = {{sorbetLet "nil" "T.untyped"}}
+        stream_signaled = {{sorbetLet "false" "T::Boolean"}}
+
+        stream_thread = ::Thread.new do
+          thread_response = {{sorbetMust "connection"}}.{{.Local.Method}}(url) do |req|
+            {{- if and .Local.Request .Local.Request.RequestBody }}
+            req.body = body
+            {{- end }}
+            req.headers.merge!(headers)
+            req.options.timeout = timeout unless timeout.nil?
+            {{- if $hasQueryParams }}
+            req.params = query_params
+            {{- end }}
+            {{- if or .Local.Security .Local.GlobalSecurity }}
+            Utils.configure_request_security(req, security{{if $needsAllowedFields}}, %i[{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}} {{end}}{{sanitizeFieldName $f.Name}}{{end}}]{{end}})
+            {{- end }}
+            http_headers&.each do |key, value|
+              req.headers[key.to_s] = value
+            end
+
+            req.options.on_data = proc do |chunk, _overall_size, env|
+              unless stream_env
+                stream_env = env
+                stream_ready.push(:ok)
+                stream_signaled = true
+              end
+              begin
+                stream_wr.write(chunk)
+              rescue ::IOError, ::Errno::EPIPE
+                # Reader closed the pipe, stop writing
+              end
+            end
+
+            {{if eq $responseFormat "envelope-http" }}http_request = {{end}}@sdk_configuration.hooks.before_request(
+              hook_ctx: SDKHooks::BeforeRequestHookContext.new(
+                hook_ctx: hook_ctx
+              ),
+              request: req
+            )
+          end
+
+          if stream_env.nil? && !thread_response.nil? && thread_response.respond_to?(:env)
+            stream_env = thread_response.env
+            stream_ready.push(:ok)
+            stream_signaled = true
+          end
+        rescue StandardError => e
+          if stream_env
+            stream_env[:stream_error] = e
+          else
+            stream_ready.push(e)
+            stream_signaled = true
+          end
+        ensure
+          stream_wr.close unless stream_wr.closed?
+          stream_ready.push(::StandardError.new('no streaming response received')) unless stream_env || stream_signaled
+        end
+
+        hdr_result = stream_ready.pop
+        raise hdr_result if hdr_result.is_a?(::StandardError)
+
+        stream_content_type = stream_env[:response_headers]&.fetch('Content-Type', nil)
+        stream_content_type ||= 'application/octet-stream'
+        live_stream_content_types = {{ templateLiveStreamContentTypes $op.Response }}
+        if Utils.error_status?(stream_env[:status]) ||
+           live_stream_content_types.none? { |live_content_type| Utils.match_content_type(stream_content_type, live_content_type) }
+          # Only bodies decoded as a whole (JSON, text, error payloads) are
+          # buffered; SSE, JSONL and raw stream bodies stay live below.
+          stream_env[:body] = stream_rd.read
+          stream_rd.close
+        else
+          # Preserve a live stream body for incremental consumers.
+          stream_env[:body] = stream_rd
+          stream_env[:stream_thread] = stream_thread
+        end
+
+        http_response = ::Faraday::Response.new
+        http_response.finish(stream_env)
+{{- else }}
+        http_response = {{sorbetMust "connection"}}.{{.Local.Method}}(url) do |req|
+          {{- if and .Local.Request .Local.Request.RequestBody }}
+          req.body = body
+          {{- end }}
+          req.headers.merge!(headers)
+          req.options.timeout = timeout unless timeout.nil?
+          {{- if $hasQueryParams }}
+          req.params = query_params
+          {{- end }}
+          {{- if or .Local.Security .Local.GlobalSecurity }}
+          Utils.configure_request_security(req, security{{if $needsAllowedFields}}, %i[{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}} {{end}}{{sanitizeFieldName $f.Name}}{{end}}]{{end}})
+          {{- end }}
+          http_headers&.each do |key, value|
+            req.headers[key.to_s] = value
+          end
+
+          {{if eq $responseFormat "envelope-http" }}http_request = {{end}}@sdk_configuration.hooks.before_request(
+            hook_ctx: SDKHooks::BeforeRequestHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            request: req
+          )
+        end
+{{- end }}
+      rescue StandardError => e
+        error = e
+      ensure
+        if http_response.nil? || Utils.error_status?(http_response.status)
+          http_response = @sdk_configuration.hooks.after_error(
+            error: error,
+            hook_ctx: SDKHooks::AfterErrorHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+        else
+          http_response = @sdk_configuration.hooks.after_success(
+            hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+        end
+
+        if http_response.nil?
+          raise error if !error.nil?
+          raise 'no response'
+        end
+      end
+
+      {{ if or (anyResponseUsesContentType $responses) (eq $responseFormat "envelope") }}content_type = http_response.headers.fetch('Content-Type', 'application/octet-stream'){{end}}
+      {{- if gt (len $responses) 0 }}
+      {{-   $hasDefault := false }}
+      {{-       $nResponses := len $responses}}
+      {{-   range $index, $response := $responses }}
+      {{-     if includes $response.Code "default"}}
+      {{-       $hasDefault = true }}
+      {{-       if gt (len $responses) 1}}
+      else
+      {{-       else }}
+      if true
+      {{-       end }}
+      {{-     else }}
+      {{-       if gt $index 0}}
+      elsif
+      {{-       else }}
+      if
+      {{-       end}} {{templateStatusCodeCheck "http_response.status" $response.Code}}
+      {{-     end }}{{/* end include response.Code default */}}
+      {{-     if ne (len $response.Content) 0 }}
+      {{-       $nContents := len $response.Content}}
+      {{-       range $index, $content := $response.Content }}
+      {{-         if and (gt (len $response.Content) 0) (gt $index 0)}}
+        elsif {{- else }}
+        if{{- end }} Utils.match_content_type(content_type, '{{ escapeString $content.ContentType }}')
+          {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+            hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+              hook_ctx: hook_ctx
+            ),
+            response: http_response
+          )
+{{templateResponseHandler $op $response $content | indentPresent 10}}
+      {{-       end}}{{/* end content range */}}
+      {{-       if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}
+        else
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 10}}
+        end
+      {{-       else }}
+        else
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 10}}
+        end
+      {{-       end }}
+      {{-     else if $response.Error}}{{/* if empty response content and strongly typed error */}}
+{{templateErrorHandler "API error occurred" $responseFormat  | indent 8}}
+      {{-     else }}{{/* empty response content, with no error */}}
+        {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+          hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+            hook_ctx: hook_ctx
+          ),
+          response: http_response
+        )
+{{templateResponseHandler $op | indentPresent 8}}
+      {{-     end }}
+      {{-     if and (eq (add1 $index) $nResponses) $hasDefault }}
+      end
+      {{-     end}}
+      {{-   else}}{{/* if only one response */}}
+      if responseStatusCode == 200
+      {{-     if (eq .SerializationMethod "json") }}
+        {{if not (eq $responseFormat "flat")}}http_response = {{end}}@sdk_configuration.hooks.after_success(
+          hook_ctx: SDKHooks::AfterSuccessHookContext.new(
+            hook_ctx: hook_ctx
+          ),
+          response: http_response
+        )
+{{templateResponseHandler $op $response | indent 8}}
+      {{-     else }}
+{{templateErrorHandler "API returned unexpected status code or content type" $responseFormat | indent 8}}
+      {{-     end }}
+      {{-     if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnveloper)}}return response{{end}}
+      {{-   end}}
+      {{-   if not $hasDefault}}
+      else
+{{templateErrorHandler "Unknown status code received" $responseFormat | indent 8}}
+
+      end
+      {{-   end }}
+      {{- end }}
+    end
+{{- end }}

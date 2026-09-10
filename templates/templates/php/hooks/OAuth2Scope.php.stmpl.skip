@@ -1,0 +1,18 @@
+{{- $namespace := getScopeNamespace "hooks" true}}
+{{- $schemeKey := .Local.schemeKey }}
+{{- $config := .Local.config }}
+{{- $enumName := getOAuth2ScopeClassName $schemeKey}}
+{{- $dedupNames := getDeduplicatedScopeEnumNames $config.AvailableScopes}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+
+{{templateComments $config.Comments nil nil 0 false "enum"}}
+enum {{$enumName}}: string
+{
+    {{- range $i, $scope := $config.AvailableScopes}}
+{{if .Comments.Summary}}{{"\n"}}{{templateComments .Comments nil nil 1 false "field"}}{{end}}
+    case {{index $dedupNames $i}} = '{{$scope.Name}}';
+    {{- end}}
+}

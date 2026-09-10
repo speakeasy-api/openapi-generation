@@ -1,0 +1,7 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+php:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  packageName: speakeasy/customhttp

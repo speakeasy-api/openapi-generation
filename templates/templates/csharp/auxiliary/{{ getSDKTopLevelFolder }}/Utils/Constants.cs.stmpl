@@ -1,0 +1,32 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    /// <summary>
+    /// SDK constants for version information and language identification.
+    /// </summary>
+    public static class Constants
+    {
+        /// <summary>
+        /// The language identifier for this SDK.
+        /// </summary>
+        public const string Language = "csharp";
+
+        /// <summary>
+        /// The version of the SDK.
+        /// </summary>
+        public const string SdkVersion = "{{.Global.Config.SDKVersion}}";
+
+        /// <summary>
+        /// The version of the SDK generator used to create this SDK.
+        /// </summary>
+        public const string SdkGenVersion = "{{.Global.Config.GenVersion}}";
+        {{- if ne .Global.Config.DocVersion ""}}
+
+        /// <summary>
+        /// The version of the OpenAPI document used to generate this SDK.
+        /// </summary>
+        public const string OpenApiDocVersion = "{{.Global.Config.DocVersion}}";
+        {{- end}}
+    }
+}
+

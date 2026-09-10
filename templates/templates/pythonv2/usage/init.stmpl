@@ -1,0 +1,7 @@
+{{- $context := .Local.Context -}}
+{{- $isAsync := .Local.Async -}}
+{{- if not $context.SkipSDKInstantiation}}
+{{- $sdkClassName := (sanitizeClassName .Global.AST.MainSDK.Type.Name)}}
+{{- if and $isAsync isSplitMode }}{{$sdkClassName = (print "Async" $sdkClassName)}}{{end}}
+{{- addImport (getModuleImport) $sdkClassName}}
+{{if $isAsync}}async {{end}}with {{$sdkClassName}}({{templateUsageSDKParams $context}}) as {{templateSDKVarName}}:{{end}}

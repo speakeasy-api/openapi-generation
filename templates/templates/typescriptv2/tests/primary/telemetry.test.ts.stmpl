@@ -1,0 +1,38 @@
+import { expect, test } from "vitest";
+
+import { SDK } from "../index.js";
+import { TelemetrySpeakeasyUserAgentGetResponse } from "../sdk/models/operations/telemetryspeakeasyuseragentget.js";
+import { TelemetryUserAgentGetResponse } from "../sdk/models/operations/telemetryuseragentget.js";
+
+import { HTTPBIN_URL, recordTest } from "./common_helpers.js";
+
+test("Test Telemetry User Agent Get", async () => {
+  recordTest("telemetry-user-agent-get");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+
+  const res: TelemetryUserAgentGetResponse =
+    await sdk.telemetry.telemetryUserAgentGet();
+
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(res.res?.headers["X-Speakeasy-User-Agent"]).toBe(
+    "speakeasy-sdk/typescript {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}"
+  );
+});
+
+test("Test Telemetry Speakeasy User Agent Get", async () => {
+  recordTest("telemetry-speakeasy-user-agent-get");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+
+  const userAgent = "test user agent";
+
+  const res: TelemetrySpeakeasyUserAgentGetResponse =
+    await sdk.telemetry.telemetrySpeakeasyUserAgentGet(userAgent);
+
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(res.res?.headers["User-Agent"]).toBe(userAgent);
+  expect(res.res?.headers["X-Speakeasy-User-Agent"]).toBe(
+    "speakeasy-sdk/typescript {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}"
+  );
+});

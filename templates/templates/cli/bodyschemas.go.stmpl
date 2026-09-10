@@ -1,0 +1,21 @@
+{{- recurse 1 -}}
+{{- addImport "fmt" -}}
+{{- addImport "io" -}}
+package usage
+
+{{genImports}}
+
+var bodySchemas = map[string]string{
+{{- range .Local.Entries}}
+	{{goStringLiteral .OpID}}: {{goStringLiteral .JSON}},
+{{- end}}
+}
+
+func EmitBodySchema(w io.Writer, operationID string) error {
+	schema, ok := bodySchemas[operationID]
+	if !ok {
+		return fmt.Errorf("no request body schema for %s", operationID)
+	}
+	_, err := fmt.Fprintln(w, schema)
+	return err
+}

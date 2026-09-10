@@ -1,0 +1,866 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+func TestPaginationCursorNullableLimit(t *testing.T) {
+	recordTest("pagination-cursor-nullable-limit")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-cursor-nullable-limit", "--all"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// --all paginates through all pages and outputs NDJSON (one result per line).
+	// The test service has 20 total items with a default limit of 10 per page.
+	lines := strings.Split(stdout, "\n")
+	assert.Equal(t, 20, len(lines), "expected 20 total results across all pages")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		assert.True(t, json.Valid([]byte(line)), "expected valid JSON line: %s", line)
+	}
+}
+
+func TestPaginationLimitOffsetNullable(t *testing.T) {
+	recordTest("pagination-limit-offset-nullable")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-offset-nullable", "--all"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// --all paginates through all pages and outputs NDJSON (one result per line).
+	// The test service has 20 total items with a default limit of 10 per page.
+	lines := strings.Split(stdout, "\n")
+	assert.Equal(t, 20, len(lines), "expected 20 total results across all pages")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		assert.True(t, json.Valid([]byte(line)), "expected valid JSON line: %s", line)
+	}
+}
+
+// paginationPage represents a single page of pagination results.
+type paginationPage struct {
+	NumPages    int     `json:"numPages"`
+	Next        *string `json:"next,omitempty"`
+	ResultArray []int64 `json:"resultArray"`
+}
+
+// newPaginationServer creates a test server that serves paginated responses.
+// Limit/offset pagination: returns pages based on ?page= param (3 pages total).
+// Cursor pagination: returns pages based on ?cursor= param (items 1-3, cursor = last item).
+func newPaginationServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/pagination/limitoffset/page"):
+			page := 0
+			if p := r.URL.Query().Get("page"); p != "" {
+				page, _ = strconv.Atoi(p)
+			}
+			numPages := 3
+			var results []int64
+			switch page {
+			case 0:
+				results = []int64{1, 2, 3}
+			case 1:
+				results = []int64{4, 5, 6}
+			case 2:
+				results = []int64{7, 8, 9}
+			default:
+				results = []int64{}
+			}
+			json.NewEncoder(w).Encode(paginationPage{
+				NumPages:    numPages,
+				ResultArray: results,
+			})
+
+		case strings.HasPrefix(r.URL.Path, "/pagination/cursor"):
+			cursor := 0
+			if c := r.URL.Query().Get("cursor"); c != "" {
+				cursor, _ = strconv.Atoi(c)
+			}
+			var results []int64
+			switch {
+			case cursor == 0:
+				results = []int64{1, 2, 3}
+			case cursor == 3:
+				results = []int64{4, 5, 6}
+			case cursor == 6:
+				results = []int64{7, 8, 9}
+			default:
+				// Empty results → pagination ends
+				results = []int64{}
+			}
+			resp := paginationPage{
+				NumPages:    3,
+				ResultArray: results,
+			}
+			json.NewEncoder(w).Encode(resp)
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+}
+
+const paginationCursorHint = "Hint: more pages available. Use --all to fetch all results, or --cursor for manual pagination.\n"
+
+// TestPaginationHintTruthfulness verifies that the hint is derived from the
+// actual raw continuation value and is emitted only for human output.
+func TestPaginationHintTruthfulness(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		results := []int64{1}
+		if r.URL.Query().Get("cursor") == "99" {
+			results = []int64{}
+		}
+		json.NewEncoder(w).Encode(paginationPage{NumPages: 2, ResultArray: results})
+	}))
+	defer s.Close()
+
+	t.Run("pretty with numeric cursor", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-cursor-params", "--cursor", "-1",
+			"--output-format", "pretty",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, paginationCursorHint, h.GetStderr())
+	})
+
+	t.Run("terminal page", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-cursor-params", "--cursor", "99",
+			"--output-format", "pretty",
+		})
+		require.NoError(t, err)
+		assert.Empty(t, h.GetStderr())
+	})
+
+	structured := []struct {
+		name string
+		args []string
+	}{
+		{name: "json", args: []string{"--output-format", "json"}},
+		{name: "yaml", args: []string{"--output-format", "yaml"}},
+		{name: "toon", args: []string{"--output-format", "toon"}},
+		{name: "jq", args: []string{"--jq", ".resultArray"}},
+		{name: "agent pretty", args: []string{"--agent-mode", "--output-format", "pretty"}},
+	}
+	for _, tt := range structured {
+		t.Run(tt.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			args := []string{"pagination", "pagination-cursor-params", "--cursor", "-1"}
+			args = append(args, tt.args...)
+			err := h.RunWithServer(s.URL, args)
+			require.NoError(t, err)
+			assert.Empty(t, h.GetStderr())
+		})
+	}
+
+	t.Run("dry run", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-cursor-params", "--cursor", "-1",
+			"--dry-run", "--output-format", "pretty",
+		})
+		require.NoError(t, err)
+		assert.NotContains(t, h.GetStderr(), "Hint: more pages available")
+	})
+}
+
+func TestPaginationOffsetDoesNotGuessHint(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-limit-offset-page-params", "--page", "0",
+		"--output-format", "pretty",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, h.GetStderr())
+}
+
+func TestPaginationMaxPagesValidationAndRequestBound(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		cursor, _ := strconv.Atoi(r.URL.Query().Get("cursor"))
+		json.NewEncoder(w).Encode(paginationPage{
+			NumPages:    10,
+			ResultArray: []int64{int64(cursor + 1)},
+		})
+	}))
+	defer s.Close()
+
+	t.Run("exact cap", func(t *testing.T) {
+		requests.Store(0)
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-cursor-params", "--cursor", "-1",
+			"--all", "--max-pages", "2", "--output-format", "pretty",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(2), requests.Load())
+		assert.Equal(t, "Stopped after 2 pages (--max-pages); more results may be available.\n", h.GetStderr())
+	})
+
+	validationCases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "requires all",
+			args: []string{"response-bodies", "flattened-envelope-pagination-response", "--max-pages", "1"},
+			want: "--max-pages requires --all",
+		},
+		{
+			name: "explicit zero requires all",
+			args: []string{"response-bodies", "flattened-envelope-pagination-response", "--max-pages", "0"},
+			want: "--max-pages requires --all",
+		},
+		{
+			name: "negative",
+			args: []string{"response-bodies", "flattened-envelope-pagination-response", "--all", "--max-pages", "-1"},
+			want: "--max-pages must be zero or greater",
+		},
+	}
+	for _, tt := range validationCases {
+		t.Run(tt.name, func(t *testing.T) {
+			requests.Store(0)
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, tt.args)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.want)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err), "--max-pages misuse is a usage error")
+			assert.Zero(t, requests.Load())
+		})
+	}
+
+	t.Run("zero is unlimited with all", func(t *testing.T) {
+		var zeroRequests atomic.Int32
+		zeroServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requestNumber := zeroRequests.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			results := []string{"next"}
+			if requestNumber == 2 {
+				results = []string{}
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"numPages": 2,
+				"resultArray": results,
+			})
+		}))
+		defer zeroServer.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(zeroServer.URL, []string{
+			"response-bodies", "flattened-envelope-pagination-response",
+			"--all", "--max-pages", "0",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(2), zeroRequests.Load())
+	})
+}
+
+func TestPaginationRepeatedCursorIsProtocolError(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"numPages": 10,
+			"resultArray": []string{"same"},
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--agent-mode",
+		"response-bodies", "flattened-envelope-pagination-response", "--all",
+	})
+	require.Error(t, err)
+	assert.Equal(t, int32(2), requests.Load(), "cycle guard must stop before a third request")
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+	assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"])
+	assert.Equal(t, "protocol_error", envelope["error_type"])
+	assert.Contains(t, envelope["error"], "repeated continuation cursor")
+}
+
+func TestPaginationRepeatedCursorWithEmptyResultsTerminates(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestNumber := requests.Add(1)
+		assert.Equal(t, "/pagination/cursor/nullable", r.URL.Path)
+		assert.Equal(t, "1", r.URL.Query().Get("limit"))
+
+		wantCursor := ""
+		results := []string{"first"}
+		if requestNumber == 2 {
+			wantCursor = "same"
+			results = []string{}
+		}
+		assert.Equal(t, wantCursor, r.URL.Query().Get("cursor"))
+		if requestNumber > 2 {
+			http.Error(w, "unexpected third request", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"results":     results,
+			"next_cursor": "same",
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-cursor-nullable-results",
+		"--limit", "1", "--all",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int32(2), requests.Load())
+	assert.Empty(t, h.GetStderr())
+}
+
+func TestPaginationNumericCursorGuardUsesSDKCoercion(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestNumber := requests.Add(1)
+		assert.Equal(t, "/pagination/cursor/numeric-coercion", r.URL.Path)
+
+		wantCursor := "-1"
+		nextCursor := 1.1
+		if requestNumber == 2 {
+			wantCursor = "1"
+			nextCursor = 1.2
+		}
+		assert.Equal(t, wantCursor, r.URL.Query().Get("cursor"))
+		if requestNumber > 2 {
+			http.Error(w, "unexpected third request", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"items":       []int32{requestNumber},
+			"next_cursor": nextCursor,
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--agent-mode",
+		"pagination", "pagination-cursor-numeric-coercion",
+		"--cursor", "-1", "--all",
+	})
+	require.Error(t, err)
+	assert.Equal(t, int32(2), requests.Load(), "cycle guard must use the cursor value sent by the SDK")
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+	assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"])
+	assert.Equal(t, "protocol_error", envelope["error_type"])
+	assert.Contains(t, envelope["error"], "repeated continuation cursor")
+}
+
+func TestPaginationForwardsHeadersToNextPage(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		command []string
+		next    interface{}
+	}{
+		{
+			name:    "plain cursor operation",
+			path:    "/anything/flattenedEnvelopePaginationResponse",
+			command: []string{"response-bodies", "flattened-envelope-pagination-response", "--all"},
+			next:    "next",
+		},
+		{
+			name:    "operation server cursor",
+			path:    "/pagination/cursor",
+			command: []string{"pagination", "pagination-cursor-params", "--cursor", "-1", "--all"},
+			next:    int64(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var requests atomic.Int32
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				requestNumber := requests.Add(1)
+				assert.Equal(t, tt.path, r.URL.Path)
+				assert.Equal(t, "1", r.Header.Get("X-Test"))
+				w.Header().Set("Content-Type", "application/json")
+				var results interface{} = []interface{}{tt.next}
+				if requestNumber == 2 {
+					results = []interface{}{}
+				}
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"numPages": 2,
+					"resultArray": results,
+				})
+			}))
+			defer s.Close()
+
+			h := NewCLITestHarness(t)
+			args := append([]string{"--header", "X-Test: 1"}, tt.command...)
+			err := h.RunWithServer(s.URL, args)
+			require.NoError(t, err)
+			assert.Equal(t, int32(2), requests.Load())
+		})
+	}
+}
+
+func TestPaginationTimeoutAppliesPerPage(t *testing.T) {
+	t.Run("renews timeout per page", func(t *testing.T) {
+		// Twelve pages at 50ms each: total server delay (>=600ms) exceeds the
+		// 500ms timeout, so only a per-page deadline can finish, while each
+		// page keeps a 10x margin against CI scheduling stalls.
+		var requests atomic.Int32
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requests.Add(1)
+			time.Sleep(50 * time.Millisecond)
+			w.Header().Set("Content-Type", "application/json")
+
+			cursor, err := strconv.Atoi(r.URL.Query().Get("cursor"))
+			if err != nil || cursor < -1 || cursor > 10 {
+				t.Errorf("unexpected cursor %q", r.URL.Query().Get("cursor"))
+				http.Error(w, "unexpected cursor", http.StatusBadRequest)
+				return
+			}
+			results := []int64{}
+			if cursor < 10 {
+				results = []int64{int64(cursor + 1)}
+			}
+			assert.NoError(t, json.NewEncoder(w).Encode(paginationPage{
+				NumPages:    12,
+				ResultArray: results,
+			}))
+		}))
+		defer s.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-cursor-params", "--cursor", "-1",
+			"--all", "--timeout", "500ms",
+		})
+		require.NoError(t, err)
+		assert.Equal(t, int32(12), requests.Load())
+
+		var items []int64
+		for _, line := range strings.Split(strings.TrimSpace(h.GetStdout()), "\n") {
+			var page paginationPage
+			require.NoError(t, json.Unmarshal([]byte(line), &page))
+			items = append(items, page.ResultArray...)
+		}
+		assert.Equal(t, []int64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, items)
+	})
+
+	t.Run("one slow page times out", func(t *testing.T) {
+		var requests atomic.Int32
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requests.Add(1)
+			<-r.Context().Done()
+		}))
+		defer s.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{
+			"--agent-mode", "--no-retries", "--timeout", "50ms",
+			"pagination", "pagination-cursor-params", "--cursor", "-1",
+		})
+		require.Error(t, err)
+		assert.Equal(t, int32(1), requests.Load())
+
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "connection_error", envelope["error_type"])
+		assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"])
+	})
+}
+
+// TestPaginationSinglePage verifies that a paginated command works normally
+// without --all (single page, standard output).
+func TestPaginationSinglePage(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// Single-page output should be a JSON object with resultArray
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(stdout), &result)
+	require.NoError(t, err)
+	assert.Contains(t, result, "resultArray")
+}
+
+// TestPaginationAllOffsetLimit verifies that --all streams all pages for
+// limit/offset pagination. Output should be NDJSON (one item per line)
+// since the harness uses --output-format json.
+func TestPaginationAllOffsetLimit(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// --all + --output-format json should produce NDJSON output.
+	// For limit/offset with explicit results, each line is one item from resultArray.
+	lines := strings.Split(stdout, "\n")
+	assert.GreaterOrEqual(t, len(lines), 3, "expected at least 3 items from first page")
+}
+
+// TestPaginationAllCursor verifies that --all works for cursor-based pagination.
+// Content is output per-page (cursor pagination has no ResultsDot).
+func TestPaginationAllCursor(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-cursor-params",
+		"--cursor", "0",
+		"--all",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// Cursor pagination outputs whole content per page (no ResultsDot).
+	// Should have at least one page of output.
+	lines := strings.Split(stdout, "\n")
+	assert.GreaterOrEqual(t, len(lines), 1, "expected at least 1 page of output")
+}
+
+// TestPaginationAllWithJq verifies --all combined with --jq filter.
+func TestPaginationAllWithJq(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+		"--jq", ".",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// Each line should be valid JSON after jq processing
+	lines := strings.Split(stdout, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		assert.True(t, json.Valid([]byte(line)), "expected valid JSON line: %s", line)
+	}
+}
+
+// TestPaginationAllPrettyFormat verifies --all with pretty output format.
+func TestPaginationAllPrettyFormat(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+		"--output-format", "pretty",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+}
+
+// TestPaginationAllMaxPages verifies --max-pages limits the number of pages fetched.
+func TestPaginationAllMaxPages(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+		"--max-pages", "1",
+	})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	// Offset/page pagination carries no continuation evidence in the page
+	// itself, so the truthful --max-pages diagnostic is not emitted here; the
+	// cursor-based TestPaginationMaxPagesValidationAndRequestBound covers the message.
+
+	var rendered []int
+	for _, field := range strings.Fields(stdout) {
+		if value, err := strconv.Atoi(field); err == nil {
+			rendered = append(rendered, value)
+		}
+	}
+	assert.Equal(t, []int{1, 2, 3}, rendered, "expected only the first page to be rendered")
+
+	h2 := NewCLITestHarness(t)
+	err = h2.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--all",
+		"--max-pages", "1",
+		"--output-format", "json",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, h2.GetStderr(), "machine-mode success must keep stderr silent")
+}
+
+func TestPaginationHintSilentInMachineMode(t *testing.T) {
+	s := newPaginationServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"pagination", "pagination-limit-offset-page-params",
+		"--page", "0",
+		"--output-format", "json",
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+	assert.Empty(t, h.GetStderr())
+}
+
+// ---------------------------------------------------------------------------
+// Standard pagination variant tests — each records a test ID matching Go SDK
+// tests so the coverage check sees them.
+// These use RunBare (no --server-url override) so the operation-specific server
+// URL (localhost:35456, the API test service) is used. The mock server at :18080
+// does not serve pagination routes.
+// ---------------------------------------------------------------------------
+
+func TestPaginationLimitOffsetPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-page-params", "--page", "1"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetPageParamsConst(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params-const")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-page-params-const", "--page", "1"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetNilPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-nil-page-params")
+	h := NewCLITestHarness(t)
+	// No --page flag = nil page parameter
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-optional-page-params"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetZeroPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-zero-page-params")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-optional-page-params", "--page", "0"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetUnionOutputPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-union-output-page-params")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-union-output-page-params", "--page", "0"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetPageBody(t *testing.T) {
+	recordTest("pagination-limit-offset-page-body")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-page-body", "--page", "1", "--limit", "15"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetDeepOutputsPageBody(t *testing.T) {
+	recordTest("pagination-limit-offset-deep-outputs-page-body")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-deep-outputs-page-body", "--page", "1", "--limit", "15"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetOffsetParams(t *testing.T) {
+	recordTest("pagination-limit-offset-offset-params")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-offset-params", "--limit", "15", "--offset", "0"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetOffsetBody(t *testing.T) {
+	recordTest("pagination-limit-offset-offset-body")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-offset-body", "--offset", "0", "--limit", "15"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetNilOffsetParams(t *testing.T) {
+	recordTest("pagination-limit-offset-nil-offset-params")
+	h := NewCLITestHarness(t)
+	// No flags = nil for both limit and offset
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-offset-params"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetDefaultOffsetBody(t *testing.T) {
+	recordTest("pagination-limit-offset-default-offset-body")
+	h := NewCLITestHarness(t)
+	// Uses default values (limit=15, offset=10)
+	err := h.RunBare([]string{"pagination", "pagination-limit-offset-default-offset-body"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationURLParams(t *testing.T) {
+	recordTest("pagination-url")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-URL-params", "--attempts", "3"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationCursorParams(t *testing.T) {
+	recordTest("pagination-cursor-params")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-cursor-params", "--cursor", "-1"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationCursorBody(t *testing.T) {
+	recordTest("pagination-cursor-body")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "pagination-cursor-body", "--cursor", "-1"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationCursorNonNumeric(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric")
+	h := NewCLITestHarness(t)
+	// No cursor flag = nil cursor
+	err := h.RunBare([]string{"pagination", "pagination-cursor-non-numeric"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+
+func TestPaginationCursorNonNumericNullable(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric-nullable")
+	h := NewCLITestHarness(t)
+	// cursor is FlagKindJSON — pass JSON string value
+	err := h.RunBare([]string{"pagination", "pagination-cursor-non-numeric-nullable", "--cursor", `"2"`})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationCursorNonNumericEmptyString(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric-empty-string")
+	h := NewCLITestHarness(t)
+	// cursor is optional, end-cursor has default ""
+	err := h.RunBare([]string{"pagination", "pagination-cursor-non-numeric-empty-string"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationWithRetries(t *testing.T) {
+	recordTest("pagination-with-retries")
+	h := NewCLITestHarness(t)
+	// fault-settings and request-id have defaults in the command metadata
+	err := h.RunBare([]string{"pagination", "pagination-with-retries"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}

@@ -1,0 +1,17 @@
+.env
+.env.local
+**/.speakeasy/temp/
+**/.speakeasy/logs/
+.speakeasy/logs/
+.speakeasy/temp/
+.speakeasy/reports
+# Ignore Gradle project-specific cache directory
+.gradle
+# Ignore Gradle build output directory
+build
+bin/
+# Ignore IDE-specific configs
+.project
+.settings/
+.DS_Store
+_debug

@@ -1,0 +1,356 @@
+import { expect, test, vi } from "vitest";
+
+import { SDK } from "../index.js";
+import { TestHooksRes } from "../sdk/models/operations/testhooks.js";
+
+import {
+  recordTest,
+  randSeq,
+  RequestLogEntry,
+  newRequestRecorderClient,
+  HTTPBIN_URL,
+  API_TEST_SERVICE_URL,
+} from "./common_helpers.js";
+import { UnexpectedClientError } from "../sdk/models/errors/httpclienterrors.js";
+import { HTTPClient } from "../lib/http.js";
+import {
+  ClientCredentialsOAuth2Scope,
+  OAuth2Scope,
+} from "../hooks/{{getOAuth2ScopesFileName}}.js";
+
+test("Test hooks", async () => {
+  recordTest("test-hooks");
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: {
+      apiKeyAuth: "Token YOUR_API_KEY",
+    },
+  });
+
+  const response = await s.hooks.testHooks("someInitialValue");
+  expect(response).toBeDefined();
+  expect(response.httpMeta.response.status).toBe(200);
+  // No-zod: header names arrive in their wire form (httpbin's canonical
+  // Title-Case-With-Dashes), so we match those literals instead of the
+  // camelized forms zod produces in primary.
+  expect(response.res).toMatchObject({
+    args: {
+      someParam: "overriddenParam",
+    },
+    headers: {
+      "Client-Level-Header": "added by client",
+      "Idempotency-Key": "some-key",
+    },
+    url: `${HTTPBIN_URL}/anything/hooks?someParam=overriddenParam`,
+  } as TestHooksRes);
+});
+
+test("Hooks can build a custom user agent from SDK metadata", async () => {
+  recordTest("hooks-custom-user-agent");
+
+  const s = new SDK({ serverURL: HTTPBIN_URL });
+
+  const res = await s.hooks.hooksCustomUserAgent();
+  expect(res.httpMeta.response.status).toBe(200);
+
+  const headers = res.CustomUserAgentEcho?.headers ?? {};
+  expect(headers["User-Agent"]).toBe(
+    `acme-corp/{{.Global.Config.SDKVersion}} acme-corp/${process.version}`,
+  );
+  expect(headers["X-Test-Gen-Version"]).toBe("{{.Global.Config.GenVersion}}");
+  expect(headers["X-Test-Doc-Version"]).toBe("{{.Global.Config.DocVersion}}");
+  expect(headers["X-Test-Init-Sdk-Version"]).toBe(
+    "{{.Global.Config.SDKVersion}}",
+  );
+});
+
+test("Test hooks before create request", async () => {
+  recordTest("test-hooks-before-create-request");
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: {
+      apiKeyAuth: "Token YOUR_API_KEY",
+    },
+  });
+
+  const response = await s.hooks.testHooksBeforeCreateRequestPaths("foo/bar");
+  expect(response).toBeDefined();
+  expect(response.httpMeta.response.status).toBe(200);
+  // No-zod: header name comes back in wire (Title-Case-With-Dashes) form.
+  expect(response.res).toMatchObject({
+    url: `${HTTPBIN_URL}/anything/hooks/beforeCreateRequestPaths/foo/bar`,
+    headers: {
+      "Old-Pathname":
+        "/anything/hooks/beforeCreateRequestPaths/foo%2Fbar",
+    },
+  });
+});
+
+test("Test hooks after response", async () => {
+  recordTest("test-hooks-after-response");
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: {
+      apiKeyAuth: "Token YOUR_API_KEY",
+    },
+  });
+
+  try {
+    await s.hooks.testHooksAfterResponse();
+    expect.unreachable("sdk call is expected to fail");
+  } catch (err: unknown) {
+    expect(err).toBeInstanceOf(UnexpectedClientError);
+    expect(err).toHaveProperty(["cause", "message"], "validation failed");
+  }
+});
+
+test("Test hooks error", async () => {
+  recordTest("test-hooks-error");
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: {
+      apiKeyAuth: "Token YOUR_API_KEY",
+    },
+  });
+
+  try {
+    await s.hooks.testHooksError();
+    expect.unreachable("sdk call is expected to fail");
+  } catch (err: unknown) {
+    expect(err).toBeInstanceOf(UnexpectedClientError);
+    expect(err).toHaveProperty(["cause", "message"], "special test error case");
+  }
+});
+
+test("Test hooks authorization header modification", async () => {
+  recordTest("hooks-authorization-header-modification");
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    security: {
+      apiKeyAuth: "Bearer testToken",
+    },
+  });
+
+  const res = await s.hooks.authorizationHeaderModification();
+  expect(res).toBeDefined();
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(res.token?.authenticated).toBe(true);
+  expect(res.token?.token).toBe("testToken modified");
+});
+
+test("Hooks can trigger retries", async () => {
+  recordTest("hooks-trigger-retries");
+
+  const spy = vi.fn();
+  const httpClient = new HTTPClient().addHook("beforeRequest", spy);
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+  });
+
+  const retries = {
+    strategy: "backoff",
+    backoff: {
+      exponent: 1.5,
+      initialInterval: 50,
+      maxInterval: 100,
+      maxElapsedTime: 1000,
+    },
+  } as const;
+
+  let res = await s.requestBodies.nullableObjectPost(null, { retries });
+
+  expect(res).toBeDefined();
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(spy).toHaveBeenCalledTimes(1);
+
+  spy.mockReset();
+  expect(spy).toHaveBeenCalledTimes(0);
+
+  res = await s.requestBodies.nullableObjectPost(null, {
+    retries,
+    fetchOptions: { headers: { "x-force-retry-hook": "force-retry" } },
+  });
+
+  expect(res).toBeDefined();
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(spy).toHaveBeenCalledTimes(2);
+});
+
+test("Hooks can access retry config for a method call", async () => {
+  recordTest("hooks-access-retry-config");
+
+  const spy = vi.fn();
+  const httpClient = new HTTPClient().addHook("beforeRequest", spy);
+
+  const s = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+  });
+
+  const retries = { strategy: "none" } as const;
+
+  const res = await s.requestBodies.nullableObjectPost(null, {
+    retries,
+    fetchOptions: { headers: { "x-force-retry-hook": "force-retry" } },
+  });
+
+  expect(res).toBeDefined();
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(spy).toHaveBeenCalledTimes(1);
+});
+
+test("Hooks can terminate retry loop", async () => {
+  recordTest("hooks-terminate-retry-loop");
+
+  let once = true;
+  const spy = vi.fn();
+  const httpClient = new HTTPClient()
+    .addHook("beforeRequest", spy)
+    .addHook("beforeRequest", (req) => {
+      if (once) {
+        once = false;
+        req.headers.set("x-teapot", "json");
+      }
+    });
+
+  const sdk = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+  });
+
+  const retries = {
+    strategy: "backoff",
+    backoff: {
+      exponent: 1.5,
+      initialInterval: 50,
+      maxInterval: 100,
+      maxElapsedTime: 1000,
+    },
+  } as const;
+
+  const res1 = await sdk.methods.methodGet({
+    serverURL: API_TEST_SERVICE_URL,
+    retries,
+    retryCodes: ["418"],
+  });
+
+  expect(res1).toBeDefined();
+  expect(res1.httpMeta.response.status).toBe(200);
+  expect(spy).toHaveBeenCalledTimes(2);
+
+  spy.mockReset();
+  expect(spy).toHaveBeenCalledTimes(0);
+
+  // At this point, we've confirmed that retry behavior works as expected.
+  // Below we will test to see if the hook can force a permanent error and abort
+  // the retry loop.
+
+  once = true;
+  await expect(
+    sdk.methods.methodGet({
+      serverURL: API_TEST_SERVICE_URL,
+      retries,
+      retryCodes: ["418"],
+      fetchOptions: {
+        headers: {
+          "x-force-retry-hook": "skip-retry",
+        },
+      },
+    }),
+  ).rejects.toThrow("Permanent error encountered");
+});
+
+test("test client credentials option successfully authenticates", async () => {
+  recordTest("hooks-client-credentials-option-success");
+
+  const log: RequestLogEntry[] = [];
+  const httpClient = newRequestRecorderClient(log);
+  const sdk = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+    security: {
+      clientCredentials: {
+        clientID: "speakeasy-sdks",
+        clientSecret: "supersecret-" + randSeq(10),
+{{- range $f := collectClientCredentialsAdditionalFields }}
+        {{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+      },
+    },
+  });
+
+  let res = await sdk.hooks.authenticatedRequest({});
+  expect(res.httpMeta.response.status).toBe(200);
+
+  // The requested token is still valid, so it should be reused.
+  res = await sdk.hooks.authenticatedRequest({});
+  expect(res.httpMeta.response.status).toBe(200);
+
+  // Check that only a single token request was made
+  const tokenUrl = "/clientcredentials/token?expires_in=90";
+  const tokenRequests = log.filter(
+    (entry) =>
+      entry.url.includes(tokenUrl) && entry.body.includes("scope=read+write"),
+  );
+  expect(tokenRequests).toHaveLength(1);
+});
+
+test("test client credentials option successfully authenticates with alt token url", async () => {
+  recordTest("hooks-client-credentials-option-success-alt-token-url");
+
+  const log: RequestLogEntry[] = [];
+  const httpClient = newRequestRecorderClient(log);
+  const tokenUrl = "/clientcredentials/alt/token";
+  const scopes: ClientCredentialsOAuth2Scope[] = ["alt:one", "alt:two"];
+
+  const sdk = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+    security: {
+      clientCredentials: {
+        clientID: "speakeasy-sdks",
+        clientSecret: "supersecret-" + randSeq(10),
+        scopes: scopes,
+        tokenURL: tokenUrl,
+{{- range $f := collectClientCredentialsAdditionalFields }}
+        {{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+      },
+    },
+  });
+
+  let res = await sdk.hooks.authenticatedRequest({});
+  expect(res.httpMeta.response.status).toBe(200);
+
+  // The token received is already expired so another one should be requested.
+  res = await sdk.hooks.authenticatedRequest({});
+  expect(res.httpMeta.response.status).toBe(200);
+
+  const tokenRequests = log.filter(
+    (entry) =>
+      entry.url.includes(tokenUrl) &&
+      entry.body.includes("scope=alt%3Aone+alt%3Atwo"),
+  );
+  expect(tokenRequests).toHaveLength(2);
+});
+
+test("test hooks available oauth2 scopes", () => {
+  recordTest("hooks-available-oauth2-scopes");
+
+  const readScope: ClientCredentialsOAuth2Scope = "read";
+  expect(readScope).toBe("read");
+  const modelsReadScope: OAuth2Scope = "models:read";
+  expect(modelsReadScope).toBe("models:read");
+
+  const writeScope: ClientCredentialsOAuth2Scope = "write";
+  expect(writeScope).toBe("write");
+  const storeManageScope: OAuth2Scope = "store_manage";
+  expect(storeManageScope).toBe("store_manage");
+});

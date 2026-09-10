@@ -1,0 +1,51 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+components:
+  schemas:
+    # Test for union unmarshal variable collision when a member type name
+    # sanitizes to the local variable name "data", which collides with the
+    # UnmarshalJSON(data []byte) parameter.
+    Data:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        content:
+          type: string
+    DataVariableCollisionMetadata:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        type:
+          type: string
+        timestamp:
+          type: string
+        source:
+          type: string
+    DataVariableCollisionUnion:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: '#/components/schemas/Data'
+        - $ref: '#/components/schemas/DataVariableCollisionMetadata'
+    # Discriminated variant: tests the same collision in the discriminator
+    # unmarshal path where a case branch uses sanitizeVariableName.
+    DataVariableCollisionDiscriminated:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: '#/components/schemas/Data'
+        - $ref: '#/components/schemas/DataVariableCollisionMetadata'
+      discriminator:
+        propertyName: type
+        mapping:
+          data: '#/components/schemas/Data'
+          metadata: '#/components/schemas/DataVariableCollisionMetadata'

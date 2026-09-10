@@ -1,0 +1,248 @@
+{{- if isFeatureUsed "serverEvents"}}
+{{typedDirective}}
+# frozen_string_literal: true
+
+require 'json'
+require 'stringio'
+{{sorbetImport}}
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  module Utils
+    class ServerEvent
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+      attr_accessor :id
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+      attr_accessor :event
+
+      {{if sorbetEnabled}}sig { returns(T.untyped) }{{end}}
+      attr_accessor :data
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(Integer)) }{{end}}
+      attr_accessor :retry
+
+      {{if sorbetEnabled}}sig { params(id: T.nilable(String), event: T.nilable(String), data: T.untyped, retry_ms: T.nilable(Integer)).void }{{end}}
+      def initialize(id: nil, event: nil, data: nil, retry_ms: nil)
+        @id = id
+        @event = event
+        @data = data
+        @retry = retry_ms
+      end
+
+      {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T.untyped]) }{{end}}
+      def to_h
+        h = {}
+        h[:id] = @id unless @id.nil?
+        h[:event] = @event unless @event.nil?
+        h[:data] = @data unless @data.nil?
+        h[:retry] = @retry unless @retry.nil?
+        h
+      end
+    end
+
+    class EventStream
+      include Enumerable
+      {{sorbetTSig}}
+
+      MESSAGE_BOUNDARIES = [
+        "\r\n\r\n",
+        "\r\n\r",
+        "\r\n\n",
+        "\r\r\n",
+        "\n\r\n",
+        "\r\r",
+        "\n\r",
+        "\n\n"
+      ].freeze
+      MAX_BOUNDARY_LEN = {{sorbetMust "MESSAGE_BOUNDARIES.map(&:length).max"}}
+
+      UTF8_BOM = "\xEF\xBB\xBF"
+
+      {{if sorbetEnabled}}sig { params(response: Faraday::Response, decoder: T.proc.params(raw: String).returns(T.untyped), sentinel: T.nilable(String), sdk_ref: T.untyped, data_required: T::Boolean).void }{{end}}
+      def initialize(response, decoder, sentinel: nil, sdk_ref: nil, data_required: true)
+        @response = response
+        @decoder = decoder
+        @sentinel = sentinel
+        @sdk_ref = sdk_ref
+        @data_required = data_required
+        @closed = false
+      end
+
+      {{if sorbetEnabled}}sig { override.params(block: T.nilable(T.proc.params(event: T.untyped).void)).returns(T.untyped) }{{end}}
+      def each(&block)
+        return enum_for(:each) unless block
+        return if @closed
+
+        stream_events(&block)
+      ensure
+        close
+      end
+
+      {{if sorbetEnabled}}sig { void }{{end}}
+      def close
+        return if @closed
+
+        @closed = true
+        body = @response.env.body
+        body.close if body.respond_to?(:close)
+        thread = @response.env[:stream_thread]
+        if thread&.alive?
+          thread.kill
+          thread.join(0.1)
+        end
+      end
+
+      private
+
+      {{if sorbetEnabled}}sig { params(block: T.proc.params(event: T.untyped).void).void }{{end}}
+      def stream_events(&block)
+        buffer = {{sorbetLet "String.new(encoding: Encoding::BINARY)" "String"}}
+        position = 0
+        event_id = {{sorbetLet "nil" "T.nilable(String)"}}
+        body = @response.env.body
+        body = StringIO.new(body) if body.is_a?(String)
+
+        read_chunks(body) do |chunk|
+          chunk = chunk.b unless chunk.encoding == Encoding::BINARY
+          if buffer.empty? && chunk.start_with?(UTF8_BOM.b)
+            chunk = chunk[UTF8_BOM.b.length..]
+          end
+          old_len = buffer.length
+          buffer << chunk
+
+          # Only re-scan the seam (last MAX_BOUNDARY_LEN-1 bytes) and the new chunk.
+          i = [position, old_len - MAX_BOUNDARY_LEN + 1].max
+          while i < buffer.length
+            seq = detect_boundary(buffer, i)
+            if seq.nil?
+              i += 1
+              next
+            end
+
+            block_data = {{sorbetMust "buffer[position...i]"}}
+            position = i + seq.length
+            event, discard, event_id = parse_event(raw: block_data, event_id: event_id)
+            yield event unless event.nil?
+            return if discard
+
+            i = position
+          end
+
+          if position.positive?
+            buffer = {{sorbetMust "buffer[position..]"}}
+            position = 0
+          end
+        end
+
+        unless buffer.empty?
+          event, = parse_event(raw: buffer, event_id: event_id)
+          yield event unless event.nil?
+        end
+
+        stream_error = @response.env[:stream_error]
+        raise stream_error unless stream_error.nil?
+      end
+
+      {{if sorbetEnabled}}sig { params(body: T.untyped, block: T.proc.params(chunk: String).void).void }{{end}}
+      def read_chunks(body, &block)
+        if body.respond_to?(:each)
+          body.each(&block)
+        elsif body.respond_to?(:read)
+          while (chunk = body.read(8192))
+            block.call(chunk)
+          end
+        else
+          block.call(body.to_s)
+        end
+      end
+
+      {{if sorbetEnabled}}sig { params(buffer: String, pos: Integer).returns(T.nilable(String)) }{{end}}
+      def detect_boundary(buffer, pos)
+        char = buffer[pos]
+        return nil unless ["\r", "\n"].include?(char)
+
+        MESSAGE_BOUNDARIES.each do |boundary|
+          if buffer[pos, boundary.length] == boundary
+            return boundary
+          end
+        end
+        nil
+      end
+
+      {{if sorbetEnabled}}sig { params(raw: String, event_id: T.nilable(String)).returns([T.untyped, T::Boolean, T.nilable(String)]) }{{end}}
+      def parse_event(raw:, event_id:)
+        block = raw.force_encoding('UTF-8')
+        lines = block.split(/\r?\n|\r/)
+        publish = {{sorbetLet "false" "T::Boolean"}}
+        current_event_id = {{sorbetLet "event_id" "T.nilable(String)"}}
+        event = ServerEvent.new
+        data = String.new
+
+        lines.each do |line|
+          next if line.empty?
+
+          delim = line.index(':')
+          if delim&.zero?
+            next
+          end
+
+          if delim.nil?
+            field = line
+            value = ''
+          else
+            field = line[0...delim]
+            value = delim < line.length - 1 ? {{sorbetMust "line[(delim + 1)..]"}} : ''
+            value = {{sorbetMust "value[1..]"}} if value.start_with?(' ')
+          end
+
+          case field
+          when 'event'
+            event.event = value
+            publish = true
+          when 'data'
+            data << value << "\n"
+            publish = true
+          when 'id'
+            publish = true
+            current_event_id = value unless value.include?("\x00")
+          when 'retry'
+            if value.match?(/\A\d+\z/)
+              event.retry = value.to_i
+              publish = true
+            end
+          end
+        end
+
+        event.id = current_event_id
+
+        if @sentinel && data == "#{@sentinel}\n"
+          return [nil, true, current_event_id]
+        end
+
+        # Skip data-less events when data is required
+        if data.empty? && publish && @data_required
+          return [nil, false, current_event_id]
+        end
+
+        unless data.empty?
+          data = data.chomp("\n")
+          begin
+            event.data = JSON.parse(data)
+          rescue JSON::ParserError
+            event.data = data
+          end
+        end
+
+        out = nil
+        if publish
+          out = @decoder.call(JSON.generate(event.to_h))
+        end
+
+        [out, false, current_event_id]
+      end
+    end
+  end
+end
+{{- end }}

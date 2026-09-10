@@ -1,0 +1,3 @@
+{{- if sdkHasTests .Global.AST -}}
+# tests/__init__.py
+{{- end}}

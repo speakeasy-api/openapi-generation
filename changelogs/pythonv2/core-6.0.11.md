@@ -1,0 +1,3 @@
+## core: 6.0.11 - 2026-02-18
+### :bug: Bug Fixes
+- TypedDict companion class naming now uses cascading PascalCase suffixes (TypedDictModel, TypedDictCompanion, TypedDictCompanionModel, TypedDict{n}) instead of underscore-prefixed _TypedDict when the default name collides with another schema type — this restores strict PascalCase pylint compliance without weakening lint rules *(commit by [@danielkov](https://github.com/danielkov))*

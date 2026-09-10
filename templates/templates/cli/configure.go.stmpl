@@ -1,0 +1,255 @@
+{{- recurse 1 -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "internal/config" true -}}
+{{- if isAnyInteractiveEnabled -}}
+{{- addImport "internal/flagutil" true -}}
+{{- end -}}
+{{- addImport "internal/client" true -}}
+{{- addImport "internal/usage" true -}}
+{{- if isAnyInteractiveEnabled -}}
+{{- addImport "internal/interactive" true -}}
+{{- end -}}
+{{- addImport "fmt" -}}
+{{- addImport "encoding/json" -}}
+{{- if isInteractiveAuthEnabled -}}
+{{- addImport "os" -}}
+{{- addImport "golang.org/x/term" -}}
+{{- addImport "github.com/charmbracelet/huh" -}}
+{{- addImport "github.com/charmbracelet/lipgloss" -}}
+{{- else -}}
+{{- addImport "bufio" -}}
+{{- addImport "strings" -}}
+{{- end -}}
+package cli
+
+{{genImports}}
+
+// initConfigureCmd initializes the configure command.
+func initConfigureCmd(parent *cobra.Command) error {
+    var cmd = &cobra.Command{
+        Use:   "configure",
+        Short: "{{templateConfigureShort}}",
+        Long:  `{{templateConfigureLong}}`,
+        Args:  cobra.NoArgs,
+        RunE:  runConfigureCmd,
+    }
+    parent.AddCommand(cmd)
+    return nil
+}
+
+// runConfigureCmd executes the configure command.
+func runConfigureCmd(cmd *cobra.Command, args []string) error {
+    if usage.UsageRequested(cmd) {
+        return usage.EmitSchema(cmd, cmd.OutOrStdout())
+    }
+    if dryRunLocalNoop(cmd, "configure changes local settings only (no API request); nothing was changed.") {
+        return nil
+    }
+    cfg := config.GetConfig()
+    if cfg == nil {
+        cfg = &config.Config{}
+    }
+    {{- if hasSecretCLIFields}}
+
+    keychainStored := false
+    {{- end}}
+    {{- if isAnyInteractiveEnabled}}
+
+    formMode := interactive.Resolve(cmd).FormMode()
+    {{- end}}
+
+{{- if isInteractiveAuthEnabled}}
+    if formMode == interactive.FormOff {
+        {{templateConfigureNonInteractiveStore | indent 8 | trim}}
+    } else {
+        {{- if hasGlobalSecurity}}
+        {{templateAuthLoginVarDeclarations | indent 8 | trim}}
+        {{- end}}
+        {{- if hasGlobals}}
+        {{templateConfigureGlobalVarDeclarations | indent 8 | trim}}
+        {{- end}}
+        accessible := formMode == interactive.FormAccessible
+
+        var groups []*huh.Group
+
+        {{- if hasGlobalSecurity}}
+        securityFields := []huh.Field{
+            {{templateAuthLoginFormFields | indent 12 | trim}}
+        }
+        groups = append(groups, huh.NewGroup(securityFields...).Title("Authentication"))
+        {{- end}}
+
+        {{- if hasGlobals}}
+        globalFields := []huh.Field{
+            {{templateConfigureGlobalFormFields | indent 12 | trim}}
+        }
+        groups = append(groups, huh.NewGroup(globalFields...).Title("Global Parameters"))
+        {{- end}}
+
+        // Preference fields use huh.Select which loops forever on EOF in
+        // accessible mode (non-TTY). Only show them when truly interactive.
+        {{templateConfigurePreferenceVarDeclarations | indent 8 | trim}}
+        if !accessible {
+            preferenceFields := []huh.Field{
+                {{templateConfigurePreferenceFormFields | indent 16 | trim}}
+            }
+            groups = append(groups, huh.NewGroup(preferenceFields...).Title("Preferences"))
+        }
+
+        form := huh.NewForm(groups...).
+            WithAccessible(accessible).
+            WithTheme(configureFormTheme()).
+            WithWidth(configureFormWidth()).
+            WithShowHelp(false)
+
+        if err := form.Run(); err != nil {
+            return fmt.Errorf("configure: %w", err)
+        }
+
+        {{- if hasGlobalSecurity}}
+        {{templateAuthLoginStore | indent 8 | trim}}
+        {{- end}}
+        {{- if hasGlobals}}
+        {{templateConfigureGlobalStore | indent 8 | trim}}
+        {{- end}}
+        if !accessible {
+            {{templateConfigurePreferenceStore | indent 12 | trim}}
+        }
+    }
+{{- else}}
+    {{- if isAnyInteractiveEnabled}}
+    if formMode == interactive.FormOff {
+        {{templateConfigureNonInteractiveStore | indent 8 | trim}}
+    } else {
+    {{- end}}
+    out := cmd.OutOrStdout()
+    fmt.Fprintln(out, "Configure {{sanitizeCliName}}")
+    fmt.Fprintln(out, "Press Enter to keep the current value, or enter a new value.")
+    fmt.Fprintln(out, "Enter - to clear a previously set value.")
+    fmt.Fprintln(out, "Leave empty to skip a setting you don't use.")
+    fmt.Fprintln(out)
+
+    // reader is shared across all prompt sections
+    reader := bufio.NewReader(cmd.InOrStdin())
+
+    {{- if hasGlobalSecurity}}
+    {{- if or (hasGlobals) true}}
+    fmt.Fprintln(out, "Authentication:")
+    fmt.Fprintln(out)
+    {{- end}}
+    {{templateConfigurePrompts | indent 4 | trim}}
+    {{- end}}
+    {{- if hasGlobals}}
+    {{- if hasGlobalSecurity}}
+    fmt.Fprintln(out)
+    {{- end}}
+    fmt.Fprintln(out, "Global Parameters:")
+    fmt.Fprintln(out)
+    {{templateConfigureGlobalPrompts | indent 4 | trim}}
+    {{- end}}
+    {{- if or (hasGlobalSecurity) (hasGlobals)}}
+    fmt.Fprintln(out)
+    {{- end}}
+    fmt.Fprintln(out, "Preferences:")
+    fmt.Fprintln(out)
+    {{templateConfigurePreferences | indent 4 | trim}}
+    {{- if isAnyInteractiveEnabled}}
+    }
+    {{- end}}
+{{- end}}
+
+    if err := config.SaveConfig(cfg); err != nil {
+        return fmt.Errorf("failed to save configuration: %w", err)
+    }
+
+    out{{if isAnyInteractiveEnabled}} :{{end}}= cmd.OutOrStdout()
+    {{- if hasSecretCLIFields}}
+    if keychainStored {
+        fmt.Fprintln(out, "Secret credentials stored in OS keychain")
+    }
+    {{- end}}
+    fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
+    return nil
+}
+
+// dryRunLocalNoop implements the append-safe dry-run contract for local
+// mutation commands: no prompts, keychain access, or filesystem writes. The
+// machine preview protocol still receives an explicit local no-op record —
+// silence would be indistinguishable from a failed preview.
+func dryRunLocalNoop(cmd *cobra.Command, message string) bool {
+    if !client.IsDryRun(cmd) {
+        return false
+    }
+    if client.IsJSONDryRun(cmd) {
+        enc := json.NewEncoder(cmd.OutOrStdout())
+        enc.SetEscapeHTML(false)
+        _ = enc.Encode(struct {
+            DryRun  bool   `json:"dry_run"`
+            Local   bool   `json:"local"`
+            Command string `json:"command"`
+            Message string `json:"message"`
+        }{DryRun: true, Local: true, Command: cmd.CommandPath(), Message: message})
+    } else {
+        fmt.Fprintln(cmd.ErrOrStderr(), "[DRY-RUN] "+message)
+    }
+    return true
+}
+
+{{- if isInteractiveAuthEnabled}}
+// configureFormTheme builds the form theme for the configure command.
+func configureFormTheme() *huh.Theme {
+    t := *huh.ThemeBase()
+
+    accent := {{themeAccent}}
+    dimmed := {{themeDimmed}}
+    subtle := {{themeSubtle}}
+    errColor := {{themeError}}
+    greenColor := {{themeSuccess}}
+
+    t.Focused.Base = t.Focused.Base.
+        BorderLeft(true).
+        BorderStyle(lipgloss.ThickBorder()).
+        BorderForeground(accent).
+        PaddingLeft(1)
+    t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
+    t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
+    t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
+    t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
+    t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
+    t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
+    t.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(greenColor).SetString("✓ ").Bold(true)
+    t.Focused.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
+    t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
+    t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
+    t.Focused.Next = t.Focused.FocusedButton
+
+    t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
+    t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
+    t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
+
+    t.Blurred.Base = t.Blurred.Base.
+        BorderLeft(true).
+        BorderStyle(lipgloss.ThickBorder()).
+        BorderForeground(subtle).
+        PaddingLeft(1)
+    t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
+    t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
+    t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
+    t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
+    t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
+    t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
+    t.Blurred.SelectedPrefix = lipgloss.NewStyle().Foreground(dimmed).SetString("✓ ")
+    t.Blurred.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
+
+    return &t
+}
+
+// configureFormWidth returns the terminal width for sizing huh forms.
+func configureFormWidth() int {
+    width, _, err := term.GetSize(int(os.Stdout.Fd()))
+    if err != nil || width <= 0 {
+        width = 80
+    }
+    return width
+}
+{{- end}}

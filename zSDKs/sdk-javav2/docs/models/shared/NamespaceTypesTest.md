@@ -1,0 +1,14 @@
+# NamespaceTypesTest
+
+A model that references enums and unions from different namespaces
+
+
+## Fields
+
+| Field                                                           | Setter Type                                                     | Getter Type                                                     | Required                                                        | Description                                                     | Example                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `fooSpecies`                                                    | [PetSpecies](../../models/shared/PetSpecies.md)                 | [PetSpecies](../../models/shared/PetSpecies.md)                 | :heavy_check_mark:                                              | Species of a pet in the foo namespace                           | cat                                                             |
+| `barStatus`                                                     | [PetStatus](../../models/shared/PetStatus.md)                   | [PetStatus](../../models/shared/PetStatus.md)                   | :heavy_check_mark:                                              | Status of a pet in the bar namespace                            | available                                                       |
+| `fooAnimal`                                                     | [Animal](../../models/shared/Animal.md)                         | [Animal](../../models/shared/Animal.md)                         | :heavy_check_mark:                                              | A discriminated union of animal types in the foo namespace      |                                                                 |
+| `barVehicle`                                                    | [Vehicle](../../models/shared/Vehicle.md)                       | [Vehicle](../../models/shared/Vehicle.md)                       | :heavy_check_mark:                                              | A non-discriminated union of vehicle types in the bar namespace |                                                                 |
+| `fooOrg`                                                        | [Organization](../../models/shared/Organization.md)             | [Organization](../../models/shared/Organization.md)             | :heavy_check_mark:                                              | An organization with nested inline schemas in the foo namespace |                                                                 |

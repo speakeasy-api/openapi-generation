@@ -1,0 +1,75 @@
+
+[TestChanges_MultipleChanges_MultipleFieldsChanged - 1]
+# Test: multiple_fields_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                age:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                emailAddress:
+                  type: string
+                age:
+                  type: string
+                dateOfBirth:
+                  type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`:  `request` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: `request` **Changed** (Breaking ⚠️)
+    - `age` **Changed** (Breaking ⚠️)
+    - `dateOfBirth` **Added**
+    - `emailAddress` **Added**
+    - `email` **Removed** (Breaking ⚠️)
+    - `fullName` **Added**
+    - `name` **Removed** (Breaking ⚠️)
+
+---

@@ -1,0 +1,43 @@
+name: Test Coverage
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  test-coverage:
+    timeout-minutes: 15
+    name: Test Coverage - ${{ inputs.target }}
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+      - if: startsWith(inputs.target, 'mcp-')
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: ${{ inputs.target }}-*-test-report
+          path: ./testSDKs
+      - if: ${{ !startsWith(inputs.target, 'mcp-') }}
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: sdk-${{ inputs.target }}-*-test-report
+          path: ./testSDKs
+      - name: Display structure of downloaded files
+        run: ls -R ./testSDKs
+      - name: Check test coverage
+        run: go run ./tests -lang ${{ inputs.target }} || exit 1

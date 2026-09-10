@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+{{- $enum := .Local.Type.Enum -}}
+{{- $enumType := (sanitizeClass .Local.Type .Local.Type.OutputLocation true)}}
+{{getModelImports .Local}}
+{{- if .Local.Type.Comments}}
+{{templateComments .Local.Type.Comments nil nil 0 false "enum"}}
+{{- end}}
+enum {{$enumType}}: {{sanitizeType $enum.Type false false .Local.Type.OutputLocation}}
+{
+{{templateEnums .Local.Type}}
+}

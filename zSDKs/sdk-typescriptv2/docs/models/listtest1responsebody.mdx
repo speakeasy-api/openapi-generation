@@ -1,0 +1,28 @@
+---
+title: "ListTest1ResponseBody"
+---
+
+OK
+
+## Example Usage
+
+```typescript
+import { ListTest1ResponseBody } from "openapi";
+
+let value: ListTest1ResponseBody = {
+  resultArray: [
+    {
+      test1: "some example response",
+    },
+  ],
+  totalCount: 100,
+};
+```
+
+## Fields
+
+| Field                                            | Type                                             | Required                                         | Description                                      | Example                                          |
+| ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| `resultArray`                                    | [models.ResultArray](../models/resultarray.mdx)[] | :heavy_check_mark:                               | N/A                                              |                                                  |
+| `totalCount`                                     | *number*                                         | :heavy_check_mark:                               | N/A                                              | 100                                              |
+| `type`                                           | [models.Enum](../models/enum.mdx)                 | :heavy_minus_sign:                               | N/A                                              | First                                            |

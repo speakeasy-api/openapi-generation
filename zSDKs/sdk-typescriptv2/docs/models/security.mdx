@@ -1,0 +1,42 @@
+---
+title: "Security"
+---
+
+## Example Usage
+
+```typescript
+import { Security } from "openapi";
+
+let value: Security = {
+  userPassAuth: {
+    username: "<USERNAME>",
+    password: "<PASSWORD>",
+  },
+  option2: {
+    bearerAuth: "<YOUR_JWT>",
+    myApiKey: "<value>",
+  },
+  option3: {
+    oauth2: "Bearer <YOUR_OAUTH2_TOKEN>",
+  },
+  option4: {
+    appId: "app-speakeasy-123",
+    secret: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI",
+  },
+  option5: {
+    mobileAuth: "Bearer <YOUR_OAUTH2_TOKEN>",
+  },
+};
+```
+
+## Fields
+
+| Field                                                  | Type                                                   | Required                                               | Description                                            |
+| ------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------ |
+| `userPassAuth`                                         | [models.UserPassAuth](../models/userpassauth.mdx)       | :heavy_minus_sign:                                     | N/A                                                    |
+| `option2`                                              | [models.SecurityOption2](../models/securityoption2.mdx) | :heavy_minus_sign:                                     | N/A                                                    |
+| `option3`                                              | [models.SecurityOption3](../models/securityoption3.mdx) | :heavy_minus_sign:                                     | N/A                                                    |
+| `option4`                                              | [models.SecurityOption4](../models/securityoption4.mdx) | :heavy_minus_sign:                                     | N/A                                                    |
+| `option5`                                              | [models.SecurityOption5](../models/securityoption5.mdx) | :heavy_minus_sign:                                     | N/A                                                    |
+| `option6`                                              | [models.SecurityOption6](../models/securityoption6.mdx) | :heavy_minus_sign:                                     | N/A                                                    |
+| `myApiKey`                                             | [models.MyApiKey](../models/myapikey.mdx)               | :heavy_minus_sign:                                     | N/A                                                    |

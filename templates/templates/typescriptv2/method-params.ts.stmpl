@@ -1,0 +1,37 @@
+{{- range .Local.Ops }}
+import type { {{.RequestName}} } from "{{.RequestImportPath}}";
+{{- end }}
+{{- range tsMethodParamsVariantImports }}
+import type { {{.MemberName}} } from "{{.MemberImportPath}}";
+{{- end }}
+{{- range .Local.Ops }}
+{{- $op := . }}
+
+export type {{.ParamsName}} = {{if .WrapperStyle}}{{.RequestName}}{{else}}{{if .OmitKeys}}Omit<
+  {{.RequestName}},
+  {{range $i, $k := .OmitKeys}}{{if $i}} | {{end}}"{{$k}}"{{end}}
+>{{else}}{{.RequestName}}{{end}}{{if .SpreadBodyKey}}{{if .BodyOptional}} & Partial<NonNullable<{{.RequestName}}["{{.SpreadBodyKey}}"]>>{{else}} & {{.RequestName}}["{{.SpreadBodyKey}}"]{{end}}{{end}}{{end}};
+{{- if .SSE }}
+
+export type {{.ParamsName}}NonStreaming = {{.ParamsName}} & {
+  stream?: false | undefined;
+};
+
+export type {{.ParamsName}}Streaming = {{.ParamsName}} & { stream: true };
+{{- end }}
+{{- range .BodyVariants }}
+
+export type {{.ParamsName}} = Omit<
+  {{$op.RequestName}},
+  {{range $i, $k := $op.OmitKeys}}{{if $i}} | {{end}}"{{$k}}"{{end}}
+> & {{if $op.BodyOptional}}Partial<{{.MemberName}}>{{else}}{{.MemberName}}{{end}};
+{{- if $op.SSE }}
+
+export type {{.ParamsName}}NonStreaming = {{.ParamsName}} & {
+  stream?: false | undefined;
+};
+
+export type {{.ParamsName}}Streaming = {{.ParamsName}} & { stream: true };
+{{- end }}
+{{- end }}
+{{- end }}

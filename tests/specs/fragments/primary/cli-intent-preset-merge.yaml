@@ -1,0 +1,95 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/intents/run:
+    post:
+      operationId: cliIntentRun
+      description: >-
+        Mixed parameters + non-discriminated union request body whose variants
+        are told apart by their required/defaulted keys (model vs agent), with
+        the model selector carrying a schema default. The CLI's declared intent
+        commands (tests/overlays/primary/cli/overlay.yaml) preset the model
+        variant over this operation; the tests check that a partial --body
+        keeps the presets instead of falling back to the union's default
+        variant, and that a body naming the other variant is a usage error.
+      tags:
+        - cliIntents
+      parameters:
+        - name: trace
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliIntentRunBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                  url:
+                    type: string
+                required:
+                  - url
+components:
+  schemas:
+    CliIntentRunBody:
+      oneOf:
+        - $ref: "#/components/schemas/CliIntentModelRequest"
+        - $ref: "#/components/schemas/CliIntentAgentRequest"
+    CliIntentModelRequest:
+      type: object
+      required:
+        - input
+      properties:
+        model:
+          type: string
+          description: Model to run
+          default: text-1
+        input:
+          type: string
+          description: Prompt text
+        output_modalities:
+          type: array
+          items:
+            type: string
+            enum: [text, image]
+        background:
+          type: boolean
+    CliIntentAgentRequest:
+      type: object
+      required:
+        - agent
+        - input
+      properties:
+        agent:
+          type: string
+          description: Managed agent to run
+        agent_profile:
+          type: string
+          description: Agent profile name
+        token_budget:
+          type: integer
+          description: Token budget for the run
+        input:
+          type: string
+          description: Prompt text
+        background:
+          type: boolean

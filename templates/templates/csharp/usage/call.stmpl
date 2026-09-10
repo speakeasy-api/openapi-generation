@@ -1,0 +1,18 @@
+{{- $paramFlattening := operationParametersFlattened .Local.Operation}}
+{{- $reqVar := getRequestVariableName .Local.StepID}}
+
+{{- if and .Local.Operation.Request (not $paramFlattening)}}
+  {{- $reqField := .Local.Operation.Request.Field}}
+  {{- $reqType := sanitizeType $reqField.Type}}
+  {{- $reqValue := templateModelUsageForOperationField .Local $reqField 0 (dict "usageContext" .Local)}}
+
+  {{- if or (eq $reqValue "") (eq $reqValue "null") }}
+    {{- $reqType}}? {{$reqVar}} = null;
+  {{- else }}
+    {{- $reqType}} {{$reqVar}} = {{$reqValue}};
+  {{- end}}
+
+{{templateString "usage/result.stmpl" .Local}}
+{{- else}}
+{{- templateString "usage/result.stmpl" .Local}}
+{{- end}}

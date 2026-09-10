@@ -1,0 +1,44 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The tertiary variant generates with cli.retryFlagsVisibility: hidden.
+// Hidden retry control flags must stay out of help output while remaining
+// registered (they still parse and keep their config-file/env behavior).
+
+func TestRetryFlagsHiddenFromHelp(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--help"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	assert.NotContains(t, stdout, "--no-retries")
+	assert.NotContains(t, stdout, "--retry-config")
+	assert.NotContains(t, stdout, "--retry-connection-errors")
+	assert.NotContains(t, stdout, "--retry-max-elapsed-time")
+	assert.Contains(t, stdout, "--timeout", "the timeout flag stays visible")
+}
+
+func TestRetryFlagsStillParseWhenHidden(t *testing.T) {
+	h := NewCLITestHarness(t)
+	// An unregistered flag would fail parsing with "unknown flag".
+	err := h.RunBare([]string{"version", "--no-retries"})
+	require.NoError(t, err)
+}
+
+func TestRetryFlagsMarkedHiddenInUsageSchema(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--usage"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	// hidden (not none): the flags stay in the machine-readable schema,
+	// marked hide, because they still parse.
+	assert.Contains(t, stdout, "flag \"--no-retries\"")
+	assert.Contains(t, stdout, "hide=#true")
+}

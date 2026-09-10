@@ -1,0 +1,14 @@
+{{- if isFeatureUsed "webhooks"}}
+export type WebhookRecipient = {
+  url: string;
+  {{- if hasWebhookSecurity }}
+  secret: string;
+  {{- end}}
+};
+{{- end}}
+
+{{- if hasWebhookSecurity }}
+export class WebhookAuthenticationError extends Error {
+  override name = "WebhookAuthenticationError";
+}
+{{- end}}

@@ -1,0 +1,96 @@
+{{- $op := .Local.Operation -}}
+{{- $responses := $op.Response.Responses -}}
+{{- $resType := $op.Response.Type -}}
+{{- $scope := .Local.Scope -}}
+{{- $asyncOkHttp := .Local.AsyncOkHttp -}}
+{{- $okHttp := useOkHttp -}}
+{{- $defaultError := (printf "%s.%s" getErrorsPackage getDefaultErrorClassName) -}}
+
+public {{if $asyncOkHttp}}{{javaImportTypeAsync $resType}}{{else if not $okHttp}}{{javaImportType $resType}}{{else}}{{importedClass $resType $scope}}{{end}} handleResponse({{javaHttpResponseType "java.io.InputStream"}} response) {
+    {{- if $okHttp}}
+    {{javaImportString}} contentType = response
+            .contentType()
+            .orElse("application/octet-stream");
+    {{- else}}
+    {{javaImportString}} contentType = response
+            .headers()
+            .firstValue("Content-Type")
+            .orElse("application/octet-stream");
+    {{- end}}
+    {{if $asyncOkHttp}}{{javaImportTypeAsync $resType}}{{else if not $okHttp}}{{importedClass $resType $scope }}{{else}}{{importedClass $resType $scope}}{{end}}.Builder resBuilder =
+            {{if $asyncOkHttp}}{{javaImportTypeAsync $resType}}{{else}}{{importedClass $resType}}{{end}}
+                    .builder()
+                    .contentType(contentType)
+                    .statusCode(response.statusCode())
+                    .rawResponse(response);
+
+    {{- if gt (len $op.Response.Responses) 0 -}}
+        {{- range $subResp := $op.Response.Responses -}}
+            {{- range $i, $code := $subResp.Code -}}
+                {{- range $subResp.Content -}}
+                    {{- if (and (eq .SerializationMethod "raw") (eq .Content.Type.Type "response-stream"))}}
+    if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $subResp}}) && {{javaImportUtils}}.contentTypeMatches(contentType, "{{.ContentType}}")) {
+        resBuilder.{{sanitizeFieldName .Content.Name}}(response.body());
+    }
+                    {{- end}}
+                {{- end}}
+            {{- end}}
+        {{- end}}
+    {{- end}}
+
+    {{if $asyncOkHttp}}{{javaImportTypeAsync $resType}}{{else}}{{importedClass $resType}}{{end}} res = resBuilder.build();
+    {{- if gt (len $responses) 0 }}
+    {{ range $index, $response := $responses }}
+    if ({{javaImportUtils}}.statusCodeMatches(response.statusCode(){{templateStatusCodes $response}})) {
+        {{- if $response.Headers }}
+        res.withHeaders(response.headers().map());
+        {{- end }}
+        {{- if eq (len $response.Content) 0 }}
+        // no content
+            {{- if $response.Error}}
+        throw {{javaImport $defaultError}}.from("API error occurred", response);
+            {{- else }}
+                {{- if $okHttp}}
+        {{javaImportUtils}}.closeQuietly(response.body());
+                {{- end}}
+        return res;
+            {{- end }}
+        {{- else -}}
+        {{- range $index, $content := $response.Content}}
+        {{- if eq $content.SerializationMethod "json"}}
+        {{ if and (gt (len $response.Content) 0) (gt $index 0)}}{{"}"}} else if {{else}}if {{end}}({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+        {{- if $response.Error}}
+            throw {{javaImportTypeMandatory $content.Content.Type}}.from(response);
+        {{- else}}
+            return res.with{{sanitizeClassName $content.Content.Name}}(Utils.unmarshal(response, new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{if $asyncOkHttp}}{{javaImportTypeAsync $content.Content.Type true}}{{else}}{{javaImportType $content.Content.Type true}}{{end}}>() {}));
+        {{- end}}
+        {{- else if eq $content.SerializationMethod "eventstream"}}
+        {{if (gt $index 0)}}{{"}\n    "}}{{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+            {{javaImportUtils}}.setSseSentinel(res, "{{$content.SSESentinel}}");
+            return res;
+        {{- else if eq $content.SerializationMethod "jsonl"}}
+        {{- if (gt $index 0)}}} else {{end}}if ({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+            return res;
+        {{- else if eq $content.SerializationMethod "raw"}}
+        {{ if and (gt (len $response.Content) 0) (gt $index 0)}}{{"}"}} else if {{else}}if {{end}}({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+            return res;
+        {{- else if eq $content.SerializationMethod "string"}}
+        {{ if and (gt (len $response.Content) 0) (gt $index 0)}}{{"}"}} else if {{else}}if {{end}}({{javaImportUtils}}.contentTypeMatches(contentType, "{{ escapeString $content.ContentType }}")) {
+            {{javaImportString}} out = {{javaImportStatic "utils.Exceptions.unchecked" true}}(() -> {{javaImportUtils}}.toUtf8AndClose(response.body())).get();
+            {{- if not $response.Error}}
+            res.with{{sanitizeClassName $content.Content.Name}}(out);
+            return res;
+            {{- else }}
+            throw {{javaImport $defaultError}}.from(out, response);
+            {{- end}}
+        {{- end}}
+        {{- end }}
+        } else {
+            throw {{javaImport $defaultError}}.from("Unexpected content-type received: " + contentType, response);
+        }
+    {{- end }}
+    }
+    {{- end }}
+    {{- end}}
+    throw {{javaImport $defaultError}}.from("Unexpected status code received: " + response.statusCode(), response);
+}

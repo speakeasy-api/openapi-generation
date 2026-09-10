@@ -1,0 +1,6 @@
+{{- recurse 1 -}}
+{{- if and shouldTemplateOpenDiscriminatedUnion (not isNoZod) }}
+{{- addZodPackageImport }}
+{{genImports}}
+{{templateOpenDiscriminatedUnionFunc}}
+{{- end}}

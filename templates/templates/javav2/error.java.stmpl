@@ -1,0 +1,119 @@
+{{  $scope := .Local.Scope -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{- $type := .Local.Type -}}
+{{- $isAsync := .Local.IsAsync -}}
+{{- $class := (sanitizeClass $type $scope true) -}}
+{{- $utilsPackage := (print (templatePackageName) ".utils") -}}
+{{- $isError := (eq $type.Type "error") -}}
+{{- $dataClass := (print "Data") -}}
+{{- $fields := (removeDerivedAndUndesiredFields $type) -}}
+@{{javaImportSuppressWarnings}}("serial")
+public{{if eq $type.OutputLocation "tests"}} static{{end}} class {{$class}} extends {{javaImport getBaseErrorFullClassName}} {
+
+    @{{javaImportNullable}}
+    private final {{$dataClass}} data;
+
+    @{{javaImportNullable}}
+    private final {{javaImportThrowable}} deserializationException;
+
+    public {{$class}}(
+                int code,
+                byte[] body,
+                {{javaHttpResponseType "?"}} rawResponse,
+                @{{javaImportNullable}} {{$dataClass}} data,
+                @{{javaImportNullable}} {{javaImportThrowable}} deserializationException) {
+        super({{errorMessageExpression $type}}, code, body, rawResponse, null);
+        this.data = data;
+        this.deserializationException = deserializationException;
+    }
+
+    {{- if $isAsync}}
+    {{- else }}
+    {{- "\n"}}
+    /**
+    * Parse a response into an instance of {{$class}}. If deserialization of the response body fails,
+    * the resulting {{$class}} instance will have a null data() value and a non-null deserializationException().
+    */
+    public static {{$class}} from({{javaHttpResponseType "java.io.InputStream"}} response) {
+        byte[] bytes;
+        try {
+            bytes = {{javaImportUtils}}.extractByteArrayFromBody(response);
+        } catch (Exception e) {
+            return new {{$class}}(response.statusCode(), null, response, null, e);
+        }
+        try {
+            Data data = {{javaImportUtils}}.mapper().readValue(bytes, Data.class);
+            return new {{$class}}(response.statusCode(), bytes, response, data, null);
+        } catch (Exception e) {
+            return new {{$class}}(response.statusCode(), bytes, response, null, e);
+        }
+    }
+
+{{- if and asyncEnabled (not useOkHttp)}}
+    {{- "\n"}}
+    /**
+    * Parse a response into an instance of {{$class}} asynchronously. If deserialization of the response body fails,
+    * the resulting {{$class}} instance will have a null data() value and a non-null deserializationException().
+    */
+    public static {{javaImport "java.util.concurrent.CompletableFuture"}}<{{$class}}> fromAsync({{javaImport "java.net.http.HttpResponse"}}<{{javaImport (print templatePackageName ".utils.Blob")}}> response) {
+        return response.body()
+                .toByteArray()
+                .handle((bytes, err) -> {
+                    // if a body read error occurs, we want to transform the exception
+                    if (err != null) {
+                        throw new {{javaImport (print getErrorsPackage ".Async" getDefaultErrorClassName)}}(
+                                "Error reading response body: " + err.getMessage(),
+                                response.statusCode(),
+                                null,
+                                response,
+                                err);
+                    }
+
+                    try {
+                        return new {{$class}}(
+                                response.statusCode(),
+                                bytes,
+                                response,
+                                {{javaImportUtils}}.mapper().readValue(
+                                        bytes,
+                                        new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<Data>() {
+                                        }),
+                                null);
+                    } catch ({{javaImportException}} e) {
+                        return new {{$class}}(
+                                response.statusCode(),
+                                bytes,
+                                response,
+                                null,
+                                e);
+                    }
+                });
+    }
+{{- end}}
+    {{- end}}
+
+    {{- range (errorClassFields $type) }}
+    {{- "\n" }}{{templateCommentsForField . 1}}
+    {{- if not (and .Comments .Comments.Deprecated)}}
+    @{{javaImportDeprecated}}{{end}}
+    {{- if .IsAdditionalProperties}}
+    public {{javaImportField . $isAsync}} {{sanitizeFieldName .Name}}() {
+        return data().map(Data::{{sanitizeFieldName .Name}}).orElse({{if isJava8}}{{javaImport (print $utilsPackage ".Java8Compat")}}.mapOf(){{else}}Map.of(){{end}});
+    }
+    {{- else }}
+    public {{javaImportOptional}}<{{javaImportFieldNonPrimitive . $isAsync true}}> {{sanitizeFieldName .Name}}() {
+        return data().{{templateDataFieldTransform .}}(Data::{{sanitizeFieldName .Name}});
+    }{{end}}{{end}}
+
+    public {{javaImportOptional}}<{{$dataClass}}> data() {
+        return {{javaImportOptional}}.ofNullable(data);
+    }
+
+    /**
+     * Returns the exception if an error occurs while deserializing the response body.
+     */
+    public {{javaImportOptional}}<{{javaImport "java.lang.Throwable"}}> deserializationException() {
+        return {{javaImportOptional}}.ofNullable(deserializationException);
+    }
+{{templateString "model.java.stmpl" .Local | indentPresent 4}}
+}

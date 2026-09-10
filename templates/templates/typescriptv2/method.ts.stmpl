@@ -1,0 +1,331 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $op := .Local.Operation -}}
+{{- $methodName := sanitizeMethodName $op -}}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $opState := opTemplateState $op }}
+{{- $usageLocation := $opState.usageLocation -}}
+{{- $methodOptions := templateMethodOptions $op false }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- $args := $op.Arguments }}
+{{- $signature := $opState.signature }}
+{{- $returnType := $signature.unwrappedReturnType }}
+{{- $responseTypes := $opState.inboundResponse }}
+{{- $sseTypes := getSSEResponseTypes $opState }}
+{{- $useAPIPromise := and withAPIPromiseHelpers (not $isPaginated) }}
+{{- $tsdoc := templateComments $op.Comments $dg $methodName 1 "method" }}
+{{- $paramsState := tsMethodParamsState $op }}
+{{- if $paramsState }}
+{{- tsImportMethodParamsTypes $paramsState $usageLocation }}
+{{- $paramsOpt := "" }}{{- if not $paramsState.ParamsRequired }}{{- $paramsOpt = "?" }}{{- end }}
+{{- if $sseTypes }}
+{{ $tsdoc }}
+{{- if $paramsState.BodyVariants }}
+{{- range $variant := $paramsState.BodyVariants }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
+    {{- end }}
+    params{{$paramsOpt}}: {{$variant.ParamsName}}NonStreaming,
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.jsonReturnType}}>;
+{{- end }}
+{{- range $variant := $paramsState.BodyVariants }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
+      dict
+        "usageLocation" $usageLocation
+        "typeDef" $field.Type
+        "rootTypeDef" $op.OwningSDK.Type
+        "optional" $field.Optional
+        "nullable" $field.Nullable
+        "streamable" (isMultipartFileField $field)
+        "constValue" $field.Const
+        "defaultValue" $field.Default
+      )).inputType}},
+    {{- end }}
+    params: {{$variant.ParamsName}}Streaming,
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
+{{- end }}
+{{- else }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
+    {{- end }}
+    params{{$paramsOpt}}: {{$paramsState.ParamsName}}NonStreaming,
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.jsonReturnType}}>;
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
+      dict
+        "usageLocation" $usageLocation
+        "typeDef" $field.Type
+        "rootTypeDef" $op.OwningSDK.Type
+        "optional" $field.Optional
+        "nullable" $field.Nullable
+        "streamable" (isMultipartFileField $field)
+        "constValue" $field.Const
+        "defaultValue" $field.Default
+      )).inputType}},
+    {{- end }}
+    params: {{$paramsState.ParamsName}}Streaming,
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
+{{- end }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
+      dict
+        "usageLocation" $usageLocation
+        "typeDef" $field.Type
+        "rootTypeDef" $op.OwningSDK.Type
+        "optional" $field.Optional
+        "nullable" $field.Nullable
+        "streamable" (isMultipartFileField $field)
+        "constValue" $field.Const
+        "defaultValue" $field.Default
+      )).inputType}},
+    {{- end }}
+    params{{$paramsOpt}}: {{$paramsState.ParamsName}},
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}>;
+{{- end }}
+{{- callImportTypesFunc $responseTypes.importOutputTypes }}
+{{- if not $sseTypes }}
+{{ $tsdoc }}
+{{- end }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- range $field := tsMethodPositionalFields $op }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
+    {{- end }}
+    params{{$paramsOpt}}: {{$paramsState.ParamsName}},
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}> {
+    {{- $prelude := tsMethodCallPrelude $op }}
+    {{- if $prelude }}
+    {{ $prelude }}
+    {{- end }}
+    {{- if $isPaginated }}
+    {{- addTypeImport "operations" "unwrapResultIterator" "funcs"}}
+    return unwrapResultIterator({{$funcName}}(
+      this,
+      {{- range $field := $args.Sorted }}
+      {{tsMethodCallArg $op $field}},
+      {{- end }}
+      options,
+    ));
+    {{- else if $useAPIPromise }}
+    {{- addTypeImport "async" "APIPromise" $usageLocation }}
+    {{- addTypeImport "async" "unwrapAsAPIPromise" $usageLocation}}
+    return unwrapAsAPIPromise({{$funcName}}(
+      this,
+      {{- range $field := $args.Sorted }}
+      {{tsMethodCallArg $op $field}},
+      {{- end }}
+      options,
+    ));
+    {{- else }}
+    {{- addTypeImport "fp" "unwrapAsync" $usageLocation}}
+    return unwrapAsync({{$funcName}}(
+      this,
+      {{- range $field := $args.Sorted }}
+      {{tsMethodCallArg $op $field}},
+      {{- end }}
+      options,
+    ));
+    {{- end }}
+  }
+{{- else }}
+
+{{- if $sseTypes }}
+{{ $tsdoc }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- if $op.Webhook }}
+    {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+    recipient: WebhookRecipient,
+    {{- end}}
+    {{- range $field := $args.Sorted }}
+      {{- $fieldName := sanitizeFieldName $field.Name }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{- if hasAnnotation $field "requestWrapper" }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & {{ getSSEStreamFieldOverride $field "stream?: false | undefined" }},
+      {{- else if hasAnnotation $field "request" }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & { stream?: false | undefined },
+      {{- else if isSSEStreamField $op $field }}
+      stream{{if $field.Optional}}?{{end}}: false,
+      {{- else }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+      {{- end }}
+    {{- end }}
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.jsonReturnType}}>;
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- if $op.Webhook }}
+    {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+    recipient: WebhookRecipient,
+    {{- end}}
+    {{- range $field := $args.Sorted }}
+      {{- $fieldName := sanitizeFieldName $field.Name }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{- if hasAnnotation $field "requestWrapper" }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & {{ getSSEStreamFieldOverride $field "stream: true" }},
+      {{- else if hasAnnotation $field "request" }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & { stream: true },
+      {{- else if isSSEStreamField $op $field }}
+      stream{{if $field.Optional}}?{{end}}: true,
+      {{- else }}
+      {{    $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+      {{- end }}
+    {{- end }}
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- if $op.Webhook }}
+    {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+    recipient: WebhookRecipient,
+    {{- end}}
+    {{- range $field := $args.Sorted }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+    {{- end }}
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}>;
+{{- end }}
+{{- callImportTypesFunc $responseTypes.importOutputTypes }}
+{{- if not $sseTypes }}{{/* When SSE overload is enabled, the jsdoc comment needs to be on the first overload so it is shown for overloads */}}
+{{ $tsdoc }}
+{{- end }}
+  {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
+    {{- if $op.Webhook }}
+    {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+    recipient: WebhookRecipient,
+    {{- end}}
+    {{- range $field := $args.Sorted }}
+      {{- $fieldType := resolveOutbound (
+        dict
+          "usageLocation" $usageLocation
+          "typeDef" $field.Type
+          "rootTypeDef" $op.OwningSDK.Type
+          "optional" $field.Optional
+          "nullable" $field.Nullable
+          "streamable" (isMultipartFileField $field)
+          "constValue" $field.Const
+          "defaultValue" $field.Default
+        ) }}
+      {{- callImportTypesFunc $fieldType.importInputTypes }}
+      {{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+    {{- end }}
+    options?: {{ $methodOptions }},
+  ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}> {
+    {{- if $isPaginated }}
+    {{- addTypeImport "operations" "unwrapResultIterator" "funcs"}}
+    return unwrapResultIterator({{$funcName}}(
+      this,
+      {{- if $op.Webhook }}
+      recipient,
+      {{- end}}
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ));
+    {{- else if $useAPIPromise }}
+    {{- addTypeImport "async" "APIPromise" $usageLocation }}
+    {{- addTypeImport "async" "unwrapAsAPIPromise" $usageLocation}}
+    return unwrapAsAPIPromise({{$funcName}}(
+      this,
+      {{- if $op.Webhook }}
+      recipient,
+      {{- end}}
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ));
+    {{- else }}
+    {{- addTypeImport "fp" "unwrapAsync" $usageLocation}}
+    return unwrapAsync({{$funcName}}(
+      this,
+      {{- if $op.Webhook }}
+      recipient,
+      {{- end}}
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ));
+    {{- end }}
+  }
+{{- end }}

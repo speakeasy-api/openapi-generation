@@ -1,0 +1,74 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/cursor/nullable#limit:
+    get:
+      operationId: paginationCursorNullableLimit
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests that cursor pagination with a nullable+optional limit parameter
+        and results output generates type-safe code. When the limit parameter is
+        defined as anyOf integer/null and is not required, it results in a
+        nullable union type. Special care must be given to ensure the generated
+        results length comparison against limit handles this correctly.
+      tags:
+        - pagination
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+        - in: query
+          name: limit
+          required: false
+          schema:
+            anyOf:
+              - type: integer
+              - type: "null"
+            default: 10
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginationCursorNullableLimitNextCursor"
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          results: $.results
+          nextCursor: $.next_cursor
+components:
+  schemas:
+    PaginationCursorNullableLimitNextCursor:
+      properties:
+        next_cursor:
+          anyOf:
+            - type: string
+            - type: "null"
+        results:
+          items:
+            type: string
+          type: array
+      required:
+        - results
+        - next_cursor
+      type: object

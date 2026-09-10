@@ -1,0 +1,140 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{- addImport "types" "BaseModel" true -}}
+{{- $optionalFields := templateOptionalFieldList $type -}}
+{{- $nullableFields := templateNullableFieldList $type -}}
+{{- $hasOptionalField := gt (len $optionalFields) 0 -}}
+{{- $hasNullableField := gt (len $nullableFields) 0 -}}
+{{- $hasAdditionalProperties := hasAdditionalPropertiesField $type -}}
+{{- if $hasAdditionalProperties}}{{addImport "pydantic" "ConfigDict"}}{{end -}}
+{{- $fields := (sortFields $type.Fields) -}}
+{{- $className := sanitizeClassName $type.Name }}
+{{- $startsWithTest := hasPrefix "Test" $className }}
+{{- $comments := templateComments $type.Comments 1 }}
+{{- $pagination := .Local.Type.Extensions.Pagination }}
+{{- $modelValidator := .Local.ModelValidator }}
+{{- templateDeprecated $type.Comments }}
+class {{$className}}(BaseModel):
+{{- $comments}}
+    {{- if and (not $startsWithTest) (not $hasAdditionalProperties) (le (len $fields) 0) (not $pagination) (not $comments)}}
+    pass{{end -}}
+    {{- if $startsWithTest}}
+    __test__ = False
+    {{- end}}
+    {{- if $hasAdditionalProperties}}
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, extra="allow")
+    __pydantic_extra__:  {{sanitizeAdditionalPropertiesField (getAdditionalPropertiesField $type) $usageLocation $local}}
+    {{- end}}
+    
+    {{- if $pagination }}
+    {{- addImport "typing" "Callable"}}
+    {{- addImport "typing" "Optional"}}
+    {{- if isAsyncPaginationSep2025Fix}}
+    {{- addImport "typing" "Union"}}
+    {{- addImport "typing" "Awaitable"}}
+    next: Union[Callable[[], Optional[{{ sanitizeClass $type $usageLocation true }}]], Callable[[], Awaitable[Optional[{{ sanitizeClass $type $usageLocation true }}]]]]
+    {{- else}}
+    next: Callable[[], Optional[{{ sanitizeClass $type $usageLocation true }}]]
+    {{- end }}
+    {{- end }}{{if or $comments $startsWithTest $hasAdditionalProperties $pagination}}{{/* Add a newline before the fields if necessary */}}
+    {{end}}
+    {{- range $fields}}
+    {{-   if not .IsAdditionalProperties}}
+    {{-     $fieldName := sanitizeFieldName .Name}}
+    {{      if and .Const useUpperCaseConsts}}{{upper $fieldName}}{{else}}{{$fieldName}}{{end}}: {{sanitizeFieldTypeAndAnnotations . $usageLocation $local}}{{templateDefaultValue . $usageLocation $local}}
+    {{-     templateComments .Comments 1 }}
+    {{-   end}}
+    {{  end}}
+    {{- if $hasAdditionalProperties}}
+    @property
+    def {{sanitizeFieldName (getAdditionalPropertiesField $type).Name}}(self):
+        return self.__pydantic_extra__
+
+    @{{sanitizeFieldName (getAdditionalPropertiesField $type).Name}}.setter
+    def {{sanitizeFieldName (getAdditionalPropertiesField $type).Name}}(self, value):
+        self.__pydantic_extra__ = value # pyright: ignore[reportIncompatibleVariableOverride]
+    {{end}}
+
+    {{- if hasOpenEnumField $type}}
+    {{-   range openEnums $type}}
+    {{-     if and (not .Const) (not (eq (getEnumFormat .Type) "union"))}}
+    {{-       $fieldName := sanitizeFieldName .Name}}
+        {{addImport "pydantic" "field_serializer"}}
+    @field_serializer("{{$fieldName}}")
+    def serialize_{{$fieldName}}(self, value):
+        if isinstance(value, str):
+            try:
+                return {{sanitizeType . (dict "optional" false "nullable" false)}}(value)
+            except ValueError:
+                return value
+        return value
+    {{-     end}}
+    {{-   end}}
+    {{- end}}
+    {{- if or $hasNullableField $hasOptionalField}}
+    {{-   addImport "pydantic" "model_serializer"}}
+    {{-   addImport "types" "UNSET_SENTINEL" true}}
+    @model_serializer(mode="wrap")
+    def {{sanitizeSerializeMethodName $type}}(self, handler):
+        {{- $nullDefaultFields := templateNullDefaultFieldList $type}}
+        {{- $hasNullDefaultField := gt (len $nullDefaultFields) 0}}
+        {{- if $hasOptionalField}}
+        optional_fields = set([{{$optionalFields}}])
+        {{-   if $hasNullableField}}
+        nullable_fields = set([{{$nullableFields}}])
+        {{-     if $hasNullDefaultField}}
+        null_default_fields = set([{{$nullDefaultFields}}])
+        {{-     end}}
+        {{-   end}}
+        {{- end}}
+        serialized = handler(self)
+        m = {}
+
+        for n, f in type(self).model_fields.items():
+            k = f.alias or n
+            val = serialized.get(k, serialized.get(n))
+            {{- if $hasAdditionalProperties}}
+            serialized.pop(k, serialized.pop(n, None))
+            {{- end}}
+
+            {{- if and $hasOptionalField $hasNullableField}}
+            is_nullable_and_explicitly_set = (
+                k in nullable_fields and
+                (
+                  self.__pydantic_fields_set__.intersection({n})
+                  {{- if $hasNullDefaultField}}
+                  or k in null_default_fields
+                  {{- end}}
+                )  # pylint: disable=no-member
+            )
+            {{- end}}
+
+            if val != UNSET_SENTINEL:
+                {{- if not $hasOptionalField}}
+                m[k] = val
+                {{- else }}
+                if (
+                    val is not None
+                    or k not in optional_fields
+                    {{- if $hasNullableField}}
+                    or is_nullable_and_explicitly_set
+                    {{- end}}
+                ):
+                    m[k] = val
+                {{- end}}
+
+        {{- if $hasAdditionalProperties}}
+        for k, v in serialized.items():
+            m[k] = v
+        {{- end}}
+
+        return m
+    {{- end}}
+    {{- if $modelValidator }}
+      {{- range $imp := $modelValidator.Imports }}
+        {{- range $imp.Symbols }}{{addImport $imp.From .}}{{end}}
+      {{- end }}
+
+{{ $modelValidator.Body | indentPresent 4 }}
+    {{- end }}

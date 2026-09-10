@@ -1,0 +1,34 @@
+---
+title: "TestEnumFormatsRequest"
+---
+
+## Example Usage
+
+```typescript
+import {
+  IntegerMapFormat,
+  IntegerPartialMapFormat,
+  StringArrayFormat,
+  StringMapFormat,
+  StringPartialMapFormat,
+  TestEnumFormatsRequest,
+} from "openapi";
+
+let value: TestEnumFormatsRequest = {
+  stringArrayFormat: StringArrayFormat.AwaitingReviewProcess,
+  stringMapFormat: StringMapFormat.ModerateImportanceLevel,
+  stringPartialMapFormat: StringPartialMapFormat.InitialDraftVersion,
+  integerMapFormat: IntegerMapFormat.SuccessfulOperationComplete,
+  integerPartialMapFormat: IntegerPartialMapFormat.PrimaryFirstOption,
+};
+```
+
+## Fields
+
+| Field                                                                  | Type                                                                   | Required                                                               | Description                                                            | Example                                                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `stringArrayFormat`                                                    | [models.StringArrayFormat](../models/stringarrayformat.mdx)             | :heavy_check_mark:                                                     | String enum with x-speakeasy-enums as array (full coverage)            | pending_review                                                         |
+| `stringMapFormat`                                                      | [models.StringMapFormat](../models/stringmapformat.mdx)                 | :heavy_check_mark:                                                     | String enum with x-speakeasy-enums as map (full coverage)              | medium_priority                                                        |
+| `stringPartialMapFormat`                                               | [models.StringPartialMapFormat](../models/stringpartialmapformat.mdx)   | :heavy_check_mark:                                                     | String enum with x-speakeasy-enums as map (partial coverage)           | draft_mode                                                             |
+| `integerMapFormat`                                                     | [models.IntegerMapFormat](../models/integermapformat.mdx)               | :heavy_check_mark:                                                     | Integer enum with x-speakeasy-enums as map (full coverage)             | 200                                                                    |
+| `integerPartialMapFormat`                                              | [models.IntegerPartialMapFormat](../models/integerpartialmapformat.mdx) | :heavy_check_mark:                                                     | Integer enum with x-speakeasy-enums as map (partial coverage)          | 1                                                                      |

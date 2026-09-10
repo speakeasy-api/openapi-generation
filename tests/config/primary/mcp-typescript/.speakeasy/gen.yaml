@@ -1,0 +1,18 @@
+configVersion: 2.0.0
+generation:
+  fixes:
+    nameOverrideFeb2026: true
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+mcp-typescript:
+  inferUnionDiscriminators: true
+  author: Speakeasy
+  packageName: openapi
+  version: 0.0.1
+  responseFormat: envelope
+  evalProvider: anthropic
+  validateResponse: false

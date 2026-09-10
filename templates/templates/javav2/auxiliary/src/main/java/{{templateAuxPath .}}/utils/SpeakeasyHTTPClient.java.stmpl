@@ -1,0 +1,666 @@
+package {{templatePackageName}}.utils;
+{{- if useOkHttp}}
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+{{- if asyncEnabled}}
+import java.util.concurrent.CompletableFuture;
+{{- end}}
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+{{- if asyncEnabled}}
+
+import okhttp3.Call;
+import okhttp3.Callback;
+{{- end}}
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSink;
+import okio.Okio;
+
+import org.apache.commons.io.IOUtils;
+{{- if isJava8}}
+
+import {{templatePackageName}}.utils.Java8Compat;
+{{- end}}
+
+import {{templatePackageName}}.utils.transport.HttpBody;
+import {{templatePackageName}}.utils.transport.HttpRequest;
+import {{templatePackageName}}.utils.transport.HttpResponse;
+
+public class SpeakeasyHTTPClient implements HTTPClient {
+{{- if slf4jLoggingEnabled}}
+
+    private static final SpeakeasyLogger slf4jLogger = SpeakeasyLogger.getLogger(SpeakeasyHTTPClient.class);
+{{- end}}
+
+    private static boolean debugEnabled = false;{{/* global debug flag, retained for backwards compatibility */}}
+
+    private Boolean localDebugEnabled;{{/* instance-level override for the backwards-compatible global debug flag */}}
+
+    private static Set<String> redactedHeaders = {{jdkCompat "Set.of"}}("AUTHORIZATION", "X-API-KEY");{{/* redactedHeaders entries are uppercase */}}
+    {{- if not slf4jLoggingEnabled}}
+
+    private static Consumer<? super String> logger = System.out::println;
+    {{- end}}
+
+    private final OkHttpClient client = new OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build();
+
+    private static final Set<String> STREAMING_MEDIA_TYPES =
+            {{/* Generated SSE / NDJSON / JSONL operations always include their streaming media type in Accept. */}}
+            {{jdkCompat "Set.of"}}("text/event-stream", "application/x-ndjson", "application/jsonl");
+
+    private static boolean isStreamingMediaType(String value) {
+        int paramsIndex = value.indexOf(';');
+        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
+        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
+    }
+{{- if asyncEnabled}}
+    {{- /* streaming responses can remain idle between events
+           keep unary async calls on the default client so sync
+           and async read timeout semantics stay aligned */}}
+
+    private final OkHttpClient streamingClient = client.newBuilder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .build();
+
+    private OkHttpClient asyncCallClient(HttpRequest request) {
+        boolean streaming = request.headers().get("Accept").stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
+        return streaming ? streamingClient : client;
+    }
+
+{{- end}}
+
+    /**
+     * Sets debug logging on or off for requests and responses including bodies for JSON content.
+     * <p>
+     * <strong>WARNING:</strong> This setting may expose sensitive information in logs (such as
+     * {@code Authorization} headers) and should only be enabled temporarily for local debugging
+     * purposes.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}). Header suppression can be controlled with the
+     * {@link #setRedactedHeaders(Collection)} method.
+     *
+     * @param enabled {@code true} to enable debug logging, {@code false} to disable it
+     * @see #setRedactedHeaders(Collection)
+     * @see #addRedactedHeader(String)
+     * @see #getDebugLoggingEnabled()
+     */
+    public static void setDebugLogging(boolean enabled) {
+        debugEnabled = enabled;
+    }
+
+    public static boolean getDebugLoggingEnabled() {
+        return debugEnabled;
+    }
+
+    @Override
+    public boolean isDebugLoggingEnabled() {
+        return Optional.ofNullable(localDebugEnabled).orElse(debugEnabled);
+    }
+
+    @Override
+    public void enableDebugLogging(boolean enabled) {
+        localDebugEnabled = enabled;
+    }
+
+    /**
+     * When debug logging is enabled, this method controls the suppression of header values in the logs.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}).
+     *
+     * @param headerNames the names (case-insensitive) of the headers whose values
+     *                    will be redacted in the logs
+     * @see #setDebugLogging(boolean)
+     */
+    public static void setRedactedHeaders(Collection<String> headerNames) {
+        redactedHeaders = headerNames.stream() //
+                .map(x -> x.toUpperCase(Locale.ENGLISH)) //
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * When debug logging is enabled, this method adds a single header to the list of headers
+     * whose values will be redacted in the logs.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}).
+     *
+     * @param headerName the name (case-insensitive) of the header whose value
+     *                   will be redacted in the logs
+     * @see #setDebugLogging(boolean)
+     * @see #setRedactedHeaders(Collection)
+     */
+    public static void addRedactedHeader(String headerName) {
+        Set<String> updated = new java.util.HashSet<>(redactedHeaders);
+        updated.add(headerName.toUpperCase(Locale.ENGLISH));
+        redactedHeaders = {{jdkCompat "Set.copyOf"}}(updated);
+    }
+{{- if not slf4jLoggingEnabled}}
+
+    public static void setLogger(Consumer<? super String> logger) {
+        SpeakeasyHTTPClient.logger = logger;
+    }
+{{- end}}
+
+    @Override
+    public HttpResponse<InputStream> send(HttpRequest request) throws IOException {
+{{- if slf4jLoggingEnabled}}
+        logRequest(request, isDebugLoggingEnabled());
+{{- else}}
+        if (isDebugLoggingEnabled()) {
+            logRequest(request, true);
+        }
+{{- end}}
+        Response okResponse = client.newCall(toOkHttpRequest(request)).execute();
+        HttpResponse<InputStream> response = toResponse(request, okResponse);
+{{- if slf4jLoggingEnabled}}
+        response = logResponse(response, isDebugLoggingEnabled());
+{{- else}}
+        if (isDebugLoggingEnabled()) {
+            response = logResponse(response, true);
+        }
+{{- end}}
+        return response;
+    }
+
+{{- if asyncEnabled}}
+
+    @Override
+    public CompletableFuture<HttpResponse<InputStream>> sendAsync(HttpRequest request) {
+        CompletableFuture<HttpResponse<InputStream>> future = new CompletableFuture<>();
+        try {
+  {{- if slf4jLoggingEnabled}}
+            logRequest(request, isDebugLoggingEnabled());
+  {{- else}}
+            if (isDebugLoggingEnabled()) {
+                logRequest(request, true);
+            }
+  {{- end}}
+            Call call = asyncCallClient(request).newCall(toOkHttpRequest(request));
+            future.whenComplete((ignored, throwable) -> {
+                if (future.isCancelled()) {
+                    call.cancel();
+                }
+            });
+            call.enqueue(new Callback() {
+
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    {{- /* propagate the IOException as-is: retry and hook logic keys on the exception type */}}
+                    CompletableFuture.runAsync(() -> future.completeExceptionally(e));
+                }
+
+                @Override
+                public void onResponse(Call call, Response okResponse) {
+                    try {
+                        HttpResponse<InputStream> response = toResponse(request, okResponse);
+                        if (isDebugLoggingEnabled()) {
+                            {{- /* debug logging buffers non-streaming bodies; keep that blocking work off OkHttp's dispatcher */}}
+                            CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    return logResponse(response, true);
+                                } catch (IOException e) {
+                                    throw new java.util.concurrent.CompletionException(e);
+                                }
+                            }).whenCompleteAsync((loggedResponse, error) -> {
+                                if (error != null) {
+                                    okResponse.close();
+                                    future.completeExceptionally(error);
+                                } else if (!future.complete(loggedResponse)) {
+                                    okResponse.close();
+                                }
+                            });
+                        } else {
+                            {{- /* complete off the dispatcher; close body if future already cancelled/completed */}}
+                            CompletableFuture.runAsync(() -> {
+                                if (!future.complete(response)) {
+                                    okResponse.close();
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        okResponse.close();
+                        CompletableFuture.runAsync(() -> future.completeExceptionally(e));
+                    }
+                }
+            });
+        } catch (Exception e) {
+            future.completeExceptionally(e);
+        }
+        return future;
+    }
+{{- end}}
+
+    private static Request toOkHttpRequest(HttpRequest request) {
+        Request.Builder builder = new Request.Builder().url(request.uri().toString());
+        request.headers().forEach((name, values) -> values.forEach(value -> builder.addHeader(name, value)));
+        okhttp3.RequestBody body = request.body().map(SpeakeasyHTTPClient::toOkHttpBody).orElse(null);
+        if (body == null && requiresRequestBody(request.method())) {
+            body = okhttp3.RequestBody.create(new byte[0], null);
+        }
+        builder.method(request.method(), body);
+        return builder.build();
+    }
+
+    private static boolean requiresRequestBody(String method) {
+        return method.equals("POST") || method.equals("PUT") || method.equals("PATCH");
+    }
+
+    private static okhttp3.RequestBody toOkHttpBody(HttpBody body) {
+        return new okhttp3.RequestBody() {
+
+            @Override
+            public MediaType contentType() {
+                return null;
+            }
+
+            @Override
+            public long contentLength() {
+                return body.contentLength();
+            }
+
+            @Override
+            public boolean isOneShot() {
+                return !body.isRepeatable();
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                InputStream in;
+                try {
+                    in = body.stream();
+                } catch (IllegalStateException e) {
+                    throw new IOException(e.getMessage(), e);
+                }
+                try (InputStream closeable = in) {
+                    sink.writeAll(Okio.source(closeable));
+                } catch (UncheckedIOException e) {
+                    throw e.getCause();
+                }
+            }
+        };
+    }
+
+    private static HttpResponse<InputStream> toResponse(HttpRequest request, Response response) {
+        Headers headers = new Headers(response.headers().toMultimap());
+        ResponseBody body = response.body();
+        InputStream in = body == null ? new ByteArrayInputStream(new byte[0]) : body.byteStream();
+        return new HttpResponse<>(request, response.code(), headers, in);
+    }
+
+    private static void logRequest(HttpRequest request, boolean logBody) throws IOException {
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug("Sending request: {}", request);
+        slf4jLogger.debug("Request headers: {}", redactHeaders(request.headers()));
+{{- else}}
+        log("Sending request: " + request);
+        log("Request headers: " + redactHeaders(request.headers()));
+{{- end}}
+
+        Optional<HttpBody> body = request.body();
+        {{- /* only log present, repeatable JSON or plain-text bodies */}}
+        if (logBody && body.isPresent() && body.get().isRepeatable() && request.headers() //
+                .first("Content-Type") //
+                .filter(x -> x.equals("application/json") || x.equals("text/plain")).isPresent()) {
+            try (InputStream in = body.get().stream()) {
+                byte[] bytes = IOUtils.toByteArray(in);
+                {{- /* debug output intentionally decodes supported text bodies as UTF-8 */}}
+{{- if slf4jLoggingEnabled}}
+                slf4jLogger.trace("Request body:\n{}", new String(bytes, StandardCharsets.UTF_8));
+{{- else}}
+                log("Request body:\n" + new String(bytes, StandardCharsets.UTF_8));
+{{- end}}
+            }
+        }
+    }
+
+    private static HttpResponse<InputStream> logResponse(HttpResponse<InputStream> response, boolean logBody) throws IOException {
+        String contentType = response.contentType().orElse("application/octet-stream");
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug("Received response: {}", response);
+        slf4jLogger.debug("Response headers: {}", redactHeaders(response.headers()));
+{{- else}}
+        log("Received response: " + response);
+        log("Response headers: " + redactHeaders(response.headers()));
+{{- end}}
+
+        if (isStreamingMediaType(contentType)) {
+            {{- /* never buffer streaming responses */}}
+            return response;
+        }
+
+        byte[] bytes;
+        {{- /* buffer the response so logging does not consume it */}}
+        try (InputStream in = response.body()) {
+            bytes = IOUtils.toByteArray(in);
+        }
+        response = new HttpResponse<>(response.request(), response.statusCode(), response.headers(),
+                new ByteArrayInputStream(bytes));
+
+        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+        {{- /* only log JSON or plain-text response bodies
+               debug output intentionally decodes supported text bodies as UTF-8 */}}
+{{- if slf4jLoggingEnabled}}
+            slf4jLogger.trace("Response body:\n{}", new String(bytes, StandardCharsets.UTF_8));
+{{- else}}
+            log("Response body:\n" + new String(bytes, StandardCharsets.UTF_8));
+{{- end}}
+        }
+        return response;
+    }
+
+    private static String redactHeaders(Headers headers) {
+        return "{" + headers.map() //
+                .entrySet() //
+                .stream() //
+                .map(entry -> {
+                    final String value;
+                    if (redactedHeaders.contains(entry.getKey().toUpperCase(Locale.ENGLISH))) {
+                        value = "[******]";
+                    } else {
+                        value = String.valueOf(entry.getValue());
+                    }
+                    return entry.getKey() + "=" + value;
+                }) //
+                .collect(Collectors.joining(", ")) + "}";
+    }
+
+    private static void log(String message) {
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug(message);
+{{- else}}
+        logger.accept(message);
+{{- end}}
+    }
+
+    @Override
+    public void close() throws Exception {
+    {{- /* streamingClient is built from client and shares its dispatcher,
+           connection pool, and cache, so releasing client closes both. */}}
+        client.dispatcher().executorService().shutdown();
+        client.connectionPool().evictAll();
+        if (client.cache() != null) {
+            client.cache().close();
+        }
+    }
+}
+{{- else -}}{{/* httpClient: jdk */}}
+{{- if asyncEnabled}}
+
+import {{templatePackageName}}.utils.Blob;
+{{- end}}
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+
+public class SpeakeasyHTTPClient implements HTTPClient {
+{{- if slf4jLoggingEnabled}}
+
+    private static final SpeakeasyLogger slf4jLogger = SpeakeasyLogger.getLogger(SpeakeasyHTTPClient.class);
+{{- end}}
+
+    // global debug flag. Retained for backwards compatibility.
+    private static boolean debugEnabled = false;
+
+    // Instance-level debug flag. Can be set by clients to enable debug logging for a
+    // single SDK instance.
+    private Boolean localDebugEnabled;
+
+    // uppercase
+    private static Set<String> redactedHeaders = Set.of("AUTHORIZATION", "X-API-KEY");
+    {{- if not slf4jLoggingEnabled}}
+    
+    private static Consumer<? super String> logger = System.out::println;
+    {{- end}}
+
+    private final HttpClient client = HttpClient.newHttpClient();
+
+    private static final Set<String> STREAMING_MEDIA_TYPES =
+            Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
+
+    private static boolean isStreamingMediaType(String value) {
+        int paramsIndex = value.indexOf(';');
+        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
+        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
+    }
+
+    /**
+     * Sets debug logging on or off for requests and responses including bodies for JSON content.
+     * <p>
+     * <strong>WARNING:</strong> This setting may expose sensitive information in logs (such as
+     * {@code Authorization} headers) and should only be enabled temporarily for local debugging
+     * purposes.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}). Header suppression can be controlled with the
+     * {@link #setRedactedHeaders(Collection)} method.
+     *
+     * @param enabled {@code true} to enable debug logging, {@code false} to disable it
+     * @see #setRedactedHeaders(Collection)
+     * @see #addRedactedHeader(String)
+     * @see #getDebugLoggingEnabled()
+     */
+    public static void setDebugLogging(boolean enabled) {
+        debugEnabled = enabled;
+    }
+
+    public static boolean getDebugLoggingEnabled() {
+        return debugEnabled;
+    }
+
+    @Override
+    public boolean isDebugLoggingEnabled() {
+        return Optional.ofNullable(localDebugEnabled).orElse(debugEnabled);
+    }
+
+    @Override
+    public void enableDebugLogging(boolean enabled) {
+        localDebugEnabled = enabled;
+    }
+
+    /**
+     * When debug logging is enabled, this method controls the suppression of header values in the logs.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}).
+     *
+     * @param headerNames the names (case-insensitive) of the headers whose values
+     *                    will be redacted in the logs
+     * @see #setDebugLogging(boolean)
+     */
+    public static void setRedactedHeaders(Collection<String> headerNames) {
+        redactedHeaders = headerNames.stream() //
+                .map(x -> x.toUpperCase(Locale.ENGLISH)) //
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * When debug logging is enabled, this method adds a single header to the list of headers
+     * whose values will be redacted in the logs.
+     * <p>
+     * By default, {@code Authorization} headers are redacted in the logs (printed with a value
+     * of {@code [*******]}).
+     * 
+     * @param headerName the name (case-insensitive) of the header whose value 
+     *                   will be redacted in the logs
+     * @see #setDebugLogging(boolean)
+     * @see #setRedactedHeaders(Collection)
+     */
+    public static void addRedactedHeader(String headerName) {
+        Set<String> updated = new java.util.HashSet<>(redactedHeaders);
+        updated.add(headerName.toUpperCase(Locale.ENGLISH));
+        redactedHeaders = Set.copyOf(updated);
+    }
+{{- if not slf4jLoggingEnabled}}
+
+    public static void setLogger(Consumer<? super String> logger) {
+        SpeakeasyHTTPClient.logger = logger;
+    }
+{{- end}}
+
+    @Override
+    public HttpResponse<InputStream> send(HttpRequest request)
+            throws IOException, InterruptedException, URISyntaxException {
+{{- if slf4jLoggingEnabled}}
+        request = logRequest(request, isDebugLoggingEnabled());
+{{- else}}
+        if (isDebugLoggingEnabled()) {
+            request = logRequest(request, true);
+        }
+{{- end}}
+        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+{{- if slf4jLoggingEnabled}}
+        response = logResponse(response, isDebugLoggingEnabled());
+{{- else}}
+        if (isDebugLoggingEnabled()) {
+            response = logResponse(response, true);
+        }
+{{- end}}
+        return response;
+    }
+
+{{- if asyncEnabled}}
+
+    @Override
+    public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
+  {{- if slf4jLoggingEnabled}}
+        request = logRequest(request, isDebugLoggingEnabled());
+  {{- else}}
+        if (isDebugLoggingEnabled()) {
+            request = logRequest(request, true);
+        }
+  {{- end}}
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
+                .thenApply(response ->
+                        // TODO: log responses when helper for Blob is setup
+                        new ResponseWithBody<>(response, Blob::from));
+    }
+{{- end}}
+
+    private HttpRequest logRequest(HttpRequest request, boolean logBody) {
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug("Sending request: {}", request);
+        slf4jLogger.debug("Request headers: {}", redactHeaders(request.headers()));
+{{- else}}
+        log("Sending request: " + request);
+        log("Request headers: " + redactHeaders(request.headers()));
+{{- end}}
+        // only log the body if logBody is true and the body is present and the content type is JSON
+        if (logBody && request.bodyPublisher().isPresent() && request.headers() //
+                .firstValue("Content-Type") //
+                .filter(x -> x.equals("application/json") || x.equals("text/plain")).isPresent()) {
+            // we read the body and ensure that the BodyPublisher is rebuilt to pass to the
+            // http client
+            byte[] body = Helpers.bodyBytes(request);
+            request = Helpers //
+                    .copy(request) //
+                    .method(request.method(), BodyPublishers.ofByteArray(body)) //
+                    .build();
+            // note that in the case of text/plain a different encoding from UTF-8
+            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+            // do not throw (substitution happens).
+{{- if slf4jLoggingEnabled}}
+            slf4jLogger.trace("Request body:\n{}", new String(body, StandardCharsets.UTF_8));
+{{- else}}
+            log("Request body:\n" + new String(body, StandardCharsets.UTF_8));
+{{- end}}
+        }
+        return request;
+    }
+
+    private static HttpResponse<InputStream> logResponse(HttpResponse<InputStream> response, boolean logBody) throws IOException {
+        String contentType = response.headers().firstValue("Content-Type").orElse("application/octet-stream");
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug("Received response: {}", response);
+        slf4jLogger.debug("Response headers: {}", redactHeaders(response.headers()));
+{{- else}}
+        log("Received response: " + response);
+        log("Response headers: " + redactHeaders(response.headers()));
+{{- end}}
+
+        // skip caching for streaming responses - they may hang
+        if (isStreamingMediaType(contentType)) {
+            return response;
+        }
+
+        // make the response re-readable by loading the response body into a byte array
+        // and allowing the InputStream to be read many times
+        response = Utils.cache(response);
+
+        // only log the response body if logBody is true and the content type is JSON or plain text
+        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            // the response is re-readable so we can read and close it without
+            // affecting later processing of the response.
+
+            // note that in the case of text/plain a different encoding from UTF-8
+            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+            // do not throw (substitution happens).
+{{- if slf4jLoggingEnabled}}
+            slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
+{{- else}}
+            log("Response body:\n" + Utils.toUtf8AndClose(response.body()));
+{{- end}}
+        }
+        return response;
+    }
+
+    private static String redactHeaders(HttpHeaders headers) {
+        return "{" + headers.map() //
+                .entrySet() //
+                .stream() //
+                .map(entry -> {
+                    final String value;
+                    if (redactedHeaders.contains(entry.getKey().toUpperCase(Locale.ENGLISH))) {
+                        value = "[******]";
+                    } else {
+                        value = String.valueOf(entry.getValue());
+                    }
+                    return entry.getKey() + "=" + value;
+                }) //
+                .collect(Collectors.joining(", ")) + "}";
+    }
+
+    private static void log(String message) {
+{{- if slf4jLoggingEnabled}}
+        slf4jLogger.debug(message);
+{{- else}}
+        logger.accept(message);
+{{- end}}
+    }
+}
+{{- end}}{{/* end httpClient: jdk */}}

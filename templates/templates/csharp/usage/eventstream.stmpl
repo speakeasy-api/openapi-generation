@@ -1,0 +1,25 @@
+{{- $eventStreamField := getEventStreamField .Local.Operation.Response.Type -}}
+{{- $dataType := sanitizeType $eventStreamField.Type.ItemType false "" "" true -}}
+{{- $siblingContentField := getEventStreamSiblingField .Local.Operation -}}
+{{- if $siblingContentField -}}
+// Handle event stream response
+var eventStream = res.{{sanitizeFieldName $eventStreamField.Name}};
+if (eventStream != null)
+{
+    await foreach ({{$dataType}} eventData in eventStream)
+    {
+        // handle eventData
+    }
+}
+// Handle JSON response
+else if (res.{{sanitizeFieldName $siblingContentField.Name}} != null)
+{
+    // handle JSON response
+    var jsonResponse = res.{{sanitizeFieldName $siblingContentField.Name}};
+}
+{{- else -}}
+await foreach ({{$dataType}} eventData in res.{{sanitizeFieldName $eventStreamField.Name}}!)
+{
+    // handle eventData
+}
+{{- end -}}

@@ -1,0 +1,99 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestResponseBodyNameOverride(t *testing.T) {
+	// Note: The Arazzo test already records "response-bodies-overridden-field-names" for this operation.
+	// This hand-written test provides additional coverage for the name-override command.
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generation", "name-override", "--test-enum-query-param", "value1", "--test-query-param", "test-query-param"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	assert.NotEmpty(t, output)
+}
+
+func TestResponseBodyAdditionalPropertiesAnyValues(t *testing.T) {
+	recordTest("response-bodies-additional-properties-any-values")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"response-bodies", "response-body-additional-properties-any-post",
+		"--additional-properties", `{"currency":"GBP","is_active":true,"product_id":"prod_123","quantity":5}`})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"currency"`)
+	assert.Contains(t, output, `"GBP"`)
+	assert.Contains(t, output, `"product_id"`)
+	assert.Contains(t, output, `"prod_123"`)
+}
+
+func TestResponseBodyBytesGet(t *testing.T) {
+	recordTest("response-bodies-bytes-get")
+
+	binaryPayload := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(200)
+		w.Write(binaryPayload)
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "response-bodies", "response-body-bytes-get"})
+	require.NoError(t, err)
+	assert.Equal(t, binaryPayload, []byte(h.GetStdout()))
+}
+
+func TestResponseBodyBytesGetOutputFile(t *testing.T) {
+	binaryPayload := []byte{0xDE, 0xAD, 0xBE, 0xEF}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(200)
+		w.Write(binaryPayload)
+	}))
+	defer s.Close()
+
+	tmpFile := filepath.Join(t.TempDir(), "test-output.bin")
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "response-bodies", "response-body-bytes-get", "--output-file", tmpFile})
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(tmpFile)
+	require.NoError(t, err)
+	assert.Equal(t, binaryPayload, data)
+	assert.Equal(t, tmpFile, strings.TrimSpace(h.GetStdout()))
+	assert.Contains(t, h.GetStderr(), tmpFile)
+
+	machineFile := filepath.Join(t.TempDir(), "machine-output.bin")
+	h2 := NewCLITestHarness(t)
+	err = h2.RunRaw([]string{"--server-url", s.URL, "--output-format", "json", "response-bodies", "response-body-bytes-get", "--output-file", machineFile})
+	require.NoError(t, err)
+	var envelope struct {
+		Path      string `json:"path"`
+		SizeBytes int64  `json:"size_bytes"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h2.GetStdout()), &envelope))
+	assert.Equal(t, machineFile, envelope.Path)
+	assert.Equal(t, int64(len(binaryPayload)), envelope.SizeBytes)
+	assert.Empty(t, h2.GetStderr())
+}

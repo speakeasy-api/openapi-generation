@@ -1,0 +1,29 @@
+{{- define "publicExportNamespace" }}
+{{.Declaration}} {{.Name}} {
+{{- range .Members }}
+  {{- if .MustInterface }}
+  export interface {{.Name}} extends {{.Intermediate}} {}
+  {{- else }}
+  export type {{.Name}} = {{.Intermediate}};
+  {{- end }}
+{{- end }}
+{{- range .Namespaces }}
+  {{- template "publicExportNamespace" . }}
+{{- end }}
+}
+{{- end }}
+{{- range .Local.Imports }}
+import type { {{range $i, $s := .Specifiers}}{{if $i}}, {{end}}{{$s.Name}} as {{$s.Alias}}{{end}} } from "{{.Path}}";
+{{- end }}
+
+{{- range .Local.Intermediates }}
+type {{.Name}} = {{.Target}};
+{{- end }}
+
+{{- range .Local.FlatAliases }}
+export type {{.Name}} = {{.Intermediate}};
+{{- end }}
+{{- range .Local.Namespaces }}
+
+{{- template "publicExportNamespace" . }}
+{{- end }}

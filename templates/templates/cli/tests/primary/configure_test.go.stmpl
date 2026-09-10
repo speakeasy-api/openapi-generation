@@ -1,0 +1,279 @@
+package tests
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/config"
+)
+
+// resetConfig resets the global config state after the test completes.
+// This prevents configure tests from polluting the global config for subsequent
+// tests and allows config.Init to re-initialize cleanly in the next test.
+func resetConfig(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		config.Reset()
+	})
+}
+
+// setupConfigureTest sets up common test fixtures for configure tests:
+// temp HOME, closed stdin pipe, config state save/restore.
+func setupConfigureTest(t *testing.T) (h *CLITestHarness, tmpDir string) {
+	t.Helper()
+
+	resetConfig(t)
+
+	tmpDir = t.TempDir()
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tmpDir)
+	t.Cleanup(func() { os.Setenv("HOME", origHome) })
+
+	// Replace stdin with a closed pipe (simulates pressing Enter with no input).
+	// readSecret falls back to reading from cmd input; closed pipe returns EOF → optional fields are skipped.
+	// bufio.ReadString returns EOF on closed pipe → non-secret fields are skipped.
+	origStdin := os.Stdin
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	w.Close()
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = origStdin })
+
+	h = NewCLITestHarness(t)
+	return h, tmpDir
+}
+
+// TestConfigureSkipsOptionalCredentials verifies that when all security
+// schemes are OR alternatives (multiple options), the configure command
+// allows skipping credentials by pressing Enter (empty input) and does
+// NOT get stuck in an infinite loop.
+//
+// This is the key regression test: previously, the configure command would
+// loop forever for unset optional credentials, requiring non-empty input.
+func TestConfigureSkipsOptionalCredentials(t *testing.T) {
+	h, tmpDir := setupConfigureTest(t)
+
+	rootCmd, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	err = cli.ExecuteRoot(context.Background(), rootCmd, []string{"configure"})
+	require.NoError(t, err, "configure should complete without error (not hang)")
+
+	output := h.GetStdout()
+
+{{- if not (isInteractiveAuthEnabled)}}
+	// Verify intro messages (readline mode only — huh forms don't print these)
+	assert.Contains(t, output, "Configure ")
+	assert.Contains(t, output, "Enter - to clear a previously set value.")
+{{- end}}
+
+	// Verify completion message
+	assert.Contains(t, output, "Configuration saved to")
+
+	// Verify config file was created
+	configPath := filepath.Join(tmpDir, ".config", "cli", "config.yaml")
+	_, err = os.Stat(configPath)
+	assert.NoError(t, err, "config file should be created at %s", configPath)
+}
+
+// writeConfigFile writes a YAML config to the standard config path under tmpDir.
+// This ensures config.Init() picks up existing values when the command runs.
+func writeConfigFile(t *testing.T, tmpDir string, values map[string]interface{}) {
+	t.Helper()
+	configDir := filepath.Join(tmpDir, ".config", "cli")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+	data, err := yaml.Marshal(values)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config.yaml"), data, 0644))
+}
+
+// TestConfigurePreservesExistingValues verifies that when a user has
+// existing credentials configured and presses Enter (empty input),
+// the existing values are preserved in the saved config.
+func TestConfigurePreservesExistingValues(t *testing.T) {
+	h, tmpDir := setupConfigureTest(t)
+
+	// Write existing credentials to config file so Init() loads them
+	writeConfigFile(t, tmpDir, map[string]interface{}{
+		"security": map[string]interface{}{
+			"api_key_auth":  "existing-key",
+			"client_id":     "existing-client-id",
+			"client_secret": "existing-secret",
+		},
+	})
+
+	rootCmd, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	err = cli.ExecuteRoot(context.Background(), rootCmd, []string{"configure"})
+	require.NoError(t, err, "configure should complete without error")
+
+	assert.Contains(t, h.GetStdout(), "Configuration saved")
+
+	// Read saved config and verify existing values were preserved
+	configPath := filepath.Join(tmpDir, ".config", "cli", "config.yaml")
+	savedData, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+
+	var savedConfig map[string]interface{}
+	require.NoError(t, yaml.Unmarshal(savedData, &savedConfig))
+	securityMap, ok := savedConfig["security"].(map[string]interface{})
+	require.True(t, ok, "config should have a 'security' section")
+	assert.Equal(t, "existing-key", securityMap["api_key_auth"])
+	assert.Equal(t, "existing-client-id", securityMap["client_id"])
+	assert.Equal(t, "existing-secret", securityMap["client_secret"])
+}
+
+// TestConfigureMaskSecretDisplay verifies that existing secrets are
+// masked when displayed in prompts (first 2 + last 2 chars visible).
+func TestConfigureMaskSecretDisplay(t *testing.T) {
+	h, tmpDir := setupConfigureTest(t)
+
+	// Write existing credential to config file so Init() loads it
+	writeConfigFile(t, tmpDir, map[string]interface{}{
+		"security": map[string]interface{}{
+			"api_key_auth": "sk-1234567890abcdef",
+		},
+	})
+
+	rootCmd, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	err = cli.ExecuteRoot(context.Background(), rootCmd, []string{"configure"})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+
+	// Should NOT contain the full secret in any mode
+	assert.NotContains(t, output, "sk-1234567890abcdef")
+
+{{- if not (isInteractiveAuthEnabled)}}
+	// In readline mode, existing value should be masked inline in the prompt
+	assert.Contains(t, output, "sk******ef")
+{{- end}}
+	// In huh form mode, the masked value is used as a Placeholder which may not
+	// appear in accessible text output. The key assertion is that the full secret
+	// is never printed.
+}
+
+// TestConfigureCreatesConfigDir verifies that configure creates the
+// config directory if it doesn't exist.
+func TestConfigureCreatesConfigDir(t *testing.T) {
+	h, tmpDir := setupConfigureTest(t)
+
+	// Ensure config dir does NOT exist yet
+	configDir := filepath.Join(tmpDir, ".config", "cli")
+	_, err := os.Stat(configDir)
+	assert.True(t, os.IsNotExist(err), "config dir should not exist before configure")
+
+	rootCmd, err2 := cli.NewRootCommand()
+	require.NoError(t, err2)
+	rootCmd.SetOut(h.stdout)
+	rootCmd.SetErr(h.stderr)
+
+	err2 = cli.ExecuteRoot(context.Background(), rootCmd, []string{"configure"})
+	require.NoError(t, err2)
+
+	// Verify config dir and file were created
+	_, err = os.Stat(configDir)
+	assert.NoError(t, err, "config dir should be created by configure")
+
+	configPath := filepath.Join(configDir, "config.yaml")
+	_, err = os.Stat(configPath)
+	assert.NoError(t, err, "config.yaml should exist")
+}
+
+// TestConfigureNoInteractiveStoresFlags verifies that the compatibility
+// default still honors the explicit non-interactive escape hatch.
+func TestConfigureNoInteractiveStoresFlags(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunPolicyDefault([]string{
+		"configure", "--no-interactive", "--username", "flag-only-user",
+	}))
+	data, err := os.ReadFile(config.GetConfigPath())
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "username: flag-only-user")
+}
+
+func TestLocalMutationCommandsDryRunAreNoOps(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "configure", args: []string{"configure", "--dry-run"}, want: "[DRY-RUN] configure changes local settings only"},
+		{{- if templateAuthUsageTestEnabled}}
+		{name: "auth login", args: []string{"auth", "login", "--dry-run"}, want: "[DRY-RUN] auth login changes local credentials only"},
+		{name: "auth logout", args: []string{"auth", "logout", "--dry-run"}, want: "[DRY-RUN] auth logout removes local credentials only"},
+		{{- end}}
+	} {
+		t.Run(tt.name+" human", func(t *testing.T) {
+			h, home := setupConfigureTest(t)
+			recorder := &recordingKeyring{}
+			config.SetKeyringBackend(recorder)
+			t.Cleanup(config.ResetKeyring)
+
+			rootCmd, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			rootCmd.SetOut(h.stdout)
+			rootCmd.SetErr(h.stderr)
+			rootCmd.SetArgs(tt.args)
+			require.NoError(t, rootCmd.Execute())
+			assert.Empty(t, h.GetStdout())
+			assert.Contains(t, h.GetStderr(), tt.want)
+			assert.Zero(t, recorder.gets)
+			assert.Zero(t, recorder.sets)
+			assert.Zero(t, recorder.deletes)
+			_, err = os.Stat(filepath.Join(home, ".config"))
+			assert.True(t, os.IsNotExist(err), "dry-run must not create config directories")
+		})
+
+		t.Run(tt.name+" json", func(t *testing.T) {
+			h, home := setupConfigureTest(t)
+			recorder := &recordingKeyring{}
+			config.SetKeyringBackend(recorder)
+			t.Cleanup(config.ResetKeyring)
+
+			rootCmd, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			rootCmd.SetOut(h.stdout)
+			rootCmd.SetErr(h.stderr)
+			rootCmd.SetArgs(append(append([]string{}, tt.args...), "--output-format", "json"))
+			require.NoError(t, rootCmd.Execute())
+			// The machine preview protocol receives an explicit local no-op
+			// record on stdout — silence would be indistinguishable from a
+			// failed preview.
+			var record struct {
+				DryRun  bool   `json:"dry_run"`
+				Local   bool   `json:"local"`
+				Command string `json:"command"`
+				Message string `json:"message"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &record), "stdout: %s", h.GetStdout())
+			assert.True(t, record.DryRun)
+			assert.True(t, record.Local)
+			assert.NotEmpty(t, record.Command)
+			assert.NotEmpty(t, record.Message)
+			assert.Empty(t, h.GetStderr())
+			assert.Zero(t, recorder.gets)
+			assert.Zero(t, recorder.sets)
+			assert.Zero(t, recorder.deletes)
+			_, err = os.Stat(filepath.Join(home, ".config"))
+			assert.True(t, os.IsNotExist(err), "dry-run must not create config directories")
+		})
+	}
+}

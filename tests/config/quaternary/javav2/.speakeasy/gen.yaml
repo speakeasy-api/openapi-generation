@@ -1,0 +1,41 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+java:
+  inferUnionDiscriminators: true
+  forwardCompatibleUnionsByDefault: false
+  version: 0.0.1
+  artifactID: openapi
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  githubURL: github.com/owner/repo
+  groupID: org.openapis.quaternary
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/shared
+      webhooks: models/webhooks
+  maxMethodParams: 5
+  ossrhURL: https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+  packageName: org.openapis.quaternary.openapi
+  projectName: openapi
+  getterStyle: raw
+  nullFriendlyParameters: false
+  asyncMode: enabled
+  templateVersion: v2
+  generateOptionalUnionAccessors: false

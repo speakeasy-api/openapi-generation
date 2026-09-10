@@ -1,0 +1,14 @@
+# NamespaceTypesTest
+
+A model that references enums and unions from different namespaces
+
+
+## Fields
+
+| Field                                                                   | Type                                                                    | Required                                                                | Description                                                             | Example                                                                 |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `fooSpecies`                                                            | [\OpenAPI\OpenAPI\Foo\PetSpecies](../foo/PetSpecies.md)                 | :heavy_check_mark:                                                      | Species of a pet in the foo namespace                                   | cat                                                                     |
+| `barStatus`                                                             | [\OpenAPI\OpenAPI\Bar\PetStatus](../bar/PetStatus.md)                   | :heavy_check_mark:                                                      | Status of a pet in the bar namespace                                    | available                                                               |
+| `fooAnimal`                                                             | [\OpenAPI\OpenAPI\Foo\Dog\|\OpenAPI\OpenAPI\Foo\Cat](../foo/Animal.md)  | :heavy_check_mark:                                                      | A discriminated union of animal types in the foo namespace              |                                                                         |
+| `barVehicle`                                                            | [\OpenAPI\OpenAPI\Bar\Car\|\OpenAPI\OpenAPI\Bar\Bike](../bar/Vehicle.md) | :heavy_check_mark:                                                      | A non-discriminated union of vehicle types in the bar namespace         |                                                                         |
+| `fooOrg`                                                                | [\OpenAPI\OpenAPI\Foo\Organization](../foo/Organization.md)             | :heavy_check_mark:                                                      | An organization with nested inline schemas in the foo namespace         |                                                                         |

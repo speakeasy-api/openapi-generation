@@ -1,0 +1,21 @@
+{{- $op := .Local.Operation }}
+{{- $err := pickBestErrorToHandle $op }}
+{{- addSDKImportForAccessNamespace "errors" }}
+{{ $baseError := getBaseErrorClassName }}
+except {{getAccessNamespace "errors"}}{{$baseError}} as e:
+    # The base class for HTTP error responses
+    print(e.message)
+    print(e.status_code)
+    print(e.body)
+    print(e.headers)
+    print(e.raw_response)
+{{ if $err }}
+    # Depending on the method different errors may be thrown
+    {{- $type := sanitizeClass $err "" false}}
+    if isinstance(e, {{$type}}):
+    {{- range $i, $errField := $err.Fields }}
+        {{- if lt $i 5 }}
+        print(e.data.{{sanitizeFieldName $errField.Name}})  # {{ sanitizeType $errField false "usage" nil false }}
+        {{- end }}
+    {{- end}}
+{{- end }}

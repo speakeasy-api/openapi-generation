@@ -1,0 +1,15 @@
+diff --git a/src/main/java/org/openapis/openapi/models/shared/ReviewTask.java b/src/main/java/org/openapis/openapi/models/shared/ReviewTask.java
+index 3d07783981..20256ef281 100644
+--- a/src/main/java/org/openapis/openapi/models/shared/ReviewTask.java
++++ b/src/main/java/org/openapis/openapi/models/shared/ReviewTask.java
+@@ -102,6 +102,10 @@ public class ReviewTask {
+         return Utils.toString(ReviewTask.class, "id", id, "name", name, "policy", policy);
+     }
+ 
++    public String summary() {
++        return name + " (" + id + ")";
++    }
++
+     @SuppressWarnings("UnusedReturnValue")
+     public static final class Builder {
+ 

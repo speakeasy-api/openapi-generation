@@ -1,0 +1,100 @@
+{{- $defaultHttpClient := getDefaultHttpClient -}}
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Net.Http;
+    using System.Threading.Tasks;{{- if .Global.Config.EnableCancellationToken}}
+    using System.Threading;{{- end}}
+
+    public interface I{{$defaultHttpClient}}
+    {
+        /// <summary>
+        /// Sends an HTTP request asynchronously.
+        /// </summary>
+        /// <remarks>
+        /// When overriding this method, use HttpCompletionOption.ResponseHeadersRead to support streaming response bodies.
+        /// </remarks>
+        /// <param name="request">The HTTP request message to send.</param>{{- if .Global.Config.EnableCancellationToken}}
+        /// <param name="cancellationToken">Optional cancellation token to cancel the request.</param>{{- end}}
+        /// <returns>The value of the TResult parameter contains the HTTP response message.</returns>
+        Task<HttpResponseMessage> SendAsync(HttpRequestMessage request{{if .Global.Config.EnableCancellationToken}}, CancellationToken? cancellationToken = null{{end}});
+
+        /// <summary>
+        /// Clones an HTTP request asynchronously.
+        /// </summary>
+        /// <remarks>
+        /// This method is used in the context of Retries. It creates a new HttpRequestMessage instance
+        /// as a deep copy of the original request, including its method, URI, content, headers and options.
+        /// </remarks>
+        /// <param name="request">The HTTP request message to clone.</param>
+        /// <returns>The value of the TResult parameter contains the cloned HTTP request message.</returns>
+        Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request);
+    }
+
+    public class {{$defaultHttpClient}} : I{{$defaultHttpClient}}
+    {
+        protected readonly HttpClient httpClient;
+
+        public {{$defaultHttpClient}}()
+        {
+            httpClient = new System.Net.Http.HttpClient();
+        }
+
+    {{- if .Global.Config.EnableCancellationToken}}
+
+        public virtual async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken? cancellationToken = null)
+        {
+            var token = cancellationToken ?? CancellationToken.None;
+            return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+        }
+    {{- else}}
+
+        public virtual async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+        {
+            return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        }
+    {{- end}}
+
+        public virtual async Task<HttpRequestMessage> CloneAsync(HttpRequestMessage request)
+        {
+            HttpRequestMessage clone = new HttpRequestMessage(request.Method, request.RequestUri);
+
+            if (request.Content != null)
+            {
+                clone.Content = new ByteArrayContent(await request.Content.ReadAsByteArrayAsync());
+                if (request.Content.Headers != null)
+                {
+                    foreach (var h in request.Content.Headers)
+                    {
+                        clone.Content.Headers.Add(h.Key, h.Value);
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+            {
+                clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+            }
+        {{- if isNetstandard2}}
+
+            foreach (KeyValuePair<string, object?> prop in request.Properties)
+            {
+                if (!clone.Properties.ContainsKey(prop.Key))
+                {
+                    clone.Properties[prop.Key] = prop.Value;
+                }
+            }
+        {{- else}}
+
+            foreach (KeyValuePair<string, object?> prop in request.Options)
+            {
+                clone.Options.TryAdd(prop.Key, prop.Value);
+            }
+        {{- end}}
+
+            return clone;
+        }
+    }
+}

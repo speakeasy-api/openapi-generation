@@ -1,0 +1,36 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+csharp:
+  inferUnionDiscriminators: true
+  forwardCompatibleUnionsByDefault: "false"
+  enableFormatting: true
+  version: 0.0.1
+  author: Speakeasy
+  dotnetVersion: net6.0
+  targetFramework: netstandard2.0
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks
+  maxMethodParams: 6
+  flatteningOrder: ""
+  packageName: company.product.feature.subnamespace
+  disableNamespacePascalCasingApr2024: false
+  presenceAwareJsonSerialization: false
+  responseFormat: envelope
+  useNodatime: true

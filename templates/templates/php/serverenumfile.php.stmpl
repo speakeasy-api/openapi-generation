@@ -1,0 +1,6 @@
+{{- $namespace := .Global.Config.Namespace -}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+{{templateString "enum.php.stmpl" .Local}}

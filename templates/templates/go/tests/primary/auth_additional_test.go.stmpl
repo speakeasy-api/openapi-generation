@@ -1,0 +1,132 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	apierrors "{{getRootModulePath}}/pkg/models/apierrors"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestFunctionCallbacksForOAuthSupport_GlobalSecurity(t *testing.T) {
+	recordTest("auth-function-callbacks-oauth-global-security")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithSecuritySource(func(ctx context.Context) (shared.Security, error) {
+		return shared.Security{
+			Oauth2: sdk.String("Bearer global"),
+		}, nil
+	}))
+
+	res, err := s.Auth.GlobalBearerAuth(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Token)
+	assert.Equal(t, "global", res.Token.Token)
+}
+
+func TestGlobalSecurityFieldsOrdering(t *testing.T) {
+	recordTest("auth-global-security-fields-ordering")
+
+    // When `maintainOpenApiOrder: false` is set, security fields are sorted in alphabetical order.
+    // Since the first non-nil field is selected ApiKeyAuth takes precedence over BasicHttp,
+    // which is not valid authentication for this endpoint.
+	s := sdk.New(sdk.WithSecurity(shared.Security{
+		APIKeyAuth: sdk.String("testApiKey"),
+		BasicHTTP:  &shared.SchemeBasicHTTP{Username: "testUser", Password: "testPass"},
+	}))
+
+	_, err := s.Auth.GlobalSecurityBasicHTTP(context.Background())
+	require.Error(t, err)
+	var apiErr *apierrors.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}
+
+func TestHoistedSecurityBasicHttpOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-basic-http-only")
+
+	s := sdk.New(sdk.WithSecurity(shared.Security{
+		APIKeyAuth:  sdk.String("testApiKey"),
+		BasicHTTP:   &shared.SchemeBasicHTTP{Username: "testUser", Password: "testPass"},
+		AccessToken: sdk.String("Bearer ghp_xxxx"),
+	}))
+
+	res, err := s.Auth.HoistedSecurityBasicHTTPOnly(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.BasicAuth)
+	assert.True(t, res.BasicAuth.Authenticated)
+	assert.Equal(t, "testUser", res.BasicAuth.User)
+}
+
+func TestHoistedSecurityAccessTokenOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-access-token-only")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (shared.Security, error) {
+		return shared.Security{
+			APIKeyAuth:  sdk.String("testApiKey"),
+      BasicHTTP:   &shared.SchemeBasicHTTP{Username: "testUser", Password: "testPass"},
+			AccessToken: sdk.String("Bearer ghp_xxxx"),
+		}, nil
+	}))
+
+	res, err := s.Auth.HoistedSecurityAccessTokenOnly(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Token)
+	assert.Equal(t, "Bearer ghp_xxxx", res.Token.Token)
+}
+
+func TestHoistedSecurityAccessTokenFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-access-token-first")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (shared.Security, error) {
+		return shared.Security{
+			APIKeyAuth:  sdk.String("testApiKey"),
+			AccessToken: sdk.String("Bearer ghp_xxxx"),
+		}, nil
+	}))
+
+	res, err := s.Auth.HoistedSecurityAccessTokenFirst(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Token)
+	assert.Equal(t, "Bearer ghp_xxxx", res.Token.Token)
+}
+
+func TestHoistedSecurityApiKeyFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-api-key-first")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (shared.Security, error) {
+		return shared.Security{
+			APIKeyAuth:  sdk.String("testApiKey"),
+			AccessToken: sdk.String("Bearer ghp_xxxx"),
+		}, nil
+	}))
+
+	res, err := s.Auth.HoistedSecurityAPIKeyFirst(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Token)
+	assert.Equal(t, "testApiKey", res.Token.Token)
+}
+
+func TestHoistedSecurityInvalidField(t *testing.T) {
+	recordTest("auth-hoisted-security-invalid-field")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (shared.Security, error) {
+		return shared.Security{
+			BasicHTTP: &shared.SchemeBasicHTTP{Username: "user", Password: "pass"},
+		}, nil
+	}))
+
+	_, err := s.Auth.HoistedSecurityAccessTokenFirst(context.Background())
+	require.Error(t, err)
+	var apiErr *apierrors.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}

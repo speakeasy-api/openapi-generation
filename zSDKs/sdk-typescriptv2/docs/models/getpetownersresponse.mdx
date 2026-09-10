@@ -1,0 +1,41 @@
+---
+title: "GetPetOwnersResponse"
+---
+
+OK
+
+## Example Usage
+
+```typescript
+import { GetPetOwnersResponse } from "openapi";
+
+let value: GetPetOwnersResponse = {
+  fooPetOwner: {
+    id: "owner-123",
+    name: "Jane Doe",
+    pets: [
+      {
+        id: "pet-foo-123",
+        name: "Fluffy",
+        species: "cat",
+      },
+    ],
+  },
+  barPetOwner: {
+    ownerId: 456,
+    fullName: "Bob Smith",
+    pet: {
+      id: "pet-bar-456",
+      name: "Buddy",
+      owner: "John Doe",
+    },
+  },
+};
+```
+
+## Fields
+
+| Field                              | Type                               | Required                           | Description                        |
+| ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
+| `fooPetOwner`                      | [foo.PetOwner](../foo/petowner.mdx) | :heavy_check_mark:                 | A pet owner in the foo namespace   |
+| `barPetOwner`                      | [bar.PetOwner](../bar/petowner.mdx) | :heavy_check_mark:                 | A pet owner in the bar namespace   |

@@ -1,0 +1,25 @@
+---
+title: "Dog"
+---
+
+A dog in the foo namespace
+
+## Example Usage
+
+```typescript
+import { Dog } from "openapi/foo";
+
+let value: Dog = {
+  animalType: "dog",
+  breed: "Labrador",
+  barkVolume: 8,
+};
+```
+
+## Fields
+
+| Field              | Type               | Required           | Description        | Example            |
+| ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| `animalType`       | *"dog"*            | :heavy_check_mark: | N/A                | dog                |
+| `breed`            | *string*           | :heavy_check_mark: | N/A                | Labrador           |
+| `barkVolume`       | *number*           | :heavy_minus_sign: | N/A                | 8                  |

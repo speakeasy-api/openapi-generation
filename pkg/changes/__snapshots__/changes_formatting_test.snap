@@ -1,0 +1,410 @@
+
+[TestChanges_FormattingByLanguage/go_pascal_case - 1]
+# Test: go_pascal_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* sdk.trackUserEvents(): **Added**
+* sdk.updateSystemConfig(): **Added** request.maxRetries
+
+---
+
+[TestChanges_FormattingByLanguage/python_snake_case - 1]
+# Test: python_snake_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* sdk.track_user_events(): **Added**
+* sdk.update_system_config(): **Added** request.max_retries
+
+---
+
+[TestChanges_FormattingByLanguage/typescript_camel_case - 1]
+# Test: typescript_camel_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* sdk.trackUserEvents(): **Added**
+* sdk.updateSystemConfig(): **Added** request.maxRetries
+
+---
+
+[TestChanges_FormattingByLanguage/java_camel_case - 1]
+# Test: java_camel_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* sdk.trackUserEvents(): **Added**
+* sdk.updateSystemConfig(): **Added** request.maxRetries
+
+---
+
+[TestChanges_FormattingByLanguage/csharp_pascal_case - 1]
+# Test: csharp_pascal_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* Sdk.TrackUserEvents(): **Added**
+* Sdk.UpdateSystemConfig(): **Added** request.MaxRetries
+
+---

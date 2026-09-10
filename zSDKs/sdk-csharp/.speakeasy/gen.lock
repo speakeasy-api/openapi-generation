@@ -1,0 +1,2244 @@
+lockVersion: 2.0.0
+id: review-sdk-test-id
+management:
+  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docVersion: 0.1.0
+  speakeasyVersion: internal
+  generationVersion: internal
+  releaseVersion: 0.0.1
+  configChecksum: 523091dd9af60e60455eb2352b93cd77
+  repoURL: https://github.com/speakeasy-sdks/test-sdk
+  installationURL: https://github.com/speakeasy-sdks/test-sdk
+features:
+  csharp:
+    additionalDependencies: 0.1.0
+    additionalProperties: 0.0.2
+    bigint: 0.2.1
+    constsAndDefaults: 0.0.3
+    core: 3.15.28
+    customSecuritySchemes: 0.1.0
+    decimal: 0.1.0
+    deprecations: 2.81.2
+    docs: 0.5.3
+    enums: 2.83.0
+    errorUnions: 0.1.1
+    errors: 1.1.0
+    examples: 2.81.8
+    flattening: 2.81.3
+    globalSecurity: 2.83.11
+    globalSecurityCallbacks: 0.1.0
+    globalServerURLs: 2.83.1
+    globals: 2.82.2
+    groups: 2.81.3
+    includes: 2.81.1
+    intellisenseMarkdownSupport: 0.1.0
+    methodArguments: 0.2.1
+    methodSecurity: 2.82.5
+    methodServerURLs: 2.82.2
+    mockServer: 0.1.4
+    nameOverrides: 2.81.4
+    nullables: 0.1.1
+    oauth2ClientCredentials: 1.1.5
+    openEnums: 0.2.0
+    pagination: 0.2.12
+    responseFormat: 0.0.4
+    retries: 0.0.4
+    sdkHooks: 0.3.0
+    serverEvents: 0.3.0
+    serverEventsSentinels: 0.2.0
+    serverIDs: 2.82.1
+    tests: 0.1.6
+    unions: 1.2.1
+    webhooks: 1.0.0
+trackedFiles:
+  .gitattributes:
+    last_write_checksum: sha1:6cf623aa5081ea7f1e32b99d74fac393718a29cf
+  Speakeasy.OpenAPI.sln:
+    last_write_checksum: sha1:172c0da3f74a5d12f5231193c6043f7a06ed940d
+  Tests/CommonHelpers.cs:
+    last_write_checksum: sha1:69f4796a557661cd5223acb32521919e4ce9c727
+  Tests/ConflictsTests.cs:
+    last_write_checksum: sha1:448ba240c260d5d8847bfc7452f858fb21b33494
+  Tests/SDKTests.cs:
+    last_write_checksum: sha1:d2ce3cb285f1be79c01a4b5947d5014dc556ac45
+  Tests/SinglebarTests.cs:
+    last_write_checksum: sha1:bd9a51e35edf29712a72db64f61d0e49cd195eb9
+  Tests/SinglefooTests.cs:
+    last_write_checksum: sha1:a0e142ecd4487c0c5829cc1ddceed6bc4e608806
+  Tests/Tag1Tests.cs:
+    last_write_checksum: sha1:2d249a8a92cd9323bf088b9c8565b02d2d26df98
+  Tests/Tag2Tests.cs:
+    last_write_checksum: sha1:00a91283ccc9c5785207d6b1ea86564f98d93793
+  Tests/TestHelpers.cs:
+    last_write_checksum: sha1:16b8ee0cc5cc67e55d481c8b08228e63f7e1b7e7
+  Tests/Tests.csproj:
+    last_write_checksum: sha1:f0883a2e474252607464d72740658e61158d887a
+  Tests/TypesTests.cs:
+    last_write_checksum: sha1:f1d34c96e29797ac628d4be3dfee6ad4492f39ed
+  Tests/mockserver/.gitignore:
+    last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
+  Tests/mockserver/Dockerfile:
+    last_write_checksum: sha1:72b74bf83cc79b4436ffe1a33211198ea447f06a
+  Tests/mockserver/Makefile:
+    last_write_checksum: sha1:f2619d7634d211c3c01dd68668635b0ebdbfc1ea
+  Tests/mockserver/README.md:
+    last_write_checksum: sha1:aa2bb9124570a1c12a3c81d728100c305a59220c
+  Tests/mockserver/go.mod:
+    last_write_checksum: sha1:e60cd88b747c397c0032d108a4e099e8b365721e
+  Tests/mockserver/go.sum:
+    last_write_checksum: sha1:cdeb52f5f4c63d07ba612730867a95b0ddb14b2d
+  Tests/mockserver/internal/handler/assert/contenttype.go:
+    last_write_checksum: sha1:2d059a68e53e70b269ddf897f8c6017f94434e18
+  Tests/mockserver/internal/handler/assert/header.go:
+    last_write_checksum: sha1:a0866dfd740d218b5b94741ac92db4cdf5a2acd9
+  Tests/mockserver/internal/handler/assert/parameter.go:
+    last_write_checksum: sha1:0df39c0981a929c99ae767201b628d8c9e31f288
+  Tests/mockserver/internal/handler/assert/pointer.go:
+    last_write_checksum: sha1:48714196fb47649be28e8df031761038a9e10ee6
+  Tests/mockserver/internal/handler/assert/security.go:
+    last_write_checksum: sha1:3cee6e3d2babea02486fd2df08eb00840f5ddea9
+  Tests/mockserver/internal/handler/doc.go:
+    last_write_checksum: sha1:a49b83f9fc775d3cc6f558b0f52b2fc9cf04f863
+  Tests/mockserver/internal/handler/generated_handler.go:
+    last_write_checksum: sha1:32101ddff940c59f43a805af303cf645a2bcca0d
+  Tests/mockserver/internal/handler/generated_handlers.go:
+    last_write_checksum: sha1:76e68780ae508b766a87a3f2f44eabf1481fad0c
+  Tests/mockserver/internal/handler/pathdeleteuserid.go:
+    last_write_checksum: sha1:13a62b3771e986bce1ce332f39616e3e422a6db5
+  Tests/mockserver/internal/handler/pathgetauthlogin.go:
+    last_write_checksum: sha1:0092c43e3b17bb6aba35e8c15ceffc72c9b06735
+  Tests/mockserver/internal/handler/pathgetauthvalidate.go:
+    last_write_checksum: sha1:e632261348783ad512b03007b537f3156f647688
+  Tests/mockserver/internal/handler/pathgetbinarydefaultresponse.go:
+    last_write_checksum: sha1:769bbd53cb3d69902311558d6cf5610118e98e8c
+  Tests/mockserver/internal/handler/pathgetdeprecated.go:
+    last_write_checksum: sha1:aa47451ad33cbdaa3ccc4e5f6190862d7637fd48
+  Tests/mockserver/internal/handler/pathgetduplicateexportcollision.go:
+    last_write_checksum: sha1:ef2e820fb7c117f55300194e56302260d79c1e7c
+  Tests/mockserver/internal/handler/pathgetemptyobjecterror.go:
+    last_write_checksum: sha1:c1a8709599cb129a98c555bc973ca7619df127b5
+  Tests/mockserver/internal/handler/pathgeterroronlyexample.go:
+    last_write_checksum: sha1:f56136cde27e691e2a4152b87257fef16cf3ec7b
+  Tests/mockserver/internal/handler/pathgetnamedprimitiveunion.go:
+    last_write_checksum: sha1:fbb4c34555023799813224079d9ba42f2827bc7d
+  Tests/mockserver/internal/handler/pathgetnamespaceanimal.go:
+    last_write_checksum: sha1:cfe85ce8d8543bb9b96d8c0074a14bf34ae60b99
+  Tests/mockserver/internal/handler/pathgetnamespaceconflict.go:
+    last_write_checksum: sha1:6f60dced6b28a4c52b83936e90c32ebf54c1a40a
+  Tests/mockserver/internal/handler/pathgetnamespaceorganization.go:
+    last_write_checksum: sha1:6b09624fb4fd866abfc480110aaedcc150629042
+  Tests/mockserver/internal/handler/pathgetnamespacetypes.go:
+    last_write_checksum: sha1:671c5e38f7835844ec84441374c1ea38c406e78c
+  Tests/mockserver/internal/handler/pathgetnamespacevehicle.go:
+    last_write_checksum: sha1:88fe5786158e190d9db75f19c58fbf151ae7d08d
+  Tests/mockserver/internal/handler/pathgetnestedintegerstring.go:
+    last_write_checksum: sha1:7894be1e981bd1c290bd69e367690eb2ed1656a7
+  Tests/mockserver/internal/handler/pathgetpetowners.go:
+    last_write_checksum: sha1:4cae23860490ab45bae1d1b473cf14a3c5030a47
+  Tests/mockserver/internal/handler/pathgetpolymorphism.go:
+    last_write_checksum: sha1:8b589af667d298be4df6696bf833a9652ff3963c
+  Tests/mockserver/internal/handler/pathgetrequestbodyflattenedaway.go:
+    last_write_checksum: sha1:223ae0aa6a32112897b909f52fba0d74e4b7d198
+  Tests/mockserver/internal/handler/pathgetsinglenamespacebarpet.go:
+    last_write_checksum: sha1:d06921d7ecc7d63faab444d2ce03a55edff1ef9f
+  Tests/mockserver/internal/handler/pathgetsinglenamespacefoopet.go:
+    last_write_checksum: sha1:d552c1a45fce2fcf86aea5eb9aeef6ef786a02cb
+  Tests/mockserver/internal/handler/pathgettest1page.go:
+    last_write_checksum: sha1:7be45873b893e095f8c8ef679553c98383446940
+  Tests/mockserver/internal/handler/pathgettriplenamespaceconflict.go:
+    last_write_checksum: sha1:60764b01bda96ed48ef23ed0101d1da1306a2d87
+  Tests/mockserver/internal/handler/pathgetunionerrors.go:
+    last_write_checksum: sha1:e7874a45aaa7d602194df55e43ad0aaed0017caa
+  Tests/mockserver/internal/handler/pathgetuserid.go:
+    last_write_checksum: sha1:42b16dc7e0ab8b2e33fc097a66dc04f49c2b33ee
+  Tests/mockserver/internal/handler/pathpostfile.go:
+    last_write_checksum: sha1:52c1a386cd8f10a07f94b3ba9896a376c5f29259
+  Tests/mockserver/internal/handler/pathpostfilewithencoding.go:
+    last_write_checksum: sha1:26bd9ef4d89c3fced22e4d7d3f9797fb12579459
+  Tests/mockserver/internal/handler/pathpostfullyflattenedrequest.go:
+    last_write_checksum: sha1:9a424c86eb626ad9d2165d0e267f2761a7662f7a
+  Tests/mockserver/internal/handler/pathpostjobsjobid.go:
+    last_write_checksum: sha1:49f0a421dd94e05be68131848b686247bf2dafdd
+  Tests/mockserver/internal/handler/pathpostnamespaceconflict.go:
+    last_write_checksum: sha1:1f262428818c23b82251ca4d17464e01f30f4419
+  Tests/mockserver/internal/handler/pathpostsinglenamespacefoopet.go:
+    last_write_checksum: sha1:200f237a444954b16597261e3306881817c1156e
+  Tests/mockserver/internal/handler/pathposttest2.go:
+    last_write_checksum: sha1:ee70bcde1e94a81fd69303ba932edcbed54b3099
+  Tests/mockserver/internal/handler/pathpostunionrequestbody.go:
+    last_write_checksum: sha1:6b51938e2a5d41ab45441fcd6d4830f5cf18ab52
+  Tests/mockserver/internal/handler/pathpostuserid.go:
+    last_write_checksum: sha1:09ed13d909bd0bc1870006fad869d84714e58282
+  Tests/mockserver/internal/handler/pathputuser.go:
+    last_write_checksum: sha1:ff8ae1a966355fa4a8cbdb6e3f21b42634704f53
+  Tests/mockserver/internal/handler/values/files.go:
+    last_write_checksum: sha1:e1e9d78c165e2a35d165f120bd8dcd7b42c33a33
+  Tests/mockserver/internal/logging/doc.go:
+    last_write_checksum: sha1:63a119620f179826356304b8205756248caa370e
+  Tests/mockserver/internal/logging/formats.go:
+    last_write_checksum: sha1:e84e84e6e62a4dc3b9ad3a7f2a95eb77374f2fcd
+  Tests/mockserver/internal/logging/http_file.go:
+    last_write_checksum: sha1:e948142b98821c23bd21c128e007e79a193114a2
+  Tests/mockserver/internal/logging/http_logger.go:
+    last_write_checksum: sha1:7a2267a61cb1282405ed7f406f9bd95fbf796b5b
+  Tests/mockserver/internal/logging/levels.go:
+    last_write_checksum: sha1:164f3aee47030d3534e4ef2df31192304e9ea97b
+  Tests/mockserver/internal/logging/logger.go:
+    last_write_checksum: sha1:92027a7d11dd84831bc444aa2d018cbb7195542f
+  Tests/mockserver/internal/logging/oas_operation.go:
+    last_write_checksum: sha1:af9187f31972ef308fb4bc82de73d6dd71b9fb64
+  Tests/mockserver/internal/logging/oas_operation_call.go:
+    last_write_checksum: sha1:1ec2244b5fc171dfe7e4e339420b2b17f0df48c9
+  Tests/mockserver/internal/sdk/models/bar/bike.go:
+    last_write_checksum: sha1:673dc5677d65fed4a2550fea402ee398fc2d67db
+  Tests/mockserver/internal/sdk/models/bar/car.go:
+    last_write_checksum: sha1:04b075715ddd07ea338052650b137f9aaeffc245
+  Tests/mockserver/internal/sdk/models/bar/pet.go:
+    last_write_checksum: sha1:94385a320e54360b483963a504e476dc04ea9eca
+  Tests/mockserver/internal/sdk/models/bar/petowner.go:
+    last_write_checksum: sha1:a465ff722c85544e5192bf94656fc18a8bd7b175
+  Tests/mockserver/internal/sdk/models/bar/petstatus.go:
+    last_write_checksum: sha1:d4fcbde91ce9d218a82dcb8e1a80f10c2360dc29
+  Tests/mockserver/internal/sdk/models/bar/vehicle.go:
+    last_write_checksum: sha1:00b9c5ca1e8776c9dde28238fd94113ad3c67ba6
+  Tests/mockserver/internal/sdk/models/baz/namespaced.go:
+    last_write_checksum: sha1:01900b399ef20cbfcdf1a2d8a469836e3740557c
+  Tests/mockserver/internal/sdk/models/baz/pet.go:
+    last_write_checksum: sha1:245fd374153e15527e2a1fd98165e71e1b4160e1
+  Tests/mockserver/internal/sdk/models/components/aloof.go:
+    last_write_checksum: sha1:7bb787d39e63421a974ddad76e81ee45d91495c4
+  Tests/mockserver/internal/sdk/models/components/approvalconfig.go:
+    last_write_checksum: sha1:968ab660745f46f908d8c162b810f87b24111ba7
+  Tests/mockserver/internal/sdk/models/components/assetimageblock.go:
+    last_write_checksum: sha1:b6900e7845ad0740a379d1584bac8587bb319055
+  Tests/mockserver/internal/sdk/models/components/assetnotestep.go:
+    last_write_checksum: sha1:97f9a4588da525885e2c6c37b81143fdd99acce4
+  Tests/mockserver/internal/sdk/models/components/assetoutputstep.go:
+    last_write_checksum: sha1:cc43defdd53dee8ea17d4e5000851e888a9220d0
+  Tests/mockserver/internal/sdk/models/components/assetresult.go:
+    last_write_checksum: sha1:f2eaa196a580b1e35de714a794c2219c3d203489
+  Tests/mockserver/internal/sdk/models/components/assettextblock.go:
+    last_write_checksum: sha1:39b45fd5cf551f179162d68607f7621288b1217f
+  Tests/mockserver/internal/sdk/models/components/badrequestresponseerror.go:
+    last_write_checksum: sha1:a1d11e4d35f19260a8cdc1e31d4c9b04b1b11141
+  Tests/mockserver/internal/sdk/models/components/baseuser.go:
+    last_write_checksum: sha1:52c4997704473038090f2f8193af733d75961315
+  Tests/mockserver/internal/sdk/models/components/boole.go:
+    last_write_checksum: sha1:35cd68ac4aeb16a04934299c4d23d5a7a8877053
+  Tests/mockserver/internal/sdk/models/components/chatagentrequest.go:
+    last_write_checksum: sha1:1fa075361dc44bd47cf6fe97b340882cb691f363
+  Tests/mockserver/internal/sdk/models/components/chatmodelrequest.go:
+    last_write_checksum: sha1:0beeb2f254dc967afe71a339886d2b730045e193
+  Tests/mockserver/internal/sdk/models/components/circle.go:
+    last_write_checksum: sha1:f59bfa8e1be914affc0606670c2097c53cf6e4c1
+  Tests/mockserver/internal/sdk/models/components/circularunion.go:
+    last_write_checksum: sha1:5e10f4fd248b3d5efe83c412b16d85fdaba2e9a5
+  Tests/mockserver/internal/sdk/models/components/color.go:
+    last_write_checksum: sha1:d73282b709bbfcbde3a6f067764703d522142eab
+  Tests/mockserver/internal/sdk/models/components/disriminatedunionwithonemember.go:
+    last_write_checksum: sha1:a86f006be5681c2d322fe96a9dd4f0b0247f2cdd
+  Tests/mockserver/internal/sdk/models/components/enum.go:
+    last_write_checksum: sha1:67ab4ea6146ffc403776a804541c215d532c78b3
+  Tests/mockserver/internal/sdk/models/components/errortype2.go:
+    last_write_checksum: sha1:b524c0ca72e5cf36d702262f58cf4100cf416fed
+  Tests/mockserver/internal/sdk/models/components/escalation.go:
+    last_write_checksum: sha1:c5aa83c9d40b0a795c7af0c4f69b4571902baab3
+  Tests/mockserver/internal/sdk/models/components/exhaustiveobject.go:
+    last_write_checksum: sha1:489127e2f9182c654df68b0a5df6e1b85e5b79f2
+  Tests/mockserver/internal/sdk/models/components/file.go:
+    last_write_checksum: sha1:a8eb000d20a81070b5266d149fc190b9f87661e1
+  Tests/mockserver/internal/sdk/models/components/gender.go:
+    last_write_checksum: sha1:6b5b03eb4d72e110057c28689e1b941a1e353f7d
+  Tests/mockserver/internal/sdk/models/components/httpmetadata.go:
+    last_write_checksum: sha1:9e4b58e3bb54db4360421109c2e169741499be16
+  Tests/mockserver/internal/sdk/models/components/mcppolicy.go:
+    last_write_checksum: sha1:2bcdd28c2797c779e7c4e8efa0e54ccd025176bd
+  Tests/mockserver/internal/sdk/models/components/metadata.go:
+    last_write_checksum: sha1:e6dae71b55c3fde90915c154aec1acbcdd62a726
+  Tests/mockserver/internal/sdk/models/components/metadataany.go:
+    last_write_checksum: sha1:3cf587d6c3fb2b57e4d89f5baaf79b172bff2a8e
+  Tests/mockserver/internal/sdk/models/components/namespaceconflicttest.go:
+    last_write_checksum: sha1:64a27e97b8ddc18330a3f7bc340c3a61cf482ee1
+  Tests/mockserver/internal/sdk/models/components/namespacetypestest.go:
+    last_write_checksum: sha1:eb7b0aaf5e9c424aa94fdbf317721c29a7fc3c34
+  Tests/mockserver/internal/sdk/models/components/objwithrenamedproperties.go:
+    last_write_checksum: sha1:0f802cd676b7110876d547ca401ad560657f4a8e
+  Tests/mockserver/internal/sdk/models/components/oneofwithfactoredoutproperties.go:
+    last_write_checksum: sha1:c9a3c38c1e82ef26b0291391486ffa7fc6fcd00b
+  Tests/mockserver/internal/sdk/models/components/policystep.go:
+    last_write_checksum: sha1:fbe39a10465e5150c315ab1f29bc21f27bcbdf29
+  Tests/mockserver/internal/sdk/models/components/rectangle.go:
+    last_write_checksum: sha1:0060fa72430a51cc09b7ab9c503efea75fcc82a5
+  Tests/mockserver/internal/sdk/models/components/recursiveformfield.go:
+    last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
+  Tests/mockserver/internal/sdk/models/components/reviewtask.go:
+    last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
+  Tests/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
+  Tests/mockserver/internal/sdk/models/components/security.go:
+    last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
+  Tests/mockserver/internal/sdk/models/components/shape.go:
+    last_write_checksum: sha1:a5681815325712dfbabfe6a0813a6a1bc6b5a274
+  Tests/mockserver/internal/sdk/models/components/shaperequest.go:
+    last_write_checksum: sha1:84f9a2e4f285704779dc141a5e21e2ddd4a8205d
+  Tests/mockserver/internal/sdk/models/components/simpleobject.go:
+    last_write_checksum: sha1:25fb9b1f98654af76ffa25ddc803be297594237d
+  Tests/mockserver/internal/sdk/models/components/someunion.go:
+    last_write_checksum: sha1:072e126922fe8eadd5c9b13e60aae4270ad06cb0
+  Tests/mockserver/internal/sdk/models/components/taggederror1.go:
+    last_write_checksum: sha1:afafda28c0a6df5c91b329f2c4cd88ef0a14ca51
+  Tests/mockserver/internal/sdk/models/components/taggederror2.go:
+    last_write_checksum: sha1:63472ffccd3b22f0e8840f725d86108cee59f7a6
+  Tests/mockserver/internal/sdk/models/components/taskresponse.go:
+    last_write_checksum: sha1:1853ed99c9300e4916f92f2a9e86149c73210b3c
+  Tests/mockserver/internal/sdk/models/components/templatebracestest.go:
+    last_write_checksum: sha1:db2dce5059873779e78a08b24887ef7098dac4af
+  Tests/mockserver/internal/sdk/models/components/test2request.go:
+    last_write_checksum: sha1:e50807dd9105c62c1330d60509eaccec5fdc791d
+  Tests/mockserver/internal/sdk/models/components/test2response.go:
+    last_write_checksum: sha1:600ae7f707978020f79ce541ba1ed3da9bcd25da
+  Tests/mockserver/internal/sdk/models/components/triplenamespaceconflicttest.go:
+    last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
+  Tests/mockserver/internal/sdk/models/components/user.go:
+    last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  Tests/mockserver/internal/sdk/models/foo/animal.go:
+    last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
+  Tests/mockserver/internal/sdk/models/foo/cat.go:
+    last_write_checksum: sha1:bc314ca2202e67b69439d9f205553b53c14ed946
+  Tests/mockserver/internal/sdk/models/foo/dog.go:
+    last_write_checksum: sha1:bb15363dc1115099ed975780d50bfa43d9cef520
+  Tests/mockserver/internal/sdk/models/foo/organization.go:
+    last_write_checksum: sha1:6dabeef4cb53770b2df3d2b5f99fea00a50348fc
+  Tests/mockserver/internal/sdk/models/foo/pet.go:
+    last_write_checksum: sha1:1b3e0e62262d1047e72558eec6bbcbc5ce293ff8
+  Tests/mockserver/internal/sdk/models/foo/petowner.go:
+    last_write_checksum: sha1:2a48d163db8500179186ecd4359a65cb9c857c82
+  Tests/mockserver/internal/sdk/models/foo/petspecies.go:
+    last_write_checksum: sha1:b201788833b1f4380fbbb277f06f90c4d70f246c
+  Tests/mockserver/internal/sdk/models/operations/auth.go:
+    last_write_checksum: sha1:7da455a48033fea2d622a98597fa36a90b0b9b60
+  Tests/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
+    last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
+  Tests/mockserver/internal/sdk/models/operations/chat.go:
+    last_write_checksum: sha1:760b8c08c260359b12687db102ad6d4dafbf9413
+  Tests/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
+    last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
+  Tests/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
+    last_write_checksum: sha1:3ea5c64c91268f51168dbb11faee27ea15da2233
+  Tests/mockserver/internal/sdk/models/operations/createuser.go:
+    last_write_checksum: sha1:a0fdcd0729e054c6dada6c53884f0d99bed4c2ac
+  Tests/mockserver/internal/sdk/models/operations/createwithunion.go:
+    last_write_checksum: sha1:7a819715f99cb337701d808cc11cacb10fae953f
+  Tests/mockserver/internal/sdk/models/operations/deleteuser.go:
+    last_write_checksum: sha1:b0665ff7c41ebdb6839fbaa6656bea219db9dbb7
+  Tests/mockserver/internal/sdk/models/operations/deprecated1.go:
+    last_write_checksum: sha1:c2581269371cdfe81cfd8e15ca0960ca9e20b53f
+  Tests/mockserver/internal/sdk/models/operations/getasset.go:
+    last_write_checksum: sha1:49d3d2514069c4f78653865dad1c113075863779
+  Tests/mockserver/internal/sdk/models/operations/getbinarydefaultresponse.go:
+    last_write_checksum: sha1:331cef575236e31d4bf3ae9a8b283b59f0f0ce03
+  Tests/mockserver/internal/sdk/models/operations/getduplicateexportcollision.go:
+    last_write_checksum: sha1:a81cf4f996bada748cb4a10762c2515aa7243c37
+  Tests/mockserver/internal/sdk/models/operations/getemptyobjecterror.go:
+    last_write_checksum: sha1:32be70baf90911ec34663d2ccf877b083a8be99f
+  Tests/mockserver/internal/sdk/models/operations/geterrorinunion.go:
+    last_write_checksum: sha1:8161fa7985685f14020c67fb299f0889d6be3734
+  Tests/mockserver/internal/sdk/models/operations/geterroronlyexample.go:
+    last_write_checksum: sha1:324898c608861ec1891bc1b73ed0e5b3cf4fdde3
+  Tests/mockserver/internal/sdk/models/operations/getfullyflattenedrequest.go:
+    last_write_checksum: sha1:a140237f1484275006a354ff129e124486b85ad8
+  Tests/mockserver/internal/sdk/models/operations/getnamedprimitiveunion.go:
+    last_write_checksum: sha1:fa54b1ac419add19e68fc4e152e38b21a4d22e50
+  Tests/mockserver/internal/sdk/models/operations/getnamespaceanimal.go:
+    last_write_checksum: sha1:94bb62bad73b53ecfa1adc456e9b9bf524809a22
+  Tests/mockserver/internal/sdk/models/operations/getnamespaceconflict.go:
+    last_write_checksum: sha1:a8f378eea7f69944bf1cbb089f98ea1df0af981d
+  Tests/mockserver/internal/sdk/models/operations/getnamespaceorganization.go:
+    last_write_checksum: sha1:c900fef31a4a86df9a9b3e86a8ca703425d4e55c
+  Tests/mockserver/internal/sdk/models/operations/getnamespacetypes.go:
+    last_write_checksum: sha1:ef41db0a67171144594cf89657e0e23e599a526e
+  Tests/mockserver/internal/sdk/models/operations/getnamespacevehicle.go:
+    last_write_checksum: sha1:131b7d70228788066f8b4a2cef37d18181138f50
+  Tests/mockserver/internal/sdk/models/operations/getnestedintegerstring.go:
+    last_write_checksum: sha1:b28228a5c8bc612c53461f24de2b48306b3a1e03
+  Tests/mockserver/internal/sdk/models/operations/getpetowners.go:
+    last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
+  Tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
+    last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  Tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
+    last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
+  Tests/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
+    last_write_checksum: sha1:8feb5970564c85bb8eb6e72203c2958feee7c8fd
+  Tests/mockserver/internal/sdk/models/operations/getsinglenamespacefoopet.go:
+    last_write_checksum: sha1:9b681d56ad2cd757783c611dcfc557bcc9d0df74
+  Tests/mockserver/internal/sdk/models/operations/gettriplenamespaceconflict.go:
+    last_write_checksum: sha1:4ce47047f9afbc63bf37f792e113f299964c30f2
+  Tests/mockserver/internal/sdk/models/operations/getunionerrors.go:
+    last_write_checksum: sha1:9e5c19d7561929f6566c19dc20c09b772fe92a05
+  Tests/mockserver/internal/sdk/models/operations/getuser.go:
+    last_write_checksum: sha1:9c67b9418a1091a7a687f2a5d80fc3e824770a9b
+  Tests/mockserver/internal/sdk/models/operations/listtest1.go:
+    last_write_checksum: sha1:1bd6a36e09e3ab85d3b1161d33fba71a134ee26f
+  Tests/mockserver/internal/sdk/models/operations/login.go:
+    last_write_checksum: sha1:71c3b73bf16edf6a067a61f75fee8fec5efd19f8
+  Tests/mockserver/internal/sdk/models/operations/nestedgroupop.go:
+    last_write_checksum: sha1:4fe1d0dffdde6130099ed577fc5770514ab28d6d
+  Tests/mockserver/internal/sdk/models/operations/operationwithleadingandtrailingunderscores.go:
+    last_write_checksum: sha1:89503141d25abf9fdb13418aa53264b79721fccd
+  Tests/mockserver/internal/sdk/models/operations/parenthesesinpathallowed.go:
+    last_write_checksum: sha1:5a5624228e50a8258b4d1b4c730e302cd6b963d6
+  Tests/mockserver/internal/sdk/models/operations/postfile.go:
+    last_write_checksum: sha1:a300eff2fd5abd753f5e4224dcb63dedb2e073fb
+  Tests/mockserver/internal/sdk/models/operations/postfilewithencoding.go:
+    last_write_checksum: sha1:4e253bbd63947bf09118cc96e6de71758cd4ac11
+  Tests/mockserver/internal/sdk/models/operations/posttest2.go:
+    last_write_checksum: sha1:35f2b762d462ab50892979f46aae611e3b4e2304
+  Tests/mockserver/internal/sdk/models/operations/putnamespaceconflict.go:
+    last_write_checksum: sha1:215ad5510995ed33b561108377cf92ebe25c557c
+  Tests/mockserver/internal/sdk/models/operations/renderasset.go:
+    last_write_checksum: sha1:fdfd8b7d8c8d68be9347be9427d98df24337c129
+  Tests/mockserver/internal/sdk/models/operations/rootgroupop.go:
+    last_write_checksum: sha1:912e9685ab8e556f4b481a0637b5453f41e776d4
+  Tests/mockserver/internal/sdk/models/operations/subgroupop.go:
+    last_write_checksum: sha1:4bf46599b9f0c1cfa33399c873b64069efa5d966
+  Tests/mockserver/internal/sdk/models/operations/testendpoint.go:
+    last_write_checksum: sha1:308babae6a1fb2e6114d1bcaa84646a6d6d40514
+  Tests/mockserver/internal/sdk/models/operations/testenumformats.go:
+    last_write_checksum: sha1:a9674f11dd98366dc8156b5fff03fad60bf57f0a
+  Tests/mockserver/internal/sdk/models/operations/updateuser.go:
+    last_write_checksum: sha1:f8f0d0ac06d72e4604943b3bd4e8f603b711548d
+  Tests/mockserver/internal/sdk/models/operations/urlvalidationstresstest.go:
+    last_write_checksum: sha1:834fed46ba1ec6da00b794ee4d94c1d9b46abaf0
+  Tests/mockserver/internal/sdk/models/operations/validate.go:
+    last_write_checksum: sha1:0dd4f2c6ab9fe25f8fddbfc1d852b0d051eee2b8
+  Tests/mockserver/internal/sdk/models/sdkerrors/badrequestresponseerror.go:
+    last_write_checksum: sha1:38c6aa4849bbdd5a39e0f040ef0a32309b522b77
+  Tests/mockserver/internal/sdk/models/sdkerrors/error.go:
+    last_write_checksum: sha1:fc2bb5d6f6ae9744affabe9e9b43ed3531a74820
+  Tests/mockserver/internal/sdk/models/sdkerrors/errortype1.go:
+    last_write_checksum: sha1:b351b483259e6ffb71d4ddbb990454c4f01f1cf7
+  Tests/mockserver/internal/sdk/models/sdkerrors/errortype2.go:
+    last_write_checksum: sha1:9ea6e81c58a796604d8f871f7f61631f2e5f82c9
+  Tests/mockserver/internal/sdk/models/sdkerrors/failedresponseerror.go:
+    last_write_checksum: sha1:e0853306a2c94cadfac3ff65032e0ac0e837d06e
+  Tests/mockserver/internal/sdk/models/sdkerrors/geterrorinunion.go:
+    last_write_checksum: sha1:3c8d4367795419eb9212e73677784ebce9c01c48
+  Tests/mockserver/internal/sdk/models/sdkerrors/getunionerrors.go:
+    last_write_checksum: sha1:52c567c65961272decd67749942f62f444194dae
+  Tests/mockserver/internal/sdk/models/sdkerrors/requesttimeouterror.go:
+    last_write_checksum: sha1:e7ac819e142cacbe4a87fa1ff3bc2bd1a1ecb7de
+  Tests/mockserver/internal/sdk/models/sdkerrors/taggederror1.go:
+    last_write_checksum: sha1:0341a8338fa8b790bd1a8af644ca88d46f465dae
+  Tests/mockserver/internal/sdk/models/sdkerrors/taggederror2.go:
+    last_write_checksum: sha1:a2dad41a456387b6ce39674490353f38d4703550
+  Tests/mockserver/internal/sdk/models/sdkerrors/test2responseerror.go:
+    last_write_checksum: sha1:50272c105368b303ea403d0a971da44c464ef2ca
+  Tests/mockserver/internal/sdk/models/webhooks/paymentcreated.go:
+    last_write_checksum: sha1:7f1a4931743137b143a5abd572896a4de68881a1
+  Tests/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
+    last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
+  Tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
+    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+  Tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
+    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+  Tests/mockserver/internal/sdk/types/bigint.go:
+    last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
+  Tests/mockserver/internal/sdk/types/date.go:
+    last_write_checksum: sha1:3036a2e1ed15a1d484c093367eba000c38f384d0
+  Tests/mockserver/internal/sdk/types/datetime.go:
+    last_write_checksum: sha1:196d050af6450669214e9ae4fd28e56263ae2b5d
+  Tests/mockserver/internal/sdk/types/decimal.go:
+    last_write_checksum: sha1:54f1f8c0d89d6ef048805121f97c6937404c5d51
+  Tests/mockserver/internal/sdk/types/jsonl/jsonl.go:
+    last_write_checksum: sha1:15fb778e0fa6c7b4c228431af3d03b9819b8fd94
+  Tests/mockserver/internal/sdk/types/pointers.go:
+    last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
+  Tests/mockserver/internal/sdk/types/stream/stream.go:
+    last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
+  Tests/mockserver/internal/sdk/utils/json.go:
+    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+  Tests/mockserver/internal/sdk/utils/reflect.go:
+    last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
+  Tests/mockserver/internal/sdk/utils/sort.go:
+    last_write_checksum: sha1:a9d390de086ad13841c7d154e97d314e6ae2d285
+  Tests/mockserver/internal/server/doc.go:
+    last_write_checksum: sha1:71ca1bebc409ffcb7ed573f4bfc85f1d2cb76252
+  Tests/mockserver/internal/server/generated_handlers.go:
+    last_write_checksum: sha1:dbaa2e7beedda2a3e0ef373939f0424577cb2666
+  Tests/mockserver/internal/server/internal_handlers.go:
+    last_write_checksum: sha1:6b31fdc2a316735bd028bb822859a175d837fc5f
+  Tests/mockserver/internal/server/server.go:
+    last_write_checksum: sha1:d97000314c64b937ff7a243cbc051c5591ab8722
+  Tests/mockserver/internal/server/server_option.go:
+    last_write_checksum: sha1:f787e17525cbaed4d6881d02562da66a1deda9c0
+  Tests/mockserver/internal/server/templates/log/index.html.tmpl:
+    last_write_checksum: sha1:7c3fc6e6b03d80e05bc586ade52ddcb8adaee148
+  Tests/mockserver/internal/server/templates/log/operation.html.tmpl:
+    last_write_checksum: sha1:ab2894028c76b25dfe613d743a243bfd04fb279c
+  Tests/mockserver/internal/server/templates/log/style.css.tmpl:
+    last_write_checksum: sha1:474c79a94fa7d2671135e078a71c51b11f38bfae
+  Tests/mockserver/internal/tracking/requesttracker.go:
+    last_write_checksum: sha1:09963693aae5446c247cac171c284f2cdf7cfa4d
+  Tests/mockserver/main.go:
+    last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
+  USAGE.md:
+    last_write_checksum: sha1:257984cb018be5711ae9e5b9a03d0c4b83bd2bdf
+  docs/Bar/Bike.md:
+    last_write_checksum: sha1:d746a92a5da88fc50b274371e606feb3f098b42b
+  docs/Bar/Car.md:
+    last_write_checksum: sha1:797252f8ea919d23685e6fa4b18b804922a9e482
+  docs/Bar/Pet.md:
+    last_write_checksum: sha1:b7e9d07c2d17945189b5a83744f457b37a8cb02b
+  docs/Bar/PetOwner.md:
+    last_write_checksum: sha1:d4a4915ad40777b0024762e6281134aa69795054
+  docs/Bar/PetStatus.md:
+    last_write_checksum: sha1:dedf153ce9fa8e4ade90f82e2d25dd204e14326f
+  docs/Bar/Vehicle.md:
+    last_write_checksum: sha1:de240eb9ba47188f3d713eda4c00b52027f49a44
+  docs/Baz/Namespaced.md:
+    last_write_checksum: sha1:015aae9b965310f7312af0dfb8c1a707706e8282
+  docs/Baz/Pet.md:
+    last_write_checksum: sha1:53c2d54e1b765e6162fc7241e869a5a8486d93cb
+  docs/Foo/Address.md:
+    last_write_checksum: sha1:4726fa8a012be818d8fc6f89c937af37b4013071
+  docs/Foo/Animal.md:
+    last_write_checksum: sha1:c94df27766e2274e10453bc8f81e91d68b2bdeed
+  docs/Foo/Cat.md:
+    last_write_checksum: sha1:a607d6d2f6cc450662094d2da1ea4272e5652e88
+  docs/Foo/CatAnimalType.md:
+    last_write_checksum: sha1:ad180b7c59b76bc7927536fd78e667accafc79e7
+  docs/Foo/Department.md:
+    last_write_checksum: sha1:8cb847eda2f158cd1c5cbe7bf6bd6d38204afa91
+  docs/Foo/Dog.md:
+    last_write_checksum: sha1:fa5286e59d17a4e22498f8d7b2ae9a7eca16b8c1
+  docs/Foo/DogAnimalType.md:
+    last_write_checksum: sha1:943c3004ce16cb55fdcaef48c1fbff3ec5355307
+  docs/Foo/Location.md:
+    last_write_checksum: sha1:174c3e2472469c8ee9645da4eee6f5c9eb0480cc
+  docs/Foo/Organization.md:
+    last_write_checksum: sha1:de484d778d2b1d6f16832138ba5939745e6f521c
+  docs/Foo/Pet.md:
+    last_write_checksum: sha1:7ec40ec9d6407c66f0700a53f0def6c01a126a15
+  docs/Foo/PetOwner.md:
+    last_write_checksum: sha1:0c6e03e29406dea0f18c254ebc70d429118469f0
+  docs/Foo/PetSpecies.md:
+    last_write_checksum: sha1:37ba4f2fe3eb2bc96c8500c1928aed487bd33fed
+  docs/Models/AllOfWithFactoredOutProperties.md:
+    last_write_checksum: sha1:e58638d483990c2f2afc344af833f000f2d3d38c
+  docs/Models/Aloof.md:
+    last_write_checksum: sha1:45010891c3cb098045fda9df893119dfd39ddbe7
+  docs/Models/Any.md:
+    last_write_checksum: sha1:ff44902eda6babaed508179ff3a5a02059578211
+  docs/Models/ApprovalConfig.md:
+    last_write_checksum: sha1:66d80b185abf5bd5da6e573f5d70d4173df29b71
+  docs/Models/AssetImageBlock.md:
+    last_write_checksum: sha1:af0d6bef067ad8a24305d0cc6d2d89105945e041
+  docs/Models/AssetNoteStep.md:
+    last_write_checksum: sha1:db5e5c158b695b9b98364dcd910e819200e8dbf2
+  docs/Models/AssetOutputStep.md:
+    last_write_checksum: sha1:f01478afcec6390c6cb5c6182f99d98c8faddd4f
+  docs/Models/AssetResult.md:
+    last_write_checksum: sha1:371822522bb7fd667728591a7b0b105e7e4c7cc6
+  docs/Models/AssetStatusStream.md:
+    last_write_checksum: sha1:879c1e7ae6e2a35dc5426a3486809b7d01073dbb
+  docs/Models/AssetStream.md:
+    last_write_checksum: sha1:6e58f308bc5f65ffcd83687796ad97505bb8dc3a
+  docs/Models/AssetTextBlock.md:
+    last_write_checksum: sha1:0d94af80eb950997dfbf0c002fc35eb9f090c4dc
+  docs/Models/Attachment.md:
+    last_write_checksum: sha1:87fc5258cc7ca1f5438a5e104b7ac4420cbd6682
+  docs/Models/AuthResponse.md:
+    last_write_checksum: sha1:f3c4ea05179a1189cb8c3b50866234f27ba20af1
+  docs/Models/AuthSecurity.md:
+    last_write_checksum: sha1:c88e15e96cf376dd7d6ef09e3f5994c36e21e03a
+  docs/Models/BadRequestResponseException.md:
+    last_write_checksum: sha1:7e7610cf65ffd4f8be61dfd03956290ea15868b9
+  docs/Models/BaseUser.md:
+    last_write_checksum: sha1:a863bf0bb264003d74f6d101906d62032086bb53
+  docs/Models/BinaryAndStringUploadRequest.md:
+    last_write_checksum: sha1:caa47476b83d44251e75690538230cff0c7a8fd9
+  docs/Models/BinaryAndStringUploadResponse.md:
+    last_write_checksum: sha1:666a0f0d55ca744b00cc632df96132d6c32c3616
+  docs/Models/Boole.md:
+    last_write_checksum: sha1:4556580cc8afaa79a36836ffd7ae8edaaa4040f0
+  docs/Models/ImageRecord.md:
+    last_write_checksum: sha1:23b0061a75e4ce238dd73016478975d5efe7001d
+  docs/Models/ChatAgentRequest.md:
+    last_write_checksum: sha1:5757c356e54f516ae20686f0170a92156dc4a924
+  docs/Models/ChatModelRequest.md:
+    last_write_checksum: sha1:8fbe7000afffb9750156dc7fea4bbbeb62d9aec6
+  docs/Models/ChatRequest.md:
+    last_write_checksum: sha1:9a0efb5e8b1167548bbdd60629d6e8df2880f674
+  docs/Models/ChatResponse.md:
+    last_write_checksum: sha1:fcbbd9e1bb8b5568e8bf9c7b8652ea6f3e0ed7fe
+  docs/Models/ChatResponseBody.md:
+    last_write_checksum: sha1:b67a1fb4e70d3f905d121845252f72ea517a0735
+  docs/Models/ChatStream.md:
+    last_write_checksum: sha1:f6d2039487efe539f31b87fc277d9958f191f5df
+  docs/Models/Circle.md:
+    last_write_checksum: sha1:9a8f0398fb67c000ed38610d544fd0529156caa3
+  docs/Models/CircularUnion.md:
+    last_write_checksum: sha1:fb7466f3b53b84bd1c83f653b6f6ce193ef30eff
+  docs/Models/ClientError.md:
+    last_write_checksum: sha1:22f9bf65748c62576219ea0a13cacfe761f548af
+  docs/Models/Color.md:
+    last_write_checksum: sha1:11d846b0758d0bea364cdfc6ea3593e3c1faa957
+  docs/Models/Content.md:
+    last_write_checksum: sha1:bdd01ee2cce8cd3c90911fe8467e5d181ea25ce4
+  docs/Models/CreateNamespaceConflictResponse.md:
+    last_write_checksum: sha1:e3d4fd49ded8d9fb77b285aaa84f5e1e14be4310
+  docs/Models/CreateSingleNamespaceFooPetResponse.md:
+    last_write_checksum: sha1:5a988c86cae6aeaed78190c21888263e8dbfaaf2
+  docs/Models/CreateUserResponse.md:
+    last_write_checksum: sha1:08a5a37ea547fadfa54461366cd44937f361ae80
+  docs/Models/CreateWithUnionRequest.md:
+    last_write_checksum: sha1:ddf9db85adc7d7af418930ff9a8e1aeb5cf28717
+  docs/Models/CreateWithUnionResponse.md:
+    last_write_checksum: sha1:e2e8f42c45321d7a21f79d6abeeb3fb472698330
+  docs/Models/CreateWithUnionResponseBody.md:
+    last_write_checksum: sha1:aee0737ab2a18bc87552661b6f90914bf0b105a6
+  docs/Models/Data.md:
+    last_write_checksum: sha1:8d4b59c7737da06b6466f3126a33551c269c3d83
+  docs/Models/DeleteUserRequest.md:
+    last_write_checksum: sha1:9bea5fa4ba26e0984a3cc81659617a317b3475eb
+  docs/Models/DeleteUserResponse.md:
+    last_write_checksum: sha1:f48bdc447f0e848e88e623b669836fe6203f5e72
+  docs/Models/Deprecated1Response.md:
+    last_write_checksum: sha1:d776a575efdf36d8fca102949f8b82abfffac62c
+  docs/Models/Detail.md:
+    last_write_checksum: sha1:5a9f45f356a8f0cbda4b7dd6d2ef1aea6b7debf3
+  docs/Models/DetailUnion.md:
+    last_write_checksum: sha1:1f388ead1d7160105dd6880042d5641994855896
+  docs/Models/DisriminatedUnionWithOneMember.md:
+    last_write_checksum: sha1:9d200f7370b82a6489bab133c56bbf0e47856816
+  docs/Models/Emoji.md:
+    last_write_checksum: sha1:e4be66dc2f0ac0e8f76851762d83ff5a570a3522
+  docs/Models/Enum.md:
+    last_write_checksum: sha1:1169b8f21df93fbb5712e58c7a25a8502055d0f0
+  docs/Models/ErrorType1.md:
+    last_write_checksum: sha1:ba44b84763e68a097dea873ffd5f97834e5c36fc
+  docs/Models/ErrorType2.md:
+    last_write_checksum: sha1:8528ff803b3e5e5ffe0485b679e6c087a74e6bcf
+  docs/Models/ErrorType2Error.md:
+    last_write_checksum: sha1:98c29a48c3df4eada4e9c23d842900710015f768
+  docs/Models/ErrorsError.md:
+    last_write_checksum: sha1:2d6531912261ee2ded1a2612cfdc7114dd4bcbb9
+  docs/Models/Escalation.md:
+    last_write_checksum: sha1:08143df95a90de565171387113a59d79a7a442d3
+  docs/Models/ExhaustiveObject.md:
+    last_write_checksum: sha1:4afa15762eb901e147c6d44c7f9fcff13732a66d
+  docs/Models/FailedResponseException.md:
+    last_write_checksum: sha1:f04543faaa2577bcbe0d3b79550ed76464062d86
+  docs/Models/File.md:
+    last_write_checksum: sha1:7d2d993163f4692560aedfcb9d194d4ffc52e398
+  docs/Models/Gender.md:
+    last_write_checksum: sha1:ece51cb80fd49518348a261d40856dcc620f1057
+  docs/Models/GetAssetRequest.md:
+    last_write_checksum: sha1:10eff78568e99a24b73a8c08c177af2c29a59b87
+  docs/Models/GetAssetResponse.md:
+    last_write_checksum: sha1:61fd2cd81c2ded9aeb880cbaf3c36dde37423c57
+  docs/Models/GetBinaryDefaultResponseResponse.md:
+    last_write_checksum: sha1:e9cd92628908488bd2805740e0762d49515c144d
+  docs/Models/GetDuplicateExportCollisionResponse.md:
+    last_write_checksum: sha1:0bf33813a3506ed20053c168e2d78ffdc6868ad4
+  docs/Models/GetDuplicateExportCollisionResponseBody.md:
+    last_write_checksum: sha1:455853f0670d4642b6064c112453bbbfc104918c
+  docs/Models/GetEmptyObjectErrorResponse.md:
+    last_write_checksum: sha1:31dbc5da20c4863405e848a9550dfa978555cf27
+  docs/Models/GetEmptyObjectErrorResponseBody.md:
+    last_write_checksum: sha1:78d60807a6d37e4de311501225c19592aece8e4a
+  docs/Models/GetErrorInUnionInternalServerError.md:
+    last_write_checksum: sha1:2a573f26d37b9eb22d597a0ea726a29cf8ec797d
+  docs/Models/GetErrorInUnionResponse.md:
+    last_write_checksum: sha1:c5af0a5ab3f847cdd6f0ccd20cf152872143ef64
+  docs/Models/GetErrorOnlyExampleResponse.md:
+    last_write_checksum: sha1:2deca21b6442425b6241d2d0e0394c968dfb4331
+  docs/Models/GetErrorOnlyExampleResponseBody.md:
+    last_write_checksum: sha1:ceb89007e7b3736230651214e60706487a8de3ae
+  docs/Models/GetFullyFlattenedRequestRequest.md:
+    last_write_checksum: sha1:be8704c1f68c5af066cc8ec7b43d34d98ad33676
+  docs/Models/GetFullyFlattenedRequestRequestBody.md:
+    last_write_checksum: sha1:f7959cea93846810a7aca10e58b138f52bab045b
+  docs/Models/GetFullyFlattenedRequestResponse.md:
+    last_write_checksum: sha1:880c614c7d419872e18b606e94d41b89c7dcb108
+  docs/Models/GetNamedPrimitiveUnionResponse.md:
+    last_write_checksum: sha1:f7477278bbbd14e8a032b8422b2d0e23a136ea2b
+  docs/Models/GetNamespaceAnimalResponse.md:
+    last_write_checksum: sha1:2884044764f45cfdf08a1b3ffff7eedbc326eacd
+  docs/Models/GetNamespaceConflictResponse.md:
+    last_write_checksum: sha1:e47a5855a0074fd46ae94c9e5d2ec5f670e32e61
+  docs/Models/GetNamespaceOrganizationResponse.md:
+    last_write_checksum: sha1:2d2129fe7eee828c40a5c2310a423c0c725c4342
+  docs/Models/GetNamespaceTypesResponse.md:
+    last_write_checksum: sha1:a58b8ad74022a135915520aa567029231dc698c8
+  docs/Models/GetNamespaceVehicleResponse.md:
+    last_write_checksum: sha1:5f6ad9aa996ea3ac111e83fa618f3ede0ab51096
+  docs/Models/GetNestedIntegerStringResponse.md:
+    last_write_checksum: sha1:c82860ad33521547a00bd17bbdbdc7a7b336952b
+  docs/Models/GetPetOwnersResponse.md:
+    last_write_checksum: sha1:fd8be9a343584a92dd18389e4608039d04a73ba3
+  docs/Models/GetPetOwnersResponseBody.md:
+    last_write_checksum: sha1:33d36644351368e74dd0939d1107d5b5c4abf92f
+  docs/Models/GetPolymorphismResponse.md:
+    last_write_checksum: sha1:0418881d2b93b5a1b91f209f6598d32f1551461e
+  docs/Models/GetPolymorphismResponseBody.md:
+    last_write_checksum: sha1:39fe03a012785cf1f809f7730a03dda60c123860
+  docs/Models/GetRequestBodyFlattenedAwayRequest.md:
+    last_write_checksum: sha1:67ad04a2055e32729f6bb929cba17b64b733eb6c
+  docs/Models/GetRequestBodyFlattenedAwayResponse.md:
+    last_write_checksum: sha1:20ffbaf129bf12feca59c2a6313f6b346daea9ef
+  docs/Models/GetSingleNamespaceBarPetResponse.md:
+    last_write_checksum: sha1:7ad36376c83458c2e64753fc4b053553fc0be859
+  docs/Models/GetSingleNamespaceFooPetResponse.md:
+    last_write_checksum: sha1:0a0842a9ad886b97a04430c53fd318d95eea3c17
+  docs/Models/GetTripleNamespaceConflictResponse.md:
+    last_write_checksum: sha1:ca37ff9a43a6c145baae34eb061036d62113a071
+  docs/Models/GetUnionErrorsInternalServerError.md:
+    last_write_checksum: sha1:2d2666cbf93a9b5f747f9c191f66e566ad33e7bc
+  docs/Models/GetUnionErrorsRequest.md:
+    last_write_checksum: sha1:2f8313329c90a7056f33657cce00bf01f37e7df5
+  docs/Models/GetUnionErrorsResponse.md:
+    last_write_checksum: sha1:ef0caf190c7f241cfc0b28a8cab371901b03d7a9
+  docs/Models/GetUnionErrorsResponseBody.md:
+    last_write_checksum: sha1:463cd9914fbed28f1cde7c0b454a00ffe9a6b2a5
+  docs/Models/GetUserRequest.md:
+    last_write_checksum: sha1:0eb3a6575cb8e34b1e22656dadd480ce20ae5f59
+  docs/Models/GetUserResponse.md:
+    last_write_checksum: sha1:4b3f0a04a45d7568ac9247c253af12dc8caac352
+  docs/Models/HTTPMetadata.md:
+    last_write_checksum: sha1:08fe4d295519e310847d7500b27fd60eb5124293
+  docs/Models/HeroWidth.md:
+    last_write_checksum: sha1:f104e1348c469fc75e17ed25e883d33d7b558f79
+  docs/Models/Icon.md:
+    last_write_checksum: sha1:c653afcdc7d242b0a5844ed317003bd7ea2bec7a
+  docs/Models/Int32Enum.md:
+    last_write_checksum: sha1:c9490c92092a06e8163d8031a1ae94208c81b9f9
+  docs/Models/IntEnum.md:
+    last_write_checksum: sha1:b1cfbadafb6009a8004e1b6e556c3c77bdf0f86a
+  docs/Models/IntegerMapFormat.md:
+    last_write_checksum: sha1:09be839f036eb28758a5b11b39fc5f292311dea9
+  docs/Models/IntegerPartialMapFormat.md:
+    last_write_checksum: sha1:4d041e656ad13058e217089dcb70d276d2fe1c11
+  docs/Models/ListTest1Request.md:
+    last_write_checksum: sha1:d9ce5cdb8a21e9280382a7c4df2afc9723494fbb
+  docs/Models/ListTest1Response.md:
+    last_write_checksum: sha1:40f17ac15baadd2b78a866c3a297915bb29ce5b4
+  docs/Models/ListTest1ResponseBody.md:
+    last_write_checksum: sha1:3d6f97f0f4d1a378f3021ab47107aa3c288df92c
+  docs/Models/LoginResponse.md:
+    last_write_checksum: sha1:0fef8613d90744811fdb6bd98fbd2f6e179e58d8
+  docs/Models/LoginResponseBody.md:
+    last_write_checksum: sha1:03a9dbaad9f6ecb6c6d9f225157a75eb9ff36091
+  docs/Models/TextRecord.md:
+    last_write_checksum: sha1:817e7d09241cb2223c4347161e210d8c0e7790d6
+  docs/Models/MCPPolicy.md:
+    last_write_checksum: sha1:de2e9f148c2606f248897369c011d06a0cce456e
+  docs/Models/Metadata.md:
+    last_write_checksum: sha1:7888f395279209cbde58f21f3e9709baf33d69fb
+  docs/Models/MetadataAny.md:
+    last_write_checksum: sha1:be24a87a7c2b078b3d072d0d21bf8bea653f3ca6
+  docs/Models/MyApiKey.md:
+    last_write_checksum: sha1:485d0e40dab6cbdfcf81c7cc3a337c866b2d4ba1
+  docs/Models/MyObject.md:
+    last_write_checksum: sha1:a0431dcca6c41e4501a3d115e630d1b2249ad739
+  docs/Models/NamespaceConflictTest.md:
+    last_write_checksum: sha1:ece41e6d6d595bc7f103f8576119d7e8009932ed
+  docs/Models/NamespaceTypesTest.md:
+    last_write_checksum: sha1:89040fa47f35869875657b469422a819d6f3e7fd
+  docs/Models/NestedGroupOpResponse.md:
+    last_write_checksum: sha1:39b50a2c18aef249e4be3ae9075ab0494707a44c
+  docs/Models/NullableIntEnum.md:
+    last_write_checksum: sha1:cdc822a6092e853825b56e84f7c43b951445449c
+  docs/Models/NullableStringEnum.md:
+    last_write_checksum: sha1:660cd7da8aa583e581e19653778b37d1cd72fda6
+  docs/Models/ObjWithRenamedProperties.md:
+    last_write_checksum: sha1:66e9668e9ac299a23de58db7713080dbf76ae726
+  docs/Models/OneOfWithFactoredOutProperties.md:
+    last_write_checksum: sha1:37c9e4a0c3b9e4926ef5fe80bd0921269c750dbe
+  docs/Models/OneOfWithFactoredOutPropertiesAny.md:
+    last_write_checksum: sha1:34fdb3b80e4794404d01d38f0c9af81740614ba4
+  docs/Models/OneOfWithFactoredOutPropertiesExhaustiveObject.md:
+    last_write_checksum: sha1:f9af90141574f0e891df4d824cbcddadfe00df0b
+  docs/Models/OneOfWithFactoredOutPropertiesHeroWidth.md:
+    last_write_checksum: sha1:76d5d997a97391d6ec6ae00f5693ac6970293587
+  docs/Models/OneOfWithFactoredOutPropertiesIcon.md:
+    last_write_checksum: sha1:fa47edd067f12bcb089511e2ab6990e9b85905d8
+  docs/Models/OneOfWithFactoredOutPropertiesInt32Enum.md:
+    last_write_checksum: sha1:b491437f49662b6a7e88e29a97becb127e163582
+  docs/Models/OneOfWithFactoredOutPropertiesIntEnum.md:
+    last_write_checksum: sha1:c12be8fb55036b85cce6e5e31769bc4a6e1324a0
+  docs/Models/OneOfWithFactoredOutPropertiesNullableIntEnum.md:
+    last_write_checksum: sha1:f4447d828130a1b18207b4e1e30c213adbd3d27b
+  docs/Models/OneOfWithFactoredOutPropertiesNullableStringEnum.md:
+    last_write_checksum: sha1:a1772418e248dae808d280c99983da988f311e34
+  docs/Models/OneOfWithFactoredOutPropertiesSimpleObject.md:
+    last_write_checksum: sha1:b3fb72ad6e59cbe490a393f3415d9e753d862a79
+  docs/Models/OneOfWithUnionDescription.md:
+    last_write_checksum: sha1:0a77a9698ea7681c96e9c9b410b7ad8796f7aa2e
+  docs/Models/OperationWithLeadingAndTrailingUnderscoresRequest.md:
+    last_write_checksum: sha1:bfa7b8c16ff1fe17e16ec10c9851818045e5fb8d
+  docs/Models/OperationWithLeadingAndTrailingUnderscoresResponse.md:
+    last_write_checksum: sha1:85d19da60a5f499eb4c62e931826a9e43478ac67
+  docs/Models/OutputModality.md:
+    last_write_checksum: sha1:cc31acefb3c03f9664cd5cf802a6b7ed76b6366f
+  docs/Models/ParenthesesInPathAllowedRequest.md:
+    last_write_checksum: sha1:50917133551688c6ecd5a74c8b9303203f205b91
+  docs/Models/ParenthesesInPathAllowedResponse.md:
+    last_write_checksum: sha1:6d618cd9e48e67bfd050aa653e966a5e9d4f5453
+  docs/Models/PaymentCreatedRequest.md:
+    last_write_checksum: sha1:430cf53bbb680e411787280a591cd35d3209b3b7
+  docs/Models/PaymentCreatedResponse.md:
+    last_write_checksum: sha1:88f220f9879690c40a711efb21ba2b1793c753af
+  docs/Models/PaymentCreatedType.md:
+    last_write_checksum: sha1:fee85f9e44f242888afec358cf8481ab4838c43d
+  docs/Models/PaymentUpdatedRequest.md:
+    last_write_checksum: sha1:e4d2bbf1d8ef08d4143b513c5bdaa39cbea794bc
+  docs/Models/PaymentUpdatedResponse.md:
+    last_write_checksum: sha1:e6994de64576849a26f84775bbee60b1c0f2431c
+  docs/Models/PaymentUpdatedType.md:
+    last_write_checksum: sha1:619d63e50f4de186fd24ef31a4b0c040804612e6
+  docs/Models/PolicyStep.md:
+    last_write_checksum: sha1:579cbf1b73ee7dcc7f2fc7abb21a3da9626f0dff
+  docs/Models/PostFileRequest.md:
+    last_write_checksum: sha1:e49d0a2e196ca18e8ab8a08e3c798cedf8d6b305
+  docs/Models/PostFileResponse.md:
+    last_write_checksum: sha1:9b3e211894734c946d4929b4628e67c1b52c1eba
+  docs/Models/PostFileWithEncodingFile.md:
+    last_write_checksum: sha1:11d8637c060e2ea8bc965842153c88838d98fabc
+  docs/Models/PostFileWithEncodingMetadata.md:
+    last_write_checksum: sha1:6f69996d80176082d82d3a96c9615ebd338be689
+  docs/Models/PostFileWithEncodingRequest.md:
+    last_write_checksum: sha1:e2cf84c0a51b0dff7daec842b1bed7fb78c9b591
+  docs/Models/PostFileWithEncodingResponse.md:
+    last_write_checksum: sha1:3094286a1538815bea776312b5bead03ce70071f
+  docs/Models/PostFileWithEncodingResponseBody.md:
+    last_write_checksum: sha1:e74874efb984f38f4caaef3fdbd137f21ea3c867
+  docs/Models/PostTest2Request.md:
+    last_write_checksum: sha1:31cb8171193fc17b1db549555592adc5beaf3e37
+  docs/Models/PostTest2Response.md:
+    last_write_checksum: sha1:d795904b1d2b9ccaee11c714bad2b0032b6ac686
+  docs/Models/PutNamespaceConflictResponse.md:
+    last_write_checksum: sha1:72e869123b6285dcdf0ada1f7a07d4cfa84fb4ee
+  docs/Models/QueryParam2.md:
+    last_write_checksum: sha1:3f7c23ef370bce12403e7f5e1ede2e166d631bef
+  docs/Models/Rectangle.md:
+    last_write_checksum: sha1:a1f3072ed295c6940e0b5a0ecae4a98d49ac30d7
+  docs/Models/RecursiveFormField.md:
+    last_write_checksum: sha1:6303e523be131e9e8cdee1ee81335cdd4638634a
+  docs/Models/RecursiveFormFieldArray.md:
+    last_write_checksum: sha1:a2a2dde5b89d495e586068f1d5f83c1b3e376b36
+  docs/Models/RecursiveFormFieldNumber.md:
+    last_write_checksum: sha1:193b508bfddfcedf2f4c10ce573572cb1542e3f3
+  docs/Models/RecursiveFormFieldText.md:
+    last_write_checksum: sha1:3278e406a24263e7fed901673911c4d316383833
+  docs/Models/RenderAssetRequest.md:
+    last_write_checksum: sha1:7edfd6b2bcca510df639d17b0ae209a2cc11ef1a
+  docs/Models/RenderAssetResponse.md:
+    last_write_checksum: sha1:4cf4ed3d443213feb07650e2867f5756f6e902e4
+  docs/Models/RequestTimeoutError.md:
+    last_write_checksum: sha1:b447e52c0f422d1ad62ead29f7cd23ba1884d933
+  docs/Models/ResultArray.md:
+    last_write_checksum: sha1:f3361232c5cb9128bd6941cc7868a291156dda34
+  docs/Models/ReviewTask.md:
+    last_write_checksum: sha1:b70a04a7e3df24a264c18b60a6b70a20ef64264e
+  docs/Models/VariantRecord.md:
+    last_write_checksum: sha1:fed274508204809b3e5ef6a65a7d460475a2641c
+  docs/Models/RootGroupOpResponse.md:
+    last_write_checksum: sha1:016a6ab75441f9ce601e5308d3e5c9e53ff47325
+  docs/Models/Security.md:
+    last_write_checksum: sha1:8d880b193f45bd88ba95a635e4ee22e972374d8a
+  docs/Models/SecurityOption2.md:
+    last_write_checksum: sha1:0bf5839d7aa7fe5bbf1aa13e7fc34452457d9c99
+  docs/Models/SecurityOption3.md:
+    last_write_checksum: sha1:d40898b39958c816ff46741aa3b08462d526cfa4
+  docs/Models/SecurityOption4.md:
+    last_write_checksum: sha1:70bf864fa988289c5a4ab176a5a56e8b372be219
+  docs/Models/SecurityOption5.md:
+    last_write_checksum: sha1:dbf898f80bf5bc0b300039861c1b85646fe7497e
+  docs/Models/SecurityOption6.md:
+    last_write_checksum: sha1:cde2840e59c3b8d866528b5ef5ce263416467644
+  docs/Models/Shape.md:
+    last_write_checksum: sha1:c404d732f055f6492ecac475b71409fc0c440258
+  docs/Models/ShapeRequest.md:
+    last_write_checksum: sha1:e80f687223f772001b3436cc91505f064f187e35
+  docs/Models/SimpleAllOf.md:
+    last_write_checksum: sha1:fdadbd4be6396091421eaf7a35190f0563e562a9
+  docs/Models/SimpleObject.md:
+    last_write_checksum: sha1:ffee79404d9c13155c3b1b3a1b2d09650229c532
+  docs/Models/SomeUnion.md:
+    last_write_checksum: sha1:db13412ffb2a65e54e92fd9490db0f6d055ad7d2
+  docs/Models/Status.md:
+    last_write_checksum: sha1:6e5d224654fc13cf1c4cc1ce6a14f2c54e5b7f72
+  docs/Models/Step.md:
+    last_write_checksum: sha1:80c32997871281afa5e6e1d633c6aca5118f8d1d
+  docs/Models/StringArrayFormat.md:
+    last_write_checksum: sha1:9e201b66de7ba7a96b3ffd66dbc784f3b4007659
+  docs/Models/StringMapFormat.md:
+    last_write_checksum: sha1:8c77f1d7b25e92d9dc26e70526438a1cb0733f88
+  docs/Models/StringPartialMapFormat.md:
+    last_write_checksum: sha1:2dbfe60286a5b723c9a1d1f73dcf3f28d1469abf
+  docs/Models/SubGroupOpResponse.md:
+    last_write_checksum: sha1:cea033257fb129c35253563981cc2c9198cc7769
+  docs/Models/Tag.md:
+    last_write_checksum: sha1:895cd48721bb366cf15ba46ccdaa3f2145b4f413
+  docs/Models/TaggedError1.md:
+    last_write_checksum: sha1:cd7d5ed758d0c850a3b7742bae77da209af25001
+  docs/Models/TaggedError2.md:
+    last_write_checksum: sha1:89c230d2a17ed3782442a1bd4d3b0000430e5c92
+  docs/Models/TaggedError2Error.md:
+    last_write_checksum: sha1:c69570d3827f1651f40b1025129b7e6d1a88e65d
+  docs/Models/TaskResponse.md:
+    last_write_checksum: sha1:e0b74f8d1e2639a7b6f13630017c9936b47fbc12
+  docs/Models/TemplateBracesTest.md:
+    last_write_checksum: sha1:ea3ad80af577d49122ccad92055d2b802330a481
+  docs/Models/Test2Request.md:
+    last_write_checksum: sha1:a53f6e1044ce158633d1c3d045def0895447b09d
+  docs/Models/Test2Response.md:
+    last_write_checksum: sha1:2e389bfc1472a5f01248a7a83cbdf3ef886d34e1
+  docs/Models/Test2ResponseException.md:
+    last_write_checksum: sha1:952d9d380f4ccee088690b6b537a38836bb62854
+  docs/Models/TestEndpointRequest.md:
+    last_write_checksum: sha1:0fe3ab4a7535589468b2c1217a676279db638aad
+  docs/Models/TestEndpointRequestBody.md:
+    last_write_checksum: sha1:291c6b7fad1c2f3255b37455cb0946741362118f
+  docs/Models/TestEndpointResponse.md:
+    last_write_checksum: sha1:d7fcbc93e4f37abcd240014394658252ad60f5ff
+  docs/Models/TestEnumFormatsRequest.md:
+    last_write_checksum: sha1:8cf4b00d839d1d434f2e974ddf460b46504ab86d
+  docs/Models/TestEnumFormatsResponse.md:
+    last_write_checksum: sha1:f13580cc4c099e8f8c3ea68ad8d94c0557e46a7d
+  docs/Models/TestEnumFormatsResponseBody.md:
+    last_write_checksum: sha1:f4f6b5d9b479e5b98ef331d95c193bca6cebf96c
+  docs/Models/TripleNamespaceConflictTest.md:
+    last_write_checksum: sha1:0d77b7589046a4da2e7456f865862ad034394639
+  docs/Models/Type.md:
+    last_write_checksum: sha1:b62bc6141d90967b3dfb9449ecdb80129f7c4f47
+  docs/Models/UpdateUserRequest.md:
+    last_write_checksum: sha1:3953a732f25100b17ea9cbef756406223c556088
+  docs/Models/UpdateUserResponse.md:
+    last_write_checksum: sha1:15ec41ec146d64d0e38e248144f0f60510fb4a38
+  docs/Models/UrlValidationStressTestResponse.md:
+    last_write_checksum: sha1:eb5f30e9408453645f3109a2029c8dfe1fcdc7ec
+  docs/Models/User.md:
+    last_write_checksum: sha1:e8a7caaebc05d647c6cd76eda3a5356e0e10d444
+  docs/Models/UserPassAuth.md:
+    last_write_checksum: sha1:6a001c0966cabda899a9f90a529c11bb01f54081
+  docs/Models/ValidateResponse.md:
+    last_write_checksum: sha1:337d4862bc2aa21c4cb6c5f134823787bb2b6798
+  docs/Models/ValidateResponseBody.md:
+    last_write_checksum: sha1:1b4ecb85c1fa40e40efeb1fb65b605cd52e027bc
+  docs/sdks/conflicts/README.md:
+    last_write_checksum: sha1:0f0a3a0240de6b7fa1b95eadf827466d1ae42bfa
+  docs/sdks/group/README.md:
+    last_write_checksum: sha1:7adeeba4393a05ecc596e14610d0cc19bd00f1d9
+  docs/sdks/obsolete/README.md:
+    last_write_checksum: sha1:f2947bce1acd9cc15582d04115effc8552d02597
+  docs/sdks/sdk/README.md:
+    last_write_checksum: sha1:81f87f7269de234d04f193e3fe18df782f79ad5c
+  docs/sdks/singlebar/README.md:
+    last_write_checksum: sha1:fd52442d18408e5047bb69f0aade739db73c73f9
+  docs/sdks/singlefoo/README.md:
+    last_write_checksum: sha1:795671002204c065287cfa03d94cbce6be5e0866
+  docs/sdks/subgroup/README.md:
+    last_write_checksum: sha1:c2f799b15db798aa4d330a0e912dd1f1afb4de4d
+  docs/sdks/tag1/README.md:
+    last_write_checksum: sha1:93207c2dac1c0d710acb37dda07f25da5136e598
+  docs/sdks/tag2/README.md:
+    last_write_checksum: sha1:8c683351db436e6a6e711bcc83e39505457e8c15
+  docs/sdks/tag3/README.md:
+    last_write_checksum: sha1:1a729085beb781b09a560e5ba421ecc24d4a6d16
+  docs/sdks/tail/README.md:
+    last_write_checksum: sha1:4cf62122f6f03284f73edfe6bd2b4d1e824daf2c
+  docs/sdks/types/README.md:
+    last_write_checksum: sha1:b0f05a87c99dc42045d6332c2e8d9cec807ca79c
+  global.json:
+    last_write_checksum: sha1:3ae61d8b19757b811358a5f8f3026b5c6f58af3a
+  src/Speakeasy/OpenAPI/Bar/Bike.cs:
+    last_write_checksum: sha1:c10723dec373e5e7e1a91415aba0ff23aae26d0b
+  src/Speakeasy/OpenAPI/Bar/Car.cs:
+    last_write_checksum: sha1:c9d040cfa1fcf915e573152fdc87388a4338c946
+  src/Speakeasy/OpenAPI/Bar/Pet.cs:
+    last_write_checksum: sha1:5479918b38e5a939936840fa349b73fc0181f97f
+  src/Speakeasy/OpenAPI/Bar/PetOwner.cs:
+    last_write_checksum: sha1:80a68e08f74c60db561d5cfa1bd24eb48ec55484
+  src/Speakeasy/OpenAPI/Bar/PetStatus.cs:
+    last_write_checksum: sha1:dd1e0297674997270370b75b4a08ba2ea2d8aedb
+  src/Speakeasy/OpenAPI/Bar/Vehicle.cs:
+    last_write_checksum: sha1:4ed5b6b1435097abb0744757c0fe1afdad9c8e99
+  src/Speakeasy/OpenAPI/Baz/Namespaced.cs:
+    last_write_checksum: sha1:6bacfcad44977ffecdb4d4251879874e70177b51
+  src/Speakeasy/OpenAPI/Baz/Pet.cs:
+    last_write_checksum: sha1:7c5ce7f8bc1cabb99d76a58935b6ade130277bc8
+  src/Speakeasy/OpenAPI/Conflicts.cs:
+    last_write_checksum: sha1:c75ba7405589e83ecb6c7f61e42b6739afa2f6b0
+  src/Speakeasy/OpenAPI/Empty.cs:
+    last_write_checksum: sha1:3c0503517f883aa09a7ec57e9b340930d3e6491b
+  src/Speakeasy/OpenAPI/Foo/Address.cs:
+    last_write_checksum: sha1:03e96e47937e5cddee754ef915b84771738d5f20
+  src/Speakeasy/OpenAPI/Foo/Animal.cs:
+    last_write_checksum: sha1:603a990cfbd911d9dade7ead569cb8d832259c05
+  src/Speakeasy/OpenAPI/Foo/Cat.cs:
+    last_write_checksum: sha1:c33e627d192bce64641288d9cf36bb83b48d7b53
+  src/Speakeasy/OpenAPI/Foo/CatAnimalType.cs:
+    last_write_checksum: sha1:f56890439aa40398eb5b1496862d199b84e4feda
+  src/Speakeasy/OpenAPI/Foo/Department.cs:
+    last_write_checksum: sha1:075e921e66f72c235197c2ae2fe2dbf36fb0bb19
+  src/Speakeasy/OpenAPI/Foo/Dog.cs:
+    last_write_checksum: sha1:406affb560b7517458ad4ff060cb53d5376a51bc
+  src/Speakeasy/OpenAPI/Foo/DogAnimalType.cs:
+    last_write_checksum: sha1:31f4fc061898aa1b0516dac5aa1489107c4b4def
+  src/Speakeasy/OpenAPI/Foo/Location.cs:
+    last_write_checksum: sha1:7db991316f7421586f972b5436c20230d729ad08
+  src/Speakeasy/OpenAPI/Foo/Organization.cs:
+    last_write_checksum: sha1:eb6afd776e46e731605aa731c50c4aa45950c312
+  src/Speakeasy/OpenAPI/Foo/Pet.cs:
+    last_write_checksum: sha1:5f455bdd8f6606756a61de1b504e9db6e2a455ee
+  src/Speakeasy/OpenAPI/Foo/PetOwner.cs:
+    last_write_checksum: sha1:8f4e76c19be4f7a5cc07018ec1ce5d702a8dbd56
+  src/Speakeasy/OpenAPI/Foo/PetSpecies.cs:
+    last_write_checksum: sha1:fee8c0aa521204095ea968e90de2eba3c0393848
+  src/Speakeasy/OpenAPI/Group.cs:
+    last_write_checksum: sha1:cbb966bcdfe9fa3c6128da4b24a54150b3255bb6
+  src/Speakeasy/OpenAPI/Hooks/ClientCredentials/ClientCredentials.cs:
+    last_write_checksum: sha1:9a0f01c6e6590c47b7ec4134249a51aaf1fbe764
+  src/Speakeasy/OpenAPI/Hooks/HookTypes.cs:
+    last_write_checksum: sha1:3c8b07f8f077cd95a34628b2684a68a4e386b0bf
+  src/Speakeasy/OpenAPI/Hooks/OAuth2Scopes.cs:
+    last_write_checksum: sha1:316d6afa23a52b0889d57b381f4d1a153ac4eb3c
+  src/Speakeasy/OpenAPI/Hooks/SDKHooks.cs:
+    last_write_checksum: sha1:0cf30d0bf3b9264197fa033502700aefd333e77a
+  src/Speakeasy/OpenAPI/Models/AllOfWithFactoredOutProperties.cs:
+    last_write_checksum: sha1:61cb1947d12037529a8e15ab0e04659bcafbfd49
+  src/Speakeasy/OpenAPI/Models/Aloof.cs:
+    last_write_checksum: sha1:e62cbd142c3e034343a4fa7d9ffcd20972170c6e
+  src/Speakeasy/OpenAPI/Models/Any.cs:
+    last_write_checksum: sha1:7ff8935464a33b4642af8c81f42bac813c9b3ac3
+  src/Speakeasy/OpenAPI/Models/ApprovalConfig.cs:
+    last_write_checksum: sha1:90afc40af97a51802ed11a5e56f7d0ed6e08e99e
+  src/Speakeasy/OpenAPI/Models/AssetImageBlock.cs:
+    last_write_checksum: sha1:2cbc1aeee573ac2cf3e74a6b8f3f4c3309e77e7c
+  src/Speakeasy/OpenAPI/Models/AssetNoteStep.cs:
+    last_write_checksum: sha1:343f8639d92bc8e08541e9600e2d19fca5dbff44
+  src/Speakeasy/OpenAPI/Models/AssetOutputStep.cs:
+    last_write_checksum: sha1:7958ca76d5587658825e686bc10291fe89a577d5
+  src/Speakeasy/OpenAPI/Models/AssetResult.cs:
+    last_write_checksum: sha1:8d28c01036bb882c9c5e976e30c8b81171532f8a
+  src/Speakeasy/OpenAPI/Models/AssetStatusStream.cs:
+    last_write_checksum: sha1:268104f00836ecc901fcdef612c8a4f62ced224f
+  src/Speakeasy/OpenAPI/Models/AssetStream.cs:
+    last_write_checksum: sha1:32b7087013ec305dc4e4cdd17095124b506679ab
+  src/Speakeasy/OpenAPI/Models/AssetTextBlock.cs:
+    last_write_checksum: sha1:332ffea490941700766ace7b65ab99267f07f0a5
+  src/Speakeasy/OpenAPI/Models/Attachment.cs:
+    last_write_checksum: sha1:f060b73cbb6dcfc8cad3a91c332130d8e6968678
+  src/Speakeasy/OpenAPI/Models/AuthResponse.cs:
+    last_write_checksum: sha1:6b53e2a09e4ee1e3f5204c865fcc6ed5eb12716a
+  src/Speakeasy/OpenAPI/Models/AuthSecurity.cs:
+    last_write_checksum: sha1:36ffcf6038740f5f7030261afff289103c3fa296
+  src/Speakeasy/OpenAPI/Models/BadRequestResponseException.cs:
+    last_write_checksum: sha1:f422418e837bf605b35b70fe040e8ab09323bf18
+  src/Speakeasy/OpenAPI/Models/BaseUser.cs:
+    last_write_checksum: sha1:4915ebfa1f1a9ad83b570d01e808d28324d50739
+  src/Speakeasy/OpenAPI/Models/BinaryAndStringUploadRequest.cs:
+    last_write_checksum: sha1:6a89c743b3cb5d534f0ec55e2357c8dd252929ca
+  src/Speakeasy/OpenAPI/Models/BinaryAndStringUploadResponse.cs:
+    last_write_checksum: sha1:4989fe16fb6e3a08f68d553664cafa92b3524450
+  src/Speakeasy/OpenAPI/Models/Boole.cs:
+    last_write_checksum: sha1:a5931be48c3cdc64711613d7258bb0b6603178c6
+  src/Speakeasy/OpenAPI/Models/ImageRecord.cs:
+    last_write_checksum: sha1:1398bb388fe7362cae39030946b75c9fc1543668
+  src/Speakeasy/OpenAPI/Models/ChatAgentRequest.cs:
+    last_write_checksum: sha1:7d342cecff7595fda0ac92fe077a1d7596f43975
+  src/Speakeasy/OpenAPI/Models/ChatModelRequest.cs:
+    last_write_checksum: sha1:360a41220e2eced5d7141581331dfb342c8a96f3
+  src/Speakeasy/OpenAPI/Models/ChatRequest.cs:
+    last_write_checksum: sha1:ba72cd0a58e5e4f29d700efcfe4127c383f9d3fd
+  src/Speakeasy/OpenAPI/Models/ChatResponse.cs:
+    last_write_checksum: sha1:87ab1b8df5f303a6a439873ddc234e8faafedd93
+  src/Speakeasy/OpenAPI/Models/ChatResponseBody.cs:
+    last_write_checksum: sha1:dc76ba55ca2c9c3057869e19bcd4c0fd90ce7e88
+  src/Speakeasy/OpenAPI/Models/ChatStream.cs:
+    last_write_checksum: sha1:598815f54a5062c442dfa317cdc9de413bf9aa4b
+  src/Speakeasy/OpenAPI/Models/Circle.cs:
+    last_write_checksum: sha1:b8ceff44f1acbfb106cfb77997c613bbcc55c7f9
+  src/Speakeasy/OpenAPI/Models/CircularUnion.cs:
+    last_write_checksum: sha1:fc76f11f6427010c1a1e14249d4eca82b17e976c
+  src/Speakeasy/OpenAPI/Models/ClientError.cs:
+    last_write_checksum: sha1:0c0407ea986711197ac317f43a1875c563de36e6
+  src/Speakeasy/OpenAPI/Models/Color.cs:
+    last_write_checksum: sha1:d1833fe5b87378b2e18eabfb2cd25b3a05bc8542
+  src/Speakeasy/OpenAPI/Models/Content.cs:
+    last_write_checksum: sha1:7fa08ad19c7aff1ea131ccf50a1ea22303f6fe3c
+  src/Speakeasy/OpenAPI/Models/CreateNamespaceConflictResponse.cs:
+    last_write_checksum: sha1:2d5067981c7e5f54924f7de6938fbb471fb7cf27
+  src/Speakeasy/OpenAPI/Models/CreateSingleNamespaceFooPetResponse.cs:
+    last_write_checksum: sha1:2351ae43218b10327506acb76076f1117159deec
+  src/Speakeasy/OpenAPI/Models/CreateUserResponse.cs:
+    last_write_checksum: sha1:9ad42fb2876bae5343fa1ff8389a7097868f633d
+  src/Speakeasy/OpenAPI/Models/CreateWithUnionRequest.cs:
+    last_write_checksum: sha1:ed86c469cb0bcb80fbe4edd216ed25cda630ccfb
+  src/Speakeasy/OpenAPI/Models/CreateWithUnionResponse.cs:
+    last_write_checksum: sha1:76b805817624f3947169314a97072e0f79ca2233
+  src/Speakeasy/OpenAPI/Models/CreateWithUnionResponseBody.cs:
+    last_write_checksum: sha1:32b26213f9e2e7d707f0cbb8eac29664c129e788
+  src/Speakeasy/OpenAPI/Models/Data.cs:
+    last_write_checksum: sha1:3e65ef9bc02729fa4c38200b9a3905fc948797d0
+  src/Speakeasy/OpenAPI/Models/DeleteUserRequest.cs:
+    last_write_checksum: sha1:6f4a0fa054cb58dd1eda67a996b3c6347f798988
+  src/Speakeasy/OpenAPI/Models/DeleteUserResponse.cs:
+    last_write_checksum: sha1:3790222fae108cba3f130f5357c354519bb6e593
+  src/Speakeasy/OpenAPI/Models/Deprecated1Response.cs:
+    last_write_checksum: sha1:a7f08c451337b99456500526ed19b5eccd35adf5
+  src/Speakeasy/OpenAPI/Models/Detail.cs:
+    last_write_checksum: sha1:828ded236041c79b91e6e3fe0c2ed8825444f0d5
+  src/Speakeasy/OpenAPI/Models/DetailUnion.cs:
+    last_write_checksum: sha1:4b1cc34516cd36bfaa4f6795babab583c735b89a
+  src/Speakeasy/OpenAPI/Models/DisriminatedUnionWithOneMember.cs:
+    last_write_checksum: sha1:1876857587eb5ce45f74b31908733ec0e3231736
+  src/Speakeasy/OpenAPI/Models/Emoji.cs:
+    last_write_checksum: sha1:91afd598c05e7250be56f2ee2af61280e7a08fbf
+  src/Speakeasy/OpenAPI/Models/Enum.cs:
+    last_write_checksum: sha1:2df7033baa981ac1a90dfc12ae0f133dbd3998bb
+  src/Speakeasy/OpenAPI/Models/ErrorType1.cs:
+    last_write_checksum: sha1:5aad815df394ae84ccbf76f02c68b358c996f43e
+  src/Speakeasy/OpenAPI/Models/ErrorType2.cs:
+    last_write_checksum: sha1:3055bb4755d0a3571f02cf2a48c2c835d794d3d8
+  src/Speakeasy/OpenAPI/Models/ErrorType2Error.cs:
+    last_write_checksum: sha1:b01cfce7c86b7138eec793ff204dd644aaa51a88
+  src/Speakeasy/OpenAPI/Models/ErrorsError.cs:
+    last_write_checksum: sha1:c16b5bfa53643d53634210c37d1179ee883b571a
+  src/Speakeasy/OpenAPI/Models/Escalation.cs:
+    last_write_checksum: sha1:592d9ff6e5da1531caa83862588aa88ec645a7e3
+  src/Speakeasy/OpenAPI/Models/ExhaustiveObject.cs:
+    last_write_checksum: sha1:acb73bcec3bf92a6296afa6541ce544fc081a301
+  src/Speakeasy/OpenAPI/Models/FailedResponseException.cs:
+    last_write_checksum: sha1:15b77cae02859f637e81a7562b572ff656eeefe5
+  src/Speakeasy/OpenAPI/Models/File.cs:
+    last_write_checksum: sha1:16293eeb8012d174ae7da928eadfa59e2d164860
+  src/Speakeasy/OpenAPI/Models/Gender.cs:
+    last_write_checksum: sha1:a33b6eb5f195acb067cddb01eaf56b8ce642842a
+  src/Speakeasy/OpenAPI/Models/GetAssetRequest.cs:
+    last_write_checksum: sha1:a08ad30876b25f871cf273eff8917f799d377ba4
+  src/Speakeasy/OpenAPI/Models/GetAssetResponse.cs:
+    last_write_checksum: sha1:1c95e0be973642228e4d86b08fec17dc3f8b2621
+  src/Speakeasy/OpenAPI/Models/GetBinaryDefaultResponseResponse.cs:
+    last_write_checksum: sha1:139204e8fd3ea460f9ce9b3730fed3f362d9f29c
+  src/Speakeasy/OpenAPI/Models/GetDuplicateExportCollisionResponse.cs:
+    last_write_checksum: sha1:66b5ad87161e5f187b875708e5cb54f10ef52689
+  src/Speakeasy/OpenAPI/Models/GetDuplicateExportCollisionResponseBody.cs:
+    last_write_checksum: sha1:6d96125b3d2b3ac3a36d1e5771da680ca835eaaf
+  src/Speakeasy/OpenAPI/Models/GetEmptyObjectErrorResponse.cs:
+    last_write_checksum: sha1:6971e97649b2ce21ea416ec645a2951c8b18e26a
+  src/Speakeasy/OpenAPI/Models/GetEmptyObjectErrorResponseBody.cs:
+    last_write_checksum: sha1:5b86a7e41602b0782fc3c3642ecf239014f7c2b3
+  src/Speakeasy/OpenAPI/Models/GetErrorInUnionInternalServerError.cs:
+    last_write_checksum: sha1:581667b7b3b1539ac0c278ea73632ea4f91ec481
+  src/Speakeasy/OpenAPI/Models/GetErrorInUnionResponse.cs:
+    last_write_checksum: sha1:ccde9c368a3d699a483fc5e752fd89c06c0ec440
+  src/Speakeasy/OpenAPI/Models/GetErrorOnlyExampleResponse.cs:
+    last_write_checksum: sha1:575541b85e0f6e1e71a201ccc47124be965f9fab
+  src/Speakeasy/OpenAPI/Models/GetErrorOnlyExampleResponseBody.cs:
+    last_write_checksum: sha1:496ad82c63bdb865c1439a31ff4af37ef96215aa
+  src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestRequest.cs:
+    last_write_checksum: sha1:9ddaa8eba7157bb06b61b094e209ca7375c4dac5
+  src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestRequestBody.cs:
+    last_write_checksum: sha1:537cc867f1c4ef5c03d08f2daf55a86791f728ca
+  src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestResponse.cs:
+    last_write_checksum: sha1:eb59cadfce7f67e1ac79b60925f3b73e4e5e383d
+  src/Speakeasy/OpenAPI/Models/GetNamedPrimitiveUnionResponse.cs:
+    last_write_checksum: sha1:1695f3db1e4e3094ae4bf3909acbcc53c8bfad17
+  src/Speakeasy/OpenAPI/Models/GetNamespaceAnimalResponse.cs:
+    last_write_checksum: sha1:74c0f291140f51d8a318d8620b4ecc26c691d8b5
+  src/Speakeasy/OpenAPI/Models/GetNamespaceConflictResponse.cs:
+    last_write_checksum: sha1:36b9ae1d75e6a9595572398554a3506b7302c656
+  src/Speakeasy/OpenAPI/Models/GetNamespaceOrganizationResponse.cs:
+    last_write_checksum: sha1:edc40d710cba34949c703ee6fd01e91abb78d98b
+  src/Speakeasy/OpenAPI/Models/GetNamespaceTypesResponse.cs:
+    last_write_checksum: sha1:56841817a31e922fe2986448e2faf5678bb34530
+  src/Speakeasy/OpenAPI/Models/GetNamespaceVehicleResponse.cs:
+    last_write_checksum: sha1:1c718f1cb3aa365c059b6b0059756a412355ad11
+  src/Speakeasy/OpenAPI/Models/GetNestedIntegerStringResponse.cs:
+    last_write_checksum: sha1:9a7bc55ba722dbf32deb074357535eac6a2c19b7
+  src/Speakeasy/OpenAPI/Models/GetPetOwnersResponse.cs:
+    last_write_checksum: sha1:dfb66f295d5a58717b6211b966a1a34a7e607356
+  src/Speakeasy/OpenAPI/Models/GetPetOwnersResponseBody.cs:
+    last_write_checksum: sha1:eaa76e7525e5e3b0c80d7b2ecb25679811207b2b
+  src/Speakeasy/OpenAPI/Models/GetPolymorphismResponse.cs:
+    last_write_checksum: sha1:8f4cc6f7c37e9b01d9e6e1c81399c81a2703b3eb
+  src/Speakeasy/OpenAPI/Models/GetPolymorphismResponseBody.cs:
+    last_write_checksum: sha1:69bfe2aa4ddd005ecaab5e51a0b4927564a7a311
+  src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayRequest.cs:
+    last_write_checksum: sha1:5a07ae2786ebf7a0e0285515fda2715725e8f0f3
+  src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayResponse.cs:
+    last_write_checksum: sha1:f936bc934ec9bd39af86eff28b9c4179a118c5eb
+  src/Speakeasy/OpenAPI/Models/GetSingleNamespaceBarPetResponse.cs:
+    last_write_checksum: sha1:c6953c5a11131c57edd7c47acc9a62b40369bf60
+  src/Speakeasy/OpenAPI/Models/GetSingleNamespaceFooPetResponse.cs:
+    last_write_checksum: sha1:1adb3c359f29e9800fb02df5251181e962df06c5
+  src/Speakeasy/OpenAPI/Models/GetTripleNamespaceConflictResponse.cs:
+    last_write_checksum: sha1:6cf99a7e92f9e129bd9cfcaaa193bfe6d6156fb4
+  src/Speakeasy/OpenAPI/Models/GetUnionErrorsInternalServerError.cs:
+    last_write_checksum: sha1:fe1f227769f5d02e5712756d71dd6cb23e54b6f4
+  src/Speakeasy/OpenAPI/Models/GetUnionErrorsRequest.cs:
+    last_write_checksum: sha1:8b26b775a51e47c3138905f742faf8e6b794e32c
+  src/Speakeasy/OpenAPI/Models/GetUnionErrorsResponse.cs:
+    last_write_checksum: sha1:5c96f6324fe8d668fa23cb591ac0a44aaa0aa1cb
+  src/Speakeasy/OpenAPI/Models/GetUnionErrorsResponseBody.cs:
+    last_write_checksum: sha1:d87b2aab0eb7bf7e9b621f6f898e2a4c761d0d62
+  src/Speakeasy/OpenAPI/Models/GetUserRequest.cs:
+    last_write_checksum: sha1:cc75cbe74eb921140a414b39c64a0ebaef841980
+  src/Speakeasy/OpenAPI/Models/GetUserResponse.cs:
+    last_write_checksum: sha1:a9c84f136fe70570bf39b91f5582221a9886421b
+  src/Speakeasy/OpenAPI/Models/HTTPMetadata.cs:
+    last_write_checksum: sha1:2eefb7b7f7d5fee558009d3ea37389b6770bb715
+  src/Speakeasy/OpenAPI/Models/HeroWidth.cs:
+    last_write_checksum: sha1:8818401aeb311e94c4031e3c43857c4028d47384
+  src/Speakeasy/OpenAPI/Models/Icon.cs:
+    last_write_checksum: sha1:881840a63cf9eb041f8d5453c45b5117ce733922
+  src/Speakeasy/OpenAPI/Models/Int32Enum.cs:
+    last_write_checksum: sha1:91b79360c0af7f17c0f6aa47c83dad1c8938d18c
+  src/Speakeasy/OpenAPI/Models/IntEnum.cs:
+    last_write_checksum: sha1:fa8b2c99ed7199b74dcc4ca2aacb4b0cde9e359e
+  src/Speakeasy/OpenAPI/Models/IntegerMapFormat.cs:
+    last_write_checksum: sha1:e707df329745718db43cf46716aeb2e675d12d1d
+  src/Speakeasy/OpenAPI/Models/IntegerPartialMapFormat.cs:
+    last_write_checksum: sha1:6e780532c97ba4f5b0c6aba111f63bebc26d399d
+  src/Speakeasy/OpenAPI/Models/ListTest1Request.cs:
+    last_write_checksum: sha1:3754ff5baa863c37a9b291c030b3ee2678486545
+  src/Speakeasy/OpenAPI/Models/ListTest1Response.cs:
+    last_write_checksum: sha1:729c19b7a90b3ca6012fc2d7f9d38722576814b0
+  src/Speakeasy/OpenAPI/Models/ListTest1ResponseBody.cs:
+    last_write_checksum: sha1:f8a373462b033750157cf573cc4a6b1f8bdb0544
+  src/Speakeasy/OpenAPI/Models/LoginResponse.cs:
+    last_write_checksum: sha1:438bc352f59d25a357cda7ecb09d70302cf9f712
+  src/Speakeasy/OpenAPI/Models/LoginResponseBody.cs:
+    last_write_checksum: sha1:7e275411595147460fef42d31429ddad892e416d
+  src/Speakeasy/OpenAPI/Models/TextRecord.cs:
+    last_write_checksum: sha1:82e1231c4e38eda4152ff1775d7c8c1b5825113c
+  src/Speakeasy/OpenAPI/Models/MCPPolicy.cs:
+    last_write_checksum: sha1:6197af49fb06149db1b4b3b4e7948642d97130dc
+  src/Speakeasy/OpenAPI/Models/Metadata.cs:
+    last_write_checksum: sha1:7d4f14838da31318f5abea7a63a2cf0f29b7b0ac
+  src/Speakeasy/OpenAPI/Models/MetadataAny.cs:
+    last_write_checksum: sha1:b82ca99914704137cdc7a679dfa4d9ddb20dbf1d
+  src/Speakeasy/OpenAPI/Models/MyApiKey.cs:
+    last_write_checksum: sha1:25ae4d39ac463cbfbd4658b895154cd37f2e30f3
+  src/Speakeasy/OpenAPI/Models/MyObject.cs:
+    last_write_checksum: sha1:9a2c798d4a20ed0ee349b3babc3bcb7aef23f650
+  src/Speakeasy/OpenAPI/Models/NamespaceConflictTest.cs:
+    last_write_checksum: sha1:3aeda926ebb8796f7b66614f19f1a0ac892a878f
+  src/Speakeasy/OpenAPI/Models/NamespaceTypesTest.cs:
+    last_write_checksum: sha1:3a012dc7b7392a0449b543ddd4d425533faf66b8
+  src/Speakeasy/OpenAPI/Models/NestedGroupOpResponse.cs:
+    last_write_checksum: sha1:3cbb1da32af9dbe821f4622d31eba5beec646fc1
+  src/Speakeasy/OpenAPI/Models/NullableIntEnum.cs:
+    last_write_checksum: sha1:8707385b580ea479fe09eb769ca15f027d32b92e
+  src/Speakeasy/OpenAPI/Models/NullableStringEnum.cs:
+    last_write_checksum: sha1:cd80176e5df78d41d261df06d5c2722af0aa2a68
+  src/Speakeasy/OpenAPI/Models/ObjWithRenamedProperties.cs:
+    last_write_checksum: sha1:c257bee375d8309c650f7709aa18f5f0ac79b3ca
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutProperties.cs:
+    last_write_checksum: sha1:31cf06ee092ae0731bc40c928481468c0825dc5a
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesAny.cs:
+    last_write_checksum: sha1:ecde4777dcda89a94bacfcde2a0e03b0a0d4555b
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesExhaustiveObject.cs:
+    last_write_checksum: sha1:c62ebc604efc2a2768d036132a14c6024a71c63a
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesHeroWidth.cs:
+    last_write_checksum: sha1:cd470fce9178c2ac92759dc48b58893109cec029
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesIcon.cs:
+    last_write_checksum: sha1:775f586ed374f9a77965d1b3089e31b3800829b5
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesInt32Enum.cs:
+    last_write_checksum: sha1:445a1d229cd2e5545bc2384b4c12ce2fb2b3249e
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesIntEnum.cs:
+    last_write_checksum: sha1:0ec0d7cdd6a899f783aa8f5b8b7b1dac5b9c738b
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesNullableIntEnum.cs:
+    last_write_checksum: sha1:5d61ba45baa374e2cfef2cc1d62d33012605228e
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesNullableStringEnum.cs:
+    last_write_checksum: sha1:84d048564641a16da785d03f1951f5d36ab14921
+  src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesSimpleObject.cs:
+    last_write_checksum: sha1:0e3ad6d89b4d164b4cf88eada9403e3b7d5c9a59
+  src/Speakeasy/OpenAPI/Models/OneOfWithUnionDescription.cs:
+    last_write_checksum: sha1:f391faa6a10d7289469ccf90e290e7c3dd5c20ac
+  src/Speakeasy/OpenAPI/Models/OperationWithLeadingAndTrailingUnderscoresRequest.cs:
+    last_write_checksum: sha1:0593ef9e15f293a110aea596895a9e44b6601ed8
+  src/Speakeasy/OpenAPI/Models/OperationWithLeadingAndTrailingUnderscoresResponse.cs:
+    last_write_checksum: sha1:b09f5420e8c26f6da6a3ab8d94b2506eddf25ccf
+  src/Speakeasy/OpenAPI/Models/OutputModality.cs:
+    last_write_checksum: sha1:ba4850009556c57ecc3a283d6e6adecf59afd819
+  src/Speakeasy/OpenAPI/Models/ParenthesesInPathAllowedRequest.cs:
+    last_write_checksum: sha1:25353e7ce82c651148b800dfab33d81f329c1be1
+  src/Speakeasy/OpenAPI/Models/ParenthesesInPathAllowedResponse.cs:
+    last_write_checksum: sha1:b347b402aea318aa9d98b458f21b59dee1a5d0ff
+  src/Speakeasy/OpenAPI/Models/PaymentCreatedRequest.cs:
+    last_write_checksum: sha1:48bb52cd5f794ffd72a74d260a3202cf133f4ba8
+  src/Speakeasy/OpenAPI/Models/PaymentCreatedResponse.cs:
+    last_write_checksum: sha1:8211a5fe0ce782490ac178efba3b9a35b7ef771f
+  src/Speakeasy/OpenAPI/Models/PaymentCreatedType.cs:
+    last_write_checksum: sha1:233eb8cf15d8b8de09d7274716cb7bd6838c7264
+  src/Speakeasy/OpenAPI/Models/PaymentUpdatedRequest.cs:
+    last_write_checksum: sha1:836187570461ca8b694c4670b1432266b0262a15
+  src/Speakeasy/OpenAPI/Models/PaymentUpdatedResponse.cs:
+    last_write_checksum: sha1:d92c932fd32ecfed09b25714027ef3322cbe264b
+  src/Speakeasy/OpenAPI/Models/PaymentUpdatedType.cs:
+    last_write_checksum: sha1:f3e1ff0aa7e109e8bcca6a62765b54fe26923167
+  src/Speakeasy/OpenAPI/Models/PolicyStep.cs:
+    last_write_checksum: sha1:996dc1eff19e4133be14ae685d434223c7c92755
+  src/Speakeasy/OpenAPI/Models/PostFileRequest.cs:
+    last_write_checksum: sha1:3b8257ce2a6c1cb24c214296b3a2b46ec07a2713
+  src/Speakeasy/OpenAPI/Models/PostFileResponse.cs:
+    last_write_checksum: sha1:ce199d9e0a5674497f244318a00753dc7860fe7b
+  src/Speakeasy/OpenAPI/Models/PostFileWithEncodingFile.cs:
+    last_write_checksum: sha1:5a73f92cdac95eed85b72c992fbb5f0fbfc06cca
+  src/Speakeasy/OpenAPI/Models/PostFileWithEncodingMetadata.cs:
+    last_write_checksum: sha1:8b31fdb612e94c9d920357efa9b116ce748f9ce3
+  src/Speakeasy/OpenAPI/Models/PostFileWithEncodingRequest.cs:
+    last_write_checksum: sha1:c13a18c7184f3d5d4a788e98988833a8a490e4f7
+  src/Speakeasy/OpenAPI/Models/PostFileWithEncodingResponse.cs:
+    last_write_checksum: sha1:16c642d33e68c9bb67ac4c47d73d03e1b74a4054
+  src/Speakeasy/OpenAPI/Models/PostFileWithEncodingResponseBody.cs:
+    last_write_checksum: sha1:cc27c4143a625f564d336733702fbe943e787509
+  src/Speakeasy/OpenAPI/Models/PostTest2Request.cs:
+    last_write_checksum: sha1:cb09b8569244cbded3939d9cb24c74ddd5853bd1
+  src/Speakeasy/OpenAPI/Models/PostTest2Response.cs:
+    last_write_checksum: sha1:42dd998c7adbbb0ccc0733fff095d8723a0d647b
+  src/Speakeasy/OpenAPI/Models/PutNamespaceConflictResponse.cs:
+    last_write_checksum: sha1:48aa4154eeb499c221258e16618f7ff84a0a35c8
+  src/Speakeasy/OpenAPI/Models/QueryParam2.cs:
+    last_write_checksum: sha1:3e8efb61387801f9024ad098bddde3e509fb79fb
+  src/Speakeasy/OpenAPI/Models/Rectangle.cs:
+    last_write_checksum: sha1:36f5533b0833d1d163e9504546bfa7cb380ee9b1
+  src/Speakeasy/OpenAPI/Models/RecursiveFormField.cs:
+    last_write_checksum: sha1:677da8c3ef4450947925eb058b7be24acf46d174
+  src/Speakeasy/OpenAPI/Models/RecursiveFormFieldArray.cs:
+    last_write_checksum: sha1:6b403c9c7e2d3a53f40d9dd1720771f40facc613
+  src/Speakeasy/OpenAPI/Models/RecursiveFormFieldNumber.cs:
+    last_write_checksum: sha1:06e90fec8e00d12f4a1f027dd3d67d3090a1ab38
+  src/Speakeasy/OpenAPI/Models/RecursiveFormFieldText.cs:
+    last_write_checksum: sha1:7954e25a39935b90281bc7ac19891ba38e1357be
+  src/Speakeasy/OpenAPI/Models/RenderAssetRequest.cs:
+    last_write_checksum: sha1:81968eee55c8fca35f6a28128f02f6ccc5cbae2c
+  src/Speakeasy/OpenAPI/Models/RenderAssetResponse.cs:
+    last_write_checksum: sha1:3a329d5c49bf1536dbfa447eb0f9c4706e7da94c
+  src/Speakeasy/OpenAPI/Models/RequestTimeoutError.cs:
+    last_write_checksum: sha1:24493978dcb512cb50e0027aa1b17501bdc52d86
+  src/Speakeasy/OpenAPI/Models/ResponseValidationException.cs:
+    last_write_checksum: sha1:dae477219de939f4d741be6f59c4e58efb0f4dd7
+  src/Speakeasy/OpenAPI/Models/ResultArray.cs:
+    last_write_checksum: sha1:f0598d16b43efb2a173b38e14b1dd920e422c69b
+  src/Speakeasy/OpenAPI/Models/ReviewTask.cs:
+    last_write_checksum: sha1:6c2d3552b40e24a2dc568d1746c6494c29b0d801
+  src/Speakeasy/OpenAPI/Models/VariantRecord.cs:
+    last_write_checksum: sha1:6e5cea447bb7a6c65c76304434694ef419065ec1
+  src/Speakeasy/OpenAPI/Models/RootGroupOpResponse.cs:
+    last_write_checksum: sha1:bf2713c3af82cd42ad066170cef2b78a2413e690
+  src/Speakeasy/OpenAPI/Models/SDKBaseException.cs:
+    last_write_checksum: sha1:1f04d77b4a1fa4fd829ba94c0661225e3592a4f8
+  src/Speakeasy/OpenAPI/Models/SDKException.cs:
+    last_write_checksum: sha1:1e88e912d13d7eaaee4a465905f8782780670703
+  src/Speakeasy/OpenAPI/Models/Security.cs:
+    last_write_checksum: sha1:5bc9a312af5e08303d0d4b0f6e101abb662550be
+  src/Speakeasy/OpenAPI/Models/SecurityOption2.cs:
+    last_write_checksum: sha1:e8bc525bb16d977f98218c9f2a77c64d1459b8e7
+  src/Speakeasy/OpenAPI/Models/SecurityOption3.cs:
+    last_write_checksum: sha1:b886b57c6b51b0343b6b90ff538bdfd5dec704d3
+  src/Speakeasy/OpenAPI/Models/SecurityOption4.cs:
+    last_write_checksum: sha1:da8a79683b8564507d26d25f99dd0e8030e03633
+  src/Speakeasy/OpenAPI/Models/SecurityOption5.cs:
+    last_write_checksum: sha1:250de6124dc1889334a933d7dbf397f65d7e02b2
+  src/Speakeasy/OpenAPI/Models/SecurityOption6.cs:
+    last_write_checksum: sha1:3f3493d966a1ce9cc022fc081d88f2a1351e9093
+  src/Speakeasy/OpenAPI/Models/Shape.cs:
+    last_write_checksum: sha1:6259ab14bb7539fdfa50989a2a4b3e98d1bb69d2
+  src/Speakeasy/OpenAPI/Models/ShapeRequest.cs:
+    last_write_checksum: sha1:aedd37730e5db044759672c4ddeeecc4c7934bd6
+  src/Speakeasy/OpenAPI/Models/SimpleAllOf.cs:
+    last_write_checksum: sha1:146c83c191e7febdf870fa02da01d8e7ef56e05f
+  src/Speakeasy/OpenAPI/Models/SimpleObject.cs:
+    last_write_checksum: sha1:6625f0710ef16009b009ccc7409cab1c1997d5a5
+  src/Speakeasy/OpenAPI/Models/SomeUnion.cs:
+    last_write_checksum: sha1:42083250f61f383a1f6d022cc28ad44f3516b743
+  src/Speakeasy/OpenAPI/Models/Status.cs:
+    last_write_checksum: sha1:f46e97e8268f73b0442d98fd0ca7191ca9bef582
+  src/Speakeasy/OpenAPI/Models/Step.cs:
+    last_write_checksum: sha1:c9386aeb4a1797db71853f82cacef5f593caeaf1
+  src/Speakeasy/OpenAPI/Models/StringArrayFormat.cs:
+    last_write_checksum: sha1:3bce863a3dfcc51003b03265ed146bc245a731e9
+  src/Speakeasy/OpenAPI/Models/StringMapFormat.cs:
+    last_write_checksum: sha1:6ff9e8ae035f04df7781bd4eda571aa44e7bc549
+  src/Speakeasy/OpenAPI/Models/StringPartialMapFormat.cs:
+    last_write_checksum: sha1:0d3f85d7e2c272c57c7bc3523af78faae69a55e1
+  src/Speakeasy/OpenAPI/Models/SubGroupOpResponse.cs:
+    last_write_checksum: sha1:61cf535dfc10943bcd1d9138a8a3c9dfbfabf47b
+  src/Speakeasy/OpenAPI/Models/Tag.cs:
+    last_write_checksum: sha1:bb3375cda64d009cc7c05b0d1bf5f8342433c9ec
+  src/Speakeasy/OpenAPI/Models/TaggedError1.cs:
+    last_write_checksum: sha1:711019391802aded3372a556a5be4732341ab2bf
+  src/Speakeasy/OpenAPI/Models/TaggedError2.cs:
+    last_write_checksum: sha1:0cf3a5a76a4d2de0f96596005f0b6c37dfa7e814
+  src/Speakeasy/OpenAPI/Models/TaggedError2Error.cs:
+    last_write_checksum: sha1:a6425a5ebd454190421bcd0f7edb7621faaa9688
+  src/Speakeasy/OpenAPI/Models/TaskResponse.cs:
+    last_write_checksum: sha1:3e4162ec3dbd0ddd13de81a6ffcfaea46978c929
+  src/Speakeasy/OpenAPI/Models/TemplateBracesTest.cs:
+    last_write_checksum: sha1:7ef98230d39815982d4bcad8d32dfe4fe7f42a93
+  src/Speakeasy/OpenAPI/Models/Test2Request.cs:
+    last_write_checksum: sha1:edd06edfe5612fb98d2684cf4c72b991362f5367
+  src/Speakeasy/OpenAPI/Models/Test2Response.cs:
+    last_write_checksum: sha1:b846987f1a3affe9659111c70ee3c1cb323ba484
+  src/Speakeasy/OpenAPI/Models/Test2ResponseException.cs:
+    last_write_checksum: sha1:95af0fb4c0ab8afc7740ab4c700c0c398e3769e7
+  src/Speakeasy/OpenAPI/Models/TestEndpointRequest.cs:
+    last_write_checksum: sha1:2b74916c155fbb2d3934fb5c7020e425668934df
+  src/Speakeasy/OpenAPI/Models/TestEndpointRequestBody.cs:
+    last_write_checksum: sha1:a2985260d7adbb665fd7360094568c09a3fed169
+  src/Speakeasy/OpenAPI/Models/TestEndpointResponse.cs:
+    last_write_checksum: sha1:974b7a3f0ec8523076a85393a253cadac6622c4a
+  src/Speakeasy/OpenAPI/Models/TestEnumFormatsRequest.cs:
+    last_write_checksum: sha1:92b7078bd4b4983dbcf48838c7ff03b6eadd4b31
+  src/Speakeasy/OpenAPI/Models/TestEnumFormatsResponse.cs:
+    last_write_checksum: sha1:4b931a5a7d92e92a57e08faa0bf575bec276296f
+  src/Speakeasy/OpenAPI/Models/TestEnumFormatsResponseBody.cs:
+    last_write_checksum: sha1:e6053a7f9639c7f917f031d3f87b3c28a67e265e
+  src/Speakeasy/OpenAPI/Models/TripleNamespaceConflictTest.cs:
+    last_write_checksum: sha1:49b4eedc84064cbb06e133d633291d1e695cafa3
+  src/Speakeasy/OpenAPI/Models/Type.cs:
+    last_write_checksum: sha1:7a3957a7d9f8509c2a0c5304341ee16309f544b2
+  src/Speakeasy/OpenAPI/Models/UpdateUserRequest.cs:
+    last_write_checksum: sha1:4c83127b97dff1c439767d86f5d4c9f87726798f
+  src/Speakeasy/OpenAPI/Models/UpdateUserResponse.cs:
+    last_write_checksum: sha1:81935aa4f2c90fc57a897bea66b5e014de5efc74
+  src/Speakeasy/OpenAPI/Models/UrlValidationStressTestResponse.cs:
+    last_write_checksum: sha1:d06a26abe58810c0d68ac536bb9ee36d342ce5b5
+  src/Speakeasy/OpenAPI/Models/User.cs:
+    last_write_checksum: sha1:326e11aa8078e37183b3afd3c25b4a349ecf9c8f
+  src/Speakeasy/OpenAPI/Models/UserPassAuth.cs:
+    last_write_checksum: sha1:9c6cc3a29371455d38a5fb159c3705f5efc9c2c4
+  src/Speakeasy/OpenAPI/Models/ValidateResponse.cs:
+    last_write_checksum: sha1:c03fcef1b6e381d9e7bef98c75de904daf9e3cfb
+  src/Speakeasy/OpenAPI/Models/ValidateResponseBody.cs:
+    last_write_checksum: sha1:05af8d70d4d813828bf504f5f84581d885894ecc
+  src/Speakeasy/OpenAPI/NamespaceTests.cs:
+    last_write_checksum: sha1:7e2aaee5b76ff1439cef9b4d3bb5e389d0d46916
+  src/Speakeasy/OpenAPI/Obsolete.cs:
+    last_write_checksum: sha1:d41395715f4408b40866a2b68770265819759a98
+  src/Speakeasy/OpenAPI/SDK.cs:
+    last_write_checksum: sha1:cf5ab129ce44c2570cdd0d6ac253a1c8c66c911a
+  src/Speakeasy/OpenAPI/SDKConfig.cs:
+    last_write_checksum: sha1:3773a28e55af09936d058f1e74f5766932871730
+  src/Speakeasy/OpenAPI/SingleBar.cs:
+    last_write_checksum: sha1:3b92b07389517e7f9adce7ca23137fed0f6f7f6c
+  src/Speakeasy/OpenAPI/SingleFoo.cs:
+    last_write_checksum: sha1:5edbadf24c6bedf1ea82df8912759f58a3365f3b
+  src/Speakeasy/OpenAPI/Speakeasy.OpenAPI.csproj:
+    last_write_checksum: sha1:d1d4614549bd333d3154235f360be81ac471def0
+  src/Speakeasy/OpenAPI/SubGroup.cs:
+    last_write_checksum: sha1:576ed938aa37b9f66e407513ba20b9e1940c7e37
+  src/Speakeasy/OpenAPI/Tag1.cs:
+    last_write_checksum: sha1:57b8e92b87af3bc6b568361b941e0fe53d431d39
+  src/Speakeasy/OpenAPI/Tag2.cs:
+    last_write_checksum: sha1:1c555d107ed07b09a857d5d5d4350933266569f0
+  src/Speakeasy/OpenAPI/Tag3.cs:
+    last_write_checksum: sha1:292b26940bc2d88f8e246757c7d83f3ee0148e61
+  src/Speakeasy/OpenAPI/Tail.cs:
+    last_write_checksum: sha1:04fa796a237e1fa76b6545346f7fbe3bf7b6ff86
+  src/Speakeasy/OpenAPI/TestGroup.cs:
+    last_write_checksum: sha1:de2e61646b4941697a10e490392cb1b590dcacfb
+  src/Speakeasy/OpenAPI/Types.cs:
+    last_write_checksum: sha1:a48bd103f704d7c88838d4d79f169d2cf569eb4b
+  src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
+    last_write_checksum: sha1:0132e56c9b583ca2b8ec632c9ef924600dd0cd68
+  src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:
+    last_write_checksum: sha1:62c143c14a8ca2a1df4731614a09b993e085923f
+  src/Speakeasy/OpenAPI/Utils/Constants.cs:
+    last_write_checksum: sha1:7056650ca71c76ed7e37706ab3299b763ae107a7
+  src/Speakeasy/OpenAPI/Utils/DecimalStrConverter.cs:
+    last_write_checksum: sha1:ef04dc2cbb42fab20d2acf4266c5b31b5a4d44af
+  src/Speakeasy/OpenAPI/Utils/EnumConverter.cs:
+    last_write_checksum: sha1:545bc3d2b6a05b7accdde8acfdef84caf98cf9bd
+  src/Speakeasy/OpenAPI/Utils/FlexibleObjectDeserializer.cs:
+    last_write_checksum: sha1:ce664c132784f326ba67e0828235dc8d5ceb481f
+  src/Speakeasy/OpenAPI/Utils/HeaderSerializer.cs:
+    last_write_checksum: sha1:b9abbc1db338948cfd718b967c0bf92baf4009ce
+  src/Speakeasy/OpenAPI/Utils/IOpenEnum.cs:
+    last_write_checksum: sha1:b366ce0ba139c7f17c4395081fb51bb4ba47f1dd
+  src/Speakeasy/OpenAPI/Utils/IOpenUnion.cs:
+    last_write_checksum: sha1:5ddd2c6fd22fdbe2d28833e41b010c9f76414602
+  src/Speakeasy/OpenAPI/Utils/IsoDateTimeSerializer.cs:
+    last_write_checksum: sha1:f49490ca4e273797c5f308908b6a0858758906b0
+  src/Speakeasy/OpenAPI/Utils/OpenEnumConverter.cs:
+    last_write_checksum: sha1:b8a93e434652e0b256abe2c394bd161a47eef437
+  src/Speakeasy/OpenAPI/Utils/OptionalNullable.cs:
+    last_write_checksum: sha1:e38e13563996304b9e6c857f7fe07d3c2924b4be
+  src/Speakeasy/OpenAPI/Utils/OptionalNullableJsonConverter.cs:
+    last_write_checksum: sha1:bf8eec6e762302070ff3a32d58ebc04347c8ed79
+  src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs:
+    last_write_checksum: sha1:4f68b905a9c9caee72cafe309fb8f991b9e18a7b
+  src/Speakeasy/OpenAPI/Utils/ResponseBodyDeserializer.cs:
+    last_write_checksum: sha1:d466d0e2124070f8010d396be9fa10dd9a7fb9d0
+  src/Speakeasy/OpenAPI/Utils/Retries/BackoffStrategy.cs:
+    last_write_checksum: sha1:1cc25eb8427b20a80dadcf8a53062a3a70860fd4
+  src/Speakeasy/OpenAPI/Utils/Retries/Retries.cs:
+    last_write_checksum: sha1:467976defcfb79b88d3b076239851140cf21ca52
+  src/Speakeasy/OpenAPI/Utils/Retries/RetryConfig.cs:
+    last_write_checksum: sha1:4afb7fc4df134b83c54b44586b8a7ef8feae66ac
+  src/Speakeasy/OpenAPI/Utils/SecurityMetadata.cs:
+    last_write_checksum: sha1:7fbacdefc695e2d6193cd50c56f2cbff043dc6b8
+  src/Speakeasy/OpenAPI/Utils/SpeakeasyHttpClient.cs:
+    last_write_checksum: sha1:6f545a5fd73f32bd4a4abe06b9552b4d487c3758
+  src/Speakeasy/OpenAPI/Utils/SpeakeasyMetadata.cs:
+    last_write_checksum: sha1:e85a1be39ab88a6265476bd9d690cc2cc183f7cb
+  src/Speakeasy/OpenAPI/Utils/Sse/EventStream.cs:
+    last_write_checksum: sha1:4f7182eadcedd7debd5e27b900e212c333931200
+  src/Speakeasy/OpenAPI/Utils/Sse/SseEvent.cs:
+    last_write_checksum: sha1:6d9d3631df01cd198293ae132607e9632e6d9880
+  src/Speakeasy/OpenAPI/Utils/Sse/SseParseException.cs:
+    last_write_checksum: sha1:add4a957cbe1e6e27f1b0c40c16d37560043a85e
+  src/Speakeasy/OpenAPI/Utils/Sse/SseStreamExtensions.cs:
+    last_write_checksum: sha1:9617bdc532d64b43aa5ae8bb540ab0b7b35f16e6
+  src/Speakeasy/OpenAPI/Utils/Sse/SseStreamParser.cs:
+    last_write_checksum: sha1:27421c001316dd7ce921f5a666c31cca827bcdde
+  src/Speakeasy/OpenAPI/Utils/URLBuilder.cs:
+    last_write_checksum: sha1:27aa6dd3713a24f20a7737dfb966c3c673529cb5
+  src/Speakeasy/OpenAPI/Utils/UnionDeserializer.cs:
+    last_write_checksum: sha1:9ddf50cc9aee44e22210ad6a12b6001f997487b7
+  src/Speakeasy/OpenAPI/Utils/Utilities.cs:
+    last_write_checksum: sha1:a6ce9c13d3755f2c3053e241c1b90e08cfa677c5
+examples:
+  _operation_with_leading_and_trailing_underscores_:
+    "":
+      parameters:
+        query:
+          queryParam1: "renamed"
+    speakeasy-default-operation-with-leading-and-trailing-underscores:
+      parameters:
+        query:
+          queryParam1: "renamed"
+  postFile:
+    speakeasy-default-post-file:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/octet-stream: "0x8578F1BEE5"
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+        5XX:
+          application/json: {"error": "some example error", "code": 2}
+  getPolymorphism:
+    speakeasy-default-get-polymorphism:
+      responses:
+        "200":
+          application/json: {"oneOfWithUnionDescription": {"str": "example"}, "oneOfWithFactoredOutProperties": {"str": "example", "anExtraProperty": "example"}, "simpleAllOf": {"str": "example", "bool": true}, "allOfWithFactoredOutProperties": {"anOverridingProperty": "example", "anotherProperty": "example", "anExtraProperty": "example"}}
+  getUnionErrors:
+    "":
+      parameters:
+        query:
+          page: 12
+      responses:
+        "200":
+          application/json:
+            "pages": ["<value 1>", "<value 2>"]
+        "404":
+          application/json:
+            "error": "some example error"
+            "code": 2
+        "500":
+          application/json:
+            "error":
+              "message": "<value>"
+        4XX:
+          application/json:
+            "tag": "tag1"
+            "error": "<value>"
+            "message": "<value>"
+    speakeasy-default-get-union-errors:
+      parameters:
+        query:
+          page: 12
+      responses:
+        "200":
+          application/json: {"pages": ["<value 1>", "<value 2>"]}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+        "500":
+          application/json: {"code": "rate_limit_exceeded", "error": "<value>", "message": 1001}
+        4XX:
+          application/json: {"tag": "tag1", "error": "<value>", "message": "<value>"}
+  getRequestBodyFlattenedAway: {}
+  getFullyFlattenedRequest:
+    namedExampleThatIsntMatchedAcrossDifferentExamples:
+      parameters:
+        query:
+          lang: "en"
+      requestBody:
+        application/json: {"name": "<value>"}
+    speakeasy-default-get-fully-flattened-request:
+      parameters:
+        query:
+          lang: "<value>"
+      requestBody:
+        application/json: {"name": "<value>"}
+  testEndpoint:
+    speakeasy-default-test-endpoint:
+      parameters:
+        path:
+          testName: "<value>"
+      requestBody:
+        application/json: {"test": "<value>"}
+  createUser:
+    speakeasy-default-create-user:
+      requestBody:
+        application/json:
+          "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+          "email": "Aglae92@gmail.com"
+          "gender": "other"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Virginie47@gmail.com"
+            "gender": "other"
+    request-only:
+      requestBody:
+        application/json: {"email": "request-only@example.com"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Aglae92@gmail.com", "gender": "other"}
+    paired-example:
+      requestBody:
+        application/json: {"email": "paired@example.com", "first_name": "John"}
+      responses:
+        "200":
+          application/json: {"id": "user-paired", "email": "paired@example.com", "first_name": "John"}
+    response-only:
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Virginie47@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "user-response", "email": "response-only@example.com"}
+  getUser:
+    speakeasy-default-get-user:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Cortney_Jakubowski@gmail.com"
+            "gender": "other"
+    success:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7dg", "email": "Trystan_Crooks@hotmail.com"}
+  updateUser:
+    speakeasy-default-update-user:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Joanny.Feeney@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Zackary25@yahoo.com", "gender": "other"}
+  deleteUser:
+    speakeasy-default-delete-user:
+      parameters:
+        path:
+          id: "<id>"
+  login:
+    speakeasy-default-login:
+      responses:
+        "200":
+          application/json: {"token": "<value>"}
+  validate:
+    speakeasy-default-validate:
+      responses:
+        "200":
+          application/json: {}
+  getBinaryDefaultResponse:
+    speakeasy-default-get-binary-default-response:
+      responses:
+        default:
+          application/octet-stream: "0xf58AcDF799"
+  deprecated1: {}
+  listTest1:
+    speakeasy-default-list-test1:
+      parameters:
+        path:
+          page: 100
+        query:
+          queryParam1: "some example query param"
+          queryParam2: 1
+        header:
+          headerParam1: "some example header param"
+      responses:
+        "200":
+          application/json: {"resultArray": [], "totalCount": 100, "type": "First"}
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "500":
+          application/json: {"error": "some example error", "code": 2}
+  postTest2:
+    speakeasy-default-post-test2:
+      parameters:
+        query:
+          deprecatedQueryParam1: "some example query param"
+          deprecatedQueryParam2: "some example query param"
+      requestBody:
+        application/json: {"obj": {"str": "example", "bool": true, "int": 999999, "int32": 1, "num": 1.1, "float32": 8499.3, "enumProp": "First", "date": "2020-01-01", "dateTime": "2020-01-01T00:00:00Z", "anything": "<value>", "boolOpt": true, "intOptNull": 999999, "numOptNull": 1.1, "intEnum": 3, "int32Enum": 69, "bigint": 702830, "bigintStr": "12345678901234567890", "decimal": 3.141592653589, "decimalStr": "3858.6", "obj": {"str": "example"}, "map": {"key": {"str": "example"}}, "arr": [{"str": "example"}, {"str": "example"}], "any": {"str": "example"}, "type": "0", "nullableIntEnum": 3, "nullableStringEnum": "Second", "color": "green", "icon": "tick", "heroWidth": 480}, "type": "type1"}
+      responses:
+        "200":
+          multipart/form-data: "0x20D83Acf0f"
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+        "500":
+          application/json: {"test2": "some example response", "someConst": "someConstValue", "requiredNullableField": "test value"}
+  paymentCreated:
+    speakeasy-default-payment-created:
+      requestBody:
+        application/json:
+          "amount": "215.23"
+          "type": "payment.created"
+  paymentUpdated:
+    speakeasy-default-payment-updated:
+      requestBody:
+        application/json:
+          "amount": "257.04"
+          "type": "payment.updated"
+  testEnumFormats:
+    speakeasy-default-test-enum-formats:
+      requestBody:
+        application/json: {"stringArrayFormat": "pending_review", "stringMapFormat": "medium_priority", "stringPartialMapFormat": "draft_mode", "integerMapFormat": 200, "integerPartialMapFormat": 1}
+      responses:
+        "200":
+          application/json: {"message": "Enum formats processed successfully"}
+  binaryAndStringUpload:
+    speakeasy-default-binary-and-string-upload:
+      requestBody:
+        application/json: {"binary": "x-file: test.json", "string": "x-file: test.json"}
+  getErrorInUnion:
+    speakeasy-default-get-error-in-union:
+      responses:
+        "500":
+          application/json: {"tag": "tag1", "error": "<value>", "message": "<value>"}
+  chat:
+    speakeasy-default-chat:
+      requestBody:
+        application/json: {"model": "review-model", "prompt": "What is the largest city in the world?", "stream": false}
+      responses:
+        "200":
+          application/json: {}
+  postFileWithEncoding:
+    speakeasy-default-post-file-with-encoding:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/json: {"fileName": "example.file", "size": 905827}
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+  auth: {}
+  groupRoot: {}
+  groupTop: {}
+  groupBottom: {}
+  rootGroupOp: {}
+  subGroupOp: {}
+  nestedGroupOp: {}
+  getEmptyObjectError:
+    speakeasy-default-get-empty-object-error:
+      responses:
+        "200":
+          application/json: {"success": true}
+        "500":
+          application/json: {}
+  urlValidationStressTest: {}
+  bracesInPathAllowed:
+    speakeasy-default-braces-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+  parenthesesInPathAllowed:
+    speakeasy-default-parentheses-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+      responses:
+        "200":
+          application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+  getNestedIntegerString:
+    speakeasy-default-get-nested-integer-string:
+      responses:
+        "200":
+          application/json: {"task": {"id": "task-123", "name": "Review Task", "policy": {"policyId": "policy-456", "steps": [{"stepId": "step-1", "approval": {"approvers": ["user-1", "user-2"], "escalation": {"enabled": true, "expiration": "86400", "fallbackApprovers": ["admin-1"]}}}]}}}
+  getNamespaceConflict:
+    speakeasy-default-get-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}
+  createNamespaceConflict:
+    speakeasy-default-create-namespace-conflict:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getTripleNamespaceConflict:
+    speakeasy-default-get-triple-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}, "bazPet": {"petId": 789, "petName": "Rex", "adoptedAt": "2024-01-15T10:30:00Z"}}
+  getPetOwners:
+    speakeasy-default-get-pet-owners:
+      responses:
+        "200":
+          application/json: {"fooPetOwner": {"id": "owner-123", "name": "Jane Doe", "pets": [{"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}]}, "barPetOwner": {"ownerId": 456, "fullName": "Bob Smith", "pet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}}
+  getSingleNamespaceFooPet:
+    speakeasy-default-get-single-namespace-foo-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  createSingleNamespaceFooPet:
+    speakeasy-default-create-single-namespace-foo-pet:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "201":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  getSingleNamespaceBarPet:
+    speakeasy-default-get-single-namespace-bar-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getNamespaceTypes:
+    speakeasy-default-get-namespace-types:
+      responses:
+        "200":
+          application/json: {"fooSpecies": "cat", "barStatus": "available", "fooAnimal": {"animalType": "cat", "furLength": "short"}, "barVehicle": {"wheels": 4, "engineType": "V8"}, "fooOrg": {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}}
+  getNamespaceAnimal:
+    speakeasy-default-get-namespace-animal:
+      responses:
+        "200":
+          application/json: {"animalType": "dog", "breed": "Labrador"}
+  getNamespaceVehicle:
+    speakeasy-default-get-namespace-vehicle:
+      responses:
+        "200":
+          application/json: {"wheels": 2, "hasPedals": true}
+  getNamespaceOrganization:
+    speakeasy-default-get-namespace-organization:
+      responses:
+        "200":
+          application/json: {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}
+  getErrorOnlyExample:
+    notFoundExample:
+      responses:
+        "404":
+          application/json: {"error": "Resource not found", "code": 404}
+    speakeasy-default-get-error-only-example:
+      responses:
+        "200":
+          application/json: {"id": "<id>", "name": "<value>"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+  getNamedPrimitiveUnion:
+    speakeasy-default-get-named-primitive-union:
+      responses:
+        "200":
+          application/json: true
+  putNamespaceConflict: {}
+  getDuplicateExportCollision:
+    speakeasy-default-get-duplicate-export-collision:
+      responses:
+        "200":
+          application/json: {}
+        "408":
+          application/json: {}
+  createWithUnion:
+    speakeasy-default-create-with-union:
+      requestBody:
+        application/json: {"name": "<value>", "shape": {"type": "rectangle", "width": 3125.73, "height": 922.51}}
+      responses:
+        "200":
+          application/json: {}
+  paginationOffsetNullable:
+    speakeasy-default-pagination-offset-nullable:
+      parameters:
+        query:
+          offset: 488005
+          limit: 466255
+      responses:
+        "200":
+          application/json:
+            "resultArray": ["<value 1>", "<value 2>", "<value 3>"]
+  renderAsset:
+    speakeasy-default-render-asset:
+      requestBody:
+        application/json: {"prompt": "<value>"}
+      responses:
+        "200":
+          application/json: {}
+  getAsset:
+    speakeasy-default-get-asset:
+      parameters:
+        path:
+          id: "<id>"
+        query:
+          stream: true
+      responses:
+        "200":
+          application/json: {}
+examplesVersion: 1.0.2
+generatedTests:
+  testEndpoint: "2024-11-26T11:24:49+02:00"
+  getUser: "2024-11-26T11:24:49+02:00"
+  getFullyFlattenedRequest: "2024-11-26T11:24:49+02:00"
+  postTest2: "2025-06-23T16:09:32+10:00"
+  postFile: "2024-11-26T11:24:49+02:00"
+  getPolymorphism: "2024-11-26T11:24:49+02:00"
+  getUnionErrors: "2024-11-26T11:24:49+02:00"
+  getRequestBodyFlattenedAway: "2024-11-26T11:24:49+02:00"
+  chat: "2024-11-26T11:24:49+02:00"
+  getBinaryDefaultResponse: "2025-06-23T16:09:32+10:00"
+  deprecated1: "2024-11-26T11:24:49+02:00"
+  listTest1: "2024-11-26T11:24:49+02:00"
+  createUser: "2024-12-10T09:09:50+10:00"
+  updateUser: "2024-12-10T09:09:50+10:00"
+  deleteUser: "2024-12-10T09:09:50+10:00"
+  _operation_with_leading_and_trailing_underscores_: "2024-12-23T09:54:34-05:00"
+  login: "2025-02-21T14:14:27+10:00"
+  validate: "2025-02-21T14:14:27+10:00"
+  testEnumFormats: "2025-06-10T15:10:56+10:00"
+  binaryAndStringUpload: "2025-06-10T16:34:10+10:00"
+  getErrorInUnion: "2025-06-11T09:45:27+10:00"
+  getUser-success: "2025-06-23T16:09:32+10:00"
+  getNestedIntegerString: "2026-02-25T09:32:44+10:00"
+  getNamedPrimitiveUnion: "2026-02-25T09:32:44+10:00"
+  getEmptyObjectError: "2026-02-25T09:32:44+10:00"
+  parenthesesInPathAllowed: "2026-02-25T09:32:44+10:00"
+  getErrorOnlyExample: "2026-02-25T09:32:44+10:00"
+  postFileWithEncoding: "2026-02-25T09:32:44+10:00"
+  getNamespaceConflict: "2026-02-25T09:32:44+10:00"
+  createNamespaceConflict: "2026-02-25T09:32:44+10:00"
+  getTripleNamespaceConflict: "2026-02-25T09:32:44+10:00"
+  getPetOwners: "2026-02-25T09:32:44+10:00"
+  getSingleNamespaceFooPet: "2026-02-25T09:32:44+10:00"
+  createSingleNamespaceFooPet: "2026-02-25T09:32:44+10:00"
+  getSingleNamespaceBarPet: "2026-02-25T09:32:44+10:00"
+  getNamespaceTypes: "2026-02-25T09:32:44+10:00"
+  getNamespaceAnimal: "2026-02-25T09:32:44+10:00"
+  getNamespaceVehicle: "2026-02-25T09:32:44+10:00"
+  getNamespaceOrganization: "2026-02-25T09:32:44+10:00"
+  createUser-request-only: "2026-02-25T09:32:44+10:00"
+  createUser-paired-example: "2026-02-25T09:32:44+10:00"
+  createUser-response-only: "2026-02-25T09:32:44+10:00"
+  getDuplicateExportCollision: "2026-02-25T09:32:44+10:00"
+  createWithUnion: "2026-03-09T14:32:42+10:00"
+  paginationOffsetNullable: "2026-04-24T16:27:21+01:00"
+  renderAsset: "2026-08-17T13:45:08+01:00"
+generatedFiles:
+  - .gitattributes
+  - Speakeasy.OpenAPI.sln
+  - USAGE.md
+  - docs/Models/AllOfWithFactoredOutProperties.md
+  - docs/Models/Any.md
+  - docs/Models/Attachment.md
+  - docs/Models/AuthResponse.md
+  - docs/Models/AuthSecurity.md
+  - docs/Models/BadRequestResponseException.md
+  - docs/Models/BaseUser.md
+  - docs/Models/BinaryAndStringUploadRequest.md
+  - docs/Models/BinaryAndStringUploadResponse.md
+  - docs/Models/ChatRequest.md
+  - docs/Models/ChatResponse.md
+  - docs/Models/ChatResponseBody.md
+  - docs/Models/ChatStream.md
+  - docs/Models/CircularUnion.md
+  - docs/Models/ClientError.md
+  - docs/Models/Color.md
+  - docs/Models/CreateUserResponse.md
+  - docs/Models/Data.md
+  - docs/Models/DeleteUserRequest.md
+  - docs/Models/DeleteUserResponse.md
+  - docs/Models/Deprecated1Response.md
+  - docs/Models/Detail.md
+  - docs/Models/DetailUnion.md
+  - docs/Models/DisriminatedUnionWithOneMember.md
+  - docs/Models/Emoji.md
+  - docs/Models/Enum.md
+  - docs/Models/ErrorType1.md
+  - docs/Models/ErrorType2.md
+  - docs/Models/ErrorType2Error.md
+  - docs/Models/ErrorsError.md
+  - docs/Models/ExhaustiveObject.md
+  - docs/Models/File.md
+  - docs/Models/Gender.md
+  - docs/Models/GetBinaryDefaultResponseResponse.md
+  - docs/Models/GetErrorInUnionInternalServerError.md
+  - docs/Models/GetErrorInUnionResponse.md
+  - docs/Models/GetFullyFlattenedRequestRequest.md
+  - docs/Models/GetFullyFlattenedRequestRequestBody.md
+  - docs/Models/GetFullyFlattenedRequestResponse.md
+  - docs/Models/GetPolymorphismResponse.md
+  - docs/Models/GetPolymorphismResponseBody.md
+  - docs/Models/GetRequestBodyFlattenedAwayRequest.md
+  - docs/Models/GetRequestBodyFlattenedAwayResponse.md
+  - docs/Models/GetUnionErrorsInternalServerError.md
+  - docs/Models/GetUnionErrorsRequest.md
+  - docs/Models/GetUnionErrorsResponse.md
+  - docs/Models/GetUnionErrorsResponseBody.md
+  - docs/Models/GetUserRequest.md
+  - docs/Models/GetUserResponse.md
+  - docs/Models/HTTPMetadata.md
+  - docs/Models/HeroWidth.md
+  - docs/Models/Icon.md
+  - docs/Models/Int32Enum.md
+  - docs/Models/IntEnum.md
+  - docs/Models/IntegerMapFormat.md
+  - docs/Models/IntegerPartialMapFormat.md
+  - docs/Models/ListTest1Request.md
+  - docs/Models/ListTest1Response.md
+  - docs/Models/ListTest1ResponseBody.md
+  - docs/Models/LoginResponse.md
+  - docs/Models/LoginResponseBody.md
+  - docs/Models/Metadata.md
+  - docs/Models/NullableIntEnum.md
+  - docs/Models/NullableStringEnum.md
+  - docs/Models/OneOfWithFactoredOutProperties.md
+  - docs/Models/OneOfWithFactoredOutPropertiesAny.md
+  - docs/Models/OneOfWithFactoredOutPropertiesExhaustiveObject.md
+  - docs/Models/OneOfWithFactoredOutPropertiesHeroWidth.md
+  - docs/Models/OneOfWithFactoredOutPropertiesIcon.md
+  - docs/Models/OneOfWithFactoredOutPropertiesInt32Enum.md
+  - docs/Models/OneOfWithFactoredOutPropertiesIntEnum.md
+  - docs/Models/OneOfWithFactoredOutPropertiesNullableIntEnum.md
+  - docs/Models/OneOfWithFactoredOutPropertiesNullableStringEnum.md
+  - docs/Models/OneOfWithFactoredOutPropertiesSimpleObject.md
+  - docs/Models/OneOfWithUnionDescription.md
+  - docs/Models/OperationWithLeadingAndTrailingUnderscoresRequest.md
+  - docs/Models/OperationWithLeadingAndTrailingUnderscoresResponse.md
+  - docs/Models/PaymentCreatedRequest.md
+  - docs/Models/PaymentCreatedResponse.md
+  - docs/Models/PaymentCreatedType.md
+  - docs/Models/PaymentUpdatedRequest.md
+  - docs/Models/PaymentUpdatedResponse.md
+  - docs/Models/PaymentUpdatedType.md
+  - docs/Models/PostFileRequest.md
+  - docs/Models/PostFileResponse.md
+  - docs/Models/PostFileWithEncodingFile.md
+  - docs/Models/PostFileWithEncodingMetadata.md
+  - docs/Models/PostFileWithEncodingRequest.md
+  - docs/Models/PostFileWithEncodingResponse.md
+  - docs/Models/PostFileWithEncodingResponseBody.md
+  - docs/Models/PostTest2Request.md
+  - docs/Models/PostTest2Response.md
+  - docs/Models/QueryParam2.md
+  - docs/Models/ResultArray.md
+  - docs/Models/Security.md
+  - docs/Models/SecurityOption1.md
+  - docs/Models/SecurityOption2.md
+  - docs/Models/SecurityOption3.md
+  - docs/Models/SecurityOption4.md
+  - docs/Models/SecurityOption5.md
+  - docs/Models/SecurityOption6.md
+  - docs/Models/SecurityOption7.md
+  - docs/Models/SimpleAllOf.md
+  - docs/Models/SimpleObject.md
+  - docs/Models/StringArrayFormat.md
+  - docs/Models/StringMapFormat.md
+  - docs/Models/StringPartialMapFormat.md
+  - docs/Models/Tag.md
+  - docs/Models/TaggedError1.md
+  - docs/Models/TaggedError2.md
+  - docs/Models/TaggedError2Error.md
+  - docs/Models/Test2Request.md
+  - docs/Models/Test2Response.md
+  - docs/Models/Test2ResponseException.md
+  - docs/Models/TestEndpointRequest.md
+  - docs/Models/TestEndpointRequestBody.md
+  - docs/Models/TestEndpointResponse.md
+  - docs/Models/TestEnumFormatsRequest.md
+  - docs/Models/TestEnumFormatsResponse.md
+  - docs/Models/TestEnumFormatsResponseBody.md
+  - docs/Models/Type.md
+  - docs/Models/UpdateUserRequest.md
+  - docs/Models/UpdateUserResponse.md
+  - docs/Models/User.md
+  - docs/Models/ValidateResponse.md
+  - docs/Models/ValidateResponseBody.md
+  - docs/sdks/sdk/README.md
+  - docs/sdks/tag1/README.md
+  - docs/sdks/tag2/README.md
+  - docs/sdks/tag3/README.md
+  - global.json
+  - src/Speakeasy/OpenAPI/Hooks/ClientCredentials/ClientCredentials.cs
+  - src/Speakeasy/OpenAPI/Hooks/HookTypes.cs
+  - src/Speakeasy/OpenAPI/Hooks/OAuth2Scopes.cs
+  - src/Speakeasy/OpenAPI/Hooks/SDKHooks.cs
+  - src/Speakeasy/OpenAPI/Models/AllOfWithFactoredOutProperties.cs
+  - src/Speakeasy/OpenAPI/Models/Any.cs
+  - src/Speakeasy/OpenAPI/Models/Attachment.cs
+  - src/Speakeasy/OpenAPI/Models/AuthResponse.cs
+  - src/Speakeasy/OpenAPI/Models/AuthSecurity.cs
+  - src/Speakeasy/OpenAPI/Models/BadRequestResponseException.cs
+  - src/Speakeasy/OpenAPI/Models/BaseUser.cs
+  - src/Speakeasy/OpenAPI/Models/BinaryAndStringUploadRequest.cs
+  - src/Speakeasy/OpenAPI/Models/BinaryAndStringUploadResponse.cs
+  - src/Speakeasy/OpenAPI/Models/ChatRequest.cs
+  - src/Speakeasy/OpenAPI/Models/ChatResponse.cs
+  - src/Speakeasy/OpenAPI/Models/ChatResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/ChatStream.cs
+  - src/Speakeasy/OpenAPI/Models/CircularUnion.cs
+  - src/Speakeasy/OpenAPI/Models/ClientError.cs
+  - src/Speakeasy/OpenAPI/Models/Color.cs
+  - src/Speakeasy/OpenAPI/Models/CreateUserResponse.cs
+  - src/Speakeasy/OpenAPI/Models/Data.cs
+  - src/Speakeasy/OpenAPI/Models/DeleteUserRequest.cs
+  - src/Speakeasy/OpenAPI/Models/DeleteUserResponse.cs
+  - src/Speakeasy/OpenAPI/Models/Deprecated1Response.cs
+  - src/Speakeasy/OpenAPI/Models/Detail.cs
+  - src/Speakeasy/OpenAPI/Models/DetailUnion.cs
+  - src/Speakeasy/OpenAPI/Models/DisriminatedUnionWithOneMember.cs
+  - src/Speakeasy/OpenAPI/Models/Emoji.cs
+  - src/Speakeasy/OpenAPI/Models/Enum.cs
+  - src/Speakeasy/OpenAPI/Models/ErrorType1.cs
+  - src/Speakeasy/OpenAPI/Models/ErrorType2.cs
+  - src/Speakeasy/OpenAPI/Models/ErrorType2Error.cs
+  - src/Speakeasy/OpenAPI/Models/ErrorsError.cs
+  - src/Speakeasy/OpenAPI/Models/ExhaustiveObject.cs
+  - src/Speakeasy/OpenAPI/Models/File.cs
+  - src/Speakeasy/OpenAPI/Models/Gender.cs
+  - src/Speakeasy/OpenAPI/Models/GetBinaryDefaultResponseResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetErrorInUnionInternalServerError.cs
+  - src/Speakeasy/OpenAPI/Models/GetErrorInUnionResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestRequest.cs
+  - src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestRequestBody.cs
+  - src/Speakeasy/OpenAPI/Models/GetFullyFlattenedRequestResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetPolymorphismResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetPolymorphismResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayRequest.cs
+  - src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetUnionErrorsInternalServerError.cs
+  - src/Speakeasy/OpenAPI/Models/GetUnionErrorsRequest.cs
+  - src/Speakeasy/OpenAPI/Models/GetUnionErrorsResponse.cs
+  - src/Speakeasy/OpenAPI/Models/GetUnionErrorsResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/GetUserRequest.cs
+  - src/Speakeasy/OpenAPI/Models/GetUserResponse.cs
+  - src/Speakeasy/OpenAPI/Models/HTTPMetadata.cs
+  - src/Speakeasy/OpenAPI/Models/HeroWidth.cs
+  - src/Speakeasy/OpenAPI/Models/Icon.cs
+  - src/Speakeasy/OpenAPI/Models/Int32Enum.cs
+  - src/Speakeasy/OpenAPI/Models/IntEnum.cs
+  - src/Speakeasy/OpenAPI/Models/IntegerMapFormat.cs
+  - src/Speakeasy/OpenAPI/Models/IntegerPartialMapFormat.cs
+  - src/Speakeasy/OpenAPI/Models/ListTest1Request.cs
+  - src/Speakeasy/OpenAPI/Models/ListTest1Response.cs
+  - src/Speakeasy/OpenAPI/Models/ListTest1ResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/LoginResponse.cs
+  - src/Speakeasy/OpenAPI/Models/LoginResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/Metadata.cs
+  - src/Speakeasy/OpenAPI/Models/NullableIntEnum.cs
+  - src/Speakeasy/OpenAPI/Models/NullableStringEnum.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutProperties.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesAny.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesExhaustiveObject.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesHeroWidth.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesIcon.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesInt32Enum.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesIntEnum.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesNullableIntEnum.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesNullableStringEnum.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithFactoredOutPropertiesSimpleObject.cs
+  - src/Speakeasy/OpenAPI/Models/OneOfWithUnionDescription.cs
+  - src/Speakeasy/OpenAPI/Models/OperationWithLeadingAndTrailingUnderscoresRequest.cs
+  - src/Speakeasy/OpenAPI/Models/OperationWithLeadingAndTrailingUnderscoresResponse.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentCreatedRequest.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentCreatedResponse.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentCreatedType.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentUpdatedRequest.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentUpdatedResponse.cs
+  - src/Speakeasy/OpenAPI/Models/PaymentUpdatedType.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileRequest.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileResponse.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileWithEncodingFile.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileWithEncodingMetadata.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileWithEncodingRequest.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileWithEncodingResponse.cs
+  - src/Speakeasy/OpenAPI/Models/PostFileWithEncodingResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/PostTest2Request.cs
+  - src/Speakeasy/OpenAPI/Models/PostTest2Response.cs
+  - src/Speakeasy/OpenAPI/Models/QueryParam2.cs
+  - src/Speakeasy/OpenAPI/Models/ResponseValidationException.cs
+  - src/Speakeasy/OpenAPI/Models/ResultArray.cs
+  - src/Speakeasy/OpenAPI/Models/SDKBaseException.cs
+  - src/Speakeasy/OpenAPI/Models/SDKException.cs
+  - src/Speakeasy/OpenAPI/Models/Security.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption1.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption2.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption3.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption4.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption5.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption6.cs
+  - src/Speakeasy/OpenAPI/Models/SecurityOption7.cs
+  - src/Speakeasy/OpenAPI/Models/SimpleAllOf.cs
+  - src/Speakeasy/OpenAPI/Models/SimpleObject.cs
+  - src/Speakeasy/OpenAPI/Models/StringArrayFormat.cs
+  - src/Speakeasy/OpenAPI/Models/StringMapFormat.cs
+  - src/Speakeasy/OpenAPI/Models/StringPartialMapFormat.cs
+  - src/Speakeasy/OpenAPI/Models/Tag.cs
+  - src/Speakeasy/OpenAPI/Models/TaggedError1.cs
+  - src/Speakeasy/OpenAPI/Models/TaggedError2.cs
+  - src/Speakeasy/OpenAPI/Models/TaggedError2Error.cs
+  - src/Speakeasy/OpenAPI/Models/Test2Request.cs
+  - src/Speakeasy/OpenAPI/Models/Test2Response.cs
+  - src/Speakeasy/OpenAPI/Models/Test2ResponseException.cs
+  - src/Speakeasy/OpenAPI/Models/TestEndpointRequest.cs
+  - src/Speakeasy/OpenAPI/Models/TestEndpointRequestBody.cs
+  - src/Speakeasy/OpenAPI/Models/TestEndpointResponse.cs
+  - src/Speakeasy/OpenAPI/Models/TestEnumFormatsRequest.cs
+  - src/Speakeasy/OpenAPI/Models/TestEnumFormatsResponse.cs
+  - src/Speakeasy/OpenAPI/Models/TestEnumFormatsResponseBody.cs
+  - src/Speakeasy/OpenAPI/Models/Type.cs
+  - src/Speakeasy/OpenAPI/Models/UpdateUserRequest.cs
+  - src/Speakeasy/OpenAPI/Models/UpdateUserResponse.cs
+  - src/Speakeasy/OpenAPI/Models/User.cs
+  - src/Speakeasy/OpenAPI/Models/ValidateResponse.cs
+  - src/Speakeasy/OpenAPI/Models/ValidateResponseBody.cs
+  - src/Speakeasy/OpenAPI/SDK.cs
+  - src/Speakeasy/OpenAPI/SDKConfig.cs
+  - src/Speakeasy/OpenAPI/Speakeasy.OpenAPI.csproj
+  - src/Speakeasy/OpenAPI/Tag1.cs
+  - src/Speakeasy/OpenAPI/Tag2.cs
+  - src/Speakeasy/OpenAPI/Tag3.cs
+  - src/Speakeasy/OpenAPI/TestGroup.cs
+  - src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs
+  - src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs
+  - src/Speakeasy/OpenAPI/Utils/Constants.cs
+  - src/Speakeasy/OpenAPI/Utils/DecimalStrConverter.cs
+  - src/Speakeasy/OpenAPI/Utils/EnumConverter.cs
+  - src/Speakeasy/OpenAPI/Utils/FlexibleObjectDeserializer.cs
+  - src/Speakeasy/OpenAPI/Utils/HeaderSerializer.cs
+  - src/Speakeasy/OpenAPI/Utils/IsoDateTimeSerializer.cs
+  - src/Speakeasy/OpenAPI/Utils/OpenEnumConverter.cs
+  - src/Speakeasy/OpenAPI/Utils/RequestBodySerializer.cs
+  - src/Speakeasy/OpenAPI/Utils/ResponseBodyDeserializer.cs
+  - src/Speakeasy/OpenAPI/Utils/Retries/BackoffStrategy.cs
+  - src/Speakeasy/OpenAPI/Utils/Retries/Retries.cs
+  - src/Speakeasy/OpenAPI/Utils/Retries/RetryConfig.cs
+  - src/Speakeasy/OpenAPI/Utils/SecurityMetadata.cs
+  - src/Speakeasy/OpenAPI/Utils/SpeakeasyHttpClient.cs
+  - src/Speakeasy/OpenAPI/Utils/SpeakeasyMetadata.cs
+  - src/Speakeasy/OpenAPI/Utils/Sse/EventStream.cs
+  - src/Speakeasy/OpenAPI/Utils/Sse/SseEvent.cs
+  - src/Speakeasy/OpenAPI/Utils/Sse/SseParseException.cs
+  - src/Speakeasy/OpenAPI/Utils/Sse/SseStreamExtensions.cs
+  - src/Speakeasy/OpenAPI/Utils/Sse/SseStreamParser.cs
+  - src/Speakeasy/OpenAPI/Utils/URLBuilder.cs
+  - src/Speakeasy/OpenAPI/Utils/Utilities.cs

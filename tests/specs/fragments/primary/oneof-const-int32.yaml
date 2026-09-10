@@ -1,0 +1,43 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/oneof-const-int32:
+    get:
+      operationId: primaryOneOfConstInt32
+      responses:
+        "200":
+          description: A response that exercises oneOf const flattening for integer int32 enums.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordCreateRequest"
+components:
+  schemas:
+    RecordCategory:
+      x-speakeasy-include: true
+      type: integer
+      format: int32
+      oneOf:
+        - const: 10
+          title: DRAFT
+        - const: 20
+          title: PUBLISHED
+        - const: 30
+          title: ARCHIVED
+    RecordCreateRequest:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/RecordCategory"

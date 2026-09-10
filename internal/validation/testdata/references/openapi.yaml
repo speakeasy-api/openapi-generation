@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Test
+  version: 0.0.1
+tags:
+  - name: Test
+    description: Test
+servers:
+  - url: https://test.com
+security:
+  - api-key: []
+paths:
+  /test/org/{org}/team/{team}:
+    parameters:
+      - $ref: "./parameters.yaml#/test-org"
+    post:
+      summary: Test
+      description: Test
+      operationId: test-1
+      parameters:
+        - $ref: "./components.yaml#/components/parameters/test-team"
+      requestBody:
+        $ref: "./request-bodies.yaml#/test-request-body"
+      tags:
+        - Test
+      responses:
+        "200":
+          $ref: "./responses.yaml#/test-response"
+        "400":
+          description: Bad Request
+      callbacks:
+        test:
+          $ref: "./components.yaml#/components/callbacks/test-callback-2"
+        test-2:
+          $ref: "./components.yaml#/components/callbacks/test-callback-3"
+  /test2/org/{org}/team/{team}:
+    $ref: "./paths.yaml#/test-2"
+webhooks:
+  test:
+    $ref: "./webhooks.yaml#/test-webhook"
+  test2:
+    $ref: "./components.yaml#/components/pathItems/test-webhook"
+components:
+  securitySchemes:
+    api-key:
+      $ref: "./security.yaml#/api-key"

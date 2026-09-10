@@ -1,0 +1,109 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  useClassNamesForArrayFields: true
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+terraform:
+  version: 0.0.1
+  additionalActions: []
+  additionalDataSources: []
+  additionalDependencies:
+    github.com/google/uuid: v1.6.0
+    github.com/hashicorp/terraform-plugin-framework-timetypes: v0.5.0
+    github.com/hashicorp/terraform-plugin-testing: v1.16.0
+  additionalEphemeralResources: []
+  additionalFunctions: []
+  additionalListResources: []
+  additionalProviderAttributes:
+    httpHeaders: http_headers
+    tlsSkipVerify: tls_skip_verify
+  additionalResources: []
+  author: hashicorp
+  baseErrorName: SDKBaseError
+  debugLogging:
+    additionalSensitiveHttpHeaders:
+      - X-Custom-Key
+      - X-Custom-Secret
+  defaultErrorName: SDKError
+  enableCustomCodeRegions: true
+  enableOperationSecurity: true
+  enableOperationServers: true
+  enableTypeDeduplication: false
+  environmentVariables:
+    - env: TESTING_APP_ID
+      providerAttribute: app_id
+    - env: TESTING_BEARER_AUTH
+      providerAttribute: bearer_auth
+    - env: TESTING_CLIENT_ID
+      providerAttribute: client_id
+    - env: TESTING_CLIENT_SECRET
+      providerAttribute: client_secret
+    - env: TESTING_DEPRECATED_QUERY_PARAM_1
+      providerAttribute: deprecated_query_param1
+    - env: TESTING_DEPRECATED_QUERY_PARAM_2
+      providerAttribute: deprecated_query_param2
+    - env: TESTING_HOST_NAME
+      providerAttribute: host_name
+    - env: TESTING_LONE_QUERY_PARAM
+      providerAttribute: lone_query_param
+    - env: TESTING_MOBILE_AUTH
+      providerAttribute: mobile_auth
+    - env: TESTING_MY_API_KEY
+      providerAttribute: my_api_key
+    - env: TESTING_OAUTH2
+      providerAttribute: oauth2
+    - env: TESTING_PASSWORD
+      providerAttribute: password
+    - env: TESTING_PORT
+      providerAttribute: port
+    - env: TESTING_QUERY_PARAM_1
+      providerAttribute: query_param1
+    - env: TESTING_SECRET
+      providerAttribute: secret
+    - env: TESTING_SERVER_URL
+      providerAttribute: server_url
+    - env: TESTING_SUBDOMAIN
+      providerAttribute: subdomain
+    - env: TESTING_TOKEN_URL
+      providerAttribute: token_url
+    - env: TESTING_USERNAME
+      providerAttribute: username
+    - env: TESTING_SERVER_VERSION
+      providerAttribute: server_version
+  excludeEmptyObjectSchemas: true
+  forwardCompatibleEnumsByDefault: false
+  includeEmptyObjects: false
+  inferUnionDiscriminators: true
+  packageName: testing
+  preApplyUnionDiscriminators: true
+  providerTypeNameOverride: ""
+  respectRequiredFields: false
+  respectTitlesForPrimitiveUnionMembers: true
+  serverVariableProviderAttributes:
+    version: server_version
+  unionStrategy: populated-fields

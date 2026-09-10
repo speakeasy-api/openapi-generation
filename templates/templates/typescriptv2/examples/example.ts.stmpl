@@ -1,0 +1,20 @@
+{{- recurse 1 -}}
+{{- addUsageImport .Global.Config.PackageName (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+import dotenv from "dotenv";
+dotenv.config();
+/**
+ * Example usage of the {{.Global.Config.PackageName}} SDK
+ * 
+ * To run this example from the examples directory:
+ * npm run build && npx tsx {{sanitizeFuncName getMainUsageExampleOperation}}.example.ts
+ */
+
+{{genImports "UsageImports"}}
+
+{{templateString "usage/init.stmpl" .Local | trim }}
+
+async function main() {
+{{templateString "usage/call.stmpl" .Local | indentPresent 2}}
+}
+
+main().catch(console.error);

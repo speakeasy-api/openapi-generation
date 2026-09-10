@@ -1,0 +1,10 @@
+*.gem
+.rbenv-gemsets
+.DS_Store
+**/.speakeasy/temp/
+**/.speakeasy/logs/
+.speakeasy/reports
+bin/
+sorbet/rbi
+.env
+.env.local

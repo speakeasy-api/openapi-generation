@@ -1,0 +1,102 @@
+[settings]
+task.run_auto_install = false
+
+[env]
+_.file = ".env"
+
+[tasks.build]
+description = "Build the generator and validator"
+dir = "{{config_root}}"
+depends = ["build:generate", "build:validate"]
+
+[tasks."build:api-test-service"]
+description = "Build the local API test service"
+dir = "{{config_root}}"
+run = "mkdir -p ./bin && go build -C services/speakeasy-api-test-service -o ../../bin/api-test-service ./cmd/server/main.go"
+
+[tasks.lint]
+description = "Run the mutating repository lint and formatting suite"
+dir = "{{config_root}}"
+run = "bash ./scripts/lint.sh"
+
+[tasks.tidy]
+description = "Run go mod tidy in tracked root and supported module directories (writes files)"
+dir = "{{config_root}}"
+run = "bash ./scripts/tidy-modules.sh"
+
+[tasks."test:generator"]
+description = "Run the aggregate generator test suite"
+dir = "{{config_root}}"
+run = "bash ./scripts/test-generator.sh"
+
+[tasks."test:validate"]
+description = "Validate the bundled OpenAPI test specifications"
+dir = "{{config_root}}"
+depends = ["test:specs"]
+
+[tasks."test:validation"]
+description = "Run internal validation package tests"
+dir = "{{config_root}}"
+depends = ["test:validate"]
+run = "go test -v -json ./internal/validation 2>&1 | go tool gotestfmt -hide all"
+
+[tasks."test:readme"]
+description = "Check README section links and structure"
+dir = "{{config_root}}"
+run = "bash ./scripts/test-readme-sections.sh"
+
+[tasks."test:cleanup"]
+description = "Remove generated SDK test record files"
+dir = "{{config_root}}"
+run = "find ./testSDKs -type f -name 'test-*-record.txt' -delete"
+
+[tasks."test:review-terraform"]
+description = "Run Terraform review-provider tests"
+dir = "{{config_root}}"
+run = "bash ./scripts/test-review-terraform.sh"
+
+[tasks."services:boot"]
+description = "Build and start local SDK test services"
+dir = "{{config_root}}"
+depends = ["build:api-test-service"]
+run = "bash ./scripts/boot-services.sh"
+
+[tasks."services:wait"]
+description = "Wait for local SDK test services to become healthy"
+dir = "{{config_root}}"
+run = "bash ./scripts/wait-for-services.sh"
+
+[tasks."services:test-boot"]
+description = "Start and wait for local SDK test services"
+dir = "{{config_root}}"
+run = "bash ./scripts/test-boot-services.sh"
+
+[tasks."services:stop"]
+description = "Stop local SDK test services and remove their state"
+dir = "{{config_root}}"
+run = "bash ./scripts/stop-services.sh"
+
+[tasks."services:restart"]
+description = "Restart local SDK test services"
+dir = "{{config_root}}"
+run = "bash ./scripts/restart-services.sh"
+
+[tasks."changesets:apply"]
+description = "Apply pending changesets (writes version and changelog files)"
+dir = "{{config_root}}"
+run = "go run cmd/changeset/apply/main.go"
+
+[tasks.permissions]
+description = "Regenerate template permission metadata (writes files)"
+dir = "{{config_root}}"
+run = "bash ./scripts/update-permissions.sh"
+
+[tasks.features]
+description = "Regenerate feature metadata (writes files)"
+dir = "{{config_root}}"
+run = "go generate ./internal/features/..."
+
+[tasks.tracing]
+description = "Run Jaeger locally; press Ctrl+C to stop"
+dir = "{{config_root}}"
+run = "docker run --rm --name jaeger -p 16686:16686 -p 4317:4317 -p 4318:4318 -p 5778:5778 -p 9411:9411 jaegertracing/jaeger:2.3.0"

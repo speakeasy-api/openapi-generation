@@ -1,0 +1,30 @@
+{{templateString "usage/init.stmpl" .Local}}
+
+{{- if .Local.Operation}}
+  {{- if .Local.RenderFeature "errors" false}}
+  {{- addUsageImport (getScopeNamespace "errors" true)}}
+
+try
+{
+{{templateIndentedString "usage/call.stmpl" .Local 1}}
+}
+{{- $baseError := getBaseErrorClassName}}
+catch ({{$baseError}} ex)  // all SDK exceptions inherit from {{$baseError}}
+{
+{{- templateIndentedString "usage/errors.stmpl" .Local 1}}
+}
+{{- if .Global.Config.EnableCancellationToken}}
+catch (OperationCanceledException ex)
+{
+    // CancellationToken was cancelled
+}
+{{- end}}
+catch (System.Net.Http.HttpRequestException ex)
+{
+    // Check ex.InnerException for Network connectivity errors
+}
+  {{- else}}{{/* not handling errors */}}
+
+{{templateString "usage/call.stmpl" .Local}}
+  {{- end}}
+{{- end}}

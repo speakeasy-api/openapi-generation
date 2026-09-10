@@ -1,0 +1,385 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $sdk := .Local -}}
+{{- $serverMap := (sdkHasServerMap $sdk) -}}
+{{- $pkg := templatePackageName -}}
+{{- $fullClassName := (print $pkg "." $sdkClassName) -}}
+{{- $asyncSDKClassName := (print "Async" $sdkClassName) -}}
+{{- $hasOperations := gt (len .Local.Operations) 0 -}}
+{{- $okHttp := useOkHttp}}
+package {{$pkg}};
+{{genImports $fullClassName -}}
+// #region imports
+// #endregion imports{{"\n"}}{{- templateCommentsWithParagraphs .Local.Comments 0 2 }}public class {{$sdkClassName}}{{if $okHttp}} implements java.lang.AutoCloseable{{end}} {
+    private static final {{javaImportLocal "utils.Headers"}} _headers = {{javaImportLocal "utils.Headers"}}.EMPTY;
+{{if $serverMap}}
+    /**
+     * AvailableServers contains identifiers for the servers available to the SDK.
+     */
+    public enum AvailableServers {
+      {{- $index := 0 -}}
+      {{- $length := len .Local.Servers.Servers}}
+      {{- range .Local.Servers.Servers}}
+      {{- $index = (add $index 1)}}
+        {{- "\n"}}{{templateCommentsStripped .Comments (templateConstName .ID "") 2 }}
+        {{templateConstName .ID ""}}("{{ .ID }}"){{if ne $index $length}},{{else}};{{end}}
+      {{- end}}
+
+        private final {{javaImportString}} server;
+
+        AvailableServers({{javaImportString}} server) {
+            this.server = server;
+        }
+
+        public {{javaImportString}} server() {
+           return server;
+        }
+    }
+
+    /**
+     * SERVERS contains the list of server urls available to the SDK.
+     */
+    @{{javaImportSuppressWarnings}}("serial")
+    public static final {{javaImportMap}}<AvailableServers, {{javaImportString}}> SERVERS = new {{javaImportHashMap}}<>() {{"{ {"}}
+    {{- range .Local.Servers.Servers}}
+        put(AvailableServers.{{templateConstName .ID ""}}, "{{ .URL }}");
+    {{- end}}
+    {{"}};"}}
+{{- else if .Local.Servers}}{{"\n"}}
+    /**
+     * SERVERS contains the list of server urls available to the SDK.
+     */
+    public static final {{javaImportString}}[] SERVERS = {
+    {{- range .Local.Servers.Servers}}
+        {{- "\n"}}{{templateBlockComment .Comments nil 2 }}
+        "{{ .URL }}",
+    {{- end}}
+    };
+  {{- end}}
+
+    {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+        {{- "\n\n"}}{{templateCommentsStripped .Comments nil 1 }}
+    private final {{sanitizeClassName .Type.Name}} {{sanitizeFieldName .FieldName}};
+        {{- end}}
+    {{- end}}
+    {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+        {{- "\n\n"}}{{templateCommentsStripped .Comments nil 1}}
+    public {{sanitizeClassName .Type.Name}} {{sanitizeFieldName .FieldName}}() {
+        return {{sanitizeFieldName .FieldName}};
+    }
+        {{- end}}
+    {{- end}}
+
+    {{- if or $hasOperations $okHttp -}}
+      {{- $extended :=  and useHooks .Global.Config.SDKHooksConfigAccess -}}
+    private {{if not $extended}}final {{end}}SDKConfiguration sdkConfiguration;
+    {{- end}}
+
+    {{- if asyncEnabled}}
+    private final {{$asyncSDKClassName}} asyncSDK;
+    {{- end}}
+
+    /**
+     * The Builder class allows the configuration of a new instance of the SDK.
+     */
+    public static class Builder {
+
+        private final SDKConfiguration sdkConfiguration = new SDKConfiguration();
+        private String serverUrl;
+        private String server;
+        
+
+        private Builder() {
+        }
+
+        /**
+         * Allows the default HTTP client to be overridden with a custom implementation.
+         *
+         * @param client The HTTP client to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder client({{javaImportLocal "utils.HTTPClient"}} client) {
+            this.sdkConfiguration.setClient(client);
+            return this;
+        }
+        {{if .Local.Security}}
+        {{- $securityNamespace := getModelNamespace true "" .Local.Security.Type.OutputLocation "Security" -}}
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity }}
+        {{- $securityField := (first .Local.Security.Type.Fields) }}
+        {{- $securityFieldName := sanitizeFieldName $securityField.Name }}
+        {{- $builderName := templateSDKBuilderName $securityField.Name -}}
+        /**
+         * Configures the SDK security to use the provided secret.
+         *
+         * @param {{$builderName}} The secret to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder {{$builderName}}({{javaImportTypeMandatory $securityField.Type}} {{$securityFieldName}}) {
+            this.sdkConfiguration.setSecuritySource(SecuritySource.of({{$securityNamespace}}.builder()
+              .{{$securityFieldName}}({{$securityFieldName}})
+              .build()));
+        {{- else}}
+        /**
+         * Configures the SDK to use the provided security details.
+         *
+         * @param security The security details to use for all requests. Can be {@code null}.
+         * @return The builder instance.
+         */
+        public Builder security({{$securityNamespace}} security) {
+            this.sdkConfiguration.setSecuritySource(SecuritySource.of(security));
+        {{- end}}
+            return this;
+        }
+
+        /**
+         * Configures the SDK to use a custom security source.
+         *
+         * @param securitySource The security source to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder securitySource(SecuritySource securitySource) {
+            {{javaImportUtils}}.checkNotNull(securitySource, "securitySource");
+            this.sdkConfiguration.setSecuritySource(securitySource);
+            return this;
+        }
+        {{end}}
+        /**
+         * Overrides the default server URL.
+         *
+         * @param serverUrl The server URL to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder serverURL({{javaImportString}} serverUrl) {
+            this.serverUrl = serverUrl;
+            return this;
+        }
+
+        /**
+         * Overrides the default server URL with a templated URL populated with the provided parameters.
+         *
+         * @param serverUrl The server URL to use for all requests.
+         * @param params The parameters to use when templating the URL.
+         * @return The builder instance.
+         */
+        public Builder serverURL({{javaImportString}} serverUrl, {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}> params) {
+            this.serverUrl = {{javaImportLocal "utils.Utils"}}.templateUrl(serverUrl, params);
+            return this;
+        }
+        {{if .Local.Servers}}
+        {{- if $serverMap}}
+        /**
+         * Overrides the default server by name.
+         *
+         * @param server The server to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder server(AvailableServers server) {
+            this.server = server.server();
+            this.serverUrl = SERVERS.get(server);
+            return this;
+        }
+        {{else}}
+        /**
+         * Overrides the default server by index.
+         *
+         * @param serverIdx The server to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder serverIndex(int serverIdx) {
+            this.sdkConfiguration.setServerIdx(serverIdx);
+            this.serverUrl= SERVERS[serverIdx];
+            return this;
+        }
+        {{end}}
+        /**
+         * Overrides the default configuration for retries
+         *
+         * @param retryConfig The retry configuration to use for all requests.
+         * @return The builder instance.
+         */
+        public Builder retryConfig({{javaImportLocal "utils.RetryConfig"}} retryConfig) {
+            this.sdkConfiguration.setRetryConfig({{javaImportOptional}}.of(retryConfig));
+            return this;
+        }
+
+        /**
+         * Enables debug logging for HTTP requests and responses, including JSON body content.
+         * <p>
+         * Convenience method that calls {@link {{javaImportLocal "utils.HTTPClient"}}#enableDebugLogging(boolean)}.
+         * {@link {{javaImportLocal "utils.SpeakeasyHTTPClient"}}} honors this setting. If you are using a custom HTTP client,
+         * it is up to the custom client to honor this setting.
+         * </p>
+         *
+         * @param enabled Whether to enable debug logging.
+         * @return The builder instance.
+         */
+        public Builder enableHTTPDebugLogging(boolean enabled) {
+            this.sdkConfiguration.client().enableDebugLogging(enabled);
+            return this;
+        }
+        {{- "\n"}}{{range $variable := .Local.Servers.GetVariables}}
+        {{- if eq $variable.Type.Type "enum"}}
+        {{- indentLines (regexSplit "\n" (templateString "enum-inner.java.stmpl" $variable.Type) -1) 2}}
+        {{- end}}
+        /**
+         * Sets the {{$variable.Name}} variable for url substitution.
+         *
+         * @param {{sanitizeFieldName $variable.Name}} The value to set.
+         * @return The builder instance.
+         */
+        public Builder {{templateSDKBuilderName $variable.Name}}({{if eq $variable.Type.Type "enum"}}{{sanitizeClass $variable.Type $variable.Type.Scope true}}{{else}}{{javaImportTypeMandatory .Type}}{{end}} {{sanitizeFieldName $variable.Name}}) {
+            {{- if $serverMap}}
+            for ({{javaImport "java.util.Map.Entry"}}<{{javaImportString}}, {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}>> entry : this.sdkConfiguration.serverVariables().entrySet()) {
+                {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}> server = entry.getValue();
+
+                if (!server.containsKey("{{$variable.Name}}")) {
+                    continue;
+                }
+                server.put("{{$variable.Name}}", {{toStringSelect (sanitizeFieldName $variable.Name) .Type}});
+            }
+            {{- else}}
+            for ({{javaImportMap}}<{{javaImportString}}, {{javaImportString}}> server : this.sdkConfiguration.serverVariables()) {
+                if (!server.containsKey("{{$variable.Name}}")) {
+                    continue;
+                }
+                server.put("{{$variable.Name}}", {{toStringSelect (sanitizeFieldName $variable.Name) .Type}});
+            }
+            {{- end}}
+
+            return this;
+        }
+        {{- end}}{{end}}
+        {{- if $globals}}{{range .Local.Globals.Fields}}
+        {{- "\n"}}
+        /**
+         * Allows setting the {{sanitizeFieldName .Name}} parameter for all supported operations.
+         *
+         * @param {{sanitizeFieldName .Name}} The value to set.
+         * @return The builder instance.
+         */
+        public Builder {{templateSDKBuilderName .Name}}({{javaImportTypeMandatory .Type}} {{sanitizeFieldName .Name}}) {
+            this.sdkConfiguration.globals.putParam("{{getParameterType .}}", "{{getOperationParameterName .}}", {{sanitizeFieldName .Name}});
+            return this;
+        }
+        {{- end}}{{end}}
+        {{- if useHooks}}
+        // Visible for testing, may be accessed via reflection in tests
+        Builder _hooks({{$pkg}}.utils.Hooks hooks) {
+            sdkConfiguration.setHooks(hooks);  
+            return this;  
+        }
+        
+        // Visible for testing, may be accessed via reflection in tests
+        Builder _hooks({{javaImport "java.util.function.Consumer"}}<? super {{$pkg}}.utils.Hooks> consumer) {
+            consumer.accept(sdkConfiguration.hooks());
+            return this;    
+        }
+        {{- end}}
+
+        /**
+         * Builds a new instance of the SDK.
+         *
+         * @return The SDK instance.
+         */
+        public {{$sdkClassName}} build() {
+            {{- if .Local.Servers}}
+            if (serverUrl == null || {{if isJava8}}{{javaImport (print (templatePackageName) ".utils.Java8Compat")}}.isBlank(serverUrl){{else}}serverUrl.isBlank(){{end}}) {
+                {{- if $serverMap}}
+                serverUrl = SERVERS.get(AvailableServers.{{templateConstName .Local.Servers.Default ""}});
+                server = AvailableServers.{{templateConstName .Local.Servers.Default ""}}.server();
+                {{- else}}
+                serverUrl = SERVERS[0];
+                sdkConfiguration.setServerIdx(0);
+                {{- end}}
+            }
+            {{- end}}
+            sdkConfiguration.setServerUrl(serverUrl);
+            {{- if $serverMap}}
+            if (server != null) {
+                sdkConfiguration.setServer(server);
+            }
+            {{- end}}
+            return new {{$sdkClassName}}(sdkConfiguration);
+        }
+    }
+
+    /**
+     * Get a new instance of the SDK builder to configure a new instance of the SDK.
+     *
+     * @return The SDK builder instance.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    {{if springBootStarterEnabled}}public{{else}}private{{end}} {{$sdkClassName}}(SDKConfiguration sdkConfiguration) {
+        sdkConfiguration.initialize();
+        {{- if not $okHttp}}
+            {{- range .Local.SubSDKs}}
+                {{- if ne .Type.Name ""}}
+        this.{{sanitizeFieldName .FieldName}} = new {{sanitizeClassName .Type.Name}}(sdkConfiguration);
+                {{- end}}
+            {{- end}}
+        {{- end}}
+        {{- if useHooks}}
+            {{- if .Global.Config.SDKHooksConfigAccess}}
+        sdkConfiguration = sdkConfiguration.hooks().sdkInit(sdkConfiguration);
+            {{- else}}
+        {{javaImportLocal "utils.Hook.SdkInitData"}} data = sdkConfiguration.hooks().sdkInit(
+                new {{javaImportLocal "utils.Hook.SdkInitData"}}(
+                        sdkConfiguration.resolvedServerUrl(), 
+                        sdkConfiguration.client()));
+        sdkConfiguration.setServerUrl(data.baseUrl());
+        sdkConfiguration.setClient(data.client());
+            {{- end}}
+        {{- end}}
+        {{- if $okHttp}}
+            {{- range .Local.SubSDKs}}
+              {{- if ne .Type.Name ""}}
+        this.{{sanitizeFieldName .FieldName}} = new {{sanitizeClassName .Type.Name}}(sdkConfiguration);
+              {{- end}}
+            {{- end}}
+        {{- end}}
+        {{- if asyncEnabled}}
+        this.asyncSDK = new {{$asyncSDKClassName}}(this, sdkConfiguration);
+        {{- end}}
+        {{- if or $hasOperations $okHttp}}
+        this.sdkConfiguration = sdkConfiguration;
+        {{- end}}
+    }
+
+    {{- if asyncEnabled}}
+    {{- "\n"}}
+    /**
+     * Switches to the async SDK.
+     * 
+     * @return The async SDK
+     */
+    public {{$asyncSDKClassName}} {{sanitizeModeMethodName "async" $sdk}}() {
+        return asyncSDK;
+    }
+    {{- "\n"}}
+    {{- end}}
+    {{- if $okHttp}}
+
+    /**
+     * Releases the configured HTTP client's owned resources.
+     *
+     * @throws Exception if the configured client cannot be closed
+     */
+    @Override
+    public void close() throws Exception {
+        this.sdkConfiguration.closeClient();
+    }
+    {{- end}}
+    // #region sdk-class-body
+    // #endregion sdk-class-body
+    // #region class-body
+    // #endregion class-body
+  {{- range .Local.Operations}}
+{{templateString "method.java.stmpl" (dict "Operation" . "SDK" $sdk)}}
+  {{- end}}
+}

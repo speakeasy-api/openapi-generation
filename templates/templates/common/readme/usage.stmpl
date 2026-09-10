@@ -1,0 +1,5 @@
+{{ .Local.Header }}
+{{ if .Local.Description }}
+{{ .Local.Description }}
+{{ end }}
+{{ templateString "readme/snippet.stmpl" .Local.UsageContext }}

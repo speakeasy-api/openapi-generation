@@ -1,0 +1,32 @@
+---
+title: "ApprovalConfig"
+---
+
+Approval configuration with escalation
+
+## Example Usage
+
+```typescript
+import { ApprovalConfig } from "openapi";
+
+let value: ApprovalConfig = {
+  approvers: [
+    "user-1",
+    "user-2",
+  ],
+  escalation: {
+    enabled: true,
+    expiration: 86400,
+    fallbackApprovers: [
+      "admin-1",
+    ],
+  },
+};
+```
+
+## Fields
+
+| Field                                                           | Type                                                            | Required                                                        | Description                                                     | Example                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `approvers`                                                     | *string*[]                                                      | :heavy_check_mark:                                              | N/A                                                             | [<br/>"user-1",<br/>"user-2"<br/>]                              |
+| `escalation`                                                    | [models.Escalation](../models/escalation.mdx)                    | :heavy_check_mark:                                              | Escalation configuration with string-encoded integer expiration |                                                                 |

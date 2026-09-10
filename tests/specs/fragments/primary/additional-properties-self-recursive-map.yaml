@@ -1,0 +1,59 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/additional-properties-self-recursive-map:
+    get:
+      operationId: primaryAdditionalPropertiesSelfRecursiveMap
+      description: >-
+        Exercises a self-recursive additionalProperties map: an object schema
+        whose additionalProperties is a union with a member that references the
+        map schema again. The map container must resolve as a map of the union
+        value type at every usage site, including the recursion point, rather
+        than being truncated to an empty model.
+      responses:
+        "200":
+          description: A map of dynamic form fields whose object-kind values nest the same map recursively.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelfRecursiveFieldMap"
+components:
+  schemas:
+    SelfRecursiveFieldMap:
+      x-speakeasy-include: true
+      type: object
+      additionalProperties:
+        anyOf:
+          - $ref: "#/components/schemas/SelfRecursiveTextField"
+          - $ref: "#/components/schemas/SelfRecursiveObjectField"
+    SelfRecursiveTextField:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        value:
+          type: string
+    SelfRecursiveObjectField:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - object
+        properties:
+          $ref: "#/components/schemas/SelfRecursiveFieldMap"

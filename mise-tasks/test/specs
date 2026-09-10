@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Validate the bundled OpenAPI specifications"
+
+set -euo pipefail
+
+readonly ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd)"
+cd "$ROOT_DIR"
+
+go run cmd/validate/main.go -s ./tests/specs/uber.yaml
+go run cmd/validate/main.go -s ./tests/specs/ecommerce.yaml

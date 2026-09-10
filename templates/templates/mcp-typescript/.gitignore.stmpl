@@ -1,0 +1,22 @@
+**/.speakeasy/logs/
+**/.speakeasy/reports/
+**/.speakeasy/temp/
+/.eslintcache
+/.tsbuildinfo
+/bin
+/esm
+/node_modules
+bun.lock
+.DS_Store
+{{- if .Global.Config.CloudflareEnabled }}
+.dev.vars
+.wrangler/
+{{- end }}
+{{- if .Global.Config.GramEnabled }}
+# Gram deployment artifacts
+gram.deploy.json
+dist/
+{{- end }}
+.env
+.env.local
+*.mcpb

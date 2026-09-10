@@ -1,0 +1,79 @@
+{{- if eq .Global.Config.PackageManager "uv" }}
+[project]
+name = "{{.Global.Config.PackageName}}"
+version = "{{.Global.Config.SDKVersion}}"
+description = "{{.Global.Config.Description}}"
+authors = [{{range .Global.Config.Authors}}{ name = "{{.}}" },{{end}}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+{{templateDependencies}}
+]
+{{- if .Global.Config.Homepage}}
+urls.homepage = "{{.Global.Config.Homepage}}"
+{{- end}}
+{{- if .Global.Config.RepoURL}}
+urls.repository = "{{.Global.Config.RepoURL}}"
+{{- end}}
+{{- if .Global.Config.DocumentationURL}}
+urls.documentation = "{{.Global.Config.DocumentationURL}}"
+{{- end}}
+{{- if .Global.Config.License}}
+license = { text = "{{.Global.Config.License}}" }
+{{- end}}
+{{ templateOptionalDependencies }}
+[dependency-groups]
+{{templateUvDependencyGroups}}
+
+[tool.setuptools.packages.find]
+where = ["{{.Global.Config.TestProject.SourceDir}}/src"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "setuptools.build_meta"
+{{- else }}
+[project]
+name = "{{.Global.Config.PackageName}}"
+version = "{{.Global.Config.SDKVersion}}"
+description = "{{.Global.Config.Description}}"
+authors = [{{range .Global.Config.Authors}}{ name = "{{.}}" },{{end}}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+{{templateDependencies}}
+]
+{{- if .Global.Config.License}}
+license = { text = "{{.Global.Config.License}}" }
+{{- end}}
+{{ templateOptionalDependencies }}
+[dependency-groups]
+{{templateAdditionalDependencies}}
+
+[tool.poetry]
+{{- if .Global.Config.Homepage}}
+homepage = "{{.Global.Config.Homepage}}"
+{{- end}}
+{{- if .Global.Config.RepoURL}}
+repository = "{{.Global.Config.RepoURL}}"
+{{- end}}
+{{- if .Global.Config.DocumentationURL}}
+documentation = "{{.Global.Config.DocumentationURL}}"
+{{- end}}
+packages = [
+    { include = "openapi", from="{{.Global.Config.TestProject.SourceDir}}/src" }
+]
+include = ["py.typed"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+{{- end }}
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

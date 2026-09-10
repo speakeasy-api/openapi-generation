@@ -1,0 +1,387 @@
+{{- enterMethodBody -}}
+{{- addHooksImport "HookContext" -}}
+{{- addImport "typing" "Optional" -}}
+{{- $op := .Local.Operation -}}
+{{- $methodState := methodTemplateState $op -}}
+{{- $flatteningEnabled := has $op.Arguments.Flattening (list "all" "body" "params") -}}
+{{- $responses := $op.Response.Responses -}}
+{{- $pagination := $op.Extensions.Pagination -}}
+{{- templateDeprecated $op.Comments "method" }}
+{{- $sseTypes := getSSEResponseTypes $op }}
+{{- $hasBodyVariantOverloads := shouldEmitBodyVariantOverloads $op }}
+{{- $canOverrideAcceptHeader := shouldAllowAcceptHeaderOverride $op $sseTypes }}
+{{- $rawResponseHelpers := pythonRawResponseHelpersEnabled }}
+{{- if $rawResponseHelpers }}
+{{- addImport "utils" "response_helpers" true }}
+{{- addHooksImport "ResponseContext" }}
+{{- addHooksImport "AfterParseErrorContext" }}
+{{- addImport "typing" "Any" }}
+{{- addImport "typing" "cast" }}
+{{- end }}
+{{- if and $sseTypes (not $hasBodyVariantOverloads) (sseHasStreamKwarg $op) }}
+    {{- addImport "typing" "overload" }}
+    {{- addImport "typing" "Literal" }}
+    {{- addImport "typing" "Union" }}
+    {{/* Overload for stream=False: returns JSON response */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateSSEOverloadArguments $op "false"}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
+    ) -> {{$sseTypes.jsonResponseType}}:
+{{- templateMethodComments $op}}
+
+    {{/* Overload for stream=True: returns SSE EventStream response */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateSSEOverloadArguments $op "true"}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
+    ) -> {{$sseTypes.sseResponseType}}:
+{{- templateMethodComments $op}}
+
+    {{/* Fallback overload for bool variables: returns JSON or SSE response */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateSSEOverloadArguments $op "bool"}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
+    ) -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]:
+{{- templateMethodComments $op}}
+
+{{ end}}
+{{- if $hasBodyVariantOverloads }}
+    {{- addImport "typing" "overload" }}
+    {{- if $sseTypes }}
+    {{- addImport "typing" "Literal" }}
+    {{- addImport "typing" "Union" }}
+    {{/* Body-variant overloads own SSE splitting when both features are enabled, so variant kwargs and stream-dependent return types stay in the same overload set. */}}
+    {{- end }}
+    {{/* Back-compat overload: `request=Union[Model, ModelTypedDict]` */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateBodyVariantRequestKwarg $op false}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
+    ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
+{{- templateMethodComments $op}}
+
+    {{- $variantCount := len (getBodyVariants $op) -}}
+    {{- range $variantIdx, $variant := getBodyVariants $op }}
+    {{- if $sseTypes }}
+    {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (expanded, stream=False): {{ $variant.name }}. */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyOverloadArguments $op}},
+{{- end}}
+        {{templateBodyVariantExpandedOverloadArguments $op $variantIdx "false"}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
+    ) -> {{$sseTypes.jsonResponseType}}:
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+
+    {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (expanded, stream=True): {{ $variant.name }}. */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyOverloadArguments $op}},
+{{- end}}
+        {{templateBodyVariantExpandedOverloadArguments $op $variantIdx "true"}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
+    ) -> {{$sseTypes.sseResponseType}}:
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+
+    {{- else }}
+    {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (expanded): {{ $variant.name }}. */}}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyOverloadArguments $op}},
+{{- end}}
+        {{templateBodyVariantExpandedOverloadArguments $op $variantIdx}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
+    ){{templateMethodReturnType $op}}:
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+
+    {{- end }}
+    {{ end }}
+    {{/* Body-variant fallback overload. Keeps `**dict` spread callers valid without adding overlapping TypedDict Unpack overloads that collapse hover output. */}}
+    {{- addImport "typing" "Any" }}
+    @overload
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateBodyVariantRequestKwarg $op true}},
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyImplArguments $op}},
+{{- end}}
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
+        **body_kwargs: Any,
+    ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
+{{- templateMethodComments $op (getBodyVariantImplFieldDefs $op)}}
+
+{{- end }}
+    {{/* Actual implementation: accepts any bool value for stream */}}
+{{- if $hasBodyVariantOverloads }}
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
+        {{templateBodyVariantRequestKwarg $op true}},
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyImplArguments $op}},
+{{- end}}
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
+        {{templateBodyVariantImplArguments $op}},
+    ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
+{{- templateMethodComments $op (getBodyVariantImplFieldDefs $op)}}
+{{templateBodyVariantXorGuards $op}}
+{{- else }}
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+        self{{range getPythonMethodPositionalArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *{{range getPythonMethodKeywordOnlyArgs $op}},
+        {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}},
+{{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
+    ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
+{{- templateMethodComments $op}}
+{{- end }}
+        base_url_ = None
+        url_variables_ = None
+        {{- if pythonMethodRequestExtrasEnabled }}
+        {{- if $op.Extensions.Retries }}
+        {{- addImport "types" "UNSET" true }}
+        {{- addImport "types" "OptionalNullable" true }}
+        retries: OptionalNullable[utils_.RetryConfig] = UNSET
+        {{- end }}
+        server_url = None
+        http_headers = extra_headers
+        {{- end }}
+        {{- if pythonMethodTimeoutSecondsEnabled }}
+        {{- if pythonMethodTimeoutAliasEnabled }}
+        timeout_ms = self._coerce_timeout_ms(timeout)
+        {{- else }}
+        timeout_ms = self._coerce_timeout_ms(timeout_ms)
+        {{- end }}
+        {{- else if pythonMethodTimeoutAliasEnabled }}
+        timeout_ms = timeout
+        {{- end }}
+        if timeout_ms is None:
+            timeout_ms = self.sdk_configuration.timeout_ms
+        {{ if $op.Extensions.Timeout }}
+        if timeout_ms is None:
+            timeout_ms = {{$op.Extensions.Timeout}}
+        {{end}}
+        if server_url is not None:
+            base_url_ = server_url
+        {{- if $op.Servers}}
+        else:
+        {{- if $op.Servers.ServerMap}}
+            {{- addSDKImportForAccessNamespace "operations" }}
+            base_url_ = {{getAccessNamespaceSuffixed "operations"}}{{upper (sanitizeFieldName (getOperationModelName $op))}}_SERVERS[{{getAccessNamespaceSuffixed "operations"}}{{templateConstName $op.Servers.Default (print (sanitizeFieldName (getOperationModelName $op)) "Server")}}]
+        {{- else}}
+            {{- addSDKImportForAccessNamespace "operations" }}
+            base_url_ = {{getAccessNamespaceSuffixed "operations"}}{{upper (sanitizeFieldName (getOperationModelName $op))}}_SERVERS[0]
+        {{- end}}
+        {{- if gt (len $op.Servers.GetVariables) 0}}
+            url_variables_ = {{"{"}}{{- range $variable := $op.Servers.GetVariables}}
+                "{{$variable.Name}}": "{{$variable.Default}}",{{end}}
+            {{"}"}}
+        {{- end}}
+        {{- else }}
+        else:
+            base_url_ = self._get_url(base_url_, url_variables_)
+        {{- end}}
+        {{- if $op.Request}}
+        {{if shouldEmitBodyVariantOverloads $op }}
+        {{- addImport "typing" "cast"}}
+        {{- addImport "typing" "Any"}}
+        {{- addImport "types" "BaseModel" true}}
+        {{- addUtilsImport }}
+        {{- $variantRequestType := sanitizeType $op.Request.Field (dict "optional" false) }}
+        if request is not UNSET:
+            request_ = cast(
+                {{$variantRequestType}},
+                request if isinstance(request, BaseModel)
+                else utils_.unmarshal(cast(Any, request), {{$variantRequestType}}),
+            )
+        else:
+            _body_kwargs = {{templateBodyVariantImplBodyDict $op}}
+            _body_kwargs = {k: v for k, v in _body_kwargs.items() if v is not UNSET}
+{{templateBodyVariantImplRequestAssignment $op}}
+        {{else if eq $op.Arguments.Flattening "all" }}
+        request_ = {{templatePydanticClassType $op.Request.Field}}(
+            {{- range $op.Arguments.ParamFields }}
+            {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
+            {{- end}}
+            {{sanitizeFieldName $op.Arguments.BodyField.Name}}={{templatePydanticClassType $op.Arguments.BodyField}}(
+                {{- range (sortBodyParamFields $op.Arguments.BodyFields) }}
+                {{- if not .IsAdditionalProperties }}
+                {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
+                  {{- if isBase64FileInputField .}}  # type: ignore[arg-type]
+                    {{/* BeforeValidator accepts Union[str, Base64FileInput] but BaseModel field typed as str */}}
+                  {{- end}}
+                {{- else}}
+                **{{sanitizeFlattenedAdditionalPropertiesRequestParam .}},
+                {{- end}}{{end}}
+            ),
+        )
+        {{else if has $op.Arguments.Flattening (list "body" "params") }}
+        request_ = {{templatePydanticClassType $op.Request.Field}}(
+            {{- range $op.Arguments.ParamFields }}
+            {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
+            {{- end}}
+            {{- range (sortBodyParamFields $op.Arguments.BodyFields) }}
+            {{- if not .IsAdditionalProperties }}
+            {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
+              {{- if isBase64FileInputField .}}  # type: ignore[arg-type]
+                {{/* BeforeValidator accepts Union[str, Base64FileInput] but BaseModel field typed as str */}}
+              {{- end}}
+            {{- else}}
+            **{{sanitizeFlattenedAdditionalPropertiesRequestParam .}},
+            {{- end}}{{end}}
+            {{- if $op.Arguments.BodyField }}
+            {{sanitizeFieldName $op.Arguments.BodyField.Name}}={{sanitizeFlattenedRequestParamAccessor $op.Arguments.BodyField}},
+            {{- end }}
+        )
+        {{else if typeIncludesPydanticModel $op.Request.Field.Type}}
+        {{- addImport "typing" "cast"}}
+        {{- addImport "types" "BaseModel" true }}
+        {{- addUtilsImport }}
+        {{- $requestType := sanitizeType $op.Request.Field (dict "optional" (isArgumentOptional $op $op.Request.Field))}}
+        request_ = request
+        if not isinstance(request_, BaseModel):
+            request_ = utils_.unmarshal(request_, {{$requestType}})
+        request_ = cast({{$requestType}}, request_)
+        {{else}}
+        request_ = request
+        {{end}}{{end}}
+        {{- if $rawResponseHelpers }}
+        _speakeasy_response_mode, http_headers = response_helpers.consume_response_mode(http_headers)
+        {{- end }}
+        req_ = self._build_request{{ asyncOnly "_async" }}(
+            method="{{upper $op.Method}}",
+            path="{{$op.Path}}",
+            base_url=base_url_,
+            url_variables=url_variables_,
+            {{- if and $pagination (hasPaginationURL $op)}}
+            url_override=url_override,{{end}}
+            request={{if $op.Request}}request_{{else}}None{{end}},
+            request_body_required={{if and $op.Request $op.Request.IsRequestBodyRequired }}True{{else}}False{{end}},
+            request_has_path_params={{if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams }}True{{else}}False{{end}},
+            request_has_query_params={{if or (and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams) (or $op.Security $op.GlobalSecurity)}}True{{else}}False{{end}},
+            user_agent_header="{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}",
+            accept_header_value={{ templateAcceptHeaderValue $op $canOverrideAcceptHeader $sseTypes }},
+            http_headers=http_headers,
+            {{- if pythonMethodRequestExtrasEnabled }}
+            extra_query_params=extra_query,
+            {{- end }}
+            {{- if $op.Globals}}
+            _globals={{templatePydanticClassType (typeDefToFieldDef $op.Globals)}}(
+                {{- range $op.Globals.Fields}}
+                {{sanitizeFieldName .Name}}={{templateGlobalParamAccess .}},
+                {{- end}}
+            ),{{end}}
+            {{- if or $op.Security $op.GlobalSecurity}}
+            security={{if $op.Security}}{{addUtilsImport}}utils_.get_pydantic_model(security, {{sanitizePydanticType $op.Security}}){{else}}self.sdk_configuration.security{{end}},{{end}}
+            {{- if and $op.Request $op.SerializationMethod }}
+            get_serialized_body={{templateSerializeRequestBody $op}}),{{end}}
+            allow_empty_value={{templateAllowEmptyValue $op}},
+            {{- if and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+            allowed_fields=[{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}"{{sanitizeFieldName $f.Name}}"{{end}}],
+            {{- end}}
+            timeout_ms=timeout_ms,
+        )
+        {{if $op.Extensions.Retries}}
+        {{- addUtilsImport}}
+        if retries == UNSET:
+            if self.sdk_configuration.retry_config is not UNSET:
+                retries = self.sdk_configuration.retry_config
+        {{- if not $op.Extensions.Retries.DefaultApplied }}
+            else:
+                {{- if eq $op.Extensions.Retries.Strategy "attempt-count-backoff"}}
+                retries = utils_.RetryConfig(
+                    "{{$op.Extensions.Retries.Strategy}}",
+                    {{if $op.Extensions.Retries.Backoff}}utils_.BackoffStrategy({{$op.Extensions.Retries.Backoff.InitialInterval}}, {{$op.Extensions.Retries.Backoff.MaxInterval}}, {{$op.Extensions.Retries.Backoff.Exponent}}, {{$op.Extensions.Retries.Backoff.MaxElapsedTime}}){{else}}None{{end}},
+                    {{sanitizeRetryConnectionErrors $op.Extensions.Retries.RetryConnectionErrors}},
+                    max_retries={{$op.Extensions.Retries.MaxRetries}},
+                )
+                {{- else}}
+                retries = utils_.RetryConfig("{{$op.Extensions.Retries.Strategy}}"{{if $op.Extensions.Retries.Backoff}}, utils_.BackoffStrategy({{$op.Extensions.Retries.Backoff.InitialInterval}}, {{$op.Extensions.Retries.Backoff.MaxInterval}}, {{$op.Extensions.Retries.Backoff.Exponent}}, {{$op.Extensions.Retries.Backoff.MaxElapsedTime}}){{end}}, {{sanitizeRetryConnectionErrors $op.Extensions.Retries.RetryConnectionErrors}})
+                {{- end}}{{end}}
+
+        retry_config_ = None
+        if isinstance(retries, utils_.RetryConfig):
+            retry_config_ = (retries, [
+                {{- $lenSC := len $op.Extensions.Retries.StatusCodes -}}
+                {{- range $i, $statusCode := $op.Extensions.Retries.StatusCodes}}
+                "{{$statusCode}}"{{if ne $i (sub $lenSC 1) }},{{end}}{{end}}
+            ])
+        {{end}}
+        {{- if $rawResponseHelpers }}
+        {{ asyncOnly "async " }}def _speakeasy_parse_response(http_res_):
+        {{- if $pagination }}
+{{ indentString (templateString "pagination.py.stmpl" $op) 1 }}
+        {{- end }}
+{{ templateResponseMatchersAtIndent $op 3 }}
+
+        {{- end }}
+        {{- if $rawResponseHelpers }}
+        _speakeasy_hook_ctx = HookContext(config=self.sdk_configuration, base_url=base_url_ or "", operation_id="{{$op.ID}}", oauth2_scopes={{templateOAuth2Scopes $op}}, security_source={{if $op.Security}}{{if .Global.Config.EnvVarPrefix}}get_security_from_env(security, {{sanitizePydanticType (typeDefToFieldDef .Global.AST.MainSDK.Security.Type)}}){{else}}security{{end}}{{else if $op.GlobalSecurity}}{{if .Global.Config.EnvVarPrefix}}get_security_from_env(self.sdk_configuration.security, {{sanitizePydanticType (typeDefToFieldDef .Global.AST.MainSDK.Security.Type)}}){{else}}self.sdk_configuration.security{{end}}{{else}}None{{end}}, tags={{templateOperationTags $op}}, extensions={{templateOperationExtensions $op}}, response=ResponseContext(mode=_speakeasy_response_mode, execution={{asyncSelect "\"async\"" "\"sync\""}}))
+        {{- end }}
+        http_res_ = {{ asyncOnly "await " }}self.do_request{{ asyncOnly "_async" }}(
+            hook_ctx={{if $rawResponseHelpers}}_speakeasy_hook_ctx{{else}}HookContext(config=self.sdk_configuration, base_url=base_url_ or "", operation_id="{{$op.ID}}", oauth2_scopes={{templateOAuth2Scopes $op}}, security_source={{if $op.Security}}{{if .Global.Config.EnvVarPrefix}}get_security_from_env(security, {{sanitizePydanticType (typeDefToFieldDef .Global.AST.MainSDK.Security.Type)}}){{else}}security{{end}}{{else if $op.GlobalSecurity}}{{if .Global.Config.EnvVarPrefix}}get_security_from_env(self.sdk_configuration.security, {{sanitizePydanticType (typeDefToFieldDef .Global.AST.MainSDK.Security.Type)}}){{else}}self.sdk_configuration.security{{end}}{{else}}None{{end}}, tags={{templateOperationTags $op}}, extensions={{templateOperationExtensions $op}}){{end}},
+            request=req_,
+            is_error_status_code=lambda c: {{templateErrorStatusCodesCheck $op.Response "c"}},
+            {{- if or $rawResponseHelpers (containsStreamingResponse $op.Response)}}
+            stream={{templateRequestStreamValue $op $rawResponseHelpers}},
+            {{- end}}
+            {{- if $op.Extensions.Retries}}
+            retry_config=retry_config_{{end}}
+        )
+        {{- if and (or $op.Security $op.GlobalSecurity) .Global.Config.EnvVarPrefix -}}
+        {{- addImport "utils" "get_security_from_env" true -}}
+        {{- end -}}
+        {{- if $rawResponseHelpers }}
+        if _speakeasy_response_mode != "parsed":
+            if {{templateErrorStatusCodesCheck $op.Response "http_res_.status_code"}}:
+                {{ asyncOnly "await " }}http_res_.{{ asyncSelect "aread" "read" }}()
+                try:
+                    {{ asyncOnly "await " }}_speakeasy_parse_response(http_res_)
+                except Exception as parse_exc_:
+                    {{- templateRaiseParseError | indentPresent 20 }}
+            _speakeasy_response_cls = (
+                response_helpers.{{asyncOnly "Async"}}StreamedAPIResponse
+                if _speakeasy_response_mode == "streaming"
+                else response_helpers.{{asyncOnly "Async"}}APIResponse
+            )
+            return cast(Any, _speakeasy_response_cls(
+                raw=http_res_,
+                parser=_speakeasy_parse_response,
+                mode={{templateResponseMode $op}},
+                client_ref=self,
+                hook_ctx=AfterParseErrorContext(_speakeasy_hook_ctx),
+                hooks=self.sdk_configuration.__dict__.get("_hooks"),
+                {{ asyncOnly "async_hooks=self.sdk_configuration.__dict__.get('_async_hooks')," }}
+            ))
+        {{- end }}
+        {{- if not $rawResponseHelpers }}
+        {{- if $pagination }}
+        {{ templateString "pagination.py.stmpl" $op }}
+        {{- end }}
+        {{- templateResponseMatchers $op}}
+        {{- else }}
+        try:
+            return {{ asyncOnly "await " }}_speakeasy_parse_response(http_res_)
+        except Exception as parse_exc_:
+            {{- templateRaiseParseError | indentPresent 12 }}
+        {{- end }}
+{{- exitMethodBody -}}

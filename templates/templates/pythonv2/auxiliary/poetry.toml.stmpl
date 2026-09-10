@@ -1,0 +1,4 @@
+{{- if eq .Global.Config.PackageManager "poetry" }}
+[virtualenvs]
+in-project = true
+{{- end }}

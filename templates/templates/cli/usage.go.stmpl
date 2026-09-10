@@ -1,0 +1,313 @@
+{{- recurse 1 -}}
+{{- addImport "fmt" -}}
+{{- addImport "io" -}}
+{{- addImport "encoding/json" -}}
+{{- addImport "strings" -}}
+{{- addImport "sync" -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "github.com/spf13/pflag" -}}
+package usage
+
+{{genImports}}
+
+{{templateUsageSchemaMap}}
+
+func UsageRequested(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
+	}
+	if flag := cmd.Flags().Lookup("usage"); flag != nil {
+		value, err := cmd.Flags().GetBool("usage")
+		return err == nil && value
+	}
+	if flag := cmd.InheritedFlags().Lookup("usage"); flag != nil {
+		value, err := cmd.InheritedFlags().GetBool("usage")
+		return err == nil && value
+	}
+	return false
+}
+
+// DisarmRequiredFlags clears cobra's required-flag annotations so a --usage
+// invocation answers with the command's schema even when required inputs are
+// absent: requiredness is part of the answer, not a precondition for asking.
+// Cobra validates the same annotations itself after the pre-run hooks, so
+// skipping the CLI's own eager validation alone would not be enough. The
+// cleared annotations are kept aside for RearmRequiredFlags, so a reused
+// command tree keeps enforcing requiredness on later executions.
+func DisarmRequiredFlags(cmd *cobra.Command) {
+	saved := map[*pflag.Flag][]string{}
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if values, ok := f.Annotations[cobra.BashCompOneRequiredFlag]; ok {
+			saved[f] = values
+			delete(f.Annotations, cobra.BashCompOneRequiredFlag)
+		}
+	})
+	if len(saved) > 0 {
+		disarmedRequiredFlags.Store(cmd, saved)
+	}
+}
+
+// RearmRequiredFlags restores the annotations DisarmRequiredFlags removed.
+func RearmRequiredFlags(cmd *cobra.Command) {
+	value, ok := disarmedRequiredFlags.LoadAndDelete(cmd)
+	if !ok {
+		return
+	}
+	for f, values := range value.(map[*pflag.Flag][]string) {
+		if f.Annotations == nil {
+			f.Annotations = map[string][]string{}
+		}
+		f.Annotations[cobra.BashCompOneRequiredFlag] = values
+	}
+}
+
+var disarmedRequiredFlags sync.Map
+
+func selectedCommandPath(cmd *cobra.Command) []string {
+	if cmd == nil {
+		return nil
+	}
+	parts := []string{}
+	for cur := cmd; cur != nil; cur = cur.Parent() {
+		if cur.Name() == "" {
+			continue
+		}
+		if cur.Parent() == nil {
+			continue
+		}
+		parts = append([]string{cur.Name()}, parts...)
+	}
+	return parts
+}
+
+func EmitSchema(cmd *cobra.Command, w io.Writer) error {
+	path := strings.Join(selectedCommandPath(cmd), " ")
+	if cmd.Annotations["speakeasy_usage_dynamic"] == "true" {
+		return emitLiveSchema(cmd, w)
+	}
+	if schema, ok := usageSchemas[path]; ok {
+		_, err := io.WriteString(w, schema)
+		return err
+	}
+	return emitLiveSchema(cmd, w)
+}
+
+// MarkDynamic makes --usage render the command's schema live from its cobra definition.
+func MarkDynamic(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations["speakeasy_usage_dynamic"] = "true"
+}
+
+// Go's %q emits \a, \v, and \xNN escapes that KDL v2 does not define.
+func kdlQuote(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '"':
+			b.WriteString(`\"`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f || r == 0x85 ||
+				r == 0x200e || r == 0x200f || r == 0x2028 || r == 0x2029 ||
+				(r >= 0x202a && r <= 0x202e) || (r >= 0x2066 && r <= 0x2069) ||
+				r == 0xfeff {
+				fmt.Fprintf(&b, `\u{%x}`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
+}
+
+// Two consecutive quotes are legal inside a KDL """ string; a third would terminate it.
+func kdlEscapeMultilineLine(line string) string {
+	var b strings.Builder
+	quoteRun := 0
+	for _, r := range line {
+		if r == '"' {
+			quoteRun++
+			if quoteRun == 3 {
+				b.WriteString(`\"`)
+				quoteRun = 0
+				continue
+			}
+			b.WriteByte('"')
+			continue
+		}
+		quoteRun = 0
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f || r == 0x85 ||
+				r == 0x200e || r == 0x200f || r == 0x2028 || r == 0x2029 ||
+				(r >= 0x202a && r <= 0x202e) || (r >= 0x2066 && r <= 0x2069) ||
+				r == 0xfeff {
+				fmt.Fprintf(&b, `\u{%x}`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	return b.String()
+}
+
+// KDL dedent strips the closing line's indent from every line and empties whitespace-only lines.
+func kdlQuoteAt(s, contentPrefix string) string {
+	if !strings.Contains(s, "\n") {
+		return kdlQuote(s)
+	}
+	lines := strings.Split(s, "\n")
+	for _, line := range lines {
+		if line != "" && (strings.TrimSpace(line) == "" || strings.TrimRight(line, " \t") != line) {
+			return kdlQuote(s)
+		}
+	}
+	var b strings.Builder
+	b.WriteString("\"\"\"\n")
+	for _, line := range lines {
+		if line != "" {
+			b.WriteString(contentPrefix)
+			b.WriteString(kdlEscapeMultilineLine(line))
+		}
+		b.WriteByte('\n')
+	}
+	b.WriteString(contentPrefix)
+	b.WriteString(`"""`)
+	return b.String()
+}
+
+func emitLiveSchema(cmd *cobra.Command, w io.Writer) error {
+	nl := string(rune(10))
+	var b strings.Builder
+	fmt.Fprintf(&b, "cmd %s help=%s {%s", kdlQuote(cmd.Name()), kdlQuoteAt(cmd.Short, "  "), nl)
+	for _, alias := range cmd.Aliases {
+		fmt.Fprintf(&b, "  alias %s%s", kdlQuote(alias), nl)
+	}
+	var promptArgs struct {
+		Version int `json:"version"`
+		Args []struct {
+			Name string `json:"name"`
+			Summary string `json:"summary"`
+			Required bool `json:"required"`
+			Variadic bool `json:"variadic"`
+		} `json:"args"`
+	}
+	if raw := cmd.Annotations["speakeasy_prompt_args"]; raw != "" && json.Unmarshal([]byte(raw), &promptArgs) == nil && promptArgs.Version == 1 {
+		for _, arg := range promptArgs.Args {
+			fmt.Fprintf(&b, "  arg %s", kdlQuote(arg.Name))
+			if arg.Summary != "" {
+				fmt.Fprintf(&b, " help=%s", kdlQuoteAt(arg.Summary, "    "))
+			}
+			if arg.Required {
+				b.WriteString(" required=#true")
+			}
+			if arg.Variadic {
+				b.WriteString(" var=#true")
+			}
+			b.WriteString(nl)
+		}
+	} else if args := cmd.Annotations["speakeasy_args_help"]; args != "" {
+		fmt.Fprintf(&b, "  args %s%s", kdlQuoteAt(args, "    "), nl)
+	}
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		if f.Hidden || f.Name == "help" {
+			return
+		}
+		name := "--" + f.Name
+		if f.Shorthand != "" {
+			name = "-" + f.Shorthand + " " + name
+		}
+		_, repeatable := f.Value.(pflag.SliceValue)
+		if f.Value.Type() != "bool" {
+			placeholder := strings.ReplaceAll(f.Name, "-", "_")
+			if repeatable {
+				placeholder += "..."
+			}
+			name += " <" + placeholder + ">"
+		}
+		fmt.Fprintf(&b, "  flag %s help=%s", kdlQuote(name), kdlQuoteAt(f.Usage, "    "))
+		if repeatable {
+			b.WriteString(" var=#true")
+		}
+		b.WriteString(nl)
+	})
+	b.WriteString("}" + nl)
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func Intercept(root *cobra.Command) {
+	for _, child := range root.Commands() {
+		Intercept(child)
+	}
+	if root.RunE == nil && root.Run == nil && root.Args == nil && root.HasSubCommands() {
+		if root.Annotations == nil {
+			root.Annotations = make(map[string]string)
+		}
+		root.Annotations[usageSynthesizedGroupAnnotation] = "true"
+	}
+	root.PersistentPreRunE = skipOnUsageE(root.PersistentPreRunE, root.PersistentPreRun)
+	root.PersistentPreRun = nil
+	root.PreRunE = skipOnUsageE(root.PreRunE, root.PreRun)
+	root.PreRun = nil
+	root.PostRunE = skipOnUsageE(root.PostRunE, root.PostRun)
+	root.PostRun = nil
+	root.PersistentPostRunE = skipOnUsageE(root.PersistentPostRunE, root.PersistentPostRun)
+	root.PersistentPostRun = nil
+
+	runE, run := root.RunE, root.Run
+	root.Run = nil
+	root.RunE = func(cmd *cobra.Command, args []string) error {
+		if UsageRequested(cmd) {
+			return EmitSchema(cmd, cmd.OutOrStdout())
+		}
+		if runE != nil {
+			return runE(cmd, args)
+		}
+		if run != nil {
+			run(cmd, args)
+			return nil
+		}
+		return cmd.Help()
+	}
+}
+
+const usageSynthesizedGroupAnnotation = "speakeasy_usage_synthesized_group"
+
+func GroupMadeRunnable(cmd *cobra.Command) bool {
+	return cmd != nil && cmd.Annotations[usageSynthesizedGroupAnnotation] == "true"
+}
+
+// Returning nil rather than a wrapper keeps Cobra's nearest-PersistentPreRunE lookup intact.
+func skipOnUsageE(hookE func(*cobra.Command, []string) error, hook func(*cobra.Command, []string)) func(*cobra.Command, []string) error {
+	if hookE == nil && hook == nil {
+		return nil
+	}
+	return func(cmd *cobra.Command, args []string) error {
+		if UsageRequested(cmd) {
+			return nil
+		}
+		if hookE != nil {
+			return hookE(cmd, args)
+		}
+		hook(cmd, args)
+		return nil
+	}
+}

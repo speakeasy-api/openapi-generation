@@ -1,0 +1,5 @@
+{{- recurse 1 -}}
+{{- addImport "asyncio" "" -}}
+{{genImports}}
+
+{{templateString "usage/async/block.stmpl" .Local}}

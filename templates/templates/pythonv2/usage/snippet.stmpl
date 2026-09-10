@@ -1,0 +1,17 @@
+{{- if or .Local.IsMainExample isSplitMode -}}
+# Synchronous Example
+{{templateString "usage/sync/snippet.stmpl" .Local | trimSuffix "\n"}}
+```
+
+</br>
+{{if isSplitMode}}
+An Async SDK client can also be used to make asynchronous requests by importing it and asyncio.
+{{else}}
+The same SDK client can also be used to make asynchronous requests by importing asyncio.
+{{end}}
+```{{templateLanguageName .Global.Config.Language}}
+# Asynchronous Example
+{{templateString "usage/async/snippet.stmpl" .Local | trimSuffix "\n"}}
+{{- else -}}
+{{templateString "usage/sync/snippet.stmpl" .Local}}
+{{- end -}}

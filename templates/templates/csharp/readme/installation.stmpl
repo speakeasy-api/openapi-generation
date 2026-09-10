@@ -1,0 +1,15 @@
+{{- if .Global.Config.Published }}
+### NuGet
+
+To add the [NuGet](https://www.nuget.org/) package to a .NET project:
+```bash
+dotnet add package {{ getPackageId }}
+```
+
+### Locally
+{{- end}}
+
+To add a reference to a local instance of the SDK in a .NET project:
+```bash
+dotnet add reference {{getSDKTopLevelFolder}}/{{getPackageId}}.csproj
+```

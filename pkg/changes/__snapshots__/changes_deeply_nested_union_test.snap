@@ -1,0 +1,102 @@
+
+[TestChanges_DeeplyNestedUnion - 1]
+# Test: deeply_nested_union_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /events:
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        payload:
+                          type: object
+                          properties:
+                            content:
+                              type: object
+                              properties:
+                                body:
+                                  oneOf:
+                                    - type: string
+                                    - type: object
+                                      properties:
+                                        text:
+                                          type: string
+                                        format:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /events:
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        payload:
+                          type: object
+                          properties:
+                            content:
+                              type: object
+                              properties:
+                                body:
+                                  oneOf:
+                                    - type: string
+                                    - type: object
+                                      properties:
+                                        text:
+                                          type: string
+                                        format:
+                                          type: string
+                                    - type: array
+                                      items:
+                                        type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Csharp SDK Changes:
+* `Sdk.CreateEvent()`: 
+  *  `request.Event.Data.Payload.Content.Body.union(Array<string>)` **Added**
+
+## Full Mode:
+## Csharp SDK Changes:
+* `Sdk.CreateEvent()`: 
+  *  `request.Event.Data.Payload.Content.Body.union(Array<string>)` **Added**
+
+---

@@ -1,0 +1,245 @@
+package tests
+
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/flagutil"
+)
+
+func TestNonBodyMeta(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FieldPath: "Trace"},
+		{FieldPath: "Body"},
+		{FieldPath: "Body.Interaction"},
+	}
+
+	// The expected literal stays multi-line: adjacent opening braces would
+	// start a template action in this .stmpl file.
+	expected := []flagutil.FlagMeta{
+		{FieldPath: "Trace"},
+	}
+	assert.Equal(t, expected, flagutil.NonBodyMeta(meta, "Body"))
+	assert.Empty(t, flagutil.NonBodyMeta(meta, ""))
+}
+
+type preflightUnionPart struct {
+	Text string `json:"text"`
+}
+
+type preflightUnion struct {
+	Text       *string              `union:"member"`
+	Parts      []preflightUnionPart `union:"member"`
+	UnknownRaw json.RawMessage      `json:"-" union:"unknown"`
+}
+
+func (u *preflightUnion) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var text string
+		if err := json.Unmarshal(data, &text); err != nil {
+			return err
+		}
+		u.Text = &text
+		return nil
+	}
+	var parts []preflightUnionPart
+	if err := json.Unmarshal(data, &parts); err != nil {
+		return err
+	}
+	u.Parts = parts
+	return nil
+}
+
+func (u preflightUnion) MarshalJSON() ([]byte, error) {
+	if u.Text != nil {
+		return json.Marshal(*u.Text)
+	}
+	if u.Parts != nil {
+		return json.Marshal(u.Parts)
+	}
+	if len(u.UnknownRaw) > 0 {
+		return u.UnknownRaw, nil
+	}
+	return nil, errors.New("could not marshal preflight union: all fields are null")
+}
+
+type preflightNestedBody struct {
+	Input preflightUnion `json:"input"`
+}
+
+type preflightBody struct {
+	Input         preflightUnion       `json:"input"`
+	Nested        *preflightNestedBody `json:"nested,omitempty"`
+	OptionalInput *preflightUnion      `json:"optionalInput,omitempty"`
+}
+
+type preflightWrappedRequest struct {
+	Body preflightBody `json:"body"`
+}
+
+func newPreflightBodyCommand() (*cobra.Command, []flagutil.FlagMeta) {
+	cmd := &cobra.Command{}
+	meta := []flagutil.FlagMeta{
+		{
+			FlagName: "input",
+			FieldPath: "Input",
+			Kind: flagutil.FlagKindUnion,
+			Required: true,
+			// A discriminated required union with no selector returns nil from
+			// buildUnionField and is therefore the flags-only preflight shape.
+			Union: &flagutil.UnionMeta{Discriminated: true},
+		},
+	}
+	flagutil.RegisterFlags(cmd, meta)
+	cmd.Flags().String("body", "", "body")
+	return cmd, meta
+}
+
+func assertMissingPreflightField(t *testing.T, err error, path string) {
+	t.Helper()
+	require.Error(t, err)
+	var missing *flagutil.MissingRequiredFieldError
+	require.ErrorAs(t, err, &missing)
+	assert.Equal(t, path, missing.Path)
+	var typed interface{ CLIReason() string }
+	require.ErrorAs(t, err, &typed)
+	assert.Equal(t, "CLI_VALIDATION", typed.CLIReason())
+}
+
+func TestPreRequestRequiredUnionPreflightSources(t *testing.T) {
+	cases := []struct {
+		name string
+		run func(t *testing.T) error
+	}{
+		{
+			name: "body flag",
+			run: func(t *testing.T) error {
+				cmd, meta := newPreflightBodyCommand()
+				require.NoError(t, cmd.Flags().Set("body", `{}`))
+				_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+				return err
+			},
+		},
+		{
+			name: "stdin",
+			run: func(t *testing.T) error {
+				cmd, meta := newPreflightBodyCommand()
+				cmd.SetIn(strings.NewReader(`{}`))
+				_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+				return err
+			},
+		},
+		{
+			name: "whole body metadata flag",
+			run: func(t *testing.T) error {
+				cmd := &cobra.Command{}
+				meta := []flagutil.FlagMeta{
+					{FlagName: "request-body", FieldPath: "Body", Kind: flagutil.FlagKindJSON, Required: true},
+					{FlagName: "input", FieldPath: "Body.Input", Kind: flagutil.FlagKindUnion, Required: true, Union: &flagutil.UnionMeta{Discriminated: true}},
+				}
+				flagutil.RegisterFlags(cmd, meta)
+				require.NoError(t, cmd.Flags().Set("request-body", `{}`))
+				_, err := flagutil.BuildRequest[preflightWrappedRequest](cmd, meta, "Body", "body")
+				return err
+			},
+		},
+		{
+			name: "single whole body flag",
+			run: func(t *testing.T) error {
+				cmd := &cobra.Command{}
+				cmd.Flags().String("request-body", "", "body")
+				require.NoError(t, cmd.Flags().Set("request-body", `{}`))
+				_, err := flagutil.BuildRequestBody[preflightBody](cmd, "request-body", "", true)
+				return err
+			},
+		},
+		{
+			name: "individual flags",
+			run: func(t *testing.T) error {
+				cmd, meta := newPreflightBodyCommand()
+				_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+				return err
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.run(t)
+			assertMissingPreflightField(t, err, "input")
+			assert.Contains(t, err.Error(), "input")
+			if tc.name == "individual flags" {
+				assert.Contains(t, err.Error(), "--input")
+			}
+		})
+	}
+}
+
+func TestPreRequestRequiredUnionPreflightNestedPath(t *testing.T) {
+	cmd, meta := newPreflightBodyCommand()
+	require.NoError(t, cmd.Flags().Set("body", `{"input":"ok","nested":{}}`))
+	_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+	assertMissingPreflightField(t, err, "nested.input")
+}
+
+func TestPreRequestRequiredUnionPreflightAllowsOptionalAndSelected(t *testing.T) {
+	t.Run("optional union omitted", func(t *testing.T) {
+		cmd, meta := newPreflightBodyCommand()
+		require.NoError(t, cmd.Flags().Set("body", `{"input":"ok"}`))
+		_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+		require.NoError(t, err)
+	})
+
+	t.Run("member selected by flag", func(t *testing.T) {
+		cmd, meta := newPreflightBodyCommand()
+		require.NoError(t, cmd.Flags().Set("input", `"ok"`))
+		_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+		require.NoError(t, err)
+	})
+
+	t.Run("nested member selected", func(t *testing.T) {
+		cmd, meta := newPreflightBodyCommand()
+		require.NoError(t, cmd.Flags().Set("body", `{"input":"ok","nested":{"input":[{"text":"part"}]}}`))
+		_, err := flagutil.BuildRequest[preflightBody](cmd, meta, "", "body")
+		require.NoError(t, err)
+	})
+}
+
+type preflightOmitZeroBody struct {
+	Input preflightUnion `json:"input,omitzero"`
+}
+
+type preflightMultipartJSONBody struct {
+	Input preflightUnion `multipartForm:"name=input,json"`
+}
+
+type preflightMultipartPlainBody struct {
+	Input preflightUnion `multipartForm:"name=input"`
+}
+
+func TestPreRequestRequiredUnionPreflightMirrorsSerializerOmissions(t *testing.T) {
+	t.Run("omitzero union is not serialized", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		cmd.Flags().String("body", "", "body")
+		require.NoError(t, cmd.Flags().Set("body", `{}`))
+		_, err := flagutil.BuildRequest[preflightOmitZeroBody](cmd, nil, "", "body")
+		require.NoError(t, err)
+	})
+
+	t.Run("multipart JSON union is serialized", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		_, err := flagutil.BuildRequest[preflightMultipartJSONBody](cmd, nil, "", "")
+		assertMissingPreflightField(t, err, "input")
+	})
+
+	t.Run("plain multipart field does not invoke union JSON", func(t *testing.T) {
+		cmd := &cobra.Command{}
+		_, err := flagutil.BuildRequest[preflightMultipartPlainBody](cmd, nil, "", "")
+		require.NoError(t, err)
+	})
+}

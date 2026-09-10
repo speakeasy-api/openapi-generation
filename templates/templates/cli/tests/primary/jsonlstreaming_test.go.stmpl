@@ -1,0 +1,178 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestJsonlStreamData(t *testing.T) {
+	recordTest("jsonl-stream-data-envelope-http-responses")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "jsonl-stream"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 2, len(events), "expected 2 JSONL events")
+
+	// Assert first event
+	assert.Equal(t, "Peter", events[0]["name"])
+	skills0, ok := events[0]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Python"}, skills0)
+
+	// Assert second event
+	assert.Equal(t, "John", events[1]["name"])
+	skills1, ok := events[1]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Rust"}, skills1)
+}
+
+func TestJsonlStreamDataChunks(t *testing.T) {
+	recordTest("jsonl-stream-data-chunks-envelope-http-responses")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "jsonl-stream-chunks"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 2, len(events), "expected 2 JSONL chunk events")
+
+	// Assert first event
+	assert.Equal(t, "Peter", events[0]["name"])
+	skills0, ok := events[0]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Python"}, skills0)
+
+	// Assert second event
+	assert.Equal(t, "John", events[1]["name"])
+	skills1, ok := events[1]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Rust"}, skills1)
+}
+
+func TestJsonlDeserializationCamelCase(t *testing.T) {
+	recordTest("jsonl-deserialization-camel-case-properties")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "jsonl-deserialization-verification"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.GreaterOrEqual(t, len(events), 1, "expected at least 1 JSONL event")
+
+	// Verify camelCase property is correctly deserialized and output
+	assert.Equal(t, "yes", events[0]["isFinished"])
+}
+
+func TestXNdjsonStreamData(t *testing.T) {
+	recordTest("x-ndjson-stream-data-envelope-http-responses")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "x-ndjson-stream"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 2, len(events), "expected 2 x-ndjson events")
+
+	// Assert first event
+	assert.Equal(t, "Peter", events[0]["name"])
+	skills0, ok := events[0]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Python"}, skills0)
+
+	// Assert second event
+	assert.Equal(t, "John", events[1]["name"])
+	skills1, ok := events[1]["skills"].([]interface{})
+	require.True(t, ok)
+	assert.Equal(t, []interface{}{"Go", "Rust"}, skills1)
+}
+
+func TestXNdjsonStreamDataChunks(t *testing.T) {
+	recordTest("x-ndjson-stream-data-chunks-envelope-http-responses")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "x-ndjson-stream-chunks"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 2, len(events), "expected 2 x-ndjson chunk events")
+
+	// Assert first event
+	assert.Equal(t, "Peter", events[0]["name"])
+
+	// Assert second event
+	assert.Equal(t, "John", events[1]["name"])
+}
+
+// Cross-cutting test: JSON error envelope for broken server
+func TestJsonlStreamErrorJSON(t *testing.T) {
+	// Create a server that returns a plain-text error. Non-JSON body forces
+	// output.Error() to wrap it in a {"error": "..."} envelope.
+	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("internal server error"))
+	}))
+	defer errorServer.Close()
+
+	h := NewCLITestHarness(t)
+	// RunWithServer adds --output-format json
+	err := h.RunWithServer(errorServer.URL, []string{"jsonl", "jsonl-stream"})
+	assert.Error(t, err)
+
+	// Error should be written as JSON envelope to stderr
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr, "expected JSON error envelope on stderr")
+	assert.True(t, json.Valid([]byte(stderr)), "expected valid JSON error output: %s", stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope))
+	_, hasError := envelope["error"]
+	assert.True(t, hasError, "expected 'error' field in JSON envelope")
+}
+
+// Cross-cutting test: YAML output with --- separators
+func TestJsonlStreamYAMLOutput(t *testing.T) {
+	h := NewCLITestHarness(t)
+	// RunWithServer prepends --output-format json, but --output-format yaml here overwrites it (last flag wins)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "jsonl-stream", "--output-format", "yaml"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// YAML output should contain --- separators between events
+	assert.Contains(t, stdout, "---", "expected YAML document separators between events")
+
+	// Verify it contains data from both events
+	assert.Contains(t, stdout, "Peter")
+	assert.Contains(t, stdout, "John")
+}
+
+// Cross-cutting test: JSONL with --jq filter
+func TestJsonlStreamWithJq(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"jsonl", "jsonl-stream", "--jq", ".name"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	lines := strings.Split(stdout, "\n")
+	assert.Equal(t, 2, len(lines), "expected 2 filtered values")
+
+	var name0 string
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(lines[0])), &name0))
+	assert.Equal(t, "Peter", name0)
+
+	var name1 string
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(lines[1])), &name1))
+	assert.Equal(t, "John", name1)
+}

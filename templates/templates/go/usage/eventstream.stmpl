@@ -1,0 +1,8 @@
+{{- $fieldName := getResponseFieldName .Local.Operation "eventstream" }}
+        defer {{getResponseVariableName .Local.StepID}}.{{$fieldName}}.Close()
+
+        for {{getResponseVariableName .Local.StepID}}.{{$fieldName}}.Next() {
+            event := {{getResponseVariableName .Local.StepID}}.{{$fieldName}}.Value()
+            log.Print(event)
+            // Handle the event
+	      }

@@ -1,0 +1,182 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"net/http"
+	"os"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/utils"
+	"{{getRootModulePath}}/{{getNullableLocation}}"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestRequestBodyPutMultipartFile(t *testing.T) {
+	recordTest("request-bodies-put-multipart-file")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	data, err := os.ReadFile("testdata/testUpload.json")
+	require.NoError(t, err)
+
+	res, err := s.RequestBodies.RequestBodyPutMultipartFile(context.Background(),
+		operations.RequestBodyPutMultipartFileRequestBody{
+			File: &operations.RequestBodyPutMultipartFileFile{
+				Content:  data,
+				FileName: "testUpload.json",
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, map[string]string{
+		"file": string(data),
+	}, res.Res.Files)
+}
+
+func TestRequestBodyPutMultipartFileRef(t *testing.T) {
+	recordTest("request-bodies-put-multipart-file-ref")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	data, err := os.ReadFile("testdata/testUpload.json")
+	require.NoError(t, err)
+
+	res, err := s.RequestBodies.RequestBodyPutMultipartFileRef(context.Background(),
+		operations.RequestBodyPutMultipartFileRefRequestBody{
+			File: &shared.BinaryString{
+				Content:  data,
+				FileName: "testUpload.json",
+			},
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, map[string]string{
+		"file": string(data),
+	}, res.Res.Files)
+}
+
+func TestRequestBodyPutBytes(t *testing.T) {
+	recordTest("request-bodies-put-bytes")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	data, err := os.ReadFile("testdata/testUpload.json")
+	require.NoError(t, err)
+
+	res, err := s.RequestBodies.RequestBodyPutBytes(context.Background(), data)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, string(data), res.Res.Data)
+}
+
+func TestRequestBodyPostNullableRequiredProperty(t *testing.T) {
+	tests := []struct {
+		name     string
+		arg      operations.NullableRequiredPropertyPostRequestBody
+		wantJson string
+	}{
+		{
+			name:     "Empty initializer",
+			arg:      operations.NullableRequiredPropertyPostRequestBody{},
+			wantJson: "{\"NullableRequiredArray\":null,\"NullableRequiredBigIntStr\":null,\"NullableRequiredDateTime\":null,\"NullableRequiredDecimalStr\":null,\"NullableRequiredEnum\":null,\"NullableRequiredInt\":null}",
+		},
+		{
+			name: "Optional field set to non-null value",
+			arg: operations.NullableRequiredPropertyPostRequestBody{
+				NullableOptionalInt: optionalnullable.From(sdk.Int64(0)),
+			},
+			wantJson: "{\"NullableOptionalInt\":0,\"NullableRequiredArray\":null,\"NullableRequiredBigIntStr\":null,\"NullableRequiredDateTime\":null,\"NullableRequiredDecimalStr\":null,\"NullableRequiredEnum\":null,\"NullableRequiredInt\":null}",
+		},
+	}
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, _, err := utils.SerializeRequestBody(context.Background(), tt.arg, false, false, "Request", "json", "")
+			require.NoError(t, err)
+			serializedBody := new(bytes.Buffer)
+			serializedBody.ReadFrom(reader)
+			assert.Equal(t, tt.wantJson, serializedBody.String())
+			res, err := s.RequestBodies.NullableRequiredPropertyPost(context.Background(), tt.arg)
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+		})
+	}
+}
+
+func TestRequestBodyNoBodyNoContentType(t *testing.T) {
+	recordTest("request-bodies-no-body-no-content-type")
+	
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Methods.MethodGet(context.Background(), operations.WithServerURL(getAPITestServiceURL()))
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	require.Nil(t, res.HTTPMeta.Request.Body)
+	require.Equal(t, res.HTTPMeta.Request.Header.Get("content-type"), "")
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Object)
+	require.Equal(t, res.Object.Status, sdk.Pointer("OK"))
+
+}
+
+func TestRequestBodiesBase64FileInputIdempotent(t *testing.T) {
+	recordTest("request-bodies-base64-file-input-idempotent")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	preEncoded := base64.StdEncoding.EncodeToString([]byte{0xff, 0xfe, 0x00, 0x01, 0x62, 0x69, 0x6e, 0x61, 0x72, 0x79, 0xc3, 0x28})
+
+	request := shared.Base64InputFileModeRequest{
+		DataByte:            preEncoded,
+		DataContentEncoding: preEncoded,
+		DataPlain:           sdk.String("plain-idempotent"),
+	}
+
+	first, err := s.RequestBodies.PostBase64InputMode(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, first)
+	assert.Equal(t, http.StatusOK, first.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, first.Res)
+	assert.Equal(t, preEncoded, first.Res.JSON.DataByte)
+	assert.Equal(t, preEncoded, first.Res.JSON.DataContentEncoding)
+	assert.Equal(t, "plain-idempotent", first.Res.JSON.DataPlain)
+
+	second, err := s.RequestBodies.PostBase64InputMode(context.Background(), request)
+	require.NoError(t, err)
+	require.NotNil(t, second)
+	assert.Equal(t, http.StatusOK, second.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, second.Res)
+	assert.Equal(t, first.Res.JSON, second.Res.JSON)
+}
+
+func TestRequestBodiesWildcardNoContentType(t *testing.T) {
+	recordTest("request-bodies-wildcard-no-content-type")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.RequestBodies.RequestBodyPostWildcard(context.Background(), nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	
+	require.Len(t, res.HTTPMeta.Request.Header.Values("Content-Type"), 0)
+}

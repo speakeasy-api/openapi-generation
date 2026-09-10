@@ -1,0 +1,27 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test -}}
+{{- $workflow := $test.Workflow -}}
+{{- if $test.Incomplete}}
+{{- addTestImport "vitest" "assert"}}
+{{- addTestImport "vitest" "it"}}
+it.skip("{{sanitizeTestName $testGroup}} {{sanitizeTestName $test.Name | trim}}", async () => {
+  assert.fail("{{templateTestIncompleteMessage $test.Incomplete}}");
+{{- else}}
+{{- addTestImport "vitest" "test"}}
+test("{{sanitizeTestName $testGroup}} {{sanitizeTestName $test.Name | trim}}", async () => {
+{{- templateTestID $test}}
+{{- templateTestEnvVars $test}}
+{{- addTestImport "../index.js" (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+{{- addTestImport (print "./" (getTestClientFileName) ".js") "createTestHTTPClient" -}}
+  const testHttpClient = createTestHTTPClient("{{$test.Name}}");
+{{- if $workflow}}
+{{range $workflow.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" .UsageContext | trim | indent 2}}
+
+{{templateString "usage/call-unguarded.stmpl" .UsageContext | trim | indent 2}}
+{{templateAssertions .UsageContext | trim | indent 2}}
+{{- else}}
+{{templateWorkflow $workflow . | trim | indent 2}}
+{{- end}}{{end}}{{- end}}{{end}}
+});

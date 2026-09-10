@@ -1,0 +1,4260 @@
+components:
+  schemas:
+    readOnlyObject:
+      type: object
+      properties:
+        string:
+          type: string
+          readOnly: true
+          example: "hello"
+        bool:
+          type: boolean
+          readOnly: true
+          example: true
+        num:
+          type: number
+          readOnly: true
+          example: 1.0
+      required:
+        - string
+        - bool
+        - num
+    writeOnlyObject:
+      type: object
+      properties:
+        string:
+          type: string
+          writeOnly: true
+          example: "hello"
+        bool:
+          type: boolean
+          writeOnly: true
+          example: true
+        num:
+          type: number
+          writeOnly: true
+          example: 1.0
+      required:
+        - string
+        - bool
+        - num
+    readWriteObject:
+      type: object
+      properties:
+        num1:
+          type: integer
+          writeOnly: true
+          example: 1
+        num2:
+          type: integer
+          writeOnly: true
+          example: 2
+        num3:
+          type: integer
+          example: 4
+        sum:
+          type: integer
+          readOnly: true
+          example: 7
+      required:
+        - num1
+        - num2
+        - num3
+        - sum
+    collectionOneOfObject:
+      oneOf:
+        - type: object
+          additionalProperties: true
+          example:
+            allow: true
+            user_is_admin: true
+            user_is_granted: []
+        - type: array
+          items: {}
+    stronglyTypedOneOfObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObjectWithType"
+        - $ref: "#/components/schemas/deepObjectWithType"
+      discriminator:
+        propertyName: type
+    stronglyTypedNullableOneOfObject:
+      oneOf:
+        - $ref: "#/components/schemas/nestedEnumArray"
+        - $ref: "#/components/schemas/nestedEnumMap"
+      nullable: true
+      discriminator:
+        propertyName: tags
+    stronglyTypedOneOfObjectWithNonStandardDiscriminatorName:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObjectWithNonStandardTypeName"
+        - $ref: "#/components/schemas/deepObjectWithNonStandardTypeName"
+      discriminator:
+        propertyName: 'obj.type'
+    stronglyTypedOneOfDiscriminatedObject:
+      oneOf:
+        - $ref: "#/components/schemas/taggedObject1"
+        - $ref: "#/components/schemas/taggedObject2"
+        - $ref: "#/components/schemas/taggedObject3"
+      discriminator:
+        propertyName: tag
+        mapping:
+          tag3: "#/components/schemas/taggedObject3"
+          tag1: "#/components/schemas/taggedObject1"
+          tag2: "#/components/schemas/taggedObject2"
+    constDiscriminatedOneOf:
+      oneOf:
+        - $ref: "#/components/schemas/constObject1"
+        - $ref: "#/components/schemas/constObject2"
+      discriminator:
+        propertyName: tag
+        mapping:
+          tag1: "#/components/schemas/constObject1"
+          tag2: "#/components/schemas/constObject2" 
+    constObject1:
+      type: object
+      properties:
+        tag:
+          const: tag1
+        imageURL:
+          type: string
+      required:
+        - tag
+        - imageURL
+    constObject2:
+      type: object
+      properties:
+        tag:
+          const: tag2
+        profileId:
+          type: string
+      required:
+        - tag
+        - profileId
+    stronglyTypedOneOfOptionalDiscriminator:
+      description: |
+        Discriminated oneOf whose discriminator property `kind` is optional
+        (absent from each member's `required`), with an explicit injective
+        mapping (one discriminator value per member schema). Exercises how a
+        target handles an optional discriminator property: the value is still
+        determined by the chosen member, but the property is nullable/omittable
+        rather than mandatory.
+      oneOf:
+        - $ref: "#/components/schemas/optionalDiscriminatorObject1"
+        - $ref: "#/components/schemas/optionalDiscriminatorObject2"
+      discriminator:
+        propertyName: kind
+        mapping:
+          kind1: "#/components/schemas/optionalDiscriminatorObject1"
+          kind2: "#/components/schemas/optionalDiscriminatorObject2"
+    optionalDiscriminatorObject1:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [kind1]
+        value:
+          type: string
+      required:
+        - value
+    optionalDiscriminatorObject2:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [kind2]
+        profile:
+          type: string
+      required:
+        - profile
+    conflictingDiscriminatorMappingKey:
+      type: object
+      required: [prefix, prefixTag2]
+      properties:
+        prefix:
+          $ref: "#/components/schemas/stronglyTypedOneOfDiscriminatedObject"
+        prefixTag2:
+          type: object
+          description: |
+            In Go, this property conflicts with the `prefix` property when concatenated
+            with the discriminator key `tag1` in the `GetPrefixTag2()` getter method.
+          properties:
+            str:
+              type: string
+    conflictingObject:
+      type: object
+      properties:
+        security:
+          type: integer
+          description: security code
+        reason:
+          type: integer
+          description: reason for the incident
+      required:
+        - security
+        - reason
+    ## test generation when objects are members of multiple 
+    ## oneOf definitions 
+    Vehicle:
+      oneOf: 
+      - $ref: '#/components/schemas/Car'
+      - $ref: '#/components/schemas/Bike'
+      discriminator:
+        propertyName: vehicleType
+        mapping: 
+          car: '#/components/schemas/Car'
+          bike: '#/components/schemas/Bike'
+
+    HasWheels:
+      oneOf: 
+      - $ref: '#/components/schemas/Car'
+      - $ref: '#/components/schemas/Bike'
+      discriminator:
+        propertyName: wheelsType
+        mapping: 
+          four: '#/components/schemas/Car'
+          two: '#/components/schemas/Bike'
+          
+    Car:
+      type: object
+      properties:
+        vehicleType:
+          type: string
+          const: car
+        wheelsType:
+          type: string
+          const: four
+      required: [vehicleType, wheelsType]
+    Bike:
+      type: object
+      properties:
+        vehicleType:
+          type: string
+          const: bike
+        wheelsType:
+          type: string
+          const: two
+        colour:
+          type: string
+      required: [vehicleType, wheelsType, colour]
+    NestedDiscUnion:
+      oneOf:
+        - $ref: "#/components/schemas/TypeA"
+        - $ref: "#/components/schemas/TypeB"
+      discriminator:
+        propertyName: type
+        mapping:
+          a: "#/components/schemas/TypeA"
+          b: "#/components/schemas/TypeB"
+    TypeA:
+      oneOf:
+        - $ref: "#/components/schemas/TypeA1"
+        - $ref: "#/components/schemas/TypeA2"
+    TypeA1:
+      type: object
+      required: [type, value]
+      properties:
+        type:
+          type: string
+          const: a
+        value:
+          type: string
+    TypeA2:
+      type: object
+      required: [type, count]
+      properties:
+        type:
+          type: string
+          const: a
+        count:
+          type: integer
+    TypeB:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          const: b
+        data:
+          type: string
+    infectedWithAny:
+      type: object
+      required: [data]
+      properties:
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/simpleObject"
+            - $ref: "#/components/schemas/deepObject"
+            - type: object
+              x-speakeasy-type-override: any
+    unionOfArrays:
+      oneOf:
+        - type: array
+          items:
+            type: object
+            required: [foo]
+            properties:
+              foo:
+                type: string
+          x-speakeasy-name-override: foos
+        - type: array
+          items:
+            type: object
+            required: [bar]
+            properties:
+              bar:
+                type: string
+        - type: array
+          items:
+            type: object
+            required: [baz]
+            properties:
+              baz:
+                type: string
+    unionWithGenericVariant:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: object
+            additionalProperties: true
+    objectWithOptionalTrueNullableTrueField:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 1
+        # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+        type:
+          type: string
+          const: mammal
+        medicalRecord:
+          nullable: true
+          default: null
+          type: object
+          properties:
+            diagnosis:
+              type: string
+              example: "fluffy is sick"
+    objectWithOptionalFalseNullableTrueField:
+      type: object
+      required:
+        - id
+        - medicalRecord
+      properties:
+        id:
+          type: integer
+          example: 1
+        # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+        type:
+          type: string
+          const: mammal
+        medicalRecord:
+          nullable: true
+          default: null
+          type: object
+          properties:
+            diagnosis:
+              type: string
+              example: "fluffy is sick"
+    objectWithOptionalTrueNullableFalseField:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 1
+        # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+        type:
+          type: string
+          const: mammal
+        medicalRecord:
+          nullable: false
+          type: object
+          properties:
+            diagnosis:
+              type: string
+              example: "fluffy is sick"
+    objectWithOptionalFalseNullableFalseField:
+      type: object
+      required:
+        - id
+        - medicalRecord
+      properties:
+        id:
+          type: integer
+          example: 1
+        # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+        type:
+          type: string
+          const: mammal
+        medicalRecord:
+          nullable: false
+          type: object
+          properties:
+            diagnosis:
+              type: string
+              example: "fluffy is sick"
+    OptionalNullable:
+      description: >
+        A model whose name collides with the C# SDK's internal OptionalNullable<T> helper type.
+      type: object
+      properties:
+        value:
+          type: [string, "null"]
+          description: "An optional-nullable field."
+    ObjectWithOptionalNullableFields:
+      description: >
+        A request body carrying various optional-nullable properties.
+      type: object
+      properties:
+        reqStr:
+          type: string
+          description: "A required baseline string."
+        optionalNullable:
+          $ref: "#/components/schemas/OptionalNullable"
+          description: "References a model named OptionalNullable to exercise reserved-class sanitization."
+        optStr:
+          type: string
+          description: "An optional (non-nullable) string."
+        optNullStr:
+          type: [string, "null"]
+          description: "An optional-nullable string."
+        optNullInt:
+          type: [integer, "null"]
+          description: "An optional-nullable integer."
+        optNullNum:
+          type: [number, "null"]
+          description: "An optional-nullable number."
+        optNullBool:
+          type: [boolean, "null"]
+          description: "An optional-nullable boolean."
+        optNullBigInt:
+          type: [integer, "null"]
+          format: bigint
+          description: "An optional-nullable big integer."
+        optNullBigIntStr:
+          type: [string, "null"]
+          format: bigint
+          description: "An optional-nullable big integer serialized as a string."
+        optNullDecimal:
+          type: [number, "null"]
+          format: decimal
+          description: "An optional-nullable decimal."
+        optNullDecimalStr:
+          type: [string, "null"]
+          format: decimal
+          description: "An optional-nullable decimal serialized as a string."
+        optNullArr:
+          type: [array, "null"]
+          items:
+            type: string
+          description: "An optional-nullable array of strings."
+        optNullBigIntStrArr:
+          type: [array, "null"]
+          items:
+            type: [string, "null"]
+            format: bigint
+          description: >
+            An optional-nullable array of string-serialized big integers.
+        optNullMap:
+          type: [object, "null"]
+          additionalProperties:
+            type: string
+          description: "An optional-nullable string-to-string map."
+        optNullDecimalStrMap:
+          type: [object, "null"]
+          additionalProperties:
+            type: [string, "null"]
+            format: decimal
+          description: >
+            An optional-nullable map of string-serialized decimals.
+        optNullUnion:
+          description: "An optional-nullable union of string or integer."
+          oneOf:
+            - type: string
+            - type: integer
+            - type: "null"
+        optNullObj:
+          type: [object, "null"]
+          description: "An optional-nullable object with optional-nullable field."
+          properties:
+            innerReqStr:
+              type: string
+              description: "A required inner string."
+            innerOptNullStr:
+              type: [string, "null"]
+              description: "An optional nullable inner string."
+          required:
+            - innerReqStr
+        optNullDateTime:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            An optional-nullable date-time. Maps to the target's typed date
+            representation and exercises the wrapped-date tri-state
+            (absent / explicit null / set) round trip.
+        optNullDate:
+          type: [string, "null"]
+          format: date
+          description: >
+            An optional-nullable date. Maps to the target's typed date-only
+            representation and completes the date type matrix alongside the
+            plain string and date-time fields.
+        optNullEnum:
+          type: [string, "null"]
+          enum:
+            - first
+            - second
+            - third
+          description: >
+            An optional-nullable string enum. Exercises the wrapped-enum
+            tri-state (absent / explicit null / set) round trip.
+      required:
+        - reqStr
+    ObjectWithOptionalNullableField:
+      description: "A minimal optional-nullable payload"
+      type: object
+      properties:
+        reqStr:
+          type: string
+          description: "A required baseline string."
+        optNullStr:
+          type: [string, "null"]
+          description: "An optional-nullable string."
+      required:
+        - reqStr
+    OptionalNullableBodyAndParam:
+      description: "A component used as both a JSON body and a query parameter."
+      type: object
+      properties:
+        optNullStr:
+          type: [string, "null"]
+          description: >
+            An optional-nullable field used in both a JSON body and a query parameter.
+    NullableUnionWithNullableFields:
+      description: >
+        A nullable union whose two object members carry the same optional-nullable
+        field, a primitive scalar in the first and a nested object in the second.
+      oneOf:
+        - $ref: "#/components/schemas/ObjectWithNullableInteger"
+        - $ref: "#/components/schemas/ObjectWithNullableObject"
+        - type: "null"
+    ObjectWithNullableInteger:
+      type: object
+      properties:
+        value:
+          type: [integer, "null"]
+    ObjectWithNullableObject:
+      type: object
+      properties:
+        value:
+          type: [object, "null"]
+          properties:
+            name:
+              type: string
+    objectWithOptionalNullableDiscriminatedUnion:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 1
+        unionField:
+          nullable: true
+          oneOf:
+            - $ref: "#/components/schemas/taggedObject1"
+            - $ref: "#/components/schemas/taggedObject2"
+          discriminator:
+            propertyName: tag
+            mapping:
+              tag1: "#/components/schemas/taggedObject1"
+              tag2: "#/components/schemas/taggedObject2"
+    objectWithOptionalNullableDiscriminatedClosedUnion:
+      description: >-
+        Same shape as objectWithOptionalNullableDiscriminatedUnion but the union
+        is pinned closed via x-speakeasy-unknown-values: disallow, so it renders
+        as a closed discriminated union (Field(discriminator=...)) regardless of
+        forwardCompatibleUnionsByDefault. This is the optional+nullable closed
+        discriminated-union request-field shape that drops during serialization
+        under Pydantic 2.13 unless wrapped, so it exercises that safeguard.
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 1
+        unionField:
+          nullable: true
+          x-speakeasy-unknown-values: disallow
+          oneOf:
+            - $ref: "#/components/schemas/taggedObject1"
+            - $ref: "#/components/schemas/taggedObject2"
+          discriminator:
+            propertyName: tag
+            mapping:
+              tag1: "#/components/schemas/taggedObject1"
+              tag2: "#/components/schemas/taggedObject2"
+    mixedNullableUnionTypes:
+      oneOf:
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              example: 1
+            # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+            type:
+              type: string
+              const: mammal
+            medicalRecord:
+              nullable: true
+              default: null
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                  example: "fluffy is sick"
+        - type: object
+          required:
+            - id
+            - medicalRecord
+          properties:
+            id:
+              type: integer
+              example: 1
+            # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+            type:
+              type: string
+              const: mammal
+            medicalRecord:
+              nullable: true
+              default: null
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                  example: "fluffy is sick"
+        - type: object
+          required:
+            - id
+            - medicalRecord
+          properties:
+            id:
+              type: integer
+              example: 1
+            # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+            type:
+              type: string
+              const: mammal
+            medicalRecord:
+              nullable: false
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                  example: "fluffy is sick"
+        - type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+              example: 1
+            # this is needed to coerce the generator into making a bespoke unmarshalJSON method
+            type:
+              type: string
+              const: mammal
+            medicalRecord:
+              nullable: false
+              type: object
+              properties:
+                diagnosis:
+                  type: string
+                  example: "fluffy is sick"
+    mixedUnionTypes:
+      oneOf:
+        - $ref: "#/components/schemas/Bike"
+        - type: array
+          items:
+            $ref: "#/components/schemas/Bike"
+    weaklyTypedOneOfObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - $ref: "#/components/schemas/deepObject"
+    weaklyTypedOneOfNullEnumObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - $ref: "#/components/schemas/deepObject"
+        - enum: [null]
+    weaklyTypedOneOfReadOnlyObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - $ref: "#/components/schemas/readOnlyObject"
+    weaklyTypedOneOfWriteOnlyObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - $ref: "#/components/schemas/writeOnlyObject"
+    weaklyTypedOneOfReadWriteObject:
+      oneOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - $ref: "#/components/schemas/readWriteObject"
+    oneOfPrimitives:
+      oneOf:
+        - type: boolean
+        - type: string
+    oneOfCollectionEnum:
+      oneOf:
+        - type: string
+        - $ref: "#/components/schemas/simpleObject"
+        - type: array
+          items:
+            type: string
+            title: nestedenum
+            enum: 
+            - "abc"
+            - "def"
+    oneOfOverlappingObjects:
+      oneOf:
+        - type: object
+          title: obj1
+          required:
+            - field1
+          properties:
+            field1:
+              type: string
+        - type: object
+          title: obj2
+          required:
+            - field1
+            - field2
+          properties:
+            field1:
+              type: string
+            field2:
+              type: boolean
+    objectWithNullEnums:
+      type: object
+      required: [nullEnum]
+      properties:
+        nullEnum:
+          enum: [null]
+        optNullEnum:
+          enum: [null]
+    typedObjectOneOf:
+      oneOf:
+        - $ref: "#/components/schemas/typedObject1"
+        - $ref: "#/components/schemas/typedObject2"
+        - $ref: "#/components/schemas/typedObject3"
+    typedObjectNullableOneOf:
+      oneOf:
+        - $ref: "#/components/schemas/typedObject1"
+        - $ref: "#/components/schemas/typedObject2"
+        - type: "null"
+    flattenedTypedObject1:
+      oneOf:
+        - $ref: "#/components/schemas/typedObject1"
+    nullableTypedObject1:
+      oneOf:
+        - $ref: "#/components/schemas/typedObject1"
+        - type: "null"
+    typedObject1:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - "obj1"
+        value:
+          type: string
+      required:
+        - type
+        - value
+    typedObject2:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - "obj2"
+        value:
+          type: string
+      required:
+        - type
+        - value
+    typedObject3:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - "obj3"
+        value:
+          type: string
+      required:
+        - type
+        - value
+    taggedObject1:
+      type: object
+      properties:
+        tag:
+          type: string
+          enum: [tag1]
+        imageURL:
+          type: string
+      required:
+        - tag
+        - imageURL
+    taggedObject2:
+      type: object
+      properties:
+        tag:
+          type: string
+          enum: [tag2]
+        profileId:
+          type: string
+      required:
+        - tag
+        - profileId
+    taggedObject3:
+      type: object
+      properties:
+        tag:
+          type: string
+          const: tag3
+        phone:
+          type: string
+      required:
+        - tag
+        - phone
+    httpBinSimpleJsonObject:
+      type: object
+      properties:
+        slideshow:
+          type: object
+          properties:
+            author:
+              type: string
+            date:
+              type: string
+            title:
+              type: string
+            slides:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  type:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - title
+                  - type
+          required:
+            - author
+            - date
+            - title
+            - slides
+      required:
+        - slideshow
+    enum:
+      type: string
+      description: "A string based enum"
+      enum:
+        - "one"
+        - "two"
+        - "three"
+        - "four_and_more"
+      example: "one"
+    enumUsedInResponseOnly:
+      type: string
+      description: "Enum used only in responses - should be automatically opened"
+      enum:
+        - "success"
+        - "pending"
+        - "failed"
+      example: "success"
+    enumUsedInRequestOnly:
+      type: string
+      description: "Enum used only in requests - should remain closed"
+      enum:
+        - "create"
+        - "update"
+        - "delete"
+      example: "create"
+    enumUsedInRequestExplicitlyOpen:
+      type: string
+      description: "Enum used only in requests but explicitly marked open"
+      enum:
+        - "alpha"
+        - "beta"
+        - "gamma"
+      x-speakeasy-unknown-values: allow
+      example: "alpha"
+    enumUsedInBothRequestAndResponse:
+      type: string
+      description: "Enum used in both request and response - should be automatically opened"
+      enum:
+        - "active"
+        - "inactive"
+        - "suspended"
+      example: "active"
+    objectWithEnumInResponseOnly:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/enumUsedInResponseOnly"
+        message:
+          type: string
+      required:
+        - status
+    objectWithEnumInRequestOnly:
+      type: object
+      properties:
+        action:
+          $ref: "#/components/schemas/enumUsedInRequestOnly"
+        data:
+          type: string
+      required:
+        - action
+    objectWithEnumExplicitlyOpen:
+      type: object
+      properties:
+        mode:
+          $ref: "#/components/schemas/enumUsedInRequestExplicitlyOpen"
+        value:
+          type: string
+      required:
+        - mode
+    objectWithEnumInBoth:
+      type: object
+      properties:
+        state:
+          $ref: "#/components/schemas/enumUsedInBothRequestAndResponse"
+        description:
+          type: string
+      required:
+        - state
+    enumArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/enum"
+    enumMap:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/enum"
+    nestedEnumArray:
+      type: object
+      properties:
+        tags:
+          type: string
+        enums:
+          $ref: "#/components/schemas/enumArray"
+      required:
+        - tags
+        - enums
+    nestedEnumMap:
+      type: object
+      properties:
+        tags:
+          type: string
+        enums:
+          $ref: "#/components/schemas/enumMap"
+      required:
+        - tags
+        - enums
+    arrayOfDiscriminatedUnions:
+      type: array
+      items:
+        $ref: "#/components/schemas/stronglyTypedOneOfObject"
+    arrayOfDiscriminatedUnionsMap:
+      type: object
+      properties:
+        arrayMap:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/arrayOfDiscriminatedUnions"
+      required:
+        - arrayMap
+    nestedArrayOfDiscriminatedUnions:
+      type: object
+      properties:
+        nestedArray:
+          type: array
+          items:
+            $ref: "#/components/schemas/arrayOfDiscriminatedUnions"
+      required:
+        - nestedArray
+    discriminatedOpenEnumUnion:
+      oneOf:
+        - $ref: "#/components/schemas/objectWithOpenEnumStatus1"
+        - $ref: "#/components/schemas/objectWithOpenEnumStatus2"
+      discriminator:
+        propertyName: status
+        mapping:
+          active: "#/components/schemas/objectWithOpenEnumStatus1"
+          inactive: "#/components/schemas/objectWithOpenEnumStatus2"
+          pending: "#/components/schemas/objectWithOpenEnumStatus1"
+          archived: "#/components/schemas/objectWithOpenEnumStatus2"
+    objectWithOpenEnumStatus1:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, pending]
+          x-speakeasy-unknown-values: allow
+        userId:
+          type: string
+        activeAt:
+          type: string
+          format: date-time
+      required:
+        - status
+        - userId
+    objectWithOpenEnumStatus2:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [inactive, archived]
+          x-speakeasy-unknown-values: allow
+        reason:
+          type: string
+        inactiveSince:
+          type: string
+          format: date-time
+      required:
+        - status
+        - reason
+    simpleObject:
+      description: "A simple object that uses all our supported primitive types and enums and has optional properties."
+      externalDocs:
+        description: "A link to the external docs."
+        url: "https://speakeasy.com/docs"
+      type: object
+      properties:
+        str:
+          type: string
+          description: "A string property."
+          example: "test"
+        bool:
+          type: boolean
+          description: "A boolean property."
+          example: true
+        int:
+          type: integer
+          description: "An integer property."
+          example: 1
+        int32:
+          type: integer
+          format: int32
+          description: "An int32 property."
+          example: 1
+        num:
+          type: number
+          description: "A number property."
+          example: 1.1
+        float32:
+          type: number
+          format: float
+          description: "A float32 property."
+          example: 1.1
+        enum:
+          $ref: "#/components/schemas/enum"
+        date:
+          type: string
+          format: date
+          description: "A date property."
+          example: "2020-01-01"
+        dateTime:
+          type: string
+          format: date-time
+          description: "A date-time property."
+          example: "2020-01-01T00:00:00.001Z"
+        any:
+          description: "An any property."
+          example: "any"
+        strOpt:
+          type: string
+          description: "An optional string property."
+          example: "testOptional"
+        boolOpt:
+          type: boolean
+          description: "An optional boolean property."
+          example: true
+        intOptNull:
+          type: integer
+          description: "An optional integer property will be null for tests."
+        numOptNull:
+          type: number
+          description: "An optional number property will be null for tests."
+        intEnum:
+          type: integer
+          description: "An integer enum property."
+          enum:
+            - 1
+            - 2
+            - 3
+          example: 2
+          x-speakeasy-enum-format: enum
+          x-speakeasy-enums:
+            - First
+            - Second
+            - Third
+        int32Enum:
+          type: integer
+          format: int32
+          description: "An int32 enum property."
+          enum:
+            - 55
+            - 69
+            - 181
+          example: 55
+        bigint:
+          type: integer
+          format: bigint
+          example: 8821239038968084
+        bigintStr:
+          type: string
+          format: bigint
+          example: "9223372036854775808"
+        decimal:
+          type: number
+          format: decimal
+          example: 3.141592653589793
+        decimalStr:
+          type: string
+          format: decimal
+          example: "3.14159265358979344719667586"
+        decimalNullableOpt:
+          type: [number, "null"]
+          format: decimal
+        int64Str:
+          type: string
+          format: int64
+          description: An int64 string
+          example: "100"
+        float64Str:
+          type: string
+          format: float64
+          description: A float64 string
+          example: "1.1"
+      required:
+        - str
+        - bool
+        - int
+        - int32
+        - num
+        - float32
+        - enum
+        - date
+        - dateTime
+        - any
+        - intEnum
+        - int32Enum
+    simpleObjectCamelCase:
+      description: "A simple object that uses all our supported primitive types and enums and has optional properties."
+      externalDocs:
+        description: "A link to the external docs."
+        url: "https://speakeasy.com/docs"
+      type: object
+      properties:
+        str_val:
+          type: string
+          description: "A string property."
+          example: "example"
+        bool_val:
+          type: boolean
+          description: "A boolean property."
+          example: true
+        int_val:
+          type: integer
+          description: "An integer property."
+          example: 999999
+        int32_val:
+          type: integer
+          format: int32
+          description: "An int32 property."
+          example: 1
+        num_val:
+          type: number
+          description: "A number property."
+          example: 1.1
+        float32_val:
+          type: number
+          format: float
+          description: "A float32 property."
+          example: 2.2222222
+        enum_val:
+          $ref: "#/components/schemas/enum"
+        date_val:
+          type: string
+          format: date
+          description: "A date property."
+          example: "2020-01-01"
+        date_time_val:
+          type: string
+          format: date-time
+          description: "A date-time property."
+          example: "2020-01-01T00:00:00.001Z"
+        any_val:
+          description: "An any property."
+          example: "any example"
+        str_opt_val:
+          type: string
+          description: "An optional string property."
+          example: "optional example"
+        bool_opt_val:
+          type: boolean
+          description: "An optional boolean property."
+          example: true
+        int_opt_null_val:
+          type: integer
+          description: "An optional integer property will be null for tests."
+          example: 999999
+        num_opt_null_val:
+          type: number
+          description: "An optional number property will be null for tests."
+          example: 1.1
+        int_enum_val:
+          type: integer
+          description: "An integer enum property."
+          enum:
+            - 1
+            - 2
+            - 3
+          example: 3
+          x-speakeasy-enum-format: enum
+          x-speakeasy-enums:
+            - First
+            - Second
+            - Third
+        int32_enum_val:
+          type: integer
+          format: int32
+          description: "An int32 enum property."
+          enum:
+            - 55
+            - 69
+            - 181
+          example: 69
+        bigint_val:
+          type: integer
+          format: bigint
+        bigint_str_val:
+          type: string
+          format: bigint
+        decimal_val:
+          type: number
+          format: decimal
+      required:
+        - str_val
+        - bool_val
+        - int_val
+        - int32_val
+        - num_val
+        - float32_val
+        - enum_val
+        - date_val
+        - date_time_val
+        - any_val
+        - int_enum_val
+        - int32_enum_val
+    simpleObjectWithType:
+      allOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - type: object
+          properties:
+            type:
+              type: string
+          required:
+            - type
+    anotherObjectWithType:
+      type: object
+      properties:
+        type:
+          type: string
+        bool:
+          type: boolean
+      required: [type, bool]
+    simpleObjectWithNonStandardTypeName:
+      allOf:
+        - $ref: "#/components/schemas/simpleObject"
+        - type: object
+          properties:
+            'obj.type':
+              type: string
+          required:
+            - 'obj.type'
+    deepObject:
+      type: object
+      properties:
+        str:
+          type: string
+          example: "test"
+        bool:
+          type: boolean
+          example: true
+        int:
+          type: integer
+          example: 1
+        num:
+          type: number
+          example: 1.1
+        obj:
+          $ref: "#/components/schemas/simpleObject"
+        map:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/simpleObject"
+          example: { "key": "...", "key2": "..." }
+        arr:
+          type: array
+          items:
+            $ref: "#/components/schemas/simpleObject"
+          example: ["...", "..."]
+        any:
+          anyOf:
+            - $ref: "#/components/schemas/simpleObject"
+            - type: string
+          example: "anyOf[0]"
+        type:
+          type: string
+      required:
+        - str
+        - bool
+        - int
+        - num
+        - obj
+        - map
+        - arr
+        - any
+    deepObjectQueryParams:
+      description: >
+        deepObject style query parameter serialization is undefined for
+        arrays or nested objects by the specification:
+           https://github.com/OAI/OpenAPI-Specification/issues/1706
+        This schema covers the intended implementation cases rather than
+        the fully complex deepObject schema.
+      type: object
+      properties:
+        arr:
+          type: array
+          items:
+            type: string
+          example: ["test1", "test2"]
+        bool:
+          type: boolean
+          example: true
+        int:
+          type: integer
+          example: 1
+        map:
+          type: object
+          additionalProperties:
+            type: string
+          example: {"testkey1": "testvalue1", "testkey2": "testvalue2"}
+        num:
+          type: number
+          example: 1.1
+        obj:
+          $ref: "#/components/schemas/simpleObject"
+        oneof:
+          oneOf:
+            - type: string
+            - type: integer
+          example: test
+        oneofnestedobject:
+          oneOf:
+            - type: string
+            - type: object
+              properties:
+                nested:
+                  type: string
+          example: { "nested": "test" }
+        str:
+          type: string
+          example: "test"
+      required:
+        - arr
+        - bool
+        - int
+        - map
+        - num
+        - obj
+        - str
+    deepObjectSmaller:
+      type: object
+      properties:
+        str:
+          type: string
+          example: "test"
+        bool:
+          type: boolean
+          example: true
+        int:
+          type: integer
+          example: 1
+        num:
+          type: number
+          example: 1.1
+        obj:
+          $ref: "#/components/schemas/simpleObject"
+        map:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/simpleObject"
+          example: { "key": "..." }
+        arr:
+          type: array
+          items:
+            $ref: "#/components/schemas/simpleObject"
+          example: ["...", "..."]
+        any:
+          anyOf:
+            - $ref: "#/components/schemas/simpleObject"
+            - type: string
+          example: "anyOf[0]"
+        type:
+          type: string
+      required:
+        - str
+        - bool
+        - int
+        - num
+        - obj
+        - map
+        - arr
+        - any
+    deepObjectCamelCase:
+      type: object
+      properties:
+        str_val:
+          type: string
+          example: "test"
+        bool_val:
+          type: boolean
+          example: true
+        int_val:
+          type: integer
+          example: 1
+        num_val:
+          type: number
+          example: 1.1
+        obj_val:
+          $ref: "#/components/schemas/simpleObjectCamelCase"
+        map_val:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/simpleObjectCamelCase"
+          example: { "key": "..." }
+        arr_val:
+          type: array
+          items:
+            $ref: "#/components/schemas/simpleObjectCamelCase"
+          example: ["...", "..."]
+        any_val:
+          anyOf:
+            - $ref: "#/components/schemas/simpleObjectCamelCase"
+            - type: string
+        type:
+          type: string
+      required:
+        - str_val
+        - bool_val
+        - int_val
+        - num_val
+        - obj_val
+        - map_val
+        - arr_val
+        - any_val
+    deepObjectWithType:
+      allOf:
+        - $ref: "#/components/schemas/deepObject"
+        - type: object
+          properties:
+            type:
+              type: string
+    deepObjectWithNonStandardTypeName:
+      allOf:
+        - $ref: "#/components/schemas/deepObject"
+        - type: object
+          properties:
+            'obj.type':
+              type: string
+    complexNumberArrays:
+      type: object
+      properties:
+        bigIntArray:
+            type: array
+            items:
+              type: integer
+              format: bigint
+        bigIntStrArray:
+            type: array
+            items:
+              type: string
+              format: bigint
+        decimalArray:
+            type: array
+            items:
+              type: number
+              format: decimal
+        decimalStrArray:
+            type: array
+            items:
+              type: string
+              format: decimal
+    complexNumberMaps:
+      type: object
+      properties:
+        bigintMap:
+          type: object
+          additionalProperties:
+            type: integer
+            format: bigint
+        bigintStrMap:
+          type: object
+          additionalProperties:
+            type: string
+            format: bigint
+        decimalMap:
+          type: object
+          additionalProperties:
+            type: number
+            format: decimal
+        decimalStrMap:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+    fakerFormattedStrings:
+      type: object
+      description: A set of strings with format values that lead to relevant examples being generated for them
+      properties:
+        dateFormat:
+          format: date
+          type: string
+          description: A field that will have RFC3339 formatted datestamp generated as example
+        datetimeFormat:
+          format: date-time
+          type: string
+          description: A field that will have RFC3339 formatted timestamp generated as example
+        imageFormat:
+          format: image
+          type: string
+          description: A field that will have a image url generated as example
+        addressFormat:
+          format: address
+          type: string
+          description: A field that will have an address generated as example
+        timezoneFormat:
+          format: timezone
+          type: string
+          description: A field that will have a timezone generated as example
+        zipcodeFormat:
+          format: zipcode
+          type: string
+          description: A field that will have a postal code generated as example
+        jsonFormat:
+          format: json
+          type: string
+          description: A field that will have a JSON generated as example
+        uuidFormat:
+          format: uuid
+          type: string
+          description: A field that will have a UUID generated as example
+        domainFormat:
+          format: domain
+          type: string
+          description: A field that will have a domain name generated as example
+        emailFormat:
+          format: email
+          type: string
+          description: A field that will have an email address generated as example
+        ipv4Format:
+          format: ipv4
+          type: string
+          description: A field that will have an IPv4 address generated as example
+        ipv6Format:
+          format: ipv6
+          type: string
+          description: A field that will have an IPv6 address generated as example
+        macFormat:
+          format: mac
+          type: string
+          description: A field that will have a MAC address generated as example
+        passwordFormat:
+          format: password
+          type: string
+          description: A field that will have a fake password generated as example
+        urlFormat:
+          format: url
+          type: string
+          description: A field that will have a URL generated as example
+        phoneFormat:
+          format: phone
+          type: string
+          description: A field that will have a phone number generated as example
+        filenameFormat:
+          format: filename
+          type: string
+          description: A field that will have a filename generated as example
+        directoryFormat:
+          format: directory
+          type: string
+          description: A field that will have a directory path generated as example
+        filepathFormat:
+          format: filepath
+          type: string
+          description: A field that will have a file path generated as example
+        unknownFormat:
+          format: unknown
+          type: string
+          description: A field that will have random words generated as example
+      required:
+        - addressFormat
+        - dateFormat
+        - datetimeFormat
+        - directoryFormat
+        - domainFormat
+        - emailFormat
+        - filenameFormat
+        - filepathFormat
+        - imageFormat
+        - ipv4Format
+        - ipv6Format
+        - jsonFormat
+        - macFormat
+        - passwordFormat
+        - phoneFormat
+        - timezoneFormat
+        - unknownFormat
+        - urlFormat
+        - uuidFormat
+        - zipcodeFormat
+    fakerCamelCasePropertyNameStrings:
+      type: object
+      description: A set of strings with camel case fieldnames that lead to relevant examples being generated for them
+      properties:
+        City:
+          type: string
+        IBAN:
+          type: string
+        ID:
+          type: string
+        IPv4:
+          type: string
+        IPv6:
+          type: string
+      required:
+        - City
+        - IBAN
+        - ID
+        - IPv4
+        - IPv6
+    fakerKebobCasePropertyNameStrings:
+      type: object
+      description: A set of strings with kebob case fieldnames that lead to relevant examples being generated for them
+      properties:
+        postal-code:
+          type: string
+      required:
+        - postal-code
+    fakerPascalCasePropertyNameStrings:
+      type: object
+      description: A set of strings with pascal case fieldnames that lead to relevant examples being generated for them
+      properties:
+        account:
+          type: string
+        address:
+          type: string
+        addressLine1:
+          type: string
+        amount:
+          type: string
+        avatar:
+          type: string
+        city:
+          type: string
+        color:
+          type: string
+        comment:
+          type: string
+        company:
+          type: string
+        continent:
+          type: string
+        createdAt:
+          type: string
+          description: RFC3339 formatted timestamp
+        country:
+          type: string
+        countryCode:
+          type: string
+        currency:
+          type: string
+        currencyCode:
+          type: string
+        currencyISO:
+          type: string
+        datatype:
+          type: string
+        default:
+          type: string
+        description:
+          type: string
+        directory:
+          type: string
+        domain:
+          type: string
+        domainName:
+          type: string
+        email:
+          type: string
+        emailAddr:
+          type: string
+        emailAddress:
+          type: string
+        expiredAt:
+          type: string
+        expires:
+          type: string
+        expiresAt:
+          type: string
+        extension:
+          type: string
+        filename:
+          type: string
+        filepath:
+          type: string
+        filetype:
+          type: string
+        firstName:
+          type: string
+        fullName:
+          type: string
+        gender:
+          type: string
+        host:
+          type: string
+        hostName:
+          type: string
+        httpStatus:
+          type: string
+        iban:
+          type: string
+        id:
+          type: string
+        ip:
+          type: string
+        ipAddr:
+          type: string
+        ipAddress:
+          type: string
+        ipv4:
+          type: string
+        ipv6:
+          type: string
+        job:
+          type: string
+        json:
+          type: string
+        key:
+          type: string
+        lastName:
+          type: string
+        latitude:
+          type: string
+        longitude:
+          type: string
+        locale:
+          type: string
+        mac:
+          type: string
+        manufacturer:
+          type: string
+        material:
+          type: string
+        middleName:
+          type: string
+        model:
+          type: string
+        password:
+          type: string
+        phone:
+          type: string
+        pin:
+          type: string
+        postalCode:
+          type: string
+        price:
+          type: string
+        product:
+          type: string
+        sex:
+          type: string
+        statusCode:
+          type: string
+        street:
+          type: string
+        timezone:
+          type: string
+        unit:
+          type: string
+        updatedAt:
+          type: string
+          description: RFC3339 formatted timestamp
+        uri:
+          type: string
+        url:
+          type: string
+        username:
+          type: string
+        uuid:
+          type: string
+      required:
+        - account
+        - accountLine1
+        - address
+        - amount
+        - avatar
+        - city
+        - color
+        - comment
+        - company
+        - continent
+        - country
+        - countryCode
+        - createdAt
+        - creditCardNumber
+        - currency
+        - currencyCode
+        - currencyISO
+        - datatype
+        - default
+        - description
+        - directory
+        - domain
+        - domainName
+        - email
+        - emailAddr
+        - emailAddress
+        - expiredAt
+        - expires
+        - expiresAt
+        - extension
+        - filename
+        - filepath
+        - filetype
+        - firstName
+        - fullName
+        - gender
+        - host
+        - hostName
+        - httpStatus
+        - iban
+        - id
+        - ip
+        - ipAddr
+        - ipAddress
+        - ipv4
+        - ipv6
+        - job
+        - json
+        - key
+        - lastName
+        - latitude
+        - locale
+        - longitude
+        - mac
+        - manufacturer
+        - material
+        - middleName
+        - model
+        - password
+        - phone
+        - pin
+        - postalCode
+        - price
+        - product
+        - sex
+        - statusCode
+        - street
+        - timezone
+        - unit
+        - updatedAt
+        - uri
+        - url
+        - username
+        - uuid
+    fakerSnakeCasePropertyNameStrings:
+      type: object
+      description: A set of strings with snake case fieldnames that lead to relevant examples being generated for them
+      properties:
+        country_code:
+          type: string
+        created_at:
+          type: string
+          description: RFC3339 formatted timestamp
+        expired_at:
+          type: string
+          description: RFC3339 formatted timestamp
+        updated_at:
+          type: string
+          description: RFC3339 formatted timestamp
+      required:
+        - country_code
+        - created_at
+        - expired_at
+        - updated_at
+    authServiceRequestBody:
+      type: object
+      properties:
+        headerAuth:
+          type: array
+          items:
+            type: object
+            properties:
+              headerName:
+                type: string
+              expectedValue:
+                type: string
+            required:
+              - headerName
+              - expectedValue
+        basicAuth:
+          type: object
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+          required:
+            - username
+            - password
+    arrValue:
+      type: array
+      items:
+        $ref: "#/components/schemas/simpleObject"
+    arrValueCamelCase:
+      type: array
+      items:
+        $ref: "#/components/schemas/simpleObjectCamelCase"
+    arrArrValue:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: "#/components/schemas/simpleObject"
+    arrArrValueCamelCase:
+      type: array
+      items:
+        type: array
+        items:
+          $ref: "#/components/schemas/simpleObjectCamelCase"
+    arrObjValue:
+      type: object
+      properties:
+        json:
+          items:
+            $ref: "#/components/schemas/simpleObject"
+          type: array
+          example: ["...", "..."]
+      required:
+        - json
+    arrObjValueCamelCase:
+      type: object
+      properties:
+        json:
+          items:
+            $ref: "#/components/schemas/simpleObjectCamelCase"
+          type: array
+          example: ["...", "..."]
+      required:
+        - json
+    mapValue:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/simpleObject"
+      example: { "mapElem1": "...", "mapElem2": "..." }
+    mapValueCamelCase:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/simpleObjectCamelCase"
+      example: { "mapElem1": "...", "mapElem2": "..." }
+    mapMapValue:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/simpleObject"
+      example: { "mapElem1" : {"subMapElem1": "...", "subMapElem2": "..."}, "mapElem2" : {"subMapElem1": "...", "subMapElem2": "..."}}
+    mapMapValueCamelCase:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/simpleObjectCamelCase"
+      example: { "mapElem1" : {"subMapElem1": "...", "subMapElem2": "..."}, "mapElem2" : {"subMapElem1": "...", "subMapElem2": "..."}}
+    mapObjValue:
+      type: object
+      properties:
+        json:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/simpleObject"
+          example: { "mapElem1": "...", "mapElem2": "..." }
+      required:
+        - json
+    mapObjValueCamelCase:
+      type: object
+      properties:
+        json:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/simpleObjectCamelCase"
+          example: { "mapElem1": "...", "mapElem2": "..." }
+      required:
+        - json
+    arrMapValue:
+      type: array
+      items:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/simpleObject"
+      example: [{"mapElem1": "...", "mapElem2": "..."}, {"mapElem1": "...", "mapElem2": "..."}]
+    arrMapValueCamelCase:
+      type: array
+      items:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/simpleObjectCamelCase"
+      example: [{"mapElem1": "...", "mapElem2": "..."}, {"mapElem1": "...", "mapElem2": "..."}]
+    mapAnyValue:
+      type: object
+      additionalProperties: true
+      example: { "mapElemArray": ["array-test"], "mapElemBool": true, "mapElemNumber": 123, "mapElemObject": { "property": "property-test" }, "mapElemString": "string-test" }
+    mapArrValue:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: "#/components/schemas/simpleObject"
+      example: { "mapElem1": ["...", "..."], "mapElem2": ["...", "..."] }
+    mapArrValueCamelCase:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: "#/components/schemas/simpleObjectCamelCase"
+      example: { "mapElem1": ["...", "..."], "mapElem2": ["...", "..."] }
+    arrPrimitiveValue:
+      type: array
+      items:
+        type: string
+      example: ["hello", "world"]
+    mapPrimitiveValue:
+      type: object
+      additionalProperties:
+        type: string
+      example: { "mapElem1": "hello", "mapElem2": "world" }
+    arrArrPrimitiveValue:
+      type: array
+      items:
+        type: array
+        items:
+          type: string
+      example: [["foo", "bar"], ["buzz", "bazz"]]
+    mapMapPrimitiveValue:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: string
+      example: { "mapElem1" : {"subMapElem1": "foo", "subMapElem2": "bar"}, "mapElem2" : {"subMapElem1": "buzz", "subMapElem2": "bazz"}}
+    orphanedObject:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        orphaned:
+          type: string
+        required:
+          - orphaned
+    seperatedCircularReferenceObject:
+      type: object
+      properties:
+        circular:
+          $ref: "#/components/schemas/validCircularReferenceObject"
+    validCircularReferenceObject:
+      type: object
+      properties:
+        circular:
+          type: array
+          items:
+            $ref: "#/components/schemas/validCircularReferenceObject"
+        separated:
+          $ref: "#/components/schemas/seperatedCircularReferenceObject"
+    arrayCircularReferenceObject:
+      type: array
+      items:
+        type: object
+        properties:
+          circular:
+            $ref: "#/components/schemas/arrayCircularReferenceObject"
+        required:
+          - circular
+    objectCircularReferenceObject:
+      type: object
+      properties:
+        circular:
+          $ref: "#/components/schemas/objectCircularReferenceObject"
+    oneOfCircularReferenceObject:
+      type: object
+      properties:
+        child:
+          oneOf:
+            - $ref: "#/components/schemas/oneOfCircularReferenceObject"
+            - $ref: "#/components/schemas/simpleObject"
+      required:
+        - child
+    recursiveOneOfValue:
+      description: >
+        A oneOf schema recursive via both array items and additionalProperties,
+        with a string base case. Must be referenced as a field inside an object
+        so the circular reference validator allows it through.
+      x-speakeasy-include: true
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            $ref: "#/components/schemas/recursiveOneOfValue"
+        - type: object
+          additionalProperties:
+            $ref: "#/components/schemas/recursiveOneOfValue"
+    objWithRenamedProperties:
+      type: object
+      properties:
+        direct:
+          $ref: "#/components/schemas/renamedSchema"
+        namespaced:
+          $ref: "#/components/schemas/namespacedSchema"
+        shadow:
+          x-speakeasy-name-override: overridden
+          $ref: "#/components/schemas/renamedSchema"
+        allof:
+          $ref: "#/components/schemas/renamedAllOfSchema"
+    renamedSchema:
+      x-speakeasy-name-override: Boole
+      type: object
+      properties:
+        bool:
+          type: boolean
+    renamedAllOfSchema:
+      x-speakeasy-name-override: Aloof
+      allOf:
+        - $ref: '#/components/schemas/renamedSchema'
+        - x-speakeasy-name-override: noEffect
+        - type: object
+          properties:
+            int:
+              type: integer
+    namespacedSchema:
+      x-speakeasy-model-namespace: baz
+      x-speakeasy-name-override: namespaced
+      type: object
+      properties:
+        namespace:
+          type: string
+          const: baz
+    conflictingEnum:
+      type: object
+      properties:
+          object:
+            type: string
+            enum:
+              - OBJ1
+              - OBJ2
+    deprecatedObject:
+      type: object
+      deprecated: true
+      x-speakeasy-deprecation-message: This object is deprecated
+      properties:
+        str:
+          type: string
+    deprecatedObjectWithExample:
+      type: object
+      deprecated: true
+      properties:
+        str:
+          type: string
+      example:
+        str: "testvalue"
+    deprecatedFieldInObject:
+      type: object
+      properties:
+        deprecatedField:
+          type: string
+          deprecated: true
+          x-speakeasy-deprecation-replacement: newField
+        deprecatedEnum:
+          type: string
+          enum: ["a", "b", "c"]
+          deprecated: true
+          x-speakeasy-deprecation-message: This enum is deprecated
+        newField:
+          type: string
+    limitOffsetConfig:
+      type: object
+      properties:
+        offset:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+    nullableLimitOffsetConfig:
+      type: object
+      properties:
+        page:
+          type: integer
+          nullable: true
+        limit:
+          type: integer
+          nullable: true
+    nullableLimitOffsetBody:
+      description: >-
+        A pagination request body that is nullable at the top level with every
+        property optional, so null is a valid value for the whole body and a
+        later page can materialize a body from nothing.
+      type: object
+      nullable: true
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+    limitOffsetConfigWithDefaults:
+      type: object
+      properties:
+        offset:
+          type: integer
+          default: 10
+        page:
+          type: integer
+        limit:
+          type: integer
+          default: 15
+    filter:
+      type: object
+      properties:
+        filter:
+          type: string
+          description: A filter query string
+        token:
+          type: string
+          description: Pagination token
+    error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+          x-speakeasy-error-message: true
+        type:
+          $ref: "#/components/schemas/errorType"
+      additionalProperties: true
+    errorMessage:
+      type: object
+      properties:
+        code:
+          type: integer
+        description:
+          type: string
+          x-speakeasy-error-message: true
+    nullableOptionalErrorMessage:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+          nullable: true
+          x-speakeasy-error-message: true
+      required:
+        - code
+    nestedNullableOptionalErrorMessage:
+      type: object
+      properties:
+        code:
+          type: integer
+        cause:
+          type: object
+          nullable: true
+          properties:
+            message:
+              type: string
+              x-speakeasy-error-message: true
+      required:
+        - code
+    errorType:
+      type: string
+      enum:
+        - "not_found"
+        - "invalid"
+        - "internal"
+    errorType1:
+      type: object
+      properties:
+        error: 
+          type: string
+      required:
+        - error
+    errorType2:
+      type: object
+      properties:
+        error: 
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      required:
+        - error
+    taggedError1:
+      type: object
+      properties:
+        tag:
+          type: string
+          enum: [tag0, tag1]
+        error:
+          type: string
+      required:
+        - tag
+        - error
+    taggedError2:
+      type: object
+      properties:
+        tag:
+          type: string
+          const: tag2
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      required:
+        - tag
+        - error
+    # Test case for shared error type in multiple discriminated error unions
+    # This tests that Discriminator.Mapping references are properly updated
+    # when the same type is used in multiple error response oneOfs
+    SharedDiscriminatedError:
+      type: object
+      properties:
+        errorType:
+          type: string
+          const: shared_error
+        message:
+          type: string
+      required:
+        - errorType
+        - message
+    SpecificError1:
+      type: object
+      properties:
+        errorType:
+          type: string
+          const: specific_error_1
+        details:
+          type: string
+      required:
+        - errorType
+        - details
+    SpecificError2:
+      type: object
+      properties:
+        errorType:
+          type: string
+          const: specific_error_2
+        reason:
+          type: string
+      required:
+        - errorType
+        - reason
+    RequestTimeoutErrorData:
+      x-speakeasy-name-override: RequestTimeoutError
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+    ErrorWithAdditionalProps:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+      additionalProperties: {}
+    teapotJSONError:
+      type: object
+      properties:
+        message:
+          type: string
+    complexNumberTypes:
+      type: object
+      properties:
+        bigintStr:
+          type: string
+          format: bigint
+          example: "9223372036854775808"
+        bigint:
+          type: integer
+          format: bigint
+          example: 8821239038968084
+        decimal:
+          type: number
+          format: decimal
+          example: 3.141592653589793
+        decimalStr:
+          type: string
+          format: decimal
+          example: "3.14159265358979344719667586"
+        int64Str:
+          type: string
+          format: int64
+          example: "100"
+        float64Str:
+          type: string
+          format: float64
+          example: "1.1"
+      required:
+        - bigintStr
+        - bigint
+        - decimal
+        - decimalStr
+        - int64Str
+        - float64Str
+    optionalComplexNumberTypes:
+      type: object
+      properties:
+        bigintStr:
+          type: string
+          format: bigint
+          example: "9223372036854775808"
+        bigint:
+          type: integer
+          format: bigint
+          example: 8821239038968084
+        decimal:
+          type: number
+          format: decimal
+          example: 3.141592653589793
+        decimalStr:
+          type: string
+          format: decimal
+          example: "3.14159265358979344719667586"
+        int64Str:
+          type: string
+          format: int64
+          example: "100"
+        float64Str:
+          type: string
+          format: float64
+          example: "1.1"
+    nullableComplexNumberTypes:
+      type: object
+      properties:
+        bigintStr:
+          type: ["string", "null"]
+          format: bigint
+        bigint:
+          type: ["integer", "null"]
+          format: bigint
+        decimal:
+          type: ["number", "null"]
+          format: decimal
+        decimalStr:
+          type: ["string", "null"]
+          format: decimal
+        int64Str:
+          type: ["string", "null"]
+          format: int64
+        float64Str:
+          type: ["string", "null"]
+          format: float64
+      required:
+        - bigintStr
+        - bigint
+        - decimal
+        - decimalStr
+        - int64Str
+        - float64Str
+    defaultsAndConsts:
+      type: object
+      properties:
+        normalField:
+          type: string
+          example: "test"
+        constStr:
+          type: string
+          const: "const"
+        constStrDQuotes:
+          type: string
+          const: 'const with "double quotes"'
+        constStrSQuotes:
+          type: string
+          const: "const with 'single quotes'"
+        constStrBackticks:
+          type: string
+          const: "const with `backticks`"
+        constStrBrackets:
+          type: string
+          const: "const with ${<brackets>}"
+        constStrNull:
+          type: string
+          const: null
+          nullable: true
+        constInt:
+          type: integer
+          const: 123
+        constNum:
+          type: number
+          const: 123.456
+        constBool:
+          type: boolean
+          const: true
+        constDate:
+          type: string
+          format: date
+          const: "2020-01-01"
+        constDateTime:
+          type: string
+          format: date-time
+          const: "2020-01-01T00:00:00Z"
+        constEnumStr:
+          type: string
+          enum:
+            - "one"
+            - "two"
+            - "three"
+          const: "two"
+        constEnumInt:
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+          const: 2
+        constBigInt:
+          type: integer
+          format: bigint
+          const: 9007199254740991
+        constBigIntStr:
+          type: string
+          format: bigint
+          const: "9223372036854775807"
+        constDecimal:
+          type: number
+          format: decimal
+          const: 3.141592653589793
+        constDecimalStr:
+          type: string
+          format: decimal
+          const: "3.141592653589793238462643383279"
+        defaultStr:
+          type: string
+          default: "default"
+        defaultStrDQuotes:
+          type: string
+          default: 'default with "double quotes"'
+        defaultStrSQuotes:
+          type: string
+          default: "default with 'single quotes'"
+        defaultStrBackticks:
+          type: string
+          default: 'default with `backticks`'
+        defaultStrBrackets:
+          type: string
+          default: 'default with ${<brackets>}'
+        defaultStrNullable:
+          type: string
+          default: null
+          nullable: true
+        defaultStrOptional:
+          type: string
+          default: "default"
+        defaultInt:
+          type: integer
+          default: 123
+        defaultNum:
+          type: number
+          default: 123.456
+        defaultBool:
+          type: boolean
+          default: true
+        defaultDate:
+          type: string
+          format: date
+          default: "2020-01-01"
+        defaultDateTime:
+          type: string
+          format: date-time
+          default: "2020-01-01T00:00:00Z"
+        defaultEnumStr:
+          type: string
+          enum:
+            - "one"
+            - "two"
+            - "three"
+          default: "two"
+        defaultEnumInt:
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+          default: 2
+        defaultBigInt:
+          type: integer
+          format: bigint
+          default: 9007199254740991
+        defaultBigIntStr:
+          type: string
+          format: bigint
+          default: "9223372036854775807"
+        defaultDecimal:
+          type: number
+          format: decimal
+          default: 3.141592653589793
+        defaultDecimalStr:
+          type: string
+          format: decimal
+          default: "3.141592653589793238462643383279"
+      required:
+        - normalField
+        - constStr
+        - constStrNull
+        - constStrDQuotes
+        - constStrSQuotes
+        - constInt
+        - constNum
+        - constBool
+        - constDate
+        - constDateTime
+        - constEnumStr
+        - constEnumInt
+        - constBigInt
+        - constBigIntStr
+        - constDecimal
+        - constDecimalStr
+        - constStrBackticks
+        - constStrBrackets
+        - defaultStr
+        - defaultStrNullable
+        - defaultStrDQuotes
+        - defaultStrSQuotes
+        - defaultInt
+        - defaultNum
+        - defaultBool
+        - defaultDate
+        - defaultDateTime
+        - defaultEnumStr
+        - defaultEnumInt
+        - defaultBigInt
+        - defaultBigIntStr
+        - defaultDecimal
+        - defaultDecimalStr
+    objWithStringAdditionalProperties:
+      type: object
+      properties:
+        normalField:
+          type: string
+      additionalProperties:
+        type: string
+      required:
+        - normalField
+    objWithAnyAdditionalProperties:
+      type: object
+      properties:
+        normalField:
+          type: string
+      additionalProperties: true
+    objWithComplexNumbersAdditionalProperties:
+      type: object
+      properties:
+        normalField:
+          type: string
+      additionalProperties:
+        type: string
+        format: bigint
+      required:
+        - normalField
+    objWithDateAdditionalProperties:
+      type: object
+      properties:
+        normalField:
+          type: string
+      additionalProperties:
+        type: string
+        format: date
+      required:
+        - normalField
+    objWithObjAdditionalProperties:
+      type: object
+      required:
+        - datetime
+        - AdditionalProperties
+      properties:
+        datetime:
+          type: string
+          format: date-time
+        AdditionalProperties:
+          type: array
+          items:
+            type: integer
+      additionalProperties:
+        $ref: "components.yaml#/components/schemas/simpleObject"
+    objWithOptionalProperties:
+      type: object
+      properties:
+        optStr:
+          type: string
+        optInt:
+          type: integer
+    jsonEvent:
+      description: Represents a single event in a json stream
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [content]
+          properties:
+            content:
+              type: string
+    textEvent:
+      description: Represents a single event in a text stream
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: string
+    sseEvent:
+      description: Represents a single event with standard fields
+      type: object
+      required: [data]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        retry:
+          type: integer
+          format: int64
+        data:
+          type: string
+    richStream:
+      oneOf:
+        - $ref: "#/components/schemas/richCompletionEvent"
+        - $ref: "#/components/schemas/heartbeatEvent"
+      discriminator:
+        propertyName: event
+        mapping:
+          completion: "#/components/schemas/richCompletionEvent"
+          heartbeat: "#/components/schemas/heartbeatEvent"
+    richCompletionEvent:
+      description: Represents a single event in a completion stream
+      type: object
+      required: [id, event, data]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+          const: completion
+        data:
+          $ref: "#/components/schemas/richCompletionEventData"
+    richCompletionEventData:
+      type: object
+      required: [completion, stop_reason]
+      properties:
+        completion:
+          type: string
+        stop_reason:
+          type: [string, "null"]
+          enum: [stop_sequence, max_tokens, null]
+        model:
+          type: string
+    heartbeatEvent: 
+      description: Represents a single heartbeat event
+      type: object
+      required: [event, data]
+      properties:
+        event:
+          type: string
+          const: heartbeat
+        data:
+          type: string
+        retry:
+          type: integer
+    chatCompletionResult:
+      type: array
+      items:
+        oneOf:
+          - $ref: "#/components/schemas/chatCompletionEvent"
+          - $ref: "#/components/schemas/sentinelEvent"
+    chatCompletionStream:
+      oneOf:
+        - $ref: "#/components/schemas/chatCompletionEvent"
+        - $ref: "#/components/schemas/sentinelEvent"
+    chatCompletionEvent:
+      description: Represents a chat completion event which contains printable content
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [content]
+          properties:
+            content:
+              type: string
+    sentinelEvent:
+      description: Represents the final event in an event stream
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: string
+          const: "[DONE]"
+    differentDataSchemas:
+      description: Represents an event with different schemas for the data property
+      type: object
+      required: [id, event, data]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+          enum: [message, url, array, primitive]
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/messageEvent"
+            - $ref: "#/components/schemas/urlEvent"
+            - $ref: "#/components/schemas/arrayEvent"
+            - type: boolean
+            - type: number
+              format: float
+    messageEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        content:
+          type: string
+      required:
+        - content
+    urlEvent:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+    arrayEvent:
+      type: array
+      items:
+        type: integer
+    mixedDataEvent:
+      description: Represents an event with either JSON or plain text data
+      type: object
+      required: [event, data]
+      properties:
+        event:
+          type: string
+          enum: [completion, text, loading]
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/messageEvent"
+            - type: string
+      discriminator:
+        propertyName: event
+        mapping:
+          completion: "#/components/schemas/messageEvent"
+          text: "#/components/schemas/stringData"
+          loading: "#/components/schemas/stringData"
+    stringData:
+      type: string
+    unionWithCommentsStream:
+      oneOf:
+        - $ref: "#/components/schemas/statusEvent"
+        - $ref: "#/components/schemas/progressEvent"
+      discriminator:
+        propertyName: event
+        mapping:
+          status: "#/components/schemas/statusEvent"
+          progress: "#/components/schemas/progressEvent"
+    statusEvent:
+      description: Represents a status update event
+      type: object
+      required: [event, data]
+      properties:
+        event:
+          type: string
+        data:
+          $ref: "#/components/schemas/statusEventData"
+    statusEventData:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    progressEvent:
+      description: Represents a progress update event
+      type: object
+      required: [event, data]
+      properties:
+        event:
+          type: string
+        data:
+          $ref: "#/components/schemas/progressEventData"
+    progressEventData:
+      type: object
+      required: [percent, detail]
+      properties:
+        percent:
+          type: integer
+        detail:
+          type: string
+    partialWithCommentsEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        data:
+          type: object
+          properties:
+            message:
+              type: string
+            status:
+              type: string
+            progress:
+              type: integer
+            result:
+              type: string
+            test:
+              type: string
+            another:
+              type: string
+      required:
+        - data
+    optionalDataEvent:
+      description: Represents an SSE event where the data field is optional (not in required array)
+      type: object
+      properties:
+        event:
+          type: string
+        data:
+          $ref: "#/components/schemas/optionalDataEventPayload"
+        id:
+          type: string
+        retry:
+          type: integer
+      required:
+        - event
+    optionalDataEventPayload:
+      type: object
+      properties:
+        content:
+          type: string
+      required:
+        - content
+    nullableIdEvent:
+      description: Represents an SSE event where the id field is nullable
+      type: object
+      required:
+        - event
+        - data
+      properties:
+        id:
+          type: string
+          nullable: true
+        event:
+          type: string
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+    themeRequestOpaque:
+      type: object
+      properties:
+        color:
+          type: string
+          example: green
+        icon:
+          type: string
+          example: tick
+        heroWidth:
+          type: integer
+          example: 480
+    themeResponse:
+      type: object
+      required:
+        - json
+      properties:
+        json:
+          $ref: "#/components/schemas/theme"
+    theme:
+      type: object
+      properties:
+        color:
+          type: string
+          # include some common reserverd words in the enum
+          # to test sanitization
+          enum: [red, green, blue, return, class, int]
+          example: green
+          default: blue
+          x-speakeasy-unknown-values: allow
+        icon:
+          type: string
+          enum: [tick, thumbs-up, fire]
+          example: tick
+        heroWidth:
+          type: integer
+          enum: [480, 720, 1080]
+          example: 480
+          x-speakeasy-unknown-values: allow
+    RecursiveGroup:
+      type: object
+      properties:
+        type:
+          type: string
+        children:
+          type: array
+          items:
+              $ref: "#/components/schemas/RecursiveEntry"
+    RecursiveEntry:
+      oneOf:
+        - $ref: "#/components/schemas/RecursiveRule"
+        - $ref: "#/components/schemas/RecursiveGroup"
+    RecursiveRule:
+      type: object
+      properties:
+        expression:
+          type: string
+        children:
+          type: array
+          items:
+              $ref: "#/components/schemas/RecursiveEntry"
+    binaryString:
+      type: string
+      format: binary
+    base64InputFileModeRequest:
+      description: |-
+        Exercises x-speakeasy-base64-input-mode: file on string fields.
+        Each opted-in property accepts pre-encoded base64 string, PathLike,
+        or binary IO; the generator must serialize non-string inputs to base64
+        before sending JSON. Control field stays plain string.
+      type: object
+      required:
+        - dataByte
+        - dataContentEncoding
+      properties:
+        dataByte:
+          description: format:byte opted in via extension; expects Union[str, Base64FileInput] in Python.
+          type: string
+          format: byte
+          x-speakeasy-base64-input-mode: file
+        dataContentEncoding:
+          description: contentEncoding:base64 spelling; same opt-in behavior as dataByte.
+          type: string
+          contentEncoding: base64
+          x-speakeasy-base64-input-mode: file
+        dataPlain:
+          description: format:byte without extension; control field, stays plain string.
+          type: string
+          format: byte
+    base64InputFileModeResponse:
+      description: |-
+        Response side for base64 file-input mode. Each property covers one row of the
+        opt-in matrix: a plain string, a base64 string without the extension, and a
+        base64 string with the extension applied. Response models must keep all three
+        as plain str — widening to a union would force consumers to narrow with typeof
+        on every read.
+      type: object
+      required:
+        - dataPlain
+        - dataByte
+        - dataContentEncoding
+      properties:
+        dataPlain:
+          description: Plain string, no base64 semantics.
+          type: string
+        dataByte:
+          description: Base64 string without the opt-in extension.
+          type: string
+          format: byte
+        dataContentEncoding:
+          description: Opt-in extension applied on a response-only field; must stay str.
+          type: string
+          contentEncoding: base64
+          x-speakeasy-base64-input-mode: file
+    base64InputFileModeShared:
+      description: |-
+        Single component used for both request body and response of the
+        /base64-input-mode-shared operation. Exists to surface what the generator
+        does when an opted-in schema is shared across both directions: ideally the
+        request-side gets the rich input surface while the response-side stays a
+        plain string. Without per-direction TypeDef splitting the response will
+        inherit the request shape, which is the limitation this fixture documents.
+      type: object
+      required:
+        - dataPlain
+        - dataByte
+        - dataContentEncoding
+      properties:
+        dataPlain:
+          description: Plain string, no base64 semantics.
+          type: string
+        dataByte:
+          description: Base64 string without the opt-in extension.
+          type: string
+          format: byte
+        dataContentEncoding:
+          description: Opt-in extension applied; request must be rich union, response must stay str.
+          type: string
+          contentEncoding: base64
+          x-speakeasy-base64-input-mode: file
+    enumWithDuplicateMembers:
+      type: object
+      properties:
+        enumField:
+          type: string
+          enum:
+            - "one"
+            - "one"
+            - "two"
+            - "three"
+    unwieldyComponent:
+      type: object
+      properties:
+        optionalList:
+          type: array
+          items:
+            type: object
+            properties:
+              optionalItem:
+                type: object
+                properties:
+                  deeplyNestedAttribute:
+                    type: string
+                    example: "hard to reach"
+    authToken:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+    # Smart Union test schemas
+    smartUnionOpenEnumsCat:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+    smartUnionOpenEnumsDog:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - dog
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+    smartUnionOpenEnumsAndSizeCatWithName:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+          x-speakeasy-unknown-values: allow
+        name:
+          type: string
+      required:
+        - kind
+        - name
+    smartUnionOpenEnumsAndSizeDogSimple:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - dog
+          x-speakeasy-unknown-values: allow
+    smartUnionAllConstsA:
+      type: object
+      properties:
+        a:
+          type: string
+          const: "A"
+        b:
+          type: string
+          const: "B"
+      required:
+        - a
+        - b
+    smartUnionAllConstsB:
+      type: object
+      properties:
+        b:
+          type: string
+          const: "B"
+        c:
+          type: string
+          const: "C"
+      required:
+        - b
+        - c
+    smartUnionDeeplyNestedArrayObjectA:
+      type: object
+      properties:
+        x:
+          type: object
+          properties:
+            a:
+              type: string
+          required:
+            - a
+      required:
+        - x
+    smartUnionDeeplyNestedArrayObjectB:
+      type: object
+      properties:
+        x:
+          type: object
+          properties:
+            a:
+              type: string
+            b:
+              type: boolean
+          required:
+            - a
+            - b
+      required:
+        - x
+    smartUnionEmptyStringObjectA:
+      type: object
+      properties:
+        a:
+          type: string
+      required:
+        - a
+    smartUnionEmptyStringObjectB:
+      type: object
+      properties:
+        b:
+          type: string
+      required:
+        - b
+    # Nested union test schemas - tests that only the winning inner option's
+    # unrecognized count is propagated to the parent union
+    smartUnionNestedInnerCat:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+    smartUnionNestedInnerDog:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - dog
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+    smartUnionNestedInnerBird:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - bird
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+    smartUnionNestedOuterB:
+      type: object
+      description: |
+        Option B for outer union - has 2 open enum fields.
+        Both kind and name are open enums, so parsing unknown values
+        will count 2 unrecognized.
+      properties:
+        kind:
+          type: string
+          enum:
+            - x
+          x-speakeasy-unknown-values: allow
+        name:
+          type: string
+          enum:
+            - y
+          x-speakeasy-unknown-values: allow
+      required:
+        - kind
+        - name
+
+    # Smart union round-trip test schemas
+    # TestSmartUnionSelectsMoreMatchedFields: {foo} | {foo, bar} -> B wins with {foo, bar}
+    smartUnionMoreFieldsA:
+      type: object
+      properties:
+        foo:
+          type: string
+      required:
+        - foo
+    smartUnionMoreFieldsB:
+      type: object
+      properties:
+        foo:
+          type: string
+        bar:
+          type: string
+      required:
+        - foo
+        - bar
+
+    # TestSmartUnionPrefersFewerUnmatchedFields: {foo, bar} | {foo} -> B wins with {foo}
+    smartUnionFewerUnmatchedA:
+      type: object
+      properties:
+        foo:
+          type: string
+        bar:
+          type: string
+      required:
+        - foo
+        - bar
+    smartUnionFewerUnmatchedB:
+      type: object
+      properties:
+        foo:
+          type: string
+      required:
+        - foo
+
+    # TestSmartUnionNestedStructs
+    smartUnionNestedStructsInnerA:
+      type: object
+      properties:
+        value:
+          type: string
+      required:
+        - value
+    smartUnionNestedStructsInnerB:
+      type: object
+      properties:
+        value:
+          type: string
+        extra:
+          type: string
+      required:
+        - value
+        - extra
+    smartUnionNestedStructsA:
+      type: object
+      properties:
+        nested:
+          $ref: "#/components/schemas/smartUnionNestedStructsInnerA"
+      required:
+        - nested
+    smartUnionNestedStructsB:
+      type: object
+      properties:
+        nested:
+          $ref: "#/components/schemas/smartUnionNestedStructsInnerB"
+      required:
+        - nested
+
+    # TestSmartUnionArrayFields
+    smartUnionArrayItemA:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    smartUnionArrayItemB:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+      required:
+        - name
+        - value
+
+    # TestSmartUnionPreservesOrderOnTie: identical types, first wins
+    smartUnionTieA:
+      type: object
+      properties:
+        foo:
+          type: string
+      required:
+        - foo
+    smartUnionTieB:
+      type: object
+      properties:
+        foo:
+          type: string
+      required:
+        - foo
+
+    # TestSmartUnionOptionalPointerFields
+    smartUnionOptionalPointerA:
+      type: object
+      properties:
+        foo:
+          type: string
+    smartUnionOptionalPointerB:
+      type: object
+      properties:
+        foo:
+          type: string
+        bar:
+          type: string
+
+    # TestSmartUnionOptionalPointerStructs
+    smartUnionOptionalPointerStructsInnerA:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+    smartUnionOptionalPointerStructsInnerB:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+      required:
+        - name
+        - value
+    smartUnionOptionalPointerStructsA:
+      type: object
+      properties:
+        nested:
+          $ref: "#/components/schemas/smartUnionOptionalPointerStructsInnerA"
+    smartUnionOptionalPointerStructsB:
+      type: object
+      properties:
+        nested:
+          $ref: "#/components/schemas/smartUnionOptionalPointerStructsInnerB"
+
+    # TestSmartUnionThreeWayFieldDiscrimination: {a,b} | {a,c} | {b,c}
+    smartUnionThreeWayA:
+      type: object
+      properties:
+        a:
+          type: string
+        b:
+          type: string
+      required:
+        - a
+        - b
+    smartUnionThreeWayB:
+      type: object
+      properties:
+        a:
+          type: string
+        c:
+          type: string
+      required:
+        - a
+        - c
+    smartUnionThreeWayC:
+      type: object
+      properties:
+        b:
+          type: string
+        c:
+          type: string
+      required:
+        - b
+        - c
+
+    # TestSmartUnionConstFieldDiscrimination
+    smartUnionConstFieldA:
+      type: object
+      properties:
+        a:
+          type: string
+          const: "x"
+        b:
+          type: string
+          const: "1"
+      required:
+        - a
+        - b
+    smartUnionConstFieldB:
+      type: object
+      properties:
+        a:
+          type: string
+          const: "x"
+        c:
+          type: string
+          const: "1"
+      required:
+        - a
+        - c
+    smartUnionConstFieldC:
+      type: object
+      properties:
+        b:
+          type: string
+          const: "1"
+        c:
+          type: string
+          const: "1"
+      required:
+        - b
+        - c
+
+    # TestSmartUnionAnyFieldType
+    smartUnionAnyFieldA:
+      type: object
+      properties:
+        a:
+          type: string
+    smartUnionAnyFieldB:
+      type: object
+      properties:
+        b: {}
+      required:
+        - b
+
+    # Test: nested union vs flat struct - B should win when it matches more fields
+    # A = A_X | A_Y | A_Z (union with 3 variants, each with 1 field)
+    # B_XY (flat struct with 2 fields: x, y)
+    # Outer union: { data: A } | { data: B_XY }
+    # Payload: { data: { x: "", y: "", z: "" } }
+    # Expected: B should win because B_XY matches 2 fields (x, y)
+    smartUnionNestedVsFlatInnerX:
+      type: object
+      properties:
+        x:
+          type: string
+      required:
+        - x
+    smartUnionNestedVsFlatInnerY:
+      type: object
+      properties:
+        y:
+          type: string
+      required:
+        - y
+    smartUnionNestedVsFlatInnerZ:
+      type: object
+      properties:
+        z:
+          type: string
+      required:
+        - z
+    smartUnionNestedVsFlatB:
+      type: object
+      properties:
+        x:
+          type: string
+        y:
+          type: string
+      required:
+        - x
+        - y
+
+    # Test: union vs union - B should win when its inner variant matches more fields
+    # A = { a: string } | { b: string }
+    # B = { a: string, b: string } | { a: string, b: string, c: string }
+    # Payload: { a: "", b: "", c: "" }
+    # Expected: B should win because B's second variant matches 3 fields
+    smartUnionVsUnionA1:
+      type: object
+      properties:
+        a:
+          type: string
+      required:
+        - a
+    smartUnionVsUnionA2:
+      type: object
+      properties:
+        b:
+          type: string
+      required:
+        - b
+    smartUnionVsUnionB1:
+      type: object
+      properties:
+        a:
+          type: string
+        b:
+          type: string
+      required:
+        - a
+        - b
+    smartUnionVsUnionB2:
+      type: object
+      properties:
+        a:
+          type: string
+        b:
+          type: string
+        c:
+          type: string
+      required:
+        - a
+        - b
+        - c
+
+    # TestSmartUnionNullableCollectionItem
+    smartUnionArrayWithUnionItems:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/oneOfPrimitives"
+    smartUnionArrayWithNullableItems:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+            nullable: true
+    smartUnionNullableArrayItem:
+      oneOf:
+        - $ref: "#/components/schemas/smartUnionArrayWithUnionItems"
+        - $ref: "#/components/schemas/smartUnionArrayWithNullableItems"
+    smartUnionMapWithUnionValues:
+      type: object
+      properties:
+        entries:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/oneOfPrimitives"
+    smartUnionMapWithNullableValues:
+      type: object
+      properties:
+        entries:
+          type: object
+          additionalProperties:
+            type: string
+            nullable: true
+    smartUnionNullableMapItem:
+      oneOf:
+        - $ref: "#/components/schemas/smartUnionMapWithUnionValues"
+        - $ref: "#/components/schemas/smartUnionMapWithNullableValues"
+
+    # TestSmartUnionWrappedComplexFields
+    smartUnionWrappedComplexMember:
+      type: object
+      properties:
+        meta:
+          type: [object, "null"]
+          properties:
+            name:
+              type: string
+        tags:
+          type: [array, "null"]
+          items:
+            type: string
+        extras:
+          type: [object, "null"]
+          additionalProperties:
+            type: string
+    smartUnionWrappedPlainNote:
+      type: object
+      properties:
+        note:
+          type: string
+    smartUnionWrappedComplex:
+      oneOf:
+        - $ref: "#/components/schemas/smartUnionWrappedComplexMember"
+        - $ref: "#/components/schemas/smartUnionWrappedPlainNote"
+
+    # TestSmartUnionNestedUnionVsNestedUnion
+    NestedUnion:
+      type: object
+      required:
+        - selectedEvent
+      properties:
+        selectedEvent:
+          oneOf:
+            - $ref: "#/components/schemas/PaymentUnion"
+            - $ref: "#/components/schemas/ShipmentUnion"
+    PaymentUnion:
+      type: object
+      required:
+        - paymentMethod
+      properties:
+        paymentMethod:
+          oneOf:
+            - $ref: "#/components/schemas/CardPayment"
+            - $ref: "#/components/schemas/TransferPayment"
+    ShipmentUnion:
+      type: object
+      required:
+        - shipmentMethod
+      properties:
+        shipmentMethod:
+          oneOf:
+            - $ref: "#/components/schemas/AirShipment"
+            - $ref: "#/components/schemas/SeaShipment"
+    CardPayment:
+      type: object
+      required:
+        - cardNumber
+      properties:
+        cardNumber:
+          type: string
+    TransferPayment:
+      type: object
+      required:
+        - accountNumber
+      properties:
+        accountNumber:
+          type: string
+    AirShipment:
+      type: object
+      required:
+        - flightNumber
+      properties:
+        flightNumber:
+          type: string
+    SeaShipment:
+      type: object
+      required:
+        - vesselName
+      properties:
+        vesselName:
+          type: string
+
+  responses:
+    tokenAuthResponse:
+      description: Successful authentication.
+      content:
+        application/json:
+          schema:
+            title: token
+            type: object
+            properties:
+              authenticated:
+                type: boolean
+              token:
+                type: string
+            required:
+              - authenticated
+              - token
+    simpleObjectFormResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              headers:
+                type: object
+                properties:
+                  Content-Type:
+                    title: contentType
+                    type: string
+                    x-speakeasy-test-ignore: true
+                required:
+                  - Content-Type
+              form:
+                type: object
+                properties:
+                  str:
+                    type: string
+                    example: "test"
+                  bool:
+                    type: string
+                    example: "true"
+                  int:
+                    type: string
+                    example: "1"
+                  int32:
+                    type: string
+                    example: "1"
+                  num:
+                    type: string
+                    example: "1.1"
+                  float32:
+                    type: string
+                    example: "1.1"
+                  enum:
+                    type: string
+                    example: "one"
+                  date:
+                    type: string
+                    example: "2020-01-01"
+                  dateTime:
+                    type: string
+                    example: "2020-01-01T00:00:00.001Z"
+                    x-speakeasy-test-internal-directives:
+                      - sanitizeTimestamp: {}
+                  any:
+                    type: string
+                    example: "any"
+                  strOpt:
+                    type: string
+                    example: "testOptional"
+                  boolOpt:
+                    type: string
+                    example: "true"
+                  intOptNull:
+                    type: string
+                  numOptNull:
+                    type: string
+                  intEnum:
+                    type: string
+                    example: "2"
+                  int32Enum:
+                    type: string
+                    example: "55"
+                  bigint:
+                    type: string
+                    example: "8821239038968084"
+                  bigintStr:
+                    type: string
+                    example: "9223372036854775808"
+                  decimal:
+                    type: string
+                    example: "3.141592653589793"
+                  decimalStr:
+                    type: string
+                    example: "3.14159265358979344719667586"
+                required:
+                  - str
+                  - bool
+                  - int
+                  - int32
+                  - num
+                  - float32
+                  - enum
+                  - date
+                  - dateTime
+                  - any
+                  - intEnum
+                  - int32Enum
+            required:
+              - form
+              - headers
+    optionalNullableFormResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              form:
+                type: object
+                description: >
+                properties:
+                  reqStr:
+                    type: string
+                    example: "base"
+                  optStr:
+                    type: string
+                  optNullStr:
+                    type: string
+                  optNullInt:
+                    type: string
+                  optNullNum:
+                    type: string
+                  optNullBool:
+                    type: string
+                  optNullBigInt:
+                    type: string
+                  optNullBigIntStr:
+                    type: string
+                  optNullDecimal:
+                    type: string
+                  optNullDecimalStr:
+                    type: string
+                  optNullArr:
+                    type: string
+                  optNullBigIntStrArr:
+                    type: string
+                  optNullMap:
+                    type: string
+                  optNullDecimalStrMap:
+                    type: string
+                  optNullUnion:
+                    type: string
+                  optNullObj:
+                    type: string
+                  optNullDateTime:
+                    type: string
+                  optNullDate:
+                    type: string
+                  optNullEnum:
+                    type: string
+                required:
+                  - reqStr
+            required:
+              - form
+    optionalNullableJsonResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              json:
+                $ref: "#/components/schemas/ObjectWithOptionalNullableFields"
+            required:
+              - json
+    deepObjectFormResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              form:
+                type: object
+                properties:
+                  str:
+                    type: string
+                    example: "test"
+                  bool:
+                    type: string
+                    example: "true"
+                  int:
+                    type: string
+                    example: "1"
+                  num:
+                    type: string
+                    example: "1.1"
+                  obj:
+                    type: string
+                    example: "{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}"
+                    x-speakeasy-test-internal-directives:
+                      - sortJSONObjectKeys: {"fields": []}
+                      - sanitizeTimestamp: {}
+                  map:
+                    type: string
+                    example: "{\"key\":{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"},\"key2\":{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}}"
+                    x-speakeasy-test-internal-directives:
+                      - sortJSONObjectKeys: {"fields": []}
+                      - sanitizeTimestamp: {}
+                  arr:
+                    type: string
+                    example: "[{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"},{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}]"
+                    x-speakeasy-test-internal-directives:
+                      - sortJSONObjectKeys: {"fields": []}
+                      - sanitizeTimestamp: {}
+                  any:
+                    type: string
+                    example: "{\"any\":\"any\",\"bigint\":8821239038968084,\"bigintStr\":\"9223372036854775808\",\"bool\":true,\"boolOpt\":true,\"date\":\"2020-01-01\",\"dateTime\":\"2020-01-01T00:00:00.001Z\",\"decimal\":3.141592653589793,\"decimalStr\":\"3.14159265358979344719667586\",\"enum\":\"one\",\"float32\":1.1,\"float64Str\":\"1.1\",\"int\":1,\"int32\":1,\"int32Enum\":55,\"int64Str\":\"100\",\"intEnum\":2,\"num\":1.1,\"str\":\"test\",\"strOpt\":\"testOptional\"}"
+                    x-speakeasy-test-internal-directives:
+                      - sortJSONObjectKeys: {"fields": []}
+                      - sanitizeTimestamp: {}
+                required:
+                  - str
+                  - bool
+                  - int
+                  - num
+                  - obj
+                  - map
+                  - arr
+                  - any
+            required:
+              - form
+    paginationResponse:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              numPages:
+                type: integer
+              next:
+                type: string
+              resultArray:
+                type: array
+                items:
+                  type: integer
+            required:
+              - numPages
+              - resultArray
+    paginationResponseDeep:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              pageInfo:
+                type: object
+                required: 
+                  - numPages
+                properties:
+                  numPages:
+                    type: integer
+                  next:
+                    type: string
+              resultArray:
+                type: array
+                items:
+                  type: integer
+            required:
+              - pageInfo
+              - resultArray
+    paginationResponseNonNumeric:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            type: object
+            properties:
+              numPages:
+                type: integer
+              next:
+                type: string
+              cursor:
+                type: string
+                nullable: true
+              resultArray:
+                type: array
+                items:
+                  type: string
+            required:
+              - numPages
+              - resultArray
+    paginationResponseUnion:
+      description: OK
+      content:
+        application/json:
+          schema:
+            title: res
+            oneOf:
+              - type: string
+              - type: object
+                title: resultObject
+                properties:
+                  numPages:
+                    type: integer
+                  cursor:
+                    type: string
+                    nullable: true
+                  resultArray:
+                    type: array
+                    items:
+                      type: integer
+                required:
+                  - numPages
+                  - resultArray
+    errorUnionResponse:
+      description: |-
+        Internal Server Error. Expect one of the following:
+        <list type="bullet">
+          <item>
+            <term>ErrorType1</term>
+            <description>Error of type one</description>
+          </item>
+          <item>
+            <term>ErrorType2</term>
+            <description>Error of type two</description>
+          </item>
+        </list>
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "components.yaml#/components/schemas/errorType1"
+              - $ref: "components.yaml#/components/schemas/errorType2"
+    errorUnionDiscriminatedResponse:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "components.yaml#/components/schemas/taggedError1"
+              - $ref: "components.yaml#/components/schemas/taggedError2"
+            discriminator:
+              propertyName: tag
+              mapping:
+                tag1: "components.yaml#/components/schemas/taggedError1"
+                tag2: "components.yaml#/components/schemas/taggedError2"
+    # Test responses for shared discriminated error type
+    # These test that Discriminator.Mapping references are updated when the same
+    # SharedDiscriminatedError type is used across multiple error response oneOfs
+    sharedErrorUnionResponse1:
+      description: Error response 1 with shared error type
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "components.yaml#/components/schemas/SpecificError1"
+              - $ref: "components.yaml#/components/schemas/SharedDiscriminatedError"
+            discriminator:
+              propertyName: errorType
+              mapping:
+                specific_error_1: "components.yaml#/components/schemas/SpecificError1"
+                shared_error: "components.yaml#/components/schemas/SharedDiscriminatedError"
+    sharedErrorUnionResponse2:
+      description: Error response 2 with shared error type
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "components.yaml#/components/schemas/SpecificError2"
+              - $ref: "components.yaml#/components/schemas/SharedDiscriminatedError"
+            discriminator:
+              propertyName: errorType
+              mapping:
+                specific_error_2: "components.yaml#/components/schemas/SpecificError2"
+                shared_error: "components.yaml#/components/schemas/SharedDiscriminatedError"
+
+  parameters:
+    emptyObjectParam:
+      name: emptyObject
+      in: path
+      required: true
+      schema:
+        type: object
+        properties: {}
+    strPathParam:
+      name: strParam
+      in: path
+      required: true
+      schema:
+        type: string
+        example: test
+    boolPathParam:
+      name: boolParam
+      in: path
+      required: true
+      schema:
+        type: boolean
+        example: true
+    intPathParam:
+      name: intParam
+      in: path
+      required: true
+      schema:
+        type: integer
+        example: 1
+    numPathParam:
+      name: numParam
+      in: path
+      required: true
+      schema:
+        type: number
+        example: 1.1
+    refQueryParamObjExploded:
+      name: refObjParamExploded
+      in: query
+      explode: true
+      schema:
+        type: object
+        properties:
+          str:
+            type: string
+            example: test
+          bool:
+            type: boolean
+            example: true
+          int:
+            type: integer
+            example: 1
+          num:
+            type: number
+            example: 1.1
+        required:
+          - str
+          - bool
+          - int
+          - num
+    refQueryParamObj:
+      name: refObjParam
+      in: query
+      explode: false
+      schema:
+        type: object
+        properties:
+          str:
+            type: string
+            example: test
+          bool:
+            type: boolean
+            example: true
+          int:
+            type: integer
+            example: 1
+          num:
+            type: number
+            example: 1.1
+        required:
+          - str
+          - bool
+          - int
+          - num
+    globalHiddenQueryParam:
+      name: globalHiddenQueryParam
+      in: query
+      required: true
+      schema:
+        type: string
+        example: hello
+      x-speakeasy-globals-hidden: true

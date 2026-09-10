@@ -1,0 +1,90 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  sdkHooksConfigAccess: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+java:
+  version: 0.0.1
+  additionalDependencies:
+    - implementation:com.fasterxml.jackson.core:jackson-databind:2.16.0
+    - api:org.apache.commons:commons-compress:1.26.1
+  additionalPlugins: []
+  artifactID: openapi
+  asyncMode: enabled
+  baseErrorName: SDKBaseException
+  clientServerStatusCodesAsErrors: true
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  customCasings:
+    mcp:
+      initialism: true
+  defaultErrorName: SDKException
+  description: This is a test description
+  enableCustomCodeRegions: true
+  enableFormatting: true
+  enableSlf4jLogging: true
+  enableStreamingUploads: true
+  explicitDocImports: true
+  flattenGlobalSecurity: true
+  forwardCompatibleEnumsByDefault: true
+  forwardCompatibleUnionsByDefault: true
+  generateOptionalUnionAccessors: true
+  generateSpringBootStarter: true
+  generateUnionDocs: true
+  getterStyle: presence-aware
+  githubURL: github.com/owner/repo
+  groupID: org.openapis.review
+  httpClient: jdk
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/shared
+      webhooks: models/webhooks
+  inferUnionDiscriminators: true
+  inputModelSuffix: input
+  languageVersion: 17
+  license:
+    name: Test License
+    shortName: test-1
+    url: testurl.com
+  maxMethodParams: 4
+  multipartArrayFormat: standard
+  nullFriendlyParameters: true
+  operationScopedParams: true
+  outputModelSuffix: output
+  packageName: org.openapis.openapi
+  prefixModeMethodNames: true
+  projectName: openapi
+  respectTitlesForPrimitiveUnionMembers: true
+  showSetterGetterTypesInDocs: true
+  templateVersion: v2
+  unionStrategy: populated-fields

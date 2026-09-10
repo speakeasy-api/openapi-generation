@@ -1,0 +1,490 @@
+{{- $utils := getScopeNamespace "utils" -}}
+{{- $className := sanitizeClassName .Local.Type.Name -}}
+{{- $discriminator := .Local.Type.Discriminator -}}
+{{- $unionLocation := .Local.Type.OutputLocation -}}
+{{- $unionType := getUnionTypeName $className $unionLocation -}}
+{{- $isUnionOfErrors := isUnionOfErrors .Local.Type -}}
+{{- $nullable := .Local.Type.IsNullableUnion}}
+{{- $typeFieldName := sanitizeFieldName "Type" $className}}
+{{- $isUnionOpen := .Local.Type.IsUnionOpen}}
+{{- $unknownMember := ""}}
+{{- $unknownValue := ""}}
+{{- $unknownRawMember := ""}}
+{{- $isUnknownMember := ""}}
+{{- if $isUnionOpen}}
+  {{- $unknownMember = openUnionUnknownMemberName .Local.Type}}
+  {{- $unknownValue = openUnionUnknownValue .Local.Type}}
+  {{- $unknownRawMember = printf "%sRaw" $unknownMember}}
+  {{- $isUnknownMember = printf "Is%s" $unknownMember}}
+{{- end}}
+    public class {{$unionType}}
+    {
+        private {{$unionType}}(string value) { Value = value; }
+
+        public string Value { get; private set; }
+
+    {{- if $discriminator}}
+      {{- range $discriminator.Mapping}}
+
+        public static {{$unionType}} {{sanitizeClassName .Name}} { get { return new {{$unionType}}({{sanitizeEnumValue .Name "string"}}); } }
+      {{- end}}
+    {{- else}}
+      {{- range .Local.Type.AssociatedTypes}}
+        {{- $name := sanitizeUnionTypeName .}}
+
+        public static {{$unionType}} {{sanitizeClassName $name}} { get { return new {{$unionType}}({{sanitizeEnumValue $name "string"}}); } }
+      {{- end}}
+    {{- end}}
+
+    {{- if $isUnionOpen}}
+
+        public static {{$unionType}} {{$unknownMember}} { get { return new {{$unionType}}({{sanitizeEnumValue $unknownValue "string"}}); } }
+    {{- end}}
+
+    {{- if $nullable }}
+
+        public static {{$unionType}} Null { get { return new {{$unionType}}("null"); } }
+    {{- end }}
+
+        public override string ToString() { return Value; }
+        public static implicit operator String({{$unionType}} v) { return v.Value; }
+        public static {{$unionType}} FromString(string v) {
+            switch(v) {
+            {{- if $discriminator -}}
+              {{- range $discriminator.Mapping}}
+                case {{sanitizeEnumValue .Name "string"}}: return {{sanitizeClassName .Name}};
+              {{- end -}}
+            {{- else -}}
+              {{- range .Local.Type.AssociatedTypes}}{{ $name := sanitizeUnionTypeName . }}
+                case {{sanitizeEnumValue $name "string"}}: return {{sanitizeClassName $name}};
+              {{- end -}}
+            {{- end}}
+            {{- if $isUnionOpen }}
+                case {{sanitizeEnumValue $unknownValue "string"}}: return {{$unknownMember}};
+            {{- end}}
+            {{- if $nullable }}
+                case "null": return Null;
+            {{- end}}
+                default: throw new ArgumentException("Invalid value for {{$unionType}}");
+            }
+        }
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            return Value.Equals((({{$unionType}})obj).Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+    }
+    {{- templateComments .Local.Type.Comments 1 $className "class"}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    [JsonConverter(typeof({{$className}}.{{$className}}Converter))]
+    public class {{$className}}{{if $isUnionOpen}} : {{$utils}}.IOpenUnion{{end}}
+    {
+        public {{$className}}({{$unionType}} type)
+        {
+            {{$typeFieldName}} = type;
+        }
+
+      {{- range .Local.Type.AssociatedTypes}}
+        {{- $fieldType := sanitizeType . false .OutputLocation}}
+        {{- $fieldName := sanitizeFieldName (sanitizeUnionTypeName .)}}
+        {{- if $isUnionOfErrors}}
+           {{- $fieldType = print $fieldType "Payload"}}
+           {{- $fieldName = print $fieldName "Payload"}}
+        {{- end}}
+
+        {{templateUnionVariantAnnotations}}
+        public {{$fieldType}}? {{$fieldName}} { get; set; }
+      {{- end}}
+
+        public {{$unionType}} {{$typeFieldName}} { get; set; }
+
+{{- if and schemaValidationLenient $isUnionOfErrors}}
+
+        /// <summary>
+        ///  The schema validation error for this variant's payload, or null if the
+        ///  payload matched the expected schema.
+        /// </summary>
+        [JsonIgnore]
+        public System.Exception? ValidationFailure { get; set; }
+{{- end}}
+
+{{- if $isUnionOpen}}
+
+        [JsonIgnore]
+        public JToken? {{$unknownRawMember}} { get; private set; }
+
+        public static {{$className}} CreateUnknown(JToken raw)
+        {
+            return new {{$className}}({{$unionType}}.{{$unknownMember}}) { {{$unknownRawMember}} = raw };
+        }
+
+        public bool {{$isUnknownMember}}()
+        {
+            return {{$typeFieldName}}.Equals({{$unionType}}.{{$unknownMember}});
+        }
+
+        bool {{$utils}}.IOpenUnion.IsUnknown() => {{$isUnknownMember}}();{{"\n"}}
+{{- end}}
+
+{{- if $discriminator}}
+  {{- range $discriminator.Mapping}}
+      {{- $paramType := sanitizeType .Type false .Type.OutputLocation}}
+      {{- $paramName := sanitizePrivateClassName .Name}}
+      {{- $fieldName := sanitizeFieldName (sanitizeUnionTypeName .Type)}}
+      {{- if $isUnionOfErrors}}
+        {{- $paramType = print $paramType "Payload"}}
+        {{- $paramName = print $paramName "Payload"}}
+        {{- $fieldName = print $fieldName "Payload"}}
+      {{- end}}
+
+        public static {{$className}} Create{{sanitizeClassName .Name}}({{$paramType}} {{$paramName}})
+        {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName .Name}};
+      {{- if or (eq .Type.Type "class") (eq .Type.Type "error") }}
+            {{- $field := .Type.Fields.GetField $discriminator.TypePropertyName}}
+        {{- if not $field.Const }}
+            string typStr = {{$unionType}}.{{sanitizeClassName .Name}}.ToString();
+          {{- if eq $field.Type.Type "enum" }}
+            {{- if $field.Type.Enum.Open }}
+            {{$paramName}}.{{sanitizeFieldName $field.Name}} = {{sanitizeClass $field.Type $unionLocation false false $unionType}}.Of({{$unionType}}.{{sanitizeClassName .Name}}.ToString());
+            {{- else }}
+            {{$paramName}}.{{sanitizeFieldName $field.Name}} = {{sanitizeClass $field.Type $unionLocation false false $unionType "Extension"}}.ToEnum({{$unionType}}.{{sanitizeClassName .Name}}.ToString());
+            {{- end }}
+          {{- else}}
+            {{sanitizePrivateClassName .Name}}.{{sanitizeFieldName $field.Name}} = typStr;
+          {{- end}}
+        {{- end}}
+      {{- end}}
+            {{$className}} res = new {{$className}}(typ);
+            res.{{$fieldName}} = {{$paramName}};
+            return res;
+        }
+  {{- end -}}
+{{- else -}}
+  {{- range .Local.Type.AssociatedTypes}}
+    {{- $name := sanitizeUnionTypeName .}}
+    {{- $paramType := sanitizeType . false .OutputLocation}}
+    {{- $paramName := sanitizePrivateClassName $name}}
+    {{- $fieldName := sanitizeFieldName $name}}
+    {{- if $isUnionOfErrors }}
+      {{- $paramType = print $paramType "Payload"}}
+      {{- $paramName = print $paramName "Payload"}}
+      {{- $fieldName = print $fieldName "Payload"}}
+    {{- end}}
+        public static {{$className}} Create{{sanitizeClassName $name}}({{$paramType}} {{$paramName}})
+        {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName $name}};
+
+            {{$className}} res = new {{$className}}(typ);
+            res.{{$fieldName}} = {{$paramName}};
+            return res;
+        }
+  {{- end}}
+{{- end}}
+
+{{- if $nullable}}
+
+        public static {{$className}} CreateNull()
+        {
+            {{$unionType}} typ = {{$unionType}}.Null;
+            return new {{$className}}(typ);
+        }
+{{- end}}
+
+        public class {{$className}}Converter : JsonConverter
+        {
+            public override bool CanConvert(System.Type objectType) => objectType == typeof({{$className}});
+
+            public override bool CanRead => true;
+
+            public override object? ReadJson(JsonReader reader, System.Type objectType, object? existingValue, JsonSerializer serializer)
+            {
+                if (reader.TokenType == JsonToken.Null)
+                {
+                  {{- if $nullable}}
+                    return null;
+                  {{- else if $isUnionOpen}}
+                    return CreateUnknown(JValue.CreateNull());
+                  {{- else if useSmartUnion}}
+                    {{/* Throw JsonException subtype so PickBestUnionCandidate can drop
+                         this candidate and continue instead of aborting the whole pick. */}}
+                    throw new JsonSerializationException("Received unexpected null JSON value");
+                  {{- else}}
+                    throw new InvalidOperationException("Received unexpected null JSON value");
+                  {{- end}}
+                }
+          {{- if $discriminator}}
+            {{- if $isUnionOpen}}
+              {{- if .Global.Config.PresenceAwareJSONSerialization}}
+
+                JToken token = JToken.Load(reader);
+              {{- else}}
+
+                JToken token = Utilities.LoadRawToken(reader);
+              {{- end}}
+                JObject? jo = token as JObject;
+                if (jo == null)
+                {
+                    return CreateUnknown(token);
+                }
+
+                JToken? discriminatorToken = jo.GetValue({{sanitizeEnumValue $discriminator.TypePropertyName "string"}});
+                if (discriminatorToken == null || discriminatorToken.Type != JTokenType.String)
+                {
+                    return CreateUnknown(jo);
+                }
+
+                string discriminator = discriminatorToken.ToString();
+            {{- else}}
+
+                JObject jo = JObject.Load(reader);
+                string discriminator = jo.GetValue({{sanitizeEnumValue $discriminator.TypePropertyName "string"}})?.ToString() ?? throw new ArgumentNullException("Could not find discriminator field.");
+            {{- end}}
+            {{- range $discriminator.Mapping}}
+                if (discriminator == {{$unionType}}.{{sanitizeClassName .Name }}.ToString())
+                {
+                {{- $variableName := (sanitizeVariableName .Type.Name)}}
+                {{- $targetType := sanitizeType .Type false .Type.OutputLocation $className}}
+                {{- if $isUnionOfErrors}}
+                    {{- $targetType = print $targetType "Payload"}}
+                    {{- $variableName = "payload"}}
+                {{- end}}
+                {{- if schemaValidationLenient}}
+                    {{$targetType}} {{$variableName}};
+                    try
+                    {
+                        {{$variableName}} = ResponseBodyDeserializer.DeserializeNotNull<{{$targetType}}>(jo.ToString());
+                    }
+                    catch (Exception{{if $isUnionOfErrors}} ex{{end}})
+                    {
+                        if (!ResponseBodyDeserializer.TryConstructUnvalidated<{{$targetType}}>(jo.ToString(), out {{$variableName}}))
+                        {
+                            throw;
+                        }
+                  {{- if $isUnionOfErrors}}
+                        {{- $resultVar := print $variableName "Result" }}
+                        var {{$resultVar}} = Create{{sanitizeClassName .Name}}({{$variableName}});
+                        {{$resultVar}}.ValidationFailure = ex;
+                        return {{$resultVar}};
+                  {{- end}}
+                    }
+                {{- else}}
+                    {{$targetType}} {{$variableName}} = ResponseBodyDeserializer.DeserializeNotNull<{{$targetType}}>(jo.ToString());
+                {{- end}}
+                    return Create{{sanitizeClassName .Name}}({{$variableName}});
+                }
+            {{- end }}{{/* range over discriminator mapping */}}
+          {{- else }}{{/* if not discriminator */}}
+
+            {{- if useSmartUnion }}
+
+                JToken jt = JToken.Load(reader);
+                var unionCandidates = new UnionCandidatePool<{{$unionType}}>();
+              {{- range $i, $assoc := .Local.Type.AssociatedTypes }}
+                {{- $assocName := sanitizeUnionTypeName $assoc }}
+                {{- $fieldName := sanitizeFieldName $assocName }}
+                {{- $targetType := sanitizeType $assoc false $assoc.OutputLocation }}
+                {{- if $isUnionOfErrors }}
+                  {{- $fieldName = print $fieldName "Payload" }}
+                  {{- $targetType = print $targetType "Payload" }}
+                {{- end }}
+                unionCandidates.Add<{{$targetType}}>("{{$fieldName}}", {{$i}}, {{$unionType}}.{{sanitizeClassName $assocName}});
+              {{- end }}
+
+                var (winner, winnerValue) = unionCandidates.PickBest(
+                    jt,
+                    Utilities.GetDefaultJsonDeserializerSettings());
+                if (winner is null || winnerValue is null)
+                {
+                {{- if $isUnionOpen}}
+                    return CreateUnknown(jt);
+                {{- else}}
+                    throw new ResponseBodyDeserializer.DeserializationException(typeof({{$className}}));
+                {{- end}}
+                }
+
+                var result = new {{$className}}(winner.TypeName);
+                typeof({{$className}}).GetProperty(winner.PropertyName)!.SetValue(result, winnerValue);
+                return result;
+
+            {{- else }}
+
+              {{- if and $isUnionOpen (not .Global.Config.PresenceAwareJSONSerialization) }}
+                var json = Utilities.LoadRawToken(reader).ToString(Newtonsoft.Json.Formatting.None);
+              {{- else }}
+
+                var json = JRaw.Create(reader).ToString();
+              {{- end }}
+                var fallbackCandidates = new List<(System.Type, object, string)>();
+              {{- range sortTypeDefFieldCount .Local.Type.AssociatedTypes -}}
+                {{- $fieldName := sanitizeFieldName (sanitizeUnionTypeName .)}}
+                {{- $returnType := printf "%s(%s.%s)" $className $unionType $fieldName}}
+                {{- if $isUnionOfErrors }}
+                  {{- $fieldName = print $fieldName "Payload"}}
+                {{- end}}
+                {{- if isPrimitive . -}}
+                  {{- if eq .Type "string"}}
+                    {{- if isNetstandard2}}
+
+                if (json[0] == '"' && json[json.Length - 1] == '"'){
+                    return new {{$returnType}}
+                    {
+                        {{$fieldName}} = json.Substring(1, json.Length - 2)
+                    };
+                }
+                    {{- else}}
+
+                if (json[0] == '"' && json[^1] == '"'){
+                    return new {{$returnType}}
+                    {
+                        {{$fieldName}} = json[1..^1]
+                    };
+                }
+                    {{- end}}
+                  {{- else}}{{/* if not string */}}
+
+                try
+                {
+                    var converted = Convert.{{primitiveConvertFunction .}}(json);
+                    return new {{$returnType}}
+                    {
+                        {{$fieldName}} = converted
+                    };
+                }
+                catch (System.FormatException)
+                {
+                    // try next option
+                }
+                  {{- end}}
+                {{- else }}{{/* if not primitive */}}
+                  {{- $targetType := sanitizeType . false .OutputLocation }}
+                  {{- if $isUnionOfErrors }}
+                    {{- $targetType = print $targetType "Payload"}}
+                  {{- end}}
+
+                try
+                {
+                    return new {{$returnType}}
+                    {
+                        {{$fieldName}} = ResponseBodyDeserializer.DeserializeUndiscriminatedUnionMember<{{$targetType}}>(json)
+                    };
+                }
+                catch (ResponseBodyDeserializer.MissingMemberException)
+                {
+                    fallbackCandidates.Add((typeof({{$targetType}}), new {{$returnType}}, "{{$fieldName}}"));
+                }
+                catch (ResponseBodyDeserializer.DeserializationException)
+                {
+                    // try next option
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                {{- end }}{{/* primitive */}}
+              {{- end }}{{/* range over associated types */}}
+
+              {{- if not $isUnionOpen }}
+
+                if (fallbackCandidates.Count > 0)
+                {
+                    fallbackCandidates.Sort((a, b) => ResponseBodyDeserializer.CompareFallbackCandidates(a.Item1, b.Item1, json));
+                    foreach(var (deserializationType, returnObject, propertyName) in fallbackCandidates)
+                    {
+                        try
+                        {
+                            return ResponseBodyDeserializer.DeserializeUndiscriminatedUnionFallback(deserializationType, returnObject, propertyName, json);
+                        }
+                        catch (ResponseBodyDeserializer.DeserializationException)
+                        {
+                            // try next fallback option
+                        }
+                        catch (Exception)
+                        {
+                            throw;
+                        }
+                    }
+                }
+              {{- end }}
+
+            {{- end }}{{/* useSmartUnion */}}
+          {{- end }}{{/* discriminator */}}
+          {{- if or $discriminator (not useSmartUnion) }}
+            {{- if $isUnionOpen }}
+              {{- if $discriminator }}
+
+                return CreateUnknown(jo);
+              {{- else }}
+
+                return CreateUnknown(Utilities.ParseRawToken(json));
+              {{- end }}
+            {{- else }}
+
+                throw new InvalidOperationException("Could not deserialize into any supported types.");
+            {{- end }}
+          {{- end }}
+            }
+
+            public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+            {
+                if (value == null)
+                {
+              {{- if $nullable}}
+                    writer.WriteRawValue("null");
+                    return;
+              {{- else}}
+                    throw new InvalidOperationException("Unexpected null JSON value.");
+              {{- end}}
+                }
+
+                {{$className}} res = ({{$className}})value;
+              {{- if $nullable}}
+                if ({{$unionType}}.FromString(res.{{$typeFieldName}}).Equals({{$unionType}}.Null))
+                {
+                    writer.WriteRawValue("null");
+                    return;
+                }
+              {{- end}}
+
+              {{- if $isUnionOpen}}
+
+                if (res.{{$isUnknownMember}}())
+                {
+                    if (res.{{$unknownRawMember}} != null)
+                    {
+                        res.{{$unknownRawMember}}.WriteTo(writer);
+                        return;
+                    }
+                    throw new InvalidOperationException("Unknown union value has no raw payload; construct via CreateUnknown(JToken).");
+                }
+              {{- end}}
+
+              {{- range .Local.Type.AssociatedTypes}}
+                {{- $fieldName := sanitizeFieldName (sanitizeUnionTypeName .)}}
+                {{- if $isUnionOfErrors }}
+                    {{- $fieldName = print $fieldName "Payload"}}
+                {{- end}}
+
+                if (res.{{$fieldName}} != null)
+                {
+                    writer.WriteRawValue(Utilities.SerializeJSON(res.{{$fieldName}}{{if .Format}}, "{{.Format}}"{{end}}));
+                    return;
+                }
+              {{- end}}
+
+                throw new InvalidOperationException(
+                    "Could not serialize union to JSON: no variant value was set. " +
+                    "Construct this union using one of the Create* factory methods.");
+            }
+
+        }
+
+    }

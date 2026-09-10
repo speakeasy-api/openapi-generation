@@ -1,0 +1,40 @@
+{{- $sdk := .Local.SDK -}}
+{{- $op := .Local.Operation -}}
+{{- $scope := $op.Scope -}}
+{{- $paramFlattening := operationParametersFlattened $op -}}
+{{- $reqParam := getRequestParameter $op -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{templateMethodSignatures $op $scope -}}
+    {{- if $paramFlattening -}}
+        {{- if $nullFriendlyParameters}}
+            {{- if useNullableWrapperForParam $reqParam}}
+        {{javaImportJsonNullable}}<{{javaImportBoxed $reqParam.Type}}> request = {{javaImportJsonNullable}}.of(new {{javaImportBoxed $reqParam.Type}}(
+            {{- templateMethodCallArgs (parametersForType $op.Request.Field.Type false) false 16 -}})
+            {{- templateSetAdditionalProperties $op.Request.Field.Type.Fields 3 -}});
+            {{- else}}
+        {{javaImportBoxed $reqParam.Type}} request = new {{javaImportBoxed $reqParam.Type}}(
+            {{- templateMethodCallArgs (parametersForType $op.Request.Field.Type false) false 16 -}})
+            {{- templateSetAdditionalProperties $op.Request.Field.Type.Fields 3 -}};
+            {{- end}}
+        {{- else}}
+            {{- $params := $op.Request.Field.Type.Fields}}
+        {{importedClass $op.Request.Field.Type }} request =
+            {{importedClass $op.Request.Field.Type }}
+                .builder()
+            {{- range $params}}
+                .{{sanitizeFieldName .Name}}({{sanitizeFieldName .Name}})
+            {{- end}}
+                .build();
+        {{- end}}
+    {{- end}}
+        {{- templateOperationInit .Local false}}
+        {{- $reqParam := getRequestParameter $op}}
+        return operation.handleResponse(operation.doRequest(
+    {{- if $reqParam -}}
+        {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+            {{- wrapNullable "request"}}
+        {{- else -}}
+            request
+        {{- end -}}
+    {{- end -}}));
+    }

@@ -1,0 +1,85 @@
+
+[TestChanges_UnionArrayDisplay - 1]
+# Test: union_array_display
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /messages:
+    post:
+      operationId: sendMessage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        $ref: '#/components/schemas/ContentChunk'
+      responses:
+        '200':
+          description: Success
+components:
+  schemas:
+    ContentChunk:
+      type: object
+      properties:
+        text:
+          type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /messages:
+    post:
+      operationId: sendMessage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        $ref: '#/components/schemas/ContentChunk'
+      responses:
+        '200':
+          description: Success
+components:
+  schemas:
+    ContentChunk:
+      type: object
+      properties:
+        text:
+          type: string
+        format:
+          type: string
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.sendMessage()`: 
+  *  `request.content.union(Array<ContentChunk>)[].format` **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.sendMessage()`: 
+  *  `request.content.union(Array<ContentChunk>)[].format` **Added**
+
+---

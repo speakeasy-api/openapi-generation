@@ -1,0 +1,170 @@
+{{- $op := .Local.Operation -}}
+{{- $scope := $op.Scope -}}
+{{- $paramFlattening := operationParametersFlattened $op -}}
+{{- $reqParam := getRequestParameter $op true -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{- $methodName := sanitizeMethodName $op -}}
+{{- $parameters := methodParameters $op $scope true -}}
+{{- $signatureParameters := (whereByProperty $parameters "IncludedInSignature") -}}
+{{- $requiredParameters := (whereByPredicate $signatureParameters "isRequiredArg") -}}
+{{- $hasNoParams := eq (len $signatureParameters) 0 -}}
+{{- $responseType := sanitizeClass $op.Response.Type $scope false -}}
+{{- $okHttp := useOkHttp -}}
+{{- $asyncResponseType := javaImportResponseReturnType $op true}}
+{{templateCommentsForOperation $op "Returns a builder to make an async request." (list) "The async call builder"}}
+    {{- if and ($op.Comments) ($op.Comments.Deprecated)}}
+    {{templateDeprecatedAnnotation $op}}
+    {{- end}}
+    {{- $builderClassName := (print (getModelNamespace true "operations" "" "" true) "." (templateRequestBuilderSimpleClassName $op))}}
+    public {{javaImport $builderClassName}} {{$methodName}}() {
+        return new {{javaImport $builderClassName}}(sdkConfiguration);
+    }
+    {{- if ne (len $requiredParameters) (len $signatureParameters)}}
+    {{- "\n"}}
+{{templateCommentsForOperation $op "Makes an async request(required parameters only)." $requiredParameters (print $asyncResponseType " - The async response")}}
+    {{- if and ($op.Comments) ($op.Comments.Deprecated)}}
+    {{templateDeprecatedAnnotation $op}}
+    {{- end}}
+    {{- $requiredMethodName := $methodName}}
+    {{- if eq (len $requiredParameters) 0}}{{$requiredMethodName = (print $methodName "Direct")}}{{- end}}
+    public {{$asyncResponseType}} {{$requiredMethodName}}({{templateMethodParams $requiredParameters false 12 2}}) {
+        {{- $allParamsMethodName := $methodName}}
+        {{- if eq (len $signatureParameters) 0}}{{$allParamsMethodName = (print $methodName "Direct")}}{{- end}}
+        return {{$allParamsMethodName}}(
+            {{- templateMethodCallArgs (collectRequiredArgs $signatureParameters $op) false 16 3}});
+    }
+    {{- end}}
+
+{{- "\n"}}
+{{- if (isStreamingOperation $op)}}
+  {{- $streamKind := "JSONL"}}{{- if (isSSEOperation $op)}}{{- $streamKind = "SSE"}}{{- end}}
+  {{- if $okHttp}}
+{{templateCommentsForOperation $op (print "Makes an async request that returns a future of a blocking " $streamKind " event stream") $signatureParameters "A CompletableFuture that completes with a blocking event stream once response headers are received. Iterating the stream blocks the calling thread; close it after use."}}
+  {{- else}}
+{{templateCommentsForOperation $op (print "Makes an async request that returns a reactive " $streamKind " publisher") $signatureParameters (print "A reactive " $streamKind " publisher that emits events from the server. Can be consumed using reactive streams toolkits such as RxJava, Project Reactor, or Java 9+ Flow API.")}}
+  {{- end}}
+{{- else}}
+{{templateCommentsForOperation $op "Makes an async request" $signatureParameters (print $asyncResponseType " - The async response")}}
+{{- end}}
+    {{- if and ($op.Comments) ($op.Comments.Deprecated)}}
+    {{templateDeprecatedAnnotation $op}}
+    {{- end}}
+    {{- $allParamsMethodName := $methodName}}
+    {{- if eq (len $signatureParameters) 0}}{{$allParamsMethodName = (print $methodName "Direct")}}{{- end}}
+    public {{$asyncResponseType}} {{$allParamsMethodName}}({{templateMethodParams $signatureParameters false 12 2}}) {
+    {{- if $paramFlattening -}}
+        {{- $req := javaImportAsyncParam $reqParam true}}
+        {{- if $nullFriendlyParameters}}
+            {{- if useNullableWrapperForParam $reqParam}}
+        {{javaImportJsonNullable}}<{{$req}}> request = {{javaImportJsonNullable}}.of(new {{$req}}(
+            {{- templateMethodCallArgs (parametersForType $op.Request.Field.Type true) false 16 3 -}})
+            {{- templateSetAdditionalProperties $op.Request.Field.Type.Fields 3 -}});
+            {{- else}}
+        {{$req}} request = new {{$req}}(
+            {{- templateMethodCallArgs (parametersForType $op.Request.Field.Type  true) false 16 3 -}})
+            {{- templateSetAdditionalProperties $op.Request.Field.Type.Fields 3 -}};
+            {{- end}}
+        {{- else}}
+            {{- $params := $op.Request.Field.Type.Fields}}
+        {{$req}} request =
+            {{$req}}
+                .builder()
+            {{- range $params}}
+                .{{sanitizeFieldName .Name}}({{sanitizeFieldName .Name}})
+            {{- end}}
+                .build();
+        {{- end}}
+    {{- end}}
+        {{- templateAsyncOperationInit .Local false}}
+        {{- if isStreamingOperation $op}}
+        {{- if $okHttp}}
+          {{- if isSSEOperation $op}}
+            {{- $sentinel := getSSESentinel $op}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest(
+            {{- if $reqParam -}}
+              {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                {{- wrapNullable "request"}}
+              {{- else -}}
+                request
+              {{- end -}}
+            {{- end -}}),
+                operation::handleResponse)
+                .thenApplyAsync(response -> new {{javaImportLocal "utils.EventStream"}}<{{getStreamingItemType $op}}>(
+                        response.rawResponse().body(),
+                        new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{getStreamingItemType $op}}>() {
+                        },
+                        {{javaImportUtils}}.mapper(),
+                        {{if eq $sentinel "null"}}{{javaImportOptional}}.empty(){{else}}{{javaImportOptional}}.of({{$sentinel}}){{end}}{{if not (getSSEDataRequired $op)}},
+                        false{{end}}), {{javaImportLocal "operations.Operations"}}.streamCompletionExecutor()), operation);
+          {{- else}}{{/* not SSE op */}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest(
+            {{- if $reqParam -}}
+              {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                {{- wrapNullable "request"}}
+              {{- else -}}
+                request
+              {{- end -}}
+            {{- end -}}),
+                operation::handleResponse)
+                .thenApplyAsync(response -> new {{javaImportLocal "utils.JsonLStream"}}<{{getStreamingItemType $op}}>(
+                        response.rawResponse().body(),
+                        new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{getStreamingItemType $op}}>() {
+                        },
+                        {{javaImportUtils}}.mapper()), {{javaImportLocal "operations.Operations"}}.streamCompletionExecutor()), operation);
+          {{- end}}
+        {{- else}}
+        {{- if isSSEOperation $op}}
+        {{- $sentinel := getSSESentinel $op}}
+        return {{javaImportLocal "utils.reactive.EventStream"}}.forSSE(
+                operation.doRequest(
+                {{- if $reqParam -}}
+                    {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                        {{- wrapNullable "request"}}
+                    {{- else -}}
+                        request
+                    {{- end -}}
+                {{- end -}}).thenCompose(operation::handleResponse),
+                new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{templateStreamingTypeRefParam $op}}>() {
+                },
+                {{javaImportUtils}}.mapper(),
+                {{$sentinel}});
+        {{- else}}
+        return {{javaImportLocal "utils.reactive.EventStream"}}.forJsonL(
+                operation.doRequest(
+                {{- if $reqParam -}}
+                    {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                        {{- wrapNullable "request"}}
+                    {{- else -}}
+                        request
+                    {{- end -}}
+                {{- end -}}).thenCompose(operation::handleResponse),
+                new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{templateStreamingTypeRefParam $op}}>() {
+                },
+                {{javaImportUtils}}.mapper());
+        {{- end}}
+        {{- end}}
+        {{- else}}
+        {{- if $okHttp}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest(
+          {{- if $reqParam -}}
+            {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                {{- wrapNullable "request"}}
+            {{- else -}}
+                request
+            {{- end -}}
+          {{- end -}}),
+            operation::handleResponse), operation);
+        {{- else}}
+        return operation.doRequest(
+        {{- if $reqParam -}}
+            {{- if (and ($reqParam.Nullable) (not $reqParam.Optional) (not $reqParam.Default)) -}}
+                {{- wrapNullable "request"}}
+            {{- else -}}
+                request
+            {{- end -}}
+        {{- end -}})
+            .thenCompose(operation::handleResponse);
+        {{- end}}
+        {{- end}}
+    }
+{{- "\n" -}}

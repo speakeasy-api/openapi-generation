@@ -1,0 +1,24 @@
+import { expect, test } from "vitest";
+import { SDKCore as SDK } from "../core.js";
+import { recordTest } from "./common_helpers.js";
+import { unionsCircularReferenceRecursiveOneOf } from "../funcs/unionsCircularReferenceRecursiveOneOf.js";
+
+const payload = ["hello", { nested: ["world"] }];
+
+test("circularReferenceRecursiveOneOf", async () => {
+  recordTest("unions-circular-reference-recursive-one-of");
+
+  const s = new SDK();
+
+  const result = await unionsCircularReferenceRecursiveOneOf(s, {
+    value: payload,
+  });
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  expect(result.value.object?.json.value).toEqual(payload);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});

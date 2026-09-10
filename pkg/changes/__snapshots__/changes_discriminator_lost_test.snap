@@ -1,0 +1,98 @@
+
+[TestChanges_DiscriminatorLost - 1]
+# Test: discriminator_lost
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /messages:
+    get:
+      operationId: getMessage
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    oneOf:
+                      - $ref: '#/components/schemas/TextMessage'
+                      - $ref: '#/components/schemas/ImageMessage'
+                    discriminator:
+                      propertyName: type
+                      mapping:
+                        text: '#/components/schemas/TextMessage'
+                        image: '#/components/schemas/ImageMessage'
+components:
+  schemas:
+    TextMessage:
+      type: object
+      properties:
+        type:
+          type: string
+        text:
+          type: string
+    ImageMessage:
+      type: object
+      properties:
+        type:
+          type: string
+        url:
+          type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /messages:
+    get:
+      operationId: getMessage
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    oneOf:
+                      - $ref: '#/components/schemas/TextMessage'
+                      - $ref: '#/components/schemas/ImageMessage'
+components:
+  schemas:
+    TextMessage:
+      type: object
+      properties:
+        text:
+          type: string
+    ImageMessage:
+      type: object
+      properties:
+        url:
+          type: string
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getMessage()`:  `response.content` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getMessage()`: `response.content` **Changed** (Breaking ⚠️)
+    - `union(ImageMessage)` **Added**
+    - `union(TextMessage)` **Added**
+    - `union(image)` **Removed** (Breaking ⚠️)
+    - `union(text)` **Removed** (Breaking ⚠️)
+
+---

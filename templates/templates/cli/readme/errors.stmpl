@@ -1,0 +1,31 @@
+The CLI uses standard exit codes to indicate success or failure:
+
+| Exit Code | Meaning |
+|-----------|---------|
+| `0` | Success |
+| `1` | Runtime/API failure |
+| `2` | Usage or input failure |
+| `3` | Authentication or authorization failure |
+
+On success, the response data is printed to **stdout** as JSON. On failure, error details are printed to **stderr**.
+
+```bash
+# Capture output and handle errors
+{{templateReadmeShowcaseCommand}} --output-format json > output.json 2> error.log
+if [ $? -ne 0 ]; then
+  echo "Error occurred, see error.log"
+fi
+```
+
+{{- if classifiedErrors}}
+In pretty mode, each error is printed once as `Error (<type>): <message>`, followed by its reason/HTTP status, actionable `Fix:` bullets, and only non-duplicative residual details.
+
+In agent mode, or with explicit `--output-format json`, `--output-format toon`, or `--jq` machine output, stderr is one classified JSON envelope with `exit_code`, `error_type`, optional `error_reason`, `message`, `hints`, and optional `status_code` — see [For AI agents](#for-ai-agents).
+{{- $carriers := cliErrorCarrierDisplayList}}
+{{- if $carriers}}
+
+`error_reason` is the structured reason code read from the error body at {{$carriers}} (resolved against the nested `error` object when the body has one){{if not cliErrorAnyCarrierDeclared}}, surfaced only when it matches a reason this CLI declares{{end}}.
+{{- end}}
+{{- else}}
+This CLI uses unclassified error rendering outside agent mode: pretty and TOON print the API error text as received, while `--output-format json` and `--jq` emit the unclassified envelope (including the configure `_hint` for HTTP 401/403) plus `exit_code`. Agent mode always emits the classified JSON envelope with `exit_code`, `error_type`, optional `error_reason`, `message`, `hints`, and optional `status_code` — see [For AI agents](#for-ai-agents).
+{{- end}}

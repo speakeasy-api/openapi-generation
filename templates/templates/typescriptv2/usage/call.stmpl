@@ -1,0 +1,12 @@
+{{- $op := .Local.Operation }}
+{{- if $op }}
+
+{{- if .Local.RenderFeature "errors" false }}{{"\n"}}
+{{- templateString "usage/call-guarded.stmpl" .Local }}
+{{- else }}
+{{- templateString "usage/call-unguarded.stmpl" .Local | trim}}
+
+{{templateString "usage/result.stmpl" .Local | trim}}
+{{- end }}
+
+{{- end }}{{/* if $op */}}

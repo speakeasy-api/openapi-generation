@@ -1,0 +1,156 @@
+{{typedDirective}}
+# frozen_string_literal: true
+{{- $moduleName := sanitizeModuleName .Global.Config.Module -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $enumImport := false }}
+{{- $globalSecurityFlattening := and .Local.Security (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+
+{{ getSDKImports}}
+
+module {{ $moduleName }}
+  {{sorbetTSig}}
+
+{{- if $serverMap}}
+{{range .Local.Servers.Servers}}
+  {{templateConstName .ID "Server"}} = :{{sanitizeHashKey .ID}}{{if .Comments}} {{templateComments .Comments 0}}{{end}}
+{{- end}}
+  SERVERS = {{if sorbetEnabled}}T.let({{end}}{
+    {{- range .Local.Servers.Servers}}
+    {{sanitizeHashKey .ID}}: '{{ .URL }}',
+    {{- end}}
+  }.freeze{{if sorbetEnabled}}, T::Hash[T.any(String, Symbol), String]){{end}}
+  # Contains the list of servers available to the SDK
+{{- else if .Local.Servers}}
+
+  SERVERS = {{if sorbetEnabled}}T.let({{end}}[{{- range .Local.Servers.Servers}}
+    '{{ .URL }}', {{ templateComments .Comments 1 nil false}}{{end}}
+  ].freeze{{if sorbetEnabled}}, T::Array[String]){{end}}
+  # Contains the list of servers available to the SDK
+{{- end}}
+
+  class SDKConfiguration
+    {{sorbetTSig}}
+
+    {{if sorbetEnabled}}sig { returns(T.nilable(Faraday::Connection)) }{{end}}
+    attr_accessor :client
+
+    {{if sorbetEnabled}}sig { returns(::{{ $moduleName }}::SDKHooks::Hooks) }{{end}}
+    attr_accessor :hooks
+
+    {{if sorbetEnabled}}sig { returns(T.nilable(::{{ $moduleName }}::Utils::RetryConfig)) }{{end}}
+    attr_accessor :retry_config
+
+    {{if sorbetEnabled}}sig { returns(T.nilable(Float)) }{{end}}
+    attr_accessor :timeout
+
+    {{if .Local.Security}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(T.proc.returns({{(sanitizeType .Local.Security.Type true false "")}}))) }{{end}}
+    attr_accessor :security_source
+
+    {{end}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(String)) }{{end}}
+    attr_accessor :server_url
+
+    {{if $serverMap}}
+    {{if sorbetEnabled}}sig { returns(Symbol) }{{end}}
+    attr_accessor :server
+
+    {{else if .Local.Servers}}
+    {{if sorbetEnabled}}sig { returns(T.nilable(Integer)) }{{end}}
+    attr_accessor :server_idx
+
+    {{end}}
+    {{- if $serverVariables}}
+    {{-   if $serverMap}}
+    {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T::Hash[Symbol, String]]) }{{end}}
+    attr_accessor :server_params
+
+    {{    else }}
+    {{if sorbetEnabled}}sig { returns(T::Array[T::Hash[Symbol, String]]) }{{end}}
+    attr_accessor :server_params
+
+    {{    end}}
+    {{- end}}
+    {{- if .Local.Globals}}
+    {{if sorbetEnabled}}sig { returns(T::Hash[Symbol, T::Hash[Symbol, T::Hash[Symbol, Object]]]) }{{end}}
+    attr_accessor :globals
+
+    {{end}}
+    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    attr_accessor :language
+
+    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    attr_accessor :openapi_doc_version
+
+    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    attr_accessor :sdk_version
+
+    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    attr_accessor :gen_version
+
+    {{if sorbetEnabled}}sig { returns(String) }{{end}}
+    attr_accessor :user_agent
+
+    {{sanitizeSDKConfigConstructorSignatureSorbet .Local}}
+    {{sanitizeSDKConfigConstructorSignature .Local}}
+      @client = client
+      @hooks = hooks
+      @retry_config = retry_config
+      @server_url = server_url
+      @timeout = (timeout_ms.to_f / 1000) unless timeout_ms.nil?
+
+      {{- if $serverMap}}
+      @server = server.nil? ? {{templateConstName .Local.Servers.Default "Server"}} : server
+      raise StandardError, "Invalid server \"#{server}\"" if !SERVERS.key?(@server)
+      {{- else if .Local.Servers}}
+      @server_idx = server_idx.nil? ? 0 : server_idx
+      raise StandardError, "Invalid server index #{server_idx}" if @server_idx.negative? || @server_idx >= SERVERS.length
+      {{- end}}
+
+      {{- if $serverVariables}}
+      @server_params = server_params
+      {{- end}}
+
+      {{- if .Local.Security}}
+      if !security_source.nil?
+        @security_source = security_source
+      {{- if $globalSecurityFlattening}}
+      elsif !{{sanitizeFieldName (first .Local.Security.Type.Fields).Name}}.nil?
+        @security_source = -> { {{sanitizeType .Local.Security.Type false false ""}}.new({{sanitizeFieldName (first .Local.Security.Type.Fields).Name}}: {{sanitizeFieldName (first .Local.Security.Type.Fields).Name}}) }
+      {{- else}}
+      elsif !security.nil?
+        @security_source = -> { security }
+      {{- end}}
+      end
+      {{- end}}
+
+      {{- if .Local.Globals}}
+      @globals = globals.nil? ? {} : globals
+      {{- end}}
+      @language = 'ruby'
+      {{- if ne .Global.Config.DocVersion ""}}
+      @openapi_doc_version = '{{.Global.Config.DocVersion}}'
+      {{- end}}
+      @sdk_version = '{{.Global.Config.SDKVersion}}'
+      @gen_version = '{{.Global.Config.GenVersion}}'
+      @user_agent = 'speakeasy-sdk/ruby {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}'
+    end
+
+    {{if sorbetEnabled}}sig { returns([String, T::Hash[Symbol, String]]) }{{end}}
+    def get_server_details
+    {{- if .Local.Servers}}
+      return [@server_url.delete_suffix('/'), {}] if !@server_url.nil?
+      {{- if $serverMap}}
+      {{sorbetMust "@server" true}}
+      [{{sorbetMust "SERVERS[@server]"}}, {{if $serverVariables}}{{sorbetMust "@server_params[@server]"}}{{else}}{}{{end}}]
+      {{- else}}
+      {{sorbetMust "@server_idx" true}}
+      [{{sorbetMust "SERVERS[@server_idx]"}}, {{if $serverVariables}}{{sorbetMust "@server_params[@server_idx]"}}{{else}}{}{{end}}]
+      {{- end}}
+    {{- else}}
+      [@server_url.delete_suffix('/'), {}]
+    {{- end}}
+    end
+  end
+end

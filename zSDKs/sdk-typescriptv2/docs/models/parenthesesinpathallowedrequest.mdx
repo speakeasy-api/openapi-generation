@@ -1,0 +1,23 @@
+---
+title: "ParenthesesInPathAllowedRequest"
+---
+
+## Example Usage
+
+```typescript
+import { ParenthesesInPathAllowedRequest } from "openapi";
+
+let value: ParenthesesInPathAllowedRequest = {
+  id: "<id>",
+  templateBracesTest: {
+    fieldWithBracesInExample: "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n",
+  },
+};
+```
+
+## Fields
+
+| Field                                                        | Type                                                         | Required                                                     | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `id`                                                         | *string*                                                     | :heavy_check_mark:                                           | N/A                                                          |
+| `templateBracesTest`                                         | [models.TemplateBracesTest](../models/templatebracestest.mdx) | :heavy_check_mark:                                           | N/A                                                          |

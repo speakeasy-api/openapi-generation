@@ -1,0 +1,7 @@
+{{- if .Local.Operation -}}
+{{- $namespace := sanitizeSDKAccess .Local.SDK }}
+{{- $methodParameters := templateUsageMethodParameters .Local 1 -}}
+{{- $methodParameters.LocalDeclarations | indentPresent 4 }}
+    {{if .Local.Operation.Response.Type}}{{getResponseVariableName .Local.StepID}}, {{end}}err := s{{$namespace}}.{{sanitizeMethodName .Local.Operation}}(ctx{{$methodParameters.MethodParams}}
+        {{- if and (.Local.Operation.Extensions.Retries) (.Local.RenderFeature "retries" false) }}, {{addImport getOperationsLocation}}{{getAccessNamespace "usage" "operations"}}WithRetries({{templateString "usage/retries.stmpl" .Local }}){{end -}}
+    ){{end}}

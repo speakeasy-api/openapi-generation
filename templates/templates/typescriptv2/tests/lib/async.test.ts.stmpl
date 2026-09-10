@@ -1,0 +1,130 @@
+import { afterEach, beforeEach, expect, test } from "vitest";
+import { APIPromise } from "../../{{getTypesLocation}}/async.js";
+
+// Capture unhandled rejections during each test so we can assert APIPromise
+// does not leak orphan rejection chains. This is a regression guard for the
+// "aborting parallel requests causes unhandled rejections" class of bug.
+let unhandled: unknown[] = [];
+function onUnhandled(reason: unknown) {
+  unhandled.push(reason);
+}
+
+const processEvents = process as NodeJS.EventEmitter;
+
+beforeEach(() => {
+  unhandled = [];
+  processEvents.on("unhandledRejection", onUnhandled);
+});
+
+afterEach(() => {
+  processEvents.off("unhandledRejection", onUnhandled);
+});
+
+// Drain microtasks and a couple of event-loop turns so any unhandledRejection
+// events are emitted before we assert.
+async function drainUnhandledRejectionQueue() {
+  await Promise.resolve();
+  await new Promise((r) => setImmediate(r));
+  await Promise.resolve();
+  await new Promise((r) => setImmediate(r));
+}
+
+test("await on rejecting APIPromise does not emit unhandled rejection", async () => {
+  const err = new Error("boom");
+  const p = new APIPromise<string>(Promise.reject(err));
+
+  let caught: unknown;
+  try {
+    await p;
+  } catch (e) {
+    caught = e;
+  }
+
+  await drainUnhandledRejectionQueue();
+  expect(caught).toBe(err);
+  expect(unhandled).toEqual([]);
+});
+
+test("await on rejecting APIPromise across many parallel callers stays clean", async () => {
+  const results = await Promise.allSettled(
+    Array.from({ length: 5 }, () => {
+      const p = new APIPromise<string>(Promise.reject(new Error("boom")));
+      return (async () => {
+        try {
+          await p;
+          return null;
+        } catch (e) {
+          return e;
+        }
+      })();
+    }),
+  );
+
+  await drainUnhandledRejectionQueue();
+  expect(results.every((r) => r.status === "fulfilled")).toBe(true);
+  expect(unhandled).toEqual([]);
+});
+
+test(".catch() observes the rejection", async () => {
+  const err = new Error("boom");
+  const p = new APIPromise<string>(Promise.reject(err));
+
+  const caught = await p.catch((e) => e);
+
+  await drainUnhandledRejectionQueue();
+  expect(caught).toBe(err);
+  expect(unhandled).toEqual([]);
+});
+
+test(".finally() runs on rejection and rethrows", async () => {
+  const err = new Error("boom");
+  let finallyRan = false;
+  const p = new APIPromise<string>(Promise.reject(err));
+
+  let caught: unknown;
+  try {
+    await p.finally(() => {
+      finallyRan = true;
+    });
+  } catch (e) {
+    caught = e;
+  }
+
+  await drainUnhandledRejectionQueue();
+  expect(finallyRan).toBe(true);
+  expect(caught).toBe(err);
+  expect(unhandled).toEqual([]);
+});
+
+test(".finally() runs on fulfillment and preserves the value", async () => {
+  let finallyRan = false;
+  const p = new APIPromise<string>(["hello", { status: "invalid" as const }]);
+
+  const value = await p.finally(() => {
+    finallyRan = true;
+  });
+
+  await drainUnhandledRejectionQueue();
+  expect(finallyRan).toBe(true);
+  expect(value).toBe("hello");
+  expect(unhandled).toEqual([]);
+});
+
+test("resolves with the value (not the [value, apicall] tuple)", async () => {
+  const apicall = { status: "invalid" as const };
+  const p = new APIPromise<string>(["hello", apicall]);
+  await expect(p).resolves.toBe("hello");
+});
+
+test("then() forwards both fulfilled and rejected results", async () => {
+  const okP = new APIPromise<number>(
+    Promise.resolve([42, { status: "invalid" }]),
+  );
+  await expect(okP.then((v) => v + 1)).resolves.toBe(43);
+
+  const errP = new APIPromise<number>(Promise.reject(new Error("nope")));
+  await expect(errP.then((v) => v)).rejects.toThrow("nope");
+
+  await drainUnhandledRejectionQueue();
+  expect(unhandled).toEqual([]);
+});

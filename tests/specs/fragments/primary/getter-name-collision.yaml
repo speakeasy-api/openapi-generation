@@ -1,0 +1,34 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/getter-name-collision:
+    get:
+      operationId: primaryGetterNameCollision
+      responses:
+        "200":
+          description: A response that exercises getter name collisions with generated model fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectWithGetterShadowingProperties"
+components:
+  schemas:
+    ObjectWithGetterShadowingProperties:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        LineType:
+          type: string
+        GetLineType:
+          type: string
+        MsID:
+          type: string
+        GetMsID:
+          type: string

@@ -1,0 +1,25 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCollections_ContainingNull(t *testing.T) {
+	recordTest("collections-containing-null")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Body fields are now expanded to individual JSON flags; use stdin for the complex body
+	body := `{"requiredArray":["foo",null],"requiredMap":{"foo":null,"bar":123},"optionalArray":["foo",null],"optionalMap":{"foo":null,"bar":123},"arrayOfNullUnion":["foo",null],"mapOfNullUnion":{"foo":null,"bar":123}}`
+	err := h.RunWithStdinServer(s.URL, []string{"collections", "collections-containing-null"}, body)
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify null values are preserved in the echo response
+	assert.Contains(t, output, "null")
+	assert.Contains(t, output, `"foo"`)
+}

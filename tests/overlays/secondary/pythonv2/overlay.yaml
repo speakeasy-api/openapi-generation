@@ -1,0 +1,41 @@
+# This overlay updates a few of the examples that aren't quite compatible with pythonv2 yet
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/secondary.yaml
+  version: 0.0.0
+actions:
+  # Remove the existing example in responseBodyAdditionalPropertiesAnyPost
+  - target: $.paths.*.*[?(@.operationId == 'responseBodyAdditionalPropertiesAnyPost')].requestBody.content['application/json'].examples.test.value
+    remove: true
+  - target: $.paths.*.*[?(@.operationId == 'responseBodyAdditionalPropertiesAnyPost')].responses['200'].content['application/json'].examples.test.value
+    remove: true
+  - target: $.paths.*.*[?(@.operationId == 'responseBodyAdditionalPropertiesAnyPost')].requestBody.content['application/json'].examples.test
+    update:
+      value: {
+        "key1": "value2",
+        "key2": 1, # Changed this from null to 1 as pythonv2 drops this field if it's null
+        "key3": {
+          "foo": "bar",
+          "subkey1": {
+            "foo": "bar"
+          }
+        },
+        "key4": [ "foo", "bar" ],
+        "normalField": "normal"
+      }
+  - target: $.paths.*.*[?(@.operationId == 'responseBodyAdditionalPropertiesAnyPost')].responses['200'].content['application/json'].examples.test
+    update:
+      value: {
+        "json": {
+          "key1": "value2",
+          "key2": 1, # Changed this from null to 1 as pythonv2 drops this field if it's null
+          "key3": {
+            "foo": "bar",
+            "subkey1": {
+              "foo": "bar"
+            }
+          },
+          "key4": [ "foo", "bar" ],
+          "normalField": "normal"
+        }
+      }

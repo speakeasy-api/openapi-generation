@@ -1,0 +1,10 @@
+{{.Local.Header}}
+
+{{ range .Local.Sections }}
+<!-- Start {{ .Header }} [{{ .ID }}] -->
+## {{ .Header }}
+
+{{ .Content }}
+<!-- End {{ .Header }} [{{ .ID }}] -->
+{{ end }}
+<!-- Placeholder for Future Speakeasy SDK Sections -->

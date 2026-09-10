@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: e-commerce api
+  version: 0.1.0
+  summary: A test API modelled after an e-commerce use case.
+servers:
+  - url: http://localhost:{port}
+    description: The default test server.
+    x-speakeasy-server-id: main
+    variables:
+      port:
+        default: "35456"
+        description: The port on which the server is running.
+
+paths:
+  /ping:
+    get:
+      operationId: healthCheck
+      summary: Health check.
+      security: []
+      responses:
+        "200":
+          description: Health check successful.
+          content:
+            text/plain:
+              schema:
+                type: string
+  /ecommerce/products:
+    get:
+      operationId: listProducts
+      x-speakeasy-name-override: list
+      summary: List all products.
+      tags:
+        - products
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "./components.ecommerce.yaml#/components/schemas/Products"
+    post:
+      operationId: createProduct
+      x-speakeasy-name-override: create
+      summary: Create a new product.
+      tags:
+        - products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./components.ecommerce.yaml#/components/schemas/NewProductForm"
+      responses:
+        "200":
+          description: Product created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "./components.ecommerce.yaml#/components/schemas/Product"
+
+  /ecommerce/products/{id}:
+    get:
+      operationId: fetchProduct
+      x-speakeasy-name-override: fetchById
+      summary: Get a product by its id.
+      tags:
+        - products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product found.
+          content:
+            application/json:
+              schema:
+                $ref: "./components.ecommerce.yaml#/components/schemas/Product"
+
+    put:
+      operationId: updateProduct
+      x-speakeasy-name-override: update
+      summary: Update an existing product.
+      tags:
+        - products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./components.ecommerce.yaml#/components/schemas/ProductUpdateForm"
+      responses:
+        "200":
+          description: Product udpated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "./components.ecommerce.yaml#/components/schemas/Product"
+
+    delete:
+      operationId: deleteProduct
+      x-speakeasy-name-override: deleteById
+      summary: Delete a product by its id.
+      tags:
+        - products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Product deleted successfully.
+
+  /ecommerce/products/{id}/inventory:
+    put:
+      operationId: updateProductStock
+      summary: Update the inventory of a product.
+      tags:
+        - inventory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./components.ecommerce.yaml#/components/schemas/ProductInventoryUpdateForm"
+      responses:
+        "200":
+          description: Inventory updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "./components.ecommerce.yaml#/components/schemas/ProductInventoryStatus"
+
+components:
+  securitySchemes: {}

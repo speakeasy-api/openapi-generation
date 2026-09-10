@@ -1,0 +1,341 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newDiagnosticsServer creates a test server that echoes requests and includes
+// security-sensitive response headers for redaction testing.
+func newDiagnosticsServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-Method", r.Method)
+		w.Header().Set("X-Request-Path", r.URL.Path)
+		w.Header().Set("Set-Cookie", "session=secret123; Path=/")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"method": r.Method,
+			"path":   r.URL.Path,
+			"echo":   true,
+		})
+	}))
+}
+
+// newRequestTracker creates a server that tracks whether it received any requests.
+// Used to verify dry-run makes zero network calls.
+func newRequestTracker() (*httptest.Server, *int) {
+	count := new(int)
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*count++
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"received": true})
+	}))
+	return s, count
+}
+
+func TestDryRunNoNetworkCall(t *testing.T) {
+
+
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--dry-run", "methods", "method-get"})
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, *count, "dry-run should not make any network calls")
+}
+
+func TestDryRunStderrOutput(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	// Point at a non-existent server — dry-run should never connect
+	err := h.RunWithStdinServerRaw("http://127.0.0.1:1", []string{"--dry-run", "methods", "method-get"}, "")
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DRY-RUN]", "stderr should contain dry-run prefix")
+	assert.Contains(t, stderr, "Would send:", "stderr should show request preview")
+	assert.Contains(t, stderr, "GET", "stderr should show HTTP method")
+	assert.Contains(t, stderr, "Network call skipped", "stderr should confirm no network call")
+	assert.Empty(t, h.GetStdout(), "human dry-run stdout must be empty")
+}
+
+func TestDryRunExitsSuccessfully(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"--dry-run", "methods", "method-get"})
+	require.NoError(t, err, "dry-run should exit with success")
+}
+
+func TestDebugLogsRequestAndResponse(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--debug", "methods", "method-get"})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	// Request diagnostics
+	assert.Contains(t, stderr, "[DEBUG] Request:", "stderr should contain request debug line")
+	assert.Contains(t, stderr, "GET", "stderr should show HTTP method")
+
+	// Response diagnostics
+	assert.Contains(t, stderr, "[DEBUG] Response:", "stderr should contain response debug line")
+	assert.Contains(t, stderr, "200", "stderr should show status code")
+}
+
+func TestDebugStillReturnsNormalOutput(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--debug", "methods", "method-get"})
+	require.NoError(t, err)
+
+	// stdout should still contain the actual response
+	stdout := h.GetStdout()
+	assert.NotEmpty(t, stdout, "stdout should contain response data")
+}
+
+func TestBothFlagsUsesDryRun(t *testing.T) {
+
+
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServerRaw(s.URL, []string{"--dry-run", "--debug", "methods", "method-get"}, "")
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, *count, "both flags set should use dry-run (no network calls)")
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DRY-RUN]", "should use dry-run prefix when both flags set")
+	assert.NotContains(t, stderr, "[DEBUG] Response:", "should not have debug response when dry-run wins")
+}
+
+func TestDryRunRedactsAuthHeaders(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServerRaw("http://127.0.0.1:1", []string{
+		"--dry-run",
+		"--header", "Authorization: Bearer supersecrettoken",
+		"--header", "X-Custom: visible-value",
+		"methods", "method-get",
+	}, "")
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[REDACTED]", "sensitive headers should be redacted")
+	assert.NotContains(t, stderr, "supersecrettoken", "auth token should not appear in stderr")
+	assert.Contains(t, stderr, "visible-value", "non-sensitive headers should remain visible")
+}
+
+func TestDebugRedactsAuthHeaders(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--debug",
+		"--header", "Authorization: Bearer supersecrettoken",
+		"--header", "X-Custom: visible-value",
+		"methods", "method-get",
+	})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[REDACTED]", "sensitive headers should be redacted in debug mode")
+	assert.NotContains(t, stderr, "supersecrettoken", "auth token should not appear in debug stderr")
+	assert.Contains(t, stderr, "visible-value", "non-sensitive headers should remain visible in debug")
+}
+
+func TestDebugRedactsSensitiveResponseHeaders(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--debug", "methods", "method-get"})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	// The diagnostics server sets Set-Cookie header which should be redacted
+	assert.NotContains(t, stderr, "secret123", "sensitive response cookie should be redacted")
+}
+
+func TestDryRunWithRequestBody(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServerRaw("http://127.0.0.1:1", []string{
+		"--dry-run",
+		"request-bodies", "request-body-post-application-json-map-of-any",
+	}, `{"key": "value"}`)
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DRY-RUN]", "stderr should contain dry-run prefix")
+	assert.Contains(t, stderr, "POST", "stderr should show POST method")
+	assert.Contains(t, stderr, "Network call skipped", "stderr should confirm no network call")
+}
+
+func TestDryRunRedactsSensitiveBodyKeys(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	body := `{"username": "admin", "password": "secret123", "data": "visible"}`
+	err := h.RunWithStdinServerRaw("http://127.0.0.1:1", []string{
+		"--dry-run",
+		"request-bodies", "request-body-post-application-json-map-of-any",
+	}, body)
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	if strings.Contains(stderr, "Body:") {
+		assert.NotContains(t, stderr, "secret123", "password field should be redacted in body")
+		assert.Contains(t, stderr, "[REDACTED]", "sensitive body keys should show [REDACTED]")
+		assert.Contains(t, stderr, "visible", "non-sensitive body values should remain visible")
+	}
+}
+
+func TestDebugFlagAfterSubcommands(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "method-get", "--debug"})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DEBUG] Request:", "debug after subcommands should log request")
+	assert.Contains(t, stderr, "[DEBUG] Response:", "debug after subcommands should log response")
+}
+
+func TestDebugFlagBetweenSubcommands(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "--debug", "method-get"})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DEBUG] Request:", "debug between subcommands should log request")
+	assert.Contains(t, stderr, "[DEBUG] Response:", "debug between subcommands should log response")
+}
+
+func TestDebugShortFlagAfterSubcommands(t *testing.T) {
+
+
+	s := newDiagnosticsServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "method-get", "-d"})
+	require.NoError(t, err)
+
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, "[DEBUG] Request:", "-d after subcommands should log request")
+	assert.Contains(t, stderr, "[DEBUG] Response:", "-d after subcommands should log response")
+}
+
+func TestDryRunOutputFormatJSON(t *testing.T) {
+
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{
+		"--dry-run",
+		"methods", "method-get",
+	})
+	require.NoError(t, err)
+
+	assert.Empty(t, h.GetStderr(), "JSON dry-run stderr must be silent")
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stdout), &parsed))
+	assert.Equal(t, true, parsed["dry_run"])
+	request, ok := parsed["request"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "GET", request["method"])
+	assert.Contains(t, request["url"], "/")
+}
+
+// Operation commands take no positional arguments. A stray token — most
+// dangerously a safety flag demoted to a positional by "--" — must be
+// rejected before the request is built, not silently swallowed while the
+// live request goes out.
+func TestOpCommandRejectsStrayPositionalAfterDoubleDash(t *testing.T) {
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "method-delete", "--", "--dry-run"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown command "--dry-run"`)
+	assert.Equal(t, 0, *count, "a rejected invocation must not send the request")
+}
+
+func TestOpCommandRejectsStrayPositional(t *testing.T) {
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"methods", "method-get", "extra"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown command "extra"`)
+	assert.Equal(t, 0, *count)
+}
+
+// Command groups reject stray tokens too — a typo'd subcommand is an error,
+// not the group help page with a zero exit code.
+func TestGroupCommandRejectsUnknownSubcommand(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"methods", "method-bogus"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown command "method-bogus"`)
+}
+
+// The informational commands emit one structured object under machine
+// formats and keep the human text under pretty.
+func TestVersionAndWhoamiMachineOutput(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"--output-format", "json", "version"}))
+	var version map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &version))
+	assert.NotEmpty(t, version["version"])
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"--output-format", "json", "whoami"}))
+	var whoami map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &whoami))
+	assert.NotEmpty(t, whoami["config_file"])
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunRaw([]string{"version"}))
+	assert.False(t, json.Valid([]byte(strings.TrimSpace(h.GetStdout()))),
+		"pretty version output turned into JSON")
+}

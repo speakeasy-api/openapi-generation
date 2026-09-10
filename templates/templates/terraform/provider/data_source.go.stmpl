@@ -1,0 +1,114 @@
+{{- recurse 1 -}}
+package provider
+
+{{genImports}}
+{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "imports" }}
+{{- addGenImport "context" -}}
+{{- addGenImport "fmt" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/datasource" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/datasource/schema" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types/basetypes" -}}
+{{- addGenImport (getSDKPackage) -}}
+
+{{- $resourceTypeName := .Local.DataSource.GoTypeName }}
+{{- $dataModelTypeName := .Local.DataSource.GoDataModelTypeName }}
+{{- $sdkClassName := (sanitizeClassName .Global.AST.MainSDK.Type.Name)}}
+
+// Ensure provider defined types fully satisfy framework interfaces.
+var _ datasource.DataSource = &{{ $resourceTypeName }}{}
+var _ datasource.DataSourceWithConfigure = &{{ $resourceTypeName }}{}
+
+func New{{ $resourceTypeName }}() datasource.DataSource {
+	return &{{ $resourceTypeName }}{}
+}
+
+// {{ $resourceTypeName }} is the data source implementation.
+type {{ $resourceTypeName }} struct {
+	{{ templateDataResourceStructFields .Local }}
+}
+
+// {{ $dataModelTypeName }} describes the data model.
+type {{ $dataModelTypeName }} struct { {{templateEntityDataModelFields .Local.DataSource}}
+}
+
+// Metadata returns the data source type name.
+func (r *{{ $resourceTypeName }}) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_{{sanitizeTFStateName .Local.DataSource.Name}}"
+}
+
+// Schema defines the schema for the data source.
+func (r *{{ $resourceTypeName }}) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: {{quote .Local.DataSource.SchemaDescription}},
+
+		Attributes: map[string]schema.Attribute{
+		    {{(generateSchema .Local.DataSource "data")}}
+		},
+	}
+}
+
+func (r *{{ $resourceTypeName }}) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	{{ if .Local.ProviderContext.HasConfigureData -}}
+	providerData, ok := req.ProviderData.(*{{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected DataSource Configure Type",
+			fmt.Sprintf("Expected *{{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	{{ templateDataResourceConfigureProviderData .Local }}
+	{{ else -}}
+	client, ok := req.ProviderData.(*sdk.{{$sdkClassName}})
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected DataSource Configure Type",
+			fmt.Sprintf("Expected *sdk.{{$sdkClassName}}, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+	{{ end -}}
+}
+
+func (r *{{ $resourceTypeName }}) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var data *{{ $dataModelTypeName }}
+	var item types.Object
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &item)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(item.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.DataSource.GlobalFields) 0 -}}
+	{{   templateDataResourceOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{(generateSDKCall .Local.DataSource .Local.DataSource.Operations.Read "read")}}
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+

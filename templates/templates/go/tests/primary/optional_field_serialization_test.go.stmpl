@@ -1,0 +1,504 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"strings"
+	"testing"
+	"time"
+
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/optionalnullable"
+	"{{getRootModulePath}}/pkg/types"
+	"{{getRootModulePath}}/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// TestOmitZeroSerializationBehavior tests the comprehensive behavior of the omitzero tag
+//
+// Key Behavior Requirements:
+// - nil fields are always omitted from the resulting json
+// - Any other 'zero value' is also omitted
+// - pointers to empty maps/structs/arrays are NOT omitted
+//
+// This test suite validates that empty objects, arrays, and maps are properly included
+// in JSON serialization when using the omitzero tag, while nil/zero values are omitted.
+func TestOmitZeroSerializationBehavior(t *testing.T) {
+	// Test all scenarios in a table-driven test approach
+	tests := []struct {
+		name     string
+		request  shared.OptionalFieldTestObject
+		validate func(t *testing.T, jsonStr string)
+	}{
+		{
+			name: "AllFieldsNilOrDefault",
+			request: shared.OptionalFieldTestObject{
+				// Required fields must be set
+				RequiredString: "test-required",
+				RequiredInt:    42,
+				RequiredBool:   true,
+				RequiredFloat:  3.14,
+				RequiredTime:   getTestTime(),
+				RequiredObject: shared.NonEmptyObject{RequiredField: "required-object"},
+
+				// All optional fields left nil/unset - should be omitted
+				OptionalString:            nil,
+				OptionalInt:               nil,
+				OptionalBool:              nil,
+				OptionalFloat:             nil,
+				OptionalTime:              nil,
+				OptionalBigDecimal:        nil,
+				OptionalNonEmptyObject:    nil,
+				OptionalAlwaysEmptyObject: nil,
+				OptionalNestedObject:      nil,
+				OptionalComplexObject:     nil,
+				OptionalStringArray:       nil,
+				OptionalObjectArray:       nil,
+				OptionalStringMap:         nil,
+				OptionalObjectMap:         nil,
+				// OptionalNullable fields unset (nil map)
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Only required fields should be present
+				assertJSONContains(t, jsonStr, "requiredString", "test-required")
+				assertJSONContains(t, jsonStr, "requiredInt", "42")
+				assertJSONContains(t, jsonStr, "requiredBool", "true")
+				assertJSONContains(t, jsonStr, "requiredFloat", "3.14")
+				assertJSONContains(t, jsonStr, "requiredTime")
+				assertJSONContains(t, jsonStr, "requiredObject")
+
+				// All optional fields should be omitted
+				assertJSONOmits(t, jsonStr, "optionalString")
+				assertJSONOmits(t, jsonStr, "optionalInt")
+				assertJSONOmits(t, jsonStr, "optionalBool")
+				assertJSONOmits(t, jsonStr, "optionalFloat")
+				assertJSONOmits(t, jsonStr, "optionalTime")
+				assertJSONOmits(t, jsonStr, "optionalBigDecimal")
+				assertJSONOmits(t, jsonStr, "optionalNonEmptyObject")
+				assertJSONOmits(t, jsonStr, "optionalAlwaysEmptyObject")
+				assertJSONOmits(t, jsonStr, "optionalNestedObject")
+				assertJSONOmits(t, jsonStr, "optionalComplexObject")
+				assertJSONOmits(t, jsonStr, "optionalStringArray")
+				assertJSONOmits(t, jsonStr, "optionalObjectArray")
+				assertJSONOmits(t, jsonStr, "optionalStringMap")
+				assertJSONOmits(t, jsonStr, "optionalObjectMap")
+				assertJSONOmits(t, jsonStr, "optionalNullableInt")
+				assertJSONOmits(t, jsonStr, "optionalNullableArray")
+			},
+		},
+		{
+			name: "PointersToZeroValuesIncluded",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0.0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Optional fields set to pointers to zero values - should be INCLUDED
+				OptionalString:     stringPtr(""),
+				OptionalInt:        int64Ptr(0),
+				OptionalBool:       boolPtr(false),
+				OptionalFloat:      float64Ptr(0.0),
+				OptionalTime:       timePtr(time.Time{}),
+				OptionalBigDecimal: types.MustNewDecimalFromString("0"),
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Required fields always present, even if zero value
+				assertJSONContains(t, jsonStr, "requiredString", `""`)
+				assertJSONContains(t, jsonStr, "requiredInt", "0")
+				assertJSONContains(t, jsonStr, "requiredBool", "false")
+				assertJSONContains(t, jsonStr, "requiredFloat", "0")
+				assertJSONContains(t, jsonStr, "requiredTime", "0001-01-01T00:00:00Z")
+				assertJSONContains(t, jsonStr, "requiredObject")
+
+				// Pointers to zero values should be INCLUDED (they are not nil or zero themselves)
+				assertJSONContains(t, jsonStr, "optionalString", `""`)
+				assertJSONContains(t, jsonStr, "optionalInt", "0")
+				assertJSONContains(t, jsonStr, "optionalBool", "false")
+				assertJSONContains(t, jsonStr, "optionalFloat", "0")
+				assertJSONContains(t, jsonStr, "optionalTime", "0001-01-01T00:00:00Z")
+				assertJSONContains(t, jsonStr, "optionalBigDecimal", "0")
+			},
+		},
+		{
+			name: "PointersToEmptyContainersIncluded",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Pointers to empty containers - should be INCLUDED per omitzero behavior
+				OptionalStringArray: []string{},                         // Empty array should be included
+				OptionalObjectArray: []shared.NonEmptyObject{},          // Empty object array should be included
+				OptionalStringMap:   map[string]string{},                // Empty map should be included
+				OptionalObjectMap:   map[string]shared.NonEmptyObject{}, // Empty object map should be included
+
+				// Empty objects - should be included as {}
+				OptionalAlwaysEmptyObject: &shared.AlwaysEmptyObject{},     // Always empty object
+				OptionalNestedObject:      &shared.NestedObject{},          // NestedObject with nil fields = empty
+				OptionalComplexObject:     &shared.ComplexOptionalObject{}, // ComplexObject with nil fields = empty
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Empty containers should be included
+				assertJSONContains(t, jsonStr, "optionalStringArray", "[]")
+				assertJSONContains(t, jsonStr, "optionalObjectArray", "[]")
+				assertJSONContains(t, jsonStr, "optionalStringMap", "{}")
+				assertJSONContains(t, jsonStr, "optionalObjectMap", "{}")
+
+				// Empty objects should be included as {}
+				assertJSONContains(t, jsonStr, "optionalAlwaysEmptyObject", "{}")
+				assertJSONContains(t, jsonStr, "optionalNestedObject", "{}")
+				assertJSONContains(t, jsonStr, "optionalComplexObject", "{}")
+			},
+		},
+		{
+			name: "OptionalFieldsSetToNonZeroValue",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "test-required",
+				RequiredInt:    999,
+				RequiredBool:   true,
+				RequiredFloat:  9.99,
+				RequiredTime:   getTestTime(),
+				RequiredObject: shared.NonEmptyObject{RequiredField: "required"},
+
+				// Optional fields with values - should all be included
+				OptionalString:     stringPtr("hello"),
+				OptionalInt:        int64Ptr(456),
+				OptionalBool:       boolPtr(true),
+				OptionalFloat:      float64Ptr(6.78),
+				OptionalTime:       timePtr(getTestTime()),
+				OptionalBigDecimal: types.MustNewDecimalFromString("999"),
+
+				// Objects with content
+				OptionalNonEmptyObject: &shared.NonEmptyObject{RequiredField: "non-empty"},
+				OptionalNestedObject: &shared.NestedObject{
+					Name:   stringPtr("nested-name"),
+					Nested: &shared.NestedObject{Name: stringPtr("deep-nested")},
+				},
+
+				// Containers with content
+				OptionalStringArray: []string{"item1", "item2"},
+				OptionalStringMap:   map[string]string{"key": "value"},
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// All fields should be present
+				assertJSONContains(t, jsonStr, "requiredString", "test-required")
+				assertJSONContains(t, jsonStr, "optionalString", "hello")
+				assertJSONContains(t, jsonStr, "optionalInt", "456")
+				assertJSONContains(t, jsonStr, "optionalBool", "true")
+				assertJSONContains(t, jsonStr, "optionalFloat", "6.78")
+				assertJSONContains(t, jsonStr, "optionalTime")
+				assertJSONContains(t, jsonStr, "optionalBigDecimal", "999")
+				assertJSONContains(t, jsonStr, "optionalNonEmptyObject")
+				assertJSONContains(t, jsonStr, "optionalNestedObject")
+				assertJSONContains(t, jsonStr, "optionalStringArray")
+				assertJSONContains(t, jsonStr, "optionalStringMap")
+
+				// Verify specific nested content
+				assert.Contains(t, jsonStr, `"name":"nested-name"`)
+				assert.Contains(t, jsonStr, `"name":"deep-nested"`)
+				assert.Contains(t, jsonStr, `"key":"value"`)
+				assert.Contains(t, jsonStr, `"item1"`)
+				assert.Contains(t, jsonStr, `"item2"`)
+			},
+		},
+		{
+			name: "NestedObjectRecursiveBehavior",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// Test nested object recursive behavior
+				OptionalNestedObject: &shared.NestedObject{
+					Name: stringPtr("level1"),
+					Nested: &shared.NestedObject{
+						Name: nil, // This should be omitted
+						Nested: &shared.NestedObject{
+							Name:   stringPtr("level3"),
+							Nested: &shared.NestedObject{}, // Empty nested - should be included as {}
+						},
+					},
+				},
+
+				// Test complex object with mixed empty/non-empty containers
+				OptionalComplexObject: &shared.ComplexOptionalObject{
+					OptionalMap:    map[string]string{},    // Empty map - should be included
+					OptionalArray:  nil,                    // Nil pointer - should be omitted
+					OptionalNested: &shared.NestedObject{}, // Empty nested object - should be included as {}
+				},
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				assertJSONContains(t, jsonStr, "optionalNestedObject", `{"name":"level1","nested":{"nested":{"name":"level3","nested":{}}}}`)
+				assertJSONContains(t, jsonStr, "optionalComplexObject", `{"optionalMap":{},"optionalNested":{}}`)
+			},
+		},
+		{
+			name: "OptionalNullableUnsetState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// All OptionalNullable fields left unset (default nil map state)
+				// OptionalNullableInt: not set
+				// OptionalNullableArray: not set
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Required fields should be present
+				assertJSONContains(t, jsonStr, "requiredString", `""`)
+				assertJSONContains(t, jsonStr, "requiredInt", "0")
+				assertJSONContains(t, jsonStr, "requiredBool", "false")
+				assertJSONContains(t, jsonStr, "requiredFloat", "0")
+				assertJSONContains(t, jsonStr, "requiredTime", "0001-01-01T00:00:00Z")
+				assertJSONContains(t, jsonStr, "requiredObject")
+
+				// Unset OptionalNullable fields should be omitted entirely
+				assertJSONOmits(t, jsonStr, "optionalNullableInt")
+				assertJSONOmits(t, jsonStr, "optionalNullableArray")
+				assertJSONOmits(t, jsonStr, "optionalNullableDatetime")
+			},
+		},
+		{
+			name: "OptionalNullableNullState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// OptionalNullable fields explicitly set to null
+				OptionalNullableInt:      optionalnullable.From[int64](nil),    // Explicitly null
+				OptionalNullableArray:    optionalnullable.From[[]string](nil), // Explicitly null
+				OptionalNullableDatetime: optionalnullable.From[time.Time](nil), // Explicitly null
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Required fields should be present
+				assertJSONContains(t, jsonStr, "requiredString", `""`)
+
+				// Explicitly null OptionalNullable fields should be present as null
+				assertJSONContains(t, jsonStr, "optionalNullableInt", "null")
+				assertJSONContains(t, jsonStr, "optionalNullableArray", "null")
+				assertJSONContains(t, jsonStr, "optionalNullableDatetime", "null")
+			},
+		},
+		{
+			name: "OptionalNullableValueState",
+			request: shared.OptionalFieldTestObject{
+				// Required fields
+				RequiredString: "",
+				RequiredInt:    0,
+				RequiredBool:   false,
+				RequiredFloat:  0,
+				RequiredTime:   time.Time{},
+				RequiredObject: shared.NonEmptyObject{RequiredField: ""},
+
+				// OptionalNullable fields set to actual values
+				OptionalNullableInt:      optionalnullable.From(int64Ptr(42)),                         // Value
+				OptionalNullableArray:    optionalnullable.From(arrayPtr([]string{"item1", "item2"})), // Array value
+				OptionalNullableDatetime: optionalnullable.From(timePtr(time.Date(2027, 12, 31, 23, 59, 59, 0, time.UTC))),
+			},
+			validate: func(t *testing.T, jsonStr string) {
+				// Required fields should be present
+				assertJSONContains(t, jsonStr, "requiredString", `""`)
+
+				// OptionalNullable fields with values should be present with their values
+				assertJSONContains(t, jsonStr, "optionalNullableInt", "42")
+				assertJSONContains(t, jsonStr, "optionalNullableArray", `["item1","item2"]`)
+				assertJSONContains(t, jsonStr, "optionalNullableDatetime", "2027-12-31T23:59:59Z")
+			},
+		},
+	}
+
+	// Run all test cases
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Serialize the request using the SDK's serialization logic
+			jsonStr := serializeTestRequest(t, tt.request)
+
+			// Run the validation function
+			tt.validate(t, jsonStr)
+
+			// Ensure the JSON is valid
+			var jsonObj map[string]interface{}
+			err := json.Unmarshal([]byte(jsonStr), &jsonObj)
+			require.NoError(t, err, "Generated JSON should be valid")
+		})
+	}
+}
+
+// TestOptionalNullableDatetimeUnmarshal verifies that OptionalNullable[time.Time] fields
+// unmarshal correctly — the map-based OptionalNullable type with a complex value type
+// must delegate to its custom UnmarshalJSON rather than falling through to generic
+// map[string]json.RawMessage handling.
+func TestOptionalNullableDatetimeUnmarshal(t *testing.T) {
+	t.Run("value present", func(t *testing.T) {
+		input := `{"requiredString":"s","requiredInt":0,"requiredBool":false,"requiredFloat":0,"requiredTime":"0001-01-01T00:00:00Z","requiredObject":{"requiredField":""},"optionalNullableDatetime":"2027-12-31T23:59:59Z"}`
+		var obj shared.OptionalFieldTestObject
+		err := json.Unmarshal([]byte(input), &obj)
+		require.NoError(t, err)
+
+		dt := obj.GetOptionalNullableDatetime()
+		require.True(t, dt.IsSet())
+		require.False(t, dt.IsNull())
+		v, ok := dt.Get()
+		require.True(t, ok)
+		require.NotNil(t, v)
+		assert.Equal(t, 2027, v.Year())
+		assert.Equal(t, time.Month(12), v.Month())
+		assert.Equal(t, 31, v.Day())
+	})
+
+	t.Run("explicitly null", func(t *testing.T) {
+		input := `{"requiredString":"s","requiredInt":0,"requiredBool":false,"requiredFloat":0,"requiredTime":"0001-01-01T00:00:00Z","requiredObject":{"requiredField":""},"optionalNullableDatetime":null}`
+		var obj shared.OptionalFieldTestObject
+		err := json.Unmarshal([]byte(input), &obj)
+		require.NoError(t, err)
+
+		dt := obj.GetOptionalNullableDatetime()
+		require.True(t, dt.IsSet())
+		require.True(t, dt.IsNull())
+	})
+
+	t.Run("absent", func(t *testing.T) {
+		input := `{"requiredString":"s","requiredInt":0,"requiredBool":false,"requiredFloat":0,"requiredTime":"0001-01-01T00:00:00Z","requiredObject":{"requiredField":""}}`
+		var obj shared.OptionalFieldTestObject
+		err := json.Unmarshal([]byte(input), &obj)
+		require.NoError(t, err)
+
+		dt := obj.GetOptionalNullableDatetime()
+		require.Nil(t, dt)
+	})
+
+	t.Run("round trip", func(t *testing.T) {
+		ts := time.Date(2027, 12, 31, 23, 59, 59, 0, time.UTC)
+		obj := shared.OptionalFieldTestObject{
+			RequiredString:           "s",
+			RequiredInt:              0,
+			RequiredBool:             false,
+			RequiredFloat:            0,
+			RequiredTime:             time.Time{},
+			RequiredObject:           shared.NonEmptyObject{RequiredField: ""},
+			OptionalNullableDatetime: optionalnullable.From(timePtr(ts)),
+		}
+		data, err := json.Marshal(obj)
+		require.NoError(t, err)
+
+		var obj2 shared.OptionalFieldTestObject
+		err = json.Unmarshal(data, &obj2)
+		require.NoError(t, err)
+
+		dt := obj2.GetOptionalNullableDatetime()
+		require.True(t, dt.IsSet())
+		require.False(t, dt.IsNull())
+		v, ok := dt.Get()
+		require.True(t, ok)
+		require.NotNil(t, v)
+		assert.True(t, ts.Equal(*v))
+	})
+}
+
+// Helper Functions
+
+// serializeTestRequest serializes a OptionalFieldTestObject using the SDK's serialization logic
+func serializeTestRequest(t *testing.T, req shared.OptionalFieldTestObject) string {
+	reader, _, err := utils.SerializeRequestBody(context.Background(), req, false, false, "Request", "json", "")
+	require.NoError(t, err, "Serialization should not fail")
+	require.NotNil(t, reader, "Reader should not be nil")
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(reader)
+	require.NoError(t, err, "Reading from serialized body should not fail")
+
+	return buf.String()
+}
+
+// assertJSONContains verifies that a JSON string contains a specific field
+func assertJSONContains(t *testing.T, jsonStr, field string, expectedValues ...string) {
+	assert.True(t, len(expectedValues) < 2, "assertJSONContains supports at most one expected value per field")
+
+	assert.Contains(t, jsonStr, `"`+field+`":`,
+		"JSON should contain field '%s'. JSON: %s", field, jsonStr)
+
+	for _, expected := range expectedValues {
+		// Check for direct match first
+		if strings.Contains(jsonStr, `"`+field+`":`+expected) {
+			continue
+		}
+		// Fallback to string value match
+		assert.Contains(t, jsonStr, `"`+field+`":"`+expected+`"`,
+			"JSON field '%s' should have value '%s'. JSON: %s", field, expected, jsonStr)
+	}
+}
+
+// assertJSONOmits verifies that a JSON string does NOT contain a specific field
+func assertJSONOmits(t *testing.T, jsonStr, field string) {
+	assert.NotContains(t, jsonStr, `"`+field+`":`,
+		"JSON should NOT contain field '%s'. JSON: %s", field, jsonStr)
+}
+
+// Helper function to create string pointers
+func stringPtr(s string) *string {
+	return &s
+}
+
+// Helper function to create int64 pointers
+func int64Ptr(i int64) *int64 {
+	return &i
+}
+
+// Helper function to create bool pointers
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+// Helper function to create float64 pointers
+func float64Ptr(f float64) *float64 {
+	return &f
+}
+
+// Helper function to create time pointers
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
+
+// Helper function to create array pointers
+func arrayPtr[T any](arr []T) *[]T {
+	return &arr
+}
+
+// Helper function to create NonEmptyObject pointers
+func nonEmptyObjectPtr(obj shared.NonEmptyObject) *shared.NonEmptyObject {
+	return &obj
+}
+
+// Helper function to get a fixed test time
+func getTestTime() time.Time {
+	return time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)
+}
+
+// Helper function to get a zero time
+func getZeroTime() time.Time {
+	return time.Time{}
+}

@@ -1,0 +1,200 @@
+{{- $operationsPath := .Global.Config.Imports.GetOperationsPath -}}
+{{- $opt := getOptionNames -}}
+package {{sanitizeModelPackageName $operationsPath false}}
+
+import (
+	"errors"
+	"time"
+	"{{getRootModulePath}}/{{getUtilsLocation}}"
+	{{- if isFeatureUsed "operationPolling" }}
+	"{{getRootModulePath}}/{{getPollingLocation}}"
+	{{- end }}
+	"{{getRootModulePath}}/{{getRetryLocation}}"
+)
+
+var ErrUnsupportedOption = errors.New("unsupported option")
+
+const (
+	{{- if isFeatureUsed "operationPolling" }}
+	SupportedOptionPolling  = "polling"
+	{{- end }}
+	SupportedOptionRetries  = "retries"
+	SupportedOptionTimeout  = "timeout"
+	SupportedOptionAcceptHeaderOverride = "acceptHeaderOverride"
+	SupportedOptionURLOverride = "urlOverride"
+	{{- if isSkipDeserializationEnabled }}
+	SupportedOptionSkipDeserialization = "skipDeserialization"
+	{{- end }}
+)
+
+{{- $allAcceptTypes := getAllAcceptTypes}}
+{{- if gt (len $allAcceptTypes) 1}}
+	type AcceptHeaderEnum string
+	const (
+	{{- range $allAcceptTypes}}
+		{{ sanitizeAcceptEnumKey . }} AcceptHeaderEnum = "{{ sanitizeAcceptEnumValue .}}"
+	{{- end}}
+	)
+	func (e AcceptHeaderEnum) ToPointer() *AcceptHeaderEnum {
+		return &e
+	}{{end}}
+
+
+type Options struct {
+	ServerURL *string
+	{{- if isFeatureUsed "operationPolling" }}
+	Polling   *polling.Config
+	{{- end }}
+	Retries   *retry.Config
+	Timeout *time.Duration
+	{{- if gt (len $allAcceptTypes) 1}}
+	AcceptHeaderOverride *AcceptHeaderEnum
+	{{- end}}
+	URLOverride *string
+	SetHeaders map[string]string
+	{{- if isSkipDeserializationEnabled }}
+	SkipDeserialization *bool
+	{{- end }}
+	{{- if hasGoOptionalMethodArgumentOptions }}
+	methodArguments map[string]any
+	{{- end }}
+}
+
+{{- if hasGoOptionalMethodArgumentOptions }}
+
+func (o *Options) setMethodArgument(key string, value any) {
+	if o.methodArguments == nil {
+		o.methodArguments = make(map[string]any)
+	}
+	o.methodArguments[key] = value
+}
+
+// GetMethodArgument returns a generated optional method argument by its opaque key.
+func (o *Options) GetMethodArgument(key string) (any, bool) {
+	value, ok := o.methodArguments[key]
+	return value, ok
+}
+{{- end }}
+
+type Option func(*Options, ...string) error
+
+// {{$opt.ServerURL}} allows providing an alternative server URL.
+func {{$opt.ServerURL}}(serverURL string) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		opts.ServerURL = &serverURL
+		return nil
+	}
+}
+
+// {{$opt.TemplatedServerURL}} allows providing an alternative server URL with templated parameters.
+func {{$opt.TemplatedServerURL}}(serverURL string, params map[string]string) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if params != nil {
+			serverURL = utils.ReplaceParameters(serverURL, params)
+		}
+
+		opts.ServerURL = &serverURL
+		return nil
+	}
+}
+
+{{- if isFeatureUsed "operationPolling" }}
+
+// {{$opt.Polling}} enables a polling configuration for an operation.
+func {{$opt.Polling}}(configFunc polling.ConfigFunc, pollingOptions ...polling.Option) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionPolling) {
+			return ErrUnsupportedOption
+		}
+
+		pollingConfig, err := configFunc(pollingOptions...)
+
+		if err != nil {
+			return err
+		}
+
+		opts.Polling = pollingConfig
+
+		return nil
+	}
+}
+{{- end }}
+
+// {{$opt.Retries}} allows customizing the default retry configuration.
+func {{$opt.Retries}}(config retry.Config) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionRetries) {
+			return ErrUnsupportedOption
+		}
+
+		opts.Retries = &config
+		return nil
+	}
+}
+
+// {{$opt.OperationTimeout}} allows setting the request timeout applied for an operation.
+func {{$opt.OperationTimeout}}(timeout time.Duration) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionTimeout) {
+			return ErrUnsupportedOption
+		}
+
+		opts.Timeout = &timeout
+		return nil
+	}
+}
+
+{{- if gt (len $allAcceptTypes) 1}}
+
+func {{$opt.AcceptHeaderOverride}}(acceptHeaderOverride AcceptHeaderEnum) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionAcceptHeaderOverride) {
+			return ErrUnsupportedOption
+		}
+
+		opts.AcceptHeaderOverride = &acceptHeaderOverride
+		return nil
+	}
+}
+{{- end}}
+
+// {{$opt.URLOverride}} allows overriding the URL.
+func {{$opt.URLOverride}}(urlOverride string) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionURLOverride) {
+			return ErrUnsupportedOption
+		}
+
+		opts.URLOverride = &urlOverride
+		return nil
+	}
+}
+
+// {{$opt.SetHeaders}} takes a map of headers that will applied to a request. If the
+// request contains headers that are in the map then they will be overwritten.
+func {{$opt.SetHeaders}}(hdrs map[string]string) Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		opts.SetHeaders = hdrs
+		return nil
+	}
+}
+
+{{- if isSkipDeserializationEnabled }}
+
+// WithSkipDeserialization skips typed deserialization of successful JSON responses. The
+// body is still consumed while the operation context is alive and replayed on
+// the HTTP response, so the caller can read it via the HTTPMeta.Response field
+// after the method returns. Non-JSON responses and error responses are always
+// deserialized regardless of this option.
+func WithSkipDeserialization() Option {
+	return func(opts *Options, supportedOptions ...string) error {
+		if !utils.Contains(supportedOptions, SupportedOptionSkipDeserialization) {
+			return ErrUnsupportedOption
+		}
+
+		t := true
+		opts.SkipDeserialization = &t
+		return nil
+	}
+}
+{{- end }}

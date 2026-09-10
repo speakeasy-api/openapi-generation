@@ -1,0 +1,240 @@
+package tests
+
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/output"
+)
+
+// These tests pin the contract for errors the CLI itself originates (flag,
+// argument, and JSON parsing failures, cobra usage errors): in agent mode
+// and JSON output mode they arrive in the same reason-first envelope as API
+// errors, rendered exactly once in structured and plain modes.
+
+// agentEnvelope decodes the single JSON envelope on stderr.
+func agentEnvelope(t *testing.T, stderr string) map[string]interface{} {
+	t.Helper()
+	trimmed := strings.TrimSpace(stderr)
+	require.NotEmpty(t, trimmed, "expected an error envelope on stderr")
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(trimmed), &envelope), "stderr should be exactly one JSON envelope, got: %s", stderr)
+	return envelope
+}
+
+func TestCLIErrorAgentModeMatrix(t *testing.T) {
+	recordTest("clierrors-agent-mode-matrix")
+
+	cases := []struct {
+		name    string
+		args    []string
+		wantMsg string
+	}{
+		{name: "malformed --body JSON", args: []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "{"}, wantMsg: "failed to parse --body"},
+		{name: "unknown flag", args: []string{"--agent-mode", "errors", "status-get-error", "--no-such-flag"}, wantMsg: "unknown flag"},
+		{name: "unknown command", args: []string{"--agent-mode", "no-such-command"}, wantMsg: "unknown command"},
+		{name: "unknown command, flag after the failing token", args: []string{"no-such-command", "--agent-mode"}, wantMsg: "unknown command"},
+		{name: "invalid flag value", args: []string{"--agent-mode", "errors", "status-get-error", "--status-code", "not-a-number"}, wantMsg: "invalid argument"},
+		{name: "invalid --timeout", args: []string{"--agent-mode", "--timeout", "soon", "errors", "status-get-error", "--status-code", "400"}, wantMsg: "invalid --timeout"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(tc.args)
+			require.Error(t, err)
+			assert.True(t, output.IsRendered(err), "a CLI error rendered in the envelope must be marked so main prints nothing further")
+
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+			assert.Contains(t, envelope["error"], tc.wantMsg)
+			assert.Contains(t, envelope["message"], tc.wantMsg)
+			_, hasStatus := envelope["status_code"]
+			assert.False(t, hasStatus, "CLI errors carry no HTTP status")
+			hints, _ := envelope["hints"].([]interface{})
+			assert.NotEmpty(t, hints, "validation errors carry the built-in hints")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+		})
+	}
+}
+
+// TestCLIErrorFlagValuesAreNotRenderingFlags: a flag-looking VALUE of a real
+// flag must not switch the rendering mode: `--body --agent-mode` is a body of
+// "--agent-mode" (invalid JSON, plain error), not agent mode; `--body -o json`
+// likewise. The pre-parse mirrors the target command's flag arities.
+func TestCLIErrorFlagValuesAreNotRenderingFlags(t *testing.T) {
+	recordTest("clierrors-flag-values-not-rendering-flags")
+	for _, args := range [][]string{
+		{"request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "--agent-mode"},
+		{"request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "-o", "json"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(args)
+			require.Error(t, err)
+			assert.True(t, output.IsRendered(err), "plain CLI errors use the shared renderer")
+			stderr := strings.TrimSpace(h.GetStderr())
+			assert.Contains(t, stderr, "Error (validation_error):")
+			assert.False(t, json.Valid([]byte(stderr)), "a flag value must not enable structured output")
+		})
+	}
+}
+
+// TestCLIErrorInvalidFlagValuesDoNotStopThePreparse: an invalid value for
+// some other flag (or for --agent-mode itself) must not hide the rendering
+// flags that follow it from the pre-parse.
+func TestCLIErrorInvalidFlagValuesDoNotStopThePreparse(t *testing.T) {
+	recordTest("clierrors-invalid-values-do-not-stop-preparse")
+	cases := []struct {
+		args []string
+	}{
+		{args: []string{"--debug=wat", "--agent-mode", "no-such-command"}},
+		{args: []string{"--agent-mode=wat", "-o", "json", "no-such-command"}},
+	}
+	for _, tc := range cases {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(tc.args)
+			require.Error(t, err)
+			assert.True(t, output.IsRendered(err))
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+		})
+	}
+}
+
+{{- if agentEnvironmentDetection}}
+// TestCLIErrorAgentModeFromEnvironment: agent mode detected from the
+// environment (no flag) must envelope pre-parse failures too.
+func TestCLIErrorAgentModeFromEnvironment(t *testing.T) {
+	recordTest("clierrors-agent-mode-from-environment")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t).WithEnv("FORCE_AGENT_MODE", "1")
+	err := h.RunRaw([]string{"no-such-command"})
+	require.Error(t, err)
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+}
+
+// TestCLIErrorAgentModeExplicitlyDisabled: --agent-mode=false beats the
+// environment even when cobra never parsed it (unknown command).
+func TestCLIErrorAgentModeExplicitlyDisabled(t *testing.T) {
+	recordTest("clierrors-agent-mode-explicitly-disabled")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t).WithEnv("FORCE_AGENT_MODE", "1")
+	err := h.RunRaw([]string{"--agent-mode=false", "no-such-command"})
+	require.Error(t, err)
+	assert.True(t, output.IsRendered(err))
+	stderr := strings.TrimSpace(h.GetStderr())
+	assert.Contains(t, stderr, "Error (validation_error):")
+	assert.Equal(t, 1, strings.Count(stderr, "unknown command"), "plain errors render exactly once")
+}
+{{- end}}
+
+// TestCLIErrorPlainModeClassified: without agent mode or JSON output the CLI
+// error uses the shared pretty renderer and returns the rendered sentinel.
+func TestCLIErrorPlainModeClassified(t *testing.T) {
+	recordTest("clierrors-plain-mode-classified")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"errors", "status-get-error", "--no-such-flag"})
+	require.Error(t, err)
+	assert.True(t, output.IsRendered(err))
+	stderr := strings.TrimSpace(h.GetStderr())
+	assert.Contains(t, stderr, "Error (validation_error): unknown flag: --no-such-flag")
+	assert.Contains(t, stderr, "Reason: CLI_VALIDATION")
+	assert.Equal(t, 1, strings.Count(stderr, "unknown flag"), "plain errors render exactly once")
+}
+
+// TestCLIErrorJSONOutputEnvelope: --output-format json (no agent mode) gets
+// the classified JSON envelope, consistent with agent and API errors. Both
+// flag positions must work, including for an unknown
+// command that cobra rejects before parsing flags.
+func TestCLIErrorJSONOutputEnvelope(t *testing.T) {
+	recordTest("clierrors-json-output-envelope")
+	for _, args := range [][]string{
+		{"-o", "json", "no-such-command"},
+		{"no-such-command", "-o", "json"},
+		{"--output-format=json", "errors", "status-get-error", "--no-such-flag"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(args)
+			require.Error(t, err)
+			assert.True(t, output.IsRendered(err))
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.NotEmpty(t, envelope["error"])
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+			assert.NotEmpty(t, envelope["hints"])
+		})
+	}
+}
+
+// TestCLIErrorAPIErrorNotDoubleWrapped: an API error rendered by
+// output.Error must pass through the root wrapper untouched — one envelope,
+// classified by the API's status, never re-labelled as a CLI error.
+func TestCLIErrorAPIErrorNotDoubleWrapped(t *testing.T) {
+	recordTest("clierrors-api-error-not-double-wrapped")
+	resetAgentMode(t)
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode", "errors", "status-get-error", "--status-code", "404"})
+	require.Error(t, err)
+	assert.True(t, output.IsRendered(err))
+	stderr := strings.TrimSpace(h.GetStderr())
+	assert.Equal(t, 1, strings.Count(stderr, `"error_type"`), "exactly one envelope, got: %s", stderr)
+	envelope := agentEnvelope(t, stderr)
+	assert.Equal(t, "not_found", envelope["error_type"])
+}
+
+// TestCLIErrorDeclaredHintsFire: an intent command's declared CLI_VALIDATION
+// hint joins the envelope of a CLI-originated error on that command.
+func TestCLIErrorDeclaredHintsFire(t *testing.T) {
+	recordTest("clierrors-declared-hints-fire")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--agent-mode", "render", "--body", "{"})
+	require.Error(t, err)
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	hints, _ := envelope["hints"].([]interface{})
+	assert.Contains(t, hints, "Print the exact request schema with --schema")
+}
+
+// TestCLIErrorTypedReasons pins output.WithCLIReason: every closed reason is
+// preserved and anything else normalizes to the safe CLI_RUNTIME fallback;
+// the sentinel wraps stay transparent to errors.Is/As.
+func TestCLIErrorTypedReasons(t *testing.T) {
+	recordTest("clierrors-typed-reasons")
+	base := errors.New("boom")
+	for reason, want := range map[string]string{
+		"CLI_VALIDATION":     "CLI_VALIDATION",
+		"CLI_CONNECTION":     "CLI_CONNECTION",
+		"CLI_PROTOCOL":       "CLI_PROTOCOL",
+		"CLI_RUNTIME":        "CLI_RUNTIME",
+		"CLI_UNAVAILABLE":    "CLI_UNAVAILABLE",
+		"CLI_AUTHENTICATION": "CLI_AUTHENTICATION",
+		"CLI_MADE_UP":        "CLI_RUNTIME",
+		"":                   "CLI_RUNTIME",
+	} {
+		typed := output.WithCLIReason(base, reason)
+		var r interface{ CLIReason() string }
+		require.True(t, errors.As(typed, &r))
+		assert.Equal(t, want, r.CLIReason(), "reason %q", reason)
+		assert.True(t, errors.Is(typed, base))
+	}
+	assert.Nil(t, output.WithCLIReason(nil, "CLI_VALIDATION"))
+	assert.False(t, output.IsRendered(base))
+}

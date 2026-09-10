@@ -1,0 +1,53 @@
+overlay: 1.0.0
+info:
+  title: Go Transformers Test Overlay
+  version: 0.0.0
+actions:
+  - target: $.paths
+    update:
+      /anything/transform:
+        post:
+          operationId: goTransformers
+          tags:
+            - transform
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  x-speakeasy-transform-to-api:
+                    jq: '. + { created_at: now | floor }'
+                  properties:
+                    initial_request:
+                      type: string
+                    created_at:
+                      type: integer
+                      description: the unix timestamp on the device
+                      const: 1
+                  required:
+                    - initial_request
+            required: true
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    title: res
+                    type: object
+                    properties:
+                      json:
+                        type: object
+                        x-speakeasy-transform-from-api:
+                          jq: '. + { copy_of_initial_request: .initial_request }'
+                        properties:
+                          initial_request:
+                            type: string
+                          created_at:
+                            type: integer
+                          copy_of_initial_request:
+                            type: string
+                        required:
+                          - initial_request
+                          - created_at
+                          - copy_of_initial_request

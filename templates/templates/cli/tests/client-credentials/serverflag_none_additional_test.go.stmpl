@@ -1,0 +1,36 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The client-credentials variant has multiple servers but forces
+// cli.serverSelectionFlag: none.
+
+func TestServerSelectionFlagNoneOmittedFromHelp(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--help"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	assert.NotContains(t, stdout, "--server string")
+	assert.Contains(t, stdout, "--server-url string")
+}
+
+func TestServerSelectionFlagNoneIsNotRegistered(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"version", "--server", "0"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown flag: --server")
+}
+
+func TestServerSelectionFlagNoneOmittedFromUsage(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--usage"})
+	require.NoError(t, err)
+
+	assert.NotContains(t, h.GetStdout(), `flag "--server <server>"`)
+}

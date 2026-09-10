@@ -1,0 +1,17 @@
+*
+!mcp-*/
+!mcp-*/**/*
+!sdk-*/
+!sdk-*/**/*
+!terraform-provider-testing/
+!terraform-provider-testing/**/*
+sdk-typescript*/__tests__
+#!httpbin-docs-*/
+.DS_Store
+.idea
+test-*-record.tx
+.classpath
+.settings
+_debug/
+snapshot-executor/
+*.mcpb

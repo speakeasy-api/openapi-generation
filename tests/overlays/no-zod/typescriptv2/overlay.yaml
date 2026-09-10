@@ -1,0 +1,46 @@
+# no-zod variant overlay.
+#
+# The no-zod variant (zodVersion: "none") does not support x-speakeasy-name
+# overrides on model fields — the generator throws an explicit error at gen
+# time. This overlay strips uber.yaml constructs that exercise that feature
+# so the no-zod variant's regen succeeds. Tracked for follow-up.
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => no-zod test spec
+  version: 0.0.0
+actions:
+  # Polling failureCriteria reads `$response.body#/polling_status` as JSONPath
+  # against the raw wire payload — no inbound rename mapping in no-zod.
+  - target: $.paths['/polling/failureCriteria/responseBody/nameOverride'].get
+    remove: true
+  # Drop the x-speakeasy-name-override but keep the schema typing intact.
+  - target: $.components.schemas.PollingNameOverride.properties.status['x-speakeasy-name-override']
+    remove: true
+
+  # Default query-param coercion (no outboundSchema.parse to apply defaults).
+  - target: $.paths['/anything/queryParams/default'].get
+    remove: true
+  # Form-style object query-param ordering depends on zod field ordering.
+  - target: $.paths['/anything/queryParams/form/camelObj'].get
+    remove: true
+  - target: $.paths['/anything/queryParams/form/refParamObject'].get
+    remove: true
+  # Smart-type constructors (Decimal/Date/bigint) unavailable under no-zod.
+  - target: $.paths['/anything/requestBodies/post/defaultsAndConsts'].post
+    remove: true
+  # Request-body default injection — separate PR.
+  - target: $.paths['/anything/requestBodies/post/defaultEmptyString'].post
+    remove: true
+  # Response-side default injection at the matcher layer — not implemented.
+  - target: $.paths['/anything/responseBodies/defaultEmptyString'].post
+    remove: true
+  # Nullable enum request body serialization needs schema-side null handling.
+  - target: $.paths['/anything/requestBodies/post/nullEnum'].post
+    remove: true
+  # Response field-name override — no inbound rename mapping in no-zod.
+  - target: $.paths['/anything/overriddenFieldNames'].post
+    remove: true
+  # Accept-header overload returns envelope-or-stream union; envelope-only
+  # under no-zod (also pinned by inferSSEOverload: false).
+  - target: $.paths['/optional'].get
+    remove: true

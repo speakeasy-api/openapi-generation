@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+{{- if eq .Global.Config.PackageManager "uv" }}
+{{- if .Global.Config.RepoURL }}
+
+uv run python scripts/prepare_readme.py
+{{- end }}
+
+uv build
+uv publish --token $PYPI_TOKEN
+{{- else }}
+export POETRY_PYPI_TOKEN_PYPI=${PYPI_TOKEN}
+
+{{- if .Global.Config.RepoURL }}
+
+poetry run python scripts/prepare_readme.py
+{{- end }}
+
+poetry publish --build --skip-existing
+{{- end }}

@@ -1,0 +1,82 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  sdkHooksConfigAccess: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: false
+    skipResponseBodyAssertions: false
+cli:
+  version: 0.0.1
+  additionalDependencies: {}
+  agentEnvironmentDetection: false
+  baseErrorName: SDKError
+  classifiedErrors: true
+  cliName: cli
+  customCasings:
+    mcp:
+      initialism: true
+  defaultColor: auto
+  defaultErrorName: SDKDefaultError
+  defaultTimeout: ""
+  distribution:
+    homebrew:
+      enabled: false
+      tap: ""
+    nfpm:
+      enabled: false
+      formats: deb,rpm
+      license: ""
+      maintainer: ""
+    winget:
+      enabled: false
+      license: ""
+      packageIdentifier: ""
+      publisher: ""
+      publisherUrl: ""
+      repositoryOwner: ""
+  enableCustomCodeRegions: false
+  envVarPrefix: CLI
+  generateRelease: true
+  helpStyle: full
+  idiomaticMethodCollisionNames: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: pkg/models/callbacks
+      errors: pkg/models/sdkerrors
+      operations: pkg/models/operations
+      shared: pkg/models/shared
+      webhooks: pkg/models/webhooks
+  interactiveAuth: true
+  interactiveByDefault: false
+  interactiveMode: true
+  interactiveTheme: modern
+  jqRawOutput: false
+  packageName: openapi
+  removeStutter: true
+  retryFlagsVisibility: visible
+  retryMethodPolicy: spec
+  serverSelectionFlag: auto

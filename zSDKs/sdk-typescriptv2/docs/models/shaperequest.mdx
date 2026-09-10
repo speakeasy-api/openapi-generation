@@ -1,0 +1,28 @@
+---
+title: "ShapeRequest"
+---
+
+Request body with a discriminated union shape field
+
+## Example Usage
+
+```typescript
+import { ShapeRequest } from "openapi";
+
+let value: ShapeRequest = {
+  name: "<value>",
+  shape: {
+    type: "rectangle",
+    width: 2044.97,
+    height: 9257.62,
+  },
+};
+```
+
+## Fields
+
+| Field                                | Type                                 | Required                             | Description                          |
+| ------------------------------------ | ------------------------------------ | ------------------------------------ | ------------------------------------ |
+| `name`                               | *string*                             | :heavy_check_mark:                   | Name for the shape                   |
+| `shape`                              | *models.Shape*                       | :heavy_check_mark:                   | A discriminated union of shape types |
+| `description`                        | *string*                             | :heavy_minus_sign:                   | Optional description                 |

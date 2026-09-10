@@ -1,0 +1,23 @@
+test-request-body:
+  content:
+    application/json:
+      schema:
+        $ref: "./components.yaml#/components/schemas/test-request-body"
+      examples:
+        test:
+          $ref: "./examples.yaml#/test-request-body"
+        test-2:
+          $ref: "./components.yaml#/components/examples/test-example"
+    multipart/form-data:
+      schema:
+        $ref: "./components.yaml#/components/schemas/test-request-body"
+      encoding:
+        test:
+          contentType: "application/json"
+          headers:
+            test:
+              $ref: "./components.yaml#/components/headers/test"
+          style: form
+          explode: true
+          allowReserved: true
+  required: true

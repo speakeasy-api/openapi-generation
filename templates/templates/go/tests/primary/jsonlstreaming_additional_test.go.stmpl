@@ -1,0 +1,235 @@
+package tests
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/types/jsonl"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestJsonlStreamData(t *testing.T) {
+	recordTest("jsonl-stream-data-envelope-http-responses")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Jsonl.JsonlStream(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Object.Close()
+
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	events := []operations.JsonlStreamResponseBody{}
+	for res.Object.Next() {
+		event, err := res.Object.Value()
+		require.NoError(t, err)
+		events = append(events, event)
+	}
+	assert.NoError(t, res.Object.Err())
+
+	assert.Len(t, events, 2)
+
+	// Assert first event
+	assert.Greater(t, len(events), 0)
+	firstEvent := events[0]
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Assert second event
+	assert.Greater(t, len(events), 1)
+	secondEvent := events[1]
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+}
+
+func TestJsonlStreamDataChunks(t *testing.T) {
+	recordTest("jsonl-stream-data-chunks-envelope-http-responses")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	startTime := time.Now()
+	res, err := s.Jsonl.JsonlStreamChunks(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Object.Close()
+
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	// Get first event
+	require.True(t, res.Object.Next())
+	firstEventTime := time.Since(startTime)
+	firstEvent, err := res.Object.Value()
+	require.NoError(t, err)
+
+	// First event should take longer than 100ms because the server sends a chunk and then waits
+	assert.GreaterOrEqual(t, firstEventTime.Milliseconds(), int64(100), "First event should take at least 100ms")
+	assert.Less(t, firstEventTime.Milliseconds(), int64(190), "First event should take less than 190ms")
+
+	// Assert first event
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Get second event
+	require.True(t, res.Object.Next())
+	secondEvent, err := res.Object.Value()
+	require.NoError(t, err)
+
+	// Assert second event
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+
+	assert.NoError(t, res.Object.Err())
+}
+
+func TestJsonlDeserializationWithCamelCaseProperties(t *testing.T) {
+	recordTest("jsonl-deserialization-camel-case-properties")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Jsonl.JsonlDeserializationVerification(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Object.Close()
+
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	require.True(t, res.Object.Next())
+	firstEvent, err := res.Object.Value()
+	require.NoError(t, err)
+
+	assert.Equal(t, "yes", firstEvent.IsFinished)
+
+	assert.NoError(t, res.Object.Err())
+}
+
+// A request timeout must bound the whole JSONL stream, not cancel it before
+// the caller iterates: the timeout context is handed to the returned stream
+// and released when it ends or is closed.
+func TestJsonlStreamWithTimeoutStreamsToCompletion(t *testing.T) {
+	recordTest("jsonl-stream-with-timeout-streams-to-completion")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithTimeout(30*time.Second))
+
+	res, err := s.Jsonl.JsonlStream(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	defer res.Object.Close()
+
+	count := 0
+	for res.Object.Next() {
+		_, err := res.Object.Value()
+		require.NoError(t, err)
+		count++
+	}
+	require.NoError(t, res.Object.Err())
+	assert.Equal(t, 2, count)
+}
+
+// The deadline still applies to the whole JSONL stream: a stream that stalls
+// past the timeout ends with an error instead of hanging.
+func TestJsonlStreamTimeoutStillBoundsSlowStream(t *testing.T) {
+	recordTest("jsonl-stream-timeout-still-bounds-slow-stream")
+
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/jsonl")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "{\"name\":\"first\",\"skills\":[\"Go\"]}\n")
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		select {
+		case <-r.Context().Done():
+		case <-time.After(20 * time.Second):
+		}
+	}))
+	defer slow.Close()
+
+	s := sdk.New(sdk.WithTimeout(2 * time.Second))
+
+	res, err := s.Jsonl.JsonlStream(context.Background(), operations.WithServerURL(slow.URL))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	defer res.Object.Close()
+
+	start := time.Now()
+	count := 0
+	for res.Object.Next() {
+		count++
+	}
+	assert.Equal(t, 1, count, "the first line arrives before the deadline")
+	require.Error(t, res.Object.Err(), "the stalled stream must end with the deadline error")
+	assert.ErrorIs(t, res.Object.Err(), context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 15*time.Second, "the deadline must cut the stalled stream short")
+}
+
+func decodeRawLine(line []byte) (map[string]json.RawMessage, error) {
+	var object map[string]json.RawMessage
+	if err := json.Unmarshal(line, &object); err != nil {
+		return nil, err
+	}
+	return object, nil
+}
+
+// jsonlSignalReadCloser closes started on its first Read, before delegating to
+// the wrapped reader, so a test knows the consumer is inside a blocking Read
+// rather than merely scheduled. It is a local twin of the eventstream tests'
+// signalReadCloser; both files render into the same package, so the name must
+// stay distinct, and keeping it here keeps this file self-contained.
+type jsonlSignalReadCloser struct {
+	io.ReadCloser
+	started chan struct{}
+	once    sync.Once
+}
+
+func (sr *jsonlSignalReadCloser) Read(p []byte) (int, error) {
+	sr.once.Do(func() { close(sr.started) })
+	return sr.ReadCloser.Read(p)
+}
+
+func TestJsonlStreamCloseWhileNextBlocked(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	pr, pw := io.Pipe()
+	defer pw.Close()
+
+	// The signal fires from inside the consuming goroutine's first Read, so
+	// Close below always races with a Next that is already committed to the
+	// blocking read, never with one that has not started yet.
+	started := make(chan struct{})
+	src := &jsonlSignalReadCloser{ReadCloser: pr, started: started}
+
+	var releases atomic.Int32
+	js := jsonl.NewJsonLStream(src, decodeRawLine, jsonl.WithCancel[map[string]json.RawMessage](countingCancel(cancel, &releases)))
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for js.Next() {
+		}
+	}()
+
+	<-started
+	require.NoError(t, js.Close())
+	wg.Wait()
+
+	assert.ErrorIs(t, ctx.Err(), context.Canceled)
+	assert.EqualValues(t, 1, releases.Load(), "the owned cancel runs exactly once")
+	require.False(t, js.Next())
+}

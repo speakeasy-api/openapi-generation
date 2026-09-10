@@ -1,0 +1,171 @@
+package tests
+
+import (
+	"testing"
+
+	"{{getRootModulePath}}/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// simpleOmitemptyStruct is a struct WITHOUT a custom MarshalJSON method.
+// This is critical for the regression test: when utils.MarshalJSON is called
+// with topLevel=true on a struct lacking json.Marshaler, the custom field
+// processing runs directly instead of delegating to json.Marshal.
+type simpleOmitemptyStruct struct {
+	Name          string            `json:"name"`
+	Items         []string          `json:"items,omitempty"`
+	Tags          map[string]string `json:"tags,omitempty"`
+	Count         *int64            `json:"count,omitempty"`
+	Flag          *bool             `json:"flag,omitempty"`
+	Description   *string           `json:"description,omitempty"`
+	ObjectItems   []simpleItem      `json:"objectItems,omitempty"`
+	ObjectMap     map[string]simpleItem `json:"objectMap,omitempty"`
+}
+
+type simpleItem struct {
+	Value string `json:"value"`
+}
+
+func newSimpleItem(value string) simpleItem {
+	return simpleItem{Value: value}
+}
+
+func ptr[T any](v T) *T { return &v }
+
+// TestTopLevelOmitemptyWithoutMarshalJSON is a regression test for a bug where
+// types without a custom MarshalJSON method would serialize empty slices as []
+// and empty maps as {} instead of omitting them when using the omitempty tag.
+//
+// The bug was introduced when the topLevel guard in MarshalJSON was changed from:
+//
+//	if topLevel { return json.Marshal(v) }
+//
+// to:
+//
+//	if topLevel && implementsJSONMarshaler(v) { return json.Marshal(v) }
+//
+// This caused types without MarshalJSON to fall through to custom field
+// processing, which had an incomplete omitempty implementation that only
+// checked isNil() instead of also checking isEmptyContainer() and IsZero().
+func TestTopLevelOmitemptyWithoutMarshalJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    simpleOmitemptyStruct
+		contains []string
+		omits    []string
+	}{
+		{
+			name: "nil containers and pointers are omitted",
+			input: simpleOmitemptyStruct{
+				Name:        "test",
+				Items:       nil,
+				Tags:        nil,
+				Count:       nil,
+				Flag:        nil,
+				Description: nil,
+				ObjectItems: nil,
+				ObjectMap:   nil,
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"items", "tags", "count", "flag", "description", "objectItems", "objectMap"},
+		},
+		{
+			name: "empty non-nil slice is omitted",
+			input: simpleOmitemptyStruct{
+				Name:  "test",
+				Items: []string{},
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"items"},
+		},
+		{
+			name: "empty non-nil map is omitted",
+			input: simpleOmitemptyStruct{
+				Name: "test",
+				Tags: map[string]string{},
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"tags"},
+		},
+		{
+			name: "empty non-nil object slice is omitted",
+			input: simpleOmitemptyStruct{
+				Name:        "test",
+				ObjectItems: []simpleItem{},
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"objectItems"},
+		},
+		{
+			name: "empty non-nil object map is omitted",
+			input: simpleOmitemptyStruct{
+				Name:      "test",
+				ObjectMap: map[string]simpleItem{},
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"objectMap"},
+		},
+		{
+			name: "all empty containers omitted together",
+			input: simpleOmitemptyStruct{
+				Name:        "test",
+				Items:       []string{},
+				Tags:        map[string]string{},
+				ObjectItems: []simpleItem{},
+				ObjectMap:   map[string]simpleItem{},
+			},
+			contains: []string{`"name":"test"`},
+			omits:    []string{"items", "tags", "objectItems", "objectMap"},
+		},
+		{
+			name: "non-empty containers are included",
+			input: simpleOmitemptyStruct{
+				Name:        "test",
+				Items:       []string{"a", "b"},
+				Tags:        map[string]string{"k": "v"},
+				ObjectItems: []simpleItem{newSimpleItem("x")},
+			},
+			contains: []string{
+				`"name":"test"`,
+				`"items":["a","b"]`,
+				`"objectItems":[{"value":"x"}]`,
+			},
+		},
+		{
+			name: "non-nil pointers to zero values are included",
+			input: simpleOmitemptyStruct{
+				Name:        "test",
+				Count:       ptr[int64](0),
+				Flag:        ptr[bool](false),
+				Description: ptr[string](""),
+			},
+			contains: []string{
+				`"name":"test"`,
+				`"count":0`,
+				`"flag":false`,
+				`"description":""`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Call MarshalJSON with topLevel=true to exercise the request body
+			// serialization path. This is how requestbody.go calls MarshalJSON.
+			data, err := utils.MarshalJSON(tt.input, "", true)
+			require.NoError(t, err)
+
+			jsonStr := string(data)
+
+			for _, s := range tt.contains {
+				assert.Contains(t, jsonStr, s,
+					"JSON should contain %q. Got: %s", s, jsonStr)
+			}
+			for _, field := range tt.omits {
+				assert.NotContains(t, jsonStr, `"`+field+`":`,
+					"JSON should NOT contain field %q with omitempty. Got: %s", field, jsonStr)
+			}
+		})
+	}
+}

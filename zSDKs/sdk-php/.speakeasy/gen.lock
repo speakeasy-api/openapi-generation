@@ -1,0 +1,1389 @@
+lockVersion: 2.0.0
+id: review-sdk-test-id
+management:
+  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docVersion: 0.1.0
+  speakeasyVersion: internal
+  generationVersion: internal
+  releaseVersion: 0.0.1
+  configChecksum: e30aedb0d9bce03a6d962233695b12ec
+features:
+  php:
+    additionalProperties: 0.1.1
+    bigint: 0.1.2
+    constsAndDefaults: 0.2.2
+    core: 3.9.28
+    customSecuritySchemes: 0.1.0
+    decimal: 0.1.1
+    deprecations: 2.81.1
+    docs: 0.4.3
+    enums: 2.82.0
+    errorUnions: 0.1.0
+    errors: 0.3.1
+    examples: 2.81.8
+    flattening: 2.81.2
+    globalSecurity: 2.81.12
+    globalServerURLs: 2.83.1
+    globals: 2.82.2
+    groups: 2.81.3
+    includes: 2.81.1
+    methodArguments: 0.1.0
+    methodSecurity: 2.82.4
+    methodServerURLs: 2.82.2
+    nameOverrides: 2.81.4
+    nullables: 1.0.1
+    oauth2ClientCredentials: 1.1.5
+    pagination: 0.1.5
+    responseFormat: 0.1.0
+    retries: 0.1.4
+    serverIDs: 2.81.1
+    unions: 0.1.9
+    webhooks: 1.0.0
+trackedFiles:
+  .gitattributes:
+    last_write_checksum: sha1:d1d000f6673e5838a636562dceffa2d9dec820df
+  USAGE.md:
+    last_write_checksum: sha1:9d1ab854e179d6db43a3f1b8f6c23c2761319336
+  composer.json:
+    last_write_checksum: sha1:370f9731dcad8b877a2b286292b17f91ae2fb24f
+  config/services.php:
+    last_write_checksum: sha1:4506ae0152026fde5482eacbaa1f289ebd6cbc0a
+  docs/AllOfWithFactoredOutProperties.md:
+    last_write_checksum: sha1:390589ef6b0ce27313bc91c987d08e8b371fbf64
+  docs/Aloof.md:
+    last_write_checksum: sha1:7fea8d0c71fa58826c28b8e3312675cbc292fc42
+  docs/Any.md:
+    last_write_checksum: sha1:6fe084fe889d76f5ea99ab7780a5026dd90bac0b
+  docs/ApprovalConfig.md:
+    last_write_checksum: sha1:0004dac83bcfc4a45a289bd624428a4848a25315
+  docs/Attachment.md:
+    last_write_checksum: sha1:bdffb3a3515cced8cd9c9ae1c95852bb78c07a09
+  docs/AuthResponse.md:
+    last_write_checksum: sha1:879f188611363f6ff68c8492f192be1a089dab6c
+  docs/AuthSecurity.md:
+    last_write_checksum: sha1:adf30f7eda2a22acdf845ede3e2ba6a40a679182
+  docs/BadRequestResponseException.md:
+    last_write_checksum: sha1:462ab342151c9be10ee93d7b51bcfc8db21b5786
+  docs/Bar/Bike.md:
+    last_write_checksum: sha1:4c1b1f09624f1699f96bf1d277f72931183ac12d
+  docs/Bar/Car.md:
+    last_write_checksum: sha1:722790a593a669fecc1443d2f2611a947fe1e91b
+  docs/Bar/Pet.md:
+    last_write_checksum: sha1:3b5c0f1b3953fb52b3a8bb5db0779d0677a07690
+  docs/Bar/PetOwner.md:
+    last_write_checksum: sha1:33d973f5dfb3d372fd758b18b46e653e9b5ea14c
+  docs/Bar/PetStatus.md:
+    last_write_checksum: sha1:f896c8305fed7bce6b9fa32128e2a34691efe275
+  docs/Bar/Vehicle.md:
+    last_write_checksum: sha1:216865478389462dd47df79d401aeaefd66ec8d3
+  docs/BaseUser.md:
+    last_write_checksum: sha1:60c422cf34e817e2c36a0bcb1469b1839c7505f3
+  docs/Baz/Namespaced.md:
+    last_write_checksum: sha1:587e71f9d6bf83cba15bb0d9da075f501c96757d
+  docs/Baz/Pet.md:
+    last_write_checksum: sha1:61a2793d09bbb31156efff7b09d316a736da71b0
+  docs/BinaryAndStringUploadRequest.md:
+    last_write_checksum: sha1:55c04a0ee80bc51bd6a044092ca921f1ccdb3891
+  docs/BinaryAndStringUploadResponse.md:
+    last_write_checksum: sha1:77c8c08102eb95168372cd467069f9aa6da846e2
+  docs/Boole.md:
+    last_write_checksum: sha1:a0ac380a11ec6f435f9b84267dca32ff56d62c63
+  docs/ImageRecord.md:
+    last_write_checksum: sha1:08128d754e8ad9366d028689c6dabd5372bff216
+  docs/Circle.md:
+    last_write_checksum: sha1:f5c7c7298b514c10abe57f7a4fd7627af15443d5
+  docs/CircularUnion.md:
+    last_write_checksum: sha1:9ee3a7755770e057ee8411e414fc48206278aacf
+  docs/ClientError.md:
+    last_write_checksum: sha1:115ddf765a62a75c2face550b8712744937b6123
+  docs/Color.md:
+    last_write_checksum: sha1:94e6659757e4616d960509c3ea8e7f5ac51065a4
+  docs/CreateNamespaceConflictResponse.md:
+    last_write_checksum: sha1:06ede11f6110c3df7934aaeb8773eaf01f6fd98a
+  docs/CreateSingleNamespaceFooPetResponse.md:
+    last_write_checksum: sha1:0e5d104837cdd2eb62b69e107e4e7556f9a530d0
+  docs/CreateUserResponse.md:
+    last_write_checksum: sha1:a208670229c1d02b4c4cd0dd4a81e793bcff7550
+  docs/CreateWithUnionRequest.md:
+    last_write_checksum: sha1:9e4563bcefee64e76eac681c8dbd7c450af6aefd
+  docs/CreateWithUnionResponse.md:
+    last_write_checksum: sha1:1e4d6f131e9582436da64a38ebdda8d88c17f2b1
+  docs/CreateWithUnionResponseBody.md:
+    last_write_checksum: sha1:0390f0ae5700d2b295c333c732995c5c71eaa545
+  docs/DeleteUserRequest.md:
+    last_write_checksum: sha1:3b0d52119ed089561b5eb775262a43f6b94df100
+  docs/DeleteUserResponse.md:
+    last_write_checksum: sha1:7438e1d089412cd71fd2ba2148135fd9baaa0ca9
+  docs/Deprecated1Response.md:
+    last_write_checksum: sha1:0072973d047db1d3734e57de45f8721bd0e0acf1
+  docs/Detail.md:
+    last_write_checksum: sha1:5a9f45f356a8f0cbda4b7dd6d2ef1aea6b7debf3
+  docs/DetailUnion.md:
+    last_write_checksum: sha1:d62e961d7868e48e6ff942f513759e7a436db8e7
+  docs/DisriminatedUnionWithOneMember.md:
+    last_write_checksum: sha1:36cfca6933d7f0d2216060e47dbd3180f83c6b60
+  docs/Emoji.md:
+    last_write_checksum: sha1:8e1cad0c8c0ce40a624523c7defde3855bdea422
+  docs/Enum.md:
+    last_write_checksum: sha1:4c31e9e127bbe86d961b0a4cf3dd441d2e46a414
+  docs/ErrorType1.md:
+    last_write_checksum: sha1:918a69aea47510810bcdcedc0de5a0f1cf3177ae
+  docs/ErrorType2.md:
+    last_write_checksum: sha1:9448a594380f1640f62d22bcc92637c6ff9d1aab
+  docs/ErrorType2Error.md:
+    last_write_checksum: sha1:fe552d185b9b4aade813801ba5ce81f306b7d3fd
+  docs/ErrorsError.md:
+    last_write_checksum: sha1:02f4cf80a3df170cf759abf8ef1bc5ba683c4d9e
+  docs/Escalation.md:
+    last_write_checksum: sha1:e2f6f6ec99ea33c0eceaa66f4e1513a89452b870
+  docs/ExhaustiveObject.md:
+    last_write_checksum: sha1:32ea41e41bb27c522f70fcfa17608972dd720002
+  docs/FailedResponseException.md:
+    last_write_checksum: sha1:a77173f41894f4dd8793ba5980361957f37d7c2c
+  docs/File.md:
+    last_write_checksum: sha1:53ca0c26dbadc5a6d59d835f5a69efbfb19de3cb
+  docs/Foo/Address.md:
+    last_write_checksum: sha1:785beba6ccd84a1e19a28d5fa18da29f5e7aa4a5
+  docs/Foo/Animal.md:
+    last_write_checksum: sha1:cab30487ddcc4b65516e4adf5fb15f64f34b7e88
+  docs/Foo/Cat.md:
+    last_write_checksum: sha1:9788517a398a0d629fc286223ddd961e1ecc7eae
+  docs/Foo/CatAnimalType.md:
+    last_write_checksum: sha1:2715fec129f4ea71b919054e8e8535d30600c11d
+  docs/Foo/Department.md:
+    last_write_checksum: sha1:6e1113c2085da80123716b55fba413318ea69873
+  docs/Foo/Dog.md:
+    last_write_checksum: sha1:aea9e8cf754c88c04345fc66e6e51511350716c4
+  docs/Foo/DogAnimalType.md:
+    last_write_checksum: sha1:a098c91a7878162ea2084decb01710c79db7aa9e
+  docs/Foo/Location.md:
+    last_write_checksum: sha1:e1635565e2b5c79a03f3ec372e8c61f0d6a350bd
+  docs/Foo/Organization.md:
+    last_write_checksum: sha1:b84b0e2e516a46dc2c6d550fd3136d467c6cdf3e
+  docs/Foo/Pet.md:
+    last_write_checksum: sha1:c53b43e48b2d8570c07d86dfb4dd9d0abed302a4
+  docs/Foo/PetOwner.md:
+    last_write_checksum: sha1:c166892b18f163a9c9437a5eb98e9aac494bd052
+  docs/Foo/PetSpecies.md:
+    last_write_checksum: sha1:286973b540c7dc31790aeea10353e5fa66e995fe
+  docs/Gender.md:
+    last_write_checksum: sha1:71cc9b7aa0cec5531d62cf743195a4c0970012c8
+  docs/GetBinaryDefaultResponseResponse.md:
+    last_write_checksum: sha1:69ffa9019352b1275cb6b8d3effc4b2105e33ebc
+  docs/GetDuplicateExportCollisionResponse.md:
+    last_write_checksum: sha1:26ae9d2d9a3f0426143276d68c3cce20af3a2e0f
+  docs/GetDuplicateExportCollisionResponseBody.md:
+    last_write_checksum: sha1:0d908de8ebfa45241cd3577cfd14c86251e21993
+  docs/GetEmptyObjectErrorResponse.md:
+    last_write_checksum: sha1:b01fdd89764c43872b864eaf64d74cd7985bd825
+  docs/GetEmptyObjectErrorResponseBody.md:
+    last_write_checksum: sha1:9a80023d5ccbc39b6c0afa3b3f843e6465c2d4ed
+  docs/GetErrorInUnionInternalServerError.md:
+    last_write_checksum: sha1:9631780c033398cd20894eef3aeb84c54a7a273e
+  docs/GetErrorInUnionResponse.md:
+    last_write_checksum: sha1:45dbc9f77ed15dd11d16dd4857c47a501438324e
+  docs/GetErrorOnlyExampleResponse.md:
+    last_write_checksum: sha1:1604fb6e2d5053b36ace3da4d446d3fb596aa392
+  docs/GetErrorOnlyExampleResponseBody.md:
+    last_write_checksum: sha1:445dab0067f82c032c29be7e25172823cc3e6777
+  docs/GetFullyFlattenedRequestRequest.md:
+    last_write_checksum: sha1:9c822d20df89aad4ea2c81fee648348894d75852
+  docs/GetFullyFlattenedRequestRequestBody.md:
+    last_write_checksum: sha1:ac44942d075827f42055a2b7949dce53e6f9d1f8
+  docs/GetFullyFlattenedRequestResponse.md:
+    last_write_checksum: sha1:fade88eeb0991e2331c7c57a76a67504f2c4ba14
+  docs/GetNamedPrimitiveUnionResponse.md:
+    last_write_checksum: sha1:f2544da0c6d0b7a6caed6428282d6a1c0043bdbd
+  docs/GetNamespaceAnimalResponse.md:
+    last_write_checksum: sha1:53fca49dfe140b91c717f0a86835d58514f01a16
+  docs/GetNamespaceConflictResponse.md:
+    last_write_checksum: sha1:ae825d6d79e6d711e4356a30d1f355d598ce7701
+  docs/GetNamespaceOrganizationResponse.md:
+    last_write_checksum: sha1:65e667bd8eff96f1c3c649c858078fca0761f9df
+  docs/GetNamespaceTypesResponse.md:
+    last_write_checksum: sha1:157f64474a924e36b45e5b327966d640970a5e2d
+  docs/GetNamespaceVehicleResponse.md:
+    last_write_checksum: sha1:5a4bb9489a29e108ab27b148f45ace8563295b3b
+  docs/GetNestedIntegerStringResponse.md:
+    last_write_checksum: sha1:a55fbade56f11478d5ab78952d7d0073418b13f8
+  docs/GetPetOwnersResponse.md:
+    last_write_checksum: sha1:8b08fefffc18bd0f5d085a2aa7d317a4b126aed7
+  docs/GetPetOwnersResponseBody.md:
+    last_write_checksum: sha1:b74faf0978a4d271343a8635e5f59c97c93b3a3f
+  docs/GetPolymorphismResponse.md:
+    last_write_checksum: sha1:f297d25c0e8c205164a5df3cedd421737bb340a4
+  docs/GetPolymorphismResponseBody.md:
+    last_write_checksum: sha1:ac415b1f4ee500b994944e51cedab5d13106286c
+  docs/GetRequestBodyFlattenedAwayRequest.md:
+    last_write_checksum: sha1:41b2f3bc9a347494e4c2c418557fd63474203a3e
+  docs/GetRequestBodyFlattenedAwayResponse.md:
+    last_write_checksum: sha1:aa434b5894e05dd810dfd409613b634f09880338
+  docs/GetSingleNamespaceBarPetResponse.md:
+    last_write_checksum: sha1:7714d707ddd307d7a1b71a0e2c3f2d61ffa964f8
+  docs/GetSingleNamespaceFooPetResponse.md:
+    last_write_checksum: sha1:05b6c81c5565686fa6315c62ba8e1bf66193cbd8
+  docs/GetTripleNamespaceConflictResponse.md:
+    last_write_checksum: sha1:69104a7416367d111e19106ea8cf2a679e1b6f81
+  docs/GetUnionErrorsInternalServerError.md:
+    last_write_checksum: sha1:09968ec005a8b14e88b364657c487cbcfa350416
+  docs/GetUnionErrorsRequest.md:
+    last_write_checksum: sha1:2d562b0671038da255bfc226e8c330bf7ec71dfc
+  docs/GetUnionErrorsResponse.md:
+    last_write_checksum: sha1:451ea03a7679380703365ee0eb1a712ac0d704b3
+  docs/GetUnionErrorsResponseBody.md:
+    last_write_checksum: sha1:c2e68f2fb5fef32dda10f1a42465b050321da696
+  docs/GetUserRequest.md:
+    last_write_checksum: sha1:dc2c42f6f3b1bc1f81bc6541f033701fe5e6e36f
+  docs/GetUserResponse.md:
+    last_write_checksum: sha1:00fb39cc5bbde0e650da37ea0b6820a100d04b29
+  docs/HeroWidth.md:
+    last_write_checksum: sha1:a6661319dddd2d853883c4684267d8c333cdad65
+  docs/Icon.md:
+    last_write_checksum: sha1:88bf9dda405cbdf6ecae2b64ba247a84cc342405
+  docs/Int32Enum.md:
+    last_write_checksum: sha1:711d54665ec63b3ce384bf4e9e005b003f340e14
+  docs/IntEnum.md:
+    last_write_checksum: sha1:828c5f5c7245c893ece90b3dccbccb728a9e0f2f
+  docs/IntegerMapFormat.md:
+    last_write_checksum: sha1:ce2aef8e9c6d6ac2458bb52105e20ee112eafd41
+  docs/IntegerPartialMapFormat.md:
+    last_write_checksum: sha1:d6f45850c66d380d536af8de3360edd2cae06714
+  docs/ListTest1Request.md:
+    last_write_checksum: sha1:e9975680586243715352596e567accc7c628e333
+  docs/ListTest1Response.md:
+    last_write_checksum: sha1:b9bc79edc5d6e7d1d1c313336a1b72ac7164fd6f
+  docs/ListTest1ResponseBody.md:
+    last_write_checksum: sha1:80ac6c5974b1d85c508bbaeaf6d0458fed356e64
+  docs/LoginResponse.md:
+    last_write_checksum: sha1:ad9132589c7febc279bf5e387019c786126e2973
+  docs/LoginResponseBody.md:
+    last_write_checksum: sha1:36164abbbed8aecde6f06e56f16be4c33071ee3c
+  docs/TextRecord.md:
+    last_write_checksum: sha1:a0376e6003ed8aeecd078b7e23c816c5536682c2
+  docs/MCPPolicy.md:
+    last_write_checksum: sha1:e61d10176cf4ec96dde8ec81685c3ea0ce51268b
+  docs/Metadata.md:
+    last_write_checksum: sha1:1e3bac506e590816576d72cf98e82f6c429f7a60
+  docs/MetadataAny.md:
+    last_write_checksum: sha1:c1f73fcd386cd03d06f96701fd6ba9d25f3bf348
+  docs/MyApiKey.md:
+    last_write_checksum: sha1:e8123eaa89a9b282f63d5f83fbe8b8ca11f128dc
+  docs/MyObject.md:
+    last_write_checksum: sha1:a0431dcca6c41e4501a3d115e630d1b2249ad739
+  docs/NamespaceConflictTest.md:
+    last_write_checksum: sha1:0fd41f0f5e3681a993727e00a84c4d66e7740a81
+  docs/NamespaceTypesTest.md:
+    last_write_checksum: sha1:dece22913817e2286b14be7507d7f1e5e2f1c6f1
+  docs/NestedGroupOpResponse.md:
+    last_write_checksum: sha1:7faf170161880017d5ccc1abf2025a0908d731f4
+  docs/NullableIntEnum.md:
+    last_write_checksum: sha1:520a1f6a235a9961e1a12aef12741211fefa9884
+  docs/NullableStringEnum.md:
+    last_write_checksum: sha1:c59f45f36ed429fc3895dd58a71ce9c9396c259d
+  docs/ObjWithRenamedProperties.md:
+    last_write_checksum: sha1:5bab84943a67875f178523ce94090d14b1653e57
+  docs/OneOfWithFactoredOutProperties.md:
+    last_write_checksum: sha1:673e228c0fb2fd371be42a6501669675c9859ec5
+  docs/OneOfWithFactoredOutPropertiesAny.md:
+    last_write_checksum: sha1:fdb2bc5cdbab023753630b8f812343dabc1ed01d
+  docs/OneOfWithFactoredOutPropertiesExhaustiveObject.md:
+    last_write_checksum: sha1:eefc3bccd81bd634c447a87b6cbefcb1aae5b298
+  docs/OneOfWithFactoredOutPropertiesHeroWidth.md:
+    last_write_checksum: sha1:9d96449621e0e7ed540f44c95d0e6a8943587cee
+  docs/OneOfWithFactoredOutPropertiesIcon.md:
+    last_write_checksum: sha1:83d3c185dd32d45751f19db4e0f249032f6be2a4
+  docs/OneOfWithFactoredOutPropertiesInt32Enum.md:
+    last_write_checksum: sha1:e6f58642d273ef705c06c0b15c591701685fe02b
+  docs/OneOfWithFactoredOutPropertiesIntEnum.md:
+    last_write_checksum: sha1:77c0d4139811d5cabe79c878756086c7de92ced5
+  docs/OneOfWithFactoredOutPropertiesNullableIntEnum.md:
+    last_write_checksum: sha1:ca3212614f7b8a21685350466e29f7122900259d
+  docs/OneOfWithFactoredOutPropertiesNullableStringEnum.md:
+    last_write_checksum: sha1:21665e6dd139a8825eabc2fa8d3ca70e48ea2e3c
+  docs/OneOfWithFactoredOutPropertiesSimpleObject.md:
+    last_write_checksum: sha1:6ffd59b1f259246a7e287501834ac6f776d9461e
+  docs/OneOfWithUnionDescription.md:
+    last_write_checksum: sha1:c9c3767da50c4512c4baac4525b0388305c0dfbc
+  docs/OperationWithLeadingAndTrailingUnderscoresRequest.md:
+    last_write_checksum: sha1:a63e0ff09320576d1058952a44df015a3e5381f1
+  docs/OperationWithLeadingAndTrailingUnderscoresResponse.md:
+    last_write_checksum: sha1:d25160d71f18c299c53a6956b0e025fafecf12fe
+  docs/ParenthesesInPathAllowedRequest.md:
+    last_write_checksum: sha1:8677bd947846f568df702d865edf0981a8fbfa58
+  docs/ParenthesesInPathAllowedResponse.md:
+    last_write_checksum: sha1:0ff8723228db078e6e50c3ae53477f6473197965
+  docs/PaymentCreatedRequest.md:
+    last_write_checksum: sha1:8ad8cdab60b7cd35b326d565286b51f4424edd2a
+  docs/PaymentCreatedResponse.md:
+    last_write_checksum: sha1:7889fcdd84c35190132a23af41a3419041815059
+  docs/PaymentCreatedType.md:
+    last_write_checksum: sha1:d534a4e16ba0db90d7341a356605629d5449b392
+  docs/PaymentUpdatedRequest.md:
+    last_write_checksum: sha1:406bbbe8037b59b49a850a71d3dc91bfe3a3de43
+  docs/PaymentUpdatedResponse.md:
+    last_write_checksum: sha1:6c03916f81ca82a79e9f8cfa093f73eaad1f469e
+  docs/PaymentUpdatedType.md:
+    last_write_checksum: sha1:05a1025b0b06c9efc1ab5ff8005ec22038ee5452
+  docs/PolicyStep.md:
+    last_write_checksum: sha1:467381165f9da44b262c3a8c480c234304b1e526
+  docs/PostFileRequest.md:
+    last_write_checksum: sha1:3be990b88f8f768103d76319283793a65f225b77
+  docs/PostFileResponse.md:
+    last_write_checksum: sha1:ddda99fcb361e4ac3ef8d86d3a63adbba1a52233
+  docs/PostFileWithEncodingFile.md:
+    last_write_checksum: sha1:671bf73644cd85173d7577ec23b10e1ffd5d3c5e
+  docs/PostFileWithEncodingMetadata.md:
+    last_write_checksum: sha1:6e4bd419bad93706b05816778970b5d05791ffd1
+  docs/PostFileWithEncodingRequest.md:
+    last_write_checksum: sha1:1d89fbf36dc062294e34d096df31b2e05c2d3cf8
+  docs/PostFileWithEncodingResponse.md:
+    last_write_checksum: sha1:e1bd9a6b14f449aae6d359223e4462d636effbf7
+  docs/PostFileWithEncodingResponseBody.md:
+    last_write_checksum: sha1:376ce3a8bc321ba5fb7a9c8092b6de48d4031914
+  docs/PostTest2Request.md:
+    last_write_checksum: sha1:951d8e6a3929b296b84cbc772a5f260661c75529
+  docs/PostTest2Response.md:
+    last_write_checksum: sha1:a08c457123b24b2733bb2f24a2319f374c34bcc0
+  docs/PutNamespaceConflictResponse.md:
+    last_write_checksum: sha1:3b3a3e8597c9969482a30dd29f0512c70ccb96ee
+  docs/QueryParam2.md:
+    last_write_checksum: sha1:45ffbb9e6c329e511bc6391ea95c1ae6dcf650e3
+  docs/Rectangle.md:
+    last_write_checksum: sha1:e8d700946ef9a0f98e9a3f105c49d623b1106542
+  docs/RecursiveFormField.md:
+    last_write_checksum: sha1:1c66674394d25339e05a98f6e8550582846a3801
+  docs/RecursiveFormFieldArray.md:
+    last_write_checksum: sha1:76110025b95c6e1073df25b2ac0d0c65f3569ad4
+  docs/RecursiveFormFieldNumber.md:
+    last_write_checksum: sha1:ffea3b5d552fee6b07ab827cfe48a3755b800665
+  docs/RecursiveFormFieldText.md:
+    last_write_checksum: sha1:d409da92b589cd9809953aa25e193717b2b55673
+  docs/RequestTimeoutError.md:
+    last_write_checksum: sha1:1ce59c7f15026e4b9acab9425d2da051e3a12f5c
+  docs/ResultArray.md:
+    last_write_checksum: sha1:05a70cca29832cd2e7ad6a156664df09a0ab9151
+  docs/ReviewTask.md:
+    last_write_checksum: sha1:754c3806d88ec8a47940ca4a4f1f4c330848361a
+  docs/VariantRecord.md:
+    last_write_checksum: sha1:879b9bb3cc7f34d3072ab52ddeabe1442ba63b34
+  docs/RootGroupOpResponse.md:
+    last_write_checksum: sha1:07d4d6d228783ddb75afaeb1c5e488e6d2d22a74
+  docs/Security.md:
+    last_write_checksum: sha1:67aa381c5bb35952dca1825a9b84469aeaf87b29
+  docs/SecurityOption2.md:
+    last_write_checksum: sha1:77b82ac5db7010d92f1a66abebc1f61b9c2e4fba
+  docs/SecurityOption3.md:
+    last_write_checksum: sha1:d05961ee1852239aa716e0dda04be60606073842
+  docs/SecurityOption4.md:
+    last_write_checksum: sha1:b6ea9b2dc39a68b89a7892ba695a883caa9195f6
+  docs/SecurityOption5.md:
+    last_write_checksum: sha1:8368e5142ca7888b115909b580cbc5a15cf08ff9
+  docs/SecurityOption6.md:
+    last_write_checksum: sha1:e26132f3f17728cef44afd83c60102bee25c70c3
+  docs/Shape.md:
+    last_write_checksum: sha1:1a7994b13fc7621a26f0f906f840ed4b7b2c1cab
+  docs/ShapeRequest.md:
+    last_write_checksum: sha1:beaaaa7f9f7ff90e7df82ca7db7aaa4415ee769c
+  docs/SimpleAllOf.md:
+    last_write_checksum: sha1:5b9a0a9bfc48150d8a418f25f88a398fb7cfd8ca
+  docs/SimpleObject.md:
+    last_write_checksum: sha1:e58cad4c7d36b55bf024d89f5943197d8cd5a3a4
+  docs/SomeUnion.md:
+    last_write_checksum: sha1:f5278933b55239b57e24df8ad88082a513a3314e
+  docs/StringArrayFormat.md:
+    last_write_checksum: sha1:76ad7fef2fd9357c57c479b3547dfdd457f4a85a
+  docs/StringMapFormat.md:
+    last_write_checksum: sha1:d4483914f100c750ffed54800339d228f0dcebf8
+  docs/StringPartialMapFormat.md:
+    last_write_checksum: sha1:b082b2d25691d541c45942b51cad23a5d08c9ecb
+  docs/SubGroupOpResponse.md:
+    last_write_checksum: sha1:215ebe3a524e5a19924df5257cf355fa58beb4c2
+  docs/Tag.md:
+    last_write_checksum: sha1:6b16f80614b5e4036f2892b048094a204317d7f3
+  docs/TaggedError1.md:
+    last_write_checksum: sha1:0289a155045bb396ca769de598508a78c3c4419a
+  docs/TaggedError2.md:
+    last_write_checksum: sha1:712e30e284349ee5551177c6fe419cc75b8068a6
+  docs/TaggedError2Error.md:
+    last_write_checksum: sha1:f418caa50e18e2d6fd5f9e3fd2fd63fb7792c903
+  docs/TaskResponse.md:
+    last_write_checksum: sha1:4651d2606f64898f1389cd93658f0e6a00e6f15e
+  docs/TemplateBracesTest.md:
+    last_write_checksum: sha1:07e00d554b3247ffae1c359e60454b0e169de690
+  docs/Test2Request.md:
+    last_write_checksum: sha1:fd2c3b3cd08adb5469fc65c9416d0fd203dbcd77
+  docs/Test2Response.md:
+    last_write_checksum: sha1:9ee3a498a740ac863966d78de67e56c96d50c2af
+  docs/Test2ResponseException.md:
+    last_write_checksum: sha1:920bffeca371ac236f07ad50adf6f4b52c8d8a87
+  docs/TestEndpointRequest.md:
+    last_write_checksum: sha1:11294b8410291ac0e1abfe6eacd76bbe99e73c58
+  docs/TestEndpointRequestBody.md:
+    last_write_checksum: sha1:9671e0920b0c2f787412712885ec03ba2c6ec361
+  docs/TestEndpointResponse.md:
+    last_write_checksum: sha1:f490df60e14681d755003303a71f5e81e1fd239e
+  docs/TestEnumFormatsRequest.md:
+    last_write_checksum: sha1:25f52678725b74ba4a0a313c97c47afd3050e969
+  docs/TestEnumFormatsResponse.md:
+    last_write_checksum: sha1:1ca65100b56ebb7ee03804ebe6e5c7a956a92392
+  docs/TestEnumFormatsResponseBody.md:
+    last_write_checksum: sha1:fddef11b37090a46df8d0670ea10ca6c62abc64b
+  docs/TripleNamespaceConflictTest.md:
+    last_write_checksum: sha1:0c8c2cc4a02d052ae40cec1275e4e6db37dc37a5
+  docs/Type.md:
+    last_write_checksum: sha1:b85c3f3a34e418ae53a034490d92981cf1fc5d4f
+  docs/UpdateUserRequest.md:
+    last_write_checksum: sha1:66557f2882bd3697aafa7319fdd47cc967c67acd
+  docs/UpdateUserResponse.md:
+    last_write_checksum: sha1:5d83b5ad3cf6663c1ceb63abe9e4fbc07f3bac36
+  docs/UrlValidationStressTestResponse.md:
+    last_write_checksum: sha1:376fbda8891ab1ecef14ee1ac213f5f87d9cb640
+  docs/User.md:
+    last_write_checksum: sha1:9894aad15359d86cf0bbf5796fdd227c3a697392
+  docs/UserPassAuth.md:
+    last_write_checksum: sha1:7782aa93f9a1de76a78dfcd39bfa50c2f00ee3a7
+  docs/ValidateResponse.md:
+    last_write_checksum: sha1:c735e0557a7bb6971150b2f561ba87bb4dcce65d
+  docs/ValidateResponseBody.md:
+    last_write_checksum: sha1:59b4bf48c373dfc3823bac42cb31de1fc2baa2b6
+  docs/sdks/conflicts/README.md:
+    last_write_checksum: sha1:878c5b62599ab91ccbbdb9cb4100d3c8327626ee
+  docs/sdks/group/README.md:
+    last_write_checksum: sha1:bcc9766f7ed8971b07c0abd2e16df5ef93af09ee
+  docs/sdks/obsolete/README.md:
+    last_write_checksum: sha1:a7e8e266430b35c96a855bbc16d12c9297157cff
+  docs/sdks/sdk/README.md:
+    last_write_checksum: sha1:f39878d12875d0700684dc5086d112c9d64ebd5c
+  docs/sdks/singlebar/README.md:
+    last_write_checksum: sha1:2473d0a0a1349481a484ee4d4f9962f234bca7b9
+  docs/sdks/singlefoo/README.md:
+    last_write_checksum: sha1:9cc411a43233034bc0f50db9bf48c3fd90464105
+  docs/sdks/subgroup/README.md:
+    last_write_checksum: sha1:adc0641c595c1ed2b8b81d83533d543478cfe892
+  docs/sdks/tag1/README.md:
+    last_write_checksum: sha1:98cf0f683491280c97935e598f7f75a8f11971e7
+  docs/sdks/tag2/README.md:
+    last_write_checksum: sha1:6726a43bed2443a8f09d6b9cb4f0f720a720bb7d
+  docs/sdks/tag3/README.md:
+    last_write_checksum: sha1:ca854bbd7a5b14b2fbbe53a3e26c33e4946ce60c
+  docs/sdks/tail/README.md:
+    last_write_checksum: sha1:63f337219305161b26ce9a39b1a6e80e8de0b05a
+  docs/sdks/types/README.md:
+    last_write_checksum: sha1:70d1519409a946701c09b7917b0475bbf2d50084
+  phpstan.neon:
+    last_write_checksum: sha1:c76cf3ac20b114f85cd6c3b569a6e297d00b4612
+  phpunit.xml:
+    last_write_checksum: sha1:1a2f73f76c0929634baf4e48f5718b9a2449be79
+  pint.json:
+    last_write_checksum: sha1:2359db512d27012e65e376b39996d3b78f87a95a
+  rector.php:
+    last_write_checksum: sha1:2c0586f29783d1cdf80ea09f3ed0f4693329f3e6
+  src/AllOfWithFactoredOutProperties.php:
+    last_write_checksum: sha1:d342c0690e4b2c0d799f3c1ac53c41a168f51e69
+  src/Aloof.php:
+    last_write_checksum: sha1:5c8c0ee013d02ed7e50431195c914270772f54ed
+  src/ApprovalConfig.php:
+    last_write_checksum: sha1:e69cf679d8be0f2b80b9a60d31dfae05a1afa90d
+  src/Attachment.php:
+    last_write_checksum: sha1:2705841006472eff86cc2c6982c2c8210ff81b57
+  src/AuthResponse.php:
+    last_write_checksum: sha1:523b92ed66211d067715c92a1492d2e42ddbd14f
+  src/AuthSecurity.php:
+    last_write_checksum: sha1:6d38dbf036d8b6c1c6fc9dceff265f24b7221822
+  src/BadRequestResponseException.php:
+    last_write_checksum: sha1:f3d33535480f66a382ba97147945e33993c579af
+  src/BadRequestResponseExceptionThrowable.php:
+    last_write_checksum: sha1:61933d38f015a9e8543d9a948291bbae93a9eab1
+  src/Bar/Bike.php:
+    last_write_checksum: sha1:d705dbf021fbbd6f35f6f759676d5a14e3d397e8
+  src/Bar/Car.php:
+    last_write_checksum: sha1:8f9c90952ae4b1ba6a2bc323597a2b6bfc4423a3
+  src/Bar/Pet.php:
+    last_write_checksum: sha1:e2d3593c514662d9301060dec3a89de1e789f030
+  src/Bar/PetOwner.php:
+    last_write_checksum: sha1:58ece3c1fe8d014907884809d9d7d0bc84e2a9c4
+  src/Bar/PetStatus.php:
+    last_write_checksum: sha1:dfdabc9bd8465819c2336f8559a1ce5e2699e2e3
+  src/BaseUser.php:
+    last_write_checksum: sha1:2c8b75661e34310ae88622830289174e35847b26
+  src/Baz/Namespaced.php:
+    last_write_checksum: sha1:de23f5c3f21afb252d7946a8f99288bdd14f21f8
+  src/Baz/Pet.php:
+    last_write_checksum: sha1:e404405b4f218f5b722000b31fadd2ca13fc608d
+  src/BinaryAndStringUploadRequest.php:
+    last_write_checksum: sha1:20292f0253990f491d76de90b592e56f861f6f08
+  src/BinaryAndStringUploadResponse.php:
+    last_write_checksum: sha1:235204e2d227400f3f836d80c71da6f976a3796b
+  src/Boole.php:
+    last_write_checksum: sha1:573e414aa99ef545b6de2d971e4c14d14daf9e93
+  src/ImageRecord.php:
+    last_write_checksum: sha1:30cbb6e12bc7ea05808860a4b9e1f0c3f485ec5f
+  src/Circle.php:
+    last_write_checksum: sha1:b4c139b3cf43d666bb0cc6d8699f27430af7ea5b
+  src/Color.php:
+    last_write_checksum: sha1:6da5a994c2b17cfb79ce1cad14c0f01aec4d8146
+  src/Conflicts.php:
+    last_write_checksum: sha1:5ca122eb53e258a589e97e60cdc3893782269be2
+  src/CreateNamespaceConflictResponse.php:
+    last_write_checksum: sha1:398a85d9007ea3679ed2804f8a028237c97c74c0
+  src/CreateSingleNamespaceFooPetResponse.php:
+    last_write_checksum: sha1:8788878f4f91bf9f97bd237f4022c45cc22a9c59
+  src/CreateUserResponse.php:
+    last_write_checksum: sha1:d474b8b87c59fa1c43bf7df7c539d92a3b981e6d
+  src/CreateWithUnionRequest.php:
+    last_write_checksum: sha1:90063836e477c4dfa896d82d69e664a1d88dd11a
+  src/CreateWithUnionResponse.php:
+    last_write_checksum: sha1:35ff5bc4a50f14f4f30c7329a1289b5bc0673ee7
+  src/CreateWithUnionResponseBody.php:
+    last_write_checksum: sha1:e2f335e0b4aef005242a9eb952bd19f41c1c33ef
+  src/DeleteUserRequest.php:
+    last_write_checksum: sha1:02abbc23ea83497c072ff4e67cdf1e1f3203b09b
+  src/DeleteUserResponse.php:
+    last_write_checksum: sha1:46dc717e8a3b1bd5c7a99c93489c80c5c8cb8415
+  src/Deprecated1Response.php:
+    last_write_checksum: sha1:8ecda1928b5e979ada47dea9fed8d3e67480a1ef
+  src/Detail.php:
+    last_write_checksum: sha1:7bd092de390df34b2394a1c2777f2efdc3e17a14
+  src/Emoji.php:
+    last_write_checksum: sha1:2702b0f053256fbc2e5411d21dc0162d943fc9e9
+  src/EmptyT.php:
+    last_write_checksum: sha1:3bfe4dbde27a5bc998bb3bf77308292201fc3861
+  src/Enum.php:
+    last_write_checksum: sha1:ea1786672729987f2b29cace4492782598642f23
+  src/ErrorType1.php:
+    last_write_checksum: sha1:4ea3a75dd1e63d5547357b88a045f1ed38ba8152
+  src/ErrorType1Throwable.php:
+    last_write_checksum: sha1:e16312877c8e9e72824c90e6477a54a4da4203fc
+  src/ErrorType2.php:
+    last_write_checksum: sha1:cd8b1cef8ad7e7e39b3dd9f27ede05298c0b8c4f
+  src/ErrorType2Error.php:
+    last_write_checksum: sha1:1d4fe8eeb007477fea60603db4fc64706e14143d
+  src/ErrorType2Throwable.php:
+    last_write_checksum: sha1:eb2c492f7b7c19dcf3bbad844568c56c586d15e9
+  src/ErrorsError.php:
+    last_write_checksum: sha1:e4e420a16b0e4aac131bcc6ff34fb73d8da15297
+  src/ErrorsErrorThrowable.php:
+    last_write_checksum: sha1:518d3b60a407d9942254ecf07aa8e63aacc09377
+  src/Escalation.php:
+    last_write_checksum: sha1:5363b244c9ae8220e596c121454e1955431808c0
+  src/ExhaustiveObject.php:
+    last_write_checksum: sha1:7117ca15d9ad5350df0c9797d2bceec39b22f176
+  src/FailedResponseException.php:
+    last_write_checksum: sha1:2c73f573bab6abfe7b5e86c794f0600465b927f3
+  src/FailedResponseExceptionThrowable.php:
+    last_write_checksum: sha1:90f2b9ce1f8187f6161df504380216599bb6f5ca
+  src/File.php:
+    last_write_checksum: sha1:5199cc8ef071837f099d4b52b3fb337cea68ce84
+  src/Foo/Address.php:
+    last_write_checksum: sha1:472a74217ee1b69fc8016d2ecad7923c1470e2ca
+  src/Foo/Cat.php:
+    last_write_checksum: sha1:86a2fdb652a4dca6f0771e0204bc3b41d711407b
+  src/Foo/CatAnimalType.php:
+    last_write_checksum: sha1:5f0c9b22833d3b2210b6ce2fcd30a2d7366b93c9
+  src/Foo/Department.php:
+    last_write_checksum: sha1:6c6f43cc6fe599efab9bdb06bc9fb0bbf53d4ef1
+  src/Foo/Dog.php:
+    last_write_checksum: sha1:52eadd9d8e742454a71b29e20bbf57bd4aee54c7
+  src/Foo/DogAnimalType.php:
+    last_write_checksum: sha1:8fb8ce322dae6739667e03a2775c33dd8e25ebb3
+  src/Foo/Location.php:
+    last_write_checksum: sha1:04cf50a76f2e5fc164f792d617ef83439d902d39
+  src/Foo/Organization.php:
+    last_write_checksum: sha1:0df3adfb368a99e0e792402bc38c1e2ec23a8ab0
+  src/Foo/Pet.php:
+    last_write_checksum: sha1:b123f7f1efffdc3ba1b1cdac3a15241989f9cde1
+  src/Foo/PetOwner.php:
+    last_write_checksum: sha1:3ae81ae911c01213640997d81083b6916941b0af
+  src/Foo/PetSpecies.php:
+    last_write_checksum: sha1:dd222dc08b49f887d57ec76773352819787ff3d8
+  src/Gender.php:
+    last_write_checksum: sha1:5c18cb4df8bdb56e02c631f78afa01d7bd973b61
+  src/GetBinaryDefaultResponseResponse.php:
+    last_write_checksum: sha1:3b042b2dd45ed2921c7fb5f1fe791613d65e43cf
+  src/GetDuplicateExportCollisionResponse.php:
+    last_write_checksum: sha1:bbe8ecb9e683a5ce9558e2c3e4e0afc9ec220ac0
+  src/GetDuplicateExportCollisionResponseBody.php:
+    last_write_checksum: sha1:f21aa5299f0bfe9196301baf872bd9c561ac000a
+  src/GetEmptyObjectErrorResponse.php:
+    last_write_checksum: sha1:a55743b18d0591cdf7abad05a56d9d31dc35ff28
+  src/GetEmptyObjectErrorResponseBody.php:
+    last_write_checksum: sha1:59a7864edfca0991c995ea52f0f3db1f83f1e3c3
+  src/GetErrorInUnionResponse.php:
+    last_write_checksum: sha1:7e903ade58b646b1d5c4b02acd433d04af912c4a
+  src/GetErrorOnlyExampleResponse.php:
+    last_write_checksum: sha1:5a79b27fd448794bec3d263373e6c7f431ebf636
+  src/GetErrorOnlyExampleResponseBody.php:
+    last_write_checksum: sha1:8721b77880c5c994074354bb9f7688a89de81a3b
+  src/GetFullyFlattenedRequestRequest.php:
+    last_write_checksum: sha1:92f81f5095a5f119ab53086a8efda10e246e0908
+  src/GetFullyFlattenedRequestRequestBody.php:
+    last_write_checksum: sha1:2de7e8e6ef728c6c78c45676f358698f38afecf9
+  src/GetFullyFlattenedRequestResponse.php:
+    last_write_checksum: sha1:7f7c7e323953f981cb8326bd913dc91ea6c753dd
+  src/GetNamedPrimitiveUnionResponse.php:
+    last_write_checksum: sha1:7f08b6a66642180434eceb752c7fbd333713de98
+  src/GetNamespaceAnimalResponse.php:
+    last_write_checksum: sha1:2c45f47d27592c9972c0e54065e55cfe80a5cd0c
+  src/GetNamespaceConflictResponse.php:
+    last_write_checksum: sha1:1fe5961e2e71d8b7a44a17105ee944de41c59dd8
+  src/GetNamespaceOrganizationResponse.php:
+    last_write_checksum: sha1:ad1f5bbec9626a323a97b6e9de3ab54d8950015c
+  src/GetNamespaceTypesResponse.php:
+    last_write_checksum: sha1:14e632e2a8b20d8424d867f78a381d02c494a5e1
+  src/GetNamespaceVehicleResponse.php:
+    last_write_checksum: sha1:aa0f379fc4735385c2b7944c361e4d36d08f6395
+  src/GetNestedIntegerStringResponse.php:
+    last_write_checksum: sha1:c2f055792c5de44ad7ae994083953a7b63ef1ac0
+  src/GetPetOwnersResponse.php:
+    last_write_checksum: sha1:03435ea33f194d71e3f2c018541ac729b3d21088
+  src/GetPetOwnersResponseBody.php:
+    last_write_checksum: sha1:7eb5aef24277884634a22474fd9b8e8120f201c7
+  src/GetPolymorphismResponse.php:
+    last_write_checksum: sha1:e5a0e0101c86f48ed0fd72acca461fbb6269a021
+  src/GetPolymorphismResponseBody.php:
+    last_write_checksum: sha1:eabbf0ae2929fa4b25289340921f733b722eb9a7
+  src/GetRequestBodyFlattenedAwayRequest.php:
+    last_write_checksum: sha1:2b22c8e29b2a4be4897fd80645f29fe606273d6e
+  src/GetRequestBodyFlattenedAwayResponse.php:
+    last_write_checksum: sha1:0214cc6ffbb784fa6597802b3dc9168cd5776466
+  src/GetSingleNamespaceBarPetResponse.php:
+    last_write_checksum: sha1:f9b33c39774af895f2829c2afdac35c199f461c9
+  src/GetSingleNamespaceFooPetResponse.php:
+    last_write_checksum: sha1:74ffdb211de3f1297da96b832e4dfbe0865cb759
+  src/GetTripleNamespaceConflictResponse.php:
+    last_write_checksum: sha1:269adda7334049d4f0dcf458fe3ce1e4c3f9aad6
+  src/GetUnionErrorsRequest.php:
+    last_write_checksum: sha1:efdc153070d1142d40b9d6a4d636c7b220ca9778
+  src/GetUnionErrorsResponse.php:
+    last_write_checksum: sha1:9f1008f8a7521ef7724fe1951f85367262ae3d72
+  src/GetUnionErrorsResponseBody.php:
+    last_write_checksum: sha1:5bd17d0ab1cc10fbd2c64c254f46a789fac48f95
+  src/GetUserRequest.php:
+    last_write_checksum: sha1:d054caf1ed3ed96721d812dd6efb6191442d2731
+  src/GetUserResponse.php:
+    last_write_checksum: sha1:25e30dab4a5339bc559dafecc6fdcab7850ca0a8
+  src/Group.php:
+    last_write_checksum: sha1:6986975ed704e95ef4be23a32fa532c37968620c
+  src/HeroWidth.php:
+    last_write_checksum: sha1:04a5b01a973e1f3cc041d3ac872b9edc0d6e0a15
+  src/Hooks/AccessTokenOAuth2Scope.php:
+    last_write_checksum: sha1:1747aa64bf4297c1826efa0982dcfd4c0020f9e8
+  src/Hooks/AfterErrorContext.php:
+    last_write_checksum: sha1:140eb30af98ae7accd55f1f52ee58ca41477edc4
+  src/Hooks/AfterErrorHook.php:
+    last_write_checksum: sha1:0331d2e581f0debbd2c91b2929f10ee04023f371
+  src/Hooks/AfterSuccessContext.php:
+    last_write_checksum: sha1:c3f111f6c2da167c76502565a767e6fd5559d4ae
+  src/Hooks/AfterSuccessHook.php:
+    last_write_checksum: sha1:ff2ae2236989257dfd876a2e12b2c175f1487227
+  src/Hooks/BeforeRequestContext.php:
+    last_write_checksum: sha1:d2726a59bb3babb0856052f66d19e4f4fe10b00a
+  src/Hooks/BeforeRequestHook.php:
+    last_write_checksum: sha1:ccafe661c93f811523ba773bd770f3a9dc451a41
+  src/Hooks/ClientCredentialsHook.php:
+    last_write_checksum: sha1:9d19ef72cb36e68b5a1f154ef707693afd571ad1
+  src/Hooks/ClientCredentialsOAuth2Scope.php:
+    last_write_checksum: sha1:20142e189df13f14a934117802a0c6dccdf1e38d
+  src/Hooks/Credentials.php:
+    last_write_checksum: sha1:7b4f981accf5d3270b3cff7b1caeb3eb4dabefcf
+  src/Hooks/ErrorResponseContext.php:
+    last_write_checksum: sha1:6d1d8ab6999a48555c168a041793393182243146
+  src/Hooks/FailEarlyException.php:
+    last_write_checksum: sha1:b48a144d47988c4cd1fef656a9755d67b33e2a42
+  src/Hooks/HookContext.php:
+    last_write_checksum: sha1:f2aac205073a57a68f1beae03bd190e6eb4ec394
+  src/Hooks/Hooks.php:
+    last_write_checksum: sha1:98e6d663ca66017ba39cbf594d008583951e42a5
+  src/Hooks/MobileAuthOAuth2Scope.php:
+    last_write_checksum: sha1:59ad0b98557debd6db44f209256aff33ad2a9ef3
+  src/Hooks/SDKHooks.php:
+    last_write_checksum: sha1:6675a0b1390301c5a42af289865c07af7d56c12f
+  src/Hooks/SDKInitHook.php:
+    last_write_checksum: sha1:60f7fe6d8aed94612b35e5656f4b5e7f20fd149f
+  src/Hooks/Session.php:
+    last_write_checksum: sha1:bea334a4bb70e98aa0192de171c5d1fc01430cb7
+  src/Hooks/TokenResponse.php:
+    last_write_checksum: sha1:f20a859f61b771558f5ac68ca9154a487517a4ab
+  src/Icon.php:
+    last_write_checksum: sha1:51c35886b2c590fb8ad305aee74f90a03df1c6e9
+  src/Int32Enum.php:
+    last_write_checksum: sha1:eedef7ba5069fc06cbad2661333c72297751452f
+  src/IntEnum.php:
+    last_write_checksum: sha1:ae571dbe045f4965b9ab138e6ede63b774941cad
+  src/IntegerMapFormat.php:
+    last_write_checksum: sha1:9f4af5003f19e5d8b0ee0c368db9c23bcce7798c
+  src/IntegerPartialMapFormat.php:
+    last_write_checksum: sha1:66e9290ad10d05b5c7095fdb27fbcf7e935fcfc2
+  src/ListTest1Request.php:
+    last_write_checksum: sha1:adeb1c0832c90320d2b4e15cfa671acb19aebb03
+  src/ListTest1Response.php:
+    last_write_checksum: sha1:89e2bbaf32b7afc8669231d50f33fc9cebf045c6
+  src/ListTest1ResponseBody.php:
+    last_write_checksum: sha1:a37f2d5d2c3be302bd262bc3d77db882b04b1472
+  src/LoginResponse.php:
+    last_write_checksum: sha1:51e38ead730e23689ca5ec0eb462df8519a5c8b5
+  src/LoginResponseBody.php:
+    last_write_checksum: sha1:9f1855cb79bcf86c632fb85cd9b42e83a55b11cb
+  src/TextRecord.php:
+    last_write_checksum: sha1:b39e37fcdff81bca09f0c24ff99ea9317d80810d
+  src/MCPPolicy.php:
+    last_write_checksum: sha1:224d8b941d65b660792a4625c808175b8e1f3f6d
+  src/Metadata.php:
+    last_write_checksum: sha1:8318368ca50eea816dcaf1973479f8ec6117f19e
+  src/MetadataAny.php:
+    last_write_checksum: sha1:bfbd2041d6d1b47923ca86bc7de2756dc401c739
+  src/MyApiKey.php:
+    last_write_checksum: sha1:9f9deaad343db31ee38464c961d8ca401542e0b3
+  src/MyObject.php:
+    last_write_checksum: sha1:4aee49e183ba2d683c0c2f15ff9b1791a66a4c63
+  src/NamespaceConflictTest.php:
+    last_write_checksum: sha1:067360a944cfd7ab2183fda504e86af582a5bb21
+  src/NamespaceTests.php:
+    last_write_checksum: sha1:e49ef9ca3dda543cf46b3c60f6e6a3bc1f30b508
+  src/NamespaceTypesTest.php:
+    last_write_checksum: sha1:3b30632d4196aace88a4c474916e1baa0c2ed0ce
+  src/NestedGroupOpResponse.php:
+    last_write_checksum: sha1:b074a1e9fde99eadc99545ad18e24a3fff4fcd00
+  src/NullableIntEnum.php:
+    last_write_checksum: sha1:ac6282a50d80f993b572e5faa46295c8993ec36a
+  src/NullableStringEnum.php:
+    last_write_checksum: sha1:95652dee1263551b9bd9ff559a427a06f59ec6ef
+  src/ObjWithRenamedProperties.php:
+    last_write_checksum: sha1:6266ada8a04bbe8570a615fbcfe9b7d5b9c95301
+  src/Obsolete.php:
+    last_write_checksum: sha1:8fd7bde4c5bc90fb804bc3534baa58920c6fc943
+  src/OneOfWithFactoredOutPropertiesExhaustiveObject.php:
+    last_write_checksum: sha1:ecb4e472a92e1591efd9ee35b949447e6f5c48e5
+  src/OneOfWithFactoredOutPropertiesHeroWidth.php:
+    last_write_checksum: sha1:0abb61e0823a2f3fec0d7f619d979e63653f6ad1
+  src/OneOfWithFactoredOutPropertiesIcon.php:
+    last_write_checksum: sha1:17cb055ff67bce398cbba7f68356f4abc08ec48b
+  src/OneOfWithFactoredOutPropertiesInt32Enum.php:
+    last_write_checksum: sha1:2da03ec30f7a4585549a9328d128eabfffc1bdb4
+  src/OneOfWithFactoredOutPropertiesIntEnum.php:
+    last_write_checksum: sha1:680b594fb98a1ef10f464655153486656a64a3ce
+  src/OneOfWithFactoredOutPropertiesNullableIntEnum.php:
+    last_write_checksum: sha1:77117c15737e64d36a624fcd5fae3a55811f8f68
+  src/OneOfWithFactoredOutPropertiesNullableStringEnum.php:
+    last_write_checksum: sha1:f0202f266a9937ef8822481a7354718607501a29
+  src/OneOfWithFactoredOutPropertiesSimpleObject.php:
+    last_write_checksum: sha1:e847effe567d80290a03cae2ba1373b0d9ad9694
+  src/OperationWithLeadingAndTrailingUnderscoresRequest.php:
+    last_write_checksum: sha1:bef83352cb3077dfbfe2ec7433c340931347211c
+  src/OperationWithLeadingAndTrailingUnderscoresResponse.php:
+    last_write_checksum: sha1:faf4882610d41f07ac013d09e2981cd22cfc766a
+  src/PackageServiceProvider.php:
+    last_write_checksum: sha1:da773473f9d0a9bb3d41b1738ba957b9d74add02
+  src/ParenthesesInPathAllowedRequest.php:
+    last_write_checksum: sha1:f493de8f7b55d241e6cfba62e548d1eb42422a60
+  src/ParenthesesInPathAllowedResponse.php:
+    last_write_checksum: sha1:c9c7cc1ef3fd69046ace026dc2752d4c303f4271
+  src/PaymentCreatedRequest.php:
+    last_write_checksum: sha1:9b8ab0ef55f6b763995c019ede4ae5ae10cb12ab
+  src/PaymentCreatedResponse.php:
+    last_write_checksum: sha1:f9ebe37374426ae9b061d242c92070d2144904bf
+  src/PaymentCreatedType.php:
+    last_write_checksum: sha1:2f39c8397f6dc91142b20b1497cacfd240340468
+  src/PaymentUpdatedRequest.php:
+    last_write_checksum: sha1:2bc0d144cc9c19544fc2edfaf150c8f39dbd9130
+  src/PaymentUpdatedResponse.php:
+    last_write_checksum: sha1:9eb89a48ec23c706090d19586c7731c9fb7a87ec
+  src/PaymentUpdatedType.php:
+    last_write_checksum: sha1:3906fbe11863ca622f1b9c6bf3401bb816afd211
+  src/PolicyStep.php:
+    last_write_checksum: sha1:6b5f8c69ad3adf652c8aa17dd7241fbfed39b0de
+  src/PostFileRequest.php:
+    last_write_checksum: sha1:2bf97009ecb4221181765db51158588731d4874c
+  src/PostFileResponse.php:
+    last_write_checksum: sha1:28ee6c6ee618f8ab53b90de50963ad2b98cdf43a
+  src/PostFileWithEncodingFile.php:
+    last_write_checksum: sha1:be5c4678565f76cfea05597b46cc9e445edc5182
+  src/PostFileWithEncodingMetadata.php:
+    last_write_checksum: sha1:c212927eacd98e6da13fa34c6ca36f8cbe2b9b15
+  src/PostFileWithEncodingRequest.php:
+    last_write_checksum: sha1:ce3be4c252d4204b52ca669e1253a5e04292f4fa
+  src/PostFileWithEncodingResponse.php:
+    last_write_checksum: sha1:3ad20c499a1cdb6de79653e7d54d782d75b1b5a5
+  src/PostFileWithEncodingResponseBody.php:
+    last_write_checksum: sha1:45b0ec3569cc5f01bd14381843434a7de106d350
+  src/PostTest2Request.php:
+    last_write_checksum: sha1:0c8784ee7720082c5036f984f319576ae4962743
+  src/PostTest2Response.php:
+    last_write_checksum: sha1:e2e25a5576406fa2edca3aec381acf4e8cac0276
+  src/PutNamespaceConflictResponse.php:
+    last_write_checksum: sha1:a21768fddfbdf4d5f0283cb292d8a794a77db2a8
+  src/QueryParam2.php:
+    last_write_checksum: sha1:d33049e4c4d9d98e10c5f112feacc60374585118
+  src/Rectangle.php:
+    last_write_checksum: sha1:e2cee001761f91e944331d7c7a1b644cba33620e
+  src/RecursiveFormFieldArray.php:
+    last_write_checksum: sha1:6f5b444b84da35a345935ec28d4351fb55dcbd6b
+  src/RecursiveFormFieldNumber.php:
+    last_write_checksum: sha1:8ebc6e1a23f4932b6d59b4fd55a910c445c7875d
+  src/RecursiveFormFieldText.php:
+    last_write_checksum: sha1:480c27e9370c186092842887bbbe01fcaa44829e
+  src/RequestTimeoutError.php:
+    last_write_checksum: sha1:6f82b90587d558a21719592b2af3fc0917cad777
+  src/RequestTimeoutErrorThrowable.php:
+    last_write_checksum: sha1:51df1c04a5695f65848de8ef609d9b0b918cad15
+  src/ResultArray.php:
+    last_write_checksum: sha1:e8cbdfcece0e6d67efd158e7bb222689a1993642
+  src/ReviewTask.php:
+    last_write_checksum: sha1:f110d2a70e2fffbc177bcddba135070e786b89b4
+  src/RootGroupOpResponse.php:
+    last_write_checksum: sha1:13e355a4f2dc8115c8697ff688b8664a63480959
+  src/SDK.php:
+    last_write_checksum: sha1:92471f6d1103994606b6c03f4d299cbcccf96490
+  src/SDKBuilder.php:
+    last_write_checksum: sha1:fa5ab1af0c415d695fc2d245b23c046fe82a13e1
+  src/SDKConfiguration.php:
+    last_write_checksum: sha1:f4bc184a2157951d5f1665320c9d8cd6f8c92844
+  src/SDKException.php:
+    last_write_checksum: sha1:97814bc4538ec1398a546f11d8f7183617efe5a6
+  src/Security.php:
+    last_write_checksum: sha1:de057a59fe90207e4a1cc658ed00fc5c07258cd0
+  src/SecurityOption2.php:
+    last_write_checksum: sha1:5a1c095c87f5bb07f0fe48bd8d810c6c9dd7e204
+  src/SecurityOption3.php:
+    last_write_checksum: sha1:6efccd42c18a463ee5e41bb877954f04b95bced4
+  src/SecurityOption4.php:
+    last_write_checksum: sha1:c5da2f4299e14a73598d00bbe9bd438d95a20b58
+  src/SecurityOption5.php:
+    last_write_checksum: sha1:b911af98d029be9decb39c7d85f5636d148f5ec5
+  src/SecurityOption6.php:
+    last_write_checksum: sha1:47bbfb7a146d56a3d3a792f65a8beeaa96dba920
+  src/ServerPORT.php:
+    last_write_checksum: sha1:f9deb9af517910eb5ccd9efae51d504bd47dc2ab
+  src/ShapeRequest.php:
+    last_write_checksum: sha1:e2e6c1cadb8d55e6e9c5ef72fd273be4fe435f9c
+  src/SimpleAllOf.php:
+    last_write_checksum: sha1:b58322b1f5c1f883be98e1767a5b3396fe47c68a
+  src/SimpleObject.php:
+    last_write_checksum: sha1:594dc862a358c0723c1133295d55da9f3db6804f
+  src/SingleBar.php:
+    last_write_checksum: sha1:f29825f70d125e406ac36a72effdbf6d47ec742f
+  src/SingleFoo.php:
+    last_write_checksum: sha1:dc953b04d7c49bb296cd1e893cef7a9c68ddb951
+  src/StringArrayFormat.php:
+    last_write_checksum: sha1:da6c080106d05fc811e8416a209ef8d5e3cc5cb6
+  src/StringMapFormat.php:
+    last_write_checksum: sha1:4e53e6a96ebb594db6823a48eb466ab5d8d47469
+  src/StringPartialMapFormat.php:
+    last_write_checksum: sha1:f704ed800f9c08425855cb856c28d228b6c960c6
+  src/SubGroup.php:
+    last_write_checksum: sha1:56417e515767651987793260fc665d050f0b2b8b
+  src/SubGroupOpResponse.php:
+    last_write_checksum: sha1:960269a949ab881d5b50462f03b4d2b52f231a9c
+  src/Tag.php:
+    last_write_checksum: sha1:8f906f24df754d77838ed50b1eb1651c4c212bf5
+  src/Tag1.php:
+    last_write_checksum: sha1:0242b106b00291a2b4bad594ac0182abe7b20d90
+  src/Tag2.php:
+    last_write_checksum: sha1:0e0aa374e9a15772b67cb3dae201b7838779e2e4
+  src/Tag3.php:
+    last_write_checksum: sha1:249f703b22bd5df87ac9bc5f41edaa0a8c338bda
+  src/TaggedError1.php:
+    last_write_checksum: sha1:1db222c35507fcc6af019eedd5c593554221ca1a
+  src/TaggedError1Throwable.php:
+    last_write_checksum: sha1:f82d2d170da90f62849ff6a8539107b16ee08358
+  src/TaggedError2.php:
+    last_write_checksum: sha1:bb9de212c15cd959208671315f27e829ce0d3e87
+  src/TaggedError2Error.php:
+    last_write_checksum: sha1:1f581ba9559cbfc8c986d570556e1d8b90908952
+  src/TaggedError2Throwable.php:
+    last_write_checksum: sha1:dfb4cd8fa3f46447420865b4696ec887d748fbc5
+  src/Tail.php:
+    last_write_checksum: sha1:b989df13bc281fb72feb9e4e5317b3eba15b9cdc
+  src/TaskResponse.php:
+    last_write_checksum: sha1:aae84c56ed47f854aad84707c054fbe3846d9bc5
+  src/TemplateBracesTest.php:
+    last_write_checksum: sha1:8f572560cdb7902ab749ca712e92abf886cf717b
+  src/Test2Request.php:
+    last_write_checksum: sha1:8f9a3f24428db4a5b6b711cb3c80e855b8febf66
+  src/Test2Response.php:
+    last_write_checksum: sha1:d98392a5e040771b4a221d16a062c058bc4c6584
+  src/Test2ResponseException.php:
+    last_write_checksum: sha1:dc8f46fe2b411ab3dfbeea75f86bbd22a4c303fb
+  src/Test2ResponseExceptionThrowable.php:
+    last_write_checksum: sha1:032884fdadb4f3905c8b59dfad55e4747a43b971
+  src/TestEndpointRequest.php:
+    last_write_checksum: sha1:5368a1420adfe258918c5815ab41f138d3e16d61
+  src/TestEndpointRequestBody.php:
+    last_write_checksum: sha1:ce99de10757c5446fe0bed399c042bc2a85728c9
+  src/TestEndpointResponse.php:
+    last_write_checksum: sha1:3006bb52989a51f776aafbcbc82df08abf40c8b6
+  src/TestEnumFormatsRequest.php:
+    last_write_checksum: sha1:0b33119a102cec7251a5ce669c8e64512caef9f9
+  src/TestEnumFormatsResponse.php:
+    last_write_checksum: sha1:cae3f97731e46cf767cfa4b550212f67374e95e4
+  src/TestEnumFormatsResponseBody.php:
+    last_write_checksum: sha1:7dce9b14ddace1338c99c7c77ba30988654c16f5
+  src/TestGroup.php:
+    last_write_checksum: sha1:b7b19db5b9c923c04acd58bf95f48dec889446e6
+  src/TripleNamespaceConflictTest.php:
+    last_write_checksum: sha1:ff3e64017f095c86e75984fffee53ebbaa97d127
+  src/Type.php:
+    last_write_checksum: sha1:3b1942bc02155d97ea5ae52714b148fde93eacd6
+  src/Types.php:
+    last_write_checksum: sha1:e57fbcce99568ac8df842658a95dee3310a8e198
+  src/UpdateUserRequest.php:
+    last_write_checksum: sha1:50cc7191027ee9a17aa62df9230c91cde1f4c9b6
+  src/UpdateUserResponse.php:
+    last_write_checksum: sha1:eec7e99ffeaa0b3d64deb4d1532c52282ab10ca4
+  src/UrlValidationStressTestResponse.php:
+    last_write_checksum: sha1:42f24ff34c82f5c59f1815af3a3ed6c38224e53f
+  src/User.php:
+    last_write_checksum: sha1:d42b17924d3aee74aca6934eb582f0a42ff069c1
+  src/UserPassAuth.php:
+    last_write_checksum: sha1:1f839eb35ebcd65254cd42594bca80ff1cec49a0
+  src/Utils/BigDecimalHandler.php:
+    last_write_checksum: sha1:2276e207691b80f9f470500a35364956ee229d7d
+  src/Utils/BigIntHandler.php:
+    last_write_checksum: sha1:8c2c106fe08ad27d703811f5b6c32b96a88db2fa
+  src/Utils/DateHandler.php:
+    last_write_checksum: sha1:270e65d0415feecf8f1394575dfe08ed43ace966
+  src/Utils/DateTimeHandler.php:
+    last_write_checksum: sha1:49fbc27fe536fe976c54280817bec30a638be82c
+  src/Utils/DefaultRequest.php:
+    last_write_checksum: sha1:e03f9fd6de894067e8b80684cba54d04ccd51c20
+  src/Utils/DefaultResponse.php:
+    last_write_checksum: sha1:5ffcdf29a2622391ceb5b14fe53ee8961d944b61
+  src/Utils/DefaultStream.php:
+    last_write_checksum: sha1:54e40698d4e3e9611b761b1c2a5931e9470db79e
+  src/Utils/DefaultUri.php:
+    last_write_checksum: sha1:432ca70c9a72ad2169a3e058d3e6c135a3841b2f
+  src/Utils/EnumHandler.php:
+    last_write_checksum: sha1:e6ccc116fd995d3aa92b3487d33dbb7e5cafcc4f
+  src/Utils/FormMetadata.php:
+    last_write_checksum: sha1:88a51ef0c94473353e3f2f04a1d2709d8bc5f79d
+  src/Utils/Headers.php:
+    last_write_checksum: sha1:939284bf67cb987ab84e504fa52b2a481f8568dd
+  src/Utils/JSON.php:
+    last_write_checksum: sha1:699d18afb5666cc4ff9f098abdd4a9ae5d860bf9
+  src/Utils/MixedJSONHandler.php:
+    last_write_checksum: sha1:54054fb4b0ef945280cc95d941856eabffb141b1
+  src/Utils/MultipartMetadata.php:
+    last_write_checksum: sha1:6f5c9cc3bdeea3ca179708aebcb3c9073a027822
+  src/Utils/Options.php:
+    last_write_checksum: sha1:4a4e3779a278399959d44c74db6e6e035fdce216
+  src/Utils/ParamsMetadata.php:
+    last_write_checksum: sha1:ec070f930e190e920b3b56656bee4b87a4b3e5c4
+  src/Utils/PathParameters.php:
+    last_write_checksum: sha1:73e7ae0e7cbf721c0a58d6eed09e61c07235b990
+  src/Utils/PhpDocTypeParser.php:
+    last_write_checksum: sha1:f33ac5d44031340ebaa2ab18ea96739c81a612da
+  src/Utils/QueryParameters.php:
+    last_write_checksum: sha1:84d48bcb58ed424bb4c92f4974228619280fd894
+  src/Utils/RequestBodies.php:
+    last_write_checksum: sha1:afaddf98cc24276060b95090facf63dc5ff870fb
+  src/Utils/RequestMetadata.php:
+    last_write_checksum: sha1:6004f679e0f580e00dac2ba29a7f77baef1a798e
+  src/Utils/Retry/PermanentError.php:
+    last_write_checksum: sha1:1ad672f8e39734f155faab2c9bfff750dabd7b02
+  src/Utils/Retry/RetryConfig.php:
+    last_write_checksum: sha1:02dbff23ff4dd3070c26105b0b1552937d28b2d7
+  src/Utils/Retry/RetryConfigBackoff.php:
+    last_write_checksum: sha1:399f1d6a007a04f772454e1f83e2f0e39dbb7b07
+  src/Utils/Retry/RetryConfigNone.php:
+    last_write_checksum: sha1:21a1b1c25cf56104f130665a95f8d037e9a11077
+  src/Utils/Retry/RetryStrategy.php:
+    last_write_checksum: sha1:3e4a3f46efa2fc6cf07cfbe83929d33a092dca51
+  src/Utils/Retry/RetryUtils.php:
+    last_write_checksum: sha1:1a36140712907ce09ba2bcf4ecdf805cc29a98d3
+  src/Utils/Retry/TemporaryError.php:
+    last_write_checksum: sha1:d7c5fea51b4417158d37228149dd517b26b4d60b
+  src/Utils/Security.php:
+    last_write_checksum: sha1:4fe41a743ac0537b7b4b35bca0a2d5d2ac5b6e13
+  src/Utils/SecurityClient.php:
+    last_write_checksum: sha1:27e5a86ad108bf7eb010f0e971fa3b35d5301815
+  src/Utils/SecurityMetadata.php:
+    last_write_checksum: sha1:f737cd6d3f37dca1af3e113accc8d95a8ecb01db
+  src/Utils/ServerDetails.php:
+    last_write_checksum: sha1:8c0e79d2e08129ebed1d09c71943f0ad3773351b
+  src/Utils/SpeakeasyMetadata.php:
+    last_write_checksum: sha1:2589987f8d12f35ddd430503c0803806c1e639e0
+  src/Utils/UnionHandler.php:
+    last_write_checksum: sha1:9e079c99d6d93ed33645806e8092ad0f4ab3d0d2
+  src/Utils/Utils.php:
+    last_write_checksum: sha1:acc9a8ab9b503acf8de9852b1424445cd755b25f
+  src/ValidateResponse.php:
+    last_write_checksum: sha1:bce76154b02a0b719f0eb3bf4c64ceb09ed85545
+  src/ValidateResponseBody.php:
+    last_write_checksum: sha1:2f582791ef25f1b66f2bc5c244163054d9dead0d
+examples:
+  _operation_with_leading_and_trailing_underscores_:
+    "":
+      parameters:
+        query:
+          queryParam1: "renamed"
+    speakeasy-default-operation-with-leading-and-trailing-underscores:
+      parameters:
+        query:
+          queryParam1: "renamed"
+  postFile:
+    speakeasy-default-post-file:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/octet-stream: "0x8578F1BEE5"
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+        5XX:
+          application/json: {"error": "some example error", "code": 2}
+  getPolymorphism:
+    speakeasy-default-get-polymorphism:
+      responses:
+        "200":
+          application/json: {"oneOfWithUnionDescription": {"str": "example"}, "oneOfWithFactoredOutProperties": {"str": "example", "anExtraProperty": "example"}, "simpleAllOf": {"str": "example", "bool": true}, "allOfWithFactoredOutProperties": {"anOverridingProperty": "example", "anotherProperty": "example", "anExtraProperty": "example"}}
+  getUnionErrors:
+    "":
+      parameters:
+        query:
+          page: 12
+      responses:
+        "200":
+          application/json:
+            "pages": ["<value 1>", "<value 2>"]
+        "404":
+          application/json:
+            "error": "some example error"
+            "code": 2
+        "500":
+          application/json:
+            "code": "rate_limit_exceeded"
+            "error": "<value>"
+            "message": 1001
+        4XX:
+          application/json:
+            "tag": "tag1"
+            "error": "<value>"
+            "message": "<value>"
+    speakeasy-default-get-union-errors:
+      parameters:
+        query:
+          page: 12
+      responses:
+        "200":
+          application/json: {"pages": ["<value 1>", "<value 2>"]}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+        "500":
+          application/json: {"code": "rate_limit_exceeded", "error": "<value>", "message": 1001}
+        4XX:
+          application/json: {"tag": "tag1", "error": "<value>", "message": "<value>"}
+  getRequestBodyFlattenedAway: {}
+  getFullyFlattenedRequest:
+    namedExampleThatIsntMatchedAcrossDifferentExamples:
+      parameters:
+        query:
+          lang: "en"
+      requestBody:
+        application/json: {"name": "<value>"}
+    speakeasy-default-get-fully-flattened-request:
+      parameters:
+        query:
+          lang: "<value>"
+      requestBody:
+        application/json: {"name": "<value>"}
+  testEndpoint:
+    speakeasy-default-test-endpoint:
+      parameters:
+        path:
+          testName: "<value>"
+      requestBody:
+        application/json: {"test": "<value>"}
+  createUser:
+    speakeasy-default-create-user:
+      requestBody:
+        application/json:
+          "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+          "email": "Aglae92@gmail.com"
+          "gender": "other"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Virginie47@gmail.com"
+            "gender": "other"
+    request-only:
+      requestBody:
+        application/json: {"email": "request-only@example.com"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Aglae92@gmail.com", "gender": "other"}
+    paired-example:
+      requestBody:
+        application/json: {"email": "paired@example.com", "first_name": "John"}
+      responses:
+        "200":
+          application/json: {"id": "user-paired", "email": "paired@example.com", "first_name": "John"}
+    response-only:
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Virginie47@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "user-response", "email": "response-only@example.com"}
+  getUser:
+    speakeasy-default-get-user:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Cortney_Jakubowski@gmail.com"
+            "gender": "other"
+    success:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7dg", "email": "Trystan_Crooks@hotmail.com"}
+  updateUser:
+    speakeasy-default-update-user:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Joanny.Feeney@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Zackary25@yahoo.com", "gender": "other"}
+  deleteUser:
+    speakeasy-default-delete-user:
+      parameters:
+        path:
+          id: "<id>"
+  login:
+    speakeasy-default-login:
+      responses:
+        "200":
+          application/json: {"token": "<value>"}
+  validate:
+    speakeasy-default-validate:
+      responses:
+        "200":
+          application/json: {}
+  getBinaryDefaultResponse:
+    speakeasy-default-get-binary-default-response:
+      responses:
+        default:
+          application/octet-stream: "0xf58AcDF799"
+  deprecated1: {}
+  listTest1:
+    speakeasy-default-list-test1:
+      parameters:
+        path:
+          page: 100
+        query:
+          queryParam1: "some example query param"
+          queryParam2: 1
+        header:
+          headerParam1: "some example header param"
+      responses:
+        "200":
+          application/json: {"resultArray": [], "totalCount": 100, "type": "First"}
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "500":
+          application/json: {"error": "some example error", "code": 2}
+  postTest2:
+    speakeasy-default-post-test2:
+      parameters:
+        query:
+          deprecatedQueryParam2: "some example query param"
+      requestBody:
+        application/json: {"obj": {"str": "example", "bool": true, "int": 999999, "int32": 1, "num": 1.1, "float32": 8499.3, "enumProp": "First", "date": "2020-01-01", "dateTime": "2020-01-01T00:00:00Z", "anything": "<value>", "boolOpt": true, "intOptNull": 999999, "numOptNull": 1.1, "intEnum": 3, "int32Enum": 69, "bigint": 702830, "bigintStr": "12345678901234567890", "decimal": 3.141592653589, "decimalStr": "3858.6", "obj": {"str": "example"}, "map": {"key": {"str": "example"}}, "arr": [{"str": "example"}, {"str": "example"}], "any": {"str": "example"}, "type": "0", "nullableIntEnum": 3, "nullableStringEnum": "Second", "color": "green", "icon": "tick", "heroWidth": 480}, "type": "type1"}
+      responses:
+        "200":
+          multipart/form-data: "0x20D83Acf0f"
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+        "500":
+          application/json: {"test2": "some example response", "someConst": "someConstValue", "requiredNullableField": "test value"}
+  paymentCreated:
+    speakeasy-default-payment-created:
+      requestBody:
+        application/json:
+          "amount": "215.23"
+          "type": "payment.created"
+  paymentUpdated:
+    speakeasy-default-payment-updated:
+      requestBody:
+        application/json:
+          "amount": "257.04"
+          "type": "payment.updated"
+  testEnumFormats:
+    speakeasy-default-test-enum-formats:
+      requestBody:
+        application/json: {"stringArrayFormat": "pending_review", "stringMapFormat": "medium_priority", "stringPartialMapFormat": "draft_mode", "integerMapFormat": 200, "integerPartialMapFormat": 1}
+      responses:
+        "200":
+          application/json: {"message": "Enum formats processed successfully"}
+  binaryAndStringUpload:
+    speakeasy-default-binary-and-string-upload:
+      requestBody:
+        application/json: {"binary": "x-file: test.json", "string": "x-file: test.json"}
+  getErrorInUnion:
+    speakeasy-default-get-error-in-union:
+      responses:
+        "500":
+          application/json: {"tag": "tag1", "error": "<value>", "message": "<value>"}
+  postFileWithEncoding:
+    speakeasy-default-post-file-with-encoding:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/json: {"fileName": "example.file", "size": 905827}
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+  auth: {}
+  groupRoot: {}
+  groupTop: {}
+  groupBottom: {}
+  rootGroupOp: {}
+  subGroupOp: {}
+  nestedGroupOp: {}
+  getEmptyObjectError:
+    speakeasy-default-get-empty-object-error:
+      responses:
+        "200":
+          application/json: {"success": true}
+        "500":
+          application/json: {}
+  urlValidationStressTest: {}
+  bracesInPathAllowed:
+    speakeasy-default-braces-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+  parenthesesInPathAllowed:
+    speakeasy-default-parentheses-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+      responses:
+        "200":
+          application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+  getNamespaceConflict:
+    speakeasy-default-get-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}
+  createNamespaceConflict:
+    speakeasy-default-create-namespace-conflict:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getTripleNamespaceConflict:
+    speakeasy-default-get-triple-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}, "bazPet": {"petId": 789, "petName": "Rex", "adoptedAt": "2024-01-15T10:30:00Z"}}
+  getPetOwners:
+    speakeasy-default-get-pet-owners:
+      responses:
+        "200":
+          application/json: {"fooPetOwner": {"id": "owner-123", "name": "Jane Doe", "pets": [{"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}]}, "barPetOwner": {"ownerId": 456, "fullName": "Bob Smith", "pet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}}
+  getSingleNamespaceFooPet:
+    speakeasy-default-get-single-namespace-foo-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  createSingleNamespaceFooPet:
+    speakeasy-default-create-single-namespace-foo-pet:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "201":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  getSingleNamespaceBarPet:
+    speakeasy-default-get-single-namespace-bar-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getNamespaceTypes:
+    speakeasy-default-get-namespace-types:
+      responses:
+        "200":
+          application/json: {"fooSpecies": "cat", "barStatus": "available", "fooAnimal": {"animalType": "cat", "furLength": "short"}, "barVehicle": {"wheels": 4, "engineType": "V8"}, "fooOrg": {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}}
+  getNamespaceAnimal:
+    speakeasy-default-get-namespace-animal:
+      responses:
+        "200":
+          application/json: {"animalType": "dog", "breed": "Labrador"}
+  getNamespaceVehicle:
+    speakeasy-default-get-namespace-vehicle:
+      responses:
+        "200":
+          application/json: {"wheels": 2, "hasPedals": true}
+  getNamespaceOrganization:
+    speakeasy-default-get-namespace-organization:
+      responses:
+        "200":
+          application/json: {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}
+  getNestedIntegerString:
+    speakeasy-default-get-nested-integer-string:
+      responses:
+        "200":
+          application/json: {"task": {"id": "task-123", "name": "Review Task", "policy": {"policyId": "policy-456", "steps": [{"stepId": "step-1", "approval": {"approvers": ["user-1", "user-2"], "escalation": {"enabled": true, "expiration": "86400", "fallbackApprovers": ["admin-1"]}}}]}}}
+  getErrorOnlyExample:
+    notFoundExample:
+      responses:
+        "404":
+          application/json: {"error": "Resource not found", "code": 404}
+    speakeasy-default-get-error-only-example:
+      responses:
+        "200":
+          application/json: {"id": "<id>", "name": "<value>"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+  getNamedPrimitiveUnion:
+    speakeasy-default-get-named-primitive-union:
+      responses:
+        "200":
+          application/json: true
+  putNamespaceConflict: {}
+  getDuplicateExportCollision:
+    speakeasy-default-get-duplicate-export-collision:
+      responses:
+        "200":
+          application/json: {}
+        "408":
+          application/json: {}
+  createWithUnion:
+    speakeasy-default-create-with-union:
+      requestBody:
+        application/json: {"name": "<value>", "shape": {"type": "rectangle", "width": 3125.73, "height": 922.51}}
+      responses:
+        "200":
+          application/json: {}
+  paginationOffsetNullable:
+    speakeasy-default-pagination-offset-nullable:
+      parameters:
+        query:
+          offset: 488005
+          limit: 466255
+      responses:
+        "200":
+          application/json:
+            "resultArray": ["<value 1>", "<value 2>", "<value 3>"]
+  renderAsset:
+    speakeasy-default-render-asset:
+      requestBody:
+        application/json:
+          "prompt": "<value>"
+      responses:
+        "200":
+          application/json: {}
+examplesVersion: 1.0.2

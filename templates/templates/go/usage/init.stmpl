@@ -1,0 +1,2 @@
+    {{- if not .Local.SkipSDKInstantiation}}
+    s {{if eq .Local.ContextIndex 0}}:{{end}}= {{sanitizeSDKPackageName true}}.New({{templateUsageSDKOptions .Local}}){{addSDKPackageImport true}}{{end}}

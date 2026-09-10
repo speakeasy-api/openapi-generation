@@ -1,0 +1,92 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /errors/{statusCode}/malformed/{shape}:
+    servers:
+      - url: http://localhost:35456
+    get:
+      operationId: getMalformedErrorResponse
+      description: >-
+        Returns deliberately non-conforming bodies. For 4XX/5XX it exercises the
+        errorSchemaValidation flag: when enabled (default) a schema mismatch
+        surfaces ResponseValidationError/SDKValidationError; when disabled the
+        SDK falls back to the default error class carrying the raw body. For 200
+        with the `wrong-type`/`missing-required` shapes it returns valid JSON
+        that violates the success response schema, exercising the
+        responseSchemaValidation flag on the success path: when enabled (default)
+        a mismatch raises ResponseValidationError; when disabled the SDK silently
+        returns the raw decoded JSON.
+      tags:
+        - errors
+      parameters:
+        - name: statusCode
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shape
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - sse
+              - plain
+              - html
+              - malformed-json
+              - empty
+              - wrong-type
+              - wrong-type-error
+              - missing-required
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - count
+                properties:
+                  count:
+                    type: integer
+        "4XX":
+          description: Client error with potentially malformed body
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/components/schemas/error"
+        "5XX":
+          description: Server error with potentially malformed body
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/components/schemas/error"
+  /errors/errorUnion/malformed:
+    servers:
+      - url: http://localhost:35456
+    get:
+      operationId: getMalformedErrorUnionResponse
+      description: >-
+        Returns an error status whose body is a discriminated error union whose
+        discriminator selects a known, mapped variant but whose payload violates
+        that variant's schema (a typed field carries the wrong JSON type).
+        Exercises response body validation on a discriminated error union: the
+        discriminator resolves to a mapped variant that then fails schema
+        validation, distinguishing lenient handling (surface the typed error
+        variant and retain the strict failure) from degrading to a generic
+        fallback error.
+      tags:
+        - errors
+      responses:
+        "200":
+          description: OK
+        "5XX":
+          $ref: "components.yaml#/components/responses/errorUnionDiscriminatedResponse"

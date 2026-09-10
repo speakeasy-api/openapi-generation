@@ -1,0 +1,11 @@
+{{- $provider := sanitizeReactContextName "provider" }}
+{{- $hook := sanitizeReactContextName "hook" }}
+export { {{$provider}}, {{$hook}} } from "./_context.js";
+export * from "./_types.js";
+
+{{ if .Global.Config.UseIndexModules}}
+{{- range $op := allOperations }}
+{{- if not (hasReactQuery $op) }}{{continue}}{{ end }}
+export * from "./{{sanitizeReactQueryHookFilename $op}}.js";
+{{- end }} 
+{{end}}

@@ -1,0 +1,7 @@
+export const mcpScopes = [
+  {{- range $scope := .Local.Scopes }}
+  "{{ $scope }}",
+  {{- end }}
+] as const;
+
+export type MCPScope = (typeof mcpScopes)[number];

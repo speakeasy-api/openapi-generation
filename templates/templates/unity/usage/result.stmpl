@@ -1,0 +1,6 @@
+{{- $handleErrors := (.Local.RenderFeature "errors" false) -}}
+{{- if .Local.Operation }}
+{{- if .Local.Operation.Extensions.Pagination -}}
+{{- templateString "usage/pagination.stmpl" .Local -}}
+{{- else}}    // handle response
+{{- end}}{{end}}

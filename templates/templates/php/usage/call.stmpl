@@ -1,0 +1,15 @@
+{{- $paramFlattening := operationParametersFlattened .Local.Operation -}}
+{{- $namespace := sanitizeSDKAccess .Local.SDK "->" -}}
+{{- if .Local.Operation.Request}}
+  {{- templateRequestParams .Local .Local.Operation.Request.Field 0 $paramFlattening}}{{end}}
+{{- if .Local.Operation.Security}}
+$requestSecurity = {{templateSecurityUsage .Local.Operation.Security.Type 0 true | trim}};
+{{- end}}
+{{- $retriesParam := ""}}
+{{- if and (.Local.Operation.Extensions.Retries) (.Local.RenderFeature "retries" false)}}
+  {{- $retriesParam = templateString "usage/retries.stmpl" .Local}}
+{{- end}}
+
+{{if .Local.Operation.Extensions.Pagination}}$responses = {{else}}$response = {{end}}$sdk{{$namespace}}->{{sanitizeMethodName .Local.Operation}}(
+{{templateUsageMethodParameters .Local 0 $retriesParam}}
+);

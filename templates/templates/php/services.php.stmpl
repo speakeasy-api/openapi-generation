@@ -1,0 +1,31 @@
+{{- $globalConfig := .Global.Config -}}
+return [
+    '{{$globalConfig.LaravelServiceProvider.svcName}}' => [
+        {{- if .Local.Security}}
+            {{- if eq (len .Local.Security.Type.Fields) 1}}
+            '{{sanitizeMapKey (first .Local.Security.Type.Fields).Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName ((first .Local.Security.Type.Fields).Name) ""}}')
+            {{- else if and (eq (len .Local.Security.Type.Fields) 2) (isSecuritySpecial (first .Local.Security.Type.Fields))}}
+                {{- range $local := .Local.Security.Type.Fields}}
+            '{{sanitizeMapKey $local.Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName $local.Name ""}}'),
+                {{- end}}
+            {{- else}}
+                {{- range $local := .Local.Security.Type.Fields}}
+            'enable_{{sanitizeMapKey $local.Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}ENABLE_{{templateConstName $local.Name ""}}'),
+                    {{- if $local.Type.IsPrimitive}}
+            '{{sanitizeMapKey $local.Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName $local.Name ""}}'),
+                    {{- else if isSecuritySpecial (first $local.Type.Fields)}}
+                            {{- range $local.Type.Fields}}
+            '{{sanitizeMapKey $local.Name}}_{{sanitizeMapKey .Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName $local.Name ""}}_{{templateConstName .Name ""}}'),
+                            {{- end}}{{/* end range .Type.Fields */}}
+                    {{- else if eq $local.Type.Type "array"}}
+            '{{sanitizeMapKey $local.Name}}' => array_filter(array_map('trim', explode(',', env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName $local.Name ""}}_{{templateConstName .Name ""}}')))),
+                    {{- else}}
+                        {{- range $local.Type.Fields}}
+            '{{sanitizeMapKey $local.Name}}_{{sanitizeMapKey .Name}}' => env('{{if $globalConfig.EnvVarPrefix}}{{$globalConfig.EnvVarPrefix}}_{{end}}{{templateConstName $local.Name ""}}_{{templateConstName .Name ""}}'),
+                        {{- end}}{{/* end range .Type.Fields */}}
+                    {{- end}}{{/* end .Type.IsPrimitive */}}
+{{""}}          {{- end}}{{/* end range .Local.Security.Type.Fields */}}
+            {{- end}}
+        {{- end}}
+    ],
+];

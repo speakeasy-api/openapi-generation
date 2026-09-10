@@ -1,0 +1,57 @@
+{/* Start Go Global Parameters */}
+Certain parameters are configured globally. These parameters must be set on the SDK client instance itself during initialization. When configured as an option during SDK initialization, These global values will be used as defaults on the operations that use them. When such operations are called, there is a place in each to override the global value, if needed.
+
+For example, you can set `queryParam1` to `"some example query param"` at SDK initialization and then you do not have to pass the same value on calls to operations like `ListTest1`. But if you want to do so you may, which will locally override the global setting. See the example code below for a demonstration.
+
+
+
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	security := operations.ListTest1Security{
+		APIKey: "<YOUR_API_KEY>",
+	}
+
+	var page int64 = 100
+
+	var headerParam1 string = "some example header param"
+
+	var queryParam1 *string = openapi.String("some example query param")
+	ctx := context.Background()
+	res, err := s.Tag1.ListTest1(ctx, security, page, headerParam1, queryParam1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.Object != nil {
+		for {
+			// handle items
+
+			res, err = res.Next()
+
+			if err != nil {
+				// handle error
+			}
+
+			if res == nil {
+				break
+			}
+		}
+
+	}
+}
+
+```
+{/* End Go Global Parameters */}

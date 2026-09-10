@@ -1,0 +1,55 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The basic-http variant has one global server and opts into
+// cli.serverSelectionFlag: auto (the generator default is visible, for
+// compatibility), which resolves to hidden here: the flag stays out of help
+// but keeps parsing so pre-existing --server invocations survive the opt-in.
+
+func TestServerSelectionFlagAutoHidesSingleServer(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--help"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	assert.NotContains(t, stdout, "--server string")
+	assert.Contains(t, stdout, "--server-url string")
+	assert.Contains(t, stdout, "Diagnostics:")
+	assert.NotContains(t, stdout, "--help-global")
+}
+
+func TestServerSelectionFlagAutoMarkedHiddenInUsage(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--usage"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	var serverLine string
+	for _, line := range strings.Split(stdout, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, `flag "--server <server>"`) {
+			serverLine = line
+			break
+		}
+	}
+	require.NotEmpty(t, serverLine, "server flag missing from usage schema")
+	assert.Contains(t, serverLine, "hide=#true")
+	assert.Contains(t, stdout, `flag "--server-url <url>"`)
+}
+
+func TestServerSelectionFlagAutoStillParses(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"version", "--server", "0"})
+	require.NoError(t, err)
+
+	h = NewCLITestHarness(t)
+	err = h.RunBare([]string{"version", "--server-url", "http://localhost:1"})
+	require.NoError(t, err)
+}

@@ -1,0 +1,60 @@
+{{- recurse 1 -}}
+{{- $globalSDK := .Global.AST.MainSDK -}}
+{{- $globalSecurity := $globalSDK.Security -}}
+{{- $usageLocation := "mcp-server" -}}
+{{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
+{{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
+{{- if gt (len .Local.Scopes) 0 }}
+import { MCPScope } from "./scopes.js";
+{{- end }}
+{{ genImports }}
+
+/**
+ * Base flags interface for MCP server configuration.
+ * Used by both CLI start command and Gram deployment wrapper.
+ */
+export interface MCPServerFlags {
+  readonly tool?: string[];
+  readonly mode?: "dynamic" | undefined;
+  readonly "tool-annotations"?: string[] | undefined;
+  {{- if gt (len .Local.Scopes) 0 }}
+  readonly scope?: MCPScope[];
+  {{- end }}
+
+  {{- if $globalSecurity }}
+  {{-   range $field := unnestSecurityEnvFields $globalSecurity.Type }}
+  {{-     $fieldName := sanitizeMCPCLIFlag $field.Name true }}
+  {{-     $types := resolveOutbound (dict "usageLocation" $usageLocation "typeDef" $field.Type "rootTypeDef" $globalSDK.Type "nullable" $field.Nullable) }}
+  {{-      callImportTypesFunc $types.importInputTypes }}
+  readonly {{ $fieldName }}?: {{ $types.inputType }} | undefined;
+  {{-   end }}
+  {{- end }}
+  {{- if (ne $globalSDK.Globals nil) }}
+  {{-   range $globalSDK.Globals.Fields }}
+  {{-     $fieldName := templateGlobalFieldName .Name }}
+  {{-     $flag := sanitizeMCPCLIFlag $fieldName true }}
+  {{-     addImport "../lib/config.js" "SDKOptions" }}
+  readonly {{ $flag }}?: SDKOptions["{{ $fieldName }}"] | undefined;
+  {{-   end }}
+  {{- end }}
+  {{- if $hasServers }}
+  readonly "server-url"?: string | undefined;
+  {{- else }}
+  readonly "server-url": string;
+  {{- end }}
+  {{- if $globalSDK.Servers }}
+  {{-   if $serverMap }}
+  {{-     addImport "../lib/config.js" "SDKOptions" }}
+  readonly server?: SDKOptions["server"];
+  {{-   else}}
+  {{-     addImport "../lib/config.js" "SDKOptions" }}
+  readonly "server-index"?: SDKOptions["serverIdx"];
+  {{-   end}}
+  {{-   range $variable := $globalSDK.Servers.GetVariables }}
+  {{-     $name := $variable.Name }}
+  {{-     $fieldName := sanitizeMCPCLIFlag $name true }}
+  {{-     addImport "../lib/config.js" "SDKOptions" }}
+  readonly {{ $fieldName }}?: SDKOptions["{{ sanitizeFieldName $name }}"];
+  {{-   end }}
+  {{- end }}
+}

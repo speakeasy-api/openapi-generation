@@ -1,0 +1,40 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+go:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: pkg/models/callbacks
+      errors: pkg/models/apierrors
+      operations: pkg/models/operations
+      shared: pkg/models/shared
+      webhooks: pkg/models/webhooks
+  includeEmptyObjects: true
+  maxMethodParams: 5
+  # Anticipated to be most common configuration style, using modulePath and
+  # customized sdkPackageName.
+  modulePath: example.com/openapi-go-sdk
+  sdkPackageName: openapi
+  responseFormat: envelope-http
+  methodArguments: infer-optional-args
+  envVarPrefix: SPEAKEASY
+  unionStrategy: populated-fields
+  enableCustomCodeRegions: true
+  forwardCompatibleUnionsByDefault: tagged-and-untagged

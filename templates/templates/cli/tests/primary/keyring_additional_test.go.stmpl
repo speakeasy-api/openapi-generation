@@ -1,0 +1,135 @@
+{{- if hasGlobalSecurity -}}
+package tests
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/zalando/go-keyring"
+
+	"{{getGolangPackage}}/internal/config"
+)
+
+// stubKeyring is an in-memory KeyringBackend for exercising GetStoredSecret
+// without touching the real OS keychain.
+type stubKeyring struct{ store map[string]string }
+
+func (s stubKeyring) Get(service, key string) (string, error) {
+	if v, ok := s.store[key]; ok {
+		return v, nil
+	}
+	return "", keyring.ErrNotFound
+}
+func (s stubKeyring) Set(service, key, value string) error { s.store[key] = value; return nil }
+func (s stubKeyring) Delete(service, key string) error     { delete(s.store, key); return nil }
+
+type recordingKeyring struct {
+	gets    int
+	sets    int
+	deletes int
+}
+
+func (r *recordingKeyring) Get(service, key string) (string, error) {
+	r.gets++
+	return "", keyring.ErrNotFound
+}
+func (r *recordingKeyring) Set(service, key, value string) error { r.sets++; return nil }
+func (r *recordingKeyring) Delete(service, key string) error     { r.deletes++; return nil }
+
+// failingKeyring reports the backend as available (probe returns ErrNotFound)
+// but fails every write, exercising StoreSecret's config-file fallback.
+type failingKeyring struct{}
+
+func (failingKeyring) Get(service, key string) (string, error) { return "", keyring.ErrNotFound }
+func (failingKeyring) Set(service, key, value string) error    { return errors.New("write denied") }
+func (failingKeyring) Delete(service, key string) error        { return nil }
+
+// unavailableKeyring reports the backend as unavailable (probe returns a
+// non-NotFound error).
+type unavailableKeyring struct{}
+
+func (unavailableKeyring) Get(service, key string) (string, error) {
+	return "", errors.New("no backend")
+}
+func (unavailableKeyring) Set(service, key, value string) error { return errors.New("no backend") }
+func (unavailableKeyring) Delete(service, key string) error     { return nil }
+
+// TestGetStoredSecretPrefersKeyring covers the keyring-first read that backs the
+// configure/auth-login form placeholders: a secret stored in the OS keychain
+// must win over the config-file fallback, so re-running configure shows the
+// existing credential instead of a blank field.
+func TestGetStoredSecretPrefersKeyring(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	t.Cleanup(config.Reset)
+
+	config.SetKeyringBackend(stubKeyring{store: map[string]string{"api-key": "from-keyring"}})
+	t.Cleanup(config.ResetKeyring)
+
+	// Keychain value wins over the config-file fallback.
+	assert.Equal(t, "from-keyring", config.GetStoredSecret("api-key", "from-config"))
+
+	// Falls back to the config value when the keychain has nothing for that key.
+	assert.Equal(t, "from-config", config.GetStoredSecret("missing", "from-config"))
+
+	// Empty when neither the keychain nor the fallback has a value.
+	assert.Equal(t, "", config.GetStoredSecret("missing", ""))
+}
+
+// TestStoreSecretFallback covers the write side that drives the
+// "Secret credentials stored in OS keychain" message: StoreSecret returns nil
+// only when the value actually lands in the keychain, distinguishes an
+// unavailable keychain (ErrKeyringUnavailable) from a failed write, and always
+// writes the config-file fallback so the credential is never lost.
+func TestStoreSecretFallback(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+	t.Cleanup(config.Reset)
+	t.Cleanup(config.ResetKeyring)
+
+	// Keychain available and writable: stored in keychain, config untouched.
+	store := map[string]string{}
+	config.SetKeyringBackend(stubKeyring{store: store})
+	var fallback string
+	assert.NoError(t, config.StoreSecret("api-key", "secret", &fallback))
+	assert.Equal(t, "", fallback)
+	assert.Equal(t, "secret", store["api-key"])
+
+	// Keychain available but the write fails: falls back to config, returns a
+	// non-ErrKeyringUnavailable error (so callers warn).
+	config.SetKeyringBackend(failingKeyring{})
+	fallback = ""
+	err := config.StoreSecret("api-key", "secret", &fallback)
+	assert.Error(t, err)
+	assert.False(t, errors.Is(err, config.ErrKeyringUnavailable))
+	assert.Equal(t, "secret", fallback)
+
+	// Keychain unavailable: falls back to config, returns ErrKeyringUnavailable
+	// (so callers stay silent).
+	config.SetKeyringBackend(unavailableKeyring{})
+	fallback = ""
+	assert.ErrorIs(t, config.StoreSecret("api-key", "secret", &fallback), config.ErrKeyringUnavailable)
+	assert.Equal(t, "secret", fallback)
+}
+
+func TestRequestDryRunSkipsKeyringButWhoamiInspectsIt(t *testing.T) {
+	recorder := &recordingKeyring{}
+	config.SetKeyringBackend(recorder)
+	t.Cleanup(config.ResetKeyring)
+
+	for _, args := range [][]string{
+		{"--dry-run", "methods", "method-get"},
+		{"--dry-run", "auth-new", "multiple-simple-scheme-auth", "--body", "{}"},
+	} {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithStdinServerRaw("http://127.0.0.1:1", args, ""))
+		assert.Zero(t, recorder.gets, "single- and multi-scheme API dry-runs must not probe or read the keyring")
+	}
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunRaw([]string{"whoami", "--dry-run"}))
+	assert.Positive(t, recorder.gets, "whoami remains an introspection command under dry-run")
+}
+{{- end}}

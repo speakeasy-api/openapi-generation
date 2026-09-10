@@ -1,0 +1,72 @@
+{{- recurse 1 -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "internal/config" true -}}
+{{- addImport "internal/usage" true -}}
+{{- addImport "fmt" -}}
+{{- addImport "internal/output" true -}}
+package cli
+
+{{genImports}}
+
+// initWhoamiCmd initializes the whoami command.
+func initWhoamiCmd(parent *cobra.Command) error {
+    var cmd = &cobra.Command{
+        Use:   "whoami",
+        Short: "{{templateWhoamiShort}}",
+        Long:  `Display the currently configured settings and their sources.
+
+Sources are shown as:
+  [flag]    - Set via command line flag
+  [env]     - Set via environment variable ({{.Global.Config.EnvVarPrefix}}_*)
+  [keyring] - Set via OS keychain (stored by configure command)
+  [config]  - Set via config file (~/.config/{{sanitizeCliName}}/config.yaml)
+  [unset]   - Not configured
+{{- if hasGlobalSecurity}}
+
+Credential values are masked for security.
+{{- end}}`,
+        Args:  cobra.NoArgs,
+        RunE:  runWhoamiCmd,
+    }
+    parent.AddCommand(cmd)
+    return nil
+}
+
+// runWhoamiCmd executes the whoami command.
+func runWhoamiCmd(cmd *cobra.Command, args []string) error {
+    if usage.UsageRequested(cmd) {
+        return usage.EmitSchema(cmd, cmd.OutOrStdout())
+    }
+
+    if output.IsMachineMode(cmd) {
+        info := map[string]any{
+            "config_file": config.GetConfigPath(),
+            {{- if .Global.Config.EnvVarPrefix}}
+            "environment_prefix": "{{.Global.Config.EnvVarPrefix}}_",
+            {{- end}}
+        }
+        {{templateWhoamiCredentialsStructured | indent 8 | trim}}
+        {{templateWhoamiGlobalsStructured | indent 8 | trim}}
+        return output.LocalResult(cmd, info)
+    }
+
+    out := cmd.OutOrStdout()
+    fmt.Fprintln(out, "Configuration")
+    fmt.Fprintln(out, "=============")
+    fmt.Fprintln(out)
+    fmt.Fprintf(out, "Config file: %s\n", config.GetConfigPath())
+    {{- if .Global.Config.EnvVarPrefix}}
+    fmt.Fprintf(out, "Environment prefix: {{.Global.Config.EnvVarPrefix}}_\n")
+    {{- end}}
+
+    {{- if hasGlobalSecurity}}
+    fmt.Fprintln(out)
+    fmt.Fprintln(out, "Credentials:")
+
+    {{templateWhoamiCredentials | indent 4 | trim}}
+    {{- end}}
+
+    {{templateWhoamiGlobals | indent 4 | trim}}
+
+    return nil
+}

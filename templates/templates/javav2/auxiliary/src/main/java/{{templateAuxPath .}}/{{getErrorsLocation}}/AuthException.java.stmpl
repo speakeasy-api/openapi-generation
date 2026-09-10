@@ -1,0 +1,37 @@
+{{- $okHttp := useOkHttp -}}
+package {{getErrorsPackage}};
+
+import java.io.InputStream;
+{{- if $okHttp}}
+import {{templatePackageName}}.utils.transport.HttpResponse;
+{{- else}}
+import java.net.http.HttpResponse;
+{{- end}}
+import java.util.Optional;
+
+/**
+ * An exception associated with Authentication or Authorization.
+ */
+@SuppressWarnings("serial")
+public class AuthException extends {{getBaseErrorClassName}} {
+
+    public AuthException(String message, int code, byte[] body, HttpResponse<InputStream> rawResponse) {
+       super(message, code, body, rawResponse, null);
+    }
+
+    /**
+     * Returns the HTTP status code of the response.
+     *
+     * @deprecated Use {@link #code()} instead.
+     */
+    @Deprecated
+    public Optional<Integer> statusCode() {
+        return Optional.of(super.code());
+    }
+    
+    @SuppressWarnings("unchecked")
+    @Override
+    public HttpResponse<InputStream> rawResponse() {
+        return (HttpResponse<InputStream>) super.rawResponse();
+    }
+}

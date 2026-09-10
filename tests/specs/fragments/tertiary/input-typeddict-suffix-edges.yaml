@@ -1,0 +1,169 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /tertiary/input-typeddict-suffix/collision-base:
+    post:
+      operationId: inputTypedDictSuffixCollisionBase
+      description: >-
+        CollisionBase is the body of this operation, so its TypedDict
+        companion is renamed via the configured input suffix
+        (CollisionBaseParam). The companion collides with the sibling
+        body schema CollisionBaseParam (defined as the body of
+        inputTypedDictSuffixCollisionTaken below), forcing the cascade
+        fallback CollisionBaseParamModel.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollisionBase"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/collision-taken:
+    post:
+      operationId: inputTypedDictSuffixCollisionTaken
+      description: >-
+        Sibling body whose schema name already occupies what would have
+        been CollisionBase's renamed companion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollisionBaseParam"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/counter-base:
+    post:
+      operationId: inputTypedDictSuffixCounterBase
+      description: >-
+        CounterBase is body-reachable; its renamed companion plus every
+        cascade suffix are also defined as sibling body schemas (see
+        operations below), forcing the numeric-counter fallback
+        (CounterBaseParam2).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterBase"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/counter-claim-1:
+    post:
+      operationId: inputTypedDictSuffixCounterClaim1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterBaseParam"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/counter-claim-2:
+    post:
+      operationId: inputTypedDictSuffixCounterClaim2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterBaseParamModel"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/counter-claim-3:
+    post:
+      operationId: inputTypedDictSuffixCounterClaim3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterBaseParamCompanion"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/counter-claim-4:
+    post:
+      operationId: inputTypedDictSuffixCounterClaim4
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CounterBaseParamCompanionModel"
+      responses:
+        "200":
+          description: OK
+  /tertiary/input-typeddict-suffix/name-override:
+    post:
+      operationId: inputTypedDictSuffixNameOverride
+      description: >-
+        x-speakeasy-name-override on a body-reachable schema redefines
+        the base name before the suffix is appended. The renamed
+        companion uses the overridden base name, not the schema's
+        original key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OriginalNameOverride"
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    CollisionBase:
+      type: object
+      properties:
+        token:
+          type: string
+    CollisionBaseParam:
+      type: object
+      properties:
+        value:
+          type: string
+    CounterBase:
+      type: object
+      properties:
+        token:
+          type: string
+    CounterBaseParam:
+      type: object
+      properties:
+        a:
+          type: string
+    CounterBaseParamModel:
+      type: object
+      properties:
+        b:
+          type: string
+    CounterBaseParamCompanion:
+      type: object
+      properties:
+        c:
+          type: string
+    CounterBaseParamCompanionModel:
+      type: object
+      properties:
+        d:
+          type: string
+    OriginalNameOverride:
+      x-speakeasy-name-override: RenamedOverride
+      type: object
+      properties:
+        token:
+          type: string

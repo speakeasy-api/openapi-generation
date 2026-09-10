@@ -1,0 +1,19 @@
+---
+title: "OperationWithLeadingAndTrailingUnderscoresRequest"
+---
+
+## Example Usage
+
+```typescript
+import { OperationWithLeadingAndTrailingUnderscoresRequest } from "openapi";
+
+let value: OperationWithLeadingAndTrailingUnderscoresRequest = {
+  qp1: "renamed",
+};
+```
+
+## Fields
+
+| Field                                                                                                                                            | Type                                                                                                                                             | Required                                                                                                                                         | Description                                                                                                                                      | Example                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `qp1`                                                                                                                                            | *string*                                                                                                                                         | :heavy_check_mark:                                                                                                                               | This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name. | renamed                                                                                                                                          |

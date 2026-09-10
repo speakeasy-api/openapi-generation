@@ -1,0 +1,60 @@
+{{- recurse 1 -}}
+package provider_test
+
+import (
+	"testing"
+)
+
+func TestCustomCodeRegionProviderImports(t *testing.T) {
+	// This test verifies that custom code regions in the provider imports section
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom imports are preserved in provider.go")
+}
+
+func TestCustomCodeRegionProviderStruct(t *testing.T) {
+	// This test verifies that custom code regions in the provider struct
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom fields are preserved in provider struct")
+}
+
+func TestCustomCodeRegionProviderConfigure(t *testing.T) {
+	// This test verifies that custom code regions in the provider Configure method
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom configuration logic is preserved")
+}
+
+func TestCustomCodeRegionResourceImports(t *testing.T) {
+	// This test verifies that custom code regions in resource imports
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom resource imports are preserved")
+}
+
+func TestCustomCodeRegionPostCreate(t *testing.T) {
+	// This test verifies that custom code regions in the post-create lifecycle hook
+	// are preserved across regeneration runs (e.g., time.Sleep after resource creation)
+	t.Skip("Manual test - verify custom post-create logic is preserved")
+}
+
+func TestCustomCodeRegionPostRead(t *testing.T) {
+	// This test verifies that custom code regions in the post-read lifecycle hook
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom post-read logic is preserved")
+}
+
+func TestCustomCodeRegionPostUpdate(t *testing.T) {
+	// This test verifies that custom code regions in the post-update lifecycle hook
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom post-update logic is preserved")
+}
+
+func TestCustomCodeRegionPreDelete(t *testing.T) {
+	// This test verifies that custom code regions in the pre-delete lifecycle hook
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom pre-delete logic is preserved")
+}
+
+func TestCustomCodeRegionDataSourceImports(t *testing.T) {
+	// This test verifies that custom code regions in data source imports
+	// are preserved across regeneration runs
+	t.Skip("Manual test - verify custom data source imports are preserved")
+}

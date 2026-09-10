@@ -1,0 +1,48 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "class"}}
+{{- $additionalProps := false }}
+export type {{$typeName}} = {
+{{- range .Local.Type.Fields}}
+  {{- if .IsAdditionalProperties }}
+  {{- $additionalProps = . }}
+  {{- continue }}
+  {{- end }}
+
+  {{- $fieldName := sanitizeModelField . -}}
+  {{- $isOptional := isInputOptional . $rootType }}
+  {{- $fieldType := resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" .Type
+      "rootTypeDef" $rootType
+      "optional" $isOptional
+      "nullable" .Nullable
+      "streamable" (isMultipartFileField .)
+      "constValue" .Const
+      "defaultValue" .Default
+  ) -}}
+  {{""}}
+  {{- templateComments .Comments $dg (printf "%s.%s" $typeName $fieldName) 1 "field" true}}
+  {{declareModelField .}}{{ if $isOptional }}?{{end}}: {{callImportTypesFunc $fieldType.importInputTypes}}{{$fieldType.inputType}};
+{{- end}}
+{{- if $additionalProps }}
+  {{- if (shouldFlattenAdditionalProperties $additionalProps) }}
+  [additionalProperties: string]: unknown;
+};
+  {{- else }}
+  {{- $fieldType := resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" $additionalProps.Type
+      "rootTypeDef" $rootType
+      "streamable" (isMultipartFileField $additionalProps)
+  ) -}}
+  {{declareModelField $additionalProps}}{{ if isInputOptional $additionalProps $rootType }}?{{end}}: {{callImportTypesFunc $fieldType.importInputTypes}}{{$fieldType.inputType}}{{ if isInputOptional $additionalProps $rootType }} | undefined{{end}}
+}
+  {{- end }}
+{{- else }}
+}
+{{ end }}

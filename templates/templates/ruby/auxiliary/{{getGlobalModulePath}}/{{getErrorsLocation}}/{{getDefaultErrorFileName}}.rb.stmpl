@@ -1,0 +1,52 @@
+{{- $responseFormat := getResponseFormat -}}
+{{typedDirective}}
+# frozen_string_literal: true
+
+module {{sanitizeModuleName .Global.Config.Module}}
+{{templateModuleDeclarations (getScopePath "errors") 1}}
+
+      class {{sanitizeClassName .Global.Config.DefaultErrorName}} < StandardError
+        include Crystalline::MetadataFields
+        {{sorbetTSig}}
+
+        {{if eq $responseFormat "envelope-http"}}
+        field :request, Faraday::Request, {}
+        field :response, Faraday::Response, {}
+        {{- else}}
+        field :body, {{ if sorbetEnabled }}T.nilable(::String){{ else }}Crystalline::Nilable.new(String){{ end }}, { 'format_json': { 'letter_case': ::{{sanitizeModuleName .Global.Config.Module}}::Utils.field_name('body') } }
+        field :raw_response, {{ if sorbetEnabled }}T.nilable(Faraday::Response){{ else }}Crystalline::Nilable.new(Faraday::Response){{ end }}, {}
+        {{- end}}
+        field :status_code, {{ if sorbetEnabled }}T.nilable(::Integer){{ else }}Crystalline::Nilable.new(Integer){{ end }}, { 'format_json': { 'letter_case': ::{{sanitizeModuleName .Global.Config.Module}}::Utils.field_name('status_code') } }
+
+        {{if eq $responseFormat "envelope-http"}}
+        {{if sorbetEnabled}}sig { params(status_code: ::Integer, request: Faraday::Request, response: Faraday::Response).void }{{end}}
+        def initialize(status_code:, request:, response:)
+        {{- else}}
+        {{if sorbetEnabled}}sig { params(status_code: ::Integer, body: ::String, raw_response: Faraday::Response).void }{{end}}
+        def initialize(status_code:, body:, raw_response:)
+        {{- end}}
+          @status_code = status_code
+          {{- if eq $responseFormat "envelope-http"}}
+          @request = request
+          @response = response
+          {{- else}}
+          @body = body
+          @raw_response = raw_response
+          {{- end}}
+        end
+
+        def ==(other)
+          return false unless other.is_a? self.class
+          {{- if eq $responseFormat "envelope-http"}}
+          return false unless @request == other.request
+          return false unless @response == other.response
+          {{- else}}
+          return false unless @status_code == other.status_code
+          return false unless @body == other.body
+          return false unless @raw_response == other.raw_response
+          {{- end}}
+          true
+        end
+      end
+{{templateModuleClosures (getScopePath "errors") 1}}
+end

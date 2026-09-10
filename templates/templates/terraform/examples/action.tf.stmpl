@@ -1,0 +1,5 @@
+action "{{ .Local.Action.TerraformTypeName }}" "example" {
+  config {
+    {{ templateTfResource .Local.Action "action" -}}
+  }
+}

@@ -1,0 +1,85 @@
+### {{if slf4jLoggingEnabled}}Debug & Logging{{else}}Debug{{end}}
+{{if slf4jLoggingEnabled}}
+#### SLF4j Logging
+This SDK uses [SLF4j](https://www.slf4j.org/) for structured logging across HTTP requests, retries, pagination, streaming, and hooks. SLF4j provides comprehensive visibility into SDK operations.
+
+**Log Levels:**
+- **DEBUG**: High-level operations (HTTP requests/responses, retry attempts, page fetches, hook execution, stream lifecycle)
+- **TRACE**: Detailed information (request/response bodies, backoff calculations, individual items processed)
+
+**Configuration:**
+
+Add your preferred SLF4j implementation to your project. For example, using Logback:
+
+```gradle
+dependencies {
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+}
+```
+
+Configure logging levels in your `logback.xml`:
+
+```xml
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- SDK-wide logging -->
+    <logger name="{{templatePackageName}}" level="DEBUG"/>
+    
+    <!-- Component-specific logging -->
+    <logger name="{{templatePackageName}}.utils.SpeakeasyHTTPClient" level="DEBUG"/>
+    <logger name="{{templatePackageName}}.utils.Retries" level="DEBUG"/>
+    <logger name="{{templatePackageName}}.utils.pagination" level="DEBUG"/>
+    <logger name="{{templatePackageName}}.utils.Hooks" level="TRACE"/>
+    
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
+```
+
+**What Gets Logged:**
+- **HTTP Client**: Request/response details, headers (with sensitive headers redacted), bodies (at TRACE level)
+- **Retries**: Retry attempts, backoff delays, exhaustion, non-retryable exceptions
+- **Pagination**: Page fetches, pagination state, errors
+- **Streaming**: Stream initialization, item processing, closure
+- **Hooks**: Hook execution counts, operation IDs, exceptions
+
+#### Legacy Debug Logging
+For backward compatibility, you can still use the legacy debug logging method:
+{{else}}
+You can setup your SDK to emit debug logs for SDK requests and responses.
+
+For request and response logging (especially json bodies), call `enableHTTPDebugLogging(boolean)` on the SDK builder like so:
+{{end}}
+```java
+SDK.builder()
+    .enableHTTPDebugLogging(true)
+    .build();
+```
+Example output:
+```
+Sending request: http://localhost:35123/bearer#global GET
+Request headers: {Accept=[application/json], Authorization=[******], Client-Level-Header=[added by client], Idempotency-Key=[some-key], x-speakeasy-user-agent=[speakeasy-sdk/java 0.0.1 internal 0.1.0 org.openapis.openapi]}
+Received response: (GET http://localhost:35123/bearer#global) 200
+Response headers: {access-control-allow-credentials=[true], access-control-allow-origin=[*], connection=[keep-alive], content-length=[50], content-type=[application/json], date=[Wed, 09 Apr 2025 01:43:29 GMT], server=[gunicorn/19.9.0]}
+Response body:
+{
+  "authenticated": true, 
+  "token": "global"
+}
+```
+__WARNING__: {{if slf4jLoggingEnabled}}Debug{{else}}This{{end}} logging should only be used for temporary debugging purposes. Leaving this option on in a production system could expose credentials/secrets in logs. <i>Authorization</i> headers are redacted by default{{if not slf4jLoggingEnabled}} and there is the ability to specify redacted header names via `SpeakeasyHTTPClient.setRedactedHeaders`{{else}}. You can specify additional redacted header names via `SpeakeasyHTTPClient.setRedactedHeaders`{{end}}.
+
+__NOTE__: This is a convenience method that calls `HTTPClient.enableDebugLogging()`. The `SpeakeasyHTTPClient` honors this setting. If you are using a custom HTTP client, it is up to the custom client to honor this setting.
+
+{{if not slf4jLoggingEnabled}}
+Another option is to set the System property `-Djdk.httpclient.HttpClient.log=all`. However, this second option does not log bodies.
+{{else}}
+#### JDK HTTP Client Logging
+Another option is to set the System property `-Djdk.httpclient.HttpClient.log=all`. However, this option does not log request/response bodies.
+{{end}}

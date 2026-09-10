@@ -1,0 +1,2 @@
+{{- $sdkName := (sanitizeSDKName .Global.AST.MainSDK.Type.Name) -}}
+var sdk = new {{ $sdkName }}({{templateUsageSDKParams .Local}});

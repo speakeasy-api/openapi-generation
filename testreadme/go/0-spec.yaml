@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: Minimal document for testing README sections insertion, removal and editing.
+  version: 0.0.0
+servers:
+  - url: http://localhost:12345
+security: []
+paths:
+  /operation/1:
+    get:
+      operationId: op1
+      tags:
+        - tag1
+      responses:
+        "200":
+          description: OK

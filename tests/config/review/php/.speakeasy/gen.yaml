@@ -1,0 +1,64 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  sdkHooksConfigAccess: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+php:
+  version: 0.0.1
+  additionalDependencies:
+    autoload: {}
+    autoload-dev: {}
+    require: {}
+    require-dev: {}
+  baseErrorName: SDKBaseException
+  clientServerStatusCodesAsErrors: true
+  customCasings:
+    mcp:
+      initialism: true
+  defaultErrorName: SDKException
+  envVarPrefix: OPENAPI
+  flattenGlobalSecurity: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: ""
+      errors: ""
+      operations: ""
+      shared: ""
+      webhooks: ""
+  inferUnionDiscriminators: true
+  inputModelSuffix: input
+  laravelServiceProvider:
+    enabled: true
+    svcName: review
+  maxMethodParams: 4
+  methodArguments: infer-optional-args
+  multipartArrayFormat: standard
+  namespace: OpenAPI\OpenAPI
+  outputModelSuffix: output
+  packageName: openapi/openapi

@@ -1,0 +1,13 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+mcp-typescript:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  packageName: basicHttp
+  version: 0.0.1
+  responseFormat: envelope
+  validateResponse: true

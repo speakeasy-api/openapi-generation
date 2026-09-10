@@ -1,0 +1,28 @@
+---
+title: "TaskResponse"
+---
+
+A task response containing deeply nested structures with string-encoded integers
+
+## Example Usage
+
+```typescript
+import { TaskResponse } from "openapi";
+
+let value: TaskResponse = {
+  task: {
+    id: "task-123",
+    name: "Review Task",
+    policy: {
+      policyId: "policy-456",
+      steps: [],
+    },
+  },
+};
+```
+
+## Fields
+
+| Field                                        | Type                                         | Required                                     | Description                                  |
+| -------------------------------------------- | -------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| `task`                                       | [models.ReviewTask](../models/reviewtask.mdx) | :heavy_check_mark:                           | A task object with nested policy             |

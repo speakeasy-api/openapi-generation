@@ -1,0 +1,18 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+php:
+  inferUnionDiscriminators: true
+  responseFormat: envelope-http
+  laravelServiceProvider: 
+    enabled: true
+    svcName: client-credentials
+  namespace: Speakeasy\Client\Credentials
+  packageName: speakeasy/client-credentials

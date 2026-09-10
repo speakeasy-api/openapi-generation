@@ -1,0 +1,726 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"strings"
+	"syscall"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/output"
+)
+
+// resetAgentMode resets agent mode state so each test re-evaluates detection.
+func resetAgentMode(t *testing.T) {
+	t.Helper()
+	output.ResetAgentMode()
+	t.Cleanup(func() { output.ResetAgentMode() })
+}
+
+type agentModeTestError struct {
+	Body       string
+	StatusCode int
+}
+
+func (e *agentModeTestError) Error() string { return "test API error" }
+
+// TestAgentModeConfigureUsesFlagOnlyUsageError verifies that agent mode never
+// opens a form and renders the ordinary no-flags error as a structured usage
+// envelope.
+func TestAgentModeConfigureUsesFlagOnlyUsageError(t *testing.T) {
+	resetAgentMode(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--agent-mode", "configure"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"configure error should be valid JSON in agent mode, got: %s", stderr)
+
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	assert.Contains(t, envelope["message"], "no flags provided")
+	assert.Contains(t, envelope["message"], "--interactive")
+	assert.NotContains(t, stderr, "configure_blocked")
+}
+
+// TestAgentModeConfigureAllowedWithoutFlag verifies that configure does not
+// acquire the agent-mode error envelope when agent mode is inactive.
+func TestAgentModeConfigureAllowedWithoutFlag(t *testing.T) {
+	resetAgentMode(t)
+
+	h := NewCLITestHarness(t)
+	_ = h.RunBare([]string{"configure"})
+	stderr := h.GetStderr()
+	assert.NotContains(t, stderr, "configure_blocked")
+}
+
+// TestAgentModeStructuredJSONErrors verifies that --agent-mode preserves
+// structured JSON error output even though success output defaults to TOON.
+func TestAgentModeStructuredJSONErrors(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// RunRaw does NOT inject --output-format json. With --agent-mode, errors
+	// should still be output as JSON to stderr.
+	err := h.RunRaw([]string{"--agent-mode", "--server-url", s.URL,
+		"errors", "status-get-error", "--status-code", "400"})
+	// Operation will error (either from echo server or token failure) — that's expected.
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr, "agent mode should output errors as JSON to stderr")
+	assert.True(t, json.Valid([]byte(stderr)),
+		"agent mode should produce valid JSON error output, got: %s", stderr)
+}
+
+// TestAgentModeDefaultsToToon verifies that agent mode uses TOON as the default
+// success output format when no explicit output format is provided.
+func TestAgentModeDefaultsToToon(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Use an operation whose response struct has content fields (not just
+	// HTTPMeta) so the TOON formatter has something to render. The echo
+	// server returns {"url": "..."} which maps to the response's URL field.
+	err := h.RunRaw([]string{"--agent-mode", "--server-url", s.URL,
+		"parameters", "duplicate-param", "--duplicate-param-request", "test"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout, "agent mode should produce TOON output on stdout")
+	assert.Contains(t, stdout, "url", "expected field name in TOON output")
+	assert.Contains(t, stdout, ":", "expected TOON key-value formatting")
+	assert.False(t, json.Valid([]byte(stdout)), "agent mode default stdout should not be JSON")
+	assert.NotContains(t, stdout, "Response Headers:", "agent mode default stdout should not fall back to pretty output")
+}
+
+{{- if agentEnvironmentDetection}}
+// TestAgentModeEnvVarDetection verifies that FORCE_AGENT_MODE=1 triggers
+// agent mode automatically and preserves structured JSON error output.
+func TestAgentModeEnvVarDetection(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t).WithEnv("FORCE_AGENT_MODE", "1")
+	// RunRaw: no --output-format json, no --agent-mode flag.
+	// FORCE_AGENT_MODE=1 should auto-detect and still produce JSON error output.
+	err := h.RunRaw([]string{"--server-url", s.URL,
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr, "env-var-detected agent mode should output errors as JSON")
+	assert.True(t, json.Valid([]byte(stderr)),
+		"FORCE_AGENT_MODE=1 should produce valid JSON error output, got: %s", stderr)
+}
+
+// TestAgentModeEnvVarFalsey verifies that falsey env var values (e.g., "0")
+// do NOT trigger agent mode.
+func TestAgentModeEnvVarFalsey(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t).WithEnv("FORCE_AGENT_MODE", "0")
+	// RunRaw with FORCE_AGENT_MODE=0: should NOT activate agent mode.
+	// In pretty mode, errors don't produce JSON on stderr for connection/token errors.
+	err := h.RunRaw([]string{"--server-url", s.URL,
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	// Pretty mode for connection-type errors may produce no stderr or non-JSON stderr.
+	if stderr != "" {
+		assert.False(t, json.Valid([]byte(stderr)),
+			"FORCE_AGENT_MODE=0 should NOT produce JSON error output, got: %s", stderr)
+	}
+}
+
+// TestAgentModeFlagOverridesEnv verifies that --agent-mode=false overrides
+// env var detection.
+func TestAgentModeFlagOverridesEnv(t *testing.T) {
+	resetAgentMode(t)
+
+	h := NewCLITestHarness(t).WithEnv("FORCE_AGENT_MODE", "1")
+	// Explicit --agent-mode=false should override the env var.
+	_ = h.RunBare([]string{"--agent-mode=false", "version"})
+	assert.False(t, output.IsAgentMode(), "--agent-mode=false should override FORCE_AGENT_MODE=1")
+}
+{{- end}}
+
+{{- if not (agentEnvironmentDetection)}}
+// TestAgentModeEnvironmentIgnored verifies that explicit-mode CLIs do not infer
+// agent mode from any legacy compatibility environment variable.
+func TestAgentModeEnvironmentIgnored(t *testing.T) {
+	for _, envVar := range []string{
+		"CLAUDECODE", "CLAUDE_CODE", "CURSOR_AGENT", "CODEX", "AIDER", "CLINE",
+		"WINDSURF_AGENT", "GITHUB_COPILOT", "AMAZON_Q", "GEMINI_CODE_ASSIST",
+		"SRC_CODY", "FORCE_AGENT_MODE",
+	} {
+		t.Run(envVar, func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t).WithEnv(envVar, "1")
+			_ = h.RunBare([]string{"version"})
+			assert.False(t, output.IsAgentMode())
+		})
+	}
+}
+{{- end}}
+
+// TestAgentModeStructuredError verifies that errors include error_type
+// and hints in agent mode.
+func TestAgentModeStructuredError(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode",
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"agent mode error should be valid JSON, got: %s", stderr)
+
+	// The error should have error_type set (exact type depends on the error)
+	errorType, ok := envelope["error_type"].(string)
+	require.True(t, ok, "error_type should be a string")
+	assert.NotEmpty(t, errorType)
+
+	// Should have a message
+	message, ok := envelope["message"].(string)
+	require.True(t, ok, "message should be a string")
+	assert.NotEmpty(t, message)
+
+	// Should have hints
+	hints, ok := envelope["hints"].([]interface{})
+	require.True(t, ok, "hints should be an array")
+	assert.NotEmpty(t, hints)
+}
+
+// TestAgentModeArrayWrappedErrorReason verifies reason-first classification
+// when the API wraps the error envelope in a one-element JSON array
+// ([{"error": {...}}]): a 400 carrying reason ACCOUNT_KEY_REVOKED must classify
+// as authentication_error with the reason surfaced, not validation_error.
+func TestAgentModeArrayWrappedErrorReason(t *testing.T) {
+	resetAgentMode(t)
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`[{"error":{"code":400,"message":"Account key not valid. Please pass a valid account key.","status":"REQUEST_REJECTED","details":[{"@type":"type.example.dev/error-detail","reason":"ACCOUNT_KEY_REVOKED","domain":"api.example.com"}]}}]`))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode",
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"agent mode error should be valid JSON, got: %s", stderr)
+
+	assert.Equal(t, "authentication_error", envelope["error_type"],
+		"array-wrapped ACCOUNT_KEY_REVOKED must classify by reason, not HTTP status")
+	assert.Equal(t, "ACCOUNT_KEY_REVOKED", envelope["error_reason"])
+	hints, ok := envelope["hints"].([]interface{})
+	require.True(t, ok, "hints should be an array")
+	assert.Equal(t, []interface{}{"Replace the revoked account key before retrying"}, hints)
+}
+
+// TestAgentModeInsufficientScopeIsAuthorization verifies that reason-first
+// classification treats a declared insufficient-scope reason as authorization,
+// even when the HTTP status would otherwise classify as validation.
+func TestAgentModeInsufficientScopeIsAuthorization(t *testing.T) {
+	resetAgentMode(t)
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`[{"error":{"code":400,"message":"Insufficient token scope for this operation.","status":"REQUEST_REJECTED","details":[{"@type":"type.example.dev/error-detail","reason":"TOKEN_SCOPE_MISSING","domain":"api.example.com"}]}}]`))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode",
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"agent mode error should be valid JSON, got: %s", stderr)
+
+	assert.Equal(t, "authorization_error", envelope["error_type"],
+		"TOKEN_SCOPE_MISSING must classify by reason, not HTTP status")
+	assert.Equal(t, "TOKEN_SCOPE_MISSING", envelope["error_reason"])
+}
+
+// TestAgentModeDeclaredHintsAppendToAPIHints verifies that command-declared
+// hints follow valid API hints and local taxonomy hints, with exact duplicate
+// lines removed while preserving first occurrence order.
+func TestAgentModeDeclaredHintsAppendToAPIHints(t *testing.T) {
+	resetAgentMode(t)
+
+	var stderr bytes.Buffer
+	cmd := &cobra.Command{Annotations: map[string]string{
+		"speakeasy_command_hints": `{"QUOTA_EXHAUSTED":["API hint","Declared hint","Declared hint"]}`,
+	}}
+	cmd.SetErr(&stderr)
+	cmd.Flags().Bool("agent-mode", false, "")
+	require.NoError(t, cmd.Flags().Set("agent-mode", "true"))
+	output.InitAgentMode(cmd)
+
+	err := output.Error(cmd, &agentModeTestError{
+		Body:       `{"error":{"details":[{"reason":"QUOTA_EXHAUSTED"}]},"hints":["API hint","API hint"]}`,
+		StatusCode: http.StatusTooManyRequests,
+	})
+	require.Error(t, err)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal(bytes.TrimSpace(stderr.Bytes()), &envelope),
+		"agent mode error should be valid JSON, got: %s", stderr.String())
+	assert.Equal(t, []interface{}{"API hint", "Rate limited — retry after a delay", "Declared hint"}, envelope["hints"])
+}
+
+// TestNonAgentModeArrayWrappedErrorIsClassified verifies that JSON output
+// outside agent mode gets the same singleton-array unwrapping and taxonomy.
+func TestNonAgentModeArrayWrappedErrorPreservesEnvelope(t *testing.T) {
+	resetAgentMode(t)
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`[{"error":{"code":400,"message":"bad request","status":"REQUEST_REJECTED"}}]`))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"errors", "status-get-error", "--status-code", "400", "--output-format", "json"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"non-agent JSON error should be valid JSON, got: %s", stderr)
+	assert.Equal(t, float64(http.StatusBadRequest), envelope["status_code"])
+	assert.Contains(t, envelope, "error")
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.NotEmpty(t, envelope["hints"])
+}
+
+// TestAgentModeMultiElementErrorArrayPreserved verifies that an error array
+// with multiple entries remains intact under the status-classified envelope.
+func TestAgentModeMultiElementErrorArrayPreserved(t *testing.T) {
+	resetAgentMode(t)
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`[{"error":{"code":400,"status":"REQUEST_REJECTED","details":[{"reason":"ACCOUNT_KEY_REVOKED"}],"message":"bad key"}},{"error":{"code":429,"status":"QUOTA_EXHAUSTED","message":"slow down"}}]`))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode",
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope),
+		"agent mode error should be valid JSON, got: %s", stderr)
+	assert.Equal(t, "validation_error", envelope["error_type"])
+
+	body, ok := envelope["body"].([]interface{})
+	require.True(t, ok, "body should preserve the error array")
+	require.Len(t, body, 2)
+	first, ok := body[0].(map[string]interface{})
+	require.True(t, ok)
+	second, ok := body[1].(map[string]interface{})
+	require.True(t, ok)
+	firstError, ok := first["error"].(map[string]interface{})
+	require.True(t, ok)
+	secondError, ok := second["error"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "bad key", firstError["message"])
+	assert.Equal(t, "slow down", secondError["message"])
+}
+
+// TestAgentModeClassificationWithoutAgentMode verifies that non-agent JSON
+// output carries the same classification contract as agent-mode JSON.
+func TestAgentModeNoEnrichmentWithoutAgentMode(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// RunWithServer requests JSON without enabling agent mode.
+	err := h.RunWithServer(s.URL, []string{
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	envelope := agentEnvelope(t, stderr)
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.NotEmpty(t, envelope["hints"])
+	assert.Equal(t, float64(2), envelope["exit_code"])
+}
+
+func assertPreRequestValidationEnvelope(t *testing.T, h *CLITestHarness, err error, wantMessage, wantHint string) {
+	t.Helper()
+	require.Error(t, err)
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	assert.Contains(t, envelope["message"], wantMessage)
+	rawHints, ok := envelope["hints"].([]interface{})
+	require.True(t, ok, "agent envelope hints must be an array: %#v", envelope["hints"])
+	var joinedHints []string
+	for _, rawHint := range rawHints {
+		hint, ok := rawHint.(string)
+		require.True(t, ok, "agent envelope hint must be a string: %#v", rawHint)
+		assert.NotContains(t, strings.ToLower(hint), "network")
+		joinedHints = append(joinedHints, hint)
+	}
+	if wantHint != "" {
+		assert.Contains(t, strings.Join(joinedHints, "\n"), wantHint)
+	}
+}
+
+// TestPreRequestValidationEnvelopeMatrix pins local failures that occur before
+// a request can be sent. None may suggest repairing connectivity.
+func TestPreRequestValidationEnvelopeMatrix(t *testing.T) {
+	recordTest("pre-request-validation-envelope-matrix")
+	missingBody := t.TempDir() + "/missing.json"
+	bodyDirectory := t.TempDir()
+	cases := []struct {
+		name        string
+		args        []string
+		wantMessage string
+		wantHint    string
+	}{
+		{
+			name: "missing body file",
+			args: []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "@" + missingBody},
+			wantMessage: missingBody,
+		},
+		{
+			name: "body path is a directory",
+			args: []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "@" + bodyDirectory},
+			wantMessage: bodyDirectory,
+		},
+		{
+			name: "malformed server URL",
+			args: []string{"--agent-mode", "--server-url", "::not a url", "methods", "method-get"},
+			wantMessage: "server-url",
+			wantHint: "--server-url",
+		},
+		{
+			name: "malformed server URL in dry run",
+			args: []string{"--agent-mode", "--dry-run", "--server-url", "::not a url", "methods", "method-get"},
+			wantMessage: "server-url",
+			wantHint: "--server-url",
+		},
+		{
+			name: "required union omitted from body",
+			args: []string{"--agent-mode", "request-bodies", "cli-required-union-fields", "--body", `{}`},
+			wantMessage: `missing required field "input"`,
+		},
+		{
+			name: "required union omitted from body in dry run",
+			args: []string{"--agent-mode", "--dry-run", "request-bodies", "cli-required-union-fields", "--body", `{}`},
+			wantMessage: `missing required field "input"`,
+		},
+		{
+			name: "required union omitted from flags",
+			args: []string{"--agent-mode", "request-bodies", "cli-required-union-fields"},
+			wantMessage: `missing required field "input"`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(tc.args)
+			assertPreRequestValidationEnvelope(t, h, err, tc.wantMessage, tc.wantHint)
+		})
+	}
+}
+
+func TestPreRequestGeneratedRequiredUnionPathsAndOptionality(t *testing.T) {
+	recordTest("pre-request-generated-required-union-paths-and-optionality")
+
+	t.Run("nested path", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{
+			"--agent-mode", "request-bodies", "cli-required-union-fields",
+			"--body", `{"input":"ok","nested":{}}`,
+		})
+		assertPreRequestValidationEnvelope(t, h, err, `missing required field "nested.input"`, "")
+	})
+
+	t.Run("nested path from flags", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{
+			"--agent-mode", "request-bodies", "cli-required-union-fields",
+			"--input", `"ok"`, "--nested", `{}`,
+		})
+		assertPreRequestValidationEnvelope(t, h, err, `missing required field "nested.input"`, "")
+	})
+}
+
+func TestPreRequestGeneratedRequiredUnionPositiveEchoes(t *testing.T) {
+	recordTest("pre-request-generated-required-union-positive-echoes")
+	s := newEchoServer()
+	defer s.Close()
+
+	cases := []struct {
+		name       string
+		args       []string
+		assertBody func(t *testing.T, output string)
+	}{
+		{
+			name: "body string member",
+			args: []string{"request-bodies", "cli-required-union-fields", "--body", `{"input":"ok"}`},
+			assertBody: func(t *testing.T, output string) {
+				assert.Equal(t, "ok", jsonGetString(output, "json.input"))
+				assert.False(t, jsonExists(output, "json.optionalInput"))
+			},
+		},
+		{
+			name: "body array and optional member",
+			args: []string{"request-bodies", "cli-required-union-fields", "--body", `{"input":[{"text":"x"}],"optionalInput":"y"}`},
+			assertBody: func(t *testing.T, output string) {
+				assert.Equal(t, "x", jsonGetString(output, "json.input.0.text"))
+				assert.Equal(t, "y", jsonGetString(output, "json.optionalInput"))
+			},
+		},
+		{
+			name: "individual union flag",
+			args: []string{"request-bodies", "cli-required-union-fields", "--input", `"ok"`},
+			assertBody: func(t *testing.T, output string) {
+				assert.Equal(t, "ok", jsonGetString(output, "json.input"))
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, tc.args)
+			require.NoError(t, err)
+			tc.assertBody(t, strings.TrimSpace(h.GetStdout()))
+		})
+	}
+}
+
+func TestPreRequestDiscriminatedRootUnionMessages(t *testing.T) {
+	recordTest("pre-request-discriminated-root-union-messages")
+
+	t.Run("nothing selects a variant", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{
+			"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+		})
+		assertPreRequestValidationEnvelope(t, h, err, "the request body is missing or selects no variant", "")
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Contains(t, envelope["message"], "pass --body")
+		assert.Contains(t, envelope["message"], "--discriminated-variant-body")
+	})
+
+	t.Run("selected variant keeps nested required flag error", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{
+			"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+			"--discriminated-variant-body.model.model", "m",
+		})
+		assertPreRequestValidationEnvelope(t, h, err, "missing required flag: --discriminated-variant-body.model.input", "")
+		assert.NotContains(t, h.GetStderr(), "request body is missing or selects no variant")
+	})
+}
+
+func TestPreRequestSilentStdinTimesOutOnRootUnion(t *testing.T) {
+	recordTest("pre-request-silent-stdin-times-out-on-root-union")
+	resetAgentMode(t)
+	withSilentStdinPipe(t)
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{
+		"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
+	})
+	assertPreRequestValidationEnvelope(t, h, err, "stdin body did not reach EOF", "")
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Contains(t, envelope["message"], "--body @-")
+}
+
+// Agent mode is per-invocation in detection-off builds: an invocation
+// without --agent-mode never inherits a previous invocation's agent mode.
+func TestAgentModeDoesNotLeakBetweenInvocations(t *testing.T) {
+	recordTest("agent-mode-does-not-leak-between-invocations")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunRaw([]string{
+		"--agent-mode", "--dry-run", "--server-url", "http://nonexistent.invalid.",
+		"methods", "method-get",
+	}))
+	require.True(t, output.IsAgentMode())
+
+	require.NoError(t, h.RunRaw([]string{
+		"--dry-run", "--server-url", "http://nonexistent.invalid.",
+		"methods", "method-get",
+	}))
+	assert.False(t, output.IsAgentMode(), "agent mode leaked into a flag-less invocation")
+}
+
+func TestPreRequestDryRunUnresolvableHostSucceeds(t *testing.T) {
+	recordTest("pre-request-dry-run-unresolvable-host")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{
+		"--agent-mode", "--dry-run", "--server-url", "http://nonexistent.invalid.",
+		"methods", "method-get",
+	})
+	require.NoError(t, err)
+	assert.NotContains(t, h.GetStderr(), "connection_error")
+}
+
+func TestPreRequestRealConnectionFailuresStayConnectionErrors(t *testing.T) {
+	recordTest("pre-request-real-connection-failures")
+
+	t.Run("connection refused", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer("http://127.0.0.1:1", []string{"--agent-mode", "methods", "method-get"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "connection_error", envelope["error_type"])
+		assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"])
+		assert.Contains(t, envelope["hints"], "Check network connectivity")
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		resetAgentMode(t)
+		// A server that accepts the connection but never answers, so the
+		// client-side deadline is the only thing that can end the request
+		// (racing a fixed timeout against a fast local mock is flaky).
+		stall := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-r.Context().Done()
+		}))
+		defer stall.Close()
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(stall.URL, []string{
+			"--agent-mode", "--timeout", "50ms",
+			"methods", "method-get",
+		})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "connection_error", envelope["error_type"])
+		assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"])
+	})
+}
+
+// TestPreRequestConnectionClassifierTypedTable exercises the no-status
+// classifier with the concrete error shapes that motivated the transport
+// helper. context.Canceled is deliberately not standalone transport evidence.
+func TestPreRequestConnectionClassifierTypedTable(t *testing.T) {
+	recordTest("pre-request-connection-classifier-typed-table")
+	cases := []struct {
+		name     string
+		err      error
+		wantType string
+	}{
+		{name: "path error", err: &os.PathError{Op: "open", Path: "/missing", Err: syscall.ENOENT}, wantType: "runtime_error"},
+		{name: "URL parse", err: &url.Error{Op: "parse", URL: "::bad", Err: errors.New("missing protocol scheme")}, wantType: "runtime_error"},
+		{name: "HTTP round trip", err: &url.Error{Op: "Post", URL: "http://example.invalid", Err: &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("refused")}}, wantType: "connection_error"},
+		{name: "network operation", err: &net.OpError{Op: "read", Net: "tcp", Err: errors.New("reset")}, wantType: "connection_error"},
+		{name: "DNS", err: &net.DNSError{Err: "no such host", Name: "example.invalid"}, wantType: "connection_error"},
+		{name: "deadline", err: context.DeadlineExceeded, wantType: "connection_error"},
+		{name: "SDK no response marker", err: errors.New("error sending request: no response"), wantType: "connection_error"},
+		{name: "canceled", err: context.Canceled, wantType: "runtime_error"},
+		{name: "plain", err: errors.New("error applying option: bad option"), wantType: "runtime_error"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			var stderr bytes.Buffer
+			cmd := &cobra.Command{}
+			cmd.SetErr(&stderr)
+			cmd.Flags().Bool("agent-mode", false, "")
+			require.NoError(t, cmd.Flags().Set("agent-mode", "true"))
+			output.InitAgentMode(cmd)
+			rendered := output.Error(cmd, tc.err)
+			require.Error(t, rendered)
+			envelope := agentEnvelope(t, stderr.String())
+			assert.Equal(t, tc.wantType, envelope["error_type"])
+		})
+	}
+}
+
+// TestAgentModeDisablesColor verifies that agent mode output never contains
+// ANSI color escape codes, even with --color=always.
+func TestAgentModeDisablesColor(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Force --color=always to verify agent mode still suppresses it.
+	err := h.RunRaw([]string{"--agent-mode", "--color", "always", "--server-url", s.URL,
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := h.GetStderr()
+	assert.NotContains(t, stderr, "\033[",
+		"agent mode should suppress ANSI color codes even with --color=always")
+
+	stdout := h.GetStdout()
+	assert.NotContains(t, stdout, "\033[",
+		"agent mode should suppress ANSI color codes on stdout too")
+}

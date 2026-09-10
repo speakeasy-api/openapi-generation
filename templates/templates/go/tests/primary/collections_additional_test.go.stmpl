@@ -1,0 +1,50 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	"{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCollections_ContainingNull(t *testing.T) {
+	recordTest("collections-containing-null")
+
+	ctx := context.Background()
+
+	s := openapi.New()
+
+	res, err := s.Collections.CollectionsContainingNull(ctx, &operations.CollectionsContainingNullNullishCollections{
+		RequiredArray: []*string{openapi.Pointer("foo"), nil},
+		RequiredMap: map[string]*operations.RequiredMap{
+			"foo": nil,
+			"bar": {Integer: openapi.Int64(123)},
+		},
+		OptionalArray: []*string{openapi.Pointer("foo"), nil},
+		OptionalMap: map[string]*operations.OptionalMap{
+			"foo": nil,
+			"bar": {Integer: openapi.Int64(123)},
+		},
+		ArrayOfNullUnion: []*operations.ArrayOfNullUnion{ {Str: openapi.Pointer("foo")}, nil},
+		MapOfNullUnion: map[string]*operations.MapOfNullUnion{
+			"foo": nil,
+			"bar": {Integer: openapi.Int64(123)},
+		},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Object)
+	assert.Equal(t, &operations.CollectionsContainingNullResponseBody{
+		JSON: map[string]any{
+			"requiredArray":    []any{"foo", nil},
+			"requiredMap":      map[string]any{"foo": nil, "bar": 123.0},
+			"optionalArray":    []any{"foo", nil},
+			"optionalMap":      map[string]any{"foo": nil, "bar": 123.0},
+			"arrayOfNullUnion": []any{"foo", nil},
+			"mapOfNullUnion":   map[string]any{"foo": nil, "bar": 123.0},
+		},
+	}, res.Object)
+}

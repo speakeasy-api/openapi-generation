@@ -1,0 +1,33 @@
+{{- $helper := .Local -}}
+{{- $returnType := "object?"}}
+{{- $methodArgs := ""}}
+{{- if $helper.Inputs}}
+  {{- $methodArgs = printf "%s inputs" (sanitizeClassName $helper.Inputs.Type.Name)}}
+{{templateString "model.cs.stmpl" $helper.Inputs.Type | indentPresent 4}}
+{{- end}}
+{{- if $helper.Outputs}}
+  {{- $returnType = sanitizeClassName $helper.Outputs.Type.Name}}
+{{templateString "model.cs.stmpl" $helper.Outputs.Type | indentPresent 4}}
+{{- end}}
+    public static async Task<{{$returnType}}> {{sanitizeHelperMethodName $helper.Name}}({{$methodArgs}})
+    {
+        var testHttpClient = CommonHelpers.CreateTestHTTPClient("{{$helper.Name}}");
+{{- range $idx, $step := $helper.Steps}}
+  {{- if eq $step.Type "operation"}}
+{{templateString "usage/init.stmpl" $step.UsageContext}}
+{{templatePreCallAssertions $helper $idx | indentPresent 8}}
+{{templateString "usage/call.stmpl" $step.UsageContext}}
+    {{- if not $step.UsageContext.Operation.Extensions.Pagination}}
+{{templateAssertions $step.UsageContext | indentPresent 8}}
+    {{- end}}
+  {{- else}}
+{{templateWorkflow $helper $step | indentPresent 8}}
+  {{- end}}
+{{- end}}
+
+{{- templateHelperOutputs $helper | indentPresent 8}}
+{{- if not $helper.Outputs}}
+
+        return null;
+{{- end}}
+    }

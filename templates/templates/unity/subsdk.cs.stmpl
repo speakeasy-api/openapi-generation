@@ -1,0 +1,66 @@
+{{- $sdkName := (sanitizeSDKName .Local.Type.Name) -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $sdkHasSecurity := sdkHasGlobalSecurity -}}
+#nullable enable
+namespace {{ getSDKNamespace .Global }}
+{
+{{ templateSDKImports .Local false }}{{"\n"}}
+
+{{- templateComments .Local.Comments 1 "class" false}}
+    public interface I{{ $sdkName }}
+    {
+        {{- ""}}{{range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+{{- templateComments .Comments 2 "field"}}
+        public I{{sanitizeSDKName .Type.Name}} {{sanitizeFieldName .FieldName}} { get; }{{end}}{{end}}
+        {{- range .Local.Operations}}
+{{- templateComments .Comments 2 "method"}}
+        Task<{{ sanitizeType .Response.Type false "" }}> {{ sanitizeMethodName . true }}({{ templateMethodArguments . "" }});
+        {{- end }}
+    }
+{{templateComments .Local.Comments 1 "class" false}}
+    public class {{ $sdkName }}: I{{ $sdkName }}
+    {
+        {{- range .Local.Operations }}
+        {{- if .Servers}}
+{{- templateString "servers.cs.stmpl" . }}
+        {{- end }}
+        {{- end }}
+        public SDKConfig SDKConfiguration { get; private set; }
+        private const string _target = "unity";
+        private const string _sdkVersion = "{{.Global.Config.SDKVersion}}";
+        private const string _sdkGenVersion = "{{.Global.Config.GenVersion}}";
+        {{- if ne .Global.Config.DocVersion ""}}
+        private const string _openapiDocVersion = "{{.Global.Config.DocVersion}}";
+        {{- end}}
+        private const string _userAgent = "speakeasy-sdk/unity {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{getPackageId}}";
+        private string _serverUrl = "";
+        private ISpeakeasyHttpClient _defaultClient;
+        {{- if $sdkHasSecurity}}
+        private Func<Security>? _securitySource;
+        {{- end}}
+
+        {{- range .Local.SubSDKs -}}
+        {{- if ne .Type.Name ""}}
+        public I{{sanitizeSDKName .Type.Name}} {{ sanitizeFieldName .FieldName}} { get; private set; }
+        {{- end }}
+        {{- end }}
+
+        public {{ $sdkName }}(ISpeakeasyHttpClient defaultClient{{if $sdkHasSecurity}}, Func<Security>? securitySource{{end}}, string serverUrl, SDKConfig config)
+        {
+            _defaultClient = defaultClient;
+            {{- if $sdkHasSecurity}}
+            _securitySource = securitySource;
+            {{- end}}
+            _serverUrl = serverUrl;
+            SDKConfiguration = config;
+            {{- range .Local.SubSDKs }}
+            {{- if ne .Type.Name "" }}
+            {{ sanitizeFieldName .FieldName}} = new {{ sanitizeSDKName .Type.Name }}(_defaultClient{{if $sdkHasSecurity}}, _securitySource{{end}}, _serverUrl, SDKConfiguration);
+            {{- end }}{{- end }}
+        }
+        {{ range .Local.Operations }}
+{{ templateString "method.cs.stmpl" . }}
+        {{ end }}
+    }
+}

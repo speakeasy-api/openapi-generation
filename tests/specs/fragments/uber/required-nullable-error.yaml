@@ -1,0 +1,40 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /errors/required-nullable-error:
+    get:
+      operationId: getRequiredNullableError
+      description: >-
+        Verifies that error response schemas with a required+nullable property
+        generate convenience accessors whose declared type matches their body.
+        The combination of `required: [detail]` plus `nullable: true` on the
+        same property exercises the path where languages must distinguish
+        "absent" from "present-but-null" without producing a doubly-wrapped
+        accessor type.
+      tags:
+        - errors
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Error with a required+nullable field
+          content:
+            application/json:
+              schema:
+                type: object
+                x-speakeasy-name-override: RequiredNullableError
+                description: Error schema with a required+nullable field.
+                required:
+                  - detail
+                properties:
+                  detail:
+                    type: string
+                    nullable: true
+                    description: A required+nullable field.

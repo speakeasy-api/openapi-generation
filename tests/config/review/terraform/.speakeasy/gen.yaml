@@ -1,0 +1,125 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  useClassNamesForArrayFields: true
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: true
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+terraform:
+  version: 0.0.1
+  serverVariableProviderAttributes:
+    port: server_port
+  additionalActions:
+    - action: NewCustomAction
+  additionalDataSources:
+    - datasource: NewCustomDataResource
+  additionalDependencies:
+    github.com/google/uuid: v1.6.0
+    github.com/hashicorp/terraform-plugin-framework-timetypes: v0.5.0
+    github.com/hashicorp/terraform-plugin-testing: v1.16.0
+  additionalEphemeralResources:
+    - resource: NewCustomEphemeralResource
+  additionalFunctions:
+    - function: NewCustomFunction
+  additionalListResources:
+    - resource: NewCustomListResource
+  additionalProviderAttributes:
+    httpHeaders: http_headers
+    tlsSkipVerify: tls_skip_verify
+  additionalResources:
+    - resource: NewCustomResource
+  author: hashicorp
+  baseErrorName: SDKBaseError
+  debugLogging:
+    additionalSensitiveHttpHeaders:
+      - X-Custom-Key
+      - X-Custom-Secret
+  defaultErrorName: SDKError
+  enableCustomCodeRegions: true
+  enableOperationSecurity: true
+  enableOperationServers: true
+  enableTypeDeduplication: false
+  environmentVariables:
+    - env: TESTING_API_KEY
+      providerAttribute: api_key
+    - env: TESTING_BEARER
+      providerAttribute: bearer
+    - env: TESTING_CLIENT_ID
+      providerAttribute: client_id
+    - env: TESTING_CLIENT_SECRET
+      providerAttribute: client_secret
+    - env: TESTING_CUSTOM_KEY
+      providerAttribute: custom_key
+    - env: TESTING_CUSTOM_SECRET
+      providerAttribute: custom_secret
+    - env: TESTING_GLOBAL_BOOLEAN
+      providerAttribute: global_boolean
+    - env: TESTING_GLOBAL_ENUM_FLOAT32
+      providerAttribute: global_enum_float32
+    - env: TESTING_GLOBAL_ENUM_FLOAT64
+      providerAttribute: global_enum_float64
+    - env: TESTING_GLOBAL_ENUM_INT32
+      providerAttribute: global_enum_int32
+    - env: TESTING_GLOBAL_ENUM_INT64
+      providerAttribute: global_enum_int64
+    - env: TESTING_GLOBAL_ENUM_INTEGER
+      providerAttribute: global_enum_integer
+    - env: TESTING_GLOBAL_ENUM_NUMBER
+      providerAttribute: global_enum_number
+    - env: TESTING_GLOBAL_ENUM_STRING
+      providerAttribute: global_enum_string
+    - env: TESTING_GLOBAL_FLOAT32
+      providerAttribute: global_float32
+    - env: TESTING_GLOBAL_FLOAT64
+      providerAttribute: global_float64
+    - env: TESTING_GLOBAL_INT32
+      providerAttribute: global_int32
+    - env: TESTING_GLOBAL_INT64
+      providerAttribute: global_int64
+    - env: TESTING_GLOBAL_INTEGER
+      providerAttribute: global_integer
+    - env: TESTING_GLOBAL_NUMBER
+      providerAttribute: global_number
+    - env: TESTING_GLOBAL_STRING
+      providerAttribute: global_string
+    - env: TESTING_HOSTNAME
+      providerAttribute: hostname
+    - env: TESTING_PASSWORD
+      providerAttribute: password
+    - env: TESTING_PORT
+      providerAttribute: server_port
+    - env: TESTING_USERNAME
+      providerAttribute: username
+  excludeEmptyObjectSchemas: true
+  forwardCompatibleEnumsByDefault: false
+  includeEmptyObjects: false
+  inferUnionDiscriminators: true
+  packageName: testing
+  preApplyUnionDiscriminators: true
+  providerTypeNameOverride: ""
+  respectRequiredFields: false
+  respectTitlesForPrimitiveUnionMembers: true
+  unionStrategy: populated-fields

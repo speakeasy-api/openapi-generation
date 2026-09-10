@@ -1,0 +1,84 @@
+
+[TestChanges_DeeplyNestedMethods_MultipleDeeplyNestedChanges - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/v1/users/profile/settings/privacy:
+    get:
+      operationId: getPrivacySettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getPrivacy
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/notifications:
+    get:
+      operationId: getNotificationSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getNotifications
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/v1/users/profile/settings/privacy:
+    get:
+      operationId: getPrivacySettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getPrivacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                includeDefaults:
+                  type: boolean
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/notifications:
+    get:
+      operationId: getNotificationSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getNotifications
+      deprecated: true
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/appearance:
+    post:
+      operationId: updateAppearanceSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: updateAppearance
+      responses:
+        '201':
+          description: Created
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.api.v1.users.profile.settings.updateAppearance()`: **Added**
+* `sdk.api.v1.users.profile.settings.getPrivacy()`: **Removed** (Breaking ⚠️)
+* `sdk.api.v1.users.profile.settings.getNotifications()`: **Deprecated**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.api.v1.users.profile.settings.updateAppearance()`: **Added**
+* `sdk.api.v1.users.profile.settings.getPrivacy()`: **Removed** (Breaking ⚠️)
+* `sdk.api.v1.users.profile.settings.getNotifications()`: **Deprecated**
+
+---

@@ -1,0 +1,246 @@
+openapi: 3.1.0
+info:
+  title: Comprehensive Validation Test API
+  version: 1.0.0
+  description: |
+    This spec intentionally violates multiple validation rules to test the speakeasy-recommended ruleset.
+    <script>alert('xss')</script>
+    Contains eval() as well.
+
+servers:
+  # style-oas3-host-not-example + generator-validate-servers violations
+  - url: https://example.com/api/v1
+    description: Production server using example.com
+
+# Missing security at document level for generator-validate-security
+security:
+  - InvalidScheme: []
+
+tags:
+  - name: users
+    description: User operations
+  - name: users  # generator-duplicate-tag
+    description: Duplicate tag with same name
+
+paths:
+  # Invalid path syntax - semantic-path-declarations
+  /users/{user-id}:
+    parameters:
+      - name: user-id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUser
+      tags:
+        - undefined-tag  # style-operation-tag-defined
+      summary: Get user
+      description: |
+        Contains eval() in description
+        Also has <script>alert('test')</script>
+      deprecated: true  # generator-validate-deprecation - missing x-speakeasy-deprecation-message
+      parameters:
+        - name: include
+          in: query
+          schema:
+            type: string
+            enum:
+              - profile
+              - profile  # semantic-duplicated-enum
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        # Missing error response - generator-missing-error-response
+
+    post:
+      operationId: createUser
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        # Missing success response - style-operation-success-response
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /products:
+    get:
+      operationId: listProducts
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              # Inline schema 1 - generator-duplicate-inline-schemas
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  price:
+                    type: number
+
+  /categories:
+    get:
+      operationId: listCategories
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        # Missing x-speakeasy-pagination - generator-pagination
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              # Duplicate inline schema - generator-duplicate-inline-schemas
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  price:
+                    type: number
+
+  # Duplicate operation name collision - generator-duplicate-operation-name
+  /items/create:
+    post:
+      operationId: createItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+
+  /things/create:
+    post:
+      operationId: createItem  # Duplicate operationId - generator-duplicate-operation-name
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+
+  # Missing path parameter - generator-path-params
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      # Missing orderId parameter definition - generator-path-params
+      responses:
+        '200':
+          description: Order
+
+  # Invalid path param syntax - generator-validate-paths
+  /invalid/{path:
+    get:
+      operationId: invalidPath
+      responses:
+        '200':
+          description: OK
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - active
+            - Active  # generator-validate-enums - collision when normalized
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+          nullable: true  # generator-validate-enums - nullable without null value
+        count:
+          type: integer
+          enum:
+            - 1
+            - "two"  # generator-validate-enums - not an integer
+
+    user:  # generator-duplicate-schema-name - case collision with User
+      type: object
+
+    # Untyped enum - semantic-typed-enum
+    UntypedEnum:
+      enum:
+        - value1
+        - value2
+        - value3
+
+    # Unused schema - semantic-unused-component
+    UnusedSchema:
+      type: object
+      properties:
+        unused:
+          type: string
+
+    # Duplicate error structures - generator-duplicate-errors
+    Error1:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    Error2:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+  responses:
+    ErrorResponse:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error1'
+
+  securitySchemes:
+    InvalidScheme:
+      type: apiKey
+      in: header
+      name: X-API-Key

@@ -1,0 +1,50 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestHeadersResponseBodyWithHeadersFlat(t *testing.T) {
+	recordTest("headers-response-body-with-headers-flat")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	require.NotNil(t, s)
+
+	res, err := s.ResponseHeaders.ResponseHeaders(
+		context.Background(),
+		true,
+		200,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Result)
+	assert.Equal(t, "test-token", res.Result.Token)
+	require.NotNil(t, res.Headers)
+	assert.Equal(t, []string{"required"}, res.Headers["X-Required-Header"])
+}
+
+func TestHeadersEmptyResponseBodyWithHeadersFlat(t *testing.T) {
+	recordTest("headers-empty-response-body-with-headers-flat")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	require.NotNil(t, s)
+
+	res, err := s.ResponseHeaders.ResponseBodyEmptyWithHeaders(
+		context.Background(),
+		1.1,
+		"hello",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Headers)
+	assert.Equal(t, []string{"hello"}, res.Headers["X-String-Header"])
+	assert.Equal(t, []string{"1.1"}, res.Headers["X-Number-Header"])
+}

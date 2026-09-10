@@ -1,0 +1,38 @@
+# This overlay setups the secondary SDK which is mainly trying to test hoisted security, flattened responses and server ids (without server variables)
+# 1. When no global security is defined but some endpoints set their own security at the operation level, the most used scheme is hoisted to the global level.
+#    In secondary, the hoisted scheme is basicAuth. In contrary to the basic-http target though, it is neither required, nor flattened.
+#    Refer to the basic-http.yaml spec for an example of a http:basic scheme that gets flattened into username/password required top-level fields.
+# 2. When x-speakeasy-server-id is used, servers are mapped by name.
+
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/secondary.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with servers using server ids
+  - target: $["servers"]
+    update:
+      - url: http://localhost:35123
+        description: The default server.
+        x-speakeasy-server-id: default-server
+      - url: http://broken
+        description: A server url to a non-existent server.
+        x-speakeasy-server-id: BrokenServer
+  # Remove global security as we want it hoisted
+  - target: $["security"]
+    remove: true
+  # Delete the testHooks operation as the hook required for it is only added in the primary test
+  # TODO: should we look at always adding all the hooks?
+  - target: $.paths.*.*[?(@.operationId == 'testHooks')]
+    remove: true
+  - target: $["x-speakeasy-webhooks"]
+    update:
+      security:
+        type: custom
+  # Disable x-speakeasy-overridable-scopes (removes the `Scopes` field from the ClientCredentials security model)
+  - target: $.components.securitySchemes.clientCredentials.flows.clientCredentials["x-speakeasy-overridable-scopes"]
+    remove: false

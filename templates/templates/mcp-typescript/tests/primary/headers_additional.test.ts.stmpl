@@ -1,0 +1,109 @@
+import { expect, test } from "vitest";
+import { SDKCore as SDK } from "../core.js";
+import { recordTest } from "./common_helpers.js";
+import { methodsMethodGet } from "../funcs/methodsMethodGet.js";
+import { responseHeadersResponseBodyEmptyWithHeaders } from "../funcs/responseHeadersResponseBodyEmptyWithHeaders.js";
+import { responseHeadersErrorResponseHeaders } from "../funcs/responseHeadersErrorResponseHeaders.js";
+import { responseHeadersResponseHeaders } from "../funcs/responseHeadersResponseHeaders.js";
+
+test("Headers Override Request Headers", async () => {
+  recordTest("headers-override-request-headers");
+
+  const s = new SDK();
+
+  const result = await methodsMethodGet(s, {
+    fetchOptions: {
+      headers: {
+        "x-inject-header-1": "foo",
+        "x-inject-header-2": "bar",
+      },
+    },
+  });
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.object).toEqual({ status: "OK" });
+
+  // Custom request headers are echoed back by test service
+  expect(result.value.RawResponse.headers.get("x-inject-header-1")).toBe("foo");
+  expect(result.value.RawResponse.headers.get("x-inject-header-2")).toBe("bar");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Headers Empty Response Body With Headers", async () => {
+  recordTest("headers-empty-response-body-with-headers");
+
+  const s = new SDK();
+
+  const result = await responseHeadersResponseBodyEmptyWithHeaders(s, {
+    xNumberHeader: 1.1,
+    xStringHeader: "hello",
+  });
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.Headers).toHaveProperty("x-string-header", ["hello"]);
+  expect(result.value.Headers).toHaveProperty("x-number-header", ["1.1"]);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Headers Response Without Headers", async () => {
+  recordTest("headers-response-headers-none");
+
+  const s = new SDK();
+
+  const result = await responseHeadersErrorResponseHeaders(s, {
+    includeHeader: true,
+    statusCode: 200,
+  });
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.authToken?.token).toEqual("test-token");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Headers Response Headers Optional", async () => {
+  recordTest("headers-response-headers-optional");
+
+  const s = new SDK();
+
+  const result1 = await responseHeadersResponseHeaders(s, {
+    includeRequiredHeader: true,
+    statusCode: 200,
+  });
+  if (!result1.ok) throw result1.error;
+{{- if isStrictMCPServer }}
+  expect(result1.value.StatusCode).toBe(200);
+  expect(result1.value.authToken?.token).toEqual("test-token");
+  expect(result1.value.Headers).toHaveProperty("x-required-header", [
+    "required",
+  ]);
+  expect(result1.value.Headers).not.toHaveProperty("x-optional-header");
+{{- else }}
+  expect(result1.value.status).toBe(200);
+{{- end }}
+
+  const result2 = await responseHeadersResponseHeaders(s, {
+    includeRequiredHeader: false,
+    statusCode: 200,
+  });
+  if (!result2.ok) throw result2.error;
+{{- if isStrictMCPServer }}
+  expect(result2.value.StatusCode).toBe(200);
+  expect(result2.value.authToken?.token).toEqual("test-token");
+  expect(result2.value.Headers).not.toHaveProperty("x-required-header");
+  expect(result2.value.Headers).not.toHaveProperty("x-optional-header");
+{{- else }}
+  expect(result2.value.status).toBe(200);
+{{- end }}
+});

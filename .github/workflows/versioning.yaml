@@ -1,0 +1,107 @@
+name: Ensure Version Bump
+
+on:
+  # Ensure Version Bump is intentionally a required status check, however
+  # associated pull request information is not readily available during the
+  # merge_group event. The job if conditionals will cause the check to always
+  # report as skipped for merge_group events, rather than failing.
+  merge_group:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+      - ready_for_review
+      - labeled
+      - unlabeled
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check_skip_changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Detect skip changelog in PR
+    outputs:
+      skippable: ${{ steps.skip_status.outputs.skippable }}
+    steps:
+      - name: Search body and labels
+        id: search
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          result-encoding: string
+          script: |
+            return Boolean(
+              context.payload.pull_request.labels.find(l => l.name === 'skip changelog') ||
+              context.payload.pull_request.body?.includes("[skip changelog]")
+            );
+      - name: Set skip status
+        id: skip_status
+        continue-on-error: true
+        run: |
+          echo "steps.search.outputs.result => ${{ steps.search.outputs.result }}"
+          echo "skippable=${{ steps.search.outputs.result }}" >> "$GITHUB_OUTPUT"
+          if [[ "${{ steps.search.outputs.result }}" == "true" ]]; then
+            echo "Skipping changelog check"
+            exit 0
+          else
+            exit 1
+          fi
+
+  changes:
+    if: github.event_name == 'pull_request' && needs.check_skip_changelog.outputs.skippable == 'false'
+    needs: [check_skip_changelog]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      require_changelog: ${{ steps.filter.outputs.require_changelog }}
+      feature_versions: ${{ steps.filter.outputs.feature_versions }}
+      feature_changelogs: ${{ steps.filter.outputs.feature_changelogs }}
+      changerecord: ${{ steps.filter.outputs.changerecord }}
+      changesets: ${{ steps.filter.outputs.changesets }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        name: Check features.ts and changelogs or changerecord or changesets have been updated
+        id: filter
+        with:
+          filters: |
+            require_changelog:
+              # Keep exclusions in the same positive glob. With paths-filter's
+              # default `any` predicate, separate negated patterns also match
+              # unrelated files and turn workflow-only changes into false positives.
+              - 'cmd/!(changelog|changeset)/**'
+              - 'compile/**'
+              - 'formatters/**'
+              - 'internal/!(changeset)/**'
+              - 'languageserver/**'
+              - 'pkg/**'
+              - 'templates/**'
+              - 'changelog.go'
+              - 'go.mod'
+              - 'package.json'
+            feature_versions:
+              - 'templates/templates/**/features.ts'
+            feature_changelogs:
+              - 'changelogs/**/*.md'
+            changerecord:
+              - 'changerecord.md'
+            changesets:
+              - '.changesets/**/*.yaml'
+  ensure_version_bump:
+    needs: [changes]
+    runs-on: ubuntu-latest
+    name: Ensure Version Bump
+    if: needs.changes.outputs.require_changelog == 'true' && needs.changes.outputs.feature_versions == 'false' && needs.changes.outputs.feature_changelogs == 'false' && needs.changes.outputs.changerecord == 'false' && needs.changes.outputs.changesets == 'false'
+    steps:
+      - name: Fail if no version files updated
+        run: |
+          echo "Changes detected that require a version bump, but no version files were updated"
+          exit 1

@@ -1,0 +1,35 @@
+{/* Start Typescript Pagination */}
+Some of the endpoints in this SDK support pagination. To use pagination, you make your SDK calls as usual, but the
+returned response object will have a `next` method that can be called to pull down the next group of results. If the
+return value of `next` is `null`, then there are no more pages to be fetched.
+
+```typescript
+import { SDK } from "openapi";
+import { ListTest1Request, ListTest1Security } from "openapi/dist/models/operations";
+
+async function run() {
+    const sdk = new SDK({
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const page: number = 100;
+    const headerParam1: string = "some example header param";
+    const queryParam1: string = "some example query param";
+    const operationSecurity: ListTest1Security = "<YOUR_API_KEY>";
+
+    const res = await sdk.tag1.listTest1(operationSecurity, page, headerParam1, queryParam1);
+
+    if (res.statusCode == 200) {
+        do {
+            // handle items
+
+            res = res.next();
+        } while (res);
+    }
+}
+
+run();
+
+```
+{/* End Typescript Pagination */}

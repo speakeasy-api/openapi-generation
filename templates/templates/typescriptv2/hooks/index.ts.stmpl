@@ -1,0 +1,4 @@
+{{- if .Global.Config.UseIndexModules}}
+export * from "./types.js";
+export * from "./hooks.js";
+{{end}}

@@ -1,0 +1,35 @@
+{{- $globalSDK := .Global.AST.MainSDK -}}
+{{- $globalSecurity := $globalSDK.Security }}
+{{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
+createMCPServer({
+  logger,
+  allowedTools: flags.tool,
+  {{- if gt (len .Local.Scopes) 0 }}
+  scopes: flags.scope,
+  {{- end }}
+  {{- if $globalSecurity }}
+  {{-   if canFlattenGlobalSecurity}}
+  {{ templateMCPSecurityAccessInline $globalSecurity }}
+  {{-   else }}
+  security: {{templateMCPSecurityAccess $globalSecurity }},
+  {{-   end }}
+  {{- end }}
+  {{- if ne $globalSDK.Globals nil }}
+  {{-   range $field := $globalSDK.Globals.Fields}}
+  {{-     $fieldName := templateGlobalFieldName $field.Name}}
+  {{$fieldName}}: {{mcpflag "flags" $fieldName}},
+  {{-   end}}
+  {{- end}}{{/* if ne $globalSDK.Globals nil */}}
+  serverURL: flags["server-url"],
+  {{- if $globalSDK.Servers}}
+  {{-   if $serverMap}}
+  server: flags.server,
+  {{-   else}}
+  serverIdx: flags["server-index"],
+  {{-   end}}
+  {{-   range $variable := $globalSDK.Servers.GetVariables}}
+  {{-     $name := $variable.Name }}
+  {{      sanitizeFieldName $name }}: {{mcpflag "flags" $name}},
+  {{-   end}}
+  {{- end}}
+})

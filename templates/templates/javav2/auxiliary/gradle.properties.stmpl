@@ -1,0 +1,4 @@
+groupId={{.Global.Config.GroupID}}
+artifactId={{.Global.Config.ArtifactID}}
+version={{.Global.Config.SDKVersion}}
+org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g

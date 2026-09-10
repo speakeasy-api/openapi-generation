@@ -1,0 +1,4 @@
+{{- if .Local.AdditionalContent -}}
+{{.Local.AdditionalContent}}{{end -}}
+# This allows generated code to be indexed correctly
+*.{{.Local.FileSuffix}} linguist-generated=false

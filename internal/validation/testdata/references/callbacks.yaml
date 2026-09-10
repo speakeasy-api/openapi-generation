@@ -1,0 +1,35 @@
+test-callback:
+  "$request.body#/callbackUrl":
+    $ref: "./components.yaml#/components/pathItems/test-callback"
+test-callback-webhook-1:
+  "$request.body#/callbackUrl":
+    post:
+      summary: Test Webhook Callback 1
+      description: Test
+      operationId: test-webhook-callback-1
+      x-speakeasy-name-override: testWebhookCallback1
+      x-speakeasy-group: pathItems.testWebhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "./components.yaml#/components/schemas/test-request-body"
+      responses:
+        "200":
+          description: OK
+test-callback-webhook-2:
+  "$request.body#/callbackUrl":
+    post:
+      summary: Test Webhook Callback 2
+      description: Test
+      operationId: test-webhook-callback-2
+      x-speakeasy-name-override: testWebhookCallback2
+      x-speakeasy-group: pathItems.testWebhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "./components.yaml#/components/schemas/test-request-body"
+      responses:
+        "200":
+          description: OK

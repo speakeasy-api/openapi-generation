@@ -1,0 +1,25 @@
+procs:
+  cli:
+    cmd: ["./scripts/build-review-sdk.sh", "cli", "--skip-compile"]
+  csharp:
+    cmd: ["./scripts/build-review-sdk.sh", "csharp", "--skip-compile"]
+  mcp-typescript:
+    cmd: ["./scripts/build-review-mcp.sh", "mcp-typescript"]
+  go:
+    cmd: ["./scripts/build-review-sdk.sh", "go"]
+  javav2:
+    cmd: ["./scripts/build-review-sdk.sh", "javav2", "--skip-compile"]
+  php:
+    cmd: ["./scripts/build-review-sdk.sh", "php", "--skip-compile"]
+  postman:
+    cmd: ["./scripts/build-review-sdk.sh", "postman", "--skip-compile"]
+  pythonv2:
+    cmd: ["./scripts/build-review-sdk.sh", "pythonv2"]
+  ruby:
+    cmd: ["./scripts/build-review-sdk.sh", "ruby", "--skip-compile"]
+  typescriptv2:
+    cmd: ["./scripts/build-review-sdk.sh", "typescriptv2"]
+  unity:
+    cmd: ["./scripts/build-review-sdk.sh", "unity", "--skip-compile"]
+  terraform:
+    cmd: ["./scripts/build-review-terraform.sh"]

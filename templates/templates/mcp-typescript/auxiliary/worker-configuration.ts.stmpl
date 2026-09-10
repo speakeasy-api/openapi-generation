@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+{{- if and .Global .Global.Config .Global.Config.CloudflareEnabled -}}
+export interface Env {
+  // Add your Cloudflare Worker environment bindings here
+  // For example:
+  // MY_KV_NAMESPACE: KVNamespace;
+  // MY_DURABLE_OBJECT: DurableObjectNamespace;
+  {{sanitizeEnvVarName .Global.Config.PackageName}}_MCP: DurableObjectNamespace;
+  ASSETS: Fetcher; // For serving static assets
+}
+{{- end -}}

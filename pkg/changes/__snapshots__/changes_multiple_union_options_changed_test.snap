@@ -1,0 +1,80 @@
+
+[TestChanges_MultipleUnionOptionsChanged - 1]
+# Test: multiple_union_options_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  oneOf:
+                    - type: string
+                      enum: [active]
+                    - type: string
+                      enum: [inactive]
+                    - type: string
+                      enum: [pending]
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  oneOf:
+                    - type: string
+                      enum: [active]
+                    - type: string
+                      enum: [suspended]
+                    - type: string
+                      enum: [deleted]
+                    - type: string
+                      enum: [archived]
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  *  `request.status` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  * `request.status` **Changed** (Breaking ⚠️)
+    - `union("archived")` **Added**
+    - `union("deleted")` **Added**
+    - `union("inactive")` **Removed** (Breaking ⚠️)
+    - `union("pending")` **Removed** (Breaking ⚠️)
+    - `union("suspended")` **Added**
+
+---

@@ -1,0 +1,25 @@
+{
+  "name": "wasm-binaries",
+  "version": "1.0.0",
+  "description": "Multiple WASM binaries for different functionalities",
+  "main": "index.js",
+  "scripts": {
+    "build": "bash build-all.sh",
+    "build:overlay": "bash build-all.sh --binary=overlay",
+    "build:ast": "bash build-all.sh --binary=ast",
+    "build:full-stack": "bash build-all.sh --binary=full-stack",
+    "test": "pnpm run build && vitest",
+    "postinstall": "pnpm build"
+  },
+  "keywords": ["wasm", "openapi", "generation", "overlay", "ast", "usage-snippets", "docsdata"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "vitest": "^3.1.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "jsdom": "^26.1.0"
+  }
+}

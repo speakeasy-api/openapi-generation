@@ -1,0 +1,8 @@
+{{- addImportInline (getScopeNamespace "retry" true)}}
+new Retry\RetryConfigBackoff(
+    initialInterval: 1,
+    maxInterval:     50,
+    exponent:        1.1,
+    maxElapsedTime:  100,
+    retryConnectionErrors: false,
+)

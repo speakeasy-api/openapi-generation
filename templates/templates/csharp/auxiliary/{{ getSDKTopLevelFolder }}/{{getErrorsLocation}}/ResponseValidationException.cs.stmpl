@@ -1,0 +1,35 @@
+{{- $className := "ResponseValidationException" -}}
+{{- $baseErrorName := getBaseErrorClassName -}}
+{{- $responseFormat := getResponseFormat -}}
+{{- $isErrorEnvelope := eq getResponseFormat "envelope-http"}}
+#nullable enable
+namespace {{getScopeNamespace "errors" true}}
+{
+    using System;
+    using System.Net.Http;
+
+    /// <summary>
+    /// Raised if the response data could not be deserialized into the expected model.
+    /// </summary>
+    public class {{$className}} : {{$baseErrorName}}
+    {
+    {{- if $isErrorEnvelope }}
+
+        public {{$className}}(
+            string message,
+            HttpRequestMessage request,
+            HttpResponseMessage response,
+            string body,
+            Exception innerException
+        ): base(message, request, response, body, innerException) {}
+    {{- else}}
+
+        public {{$className}}(
+            string message,
+            HttpResponseMessage rawResponse,
+            string body,
+            Exception innerException
+        ): base(message, rawResponse, body, innerException) {}
+    {{- end}}
+    }
+}

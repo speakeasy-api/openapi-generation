@@ -1,0 +1,352 @@
+package tests
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// --- JSON Map of Any ---
+
+func TestRequestBodyPostApplicationJSONMapOfAny(t *testing.T) {
+	recordTest("request-bodies-post-application-json-map-of-any")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	mapJSON := `{"mapElemArray":["array-test"],"mapElemBool":true,"mapElemNumber":123,"mapElemObject":{"property":"property-test"},"mapElemString":"string-test"}`
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-post-application-json-map-of-any",
+		"--request", mapJSON,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"mapElemString"`)
+	assert.Contains(t, output, `"string-test"`)
+	assert.Contains(t, output, `"mapElemBool"`)
+}
+
+// --- Inferred Optional Request Wrapper (GET with optional query params) ---
+
+func TestRequestBodyGetInferredOptionalRequestWrapper(t *testing.T) {
+	recordTest("request-bodies-get-inferred-optional-request-wrapper")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-get-inferred-optional-request-wrapper",
+		"--keyword", "search",
+		"--limit", "10",
+		"--offset", "5",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"keyword"`)
+	assert.Contains(t, output, `"search"`)
+}
+
+// --- Multipart File Upload ---
+
+func TestRequestBodyPutMultipartFile(t *testing.T) {
+	recordTest("request-bodies-put-multipart-file")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Create a temp file with test content
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "testUpload.json")
+	err := os.WriteFile(testFile, []byte(`{"hello":"world"}`), 0644)
+	require.NoError(t, err)
+
+	h := NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-multipart-file",
+		"--file", testFile,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Echo server returns raw multipart body in "data" field — verify it contains our file content
+	assert.Contains(t, output, `hello`)
+}
+
+// --- Multipart File with Different File Name ---
+
+func TestRequestBodyPutMultipartDifferentFileName(t *testing.T) {
+	recordTest("request-bodies-put-different-file-name")
+	s := newEchoServer()
+	defer s.Close()
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "testUpload.json")
+	err := os.WriteFile(testFile, []byte(`{"hello":"world"}`), 0644)
+	require.NoError(t, err)
+
+	h := NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-multipart-different-file-name",
+		"--different-file-name", testFile,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `hello`)
+}
+
+// --- Bytes with Params ---
+
+func TestRequestBodyPutBytesWithParams(t *testing.T) {
+	recordTest("request-bodies-put-bytes-with-params")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-bytes-with-params",
+		"--request-body", "test body content",
+		"--query-string-param", "test param",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test param"`)
+}
+
+
+// --- Nullable Required Shared Object ---
+
+func TestNullableRequiredSharedObjectPostAllSet(t *testing.T) {
+	recordTest("request-bodies-post-nullable-required-shared-object-all-set")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "nullable-required-shared-object-post",
+		"--nullable-optional-obj", `{"required":1,"optional":"test"}`,
+		"--nullable-required-obj", `{"required":1}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"NullableOptionalObj"`)
+	assert.Contains(t, output, `"NullableRequiredObj"`)
+}
+
+func TestNullableRequiredSharedObjectPostRequiredNull(t *testing.T) {
+	recordTest("request-bodies-post-nullable-required-shared-object-required-null")
+	s := newEchoServer()
+	defer s.Close()
+	// Omit both flags — NullableOptionalObj absent (omitted), NullableRequiredObj nil (serialized as null)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "nullable-required-shared-object-post"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+func TestNullableRequiredSharedObjectPostOptionalNonNull(t *testing.T) {
+	recordTest("request-bodies-post-nullable-required-shared-object-optional-non-null")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "nullable-required-shared-object-post",
+		"--nullable-optional-obj", `{"required":1}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"NullableOptionalObj"`)
+}
+
+func TestNullableRequiredSharedObjectPostAllNull(t *testing.T) {
+	recordTest("request-bodies-post-nullable-required-shared-object-all-null")
+	s := newEchoServer()
+	defer s.Close()
+	// Pass explicit null for optional field to distinguish from absent
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "nullable-required-shared-object-post",
+		"--nullable-optional-obj", "null",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- Form Encoded String Array ---
+
+func TestFormRequestBodyStringArray(t *testing.T) {
+	recordTest("request-bodies-form-encoded-string-array")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "form-request-body-string-array",
+		"--stuff", "item1", "--stuff", "item2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- No Body No Content Type ---
+
+func TestRequestBodyNoBodyNoContentType(t *testing.T) {
+	recordTest("request-bodies-no-body-no-content-type")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// GET request with no body — should not send Content-Type header
+	err := h.RunWithServer(s.URL, []string{"methods", "method-get"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"GET"`)
+}
+
+
+// --- Multipart File Ref ---
+
+func TestRequestBodyPutMultipartFileRef(t *testing.T) {
+	recordTest("request-bodies-put-multipart-file-ref")
+	s := newEchoServer()
+	defer s.Close()
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "testUpload.json")
+	err := os.WriteFile(testFile, []byte(`{"ref":"test"}`), 0644)
+	require.NoError(t, err)
+
+	h := NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-multipart-file-ref",
+		"--file", testFile,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- Put Bytes ---
+
+func TestRequestBodyPutBytes(t *testing.T) {
+	recordTest("request-bodies-put-bytes")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-bytes",
+		"--request", "hello world bytes",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "hello world bytes")
+}
+
+// --- Wildcard No Content Type ---
+
+func TestRequestBodyPostWildcardNoContentType(t *testing.T) {
+	recordTest("request-bodies-wildcard-no-content-type")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// POST with optional wildcard body — omit body entirely
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-post-wildcard",
+		"--output-format", "json",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// No Content-Type header should be sent when body is nil
+	assert.Empty(t, jsonGetString(output, "headers.Content-Type"))
+}
+
+func TestRequestBodyPutBytesStreaming(t *testing.T) {
+	recordTest("request-bodies-put-bytes-streaming")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-bytes",
+		"--request", `{"test":"streaming bytes"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "streaming bytes")
+}
+
+// --- flag defaults must not override --body / stdin ---
+
+func TestRequestBodyFlagDefaultsDoNotOverrideBody(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+
+	// status defaults to "pending", count defaults to 42 — body supplies different values
+	// and the dedicated flags are not set, so body values must win.
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "request-body-post-flag-defaults-body-merge",
+		"--body", `{"name":"from-body","status":"active","count":7}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "from-body", jsonGetString(output, "json.name"))
+	assert.Equal(t, "active", jsonGetString(output, "json.status"),
+		"unchanged --status flag default must not overwrite --body value")
+	assert.Equal(t, float64(7), jsonGetFloat64(output, "json.count"),
+		"unchanged --count flag default must not overwrite --body value")
+}
+
+func TestRequestBodyFlagDefaultsDoNotOverrideStdin(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+
+	err := h.RunWithStdinServer(s.URL, []string{
+		"request-bodies", "request-body-post-flag-defaults-body-merge",
+	}, `{"name":"from-stdin","status":"archived","count":3}`)
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "from-stdin", jsonGetString(output, "json.name"))
+	assert.Equal(t, "archived", jsonGetString(output, "json.status"),
+		"unchanged --status flag default must not overwrite stdin value")
+	assert.Equal(t, float64(3), jsonGetFloat64(output, "json.count"),
+		"unchanged --count flag default must not overwrite stdin value")
+}
+
+func TestRequestBodyExplicitFlagOverridesBodyDefaultField(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+
+	// Explicit flags still win over --body (highest priority).
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "request-body-post-flag-defaults-body-merge",
+		"--body", `{"name":"from-body","status":"active","count":7}`,
+		"--status", "flagged",
+		"--count", "99",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "from-body", jsonGetString(output, "json.name"))
+	assert.Equal(t, "flagged", jsonGetString(output, "json.status"))
+	assert.Equal(t, float64(99), jsonGetFloat64(output, "json.count"))
+}
+
+func TestRequestBodyFlagDefaultsAppliedWithoutBody(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+
+	// No --body/stdin: schema defaults on unchanged flags should still be sent.
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "request-body-post-flag-defaults-body-merge",
+		"--name", "flags-only",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Equal(t, "flags-only", jsonGetString(output, "json.name"))
+	assert.Equal(t, "pending", jsonGetString(output, "json.status"),
+		"schema default should apply when building from flags alone")
+	assert.Equal(t, float64(42), jsonGetFloat64(output, "json.count"),
+		"schema default should apply when building from flags alone")
+}

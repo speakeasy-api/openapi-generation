@@ -1,0 +1,641 @@
+{{- recurse 1 -}}
+{{- $coreName := sanitizeCoreSDKName }}
+import { {{$coreName}} } from "../core.js";
+{{- genImports -}}
+{{- addInternalImport "sdks" "RequestOptions" "funcs"}}
+{{- addTypeImport "fp" "Result" "funcs" }}
+{{- addTypeImport "async" "APICall" "funcs" }}
+{{- addTypeImport "async" "APIPromise" "funcs" }}
+{{- $dg := .Local.DocGroup -}}
+{{- $opState := .Local.TemplateState }}
+{{- $op := $opState.operation -}}
+{{- $globalSDK := .Global.AST.MainSDK }}
+{{- $usageLocation := "funcs" -}}
+{{- $responseTypes := $opState.inboundResponse }}
+{{- $requestTypes := ""}}
+{{- $hasRequestBody := (and $op.Request $op.Request.Field (not $op.Request.Field.Type.IsEmpty)) }}
+{{- if and $op.Request $op.Request.Field }}
+  {{- $requestTypes = resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" $op.Request.Field.Type
+      "rootTypeDef" $op.OwningSDK.Type
+      "optional" $op.Request.Field.Optional
+      "nullable" $op.Request.Field.Nullable
+      "constValue" $op.Request.Field.Const
+      "defaultValue" $op.Request.Field.Default
+  )}}
+{{- end }}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $funcOptions := templateMethodOptions $op }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $hasURLPagination := hasPaginationURL $op }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- $isGlobalSecurityFlattened := and $op.GlobalSecurity (canFlattenGlobalSecurity) }}
+{{- callImportTypesFunc $responseTypes.importOutputTypes }}
+{{- callImportTypesFunc $opState.importErrorTypes }}
+{{- if $isPaginated }}
+  {{- addTypeImport "operations" "Paginator" "funcs"}}
+  {{- addTypeImport "operations" "PageIterator" "funcs"}}
+  {{- addTypeImport "operations" "createPageIterator" "funcs"}}
+  {{- addTypeImport "operations" "haltIterator" "funcs"}}
+  {{- if opHasPaginationURL $op }}{{addTypeImport "operations" "URL_OVERRIDE" "funcs"}}{{ end }}
+{{- end}}
+
+{{- $args := $op.Arguments }}
+{{- $signature := $opState.signature }}
+{{- $returnType := $signature.returnType }}
+{{- $flatOptions := $opState.flatOptions }}
+{{- $responseFormat := $opState.responseFormat }}
+{{- $inputVar := funcLocal "input" }}
+{{- $emptyRequest := or (not $op.Request) (not $op.Request.Field) $op.Request.Field.Type.IsEmpty }}
+{{- $sseTypes := getSSEResponseTypes $opState }}
+{{- $tsdoc := templateComments $op.Comments $dg $funcName 0 "method" false (getHoistedSecurityRemark $op)}}
+
+{{ if shouldTemplateAcceptHeaderEnum $op }}
+export enum {{sanitizeAcceptEnumName $op}} {
+  {{- range $op.GetAcceptTypes}}
+  {{ sanitizeAcceptEnumKey . }} = "{{ sanitizeAcceptEnumValue . }}",
+  {{- end}}
+}
+{{- end }}
+
+{{- if $sseTypes }}
+{{ $tsdoc }}
+export function {{$funcName}}(
+  {{funcLocal "client"}}: {{$coreName}},
+  {{- if $op.Webhook }}
+  {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+  {{funcLocal "recipient"}}: WebhookRecipient,
+  {{- end}}
+  {{- range $field := $args.Sorted }}
+  {{-   $fieldName := sanitizeFieldName $field.Name }}
+  {{-   $fieldType := resolveOutbound (dict
+        "usageLocation" $usageLocation
+        "typeDef" $field.Type
+        "rootTypeDef" $op.OwningSDK.Type
+        "optional" $field.Optional
+        "nullable" $field.Nullable
+        "streamable" (isMultipartFileField $field)
+        "constValue" $field.Const
+        "defaultValue" $field.Default
+  )}}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{-   if hasAnnotation $field "requestWrapper" }}
+  {{      $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & {{ getSSEStreamFieldOverride $field "stream?: false" }},
+  {{-   else if hasAnnotation $field "request" }}
+  {{      $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & { stream?: false },
+  {{-   else if isSSEStreamField $op $field }}
+  stream{{if $field.Optional}}?{{end}}: false,
+  {{-   else }}
+  {{      if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+  {{-   end }}
+  {{- end }}
+  options?: {{ $funcOptions }},
+): APIPromise<Result<{{$sseTypes.jsonReturnType}}, {{ $opState.errorType }}>>;
+export function {{$funcName}}(
+  {{funcLocal "client"}}: {{$coreName}},
+  {{- if $op.Webhook }}
+  {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+  {{funcLocal "recipient"}}: WebhookRecipient,
+  {{- end}}
+  {{- range $field := $args.Sorted }}
+  {{-   $fieldName := sanitizeFieldName $field.Name }}
+  {{-   $fieldType := resolveOutbound (dict
+        "usageLocation" $usageLocation
+        "typeDef" $field.Type
+        "rootTypeDef" $op.OwningSDK.Type
+        "optional" $field.Optional
+        "nullable" $field.Nullable
+        "streamable" (isMultipartFileField $field)
+        "constValue" $field.Const
+        "defaultValue" $field.Default
+  )}}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{-   if hasAnnotation $field "requestWrapper" }}
+  {{      $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & {{ getSSEStreamFieldOverride $field "stream: true" }},
+  {{-   else if hasAnnotation $field "request" }}
+  {{      $fieldName}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}} & { stream: true },
+  {{-   else if isSSEStreamField $op $field }}
+  stream{{if $field.Optional}}?{{end}}: true,
+  {{-   else }}
+  {{      if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+  {{-   end }}
+  {{- end }}
+  options?: {{ $funcOptions }},
+): APIPromise<Result<{{$sseTypes.sseReturnType}}, {{ $opState.errorType }}>>;
+export function {{$funcName}}(
+  {{funcLocal "client"}}: {{$coreName}},
+  {{- if $op.Webhook }}
+  {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+  {{funcLocal "recipient"}}: WebhookRecipient,
+  {{- end}}
+  {{- range $field := $args.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "usageLocation" $usageLocation
+            "typeDef" $field.Type
+            "rootTypeDef" $op.OwningSDK.Type
+            "optional" $field.Optional
+            "nullable" $field.Nullable
+            "streamable" (isMultipartFileField $field)
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+  {{- end }}
+  options?: {{ $funcOptions }},
+): APIPromise<{{$returnType}}>;
+{{- end }}
+{{- if not $sseTypes }}{{/* When SSE overload is enabled, the jsdoc comment needs to be on the first overload so it is shown for overloads */}}
+{{ $tsdoc }}
+{{- end }}
+export function {{$funcName}}(
+  {{funcLocal "client"}}: {{$coreName}},
+  {{- if $op.Webhook }}
+  {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+  {{funcLocal "recipient"}}: WebhookRecipient,
+  {{- end}}
+  {{- range $field := $args.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "usageLocation" $usageLocation
+            "typeDef" $field.Type
+            "rootTypeDef" $op.OwningSDK.Type
+            "optional" $field.Optional
+            "nullable" $field.Nullable
+            "streamable" (isMultipartFileField $field)
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+  {{- end }}
+  options?: {{ $funcOptions }},
+): APIPromise<{{$returnType}}> {
+  return new APIPromise($do(
+    {{funcLocal "client"}},
+    {{- if $op.Webhook }}
+    {{funcLocal "recipient"}},
+    {{- end}}
+    {{- range $field := $args.Sorted }}
+    {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}},
+    {{- end }}
+    options,
+  ));
+}
+
+async function $do(
+  {{funcLocal "client"}}: {{$coreName}},
+  {{- if $op.Webhook }}
+  {{- addTypeImport "webhooks" "WebhookRecipient" $usageLocation }}
+  {{funcLocal "recipient"}}: WebhookRecipient,
+  {{- end}}
+  {{- range $field := $args.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "usageLocation" $usageLocation
+            "typeDef" $field.Type
+            "rootTypeDef" $op.OwningSDK.Type
+            "optional" $field.Optional
+            "nullable" $field.Nullable
+            "streamable" (isMultipartFileField $field)
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{end}}{{sanitizeFieldName $field.Name}}{{if $field.Optional}}?{{end}}: {{$fieldType.inputType}},
+  {{- end }}
+  options?: {{ $funcOptions }},
+): Promise<[{{$returnType}}, APICall]> {
+  {{- if not $emptyRequest }}
+  {{-   if or (eq $args.Flattening "body") (eq $args.Flattening "all") }}
+  {{-     fail (printf "flattening scheme '%s' not supported: %s" $args.Flattening $op.ID) }}
+  {{-   else if eq $args.Flattening "params" }}
+  const {{funcLocal "input"}}: {{callImportTypesFunc $requestTypes.importInputTypes }}{{$requestTypes.inputType}} = {{"{"}}
+  {{-     range $field := $args.Sorted }}
+  {{-       if hasAnnotation $field "opSecurity" }}{{continue}}{{ end }}
+  {{        declareModelField $field}}: {{sanitizeFieldName $field.Name}},
+  {{-     end}}
+  {{"};"}}
+  {{-   else }}
+  {{-     $inputVar = "request" }}
+  {{-   end }}
+  {{- end}}
+
+{{/* > Request 🔴 */}}
+  {{- if $hasRequestBody }}
+  {{- $paramFlattening := operationParametersFlattened $op -}}
+  {{- $reqBodyOptional := isRequestBodyOptional $op.Request }}
+  {{- $requestSchema := $requestTypes.zod }}
+  {{- callImportTypesFunc $requestTypes.importZodTypes}}
+  {{- if isNoZod }}
+  {{- /* No-zod: request input is shipped as-is. preserveModelFieldNames is auto-forced to true
+         in configuration.go so wire keys == TS identifiers — no name translation needed. */ -}}
+  const {{funcLocal "payload"}} = {{$inputVar}};
+  {{- else }}
+  {{- addInternalImport "schemas" "safeParse" "funcs" "typeImport" }}
+  const {{funcLocal "parsed"}} = safeParse(
+    {{$inputVar}},
+    {{- if isZodV4Mini }}
+    {{ addZodPackageImport }}
+    ({{funcLocal "value"}}) => z.parse({{ $requestSchema }}, {{funcLocal "value"}}),
+    {{- else }}
+    ({{funcLocal "value"}}) => {{ $requestSchema }}.parse({{funcLocal "value"}}),
+    {{- end }}
+    "Input validation failed",
+  );
+  if (!{{funcLocal "parsed"}}.ok) {
+    return [{{if $isPaginated}}haltIterator({{funcLocal "parsed"}}){{else}}{{funcLocal "parsed"}}{{end}}, { status: "invalid" }];
+  }
+  const {{funcLocal "payload"}} = {{funcLocal "parsed"}}.value;
+  {{- end }}
+  {{- $bodyType := getRequestBodyType $op }}
+  {{- $bodyRef := getRequestBodyAccessor $op (funcLocal "payload") }}
+  {{- if not $bodyRef }}
+  const {{funcLocal "body"}} = null;
+  {{- else }}
+  {{- if usesSerialization $op "json" }}
+  {{- addInternalImport "encodings" "encodeJSON" "funcs" "typeImport"}}
+  {{- if $reqBodyOptional }}
+  const {{funcLocal "body"}} = {{funcLocal "payload"}} === undefined ? null : encodeJSON("body", {{$bodyRef}}, { explode: true });
+  {{- else }}
+  const {{funcLocal "body"}} = encodeJSON("body", {{$bodyRef}}, { explode: true });
+  {{- end }}
+
+  {{- else if usesSerialization $op "string" }}
+  {{- if $reqBodyOptional }}
+  const {{funcLocal "body"}} = {{funcLocal "payload"}} === undefined ? null : {{$bodyRef}};
+  {{- else }}
+  const {{funcLocal "body"}} = {{$bodyRef}};
+  {{- end }}
+
+  {{- else if usesSerialization $op "raw" }}
+  {{- if $reqBodyOptional }}
+  const {{funcLocal "body"}} = {{funcLocal "payload"}} === undefined ? null : {{$bodyRef}} instanceof Uint8Array ? new Uint8Array({{$bodyRef}}).buffer : {{$bodyRef}};
+  {{- else }}
+  const {{funcLocal "body"}} = {{$bodyRef}} instanceof Uint8Array ? new Uint8Array({{$bodyRef}}).buffer : {{$bodyRef}};
+  {{- end }}
+
+  {{- else if usesSerialization $op "form" }}
+  {{- if $bodyType := "map" }}{{/* THIS IS A BUG THAT NEEDS RESOLVING THE CORRECT CODE IS BELOW BUT IT EXPOSES CODE NOT HANDLING CERTAIN CASES CORRECTLY */}}
+  {{/*- if eq $bodyType.Type "map" */}}
+  {{- addInternalImport "encodings" "encodeBodyForm" "funcs" "typeImport"}}
+  const {{funcLocal "body"}} = Object.entries({{$bodyRef}} || {}).map(([k, v]) => {
+    return encodeBodyForm(k, v, { charEncoding: "percent" });
+  }).join("&");
+  {{- else }}
+  const {{funcLocal "body"}} = [
+    {{- range $bodyType.Fields }}
+    {{- $fieldName := originalFieldName .}}
+    {{genFormBodyEncoder . (sanitizeAccessor $bodyRef $fieldName $reqBodyOptional)}},
+    {{- end }}
+  ].filter(Boolean).join("&");
+  {{- end }}
+
+  {{- else if usesSerialization $op "multipart" }}
+  {{- $hasMultipartContent := or (eq $bodyType.Type "map") (gt (len $bodyType.Fields) 0) }}
+  const {{funcLocal "body"}} = new FormData();
+  {{- if $hasMultipartContent }}
+  {{ if not $op.Request.IsRequestBodyRequired }}if ({{$bodyRef}} != null) { {{end}}{{/* Start optional body check */}}
+  {{- if eq $bodyType.Type "map" }}
+  {{- addInternalImport "encodings" "appendForm" "funcs" "typeImport"}}
+  for (const [{{funcLocal "key"}}, {{funcLocal "value"}}] of Object.entries({{$bodyRef}} || {})) {
+    appendForm({{funcLocal "body"}}, {{funcLocal "key"}}, {{funcLocal "value"}});
+  }
+  {{- else }}
+  {{- range sortOptionalFieldDefs $bodyType.Fields }}
+  {{- $fieldName := originalFieldName .}}
+  {{- $fieldAccessor := sanitizeAccessor $bodyRef $fieldName $reqBodyOptional }}
+  {{- $isFieldOptional := or .Optional (eq .Type.Type "any") }}
+  {{- if $isFieldOptional }}
+  if ({{ $fieldAccessor }} !== undefined) {
+    {{genMultiPartEncoder . (funcLocal "body") $fieldAccessor}};
+  }
+  {{- else }}
+  {{genMultiPartEncoder . (funcLocal "body") $fieldAccessor}};
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  {{ if not $op.Request.IsRequestBodyRequired }}}{{end}}{{/* End optional body check */}}
+  {{- else }}
+  void {{funcLocal "payload"}};
+  {{- end }}
+
+  {{- else }}
+  const {{funcLocal "body"}} = null;
+
+  {{- end}}
+  {{- end}}
+  {{- end}}
+{{- /* < Request */}}
+
+{{- /* > URL 🔴 */}}
+  {{- if $op.Webhook }}
+  const {{funcLocal "baseURL"}} = new URL({{funcLocal "recipient"}}.url);
+  const {{funcLocal "path"}} = "";
+  {{- else }}
+  {{-   if $op.Servers }}
+  {{-   $opServerVars := $op.Servers.GetVariables}}
+  {{-     if $op.Servers.ServerMap}}
+  {{        if $hasURLPagination -}}
+  {{- addInternalImport "url" "pathToFunc" "funcs" }}
+  const {{funcLocal "baseURL"}} = options?.[URL_OVERRIDE]?.href
+  || options?.{{constants.serverURL}} || pathToFunc({{templateServerListName $op "funcs"}}[{{templateServerID $op $op.Servers.Default "funcs"}}], { charEncoding: "percent" })(
+  {{-         if gt (len $opServerVars) 0 }}{
+  {{-           range $variable := $opServerVars}}
+    {{            sanitizeKey $variable.Name}}: "{{$variable.Default}}",{{end}}
+  }{{-        end }});
+  {{        else -}}
+  {{-         addInternalImport "url" "pathToFunc" "funcs" }}
+  const {{funcLocal "baseURL"}} = options?.{{constants.serverURL}} || pathToFunc({{templateServerListName $op "funcs"}}[{{templateServerID $op $op.Servers.Default "funcs"}}], { charEncoding: "percent" })(
+  {{-         if gt (len $opServerVars) 0 }}{
+  {{-           range $variable := $opServerVars}}
+    {{sanitizeKey $variable.Name}}: "{{$variable.Default}}",{{end}}
+  }{{-        end }});
+  {{        end -}}
+  {{-     else }}
+  {{        if $hasURLPagination -}}
+  {{- addInternalImport "url" "pathToFunc" "funcs" }}
+  const {{funcLocal "baseURL"}} = options?.[URL_OVERRIDE]?.href
+  || options?.{{constants.serverURL}} || pathToFunc({{templateServerListName $op "funcs"}}[0], { charEncoding: "percent" })(
+  {{-         if gt (len $opServerVars) 0 }}{
+  {{-           range $variable := $opServerVars}}
+    {{sanitizeKey $variable.Name}}: "{{$variable.Default}}",
+  {{-           end }}
+  }{{-        end }});
+  {{        else -}}
+  {{-         addInternalImport "url" "pathToFunc" "funcs" }}
+  const {{funcLocal "baseURL"}} = options?.{{constants.serverURL}} || pathToFunc({{templateServerListName $op "funcs"}}[0], { charEncoding: "percent" })(
+  {{-         if gt (len $opServerVars) 0 }}{
+  {{-           range $variable := $opServerVars}}
+    {{sanitizeKey $variable.Name}}: "{{$variable.Default}}",
+  {{-           end }}
+  }{{-        end }});
+  {{        end -}}
+  {{-     end }}
+  {{-   end }}
+  {{- end }}
+{{- /* < URL */}}
+{{- /* > Params 🔴 */}}
+  {{- $requestParams := generateParamsSpec (dict "op" $op "localKey" (funcLocal "payload") "globalKey" (printf "%s._options" (funcLocal "client"))) }}
+  {{- $hasPathParams := gt (len $requestParams.path) 0 }}
+  {{- $hasQueryParams := gt (len $requestParams.query) 0 }}
+  {{- $hasURLPagination := hasPaginationURL $op }}
+
+  {{- if not $op.Webhook }}
+  {{ if $hasPathParams }}
+  const {{funcLocal "pathParams"}} = {
+  {{- range $unused, $spec := $requestParams.path}}
+    {{sanitizeKey $spec.name}}: {{genSingleParamEncoder $spec.fieldDef $spec.accessor}},
+  {{- end }}
+  };
+  {{- end}}
+  {{- addInternalImport "url" "pathToFunc" "funcs" }}
+  {{ if $hasURLPagination -}}
+  const {{funcLocal "path"}} = options?.[URL_OVERRIDE]
+      ? ""
+      : pathToFunc("{{$op.Path}}")({{- if $hasPathParams }}{{funcLocal "pathParams"}}{{end}});
+  {{ else -}}
+  const {{funcLocal "path"}} = pathToFunc("{{$op.Path}}")({{- if $hasPathParams }}{{funcLocal "pathParams"}}{{end}});
+  {{ end -}}
+
+  {{ if $hasQueryParams }}
+  {{ if $hasURLPagination -}}
+  const {{funcLocal "query"}} = options?.[URL_OVERRIDE]
+  ? options[URL_OVERRIDE].search.substring(1)
+  : {{genQueryParamEncoder $requestParams.query}};
+  {{ else -}}
+  const {{funcLocal "query"}} = {{genQueryParamEncoder $requestParams.query}};
+  {{- end }}
+  {{- end }}
+  {{- end }}
+
+  {{ addInternalImport "primitives" "compactMap" "funcs" -}}
+  const {{funcLocal "headers"}} = new Headers(compactMap({
+    {{- $opMediaType := getRequestMediaType $op }}
+    {{- $contentType := "" }}
+    {{- if isMultipartRequest $op }}
+    {{- /* The header for multipart requests is generated by `fetch` + `FormData` */}}
+    {{- else if $opMediaType }}
+    {{-   $contentType = $opMediaType | quote }}
+    {{- else if usesSerialization $op "raw" }}
+    {{-   $contentType = "body instanceof Blob && body.type ? body.type : undefined" }}
+    {{- end }}
+    {{- if $contentType }}
+    "Content-Type": {{$contentType}},
+    {{- end }}
+    {{- if $sseTypes}}
+      {{- if shouldTemplateAcceptHeaderEnum $op}}
+    Accept: options?.acceptHeaderOverride || ({{ getSSEStreamAccessor $op $inputVar }} ? "{{ $sseTypes.sseContentType }}" : "{{ $sseTypes.jsonContentType }}"),
+      {{- else}}
+    Accept: {{ getSSEStreamAccessor $op $inputVar }} ? "{{ $sseTypes.sseContentType }}" : "{{ $sseTypes.jsonContentType }}",
+      {{- end}}
+    {{- else if shouldTemplateAcceptHeaderEnum $op}}
+    Accept: options?.acceptHeaderOverride || {{ formatDefaultAcceptHeader $op }},
+    {{- else}}
+    Accept: {{ formatDefaultAcceptHeader $op }},
+    {{- end}}
+    {{- range $unused, $spec := $requestParams.header }}
+    "{{$spec.name}}": {{genSingleParamEncoder $spec.fieldDef $spec.accessor}},
+    {{- end}}
+  }));
+{{- /* < Params */}}
+
+{{- /* > Security 🔴 */}}
+  {{- $securitySourceCtx := "" }}
+  {{- if $op.Webhook }}
+  {{- $securitySourceCtx = printf "{{constants.hookContext.securitySource}}: undefined," }}
+  {{- else }}
+  {{ if and $op.GlobalSecurity (not $op.Security) }}
+  {{-   addInternalImport "security" "resolveGlobalSecurity" "funcs" }}
+  {{-   addInternalImport "security" "extractSecurity" "funcs" }}
+  {{-   if $isGlobalSecurityFlattened }}
+  {{-     $securityFieldName := sanitizeFieldName (first $op.GlobalSecurity.Type.Fields).Name }}
+  {{-     $securityAccessor := printf "%s._options.%s" (funcLocal "client") $securityFieldName }}
+  {{-     $securitySourceCtx = printf "{{constants.hookContext.securitySource}}: %s," $securityAccessor}}
+  const secConfig = await extractSecurity({{$securityAccessor}});
+  const securityInput = secConfig == null ? {} : { {{$securityFieldName}}: secConfig };
+  {{-   else }}
+  {{-     $securitySourceCtx = printf "{{constants.hookContext.securitySource}}: %s._options.%s," (funcLocal "client") constants.security }}
+  const securityInput = await extractSecurity({{funcLocal "client"}}._options.{{constants.security}})
+  {{-   end }}
+  {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+  const requestSecurity = resolveGlobalSecurity(securityInput{{if $needsAllowedFields}}, {{templateHoistedSecurityIndices $op}}{{end}});
+  {{- else if $op.Security }}{{"\n"}}
+  {{-   $securitySourceCtx = "{{constants.hookContext.securitySource}}: security," }}
+  {{-   $securitySpecs := genSecuritySpecs $op.Security.Type "security" "" }}
+  {{-   addInternalImport "security" "resolveSecurity" "funcs" }}
+  const requestSecurity = resolveSecurity(
+    {{- range $requirements := $securitySpecs }}
+    [
+      {{- range $opt := $requirements }}
+      {
+        {{ if $opt.fieldName }}fieldName: "{{$opt.fieldName}}",{{end}}
+        type: "{{$opt.type}}",
+        value: {{$opt.value}},
+      },
+      {{- end }}
+    ],
+    {{- end }}
+  );
+  {{ else }}
+  {{- $securitySourceCtx = "{{constants.hookContext.securitySource}}: null," }}
+  {{ end }}
+  {{ end }}
+
+{{- if not $securitySourceCtx }}
+  {{- fail (printf "%s: no security source context was set" $op.ID) }}
+{{- end }}
+{{- /* < Security */}}
+
+{{/* > Context 🔴 */}}
+  const context = {
+    {{constants.hookContext.options}}: {{funcLocal "client"}}._options,
+    {{- if or $op.Servers $op.Webhook -}}
+    {{constants.hookContext.baseURL}}: {{funcLocal "baseURL"}} ?? "",
+    {{- else }}
+    {{constants.hookContext.baseURL}}: options?.{{constants.serverURL}} ?? {{funcLocal "client"}}._baseURL ?? "",
+    {{- end -}}
+    {{constants.hookContext.operationID}}: "{{$op.ID}}",
+    {{constants.hookContext.oAuth2Scopes}}: {{templateOAuth2Scopes $op}},
+    {{- if $op.Webhook }}
+    {{constants.hookContext.webhookRecipient}}: {{funcLocal "recipient"}},
+    {{constants.hookContext.resolvedSecurity}}: null,
+    {{- else }}
+    {{ if or $op.GlobalSecurity $op.Security }}
+    {{constants.hookContext.resolvedSecurity}}: requestSecurity,
+    {{ else }}
+    {{constants.hookContext.resolvedSecurity}}: null,
+    {{ end }}
+    {{- end }}
+    {{$securitySourceCtx}}
+{{- if $op.Extensions.Retries}}
+    {{constants.retryConfig}}:
+      options?.{{constants.retries}} ||
+      {{funcLocal "client"}}._options.{{constants.retryConfig}} ||{{ if not $op.Extensions.Retries.DefaultApplied }}
+      {
+        strategy: "{{$op.Extensions.Retries.Strategy}}",
+        {{- if $op.Extensions.Retries.Backoff}}
+        backoff: {
+          initialInterval: {{ $op.Extensions.Retries.Backoff.InitialInterval}},
+          maxInterval: {{ $op.Extensions.Retries.Backoff.MaxInterval}},
+          exponent: {{ $op.Extensions.Retries.Backoff.Exponent}},
+          maxElapsedTime: {{ $op.Extensions.Retries.Backoff.MaxElapsedTime}},
+        },
+        retryConnectionErrors: {{$op.Extensions.Retries.RetryConnectionErrors}},
+        {{- end}}
+        {{- if eq $op.Extensions.Retries.Strategy "attempt-count-backoff"}}
+        maxRetries: {{$op.Extensions.Retries.MaxRetries}},
+        {{- end}}
+      } ||{{end}}
+      { strategy: "none" },
+    {{constants.retryCodes}}: options?.{{constants.retryCodes}} || [{{if gt (len $op.Extensions.Retries.StatusCodes) 0 }}{{range $i, $statusCode := $op.Extensions.Retries.StatusCodes}}"{{$statusCode}}",{{end}}{{end}}],
+{{- else}}
+    {{constants.retryConfig}}: options?.{{constants.retries}} || { strategy: "none" },
+    {{constants.retryCodes}}: options?.{{constants.retryCodes}} || ["429", "500", "502", "503", "504"],
+{{- end}}
+  };
+{{- /* < Context */}}
+
+{{/* > Create request 🔴 */}}
+  const requestRes = {{funcLocal "client"}}._createRequest(context, {
+    {{- if $op.Webhook }}
+    {{- else }}
+    {{- if or $op.GlobalSecurity $op.Security -}}
+    security: requestSecurity,
+    {{- end -}}
+    {{- end -}}
+    method: "{{$op.Method | upper}}",
+    {{- if or $op.Servers $op.Webhook -}}
+    baseURL: {{funcLocal "baseURL"}},
+    {{- else if $hasURLPagination }}
+    baseURL: options?.[URL_OVERRIDE]?.href || options?.{{constants.serverURL}},
+    {{- else }}
+    baseURL: options?.{{constants.serverURL}},
+    {{- end -}}
+    path: {{funcLocal "path"}},
+    headers: {{funcLocal "headers"}},
+    {{- if $hasQueryParams }}
+    query: {{funcLocal "query"}},
+    {{- end }}
+    {{- if $hasRequestBody -}}
+    body: {{funcLocal "body"}},
+    {{- end -}}
+    {{- if $op.UsesUserAgentHeader}}
+    uaHeader: "x-speakeasy-user-agent",
+    {{- end -}}
+    userAgent: {{funcLocal "client"}}._options.{{constants.userAgent}},
+    {{constants.timeoutMs}}: options?.{{constants.timeoutMs}} || {{funcLocal "client"}}._options.{{constants.timeoutMs}}|| {{ if $op.Extensions.Timeout }}{{$op.Extensions.Timeout}}{{else}}-1{{end}},
+  }, options);
+  if (!requestRes.ok) {
+    return [{{if $isPaginated}}haltIterator(requestRes){{else}}requestRes{{end}}, { status: "invalid" }];
+  }
+  const {{funcLocal "req"}} = requestRes.value;
+{{- /* < Create request */}}
+
+{{/* > Send 🔴 */}}
+  const doResult = await {{funcLocal "client"}}._do({{funcLocal "req"}}, {
+    context,
+    isErrorStatusCode: {{templateErrorStatusCodesCheck $op.Response}},
+    retryConfig: context.{{constants.retryConfig}},
+    retryCodes: context.{{constants.retryCodes}},
+  });
+  if (!doResult.ok) {
+    return [{{if $isPaginated}}haltIterator(doResult){{else}}doResult{{end}}, { status: "request-error", request: {{funcLocal "req"}} }];
+  }
+  const response = doResult.value;
+{{- /* < Send */}}
+
+{{- /* > Response 🔴 */}}
+  {{- /* When response format is "flat" but there are error types defined then we need an envelope because errors capture http metadata. */}}
+  {{ if or (eq $responseFormat "envelope-http") $flatOptions.needsEnvelope }}
+  {{- if isNoZod }}
+  const {{funcLocal "responseFields"}} = {
+    httpMeta: { response: response, request: {{funcLocal "req"}} },
+  };
+  {{- else }}
+  const {{funcLocal "responseFields"}} = {
+    HttpMeta: { Response: response, Request: {{funcLocal "req"}} },
+  };
+  {{- end }}
+  {{ else if eq $responseFormat "envelope" }}
+  {{- if isNoZod }}
+  const {{funcLocal "responseFields"}} = {
+    contentType: response.headers.get("content-type") ?? "application/octet-stream",
+    statusCode: response.status,
+    rawResponse: response,
+    headers: {},
+  };
+  {{- else }}
+  const {{funcLocal "responseFields"}} = {
+    ContentType: response.headers.get("content-type") ?? "application/octet-stream",
+    StatusCode: response.status,
+    RawResponse: response,
+    Headers: {},
+  };
+  {{- end }}
+  {{ else if and (eq $responseFormat "flat") $op.Response.Type $op.Response.Type.ResponseEnvelope $flatOptions.needsEnvelope }}
+  const {{funcLocal "responseFields"}} = {};
+  {{- end}}
+  {{"\n"}}
+
+  {{templateResponseMatcher $opState}}
+  if (!{{funcLocal "result"}}.ok) {
+    return [{{if $isPaginated}}haltIterator({{funcLocal "result"}}){{else}}{{funcLocal "result"}}{{end}}, { status: "complete", request: {{funcLocal "req"}}, response }];
+  }
+{{- /* < Response */}}
+
+  {{ if and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- /* > Pagination 🔴 */}}
+
+  {{ templateString "func-pagination.ts.stmpl" $opState | indent 4}}
+
+  const {{funcLocal "page"}} = { ...{{funcLocal "result"}}, ...nextFunc({{funcLocal "raw"}}) };
+  return [{ ...{{funcLocal "page"}}, ...createPageIterator({{funcLocal "page"}}, (v) => !v.ok) }, { status: "complete", request: {{funcLocal "req"}}, response }];
+{{- /* < Pagination */}}
+  {{ else }}
+  return [{{funcLocal "result"}}, { status: "complete", request: {{funcLocal "req"}}, response }];
+  {{- end }}
+}

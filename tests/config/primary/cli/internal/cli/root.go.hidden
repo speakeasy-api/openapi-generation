@@ -1,0 +1,63 @@
+// This incomplete file will trick the generator into applying the custom code
+// regions to the actual final output version of this file.
+
+// #region custom-commands
+rootCmd.AddCommand(&cobra.Command{
+	Use:   "custom-hello",
+	Short: "A custom command added via custom code region",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Fprintln(cmd.OutOrStdout(), "hello from custom command")
+		return nil
+	},
+})
+
+customRequiredFlagsCmd := &cobra.Command{
+	Use:     "custom-required-flags",
+	Aliases: []string{"crf"},
+	Short:   "Exercise tree-wide required-flag prompting",
+	Args:    cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cobraValue, _ := cmd.Flags().GetString("cobra-value")
+		generatedValue, _ := cmd.Flags().GetString("generated-value")
+		note, _ := cmd.Flags().GetString("note")
+		fmt.Fprintf(cmd.OutOrStdout(), "ran: cobra=%s generated=%s note=%s\n", cobraValue, generatedValue, note)
+		return nil
+	},
+}
+customRequiredFlagsCmd.Flags().StringP("cobra-value", "x", "", "Required through cobra.MarkFlagRequired")
+customRequiredFlagsCmd.Flags().String("generated-value", "", "Required through the Speakeasy prompt contract")
+customRequiredFlagsCmd.Flags().String("note", "", "Optional prompt field")
+customRequiredFlagsCmd.Flags().StringSlice("tag", nil, "Repeatable tag")
+customRequiredFlagsCmd.Flags().String("weird-help", "", "Ctrl\x01 char in help")
+if err := customRequiredFlagsCmd.MarkFlagRequired("cobra-value"); err != nil {
+	return nil, fmt.Errorf("mark custom cobra flag required: %w", err)
+}
+if err := flagutil.AnnotatePromptFlag(customRequiredFlagsCmd, "cobra-value", flagutil.PromptFlagSpec{Kind: "string", Order: 0}); err != nil {
+	return nil, err
+}
+if err := flagutil.AnnotatePromptFlag(customRequiredFlagsCmd, "generated-value", flagutil.PromptFlagSpec{Required: true, Kind: "string", Order: 1}); err != nil {
+	return nil, err
+}
+if err := flagutil.AnnotatePromptFlag(customRequiredFlagsCmd, "note", flagutil.PromptFlagSpec{PromptOptional: true, Kind: "string", Order: 2}); err != nil {
+	return nil, err
+}
+usage.MarkDynamic(customRequiredFlagsCmd)
+rootCmd.AddCommand(customRequiredFlagsCmd)
+
+customRequiredArgCmd := &cobra.Command{
+	Use:   "custom-required-arg <target>",
+	Short: "Exercise tree-wide positional prompting",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Fprintf(cmd.OutOrStdout(), "ran: target=%s\n", args[0])
+		return nil
+	},
+}
+if err := interactive.Declare(customRequiredArgCmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+	{Name: "target", Summary: "Target to run", Required: true},
+}}); err != nil {
+	return nil, fmt.Errorf("declare custom positional: %w", err)
+}
+usage.MarkDynamic(customRequiredArgCmd)
+rootCmd.AddCommand(customRequiredArgCmd)
+// #endregion custom-commands

@@ -1,0 +1,4 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $opState := opTemplateState .Local.Operation "funcs" }}
+{{- initFuncLocals $opState -}}
+{{- templateString "func-source.ts.stmpl" (dict "DocGroup" .Local.DocGroup "TemplateState" $opState) }}

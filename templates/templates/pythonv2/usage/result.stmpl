@@ -1,0 +1,25 @@
+{{- $context := .Local.Context -}}
+{{- $isAsync := .Local.Async -}}
+{{- if and $context.Operation $context.Operation.Response.Type -}}
+{{- $responseFormat := getResponseFormat }}
+{{- $responseFieldName := getResponseFieldName $context.Operation }}
+{{- $op := $context.Operation }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $needNilCheck := and (not $pagination) (or (ne $responseFormat "flat") (isReturnTypeOptional $op.Response $pagination)) }}
+{{- $resVar := getResponseVariableName .Local.StepID }}
+{{-   if $needNilCheck }}
+assert {{$resVar}}{{if and (ne $responseFormat "flat") $responseFieldName}}.{{sanitizeFieldName $responseFieldName}}{{end}} is not None
+{{    end }}
+{{-   if operationUsesEventStreams $op }}
+{{     templateString "usage/eventstream.stmpl" (dict "Context" $context "Async" $isAsync) }}
+{{-   else if operationUsesJsonLStreams $op }}
+{{     templateString "usage/jsonlstream.stmpl" (dict "Context" $context "Async" $isAsync) }}
+{{-   else if $pagination}}
+{{     templateString "usage/pagination.stmpl" $context }}
+{{-   else }}
+# Handle response
+print({{$resVar}}{{if and (ne $responseFormat "flat") $responseFieldName}}.{{sanitizeFieldName $responseFieldName}}{{end}})
+{{-   end}}
+{{- else}}
+# Use the SDK ...
+{{- end}}

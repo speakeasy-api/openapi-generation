@@ -1,0 +1,37 @@
+{{if not .Global.Config.Published}}
+> [!TIP]
+> To finish publishing your SDK you must [run your first generation action](https://www.speakeasy.com/docs/github-setup#step-by-step-guide).
+{{end}}
+
+The SDK relies on [Composer](https://getcomposer.org/) to manage its dependencies.
+
+{{- if .Global.Config.Published}}
+
+To install the SDK and add it as a dependency to an existing `composer.json` file:
+```bash
+composer require "{{.Global.Config.PackageName}}"
+```
+{{- else}}
+
+To install the SDK first add the below to your `composer.json` file:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "github",
+            "url": "{{default "<UNSET>" .Global.Config.InstallationURL}}{{if not (hasSuffix ".git" .Global.Config.InstallationURL)}}.git{{end}}"
+        }
+    ],
+    "require": {
+        "{{.Global.Config.PackageName}}": "*"
+    }
+}
+```
+
+Then run the following command:
+
+```bash
+composer update
+```
+{{- end}}

@@ -1,0 +1,74 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test -}}
+{{- $workflow := $test.Workflow -}}
+{{- $cliSkip := getCLITestSkipMessage $test -}}
+{{- $isMultiStep := isMultiStepTest $test -}}
+{{- $isNonJSON := testHasNonJSONResponse $test -}}
+func Test{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}(t *testing.T) {
+{{- if $test.Incomplete}}
+    t.Skip("{{templateTestIncompleteMessage $test.Incomplete}}")
+{{- else if $cliSkip}}
+    t.Skip("{{$cliSkip}}")
+{{- else}}
+{{- templateTestID $test}}
+{{- templateTestEnvVars $test}}
+    h := NewCLITestHarness(t).WithTestName("{{getMockServerTestName $test}}")
+    var args []string
+    var err error
+    var output string
+
+{{- if $workflow}}
+{{range $workflow.Steps}}
+{{- if eq .Type "operation"}}
+{{- if $isMultiStep}}
+    // Execute: {{.UsageContext.Operation.GetID}}
+{{templateCLIStepCode .UsageContext | indentPresent 4}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+    {{getStepOutputVarName .StepID}} := h.GetStdout()
+    output = {{getStepOutputVarName .StepID}}
+    _ = output
+{{templateAssertions .UsageContext | indentPresent 4}}
+{{- else}}
+    // Execute: {{.UsageContext.Operation.GetID}}
+    args = []string{ {{templateCLIArgs .UsageContext}} }
+{{- if $isNonJSON}}
+    err = h.RunRaw(args)
+{{- else}}
+    err = h.Run(args)
+{{- end}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+
+    output = h.GetStdout()
+    _ = output
+{{templateAssertions .UsageContext | indentPresent 4}}
+{{- end}}
+{{else}}
+{{templateCLIWorkflow $workflow . | indentPresent 4}}
+{{end}}{{end}}{{- end}}
+{{- end}}
+}
+{{- if and (not $test.Incomplete) (not $cliSkip) (not $isMultiStep) (testHasExpandableBody $test) }}
+{{- $stdinStep := index $workflow.Steps 0 }}
+{{- if eq $stdinStep.Type "operation" }}
+
+func Test{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}_Stdin(t *testing.T) {
+{{- templateTestID $test}}
+{{- templateTestEnvVars $test}}
+    h := NewCLITestHarness(t).WithTestName("{{getMockServerTestName $test}}")
+    args := []string{ {{templateCLIArgsStdin $stdinStep.UsageContext}} }
+{{- if $isNonJSON}}
+    err := h.RunWithStdinRaw(args, {{templateStdinBodyJSON $stdinStep.UsageContext}})
+{{- else}}
+    err := h.RunWithStdin(args, {{templateStdinBodyJSON $stdinStep.UsageContext}})
+{{- end}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+
+    output := h.GetStdout()
+    _ = output
+{{templateAssertions $stdinStep.UsageContext | indentPresent 4}}
+}
+{{- end}}
+{{- end}}

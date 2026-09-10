@@ -1,0 +1,35 @@
+package mapvalidators
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+)
+{{- $validatorName := sanitizeClassName .Local.ValidatorName}}
+var _ validator.Map = Map{{$validatorName}}Validator{}
+
+type Map{{$validatorName}}Validator struct{}
+
+// Description describes the validation in plain text formatting.
+func (v Map{{$validatorName}}Validator) Description(_ context.Context) string {
+	return "TODO: add validator description"
+}
+
+// MarkdownDescription describes the validation in Markdown formatting.
+func (v Map{{$validatorName}}Validator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+// Validate performs the validation.
+func (v Map{{$validatorName}}Validator) ValidateMap(ctx context.Context, req validator.MapRequest, resp *validator.MapResponse) {
+    resp.Diagnostics.AddAttributeError(
+        req.Path,
+        "TODO: implement mapvalidator {{$validatorName}} logic",
+        req.Path.String()+": "+v.Description(ctx),
+    )
+}
+
+
+func {{$validatorName}}() validator.Map {
+	return Map{{$validatorName}}Validator{}
+}

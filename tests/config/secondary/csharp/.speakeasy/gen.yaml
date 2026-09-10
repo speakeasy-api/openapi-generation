@@ -1,0 +1,41 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+    nameOverrideFeb2026: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  sdkHooksConfigAccess: false
+csharp:
+  inferUnionDiscriminators: true
+  forwardCompatibleUnionsByDefault: tagged-only
+  enableFormatting: false
+  version: 0.0.1
+  author: Speakeasy
+  dotnetVersion: net6.0
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: false
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks
+  maxMethodParams: 6
+  packageName: hoisted-security
+  # default value for `flatteningOrder` is `parameters-first`
+  disableNamespacePascalCasingApr2024: false
+  responseFormat: flat
+  sourceDirectory: ""
+  httpClientPrefix: ""
+  useNodatime: true
+  targetFramework: dotnetVersion

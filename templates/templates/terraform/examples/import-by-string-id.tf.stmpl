@@ -1,0 +1,4 @@
+import {
+  to = {{.Local.ResourceName}}.my_{{.Local.ResourceName}}
+  id = {{.Local.ImportConfigID}}
+}

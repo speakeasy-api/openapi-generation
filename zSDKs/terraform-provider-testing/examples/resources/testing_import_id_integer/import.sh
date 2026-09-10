@@ -1,0 +1,1 @@
+terraform import testing_import_id_integer.my_testing_import_id_integer 0

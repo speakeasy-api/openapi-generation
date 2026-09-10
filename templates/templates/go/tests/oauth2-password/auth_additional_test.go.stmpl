@@ -1,0 +1,230 @@
+package tests
+
+import (
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"openapi"
+	"openapi/internal/utils"
+	"openapi/models/apierrors"
+	"openapi/models/components"
+	"openapi/models/operations"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestOAuth2Password_WithCredentials(t *testing.T) {
+	recordTest("hooks-oauth2-password-with-credentials")
+
+	s := openapi.New(openapi.WithSecurity(components.Oauth2Input{
+		Oauth2Credentials: &components.Oauth2Credentials{
+			Username:     "testuser",
+			Password:     "testpassword",
+			ClientID:     openapi.String("beezy"),
+			ClientSecret: openapi.String("super-secret"),
+		},
+	}))
+
+	res, err := s.Products.List(t.Context())
+
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", res.HTTPMeta.Response.Header.Get("x-oauth2"))
+}
+
+func TestOAuth2Password_WithToken(t *testing.T) {
+	recordTest("hooks-oauth2-password-with-token")
+
+	credentials := utils.NewOAuth2ResourceOwnerPasswordCredentials(
+		getAPITestServiceURL()+"/oauth2/token",
+		"testuser",
+		"testpassword",
+		openapi.String("beezy"),
+		openapi.String("super-secret"),
+	)
+	session, err := credentials.NewSession(t.Context(), http.DefaultClient, []string{"products:read"})
+
+	require.NoError(t, err)
+
+	s := openapi.New(openapi.WithSecurity(components.Oauth2Input{
+		Oauth2Token: openapi.String(session.AccessToken),
+	}))
+
+	res, err := s.Products.List(t.Context())
+
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", res.HTTPMeta.Response.Header.Get("x-oauth2"))
+}
+
+type customOAuth2PasswordTokenRenewalTransport struct {
+	*http.Transport
+
+	tokenRequests int
+}
+
+func (t *customOAuth2PasswordTokenRenewalTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Method != http.MethodPost || req.URL.Path != "/oauth2/token" {
+		return t.Transport.RoundTrip(req)
+	}
+
+	t.tokenRequests++
+
+	if t.tokenRequests > 1 {
+		return t.Transport.RoundTrip(req)
+	}
+
+	req.Header.Set("x-oauth2-expire-at", time.Now().Add(-24*time.Hour).Format(time.RFC3339))
+
+	return t.Transport.RoundTrip(req)
+}
+
+func TestOAuth2Password_TokenRenewal(t *testing.T) {
+	recordTest("hooks-oauth2-password-token-renewal")
+
+	customTransport := &customOAuth2PasswordTokenRenewalTransport{
+		Transport: http.DefaultTransport.(*http.Transport).Clone(),
+	}
+
+	s := openapi.New(
+		openapi.WithClient(&http.Client{
+			Transport: customTransport,
+		}),
+		openapi.WithSecurity(components.Oauth2Input{
+			Oauth2Credentials: &components.Oauth2Credentials{
+				Username:     "testuser",
+				Password:     "testpassword",
+				ClientID:     openapi.String("beezy"),
+				ClientSecret: openapi.String("super-secret"),
+			},
+		}),
+	)
+
+	// Go target does not support customizing the retry status codes, so first
+	// request should fail with 401.
+	res, err := s.Products.List(t.Context())
+
+	assert.Nil(t, res)
+	assert.Error(t, err)
+	assert.Equal(t, `{"error": "token has expired"}`, strings.TrimSpace(err.(*apierrors.APIError).Body))
+	assert.Equal(t, http.StatusUnauthorized, err.(*apierrors.APIError).StatusCode)
+
+	res, err = s.Products.List(t.Context())
+
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", res.HTTPMeta.Response.Header.Get("x-oauth2"))
+	assert.Equal(t, 2, customTransport.tokenRequests)
+}
+
+func TestOAuth2Password_OperationScope(t *testing.T) {
+	recordTest("hooks-oauth2-password-operation-scope")
+
+	s := openapi.New(
+		openapi.WithSecurity(components.Oauth2Input{
+			Oauth2Credentials: &components.Oauth2Credentials{
+				Username:     "testuser",
+				Password:     "testpassword",
+				ClientID:     openapi.String("beezy"),
+				ClientSecret: openapi.String("super-secret"),
+			},
+		}),
+	)
+
+	// First request needs scope "products:read"
+	listRes, err := s.Products.List(t.Context())
+
+	require.NoError(t, err)
+	assert.NotNil(t, listRes)
+	assert.Equal(t, 200, listRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", listRes.HTTPMeta.Response.Header.Get("x-oauth2"))
+
+	// Second request needs scope "products:create"
+	createRes, err := s.Products.Create(t.Context(), components.NewProductForm{
+		Description: "Games console",
+		Name:        "Playstation 5",
+		Price:       499.99,
+	})
+
+	require.NoError(t, err)
+	assert.NotNil(t, createRes)
+	assert.Equal(t, 200, createRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", createRes.HTTPMeta.Response.Header.Get("x-oauth2"))
+}
+
+func TestOAuth2Password_BadCredentials(t *testing.T) {
+	recordTest("hooks-oauth2-password-bad-credentials")
+
+	s := openapi.New(
+		openapi.WithSecurity(components.Oauth2Input{
+			Oauth2Credentials: &components.Oauth2Credentials{
+				Username:     "testuser",
+				Password:     "BAD_PASSWORD",
+				ClientID:     openapi.String("beezy"),
+				ClientSecret: openapi.String("super-secret"),
+			},
+		}),
+	)
+
+	res, err := s.Products.List(t.Context())
+
+	assert.Nil(t, res)
+	assert.ErrorContains(t, err, "invalid username or password")
+}
+
+func TestOAuth2Password_NotRequired(t *testing.T) {
+	recordTest("hooks-oauth2-password-not-required")
+
+	s := openapi.New(
+		openapi.WithSecurity(components.Oauth2Input{
+			Oauth2Credentials: &components.Oauth2Credentials{
+				Username:     "testuser",
+				Password:     "testpassword",
+				ClientID:     openapi.String("beezy"),
+				ClientSecret: openapi.String("super-secret"),
+			},
+		}),
+	)
+
+	res, err := s.HealthCheck(t.Context())
+
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "", res.HTTPMeta.Response.Header.Get("x-oauth2"))
+}
+
+func TestOAuth2Password_OperationSecurityOption(t *testing.T) {
+	recordTest("hooks-oauth2-password-operation-security-option")
+
+	s := openapi.New()
+
+	res, err := s.Inventory.UpdateProductStock(
+		t.Context(),
+		operations.UpdateProductStockSecurity{
+			Oauth2: &components.Oauth2Input{
+				Oauth2Credentials: &components.Oauth2Credentials{
+					Username:     "testuser",
+					Password:     "testpassword",
+					ClientID:     openapi.String("beezy"),
+					ClientSecret: openapi.String("super-secret"),
+				},
+			},
+		},
+		components.ProductInventoryUpdateForm{
+			QuantityDelta: 99,
+		},
+		"123",
+	)
+
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "pass", res.HTTPMeta.Response.Header.Get("x-oauth2"))
+}

@@ -1,0 +1,16 @@
+{{- $testGroup := .Local.Name -}}
+# frozen_string_literal: true
+
+require_relative '../lib/{{sanitizeFileName .Global.Config.PackageName}}'
+require_relative 'test_client'
+require_relative 'common_helper_test'
+require 'minitest/autorun'
+require 'minitest/focus'
+
+module {{ sanitizeModuleName .Global.Config.Module }}
+  class Test{{sanitizeClassName $testGroup}} < Minitest::Test
+{{range .Local.Tests}}
+{{templateString "test.rb.stmpl" (dict "TestGroup" $testGroup "Test" .)}}
+{{end}}
+  end
+end

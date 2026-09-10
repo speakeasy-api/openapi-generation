@@ -1,0 +1,6 @@
+{{- $resFieldName := getResponseFieldName .Local.Operation "eventstream" -}}
+{{- $responseFormat := getResponseFormat -}}
+res{{if and (not (eq $responseFormat "flat")) $resFieldName}}.{{$resFieldName}}{{end}}.each do |event|
+  # handle event
+  puts event
+end

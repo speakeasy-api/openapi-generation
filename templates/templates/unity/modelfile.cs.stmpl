@@ -1,0 +1,14 @@
+#nullable enable
+namespace {{getModelNamespace .Local.OutputLocation}}
+{
+{{- templateModelImports .Local}}
+    {{- if eq .Local.Type.Type "enum"}}
+    {{templateString "enum.cs.stmpl" .Local.Type}}
+    {{- else if eq .Local.Type.Type "error"}}
+    {{templateString "error.cs.stmpl" .Local.Type}}
+    {{- else if eq .Local.Type.Type "union"}}
+    {{templateString "union.cs.stmpl" .Local}}
+    {{- else}}
+    {{templateString "model.cs.stmpl" .Local.Type}}
+    {{- end}}
+}

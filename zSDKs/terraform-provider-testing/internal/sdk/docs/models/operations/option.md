@@ -1,0 +1,374 @@
+# Options
+
+## Global Options
+
+Global options are passed when initializing the SDK client and apply to all operations.
+
+### WithServerURL
+
+WithServerURL allows providing an alternative server URL.
+
+```go
+sdk.WithServerURL("https://api.example.com")
+```
+
+### WithTemplatedServerURL
+
+WithTemplatedServerURL allows providing an alternative server URL with templated parameters.
+
+```go
+sdk.WithTemplatedServerURL("https://{host}:{port}", map[string]string{
+    "host": "api.example.com",
+    "port": "8080",
+})
+```
+
+### WithServerIndex
+
+WithServerIndex allows the overriding of the default server by index.
+
+```go
+sdk.WithServerIndex(1)
+```
+
+### WithHostname
+
+WithHostname allows setting the hostname variable for url substitution.
+
+```go
+sdk.WithHostname(/* ... */)
+```
+
+### WithPort
+
+WithPort allows setting the port variable for url substitution.
+
+```go
+sdk.WithPort(/* ... */)
+```
+
+### WithClient
+
+WithClient allows the overriding of the default HTTP client used by the SDK.
+
+```go
+sdk.WithClient(httpClient)
+```
+
+### WithSecurity
+
+WithSecurity configures the SDK to use the provided security details.
+
+```go
+sdk.WithSecurity(/* ... */)
+```
+
+### WithSecuritySource
+
+WithSecuritySource configures the SDK to invoke the provided function on each method call to determine authentication.
+
+```go
+sdk.WithSecuritySource(/* ... */)
+```
+
+### WithGlobalBoolean
+
+WithGlobalBoolean allows setting the GlobalBoolean parameter for all supported operations.
+
+```go
+sdk.WithGlobalBoolean(/* ... */)
+```
+
+### WithGlobalBooleanWithDefault
+
+WithGlobalBooleanWithDefault allows setting the GlobalBooleanWithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalBooleanWithDefault(/* ... */)
+```
+
+### WithGlobalEnumFloat32
+
+WithGlobalEnumFloat32 allows setting the GlobalEnumFloat32 parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumFloat32(/* ... */)
+```
+
+### WithGlobalEnumFloat64
+
+WithGlobalEnumFloat64 allows setting the GlobalEnumFloat64 parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumFloat64(/* ... */)
+```
+
+### WithGlobalEnumInt32
+
+WithGlobalEnumInt32 allows setting the GlobalEnumInt32 parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumInt32(/* ... */)
+```
+
+### WithGlobalEnumInt64
+
+WithGlobalEnumInt64 allows setting the GlobalEnumInt64 parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumInt64(/* ... */)
+```
+
+### WithGlobalEnumInteger
+
+WithGlobalEnumInteger allows setting the GlobalEnumInteger parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumInteger(/* ... */)
+```
+
+### WithGlobalEnumNumber
+
+WithGlobalEnumNumber allows setting the GlobalEnumNumber parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumNumber(/* ... */)
+```
+
+### WithGlobalEnumString
+
+WithGlobalEnumString allows setting the GlobalEnumString parameter for all supported operations.
+
+```go
+sdk.WithGlobalEnumString(/* ... */)
+```
+
+### WithGlobalFloat32
+
+WithGlobalFloat32 allows setting the GlobalFloat32 parameter for all supported operations.
+
+```go
+sdk.WithGlobalFloat32(/* ... */)
+```
+
+### WithGlobalFloat32WithDefault
+
+WithGlobalFloat32WithDefault allows setting the GlobalFloat32WithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalFloat32WithDefault(/* ... */)
+```
+
+### WithGlobalFloat64
+
+WithGlobalFloat64 allows setting the GlobalFloat64 parameter for all supported operations.
+
+```go
+sdk.WithGlobalFloat64(/* ... */)
+```
+
+### WithGlobalFloat64WithDefault
+
+WithGlobalFloat64WithDefault allows setting the GlobalFloat64WithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalFloat64WithDefault(/* ... */)
+```
+
+### WithGlobalInt32
+
+WithGlobalInt32 allows setting the GlobalInt32 parameter for all supported operations.
+
+```go
+sdk.WithGlobalInt32(/* ... */)
+```
+
+### WithGlobalInt32WithDefault
+
+WithGlobalInt32WithDefault allows setting the GlobalInt32WithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalInt32WithDefault(/* ... */)
+```
+
+### WithGlobalInt64
+
+WithGlobalInt64 allows setting the GlobalInt64 parameter for all supported operations.
+
+```go
+sdk.WithGlobalInt64(/* ... */)
+```
+
+### WithGlobalInt64WithDefault
+
+WithGlobalInt64WithDefault allows setting the GlobalInt64WithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalInt64WithDefault(/* ... */)
+```
+
+### WithGlobalInteger
+
+WithGlobalInteger allows setting the GlobalInteger parameter for all supported operations.
+
+```go
+sdk.WithGlobalInteger(/* ... */)
+```
+
+### WithGlobalIntegerWithDefault
+
+WithGlobalIntegerWithDefault allows setting the GlobalIntegerWithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalIntegerWithDefault(/* ... */)
+```
+
+### WithGlobalNumber
+
+WithGlobalNumber allows setting the GlobalNumber parameter for all supported operations.
+
+```go
+sdk.WithGlobalNumber(/* ... */)
+```
+
+### WithGlobalNumberWithDefault
+
+WithGlobalNumberWithDefault allows setting the GlobalNumberWithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalNumberWithDefault(/* ... */)
+```
+
+### WithGlobalString
+
+WithGlobalString allows setting the GlobalString parameter for all supported operations.
+
+```go
+sdk.WithGlobalString(/* ... */)
+```
+
+### WithGlobalStringWithDefault
+
+WithGlobalStringWithDefault allows setting the GlobalStringWithDefault parameter for all supported operations.
+
+```go
+sdk.WithGlobalStringWithDefault(/* ... */)
+```
+
+### WithRetryConfig
+
+WithRetryConfig allows setting the default retry configuration used by the SDK for all supported operations.
+
+```go
+sdk.WithRetryConfig(retry.Config{
+    Strategy: "backoff",
+    Backoff: retry.BackoffStrategy{
+        InitialInterval: 500 * time.Millisecond,
+        MaxInterval: 60 * time.Second,
+        Exponent: 1.5,
+        MaxElapsedTime: 5 * time.Minute,
+    },
+    RetryConnectionErrors: true,
+})
+```
+
+### WithTimeout
+
+WithTimeout sets the default request timeout for all operations.
+
+```go
+sdk.WithTimeout(30 * time.Second)
+```
+
+## Per-Method Options
+
+Per-method options are passed as the last argument to individual methods and override any global settings for that request.
+
+### WithServerURL
+
+WithServerURL allows providing an alternative server URL for a single request.
+
+```go
+operations.WithServerURL("http://api.example.com")
+```
+
+### WithTemplatedServerURL
+
+WithTemplatedServerURL allows providing an alternative server URL with templated parameters for a single request.
+
+```go
+operations.WithTemplatedServerURL("http://{host}:{port}", map[string]string{
+    "host": "api.example.com",
+    "port": "8080",
+})
+```
+
+### WithRetries
+
+WithRetries allows customizing the default retry configuration for a single request.
+
+```go
+operations.WithRetries(retry.Config{
+    Strategy: "backoff",
+    Backoff: retry.BackoffStrategy{
+        InitialInterval: 500 * time.Millisecond,
+        MaxInterval: 60 * time.Second,
+        Exponent: 1.5,
+        MaxElapsedTime: 5 * time.Minute,
+    },
+    RetryConnectionErrors: true,
+})
+```
+
+### WithOperationTimeout
+
+WithOperationTimeout allows setting the request timeout for a single request.
+
+```go
+operations.WithOperationTimeout(30 * time.Second)
+```
+
+### WithSetHeaders
+
+WithSetHeaders allows setting custom headers on a per-request basis. If the request already contains headers matching the provided keys, they will be overwritten.
+
+```go
+operations.WithSetHeaders(map[string]string{
+    "X-Cache-TTL": "60",
+})
+```
+
+### WithURLOverride
+
+WithURLOverride allows overriding the default URL for an operation.
+
+```go
+operations.WithURLOverride("/custom/path")
+```
+
+### WithAcceptHeaderOverride
+
+WithAcceptHeaderOverride allows overriding the `Accept` header for operations that support multiple response content types.
+
+```go
+operations.WithAcceptHeaderOverride(operations.AcceptHeaderEnumApplicationJson)
+```
+
+### WithPolling
+
+WithPolling enables method-specific polling configurations, such as waiting for a particular HTTP status code or response body content. Only usable with methods that implement polling support.
+
+```go
+operations.WithPolling(client.ExampleOperationWaitForSuccess())
+```
+
+There are separate polling options available in the `polling` package for overriding polling behaviors, such as the request count limit. Provide any number of these polling options.
+
+```go
+operations.WithPolling(
+    client.ExampleOperationWaitForSuccess(),
+    polling.WithDelaySecondsOverride(5),
+    polling.WithIntervalSecondsOverride(2),
+    polling.WithLimitCountOverride(10),
+)
+```

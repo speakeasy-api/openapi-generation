@@ -1,0 +1,16 @@
+{{ define "footer"}}
+<footer>
+    <!-- do something in here -->
+</footer>
+{{- if not .TestMode -}}
+<script>
+  // statistics
+  window.statistics = {{ .Statistics }}
+</script>
+<script>
+    {{ .HydrateJS }}
+</script>
+{{- else -}}
+<script src="http://localhost:8080/js/hydrate.js"></script>
+{{- end -}}
+{{ end}}

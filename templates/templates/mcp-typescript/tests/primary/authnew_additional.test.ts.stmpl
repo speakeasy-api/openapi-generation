@@ -1,0 +1,287 @@
+import { expect, test } from "vitest";
+
+import { SDKCore as SDK } from "../core.js";
+import { API_TEST_SERVICE_URL, recordTest } from "./common_helpers.js";
+import { fileToBase64{{ if isStrictMCPServer }}, filesToString{{ end }} } from "./files.js";
+import { createTestHTTPClient } from "./testclient.js";
+import { authNewBasicAuthNew } from "../funcs/authNewBasicAuthNew.js";
+import { authNewMultipleMixedSchemeAuth } from "../funcs/authNewMultipleMixedSchemeAuth.js";
+import { authNewMultipleMixedOptionsAuth } from "../funcs/authNewMultipleMixedOptionsAuth.js";
+import { authNewMultipleOptionsWithMixedSchemesAuth } from "../funcs/authNewMultipleOptionsWithMixedSchemesAuth.js";
+import { requestBodiesRequestBodyPutStringWithParams } from "../funcs/requestBodiesRequestBodyPutStringWithParams.js";
+import { requestBodiesRequestBodyPutBytesWithParams } from "../funcs/requestBodiesRequestBodyPutBytesWithParams.js";
+
+test("Authnew Basic Auth New With Credentials", async () => {
+  recordTest("auth-basic-auth");
+
+  const testHttpClient = createTestHTTPClient("basicAuthNew");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewBasicAuthNew(
+    sdk,
+    {
+      password: "testPass",
+      username: "testUser",
+    },
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+    },
+    {
+      serverURL: API_TEST_SERVICE_URL,
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Basic Auth New Empty", async () => {
+  recordTest("auth-basic-auth-empty");
+
+  const testHttpClient = createTestHTTPClient("basicAuthNew");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewBasicAuthNew(
+    sdk,
+    {
+      password: "",
+      username: "",
+    },
+    {
+      basicAuth: {
+        password: "",
+        username: "",
+      },
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Basic Auth New Username Only", async () => {
+  recordTest("auth-basic-auth-username-only");
+
+  const testHttpClient = createTestHTTPClient("basicAuthNew");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewBasicAuthNew(
+    sdk,
+    {
+      password: "",
+      username: "testUser",
+    },
+    {
+      basicAuth: {
+        password: "",
+        username: "testUser",
+      },
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Basic Auth New Password Only", async () => {
+  recordTest("auth-basic-auth-password-only");
+
+  const testHttpClient = createTestHTTPClient("basicAuthNew");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewBasicAuthNew(
+    sdk,
+    {
+      password: "testPass",
+      username: "",
+    },
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "",
+      },
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Multiple Mixed Scheme Auth", async () => {
+  recordTest("auth-multiple-mixed-scheme-auth");
+
+  const testHttpClient = createTestHTTPClient("multipleMixedSchemeAuth");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewMultipleMixedSchemeAuth(
+    sdk,
+    {
+      apiKeyAuthNew: "test_api_key",
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+    },
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+      headerAuth: [
+        {
+          expectedValue: "test_api_key",
+          headerName: "x-api-key",
+        },
+      ],
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Multiple Mixed Options Auth Second Option", async () => {
+  recordTest("auth-multiple-mixed-options-auth-second-option");
+
+  const testHttpClient = createTestHTTPClient("multipleMixedOptionsAuth");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewMultipleMixedOptionsAuth(
+    sdk,
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+    },
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Authnew Multiple Options With Mixed Schemes Auth Second Option", async () => {
+  recordTest("auth-multiple-options-with-mixed-schemes-auth-second-option");
+
+  const testHttpClient = createTestHTTPClient(
+    "multipleOptionsWithMixedSchemesAuth",
+  );
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await authNewMultipleOptionsWithMixedSchemesAuth(
+    sdk,
+    {
+      Option2: {
+        apiKeyAuthNew: "test_api_key",
+        basicAuth: {
+          password: "testPass",
+          username: "testUser",
+        },
+      },
+    },
+    {
+      basicAuth: {
+        password: "testPass",
+        username: "testUser",
+      },
+      headerAuth: [
+        {
+          expectedValue: "test_api_key",
+          headerName: "x-api-key",
+        },
+      ],
+    },
+  );
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Requestbodies Request Body Put String With Params", async () => {
+  recordTest("request-bodies-put-string-with-params");
+
+  const testHttpClient = createTestHTTPClient("requestBodyPutStringWithParams");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await requestBodiesRequestBodyPutStringWithParams(sdk, {
+    RequestBody: "Hello world",
+    queryStringParam: "test param",
+  });
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res).toEqual({
+    args: {
+      queryStringParam: "test param",
+    },
+    data: "Hello world",
+  });
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Requestbodies Request Body Put Bytes With Params", async () => {
+  recordTest("request-bodies-put-bytes-with-params");
+
+  const testHttpClient = createTestHTTPClient("requestBodyPutBytesWithParams");
+  const sdk = new SDK({ httpClient: testHttpClient });
+
+  const result = await requestBodiesRequestBodyPutBytesWithParams(sdk, {
+    RequestBody: await fileToBase64(".speakeasy/testfiles/testUpload.json"),
+    queryStringParam: "test param",
+  });
+
+  if (!result.ok) throw result.error;
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res).toEqual({
+    args: {
+      queryStringParam: "test param",
+    },
+    data: await filesToString(".speakeasy/testfiles/testUpload.json"),
+  });
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});

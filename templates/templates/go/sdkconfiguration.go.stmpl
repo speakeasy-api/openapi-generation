@@ -1,0 +1,81 @@
+{{- recurse 1 -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $hasServers := (and .Local.Servers .Local.Servers.HasAbsoluteURL) -}}
+{{- addImport "net/http"}}
+{{- addImport "time"}}
+{{- addImport "retry"}}
+package config
+
+{{genImports}}
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type SDKConfiguration struct {
+	Client   			HTTPClient
+	{{if .Local.Security}}{{addImport "context"}}Security        	func(context.Context) (interface{}, error){{end}}
+	ServerURL      		string
+	{{- if $hasServers }}
+	{{- if $serverMap}}
+	Server 				string
+    ServerList 			map[string]string
+	{{- else }}
+	ServerIndex 		int
+    ServerList 			[]string
+	{{- end}}
+	{{- if $serverVariables}}
+	{{- if $serverMap}}
+	ServerVariables 	map[string]map[string]string
+	{{- else}}
+	ServerVariables 	[]map[string]string
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	UserAgent     		string
+	SDKVersion          string
+	GenVersion          string
+	OpenAPIDocVersion   string
+	{{- if .Local.Globals}}
+	Globals        		{{sanitizeClass .Local.Globals "" false}}
+	{{- end}}
+	RetryConfig			*retry.Config
+	Timeout             *time.Duration
+}
+
+func (c *SDKConfiguration) GetServerDetails() (string, map[string]string) {
+{{- if not $hasServers }}
+	return c.ServerURL, map[string]string{}
+{{- else }}
+	if c.ServerURL != "" {
+		return c.ServerURL, nil
+	}
+	{{- if $serverMap}}
+
+	if c.Server == "" {
+		c.Server = "{{.Local.Servers.Default}}"
+	}
+
+	return c.ServerList[c.Server], {{if $serverVariables}}c.ServerVariables[c.Server]{{else}}nil{{end}}
+	{{- else }}
+
+	return c.ServerList[c.ServerIndex], {{if $serverVariables}}c.ServerVariables[c.ServerIndex]{{else}}nil{{end}}
+	{{- end}}
+{{ end -}}
+}
+{{- if (and .Global.Config.EnvVarPrefix .Local.Globals)}}
+
+func(c *SDKConfiguration) FillGlobalsFromEnv() {
+    {{- range .Local.Globals.Fields}}
+    if c.Globals.{{sanitizeFieldName .Name}} == nil {
+	{{- addImport "utils"}}
+        if val := utils.ValueFromEnvVar("{{templateSecurityEnvVars .}}", c.Globals.{{sanitizeFieldName .Name}}); val != nil {
+            if typedVal, ok := val.({{sanitizeType .Type false false "sdk"}}); ok {
+                c.Globals.{{sanitizeFieldName .Name}} = &typedVal
+            }
+        }
+    }
+{{- end}}
+}
+{{- end}}

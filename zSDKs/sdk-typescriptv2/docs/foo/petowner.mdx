@@ -1,0 +1,31 @@
+---
+title: "PetOwner"
+---
+
+A pet owner in the foo namespace
+
+## Example Usage
+
+```typescript
+import { PetOwner } from "openapi/foo";
+
+let value: PetOwner = {
+  id: "owner-123",
+  name: "Jane Doe",
+  pets: [
+    {
+      id: "pet-foo-123",
+      name: "Fluffy",
+      species: "cat",
+    },
+  ],
+};
+```
+
+## Fields
+
+| Field                      | Type                       | Required                   | Description                | Example                    |
+| -------------------------- | -------------------------- | -------------------------- | -------------------------- | -------------------------- |
+| `id`                       | *string*                   | :heavy_check_mark:         | N/A                        | owner-123                  |
+| `name`                     | *string*                   | :heavy_check_mark:         | N/A                        | Jane Doe                   |
+| `pets`                     | [foo.Pet](../foo/pet.mdx)[] | :heavy_minus_sign:         | N/A                        |                            |

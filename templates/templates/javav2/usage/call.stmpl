@@ -1,0 +1,26 @@
+{{- $usageCtx := .Local.Context}}
+{{- $isAsync := .Local.Async}}
+{{- $mode := .Local.Mode}}
+{{- $pagination := .Local.Pagination}}
+{{- $paginationScope := .Local.PaginationScope}}
+{{- $op := $usageCtx.Operation -}}
+{{- if $op -}}
+{{- $paramFlattening := operationParametersFlattened $op -}}
+{{- $namespace := sanitizeSDKAccess $usageCtx.SDK -}}
+{{- $reqAssignment := "" -}}
+{{- if and $op.Request (not $paramFlattening) }}
+        {{- $reqAssignment = (templateAssignRequest $usageCtx $op.Request) -}}
+        {{- if gt (len $reqAssignment) 0}}
+        {{$reqAssignment}}{{"\n"}}
+        {{- end}}
+{{- end}}
+{{- if eq $mode "pagination" }}
+{{templateString "usage/pagination.stmpl" .Local}}
+{{- else}}
+        {{- if or (eq $mode "eventstream") (eq $mode "jsonl") (eq $mode "pagination")}}
+        {{javaImportResponseReturnType $op $isAsync}} {{getResponseVariableName $usageCtx.StepID}} = sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 ".call()" $reqAssignment}};
+        {{- else}}
+        {{javaImportResponseReturnType $op $isAsync}} {{getResponseVariableName $usageCtx.StepID}}{{if $isAsync}}Fut{{end}} = sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 ".call()" $reqAssignment}};
+        {{- end}}
+{{- end}}
+{{- end -}}

@@ -1,0 +1,9 @@
+# RenderAssetRequest
+
+
+## Fields
+
+| Field                                                                         | Setter Type                                                                   | Getter Type                                                                   | Required                                                                      | Description                                                                   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `prompt`                                                                      | *String*                                                                      | *String*                                                                      | :heavy_check_mark:                                                            | N/A                                                                           |
+| `outputModalities`                                                            | @Nullable List\<[OutputModality](../../models/operations/OutputModality.md)>  | Optional\<List\<[OutputModality](../../models/operations/OutputModality.md)>> | :heavy_minus_sign:                                                            | N/A                                                                           |

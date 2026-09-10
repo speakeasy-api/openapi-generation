@@ -1,0 +1,32 @@
+{{- if .Local.Servers.ServerMap }}
+  {{- $serverMapName := templateConstName "ServerMap" .Local.ID }}
+  {{- $serversEnumName := print (sanitizeClassName .Local.ID) "Servers" }}
+        /// <summary>
+        /// Server identifiers available for the {{ .Local.ID }} operation.
+        /// </summary>
+        public enum {{ $serversEnumName }} {
+          {{- range .Local.Servers.Servers}}
+            {{ sanitizeClassName .ID  false}},
+          {{- end}}
+        }
+
+        /// <summary>
+        /// Server URLs available for the {{ .Local.ID }} operation.
+        /// </summary>
+        public static readonly Dictionary<{{ $serversEnumName }}, string> {{ $serverMapName }} = new Dictionary<{{ $serversEnumName }}, string>()
+        {
+          {{- range .Local.Servers.Servers}}
+            { {{ $serversEnumName }}.{{ templateConstName .ID "" }}, "{{ .URL }}" },
+          {{- end}}
+        };
+{{- else}}
+  {{- $serverListName := templateConstName "ServerList" .Local.ID }}
+        /// <summary>
+        /// List of server URLs available for the {{ .Local.ID }} operation.
+        /// </summary>
+        public static readonly string[] {{ $serverListName }} = {
+          {{- range .Local.Servers.Servers}}
+            "{{ .URL }}",
+          {{- end}}
+        };
+{{- end}}

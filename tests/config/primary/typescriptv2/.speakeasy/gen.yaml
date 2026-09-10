@@ -1,0 +1,64 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+typescript:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  additionalDependencies:
+    devDependencies:
+      'undici': ^7.21.0
+  author: Speakeasy
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  defaultErrorName: APIError
+  constFieldsAlwaysOptional: false
+  enableMCPServer: true
+  sseFlatResponse: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: sdk/models/callbacks
+      errors: sdk/models/errors
+      operations: sdk/models/operations
+      shared: sdk/models/shared
+      webhooks: sdk/models/webhooks
+  maxMethodParams: 5
+  flatteningOrder: parameters-first
+  packageName: openapi
+  templateVersion: v2
+  responseFormat: envelope-http
+  enumFormat: union
+  methodArguments: infer-optional-args
+  requestExtras: true
+  apiPromiseHelpers: false
+  useIndexModules: false
+  modelPropertyCasing: "camel"
+  moduleFormat: esm
+  envVarPrefix: SPEAKEASY
+  webhooks:
+    enabled: true
+  enableReactQuery: true
+  enableCustomCodeRegions: true
+  jsonpath: rfc9535
+  acceptHeaderEnum: true
+  zodVersion: v4-mini
+  laxMode: lax
+  forwardCompatibleUnionsByDefault: tagged-only
+  formStringArrayEncodeMode: array
+  flatAdditionalProperties: true
+  legacyFileNaming: true
+  useOxlint: true
+  useTsgo: true

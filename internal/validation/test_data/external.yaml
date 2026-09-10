@@ -1,0 +1,16 @@
+a:
+  get:
+    operationId: op-a
+    x-speakeasy-group: group-a
+    x-speakeasy-name-override: asdf1
+    responses:
+      '200':
+        description: OK
+b:
+  get:
+    operationId: op-b
+    x-speakeasy-group: group-a
+    x-speakeasy-name-override: asdf2
+    responses:
+      '200':
+        description: OK

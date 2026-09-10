@@ -1,0 +1,257 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/interactions:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliInteract
+      summary: Run an interaction with a model or an agent
+      description: >-
+        Provide input and choose exactly one selector: "model" or "agent".
+        The body is a non-discriminated union whose model variant carries a
+        schema default, so a body naming neither selector runs the default
+        model.
+      tags:
+        - requestBodies
+      parameters:
+        - name: trace
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include request tracing details in the response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/CliModelInteraction"
+                - $ref: "#/components/schemas/CliAgentInteraction"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                  url:
+                    type: string
+                required:
+                  - url
+            text/event-stream:
+              x-speakeasy-sse-sentinel: "[DONE]"
+              schema:
+                $ref: "#/components/schemas/cliInteractionStreamEvent"
+  /anything/cli/interactionTriggers:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliCreateInteractionTrigger
+      summary: Create a scheduled interaction trigger
+      description: >-
+        The union sits inside the body; a body naming neither selector must
+        run the schema's default model exactly like the whole-body operation.
+      tags:
+        - requestBodies
+      parameters:
+        - name: trace
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include request tracing details in the response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliInteractionTrigger"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                  url:
+                    type: string
+                required:
+                  - url
+  /anything/cli/requiredUnionFields:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliRequiredUnionFields
+      summary: Validate required union-valued request fields
+      description: >-
+        Exercises required and optional union-valued fields at the top level
+        and below an optional nested object.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliRequiredUnionFields"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                  url:
+                    type: string
+                required:
+                  - url
+  /anything/cli/notes:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliOpenNote
+      summary: Store a note with free-form extra fields
+      description: >-
+        The body schema is open (additionalProperties), so keys the CLI does
+        not know about must reach the wire unchanged (API additivity).
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliOpenNote"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    type: object
+                    additionalProperties: true
+                  url:
+                    type: string
+                required:
+                  - url
+components:
+  schemas:
+    CliUnionInputPart:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+    CliUnionInput:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            $ref: "#/components/schemas/CliUnionInputPart"
+    CliRequiredUnionNested:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          $ref: "#/components/schemas/CliUnionInput"
+    CliRequiredUnionFields:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          $ref: "#/components/schemas/CliUnionInput"
+        nested:
+          $ref: "#/components/schemas/CliRequiredUnionNested"
+        optionalInput:
+          $ref: "#/components/schemas/CliUnionInput"
+    CliOpenNote:
+      type: object
+      additionalProperties: true
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Note title
+        pinned:
+          type: boolean
+          description: Pin the note
+    CliInteractionTrigger:
+      type: object
+      required:
+        - cron
+        - interaction
+      properties:
+        cron:
+          type: string
+          description: Cron cadence for the trigger
+        interaction:
+          description: Interaction to run
+          # The agent variant is listed first on purpose: with no selector named
+          # and no default merged, candidate scoring ties and spec order would
+          # pick the agent variant — the nested default must beat that.
+          oneOf:
+            - $ref: "#/components/schemas/CliAgentInteraction"
+            - $ref: "#/components/schemas/CliModelInteraction"
+    CliModelInteraction:
+      type: object
+      required:
+        - model
+        - input
+      properties:
+        model:
+          type: string
+          description: Model to run
+          default: model-default-1
+        input:
+          type: string
+          description: Prompt for the model
+        background:
+          type: boolean
+          description: Return immediately and run in the background
+        stream:
+          type: boolean
+          default: true
+          description: Stream events as they arrive
+    CliAgentInteraction:
+      type: object
+      required:
+        - agent
+        - input
+      properties:
+        agent:
+          type: string
+          description: Agent to run
+        input:
+          type: string
+          description: Prompt for the agent
+        background:
+          type: boolean
+          description: Return immediately and run in the background
+        stream:
+          type: boolean
+          default: true
+          description: Stream events as they arrive

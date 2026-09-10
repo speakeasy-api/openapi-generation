@@ -1,0 +1,16 @@
+diff --git a/lib/open_api_sdk/components/reviewtask.rb b/lib/open_api_sdk/components/reviewtask.rb
+index b38c82b306..0e752c9e83 100644
+--- a/lib/open_api_sdk/components/reviewtask.rb
++++ b/lib/open_api_sdk/components/reviewtask.rb
+@@ -35,6 +35,11 @@ module OpenApiSDK
+         return false unless @policy == other.policy
+         true
+       end
++
++      sig { returns(::String) }
++      def to_s
++        "#{@name} (#{@id})"
++      end
+     end
+   end
+ end

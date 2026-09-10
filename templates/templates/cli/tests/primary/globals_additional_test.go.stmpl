@@ -1,0 +1,178 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGlobalsQueryParameterGet_UsesLocal(t *testing.T) {
+	recordTest("globals-query-parameter-get-uses-local")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-query-parameter-get", "--global-query-param", "local"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"local"`)
+}
+
+func TestGlobalPathParameterGet_UsesLocal(t *testing.T) {
+	recordTest("globals-path-parameter-get-uses-local")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "global-path-parameter-get", "--global-path-param", "2"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+func TestGlobalsHiddenPost(t *testing.T) {
+	recordTest("globals-hidden-post")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-hidden-post",
+		"--test", "friend",
+		"--other", "37",
+		"--global-hidden-query-param", "hello",
+		"--global-hidden-header-param", "world",
+		"--global-hidden-path-param", "test",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"friend"`)
+}
+
+func TestGlobalsOperationParamsOnly(t *testing.T) {
+	recordTest("globals-operation-params-only")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-operation-scoped-exclusive",
+		"--operation-header-param", "operationHeader",
+		"--operation-path-param", "operationPath",
+		"--operation-query-param", "operationQuery",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Global params should NOT be in the response (operation-scoped only)
+	assert.NotContains(t, output, `"globalQueryParam"`)
+}
+
+func TestGlobalsKebabCaseParamGet(t *testing.T) {
+	recordTest("globals-kebab-case-param-get")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-kebab-case-param-get", "--kebab-case-param", "kebab-case-value"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"kebab-case-value"`)
+}
+
+func TestGlobalsQueryParameterGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-query-parameter-get-uses-global")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-query-parameter-get", "--global-query-param", "test"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test"`)
+}
+
+func TestGlobalPathParameterGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-path-parameter-get-uses-global")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "global-path-parameter-get", "--global-path-param", "1"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Path parameter should appear in the echoed URL
+	url := jsonGetString(output, "url")
+	assert.Contains(t, url, "/1")
+}
+
+func TestGlobalsHeaderGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-header-get-uses-global")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-header-get", "--global-header-param=true"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Echo server reflects headers; verify the header was sent
+	assert.Contains(t, output, `"Globalheaderparam"`)
+}
+
+func TestGlobalsHeaderKeepsCustomClientHeaders(t *testing.T) {
+	recordTest("globals-header-keeps-custom-client-headers")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-header-get",
+		"--global-header-param=true",
+		"--header", "X-Custom-Header: someValue",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Both the global header param and the custom --header should coexist
+	assert.Contains(t, output, `"Globalheaderparam"`)
+	assert.Equal(t, "someValue", jsonGetString(output, "headers.X-Custom-Header"))
+}
+
+func TestGlobalsHeaderGet_UsesLocal(t *testing.T) {
+	recordTest("globals-header-get-uses-local")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"globals", "globals-header-get", "--global-header-param=false"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the header was sent with the local override value
+	assert.Contains(t, output, `"Globalheaderparam"`)
+}

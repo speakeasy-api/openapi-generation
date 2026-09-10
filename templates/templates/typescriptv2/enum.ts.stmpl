@@ -1,0 +1,45 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $usageLocation := getModelsLocation .Local.Type.OutputLocation -}}
+{{- $typeName := sanitizeClass .Local.Type $usageLocation true -}}
+
+{{- if eq (getEnumFormat .Local.Type) "union" }}
+{{- if isNoZod }}
+{{- /* No-zod: emit a literal union directly. The `const X = { ... } as const`
+       runtime object is unnecessary ceremony — callers pass the literal value
+       directly. Open enums inline their primitive fallback. */ -}}
+{{ templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export type {{$typeName}} = {{templateEnumLiteralUnion .Local.Type}}{{if .Local.Type.Enum.Open}} | ({{getEnumDataType .Local.Type}} & {}){{end}};
+{{- else }}
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export const {{$typeName}} = {
+{{templateEnums .Local.Type | indent 2}}
+} as const;
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+{{- if .Local.Type.Enum.Open }}
+{{- addTypeImport "enums" "OpenEnum" $usageLocation }}
+export type {{$typeName}} = OpenEnum<typeof {{$typeName}}>;
+{{- else }}
+{{- addTypeImport "enums" "ClosedEnum" $usageLocation }}
+export type {{$typeName}} = ClosedEnum<typeof {{$typeName}}>;
+{{- end }}
+{{- end }}
+
+{{- else }}
+
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export enum {{$typeName}} {
+{{templateEnums .Local.Type | indent 2}}
+}
+
+{{- if .Local.Type.Enum.Open }}
+{{- if isNoZod }}
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export type {{$typeName}}Open = (typeof {{$typeName}})[keyof typeof {{$typeName}}] | ({{getEnumDataType .Local.Type}} & {});
+{{- else }}
+{{- addTypeImport "enums" "OpenEnum" $usageLocation }}
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export type {{$typeName}}Open = OpenEnum<typeof {{$typeName}}>;
+{{- end }}
+{{- end }}
+
+{{- end }}

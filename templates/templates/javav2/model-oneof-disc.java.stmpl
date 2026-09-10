@@ -1,0 +1,12 @@
+{{- $scope := .Local.Scope -}}
+{{- $type := .Local.Type -}}
+{{- $class := (sanitizeClass $type $scope true) -}}
+{{templateComments $type.Comments $class 0 "class" }}{{if and $type.Comments $type.Comments.Deprecated}}@Deprecated
+{{end}}{{oneOfDiscriminatedClassAnnotations $type $scope}}
+public interface {{$class}}{{discriminatedInterfaceExtends $type $scope}} {
+
+{{oneOfDiscriminatedInterfaceMethod $type}}
+
+    // #region class-body
+    // #endregion class-body
+}

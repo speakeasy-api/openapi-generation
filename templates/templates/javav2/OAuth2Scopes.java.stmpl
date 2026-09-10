@@ -1,0 +1,45 @@
+{{- recurse 1 -}}
+package {{templatePackageName}}.hooks;
+
+public final class OAuth2Scopes {
+
+    private OAuth2Scopes() {
+        // prevent instantiation
+    }
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $enumName := sanitizeClassName $schemeKey}}
+    {{- $dedupNames := getDeduplicatedScopeClassNames $config.AvailableScopes}}
+
+{{templateCommentsStripped $config.Comments nil 1 "enum"}}
+    public static enum {{$enumName}} {
+    {{- $numScopes := len $config.AvailableScopes}}
+    {{- range $i, $scope := $config.AvailableScopes }}
+{{if .Comments}}{{"\n"}}{{templateCommentsStripped .Comments nil 2 "field"}}{{end}}
+        {{index $dedupNames $i}}("{{$scope.Name}}")
+      {{- if lt $i (sub $numScopes 1)}},{{else}};{{end}}
+    {{- end}}
+
+        private final {{javaImportString}} value;
+
+        {{$enumName}}({{javaImportString}} value) {
+            this.value = value;
+        }
+
+        public {{javaImportString}} value() {
+            return value;
+        }
+
+        public static {{javaImportOptional}}<{{$enumName}}> fromValue({{javaImportString}} value) {
+            for ({{$enumName}} o: {{$enumName}}.values()) {
+                if ({{javaImport "java.util.Objects"}}.deepEquals(o.value, value)) {
+                    return {{javaImportOptional}}.of(o);
+                }
+            }
+            return {{javaImportOptional}}.empty();
+        }
+    }
+  {{- end}}
+{{- end}}
+}

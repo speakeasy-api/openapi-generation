@@ -1,0 +1,286 @@
+{{- if hasAttemptCountRetries -}}
+{{typedDirective}}
+# frozen_string_literal: true
+
+require 'faraday/retry'
+require 'time'
+{{sorbetImport}}
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  module Utils
+    class BackoffStrategy
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Float)) }{{end}}
+      attr_accessor :exponent
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :initial_interval
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :max_elapsed_time
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :max_interval
+
+      {{if sorbetEnabled}}sig do
+        params(
+          exponent: T.nilable(::Float),
+          initial_interval: T.nilable(::Integer),
+          max_elapsed_time: T.nilable(::Integer),
+          max_interval: T.nilable(::Integer)
+        ).void
+      end{{end}}
+      def initialize(exponent: nil, initial_interval: nil, max_elapsed_time: nil, max_interval: nil)
+        @exponent = {{ sorbetLet "exponent" "T.nilable(::Float)" }}
+        @initial_interval = {{ sorbetLet "initial_interval" "T.nilable(::Integer)" }}
+        @max_elapsed_time = {{ sorbetLet "max_elapsed_time" "T.nilable(::Integer)" }}
+        @max_interval = {{ sorbetLet "max_interval" "T.nilable(::Integer)" }}
+      end
+    end
+
+    class RetryConfig
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(BackoffStrategy)) }{{end}}
+      attr_accessor :backoff
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(T::Boolean)) }{{end}}
+      attr_accessor :retry_connection_errors
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::String)) }{{end}}
+      attr_accessor :strategy
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :max_retries
+
+      {{if sorbetEnabled}}sig do
+        params(
+          backoff: T.nilable(BackoffStrategy),
+          retry_connection_errors: T.nilable(T::Boolean),
+          strategy: T.nilable(::String),
+          max_retries: T.nilable(::Integer)
+        ).void
+      end{{end}}
+      def initialize(
+        backoff: nil,
+        retry_connection_errors: nil,
+        strategy: nil,
+        max_retries: nil
+      )
+        @backoff = {{ sorbetLet "backoff" "T.nilable(BackoffStrategy)" }}
+        @retry_connection_errors = {{ sorbetLet "retry_connection_errors" "T.nilable(T::Boolean)" }}
+        @strategy = {{ sorbetLet "strategy" "T.nilable(::String)" }}
+        @max_retries = {{ sorbetLet "max_retries" "T.nilable(::Integer)" }}
+      end
+
+      {{if sorbetEnabled}}sig { params(initial_time: ::Time).returns(::Hash) }{{end}}
+      def to_faraday_retry_options(initial_time:)
+        retry_options = {
+          # must overwrite default max of 2 retries and it must be positive
+          max: 1_000_000_000,
+          # ensure all HTTP methods are retried, especially via retry_if
+          methods: [],
+        }
+
+        if @retry_connection_errors
+          retry_options[:exceptions] = Faraday::Retry::Middleware::DEFAULT_EXCEPTIONS + [Faraday::ConnectionFailed]
+        end
+
+        if %w[backoff attempt-count-backoff].include?(@strategy) && @backoff
+          retry_options[:backoff_factor] = @backoff.exponent unless @backoff.exponent.nil?
+          retry_options[:interval] = (@backoff.initial_interval.to_f / 1000) unless @backoff.initial_interval.nil?
+          retry_options[:max_interval] = (@backoff.max_interval.to_f / 1000) unless @backoff.max_interval.nil?
+
+          if @strategy == 'attempt-count-backoff' && !@max_retries.nil?
+            retry_options[:max] = @max_retries
+            retry_options[:retry_if] = ->(_env, _exc) { true }
+          elsif !@backoff.max_elapsed_time.nil?
+            stop_time = initial_time + (@backoff.max_elapsed_time.to_f / 1000)
+            retry_options[:retry_if] = ->(_env, _exc) { Time.now < stop_time }
+          end
+
+        end
+
+        retry_options
+      end
+    end
+
+    class RetryMiddleware < Faraday::Retry::Middleware
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { params(retries: T.untyped, env: T.untyped).returns(T.untyped) }{{end}}
+      def calculate_sleep_amount(retries, env)
+        retry_after = [calculate_retry_after(env), calculate_rate_limit_reset(env)].compact.max
+        retry_interval = calculate_retry_interval(retries)
+        return retry_interval if retry_after.nil?
+
+        # unlike the stock middleware, cap server delays at max_interval rather
+        # than abandoning the retry
+        [[retry_after, @options.max_interval].min, retry_interval].max
+      end
+
+      private
+
+      {{if sorbetEnabled}}sig { params(env: T.untyped).returns(T.untyped) }{{end}}
+      def calculate_retry_after(env)
+        response_headers = env[:response_headers]
+        return unless response_headers
+
+        ms_value = response_headers['retry-after-ms']
+        return ms_value.to_f / 1000 if ms_value&.match?(/\A\s*\d+\s*\z/)
+
+        value = response_headers['retry-after']
+        return if value.nil? || value.strip.empty?
+        return value.to_f if value.match?(/\A\s*\d+\s*\z/)
+
+        begin
+          Time.httpdate(value) - Time.now
+        rescue ArgumentError
+          begin
+            Time.iso8601(value) - Time.now
+          rescue ArgumentError
+            nil
+          end
+        end
+      end
+    end
+  end
+end
+{{- else -}}
+{{typedDirective}}
+# frozen_string_literal: true
+
+require 'faraday/retry'
+require 'time'
+{{sorbetImport}}
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  module Utils
+    class BackoffStrategy
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Float)) }{{end}}
+      attr_accessor :exponent
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :initial_interval
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :max_elapsed_time
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::Integer)) }{{end}}
+      attr_accessor :max_interval
+
+      {{if sorbetEnabled}}sig do
+        params(
+          exponent: T.nilable(::Float),
+          initial_interval: T.nilable(::Integer),
+          max_elapsed_time: T.nilable(::Integer),
+          max_interval: T.nilable(::Integer)
+        ).void
+      end{{end}}
+      def initialize(exponent: nil, initial_interval: nil, max_elapsed_time: nil, max_interval: nil)
+        @exponent = {{ sorbetLet "exponent" "T.nilable(::Float)" }}
+        @initial_interval = {{ sorbetLet "initial_interval" "T.nilable(::Integer)" }}
+        @max_elapsed_time = {{ sorbetLet "max_elapsed_time" "T.nilable(::Integer)" }}
+        @max_interval = {{ sorbetLet "max_interval" "T.nilable(::Integer)" }}
+      end
+    end
+
+    class RetryConfig
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(BackoffStrategy)) }{{end}}
+      attr_accessor :backoff
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(T::Boolean)) }{{end}}
+      attr_accessor :retry_connection_errors
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(::String)) }{{end}}
+      attr_accessor :strategy
+
+      {{if sorbetEnabled}}sig do
+        params(
+          backoff: T.nilable(BackoffStrategy),
+          retry_connection_errors: T.nilable(T::Boolean),
+          strategy: T.nilable(::String)
+        ).void
+      end{{end}}
+      def initialize(backoff: nil, retry_connection_errors: nil, strategy: nil)
+        @backoff = {{ sorbetLet "backoff" "T.nilable(BackoffStrategy)" }}
+        @retry_connection_errors = {{ sorbetLet "retry_connection_errors" "T.nilable(T::Boolean)" }}
+        @strategy = {{ sorbetLet "strategy" "T.nilable(::String)" }}
+      end
+
+      {{if sorbetEnabled}}sig { params(initial_time: ::Time).returns(::Hash) }{{end}}
+      def to_faraday_retry_options(initial_time:)
+        retry_options = {
+          # must overwrite default max of 2 retries and it must be positive
+          max: 1_000_000_000,
+          # ensure all HTTP methods are retried, especially via retry_if
+          methods: [],
+        }
+
+        if @retry_connection_errors
+          retry_options[:exceptions] = Faraday::Retry::Middleware::DEFAULT_EXCEPTIONS + [Faraday::ConnectionFailed]
+        end
+
+        if @strategy == 'backoff' && @backoff
+          retry_options[:backoff_factor] = @backoff.exponent unless @backoff.exponent.nil?
+          retry_options[:interval] = (@backoff.initial_interval.to_f / 1000) unless @backoff.initial_interval.nil?
+          retry_options[:max_interval] = (@backoff.max_interval.to_f / 1000) unless @backoff.max_interval.nil?
+
+          unless @backoff.max_elapsed_time.nil?
+            stop_time = initial_time + (@backoff.max_elapsed_time.to_f / 1000)
+            retry_options[:retry_if] = ->(_env, _exc) { Time.now < stop_time }
+          end
+
+        end
+
+        retry_options
+      end
+    end
+
+    class RetryMiddleware < Faraday::Retry::Middleware
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { params(retries: T.untyped, env: T.untyped).returns(T.untyped) }{{end}}
+      def calculate_sleep_amount(retries, env)
+        retry_after = [calculate_retry_after(env), calculate_rate_limit_reset(env)].compact.max
+        retry_interval = calculate_retry_interval(retries)
+        return retry_interval if retry_after.nil?
+
+        # unlike the stock middleware, cap server delays at max_interval rather
+        # than abandoning the retry
+        [[retry_after, @options.max_interval].min, retry_interval].max
+      end
+
+      private
+
+      {{if sorbetEnabled}}sig { params(env: T.untyped).returns(T.untyped) }{{end}}
+      def calculate_retry_after(env)
+        response_headers = env[:response_headers]
+        return unless response_headers
+
+        ms_value = response_headers['retry-after-ms']
+        return ms_value.to_f / 1000 if ms_value&.match?(/\A\s*\d+\s*\z/)
+
+        value = response_headers['retry-after']
+        return if value.nil? || value.strip.empty?
+        return value.to_f if value.match?(/\A\s*\d+\s*\z/)
+
+        begin
+          Time.httpdate(value) - Time.now
+        rescue ArgumentError
+          begin
+            Time.iso8601(value) - Time.now
+          rescue ArgumentError
+            nil
+          end
+        end
+      end
+    end
+  end
+end
+{{- end }}

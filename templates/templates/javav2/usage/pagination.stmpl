@@ -1,0 +1,75 @@
+{{- $usageCtx := .Local.Context}}
+{{- $isAsync := .Local.Async}}
+{{- $pagination := .Local.Pagination}}
+{{- $paginationScope := .Local.PaginationScope}}
+{{- $op := $usageCtx.Operation -}}
+{{- $paramFlattening := operationParametersFlattened $op -}}
+{{- $namespace := sanitizeSDKAccess $usageCtx.SDK -}}
+{{- $reqAssignment := "" -}}
+{{- if $isAsync}}
+  {{- if useOkHttp}}
+        {{templateJdkVar (templateRequestBuilderFullClassName $op true) "b"}} = sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 "" $reqAssignment -}};
+
+        // Fetch the first page asynchronously; subsequent pages are fetched
+        // lazily (blocking) as the stream is consumed - pages
+        b.callAsStream()
+            .thenAccept(pages -> pages.forEach(page -> System.out.println(page)));
+
+    {{- if $pagination.itemType}}
+        // Individual items across all pages
+        b.callAsStreamUnwrapped()
+            .thenAccept(items -> items.forEach(item -> System.out.println(item)));
+    {{- end}}
+  {{- else}}
+        {{templateJdkVar (templateRequestBuilderFullClassName $op true) "b"}} = sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 "" $reqAssignment -}};
+
+        // Example using Project Reactor (illustrative) - pages
+        {{javaImport "reactor.core.publisher.Flux"}}<{{javaImportAsync $pagination.pageType}}> pageFlux = {{javaImport "reactor.core.publisher.Flux"}}.from(b.callAsPublisher());
+        pageFlux.subscribe(
+            page -> System.out.println(page),
+            error -> error.printStackTrace(),
+            () -> System.out.println("Pagination completed")
+        );
+
+        {{- if $pagination.itemType}}
+        // Example using Project Reactor (illustrative) - individual items
+        {{javaImport "reactor.core.publisher.Flux"}}<{{javaImportAsync $pagination.itemType}}> itemFlux = {{javaImport "reactor.core.publisher.Flux"}}.from(b.callAsPublisherUnwrapped());
+        itemFlux.subscribe(
+            item -> System.out.println(item),
+            error -> error.printStackTrace(),
+            () -> System.out.println("Items completed")
+        );
+        {{- end}}
+  {{- end}}
+{{- else}}
+        {{- if $paginationScope}}
+        {{templateJdkVar (templateRequestBuilderFullClassName $op) "b"}} = sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 "" $reqAssignment -}};
+
+        // Iterate through all pages using a traditional for-each loop
+        // Each iteration returns a complete page response
+        {{javaImport "java.lang.Iterable"}}<{{javaImport $pagination.pageType}}> iterable = b.callAsIterable();
+        for ({{javaImport $pagination.pageType}} page : iterable) {
+            // handle page
+        }
+
+        // Stream through all pages and process individual items
+        // callAsStreamUnwrapped() flattens pages into individual items
+        {{- if $pagination.itemType}}
+        b.callAsStreamUnwrapped()
+            .forEach(({{javaImport $pagination.itemType}} item) -> {
+                // handle item
+            });
+        {{- end}}
+
+        // Stream through pages without unwrapping (each item is a complete page)
+        b.callAsStream()
+            .forEach(({{javaImport $pagination.pageType}} page) -> {
+                // handle page
+            });
+        {{- else}}
+        sdk{{$namespace}}.{{sanitizeMethodName $op}}(){{templateUsageBuilderMethodParameters $usageCtx 3 (paginationStreamCall $op) $reqAssignment}}
+                .forEach(({{- if $pagination.itemType}}{{javaImport $pagination.itemType}}{{else}}{{javaImport $pagination.pageType}}{{end}} item) -> {
+                   // handle {{if $pagination.itemType}}item{{else}}page{{end}}
+                });
+        {{- end}}
+{{- end}}

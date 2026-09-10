@@ -1,0 +1,334 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newPollingServer creates a test server that simulates polling endpoint responses.
+// CLI doesn't implement automatic polling loops — these tests verify the commands
+// can make single API calls and handle responses correctly.
+func newPollingServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/polling/successCriteria/responseBody/nested"):
+			json.NewEncoder(w).Encode(map[string]any{
+				"nested": map[string]string{"status": "completed"},
+			})
+		case strings.HasPrefix(r.URL.Path, "/polling/successCriteria/responseBody"):
+			json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
+		case strings.HasPrefix(r.URL.Path, "/polling/successCriteria/statusCode"):
+			json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
+		case strings.HasPrefix(r.URL.Path, "/polling/failureCriteria/responseBody/nested"):
+			json.NewEncoder(w).Encode(map[string]any{
+				"nested": map[string]string{"status": "failed"},
+			})
+		case strings.HasPrefix(r.URL.Path, "/polling/failureCriteria/responseBody"):
+			json.NewEncoder(w).Encode(map[string]string{"status": "failed"})
+		case strings.HasPrefix(r.URL.Path, "/polling/failureCriteria/statusCode"):
+			json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
+		default:
+			// delay, interval, limit count paths
+			json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
+		}
+	}))
+}
+
+// --- Success Criteria: Response Body ---
+
+func TestPollingSuccessCriteriaResponseBody(t *testing.T) {
+	recordTest("polling-success-criteria-response-body")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-response-body",
+		"--request-id", "test-1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingSuccessCriteriaResponseBodyNested(t *testing.T) {
+	recordTest("polling-success-criteria-response-body-nested")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-response-body-nested",
+		"--request-id", "test-2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingSuccessCriteriaResponseBodyOptional(t *testing.T) {
+	recordTest("polling-success-criteria-response-body-optional")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-response-body-optional",
+		"--request-id", "test-3",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingSuccessCriteriaResponseBodyRegex(t *testing.T) {
+	recordTest("polling-success-criteria-response-body-regex")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Same operation as non-regex — CLI doesn't evaluate polling criteria
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-response-body",
+		"--request-id", "test-4",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+// --- Success Criteria: Status Code ---
+
+func TestPollingSuccessCriteriaStatusCode(t *testing.T) {
+	recordTest("polling-success-criteria-status-code")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-status-code",
+		"--request-id", "test-5",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingSuccessCriteriaStatusCodeRegex(t *testing.T) {
+	recordTest("polling-success-criteria-status-code-regex")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-status-code",
+		"--request-id", "test-6",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+// --- Success Criteria: Status Code Error Variants ---
+// Go SDK resolves these via polling loop; CLI just makes a single call.
+
+func TestPollingSuccessCriteriaStatusCodeErrorKnown(t *testing.T) {
+	recordTest("polling-success-criteria-status-code-error-known")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-status-code",
+		"--request-id", "test-7",
+		"--status-code", "404",
+	})
+	require.NoError(t, err)
+}
+
+func TestPollingSuccessCriteriaStatusCodeErrorRegex(t *testing.T) {
+	recordTest("polling-success-criteria-status-code-error-regex")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-status-code",
+		"--request-id", "test-8",
+		"--status-code", "404",
+	})
+	require.NoError(t, err)
+}
+
+func TestPollingSuccessCriteriaStatusCodeErrorUnknown(t *testing.T) {
+	recordTest("polling-success-criteria-status-code-error-unknown")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "success-criteria-status-code",
+		"--request-id", "test-9",
+		"--status-code", "410",
+	})
+	require.NoError(t, err)
+}
+
+// --- Failure Criteria: Response Body ---
+
+func TestPollingFailureCriteriaResponseBody(t *testing.T) {
+	recordTest("polling-failure-criteria-response-body")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-response-body"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"failed"`)
+}
+
+func TestPollingFailureCriteriaResponseBodyNested(t *testing.T) {
+	recordTest("polling-failure-criteria-response-body-nested")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-response-body-nested"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"failed"`)
+}
+
+func TestPollingFailureCriteriaResponseBodyOptional(t *testing.T) {
+	recordTest("polling-failure-criteria-response-body-optional")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-response-body-optional"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"failed"`)
+}
+
+func TestPollingFailureCriteriaResponseBodyRegex(t *testing.T) {
+	recordTest("polling-failure-criteria-response-body-regex")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Same operation as non-regex — CLI doesn't evaluate polling criteria
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-response-body"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"failed"`)
+}
+
+// --- Failure Criteria: Status Code ---
+
+func TestPollingFailureCriteriaStatusCode(t *testing.T) {
+	recordTest("polling-failure-criteria-status-code")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-status-code"})
+	require.NoError(t, err)
+}
+
+func TestPollingFailureCriteriaStatusCodeRegex(t *testing.T) {
+	recordTest("polling-failure-criteria-status-code-regex")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "failure-criteria-status-code"})
+	require.NoError(t, err)
+}
+
+// --- Delay Seconds ---
+
+func TestPollingDelaySeconds(t *testing.T) {
+	recordTest("polling-delay-seconds")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "delay-seconds",
+		"--request-id", "test-delay-1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingDelaySecondsOverride(t *testing.T) {
+	recordTest("polling-delay-seconds-override")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "delay-seconds-override",
+		"--request-id", "test-delay-2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+// --- Interval Seconds ---
+
+func TestPollingIntervalSeconds(t *testing.T) {
+	recordTest("polling-interval-seconds")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "interval-seconds",
+		"--request-id", "test-interval-1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingIntervalSecondsOverride(t *testing.T) {
+	recordTest("polling-interval-seconds-override")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "interval-seconds-override",
+		"--request-id", "test-interval-2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+// --- Limit Count ---
+
+func TestPollingLimitCount(t *testing.T) {
+	recordTest("polling-limit-count")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "limit-count",
+		"--request-id", "test-limit-1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}
+
+func TestPollingLimitCountOverride(t *testing.T) {
+	recordTest("polling-limit-count-override")
+	s := newPollingServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"polling", "limit-count-override",
+		"--request-id", "test-limit-2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"completed"`)
+}

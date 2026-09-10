@@ -1,0 +1,51 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    hoistGlobalSecurity: false
+java:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  artifactID: openapi
+  clientServerStatusCodesAsErrors: true
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  githubURL: github.com/owner/repo
+  groupID: org.openapis.tertiary
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/components
+      webhooks: models/webhooks
+  inputModelSuffix: input
+  maxMethodParams: 5
+  ossrhURL: https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+  outputModelSuffix: output
+  packageName: org.openapis.tertiary.openapi
+  projectName: openapi
+  getterStyle: always-optional
+  nullFriendlyParameters: false
+  templateVersion: v2
+  defaultErrorName: SDKError
+  languageVersion: 8
+  httpClient: okhttp
+  asyncMode: enabled
+  generateSpringBootStarter: false
+  enableStreamingUploads: true
+  multipartArrayFormat: standard
+  generateOptionalUnionAccessors: false
+  openUnions: false
+  forwardCompatibleEnumsByDefault: false
+  unionStrategy: left-to-right

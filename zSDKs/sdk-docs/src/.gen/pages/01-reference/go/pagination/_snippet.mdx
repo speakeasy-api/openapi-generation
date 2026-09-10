@@ -1,0 +1,54 @@
+{/* Start Go Pagination */}
+Some of the endpoints in this SDK support pagination. To use pagination, you make your SDK calls as usual, but the
+returned response object will have a `next` method that can be called to pull down the next group of results. If the
+return value of `next` is `null`, then there are no more pages to be fetched.
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	security := operations.ListTest1Security{
+		APIKey: "<YOUR_API_KEY>",
+	}
+
+	var page int64 = 100
+
+	var headerParam1 string = "some example header param"
+
+	var queryParam1 *string = openapi.String("some example query param")
+	ctx := context.Background()
+	res, err := s.Tag1.ListTest1(ctx, security, page, headerParam1, queryParam1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.Object != nil {
+		for {
+			// handle items
+
+			res, err = res.Next()
+
+			if err != nil {
+				// handle error
+			}
+
+			if res == nil {
+				break
+			}
+		}
+
+	}
+}
+
+```
+{/* End Go Pagination */}

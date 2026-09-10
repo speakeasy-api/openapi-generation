@@ -1,0 +1,271 @@
+{{- recurse 1 -}}
+{{- $m := .Local -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "fmt" -}}
+{{- addImport "sort" -}}
+{{- addImport "internal/output" true -}}
+{{- addImport "internal/usage" true -}}
+package cli
+
+{{genImports}}
+
+func init() {
+	cobra.EnableCommandSorting = false
+}
+
+func initIntentCmds(rootCmd *cobra.Command) error {
+	{{- range $m.Categories}}
+	rootCmd.AddGroup(&cobra.Group{ID: "{{intentCategoryID .}}", Title: "{{escapeGoString .}}:"})
+	{{- end}}
+
+	{{- range $m.Bound}}
+	{{- if .ParentPath}}
+	if parent := findCommandByPath(rootCmd, {{intentPathLiteral .ParentPath}}); parent == nil {
+		return fmt.Errorf("declared parent %q for intent command %q does not exist in the generated CLI", "{{range $i, $seg := .ParentPath}}{{if $i}} {{end}}{{$seg}}{{end}}", "{{.ID}}")
+	} else {
+		{{- if eq .PkgName "cli"}}
+		if err := InitIntent{{.FuncName}}(parent); err != nil {
+			return fmt.Errorf("init intent {{.ID}}: %w", err)
+		}
+		{{- else}}
+		{{- addImport (print "internal/cli/" .PkgPath) true}}
+		if err := {{.PkgName}}.InitIntent{{.FuncName}}(parent); err != nil {
+			return fmt.Errorf("init intent {{.ID}}: %w", err)
+		}
+		{{- end}}
+		{{- if .Category}}
+		ensureCommandGroup(parent, "{{intentCategoryID .Category}}", "{{escapeGoString .Category}}:")
+		if err := setCommandGroup(parent, "{{firstUseWord .Use}}", "{{intentCategoryID .Category}}"); err != nil {
+			return err
+		}
+		{{- end}}
+	}
+	{{- else}}
+	{{- if eq .PkgName "cli"}}
+	if err := InitIntent{{.FuncName}}(rootCmd); err != nil {
+		return fmt.Errorf("init intent {{.ID}}: %w", err)
+	}
+	{{- else}}
+	{{- addImport (print "internal/cli/" .PkgPath) true}}
+	if err := {{.PkgName}}.InitIntent{{.FuncName}}(rootCmd); err != nil {
+		return fmt.Errorf("init intent {{.ID}}: %w", err)
+	}
+	{{- end}}
+	{{- if .Category}}
+	if err := setCommandGroup(rootCmd, "{{firstUseWord .Use}}", "{{intentCategoryID .Category}}"); err != nil {
+		return err
+	}
+	{{- end}}
+	{{- end}}
+	{{- end}}
+
+	{{- range $m.Planned}}
+	{{- if .ParentPath}}
+	if parent := findCommandByPath(rootCmd, {{intentPathLiteral .ParentPath}}); parent == nil {
+		return fmt.Errorf("declared parent for planned command %q does not exist in the generated CLI", "{{.Name}}")
+	} else if !commandExists(parent, "{{.Name}}") {
+		{{- if .Category}}
+		ensureCommandGroup(parent, "{{intentCategoryID .Category}}", "{{escapeGoString .Category}}:")
+		{{- end}}
+		parent.AddCommand(newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"))
+		{{- if .Category}}
+	} else {
+		ensureCommandGroup(parent, "{{intentCategoryID .Category}}", "{{escapeGoString .Category}}:")
+		if err := setCommandGroup(parent, "{{.Name}}", "{{intentCategoryID .Category}}"); err != nil {
+			return err
+		}
+		{{- end}}
+	}
+	{{- else}}
+	if owner := findOwningCommand(rootCmd, "{{.Name}}"); owner == nil {
+		rootCmd.AddCommand(newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"))
+	} else {
+		{{- if .Category}}
+		owner.GroupID = "{{intentCategoryID .Category}}"
+		{{- else}}
+		_ = owner // name already owned by a real command
+		{{- end}}
+	}
+	{{- end}}
+	{{- if and (eq (helpStyle) "compact") (or .HelpDefaults .HelpLearn .HelpEscalate)}}
+	if helpParent := findCommandByPath(rootCmd, {{intentPathLiteral .ParentPath}}); helpParent != nil {
+		if owner := findOwningCommand(helpParent, "{{.Name}}"); owner != nil {
+			applyCompactHelpAnnotations(owner, "{{escapeGoString .HelpDefaults}}", "{{escapeGoString .HelpLearn}}", "{{escapeGoString .HelpEscalate}}")
+		}
+	}
+	{{- end}}
+	{{- end}}
+
+	{{- range $m.GroupTags}}
+	{{- if .Category}}
+	if err := setCommandGroup(rootCmd, "{{.Name}}", "{{intentCategoryID .Category}}"); err != nil {
+		return err
+	}
+	{{- end}}
+	{{- if and (eq (helpStyle) "compact") (or .HelpDefaults .HelpLearn .HelpEscalate)}}
+	if owner := findOwningCommand(rootCmd, "{{.Name}}"); owner != nil {
+		applyCompactHelpAnnotations(owner, "{{escapeGoString .HelpDefaults}}", "{{escapeGoString .HelpLearn}}", "{{escapeGoString .HelpEscalate}}")
+	}
+	{{- end}}
+	{{- end}}
+
+	return nil
+}
+
+func newPlannedCmd(name, short, long, groupID, note string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   name,
+		Short: short,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if usage.UsageRequested(cmd) {
+				return usage.EmitSchema(cmd, cmd.OutOrStdout())
+			}
+			return output.WithCLIReason(fmt.Errorf("%s", note), output.ReasonCLIUnavailable)
+		},
+	}
+	unavailable := "Not yet available: " + note + "."
+	if long != "" {
+		cmd.Long = long + "\n\n" + unavailable
+	} else {
+		cmd.Long = unavailable
+	}
+	if groupID != "" {
+		cmd.GroupID = groupID
+	}
+	return cmd
+}
+
+{{- if eq (helpStyle) "compact"}}
+
+func applyCompactHelpAnnotations(cmd *cobra.Command, defaults, learn, escalate string) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	if defaults != "" {
+		cmd.Annotations["speakeasy_help_defaults"] = defaults
+	}
+	if learn != "" {
+		cmd.Annotations["speakeasy_help_learn"] = learn
+	}
+	if escalate != "" {
+		cmd.Annotations["speakeasy_help_escalate"] = escalate
+	}
+}
+{{- end}}
+
+type intentOrderEntry struct {
+	ParentPath []string
+	Name       string
+}
+
+var intentDeclarationOrder = []intentOrderEntry{
+	{{- range $m.Order}}
+	{ParentPath: {{intentPathLiteral .ParentPath}}, Name: "{{.Name}}"},
+	{{- end}}
+}
+
+func applyDeclaredCommandOrder(rootCmd *cobra.Command) {
+	applyCommandOrderEntries(rootCmd, intentDeclarationOrder)
+}
+
+func applyCommandOrderEntries(rootCmd *cobra.Command, order []intentOrderEntry) {
+	byParent := map[*cobra.Command][]string{}
+	for _, entry := range order {
+		parent := findCommandByPath(rootCmd, entry.ParentPath)
+		if parent == nil {
+			parent = rootCmd
+		}
+		byParent[parent] = append(byParent[parent], entry.Name)
+	}
+
+	var reorder func(*cobra.Command)
+	reorder = func(parent *cobra.Command) {
+		children := parent.Commands()
+		if len(children) == 0 {
+			return
+		}
+		// First-added wins the name: cobra's builtin help and completion
+		// commands are appended after the declared tree (InitDefaultHelpCmd
+		// runs after initIntentCmds, and again inside Execute), so a declared
+		// command that shares a builtin's name must keep its slot here.
+		// Letting the later-added builtin claim the map entry would drop the
+		// declared command from the re-added list entirely — a silently
+		// swallowed command. Cobra dispatches to the earliest match, so
+		// keeping the declared command first also keeps it runnable.
+		byName := map[string]*cobra.Command{}
+		for _, child := range children {
+			if _, ok := byName[child.Name()]; !ok {
+				byName[child.Name()] = child
+			}
+		}
+		var reordered []*cobra.Command
+		taken := map[*cobra.Command]bool{}
+		for _, name := range byParent[parent] {
+			if child, ok := byName[name]; ok && !taken[child] {
+				reordered = append(reordered, child)
+				taken[child] = true
+			}
+		}
+		var rest []*cobra.Command
+		for _, child := range children {
+			if !taken[child] {
+				rest = append(rest, child)
+			}
+		}
+		sort.SliceStable(rest, func(i, j int) bool { return rest[i].Name() < rest[j].Name() })
+		reordered = append(reordered, rest...)
+		parent.RemoveCommand(children...)
+		parent.AddCommand(reordered...)
+		for _, child := range reordered {
+			reorder(child)
+		}
+	}
+	reorder(rootCmd)
+}
+
+func findCommandByPath(rootCmd *cobra.Command, path []string) *cobra.Command {
+	current := rootCmd
+	for _, segment := range path {
+		var next *cobra.Command
+		for _, child := range current.Commands() {
+			if child.Name() == segment {
+				next = child
+				break
+			}
+		}
+		if next == nil {
+			return nil
+		}
+		current = next
+	}
+	return current
+}
+
+// Cobra panics in ExecuteC when a child names a group its parent does not declare.
+func ensureCommandGroup(cmd *cobra.Command, id, title string) {
+	if !cmd.ContainsGroup(id) {
+		cmd.AddGroup(&cobra.Group{ID: id, Title: title})
+	}
+}
+
+func setCommandGroup(rootCmd *cobra.Command, name string, groupID string) error {
+	if owner := findOwningCommand(rootCmd, name); owner != nil {
+		owner.GroupID = groupID
+		return nil
+	}
+	return fmt.Errorf("declared command group %q does not exist in the generated CLI", name)
+}
+
+func findOwningCommand(parentCmd *cobra.Command, name string) *cobra.Command {
+	for _, c := range parentCmd.Commands() {
+		if c.Name() == name || c.HasAlias(name) {
+			return c
+		}
+	}
+	return nil
+}
+
+func commandExists(parentCmd *cobra.Command, name string) bool {
+	return findOwningCommand(parentCmd, name) != nil
+}

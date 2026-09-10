@@ -1,0 +1,12 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+php:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  responseFormat: envelope-http
+  namespace: Speakeasy\BasicHttp
+  packageName: speakeasy/basic-http

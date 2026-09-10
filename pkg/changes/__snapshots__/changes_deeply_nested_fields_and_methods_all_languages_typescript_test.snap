@@ -1,0 +1,114 @@
+
+[TestChanges_DeeplyNestedFieldsAndMethods_AllLanguages_Typescript - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/complex:
+    post:
+      tags:
+        - inner
+      operationId: complexOperation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level1:
+                  type: object
+                  properties:
+                    level2:
+                      type: object
+                      properties:
+                        level3:
+                          type: object
+                          properties:
+                            field1:
+                              type: integer
+                            field1a:
+                              type: string
+                            level4:
+                              type: object
+                              properties:
+                                level5:
+                                  type: object
+                                  properties:
+                                    field2:
+                                      type: integer
+                                    field3:
+                                      type: string
+                                    field4:
+                                      type: object
+                                      properties:
+                                        nested:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.inner.complexOperation()`: 
+  *  `request.level1.level2.level3` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.inner.complexOperation()`: 
+  * `request.level1.level2.level3` **Changed** (Breaking ⚠️)
+    - `field1` **Changed** (Breaking ⚠️)
+    - `field1a` **Added**
+    - `level4.level5.field3` **Changed** (Breaking ⚠️)
+    - `level4.level5.field4` **Added**
+
+---

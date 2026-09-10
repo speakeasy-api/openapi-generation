@@ -1,0 +1,34 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: false
+    securityFeb2025: true
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  sdkHooksConfigAccess: true
+php:
+  inferUnionDiscriminators: false
+  version: 0.0.1
+  imports:
+    option: openapi
+    paths:
+      callbacks: Models/Callbacks
+      errors: Models/Errors
+      operations: Models/Operations
+      shared: Models/Shared
+      webhooks: Models/Webhooks
+  maxMethodParams: 5
+  namespace: OpenAPI\OpenAPI
+  packageName: openapi/openapi
+  responseFormat: envelope-http
+  laravelServiceProvider: 
+    enabled: true
+    svcName: primary

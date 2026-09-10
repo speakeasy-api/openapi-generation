@@ -1,0 +1,10 @@
+{{typedDirective}}
+# frozen_string_literal: true
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  autoload :{{sanitizeClassName .Global.Config.SDKName}}, '{{templateAuxPath . }}/{{sanitizeFileName .Global.Config.SDKName}}'
+{{getGemAutoloads .Global.AST.MainSDK 1}}
+{{templateAllScopeAutoloads (templateAuxPath .) 1}}
+end
+
+{{getGemImports }}

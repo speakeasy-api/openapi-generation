@@ -1,0 +1,65 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  repoUrl: https://github.com/speakeasy-sdks/test-sdk
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: false
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  persistentEdits: {}
+mcp-typescript:
+  version: 0.0.1
+  additionalDependencies:
+    dependencies: {}
+    devDependencies: {}
+    peerDependencies: {}
+  advancedFlags:
+    - loneQueryParam
+  author: Speakeasy
+  baseErrorName: SDKError
+  cloudflareEnabled: true
+  cloudflareURL: https://openapi-mcp-server.example.workers.dev
+  gramEnabled: true
+  defaultErrorName: SDKDefaultError
+  envVarPrefix: SPK
+  formStringArrayEncodeMode: encoded-string
+  inferUnionDiscriminators: true
+  inputModelSuffix: input
+  maxMethodParams: 0
+  mcpName: io.github.speakeasy-api/openapi-server
+  mcpbManifestOverlay:
+    keywords:
+      - custom
+      - added
+      - keywords
+    user_config:
+      overlay_param1:
+        description: Description of overlayParam1
+        required: false
+        title: overlayParam1
+        type: string
+  multipartArrayFormat: standard
+  outputModelSuffix: output
+  packageName: openapi
+  responseFormat: envelope
+  evalProvider: openai
+  fixEnumNameSanitization: true
+  validateResponse: false
+  customCasings:
+    mcp:
+      initialism: true

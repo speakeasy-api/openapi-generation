@@ -1,0 +1,30 @@
+{{- if cliDefaultTimeout}}
+package output
+
+import (
+	"time"
+
+	"github.com/spf13/cobra"
+
+	"{{getGolangPackage}}/internal/config"
+	"{{getGolangPackage}}/internal/flagutil"
+	"{{getGolangPackage}}/internal/sdk/models/operations"
+)
+
+// cli.defaultTimeout is validated at generation time and emitted as nanoseconds.
+const defaultOperationTimeout = time.Duration({{cliDefaultTimeout}})
+
+// DefaultTimeoutOpts is not for streaming operations: the deferred cancel closes the body mid-read.
+func DefaultTimeoutOpts(cmd *cobra.Command) []operations.Option {
+	if defaultOperationTimeout <= 0 {
+		return nil
+	}
+	if val, changed := flagutil.GetStringFlag(cmd, "timeout"); changed && val != "" {
+		return nil
+	}
+	if config.GetString("timeout") != "" {
+		return nil
+	}
+	return []operations.Option{operations.WithOperationTimeout(defaultOperationTimeout)}
+}
+{{- end}}

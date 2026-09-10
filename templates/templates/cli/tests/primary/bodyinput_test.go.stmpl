@@ -1,0 +1,210 @@
+package tests
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/flagutil"
+	"{{getGolangPackage}}/internal/output"
+)
+
+// withSilentStdinPipe swaps os.Stdin for the read end of a pipe whose write
+// end stays open and never produces data — the shape agent runtimes and exec
+// wrappers hand a CLI — and restores it when the test ends.
+func withSilentStdinPipe(t *testing.T) {
+	t.Helper()
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	orig := os.Stdin
+	os.Stdin = r
+	t.Cleanup(func() {
+		os.Stdin = orig
+		_ = w.Close()
+		_ = r.Close()
+	})
+}
+
+// withDelayedStdinPipe swaps os.Stdin for a pipe whose writer delivers data
+// after delay. closeAfter controls whether the writer then closes (EOF) or
+// stalls with the pipe held open.
+func withDelayedStdinPipe(t *testing.T, delay time.Duration, data string, closeAfter bool) {
+	t.Helper()
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	orig := os.Stdin
+	os.Stdin = r
+	go func() {
+		time.Sleep(delay)
+		_, _ = w.WriteString(data)
+		if closeAfter {
+			_ = w.Close()
+		}
+	}()
+	t.Cleanup(func() {
+		os.Stdin = orig
+		_ = w.Close()
+		_ = r.Close()
+	})
+}
+
+// resetStdinDeadline restores agent mode and the stdin deadline the root
+// command wired from it during an --agent-mode invocation.
+func resetStdinDeadline(t *testing.T) {
+	t.Helper()
+	t.Cleanup(output.ResetAgentMode)
+	t.Cleanup(func() { flagutil.SetStdinReadDeadline(false) })
+}
+
+// In agent mode an open-but-silent stdin pipe on a body-accepting command
+// is a hard, fast usage error: proceeding would send a body the producer
+// never wrote, and blocking would hang agent runtimes that hold stdin open.
+// No request is sent. The deadline is armed by the root command's wiring
+// when --agent-mode is parsed.
+func TestSilentStdinPipeFailsLoudWithoutRequest(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+	assert.Contains(t, err.Error(), "--body @-")
+	assert.Equal(t, 0, *count)
+}
+
+// Outside agent mode an implicit pipe read has no deadline: a producer
+// slower than stdinReadDeadline still delivers its body, exactly like the
+// classic `producer | cli op` filter contract.
+func TestNonAgentModeSlowProducerBlocksToEOF(t *testing.T) {
+	withDelayedStdinPipe(t, 1300*time.Millisecond, `{"code":"slow-body","label":"x"}`, true)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post"})
+	require.NoError(t, err)
+	assert.Equal(t, "slow-body", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+// A producer that delivers the complete body within the deadline is honored,
+// however late its first byte arrives: `slow-producer | cli op` is the
+// documented pipe contract.
+func TestDelayedStdinBodyWithinDeadlineIsSent(t *testing.T) {
+	withDelayedStdinPipe(t, 300*time.Millisecond, `{"code":"late-body","label":"x"}`, true)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode"})
+	require.NoError(t, err)
+	assert.Equal(t, "late-body", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+// A producer that starts writing but never reaches EOF is a timeout, not a
+// partial body: the deadline bounds the whole read, not the first byte.
+func TestStdinFirstByteThenStallTimesOut(t *testing.T) {
+	withDelayedStdinPipe(t, 100*time.Millisecond, `{"code":`, false)
+	resetStdinDeadline(t)
+
+	s, count := newRequestTracker()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+	assert.Equal(t, 0, *count)
+}
+
+// A closed, empty stdin means no body: the required-body failure names the
+// missing flag and never mentions the stdin deadline.
+func TestClosedEmptyStdinReportsMissingBody(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer("http://127.0.0.1:1", []string{"cli-hygiene", "cli-arg-hygiene-post"}, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing required flag: --code")
+	assert.NotContains(t, err.Error(), "stdin body did not reach EOF")
+}
+
+// An explicit --body wins outright: stdin is never consulted, so an
+// open-but-silent pipe cannot fail a fully specified invocation.
+func TestBodyFlagIgnoresOpenSilentStdin(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode", "--body", `{"code":"explicit","label":"x"}`})
+	require.NoError(t, err)
+	assert.Equal(t, "explicit", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+// --body @- reads stdin to EOF (blocking), --body @path reads a file.
+func TestBodyFlagAtDashReadsStdin(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--body", "@-"}, `{"code":"from-stdin","label":"x"}`)
+	require.NoError(t, err)
+	assert.Equal(t, "from-stdin", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+func TestBodyFlagAtPathReadsFile(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	path := filepath.Join(t.TempDir(), "body.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"code":"from-file"}`), 0o600))
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--body", "@" + path})
+	require.NoError(t, err)
+	assert.Equal(t, "from-file", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+// A single-body command names its own flag in the timeout error (--request,
+// not --body), and "@@" is the literal escape for a raw body that must start
+// with "@".
+func TestSingleBodyFlagTimeoutNamesOwnFlag(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"request-bodies", "request-body-put-bytes", "--agent-mode"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+	assert.Contains(t, err.Error(), "--request @-")
+	assert.NotContains(t, err.Error(), "--body @-")
+}
+
+func TestBodyFlagDoubleAtIsLiteralEscape(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-put-bytes", "--request", "@@handle"})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStdout(), "@handle")
+	assert.NotContains(t, h.GetStdout(), "@@handle")
+}
+
+func TestBodyFlagAtPathMissingFileErrors(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"cli-hygiene", "cli-arg-hygiene-post", "--body", "@/nonexistent/body.json"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read file for --body")
+}

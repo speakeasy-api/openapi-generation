@@ -1,0 +1,2261 @@
+lockVersion: 2.0.0
+id: review-sdk-test-id
+management:
+  docChecksum: 8e4daf4696cacb12705469551dc2b438
+  docVersion: 0.1.0
+  speakeasyVersion: internal
+  generationVersion: internal
+  releaseVersion: 0.0.1
+  configChecksum: d2cc1e97e7d71e72848b8ba38cc629ef
+  repoURL: https://github.com/speakeasy-sdks/test-sdk
+  installationURL: https://github.com/speakeasy-sdks/test-sdk
+features:
+  ruby:
+    additionalProperties: 0.1.1
+    constsAndDefaults: 0.1.4
+    core: 3.11.35
+    customSecuritySchemes: 0.1.0
+    deprecations: 2.81.2
+    docs: 0.5.3
+    enums: 2.82.2
+    errors: 0.1.2
+    examples: 2.81.8
+    flattening: 2.81.1
+    globalSecurity: 2.81.11
+    globalServerURLs: 2.83.1
+    globals: 2.82.1
+    groups: 2.81.3
+    includes: 2.81.1
+    methodSecurity: 2.82.4
+    methodServerURLs: 2.82.2
+    mockServer: 0.1.4
+    nameOverrides: 2.81.4
+    nullables: 0.1.0
+    oauth2ClientCredentials: 2.1.7
+    openEnums: 0.1.1
+    operationTimeout: 0.1.0
+    pagination: 0.1.1
+    responseFormat: 0.1.0
+    retries: 0.1.4
+    serverEvents: 0.1.5
+    serverEventsSentinels: 0.1.1
+    serverIDs: 2.81.1
+    tests: 0.1.5
+    unions: 0.1.5
+    webhooks: 1.0.0
+trackedFiles:
+  .gitattributes:
+    last_write_checksum: sha1:ddc1beb0214aecada04e60ef2e038729bd8d20e6
+  .rubocop-strict.yml:
+    last_write_checksum: sha1:452cf23c1aac793c4f54d66fced59fdacab69142
+  .rubocop.yml:
+    last_write_checksum: sha1:43650c745c2254f02a2966922cb744e87115505b
+  Gemfile:
+    last_write_checksum: sha1:8c1b6fa9505f61abd0fb6741f8094e9655a55495
+  Gemfile.lock:
+    last_write_checksum: sha1:2556f1f1e0935372d1f81837e773036d6b9edf02
+  Rakefile:
+    last_write_checksum: sha1:c572639efdae8c7b24141ee5c02d8f009e101ed8
+  USAGE.md:
+    last_write_checksum: sha1:e38600f4eadd438f214821fdb8b318bf9d1c9e93
+  docs/components/aloof.md:
+    last_write_checksum: sha1:a403949068fee4ea6970e15df192fe90a4839903
+  docs/components/any.md:
+    last_write_checksum: sha1:4d4273d61c8175921d815af037cebf507aaabf57
+  docs/components/approvalconfig.md:
+    last_write_checksum: sha1:197532d106a6e26f3da9baeeeecb20ec82ce9f4a
+  docs/components/assetimageblock.md:
+    last_write_checksum: sha1:652fac5c353874c398e7aa31362ac4390022cf58
+  docs/components/assetnotestep.md:
+    last_write_checksum: sha1:0656a1de43fcfb80400c809a3517e6525db9b6cd
+  docs/components/assetoutputstep.md:
+    last_write_checksum: sha1:5e370647d4379c11123eb321ee3ebcd602f4cc24
+  docs/components/assetresult.md:
+    last_write_checksum: sha1:0e4bd97af162cc00fac4444fca19d1cdb2089c4b
+  docs/components/assettextblock.md:
+    last_write_checksum: sha1:80a70167066fb8dc8cf3ff920e06ee7e14c963a7
+  docs/components/bar/bike.md:
+    last_write_checksum: sha1:a19d86c532e8641b0d6bf9846ffb58290987bbd8
+  docs/components/bar/car.md:
+    last_write_checksum: sha1:1b069e94e89bb345b516b150f346d5fc578beb5c
+  docs/components/bar/pet.md:
+    last_write_checksum: sha1:c08ff76837e1269113f11a11f59a822df7711e9a
+  docs/components/bar/petowner.md:
+    last_write_checksum: sha1:5cfda6e04e3482eab5cacca595b291d8b0bcb05a
+  docs/components/bar/petstatus.md:
+    last_write_checksum: sha1:b2cf5c87c28722b63fcd21c41e579d420246e1de
+  docs/components/bar/vehicle.md:
+    last_write_checksum: sha1:96b1737b74f18a4b65eb41af3c0c333d0ee838ec
+  docs/components/baseuser.md:
+    last_write_checksum: sha1:881a0642e131deb0827561f199c4f63b76fd0005
+  docs/components/baz/namespaced.md:
+    last_write_checksum: sha1:62addf4261b3b784819ab304a4e441d008fbfe82
+  docs/components/baz/pet.md:
+    last_write_checksum: sha1:86d8c16ca00cae77910cda082bd69e0e30f04b2b
+  docs/components/boole.md:
+    last_write_checksum: sha1:80b926abc8942b95f14c52589bd8cad99a5b29eb
+  docs/components/imagerecord.md:
+    last_write_checksum: sha1:f3a0ac3e6a12d0dc045d5635cc3e1193d6127e44
+  docs/components/chatagentrequest.md:
+    last_write_checksum: sha1:792b587b23d807336b618f3a9a8cdfe5f62ff010
+  docs/components/chatmodelrequest.md:
+    last_write_checksum: sha1:2c8ca266071c692d7b939df19a6a57f3caf677a8
+  docs/components/circle.md:
+    last_write_checksum: sha1:769288590485524fc8cc2086f91f476157e3f8e9
+  docs/components/circularunion.md:
+    last_write_checksum: sha1:31107738c86847d9c24bdeb74ca48d259729687e
+  docs/components/color.md:
+    last_write_checksum: sha1:76119eebfda044c64583ece23c81968c5e159820
+  docs/components/content.md:
+    last_write_checksum: sha1:361564d05c71c2c6df98c835b651fd40b27fd5c6
+  docs/components/detail.md:
+    last_write_checksum: sha1:5a9f45f356a8f0cbda4b7dd6d2ef1aea6b7debf3
+  docs/components/detailunion.md:
+    last_write_checksum: sha1:ede39325dc304f2805759941d836590d0f3c23cc
+  docs/components/disriminatedunionwithonemember.md:
+    last_write_checksum: sha1:7eb842b3619b3dcc3d9de415dff830bd8fa9e2c6
+  docs/components/enum.md:
+    last_write_checksum: sha1:b24149e8fec31a68088a1de177be690ec7bee8dc
+  docs/components/escalation.md:
+    last_write_checksum: sha1:aba9f5792dcf0bb257e66fa1af5db182f888c3ca
+  docs/components/exhaustiveobject.md:
+    last_write_checksum: sha1:613184b84c9b6370efb1014182405ebc1d25db4f
+  docs/components/file.md:
+    last_write_checksum: sha1:d882a49e870fe743aa9299639329c512d49e2f71
+  docs/components/foo/address.md:
+    last_write_checksum: sha1:8d2d8792665f01cce8c8b1bf62af64cba1f7dbfe
+  docs/components/foo/animal.md:
+    last_write_checksum: sha1:1d877a13b665c5af53bfa21561519c3a7f370e4c
+  docs/components/foo/cat.md:
+    last_write_checksum: sha1:fccd2d6df7f1dec016d4629685e2781047f088a1
+  docs/components/foo/catanimaltype.md:
+    last_write_checksum: sha1:3fe262bf4b6659b7185a47de090aaa61852d78be
+  docs/components/foo/department.md:
+    last_write_checksum: sha1:75ee050138a9a489024cfb5aa68fb406c367e97b
+  docs/components/foo/dog.md:
+    last_write_checksum: sha1:fe245fa8d0c85fbc71eff5db726cd944d45df44a
+  docs/components/foo/doganimaltype.md:
+    last_write_checksum: sha1:17b8d506d27ed016219c6bcbc77ca47cdb7c15f9
+  docs/components/foo/location.md:
+    last_write_checksum: sha1:ceca4c63f136b9966b1276bea1f0d3eebabac3ea
+  docs/components/foo/organization.md:
+    last_write_checksum: sha1:c34a1a2751f3b68cdd5920f438b197a11f300558
+  docs/components/foo/pet.md:
+    last_write_checksum: sha1:e023a9a30b94d6c8133fa757fc7a38dc789b5b53
+  docs/components/foo/petowner.md:
+    last_write_checksum: sha1:a9d78fa2ddaab2750a6f175297cd99cf51c4f55a
+  docs/components/foo/petspecies.md:
+    last_write_checksum: sha1:557d17537d1e6f61408240139b1b6b60046e700d
+  docs/components/gender.md:
+    last_write_checksum: sha1:abf89e69f9d8255798f8ae7200f03a9d3723d4cb
+  docs/components/herowidth.md:
+    last_write_checksum: sha1:21b533d8d78c4df6a9b0524804e4f9a5db079678
+  docs/components/icon.md:
+    last_write_checksum: sha1:813e7ac201bc5374bedfe0c6332d8dcf33e0c031
+  docs/components/int32enum.md:
+    last_write_checksum: sha1:5518112898efda01992c58b37b0958525dfaebd1
+  docs/components/intenum.md:
+    last_write_checksum: sha1:561100d1b3be9c090d04bfde2bf4fe3aa35634af
+  docs/components/textrecord.md:
+    last_write_checksum: sha1:7928d9170bfd54d52e84a9bf1e07baafe2e4b61d
+  docs/components/mcppolicy.md:
+    last_write_checksum: sha1:60b354d9fd7391dfc2b8951b7312cc96d9635ec1
+  docs/components/metadata.md:
+    last_write_checksum: sha1:7dda2152387e87d7f674d7e6e449613827cc093b
+  docs/components/metadataany.md:
+    last_write_checksum: sha1:9f8d7f3fe1e5f64f5d08499f50b4ab10cd0dd40c
+  docs/components/myapikey.md:
+    last_write_checksum: sha1:08c15c4610fc0764fd9434137e0e352de37fba79
+  docs/components/myobject.md:
+    last_write_checksum: sha1:a0431dcca6c41e4501a3d115e630d1b2249ad739
+  docs/components/namespaceconflicttest.md:
+    last_write_checksum: sha1:fa663e6a4c84d7f2a2f8d0af766a5bcb09759104
+  docs/components/namespacetypestest.md:
+    last_write_checksum: sha1:6dd57ba75fc250efd6bbbc9ee718944535005d5f
+  docs/components/nullableintenum.md:
+    last_write_checksum: sha1:738a13230b18d4e135d8366878152ab3bc67fa90
+  docs/components/nullablestringenum.md:
+    last_write_checksum: sha1:c0614a21fa94e29ae168eaf5615643e40d0d23ac
+  docs/components/objwithrenamedproperties.md:
+    last_write_checksum: sha1:ea984a90f94b31bdc2ae0d85e80aa2279804cb7d
+  docs/components/oneofwithfactoredoutproperties.md:
+    last_write_checksum: sha1:8e907f0fadd097c6563d89d6525abe4b3b28a82a
+  docs/components/oneofwithfactoredoutpropertiesany.md:
+    last_write_checksum: sha1:7e9c5f4e70fecec72711073ae4da30226829a268
+  docs/components/oneofwithfactoredoutpropertiesexhaustiveobject.md:
+    last_write_checksum: sha1:5066b26736cc9a40e1e3b9eb52fa9b64053ef838
+  docs/components/oneofwithfactoredoutpropertiesherowidth.md:
+    last_write_checksum: sha1:dfe1ce133d312223d2a28855ae4e030b0afce567
+  docs/components/oneofwithfactoredoutpropertiesicon.md:
+    last_write_checksum: sha1:d84368990259e8ba6fad7f1bc4b9075cccef59ba
+  docs/components/oneofwithfactoredoutpropertiesint32enum.md:
+    last_write_checksum: sha1:12d90cdbac97737eba98b9e1736a2a53144990c3
+  docs/components/oneofwithfactoredoutpropertiesintenum.md:
+    last_write_checksum: sha1:18d4aa8e7d6bf2a621a16a52abc1b4bb4c56f680
+  docs/components/oneofwithfactoredoutpropertiesnullableintenum.md:
+    last_write_checksum: sha1:9cdc44523a6589ebb268e62afddb6835ea052186
+  docs/components/oneofwithfactoredoutpropertiesnullablestringenum.md:
+    last_write_checksum: sha1:4de3f2149ba02cfae8a53c3deab3221a22ce3115
+  docs/components/oneofwithfactoredoutpropertiessimpleobject.md:
+    last_write_checksum: sha1:75739c3978d8a405fbd180b8c26f6b237d87c28b
+  docs/components/policystep.md:
+    last_write_checksum: sha1:7fe5d374343f58cf3ab607e04f8a98da478f763f
+  docs/components/rectangle.md:
+    last_write_checksum: sha1:c59e51267205ed5a8fb92a5129320456ac0ee261
+  docs/components/recursiveformfield.md:
+    last_write_checksum: sha1:5f6aa403631895775473ed64c2285b9423f80b21
+  docs/components/recursiveformfieldarray.md:
+    last_write_checksum: sha1:95c5ae9492dd78c4a7da19aa271da18d9d75fc97
+  docs/components/recursiveformfieldnumber.md:
+    last_write_checksum: sha1:51c27d882c8b8a8d6c16551b1e3622646c00a74d
+  docs/components/recursiveformfieldtext.md:
+    last_write_checksum: sha1:f01d923f433e794b4434a7e0c9222cfc4f8558b6
+  docs/components/reviewtask.md:
+    last_write_checksum: sha1:a522de21b6f3d37eb5ba20496fb15181cf41c853
+  docs/components/variantrecord.md:
+    last_write_checksum: sha1:be8aa94c1b2444d15e3f1650a4669e9fdeb7af80
+  docs/components/security.md:
+    last_write_checksum: sha1:e81b41695a8517ef893d87bd2eb604fd59de21f0
+  docs/components/securityoption2.md:
+    last_write_checksum: sha1:12e5dce804c4d9dcfb0403caf383a5c3926c507c
+  docs/components/securityoption3.md:
+    last_write_checksum: sha1:50e6a81e9d4c1c30d29c449e39075201d941aabb
+  docs/components/securityoption4.md:
+    last_write_checksum: sha1:06f176f978d7fcc6add804586e6737ad96020d62
+  docs/components/securityoption5.md:
+    last_write_checksum: sha1:c081fbab2111a6fa4a930a624bb0df24f8ca33c8
+  docs/components/securityoption6.md:
+    last_write_checksum: sha1:82ef8b6aa502cd2e59e4a11dfe48abe961487bb0
+  docs/components/shape.md:
+    last_write_checksum: sha1:d5a0cbc63b172c4367f2b736d86e578951edde15
+  docs/components/shaperequest.md:
+    last_write_checksum: sha1:22e46aad601fbd2a3d09bb0a8700fd1c950c1f13
+  docs/components/simpleobject.md:
+    last_write_checksum: sha1:cdda904fe0631a3bb66fde6d9e9795d7cab977a8
+  docs/components/someunion.md:
+    last_write_checksum: sha1:2f5811733ceec6aa7d87a3cbe047695846e606ce
+  docs/components/status.md:
+    last_write_checksum: sha1:981e295a8a9841b3436d6adc3a3ad6670cf2da8e
+  docs/components/step.md:
+    last_write_checksum: sha1:1754d45109c711b3ce6e4cfbd03f2ed7695c7588
+  docs/components/taskresponse.md:
+    last_write_checksum: sha1:554bd9f08e17f5704e4b608f5224a114bc416ce1
+  docs/components/templatebracestest.md:
+    last_write_checksum: sha1:f15106ca192ede34e91e6eb79840866760ab391b
+  docs/components/test2request.md:
+    last_write_checksum: sha1:ef53091b1742147a12d21406a860581dab7ca947
+  docs/components/test2response.md:
+    last_write_checksum: sha1:d73c56cebb76d85daa5a3c40c6ef00a6ecc623fd
+  docs/components/triplenamespaceconflicttest.md:
+    last_write_checksum: sha1:3232c484b5e80ab6b9cabe32e25b2ccfc2208840
+  docs/components/type.md:
+    last_write_checksum: sha1:c2fdf4a64543e838979408f0709500499d56b688
+  docs/components/user.md:
+    last_write_checksum: sha1:74bb76c1d9b42c8686a10e6aa14bf6ac143fa0f0
+  docs/components/userpassauth.md:
+    last_write_checksum: sha1:b95be44d564d7638bdd69df1b7751c0647e631cb
+  docs/components/webhooks/paymentcreatedrequest.md:
+    last_write_checksum: sha1:7733bd100c4e4dd9e003303d9e977cd28cd5ba86
+  docs/components/webhooks/paymentcreatedresponse.md:
+    last_write_checksum: sha1:e82aa696ca502b41c5009178d6576ea29aa5f6e4
+  docs/components/webhooks/paymentcreatedtype.md:
+    last_write_checksum: sha1:90e4985add230eab8aaf55d94e3ee5671bca2dce
+  docs/components/webhooks/paymentupdatedrequest.md:
+    last_write_checksum: sha1:867787029c45842796fb47baf98ed49975b3355d
+  docs/components/webhooks/paymentupdatedresponse.md:
+    last_write_checksum: sha1:7094ab78128dd4b92e4be622c1cbd97cfa9eb0fe
+  docs/components/webhooks/paymentupdatedtype.md:
+    last_write_checksum: sha1:60c4e71cee234f54aef789a2c8f1b98ea705543b
+  docs/errors/badrequestresponseerror.md:
+    last_write_checksum: sha1:23dd2dd2ae5a3441fd4c7062e69166cf11ab9ab5
+  docs/errors/error.md:
+    last_write_checksum: sha1:1c9d43ca2ffff541907d7b31c277b22052bab98a
+  docs/errors/failedresponseerror.md:
+    last_write_checksum: sha1:eb65eb71ba56974de351a915393569ba3ccbd234
+  docs/errors/requesttimeouterror.md:
+    last_write_checksum: sha1:685fad0eabbe36b707d7482b986b10ad27bfac7c
+  docs/errors/test2responseerror.md:
+    last_write_checksum: sha1:2d4500619d47bac39d1b8c29a95b031f4a5d9bef
+  docs/operations/v2/schemas/allofwithfactoredoutproperties.md:
+    last_write_checksum: sha1:3a091e29f7f123a26a2753419a400c43e799d4a1
+  docs/operations/v2/schemas/assetstatusstream.md:
+    last_write_checksum: sha1:e1e335fd5bd5b086b35f52f59e53e93cc604eea0
+  docs/operations/v2/schemas/assetstream.md:
+    last_write_checksum: sha1:a829dd583b5c734d1fd219eb6cfcdb86ae88111a
+  docs/operations/v2/schemas/attachment.md:
+    last_write_checksum: sha1:2f89dbfead2c6bd2e95f583fe46e871c39cb0f65
+  docs/operations/v2/schemas/authresponse.md:
+    last_write_checksum: sha1:88329a2b8f377c7cce4bc020b603c2bacb43fa42
+  docs/operations/v2/schemas/authsecurity.md:
+    last_write_checksum: sha1:287ad253085a1e6aa0061818a7629065945e7dc5
+  docs/operations/v2/schemas/binaryandstringuploadrequest.md:
+    last_write_checksum: sha1:5daf1edbc32d093529630f47ad01519f056006b9
+  docs/operations/v2/schemas/binaryandstringuploadresponse.md:
+    last_write_checksum: sha1:088f59572872d3d9fa4ca6af23f154294cce4c76
+  docs/operations/v2/schemas/chatrequest.md:
+    last_write_checksum: sha1:06dd7ac537899d4a6c1e008e3845577dad89a2a4
+  docs/operations/v2/schemas/chatresponse.md:
+    last_write_checksum: sha1:bc70a92098084eecef1b5333ed619a22328679e6
+  docs/operations/v2/schemas/chatresponsebody.md:
+    last_write_checksum: sha1:b0d8a784fc9c5a93fbef77ff94f7906b1d63e265
+  docs/operations/v2/schemas/chatstream.md:
+    last_write_checksum: sha1:3700ec9096bfea5bc1ecbe90a42b656f831f04ba
+  docs/operations/v2/schemas/createnamespaceconflictresponse.md:
+    last_write_checksum: sha1:d2fa048a0c0ddd1f56d78baa3c5be8393978571b
+  docs/operations/v2/schemas/createsinglenamespacefoopetresponse.md:
+    last_write_checksum: sha1:8240e357c9d191676cd3f462d0268ebb491c3f2c
+  docs/operations/v2/schemas/createuserresponse.md:
+    last_write_checksum: sha1:1f8020670f89ef07674b67cbce971b1e9ca4ed33
+  docs/operations/v2/schemas/createwithunionrequest.md:
+    last_write_checksum: sha1:2592e6295b1dbdde9f030fd5ec09112480c59409
+  docs/operations/v2/schemas/createwithunionresponse.md:
+    last_write_checksum: sha1:c7287624907b2268114c9eee377c063665ae06b5
+  docs/operations/v2/schemas/createwithunionresponsebody.md:
+    last_write_checksum: sha1:cceb968014dce6cb6c4839e8a281895487e90fdc
+  docs/operations/v2/schemas/data.md:
+    last_write_checksum: sha1:69fef8f42af83fca152c052262d15c1b6dc1d9be
+  docs/operations/v2/schemas/deleteuserrequest.md:
+    last_write_checksum: sha1:a2a0f023bc3163db44fcd4a7738a0e52a07b45cd
+  docs/operations/v2/schemas/deleteuserresponse.md:
+    last_write_checksum: sha1:fdb845bc1d8b822becd05718b46c1cc46af7abd2
+  docs/operations/v2/schemas/deprecated1response.md:
+    last_write_checksum: sha1:8c812af1a297b0e80ee9967840a4955bc675ec58
+  docs/operations/v2/schemas/emoji.md:
+    last_write_checksum: sha1:5f125134dd349c25c2367bffc6a82251229eb0b0
+  docs/operations/v2/schemas/file.md:
+    last_write_checksum: sha1:d882a49e870fe743aa9299639329c512d49e2f71
+  docs/operations/v2/schemas/getassetrequest.md:
+    last_write_checksum: sha1:d759afc4728f44e28c77de89a4f514da75703100
+  docs/operations/v2/schemas/getassetresponse.md:
+    last_write_checksum: sha1:bfc2c0a00acded9bedb149b033de31dfb8d956ac
+  docs/operations/v2/schemas/getbinarydefaultresponseresponse.md:
+    last_write_checksum: sha1:b1c3e3b51705b58a1d45cd58e0eec12ee8b5019a
+  docs/operations/v2/schemas/getduplicateexportcollisionresponse.md:
+    last_write_checksum: sha1:705578468648a498aa907a7a6aaea83362cb686b
+  docs/operations/v2/schemas/getduplicateexportcollisionresponsebody.md:
+    last_write_checksum: sha1:4b23bd0184bf4472221f252431537bbd85cee1f8
+  docs/operations/v2/schemas/getemptyobjecterrorresponse.md:
+    last_write_checksum: sha1:bfb6dec587b0a174c66a52d8374131851f87366d
+  docs/operations/v2/schemas/getemptyobjecterrorresponsebody.md:
+    last_write_checksum: sha1:252372574819c6df32c244657b4231ba1fc5c678
+  docs/operations/v2/schemas/geterroronlyexampleresponse.md:
+    last_write_checksum: sha1:a071b0443b52bbdf2fbef715dbb2210ee5ddc402
+  docs/operations/v2/schemas/geterroronlyexampleresponsebody.md:
+    last_write_checksum: sha1:691d08688d647f2c3aa0229e39d03b9602e142f1
+  docs/operations/v2/schemas/getfullyflattenedrequestrequest.md:
+    last_write_checksum: sha1:02091e8531d467d0a600e7f2a8746ed6194b0e22
+  docs/operations/v2/schemas/getfullyflattenedrequestrequestbody.md:
+    last_write_checksum: sha1:e5eb1b38532f2435ac88b0c331059cb1aae1d745
+  docs/operations/v2/schemas/getfullyflattenedrequestresponse.md:
+    last_write_checksum: sha1:b8029974ed21f3c0ef92d01d8bfe2503214138ee
+  docs/operations/v2/schemas/getnamedprimitiveunionresponse.md:
+    last_write_checksum: sha1:82b86562cc3e12aafc3cd3151d76c9a1ccf63418
+  docs/operations/v2/schemas/getnamespaceanimalresponse.md:
+    last_write_checksum: sha1:b8e5fdedad34cb016783b1140e1a5e08de1dff4a
+  docs/operations/v2/schemas/getnamespaceconflictresponse.md:
+    last_write_checksum: sha1:ddcf5ec85368f3ab98471912a3da9cc852d91aa1
+  docs/operations/v2/schemas/getnamespaceorganizationresponse.md:
+    last_write_checksum: sha1:9ac786e30be08db7d41bdc1ea4151bda2167af7f
+  docs/operations/v2/schemas/getnamespacetypesresponse.md:
+    last_write_checksum: sha1:30676ac5c5e7e557c9f5b3be36369e0b438b5350
+  docs/operations/v2/schemas/getnamespacevehicleresponse.md:
+    last_write_checksum: sha1:f38cd01958e40f75054bebf29d59b2a7073fef74
+  docs/operations/v2/schemas/getnestedintegerstringresponse.md:
+    last_write_checksum: sha1:52422ea2cabd20de19bd97fd9af463958067b92d
+  docs/operations/v2/schemas/getpetownersresponse.md:
+    last_write_checksum: sha1:18dd54f038f1820ad8a36d2631a4ef1ea8cd4880
+  docs/operations/v2/schemas/getpetownersresponsebody.md:
+    last_write_checksum: sha1:e275267f50b0d15bdfd402e6550a17bab6d176c2
+  docs/operations/v2/schemas/getpolymorphismresponse.md:
+    last_write_checksum: sha1:ad5e8ab25373b7df68ac46fdea274d6978a40797
+  docs/operations/v2/schemas/getpolymorphismresponsebody.md:
+    last_write_checksum: sha1:8d3fbea8cda1c4e5b6819e32410514349f24738b
+  docs/operations/v2/schemas/getrequestbodyflattenedawayrequest.md:
+    last_write_checksum: sha1:2cfc78e75a6952fa3f3e0ddbaa0084479be5ac31
+  docs/operations/v2/schemas/getrequestbodyflattenedawayresponse.md:
+    last_write_checksum: sha1:7d3e6fe4004eb07cd7cf4dae98ed8433bdc3b9e4
+  docs/operations/v2/schemas/getsinglenamespacebarpetresponse.md:
+    last_write_checksum: sha1:57c54e2dfa8ccf6804a1033d3410d796d5ae3b6d
+  docs/operations/v2/schemas/getsinglenamespacefoopetresponse.md:
+    last_write_checksum: sha1:4db6d314687b28ce4c7c39e3b6b271e40e02e57a
+  docs/operations/v2/schemas/gettriplenamespaceconflictresponse.md:
+    last_write_checksum: sha1:03c110a929795157a471ab77064739807b16da28
+  docs/operations/v2/schemas/getuserrequest.md:
+    last_write_checksum: sha1:6883004effc46d39fdc13110f160dece9a8ba13d
+  docs/operations/v2/schemas/getuserresponse.md:
+    last_write_checksum: sha1:c491f5ae4698e892cf00f26d55696354b030ea8e
+  docs/operations/v2/schemas/integermapformat.md:
+    last_write_checksum: sha1:632df90d39884df6e23218ec9f90f92f32274194
+  docs/operations/v2/schemas/integerpartialmapformat.md:
+    last_write_checksum: sha1:fe82ebaefe3c4fcb2c1bc1275899e343fd67d49d
+  docs/operations/v2/schemas/listtest1request.md:
+    last_write_checksum: sha1:d652b102058c9bf34b42f43e0dcbba4f48832af5
+  docs/operations/v2/schemas/listtest1response.md:
+    last_write_checksum: sha1:a0045a65ff2369d08acb8fe7e21fbe7982d7e844
+  docs/operations/v2/schemas/listtest1responsebody.md:
+    last_write_checksum: sha1:0e1cf4a9e1bf09ff2e53dbe52eb79a4afd9c6df8
+  docs/operations/v2/schemas/loginresponse.md:
+    last_write_checksum: sha1:b0a81b4e060438568e97432256b9a909340d12e6
+  docs/operations/v2/schemas/loginresponsebody.md:
+    last_write_checksum: sha1:8a07e044c0b7d0b2ccc16b70feb57dce2d546ff9
+  docs/operations/v2/schemas/metadata.md:
+    last_write_checksum: sha1:aa424420e32fe682a63540427244c51992a28919
+  docs/operations/v2/schemas/nestedgroupopresponse.md:
+    last_write_checksum: sha1:52f04d3a3016bb06e5fc4ace0a0ad58d53209ed8
+  docs/operations/v2/schemas/oneofwithuniondescription.md:
+    last_write_checksum: sha1:45682bc0d09735eac66aebac167cea9663dd19ef
+  docs/operations/v2/schemas/operationwithleadingandtrailingunderscoresrequest.md:
+    last_write_checksum: sha1:353dc71f1f6614802132d8ce81235ef4ff5c51ff
+  docs/operations/v2/schemas/operationwithleadingandtrailingunderscoresresponse.md:
+    last_write_checksum: sha1:e5a877091c5e7a50812e3d5eb17afb832014c903
+  docs/operations/v2/schemas/outputmodality.md:
+    last_write_checksum: sha1:2527710e210d7af16b66023d22083254a6b2c2ef
+  docs/operations/v2/schemas/parenthesesinpathallowedrequest.md:
+    last_write_checksum: sha1:4d4a7cf7ec5b6aaec888e8061872ff3a1d84f234
+  docs/operations/v2/schemas/parenthesesinpathallowedresponse.md:
+    last_write_checksum: sha1:a96cea6d56f24070278b1ead09c02f15a819610d
+  docs/operations/v2/schemas/postfilerequest.md:
+    last_write_checksum: sha1:29d3b20878e0e775029c24544635ee7aaa21b2e4
+  docs/operations/v2/schemas/postfileresponse.md:
+    last_write_checksum: sha1:8ddf0d853d7b0374d959d6b06c5f1bdd3de39700
+  docs/operations/v2/schemas/postfilewithencodingrequest.md:
+    last_write_checksum: sha1:d3a0ab90360b486b0f1814e17d41f34f42bc1dc1
+  docs/operations/v2/schemas/postfilewithencodingresponse.md:
+    last_write_checksum: sha1:43f796c2b9bf7d19f105bb5ad60a0f0c36699a17
+  docs/operations/v2/schemas/postfilewithencodingresponsebody.md:
+    last_write_checksum: sha1:3e59390a5f9e844049621a5fb9993acf1147eaed
+  docs/operations/v2/schemas/posttest2request.md:
+    last_write_checksum: sha1:9133ddd9536cb5b02cc29cc6303377321dce3811
+  docs/operations/v2/schemas/posttest2response.md:
+    last_write_checksum: sha1:cbed94ec72edc74e509b6d1ca56ea75d98c6cba8
+  docs/operations/v2/schemas/putnamespaceconflictresponse.md:
+    last_write_checksum: sha1:d6a6410a926c3f6140d77a56663b434ab02e6f21
+  docs/operations/v2/schemas/queryparam2.md:
+    last_write_checksum: sha1:3ac902774e51b294ca0a15d97d4cafe929377843
+  docs/operations/v2/schemas/renderassetrequest.md:
+    last_write_checksum: sha1:9d7d760cfa5c90f74c80d0af840f48860a178b81
+  docs/operations/v2/schemas/renderassetresponse.md:
+    last_write_checksum: sha1:566ce275e69a01d16e9124495636ccbc7b8d11ae
+  docs/operations/v2/schemas/resultarray.md:
+    last_write_checksum: sha1:85c4476c07a7b01b4dba2c7827dd2d2de01b98fb
+  docs/operations/v2/schemas/rootgroupopresponse.md:
+    last_write_checksum: sha1:90a1715ddb4ef472705cc421cb8feaa257601fa3
+  docs/operations/v2/schemas/simpleallof.md:
+    last_write_checksum: sha1:fa269cc1aa29c6d71f14c392ab1c30cda99a9b1b
+  docs/operations/v2/schemas/stringarrayformat.md:
+    last_write_checksum: sha1:5df4bf3e095d63f43e0aaa153e518dca0e800e96
+  docs/operations/v2/schemas/stringmapformat.md:
+    last_write_checksum: sha1:020f154fd3b0db08e4bd9683ce9efce88eae858e
+  docs/operations/v2/schemas/stringpartialmapformat.md:
+    last_write_checksum: sha1:bfdabea7b8a0b853730141359885ea790e2abc22
+  docs/operations/v2/schemas/subgroupopresponse.md:
+    last_write_checksum: sha1:f85825312e0621fe012067bdd17398215141271e
+  docs/operations/v2/schemas/testendpointrequest.md:
+    last_write_checksum: sha1:27aa325a66bc691f6d7c722ef712e90d3beaf98a
+  docs/operations/v2/schemas/testendpointrequestbody.md:
+    last_write_checksum: sha1:a438e2bf67b4f202901aa951f5db04da701cfcf0
+  docs/operations/v2/schemas/testendpointresponse.md:
+    last_write_checksum: sha1:ad9301740ebf50b1c89558014bfe044bc9f7c65c
+  docs/operations/v2/schemas/testenumformatsrequest.md:
+    last_write_checksum: sha1:cc51f453f514b9ddfc7484a5301b1d7013ca5882
+  docs/operations/v2/schemas/testenumformatsresponse.md:
+    last_write_checksum: sha1:90c5c256cf6aedb0c4080fcce6a0db24a27ba423
+  docs/operations/v2/schemas/testenumformatsresponsebody.md:
+    last_write_checksum: sha1:3473cb7c65e47e6bfb24910a0e8d277bda186c70
+  docs/operations/v2/schemas/updateuserrequest.md:
+    last_write_checksum: sha1:7bdf351700b7724dacc92bf97f33a7b8c26a9c03
+  docs/operations/v2/schemas/updateuserresponse.md:
+    last_write_checksum: sha1:e432a8369ca0435e7bed2649868d0ffba428f086
+  docs/operations/v2/schemas/urlvalidationstresstestresponse.md:
+    last_write_checksum: sha1:5442b08294934011bb88dead27f9ca42b26b04c6
+  docs/operations/v2/schemas/validateresponse.md:
+    last_write_checksum: sha1:23cc4d2eb90fff679d244b86fbda3e4c9406bbc3
+  docs/operations/v2/schemas/validateresponsebody.md:
+    last_write_checksum: sha1:17b00daf660d953742af39045da9456ba24b1e37
+  docs/sdks/conflicts/README.md:
+    last_write_checksum: sha1:29e344594726dff518c3e9f0e796973beaaabdbe
+  docs/sdks/group/README.md:
+    last_write_checksum: sha1:b339c5a71578194386017c8d8f76bc3d524bc343
+  docs/sdks/obsolete/README.md:
+    last_write_checksum: sha1:9db4b09843bacdc905525b7d054efd3ba5e1fdac
+  docs/sdks/sdk/README.md:
+    last_write_checksum: sha1:50c6da959a2987dca55b2dd9d8cd61b3e90711c5
+  docs/sdks/singlebar/README.md:
+    last_write_checksum: sha1:6c99100d6b0274050c6bc9778024a1a80455d410
+  docs/sdks/singlefoo/README.md:
+    last_write_checksum: sha1:0703c5630bffd834db68b381cab35ef5c18c7f04
+  docs/sdks/subgroup/README.md:
+    last_write_checksum: sha1:c65f705b2a3d6a49dea73f8be5f33ab114ae3f95
+  docs/sdks/tag1/README.md:
+    last_write_checksum: sha1:c08b152694d9533a0b2aea0f4bde8c1a261d4dc8
+  docs/sdks/tag2/README.md:
+    last_write_checksum: sha1:5ad812785c61e3dd72564ae495e562c5d0ee7ab3
+  docs/sdks/tag3/README.md:
+    last_write_checksum: sha1:38424579324586d0a1182c76e9ad7297dbfe7e73
+  docs/sdks/tail/README.md:
+    last_write_checksum: sha1:0b245246f689bcd234a7581bb3e94748455c2951
+  docs/sdks/types/README.md:
+    last_write_checksum: sha1:a62e3510180e3a999edf9afbcd6dd3ba20825df5
+  lib/crystalline.rb:
+    last_write_checksum: sha1:b6ec0a2833f58ba9a6f07c9637fdca05e59006d3
+  lib/crystalline/enum.rbi:
+    last_write_checksum: sha1:548b19d96bcf832792c1e54f0065c293934a9ce5
+  lib/crystalline/metadata_fields.rb:
+    last_write_checksum: sha1:fd3fb667a441554f212e7eff01bcdb608bdd3f44
+  lib/crystalline/module.rb:
+    last_write_checksum: sha1:4050ac608d9327d1506ab13b5d41f818dce32433
+  lib/crystalline/types.rb:
+    last_write_checksum: sha1:d7a70117f4c6504cc9c602bbd13f46df31d15119
+  lib/crystalline/utils.rb:
+    last_write_checksum: sha1:b32469851da6f9f729e484ade6a23b38639a652a
+  lib/open_api_sdk/components.rb:
+    last_write_checksum: sha1:6428aca9bc5b97e52098f30745af2a38cdbca90d
+  lib/open_api_sdk/components/aloof.rb:
+    last_write_checksum: sha1:86782a9b16ced61ae4468ee4d1cf9126f8e0ab18
+  lib/open_api_sdk/components/aloof.rbi:
+    last_write_checksum: sha1:1c30f1881bc7a93823560e0c5dfc102d67db19fd
+  lib/open_api_sdk/components/any.rb:
+    last_write_checksum: sha1:473bf37fec9fa70416bc46ca031af3f779163b83
+  lib/open_api_sdk/components/any.rbi:
+    last_write_checksum: sha1:e75aab464b0ca2c7a5f334b1c583147c57355b15
+  lib/open_api_sdk/components/approvalconfig.rb:
+    last_write_checksum: sha1:ed96db2b0384589bdd05e2b5c4cb230a8215fbd0
+  lib/open_api_sdk/components/approvalconfig.rbi:
+    last_write_checksum: sha1:f5f9952442af299314423fce30bf470861c4a06f
+  lib/open_api_sdk/components/assetimageblock.rb:
+    last_write_checksum: sha1:6344bd99653eabe5d928db1c38bee51156ac5f90
+  lib/open_api_sdk/components/assetimageblock.rbi:
+    last_write_checksum: sha1:ac4a397de11810a64f61d05d0e2ac2e1caaf9b84
+  lib/open_api_sdk/components/assetnotestep.rb:
+    last_write_checksum: sha1:9f887e54f9479d29a7f031df6e955c871e9f8bd8
+  lib/open_api_sdk/components/assetnotestep.rbi:
+    last_write_checksum: sha1:706628e2e111951caa699bca8eb9cd560747631f
+  lib/open_api_sdk/components/assetoutputstep.rb:
+    last_write_checksum: sha1:5fbf39935551ddcbfeb2e0bbb8406b8ac5178539
+  lib/open_api_sdk/components/assetoutputstep.rbi:
+    last_write_checksum: sha1:a2d72b48a1c17c1805334f81bd3a18067e01f7df
+  lib/open_api_sdk/components/assetresult.rb:
+    last_write_checksum: sha1:0415057400c49e0ab072c9279be52a825e68e562
+  lib/open_api_sdk/components/assetresult.rbi:
+    last_write_checksum: sha1:471f56561151aad99b03f3f99cb79214dcc91b6b
+  lib/open_api_sdk/components/assettextblock.rb:
+    last_write_checksum: sha1:30a433953014a1d5aeb35723726c37119e1774fd
+  lib/open_api_sdk/components/assettextblock.rbi:
+    last_write_checksum: sha1:82ff476c63463e97d7641641bdf2b4e7ae7aaa88
+  lib/open_api_sdk/components/bar.rb:
+    last_write_checksum: sha1:4e09a90d9deb89c175077bb111caeb5b74590042
+  lib/open_api_sdk/components/bar/bike.rb:
+    last_write_checksum: sha1:ae6d683ecd663e78cc344452d481c8be8dc53038
+  lib/open_api_sdk/components/bar/bike.rbi:
+    last_write_checksum: sha1:4b88e520806eadd500921cc9d19cd1d02cf2d57e
+  lib/open_api_sdk/components/bar/car.rb:
+    last_write_checksum: sha1:f8f0d86ab44cb725f3598ba25fafe1d2f9c0ff9b
+  lib/open_api_sdk/components/bar/car.rbi:
+    last_write_checksum: sha1:35e684c7ee40765fff1bb7c040f7c4936a650ab7
+  lib/open_api_sdk/components/bar/pet.rb:
+    last_write_checksum: sha1:cfdb56ccebe4c0d835a59369d5f2482906cb2751
+  lib/open_api_sdk/components/bar/pet.rbi:
+    last_write_checksum: sha1:ed90e0eff239d379956e163d6aaba60a094943d9
+  lib/open_api_sdk/components/bar/petowner.rb:
+    last_write_checksum: sha1:cadd2ec984a9c00cc253b761bb9853c1b36ff600
+  lib/open_api_sdk/components/bar/petowner.rbi:
+    last_write_checksum: sha1:c18a2f50c48ad43ea4225cee2d91c9f774a40def
+  lib/open_api_sdk/components/bar/petstatus.rb:
+    last_write_checksum: sha1:f0b38bf0dfff7d8381406a7f1bad8e813260eadf
+  lib/open_api_sdk/components/bar/petstatus.rbi:
+    last_write_checksum: sha1:cf608d1f32cd6ef8247cc3634638d856bc3dcc99
+  lib/open_api_sdk/components/bar/vehicle.rb:
+    last_write_checksum: sha1:09f5d7f971ab67b8abafd72a384bf528ee874fd3
+  lib/open_api_sdk/components/bar/vehicle.rbi:
+    last_write_checksum: sha1:7b186920056c8d8fedfa23e32dfd93f9a680da2b
+  lib/open_api_sdk/components/baseuser.rb:
+    last_write_checksum: sha1:94710a38d4f724d317f6961a6db8079931f5e147
+  lib/open_api_sdk/components/baseuser.rbi:
+    last_write_checksum: sha1:830d3c97435f0fd1a9201565ecf26648baa0f4c7
+  lib/open_api_sdk/components/baz.rb:
+    last_write_checksum: sha1:8aca3f1865ec7a8236018b7a1209f772ef2c69eb
+  lib/open_api_sdk/components/baz/namespaced.rb:
+    last_write_checksum: sha1:f2a769468c6bb62b54f511c65b934d23caeb52af
+  lib/open_api_sdk/components/baz/namespaced.rbi:
+    last_write_checksum: sha1:31f1f7838fd7100071d373368775f355a2226035
+  lib/open_api_sdk/components/baz/pet.rb:
+    last_write_checksum: sha1:15a516373fb42ea5300bc7617bbfb43f71f7406f
+  lib/open_api_sdk/components/baz/pet.rbi:
+    last_write_checksum: sha1:8b5db079c210f2489fdc6366c2ebbf6602f4ab5d
+  lib/open_api_sdk/components/boole.rb:
+    last_write_checksum: sha1:1e2588284aa7e022cf1a6dcfa036ae9bfeffba07
+  lib/open_api_sdk/components/boole.rbi:
+    last_write_checksum: sha1:f3a2fbcb772e15820a6b4bea3e5f6f64749bcb03
+  lib/open_api_sdk/components/imagerecord.rb:
+    last_write_checksum: sha1:ee3e99ec00581debd29b3cf4bfd8981992f50909
+  lib/open_api_sdk/components/imagerecord.rbi:
+    last_write_checksum: sha1:7d14b1251da0c23b77da33fb0e63e96ffd18494a
+  lib/open_api_sdk/components/chatagentrequest.rb:
+    last_write_checksum: sha1:8e2d561843e972bcb5dffb153d20be8f3569acc6
+  lib/open_api_sdk/components/chatagentrequest.rbi:
+    last_write_checksum: sha1:eac44051b453c6d70f0201cf4bb96ec66ccf2529
+  lib/open_api_sdk/components/chatmodelrequest.rb:
+    last_write_checksum: sha1:b6bc547705cb82a55a7abefde17e2de5b682d268
+  lib/open_api_sdk/components/chatmodelrequest.rbi:
+    last_write_checksum: sha1:7d8e1c762918c8ab2c4c728820b5533abd0381ef
+  lib/open_api_sdk/components/circle.rb:
+    last_write_checksum: sha1:3f45402448e6f80886ed4f632e1e6ac68baedcd4
+  lib/open_api_sdk/components/circle.rbi:
+    last_write_checksum: sha1:fe09f240c0439f7b0224089b19fb5baea0e9f62a
+  lib/open_api_sdk/components/circularunion.rb:
+    last_write_checksum: sha1:6fed10c957807369d4f8c026b1b7c34d173212cc
+  lib/open_api_sdk/components/circularunion.rbi:
+    last_write_checksum: sha1:96ad2775ee8320420627ce8492ebc4d48cba04b4
+  lib/open_api_sdk/components/color.rb:
+    last_write_checksum: sha1:7faaa35eb214f97eab932539401576c8940ae8bf
+  lib/open_api_sdk/components/color.rbi:
+    last_write_checksum: sha1:fb37524f7d7a14133e41458117177566f5295dd5
+  lib/open_api_sdk/components/content.rb:
+    last_write_checksum: sha1:b1664b48f48c6ae468763a4a7fcc2f43af226dfb
+  lib/open_api_sdk/components/content.rbi:
+    last_write_checksum: sha1:9bd32a23325a97d2e95892094633792363506a26
+  lib/open_api_sdk/components/detail.rb:
+    last_write_checksum: sha1:fc7e223e0c057d3cf9bf5d047ae93d83400fd5c4
+  lib/open_api_sdk/components/detail.rbi:
+    last_write_checksum: sha1:c3b3f17a89236e3eb8f138888cbed20adb267400
+  lib/open_api_sdk/components/detail_union.rb:
+    last_write_checksum: sha1:6331bee978c62b286ee4ac603e7ed849713ba413
+  lib/open_api_sdk/components/detail_union.rbi:
+    last_write_checksum: sha1:761b9374f300088e8f67081b2f28284021445cf7
+  lib/open_api_sdk/components/disriminatedunionwithonemember.rb:
+    last_write_checksum: sha1:5b3f2178614f60354147c7dc6f6760de68eff98c
+  lib/open_api_sdk/components/disriminatedunionwithonemember.rbi:
+    last_write_checksum: sha1:b2e122f37dd0dc4684efb19964576784902f5027
+  lib/open_api_sdk/components/enum.rb:
+    last_write_checksum: sha1:1a1fc98274645a5de3a4d2e0c405a76feddcd7f7
+  lib/open_api_sdk/components/enum.rbi:
+    last_write_checksum: sha1:ecfd79d5c0e919eafafa58ae87fa5d414f25815e
+  lib/open_api_sdk/components/escalation.rb:
+    last_write_checksum: sha1:deafdb787e1e7cf0908990ed3e3ff63eee4c4dea
+  lib/open_api_sdk/components/escalation.rbi:
+    last_write_checksum: sha1:f760e4568db5a48b6d24f0330e0f115061df31c4
+  lib/open_api_sdk/components/exhaustiveobject.rb:
+    last_write_checksum: sha1:16f88bb73ac3e4e976d2c3e58ca10c2f1f1026ec
+  lib/open_api_sdk/components/exhaustiveobject.rbi:
+    last_write_checksum: sha1:e2272eb2a3f257739b5b44f94da93cf93d22d2b6
+  lib/open_api_sdk/components/file.rb:
+    last_write_checksum: sha1:d35e681367ae785e960458478cb5d9bf2777c42a
+  lib/open_api_sdk/components/file.rbi:
+    last_write_checksum: sha1:fad258f3aeee5eea29ae6ae52cbfd253adf6ce55
+  lib/open_api_sdk/components/foo.rb:
+    last_write_checksum: sha1:ae69ba5864481fd33c433e7d3117a291771335dc
+  lib/open_api_sdk/components/foo/address.rb:
+    last_write_checksum: sha1:0c3e5d032d41833c41a5446b40165ab47728a258
+  lib/open_api_sdk/components/foo/address.rbi:
+    last_write_checksum: sha1:8dbdf1fc4fe8ec33f2bfee1caf8366085b9560ae
+  lib/open_api_sdk/components/foo/animal.rb:
+    last_write_checksum: sha1:381755ce93e6b4c22131e82c48dd2860f1398659
+  lib/open_api_sdk/components/foo/animal.rbi:
+    last_write_checksum: sha1:157c11fd6c088c0db782766ad49fa71741db8ae2
+  lib/open_api_sdk/components/foo/cat.rb:
+    last_write_checksum: sha1:0c68ba327deb4a9bccb282b6853a0a3c9c1a7e41
+  lib/open_api_sdk/components/foo/cat.rbi:
+    last_write_checksum: sha1:a217039381c0298f7073aa1bc912024a903a2b54
+  lib/open_api_sdk/components/foo/cat_animaltype.rb:
+    last_write_checksum: sha1:3867f3f245d60488cc7365e8f086d893db47b347
+  lib/open_api_sdk/components/foo/cat_animaltype.rbi:
+    last_write_checksum: sha1:9afa7a0c8a1bcd27a581806edc2f902e608bd9aa
+  lib/open_api_sdk/components/foo/department.rb:
+    last_write_checksum: sha1:38f4f53d41c3a8a48e1fb27bdbb554ebf336a44f
+  lib/open_api_sdk/components/foo/department.rbi:
+    last_write_checksum: sha1:30b9666d6869b823c8ff0f74a032a228fe3055bb
+  lib/open_api_sdk/components/foo/dog.rb:
+    last_write_checksum: sha1:a9e60f4caa4bb6de4be6183b56739188e435124d
+  lib/open_api_sdk/components/foo/dog.rbi:
+    last_write_checksum: sha1:f06c650a3468a583890d056717e4217d36d5d6c9
+  lib/open_api_sdk/components/foo/dog_animaltype.rb:
+    last_write_checksum: sha1:9c7e6654633e6ffbbc6f497d9989ccf888b11cab
+  lib/open_api_sdk/components/foo/dog_animaltype.rbi:
+    last_write_checksum: sha1:32ce448b2346efc038493a61cbbd2b0d41e1fbe4
+  lib/open_api_sdk/components/foo/location.rb:
+    last_write_checksum: sha1:59f8ec8fac185265bd390e1e1fcadae4ed0f61f8
+  lib/open_api_sdk/components/foo/location.rbi:
+    last_write_checksum: sha1:7ce81f6b89e561a678bbae1e740cd8acba4151f8
+  lib/open_api_sdk/components/foo/organization.rb:
+    last_write_checksum: sha1:75d9d0240079fd3bcdeea5f13bbaa8161454c04d
+  lib/open_api_sdk/components/foo/organization.rbi:
+    last_write_checksum: sha1:27ded67ec01365ae17b94c1ea3ce1cafb94ea6d5
+  lib/open_api_sdk/components/foo/pet.rb:
+    last_write_checksum: sha1:069b80766532567e476f70e5767d7ae69b9a18f5
+  lib/open_api_sdk/components/foo/pet.rbi:
+    last_write_checksum: sha1:fd9503fbfd62de5ced14b01d5b341e4613f13b18
+  lib/open_api_sdk/components/foo/petowner.rb:
+    last_write_checksum: sha1:2ce197e5ae2ca7977bfbffdd9e8c92ba04098bb6
+  lib/open_api_sdk/components/foo/petowner.rbi:
+    last_write_checksum: sha1:7edd05956d462eacb511da7433aae83fd530c065
+  lib/open_api_sdk/components/foo/petspecies.rb:
+    last_write_checksum: sha1:f71159987d9b3c7c042ecb281dd3cb6cf672ee55
+  lib/open_api_sdk/components/foo/petspecies.rbi:
+    last_write_checksum: sha1:905496e9201a149112cd48eeff8881d2a8613674
+  lib/open_api_sdk/components/gender.rb:
+    last_write_checksum: sha1:9e94635c25fe676146d104bba704f0a7002c9f22
+  lib/open_api_sdk/components/gender.rbi:
+    last_write_checksum: sha1:ab9b6fa848c321ea7c8a704181e53fdc21e4e2b7
+  lib/open_api_sdk/components/herowidth.rb:
+    last_write_checksum: sha1:18c2cd1720d9d1cbf8bb7fd1f619766b21555929
+  lib/open_api_sdk/components/herowidth.rbi:
+    last_write_checksum: sha1:ce7ae883f38b3920e79c6ce1c41a2bf981977527
+  lib/open_api_sdk/components/icon.rb:
+    last_write_checksum: sha1:6e9d55441e6693405b18c191452962d3c583250a
+  lib/open_api_sdk/components/icon.rbi:
+    last_write_checksum: sha1:464196a947159628af8bd5df810069908e4734af
+  lib/open_api_sdk/components/int32enum.rb:
+    last_write_checksum: sha1:a2156663b2bd68e27c21fc33bd579a19ef29edf0
+  lib/open_api_sdk/components/int32enum.rbi:
+    last_write_checksum: sha1:8a96b761f979b23d7cc64eea80c68857057cbc5f
+  lib/open_api_sdk/components/intenum.rb:
+    last_write_checksum: sha1:dec83f2e7b646d3d4162acbafc82b380f42a5025
+  lib/open_api_sdk/components/intenum.rbi:
+    last_write_checksum: sha1:ea3e179db33e768dc044dac20988c1cae2ac1a9b
+  lib/open_api_sdk/components/textrecord.rb:
+    last_write_checksum: sha1:6109648bae16cfe14ff0e5a8bb01b0b3cfde581d
+  lib/open_api_sdk/components/textrecord.rbi:
+    last_write_checksum: sha1:5f905cd2df243a5eb845e4d9408ff324965dfebd
+  lib/open_api_sdk/components/mcppolicy.rb:
+    last_write_checksum: sha1:01bf7d46b213f5d34043c363c6451fdaa34ea072
+  lib/open_api_sdk/components/mcppolicy.rbi:
+    last_write_checksum: sha1:7587769ac0c54ca72e0349e1f37946f75cecf654
+  lib/open_api_sdk/components/metadata.rb:
+    last_write_checksum: sha1:6b54b04e3a39e487fb4fa682d5097048b8b02535
+  lib/open_api_sdk/components/metadata.rbi:
+    last_write_checksum: sha1:772b3a8f9fee605c1e7d76f57659c7673bfa0446
+  lib/open_api_sdk/components/metadataany.rb:
+    last_write_checksum: sha1:72ce47eb323dbe2e7ca6ac88aa50cd5a60659e8a
+  lib/open_api_sdk/components/metadataany.rbi:
+    last_write_checksum: sha1:276d11673d36efd6721d2b639e12fcd35652aef3
+  lib/open_api_sdk/components/myapikey.rb:
+    last_write_checksum: sha1:528450a035b67dc9c4a8620e53c09b1ac6312b63
+  lib/open_api_sdk/components/myapikey.rbi:
+    last_write_checksum: sha1:936ab794d71bd5f7c554dc92ab036d5a3d2c22df
+  lib/open_api_sdk/components/myobject.rb:
+    last_write_checksum: sha1:730e0066d6ec555ce4b24aeb35767880ca3e7669
+  lib/open_api_sdk/components/myobject.rbi:
+    last_write_checksum: sha1:5e46a66ce4711c156b20910ada122e9279f2cbde
+  lib/open_api_sdk/components/namespaceconflicttest.rb:
+    last_write_checksum: sha1:ae13baa6db284f95e25cbb799d27df9f6f5bfcef
+  lib/open_api_sdk/components/namespaceconflicttest.rbi:
+    last_write_checksum: sha1:cd69e0233dc1e332b5f7be7080926c8eaeed486c
+  lib/open_api_sdk/components/namespacetypestest.rb:
+    last_write_checksum: sha1:163567304b055208c794b09f0de48baccc5696c8
+  lib/open_api_sdk/components/namespacetypestest.rbi:
+    last_write_checksum: sha1:3624af03892982246d46ae0ee1d92a9ad56f42a0
+  lib/open_api_sdk/components/nullableintenum.rb:
+    last_write_checksum: sha1:92e47dd1f91655eeb46f96b91c35e5baa5ce7eed
+  lib/open_api_sdk/components/nullableintenum.rbi:
+    last_write_checksum: sha1:71409e40c49310f888757fa550e64596841ad179
+  lib/open_api_sdk/components/nullablestringenum.rb:
+    last_write_checksum: sha1:15263abffdd23e53b142347d0852d6acc566a256
+  lib/open_api_sdk/components/nullablestringenum.rbi:
+    last_write_checksum: sha1:4f6d5bba1f90d8c74267dcae663623f8049a1d07
+  lib/open_api_sdk/components/objwithrenamedproperties.rb:
+    last_write_checksum: sha1:943c8bf9787bb11ca3dfa6dc43ded90c1b7e88ab
+  lib/open_api_sdk/components/objwithrenamedproperties.rbi:
+    last_write_checksum: sha1:8d35d34effbbbbc786fa0791e791787e5dbe821a
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties.rb:
+    last_write_checksum: sha1:3c185f9efd3a6843de828823908a6ec86c7bfec6
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties.rbi:
+    last_write_checksum: sha1:bc7d919c51156af0c186b0011f349c8186b824fd
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_any.rb:
+    last_write_checksum: sha1:c2fe0cb41fb61763dd7759d70a3af67fe46468cf
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_any.rbi:
+    last_write_checksum: sha1:328642a5b891cb4807303712e033c1dac47f6cc2
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_exhaustiveobject.rb:
+    last_write_checksum: sha1:c96d073b2a5c38c8f39f92de15fe91469deed836
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_exhaustiveobject.rbi:
+    last_write_checksum: sha1:fef15d49dbd78f299dda3fbef1b058a173243475
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_herowidth.rb:
+    last_write_checksum: sha1:ec44af8e7c4c398cce7ed9cbdaa0ef38039d7a86
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_herowidth.rbi:
+    last_write_checksum: sha1:04574d03ed5646343cd594a0c29cba8395f1cdad
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_icon.rb:
+    last_write_checksum: sha1:5b2abfab37715f2cab6e3f3581eaa4e91a2e4b57
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_icon.rbi:
+    last_write_checksum: sha1:869745516a2fa6d1b1187f95a146bffa27caf284
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_int32enum.rb:
+    last_write_checksum: sha1:b9e1f3eca47cd4b99849f9e521a2635244969f77
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_int32enum.rbi:
+    last_write_checksum: sha1:6d3802dca708093f7886f1a8592f7e24092262a8
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_intenum.rb:
+    last_write_checksum: sha1:249c310e7cdb88d7bd3bf311e58c2bb7abe03598
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_intenum.rbi:
+    last_write_checksum: sha1:ed0aa682a9c561f6e4eed06f1541789dee247b6d
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_nullableintenum.rb:
+    last_write_checksum: sha1:40ffbaa286ea1fbf452bf07359429d0b875b4378
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_nullableintenum.rbi:
+    last_write_checksum: sha1:e6fe320b34671a75e2cc60b04767ae7a06d396ab
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_nullablestringenum.rb:
+    last_write_checksum: sha1:f045164f70d6f228daef0056e431af92fc6aecff
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_nullablestringenum.rbi:
+    last_write_checksum: sha1:60274d8824e10ef3569b334ba1e3c88d97a1d73c
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_simpleobject.rb:
+    last_write_checksum: sha1:90d846984d9b11df47203378d3f020d823e6df5b
+  lib/open_api_sdk/components/oneofwithfactoredoutproperties_simpleobject.rbi:
+    last_write_checksum: sha1:744f7d5b3c9dd0a4ceeb3b637ebc02490fe71034
+  lib/open_api_sdk/components/policystep.rb:
+    last_write_checksum: sha1:811e7fd72a7486f059e03ddc9faea8a4a44ab28b
+  lib/open_api_sdk/components/policystep.rbi:
+    last_write_checksum: sha1:b979f3854f8578479b9842e26775f2d564bd5cf9
+  lib/open_api_sdk/components/rectangle.rb:
+    last_write_checksum: sha1:b3e33f73a0ebe7199f47d8ca09466575b1669714
+  lib/open_api_sdk/components/rectangle.rbi:
+    last_write_checksum: sha1:76017433fb2a3c09771e21c18f238495a473e210
+  lib/open_api_sdk/components/recursiveformfield.rb:
+    last_write_checksum: sha1:4328daa27b3ff7448852165e8510f7c8baf7b107
+  lib/open_api_sdk/components/recursiveformfield.rbi:
+    last_write_checksum: sha1:81bb8f90db66bd9ccdabd4bad063c737a52871b4
+  lib/open_api_sdk/components/recursiveformfield_array.rb:
+    last_write_checksum: sha1:1434a8813837cbaf6b04d2d15fb877d1e82d0958
+  lib/open_api_sdk/components/recursiveformfield_array.rbi:
+    last_write_checksum: sha1:e016faae3ddb393401eb6c6e2cd46048c4cb1ca9
+  lib/open_api_sdk/components/recursiveformfield_number.rb:
+    last_write_checksum: sha1:abbdaa794d49fbc73486b23f449d1774d74eaccc
+  lib/open_api_sdk/components/recursiveformfield_number.rbi:
+    last_write_checksum: sha1:819e217645d1e953d81dcf57901bdecf00ec7fd0
+  lib/open_api_sdk/components/recursiveformfield_text.rb:
+    last_write_checksum: sha1:6e9d0d5aa4361657e64cd600a99329084262cda4
+  lib/open_api_sdk/components/recursiveformfield_text.rbi:
+    last_write_checksum: sha1:321b2488d71eca34e8dd19fdaf97e468ebc68cf1
+  lib/open_api_sdk/components/reviewtask.rb:
+    last_write_checksum: sha1:3ac7a2c6f69a8af8928af4bed1393cccc80d15bb
+  lib/open_api_sdk/components/reviewtask.rbi:
+    last_write_checksum: sha1:273f03cd10a627497585cd8b3692f13d7e5b3963
+  lib/open_api_sdk/components/variantrecord.rb:
+    last_write_checksum: sha1:37eeb06862c9e02e9c6c54a2f641d2d0a3e410cf
+  lib/open_api_sdk/components/variantrecord.rbi:
+    last_write_checksum: sha1:eb3f3601c89b141c49b475bed3aea0b3a66f9791
+  lib/open_api_sdk/components/security.rb:
+    last_write_checksum: sha1:633bc752f6a45ec2623dfd2599e20212239f9561
+  lib/open_api_sdk/components/security.rbi:
+    last_write_checksum: sha1:a868d03e633a1293f936debe4291799732357cff
+  lib/open_api_sdk/components/securityoption2.rb:
+    last_write_checksum: sha1:d79ae1a025a4ed0abdd16124320243fc23ccf276
+  lib/open_api_sdk/components/securityoption2.rbi:
+    last_write_checksum: sha1:08e65af1f7536357bab55955d9bfbef19262f910
+  lib/open_api_sdk/components/securityoption3.rb:
+    last_write_checksum: sha1:85fb1e312a09e3b1d192a819f45e919c82224df4
+  lib/open_api_sdk/components/securityoption3.rbi:
+    last_write_checksum: sha1:cb9cd46215187ea6f182a8a2bc6da8182a409162
+  lib/open_api_sdk/components/securityoption4.rb:
+    last_write_checksum: sha1:67d23d0fd08989e456b126a03fff735501dbbec7
+  lib/open_api_sdk/components/securityoption4.rbi:
+    last_write_checksum: sha1:fee43d3f365a470c10360e7aeffd74eaebce90b7
+  lib/open_api_sdk/components/securityoption5.rb:
+    last_write_checksum: sha1:6b78c0c5438567a3acf81107aa5d1e7078576dc6
+  lib/open_api_sdk/components/securityoption5.rbi:
+    last_write_checksum: sha1:3c464afcef9310723e87fecf4be0c033081784ae
+  lib/open_api_sdk/components/securityoption6.rb:
+    last_write_checksum: sha1:80ee6cd81c79af72b9b916eecb83810454138dc0
+  lib/open_api_sdk/components/securityoption6.rbi:
+    last_write_checksum: sha1:45e378c83474f6623cd321d1ca47bd8427daff06
+  lib/open_api_sdk/components/server_variables.rb:
+    last_write_checksum: sha1:81e93e59fb066562f5cc6a9ad7ef6897b11f0814
+  lib/open_api_sdk/components/server_variables/server_port.rb:
+    last_write_checksum: sha1:c9932d7bceead97575215c11947c29130df06eb8
+  lib/open_api_sdk/components/shape.rb:
+    last_write_checksum: sha1:9c49f2471d74b699fcdba162bde346079354ee60
+  lib/open_api_sdk/components/shape.rbi:
+    last_write_checksum: sha1:ac33037c43a2dd5ebd929d62902f59d20562cd4e
+  lib/open_api_sdk/components/shaperequest.rb:
+    last_write_checksum: sha1:d8b13f42bf7733540db2c590e563714308fdd0ec
+  lib/open_api_sdk/components/shaperequest.rbi:
+    last_write_checksum: sha1:0b36ae01c668f1977f4a38d1f336890086657287
+  lib/open_api_sdk/components/simpleobject.rb:
+    last_write_checksum: sha1:235e36b01604c79230f0334567c780a89c60cc12
+  lib/open_api_sdk/components/simpleobject.rbi:
+    last_write_checksum: sha1:b521ca640322c95812eea916bec879322a0965d4
+  lib/open_api_sdk/components/someunion.rb:
+    last_write_checksum: sha1:6f1fbc6ae1b85bfc2e2d38b144f6447670306fb5
+  lib/open_api_sdk/components/someunion.rbi:
+    last_write_checksum: sha1:c04c837b06030342322fc3100bb0c4656f913cad
+  lib/open_api_sdk/components/status.rb:
+    last_write_checksum: sha1:848b7b6b90cbcd512a1907c1f37d64bd83f0f943
+  lib/open_api_sdk/components/status.rbi:
+    last_write_checksum: sha1:dfd801bd883bf6404741a52d1b5080771c79640e
+  lib/open_api_sdk/components/step.rb:
+    last_write_checksum: sha1:226d9033767548e0dad50f927aa0bd826b72caf1
+  lib/open_api_sdk/components/step.rbi:
+    last_write_checksum: sha1:9acc3af3c5340b914fd9e9d35b8f57efa7afa259
+  lib/open_api_sdk/components/taskresponse.rb:
+    last_write_checksum: sha1:1bc971201140464166c46098db580629f4157a16
+  lib/open_api_sdk/components/taskresponse.rbi:
+    last_write_checksum: sha1:1ae87f4f5faa865a69a250fb59c035bbccabe012
+  lib/open_api_sdk/components/templatebracestest.rb:
+    last_write_checksum: sha1:30db3e13bb8f66a314d9be4e684dce1459e6b33a
+  lib/open_api_sdk/components/templatebracestest.rbi:
+    last_write_checksum: sha1:d9b6abf93856a2ffbf5d299eb814aa13f5ea7b7d
+  lib/open_api_sdk/components/test2request.rb:
+    last_write_checksum: sha1:6897316fd0590889c4cb7802c37aaa892c6b30e0
+  lib/open_api_sdk/components/test2request.rbi:
+    last_write_checksum: sha1:3a94bb983b9f3e42f7a1b7a7644e98e20137930a
+  lib/open_api_sdk/components/test2response.rb:
+    last_write_checksum: sha1:4a11ce687bda41fbc37738b990fb424803d38441
+  lib/open_api_sdk/components/test2response.rbi:
+    last_write_checksum: sha1:ad93d49e584b9ba54bdb1ac9e5e5c46cf2553c2f
+  lib/open_api_sdk/components/triplenamespaceconflicttest.rb:
+    last_write_checksum: sha1:d0fc9e92fa64b88a3e1538222a7a583a0b88db67
+  lib/open_api_sdk/components/triplenamespaceconflicttest.rbi:
+    last_write_checksum: sha1:96a83a9ecc870f99b9b9ded4e17f71c7fb2a74eb
+  lib/open_api_sdk/components/type.rb:
+    last_write_checksum: sha1:1b0ead4636a4454c9e9ef6335467e9bb37794122
+  lib/open_api_sdk/components/type.rbi:
+    last_write_checksum: sha1:d40b48c707c2a61f8c56096b3e09c536dd4ead3e
+  lib/open_api_sdk/components/user.rb:
+    last_write_checksum: sha1:ebba4ab0ca334a268801b967332a7a5b2e0f4d80
+  lib/open_api_sdk/components/user.rbi:
+    last_write_checksum: sha1:90eda1860cca98fbe137ce470429804df05f1bd9
+  lib/open_api_sdk/components/userpassauth.rb:
+    last_write_checksum: sha1:2879e86200af249b267811ffeb0f0218a67da515
+  lib/open_api_sdk/components/userpassauth.rbi:
+    last_write_checksum: sha1:d2de5f8c7b7cd2d317a54db42d0446924aafa761
+  lib/open_api_sdk/components/webhooks.rb:
+    last_write_checksum: sha1:907b082837193a9049c6171dfbbd6d000d9d17a9
+  lib/open_api_sdk/components/webhooks/paymentcreated_request.rb:
+    last_write_checksum: sha1:9b7e32a90ce24532c5f141d1bc6bf8cb8a382442
+  lib/open_api_sdk/components/webhooks/paymentcreated_request.rbi:
+    last_write_checksum: sha1:a8d4b72377f74d486286f23022d58194573ee333
+  lib/open_api_sdk/components/webhooks/paymentcreated_response.rb:
+    last_write_checksum: sha1:cc9782218aade1b48af14cc8a78bbf6d0cf623e7
+  lib/open_api_sdk/components/webhooks/paymentcreated_response.rbi:
+    last_write_checksum: sha1:f6353f22b61ef10f1b4a1a01d2f30432e9ba2cae
+  lib/open_api_sdk/components/webhooks/paymentcreated_type.rb:
+    last_write_checksum: sha1:06f382dbb9a61cb9c204522ae2f8d885f7f68d1d
+  lib/open_api_sdk/components/webhooks/paymentcreated_type.rbi:
+    last_write_checksum: sha1:52ab708943a8f7d0b427aadc98918c391f86d28b
+  lib/open_api_sdk/components/webhooks/paymentupdated_request.rb:
+    last_write_checksum: sha1:a8a7fe0a32b6f82a30f442d4aeb42b5c0ba1e247
+  lib/open_api_sdk/components/webhooks/paymentupdated_request.rbi:
+    last_write_checksum: sha1:df9ae18f05317dc00c9ee71678d4e3f62ab5d2c4
+  lib/open_api_sdk/components/webhooks/paymentupdated_response.rb:
+    last_write_checksum: sha1:e4f721b9be884d1693dfd6cc6e3745d838b1c795
+  lib/open_api_sdk/components/webhooks/paymentupdated_response.rbi:
+    last_write_checksum: sha1:290c23aec698f235e23f06f9d593ba43e3df3159
+  lib/open_api_sdk/components/webhooks/paymentupdated_type.rb:
+    last_write_checksum: sha1:fbb184c0d0629aaff840fed2f8e7b4c65a5e6906
+  lib/open_api_sdk/components/webhooks/paymentupdated_type.rbi:
+    last_write_checksum: sha1:7b45ec7c2d7273b08be681a5775cee824bb93280
+  lib/open_api_sdk/conflicts.rb:
+    last_write_checksum: sha1:7eff2c945e8feb1eaca9407fe93464ed53850569
+  lib/open_api_sdk/empty.rb:
+    last_write_checksum: sha1:f781ea032055f98d75f49fe3f881e55720ccc3d3
+  lib/open_api_sdk/errors.rb:
+    last_write_checksum: sha1:4981e05edea9a5b3adea4390e914f04cbc97b09b
+  lib/open_api_sdk/errors/apierror.rb:
+    last_write_checksum: sha1:b50adf2499ace4149bef3e8903d1f87c0756a828
+  lib/open_api_sdk/errors/apierror.rbi:
+    last_write_checksum: sha1:feb70f1c09564d4c241d4c6d78eb1474a08e412f
+  lib/open_api_sdk/errors/badrequestresponse_error.rb:
+    last_write_checksum: sha1:63177dae52537de234df51558a568178f86542ce
+  lib/open_api_sdk/errors/badrequestresponse_error.rbi:
+    last_write_checksum: sha1:7a1ec74221e520f8cd2c2823cabf06ff8495be3e
+  lib/open_api_sdk/errors/error.rb:
+    last_write_checksum: sha1:d7c42d3c36ba70c4e577d3c41741b3a681d7a06e
+  lib/open_api_sdk/errors/error.rbi:
+    last_write_checksum: sha1:a61e9dcf85b63bb8b28c28c51a9c57e2a42645ec
+  lib/open_api_sdk/errors/failedresponse_error.rb:
+    last_write_checksum: sha1:d6a69867335937baf0fb9a4532b50435abe014b1
+  lib/open_api_sdk/errors/failedresponse_error.rbi:
+    last_write_checksum: sha1:353c2fcb7f63cc8fdadb6f42e07a8c6634f2891a
+  lib/open_api_sdk/errors/requesttimeouterror.rb:
+    last_write_checksum: sha1:dd9f9a5261785ed4394cc24db853a733bf9175f5
+  lib/open_api_sdk/errors/requesttimeouterror.rbi:
+    last_write_checksum: sha1:5aed1c2883119b83feaa0a94ba9ba6b4d24073d9
+  lib/open_api_sdk/errors/test2response_error.rb:
+    last_write_checksum: sha1:e4eb90b0e84029da3a823e807851aef79ea38681
+  lib/open_api_sdk/errors/test2response_error.rbi:
+    last_write_checksum: sha1:a5b99e964594dd721b9ca5518e035063a2d67033
+  lib/open_api_sdk/group.rb:
+    last_write_checksum: sha1:0e42359bdc81abea4f3308daf2e2b8e1c7265465
+  lib/open_api_sdk/namespacetests.rb:
+    last_write_checksum: sha1:72532fbdb67709ac28b6f04a2f1af0ef73e2033d
+  lib/open_api_sdk/obsolete.rb:
+    last_write_checksum: sha1:5d40331c33ecb3d6a7f66d3f27ffadf1f36378b1
+  lib/open_api_sdk/operations/callbacks.rb:
+    last_write_checksum: sha1:5f294da5822b33d74c2ddd3a9253439c7bf2f63e
+  lib/open_api_sdk/operations/v2/schemas.rb:
+    last_write_checksum: sha1:47f573f25026b219c716cb1b715a32e829c94dff
+  lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_request.rb:
+    last_write_checksum: sha1:bdc98b446d0cf141a999bdffe1871709bd50c7a2
+  lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_request.rbi:
+    last_write_checksum: sha1:b3e0101041672c45a37fabf2ee7fe85a9d471970
+  lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_response.rb:
+    last_write_checksum: sha1:f2c90126d3e5bfe14c21069ec59a99917b6601af
+  lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_response.rbi:
+    last_write_checksum: sha1:a8c3dd5d631b3a0b2bc73533e15f90e45ac97e1a
+  lib/open_api_sdk/operations/v2/schemas/allofwithfactoredoutproperties.rb:
+    last_write_checksum: sha1:693548d553978d776d6f46f66de43e4ca851853f
+  lib/open_api_sdk/operations/v2/schemas/allofwithfactoredoutproperties.rbi:
+    last_write_checksum: sha1:b72237247dc0478895dcc744129433c538f7834a
+  lib/open_api_sdk/operations/v2/schemas/assetstatusstream.rb:
+    last_write_checksum: sha1:bfd038bbcf13921997ef65080b95d97e151a8f4e
+  lib/open_api_sdk/operations/v2/schemas/assetstatusstream.rbi:
+    last_write_checksum: sha1:65cca861fdd715a3e5a8e74762cdb08e6a772407
+  lib/open_api_sdk/operations/v2/schemas/assetstream.rb:
+    last_write_checksum: sha1:6e0fd577d2b088652a23cb3bc739d56c8c6a7b20
+  lib/open_api_sdk/operations/v2/schemas/assetstream.rbi:
+    last_write_checksum: sha1:cebd3f54ca505189ca7580f8beb046cf962582f5
+  lib/open_api_sdk/operations/v2/schemas/attachment.rb:
+    last_write_checksum: sha1:4ab14c152a54a225571b602b7bdfa845e928f0bc
+  lib/open_api_sdk/operations/v2/schemas/attachment.rbi:
+    last_write_checksum: sha1:24c7e16803b4eacd1e703ed94e364ca362743235
+  lib/open_api_sdk/operations/v2/schemas/auth_response.rb:
+    last_write_checksum: sha1:03fc52787cc62e8162c4f6d3c424922ad1d4a31d
+  lib/open_api_sdk/operations/v2/schemas/auth_response.rbi:
+    last_write_checksum: sha1:4f74fb3d5a47f0256ad3f32d77615df769aab989
+  lib/open_api_sdk/operations/v2/schemas/auth_security.rb:
+    last_write_checksum: sha1:8149fbbf3c107f514d29584e06c89b79a9402bd4
+  lib/open_api_sdk/operations/v2/schemas/auth_security.rbi:
+    last_write_checksum: sha1:124af1458503731cb08b17b04b417ceae8d10a74
+  lib/open_api_sdk/operations/v2/schemas/binaryandstringupload_request.rb:
+    last_write_checksum: sha1:578a1c09d7bb8753e98054750c885afea97e3683
+  lib/open_api_sdk/operations/v2/schemas/binaryandstringupload_request.rbi:
+    last_write_checksum: sha1:875f3ac0903052914b65e0f3399abac6b442862b
+  lib/open_api_sdk/operations/v2/schemas/binaryandstringupload_response.rb:
+    last_write_checksum: sha1:0b799971891093ddf5f350440431110b7590e7a5
+  lib/open_api_sdk/operations/v2/schemas/binaryandstringupload_response.rbi:
+    last_write_checksum: sha1:d36db737da6e3d89b52d8e7329c1e5bc3fc36b74
+  lib/open_api_sdk/operations/v2/schemas/chat_request.rb:
+    last_write_checksum: sha1:98ae9cf75d1c2dd4d7a69f8e6885ca844152e3f2
+  lib/open_api_sdk/operations/v2/schemas/chat_request.rbi:
+    last_write_checksum: sha1:127d946fde5b1b98d254cfea67a9e0c8f1942a67
+  lib/open_api_sdk/operations/v2/schemas/chat_response.rb:
+    last_write_checksum: sha1:73908980973c418b6325a661c118072e89a17698
+  lib/open_api_sdk/operations/v2/schemas/chat_response.rbi:
+    last_write_checksum: sha1:1715659a20abf906840dde2e5002e62b91d5e7a0
+  lib/open_api_sdk/operations/v2/schemas/chat_responsebody.rb:
+    last_write_checksum: sha1:b1ebd4c512d6a465c642b70b43774078eb2f518c
+  lib/open_api_sdk/operations/v2/schemas/chat_responsebody.rbi:
+    last_write_checksum: sha1:e7853d95c5dd6bf0242c842c85b9d479b8991753
+  lib/open_api_sdk/operations/v2/schemas/chatstream.rb:
+    last_write_checksum: sha1:3d812d7ff1b8a80c1003c6fcd0982470bbc6927d
+  lib/open_api_sdk/operations/v2/schemas/chatstream.rbi:
+    last_write_checksum: sha1:ca5fda879c48634a68b0011607df19b957a68bd1
+  lib/open_api_sdk/operations/v2/schemas/createnamespaceconflict_response.rb:
+    last_write_checksum: sha1:c41e8d2dc9af5c93aa5d5d6d8eaba457aaee4315
+  lib/open_api_sdk/operations/v2/schemas/createnamespaceconflict_response.rbi:
+    last_write_checksum: sha1:990e12042252d41b401963390143c54d967da3d5
+  lib/open_api_sdk/operations/v2/schemas/createsinglenamespacefoopet_response.rb:
+    last_write_checksum: sha1:8b14a17c6dad4768aba3282be16a70728917a51c
+  lib/open_api_sdk/operations/v2/schemas/createsinglenamespacefoopet_response.rbi:
+    last_write_checksum: sha1:9bd866f207261044c6e9f31d03c39268f7457414
+  lib/open_api_sdk/operations/v2/schemas/createuser_response.rb:
+    last_write_checksum: sha1:431c62145cb6597d1c86df14093c918cd9d42c7d
+  lib/open_api_sdk/operations/v2/schemas/createuser_response.rbi:
+    last_write_checksum: sha1:d92e5afe884a5af5f602b1997ad7f6d7c48e3c19
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_request.rb:
+    last_write_checksum: sha1:45f24d523c8cef1e389904969860b00e3b2617b9
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_request.rbi:
+    last_write_checksum: sha1:5883487ee7cbcc42b3752b6c3acedd2272883640
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_response.rb:
+    last_write_checksum: sha1:d4c898db16eb14cb980cff76ffd3f801637885c9
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_response.rbi:
+    last_write_checksum: sha1:dc86937e577f6850047ed71a128e8009488295bf
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_responsebody.rb:
+    last_write_checksum: sha1:e8a78f811a5499990b6bb7430122f866397933a4
+  lib/open_api_sdk/operations/v2/schemas/createwithunion_responsebody.rbi:
+    last_write_checksum: sha1:4e1a15a8c5bb394312d2a8dd662b59a6439e9eca
+  lib/open_api_sdk/operations/v2/schemas/data.rb:
+    last_write_checksum: sha1:0f86c711ddb4052befd1bcffee8d7b8bc7644452
+  lib/open_api_sdk/operations/v2/schemas/data.rbi:
+    last_write_checksum: sha1:385edb00cf324be6a2bb0a2d212a8bfb0eac553a
+  lib/open_api_sdk/operations/v2/schemas/deleteuser_request.rb:
+    last_write_checksum: sha1:2f876029b04d8d3ae552a53a5ffbe95969e6ba22
+  lib/open_api_sdk/operations/v2/schemas/deleteuser_request.rbi:
+    last_write_checksum: sha1:951ed041a95e4ced854afc3dad8ac16e32da6ae5
+  lib/open_api_sdk/operations/v2/schemas/deleteuser_response.rb:
+    last_write_checksum: sha1:93cd2ad5e822405c1c5afe3ec3edf958dbf28f88
+  lib/open_api_sdk/operations/v2/schemas/deleteuser_response.rbi:
+    last_write_checksum: sha1:d1b96d147c7afcc864920342fe25711283aba214
+  lib/open_api_sdk/operations/v2/schemas/deprecated1_response.rb:
+    last_write_checksum: sha1:74ef8ab8545913ae8c33802ceeda3195c73086c5
+  lib/open_api_sdk/operations/v2/schemas/deprecated1_response.rbi:
+    last_write_checksum: sha1:9ac1be97a5635f0ca5a707697d17c69279cc13a4
+  lib/open_api_sdk/operations/v2/schemas/emoji.rb:
+    last_write_checksum: sha1:1dc7cf14ed38c5f1f83d3d254d8028b3c1a20953
+  lib/open_api_sdk/operations/v2/schemas/emoji.rbi:
+    last_write_checksum: sha1:e2c7a7e411f1981b6dd60d89c69cfd928f7488ec
+  lib/open_api_sdk/operations/v2/schemas/file.rb:
+    last_write_checksum: sha1:b7e74ccd24e6063bbb2b8af2284fbcd1109668c2
+  lib/open_api_sdk/operations/v2/schemas/file.rbi:
+    last_write_checksum: sha1:80661562f7f051bde18556baf182602423b2408d
+  lib/open_api_sdk/operations/v2/schemas/getasset_request.rb:
+    last_write_checksum: sha1:8063ab6ad32106a65c08c0b1979761de37d3425d
+  lib/open_api_sdk/operations/v2/schemas/getasset_request.rbi:
+    last_write_checksum: sha1:fa4a8acfe017960da2727f5f1633cd3d5f36ce0c
+  lib/open_api_sdk/operations/v2/schemas/getasset_response.rb:
+    last_write_checksum: sha1:dea4021aecca1499baae585c354210a3bbd10b11
+  lib/open_api_sdk/operations/v2/schemas/getasset_response.rbi:
+    last_write_checksum: sha1:97bbc7dba241e651afe3ffb92c68503a9e504700
+  lib/open_api_sdk/operations/v2/schemas/getbinarydefaultresponse_response.rb:
+    last_write_checksum: sha1:6d7168215c4fc2fbbb9218ca5d2f94af2c40a7e8
+  lib/open_api_sdk/operations/v2/schemas/getbinarydefaultresponse_response.rbi:
+    last_write_checksum: sha1:eb2d42ee996e2b353ce1a7447095cadd2622e669
+  lib/open_api_sdk/operations/v2/schemas/getduplicateexportcollision_response.rb:
+    last_write_checksum: sha1:f6c60ca9f9832320fb8624d3e417b5c82b3822b9
+  lib/open_api_sdk/operations/v2/schemas/getduplicateexportcollision_response.rbi:
+    last_write_checksum: sha1:56e245bc67c92b6def191e40f15a95c8db1248f1
+  lib/open_api_sdk/operations/v2/schemas/getduplicateexportcollision_responsebody.rb:
+    last_write_checksum: sha1:dad140e1ce4525266b7aa3c4d5ca2d6fa8f07469
+  lib/open_api_sdk/operations/v2/schemas/getduplicateexportcollision_responsebody.rbi:
+    last_write_checksum: sha1:8d75a19029e0db38a964a5d5f7090fcf680b0702
+  lib/open_api_sdk/operations/v2/schemas/getemptyobjecterror_response.rb:
+    last_write_checksum: sha1:3ef09ea2c1a96d00f83747ae82310a25b3b78d57
+  lib/open_api_sdk/operations/v2/schemas/getemptyobjecterror_response.rbi:
+    last_write_checksum: sha1:c774312ddca0b5de611d6fa0dd9732e3169b7716
+  lib/open_api_sdk/operations/v2/schemas/getemptyobjecterror_responsebody.rb:
+    last_write_checksum: sha1:e92aa20f6cfb292f0db93c161e3a4f9a8903923a
+  lib/open_api_sdk/operations/v2/schemas/getemptyobjecterror_responsebody.rbi:
+    last_write_checksum: sha1:ea7aff81c44aa616f31d4f1e46b0c8ce6879013f
+  lib/open_api_sdk/operations/v2/schemas/geterroronlyexample_response.rb:
+    last_write_checksum: sha1:7b152eecd1a165d9035a3589766c9da56150ac30
+  lib/open_api_sdk/operations/v2/schemas/geterroronlyexample_response.rbi:
+    last_write_checksum: sha1:3755189df7a28987ed8af2982addec5608dcf5d1
+  lib/open_api_sdk/operations/v2/schemas/geterroronlyexample_responsebody.rb:
+    last_write_checksum: sha1:1ee0b6e1cf51f4843cb383925cc28616d4acb043
+  lib/open_api_sdk/operations/v2/schemas/geterroronlyexample_responsebody.rbi:
+    last_write_checksum: sha1:bb396eae3c3e6ff30c08333f8cb61a9ecf5e940e
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_request.rb:
+    last_write_checksum: sha1:d7b46d1864679a376cf8bc8bc1b3867d6aa46411
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_request.rbi:
+    last_write_checksum: sha1:c93a6801a2ce35bea708fea7957cc30e0e031d1f
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_requestbody.rb:
+    last_write_checksum: sha1:7bdb61568b2d734df8bda5d9814949ccd174f406
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_requestbody.rbi:
+    last_write_checksum: sha1:8b5a14e24a28b9596aa61b855a24a79a289813ed
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_response.rb:
+    last_write_checksum: sha1:0a8ef95c8efbddd622dbb547c9d00008f643dffb
+  lib/open_api_sdk/operations/v2/schemas/getfullyflattenedrequest_response.rbi:
+    last_write_checksum: sha1:8a61a99de436127885d0c01bd7f3fc5160ba154b
+  lib/open_api_sdk/operations/v2/schemas/getnamedprimitiveunion_response.rb:
+    last_write_checksum: sha1:192cc2e61289c875064b151f939a340ee26c735b
+  lib/open_api_sdk/operations/v2/schemas/getnamedprimitiveunion_response.rbi:
+    last_write_checksum: sha1:d98d3fae3b63f444f60db2e229044edcedfe31a5
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceanimal_response.rb:
+    last_write_checksum: sha1:baf595149db7bdb857855b0ccf131b0547882827
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceanimal_response.rbi:
+    last_write_checksum: sha1:c44ce2ef8b23617a9f3f1c71d87daa60b9106ff9
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceconflict_response.rb:
+    last_write_checksum: sha1:7025ef8a563f5bed26d5a8935e1ca0367041bfb6
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceconflict_response.rbi:
+    last_write_checksum: sha1:ca1e1387567537ff6be65f8f13f61e09ed8ad08d
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceorganization_response.rb:
+    last_write_checksum: sha1:6e3fc28f649580e4540464d40ce599a94a08eb89
+  lib/open_api_sdk/operations/v2/schemas/getnamespaceorganization_response.rbi:
+    last_write_checksum: sha1:d05d1969276c04943376197308af67ad611e53e7
+  lib/open_api_sdk/operations/v2/schemas/getnamespacetypes_response.rb:
+    last_write_checksum: sha1:dc5ce53832ae04e71911784146fc8eabc37723a9
+  lib/open_api_sdk/operations/v2/schemas/getnamespacetypes_response.rbi:
+    last_write_checksum: sha1:32da34a000403029ea0013f43a7e55567cc79a5c
+  lib/open_api_sdk/operations/v2/schemas/getnamespacevehicle_response.rb:
+    last_write_checksum: sha1:b888e044b908e4a01b794983111c478b4c0ba0eb
+  lib/open_api_sdk/operations/v2/schemas/getnamespacevehicle_response.rbi:
+    last_write_checksum: sha1:e64e06daa32628ba40b9712aedadf131157183ac
+  lib/open_api_sdk/operations/v2/schemas/getnestedintegerstring_response.rb:
+    last_write_checksum: sha1:256aed1d1004340e0ff699a1c34f157e734859c0
+  lib/open_api_sdk/operations/v2/schemas/getnestedintegerstring_response.rbi:
+    last_write_checksum: sha1:fc88ebb93388537a2615850dceaf569e878f1705
+  lib/open_api_sdk/operations/v2/schemas/getpetowners_response.rb:
+    last_write_checksum: sha1:47854be410ff45854464205e9fecf39e8b51e63a
+  lib/open_api_sdk/operations/v2/schemas/getpetowners_response.rbi:
+    last_write_checksum: sha1:5358aea45adfa50b12df91a70af9eff28a694093
+  lib/open_api_sdk/operations/v2/schemas/getpetowners_responsebody.rb:
+    last_write_checksum: sha1:019c8bf661eea380e2de8e9c1cff4fe7ab15af03
+  lib/open_api_sdk/operations/v2/schemas/getpetowners_responsebody.rbi:
+    last_write_checksum: sha1:4e4e8f72e4f5bef8afce3c11adf72cdba9d21af7
+  lib/open_api_sdk/operations/v2/schemas/getpolymorphism_response.rb:
+    last_write_checksum: sha1:70f8423739b2a51b93b2dd86adfafe20796b63d4
+  lib/open_api_sdk/operations/v2/schemas/getpolymorphism_response.rbi:
+    last_write_checksum: sha1:ee5c7a062df87fcd9cbc82e34586a6a3d20b2905
+  lib/open_api_sdk/operations/v2/schemas/getpolymorphism_responsebody.rb:
+    last_write_checksum: sha1:9818dca894a9842449e2d129f8915d45f7b701f9
+  lib/open_api_sdk/operations/v2/schemas/getpolymorphism_responsebody.rbi:
+    last_write_checksum: sha1:e33c070ab0c03cb412fec293f04b19802eafe598
+  lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_request.rb:
+    last_write_checksum: sha1:f9dc4632150670f3039b76721b86d42c4dd4b993
+  lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_request.rbi:
+    last_write_checksum: sha1:b64e4a8313020328c4bca2403d2207eaded1d550
+  lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_response.rb:
+    last_write_checksum: sha1:821b5fdad06d73d31bcdc11a10e939eb5fee76ec
+  lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_response.rbi:
+    last_write_checksum: sha1:f8b8c8ac6ca6ad9d36f6f33369f3f3206e7503c0
+  lib/open_api_sdk/operations/v2/schemas/getsinglenamespacebarpet_response.rb:
+    last_write_checksum: sha1:afb42be06dbaa229b8ef9e9765fd2d759a622563
+  lib/open_api_sdk/operations/v2/schemas/getsinglenamespacebarpet_response.rbi:
+    last_write_checksum: sha1:aec4565b21df695c31811298ea2bd9943ca4c4ea
+  lib/open_api_sdk/operations/v2/schemas/getsinglenamespacefoopet_response.rb:
+    last_write_checksum: sha1:518b774c382ea6446697e57ded5ce2737edeee52
+  lib/open_api_sdk/operations/v2/schemas/getsinglenamespacefoopet_response.rbi:
+    last_write_checksum: sha1:e817886ef359e5f531746a411b380e40343d5b98
+  lib/open_api_sdk/operations/v2/schemas/gettriplenamespaceconflict_response.rb:
+    last_write_checksum: sha1:b020304ac4020ec5df27c15f423b8edd130e9fd9
+  lib/open_api_sdk/operations/v2/schemas/gettriplenamespaceconflict_response.rbi:
+    last_write_checksum: sha1:b596985f3ab263ccfbe872af60e569da72b7e996
+  lib/open_api_sdk/operations/v2/schemas/getuser_request.rb:
+    last_write_checksum: sha1:983f18a217a7e30db5574c6a6cc81efca613c505
+  lib/open_api_sdk/operations/v2/schemas/getuser_request.rbi:
+    last_write_checksum: sha1:2c88b262f4366515807b113abde2c190ff78bd3d
+  lib/open_api_sdk/operations/v2/schemas/getuser_response.rb:
+    last_write_checksum: sha1:5ca97edf4d1c00607d8cf5e309bdb6080073df73
+  lib/open_api_sdk/operations/v2/schemas/getuser_response.rbi:
+    last_write_checksum: sha1:ebc1d14309c66cf94a95494f0a4dff2d05eae0f7
+  lib/open_api_sdk/operations/v2/schemas/integermapformat.rb:
+    last_write_checksum: sha1:8bf443b6ea58f2ea94cc1572fe16ab4945e78ae8
+  lib/open_api_sdk/operations/v2/schemas/integermapformat.rbi:
+    last_write_checksum: sha1:180de79e151bca48539b69cfa64adda105984d3e
+  lib/open_api_sdk/operations/v2/schemas/integerpartialmapformat.rb:
+    last_write_checksum: sha1:02d6004766b5121fc7b024ab85f097f92c8392b0
+  lib/open_api_sdk/operations/v2/schemas/integerpartialmapformat.rbi:
+    last_write_checksum: sha1:40104cbc172817a3c00568098caa42388ee08819
+  lib/open_api_sdk/operations/v2/schemas/listtest1_request.rb:
+    last_write_checksum: sha1:df9510b8fded42779a62b1e8ff0e8911f5da30cf
+  lib/open_api_sdk/operations/v2/schemas/listtest1_request.rbi:
+    last_write_checksum: sha1:df13477a2b402dd60c48c4c9226a8ee8da2e9c8a
+  lib/open_api_sdk/operations/v2/schemas/listtest1_response.rb:
+    last_write_checksum: sha1:af113bdd75a2a39c1578ffe0dcf1f268d4442dd1
+  lib/open_api_sdk/operations/v2/schemas/listtest1_response.rbi:
+    last_write_checksum: sha1:b7bfd63ea95aeb45a0e4e8ea97ede9573db71e2e
+  lib/open_api_sdk/operations/v2/schemas/listtest1_responsebody.rb:
+    last_write_checksum: sha1:4b9739c084375aa0e862c82636d50e118d54301d
+  lib/open_api_sdk/operations/v2/schemas/listtest1_responsebody.rbi:
+    last_write_checksum: sha1:e35537b9b54b5175bc615c9734c58bf196f03639
+  lib/open_api_sdk/operations/v2/schemas/login_response.rb:
+    last_write_checksum: sha1:f62ea0b57ef7d12aa7ae3c394c87e6279069ec9c
+  lib/open_api_sdk/operations/v2/schemas/login_response.rbi:
+    last_write_checksum: sha1:2f67d765d5416f83d501b0b2a15d4b2f5b1d3bdb
+  lib/open_api_sdk/operations/v2/schemas/login_responsebody.rb:
+    last_write_checksum: sha1:814bdaadcdc86ae19ee26f3afeb1353ac38ef16e
+  lib/open_api_sdk/operations/v2/schemas/login_responsebody.rbi:
+    last_write_checksum: sha1:4fd98ddfa3883e57f7ed7dbb96816a5a767d2e02
+  lib/open_api_sdk/operations/v2/schemas/metadata.rb:
+    last_write_checksum: sha1:36e4e4d157b88605acb0a0ec41640bdff8b67435
+  lib/open_api_sdk/operations/v2/schemas/metadata.rbi:
+    last_write_checksum: sha1:3eb9184ef0f432ed5ede563901956fb8484785f1
+  lib/open_api_sdk/operations/v2/schemas/nestedgroupop_response.rb:
+    last_write_checksum: sha1:4ab524874bdaa4ce8eecb69d5fc8d43b5ee6444c
+  lib/open_api_sdk/operations/v2/schemas/nestedgroupop_response.rbi:
+    last_write_checksum: sha1:0bd57245025f820d916ca783017cabf3919cd19e
+  lib/open_api_sdk/operations/v2/schemas/oneofwithuniondescription.rb:
+    last_write_checksum: sha1:034a5334268a74454b2e882dcfd3649ce629e9d4
+  lib/open_api_sdk/operations/v2/schemas/oneofwithuniondescription.rbi:
+    last_write_checksum: sha1:9cf94c8cfcbd862ac9bbb33e16ff49eacb3d8ee0
+  lib/open_api_sdk/operations/v2/schemas/output_modality.rb:
+    last_write_checksum: sha1:612b5af936df6b9ad4278c4e2f7ab1ed09ee5d4e
+  lib/open_api_sdk/operations/v2/schemas/output_modality.rbi:
+    last_write_checksum: sha1:f20d27ac4f3bb77555784cfe8fc4abdfe8641245
+  lib/open_api_sdk/operations/v2/schemas/parenthesesinpathallowed_request.rb:
+    last_write_checksum: sha1:828fc0fef2856d6272ce67f328ce3497113cc6f6
+  lib/open_api_sdk/operations/v2/schemas/parenthesesinpathallowed_request.rbi:
+    last_write_checksum: sha1:0120e37eb1d319a1f08440021a0f0cacfed6952d
+  lib/open_api_sdk/operations/v2/schemas/parenthesesinpathallowed_response.rb:
+    last_write_checksum: sha1:2fbfcb28952b9c343918045a7ce0470800125611
+  lib/open_api_sdk/operations/v2/schemas/parenthesesinpathallowed_response.rbi:
+    last_write_checksum: sha1:0055808c7f1fc4f80210dcbe6df2d6a6c2f71297
+  lib/open_api_sdk/operations/v2/schemas/postfile_request.rb:
+    last_write_checksum: sha1:657c3c317ca6071bd6f7041f764c15472a5ae645
+  lib/open_api_sdk/operations/v2/schemas/postfile_request.rbi:
+    last_write_checksum: sha1:290a95832bf7fec4b9c4da8b13f9c0306a574934
+  lib/open_api_sdk/operations/v2/schemas/postfile_response.rb:
+    last_write_checksum: sha1:cd1d2652b98dca6136a081b01f45dbab1401a6ac
+  lib/open_api_sdk/operations/v2/schemas/postfile_response.rbi:
+    last_write_checksum: sha1:bb06ac01ca6b5fe2da3755c89ff418b3cb08bcc9
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_request.rb:
+    last_write_checksum: sha1:1fe20bdc25665e3291ae234379fc391589dc7231
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_request.rbi:
+    last_write_checksum: sha1:1bf56b7446ed428352653a4fb738e9d62c840ce8
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_response.rb:
+    last_write_checksum: sha1:a688ae9cb133707ef28e44d0ae2b9f22090debcf
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_response.rbi:
+    last_write_checksum: sha1:968fa5e05d3856511b4380391e591e29095595cd
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_responsebody.rb:
+    last_write_checksum: sha1:1fb79149c40d9a2044fbccf527cfc8adc2ba5152
+  lib/open_api_sdk/operations/v2/schemas/postfilewithencoding_responsebody.rbi:
+    last_write_checksum: sha1:2616839c782fec201ea21a2957b261b5d8918ede
+  lib/open_api_sdk/operations/v2/schemas/posttest2_request.rb:
+    last_write_checksum: sha1:904aa2665560e9fc7ed06dabd74d16da08122461
+  lib/open_api_sdk/operations/v2/schemas/posttest2_request.rbi:
+    last_write_checksum: sha1:3b79b78c120ce4c24679d1aea2a502568b6bdb34
+  lib/open_api_sdk/operations/v2/schemas/posttest2_response.rb:
+    last_write_checksum: sha1:f7b6e2e63f0ddc9c53af97cbe15164ac626bbc19
+  lib/open_api_sdk/operations/v2/schemas/posttest2_response.rbi:
+    last_write_checksum: sha1:089edec28b57a3585cc51ce7fd88cc13449c5cbf
+  lib/open_api_sdk/operations/v2/schemas/putnamespaceconflict_response.rb:
+    last_write_checksum: sha1:5298824a5fbca4d7f3740b1b580fde2c19d3f0e8
+  lib/open_api_sdk/operations/v2/schemas/putnamespaceconflict_response.rbi:
+    last_write_checksum: sha1:fa0fe89bdd0166cb04d26f3c0a58af47151ed523
+  lib/open_api_sdk/operations/v2/schemas/queryparam2.rb:
+    last_write_checksum: sha1:088d7c79b462c7a3f0ae4ec527571102da0421cf
+  lib/open_api_sdk/operations/v2/schemas/queryparam2.rbi:
+    last_write_checksum: sha1:0b1130a2f8abc934b296830ad047eb7413126a6d
+  lib/open_api_sdk/operations/v2/schemas/renderasset_request.rb:
+    last_write_checksum: sha1:fe2d6a65a88e878d697d39affed230c37adca6d7
+  lib/open_api_sdk/operations/v2/schemas/renderasset_request.rbi:
+    last_write_checksum: sha1:ef84bfb6d97e75c01cea178e85837872530be1bb
+  lib/open_api_sdk/operations/v2/schemas/renderasset_response.rb:
+    last_write_checksum: sha1:571fc003299fd9f25d13d7bd868a939ccaa0fe4c
+  lib/open_api_sdk/operations/v2/schemas/renderasset_response.rbi:
+    last_write_checksum: sha1:f8795e59457a288197e2e14f652479845f76ab29
+  lib/open_api_sdk/operations/v2/schemas/resultarray.rb:
+    last_write_checksum: sha1:edb038e66ee3853a553265c0529599ed303e8eb8
+  lib/open_api_sdk/operations/v2/schemas/resultarray.rbi:
+    last_write_checksum: sha1:57d189616ac5d9b8887081dbc9fe9bc3b337497e
+  lib/open_api_sdk/operations/v2/schemas/rootgroupop_response.rb:
+    last_write_checksum: sha1:22b11c1728f3ffe663895f3545d1d2c64db7d5c2
+  lib/open_api_sdk/operations/v2/schemas/rootgroupop_response.rbi:
+    last_write_checksum: sha1:a498be697d26b3e48ec5a549edfe83dda6c5229b
+  lib/open_api_sdk/operations/v2/schemas/simpleallof.rb:
+    last_write_checksum: sha1:124a101f39abd569e984bb8a97acf4aa701bca0d
+  lib/open_api_sdk/operations/v2/schemas/simpleallof.rbi:
+    last_write_checksum: sha1:8c316ae25520328b3e0b926db252741b9a91b525
+  lib/open_api_sdk/operations/v2/schemas/stringarrayformat.rb:
+    last_write_checksum: sha1:f1a72643d3ff4ad9d30b24e7ae2cc3afdd2e9e99
+  lib/open_api_sdk/operations/v2/schemas/stringarrayformat.rbi:
+    last_write_checksum: sha1:ddd6a2fae8abbecfd42f8623e5a9cdb7d639b0d9
+  lib/open_api_sdk/operations/v2/schemas/stringmapformat.rb:
+    last_write_checksum: sha1:24c6e43910a44fcd063063861fca5144299b5783
+  lib/open_api_sdk/operations/v2/schemas/stringmapformat.rbi:
+    last_write_checksum: sha1:11daa40d20892070ebfaa167ca217c93b96b2736
+  lib/open_api_sdk/operations/v2/schemas/stringpartialmapformat.rb:
+    last_write_checksum: sha1:2d40955d6a8ce5f443541249a59503a484a20f85
+  lib/open_api_sdk/operations/v2/schemas/stringpartialmapformat.rbi:
+    last_write_checksum: sha1:d8897993cd1b40c8f36b130d35fa322dd00fbb2c
+  lib/open_api_sdk/operations/v2/schemas/subgroupop_response.rb:
+    last_write_checksum: sha1:c2ece797b8c61f6f06465c29e7fd1c6a0d78f92c
+  lib/open_api_sdk/operations/v2/schemas/subgroupop_response.rbi:
+    last_write_checksum: sha1:b2ea315946d91eb9da52c19d44f5de1dda366c2d
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_request.rb:
+    last_write_checksum: sha1:0a7de2b943e8e9da500c5d94cf31e7cce1e58409
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_request.rbi:
+    last_write_checksum: sha1:354dd4e02bf3cefbffb8ab163a3b6797e43c64f3
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_requestbody.rb:
+    last_write_checksum: sha1:e823db011d232c79f7bc5ab68f6723b9bffa6df2
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_requestbody.rbi:
+    last_write_checksum: sha1:01db7dd7e92454d6d9afe133cc374e725c14ae2d
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_response.rb:
+    last_write_checksum: sha1:6acc8e00c06daf37a85047c1de21ca2a2c599e32
+  lib/open_api_sdk/operations/v2/schemas/testendpoint_response.rbi:
+    last_write_checksum: sha1:749ea1e3082b2accba37fa9bd4761127cff44a74
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_request.rb:
+    last_write_checksum: sha1:c1ec86afc16a9248dad581e8e5e13ad3ee49f632
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_request.rbi:
+    last_write_checksum: sha1:e905068041b1811d5720e247890541a6d74664e6
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_response.rb:
+    last_write_checksum: sha1:b5a20f6dc7eff71be88aad4c827c0a4697d36d65
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_response.rbi:
+    last_write_checksum: sha1:41f738d5845be23e2018ad17165e8cc24a715491
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_responsebody.rb:
+    last_write_checksum: sha1:24138c0976f6e3071653b3eb91056fac9a0b8161
+  lib/open_api_sdk/operations/v2/schemas/testenumformats_responsebody.rbi:
+    last_write_checksum: sha1:293473893baf0149a94b192c95d30967164083f8
+  lib/open_api_sdk/operations/v2/schemas/updateuser_request.rb:
+    last_write_checksum: sha1:cf0ee545ebdd376cc38a64aaf691ac67289277b4
+  lib/open_api_sdk/operations/v2/schemas/updateuser_request.rbi:
+    last_write_checksum: sha1:6fca32ecf9814daabba19ea4aa4e41d6ca3e9ac6
+  lib/open_api_sdk/operations/v2/schemas/updateuser_response.rb:
+    last_write_checksum: sha1:bf1041b9cf1b4516206c206dc3697f9aed68db36
+  lib/open_api_sdk/operations/v2/schemas/updateuser_response.rbi:
+    last_write_checksum: sha1:f74404ff6558e098c2a5be5d2c4f3413201434e4
+  lib/open_api_sdk/operations/v2/schemas/urlvalidationstresstest_response.rb:
+    last_write_checksum: sha1:86fa4b041eb6866c17df81db21420152e2484411
+  lib/open_api_sdk/operations/v2/schemas/urlvalidationstresstest_response.rbi:
+    last_write_checksum: sha1:752fab8dd955c16c1396e4b18d72a272c54f760b
+  lib/open_api_sdk/operations/v2/schemas/validate_response.rb:
+    last_write_checksum: sha1:2e7680c9e94d06fc686465405f98ea2751e90e82
+  lib/open_api_sdk/operations/v2/schemas/validate_response.rbi:
+    last_write_checksum: sha1:0efe78aa1fe844d610c7abdb46b4c96011453418
+  lib/open_api_sdk/operations/v2/schemas/validate_responsebody.rb:
+    last_write_checksum: sha1:45e36a0ef28e0db7da59d658caa18255c6a54258
+  lib/open_api_sdk/operations/v2/schemas/validate_responsebody.rbi:
+    last_write_checksum: sha1:597916a0ce8f2715f5947408878c7df6d45f7b80
+  lib/open_api_sdk/sdk.rb:
+    last_write_checksum: sha1:00262619e23ea77fe3f2839a00c041179e949ec9
+  lib/open_api_sdk/sdk_hooks/clientcredentials.rb:
+    last_write_checksum: sha1:2ec00441a0545f7f28219f9758a071dcc5aa9070
+  lib/open_api_sdk/sdk_hooks/hooks.rb:
+    last_write_checksum: sha1:9ef833ddf4ea0ec17090c7a2ceb7d0982126db92
+  lib/open_api_sdk/sdk_hooks/oauth2scopes.rb:
+    last_write_checksum: sha1:606379156160d75cf4ca597f2223d3692bf288b7
+  lib/open_api_sdk/sdk_hooks/types.rb:
+    last_write_checksum: sha1:319d7a80741d2d1fe8e09db18d0cebaef5f50b4b
+  lib/open_api_sdk/sdkconfiguration.rb:
+    last_write_checksum: sha1:28724ec04c1779127b389c254b17d339a3de3b86
+  lib/open_api_sdk/sdkconfiguration.rbi:
+    last_write_checksum: sha1:2f335523718ef81fde2803d5d00afe8db7f59e45
+  lib/open_api_sdk/singlebar.rb:
+    last_write_checksum: sha1:36c94e247004f1ee575cea56b30b14b5441e5328
+  lib/open_api_sdk/singlefoo.rb:
+    last_write_checksum: sha1:20c77e91de321e5198bade132c531266f095050f
+  lib/open_api_sdk/subgroup.rb:
+    last_write_checksum: sha1:72464fc1a9643d8675149e5daf8bae60c5d62ea2
+  lib/open_api_sdk/tag1.rb:
+    last_write_checksum: sha1:0c42927774ee587f5390a53c0711ffc51879fd83
+  lib/open_api_sdk/tag2.rb:
+    last_write_checksum: sha1:245d5f89cf4f4913723aff019f1e36001a72bde6
+  lib/open_api_sdk/tag3.rb:
+    last_write_checksum: sha1:3fd58f3f7a979a1952e201e6c21066f03d76c1ad
+  lib/open_api_sdk/tail.rb:
+    last_write_checksum: sha1:d6d1981aa2f21b92198f0481ec765af381f09a41
+  lib/open_api_sdk/testgroup.rb:
+    last_write_checksum: sha1:ec3a1a7f45de6653e505913b7a8062bf7687220f
+  lib/open_api_sdk/types.rb:
+    last_write_checksum: sha1:8da016d9bad63f846718a8de0d19dec406d34fa2
+  lib/open_api_sdk/utils/eventstreaming.rb:
+    last_write_checksum: sha1:ee763e7557e10d3db573981244df7a085ec8f12d
+  lib/open_api_sdk/utils/forms.rb:
+    last_write_checksum: sha1:db7c90f11b42296018de3f599ed6934a7c3a9b1a
+  lib/open_api_sdk/utils/headers.rb:
+    last_write_checksum: sha1:8b4de2f0046843ad0aef7d0e7ee6567c7539d427
+  lib/open_api_sdk/utils/query_params.rb:
+    last_write_checksum: sha1:239cc17c4ec751dbf327108600cac54a932d317d
+  lib/open_api_sdk/utils/request_bodies.rb:
+    last_write_checksum: sha1:17b3ca5a6b3ed62a13f30c3ecd2590a133f6b49d
+  lib/open_api_sdk/utils/retries.rb:
+    last_write_checksum: sha1:732bac8e3620e40ec4f2ec6adc98715a2cf20252
+  lib/open_api_sdk/utils/security.rb:
+    last_write_checksum: sha1:9962bb080cbb2323a058b8f67a80a95b9c75d19f
+  lib/open_api_sdk/utils/url.rb:
+    last_write_checksum: sha1:3bfd065a74d847940ece3f408a4eb1148eec0871
+  lib/open_api_sdk/utils/utils.rb:
+    last_write_checksum: sha1:557fa7550ef6d614f6b7bdf8b786b543c7d4a2a2
+  lib/openapi.rb:
+    last_write_checksum: sha1:f1ceb564d0c6da847e24b8e404b0d974c36dc5d5
+  openapi.gemspec:
+    last_write_checksum: sha1:8b09c55cb13bbf8d09c521e7dcf8d8802478037a
+  sorbet/config:
+    last_write_checksum: sha1:d02b32628dad70edc5929a9b9801d5e2dca15d40
+  sorbet/rbi/annotations/.gitattributes:
+    last_write_checksum: sha1:c683580f06441d46622a00a7aac20eeefdae4087
+  sorbet/rbi/gems/.gitattributes:
+    last_write_checksum: sha1:737a5b4c7736cfd651133334bf4cdfabbe78ac69
+  sorbet/tapioca/config.yml:
+    last_write_checksum: sha1:0b9c1ef96625b48230f1e888e468628d36d9d287
+  sorbet/tapioca/require.rb:
+    last_write_checksum: sha1:29b5fbd716704c2996f36f62fb32515705cfe56a
+  test/common_helper_test.rb:
+    last_write_checksum: sha1:f0f33ef27a994545423c925cb48705047245e221
+  test/conflicts_test.rb:
+    last_write_checksum: sha1:1ee5fca0be36feb681c552a948e29515e68d9165
+  test/mockserver/.gitignore:
+    last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
+  test/mockserver/Dockerfile:
+    last_write_checksum: sha1:72b74bf83cc79b4436ffe1a33211198ea447f06a
+  test/mockserver/Makefile:
+    last_write_checksum: sha1:f2619d7634d211c3c01dd68668635b0ebdbfc1ea
+  test/mockserver/README.md:
+    last_write_checksum: sha1:aa2bb9124570a1c12a3c81d728100c305a59220c
+  test/mockserver/go.mod:
+    last_write_checksum: sha1:e60cd88b747c397c0032d108a4e099e8b365721e
+  test/mockserver/go.sum:
+    last_write_checksum: sha1:cdeb52f5f4c63d07ba612730867a95b0ddb14b2d
+  test/mockserver/internal/handler/assert/contenttype.go:
+    last_write_checksum: sha1:2d059a68e53e70b269ddf897f8c6017f94434e18
+  test/mockserver/internal/handler/assert/header.go:
+    last_write_checksum: sha1:a0866dfd740d218b5b94741ac92db4cdf5a2acd9
+  test/mockserver/internal/handler/assert/parameter.go:
+    last_write_checksum: sha1:0df39c0981a929c99ae767201b628d8c9e31f288
+  test/mockserver/internal/handler/assert/pointer.go:
+    last_write_checksum: sha1:48714196fb47649be28e8df031761038a9e10ee6
+  test/mockserver/internal/handler/assert/security.go:
+    last_write_checksum: sha1:3cee6e3d2babea02486fd2df08eb00840f5ddea9
+  test/mockserver/internal/handler/doc.go:
+    last_write_checksum: sha1:a49b83f9fc775d3cc6f558b0f52b2fc9cf04f863
+  test/mockserver/internal/handler/generated_handler.go:
+    last_write_checksum: sha1:32101ddff940c59f43a805af303cf645a2bcca0d
+  test/mockserver/internal/handler/generated_handlers.go:
+    last_write_checksum: sha1:f96b92352b7b0d62e9d93178a2426d4f8518f7d4
+  test/mockserver/internal/handler/pathdeleteuserid.go:
+    last_write_checksum: sha1:13a62b3771e986bce1ce332f39616e3e422a6db5
+  test/mockserver/internal/handler/pathgetauthlogin.go:
+    last_write_checksum: sha1:0092c43e3b17bb6aba35e8c15ceffc72c9b06735
+  test/mockserver/internal/handler/pathgetauthvalidate.go:
+    last_write_checksum: sha1:e632261348783ad512b03007b537f3156f647688
+  test/mockserver/internal/handler/pathgetbinarydefaultresponse.go:
+    last_write_checksum: sha1:769bbd53cb3d69902311558d6cf5610118e98e8c
+  test/mockserver/internal/handler/pathgetdeprecated.go:
+    last_write_checksum: sha1:aa47451ad33cbdaa3ccc4e5f6190862d7637fd48
+  test/mockserver/internal/handler/pathgetduplicateexportcollision.go:
+    last_write_checksum: sha1:ef2e820fb7c117f55300194e56302260d79c1e7c
+  test/mockserver/internal/handler/pathgetemptyobjecterror.go:
+    last_write_checksum: sha1:c1a8709599cb129a98c555bc973ca7619df127b5
+  test/mockserver/internal/handler/pathgeterroronlyexample.go:
+    last_write_checksum: sha1:f56136cde27e691e2a4152b87257fef16cf3ec7b
+  test/mockserver/internal/handler/pathgetnamedprimitiveunion.go:
+    last_write_checksum: sha1:fbb4c34555023799813224079d9ba42f2827bc7d
+  test/mockserver/internal/handler/pathgetnamespaceanimal.go:
+    last_write_checksum: sha1:cfe85ce8d8543bb9b96d8c0074a14bf34ae60b99
+  test/mockserver/internal/handler/pathgetnamespaceconflict.go:
+    last_write_checksum: sha1:6f60dced6b28a4c52b83936e90c32ebf54c1a40a
+  test/mockserver/internal/handler/pathgetnamespaceorganization.go:
+    last_write_checksum: sha1:6b09624fb4fd866abfc480110aaedcc150629042
+  test/mockserver/internal/handler/pathgetnamespacetypes.go:
+    last_write_checksum: sha1:671c5e38f7835844ec84441374c1ea38c406e78c
+  test/mockserver/internal/handler/pathgetnamespacevehicle.go:
+    last_write_checksum: sha1:88fe5786158e190d9db75f19c58fbf151ae7d08d
+  test/mockserver/internal/handler/pathgetnestedintegerstring.go:
+    last_write_checksum: sha1:7894be1e981bd1c290bd69e367690eb2ed1656a7
+  test/mockserver/internal/handler/pathgetpetowners.go:
+    last_write_checksum: sha1:4cae23860490ab45bae1d1b473cf14a3c5030a47
+  test/mockserver/internal/handler/pathgetpolymorphism.go:
+    last_write_checksum: sha1:8b589af667d298be4df6696bf833a9652ff3963c
+  test/mockserver/internal/handler/pathgetrequestbodyflattenedaway.go:
+    last_write_checksum: sha1:223ae0aa6a32112897b909f52fba0d74e4b7d198
+  test/mockserver/internal/handler/pathgetsinglenamespacebarpet.go:
+    last_write_checksum: sha1:d06921d7ecc7d63faab444d2ce03a55edff1ef9f
+  test/mockserver/internal/handler/pathgetsinglenamespacefoopet.go:
+    last_write_checksum: sha1:d552c1a45fce2fcf86aea5eb9aeef6ef786a02cb
+  test/mockserver/internal/handler/pathgettest1page.go:
+    last_write_checksum: sha1:7be45873b893e095f8c8ef679553c98383446940
+  test/mockserver/internal/handler/pathgettriplenamespaceconflict.go:
+    last_write_checksum: sha1:60764b01bda96ed48ef23ed0101d1da1306a2d87
+  test/mockserver/internal/handler/pathgetunionerrors.go:
+    last_write_checksum: sha1:e7874a45aaa7d602194df55e43ad0aaed0017caa
+  test/mockserver/internal/handler/pathgetuserid.go:
+    last_write_checksum: sha1:42b16dc7e0ab8b2e33fc097a66dc04f49c2b33ee
+  test/mockserver/internal/handler/pathpostenumformats.go:
+    last_write_checksum: sha1:d60b962e3cac40352434aa34ceee7d46f27d9652
+  test/mockserver/internal/handler/pathpostfile.go:
+    last_write_checksum: sha1:52c1a386cd8f10a07f94b3ba9896a376c5f29259
+  test/mockserver/internal/handler/pathpostfilewithencoding.go:
+    last_write_checksum: sha1:26bd9ef4d89c3fced22e4d7d3f9797fb12579459
+  test/mockserver/internal/handler/pathpostfullyflattenedrequest.go:
+    last_write_checksum: sha1:9a424c86eb626ad9d2165d0e267f2761a7662f7a
+  test/mockserver/internal/handler/pathpostjobsjobid.go:
+    last_write_checksum: sha1:49f0a421dd94e05be68131848b686247bf2dafdd
+  test/mockserver/internal/handler/pathpostnamespaceconflict.go:
+    last_write_checksum: sha1:1f262428818c23b82251ca4d17464e01f30f4419
+  test/mockserver/internal/handler/pathpostsinglenamespacefoopet.go:
+    last_write_checksum: sha1:200f237a444954b16597261e3306881817c1156e
+  test/mockserver/internal/handler/pathposttest2.go:
+    last_write_checksum: sha1:7b650fa4fe61cc20a4eac4e39c9921263e8c0db6
+  test/mockserver/internal/handler/pathpostunionrequestbody.go:
+    last_write_checksum: sha1:6b51938e2a5d41ab45441fcd6d4830f5cf18ab52
+  test/mockserver/internal/handler/pathpostuserid.go:
+    last_write_checksum: sha1:09ed13d909bd0bc1870006fad869d84714e58282
+  test/mockserver/internal/handler/pathputuser.go:
+    last_write_checksum: sha1:ff8ae1a966355fa4a8cbdb6e3f21b42634704f53
+  test/mockserver/internal/handler/values/files.go:
+    last_write_checksum: sha1:e1e9d78c165e2a35d165f120bd8dcd7b42c33a33
+  test/mockserver/internal/logging/doc.go:
+    last_write_checksum: sha1:63a119620f179826356304b8205756248caa370e
+  test/mockserver/internal/logging/formats.go:
+    last_write_checksum: sha1:e84e84e6e62a4dc3b9ad3a7f2a95eb77374f2fcd
+  test/mockserver/internal/logging/http_file.go:
+    last_write_checksum: sha1:e948142b98821c23bd21c128e007e79a193114a2
+  test/mockserver/internal/logging/http_logger.go:
+    last_write_checksum: sha1:7a2267a61cb1282405ed7f406f9bd95fbf796b5b
+  test/mockserver/internal/logging/levels.go:
+    last_write_checksum: sha1:164f3aee47030d3534e4ef2df31192304e9ea97b
+  test/mockserver/internal/logging/logger.go:
+    last_write_checksum: sha1:92027a7d11dd84831bc444aa2d018cbb7195542f
+  test/mockserver/internal/logging/oas_operation.go:
+    last_write_checksum: sha1:af9187f31972ef308fb4bc82de73d6dd71b9fb64
+  test/mockserver/internal/logging/oas_operation_call.go:
+    last_write_checksum: sha1:1ec2244b5fc171dfe7e4e339420b2b17f0df48c9
+  test/mockserver/internal/sdk/models/bar/bike.go:
+    last_write_checksum: sha1:673dc5677d65fed4a2550fea402ee398fc2d67db
+  test/mockserver/internal/sdk/models/bar/car.go:
+    last_write_checksum: sha1:04b075715ddd07ea338052650b137f9aaeffc245
+  test/mockserver/internal/sdk/models/bar/pet.go:
+    last_write_checksum: sha1:94385a320e54360b483963a504e476dc04ea9eca
+  test/mockserver/internal/sdk/models/bar/petowner.go:
+    last_write_checksum: sha1:a465ff722c85544e5192bf94656fc18a8bd7b175
+  test/mockserver/internal/sdk/models/bar/petstatus.go:
+    last_write_checksum: sha1:d4fcbde91ce9d218a82dcb8e1a80f10c2360dc29
+  test/mockserver/internal/sdk/models/bar/vehicle.go:
+    last_write_checksum: sha1:00b9c5ca1e8776c9dde28238fd94113ad3c67ba6
+  test/mockserver/internal/sdk/models/baz/namespaced.go:
+    last_write_checksum: sha1:01900b399ef20cbfcdf1a2d8a469836e3740557c
+  test/mockserver/internal/sdk/models/baz/pet.go:
+    last_write_checksum: sha1:245fd374153e15527e2a1fd98165e71e1b4160e1
+  test/mockserver/internal/sdk/models/components/aloof.go:
+    last_write_checksum: sha1:7bb787d39e63421a974ddad76e81ee45d91495c4
+  test/mockserver/internal/sdk/models/components/approvalconfig.go:
+    last_write_checksum: sha1:968ab660745f46f908d8c162b810f87b24111ba7
+  test/mockserver/internal/sdk/models/components/assetimageblock.go:
+    last_write_checksum: sha1:b6900e7845ad0740a379d1584bac8587bb319055
+  test/mockserver/internal/sdk/models/components/assetnotestep.go:
+    last_write_checksum: sha1:97f9a4588da525885e2c6c37b81143fdd99acce4
+  test/mockserver/internal/sdk/models/components/assetoutputstep.go:
+    last_write_checksum: sha1:cc43defdd53dee8ea17d4e5000851e888a9220d0
+  test/mockserver/internal/sdk/models/components/assetresult.go:
+    last_write_checksum: sha1:f2eaa196a580b1e35de714a794c2219c3d203489
+  test/mockserver/internal/sdk/models/components/assettextblock.go:
+    last_write_checksum: sha1:39b45fd5cf551f179162d68607f7621288b1217f
+  test/mockserver/internal/sdk/models/components/badrequestresponseerror.go:
+    last_write_checksum: sha1:a1d11e4d35f19260a8cdc1e31d4c9b04b1b11141
+  test/mockserver/internal/sdk/models/components/baseuser.go:
+    last_write_checksum: sha1:52c4997704473038090f2f8193af733d75961315
+  test/mockserver/internal/sdk/models/components/boole.go:
+    last_write_checksum: sha1:35cd68ac4aeb16a04934299c4d23d5a7a8877053
+  test/mockserver/internal/sdk/models/components/chatagentrequest.go:
+    last_write_checksum: sha1:1fa075361dc44bd47cf6fe97b340882cb691f363
+  test/mockserver/internal/sdk/models/components/chatmodelrequest.go:
+    last_write_checksum: sha1:0beeb2f254dc967afe71a339886d2b730045e193
+  test/mockserver/internal/sdk/models/components/circle.go:
+    last_write_checksum: sha1:f59bfa8e1be914affc0606670c2097c53cf6e4c1
+  test/mockserver/internal/sdk/models/components/circularunion.go:
+    last_write_checksum: sha1:5e10f4fd248b3d5efe83c412b16d85fdaba2e9a5
+  test/mockserver/internal/sdk/models/components/color.go:
+    last_write_checksum: sha1:d73282b709bbfcbde3a6f067764703d522142eab
+  test/mockserver/internal/sdk/models/components/disriminatedunionwithonemember.go:
+    last_write_checksum: sha1:a86f006be5681c2d322fe96a9dd4f0b0247f2cdd
+  test/mockserver/internal/sdk/models/components/enum.go:
+    last_write_checksum: sha1:67ab4ea6146ffc403776a804541c215d532c78b3
+  test/mockserver/internal/sdk/models/components/errortype2.go:
+    last_write_checksum: sha1:b524c0ca72e5cf36d702262f58cf4100cf416fed
+  test/mockserver/internal/sdk/models/components/escalation.go:
+    last_write_checksum: sha1:c5aa83c9d40b0a795c7af0c4f69b4571902baab3
+  test/mockserver/internal/sdk/models/components/exhaustiveobject.go:
+    last_write_checksum: sha1:489127e2f9182c654df68b0a5df6e1b85e5b79f2
+  test/mockserver/internal/sdk/models/components/file.go:
+    last_write_checksum: sha1:a8eb000d20a81070b5266d149fc190b9f87661e1
+  test/mockserver/internal/sdk/models/components/gender.go:
+    last_write_checksum: sha1:6b5b03eb4d72e110057c28689e1b941a1e353f7d
+  test/mockserver/internal/sdk/models/components/httpmetadata.go:
+    last_write_checksum: sha1:9e4b58e3bb54db4360421109c2e169741499be16
+  test/mockserver/internal/sdk/models/components/mcppolicy.go:
+    last_write_checksum: sha1:2bcdd28c2797c779e7c4e8efa0e54ccd025176bd
+  test/mockserver/internal/sdk/models/components/metadata.go:
+    last_write_checksum: sha1:e6dae71b55c3fde90915c154aec1acbcdd62a726
+  test/mockserver/internal/sdk/models/components/metadataany.go:
+    last_write_checksum: sha1:3cf587d6c3fb2b57e4d89f5baaf79b172bff2a8e
+  test/mockserver/internal/sdk/models/components/namespaceconflicttest.go:
+    last_write_checksum: sha1:64a27e97b8ddc18330a3f7bc340c3a61cf482ee1
+  test/mockserver/internal/sdk/models/components/namespacetypestest.go:
+    last_write_checksum: sha1:eb7b0aaf5e9c424aa94fdbf317721c29a7fc3c34
+  test/mockserver/internal/sdk/models/components/objwithrenamedproperties.go:
+    last_write_checksum: sha1:0f802cd676b7110876d547ca401ad560657f4a8e
+  test/mockserver/internal/sdk/models/components/oneofwithfactoredoutproperties.go:
+    last_write_checksum: sha1:c9a3c38c1e82ef26b0291391486ffa7fc6fcd00b
+  test/mockserver/internal/sdk/models/components/policystep.go:
+    last_write_checksum: sha1:fbe39a10465e5150c315ab1f29bc21f27bcbdf29
+  test/mockserver/internal/sdk/models/components/rectangle.go:
+    last_write_checksum: sha1:0060fa72430a51cc09b7ab9c503efea75fcc82a5
+  test/mockserver/internal/sdk/models/components/recursiveformfield.go:
+    last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
+  test/mockserver/internal/sdk/models/components/reviewtask.go:
+    last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
+  test/mockserver/internal/sdk/models/components/variantrecord.go:
+    last_write_checksum: sha1:14bbd4bd575a7e8e6f166a1e37c9cb716f3055df
+  test/mockserver/internal/sdk/models/components/security.go:
+    last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
+  test/mockserver/internal/sdk/models/components/shape.go:
+    last_write_checksum: sha1:a5681815325712dfbabfe6a0813a6a1bc6b5a274
+  test/mockserver/internal/sdk/models/components/shaperequest.go:
+    last_write_checksum: sha1:84f9a2e4f285704779dc141a5e21e2ddd4a8205d
+  test/mockserver/internal/sdk/models/components/simpleobject.go:
+    last_write_checksum: sha1:25fb9b1f98654af76ffa25ddc803be297594237d
+  test/mockserver/internal/sdk/models/components/someunion.go:
+    last_write_checksum: sha1:072e126922fe8eadd5c9b13e60aae4270ad06cb0
+  test/mockserver/internal/sdk/models/components/taggederror1.go:
+    last_write_checksum: sha1:afafda28c0a6df5c91b329f2c4cd88ef0a14ca51
+  test/mockserver/internal/sdk/models/components/taggederror2.go:
+    last_write_checksum: sha1:63472ffccd3b22f0e8840f725d86108cee59f7a6
+  test/mockserver/internal/sdk/models/components/taskresponse.go:
+    last_write_checksum: sha1:1853ed99c9300e4916f92f2a9e86149c73210b3c
+  test/mockserver/internal/sdk/models/components/templatebracestest.go:
+    last_write_checksum: sha1:db2dce5059873779e78a08b24887ef7098dac4af
+  test/mockserver/internal/sdk/models/components/test2request.go:
+    last_write_checksum: sha1:e50807dd9105c62c1330d60509eaccec5fdc791d
+  test/mockserver/internal/sdk/models/components/test2response.go:
+    last_write_checksum: sha1:600ae7f707978020f79ce541ba1ed3da9bcd25da
+  test/mockserver/internal/sdk/models/components/triplenamespaceconflicttest.go:
+    last_write_checksum: sha1:6f051f6bf4d483b19c5eb5c3f829d4eef45ff101
+  test/mockserver/internal/sdk/models/components/user.go:
+    last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
+  test/mockserver/internal/sdk/models/foo/animal.go:
+    last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
+  test/mockserver/internal/sdk/models/foo/cat.go:
+    last_write_checksum: sha1:bc314ca2202e67b69439d9f205553b53c14ed946
+  test/mockserver/internal/sdk/models/foo/dog.go:
+    last_write_checksum: sha1:bb15363dc1115099ed975780d50bfa43d9cef520
+  test/mockserver/internal/sdk/models/foo/organization.go:
+    last_write_checksum: sha1:6dabeef4cb53770b2df3d2b5f99fea00a50348fc
+  test/mockserver/internal/sdk/models/foo/pet.go:
+    last_write_checksum: sha1:1b3e0e62262d1047e72558eec6bbcbc5ce293ff8
+  test/mockserver/internal/sdk/models/foo/petowner.go:
+    last_write_checksum: sha1:2a48d163db8500179186ecd4359a65cb9c857c82
+  test/mockserver/internal/sdk/models/foo/petspecies.go:
+    last_write_checksum: sha1:b201788833b1f4380fbbb277f06f90c4d70f246c
+  test/mockserver/internal/sdk/models/operations/auth.go:
+    last_write_checksum: sha1:7da455a48033fea2d622a98597fa36a90b0b9b60
+  test/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
+    last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
+  test/mockserver/internal/sdk/models/operations/chat.go:
+    last_write_checksum: sha1:760b8c08c260359b12687db102ad6d4dafbf9413
+  test/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
+    last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
+  test/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
+    last_write_checksum: sha1:3ea5c64c91268f51168dbb11faee27ea15da2233
+  test/mockserver/internal/sdk/models/operations/createuser.go:
+    last_write_checksum: sha1:a0fdcd0729e054c6dada6c53884f0d99bed4c2ac
+  test/mockserver/internal/sdk/models/operations/createwithunion.go:
+    last_write_checksum: sha1:7a819715f99cb337701d808cc11cacb10fae953f
+  test/mockserver/internal/sdk/models/operations/deleteuser.go:
+    last_write_checksum: sha1:b0665ff7c41ebdb6839fbaa6656bea219db9dbb7
+  test/mockserver/internal/sdk/models/operations/deprecated1.go:
+    last_write_checksum: sha1:c2581269371cdfe81cfd8e15ca0960ca9e20b53f
+  test/mockserver/internal/sdk/models/operations/getasset.go:
+    last_write_checksum: sha1:49d3d2514069c4f78653865dad1c113075863779
+  test/mockserver/internal/sdk/models/operations/getbinarydefaultresponse.go:
+    last_write_checksum: sha1:331cef575236e31d4bf3ae9a8b283b59f0f0ce03
+  test/mockserver/internal/sdk/models/operations/getduplicateexportcollision.go:
+    last_write_checksum: sha1:a81cf4f996bada748cb4a10762c2515aa7243c37
+  test/mockserver/internal/sdk/models/operations/getemptyobjecterror.go:
+    last_write_checksum: sha1:32be70baf90911ec34663d2ccf877b083a8be99f
+  test/mockserver/internal/sdk/models/operations/geterrorinunion.go:
+    last_write_checksum: sha1:8161fa7985685f14020c67fb299f0889d6be3734
+  test/mockserver/internal/sdk/models/operations/geterroronlyexample.go:
+    last_write_checksum: sha1:324898c608861ec1891bc1b73ed0e5b3cf4fdde3
+  test/mockserver/internal/sdk/models/operations/getfullyflattenedrequest.go:
+    last_write_checksum: sha1:a140237f1484275006a354ff129e124486b85ad8
+  test/mockserver/internal/sdk/models/operations/getnamedprimitiveunion.go:
+    last_write_checksum: sha1:fa54b1ac419add19e68fc4e152e38b21a4d22e50
+  test/mockserver/internal/sdk/models/operations/getnamespaceanimal.go:
+    last_write_checksum: sha1:94bb62bad73b53ecfa1adc456e9b9bf524809a22
+  test/mockserver/internal/sdk/models/operations/getnamespaceconflict.go:
+    last_write_checksum: sha1:a8f378eea7f69944bf1cbb089f98ea1df0af981d
+  test/mockserver/internal/sdk/models/operations/getnamespaceorganization.go:
+    last_write_checksum: sha1:c900fef31a4a86df9a9b3e86a8ca703425d4e55c
+  test/mockserver/internal/sdk/models/operations/getnamespacetypes.go:
+    last_write_checksum: sha1:ef41db0a67171144594cf89657e0e23e599a526e
+  test/mockserver/internal/sdk/models/operations/getnamespacevehicle.go:
+    last_write_checksum: sha1:131b7d70228788066f8b4a2cef37d18181138f50
+  test/mockserver/internal/sdk/models/operations/getnestedintegerstring.go:
+    last_write_checksum: sha1:b28228a5c8bc612c53461f24de2b48306b3a1e03
+  test/mockserver/internal/sdk/models/operations/getpetowners.go:
+    last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
+  test/mockserver/internal/sdk/models/operations/getpolymorphism.go:
+    last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  test/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
+    last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
+  test/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
+    last_write_checksum: sha1:8feb5970564c85bb8eb6e72203c2958feee7c8fd
+  test/mockserver/internal/sdk/models/operations/getsinglenamespacefoopet.go:
+    last_write_checksum: sha1:9b681d56ad2cd757783c611dcfc557bcc9d0df74
+  test/mockserver/internal/sdk/models/operations/gettriplenamespaceconflict.go:
+    last_write_checksum: sha1:4ce47047f9afbc63bf37f792e113f299964c30f2
+  test/mockserver/internal/sdk/models/operations/getunionerrors.go:
+    last_write_checksum: sha1:9e5c19d7561929f6566c19dc20c09b772fe92a05
+  test/mockserver/internal/sdk/models/operations/getuser.go:
+    last_write_checksum: sha1:9c67b9418a1091a7a687f2a5d80fc3e824770a9b
+  test/mockserver/internal/sdk/models/operations/listtest1.go:
+    last_write_checksum: sha1:1bd6a36e09e3ab85d3b1161d33fba71a134ee26f
+  test/mockserver/internal/sdk/models/operations/login.go:
+    last_write_checksum: sha1:71c3b73bf16edf6a067a61f75fee8fec5efd19f8
+  test/mockserver/internal/sdk/models/operations/nestedgroupop.go:
+    last_write_checksum: sha1:4fe1d0dffdde6130099ed577fc5770514ab28d6d
+  test/mockserver/internal/sdk/models/operations/operationwithleadingandtrailingunderscores.go:
+    last_write_checksum: sha1:89503141d25abf9fdb13418aa53264b79721fccd
+  test/mockserver/internal/sdk/models/operations/parenthesesinpathallowed.go:
+    last_write_checksum: sha1:5a5624228e50a8258b4d1b4c730e302cd6b963d6
+  test/mockserver/internal/sdk/models/operations/postfile.go:
+    last_write_checksum: sha1:a300eff2fd5abd753f5e4224dcb63dedb2e073fb
+  test/mockserver/internal/sdk/models/operations/postfilewithencoding.go:
+    last_write_checksum: sha1:4e253bbd63947bf09118cc96e6de71758cd4ac11
+  test/mockserver/internal/sdk/models/operations/posttest2.go:
+    last_write_checksum: sha1:35f2b762d462ab50892979f46aae611e3b4e2304
+  test/mockserver/internal/sdk/models/operations/putnamespaceconflict.go:
+    last_write_checksum: sha1:215ad5510995ed33b561108377cf92ebe25c557c
+  test/mockserver/internal/sdk/models/operations/renderasset.go:
+    last_write_checksum: sha1:fdfd8b7d8c8d68be9347be9427d98df24337c129
+  test/mockserver/internal/sdk/models/operations/rootgroupop.go:
+    last_write_checksum: sha1:912e9685ab8e556f4b481a0637b5453f41e776d4
+  test/mockserver/internal/sdk/models/operations/subgroupop.go:
+    last_write_checksum: sha1:4bf46599b9f0c1cfa33399c873b64069efa5d966
+  test/mockserver/internal/sdk/models/operations/testendpoint.go:
+    last_write_checksum: sha1:308babae6a1fb2e6114d1bcaa84646a6d6d40514
+  test/mockserver/internal/sdk/models/operations/testenumformats.go:
+    last_write_checksum: sha1:a9674f11dd98366dc8156b5fff03fad60bf57f0a
+  test/mockserver/internal/sdk/models/operations/updateuser.go:
+    last_write_checksum: sha1:f8f0d0ac06d72e4604943b3bd4e8f603b711548d
+  test/mockserver/internal/sdk/models/operations/urlvalidationstresstest.go:
+    last_write_checksum: sha1:834fed46ba1ec6da00b794ee4d94c1d9b46abaf0
+  test/mockserver/internal/sdk/models/operations/validate.go:
+    last_write_checksum: sha1:0dd4f2c6ab9fe25f8fddbfc1d852b0d051eee2b8
+  test/mockserver/internal/sdk/models/sdkerrors/badrequestresponseerror.go:
+    last_write_checksum: sha1:38c6aa4849bbdd5a39e0f040ef0a32309b522b77
+  test/mockserver/internal/sdk/models/sdkerrors/error.go:
+    last_write_checksum: sha1:fc2bb5d6f6ae9744affabe9e9b43ed3531a74820
+  test/mockserver/internal/sdk/models/sdkerrors/errortype1.go:
+    last_write_checksum: sha1:b351b483259e6ffb71d4ddbb990454c4f01f1cf7
+  test/mockserver/internal/sdk/models/sdkerrors/errortype2.go:
+    last_write_checksum: sha1:9ea6e81c58a796604d8f871f7f61631f2e5f82c9
+  test/mockserver/internal/sdk/models/sdkerrors/failedresponseerror.go:
+    last_write_checksum: sha1:e0853306a2c94cadfac3ff65032e0ac0e837d06e
+  test/mockserver/internal/sdk/models/sdkerrors/geterrorinunion.go:
+    last_write_checksum: sha1:3c8d4367795419eb9212e73677784ebce9c01c48
+  test/mockserver/internal/sdk/models/sdkerrors/getunionerrors.go:
+    last_write_checksum: sha1:52c567c65961272decd67749942f62f444194dae
+  test/mockserver/internal/sdk/models/sdkerrors/requesttimeouterror.go:
+    last_write_checksum: sha1:e7ac819e142cacbe4a87fa1ff3bc2bd1a1ecb7de
+  test/mockserver/internal/sdk/models/sdkerrors/taggederror1.go:
+    last_write_checksum: sha1:0341a8338fa8b790bd1a8af644ca88d46f465dae
+  test/mockserver/internal/sdk/models/sdkerrors/taggederror2.go:
+    last_write_checksum: sha1:a2dad41a456387b6ce39674490353f38d4703550
+  test/mockserver/internal/sdk/models/sdkerrors/test2responseerror.go:
+    last_write_checksum: sha1:50272c105368b303ea403d0a971da44c464ef2ca
+  test/mockserver/internal/sdk/models/webhooks/paymentcreated.go:
+    last_write_checksum: sha1:7f1a4931743137b143a5abd572896a4de68881a1
+  test/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
+    last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
+  test/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
+    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+  test/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
+    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+  test/mockserver/internal/sdk/types/bigint.go:
+    last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
+  test/mockserver/internal/sdk/types/date.go:
+    last_write_checksum: sha1:3036a2e1ed15a1d484c093367eba000c38f384d0
+  test/mockserver/internal/sdk/types/datetime.go:
+    last_write_checksum: sha1:196d050af6450669214e9ae4fd28e56263ae2b5d
+  test/mockserver/internal/sdk/types/decimal.go:
+    last_write_checksum: sha1:54f1f8c0d89d6ef048805121f97c6937404c5d51
+  test/mockserver/internal/sdk/types/jsonl/jsonl.go:
+    last_write_checksum: sha1:15fb778e0fa6c7b4c228431af3d03b9819b8fd94
+  test/mockserver/internal/sdk/types/pointers.go:
+    last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
+  test/mockserver/internal/sdk/types/stream/stream.go:
+    last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
+  test/mockserver/internal/sdk/utils/json.go:
+    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+  test/mockserver/internal/sdk/utils/reflect.go:
+    last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
+  test/mockserver/internal/sdk/utils/sort.go:
+    last_write_checksum: sha1:a9d390de086ad13841c7d154e97d314e6ae2d285
+  test/mockserver/internal/server/doc.go:
+    last_write_checksum: sha1:71ca1bebc409ffcb7ed573f4bfc85f1d2cb76252
+  test/mockserver/internal/server/generated_handlers.go:
+    last_write_checksum: sha1:dbaa2e7beedda2a3e0ef373939f0424577cb2666
+  test/mockserver/internal/server/internal_handlers.go:
+    last_write_checksum: sha1:6b31fdc2a316735bd028bb822859a175d837fc5f
+  test/mockserver/internal/server/server.go:
+    last_write_checksum: sha1:d97000314c64b937ff7a243cbc051c5591ab8722
+  test/mockserver/internal/server/server_option.go:
+    last_write_checksum: sha1:f787e17525cbaed4d6881d02562da66a1deda9c0
+  test/mockserver/internal/server/templates/log/index.html.tmpl:
+    last_write_checksum: sha1:7c3fc6e6b03d80e05bc586ade52ddcb8adaee148
+  test/mockserver/internal/server/templates/log/operation.html.tmpl:
+    last_write_checksum: sha1:ab2894028c76b25dfe613d743a243bfd04fb279c
+  test/mockserver/internal/server/templates/log/style.css.tmpl:
+    last_write_checksum: sha1:474c79a94fa7d2671135e078a71c51b11f38bfae
+  test/mockserver/internal/tracking/requesttracker.go:
+    last_write_checksum: sha1:09963693aae5446c247cac171c284f2cdf7cfa4d
+  test/mockserver/main.go:
+    last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
+  test/sdk_test.rb:
+    last_write_checksum: sha1:07457133ea702e20d8c3ebedb8ed7b34da7d4fdb
+  test/singlebar_test.rb:
+    last_write_checksum: sha1:6d701508fb06943605cdfb423bf37114b1396435
+  test/singlefoo_test.rb:
+    last_write_checksum: sha1:1f4989cdcdea0e12e8a98b128d6b9aebc6f4fa57
+  test/tag1_test.rb:
+    last_write_checksum: sha1:c56d0cd3fff95569c2f3294820c9d3fcdbd7c755
+  test/tag2_test.rb:
+    last_write_checksum: sha1:f4727f21f8e96ee41a58faa7e95dae0fd7d7e32f
+  test/test_client.rb:
+    last_write_checksum: sha1:a62a009a486baddcc03be22e48bb9f5d94c6de83
+  test/test_helpers.rb:
+    last_write_checksum: sha1:72e026b740b1f623ec390badfb766982dd3e62b6
+  test/types_test.rb:
+    last_write_checksum: sha1:16767971b1b7dd5beda91efb9745f3a8b35a64a2
+examples:
+  _operation_with_leading_and_trailing_underscores_:
+    "":
+      parameters:
+        query:
+          queryParam1: "renamed"
+    speakeasy-default-operation-with-leading-and-trailing-underscores:
+      parameters:
+        query:
+          queryParam1: "renamed"
+  postFile:
+    speakeasy-default-post-file:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/octet-stream: "0x8578F1BEE5"
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+        5XX:
+          application/json: {"error": "some example error", "code": 2}
+  getPolymorphism:
+    speakeasy-default-get-polymorphism:
+      responses:
+        "200":
+          application/json: {"oneOfWithUnionDescription": {"str": "example"}, "oneOfWithFactoredOutProperties": {"str": "example", "anExtraProperty": "example"}, "simpleAllOf": {"str": "example", "bool": true}, "allOfWithFactoredOutProperties": {"anOverridingProperty": "example", "anotherProperty": "example", "anExtraProperty": "example"}}
+  getRequestBodyFlattenedAway: {}
+  getFullyFlattenedRequest:
+    namedExampleThatIsntMatchedAcrossDifferentExamples:
+      parameters:
+        query:
+          lang: "en"
+      requestBody:
+        application/json: {"name": "<value>"}
+    speakeasy-default-get-fully-flattened-request:
+      parameters:
+        query:
+          lang: "<value>"
+      requestBody:
+        application/json: {"name": "<value>"}
+  testEndpoint:
+    speakeasy-default-test-endpoint:
+      parameters:
+        path:
+          testName: "<value>"
+      requestBody:
+        application/json: {"test": "<value>"}
+  createUser:
+    speakeasy-default-create-user:
+      requestBody:
+        application/json:
+          "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+          "email": "Aglae92@gmail.com"
+          "gender": "other"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Virginie47@gmail.com"
+            "gender": "other"
+    request-only:
+      requestBody:
+        application/json: {"email": "request-only@example.com"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Aglae92@gmail.com", "gender": "other"}
+    paired-example:
+      requestBody:
+        application/json: {"email": "paired@example.com", "first_name": "John"}
+      responses:
+        "200":
+          application/json: {"id": "user-paired", "email": "paired@example.com", "first_name": "John"}
+    response-only:
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Virginie47@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "user-response", "email": "response-only@example.com"}
+  getUser:
+    speakeasy-default-get-user:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json:
+            "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+            "email": "Cortney_Jakubowski@gmail.com"
+            "gender": "other"
+    success:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7dg", "email": "Trystan_Crooks@hotmail.com"}
+  updateUser:
+    speakeasy-default-update-user:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Joanny.Feeney@gmail.com", "gender": "other"}
+      responses:
+        "200":
+          application/json: {"id": "8ffac18c-7d88-4879-b057-e5f45b9ce7de", "email": "Zackary25@yahoo.com", "gender": "other"}
+  deleteUser:
+    speakeasy-default-delete-user:
+      parameters:
+        path:
+          id: "<id>"
+  login:
+    speakeasy-default-login:
+      responses:
+        "200":
+          application/json: {"token": "<value>"}
+  validate:
+    speakeasy-default-validate:
+      responses:
+        "200":
+          application/json: {}
+  getBinaryDefaultResponse:
+    speakeasy-default-get-binary-default-response:
+      responses:
+        default:
+          application/octet-stream: "0xf58AcDF799"
+  deprecated1: {}
+  listTest1:
+    speakeasy-default-list-test1:
+      parameters:
+        path:
+          page: 100
+        query:
+          queryParam1: "some example query param"
+          queryParam2: 1
+        header:
+          headerParam1: "some example header param"
+      responses:
+        "200":
+          application/json: {"resultArray": [], "totalCount": 100, "type": "First"}
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "500":
+          application/json: {"error": "some example error", "code": 2}
+  postTest2:
+    speakeasy-default-post-test2:
+      parameters:
+        query:
+          deprecatedQueryParam1: "some example query param"
+          deprecatedQueryParam2: "some example query param"
+      requestBody:
+        application/json: {"obj": {"str": "example", "bool": true, "int": 999999, "int32": 1, "num": 1.1, "float32": 8499.3, "enumProp": "First", "date": "2020-01-01", "dateTime": "2020-01-01T00:00:00Z", "anything": "<value>", "boolOpt": true, "intOptNull": 999999, "numOptNull": 1.1, "intEnum": 3, "int32Enum": 69, "bigint": 702830, "bigintStr": "12345678901234567890", "decimal": 3.141592653589, "decimalStr": "<value>", "obj": {"str": "example"}, "map": {"key": {"str": "example"}}, "arr": [{"str": "example"}], "any": "<value>", "type": "0", "nullableIntEnum": 3, "nullableStringEnum": "Second", "color": "green", "icon": "tick", "heroWidth": 480}, "type": "type1"}
+      responses:
+        "200":
+          multipart/form-data: "0x920D83Acf0"
+        "400":
+          application/json: {"status_code": 400, "error": "Bad Request", "type_name": "RequestValidationError", "message": "Invalid Params", "detail": "Missing property foobar"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+        "500":
+          application/json: {"test2": "some example response", "someConst": "someConstValue", "requiredNullableField": "test value"}
+  paymentCreated:
+    speakeasy-default-payment-created:
+      requestBody:
+        application/json:
+          "amount": "215.23"
+          "type": "payment.created"
+  paymentUpdated:
+    speakeasy-default-payment-updated:
+      requestBody:
+        application/json:
+          "amount": "257.04"
+          "type": "payment.updated"
+  testEnumFormats:
+    speakeasy-default-test-enum-formats:
+      requestBody:
+        application/json: {"stringArrayFormat": "pending_review", "stringMapFormat": "medium_priority", "stringPartialMapFormat": "draft_mode", "integerMapFormat": 200, "integerPartialMapFormat": 1}
+      responses:
+        "200":
+          application/json: {"message": "Enum formats processed successfully"}
+  binaryAndStringUpload:
+    speakeasy-default-binary-and-string-upload:
+      requestBody:
+        application/json: {"binary": "x-file: test.json", "string": "x-file: test.json"}
+  postFileWithEncoding:
+    speakeasy-default-post-file-with-encoding:
+      requestBody:
+        multipart/form-data: {"file": "x-file: example.file"}
+      responses:
+        "200":
+          application/json: {"fileName": "example.file", "size": 905827}
+        "415":
+          application/json: {"error": "some example error", "code": 2}
+  auth: {}
+  groupRoot: {}
+  groupTop: {}
+  groupBottom: {}
+  rootGroupOp: {}
+  subGroupOp: {}
+  nestedGroupOp: {}
+  getEmptyObjectError:
+    speakeasy-default-get-empty-object-error:
+      responses:
+        "200":
+          application/json: {"success": true}
+        "500":
+          application/json: {}
+  urlValidationStressTest: {}
+  bracesInPathAllowed:
+    speakeasy-default-braces-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+  parenthesesInPathAllowed:
+    speakeasy-default-parentheses-in-path-allowed:
+      parameters:
+        path:
+          id: "<id>"
+      requestBody:
+        application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+      responses:
+        "200":
+          application/json: {"fieldWithBracesInDefault": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInConst": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n", "fieldWithBracesInExample": "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n"}
+  getNamespaceConflict:
+    speakeasy-default-get-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}
+  createNamespaceConflict:
+    speakeasy-default-create-namespace-conflict:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getTripleNamespaceConflict:
+    speakeasy-default-get-triple-namespace-conflict:
+      responses:
+        "200":
+          application/json: {"fooPet": {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}, "barPet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}, "bazPet": {"petId": 789, "petName": "Rex", "adoptedAt": "2024-01-15T10:30:00Z"}}
+  getPetOwners:
+    speakeasy-default-get-pet-owners:
+      responses:
+        "200":
+          application/json: {"fooPetOwner": {"id": "owner-123", "name": "Jane Doe", "pets": [{"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}]}, "barPetOwner": {"ownerId": 456, "fullName": "Bob Smith", "pet": {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}}}
+  getSingleNamespaceFooPet:
+    speakeasy-default-get-single-namespace-foo-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  createSingleNamespaceFooPet:
+    speakeasy-default-create-single-namespace-foo-pet:
+      requestBody:
+        application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+      responses:
+        "201":
+          application/json: {"id": "pet-foo-123", "name": "Fluffy", "species": "cat"}
+  getSingleNamespaceBarPet:
+    speakeasy-default-get-single-namespace-bar-pet:
+      responses:
+        "200":
+          application/json: {"id": "pet-bar-456", "name": "Buddy", "owner": "John Doe"}
+  getNamespaceTypes:
+    speakeasy-default-get-namespace-types:
+      responses:
+        "200":
+          application/json: {"fooSpecies": "cat", "barStatus": "available", "fooAnimal": {"animalType": "cat", "furLength": "short"}, "barVehicle": {"wheels": 4, "engineType": "V8"}, "fooOrg": {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}}
+  getNamespaceAnimal:
+    speakeasy-default-get-namespace-animal:
+      responses:
+        "200":
+          application/json: {"animalType": "dog", "breed": "Labrador"}
+  getNamespaceVehicle:
+    speakeasy-default-get-namespace-vehicle:
+      responses:
+        "200":
+          application/json: {"wheels": 2, "hasPedals": true}
+  getNamespaceOrganization:
+    speakeasy-default-get-namespace-organization:
+      responses:
+        "200":
+          application/json: {"name": "Acme Corp", "address": {"street": "123 Main St", "city": "Springfield", "location": {"latitude": 37.7749, "longitude": -122.4194}}, "departments": [{"deptName": "Engineering", "headCount": 50}]}
+  getNestedIntegerString:
+    speakeasy-default-get-nested-integer-string:
+      responses:
+        "200":
+          application/json: {"task": {"id": "task-123", "name": "Review Task", "policy": {"policyId": "policy-456", "steps": [{"stepId": "step-1", "approval": {"approvers": ["user-1", "user-2"], "escalation": {"enabled": true, "expiration": "86400", "fallbackApprovers": ["admin-1"]}}}]}}}
+  getErrorOnlyExample:
+    notFoundExample:
+      responses:
+        "404":
+          application/json: {"error": "Resource not found", "code": 404}
+    speakeasy-default-get-error-only-example:
+      responses:
+        "200":
+          application/json: {"id": "<id>", "name": "<value>"}
+        "404":
+          application/json: {"error": "some example error", "code": 2}
+  getNamedPrimitiveUnion:
+    speakeasy-default-get-named-primitive-union:
+      responses:
+        "200":
+          application/json: true
+  putNamespaceConflict: {}
+  getDuplicateExportCollision:
+    speakeasy-default-get-duplicate-export-collision:
+      responses:
+        "200":
+          application/json: {}
+        "408":
+          application/json: {}
+  chat:
+    speakeasy-default-chat:
+      requestBody:
+        application/json: {"model": "review-model", "prompt": "What is the largest city in the world?", "stream": false}
+      responses:
+        "200":
+          application/json: {}
+  createWithUnion:
+    speakeasy-default-create-with-union:
+      requestBody:
+        application/json: {"name": "<value>", "shape": {"type": "rectangle", "width": 3125.73, "height": 922.51}}
+      responses:
+        "200":
+          application/json: {}
+  paginationOffsetNullable:
+    speakeasy-default-pagination-offset-nullable:
+      parameters:
+        query:
+          offset: 488005
+          limit: 466255
+      responses:
+        "200":
+          application/json:
+            "resultArray": ["<value 1>", "<value 2>", "<value 3>"]
+  renderAsset:
+    speakeasy-default-render-asset:
+      requestBody:
+        application/json: {"prompt": "<value>"}
+      responses:
+        "200":
+          application/json: {}
+  getAsset:
+    speakeasy-default-get-asset:
+      parameters:
+        path:
+          id: "<id>"
+        query:
+          stream: true
+      responses:
+        "200":
+          application/json: {}
+examplesVersion: 1.0.2
+generatedTests:
+  testEndpoint: "2026-02-16T03:56:09Z"
+  getUser: "2026-02-16T03:56:09Z"
+  getFullyFlattenedRequest: "2026-02-16T03:56:09Z"
+  postTest2: "2026-02-16T03:56:09Z"
+  postFile: "2026-02-16T03:56:09Z"
+  getPolymorphism: "2026-02-16T03:56:09Z"
+  getUnionErrors: "2026-02-16T03:56:09Z"
+  getRequestBodyFlattenedAway: "2026-02-16T03:56:09Z"
+  chat: "2026-02-16T03:56:09Z"
+  getBinaryDefaultResponse: "2026-02-16T03:56:09Z"
+  deprecated1: "2026-02-16T03:56:09Z"
+  listTest1: "2026-02-16T03:56:09Z"
+  login: "2026-02-16T03:56:09Z"
+  validate: "2026-02-16T03:56:09Z"
+  createUser: "2026-02-16T03:56:09Z"
+  updateUser: "2026-02-16T03:56:09Z"
+  deleteUser: "2026-02-16T03:56:09Z"
+  getNestedIntegerString: "2026-02-16T03:56:09Z"
+  testEnumFormats: "2026-02-16T03:56:09Z"
+  getNamedPrimitiveUnion: "2026-02-16T03:56:09Z"
+  getEmptyObjectError: "2026-02-16T03:56:09Z"
+  parenthesesInPathAllowed: "2026-02-16T03:56:09Z"
+  getErrorOnlyExample: "2026-02-16T03:56:09Z"
+  postFileWithEncoding: "2026-02-16T03:56:09Z"
+  getNamespaceConflict: "2026-02-16T03:56:09Z"
+  createNamespaceConflict: "2026-02-16T03:56:09Z"
+  getTripleNamespaceConflict: "2026-02-16T03:56:09Z"
+  getPetOwners: "2026-02-16T03:56:09Z"
+  getSingleNamespaceFooPet: "2026-02-16T03:56:09Z"
+  createSingleNamespaceFooPet: "2026-02-16T03:56:09Z"
+  getSingleNamespaceBarPet: "2026-02-16T03:56:09Z"
+  getNamespaceTypes: "2026-02-16T03:56:09Z"
+  getNamespaceAnimal: "2026-02-16T03:56:09Z"
+  getNamespaceVehicle: "2026-02-16T03:56:09Z"
+  getNamespaceOrganization: "2026-02-16T03:56:09Z"
+  createUser-request-only: "2026-02-16T03:56:09Z"
+  createUser-paired-example: "2026-02-16T03:56:09Z"
+  createUser-response-only: "2026-02-16T03:56:09Z"
+  getUser-success: "2026-02-16T03:56:09Z"
+  getDuplicateExportCollision: "2026-02-20T12:33:42Z"
+  createWithUnion: "2026-03-09T14:35:04+10:00"
+  paginationOffsetNullable: "2026-04-24T16:27:28+01:00"
+  renderAsset: "2026-09-02T19:50:54+01:00"

@@ -1,0 +1,505 @@
+DEBUG	prepend_op_id: Renamed to "listTest1_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:listTest1 operationTag:tag1 requestResponse:response" 
+	 registrationID: "scope:operations operationTag:tag1 operation:listTest1 requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	add_name: Renamed to "detail" 
+	 labels: "scope:shared refType:response refName:BadRequestResponse oneOf:detail" 
+	 registrationID: "scope:shared refType:Responses refName:BadRequestResponse oneOf:detail oneOfPosition:2 originalName:"
+DEBUG	append_error: Renamed component to "BadRequestResponse_error" 
+	 labels: "original_name:BadRequestResponse scope:errors data_type:error refType:response" 
+	 registrationID: "scope:errors refType:Responses refName:BadRequestResponse component:true originalName:BadRequestResponse"
+DEBUG	append_error: Renamed component to "Test2Response_error" 
+	 labels: "original_name:Test2Response scope:errors data_type:error" 
+	 registrationID: "scope:errors refType:Schemas refName:Test2Response component:true constProperty:SomeConstValue originalName:Test2Response"
+DEBUG	prepend_op_id: Renamed to "postFile_request" 
+	 labels: "original_name:request operation:postFile" 
+	 registrationID: "scope:operations operation:postFile requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "postFileWithEncoding_request" 
+	 labels: "original_name:request operation:postFileWithEncoding operationTag:tag1" 
+	 registrationID: "scope:operations operationTag:tag1 operation:postFileWithEncoding requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "postFileWithEncoding_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:postFileWithEncoding operationTag:tag1 requestResponse:response" 
+	 registrationID: "scope:operations operationTag:tag1 operation:postFileWithEncoding requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	add_name: Renamed to "RecursiveFormField" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Text" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:1 constProperty:Text originalName:"
+DEBUG	add_name: Renamed to "RecursiveFormField" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Number" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:2 constProperty:Number originalName:"
+DEBUG	add_name: Renamed to "RecursiveFormField" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Array" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:3 constProperty:Array originalName:"
+DEBUG	prepend_op_id: Renamed to "getPolymorphism_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getPolymorphism requestResponse:response" 
+	 registrationID: "scope:operations operation:getPolymorphism requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "getUnionErrors_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getUnionErrors requestResponse:response" 
+	 registrationID: "scope:operations operation:getUnionErrors requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	add_name: Renamed to "ClientError" 
+	 labels: "scope:errors operation:getUnionErrors data_type:union responseStatusCode:ClientError" 
+	 registrationID: "scope:errors operation:getUnionErrors requestResponse:response responseStatusCode:4XX responseMediaType:application/json originalName:ResponseBody"
+DEBUG	add_name: Renamed to "InternalServerError" 
+	 labels: "scope:errors operation:getUnionErrors data_type:union responseStatusCode:InternalServerError" 
+	 registrationID: "scope:errors operation:getUnionErrors requestResponse:response responseStatusCode:500 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "getFullyFlattenedRequest_RequestBody" 
+	 labels: "original_name:RequestBody operation:getFullyFlattenedRequest requestResponse:request" 
+	 registrationID: "scope:operations operation:getFullyFlattenedRequest requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "createWithUnion_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:createWithUnion requestResponse:response" 
+	 registrationID: "scope:operations operation:createWithUnion requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "testEndpoint_RequestBody" 
+	 labels: "original_name:RequestBody operation:testEndpoint requestResponse:request" 
+	 registrationID: "scope:operations operation:testEndpoint requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "login_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:login requestResponse:response" 
+	 registrationID: "scope:operations operation:login requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "validate_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:validate requestResponse:response" 
+	 registrationID: "scope:operations operation:validate requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "chat_request" 
+	 labels: "original_name:request operation:chat data_type:union" 
+	 registrationID: "scope:operations operation:chat requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "chat_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:chat requestResponse:response" 
+	 registrationID: "scope:operations operation:chat requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "testEnumFormats_request" 
+	 labels: "original_name:request operation:testEnumFormats" 
+	 registrationID: "scope:operations operation:testEnumFormats requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "testEnumFormats_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:testEnumFormats requestResponse:response" 
+	 registrationID: "scope:operations operation:testEnumFormats requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "binaryAndStringUpload_request" 
+	 labels: "original_name:request operation:binaryAndStringUpload" 
+	 registrationID: "scope:operations operation:binaryAndStringUpload requestResponse:request originalName:RequestBody"
+DEBUG	add_name: Renamed to "InternalServerError" 
+	 labels: "scope:errors operation:getErrorInUnion data_type:union responseStatusCode:InternalServerError" 
+	 registrationID: "scope:errors operation:getErrorInUnion requestResponse:response responseStatusCode:500 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "getDuplicateExportCollision_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getDuplicateExportCollision requestResponse:response" 
+	 registrationID: "scope:operations operation:getDuplicateExportCollision requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "getEmptyObjectError_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getEmptyObjectError requestResponse:response" 
+	 registrationID: "scope:operations operation:getEmptyObjectError requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	append_error: Renamed component to "FailedResponse_error" 
+	 labels: "original_name:FailedResponse scope:errors data_type:error" 
+	 registrationID: "scope:errors refType:Schemas refName:FailedResponse component:true originalName:FailedResponse"
+DEBUG	prepend_op_id: Renamed to "getPetOwners_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getPetOwners operationTag:namespaceTests.conflicts requestResponse:response" 
+	 registrationID: "scope:operations operationTag:namespaceTests.conflicts operation:getPetOwners requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "renderAsset_request" 
+	 labels: "original_name:request operation:renderAsset" 
+	 registrationID: "scope:operations operation:renderAsset requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "getErrorOnlyExample_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getErrorOnlyExample requestResponse:response" 
+	 registrationID: "scope:operations operation:getErrorOnlyExample requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "paymentCreated_request" 
+	 labels: "original_name:request operation:paymentCreated operationTag:hooks" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentCreated requestResponse:request constProperty:PaymentCreated originalName:RequestBody"
+DEBUG	prepend_op_id: Renamed to "paymentUpdated_request" 
+	 labels: "original_name:request operation:paymentUpdated operationTag:hooks" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentUpdated requestResponse:request constProperty:PaymentUpdated originalName:RequestBody"
+DEBUG	
+
+--- Renaming 2 types with name "detail" ---
+DEBUG	discriminated: Renamed to "detail_union" 
+	 labels: "original_name:detail scope:shared data_type:union refType:response refName:BadRequestResponse" 
+	 registrationID: "scope:shared refType:Responses refName:BadRequestResponse originalName:detail"
+DEBUG	
+
+--- Renaming 2 types with name "intEnum" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_intEnum" 
+	 labels: "original_name:intEnum scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:intEnum"
+DEBUG	
+
+--- Renaming 2 types with name "int32Enum" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_int32Enum" 
+	 labels: "original_name:int32Enum scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:int32Enum"
+DEBUG	
+
+--- Renaming 2 types with name "SimpleObject" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_SimpleObject" 
+	 labels: "original_name:SimpleObject scope:shared refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true originalName:SimpleObject"
+DEBUG	
+
+--- Renaming 2 types with name "any" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_any" 
+	 labels: "original_name:any scope:shared data_type:union refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:any"
+DEBUG	
+
+--- Renaming 2 types with name "nullableIntEnum" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_nullableIntEnum" 
+	 labels: "original_name:nullableIntEnum scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:nullableIntEnum"
+DEBUG	
+
+--- Renaming 2 types with name "nullableStringEnum" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_nullableStringEnum" 
+	 labels: "original_name:nullableStringEnum scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:nullableStringEnum"
+DEBUG	
+
+--- Renaming 2 types with name "icon" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_icon" 
+	 labels: "original_name:icon scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:icon"
+DEBUG	
+
+--- Renaming 2 types with name "heroWidth" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_heroWidth" 
+	 labels: "original_name:heroWidth scope:shared data_type:enum refName:ExhaustiveObject refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true refName:ExhaustiveObject originalName:heroWidth"
+DEBUG	
+
+--- Renaming 2 types with name "ExhaustiveObject" ---
+DEBUG	discriminated: Renamed to "OneOfWithFactoredOutProperties_ExhaustiveObject" 
+	 labels: "original_name:ExhaustiveObject scope:shared refName:OneOfWithFactoredOutProperties" 
+	 registrationID: "scope:shared refType:Schemas refName:OneOfWithFactoredOutProperties component:true originalName:ExhaustiveObject"
+DEBUG	
+
+--- Renaming 4 types with name "RecursiveFormField" ---
+DEBUG	discriminated: Renamed to "RecursiveFormField_Text" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Text" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:1 constProperty:Text originalName:"
+DEBUG	discriminated: Renamed to "RecursiveFormField_Number" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Number" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:2 constProperty:Number originalName:"
+DEBUG	discriminated: Renamed to "RecursiveFormField_Array" 
+	 labels: "scope:shared refName:RecursiveFormField constProperty:Array" 
+	 registrationID: "scope:shared refType:Schemas refName:RecursiveFormField component:true oneOfPosition:3 constProperty:Array originalName:"
+DEBUG	
+
+--- Renaming 2 types with name "error" ---
+DEBUG	discriminated: Renamed to "TaggedError2_error" 
+	 labels: "original_name:error scope:shared refName:TaggedError2" 
+	 registrationID: "scope:shared refType:Schemas refName:TaggedError2 originalName:error"
+DEBUG	discriminated: Renamed to "ErrorType2_error" 
+	 labels: "original_name:error scope:shared refName:ErrorType2" 
+	 registrationID: "scope:shared refType:Schemas refName:ErrorType2 originalName:error"
+DEBUG	
+
+--- Renaming 2 types with name "InternalServerError" ---
+DEBUG	discriminated: Renamed to "getUnionErrors_InternalServerError" 
+	 labels: "scope:errors operation:getUnionErrors data_type:union responseStatusCode:InternalServerError" 
+	 registrationID: "scope:errors operation:getUnionErrors requestResponse:response responseStatusCode:500 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	discriminated: Renamed to "getErrorInUnion_InternalServerError" 
+	 labels: "scope:errors operation:getErrorInUnion data_type:union responseStatusCode:InternalServerError" 
+	 registrationID: "scope:errors operation:getErrorInUnion requestResponse:response responseStatusCode:500 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	
+
+--- Renaming 2 types with name "animalType" ---
+DEBUG	discriminated: Renamed to "Dog_animalType" 
+	 labels: "original_name:animalType scope:shared data_type:enum refName:Dog modelNamespace:foo" 
+	 registrationID: "scope:shared refType:Schemas refName:Dog component:true modelNamespace:foo constProperty:dog originalName:animalType"
+DEBUG	discriminated: Renamed to "Cat_animalType" 
+	 labels: "original_name:animalType scope:shared data_type:enum refName:Cat modelNamespace:foo" 
+	 registrationID: "scope:shared refType:Schemas refName:Cat component:true modelNamespace:foo constProperty:cat originalName:animalType"
+DEBUG	
+
+--- Renaming 2 types with name "type" ---
+DEBUG	discriminated: Renamed to "paymentCreated_type" 
+	 labels: "original_name:type operation:paymentCreated operationTag:hooks requestResponse:request data_type:enum" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentCreated requestResponse:request constProperty:PaymentCreated constProperty:payment.created originalName:type"
+DEBUG	discriminated: Renamed to "paymentUpdated_type" 
+	 labels: "original_name:type operation:paymentUpdated operationTag:hooks requestResponse:request data_type:enum" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentUpdated requestResponse:request constProperty:PaymentUpdated constProperty:payment.updated originalName:type"
+DEBUG	prepend_op_id: N/A rename "listTest1_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:listTest1 operationTag:tag1 requestResponse:response" 
+	 registrationID: "scope:operations operationTag:tag1 operation:listTest1 requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "postFile_request" 
+	 labels: "original_name:request operation:postFile" 
+	 registrationID: "scope:operations operation:postFile requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "postFileWithEncoding_request" 
+	 labels: "original_name:request operation:postFileWithEncoding operationTag:tag1" 
+	 registrationID: "scope:operations operationTag:tag1 operation:postFileWithEncoding requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "postFileWithEncoding_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:postFileWithEncoding operationTag:tag1 requestResponse:response" 
+	 registrationID: "scope:operations operationTag:tag1 operation:postFileWithEncoding requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "getPolymorphism_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getPolymorphism requestResponse:response" 
+	 registrationID: "scope:operations operation:getPolymorphism requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "getUnionErrors_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getUnionErrors requestResponse:response" 
+	 registrationID: "scope:operations operation:getUnionErrors requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "getFullyFlattenedRequest_RequestBody" 
+	 labels: "original_name:RequestBody operation:getFullyFlattenedRequest requestResponse:request" 
+	 registrationID: "scope:operations operation:getFullyFlattenedRequest requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "createWithUnion_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:createWithUnion requestResponse:response" 
+	 registrationID: "scope:operations operation:createWithUnion requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "testEndpoint_RequestBody" 
+	 labels: "original_name:RequestBody operation:testEndpoint requestResponse:request" 
+	 registrationID: "scope:operations operation:testEndpoint requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "login_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:login requestResponse:response" 
+	 registrationID: "scope:operations operation:login requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "validate_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:validate requestResponse:response" 
+	 registrationID: "scope:operations operation:validate requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "chat_request" 
+	 labels: "original_name:request operation:chat data_type:union" 
+	 registrationID: "scope:operations operation:chat requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "chat_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:chat requestResponse:response" 
+	 registrationID: "scope:operations operation:chat requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "testEnumFormats_request" 
+	 labels: "original_name:request operation:testEnumFormats" 
+	 registrationID: "scope:operations operation:testEnumFormats requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "testEnumFormats_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:testEnumFormats requestResponse:response" 
+	 registrationID: "scope:operations operation:testEnumFormats requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "binaryAndStringUpload_request" 
+	 labels: "original_name:request operation:binaryAndStringUpload" 
+	 registrationID: "scope:operations operation:binaryAndStringUpload requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "getDuplicateExportCollision_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getDuplicateExportCollision requestResponse:response" 
+	 registrationID: "scope:operations operation:getDuplicateExportCollision requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "getEmptyObjectError_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getEmptyObjectError requestResponse:response" 
+	 registrationID: "scope:operations operation:getEmptyObjectError requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "getPetOwners_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getPetOwners operationTag:namespaceTests.conflicts requestResponse:response" 
+	 registrationID: "scope:operations operationTag:namespaceTests.conflicts operation:getPetOwners requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "renderAsset_request" 
+	 labels: "original_name:request operation:renderAsset" 
+	 registrationID: "scope:operations operation:renderAsset requestResponse:request originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "getErrorOnlyExample_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:getErrorOnlyExample requestResponse:response" 
+	 registrationID: "scope:operations operation:getErrorOnlyExample requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "paymentCreated_request" 
+	 labels: "original_name:request operation:paymentCreated operationTag:hooks" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentCreated requestResponse:request constProperty:PaymentCreated originalName:RequestBody"
+DEBUG	prepend_op_id: N/A rename "paymentUpdated_request" 
+	 labels: "original_name:request operation:paymentUpdated operationTag:hooks" 
+	 registrationID: "scope:webhooks operationTag:hooks operation:paymentUpdated requestResponse:request constProperty:PaymentUpdated originalName:RequestBody"
+DEBUG	
+
+Sdk (SDK empty)
+ServerPort (enum: 80, 8080, 443)
+Tag1 (SDK empty)
+Deprecated1Response (HttpMeta: HTTPMetadata)
+ HttpMetadata (Response: response, Request: request)
+AuthResponse (HttpMeta: HTTPMetadata)
+AuthSecurity (accessToken: string)
+ListTest1Request (queryParam1: string, queryParam2: enum, page: integer ...)
+ QueryParam2 (enum: 0, 1, 2)
+ListTest1Response (HttpMeta: HTTPMetadata, object: class)
+ ListTest1ResponseBody (resultArray: array, totalCount: integer, type: Enum)
+   ResultArray (test1: string)
+  Enum (enum: First, Second, Ex-aequo ...)
+BadRequestResponseError (error)
+ DetailUnion (union)
+  Detail (empty)
+Error (error)
+PostFileWithEncodingRequest (file: class, attachment: class, fileName: string ...)
+ File (fileName: string, content: request-stream)
+ Attachment (fileName: string, content: request-stream)
+ Metadata (title: string, description: string, tags: array)
+PostFileWithEncodingResponse (HttpMeta: HTTPMetadata, object: class)
+ PostFileWithEncodingResponseBody (fileName: string, size: integer, contentType: string ...)
+ListTest1Globals (queryParam1: string)
+Obsolete (SDK empty)
+TestGroup (SDK empty)
+Tag2 (SDK empty)
+PostTest2Request (deprecatedQueryParam1: string, deprecatedQueryParam2: string, body: Test2Request)
+ Test2Request (obj: ExhaustiveObject, type: enum)
+  ExhaustiveObject (str: string, bool: boolean, integer: integer ...)
+   IntEnum (enum: 1, 2, 3)
+   Int32Enum (enum: 55, 69, 181)
+   SimpleObject (str: string)
+   Any (union)
+   NullableIntEnum (enum: 1, 2, 3)
+   NullableStringEnum (enum: First, Second, Third)
+   Color (enum: red, green, blue)
+   Icon (enum: tick, thumbs-up, fire)
+   HeroWidth (enum: 480, 720, 1080)
+  Type (enum: type1, type2)
+PostTest2Response (HttpMeta: HTTPMetadata, Body: bytes)
+  Test2Response (test2: string, someConst: string, requiredNullableField: string)
+Test2ResponseError (error)
+Tag3 (SDK empty)
+Group (SDK empty)
+SubGroup (SDK empty)
+Empty (SDK empty)
+Tail (SDK empty)
+NestedGroupOpResponse (HttpMeta: HTTPMetadata)
+SubGroupOpResponse (HttpMeta: HTTPMetadata)
+RootGroupOpResponse (HttpMeta: HTTPMetadata)
+NamespaceTests (SDK empty)
+Conflicts (SDK empty)
+GetNamespaceConflictResponse (HttpMeta: HTTPMetadata, NamespaceConflictTest: NamespaceConflictTest)
+ NamespaceConflictTest (fooPet: Pet, barPet: Pet)
+  Pet (id: string, name: string, species: string ...)
+  Pet (id: string, name: string, owner: string)
+ObjWithRenamedProperties (direct: Boole, namespaced: namespaced, overridden: Boole ...)
+ Boole (bool: boolean)
+ Namespaced (namespace: string)
+ Aloof (bool: boolean, int: integer)
+PutNamespaceConflictResponse (HttpMeta: HTTPMetadata)
+CreateNamespaceConflictResponse (HttpMeta: HTTPMetadata, Pet: Pet)
+GetTripleNamespaceConflictResponse (HttpMeta: HTTPMetadata, TripleNamespaceConflictTest: TripleNamespaceConflictTest)
+ TripleNamespaceConflictTest (fooPet: Pet, barPet: Pet, bazPet: Pet)
+  Pet (petId: integer, petName: string, adoptedAt: date-time)
+GetPetOwnersResponse (HttpMeta: HTTPMetadata, object: class)
+ GetPetOwnersResponseBody (fooPetOwner: PetOwner, barPetOwner: PetOwner)
+  PetOwner (id: string, name: string, pets: array)
+  PetOwner (ownerId: integer, fullName: string, pet: Pet)
+SingleFoo (SDK empty)
+GetSingleNamespaceFooPetResponse (HttpMeta: HTTPMetadata, Pet: Pet)
+CreateSingleNamespaceFooPetResponse (HttpMeta: HTTPMetadata, Pet: Pet)
+SingleBar (SDK empty)
+GetSingleNamespaceBarPetResponse (HttpMeta: HTTPMetadata, Pet: Pet)
+Types (SDK empty)
+GetNamespaceTypesResponse (HttpMeta: HTTPMetadata, NamespaceTypesTest: NamespaceTypesTest)
+ NamespaceTypesTest (fooSpecies: PetSpecies, barStatus: PetStatus, fooAnimal: Animal ...)
+  PetSpecies (enum: dog, cat, bird ...)
+  PetStatus (enum: available, adopted, pending ...)
+  Animal (union)
+   Dog (animalType: enum, breed: string, barkVolume: integer)
+    DogAnimalType (enum: dog)
+   Cat (animalType: enum, furLength: string, meowFrequency: integer)
+    CatAnimalType (enum: cat)
+  Vehicle (union)
+   Car (wheels: integer, engineType: string)
+   Bike (wheels: integer, hasPedals: boolean)
+  Organization (name: string, address: class, departments: array)
+   Address (street: string, city: string, location: class)
+    Location (latitude: number, longitude: number)
+    Department (deptName: string, headCount: integer)
+GetNamespaceAnimalResponse (HttpMeta: HTTPMetadata, Animal: Animal)
+GetNamespaceVehicleResponse (HttpMeta: HTTPMetadata, Vehicle: Vehicle)
+GetNamespaceOrganizationResponse (HttpMeta: HTTPMetadata, Organization: Organization)
+OperationWithLeadingAndTrailingUnderscoresRequest (qp1: string)
+OperationWithLeadingAndTrailingUnderscoresResponse (HttpMeta: HTTPMetadata)
+PostFileRequest (upload: File)
+ File (fileName: string, content: request-stream)
+PostFileResponse (HttpMeta: HTTPMetadata, File: response-stream)
+GetPolymorphismResponse (HttpMeta: HTTPMetadata, object: class)
+ GetPolymorphismResponseBody (oneOfWithUnionDescription: union, oneOfWithFactoredOutProperties: OneOfWithFactoredOutProperties, simpleAllOf: class ...)
+  OneOfWithUnionDescription (union)
+  OneOfWithFactoredOutProperties (union)
+   OneOfWithFactoredOutPropertiesExhaustiveObject (str: string, bool: boolean, integer: integer ...)
+    OneOfWithFactoredOutPropertiesIntEnum (enum: 1, 2, 3)
+    OneOfWithFactoredOutPropertiesInt32Enum (enum: 55, 69, 181)
+    OneOfWithFactoredOutPropertiesAny (union)
+    OneOfWithFactoredOutPropertiesNullableIntEnum (enum: 1, 2, 3)
+    OneOfWithFactoredOutPropertiesNullableStringEnum (enum: First, Second, Third)
+    OneOfWithFactoredOutPropertiesIcon (enum: tick, thumbs-up, fire)
+    OneOfWithFactoredOutPropertiesHeroWidth (enum: 480, 720, 1080)
+   OneOfWithFactoredOutPropertiesSimpleObject (str: string, anExtraProperty: string)
+  SimpleAllOf (str: string, bool: boolean)
+  AllOfWithFactoredOutProperties (anOverridingProperty: string, anotherProperty: string, anExtraProperty: string)
+  CircularUnion (union)
+  RecursiveFormField (union)
+   RecursiveFormFieldText (type: string, label: string, required: boolean)
+   RecursiveFormFieldNumber (type: string, label: string, required: boolean)
+   RecursiveFormFieldArray (type: string, label: string, required: boolean ...)
+GetUnionErrorsRequest (page: integer)
+GetUnionErrorsResponse (HttpMeta: HTTPMetadata, object: class)
+ GetUnionErrorsResponseBody (pages: array)
+GetUnionErrorsInternalServerError (union)
+ ErrorType1 (error)
+ ErrorType2 (error)
+  ErrorType2Error (message: string)
+ClientError (union)
+ TaggedError1 (error)
+  Tag (enum: tag1)
+ TaggedError2 (error)
+  TaggedError2Error (message: string)
+GetRequestBodyFlattenedAwayRequest (loneQueryParam: string)
+GetRequestBodyFlattenedAwayResponse (HttpMeta: HTTPMetadata)
+GetFullyFlattenedRequestRequest (lang: string, max_length: integer, body: class)
+ GetFullyFlattenedRequestRequestBody (name: string, emoji: enum, gif: string ...)
+  Emoji (enum: wave, smiley, thumbsup ...)
+GetFullyFlattenedRequestResponse (HttpMeta: HTTPMetadata)
+CreateWithUnionRequest (dryRun: boolean, body: ShapeRequest)
+ ShapeRequest (name: string, shape: Shape, description: string)
+  Shape (union)
+   Circle (type: string, radius: number, color: string)
+   Rectangle (type: string, width: number, height: number ...)
+CreateWithUnionResponse (HttpMeta: HTTPMetadata, object: class)
+ CreateWithUnionResponseBody (id: string, shape: Shape)
+TestEndpointRequest (testName: string, body: class)
+ TestEndpointRequestBody (test: string)
+TestEndpointResponse (HttpMeta: HTTPMetadata)
+BaseUser (id: string, email: string, first_name: string ...)
+ Gender (enum: male, female, other)
+ Metadata (allergies: string, AdditionalProperties: map)
+ MetadataAny (notes: string, AdditionalProperties: map)
+CreateUserResponse (HttpMeta: HTTPMetadata, User: User)
+ User (id: string, email: string, first_name: string ...)
+GetUserRequest (id: string)
+GetUserResponse (HttpMeta: HTTPMetadata, User: User)
+UpdateUserRequest (id: string, body: User)
+UpdateUserResponse (HttpMeta: HTTPMetadata, User: User)
+DeleteUserRequest (id: string)
+DeleteUserResponse (HttpMeta: HTTPMetadata)
+LoginResponse (HttpMeta: HTTPMetadata, object: class)
+ LoginResponseBody (token: string)
+ValidateResponse (HttpMeta: HTTPMetadata, object: class)
+ ValidateResponseBody (valid: boolean, id: string, lastLogin: date-time)
+ChatRequest (union)
+ ChatModelRequest (model: string, prompt: string, stream: boolean ...)
+ ChatAgentRequest (agent: string, prompt: string, stream: boolean ...)
+ChatResponse (HttpMeta: HTTPMetadata, object: class, ChatStream: event-stream)
+ ChatResponseBody (data: string)
+  ChatStream (data: class)
+   Data (content: string)
+GetBinaryDefaultResponseResponse (HttpMeta: HTTPMetadata, bytes: response-stream)
+TestEnumFormatsRequest (stringArrayFormat: enum, stringMapFormat: enum, stringPartialMapFormat: enum ...)
+ StringArrayFormat (enum: pending_review, approved_final, rejected_permanently ...)
+ StringMapFormat (enum: low_priority, medium_priority, high_priority ...)
+ StringPartialMapFormat (enum: draft_mode, under_review, published_live ...)
+ IntegerMapFormat (enum: 100, 200, 300 ...)
+ IntegerPartialMapFormat (enum: 1, 2, 3 ...)
+TestEnumFormatsResponse (HttpMeta: HTTPMetadata, object: class)
+ TestEnumFormatsResponseBody (message: string)
+BinaryAndStringUploadRequest (binary: bytes, string: string)
+BinaryAndStringUploadResponse (HttpMeta: HTTPMetadata)
+GetErrorInUnionResponse (HttpMeta: HTTPMetadata)
+GetErrorInUnionInternalServerError (union)
+GetDuplicateExportCollisionResponse (HttpMeta: HTTPMetadata, object: class)
+ GetDuplicateExportCollisionResponseBody (result: string)
+RequestTimeoutError (error)
+GetNamedPrimitiveUnionResponse (HttpMeta: HTTPMetadata, SomeUnion: SomeUnion)
+ SomeUnion (union)
+  MyObject (empty)
+GetEmptyObjectErrorResponse (HttpMeta: HTTPMetadata, object: class)
+ GetEmptyObjectErrorResponseBody (success: boolean)
+FailedResponseError (error)
+UrlValidationStressTestResponse (HttpMeta: HTTPMetadata)
+ParenthesesInPathAllowedRequest (id: string, body: TemplateBracesTest)
+ TemplateBracesTest (fieldWithBracesInDescription: string, fieldWithBracesInDefault: string, fieldWithBracesInConst: string ...)
+ParenthesesInPathAllowedResponse (HttpMeta: HTTPMetadata, TemplateBracesTest: TemplateBracesTest)
+GetNestedIntegerStringResponse (HttpMeta: HTTPMetadata, TaskResponse: TaskResponse)
+ TaskResponse (task: ReviewTask)
+  ReviewTask (id: string, name: string, policy: McpPolicy)
+   McpPolicy (policyId: string, steps: array)
+     PolicyStep (stepId: string, approval: ApprovalConfig)
+      ApprovalConfig (approvers: array, escalation: Escalation)
+       Escalation (enabled: boolean, expiration: integer, fallbackApprovers: array)
+RenderAssetRequest (prompt: string, output_modalities: array)
+  OutputModality (enum: text, image)
+RenderAssetResponse (HttpMeta: HTTPMetadata, AssetResult: AssetResult, AssetStream: event-stream)
+ AssetResult (id: string, status: enum, steps: array)
+  Status (enum: in_progress, completed, failed ...)
+   Step (union)
+    AssetNoteStep (type: string, text: string)
+    AssetOutputStep (type: string, content: array)
+      Content (union)
+       AssetTextBlock (type: string, text: string)
+       AssetImageBlock (type: string, data: string, mime_type: string ...)
+  AssetStream (data: AssetResult)
+GetAssetRequest (id: string, stream: boolean)
+GetAssetResponse (HttpMeta: HTTPMetadata, AssetResult: AssetResult, AssetStatusStream: event-stream)
+  AssetStatusStream (data: AssetResult)
+GetErrorOnlyExampleResponse (HttpMeta: HTTPMetadata, object: class)
+ GetErrorOnlyExampleResponseBody (id: string, name: string, status: string)
+DisriminatedUnionWithOneMember (union)
+VariantRecord (union)
+ TextRecord (type: string, ipAddress: string, userAgent: string)
+ ImageRecord (type: string, challengeId: string, method: string)
+Globals (queryParam1: string, deprecatedQueryParam1: string, deprecatedQueryParam2: string ...)
+

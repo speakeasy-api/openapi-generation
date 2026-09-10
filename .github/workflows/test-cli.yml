@@ -1,0 +1,42 @@
+name: Test CLI
+on:
+  workflow_call:
+    inputs:
+      test-group:
+        required: true
+        type: string
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  test-cli:
+    timeout-minutes: 15
+    name: Test CLI - ${{ inputs.test-group }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+      - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: TARGET=${{ inputs.test-group }} make test-cli
+      - name: git diff
+        run: ./scripts/check-generated-diff.sh
+      - name: Upload test report
+        if: inputs.test-group != 'review'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-cli-${{ inputs.test-group }}-test-report
+          path: ./testSDKs/sdk-cli-${{ inputs.test-group }}/**/test-cli-record.txt
+          if-no-files-found: error

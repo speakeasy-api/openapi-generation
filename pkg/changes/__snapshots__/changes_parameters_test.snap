@@ -1,0 +1,635 @@
+
+[TestChanges_ParameterChanges/header_field_added - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Changed** request [breaking]
+
+---
+
+[TestChanges_ParameterChanges/header_field_removed - 1]
+# Test: header_field_removed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Removed** request.x-api-key [breaking]
+
+---
+
+[TestChanges_ParameterChanges/header_field_changed - 1]
+# Test: header_field_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Changed** request [breaking]
+
+---
+
+[TestChanges_ParameterChanges/query_parameter_changed - 1]
+# Test: query_parameter_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: string
+        - name: offset
+          in: query
+          schema:
+            type: integer
+        - name: sort
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUsers(): **Changed** request [breaking]
+
+---
+
+[TestChanges_ParameterChanges/path_parameter_changed - 1]
+# Test: path_parameter_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Changed** request.userId [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_go - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.GetUser(): **Added** request.X-Api-Key [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_php - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk->getuser(): **Added** request.x-api-key [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_typescript - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Changed** request [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_python - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.get_user(): **Added** request.x-api-key [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_ruby - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.get_user(): **Added** request.x-api-key [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_java - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.getUser(): **Added** request.x-api-key [breaking]
+
+---
+
+[TestChanges_ParameterChanges_All_Languages/header_field_added_csharp - 1]
+# Test: header_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* Sdk.GetUser(): **Added** request.x-api-key [breaking]
+
+---

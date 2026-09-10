@@ -1,0 +1,146 @@
+{{- $op := .Local.Operation}}
+{{- $sdk := .Local.SDK}}
+{{- $isAsync := .Local.IsAsync}}
+{{- $responses := $op.Response.Responses}}
+{{- $defaultError := (printf "%s.%s" getErrorsPackage getDefaultErrorClassName)}}
+{{- $resType := $op.Response.Type}}
+{{- $opHelper := (javaImportLocal (printf "%s.%s" "operations" (templateOperationSimpleClassName $op)))}}
+{{- $reqParam := getRequestParameter $op -}}
+{{- $opParams := operationParameters $op $sdk}}
+{{- $className := templateOperationSimpleClassName $op}}
+{{- $pkg := (print templatePackageName ".operations")}}
+{{- $fullClassName := (print $pkg "." $className)}}
+{{- $options := supportedMethodOptions $op -}}
+{{- $optionsParam := methodOptionsParameter}}
+{{- if $isAsync}}
+  {{- if useOkHttp}}
+    {{- templatePaginationCallAsFutureStream .Local true}}
+    {{- callAsFutureStreamUnwrappedCode .Local}}
+  {{- else}}
+    /**
+     * Returns a {@link {{javaImportReactivePublisher}}} that performs next page calls till no more pages
+     * are returned.
+     *
+     * <p>The returned {@link {{javaImportReactivePublisher}}} can be used with reactive frameworks:
+     * <pre><code>
+     * {{javaImportReactivePublisher}}&lt;{{javaImportTypeAsync $resType}}&gt; publisher = builder.callAsPublisher();
+     * publisher.subscribe(new {{javaImportReactiveSubscriber}}&lt;{{javaImportTypeAsync $resType}}&gt;() {
+     *     // Handle onNext, onError, onComplete
+     * });
+     * </code></pre>
+     *
+     * @return A {@link {{javaImportReactivePublisher}}} that emits pages asynchronously
+     */
+    public {{javaImportReactivePublisher}}<{{javaImportTypeAsync $resType}}> callAsPublisher() {
+        {{- if $op.Request}}
+            {{- if operationParametersFlattened $op }}
+        {{ importedClass $op.Request.Field.Type }} request = pojoBuilder.build();
+            {{- else}}
+                {{- if $reqParam.Nullable}}
+        {{javaImportJsonNullable}}<{{javaImportType $op.Request.Field.Type}}> request = this.request;
+        {{javaImportType $op.Request.Field.Type}} pagedRequest = request.orElse(null) == null ? new {{javaImportType $op.Request.Field.Type}}() : request.get();
+                {{- else}}
+        {{ javaImportType $op.Request.Field.Type }} request = this.request;
+                {{- end}}
+            {{- end}}
+        {{- end}}
+        {{- if $options}}
+        {{javaImport $optionsParam.Type}} options = optionsBuilder.build();
+        {{- end}}
+        {{- templateOperationInit .Local false true}}
+
+        {{javaImportFlowPublisher}}<{{javaImport "java.net.http.HttpResponse"}}<{{javaImportLocal "utils.Blob"}}>> asyncPaginator = new {{javaImportPaginationEntity "AsyncPaginator"}}<>(
+            request,
+            {{templatePaginatorTracker $op}},
+            {{templatePaginatorFetcher $op true}});
+
+        Flow.Publisher<{{javaImportTypeAsync $resType}}> flowPublisher = {{javaImportStatic "utils.reactive.ReactiveUtils.mapAsync" true}}(asyncPaginator, operation::handleResponse);
+
+        // Convert Flow.Publisher to Reactive Streams Publisher at the last stage
+        return {{javaImport "org.reactivestreams.FlowAdapters"}}.toPublisher(flowPublisher);
+    }
+    {{- $unwrapStreamMetadata := getUnwrapStreamMetadata $op true}}
+    {{- if $unwrapStreamMetadata}}
+
+    /**
+     * Returns a flat Publisher of {@link {{javaImport $unwrapStreamMetadata.itemType}}} items. Subsequent pagination
+     * calls are transparently handled by the SDK until no more pages are returned.
+     **/
+    public {{javaImportReactivePublisher}}<{{javaImport $unwrapStreamMetadata.itemType}}> callAsPublisherUnwrapped() {
+        // Delegate to callAsPublisher and then unwrap the items
+        {{javaImportReactivePublisher}}<{{javaImportTypeAsync $resType}}> pagePublisher = callAsPublisher();
+
+        // Convert back to Flow for internal processing, then back to Reactive Streams at the end
+        Flow.Publisher<{{javaImportTypeAsync $resType}}> flowPublisher = {{javaImport "org.reactivestreams.FlowAdapters"}}.toFlowPublisher(pagePublisher);
+
+        Flow.Publisher<{{javaImport "java.util.List"}}<{{javaImport $unwrapStreamMetadata.itemType}}>> items = {{javaImportStatic "utils.reactive.ReactiveUtils.map" true}}(flowPublisher,
+                {{ $unwrapStreamMetadata.streamOps | join "\n                " -}}
+        );
+
+        Flow.Publisher<{{javaImport $unwrapStreamMetadata.itemType}}> flattenedFlow = {{javaImportStatic "utils.reactive.ReactiveUtils.flatten" true}}(items);
+
+        // Convert Flow.Publisher to Reactive Streams Publisher at the last stage
+        return {{javaImport "org.reactivestreams.FlowAdapters"}}.toPublisher(flattenedFlow);
+    }
+    {{- end}}
+  {{- end}}
+{{- else}}
+    /**
+    * Returns an iterable that performs next page calls till no more pages
+    * are returned.
+    *
+    * <p>The returned iterable can be used in a for-each loop:
+    * <pre><code>
+    * for ({{javaImportTypeMandatory $resType}} page : builder.callAsIterable()) {
+    *     // Process each page
+    * }
+    * </code></pre>
+    * 
+    * @return An iterable that can be used to iterate through all pages
+    */
+    public {{javaImport "java.lang.Iterable"}}<{{javaImportTypeMandatory $resType}}> callAsIterable() {
+        {{- if $op.Request}}
+            {{- if operationParametersFlattened $op }}
+        {{ importedClass $op.Request.Field.Type }} request = pojoBuilder.build();
+            {{- else}}
+                {{- if $reqParam.Nullable}}
+        {{javaImportJsonNullable}}<{{javaImportType $op.Request.Field.Type}}> request = this.request;
+        {{javaImportType $op.Request.Field.Type}} pagedRequest = request.orElse(null) == null ? new {{javaImportType $op.Request.Field.Type}}() : request.get();
+                {{- else}}
+        {{ javaImportType $op.Request.Field.Type }} request = this.request;
+                {{- end}}
+            {{- end}}
+        {{- end}}
+        {{- if $options}}
+        {{javaImport $optionsParam.Type}} options = optionsBuilder.build();
+        {{- end}}
+        {{- templateOperationInit .Local false}}
+
+        {{javaImport "java.util.Iterator"}}<{{javaHttpResponseType "java.io.InputStream"}}> iterator = new {{javaImportPaginationEntity "Paginator"}}<>(
+            request,
+            {{templatePaginatorTracker $op}},
+            {{templatePaginatorFetcher $op false}});
+
+        return () -> {{javaImportStatic "utils.Utils.transform" true}}(iterator, operation::handleResponse);
+    }
+
+    /**
+    * Returns a stream that performs next page calls till no more pages
+    * are returned.
+    **/  
+    public {{javaImport "java.util.stream.Stream"}}<{{javaImportTypeMandatory $resType}}> callAsStream() {
+        return {{javaImportStatic "utils.Utils.toStream" true}}(callAsIterable());
+    }
+    {{- $unwrapStreamMetadata := getUnwrapStreamMetadata $op}}
+    {{- if $unwrapStreamMetadata}}
+
+    /**
+     * Returns a flat stream of {@link {{javaImport $unwrapStreamMetadata.itemType}}} items. Subsequent pagination
+     * calls are transparently handled by the SDK until no more pages are returned.
+     **/
+    public {{javaImport "java.util.stream.Stream"}}<{{javaImport $unwrapStreamMetadata.itemType}}> callAsStreamUnwrapped() {
+        return callAsStream()
+                {{ $unwrapStreamMetadata.streamOps | join "\n                "}};
+    }
+    {{- end}}
+{{- end}}

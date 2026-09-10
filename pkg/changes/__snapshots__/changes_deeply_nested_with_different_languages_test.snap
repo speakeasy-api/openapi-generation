@@ -1,0 +1,85 @@
+
+[TestChanges_DeeplyNestedMethods_DeeplyNestedWithDifferentLanguages - 1]
+# Test: deeply_nested_with_different_languages
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /cloud/regions/{regionId}/clusters/{clusterId}/nodes/{nodeId}/metrics:
+    get:
+      operationId: getNodeMetrics
+      x-speakeasy-group: cloud.regions.clusters.nodes
+      x-speakeasy-name-override: getMetrics
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /cloud/regions/{regionId}/clusters/{clusterId}/nodes/{nodeId}/metrics:
+    get:
+      operationId: getNodeMetrics
+      x-speakeasy-group: cloud.regions.clusters.nodes
+      x-speakeasy-name-override: getMetrics
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Java SDK Changes:
+* `sdk.cloud.regions.clusters.nodes.getMetrics()`:  `request.period` **Added** (Breaking ⚠️)
+
+## Full Mode:
+## Java SDK Changes:
+* `sdk.cloud.regions.clusters.nodes.getMetrics()`:  `request.period` **Added** (Breaking ⚠️)
+
+---

@@ -1,0 +1,446 @@
+package tests
+
+import (
+	"net/http"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/polling"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPollingDelaySeconds(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-delay-seconds")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	// Endpoint requires initial request with requestID query parameter
+	res, err := client.Polling.DelaySeconds(t.Context(), requestID)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusCreated, res.HTTPMeta.Response.StatusCode)
+
+	res, err = client.Polling.DelaySeconds(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.DelaySecondsWaitForSuccess()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingDelaySecondsOverride(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-delay-seconds-override")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	// Endpoint requires initial request with requestID query parameter
+	res, err := client.Polling.DelaySecondsOverride(t.Context(), requestID)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusCreated, res.HTTPMeta.Response.StatusCode)
+
+	res, err = client.Polling.DelaySecondsOverride(
+		t.Context(),
+		requestID,
+		operations.WithPolling(
+			client.Polling.DelaySecondsOverrideWaitForSuccess(),
+			polling.WithDelaySecondsOverride(5),
+		),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingFailureCriteriaResponseBody(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-response-body")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaResponseBody(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaResponseBodyWaitForStatusCompleted()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusFailed, res.Polling.Status)
+}
+
+func TestPollingFailureCriteriaResponseBodyOptional(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-response-body-optional")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaResponseBodyOptional(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaResponseBodyOptionalWaitForStatusCompleted()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.PollingOptional)
+	require.NotNil(t, res.PollingOptional.Status)
+	assert.Equal(t, shared.PollingStatusFailed, *res.PollingOptional.Status)
+}
+
+func TestPollingFailureCriteriaResponseBodyNested(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-response-body-nested")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaResponseBodyNested(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaResponseBodyNestedWaitForStatusCompleted()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.PollingNested)
+	assert.Equal(t, shared.PollingStatusFailed, res.PollingNested.Nested.Status)
+}
+
+func TestPollingFailureCriteriaResponseBodyRegex(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-response-body-regex")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaResponseBody(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaResponseBodyWaitForStatusCompletedRegex()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusFailed, res.Polling.Status)
+}
+
+func TestPollingFailureCriteriaStatusCode(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-status-code")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaStatusCode(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaStatusCodeWaitForSuccess()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusAccepted, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestPollingFailureCriteriaStatusCodeRegex(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-failure-criteria-status-code-regex")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := client.Polling.FailureCriteriaStatusCode(
+		t.Context(),
+		operations.WithPolling(client.Polling.FailureCriteriaStatusCodeWaitForSuccessRegex()),
+	)
+	require.ErrorAs(t, err, new(*polling.FailureCriteriaError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusAccepted, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestPollingIntervalSeconds(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-interval-seconds")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.IntervalSeconds(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.IntervalSecondsWaitForSuccess()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingIntervalSecondsOverride(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-interval-seconds-override")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.IntervalSecondsOverride(
+		t.Context(),
+		requestID,
+		operations.WithPolling(
+			client.Polling.IntervalSecondsOverrideWaitForSuccess(),
+			polling.WithIntervalSecondsOverride(5),
+		),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingLimitCount(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-limit-count")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.LimitCount(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.LimitCountWaitForStatusCompleted()),
+	)
+	require.ErrorAs(t, err, new(*polling.LimitCountError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusRunning, res.Polling.Status)
+}
+
+func TestPollingLimitCountOverride(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-limit-count-override")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.LimitCountOverride(
+		t.Context(),
+		requestID,
+		operations.WithPolling(
+			client.Polling.LimitCountOverrideWaitForStatusCompleted(),
+			polling.WithLimitCountOverride(5),
+		),
+	)
+	require.ErrorAs(t, err, new(*polling.LimitCountError))
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusRunning, res.Polling.Status)
+}
+
+func TestPollingSuccessCriteriaResponseBody(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-response-body")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaResponseBody(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.SuccessCriteriaResponseBodyWaitForStatusCompleted()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingSuccessCriteriaResponseBodyNested(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-response-body-nested")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaResponseBodyNested(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.SuccessCriteriaResponseBodyNestedWaitForStatusCompleted()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.PollingNested)
+	assert.Equal(t, shared.PollingStatusCompleted, res.PollingNested.Nested.Status)
+}
+
+func TestPollingSuccessCriteriaResponseBodyOptional(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-response-body-optional")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaResponseBodyOptional(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.SuccessCriteriaResponseBodyOptionalWaitForStatusCompleted()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.PollingOptional)
+	require.NotNil(t, res.PollingOptional.Status)
+	assert.Equal(t, shared.PollingStatusCompleted, *res.PollingOptional.Status)
+}
+
+func TestPollingSuccessCriteriaResponseBodyRegex(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-response-body-regex")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaResponseBody(
+		t.Context(),
+		requestID,
+		operations.WithPolling(client.Polling.SuccessCriteriaResponseBodyWaitForStatusRegex()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingSuccessCriteriaStatusCode(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-status-code")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		requestID,
+		http.StatusOK,
+		operations.WithPolling(client.Polling.SuccessCriteriaStatusCodeWaitForSuccess()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}
+
+func TestPollingSuccessCriteriaStatusCodeErrorKnown(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-status-code-error-known")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		requestID,
+		http.StatusNotFound,
+		operations.WithPolling(
+			client.Polling.SuccessCriteriaStatusCodeWaitForNotFound(),
+			polling.WithLimitCountOverride(2), // pass/fail more immediately
+		),
+	)
+	require.NoError(t, err)
+	require.Nil(t, res)
+}
+
+func TestPollingSuccessCriteriaStatusCodeErrorRegex(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-status-code-error-regex")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		requestID,
+		http.StatusNotFound,
+		operations.WithPolling(
+			client.Polling.SuccessCriteriaStatusCodeWaitForNotFoundRegex(),
+			polling.WithLimitCountOverride(2), // pass/fail more immediately
+		),
+	)
+	require.NoError(t, err)
+	require.Nil(t, res)
+}
+
+func TestPollingSuccessCriteriaStatusCodeErrorUnknown(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-status-code-error-unknown")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		requestID,
+		http.StatusGone,
+		operations.WithPolling(
+			client.Polling.SuccessCriteriaStatusCodeWaitForGone(),
+			polling.WithLimitCountOverride(2), // pass/fail more immediately
+		),
+	)
+	require.NoError(t, err)
+	require.Nil(t, res)
+}
+
+func TestPollingSuccessCriteriaStatusCodeRegex(t *testing.T) {
+	t.Parallel()
+
+	recordTest("polling-success-criteria-status-code-regex")
+
+	client := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	requestID := pseudo_uuid()
+
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		requestID,
+		http.StatusOK,
+		operations.WithPolling(client.Polling.SuccessCriteriaStatusCodeWaitForSuccessRegex()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Polling)
+	assert.Equal(t, shared.PollingStatusCompleted, res.Polling.Status)
+}

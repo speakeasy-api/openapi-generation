@@ -1,0 +1,1021 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// simpleObjectWithTypeJSON is a SimpleObjectWithType with type discriminator.
+var simpleObjectWithTypeJSON = `{"type":"simpleObjectWithType","str":"test","bool":true,"int":1,"int32":1,"intEnum":2,"int32Enum":55,"num":1.1,"float32":1.1,"enum":"one","any":"any","date":"2020-01-01","dateTime":"2020-01-01T00:00:00.000000001Z","boolOpt":true,"strOpt":"testOptional"}`
+
+// simpleObjectJSON is a SimpleObject (no type field, includes bigint).
+var unionSimpleObjectJSON = `{"str":"test","bool":true,"int":1,"int32":1,"intEnum":2,"int32Enum":55,"num":1.1,"float32":1.1,"enum":"one","any":"any","date":"2020-01-01","dateTime":"2020-01-01T00:00:00.000000001Z","boolOpt":true,"strOpt":"testOptional","bigint":8821239038968084,"bigintStr":"9223372036854775808"}`
+
+// deepObjectWithTypeJSON is a DeepObjectWithType.
+var deepObjectWithTypeJSON = `{"type":"deepObjectWithType","any":` + unionSimpleObjectJSON + `,"arr":[` + unionSimpleObjectJSON + `],"bool":true,"int":1,"map":{"key":` + unionSimpleObjectJSON + `},"num":1.1,"obj":` + unionSimpleObjectJSON + `,"str":"test"}`
+
+// --- Strongly Typed OneOf ---
+
+func TestStronglyTypedOneOfPost_Basic(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-basic")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "strongly-typed-one-of-post",
+		"--strongly-typed-one-of-object", simpleObjectWithTypeJSON,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"simpleObjectWithType"`)
+}
+
+func TestStronglyTypedOneOfPost_Deep(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-deep")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "strongly-typed-one-of-post",
+		"--strongly-typed-one-of-object", deepObjectWithTypeJSON,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"deepObjectWithType"`)
+}
+
+func TestStronglyTypedOneOfPostWithNonStandardDiscriminatorName(t *testing.T) {
+	recordTest("unions-strongly-typed-one-of-post-with-non-standard-discriminator-name")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Non-standard discriminator uses "obj.type" (with dot) instead of "type"
+	obj := `{"obj.type":"simpleObjectWithNonStandardTypeName","str":"test","bool":true,"int":1,"int32":1,"intEnum":2,"int32Enum":55,"num":1.1,"float32":1.1,"enum":"one","any":"any","date":"2020-01-01","dateTime":"2020-01-01T00:00:00.000000001Z","boolOpt":true,"strOpt":"testOptional"}`
+	err := h.RunWithServer(s.URL, []string{"unions", "strongly-typed-one-of-post-with-non-standard-discriminator-name",
+		"--strongly-typed-one-of-object-with-non-standard-discriminator-name", obj,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"simpleObjectWithNonStandardTypeName"`)
+}
+
+func TestStronglyTypedNullableOneOfPost(t *testing.T) {
+	recordTest("unions-strongly-typed-nullable-one-of-post")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: NestedEnumArray variant
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "strongly-typed-nullable-one-of-post",
+		"--strongly-typed-nullable-one-of-object", `{"enums":["one","two"],"tags":"nestedEnumArray"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"nestedEnumArray"`)
+
+	// Test 2: NestedEnumMap variant
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "strongly-typed-nullable-one-of-post",
+		"--strongly-typed-nullable-one-of-object", `{"enums":{"key2":"two","key3":"three"},"tags":"nestedEnumMap"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"nestedEnumMap"`)
+
+	// Test 3: Null (omit body flag — nullable)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "strongly-typed-nullable-one-of-post"})
+	require.NoError(t, err)
+}
+
+// --- Weakly Typed OneOf ---
+
+func TestWeaklyTypedOneOfPost_Basic(t *testing.T) {
+	recordTest("unions-weakly-typed-one-of-post-basic")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "weakly-typed-one-of-post",
+		"--weakly-typed-one-of-object", unionSimpleObjectJSON,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test"`)
+}
+
+func TestWeaklyTypedOneOfPost_Deep(t *testing.T) {
+	recordTest("unions-weakly-typed-one-of-post-deep")
+	s := newEchoServer()
+	defer s.Close()
+	// DeepObject (without type field)
+	deepObj := `{"any":` + unionSimpleObjectJSON + `,"arr":[` + unionSimpleObjectJSON + `],"bool":true,"int":1,"map":{"key":` + unionSimpleObjectJSON + `},"num":1.1,"obj":` + unionSimpleObjectJSON + `,"str":"test"}`
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "weakly-typed-one-of-post",
+		"--weakly-typed-one-of-object", deepObj,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj"`)
+}
+
+// --- Typed Object OneOf ---
+
+func TestTypedObjectOneOfPost_Obj1(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj1")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-one-of-post",
+		"--typed-object-one-of", `{"type":"obj1"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+func TestTypedObjectOneOfPost_Obj2(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj2")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-one-of-post",
+		"--typed-object-one-of", `{"type":"obj2"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj2"`)
+}
+
+func TestTypedObjectOneOfPost_Obj3(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-obj3")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-one-of-post",
+		"--typed-object-one-of", `{"type":"obj3"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj3"`)
+}
+
+func TestTypedObjectOneOfPost_Null(t *testing.T) {
+	recordTest("unions-typed-object-one-of-post-null")
+	s := newEchoServer()
+	defer s.Close()
+	// Passing empty JSON — with open unions + populated-fields strategy,
+	// {} is treated as an unknown variant (no error, raw JSON preserved).
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-one-of-post",
+		"--typed-object-one-of", `{}`,
+	})
+	require.NoError(t, err)
+}
+
+// --- Typed Object Nullable OneOf ---
+
+func TestTypedObjectNullableOneOfPost_Obj1(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-obj1")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-nullable-one-of-post",
+		"--typed-object-nullable-one-of", `{"type":"obj1","value":"one"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+func TestTypedObjectNullableOneOfPost_Obj2(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-obj2")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-nullable-one-of-post",
+		"--typed-object-nullable-one-of", `{"type":"obj2","value":"two"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj2"`)
+}
+
+func TestTypedObjectNullableOneOfPost_Null(t *testing.T) {
+	recordTest("unions-typed-object-nullable-one-of-post-null")
+	s := newEchoServer()
+	defer s.Close()
+	// Omit body flag — nullable union should send null body
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "typed-object-nullable-one-of-post"})
+	require.NoError(t, err)
+}
+
+// --- Flattened and Nullable Typed Object ---
+
+func TestFlattenedTypedObject_Obj1(t *testing.T) {
+	recordTest("unions-flattened-typed-object-post-obj1")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "flattened-typed-object-post",
+		"--flattened-typed-object1", `{"type":"obj1","value":"one"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+func TestNullableTypedObjectPost_Obj1(t *testing.T) {
+	recordTest("unions-nullable-typed-object-post-obj1")
+	s := newEchoServer()
+	defer s.Close()
+	// Uses metadata-driven flags
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-typed-object-post",
+		"--type", "obj1", "--value", "one",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+func TestNullableTypedObjectPost_Null(t *testing.T) {
+	recordTest("unions-nullable-typed-object-post-null")
+	s := newEchoServer()
+	defer s.Close()
+	// CLI metadata marks --type and --value as required, so null variant means passing empty string for value.
+	// The SDK passes nil pointer, but CLI can't omit required metadata flags.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-typed-object-post",
+		"--type", "obj1", "--value", "null",
+	})
+	require.NoError(t, err)
+}
+
+// --- Nullable OneOf Schema ---
+
+func TestNullableOneOfSchemaPost_Obj1(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-obj1")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-one-of-schema-post",
+		"--request", `{"type":"obj1","value":"one"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+func TestNullableOneOfSchemaPost_Obj2(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-obj2")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-one-of-schema-post",
+		"--request", `{"type":"obj2","value":"two"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj2"`)
+}
+
+func TestNullableOneOfSchemaPost_Null(t *testing.T) {
+	recordTest("unions-nullable-oneof-schema-post-null")
+	s := newEchoServer()
+	defer s.Close()
+	// Omit body flag — sends null body
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-one-of-schema-post"})
+	require.NoError(t, err)
+}
+
+// --- Nullable OneOf Type In Object ---
+
+func TestNullableOneOfTypeInObjectPost(t *testing.T) {
+	recordTest("unions-nullable-oneof-type-in-object-post")
+	s := newEchoServer()
+	defer s.Close()
+
+	// All fields set (including nullable union fields)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-one-of-type-in-object-post",
+		"--one-of-one=true",
+		"--nullable-one-of-one=true",
+		"--nullable-one-of-two", "2",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "true")
+}
+
+// --- Nullable OneOf Ref In Object ---
+
+func TestNullableOneOfRefInObjectPost(t *testing.T) {
+	recordTest("unions-nullable-oneof-ref-in-object-post")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test: Non-nullable and nullable fields set
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nullable-one-of-ref-in-object-post",
+		"--one-of-one", `{"type":"obj1","value":"one"}`,
+		"--nullable-one-of-one", `{"type":"obj1","value":"one"}`,
+		"--nullable-one-of-two", `{"type":"obj2","value":"two"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"obj1"`)
+}
+
+// --- Primitive Type OneOf ---
+
+func TestPrimitiveTypeOneOfPost_String(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-string")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "primitive-type-one-of-post",
+		"--request", `"test"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "test")
+}
+
+func TestPrimitiveTypeOneOfPost_Integer(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-integer")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "primitive-type-one-of-post",
+		"--request", `111`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "111")
+}
+
+func TestPrimitiveTypeOneOfPost_Number(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-number")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "primitive-type-one-of-post",
+		"--request", `22.2`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "22.2")
+}
+
+func TestPrimitiveTypeOneOfPost_Boolean(t *testing.T) {
+	recordTest("unions-primitive-type-one-of-post-boolean")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "primitive-type-one-of-post",
+		"--request", `true`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "true")
+}
+
+// --- Mixed Type OneOf ---
+
+func TestMixedTypeOneOfPost_String(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-string")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "mixed-type-one-of-post",
+		"--request", `"test"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+func TestMixedTypeOneOfPost_Integer(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-integer")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "mixed-type-one-of-post",
+		"--request", `111`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+func TestMixedTypeOneOfPost_Object(t *testing.T) {
+	recordTest("unions-mixed-type-one-of-post-object")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "mixed-type-one-of-post",
+		"--request", unionSimpleObjectJSON,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test"`)
+}
+
+// --- Date/Time Unions ---
+
+func TestDateNullUnion(t *testing.T) {
+	recordTest("unions-date-null")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-date-null",
+		"--request", `"2020-01-01"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "2020-01-01")
+}
+
+func TestDateTimeNullUnion(t *testing.T) {
+	recordTest("unions-datetime-null")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-date-time-null",
+		"--request", `"2020-01-01T00:00:00Z"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "2020-01-01")
+}
+
+func TestDateTimeBigintUnion(t *testing.T) {
+	recordTest("unions-datetime-bigint")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: DateTime variant
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-date-time-big-int",
+		"--request", `"2020-01-01T00:00:00Z"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Test 2: BigInt variant
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "union-date-time-big-int",
+		"--request", `9007199254740991`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "9007199254740991")
+}
+
+func TestUnionBigintStrDecimal(t *testing.T) {
+	recordTest("unions-bigint-str-decimal")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: Decimal variant
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-big-int-str-decimal",
+		"--request", `3.141592653589793`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Test 2: BigInt variant
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "union-big-int-str-decimal",
+		"--request", `9223372036854775807`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- Collection and Map Unions ---
+
+func TestCollectionOneOfPost(t *testing.T) {
+	recordTest("unions-collections-one-of-post")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: Array variant
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "collection-one-of-post",
+		"--collection-one-of-object", `{"arrayOfAny":["one","two"]}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"one"`)
+
+	// Test 2: Map variant
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "collection-one-of-post",
+		"--collection-one-of-object", `{"mapOfAny":{"1":"one","2":"two"}}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"one"`)
+}
+
+func TestUnionMap(t *testing.T) {
+	recordTest("unions-union-map")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-map",
+		"--input", `{"str":"test","bool":true}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"str"`)
+}
+
+func TestOptionalUnionMap(t *testing.T) {
+	recordTest("unions-optional-union-map")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: With data
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "union-map-optional",
+		"--input", `{"str":"test","bool":true}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Test 2: With nil input (optional field, omit the flag)
+	h = NewCLITestHarness(t)
+	err = h.RunWithStdinServer(s.URL, []string{"unions", "union-map-optional"}, `{}`)
+	require.NoError(t, err)
+}
+
+// --- Extra JSON Properties / Overlapping Objects ---
+
+func TestUnionExtraJsonProperties(t *testing.T) {
+	recordTest("unions-extra-json-properties")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: Obj1 (field1 + field3, no field2)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "one-of-overlapping-objects",
+		"--field1", "test1", "--field3", "1",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test1"`)
+
+	// Test 2: Obj2 (field1 + field2 + field3)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "one-of-overlapping-objects",
+		"--field1", "test2", "--field2=true", "--field3", "1",
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test2"`)
+}
+
+// --- Mixed Union Types ---
+
+func TestMixedUnionTypes(t *testing.T) {
+	recordTest("unions-mixed-union-types")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: Array of Bike objects
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "mixed-union-types",
+		"--mixed-union-types", `[{"colour":"white"},{"colour":"brown"}]`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"white"`)
+
+	// Test 2: Single Bike object
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "mixed-union-types",
+		"--mixed-union-types", `{"colour":"white"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"white"`)
+}
+
+// --- Array of Discriminated Unions ---
+
+func TestArrayOfDiscriminatedUnions(t *testing.T) {
+	recordTest("unions-array-of-discriminated-unions")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "array-of-discriminated-unions",
+		"--request", `[` + simpleObjectWithTypeJSON + `,` + deepObjectWithTypeJSON + `]`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"simpleObjectWithType"`)
+	assert.Contains(t, output, `"deepObjectWithType"`)
+}
+
+func TestArrayOfDiscriminatedUnionsMap(t *testing.T) {
+	recordTest("unions-array-of-discriminated-unions-map")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "array-of-discriminated-unions-map",
+		"--array-map", `{"item":[` + simpleObjectWithTypeJSON + `]}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"simpleObjectWithType"`)
+}
+
+func TestNestedArrayOfDiscriminatedUnions(t *testing.T) {
+	recordTest("unions-nested-array-of-discriminated-unions")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nested-array-of-discriminated-unions",
+		"--nested-array", `[[` + simpleObjectWithTypeJSON + `],[` + deepObjectWithTypeJSON + `]]`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"nestedArray"`)
+}
+
+// --- Boolean and String Enum Union ---
+
+func TestOneOfBooleanAndStringEnumWithResponseBoolean(t *testing.T) {
+	recordTest("unions-one-of-boolean-and-string-enum-with-response-boolean")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "one-of-boolean-and-string-enum",
+		"--active=true",
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "true")
+}
+
+func TestOneOfBooleanAndStringEnumWithResponseEnum(t *testing.T) {
+	recordTest("unions-one-of-boolean-and-string-enum-with-response-enum")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "one-of-boolean-and-string-enum",
+		"--active", `"true"`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- Nested Discriminated Union ---
+
+func TestNestedDiscriminatedUnion(t *testing.T) {
+	recordTest("unions-nested-discriminated-union")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: TypeA variant with TypeA1 (discriminator "type" = "a", nested has "value")
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "nested-disc-union",
+		"--nested-disc-union", `{"type":"a","value":"test value"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test value"`)
+
+	// Test 2: TypeB variant (discriminator "type" = "b", has "data" field)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "nested-disc-union",
+		"--nested-disc-union", `{"type":"b","data":"test data"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"test data"`)
+}
+
+// --- Discriminated Open Enum ---
+
+func TestDiscriminatedOpenEnum(t *testing.T) {
+	recordTest("unions-discriminated-open-enum")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test 1: Active variant (discriminator "status" = "active")
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-open-enum",
+		"--discriminated-open-enum-union", `{"status":"active","userId":"user-123"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"active"`)
+	assert.Contains(t, output, `"user-123"`)
+
+	// Test 2: Inactive variant (discriminator "status" = "inactive")
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "discriminated-open-enum",
+		"--discriminated-open-enum-union", `{"status":"inactive","reason":"User requested deactivation"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"inactive"`)
+}
+
+// --- Smart Union Tests ---
+
+func TestSmartUnionEmptyString(t *testing.T) {
+	recordTest("smart-union-empty-string")
+	s := newEchoServer()
+	defer s.Close()
+	// ObjectB variant: has field "b" (string). Empty string should be preserved.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "smart-union-empty-string",
+		"--request", `{"b":""}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+// --- Conflicting Discriminator Mapping Key ---
+
+func TestConflictingDiscriminatorMappingKey(t *testing.T) {
+	recordTest("unions-conflicting-discriminator-mapping-key")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "conflicting-discriminator-mapping-key",
+		"--prefix.tag1.image-url", "https://example.com/image.png",
+		"--prefix-tag2", `{"str":"test"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"https://example.com/image.png"`)
+	assert.Contains(t, output, `"tag1"`)
+}
+
+// --- Open Union Forward Compatibility ---
+
+func TestOpenUnionKnownVariant(t *testing.T) {
+	recordTest("open-union-known-variant")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Known "car" discriminator → parses to Car variant
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"car","wheelsType":"four"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"car"`)
+	assert.Contains(t, output, `"four"`)
+
+	// Known "bike" discriminator → parses to Bike variant
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"bike","wheelsType":"two","colour":"red"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"bike"`)
+	assert.Contains(t, output, `"red"`)
+}
+
+func TestOpenUnionUnknownDiscriminator(t *testing.T) {
+	recordTest("open-union-unknown-discriminator")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Unknown discriminator "spaceship" → stored as raw JSON, no error
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"spaceship","thrust":9000}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"spaceship"`)
+	assert.Contains(t, output, "9000")
+}
+
+func TestOpenUnionMissingDiscriminator(t *testing.T) {
+	recordTest("open-union-missing-discriminator")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Object without discriminator field → treated as unknown, no error
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"wheelsType":"four"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"four"`)
+}
+
+func TestOpenUnionKnownDiscInvalidSchema(t *testing.T) {
+	recordTest("open-union-known-disc-invalid-schema")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Known "bike" discriminator but missing required "colour" field.
+	// Go json.Unmarshal doesn't enforce required fields, so this succeeds
+	// as a known Bike with zero-value colour.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"bike","wheelsType":"two"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"bike"`)
+}
+
+func TestOpenUnionMixedKnownAndUnknown(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	// Known car variant works
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"car","wheelsType":"four"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"car"`)
+
+	// Unknown "hovercraft" variant works in the same session
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"hovercraft","propulsion":"fan"}`,
+	})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"hovercraft"`)
+	assert.Contains(t, output, `"fan"`)
+}
+
+func TestSmartUnionOpenEnums(t *testing.T) {
+	recordTest("smart-union-open-enums")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Neither variant declares "name": a stray key is now rejected rather than
+	// silently dropped, so send only the selector.
+	err := h.RunWithServer(s.URL, []string{"unions", "smart-union-open-enums",
+		"--request", `{"kind":"cat"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+}
+
+func TestSmartUnionOpenEnumsAndSize(t *testing.T) {
+	recordTest("smart-union-open-enums-and-size")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// "bat" is an unrecognized open enum value — should resolve to CatWithName variant (more fields)
+	err := h.RunWithServer(s.URL, []string{"unions", "smart-union-open-enums-and-size",
+		"--request", `{"kind":"bat","name":"asdf"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"bat"`)
+	assert.Contains(t, output, `"asdf"`)
+}
+
+func TestSmartUnionNestedUnion(t *testing.T) {
+	recordTest("smart-union-nested-union")
+	// This operation has its own server (http://localhost:35456), so use RunBare()
+	// to avoid --server-url override. No request body — the test service returns a
+	// hardcoded response with unknown enum values to test union resolution.
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"unions", "smart-union-nested-union"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"unknown"`)
+	assert.Contains(t, output, `"also_unknown"`)
+}
+
+// --- Const Discriminator ---
+
+func TestConstDiscriminator(t *testing.T) {
+	recordTest("unions-const-discriminator")
+	s := newEchoServer()
+	defer s.Close()
+
+	// constObject1 has a const "tag" field (tag1) and imageURL.
+	// The CLI flag accepts the full JSON body.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "const-discriminated-one-of",
+		"--const-discriminated-one-of", `{"tag":"tag1","imageURL":"http://boo"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"tag1"`)
+	assert.Contains(t, output, `"http://boo"`)
+}
+
+// --- Discriminated Multiple Memberships ---
+
+func TestDiscriminatedMultipleMemberships(t *testing.T) {
+	recordTest("unions-discriminated-multiple-memberships")
+	s := newEchoServer()
+	defer s.Close()
+
+	// Car participates in both Vehicle (vehicleType discriminator) and
+	// HasWheels (wheelsType discriminator) oneOf schemas.
+	// Send a Car object and verify both discriminator fields are round-tripped.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "discriminated-one-multiple-memberships",
+		"--vehicle", `{"vehicleType":"car","wheelsType":"four"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"car"`)
+	assert.Contains(t, output, `"four"`)
+}
+
+// --- Recursive OneOf ---
+
+func TestCircularReferenceRecursiveOneOf(t *testing.T) {
+	recordTest("unions-circular-reference-recursive-one-of")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "circular-reference-recursive-one-of",
+		"--value", `["hello",{"nested":["world"]}]`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"hello"`)
+	assert.Contains(t, output, `"nested"`)
+	assert.Contains(t, output, `"world"`)
+}

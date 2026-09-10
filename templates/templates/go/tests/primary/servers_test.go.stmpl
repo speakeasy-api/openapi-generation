@@ -1,0 +1,230 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSelectGlobalServerValid(t *testing.T) {
+	recordTest("servers-select-global-server-valid")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Servers.SelectGlobalServer(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestSelectGlobalServerBroken(t *testing.T) {
+	recordTest("servers-select-global-server-broken")
+
+	s := sdk.New(sdk.WithServerIndex(1))
+
+	res, err := s.Servers.SelectGlobalServer(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
+func TestSelectServerWithIDDefault(t *testing.T) {
+	recordTest("servers-select-server-with-id-default")
+
+	s := sdk.New()
+
+	res, err := s.Servers.SelectServerWithID(context.Background(), operations.WithServerURL(getHTTPBinURL()))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestSelectServerWithIDValid(t *testing.T) {
+	recordTest("servers-select-server-with-id-valid")
+
+	s := sdk.New()
+
+	res, err := s.Servers.SelectServerWithID(context.Background(), operations.WithServerURL(getHTTPBinURL()))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestSelectServerWithIDBroken(t *testing.T) {
+	recordTest("servers-select-server-with-id-broken")
+
+	s := sdk.New()
+
+	res, err := s.Servers.SelectServerWithID(context.Background(), operations.WithServerURL(operations.SelectServerWithIDServerList[operations.SelectServerWithIDServerBroken]))
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
+func TestServerWithTemplatesGlobal(t *testing.T) {
+	recordTest("servers-server-with-templates-global")
+
+	s := sdk.New(sdk.WithServerIndex(2), sdk.WithHostname("localhost"), sdk.WithPort(getHTTPBinPort()))
+
+	res, err := s.Servers.ServerWithTemplatesGlobal(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerWithTemplatesGlobalDefaults(t *testing.T) {
+	recordTest("servers-server-with-templates-global-defaults")
+
+	s := sdk.New(sdk.WithServerIndex(2), sdk.WithHostname("localhost"), sdk.WithPort(getHTTPBinPort()))
+
+	res, err := s.Servers.ServerWithTemplatesGlobal(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerWithTemplatesGlobalEnum(t *testing.T) {
+	recordTest("servers-server-with-templates-global-enum")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()+"/anything/"+string(sdk.ServerSomethingSomethingElseAgain)))
+
+	res, err := s.Servers.ServerWithTemplatesGlobal(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerWithTemplates(t *testing.T) {
+	recordTest("servers-server-with-templates")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServerWithTemplates(context.Background(), operations.WithTemplatedServerURL(operations.ServerWithTemplatesServerList[0], map[string]string{
+		"hostname": "localhost",
+		"port":     getHTTPBinPort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerWithTemplatesDefaults(t *testing.T) {
+	recordTest("servers-server-with-templates-defaults")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServerWithTemplates(context.Background(), operations.WithTemplatedServerURL(operations.ServerWithTemplatesServerList[0], map[string]string{
+		"hostname": "localhost",
+		"port":     getHTTPBinPort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerByIDWithTemplates(t *testing.T) {
+	recordTest("servers-server-by-id-with-templates")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServersByIDWithTemplates(context.Background(), operations.WithTemplatedServerURL("http://{hostname}:{port}", map[string]string{
+		"hostname": "localhost",
+		"port":     getHTTPBinPort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestGlobalServerWithTemplatedProtocol(t *testing.T) {
+	recordTest("servers-global-server-with-templated-protocol")
+
+	s := sdk.New(sdk.WithServerIndex(4), sdk.WithProtocol("http"), sdk.WithHostname("localhost"), sdk.WithPort(getHTTPBinPort()))
+
+	res, err := s.Servers.SelectGlobalServer(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestGlobalServerWithInvalidTemplatedProtocol(t *testing.T) {
+	recordTest("servers-global-server-with-invalid-templated-protocol")
+
+	s := sdk.New(sdk.WithServerIndex(4), sdk.WithProtocol("invalid"), sdk.WithHostname("localhost"), sdk.WithPort(getHTTPBinPort()))
+
+	res, err := s.Servers.SelectGlobalServer(context.Background())
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
+func TestServerWithProtocolTemplate(t *testing.T) {
+	recordTest("servers-server-with-protocol-template")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServerWithProtocolTemplate(context.Background(), operations.WithTemplatedServerURL(operations.ServerWithProtocolTemplateServerList[operations.ServerWithProtocolTemplateServerMain], map[string]string{
+		"protocol": "http",
+		"hostname": "localhost",
+		"port":     getHTTPBinPort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServerWithInvalidProtocolTemplate(t *testing.T) {
+	recordTest("servers-server-with-invalid-protocol-template")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServerWithProtocolTemplate(context.Background(), operations.WithTemplatedServerURL(operations.ServerWithProtocolTemplateServerList[operations.ServerWithProtocolTemplateServerMain], map[string]string{
+		"protocol": "invalid",
+		"hostname": "localhost",
+		"port":     getHTTPBinPort(),
+	}))
+	assert.Error(t, err)
+	assert.Nil(t, res)
+}
+
+func TestServersOverrideGlobalServerURL(t *testing.T) {
+	recordTest("servers-override-global-server-url")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServersOverrideGlobalServerURL(context.Background(), operations.WithServerURL(getHTTPBinURL()+"/anything"))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, getHTTPBinURL()+"/anything/ping", res.HTTPMeta.Request.URL.String())
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	res, err = s.Servers.ServersOverrideGlobalServerURL(context.Background(), operations.WithTemplatedServerURL("http://localhost:{port}", map[string]string{
+		"port": getAPITestServicePort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, getAPITestServiceURL()+"/ping", res.HTTPMeta.Request.URL.String())
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}
+
+func TestServersOverrideOperationServerURL(t *testing.T) {
+	recordTest("servers-override-operation-server-url")
+
+	s := sdk.New()
+
+	res, err := s.Servers.ServersOverrideOperationServerURL(context.Background(), operations.WithServerURL(getHTTPBinURL()+"/anything"))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, getHTTPBinURL()+"/anything/ping", res.HTTPMeta.Request.URL.String())
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	res, err = s.Servers.ServersOverrideOperationServerURL(context.Background(), operations.WithTemplatedServerURL("http://localhost:{port}", map[string]string{
+		"port": getAPITestServicePort(),
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, getAPITestServiceURL()+"/ping", res.HTTPMeta.Request.URL.String())
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+}

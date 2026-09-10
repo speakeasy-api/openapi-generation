@@ -1,0 +1,20 @@
+---
+title: "MetadataAny"
+---
+
+A metadata object with additionalProperties true (any type) - should be flattened
+
+## Example Usage
+
+```typescript
+import { MetadataAny } from "openapi";
+
+let value: MetadataAny = {};
+```
+
+## Fields
+
+| Field                  | Type                   | Required               | Description            |
+| ---------------------- | ---------------------- | ---------------------- | ---------------------- |
+| `notes`                | *string*               | :heavy_minus_sign:     | N/A                    |
+| `additionalProperties` | Record\<string, *any*>  | :heavy_minus_sign:     | N/A                    |

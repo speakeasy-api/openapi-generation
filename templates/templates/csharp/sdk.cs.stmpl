@@ -1,0 +1,317 @@
+{{- $sdkName := (sanitizeSDKName .Local.Type.Name) -}}
+{{- $hasSubSDKs := gt (len .Local.SubSDKs) 0 -}}
+{{- $interfaceName := printf "I%s" $sdkName -}}
+{{- $defaultHttpClient := getDefaultHttpClient -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $sdkSecurity := getGlobalSecurityClass -}}
+#nullable enable
+namespace {{ getSDKNamespace }}
+{
+{{ templateSDKImports .Local true }}
+
+{{- if $serverVariables}}
+  {{- range .Local.Servers.GetVariables}}
+    {{- if eq .Type.Type "enum"}}
+{{templateString "enum.cs.stmpl" .Type}}{{"\n"}}
+    {{- end}}
+  {{- end}}
+{{- end}}
+
+    {{- templateComments .Local.Comments 1 "class" false}}
+    public interface I{{ $sdkName }}
+    {
+    {{- range $idx, $subSDK := .Local.SubSDKs}}
+      {{- if ne $subSDK.Type.Name ""}}
+        {{- templateComments .Comments 2 "field" (ne $idx 0)}}
+        public I{{sanitizeSDKName $subSDK.Type.Name}} {{sanitizeFieldName $subSDK.FieldName}} { get; }
+      {{- end }}
+    {{- end }}
+    {{- range $idx, $op := .Local.Operations}}
+        {{- templateComments $op.Comments 2 "method" (or $hasSubSDKs (ne $idx 0))}}
+        {{- templateMethodDefinition $op $interfaceName 2 true}};
+    {{- end }}
+    }
+
+    {{- templateComments .Local.Comments 1 "class"}}
+    public class {{ $sdkName }}: I{{ $sdkName }}
+    {
+        {{- range .Local.Operations }}
+            {{- if .Servers}}
+              {{- templateString "servers.cs.stmpl" . }}
+            {{- end }}
+        {{- end }}
+        /// <summary>
+        /// The main SDK Configuration.
+        /// </summary>
+        public SDKConfig SDKConfiguration { get; private set; }
+
+        {{- range .Local.SubSDKs -}}
+        {{- if ne .Type.Name ""}}
+        {{- $subSDKName := sanitizeSDKName .Type.Name}}
+        /// <summary>
+        /// The {{$subSDKName}} sub-SDK.
+        /// </summary>
+        public I{{$subSDKName}} {{ sanitizeFieldName .FieldName }} { get; private set; }
+        {{- end }}
+        {{- end }}
+
+        /// <summary>
+        /// Initializes a new instance of the SDK based on a <see cref="SDKConfig"/> configuration object.
+        /// </summary>
+        /// <param name="config">The SDK configuration object.</param>
+        public {{ $sdkName }}(SDKConfig config)
+        {
+            SDKConfiguration = config;
+            InitHooks();
+          {{- range .Local.SubSDKs }}
+            {{- if ne .Type.Name "" }}{{"\n"}}
+            {{ sanitizeFieldName .FieldName }} = new {{ sanitizeSDKName .Type.Name }}(SDKConfiguration);
+            {{- end }}
+          {{- end }}
+        }
+
+        {{- templateSDKConstructor .Local}}
+        {
+          {{- if and .Local.Servers (not $serverMap) }}
+            if (serverIndex != null)
+            {
+                if (serverIndex.Value < 0 || serverIndex.Value >= SDKConfig.ServerList.Length)
+                {
+                    throw new ArgumentOutOfRangeException($"Invalid server index {serverIndex}: must be between 0 (inclusive) and {SDKConfig.ServerList.Length} (exclusive)." );
+                }
+            }
+          {{- end}}
+
+            if (serverUrl != null)
+            {
+                if (urlParams != null)
+                {
+                    serverUrl = Utilities.TemplateUrl(serverUrl, urlParams);
+                }
+            }
+
+          {{- if $sdkSecurity }}
+            {{- $secParam := getSecurityParam .Local}}
+            Func<{{$sdkSecurity}}>? _securitySource = null;
+
+            if({{$secParam.Source}} != null)
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _securitySource = () => new {{$sdkSecurity}}() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Source}}() };
+                {{- else }}
+                _securitySource = {{$secParam.Source}};
+                {{- end }}
+            }
+            else if({{$secParam.Name}} != null)
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _securitySource = () => new {{$sdkSecurity}}() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Name}} };
+                {{- else }}
+                _securitySource = () => {{$secParam.Name}};
+                {{- end }}
+            }
+            {{- if not $secParam.Optional }}
+            else
+            {
+                throw new ArgumentException("{{$secParam.Name}} and {{$secParam.Source}} cannot both be null");
+            }
+            {{- end}}
+          {{- end}}
+
+            SDKConfiguration = new SDKConfig(client)
+            {
+                {{- if .Local.Globals }}
+                {{- range .Local.Globals.Fields }}
+                {{ sanitizeFieldName .Name }} = {{ sanitizePrivateFieldName .Name }},
+                {{- end }}
+                {{- end }}
+                {{- if $serverMap}}
+                ServerName = server,
+                {{- else if .Local.Servers}}
+                ServerIndex = serverIndex == null ? 0 : serverIndex.Value,
+                {{- end}}
+                ServerUrl = serverUrl == null ? "" : serverUrl,
+                {{- if $sdkSecurity }}
+                SecuritySource = _securitySource,
+                {{- end}}
+                RetryConfig = retryConfig
+            };
+            {{- if $serverVariables}}
+              {{- range $serverVariable := .Local.Servers.GetVariables}}{{print "\n"}}
+            if ({{sanitizePrivateFieldName $serverVariable.Name}} != null)
+            {
+                SDKConfiguration.SetServerVariable("{{$serverVariable.Name}}", {{if eq $serverVariable.Type.Type "enum"}}{{sanitizeType $serverVariable.Type}}Extension.Value({{sanitizePrivateFieldName $serverVariable.Name}}.Value){{else}}{{sanitizePrivateFieldName $serverVariable.Name}}{{end}});
+            }
+              {{- end}}
+            {{- end}}
+
+            InitHooks();
+
+        {{- range .Local.SubSDKs }}
+            {{- if ne .Type.Name "" }}{{"\n"}}
+            {{ sanitizeFieldName .FieldName }} = new {{ sanitizeSDKName .Type.Name }}(SDKConfiguration);
+            {{- end }}
+        {{- end }}
+        }
+
+        private void InitHooks()
+        {
+            {{- if .Global.Config.SDKHooksConfigAccess}}
+            SDKConfiguration = SDKConfiguration.Hooks.SDKInit(SDKConfiguration);
+            {{- else}}
+            string preHooksUrl = SDKConfiguration.GetTemplatedServerUrl();
+            var (postHooksUrl, postHooksClient) = SDKConfiguration.Hooks.SDKInit(preHooksUrl, SDKConfiguration.Client);
+            var config = SDKConfiguration;
+            if (preHooksUrl != postHooksUrl)
+            {
+                config.ServerUrl = postHooksUrl;
+            }
+            config.Client = postHooksClient;
+            SDKConfiguration = config;
+            {{- end}}
+        }
+        {{- range .Local.Operations}}
+          {{- templateString "method.cs.stmpl" .}}
+        {{- end}}
+
+        /// <summary>
+        /// Builder class for constructing an instance of the SDK.
+        /// </summary>
+        public class SDKBuilder
+        {
+            private SDKConfig _sdkConfig = new SDKConfig(client: new {{$defaultHttpClient}}());
+
+            public SDKBuilder() { }
+
+            {{- if $serverMap }}{{print "\n"}}
+            /// <summary>
+            /// Overrides the default server by name.
+            /// </summary>
+            public SDKBuilder WithServer(SDKConfig.Server server)
+            {
+                _sdkConfig.ServerName = server;
+                return this;
+            }
+            {{- else if .Local.Servers}}
+
+            /// <summary>
+            /// Overrides the default server by index.
+            /// </summary>
+            public SDKBuilder WithServerIndex(int serverIndex)
+            {
+                if (serverIndex < 0 || serverIndex >= SDKConfig.ServerList.Length)
+                {
+                    throw new ArgumentOutOfRangeException($"Invalid server index {serverIndex}: must be between 0 (inclusive) and {SDKConfig.ServerList.Length} (exclusive)." );
+                }
+                _sdkConfig.ServerIndex = serverIndex;
+                return this;
+            }
+            {{- end}}
+            {{- if $serverVariables}}
+                {{- range $variable := .Local.Servers.GetVariables}}{{print "\n"}}
+            /// <summary>
+            /// Sets the {{$variable.Name}} server variable for the templated server URL.
+            /// </summary>
+            public SDKBuilder With{{sanitizeFieldName $variable.Name}}({{sanitizeType $variable.Type}} {{sanitizePrivateFieldName $variable.Name}})
+            {
+                _sdkConfig.SetServerVariable("{{$variable.Name}}", {{if eq $variable.Type.Type "enum"}}{{sanitizeType $variable.Type}}Extension.Value({{sanitizePrivateFieldName $variable.Name}}){{else}}{{sanitizePrivateFieldName $variable.Name}}{{end}});
+                return this;
+            }
+                {{- end}}
+            {{- end}}
+
+            /// <summary>
+            /// Overrides the default server URL for the SDK.
+            /// </summary>
+            public SDKBuilder WithServerUrl(string serverUrl, Dictionary<string, string>? serverVariables = null)
+            {
+                if (serverVariables != null)
+                {
+                    serverUrl = Utilities.TemplateUrl(serverUrl, serverVariables);
+                }
+                _sdkConfig.ServerUrl = serverUrl;
+                return this;
+            }
+            {{- if .Local.Globals }}
+                {{- range .Local.Globals.Fields }}
+            {{- $fieldName := sanitizeFieldName .Name}}
+            /// <summary>
+            /// Sets the {{$fieldName}} global parameter for the SDK.
+            /// </summary>
+            public SDKBuilder With{{$fieldName}}({{sanitizeType .Type}} {{sanitizePrivateFieldName .Name}})
+            {
+                _sdkConfig.{{$fieldName}} = {{sanitizePrivateFieldName .Name}};
+                return this;
+            }
+                {{- end }}
+            {{- end }}
+            {{- if $sdkSecurity }}
+            {{- $secParam := getSecurityParam .Local}}
+
+            /// <summary>
+            /// Sets the {{$secParam.Source}} security parameter for the SDK.
+            /// </summary>
+            public SDKBuilder With{{sanitizeFieldName $secParam.Source}}(Func<{{$secParam.Type}}> {{$secParam.Source}})
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _sdkConfig.SecuritySource = () => new {{$sdkSecurity}}() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Source}}() };
+                {{- else }}
+                _sdkConfig.SecuritySource = {{$secParam.Source}};
+                {{- end }}
+                return this;
+            }
+
+            /// <summary>
+            /// Sets the {{$secParam.Name}} security parameter for the SDK.
+            /// </summary>
+            public SDKBuilder With{{sanitizeFieldName $secParam.Name}}({{$secParam.Type}} {{$secParam.Name}})
+            {
+                {{- if $secParam.FlattenedFieldName }}
+                _sdkConfig.SecuritySource = () => new {{$sdkSecurity}}() { {{ $secParam.FlattenedFieldName }} = {{$secParam.Name}} };
+                {{- else }}
+                _sdkConfig.SecuritySource = () => {{$secParam.Name}};
+                {{- end }}
+                return this;
+            }
+            {{- end }}
+
+            /// <summary>
+            /// Sets a custom HTTP client to be used by the SDK.
+            /// </summary>
+            public SDKBuilder WithClient(I{{$defaultHttpClient}} client)
+            {
+                _sdkConfig.Client = client;
+                return this;
+            }
+
+            /// <summary>
+            /// Sets the retry configuration for the SDK.
+            /// </summary>
+            public SDKBuilder WithRetryConfig(RetryConfig retryConfig)
+            {
+                _sdkConfig.RetryConfig = retryConfig;
+                return this;
+            }
+
+            /// <summary>
+            /// Builds and returns the SDK instance.
+            /// </summary>
+            public {{ $sdkName }} Build()
+            {
+              {{- if $sdkSecurity }}
+                {{- $secParam := getSecurityParam .Local}}
+                {{- if not $secParam.Optional}}
+              if (_sdkConfig.SecuritySource == null) {
+                  throw new ArgumentException("securitySource cannot be null. One of `{{ sanitizeFieldName $secParam.Name }}` or `{{ $secParam.Source }}` needs to be defined.");
+              }
+                {{- end }}
+              {{- end }}
+              return new {{ $sdkName }}(_sdkConfig);
+            }
+
+        }
+
+        public static SDKBuilder Builder() => new SDKBuilder();
+    }
+}

@@ -1,0 +1,65 @@
+{
+  "name": "openapi",
+  "version": "0.0.1",
+  "mcpName": "io.github.speakeasy-api/openapi-server",
+  "author": "Speakeasy",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/speakeasy-sdks/test-sdk"
+  },
+  "bin": {
+    "openapi": "bin/mcp-server.js",
+    "mcp": "bin/mcp-server.js"
+  },
+  "scripts": {
+    "build": "bun i && bun src/mcp-server/build.mts && tsc",
+    "mcpb:build": "bun i && bun src/mcp-server/build.mts --pack && tsc",
+    "types": "wrangler types",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "gram:build": "npx gf build",
+    "check": "npm run test && npm run lint",
+    "lint": "eslint --cache --max-warnings=0 src",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run src --reporter=junit --outputFile=.speakeasy/reports/tests.xml --reporter=default"
+  },
+  "dependencies": {
+    "@ai-sdk/mcp": "^1.0.19",
+    "@ai-sdk/openai": "^3.0.26",
+    "@gram-ai/functions": "^0.12.1",
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "@stricli/core": "^1.1.2",
+    "agents": "0.3.10",
+    "ai": "^6.0.77",
+    "decimal.js": "^10.5.0",
+    "express": "^5.1.0",
+    "zod": "^4.0.0"
+  },
+  "overrides": {
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "hono": ">=4.12.34",
+    "fast-uri": ">=4.1.2 <5.0.0",
+    "js-yaml": ">=4.3.1 <5.0.0",
+    "ip-address": ">=10.3.1 <11.0.0",
+    "nanoid@^5.0.0": ">=5.1.16 <6.0.0",
+    "brace-expansion@^2.0.0": ">=2.1.4 <3.0.0",
+    "body-parser": ">=2.3.0 <3.0.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "^1.2.0",
+    "@cloudflare/workers-types": "^4.20250712.0",
+    "@eslint/js": "^9.26.0",
+    "@types/bun": "^1.2.13",
+    "@types/express": "^5.0.1",
+    "@types/node": "^18.19.3",
+    "bun": "^1.2.12",
+    "eslint": "^9.26.0",
+    "globals": "^16.0.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.31.1",
+    "vitest": "^3.2.6",
+    "wrangler": "^4.59.1"
+  }
+}

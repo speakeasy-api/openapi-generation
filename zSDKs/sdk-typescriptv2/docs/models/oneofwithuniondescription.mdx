@@ -1,0 +1,55 @@
+---
+title: "OneOfWithUnionDescription"
+---
+
+A union of two types.
+
+
+## Supported Types
+
+### `models.ExhaustiveObject`
+
+```typescript
+const value: models.ExhaustiveObject = {
+  str: "example",
+  bool: true,
+  integer: 999999,
+  int32: 1,
+  num: 1.1,
+  float32: 6618.71,
+  date: new Date("2020-01-01"),
+  dateTime: new Date("2020-01-01T00:00:00Z"),
+  anything: "<value>",
+  boolOpt: true,
+  intOptNull: 999999,
+  numOptNull: 1.1,
+  intEnum: IntEnum.Third,
+  int32Enum: Int32Enum.SixtyNine,
+  bigint: 928453,
+  decimalStr: new Decimal("4020.28"),
+  obj: {
+    str: "example",
+  },
+  map: {
+    "key": {
+      str: "example",
+    },
+  },
+  arr: [],
+  any: "<value>",
+  nullableIntEnum: NullableIntEnum.Third,
+  nullableStringEnum: NullableStringEnum.Second,
+  color: "green",
+  icon: Icon.Tick,
+  heroWidth: HeroWidth.FourHundredAndEighty,
+};
+```
+
+### `models.SimpleObject`
+
+```typescript
+const value: models.SimpleObject = {
+  str: "example",
+};
+```
+

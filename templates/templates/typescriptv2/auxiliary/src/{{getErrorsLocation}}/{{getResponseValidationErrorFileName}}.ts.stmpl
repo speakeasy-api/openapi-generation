@@ -1,0 +1,48 @@
+{{- recurse 1 -}}
+{{- if isNoZod -}}
+{{- /* No-zod: ResponseValidationError is unreachable — the matcher dispatches
+       by `enc` and never calls a validating parse function. The class is not
+       emitted, not imported, and not in any error union. */ -}}
+{{- else -}}
+{{- genImports -}}
+{{- importBaseError getErrorsLocation -}}
+{{if isZodV4}}
+{{- addZodCorePackageImport }}
+{{ else }}
+{{- addZodPackageImport }}
+{{ end }}
+{{- addImport (printf "./%s.js" getSDKValidationErrorFileName) "formatZodError" }}
+
+export class ResponseValidationError extends {{ getBaseErrorClassName}} {
+  /**
+   * The raw value that failed validation.
+   */
+  public readonly rawValue: unknown;
+
+  /**
+   * The raw message that failed validation.
+   */
+  public readonly rawMessage: unknown;
+
+  constructor(message: string, extra: { response: Response; request: Request; body: string, cause: unknown, rawValue: unknown, rawMessage: unknown }) {
+    super(message, extra);
+    this.name = "ResponseValidationError";
+    this.cause = extra.cause;
+    this.rawValue = extra.rawValue;
+    this.rawMessage = extra.rawMessage;
+  }
+
+  /**
+   * Return a pretty-formatted error message if the underlying validation error
+   * is a ZodError or some other recognized error type, otherwise return the
+   * default error message.
+   */
+  public pretty(): string {
+    if (this.cause instanceof z.{{if isZodV4}}${{end}}ZodError) {
+      return `${this.rawMessage}\n${formatZodError(this.cause)}`;
+    } else {
+      return this.toString();
+    }
+  }
+}
+{{- end }}

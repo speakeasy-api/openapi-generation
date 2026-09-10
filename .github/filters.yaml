@@ -1,0 +1,52 @@
+core:
+  - ".github/**"
+  - "ci/**"
+  - "cmd/**"
+  - "formatters/**"
+  - "internal/**"
+  - "pkg/**"
+  - "tests/**"
+  - "usage/**"
+  - "templates/faker/**"
+  - "templates/perms/**"
+  - "templates/templates/common/**"
+  - "templates/perms.go"
+  - "templates/templates.go"
+  - "go.mod"
+  - "go.sum"
+csharp:
+  - "templates/templates/csharp/**"
+  - "zSDKs/sdk-csharp/**"
+go:
+  - "templates/templates/go/**"
+  - "zSDKs/sdk-go/**"
+javav2:
+  - "templates/templates/javav2/**"
+  - "zSDKs/sdk-javav2/**"
+mcp-typescript:
+  - "templates/templates/common/typescript/**"
+  - "templates/templates/mcp-typescript/**"
+  - "zSDKs/mcp-typescript/**"
+mockserver:
+  - "templates/templates/mockserver/**"
+  - "zSDKs/sdk-mockserver/**"
+php:
+  - "templates/templates/php/**"
+  - "zSDKs/sdk-php/**"
+pythonv2:
+  - "templates/templates/pythonv2/**"
+  - "zSDKs/sdk-pythonv2/**"
+ruby:
+  - "templates/templates/ruby/**"
+  - "zSDKs/sdk-ruby/**"
+terraform:
+  - "templates/templates/terraform/**"
+  - "zSDKs/sdk-terraform/**"
+typescriptv2:
+  - "templates/templates/common/typescript/**"
+  - "templates/templates/typescriptv2/**"
+  - "zSDKs/sdk-typescriptv2/**"
+unity:
+  - "templates/templates/unity/**"
+  - "zSDKs/sdk-unity/**"
+  - "zSDKs/sdk-unity-tests/**"

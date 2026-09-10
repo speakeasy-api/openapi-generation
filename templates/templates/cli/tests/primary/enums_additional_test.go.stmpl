@@ -1,0 +1,106 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestOpenEnumsRoundTrip(t *testing.T) {
+	recordTest("open-enums-round-trip")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"enums", "enums-post-open-enum-unrecognized", "--color-param", "purple", "--icon", "tick", "--hero-width", "2160"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Verify the response echoes back the enum values
+	assert.Contains(t, output, `"purple"`)
+	assert.Contains(t, output, `"tick"`)
+	assert.Contains(t, output, "2160")
+}
+
+func TestOpenEnumsRoundTripStringUnion(t *testing.T) {
+	recordTest("open-enums-round-trip-string-union")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"enums", "enums-post-open-enum-unrecognized", "--color-param", "purple", "--icon", "tick", "--hero-width", "2160"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Verify string union enum values are preserved in round trip
+	assert.Contains(t, output, `"purple"`)
+	assert.Contains(t, output, `"tick"`)
+	assert.Contains(t, output, "2160")
+}
+
+func TestOpenEnumUnknownValueInResponse(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	// Send a request with an unknown enum value for a response-only enum field.
+	// With forward-compatible (open) enums enabled, the CLI handles this
+	// gracefully without error, preserving the unknown value in the output.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"open-enums", "open-enums-response-usage-response-only", "--request", `{"message":"test","status":"unknown_new_value"}`})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"unknown_new_value"`)
+	assert.Contains(t, output, `"test"`)
+}
+
+func TestOpenEnumsResponseUsage(t *testing.T) {
+	recordTest("open-enums-response-usage")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	// Test request-only variant (individual flags)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"open-enums", "open-enums-response-usage-request-only", "--action", "create", "--data", "test data"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"create"`)
+	assert.Contains(t, output, `"test data"`)
+
+	// Test explicitly-open variant (individual flags)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"open-enums", "open-enums-response-usage-explicitly-open", "--mode", "alpha", "--value", "test value"})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"alpha"`)
+	assert.Contains(t, output, `"test value"`)
+
+	// Test both-request-and-response variant (individual flags)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"open-enums", "open-enums-response-usage-both-request-and-response", "--state", "active", "--description", "known value test"})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"active"`)
+	assert.Contains(t, output, `"known value test"`)
+
+	// Test response-only variant (--request JSON blob, no individual flags)
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"open-enums", "open-enums-response-usage-response-only", "--request", `{"message":"foobar","status":"pending"}`})
+	require.NoError(t, err)
+	output = strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"foobar"`)
+	assert.Contains(t, output, `"pending"`)
+}

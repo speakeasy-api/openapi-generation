@@ -1,0 +1,8 @@
+{{- recurse 1 -}}
+package main
+
+{{genImports}}
+
+func main() {
+{{templateString "usage/block.stmpl" .Local}}
+}

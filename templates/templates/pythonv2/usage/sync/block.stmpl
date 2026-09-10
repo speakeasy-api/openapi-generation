@@ -1,0 +1,13 @@
+{{- $handleErrors := .Local.RenderFeature "errors" false -}}
+{{- $syncCallContext := dict "Context" .Local "Async" false -}}
+{{templateString "usage/init.stmpl" $syncCallContext}}
+{{- if $handleErrors }}
+{{if .Local.Operation.Response.Type}}    res = None{{end}}
+    try:
+{{templateString "usage/call.stmpl" $syncCallContext | indentPresent 8}}
+{{templateString "usage/result.stmpl" $syncCallContext | indentPresent 8}}
+{{templateString "usage/errors.stmpl" .Local | indentPresent 4}}
+{{- else}}
+{{templateString "usage/call.stmpl" $syncCallContext | indentPresent 4}}
+{{templateString "usage/result.stmpl" $syncCallContext  | indentPresent 4}}
+{{end}}

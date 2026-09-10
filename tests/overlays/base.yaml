@@ -1,0 +1,9 @@
+overlay: 1.0.0
+info:
+  title: Apply common overlay rule to prepare for generating test SDKs
+  version: 0.0.0
+actions:
+  - target: $.paths.*[?(@["x-speakeasy-exclude-test-sdk"][?(@ == "$TARGET")])]
+    remove: true
+  - target: $.paths.*.*[?(@["x-speakeasy-exclude-test-sdk"][?(@ == "$TARGET")])]
+    remove: true

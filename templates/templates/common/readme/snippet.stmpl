@@ -1,0 +1,3 @@
+```{{templateLanguageName .Global.Config.Language}}
+{{templateUsageSnippet .Local}}
+```

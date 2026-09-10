@@ -1,0 +1,60 @@
+{{- recurse 1 -}}
+{{- $strictMode := responseSchemaValidationStrict}}
+{{- $lenientMode := responseSchemaValidationLenient}}
+{{- $disabledMode := and (not $strictMode) (not $lenientMode)}}
+{{- addSDKImportForAccessNamespace "errors"}}
+{{- if not $strictMode}}
+  {{- addImport "json" ""}}
+{{- end}}
+
+from typing import Any, Optional, Type, TypeVar, overload
+
+{{ pythonHttpxImport }}
+
+from .serializers import unmarshal_json{{if $lenientMode}}, construct_unvalidated{{end}}
+{{ genImports }}
+
+T = TypeVar("T")
+
+@overload
+def unmarshal_json_response(typ: Type[T], http_res: httpx.Response, body: Optional[str] = None{{if not $strictMode}}, validate: bool = True{{end}}) -> T: ...
+
+@overload
+def unmarshal_json_response(typ: Any, http_res: httpx.Response, body: Optional[str] = None{{if not $strictMode}}, validate: bool = True{{end}}) -> Any: ...
+
+def unmarshal_json_response(typ: Any, http_res: httpx.Response, body: Optional[str] = None{{if not $strictMode}}, validate: bool = True{{end}}) -> Any:
+    if body is None:
+        body = http_res.text
+    try:
+        return unmarshal_json(body, typ)
+    except Exception as e:
+{{- if not $strictMode}}
+        if not validate:
+  {{- if $lenientMode}}
+            try:
+                decoded = json.loads(body)
+            except ValueError:
+                pass
+            else:
+                return construct_unvalidated(decoded, typ)
+  {{- else}}
+            return json.loads(body)
+  {{- end}}
+{{- end}}
+        raise {{getAccessNamespace "errors"}}ResponseValidationError(
+            "Response validation failed",
+            http_res,
+            e,
+            body,
+        ) from e
+
+{{- if $disabledMode}}
+
+
+def sse_event_data(event: Any) -> Any:
+    """Extract the ``data`` field from a decoded SSE event."""
+    try:
+        return event.data
+    except AttributeError:
+        return event.get("data")
+{{- end}}

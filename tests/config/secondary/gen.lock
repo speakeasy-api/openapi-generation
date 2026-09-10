@@ -1,0 +1,4 @@
+lockVersion: 2.0.0
+id: test-hoisted-security-id
+management:
+  releaseVersion: 0.0.0

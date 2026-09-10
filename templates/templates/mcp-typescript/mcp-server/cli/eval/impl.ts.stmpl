@@ -1,0 +1,166 @@
+{{- recurse 1 -}}
+{{- $globalSDK := .Global.AST.MainSDK -}}
+{{- $globalSecurity := $globalSDK.Security -}}
+{{- $usageLocation := "mcp-server/cli/eval" -}}
+import {
+  generateText,
+  streamText,
+  stepCountIs,
+  type ModelMessage,
+  type LanguageModel,
+  type ToolSet,
+} from "ai";
+import { {{ .Local.EvalProvider.ImportName }} } from "{{ .Local.EvalProvider.Package }}";
+import { createMCPClient } from "@ai-sdk/mcp";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import * as readline from "node:readline/promises";
+import { LocalContext } from "../../cli.js";
+import {
+  ConsoleLoggerLevel,
+  createConsoleLogger,
+} from "../../console-logger.js";
+import { MCPServerFlags } from "../../flags.js";
+import { createMCPServer } from "../../server.js";
+import { buildAnnotationFilter } from "../../tools.js";
+{{ genImports }}
+
+interface EvalCommandFlags extends MCPServerFlags {
+  readonly model: string;
+  readonly "{{ .Local.EvalProvider.ApiKeyFlag }}"?: string;
+  readonly "max-steps": number;
+  readonly verbose: boolean;
+  readonly chat: boolean;
+  readonly "log-level": ConsoleLoggerLevel;
+  readonly env?: [string, string][];
+}
+
+export async function main(
+  this: LocalContext,
+  flags: EvalCommandFlags,
+  prompt: string | undefined,
+) {
+  flags.env?.forEach(([key, value]) => {
+    process.env[key] = value;
+  });
+
+  if (!flags.chat && !prompt) {
+    console.error(
+      "Error: A prompt is required unless --chat mode is enabled.",
+    );
+    process.exit(1);
+  }
+
+  const apiKey = flags["{{ .Local.EvalProvider.ApiKeyFlag }}"];
+  if (apiKey) {
+    process.env["{{ .Local.EvalProvider.ApiKeyEnvVar }}"] = apiKey;
+  }
+
+  const logger = createConsoleLogger(flags["log-level"]);
+  const model = {{ .Local.EvalProvider.ImportName }}(flags.model);
+
+  // Create server
+  const { server } = {{ templateString "mcp-server/create-mcp-server.ts.stmpl" .Local }};
+
+  // Create linked in-memory transport pair
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+
+  // Wire them up
+  await server.connect(serverTransport);
+  const mcpClient = await createMCPClient({
+    transport: clientTransport,
+  });
+  const tools = await mcpClient.tools();
+
+  try {
+    if (flags.chat) {
+      await runChat(model, tools, flags);
+    } else {
+      await runOneShot(model, tools, flags, prompt!);
+    }
+  } finally {
+    await mcpClient.close();
+    await server.close();
+  }
+}
+
+async function runOneShot(
+  model: LanguageModel,
+  tools: ToolSet,
+  flags: EvalCommandFlags,
+  prompt: string,
+) {
+  const result = await generateText({
+    model,
+    tools,
+    stopWhen: stepCountIs(flags["max-steps"]),
+    prompt,
+  });
+
+  if (flags.verbose) {
+    for (const step of result.steps) {
+      for (const tc of step.toolCalls) {
+        console.error(
+          `  [tool] ${tc.toolName}(${JSON.stringify(tc.input)})`,
+        );
+      }
+    }
+  }
+
+  console.log(result.text);
+}
+
+async function runChat(
+  model: LanguageModel,
+  tools: ToolSet,
+  flags: EvalCommandFlags,
+) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stderr,
+  });
+
+  const messages: ModelMessage[] = [];
+
+  console.error("MCP Eval Chat (type 'exit' or Ctrl+C to quit)\n");
+
+  try {
+    while (true) {
+      const input = await rl.question("you> ");
+      if (!input.trim()) continue;
+      if (input.trim().toLowerCase() === "exit") break;
+
+      messages.push({ role: "user", content: input });
+
+      const result = streamText({
+        model,
+        tools,
+        stopWhen: stepCountIs(flags["max-steps"]),
+        messages,
+      });
+
+      process.stdout.write("assistant> ");
+      for await (const chunk of result.textStream) {
+        process.stdout.write(chunk);
+      }
+      process.stdout.write("\n\n");
+
+      const steps = await result.steps;
+
+      if (flags.verbose) {
+        for (const step of steps) {
+          for (const tc of step.toolCalls) {
+            console.error(
+              `  [tool] ${tc.toolName}(${JSON.stringify(tc.input)})`,
+            );
+          }
+        }
+      }
+
+      const text = await result.text;
+      messages.push({ role: "assistant", content: text });
+    }
+  } finally {
+    rl.close();
+  }
+}

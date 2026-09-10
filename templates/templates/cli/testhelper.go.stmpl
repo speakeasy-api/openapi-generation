@@ -1,0 +1,21 @@
+{{- $helper := .Local -}}
+func cli{{sanitizeTestName $helper.Name}}(t *testing.T{{if $helper.Inputs}}, inputs map[string]string{{end}}){{if $helper.Outputs}} map[string]string{{end}} {
+    h := NewCLITestHarness(t).WithTestName("{{$helper.Name}}")
+    var args []string
+    var err error
+    var output string
+{{range $helper.Steps}}
+{{- if eq .Type "operation"}}
+    // Execute: {{.UsageContext.Operation.GetID}}
+{{templateCLIStepCode .UsageContext | indentPresent 4}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+    {{getStepOutputVarName .StepID}} := h.GetStdout()
+    output = {{getStepOutputVarName .StepID}}
+    _ = output
+{{templateAssertions .UsageContext | indentPresent 4}}
+{{else}}
+{{templateCLIWorkflow $helper . | indentPresent 4}}
+{{end}}{{end}}
+{{- templateCLIHelperOutputs $helper | indentPresent 4}}
+}

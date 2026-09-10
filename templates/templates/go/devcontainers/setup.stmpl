@@ -1,0 +1,3 @@
+# Go module commands
+go mod download
+go mod tidy

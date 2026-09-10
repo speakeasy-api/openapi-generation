@@ -1,0 +1,35 @@
+{{- $namespace := sanitizeSDKAccess .Local.SDK -}}
+{{- $resVar := getResponseVariableName .Local.StepID -}}
+
+{{- $retriesParam := ""}}
+{{- if and (.Local.Operation.Extensions.Retries) (.Local.RenderFeature "retries" false)}}
+  {{- $retriesParam = templateString "usage/retries.stmpl" .Local}}
+{{- end}}
+
+{{- $params := templateUsageMethodParameters .Local 0 $retriesParam -}}
+{{- $call := printf "await sdk%s.%sAsync(%s)" $namespace (sanitizeMethodName .Local.Operation) $params -}}
+
+{{- if .Local.Operation.Extensions.Pagination -}}
+{{sanitizeType .Local.Operation.Response.Type}}? {{$resVar}} = {{$call}};
+
+  {{- if .Local.Test}}
+
+{{templateAssertions .Local}}
+  {{- end}}
+
+{{templateString "usage/pagination.stmpl" .Local}}
+{{- else if .Local.Operation.Response.Type -}}
+  {{- $eventStreamField := getEventStreamField .Local.Operation.Response.Type -}}
+var {{$resVar}} = {{$call}};
+  {{- if $eventStreamField}}
+
+{{templateString "usage/eventstream.stmpl" .Local}}
+  {{- else}}
+
+// handle response
+  {{- end}}
+{{- else -}}
+{{$call}};
+
+// handle response
+{{- end -}}

@@ -1,0 +1,182 @@
+{{- recurse 1 -}}
+{{ $cfg := getWebhookSecurity }}
+
+import {
+  BeforeRequestContext,
+  BeforeRequestHook,
+  WebhookVerificationHook,
+  WebhookVerificationContext,
+} from "./types.js";
+{{- addTypeImport "fp" "Result" "hooks" }}
+{{- addTypeImport "fp" "ERR" "hooks" }}
+{{- addTypeImport "fp" "OK" "hooks" }}
+{{- addTypeImport "webhooks" "WebhookAuthenticationError" "hooks" }}
+{{- if or (eq $cfg.SignatureTextEncoding "base64") (eq $cfg.SignatureTextEncoding "base64url")}}
+{{- addImport "../lib/base64.js" "bytesToBase64" -}}
+{{- end}}
+
+{{genImports}}
+
+export class WebhookSecurityHook
+  implements BeforeRequestHook, WebhookVerificationHook
+{
+  private auth = new WebhookSecurity();
+
+  async beforeRequest(
+    hookCtx: BeforeRequestContext,
+    request: Request,
+  ): Promise<Request> {
+    if (!hookCtx.{{constants.hookContext.webhookRecipient}}) return request;
+    return this.auth.sign({ secret: hookCtx.{{constants.hookContext.webhookRecipient}}.secret, request });
+  }
+
+  async verifyWebhook(
+    _hookCtx: WebhookVerificationContext,
+    { request, secret }: { request: Request; secret: string },
+  ): Promise<Result<true, WebhookAuthenticationError>> {
+    try {
+      await this.auth.verify({ request, secret });
+      return OK(true);
+    } catch (e) {
+      if (e instanceof WebhookAuthenticationError) return ERR(e);
+      throw e;
+    }
+  }
+}
+
+const headerName = "{{ $cfg.HeaderName }}";
+
+export class WebhookSecurity {
+  /**
+   * Signs a webhook request by generating a signature using the provided secret
+   * @returns A new Request object with the signature header added.
+   */
+  async sign({
+    secret,
+    request,
+  }: {
+    secret: string;
+    request: Request;
+  }): Promise<Request> {
+    // Validation: Ensure the request has a body and a secret is provided
+    this._assert(request.body, "Unable to sign webhook with missing body");
+    this._assert(secret, "Unable to sign webhook, missing secret");
+
+    // Clone the original request to avoid mutating it
+    const newRequest = request.clone();
+
+    // Read the body content from the request
+    const bodyBytes = await request.arrayBuffer()
+    this._assert(bodyBytes, "Unable to sign webhook with missing body");
+
+    // Safely access the SubtleCrypto interface for cryptographic operations
+    const crypto = globalThis?.crypto?.subtle;
+    this._assert(crypto, "SubtleCrypto not found, if you're using node 18, please upgrade to a more recent version of node");
+
+    // Encode the secret into bytes, assume UTF-8 encoding
+    const encoder = new TextEncoder();
+    const secretBytes = encoder.encode(secret);
+
+    // Import the secret as a CryptoKey for HMAC signing
+    const cryptoKey = await crypto.importKey(
+      "raw",
+      secretBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+
+    // Generate the HMAC signature for the request body
+    const signatureBytes = await crypto.sign("HMAC", cryptoKey, bodyBytes);
+
+    {{- if eq $cfg.SignatureTextEncoding "base64"}}
+    const encodedSignature = bytesToBase64(new Uint8Array(signatureBytes))
+    {{- else if eq $cfg.SignatureTextEncoding "base64url"}}
+    const encodedSignature = bytesToBase64(new Uint8Array(signatureBytes)).replaceAll("+", "-").replaceAll("/", "_");
+    {{- else}}
+    const encodedSignature = Buffer.from(signatureBytes).toString("hex")
+    {{- end}}
+
+    // Add the signature to the request headers
+    newRequest.headers.set(headerName, encodedSignature);
+
+    return newRequest;
+  }
+
+  /**
+   * Verifies the authenticity of a webhook request by comparing signatures using constant-time comparison
+   */
+  async verify({
+    request,
+    secret,
+  }: {
+    request: Request;
+    secret: string;
+  }): Promise<boolean> {
+    this._assert(secret, "Unable to verify webhook missing secret");
+
+    // Clone the request to avoid reading the body multiple times
+    request = request.clone();
+
+    // Retrieve the incoming signature from the request headers
+    const incomingSignature = request.headers.get(headerName);
+    this._assert(incomingSignature, "Unable to verify webhook missing signature");
+
+    // Read the body content from the request
+    const bodyBytes = await request.arrayBuffer();
+    this._assert(bodyBytes, "Unable to verify webhook with missing body");
+
+    // Safely access the SubtleCrypto interface for cryptographic operations
+    const crypto = globalThis?.crypto?.subtle;
+    this._assert(
+      crypto,
+      "SubtleCrypto not found, if you're using node 18, please upgrade to a more recent version of node",
+    );
+
+    // Encode the secret into bytes, assume UTF-8 encoding
+    const encoder = new TextEncoder();
+    const secretBytes = encoder.encode(secret);
+
+    // Import the secret as a CryptoKey for HMAC verification
+    const cryptoKey = await crypto.importKey(
+      "raw",
+      secretBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+
+    // Decode the incoming signature from the header encoding
+    let incomingSignatureBytes: BufferSource;
+    try {
+      {{- if eq $cfg.SignatureTextEncoding "base64"}}
+      incomingSignatureBytes = Uint8Array.from(atob(incomingSignature), c => c.charCodeAt(0));
+      {{- else if eq $cfg.SignatureTextEncoding "base64url"}}
+      const base64 = incomingSignature.replaceAll("-", "+").replaceAll("_", "/");
+      incomingSignatureBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      {{- else}}
+      incomingSignatureBytes = Uint8Array.from(
+        incomingSignature.match(/.{1,2}/g) || [],
+        byte => parseInt(byte, 16)
+      );
+      {{- end}}
+    } catch (e) {
+      this._assert(false, `Invalid signature format: ${e}`);
+    }
+
+    // Use SubtleCrypto.verify for constant-time comparison (protects against timing attacks)
+    const isValid = await crypto.verify(
+      "HMAC",
+      cryptoKey,
+      incomingSignatureBytes,
+      bodyBytes,
+    );
+
+    this._assert(isValid, "Invalid signature");
+    return true;
+  }
+
+  private _assert(condition: any, message: string): asserts condition {
+    if (!condition) throw new WebhookAuthenticationError(message);
+  }
+}

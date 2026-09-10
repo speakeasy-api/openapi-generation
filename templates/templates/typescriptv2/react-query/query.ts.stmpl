@@ -1,0 +1,223 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup }}
+{{- $op := .Local.Operation }}
+{{- $usageLocation := "react-query" }}
+{{- $opState := opTemplateState .Local.Operation $usageLocation }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $hookName := sanitizeReactQueryHookName $op }}
+{{- $coreName := sanitizeCoreSDKName }}
+{{- $args := $op.Arguments }}
+{{- $returnType := $opState.valueType }}
+{{- $returnTypePaginated := $opState.signature.unwrappedReturnType }}
+{{- $responseTypes := $opState.inboundResponse }}
+{{- $errorType := $opState.errorType }}
+{{- callImportTypesFunc $opState.importErrorTypes }}
+{{- $useSDK := sanitizeReactContextName "hook" }}
+{{- $funcOptions := templateMethodOptions $op false }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- $tupleType := reactQueryTupleType $op $usageLocation }}
+{{- callImportTypesFunc $tupleType.pathImports }}
+{{- callImportTypesFunc $tupleType.variableImports }}
+{{- $argTypes := reactQueryOperationArgTypes $op $usageLocation }}
+{{- $emptyRequest := or (not $op.Request) (not $op.Request.Field) $op.Request.Field.Type.IsEmpty }}
+{{- $coreFilename := sanitizeReactQueryHookFilename $op }}
+{{- $builderFuncName := sanitizeReactQueryName $op "query-factory" }}
+{{- $infiniteBuilderFuncName := sanitizeReactQueryName $op "query-infinite-factory" }}
+{{- $queryKeyFuncName := sanitizeReactQueryName $op "query-key" }}
+{{- $infiniteQueryKeyFuncName := sanitizeReactQueryName $op "query-key-infinite" }}
+{{- $queryDataType := sanitizeClassName (print $hookName "_QueryData") }}
+{{- $queryErrorType := sanitizeClassName (print $hookName "_QueryError") }}
+{{- $infiniteQueryDataType := sanitizeClassName (print $hookName "_InfiniteQueryData") }}
+{{- $pageParamsType := sanitizeClassName (print $hookName "_PageParams") }}
+{{- $requestTypes := ""}}
+{{- $hasRequestBody := (and $op.Request $op.Request.Field (not $op.Request.Field.Type.IsEmpty)) }}
+{{- if and $op.Request $op.Request.Field }}
+  {{- $requestTypes = resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" $op.Request.Field.Type
+      "rootTypeDef" $op.OwningSDK.Type
+      "optional" $op.Request.Field.Optional
+      "nullable" $op.Request.Field.Nullable
+      "constValue" $op.Request.Field.Const
+      "defaultValue" $op.Request.Field.Default
+  )}}
+{{- end }}
+
+{{- /* Standard imports */}}
+{{- addImport "@tanstack/react-query" "QueryClient" }}
+{{- addImport "@tanstack/react-query" "InvalidateQueryFilters" }}
+{{- addImport "@tanstack/react-query" "useQuery" }}
+{{- addImport "@tanstack/react-query" "useSuspenseQuery" }}
+{{- addImport "@tanstack/react-query" "UseQueryResult" }}
+{{- addImport "@tanstack/react-query" "UseSuspenseQueryResult" }}
+{{- addImport "./_context.js" $useSDK }}
+{{- addImport "./_types.js" "QueryHookOptions" }}
+{{- addImport "./_types.js" "SuspenseQueryHookOptions" }}
+{{- if not $tupleType.inert}}
+{{- addImport "./_types.js" "TupleToPrefixes" }}
+{{- end}}
+{{- /* Import from core file for server-safe utilities */}}
+{{- addImport (printf "./%s.core.js" $coreFilename) $builderFuncName }}
+{{- addImport (printf "./%s.core.js" $coreFilename) $queryKeyFuncName }}
+{{- addImport (printf "./%s.core.js" $coreFilename) (sanitizeReactQueryName $op "query-prefetch") }}
+{{- addImport (printf "./%s.core.js" $coreFilename) $queryDataType "typeImport" }}
+{{- if $isPaginated}}
+{{- addImport (printf "./%s.core.js" $coreFilename) $infiniteBuilderFuncName }}
+{{- addImport (printf "./%s.core.js" $coreFilename) $infiniteQueryKeyFuncName }}
+{{- addImport (printf "./%s.core.js" $coreFilename) (sanitizeReactQueryName $op "query-prefetch-infinite") }}
+{{- addImport (printf "./%s.core.js" $coreFilename) $infiniteQueryDataType "typeImport" }}
+{{- addImport (printf "./%s.core.js" $coreFilename) $pageParamsType "typeImport" }}
+{{- end}}
+{{genImports}}
+export {
+  {{$builderFuncName}},
+  {{$queryKeyFuncName}},
+  {{sanitizeReactQueryName $op "query-prefetch"}},
+  type {{$queryDataType}},
+{{- if $isPaginated}}
+  {{$infiniteBuilderFuncName}},
+  {{$infiniteQueryKeyFuncName}},
+  {{sanitizeReactQueryName $op "query-prefetch-infinite"}},
+  type {{$infiniteQueryDataType}},
+  type {{$pageParamsType}},
+{{- end}}
+};
+
+export type {{$queryErrorType}} = {{$errorType}};
+
+{{ if shouldTemplateAcceptHeaderEnum $op }}
+export { {{sanitizeAcceptEnumName $op}} } from "{{getFuncImportPath $op $usageLocation}}";
+{{- end }}
+
+{{$queryName := sanitizeReactQueryName $op "query"}}
+{{templateComments $op.Comments $dg $queryName 0 "method"}}
+export function {{$queryName}}(
+  {{$argTypes}}
+  options?: QueryHookOptions<{{$queryDataType}}, {{$queryErrorType}}>,
+): UseQueryResult<{{$queryDataType}}, {{$queryErrorType}}> {
+  const client = {{$useSDK}}();
+	return useQuery({
+    ...{{$builderFuncName}}(
+      client,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ),
+    ...options,
+	});
+}
+
+{{$suspenseQueryName := sanitizeReactQueryName $op "query-suspense"}}
+{{templateComments $op.Comments $dg $suspenseQueryName 0 "method"}}
+export function {{$suspenseQueryName}}(
+  {{$argTypes}}
+  options?: SuspenseQueryHookOptions<{{$queryDataType}}, {{$queryErrorType}}>,
+): UseSuspenseQueryResult<{{$queryDataType}}, {{$queryErrorType}}> {
+  const client = {{$useSDK}}();
+	return useSuspenseQuery({
+    ...{{$builderFuncName}}(
+      client,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ),
+    ...options,
+	});
+}
+
+{{if $isPaginated}}
+{{- addImport "@tanstack/react-query" "useInfiniteQuery" }}
+{{- addImport "@tanstack/react-query" "UseInfiniteQueryResult" }}
+{{- addImport "@tanstack/react-query" "InfiniteData" }}
+{{- addImport "@tanstack/react-query" "QueryKey" }}
+{{- addImport "./_types.js" "InfiniteQueryHookOptions" }}
+
+{{$infiniteQueryName := sanitizeReactQueryName $op "query-infinite"}}
+{{templateComments $op.Comments $dg $infiniteQueryName 0 "method"}}
+export function {{$infiniteQueryName}}(
+  {{$argTypes}}
+  options?: InfiniteQueryHookOptions<{{$infiniteQueryDataType}}, {{$queryErrorType}}>,
+): UseInfiniteQueryResult<InfiniteData<{{$infiniteQueryDataType}}, {{$pageParamsType}}>, {{$queryErrorType}}> {
+  const client = {{$useSDK}}();
+	return useInfiniteQuery<{{$infiniteQueryDataType}}, {{$queryErrorType}}, InfiniteData<{{$infiniteQueryDataType}}, {{$pageParamsType}}>, QueryKey, {{$pageParamsType}}>({
+    ...{{$infiniteBuilderFuncName}}(
+      client,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ),
+    initialPageParam: options?.initialPageParam,
+    getNextPageParam: (previousPage) => previousPage["~next"],
+    ...options,
+	});
+}
+
+{{- addImport "@tanstack/react-query" "useSuspenseInfiniteQuery" }}
+{{- addImport "@tanstack/react-query" "UseSuspenseInfiniteQueryResult" }}
+{{- addImport "./_types.js" "SuspenseInfiniteQueryHookOptions" }}
+
+{{$infiniteSuspenseQueryName := sanitizeReactQueryName $op "query-infinite-suspense"}}
+{{templateComments $op.Comments $dg $infiniteSuspenseQueryName 0 "method"}}
+export function {{$infiniteSuspenseQueryName}}(
+  {{$argTypes}}
+  options?: SuspenseInfiniteQueryHookOptions<{{$infiniteQueryDataType}}, {{$queryErrorType}}>,
+): UseSuspenseInfiniteQueryResult<InfiniteData<{{$infiniteQueryDataType}}, {{$pageParamsType}}>, {{$queryErrorType}}> {
+  const client = {{$useSDK}}();
+	return useSuspenseInfiniteQuery<{{$infiniteQueryDataType}}, {{$queryErrorType}}, InfiniteData<{{$infiniteQueryDataType}}, {{$pageParamsType}}>, QueryKey, {{$pageParamsType}}>({
+    ...{{$infiniteBuilderFuncName}}(
+      client,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ),
+    initialPageParam: options?.initialPageParam,
+    getNextPageParam: (previousPage) => previousPage["~next"],
+    ...options,
+	});
+}
+{{end}}
+
+export function {{sanitizeReactQueryName $op "query-set-data"}}(
+  client: QueryClient,
+{{- if not $tupleType.inert }}
+  queryKeyBase: {{$tupleType.base}},
+{{- end }}
+  data: {{$queryDataType}},
+): {{$queryDataType}} | undefined {
+{{- if $tupleType.inert }}
+  const key = {{$queryKeyFuncName}}();
+{{- else }}
+  const key = {{$queryKeyFuncName}}(...queryKeyBase);
+{{- end }}
+
+  return client.setQueryData<{{$queryDataType}}>(key, data);
+}
+
+{{if not $tupleType.inert}}
+export function {{sanitizeReactQueryName $op "query-invalidate"}}(
+  client: QueryClient,
+  queryKeyBase: TupleToPrefixes<{{$tupleType.base}}>,
+  filters?: Omit<InvalidateQueryFilters, "queryKey" | "predicate" | "exact">
+): Promise<void> {
+  return client.invalidateQueries({
+    ...filters,
+    queryKey: [{{$tupleType.prefix | sliceString 1 -1}}, ...queryKeyBase],
+  });
+};
+{{end}}
+
+export function {{sanitizeReactQueryName $op "query-invalidate-all"}}(
+  client: QueryClient,
+  filters?: Omit<InvalidateQueryFilters, "queryKey" | "predicate" | "exact">
+): Promise<void> {
+  return client.invalidateQueries({
+    ...filters,
+    queryKey: {{$tupleType.prefix}},
+  });
+};

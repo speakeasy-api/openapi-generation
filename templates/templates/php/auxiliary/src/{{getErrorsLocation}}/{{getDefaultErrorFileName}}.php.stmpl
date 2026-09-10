@@ -1,0 +1,53 @@
+{{- $className := getDefaultErrorClassName -}}
+{{- $responseFormat := getResponseFormat -}}
+declare(strict_types=1);
+
+namespace {{getScopeNamespace "errors" true}};
+
+class {{$className}} extends \Exception
+{
+
+
+    {{- if eq $responseFormat "envelope-http"}}
+    public ?\Psr\Http\Message\RequestInterface $request;
+    public ?\Psr\Http\Message\ResponseInterface $response;
+    {{- else}}
+    public int $statusCode;
+    public string $body;
+    public ?\Psr\Http\Message\ResponseInterface $rawResponse;
+    {{- end}}
+
+    {{- if eq $responseFormat "envelope-http" }}
+
+    public function __construct(string $message = '', ?\Psr\Http\Message\RequestInterface $request = null, ?\Psr\Http\Message\ResponseInterface $response = null)
+    {{- else}}
+
+    public function __construct(string $message, int $statusCode, string $body, ?\Psr\Http\Message\ResponseInterface $rawResponse)
+    {{- end}}
+    {
+        $this->message = $message;
+        {{- if eq $responseFormat "envelope-http"}}
+        $this->request = $request;
+        $this->response = $response;
+        $code = $response->getStatusCode();
+        {{- else}}
+        $code = $statusCode;
+        $this->statusCode = $statusCode;
+        $this->body = $body;
+        $this->rawResponse = $rawResponse;
+        {{- end}}
+        parent::__construct($message, $code, null);
+    }
+
+    public function __toString(): string
+    {
+        {{- if eq $responseFormat "envelope-http"}}
+        $status = $this->response->getStatusCode();
+
+        return "$this->message: Status $status";
+        {{- else}}
+        return "$this->message: Status $this->statusCode $this->body";
+        {{- end}}
+    }
+
+}

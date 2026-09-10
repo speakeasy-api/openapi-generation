@@ -1,0 +1,68 @@
+
+[TestChanges_EnumValueRemovedRequest - 1]
+# Test: enum_value_removed_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - processing
+                    - shipped
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - pending
+                    - processing
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createOrder()`: 
+  *  `request.status.enum(shipped)` **Removed** (Breaking ⚠️)
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createOrder()`: 
+  *  `request.status.enum(shipped)` **Removed** (Breaking ⚠️)
+
+---

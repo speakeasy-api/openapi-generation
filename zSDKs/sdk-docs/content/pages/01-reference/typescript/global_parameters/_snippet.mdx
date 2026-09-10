@@ -1,0 +1,37 @@
+{/* Start Typescript Global Parameters */}
+Certain parameters are configured globally. These parameters must be set on the SDK client instance itself during initialization. When configured as an option during SDK initialization, These global values will be used as defaults on the operations that use them. When such operations are called, there is a place in each to override the global value, if needed.
+
+For example, you can set `queryParam1` to `"some example query param"` at SDK initialization and then you do not have to pass the same value on calls to operations like `getRequestBodyFlattenedAway`. But if you want to do so you may, which will locally override the global setting. See the example code below for a demonstration.
+
+
+
+
+```typescript
+import { SDK } from "openapi";
+import { GetRequestBodyFlattenedAwayRequest } from "openapi/dist/models/operations";
+
+async function run() {
+    const sdk = new SDK({
+        security: {
+            option1: {
+                username: "<USERNAME>",
+                password: "<PASSWORD>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const loneQueryParam: string = "<value>";
+
+    const res = await sdk.getRequestBodyFlattenedAway(loneQueryParam);
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+{/* End Typescript Global Parameters */}

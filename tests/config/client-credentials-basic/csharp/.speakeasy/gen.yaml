@@ -1,0 +1,26 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+csharp:
+  inferUnionDiscriminators: true
+  enableFormatting: true
+  version: 0.0.1
+  author: speakeasy
+  packageName: Speakeasy.Client.Credentials
+  responseFormat: envelope-http
+  additionalDependencies:
+    - package: Polly
+      version: 7.2.2
+    - package: RestSharp
+      version: 106.12.0
+      includeAssets: all
+      privateAssets: contentFiles; build; native; analyzers; buildTransitive
+      excludeAssets: none
+  useNodatime: true

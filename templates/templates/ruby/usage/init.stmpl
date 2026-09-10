@@ -1,0 +1,3 @@
+{{- $sdkModuleName := (sanitizeModuleName .Global.Config.Module) -}}
+{{- $sdkClassName := (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+s = ::{{$sdkModuleName}}::{{$sdkClassName}}.new{{templateUsageSDKParams .Local}}

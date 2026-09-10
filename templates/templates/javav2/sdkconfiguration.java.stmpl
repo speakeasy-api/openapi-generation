@@ -1,0 +1,259 @@
+{{- recurse 1 -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $pkg := templatePackageName -}}
+{{- $fullClassName := (print $pkg ".SDKConfiguration") -}}
+{{- $docVersionPresent := ne .Global.Config.DocVersion "" -}}
+package {{$pkg}};
+{{genImports $fullClassName}}public class SDKConfiguration {
+
+    private static final {{javaImportString}} LANGUAGE = "java";
+    {{- if $docVersionPresent}}
+    public static final {{javaImportString}} OPENAPI_DOC_VERSION = "{{.Global.Config.DocVersion}}";
+    {{- end}}
+    public static final {{javaImportString}} SDK_VERSION = "{{.Global.Config.SDKVersion}}";
+    public static final {{javaImportString}} GEN_VERSION = "{{.Global.Config.GenVersion}}";
+    private static final {{javaImportString}} BASE_PACKAGE = "{{templatePackageName}}";
+    public static final {{javaImportString}} USER_AGENT = 
+            String.format("speakeasy-sdk/%s %s %s %s
+            {{- if $docVersionPresent}}
+                {{- ""}} %s
+            {{- end}}",
+                LANGUAGE, SDK_VERSION, GEN_VERSION
+                {{- if $docVersionPresent}}
+                    {{- ""}}, OPENAPI_DOC_VERSION
+                {{- end}}, BASE_PACKAGE);
+
+    private SecuritySource securitySource = SecuritySource.of(null);
+    
+    public SecuritySource securitySource() {
+        return securitySource;
+    }
+    
+    public void setSecuritySource(SecuritySource securitySource) {
+        {{javaImportUtils}}.checkNotNull(securitySource, "securitySource");
+        this.securitySource = securitySource;
+    }
+    
+    private {{javaImportLocal "utils.HTTPClient"}} client = new {{javaImportLocal "utils.SpeakeasyHTTPClient"}}();
+    
+    public {{javaImportLocal "utils.HTTPClient"}} client() {
+        return client;
+    }
+    
+    public void setClient({{javaImportLocal "utils.HTTPClient"}} client) {
+        {{javaImportUtils}}.checkNotNull(client, "client");
+        this.client = client;
+    }
+
+    {{- if useOkHttp}}
+
+    private final java.util.concurrent.atomic.AtomicReference<Object> closedClient =
+            new java.util.concurrent.atomic.AtomicReference<>();
+
+    public void closeClient() throws Exception {
+        Object client = client();
+        if (closedClient.getAndSet(client) != client
+                && client instanceof java.lang.AutoCloseable) {
+            ((java.lang.AutoCloseable) client).close();
+        }
+    }
+    {{- end}}
+    
+    private {{javaImportString}} serverUrl;
+    
+    public {{javaImportString}} serverUrl() {
+        return serverUrl;
+    }
+    
+    public void setServerUrl({{javaImportString}} serverUrl) {
+        {{javaImportUtils}}.checkNotNull(serverUrl, "serverUrl");
+        this.serverUrl = trimFinalSlash(serverUrl);
+    }
+    
+    private static {{javaImportString}} trimFinalSlash({{javaImportString}} url) {
+        if (url == null) {
+            return null;
+        } else if (url.endsWith("/")) {
+            return url.substring(0, url.length() - 1);
+        } else  {
+            return url;
+        }
+    }
+    
+    public {{javaImportString}} resolvedServerUrl() {
+        {{- if $serverVariables }}
+        return {{javaImportUtils}}.templateUrl(serverUrl, getServerVariableDefaults());
+        {{- else }}
+        return serverUrl;
+        {{- end }}
+    }
+    
+    {{- if $serverMap}}
+    
+    // the name of the server to use from the server map
+    private {{javaImportString}} server;
+    
+    public void setServer({{javaImportString}} server) {
+        {{javaImportUtils}}.checkNotNull(server, "server");
+        this.server = server;
+    }
+    
+    public {{javaImportString}} server() {
+        return server;
+    }
+    {{ else if .Local.Servers}}
+    
+    private int serverIdx = 0;
+    
+    public void setServerIdx(int serverIdx) {
+        this.serverIdx = serverIdx;
+    }
+    
+    public int serverIdx() {
+        return serverIdx;
+    }
+    {{ end}}
+    {{- if $serverVariables}}
+    {{- if $serverMap}}
+    @{{javaImportSuppressWarnings}}("serial")
+    private {{javaImportMap}}<{{javaImportString}}, {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}>> serverVariables = new {{javaImportHashMap}}<>(){{"{ {"}}
+        {{- range .Local.Servers.Servers}}
+        put("{{.ID}}", new {{javaImportHashMap}}<>(){{if gt (len .Variables) 0}}{{"{ {"}}
+            {{- range $variable := .Variables}}
+            put("{{$variable.Name}}", "{{$variable.Default}}");
+            {{- end}}
+        {{"} }"}}{{end}});
+        {{- end}}
+    {{"} }"}};
+    
+    public {{javaImportMap}}<{{javaImportString}}, {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}>> serverVariables() {
+        return serverVariables;
+    }
+    {{- else}}
+    @{{javaImportSuppressWarnings}}("serial")
+    private {{javaImportList}}<{{javaImportMap}}<{{javaImportString}}, {{javaImportString}}>> serverVariables = new {{javaImport "java.util.ArrayList"}}<>(){{"{ {"}}
+        {{- range .Local.Servers.Servers}}
+        add(new {{javaImportHashMap}}<>(){{if gt (len .Variables) 0}}{{"{ {"}}
+            {{- range $variable := .Variables}}
+            put("{{$variable.Name}}", "{{$variable.Default}}");
+            {{- end}}
+        {{"} }"}}{{end}});
+        {{- end}}
+    {{"} }"}};
+    
+    public {{javaImportList}}<{{javaImportMap}}<{{javaImportString}}, {{javaImportString}}>> serverVariables() {
+        return serverVariables;
+    }
+    {{- end}}
+    
+    {{- if $globals}}
+    {{- end}}{{end}}
+    
+    private {{javaImportLocal "utils.Hooks"}} _hooks = createHooks();
+
+    private static {{javaImportLocal "utils.Hooks"}} createHooks() {
+        {{javaImportLocal "utils.Hooks"}} hooks = new {{javaImportLocal "utils.Hooks"}}();
+        {{- if hasClientCredentials}}
+        {
+            {{javaImportLocal "hooks.ClientCredentialsHook"}} h = new {{javaImportLocal "hooks.ClientCredentialsHook"}}();
+            hooks.registerSdkInit(h);
+            hooks.registerBeforeRequest(h);
+            hooks.registerAfterError(h);
+            {{- if asyncEnabled}}
+            // TODO: async client credentials hooks are yet to be supported
+            {{- end}}
+        }
+        {{- end}}
+        {{- if hasOAuth2PasswordFlow}}
+        {
+            {{javaImportLocal "hooks.OAuth2PasswordHook"}} h = new {{javaImportLocal "hooks.OAuth2PasswordHook"}}();
+            hooks.registerSdkInit(h);
+            hooks.registerBeforeRequest(h);
+            hooks.registerAfterError(h);
+            {{- if asyncEnabled}}
+            // TODO: async OAuth2 password hooks are yet to be supported
+            {{- end}}
+        }
+        {{- end}}
+        return hooks;
+    }
+    
+    public {{javaImportLocal "utils.Hooks"}} hooks() {
+        return _hooks;
+    }
+
+    public void setHooks({{javaImportLocal "utils.Hooks"}} hooks) {
+        this._hooks = hooks;
+    }
+
+    /**
+     * Initializes state (for example hooks).
+     **/
+    public void initialize() {
+    {{- if useHooks}}
+        {{javaImportLocal "hooks.SDKHooks"}}.initialize(_hooks);
+        {{- if asyncEnabled}}
+        {{javaImportLocal "hooks.SDKHooks"}}.initialize(_asyncHooks);
+        {{- end}}
+    {{- end}}
+    }
+
+    {{if $globals}}@{{javaImportSuppressWarnings}}("serial")
+    public {{javaImportLocal "utils.Globals"}} globals = new {{javaImportLocal "utils.Globals"}}();
+
+    {{- if springBootStarterEnabled}}
+    /**
+     * Sets the globals configuration. Used by Spring Boot auto-configuration.
+     *
+     * @param globals The globals configuration to set.
+     */
+    public void setGlobals({{javaImportLocal "utils.Globals"}} globals) {
+        {{javaImportUtils}}.checkNotNull(globals, "globals");
+        this.globals = globals;
+    }
+    {{- end}}{{end}}
+    {{if $serverVariables}}
+     public {{javaImportMap}}<{{javaImportString}}, {{javaImportString}}> getServerVariableDefaults() {
+         {{- if $serverMap}}
+         return serverVariables.get(this.server);
+         {{- else}}
+         return serverVariables.get(this.serverIdx);
+         {{- end}}
+     }
+    {{- end}}
+    private {{javaImportOptional}}<{{javaImportLocal "utils.RetryConfig"}}> retryConfig = {{javaImportOptional}}.empty();
+    
+    public {{javaImportOptional}}<{{javaImportLocal "utils.RetryConfig"}}> retryConfig() {
+        return retryConfig;
+    }
+
+    public void setRetryConfig({{javaImportOptional}}<{{javaImportLocal "utils.RetryConfig"}}> retryConfig) {
+        {{javaImportUtils}}.checkNotNull(retryConfig, "retryConfig");
+        this.retryConfig = retryConfig;
+    }
+    {{- if asyncEnabled}}
+    private {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler = {{javaImport "java.util.concurrent.Executors"}}.newSingleThreadScheduledExecutor();
+    
+    public {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler() {
+        return retryScheduler;
+    }
+
+    public void setAsyncRetryScheduler({{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler) {
+        {{javaImportUtils}}.checkNotNull(retryScheduler, "retryScheduler");
+        this.retryScheduler = retryScheduler;
+    }
+
+    private {{javaImportLocal "utils.AsyncHooks"}} _asyncHooks = new {{javaImportLocal "utils.AsyncHooks"}}();
+
+    public {{javaImportLocal "utils.AsyncHooks"}} asyncHooks() {
+        return _asyncHooks;
+    }
+
+    public void setAsyncHooks({{javaImportLocal "utils.AsyncHooks"}} asyncHooks) {
+        {{javaImportUtils}}.checkNotNull(asyncHooks, "asyncHooks");
+        this._asyncHooks = asyncHooks;
+    }
+    {{- end}}
+}

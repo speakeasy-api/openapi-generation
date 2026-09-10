@@ -1,0 +1,46 @@
+{{- $op := .Local.Operation -}}
+{{- $metadata := getGoOperationOptionMetadata $op -}}
+{{- $opsNamespace := getAccessNamespace "" "operations" -}}
+{{- if eq $metadata.mode "method-options" }}
+    o := {{$opsNamespace}}{{$metadata.optionsType}}{}
+    for _, opt := range opts {
+        if err := opt(&o); err != nil {
+            {{templateErrorReturn $op (printf "fmt.Errorf(\"error applying option to %s: %%w\", err)" $metadata.prefix)}}
+        }
+    }
+{{- else }}
+    o := {{$opsNamespace}}Options{}
+    supportedOptions := []string{
+        {{- if $op.Extensions.Polling }}
+        {{$opsNamespace}}SupportedOptionPolling,
+        {{- end }}
+        {{- if $op.Extensions.Retries}}
+        {{$opsNamespace}}SupportedOptionRetries,
+        {{- end}}
+        {{$opsNamespace}}SupportedOptionTimeout,
+        {{- if gt (len $op.GetAcceptTypes) 1}}
+        {{$opsNamespace}}SupportedOptionAcceptHeaderOverride,
+        {{- end}}
+        {{- if hasPaginationURL $op}}
+        {{$opsNamespace}}SupportedOptionURLOverride,
+        {{- end}}
+        {{- if isSkipDeserializationEnabled }}
+        {{$opsNamespace}}SupportedOptionSkipDeserialization,
+        {{- end}}
+        {{- range $argument := $metadata.optionalArguments }}
+        {{$opsNamespace}}{{$argument.supportedOptionName}},
+        {{- end}}
+    }
+
+    for _, opt := range opts {
+        if err := opt(&o, supportedOptions...); err != nil {
+            {{templateErrorReturn $op (printf "fmt.Errorf(\"error applying option to %s: %%w\", err)" $metadata.prefix)}}
+        }
+    }
+{{- end }}
+{{- range $argument := $metadata.optionalArguments }}
+    var {{sanitizePrivateFieldName $argument.field.Name}} {{getGoMethodArgumentStoredType $argument}}
+    if value, ok := o.GetMethodArgument({{$opsNamespace}}{{$argument.supportedOptionName}}); ok {
+        {{sanitizePrivateFieldName $argument.field.Name}} = value.({{getGoMethodArgumentStoredType $argument}})
+    }
+{{- end }}

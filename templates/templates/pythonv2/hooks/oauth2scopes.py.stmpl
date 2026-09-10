@@ -1,0 +1,18 @@
+from enum import Enum
+
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $enumName := getOAuth2ScopeClassName $schemeKey}}
+    {{- $dedupNames := getDeduplicatedScopeEnumNames $config.AvailableScopes}}
+
+
+class {{$enumName}}(str, Enum):
+{{- templateComments $config.Comments 1 true}}
+    {{- range $i, $scope := $config.AvailableScopes }}
+
+    {{index $dedupNames $i}} = "{{$scope.Name}}"
+    {{- templateComments $scope.Comments 1 true}}
+    {{- end}}
+  {{- end}}
+{{- end}}

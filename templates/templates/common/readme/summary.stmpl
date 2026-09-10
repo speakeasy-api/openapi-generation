@@ -1,0 +1,22 @@
+{{- $comments := .Global.AST.MainSDK.Comments}}
+{{- if $comments.Summary}}
+
+{{$comments.Summary}}
+{{- end}}
+
+{{- if $comments.Description}}
+
+{{$comments.Description}}
+{{- end}}
+
+{{- if $comments.ExternalDocs}}
+
+  {{- if and $comments.ExternalDocs.Description $comments.ExternalDocs.URL}}
+
+For more information about the API: [{{$comments.ExternalDocs.Description}}]({{$comments.ExternalDocs.URL}})
+
+  {{- else if $comments.ExternalDocs.URL}}
+
+More information about the API can be found at {{$comments.ExternalDocs.URL}}
+  {{- end}}
+{{- end}}

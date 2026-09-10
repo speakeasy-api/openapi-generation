@@ -1,0 +1,45 @@
+{{- recurse 1 -}}
+{{- $dg := print "src/sdk/" (sanitizeFileName .Global.Config.SDKName) -}}
+{{- $sdkName := .Local.Type.Name -}}
+{{- $usageLocation := .Local.Type.OutputLocation }}
+{{- $className := sanitizeClassName $sdkName -}}
+{{- addInternalImport "sdks" "ClientSDK" $usageLocation -}}
+
+{{genImports}}
+// #region imports
+// #endregion imports
+
+{{ range $op := .Local.Operations}}
+{{ if shouldTemplateAcceptHeaderEnum $op }}
+{{- addFuncAcceptEnumImport $op $usageLocation }}
+export { {{sanitizeAcceptEnumName .}} } from "{{getFuncImportPath $op $usageLocation}}";
+{{- end }}
+{{- end}}
+
+export class {{templateSDKClassName $className}} extends ClientSDK {
+  {{- range .Local.SubSDKs}}
+  {{- addImport (print "./" (sanitizeTypeFilename .Type.Name) ".js") (sanitizeClassName .Type.Name) }}
+  {{- $subSDKName := .Type.Name }}
+  {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
+  {{- if ne $subSDKName ""}}
+  {{"\n"}}
+  private _{{$fieldName}}?: {{sanitizeClassName $subSDKName}};
+  get {{$fieldName}}(): {{sanitizeClassName $subSDKName}} {
+    return (this._{{$fieldName}} ??= new {{sanitizeClassName $subSDKName}}(this._options));
+  }
+  {{- end}}
+  {{- end}}
+
+  // #region sdk-class-body
+  // #endregion sdk-class-body
+
+{{- range .Local.Operations -}}
+  {{- addInternalImport "sdks" "RequestOptions" $usageLocation}}
+  {{- addFuncImport . $usageLocation}}
+  {{- if and .Extensions.Pagination .Response (gt (len .Response.Responses) 0) }}
+  {{- addTypeImport "operations" "PageIterator" "funcs"}}
+  {{- end }}
+  {{templateString "method.ts.stmpl" (getDocGroupedOperation . $dg)}}
+
+{{- end}}
+}

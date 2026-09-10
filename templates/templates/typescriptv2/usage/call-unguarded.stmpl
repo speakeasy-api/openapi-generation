@@ -1,0 +1,4 @@
+{{- $sdkVar := sanitizeFieldName .Global.AST.MainSDK.Type.Name }}
+{{- $namespace := sanitizeSDKAccess .Local.SDK }}
+{{- templateUsageLocalDeclarations .Local }}
+{{- if .Local.Operation.Response.Type}}const {{getResponseVariableName .Local.StepID}} = {{end}}await {{$sdkVar}}{{$namespace}}.{{sanitizeMethodName .Local.Operation}}({{ templateUsageMethodParameters .Local 0 }});

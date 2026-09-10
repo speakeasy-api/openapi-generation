@@ -1,0 +1,47 @@
+package tests
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"openapi"
+	"openapi/pkg/models/operations"
+)
+
+func TestTransform_GoTransformers(t *testing.T) {
+	recordTest("transform-jq-request-response")
+
+	ctx := context.Background()
+
+	testHTTPClient := createTestHTTPClient("goTransformers")
+
+	s := openapi.New(
+		openapi.WithClient(testHTTPClient),
+		openapi.WithSecurity("Token YOUR_API_KEY"),
+	)
+
+	initialRequest := "mirror this payload"
+	before := time.Now().Unix()
+
+	res, err := s.Transform.GoTransformers(ctx, operations.GoTransformersRequestBody{
+		InitialRequest: initialRequest,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	assert.Equal(t, 200, res.StatusCode)
+	require.NotNil(t, res.Res)
+
+	jsonRes := res.Res.GetJSON()
+	require.NotNil(t, jsonRes)
+
+	assert.Equal(t, initialRequest, jsonRes.GetInitialRequest())
+	assert.Equal(t, initialRequest, jsonRes.GetCopyOfInitialRequest())
+	after := time.Now().Unix()
+	assert.GreaterOrEqual(t, jsonRes.GetCreatedAt(), before)
+	assert.LessOrEqual(t, jsonRes.GetCreatedAt(), after)
+	assert.Equal(t, "application/json", res.ContentType)
+}

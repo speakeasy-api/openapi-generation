@@ -1,0 +1,26 @@
+{{- $coreName := sanitizeCoreSDKName }}
+import React from "react";
+
+import { {{$coreName}} } from "../core.js";
+
+{{- $context := sanitizeReactContextName "context" }}
+{{- $provider := sanitizeReactContextName "provider" }}
+{{- $hook := sanitizeReactContextName "hook" }}
+
+const {{$context}} = React.createContext<{{$coreName}} | null>(null);
+
+export function {{$provider}}(props: { client: {{$coreName}}, children: React.ReactNode }): React.ReactNode { 
+  return (
+    <{{$context}}.Provider value={props.client}>
+      {props.children}
+    </{{$context}}.Provider>
+  );
+}
+
+export function {{$hook}}(): {{$coreName}} { 
+  const value = React.useContext({{$context}});
+  if (value === null) {
+    throw new Error("SDK not initialized. Create an instance of {{$coreName}} and pass it to <{{$provider}} />.");
+  }
+  return value;
+}

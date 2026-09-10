@@ -1,0 +1,46 @@
+{{- recurse 1 -}}
+{{- $scope := .Local.Scope -}}
+{{- $type := .Local.Type -}}
+{{- $class := (sanitizeClass $type $scope true) -}}
+{{- $resolverClass := printf "%sTypeIdResolver" $class -}}
+{{- $unknownClass := printf "Unknown%s" $class -}}
+{{- $outputLoc := $type.OutputLocation -}}
+{{- $pkg := (getModelPackage true $scope $outputLoc) -}}
+{{- $fullClassName := (print $pkg "." $resolverClass) }}
+package {{$pkg}};
+{{genImports $fullClassName}}// #region imports{{"\n"}}// #endregion imports{{"\n"}}
+{{templateComments $type.Comments $resolverClass 0 "class" }}{{if and $type.Comments $type.Comments.Deprecated}}@Deprecated
+{{end}}public class {{$resolverClass}} extends {{javaImportLocal "utils.GenericTypeIdResolver"}}<{{$class}}> {
+
+    public {{$resolverClass}}() {
+        super({{$unknownClass}}.class);
+        initializeTypeMap();
+    }
+
+    private void initializeTypeMap() {
+{{indentLines (generateDiscriminatorMappings $type $scope) 2}}
+    }
+
+    @{{javaImportOverride}}
+    public {{javaImportString}} idFromValue({{javaImport "java.lang.Object"}} value) {
+        if (value == null) {
+            return null;
+        }
+        
+        // Handle known types by checking if they implement the discriminator method
+        if (value instanceof {{$class}}) {
+            {{$class}} discriminated = ({{$class}}) value;
+            return discriminated.{{discriminatorFieldName $type}}();
+        }
+        
+        throw new {{javaImport "java.lang.IllegalArgumentException"}}("Unknown value type: " + value.getClass().getName());
+    }
+
+    @{{javaImportOverride}}
+    public {{javaImportString}} getDescForKnownTypeIds() {
+        return "{{$class}} type resolver";
+    }
+
+    // #region class-body
+    // #endregion class-body
+}

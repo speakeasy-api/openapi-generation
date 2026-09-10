@@ -1,0 +1,10 @@
+{
+  "go": {
+    "type": "page",
+    "display": "hidden"
+  },
+  "typescript": {
+    "type": "page",
+    "display": "hidden"
+  }
+}

@@ -1,0 +1,80 @@
+package tests
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// This fixture generates with cli.defaultTimeout: 5s — large enough that the
+// rest of this suite never brushes against it on a loaded runner, small
+// enough to keep these focused tests quick. Without an explicit --timeout, a
+// finite operation is bounded end to end: a server that never sends headers
+// is cut off by the transport's response-header bound, and a body that
+// stalls after headers is cut off by the operation deadline.
+
+func TestDefaultTimeoutBoundsStalledHeaders(t *testing.T) {
+	release := make(chan struct{})
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-release
+	}))
+	defer func() { close(release); s.Close() }()
+
+	h := NewCLITestHarness(t)
+	start := time.Now()
+	err := h.RunRaw([]string{"--server-url", s.URL, "--output-format", "json", "products", "list"})
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	assert.Less(t, elapsed, 15*time.Second, "the generated default must bound a server that never responds")
+	combined := h.GetStdout() + h.GetStderr() + err.Error()
+	assert.NotContains(t, combined, "response body is empty")
+}
+
+func TestDefaultTimeoutBoundsStalledBody(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		fmt.Fprint(w, `[{"id":"p1","name":`)
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	start := time.Now()
+	err := h.RunRaw([]string{"--server-url", s.URL, "--output-format", "json", "products", "list"})
+	elapsed := time.Since(start)
+
+	require.Error(t, err, "a body that stalls past the default timeout must fail, not hang")
+	// The server never completes the body on its own (it waits for client
+	// disconnect), so any return proves the deadline fired; the bound only
+	// guards against an unbounded hang and stays generous for loaded runners.
+	assert.Less(t, elapsed, 15*time.Second)
+	combined := h.GetStdout() + h.GetStderr() + err.Error()
+	assert.NotContains(t, combined, "response body is empty")
+}
+
+// An explicit --timeout replaces the generated default entirely: a response
+// slower than the default but inside the explicit bound succeeds.
+func TestExplicitTimeoutOverridesGeneratedDefault(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(6 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `[]`)
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"--server-url", s.URL, "--timeout", "15s", "--output-format", "json", "products", "list"})
+	require.NoError(t, err, "stderr: %s", h.GetStderr())
+	assert.Equal(t, "[]", strings.TrimSpace(h.GetStdout()))
+}

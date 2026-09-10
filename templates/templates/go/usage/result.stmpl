@@ -1,0 +1,47 @@
+{{- if .Local.Operation }}{{if .Local.RenderFeature "errors" false -}}
+{{""}}    if err != nil {
+        {{ range .Local.Operation.Response.Responses}}
+            {{- if .Error  }}
+                {{ range .Content }}
+                    var e *{{sanitizeClass .Content.Type "" false}}
+                    {{- addImport "errors"}}
+                    if errors.As(err, &e) {
+                        // handle error
+                        log.Fatal(e.Error())
+                    }
+                {{end}}{{end}}{{end}}
+                    {{- addImport "errors"}}
+                    {{- addImport .Global.Config.Imports.GetErrorsPath true}}
+                    var e *{{sanitizeModelPackageName .Global.Config.Imports.GetErrorsPath true}}.{{getDefaultErrorClassName}}
+                    if errors.As(err, &e) {
+                        // handle error
+                        {{- addImport "log"}}
+                        log.Fatal(e.Error())
+                    }
+    }
+{{- else}}{{""}}    if err != nil {
+        {{- addImport "log"}}
+        log.Fatal(err)
+    }
+{{- if .Local.Operation.Response.Type}}
+{{- $responseFormat := getResponseFormat }}
+{{- $resFieldName := getResponseFieldName .Local.Operation}}
+    if {{getResponseVariableName .Local.StepID}}{{if and (not (eq $responseFormat "flat")) $resFieldName}}.{{sanitizeFieldName $resFieldName}}{{end}} != nil {
+    {{- if operationUsesEventStreams .Local.Operation }}
+        {{- templateString "usage/eventstream.stmpl" .Local }}
+    {{- else if operationUsesJsonLStreams .Local.Operation}}
+        {{- templateString "usage/jsonl.stmpl" .Local }}
+    {{- else if .Local.Operation.Extensions.Pagination }}
+{{ templateIndentedString "usage/pagination.stmpl" .Local 2 }}
+    {{- else if responseHasUnionType .Local.Operation}}
+{{templateResponseUnionDiscrimination .Local.Operation .Local.StepID}}
+    {{- else}}
+        // handle response
+    {{- end}}
+    }
+{{- end}}
+{{- end}}
+{{- else}}
+
+    // Use the SDK...
+{{- end}}

@@ -1,0 +1,205 @@
+components:
+  schemas:
+    test-request-body:
+      $ref: "#/components/schemas/test-request-body-2"
+    test-request-body-2:
+      type: object
+      properties:
+        test:
+          type: string
+    test-header:
+      type: string
+    test-response:
+      type: object
+      properties:
+        test:
+          type: string
+  responses:
+    test-response:
+      $ref: "#/components/responses/test-response-2"
+    test-response-2:
+      description: Test
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/test-response"
+      headers:
+        test:
+          $ref: "#/components/headers/test"
+      links:
+        test:
+          $ref: "#/components/links/test"
+    default-response:
+      description: Default
+  parameters:
+    test-team:
+      $ref: "#/components/parameters/test-team-2"
+    test-team-2:
+      name: team
+      in: path
+      required: true
+      schema:
+        type: string
+  examples:
+    test-example:
+      $ref: "#/components/examples/test-example-2"
+    test-example-2:
+      summary: Test
+      description: Test
+      value:
+        test: test
+  requestBodies:
+    test-request-body:
+      $ref: "#/components/requestBodies/test-request-body-2"
+    test-request-body-2:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/test-request-body"
+  headers:
+    test:
+      $ref: "#/components/headers/test2"
+    test2:
+      description: Test
+      schema:
+        $ref: "#/components/schemas/test-header"
+  links:
+    test:
+      $ref: "#/components/links/test2"
+    test2:
+      operationId: test-2
+      description: Test
+  callbacks:
+    test-callback:
+      $ref: "#/components/callbacks/test-callback-2"
+    test-callback-2:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback"
+    test-callback-3:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback-3"
+    test-callback-4:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback-4"
+    test-callback-5:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback-5"
+    test-callback-6:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback-6"
+    test-callback-7:
+      "$request.body#/callbackUrl":
+        $ref: "#/components/pathItems/test-callback-7"
+  pathItems:
+    test-callback:
+      $ref: "#/components/pathItems/test-callback-2"
+    test-callback-2:
+      post:
+        summary: Test
+        description: Test
+        operationId: test-callback-2
+        x-speakeasy-name-override: testCallback2PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+          default:
+            $ref: "#/components/responses/default-response"
+    test-callback-3:
+      post:
+        summary: Test Callback 3
+        description: Test
+        operationId: test-callback-3
+        x-speakeasy-name-override: testCallback3PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+    test-callback-4:
+      post:
+        summary: Test Callback 4
+        description: Test
+        operationId: test-callback-4
+        x-speakeasy-name-override: testCallback4PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+    test-callback-5:
+      post:
+        summary: Test Callback 5
+        description: Test
+        operationId: test-callback-5
+        x-speakeasy-name-override: testCallback5PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+    test-callback-6:
+      post:
+        summary: Test Callback 6
+        description: Test
+        operationId: test-callback-6
+        x-speakeasy-name-override: testCallback6PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+    test-callback-7:
+      post:
+        summary: Test Callback 7
+        description: Test
+        operationId: test-callback-7
+        x-speakeasy-name-override: testCallback7PathItem
+        x-speakeasy-group: pathItems.testCallback
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/test-request-body"
+        responses:
+          "200":
+            description: OK
+    test-webhook:
+      post:
+        summary: Test
+        description: Test
+        operationId: test-webhook-pathitem
+        x-speakeasy-name-override: testWebhookPathItem
+        parameters:
+          - $ref: "./parameters.yaml#/test-org"
+        requestBody:
+          $ref: "./request-bodies.yaml#/test-request-body"
+        responses:
+          "200":
+            $ref: "./responses.yaml#/test-response"
+        callbacks:
+          test:
+            $ref: "./callbacks.yaml#/test-callback-webhook-1"
+          test-2:
+            $ref: "./callbacks.yaml#/test-callback-webhook-2"

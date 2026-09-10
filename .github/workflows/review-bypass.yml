@@ -1,0 +1,72 @@
+name: Review Bypass
+
+# SECURITY: Keep this workflow on `pull_request`, never
+# `pull_request_target`. The latter exposes BOT_REPO_TOKEN to fork-triggered
+# runs, which would make a future step that executes PR code a credential leak.
+# With `pull_request`, fork PRs receive no secrets, and the same-repo guard
+# below skips them before the token is used.
+#
+# Applying `review:bypass` makes speakeasybot submit an approving review.
+# Removing the label dismisses that review. Required status checks and the
+# merge queue remain in force.
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize]
+
+permissions: {}
+
+jobs:
+  reconcile:
+    name: Reconcile bypass approval with label
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'synchronize' || github.event.label.name == 'review:bypass')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: review-bypass-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - name: Approve or dismiss to match label state
+        env:
+          GH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          FALLBACK_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          bot_login=$(gh api user --jq '.login')
+          has_label=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/labels" \
+            --jq '[.[].name] | index("review:bypass") != null')
+
+          approval_ids=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/reviews" --paginate \
+            | jq -r --arg bot_login "$bot_login" \
+              '.[] | select(.user.login == $bot_login and .state == "APPROVED") | .id')
+
+          if [[ "$has_label" == "true" && -z "$approval_ids" ]]; then
+            labeled_by=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/events" --paginate \
+              --jq '[.[] | select(.event == "labeled" and .label.name == "review:bypass") | .actor.login] | last // empty' \
+              | tail -1)
+            labeled_by="${labeled_by:-$FALLBACK_ACTOR}"
+            echo "Label present, no ${bot_login} approval: approving (label applied by ${labeled_by})."
+            gh api \
+              "repos/${REPO}/pulls/${PR_NUMBER}/reviews" \
+              -f event=APPROVE \
+              -f body="Auto-approved: review:bypass label applied by @${labeled_by}. Required status checks still gate this merge."
+          elif [[ "$has_label" != "true" && -n "$approval_ids" ]]; then
+            unlabeled_by=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/events" --paginate \
+              --jq '[.[] | select(.event == "unlabeled" and .label.name == "review:bypass") | .actor.login] | last // empty' \
+              | tail -1)
+            unlabeled_by="${unlabeled_by:-$FALLBACK_ACTOR}"
+            for id in $approval_ids; do
+              echo "Label absent, dismissing ${bot_login} approval ${id}."
+              gh api \
+                --method PUT \
+                "repos/${REPO}/pulls/${PR_NUMBER}/reviews/${id}/dismissals" \
+                -f message="review:bypass label removed by @${unlabeled_by}." \
+                -f event=DISMISS
+            done
+          else
+            echo "State already consistent (label present: ${has_label}); nothing to do."
+          fi

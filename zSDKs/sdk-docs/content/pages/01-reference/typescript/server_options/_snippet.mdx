@@ -1,0 +1,124 @@
+{/* Start Typescript Server Options */}
+
+### Select Server by Index
+
+You can override the default server globally by passing a server index to the `serverIdx: number` optional parameter when initializing the SDK client instance. The selected server will then be used as the default on the operations that use it. This table lists the indexes associated with the available servers:
+
+
+
+#### Example
+
+```typescript
+import { SDK } from "openapi";
+
+async function run() {
+    const sdk = new SDK({
+        serverIdx: 1,
+        security: {
+            option1: {
+                username: "<USERNAME>",
+                password: "<PASSWORD>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+
+    const res = await sdk.postFile({
+        file: {
+            fileName: "your_file_here",
+            content: new TextEncoder().encode("0x8fBAEeAAE7"),
+        },
+    });
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+#### Variables
+
+Some of the server options above contain variables. If you want to set the values of those variables, the following optional parameters are available when initializing the SDK client instance:
+ * `hostname: string`
+ * `port: string`
+
+### Override Server URL Per-Client
+
+The default server can also be overridden globally by passing a URL to the `serverURL: str` optional parameter when initializing the SDK client instance. For example:
+```typescript
+import { SDK } from "openapi";
+
+async function run() {
+    const sdk = new SDK({
+        serverURL: "http://localhost:35123",
+        security: {
+            option1: {
+                username: "<USERNAME>",
+                password: "<PASSWORD>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+
+    const res = await sdk.postFile({
+        file: {
+            fileName: "your_file_here",
+            content: new TextEncoder().encode("0x8fBAEeAAE7"),
+        },
+    });
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+### Override Server URL Per-Operation
+
+The server URL can also be overridden on a per-operation basis, provided a server list was specified for the operation. For example:
+```typescript
+import { SDK } from "openapi";
+import { ListTest1Request, ListTest1Security } from "openapi/dist/models/operations";
+
+async function run() {
+    const sdk = new SDK({
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const page: number = 100;
+    const headerParam1: string = "some example header param";
+    const queryParam1: string = "some example query param";
+    const operationSecurity: ListTest1Security = "<YOUR_API_KEY>";
+
+    const res = await sdk.tag1.listTest1(
+        operationSecurity,
+        page,
+        headerParam1,
+        queryParam1,
+        "http://localhost:35123"
+    );
+
+    if (res.statusCode == 200) {
+        do {
+            // handle items
+
+            res = res.next();
+        } while (res);
+    }
+}
+
+run();
+
+```
+{/* End Typescript Server Options */}

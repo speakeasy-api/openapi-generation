@@ -1,0 +1,17 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+go:
+  inferUnionDiscriminators: true
+  envVarPrefix: SPEAKEASY
+  modulePath: openapi
+  responseFormat: envelope-http
+  sdkPackageName: openapi
+  version: 0.0.1

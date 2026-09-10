@@ -1,0 +1,162 @@
+{{- recurse 1 -}}
+{{- $namespace := .Global.Config.Namespace -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap)}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0)}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+{{genImports}}
+
+class SDKConfiguration
+{
+    public ?\GuzzleHttp\ClientInterface $client = null;
+
+    public ?\GuzzleHttp\ClientInterface $defaultClient = null;
+
+    public {{getModelNamespace "" false "Hooks"}}\SDKHooks $hooks;
+
+    
+{{- if .Local.Security}}
+    /** @var ?pure-Closure(): {{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}} */
+    public ?\Closure $securitySource = null;
+{{- end}}
+    public string $serverUrl = '';
+    {{- if $serverMap}}
+
+    public string $server = '';
+    {{- else if .Local.Servers}}
+
+    public int $serverIndex = 0;
+    {{- end}}
+
+    {{- if $serverVariables}}
+    {{- if $serverMap}}
+    /** @var array<string, array<string, string>> */
+    public ?array $serverVariables = [
+        {{- range .Local.Servers.Servers}}
+        '{{.ID}}' => [
+            {{- range $variable := .Variables}}
+            '{{$variable.Name}}' => '{{$variable.Default}}',
+            {{- end}}
+        ],
+        {{- end}}
+    ];
+    {{- else}}
+
+    /** @var array<array<string, string>> */
+    public ?array $serverVariables = [
+        {{- range .Local.Servers.Servers}}
+        [{{- range $variable := .Variables}}
+            '{{$variable.Name}}' => '{{$variable.Default}}',{{end}}
+        ],
+        {{- end}}
+    ];
+    {{- end}}{{end}}
+
+    public string $language = 'php';
+    {{- if ne .Global.Config.DocVersion ""}}
+
+    public string $openapiDocVersion = '{{.Global.Config.DocVersion}}';
+    {{- end}}
+
+    public string $sdkVersion = '{{.Global.Config.SDKVersion}}';
+
+    public string $genVersion = '{{.Global.Config.GenVersion}}';
+
+    public string $userAgent = 'speakeasy-sdk/php {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}';
+
+    {{- if $globals}}
+    /** @var array<string, array<string, array<string, mixed>>> */
+    public ?array $globals = [
+        'parameters' => [],
+    ];{{end}}
+
+    public ?RetryConfig $retryConfig = null;{{- addImportInline (printf "%s%s" (getScopeNamespace "retry" true) "\\RetryConfig")}}
+
+    public function __construct()
+    {
+        $this->hooks = new {{getModelNamespace "" false "Hooks"}}\SDKHooks();
+    }
+
+    public function getServerUrl(): string
+    {
+{{if .Local.Servers}}
+        if ($this->serverUrl !== '') {
+            return $this->serverUrl;
+        }
+{{if $serverMap}}
+        if ($this->server === '') {
+            $this->server = {{$sdkClassName}}::{{templateConstName .Local.Servers.Default "Server"}};
+        }
+
+        return {{$sdkClassName}}::SERVERS[$this->server];
+{{- else }}{{/* else $serverMap */}}
+        if (isset({{$sdkClassName}}::SERVERS[$this->serverIndex])) {
+            return {{$sdkClassName}}::SERVERS[$this->serverIndex];
+        } else {
+            throw new \OutOfBoundsException('Server index '.$this->serverIndex.' is out of bounds');
+        }
+{{- end}}{{/* end $serverMap */}}
+{{- else}}{{/* else .Local.Servers */}}
+        return $this->serverUrl;
+{{- end}}{{/* end .Local.Servers */}}
+    }
+{{- if $serverVariables}}
+
+    /**
+     * @return array<string, string>
+     */
+    public function getServerVariables(): ?array
+    {
+        {{- if $serverMap}}
+        if ($this->server === '') {
+            $this->server = {{$sdkClassName}}::{{templateConstName .Local.Servers.Default "Server"}};
+        }
+
+        return $this->serverVariables[$this->server];
+        {{- else if .Local.Servers}}
+        return $this->serverVariables[$this->serverIndex];
+        {{- end}}
+    }
+{{- end}}
+{{- if .Local.Security}}
+    public function hasSecurity(): bool
+    {
+        return $this->securitySource !== null;
+    }
+
+    public function getSecurity(): ?{{getModelNamespace .Local.Security.Type.OutputLocation false "Security"}}
+    {
+        return $this->securitySource->call($this);
+    }
+{{- end}}
+
+    /**
+     * @return Utils\ServerDetails
+     */
+    public function getServerDetails(): Utils\ServerDetails
+    {
+        if ($this->serverUrl !== '') {
+            return new Utils\ServerDetails(rtrim($this->serverUrl, '/'), []);
+        }
+        {{- if and .Local.Servers (not $serverMap)}}
+        if ($this->serverIndex === null) {
+            $this->serverIndex = 0;
+        }
+        {{- end}}
+
+        return new Utils\ServerDetails({{$sdkClassName}}::SERVERS[{{if and .Local.Servers $serverMap}}$this->server{{else}}$this->serverIndex{{end}}], {{if $serverVariables}}$this->serverVariables[{{if and .Local.Servers $serverMap}}$this->server{{else}}$this->serverIndex{{end}}]{{else}}[]{{end}});
+
+    }
+
+    public function getTemplatedServerUrl(): string
+    {
+        if ($this->serverUrl) {
+            return Utils\Utils::templateUrl($this->serverUrl.trim('/'), []);
+        }
+
+        return Utils\Utils::templateUrl($this->getServerUrl(), {{if $serverVariables}}$this->getServerVariables(){{else}}[]{{end}});
+    }
+}

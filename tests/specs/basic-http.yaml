@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Basic HTTP Auth Test
+  version: 0.1.0
+  summary: |
+    Minimal spec to test flattened basicHttp security.
+    Global security flattening requires two conditions:
+    (1) flattenGlobalSecurity: true in gen config (if applicable)
+    (2) a single global security scheme.
+    When both are met, the inner field(s) of that scheme (in this case username/password)
+    are flattened to top-level fields on the Security model.
+    Refer to the secondary variant for an example of an unflattened, hoisted http:basic scheme.
+servers:
+  - url: http://localhost:35123
+security:
+  - basicHttp: []
+tags:
+  - name: auth
+    description: Endpoints for testing authentication.
+paths:
+  /basic-auth/testUser/testPass#Global:
+    get:
+      operationId: basicAuthGlobal
+      description: |
+        Tests global, flattened basicHttp security.
+        Note the flattened username/password fields are required because there is no
+        `envVarPrefix` configured. Otherwise they would become optional to allow setting
+        credentials via environment variables.
+      tags:
+        - auth
+      responses:
+        "200":
+          $ref: "#/components/responses/basicAuthResponse"
+        "401":
+          description: Unsuccessful authentication.
+  /basic-auth/testUser/testPass#Hoisted:
+    get:
+      operationId: basicAuthHoisted
+      description: |
+        This operation uses the same global security model as basicAuthGlobal
+        (flattened, required username/password fields). The op-level security
+        gets hoisted since it matches global security.
+      tags:
+        - auth
+      security:
+        - basicHttp: []
+      responses:
+        "200":
+          $ref: "#/components/responses/basicAuthResponse"
+        "401":
+          description: Unsuccessful authentication.
+  /basic-auth/testUser/testPass#Optional:
+    get:
+      operationId: basicAuthOptional
+      description: |
+        Declares basicHttp at the operation level but optional ({} requirement).
+        This does not alter global security fields which are required.
+        Instead, the SDK generates a separate per-operation security type
+        (e.g. BasicAuthOptionalSecurity) with optional username/password fields.
+        Callers can pass nil to skip authentication entirely.
+      tags:
+        - auth
+      security:
+        - basicHttp: []
+        - {}
+      responses:
+        "200":
+          $ref: "#/components/responses/basicAuthResponse"
+        "401":
+          description: Unsuccessful authentication.
+components:
+  responses:
+    basicAuthResponse:
+      description: Successful authentication.
+      content:
+        application/json:
+          schema:
+            title: basicAuthUser
+            type: object
+            properties:
+              authenticated:
+                type: boolean
+              user:
+                type: string
+            required:
+              - authenticated
+              - user
+  securitySchemes:
+    basicHttp:
+      type: http
+      scheme: basic
+      x-speakeasy-example: testUser;testPass

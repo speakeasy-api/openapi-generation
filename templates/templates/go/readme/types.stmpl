@@ -1,0 +1,10 @@
+{{- if gt (len listCustomTypes) 0 -}}
+This SDK defines the following custom types to assist with marshalling and unmarshalling data.
+
+{{- $p := .Local }}
+{{- range listCustomTypes }}
+
+{{templateString (print "docs/types/" . ".stmpl") $p | adjustHeadings 2}}
+
+{{- end }}
+{{- end -}}

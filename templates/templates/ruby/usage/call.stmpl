@@ -1,0 +1,14 @@
+{{- if .Local.Operation -}}
+{{- $namespace := sanitizeSDKAccess .Local.SDK "." -}}
+{{- $flatten := operationParametersFlattened .Local.Operation -}}
+{{- if and .Local.Operation.Request (not $flatten)}}
+{{- $reqValue := templateModelUsageForOperationField .Local .Local.Operation.Request.Field 0 (dict "usageContext" .Local "isTest" .Local.Test "test" .Local.Test) -}}
+{{- if $reqValue}}
+req = {{$reqValue}}
+{{else}}
+req = nil
+{{end}}
+{{- end}}
+{{- $methodParams := templateUsageMethodParameters .Local 1 -}}
+{{- $resVar := getResponseVariableName .Local.StepID -}}
+{{- if $methodParams}}{{$resVar}} = s{{$namespace}}.{{sanitizeMethodName .Local.Operation}}({{$methodParams}}){{else}}{{$resVar}} = s{{$namespace}}.{{sanitizeMethodName .Local.Operation}}{{end}}{{end}}

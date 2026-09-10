@@ -1,0 +1,32 @@
+{{- $responseFormat := getResponseFormat }}
+{{- $fieldName := sanitizeFieldName (getResponseFieldName .Local.Operation "jsonl") }}
+
+{{- $accessor := (getResponseVariableName .Local.StepID) }}
+{{- if ne $responseFormat "flat" }}
+{{- $accessor = print (getResponseVariableName .Local.StepID) "." $fieldName }}
+{{- end }}
+
+{{- if ne $responseFormat "flat" }}
+if ({{$accessor}} == null) {
+  throw new Error("failed to create stream: received null value");
+}
+{{- end }}
+
+{{- if and .Local.Operation.Response.Type (eq .Local.Operation.Response.Type.Type "union") }}
+{{- addJsonLStreamUsageImport }}
+// Check if the response is a JsonLStream instance for union types
+if ({{$accessor}} instanceof JsonLStream) {
+  for await (const event of {{$accessor}}) {
+    // Handle the event
+    console.log(event);
+  }
+} else {
+  // Handle non-EventStream response (other union type)
+  console.log({{$accessor}});
+}
+{{- else }}
+for await (const event of {{$accessor}}) {
+  // Handle the event
+  console.log(event);
+}
+{{- end }}

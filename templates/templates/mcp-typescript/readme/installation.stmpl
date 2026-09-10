@@ -1,0 +1,109 @@
+{{- $flags := generateMCPFlagsUsage -}}
+{{- $packageName := .Global.Config.PackageName -}}
+
+{{- if not .Global.Config.Published }}
+> [!TIP]
+> To finish publishing your MCP Server to npm and others you must [run your first generation action](https://www.speakeasy.com/docs/github-setup#step-by-step-guide).
+{{- end }}
+
+{{- if and isRemoteMcp .Global.Config.CloudflareURL }}
+
+Deployed at {{.Global.Config.CloudflareURL}}
+
+{{- end }}
+<details>
+<summary>Claude Desktop</summary>
+
+Install the MCP server as a Desktop Extension using the pre-built [`mcp-server.mcpb`]({{ templateMcpBundleReleaseURL }}) file:
+
+Simply drag and drop the [`mcp-server.mcpb`]({{ templateMcpBundleReleaseURL }}) file onto Claude Desktop to install the extension.
+
+The MCP bundle package includes the MCP server and all necessary configuration. Once installed, the server will be available without additional setup.
+
+> [!NOTE]
+> MCP bundles provide a streamlined way to package and distribute MCP servers. Learn more about [Desktop Extensions](https://www.anthropic.com/engineering/desktop-extensions).
+
+</details>
+
+<details>
+<summary>Cursor</summary>
+
+{{ templateMcpCursorInstallationButton }}
+
+Or manually:
+
+1. Open Cursor Settings
+2. Select Tools and Integrations
+3. Select New MCP Server
+4. If the configuration file is empty paste the following JSON into the MCP Server Configuration:
+
+```json
+{{ templateMcpIDEConfig }}
+```
+
+</details>
+
+<details>
+<summary>Claude Code CLI</summary>
+
+```bash
+{{ templateMcpCLICommand (dict "client" "claude") }}
+```
+
+</details>
+<details>
+<summary>Gemini</summary>
+
+```bash
+{{ templateMcpCLICommand (dict "client" "gemini") }}
+```
+
+</details>
+<details>
+<summary>Windsurf</summary>
+
+Refer to [Official Windsurf documentation](https://docs.windsurf.com/windsurf/cascade/mcp#adding-a-new-mcp-plugin) for latest information
+
+1. Open Windsurf Settings
+2. Select Cascade on left side menu
+3. Click on `Manage MCPs`. (To Manage MCPs you should be signed in with a Windsurf Account)
+4. Click on `View raw config` to open up the mcp configuration file.
+5. If the configuration file is empty paste the full json
+
+```bash
+{{ templateMcpIDEConfig }}
+```
+</details>
+<details>
+<summary>VS Code</summary>
+
+{{ templateMcpVSCodeInstallationButton }}
+
+Or manually:
+
+Refer to [Official VS Code documentation](https://code.visualstudio.com/api/extension-guides/ai/mcp) for latest information
+
+1. Open [Command Palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette)
+1. Search and open `MCP: Open User Configuration`. This should open mcp.json file
+2. If the configuration file is empty paste the full json
+
+```bash
+{{ templateMcpIDEConfig }}
+```
+
+</details>
+<details>
+<summary> Stdio installation via npm </summary>
+To start the MCP server, run:
+
+```bash
+{{ templateMcpStartCommandString }}
+```
+
+For a full list of server arguments, run:
+
+```
+npx {{ $packageName }} --help
+```
+
+</details>

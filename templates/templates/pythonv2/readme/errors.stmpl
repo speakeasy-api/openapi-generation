@@ -1,0 +1,42 @@
+{{- $baseClass := getBaseErrorClassName}}
+{{- $baseClassLink := templateErrorMarkdownLink $baseClass}}
+{{$baseClassLink}} is the base class for all HTTP error responses. It has the following properties:
+
+{{templateBaseErrorClassTable}}
+
+### Example
+{{templateUsageExample .Local.UsageContext ""}}
+
+### Error Classes
+
+{{- $groups := groupGlobalErrorsByErrorType }}
+**Primary error{{ if gt $groups.PrimaryErrorCount 0 }}s{{ end }}:**
+* {{$baseClassLink}}: The base class for HTTP error responses.
+{{- range $groups.PrimaryErrors }}
+  * {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+
+{{- $count := $groups.LessCommonErrorCount}}
+{{- $builtInCount := 5}}
+{{- $count := add $count $builtInCount}}
+
+<details><summary>Less common errors ({{$count}})</summary>
+
+<br />
+
+**Network errors:**
+* [`httpx.RequestError`](https://www.python-httpx.org/exceptions/#httpx.RequestError): Base class for request errors.
+    * [`httpx.ConnectError`](https://www.python-httpx.org/exceptions/#httpx.ConnectError): HTTP client was unable to make a request to a server.
+    * [`httpx.TimeoutException`](https://www.python-httpx.org/exceptions/#httpx.TimeoutException): HTTP request timed out.
+
+
+**Inherit from {{$baseClassLink}}**:
+{{- range $groups.LessCommonErrors }}
+* {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+* {{templateErrorMarkdownLink "ResponseValidationError"}}: Type mismatch between the response data and the expected Pydantic model. Provides access to the Pydantic validation error via the `cause` attribute.
+
+</details>
+{{ if $groups.HasErrorsApplicableToNotAllOperations }}
+\* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
+{{- end }}

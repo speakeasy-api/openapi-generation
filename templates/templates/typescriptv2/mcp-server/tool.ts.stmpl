@@ -1,0 +1,88 @@
+{{- recurse 1 -}}
+{{- $usageLocation := "mcp-server/tools" }}
+{{- $op := .Local.Operation }}
+{{- $opState := opTemplateState $op $usageLocation }}
+{{- $hasArgs := gt (len $op.Arguments.Sorted) 0 }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $customPath := printf "%s/%s.custom.ts" .Local.Dir .Local.Filename }}
+{{- $hasCustomFile := fileExists $customPath }}
+{{ genImports }}
+import { formatResult, ToolDefinition } from "../tools.js";
+
+{{- if $hasCustomFile }}
+{{- addImport (printf "./%s.custom.js" .Local.Filename) "customizer" "aliasImport" }}
+{{- end }}
+
+{{ if $hasArgs }}
+const args = {
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveInbound (
+          dict
+            "usageLocation" $usageLocation
+            "typeDef" $field.Type
+            "rootTypeDef" $op.OwningSDK.Type
+            "optional" $field.Optional
+            "nullable" $field.Nullable
+            "streamable" (isMultipartFileField $field)
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importZodTypes }}
+  {{    sanitizeFieldName $field.Name}}: {{$fieldType.zod}},
+  {{- end }}
+};
+{{ end }}
+
+export const {{sanitizeMCPPrimitiveExport $op}}: ToolDefinition{{if $hasArgs}}<typeof args>{{end}} = {
+  name: "{{ sanitizeMCPPrimitiveName $op }}",
+  description: `{{ sanitizeMCPPrimitiveDescription $op }}`,
+  {{- if and $op.Extensions.MCP $op.Extensions.MCP.Scopes }}
+  scopes: {{ $op.Extensions.MCP.Scopes | toJson }},
+  {{- end }}
+  {{- if $hasArgs}}
+  args,
+  {{- end}}
+  tool: async (client{{ if $hasArgs }}, args{{end}}, ctx) => {
+    {{- addFuncImport $op $usageLocation }}
+    const [result, apiCall] = await {{$funcName}}(
+      client,
+      {{- range $field := $op.Arguments.Sorted }}
+      {{    sanitizeAccessor "args" (sanitizeFieldName $field.Name)}},
+      {{- end }}
+      { {{constants.fetchOptions}}: { signal: ctx.signal } },
+    ).$inspect();
+
+    if (!result.ok) {
+      return {
+        content: [{ type: "text", text: result.error.message }],
+        isError: true,
+      };
+    }
+
+    {{ if hasResponseBody $op }}
+    {{    if isResponseEnveloped $op }}
+    const value = result.value{{ if $opState.flatOptions.returnTypeOptional }}?{{end}}.result;
+    {{    else }}
+    const value = result.value;
+    {{    end }}
+
+    {{-   if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(value, apiCall);
+    }
+    {{-   end }}
+
+    return formatResult(value, apiCall);
+    {{- else }}
+    {{-   if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(void 0, apiCall);
+    }
+    {{-   end }}
+
+    return formatResult(void 0, apiCall);
+    {{- end }}
+  }
+};

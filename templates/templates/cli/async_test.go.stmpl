@@ -1,0 +1,435 @@
+{{- $a := templateAsyncTestCommand -}}
+{{- if $a}}
+package tests
+
+import (
+	{{- if $a.AsyncPendingTestJSON}}
+	"context"
+	{{- end}}
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	{{- if $a.ArtifactJSON}}
+	"os"
+	"path/filepath"
+	{{- end}}
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	{{- if $a.AsyncPendingTestJSON}}
+	"{{getGolangPackage}}/internal/cli"
+	{{- end}}
+	"{{getGolangPackage}}/internal/flagutil"
+	"{{getGolangPackage}}/internal/sdk/types"
+)
+
+const (
+	asyncTestHandle       = "async-test-handle"
+	asyncCreateTestBody   = {{goStringLiteral $a.AsyncCreateTestJSON}}
+	asyncSuccessTestBody  = {{goStringLiteral $a.AsyncSuccessTestJSON}}
+	asyncUnknownTestBody  = {{goStringLiteral $a.AsyncUnknownTestJSON}}
+	asyncMissingStateBody = {{goStringLiteral $a.AsyncMissingStateTestJSON}}
+	asyncMissingIDBody    = {{goStringLiteral $a.AsyncMissingHandleTestJSON}}
+)
+
+type asyncStub struct {
+	server       *httptest.Server
+	mu           sync.Mutex
+	createBody   string
+	createType   string
+	pollBodies   []string
+	createStatus int
+	pollStatus   int
+	createCalls  int
+	pollCalls    int
+	firstPoll    time.Time
+}
+
+func newAsyncStubWithStatus(t *testing.T, createStatus, pollStatus int, createBody string, pollBodies ...string) *asyncStub {
+	t.Helper()
+	stub := &asyncStub{
+		createBody: createBody, createType: "application/json", pollBodies: pollBodies,
+		createStatus: createStatus, pollStatus: pollStatus,
+	}
+	stub.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		stub.mu.Lock()
+		defer stub.mu.Unlock()
+		body := stub.createBody
+		contentType := stub.createType
+		status := stub.createStatus
+		if r.Method == http.MethodGet {
+			stub.pollCalls++
+			status = stub.pollStatus
+			{{- if eq $a.AsyncParameterIn "query"}}
+			assert.Equal(t, asyncTestHandle, r.URL.Query().Get({{goStringLiteral $a.AsyncParameterName}}))
+			{{- else}}
+			assert.Contains(t, r.URL.EscapedPath(), asyncTestHandle)
+			{{- end}}
+			if stub.firstPoll.IsZero() {
+				stub.firstPoll = time.Now()
+			}
+			{{- range $a.AsyncParams}}
+			{{- if eq .In "query"}}
+			assert.Equal(t, {{goStringLiteral .Expected}}, r.URL.Query().Get({{goStringLiteral .Name}}))
+			{{- else if eq .In "header"}}
+			assert.Equal(t, {{goStringLiteral .Expected}}, r.Header.Get({{goStringLiteral .Name}}))
+			{{- end}}
+			{{- end}}
+			if len(stub.pollBodies) > 0 {
+				index := stub.pollCalls - 1
+				if index >= len(stub.pollBodies) {
+					index = len(stub.pollBodies) - 1
+				}
+				body = stub.pollBodies[index]
+			}
+		} else {
+			stub.createCalls++
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(stub.server.Close)
+	return stub
+}
+
+func newAsyncStub(t *testing.T, createBody string, pollBodies ...string) *asyncStub {
+	t.Helper()
+	return newAsyncStubWithStatus(t, {{$a.AsyncCreateResponseCode}}, {{$a.AsyncResponseCode}}, createBody, pollBodies...)
+}
+
+func (s *asyncStub) counts() (int, int, time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.createCalls, s.pollCalls, s.firstPoll
+}
+
+func runAsyncIntent(t *testing.T, h *CLITestHarness, serverURL string, extra ...string) error {
+	t.Helper()
+	args := []string{ {{templateAsyncTestArgs}} }
+	args = append(args, "--poll-interval", "20ms", "--poll-timeout", "5s")
+	args = append(args, extra...)
+	return h.RunWithStdinServerRaw(serverURL, args, "")
+}
+
+{{- if $a.ArtifactJSON}}
+func withAsyncWorkingDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	original, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() { _ = os.Chdir(original) })
+	return dir
+}
+{{- end}}
+
+func TestAsyncIntent_SuccessRendersTerminalResponse(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody{{if $a.AsyncPendingTestJSON}}, {{goStringLiteral $a.AsyncPendingTestJSON}}{{end}}, asyncSuccessTestBody)
+	{{- if $a.ArtifactJSON}}
+	dir := withAsyncWorkingDir(t)
+	{{- end}}
+	h := NewCLITestHarness(t)
+	started := time.Now()
+
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL))
+	{{- if $a.ArtifactJSON}}
+	path := strings.TrimSpace(h.GetStdout())
+	require.True(t, filepath.IsAbs(path))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(0))
+	resolvedDir, err := filepath.EvalSymlinks(dir)
+	require.NoError(t, err)
+	resolvedPathDir, err := filepath.EvalSymlinks(filepath.Dir(path))
+	require.NoError(t, err)
+	assert.Equal(t, resolvedDir, resolvedPathDir)
+	{{- else}}
+	assert.JSONEq(t, asyncSuccessTestBody, h.GetStdout())
+	{{- end}}
+	createCalls, pollCalls, firstPoll := stub.counts()
+	assert.Equal(t, 1, createCalls)
+	assert.Equal(t, {{if $a.AsyncPendingTestJSON}}2{{else}}1{{end}}, pollCalls)
+	assert.GreaterOrEqual(t, firstPoll.Sub(started), 10*time.Millisecond)
+	{{- if $a.AsyncPendingTestJSON}}
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Waiting for {{$a.CommandDisplay}}"))
+	{{- end}}
+}
+
+{{- if $a.ArtifactJSON}}
+func TestAsyncIntent_JSONSuccessWritesArtifactEnvelopeSilently(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	withAsyncWorkingDir(t)
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--output-format", "json"))
+	path := jsonGetString(h.GetStdout(), "path")
+	require.NotEmpty(t, path)
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(0))
+	assert.Empty(t, h.GetStderr())
+}
+{{- else}}
+func TestAsyncIntent_JSONSuccessRendersTerminalPayloadSilently(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--output-format", "json"))
+	assert.JSONEq(t, asyncSuccessTestBody, h.GetStdout())
+	assert.Empty(t, h.GetStderr())
+}
+{{- end}}
+
+func TestAsyncIntent_EscapeReturnsCreateResponseWithoutPolling(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--async"))
+	assert.Equal(t, asyncTestHandle, strings.TrimSpace(h.GetStdout()))
+	assert.Empty(t, h.GetStderr())
+	_, polls, _ := stub.counts()
+	assert.Zero(t, polls)
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--async", "--output-format", "json"))
+	assert.JSONEq(t, asyncCreateTestBody, h.GetStdout())
+	assert.Empty(t, h.GetStderr())
+
+	for name, args := range map[string][]string{
+		"yaml": {"--async", "--output-format", "yaml"},
+		"toon": {"--async", "--output-format", "toon"},
+		"jq": {"--async", "--jq", "."},
+		"agent": {"--agent-mode", "--async"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, runAsyncIntent(t, h, stub.server.URL, args...))
+			assert.Contains(t, h.GetStdout(), asyncTestHandle)
+			assert.Empty(t, h.GetStderr())
+		})
+	}
+}
+
+{{- if $a.AsyncHandoffTestJSON}}
+func TestAsyncIntent_HandoffReturnsPayloadWithoutArtifact(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, {{goStringLiteral $a.AsyncHandoffTestJSON}})
+	{{- if $a.ArtifactJSON}}
+	withAsyncWorkingDir(t)
+	{{- end}}
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--output-format", "json"))
+	assert.JSONEq(t, {{goStringLiteral $a.AsyncHandoffTestJSON}}, h.GetStdout())
+	assert.NotContains(t, h.GetStdout(), `"path"`)
+}
+{{- end}}
+
+{{- if $a.AsyncFailureTestJSON}}
+func TestAsyncIntent_FailureUsesSharedMachineErrorEnvelope(t *testing.T) {
+	for _, args := range [][]string{
+		{"--agent-mode", "--output-format", "json"},
+		{"--output-format", "json"},
+	} {
+		stub := newAsyncStub(t, asyncCreateTestBody, {{goStringLiteral $a.AsyncFailureTestJSON}})
+		h := NewCLITestHarness(t)
+		err := runAsyncIntent(t, h, stub.server.URL, args...)
+		require.Error(t, err)
+		assert.Empty(t, h.GetStdout())
+		assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
+		assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), {{goStringLiteral $a.AsyncResume}}+" "+asyncTestHandle)
+		if args[0] == "--agent-mode" {
+			assert.Equal(t, "CLI_ASYNC_FAILED", jsonGetString(h.GetStderr(), "error_reason"))
+			{{- if $a.AsyncFailureHint}}
+			assert.Contains(t, h.GetStderr(), {{goStringLiteral $a.AsyncFailureHint}})
+			{{- end}}
+		}
+	}
+
+	stub := newAsyncStub(t, asyncCreateTestBody, {{goStringLiteral $a.AsyncFailureTestJSON}})
+	h := NewCLITestHarness(t)
+	err := runAsyncIntent(t, h, stub.server.URL)
+	require.Error(t, err)
+	diagnostic := strings.TrimSpace(h.GetStderr())
+	assert.Contains(t, diagnostic, asyncTestHandle)
+	assert.Contains(t, diagnostic, {{goStringLiteral $a.AsyncResume}}+" "+asyncTestHandle)
+	assert.Zero(t, strings.Count(diagnostic, string(rune(10))))
+}
+{{- end}}
+
+func TestAsyncIntent_UnknownAndMissingStatesAreErrors(t *testing.T) {
+	for name, test := range map[string]struct{ body, reason string }{
+		"unknown": {asyncUnknownTestBody, "CLI_ASYNC_UNKNOWN_STATE"},
+		"missing": {asyncMissingStateBody, "CLI_PROTOCOL"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody, test.body)
+			h := NewCLITestHarness(t)
+			err := runAsyncIntent(t, h, stub.server.URL, "--agent-mode", "--output-format", "json")
+			require.Error(t, err)
+			assert.Empty(t, h.GetStdout())
+			assert.Equal(t, test.reason, jsonGetString(h.GetStderr(), "error_reason"))
+			assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
+			assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), {{goStringLiteral $a.AsyncResume}}+" "+asyncTestHandle)
+		})
+	}
+}
+
+func TestAsyncIntent_MissingHandleAndCreateStreamAreProtocolErrors(t *testing.T) {
+	for name, configure := range map[string]func(*asyncStub){
+		"missing handle": func(stub *asyncStub) { stub.createBody = asyncMissingIDBody },
+		"create stream": func(stub *asyncStub) { stub.createType = "text/event-stream" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+			configure(stub)
+			h := NewCLITestHarness(t)
+			err := runAsyncIntent(t, h, stub.server.URL, "--agent-mode", "--output-format", "json")
+			require.Error(t, err)
+			assert.Empty(t, h.GetStdout())
+			assert.Equal(t, "CLI_PROTOCOL", jsonGetString(h.GetStderr(), "error_reason"))
+			assert.Equal(t, "<missing>", jsonGetString(h.GetStderr(), "id"))
+		})
+	}
+}
+
+{{- if $a.AsyncPendingTestJSON}}
+func TestAsyncIntent_TimeoutAndCancelStopPendingPolls(t *testing.T) {
+	pending := {{goStringLiteral $a.AsyncPendingTestJSON}}
+	stub := newAsyncStub(t, asyncCreateTestBody, pending)
+	h := NewCLITestHarness(t)
+	started := time.Now()
+	err := runAsyncIntent(t, h, stub.server.URL, "--agent-mode", "--output-format", "json", "--poll-timeout", "150ms")
+	require.Error(t, err)
+	assert.Less(t, time.Since(started), 20*time.Second)
+	assert.Equal(t, "CLI_ASYNC_TIMEOUT", jsonGetString(h.GetStderr(), "error_reason"))
+
+	stub = newAsyncStub(t, asyncCreateTestBody, pending)
+	h = NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	args := append(baseArgs(), "--server-url", stub.server.URL, "--agent-mode", "--output-format", "json", "--color", "never", {{templateAsyncTestArgs}}, "--poll-interval", "20ms", "--poll-timeout", "5s")
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(60*time.Millisecond, cancel)
+	err = cli.ExecuteRoot(ctx, root, args)
+	require.Error(t, err)
+	assert.NotContains(t, h.GetStderr(), "CLI_ASYNC_TIMEOUT")
+}
+{{- end}}
+
+func TestAsyncIntent_DryRunDoesNotCallOrRender(t *testing.T) {
+	for _, extra := range [][]string{
+		{"--dry-run", "--output-format", "json"},
+		{"--async", "--dry-run", "--output-format", "json"},
+	} {
+		stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+		h := NewCLITestHarness(t)
+		require.NoError(t, runAsyncIntent(t, h, stub.server.URL, extra...))
+		// An explicit JSON dry-run prints the create-request preview object and
+		// nothing else: no create call, no polling, no synthetic handle.
+		var preview struct {
+			DryRun  bool `json:"dry_run"`
+			Request struct {
+				Method string `json:"method"`
+			} `json:"request"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStdout())), &preview), "stdout: %s", h.GetStdout())
+		assert.True(t, preview.DryRun)
+		assert.Equal(t, "POST", preview.Request.Method)
+		assert.Equal(t, 1, strings.Count(strings.TrimSpace(h.GetStdout()), "\n")+1, "exactly one preview line")
+		createCalls, pollCalls, _ := stub.counts()
+		assert.Zero(t, createCalls)
+		assert.Zero(t, pollCalls)
+	}
+}
+
+func TestAsyncIntent_PollOverridesValidateBeforeCreate(t *testing.T) {
+	for _, extra := range [][]string{
+		{"--poll-interval", "0s"},
+		{"--poll-timeout", "10ms"},
+	} {
+		stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+		h := NewCLITestHarness(t)
+		err := runAsyncIntent(t, h, stub.server.URL, extra...)
+		require.Error(t, err)
+		createCalls, pollCalls, _ := stub.counts()
+		assert.Zero(t, createCalls)
+		assert.Zero(t, pollCalls)
+	}
+}
+
+func TestAsyncIntent_UsageListsPollingControls(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--usage"))
+	assert.Contains(t, h.GetStdout(), "poll-interval")
+	assert.Contains(t, h.GetStdout(), "poll-timeout")
+	createCalls, pollCalls, _ := stub.counts()
+	assert.Zero(t, createCalls)
+	assert.Zero(t, pollCalls)
+}
+
+type asyncNamedBool bool
+type asyncNamedInt int16
+type asyncNamedFloat float32
+
+type asyncParameterFixture struct {
+	Enabled *asyncNamedBool  `queryParam:"name=enabled"`
+	Limit   asyncNamedInt    `queryParam:"name=limit"`
+	Ratio   *asyncNamedFloat `queryParam:"name=ratio"`
+	Mode    string           `header:"name=X-Mode"`
+	Since   time.Time        `queryParam:"name=since"`
+	Day     *types.Date      `queryParam:"name=day"`
+}
+
+func TestAsyncIntent_RequestParameterReflectionSupportsLinkedScalars(t *testing.T) {
+	request := &asyncParameterFixture{}
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "query", "enabled", false))
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "query", "limit", float64(12)))
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "query", "ratio", float64(1.25)))
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "header", "X-Mode", "discrete"))
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "query", "since", "2024-01-15T10:30:00Z"))
+	require.NoError(t, flagutil.SetRequestParameter(request, "testPoll", "query", "day", "2024-01-15"))
+	require.NotNil(t, request.Enabled)
+	assert.False(t, bool(*request.Enabled))
+	assert.Equal(t, asyncNamedInt(12), request.Limit)
+	require.NotNil(t, request.Ratio)
+	assert.Equal(t, asyncNamedFloat(1.25), *request.Ratio)
+	assert.Equal(t, "discrete", request.Mode)
+	assert.True(t, request.Since.Equal(time.Date(2024, time.January, 15, 10, 30, 0, 0, time.UTC)))
+	require.NotNil(t, request.Day)
+	assert.Equal(t, "2024-01-15", request.Day.String())
+	assert.Error(t, flagutil.SetRequestParameter(request, "testPoll", "query", "limit", float64(40000)))
+	assert.Error(t, flagutil.SetRequestParameter(request, "testPoll", "query", "limit", 1.5))
+	assert.Error(t, flagutil.SetRequestParameter(request, "testPoll", "query", "since", "yesterday"))
+	assert.Error(t, flagutil.SetRequestParameter(request, "testPoll", "query", "day", "2024-01-15T10:30:00Z"))
+}
+
+{{- $j := templateAsyncJQTestCommand}}
+{{- if $j}}
+func TestAsyncIntent_DeclaredJQAppliesOnlyToTerminalResponse(t *testing.T) {
+	stub := newAsyncStubWithStatus(t, {{$j.AsyncCreateResponseCode}}, {{$j.AsyncResponseCode}}, {{goStringLiteral $j.AsyncCreateTestJSON}}, {{goStringLiteral $j.AsyncSuccessTestJSON}})
+	h := NewCLITestHarness(t)
+	commandArgs := []string{ {{templateIntentAsyncTestArgs $j}} }
+	commandArgs = append(commandArgs, "--poll-interval", "20ms", "--poll-timeout", "5s", "--async")
+	require.NoError(t, h.RunWithStdinServerRaw(stub.server.URL, commandArgs, ""))
+	assert.Equal(t, asyncTestHandle, strings.TrimSpace(h.GetStdout()))
+	_, polls, _ := stub.counts()
+	assert.Zero(t, polls)
+
+	stub = newAsyncStubWithStatus(t, {{$j.AsyncCreateResponseCode}}, {{$j.AsyncResponseCode}}, {{goStringLiteral $j.AsyncCreateTestJSON}}, {{goStringLiteral $j.AsyncSuccessTestJSON}})
+	h = NewCLITestHarness(t)
+	commandArgs = commandArgs[:len(commandArgs)-1]
+	commandArgs = append(commandArgs, "--jq", ".")
+	require.NoError(t, h.RunWithStdinServerRaw(stub.server.URL, commandArgs, ""))
+	assert.JSONEq(t, {{goStringLiteral $j.AsyncSuccessTestJSON}}, h.GetStdout())
+}
+{{- end}}
+{{- end}}

@@ -1,0 +1,239 @@
+{{- recurse 1 -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "internal/sdk" true -}}
+{{- addImport "internal/flagutil" true -}}
+{{- addImport "internal/testclient" true -}}
+{{- addImport "internal/config" true -}}
+{{- addImport "net" -}}
+{{- addImport "net/http" -}}
+{{- addImport "sync" -}}
+{{- addImport "time" -}}
+{{- addImport "fmt" -}}
+package client
+
+{{genImports}}
+// #region imports
+// #endregion imports
+
+// NewClient creates a new SDK client configured from command flags and environment.
+// It handles global security, server URL/selection override, global parameters,
+// retry configuration, timeout, and test client injection.
+// Empty allowedSecurityFields accepts every global security alternative.
+func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{templateMainSDKTypeName}}, error) {
+    var sdkOpts []sdk.SDKOption
+    {{- if hasGlobalSecurity}}
+    sdkOpts = append(sdkOpts, sdk.WithSecurity(buildGlobalSecurity(cmd, allowedSecurityFields)))
+    {{- else}}
+    _ = allowedSecurityFields
+    {{- end}}
+    if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
+        if err := flagutil.ValidateServerURL(serverURL); err != nil {
+            return nil, err
+        }
+    }
+    {{- if sdkHasServers}}
+    if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
+        sdkOpts = append(sdkOpts, sdk.WithServerURL(serverURL))
+    {{- if ne (serverSelectionFlag) "none"}}
+    } else if serverFlag, _ := flagutil.GetStringFlag(cmd, "server"); serverFlag != "" {
+        {{- if sdkServerMap}}
+        // Silently skip unrecognized server names — they may be intended for operation-level servers.
+        if _, ok := sdk.ServerList[serverFlag]; ok {
+            sdkOpts = append(sdkOpts, sdk.WithServer(serverFlag))
+        }
+        {{- else}}
+        {{- addImport "strconv"}}
+        // Silently skip non-integer or out-of-range values — they may be intended for operation-level servers.
+        if idx, err := strconv.Atoi(serverFlag); err == nil && idx >= 0 && idx < len(sdk.ServerList) {
+            sdkOpts = append(sdkOpts, sdk.WithServerIndex(idx))
+        }
+        {{- end}}
+    {{- end}}
+    }
+    {{templateServerVariableOptions | indent 4 | trim}}
+    {{- end}}
+    {{- if hasGlobals}}
+    sdkOpts = append(sdkOpts, buildGlobalOptions(cmd)...)
+    {{- end}}
+
+    // Timeout (always available)
+    if timeoutStr := resolveStringFlag(cmd, "timeout"); timeoutStr != "" {
+        timeout, err := time.ParseDuration(timeoutStr)
+        if err != nil {
+            return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid --timeout value %q: %w", timeoutStr, err))
+        }
+        sdkOpts = append(sdkOpts, sdk.WithTimeout(timeout))
+    }
+
+    {{- if isFeatureUsed "retries"}}
+    {{- addImport "retry" -}}
+    {{- addImport "encoding/json" -}}
+    // Retry configuration
+    retryConfig, err := buildRetryConfig(cmd)
+    if err != nil {
+        return nil, err
+    }
+    if retryConfig != nil {
+        sdkOpts = append(sdkOpts, sdk.WithRetryConfig(*retryConfig))
+    }
+    {{- end}}
+
+    // #region custom-client-options
+    // #endregion custom-client-options
+
+    // Diagnostics and test client composition.
+    // Order: test client (innermost) → diagnostics wrapper (outermost).
+    var httpClient HTTPClient = &http.Client{Transport: newPhaseBoundedTransport(cmd)}
+    if testClient := testclient.NewTestHTTPClient(); testClient != nil {
+        httpClient = testClient
+    }
+    httpClient = WrapClientForDiagnostics(cmd, httpClient)
+    sdkOpts = append(sdkOpts, sdk.WithClient(httpClient))
+    {{- if sdkNewTakesOnlyOptions}}
+    return sdk.New(sdkOpts...), nil
+    {{- else}}
+    serverURL, _ := flagutil.GetStringFlag(cmd, "server-url")
+    return sdk.New(serverURL, sdkOpts...), nil
+    {{- end}}
+}
+
+func newPhaseBoundedTransport(cmd *cobra.Command) http.RoundTripper {
+    var phase time.Duration
+    if s := resolveStringFlag(cmd, "timeout"); s != "" {
+        d, err := time.ParseDuration(s)
+        if err != nil || d <= 0 {
+            return nil
+        }
+        phase = d
+    }
+    {{- if cliDefaultTimeout}}
+    if phase <= 0 {
+        phase = time.Duration({{cliDefaultTimeout}})
+    }
+    {{- end}}
+    if phase <= 0 {
+        return nil
+    }
+    if cached, ok := phaseBoundedTransports.Load(phase); ok {
+        return cached.(*http.Transport)
+    }
+    transport, ok := http.DefaultTransport.(*http.Transport)
+    if !ok {
+        return nil
+    }
+    bounded := transport.Clone()
+    // http.DefaultTransport dials with a 30s timeout and a 10s TLS handshake timeout.
+    if phase < 30*time.Second {
+        bounded.DialContext = (&net.Dialer{Timeout: phase, KeepAlive: 30 * time.Second}).DialContext
+    }
+    if phase < bounded.TLSHandshakeTimeout {
+        bounded.TLSHandshakeTimeout = phase
+    }
+    bounded.ResponseHeaderTimeout = phase
+    actual, _ := phaseBoundedTransports.LoadOrStore(phase, bounded)
+    return actual.(*http.Transport)
+}
+
+var phaseBoundedTransports sync.Map
+
+// resolveStringFlag reads a string flag with priority: flag > env > config.
+func resolveStringFlag(cmd *cobra.Command, name string) string {
+    if val, changed := flagutil.GetStringFlag(cmd, name); changed && val != "" {
+        return val
+    }
+    return config.GetString(name)
+}
+
+{{- if hasGlobalSecurity}}
+
+// buildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
+func buildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecurityFields"}} []string) {{templateGlobalSecurityTypeName}} {
+    {{- if not hasMultipleSecuritySchemes}}
+    _ = {{securityIdentifier "allowedSecurityFields"}}
+    {{- end}}
+    {{templateSecurityFieldParsing | indent 4 | trim}}
+    {{templateGlobalSecurityConstruction | indent 4 | trim}}
+    return globalSecurity
+}
+{{- end}}
+
+{{- if hasGlobals}}
+
+// buildGlobalOptions reads global parameter flags and returns SDK options.
+// Priority: flag > env var > config file.
+func buildGlobalOptions(cmd *cobra.Command) []sdk.SDKOption {
+    var opts []sdk.SDKOption
+    {{templateGlobalOptionsBuilding | indent 4 | trim}}
+    return opts
+}
+{{- end}}
+
+{{- if isFeatureUsed "retries"}}
+
+// buildRetryConfig reads retry flags and constructs a retry configuration.
+// Returns (nil, nil) if no retry flags were set (use spec/SDK defaults).
+// Returns non-nil error for invalid flag values (malformed JSON, bad duration).
+func buildRetryConfig(cmd *cobra.Command) (*retry.Config, error) {
+    // --no-retries: highest precedence
+    if noRetries, changed := flagutil.GetBoolFlag(cmd, "no-retries"); changed {
+        if noRetries {
+            return &retry.Config{Strategy: ""}, nil
+        }
+        // Explicit --no-retries=false: skip config fallback, proceed to other flags
+    } else if val := config.GetString("no-retries"); val == "true" {
+        return &retry.Config{Strategy: ""}, nil
+    }
+
+    // --retry-config: full JSON override
+    if configJSON, changed := flagutil.GetStringFlag(cmd, "retry-config"); changed && configJSON != "" {
+        var cfg retry.Config
+        if err := json.Unmarshal([]byte(configJSON), &cfg); err != nil {
+            return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid --retry-config JSON: %w", err))
+        }
+        return &cfg, nil
+    }
+    if configJSON := config.GetString("retry-config"); configJSON != "" {
+        var cfg retry.Config
+        if err := json.Unmarshal([]byte(configJSON), &cfg); err != nil {
+            return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid retry-config in config file: %w", err))
+        }
+        return &cfg, nil
+    }
+
+    // Individual flags: build fresh config with CLI defaults, override specific fields.
+    // Note: this REPLACES the spec-level retry config entirely (the SDK takes a
+    // complete retry.Config, not a partial merge). Use --retry-config JSON for
+    // exact control over all parameters.
+    var hasOverride bool
+    retryConfig := retry.Config{
+        Strategy: "backoff",
+        Backoff: &retry.BackoffStrategy{
+            InitialInterval: 500,
+            MaxInterval:     10000,
+            Exponent:        1.5,
+            MaxElapsedTime:  30000,
+        },
+    }
+
+    if maxElapsed := resolveStringFlag(cmd, "retry-max-elapsed-time"); maxElapsed != "" {
+        dur, err := time.ParseDuration(maxElapsed)
+        if err != nil {
+            return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid --retry-max-elapsed-time value %q: %w", maxElapsed, err))
+        }
+        retryConfig.Backoff.MaxElapsedTime = int(dur.Milliseconds())
+        hasOverride = true
+    }
+    if retryConn, changed := flagutil.GetBoolFlag(cmd, "retry-connection-errors"); changed {
+        retryConfig.RetryConnectionErrors = retryConn
+        hasOverride = true
+    } else if val := config.GetString("retry-connection-errors"); val == "true" {
+        retryConfig.RetryConnectionErrors = true
+        hasOverride = true
+    }
+
+    if hasOverride {
+        return &retryConfig, nil
+    }
+    return nil, nil
+}
+{{- end}}

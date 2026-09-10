@@ -1,0 +1,3 @@
+## serverEvents: 1.0.14 - 2026-03-03
+### :bug: Bug Fixes
+- SSE streaming no longer crashes on non-JSON event data in union types *(commit by [@tristanspeakeasy](https://github.com/tristanspeakeasy))*

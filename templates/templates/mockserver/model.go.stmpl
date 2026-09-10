@@ -1,0 +1,102 @@
+{{- $typeDef := .Local.Type -}}
+{{- $outputLocation := .Local.Type.OutputLocation -}}
+{{- $className := sanitizeClass .Local.Type $outputLocation true -}}
+{{- $dg := .Local.DocGroup -}}
+{{templateComments .Local.Type.Comments $dg $className 0 "type" -}}
+type {{$className}} struct {
+    {{range .Local.Type.Fields -}}
+    {{- $fieldName := sanitizeFieldName .Name -}}
+    {{- if .Const -}}
+    {{- $fieldName = sanitizePrivateFieldName .Name -}}
+    {{- end }}
+    {{- $fieldType := sanitizeFieldType . $outputLocation -}}
+    {{- templateComments .Comments $dg (printf "%s.%s" $className $fieldName) 1 "field" true -}}
+    {{- if eq $fieldType "io.ReadCloser" -}}
+    // The Close method must be called on this field, even if it is not used, to prevent resource leaks.
+    {{ end -}}
+    {{$fieldName}} {{$fieldType}} {{templateAnnotations .}}
+    {{end}}
+    {{- if .Local.Type.Extensions.Pagination }}
+    Next func() (*{{sanitizeClass .Local.Type $outputLocation true}}, error)
+    {{- end }}
+}
+{{if needsCustomJSONSerialization .Local.Type}}{{"\n"}}
+{{- $classAccessor := substr 0 1 (lower $className) -}}
+func ({{$classAccessor}} {{$className}}) MarshalJSON() ([]byte, error) {
+    {{- addImport "utils"}}
+    return utils.MarshalJSON({{$classAccessor}}, "", false);
+}
+
+func ({{$classAccessor}} *{{$className}}) UnmarshalJSON(data []byte) error {
+    {{- addImport "utils"}}
+    if err := utils.UnmarshalJSON(data, &{{$classAccessor}}, "", false, {{templateRequiredFields .Local.Type}}); err != nil {
+        return err
+    }
+    return nil
+}
+{{end}}
+{{range .Local.Type.Fields}}
+{{- $fieldName := sanitizeFieldName .Name -}}
+{{- $getterName := sanitizeGetterName $fieldName $typeDef.Fields -}}
+{{- $optional := or .Optional .Nullable -}}
+func (o *{{$className}}) {{$getterName}}() {{sanitizeFieldType . $outputLocation}} {
+    {{- if .Const}}
+    {{- $isOptionalNullable := and .Nullable .Optional}}
+    {{- if $isOptionalNullable}}
+    {{- addImport "optionalnullable"}}
+    {{- $innerType := sanitizeType .Type false $outputLocation}}
+    {{- $constVal := templateConstValue . $outputLocation true}}
+    {{- if eq $constVal "nil"}}
+    return optionalnullable.From[{{$innerType}}](nil)
+    {{- else}}
+    var tmp {{$innerType}} = {{$constVal}}
+    return optionalnullable.From[{{$innerType}}](&tmp)
+    {{- end}}
+    {{- else}}
+    return {{templateValueWrapper . (templateConstValue . $outputLocation)}}
+    {{- end}}
+    {{- else}}
+    if o == nil {
+        return {{templateZero .Type $optional $outputLocation}}
+    }
+    return o.{{sanitizeFieldName .Name}}
+    {{- end}}
+}
+{{ if eq .Type.Type "union" }}
+{{ if .Type.Discriminator }}
+{{- $parentField := . -}}
+{{- $isOptionalNullable := and $parentField.Nullable $parentField.Optional}}
+{{ range sanitizeDiscriminatorGetters $typeDef.Fields $fieldName .Type.Discriminator.Mapping}}
+func (o *{{$className}}) {{.Getter}}() {{sanitizeType .Type true $outputLocation false}} {
+    {{- if $optional }}
+    if v := o.{{$getterName}}(); v != nil {
+        {{- if $isOptionalNullable}}
+        if actualValue, ok := v.Get(); ok && actualValue != nil {
+            return actualValue.{{sanitizeFieldName .Type.Name}}
+        }
+        return nil
+        {{- else}}
+        return v.{{sanitizeFieldName .Type.Name}}
+        {{- end}}
+    }
+    return nil
+    {{- else }}
+    {{- if $isOptionalNullable}}
+    if actualValue, ok := o.{{$getterName}}().Get(); ok && actualValue != nil {
+        return actualValue.{{sanitizeFieldName .Type.Name}}
+    }
+    return nil
+    {{- else}}
+    return o.{{$getterName}}().{{sanitizeFieldName .Type.Name}}
+    {{- end}}
+    {{- end }}
+}
+{{ end }}
+{{ end }}
+{{ end }}
+{{end}}
+{{- if .Local.Type.EventStreamEnvelope}}
+func (o {{$className}}) GetEventEncoding(event string) (string, error) {
+    return "{{getEventEncoding .Local.Type}}", nil
+}
+{{end}}

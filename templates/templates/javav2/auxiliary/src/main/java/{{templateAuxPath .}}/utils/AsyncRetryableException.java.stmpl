@@ -1,0 +1,22 @@
+{{- $okHttp := useOkHttp -}}
+{{- $bodyType := "Blob" -}}
+{{- if $okHttp -}}{{- $bodyType = "InputStream" -}}{{- end -}}
+package {{templatePackageName}}.utils;
+{{if $okHttp}}
+import java.io.InputStream;
+{{else}}
+import {{templatePackageName}}.utils.Blob;
+{{end}}
+import {{javaHttpResponseFqn}};
+
+public final class AsyncRetryableException extends Exception {
+    private final HttpResponse<{{$bodyType}}> response;
+
+    public AsyncRetryableException(HttpResponse<{{$bodyType}}> response) {
+        this.response = response;
+    }
+
+    public HttpResponse<{{$bodyType}}> response() {
+        return response;
+    }
+}

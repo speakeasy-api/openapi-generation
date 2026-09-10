@@ -1,0 +1,30 @@
+{{- recurse 1 -}}
+{{- if and .Global .Global.Config .Global.Config.CloudflareEnabled -}}
+{{- $pkgNameKebab := lower .Global.Config.PackageName }}
+name = "{{ $pkgNameKebab }}-mcp-server"
+main = "src/cloudflare-worker/cloudflare-worker.ts"
+compatibility_date = "2025-07-15"
+
+# Enable node compatibility for MCP SDK
+compatibility_flags = ["nodejs_compat"]
+
+# Durable Object binding for MCP Agent
+[[durable_objects.bindings]]
+name = "{{ sanitizeEnvVarName .Global.Config.PackageName }}_MCP"
+class_name = "{{ sanitizeClassName .Global.Config.PackageName }}MCP"
+
+# Durable Object migration
+[[migrations]]
+tag = "v1"
+new_classes = ["{{ sanitizeClassName .Global.Config.PackageName }}MCP"]
+
+# Static assets configuration
+[assets]
+directory = "./static"
+binding = "ASSETS"
+run_worker_first = true
+
+# Development configuration
+[dev]
+port = 8787
+{{- end -}}

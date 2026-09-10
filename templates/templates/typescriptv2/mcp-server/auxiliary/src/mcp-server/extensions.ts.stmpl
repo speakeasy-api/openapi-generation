@@ -1,0 +1,15 @@
+{{- recurse 1 -}}
+{{ genImports }}
+{{- addImport "./tools.js" "ToolDefinition" }}
+{{- addImport "./prompts.js" "PromptDefinition" }}
+{{- addImport "./prompts.js" "PromptArgsRawShape" }}
+{{- addImport "./resources.js" "ResourceDefinition" }}
+{{- addImport "./resources.js" "ResourceTemplateDefinition" }}
+{{- addZodPackageImport "ZodRawShape" }}
+
+export type Register = {
+  tool: <A extends ZodRawShape | undefined>(def: ToolDefinition<A>) => void;
+  resource: (def: ResourceDefinition) => void;
+  resourceTemplate: (def: ResourceTemplateDefinition) => void;
+  prompt: <A extends PromptArgsRawShape | undefined>(prompt: PromptDefinition<A>) => void;
+}

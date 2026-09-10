@@ -1,0 +1,69 @@
+# This overlay sets up custom:http as the only security scheme
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/ecommerce.yaml => ./tests/specs/ecommerce-custom-http.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/ecommerce.yaml
+actions:
+  - target: $.components.securitySchemes
+    update:
+      customHttp:
+        type: http
+        scheme: custom
+        x-speakeasy-custom-security-scheme:
+          schema:
+            type: object
+            properties:
+              Security:
+                type: object
+                required:
+                  - userID
+                  - role
+                  - passphrase
+                  - accessCode
+                properties:
+                  userID:
+                    type: integer
+                  role:
+                    type: string
+                    enum:
+                      - admin
+                      - manager
+                  passphrase:
+                    type: string
+                  accessCode:
+                    type: integer
+                    default: 104
+                  scopes:
+                    type: array
+                    items:
+                      type: string
+  - target: $.paths
+    update:
+      /auth/customsecurity/customHttpOnly:
+        get:
+          operationId: customHttpOnly
+          tags:
+            - auth
+          servers:
+            - url: http://localhost:35456
+          responses:
+            "200":
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      grant:
+                        type: string
+                      scopes:
+                        type: array
+                        items:
+                          type: string
+            "401":
+              description: Unsuccessful authentication.
+  - target: $
+    update:
+      security:
+        - customHttp: []

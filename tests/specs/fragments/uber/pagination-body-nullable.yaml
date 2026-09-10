@@ -1,0 +1,46 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/limitoffset/nullable_body:
+    put:
+      operationId: paginationLimitOffsetPageBodyNullable
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests offsetLimit pagination where the request body schema is nullable
+        at the top level and every property is optional, so a caller may supply
+        null as the initial request. The first request must serialize the body
+        as a JSON null, and every later page must materialize a body carrying
+        the page input. The test service enforces that sequence, rejecting a
+        non-null first-page body and a materialized body whose page was not
+        advanced past the first page.
+      tags:
+        - pagination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/nullableLimitOffsetBody"
+      responses:
+        "200":
+          $ref: "components.yaml#/components/responses/paginationResponse"
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: requestBody
+            type: page
+          - name: limit
+            in: requestBody
+            type: limit
+        outputs:
+          numPages: $.numPages
+          results: $.resultArray

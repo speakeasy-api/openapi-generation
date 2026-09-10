@@ -1,0 +1,103 @@
+{{- recurse 1 -}}
+{{- if isNoZod -}}
+{{- /* No-zod: schemas.ts is empty (no passthrough, parse, safeParse,
+       collectExtraKeys, SDKValidationError) — there's nothing left to test
+       in this file. The file is gated off entirely. */ -}}
+{{- else -}}
+{{- genImports -}}
+{{- addZodPackageImport }}
+import { expect, test } from "vitest";
+{{- addImport "../../lib/schemas.js" "collectExtraKeys" }}
+
+test("collectExtraKeys collects excess object keys", () => {
+  const schema = {{ templateTestSchemaPersonObject }};
+  const wrapped = collectExtraKeys(schema, "additional", false);
+
+  const result = wrapped.parse({
+    name: "John",
+    age: 30,
+    extranum: 42,
+    extraobj: { cool: "beans" },
+  });
+
+  expect(result).toEqual({
+    name: "John",
+    age: 30,
+    additional: { extranum: 42, extraobj: { cool: "beans" } },
+  });
+});
+
+test("collectExtraKeys adds empty key when no excess props found and not optional", () => {
+  const schema = {{ templateTestSchemaPersonObject }};
+
+  const wrapped = collectExtraKeys(schema, "additional", false);
+
+  const result = wrapped.parse({
+    name: "John",
+    age: 30,
+  });
+
+  expect(result).toEqual({
+    name: "John",
+    age: 30,
+    additional: {},
+  });
+});
+
+test("collectExtraKeys does not add empty key when no excess props found and optional", () => {
+  const schema = {{ templateTestSchemaPersonObject }};
+
+  const wrapped = collectExtraKeys(schema, "additional", true);
+
+  const result = wrapped.parse({
+    name: "John",
+    age: 30,
+  });
+
+  expect(result).toEqual({
+    name: "John",
+    age: 30,
+  });
+});
+
+test("collectExtraKeys adds empty key when catch all is not set", () => {
+  const schema = {{ templateTestSchemaPersonObject }};
+
+  const wrapped = collectExtraKeys(schema, "additional", false);
+
+  const result = wrapped.parse({
+    name: "John",
+    age: 30,
+  });
+
+  expect(result).toEqual({
+    name: "John",
+    age: 30,
+    additional: {},
+  });
+});
+
+test("collectExtraKeys does not clobber excess key name", () => {
+  const schema = {{ templateTestSchemaPersonObjectWithArrayCatchall }};
+
+  const wrapped = collectExtraKeys(schema, "additional", true);
+
+  const result = wrapped.parse({
+    name: "John",
+    age: 30,
+    additional: [1, 2, 3],
+    extranum: [4, 5, 6],
+    extraobj: [7, 8, 9],
+  });
+
+  expect(result).toEqual({
+    name: "John",
+    age: 30,
+    additional: {
+      additional: [1, 2, 3],
+      extranum: [4, 5, 6],
+      extraobj: [7, 8, 9],
+    },
+  });
+});
+{{- end -}}

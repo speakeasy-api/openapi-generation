@@ -1,0 +1,41 @@
+{{typedDirective}}
+# frozen_string_literal: true
+{{- $modelName := .Local.Name }}
+
+
+module {{sanitizeModuleName .Global.Config.Module}}
+{{- if .Local.IsCustomNamespace }}
+{{templateModuleDeclarations .Local.OutputLocation 1}}
+{{- else }}
+{{templateModuleDeclarations (getScopePath .Local.Scope) 1}}
+{{- end }}
+    {{- if .Local.Servers }}
+    {{- if .Local.Servers.ServerMap}}
+    {{- range .Local.Servers.Servers}}
+{{templateComments .Comments (templateConstName .ID (print $modelName "Server")) 3}}
+      {{templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}} = '{{ .ID }}'
+    {{- end}}
+      {{upper (sanitizeFieldName $modelName)}}_SERVERS = {
+        {{- $n := len .Local.Servers.Servers }}{{ range $index, $server := .Local.Servers.Servers}}
+{{templateComments .Comments nil 4}}
+        {{templateConstName .ID (print (sanitizeFieldName $modelName) "Server")}}: '{{ .URL }}'{{if not (eq (add1 $index) $n)}},{{end}}
+        {{- end}}
+      }.freeze
+    {{- else}}
+      {{upper (sanitizeFieldName $modelName)}}_SERVERS = [
+        {{- $n := len .Local.Servers.Servers }}{{ range $index, $server := .Local.Servers.Servers}}
+        '{{ .URL }}'{{if not (eq (add1 $index) $n)}},{{end}}
+      {{- end}}
+      ].freeze
+    {{- end}}
+    {{- end}}
+{{- if eq .Local.Type.Type "enum" }}
+{{indentLines (splitOnNewline (templateString "enum.rb.stmpl" .Local.Type)) 3}}
+    {{- else -}}
+  {{ templateString "model.rb.stmpl" .Local }}{{ end }}
+{{- if .Local.IsCustomNamespace }}
+{{templateModuleClosures .Local.OutputLocation 1}}
+{{- else }}
+{{templateModuleClosures (getScopePath .Local.Scope) 1}}
+{{- end }}
+end

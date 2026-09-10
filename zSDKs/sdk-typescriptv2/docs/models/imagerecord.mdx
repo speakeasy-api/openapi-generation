@@ -1,0 +1,25 @@
+---
+title: "ImageRecord"
+---
+
+An image record request
+
+## Example Usage
+
+```typescript
+import { ImageRecord } from "openapi";
+
+let value: ImageRecord = {
+  type: "<value>",
+  imageId: "image-001",
+  caption: "sample caption",
+};
+```
+
+## Fields
+
+| Field                              | Type                               | Required                           | Description                        | Example                            |
+| ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
+| `type`                             | *string*                           | :heavy_check_mark:                 | Record type discriminator |                                    |
+| `imageId`                      | *string*                           | :heavy_check_mark:                 | N/A                                | image-001                       |
+| `caption`                           | *string*                           | :heavy_minus_sign:                 | N/A                                | sms                                |

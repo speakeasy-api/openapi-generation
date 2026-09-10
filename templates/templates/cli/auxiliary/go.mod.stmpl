@@ -1,0 +1,7 @@
+module {{getGolangPackage}}
+
+go 1.25.10
+
+require (
+	{{templateDependencies | indent 4 | trim}}
+)

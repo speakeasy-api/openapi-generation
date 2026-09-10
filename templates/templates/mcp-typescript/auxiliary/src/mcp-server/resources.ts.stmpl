@@ -1,0 +1,185 @@
+{{- recurse 1 -}}
+{{- $coreName := sanitizeCoreSDKName }}
+{{ genImports }}
+{{- addImport "./shared.js" "valueToBase64" }}
+{{- addImport "./scopes.js" "MCPScope" }}
+{{- addImport "./console-logger.js" "ConsoleLogger" }}
+{{- addImport "../core.js" $coreName }}
+{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
+{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "ResourceMetadata" }}
+{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "ResourceTemplate" }}
+{{- addImport "@modelcontextprotocol/sdk/shared/uriTemplate.js" "Variables" }}
+{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ReadResourceResult" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
+
+export type ReadResourceCallback = (
+  client: {{ $coreName }},
+  uri: URL,
+  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
+export type ResourceDefinition = {
+  name: string;
+  description?: string;
+  metadata?: ResourceMetadata;
+  scopes?: MCPScope[];
+  resource: string;
+  read: ReadResourceCallback;
+};
+
+export type ReadResourceTemplateCallback = (
+  client: {{ $coreName }},
+  uri: URL,
+  vars: Variables,
+  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+) => ReadResourceResult | Promise<ReadResourceResult>;
+
+export type ResourceTemplateDefinition = {
+  name: string;
+  description: string;
+  metadata?: ResourceMetadata;
+  scopes?: MCPScope[];
+  resource: ResourceTemplate;
+  read: ReadResourceTemplateCallback;
+};
+
+{{ if isStrictMCPServer }}
+{{ addImport "./shared.js" "isBinaryData" -}}
+{{ addImport "./shared.js" "isAsyncIterable" -}}
+// Optional function to assist with formatting resource results
+export async function formatResult(
+  value: unknown,
+  uri: URL,
+  init: { mimeType?: string | undefined, response?: Response | undefined },
+): Promise<ReadResourceResult> {
+  if (typeof value === "undefined") {
+    return { contents: [] };
+  }
+
+  let contents: ReadResourceResult["contents"] = [];
+
+  const mimeType = init.mimeType ?? init.response?.headers.get("content-type") ?? "";
+
+  if (mimeType.search(/\bjson\b/g) !== -1) {
+    contents = [{ uri: uri.toString(), mimeType, text: JSON.stringify(value) }];
+  } else if (
+    mimeType.startsWith("text/event-stream")
+    && isAsyncIterable(value)
+  ) {
+    contents = [
+      {
+        uri: uri.toString(),
+        mimeType: "application/json",
+        text: await stringifySSEToJSON(value),
+      },
+    ];
+  } else if ((mimeType.startsWith("text/") || mimeType.startsWith("application/")) && typeof value === "string") {
+    contents = [{ uri: uri.toString(), mimeType, text: value }];
+  } else if (isBinaryData(value)) {
+    const blob = await valueToBase64(value);
+    contents = blob == null ? [] : [{ uri: uri.toString(), blob, mimeType }];
+  } else {
+    throw new Error(`Unsupported content type: "${mimeType}"`);
+  }
+
+  return { contents };
+}
+
+async function stringifySSEToJSON(
+  value: AsyncIterable<unknown>,
+): Promise<string> {
+  const payloads = [];
+
+  for await (const chunk of value) {
+    payloads.push(chunk);
+  }
+
+  return JSON.stringify(payloads);
+}
+{{ else }}
+// Optional function to assist with formatting tool results
+export async function formatResult(
+  response: Response,
+  uri: URL,
+  init?: { mimeType?: string | undefined },
+): Promise<ReadResourceResult> {
+  let contents: ReadResourceResult["contents"] = [];
+  const mimeType = init?.mimeType ?? response.headers.get("content-type") ?? "";
+
+  if (mimeType.startsWith("image/") || mimeType.startsWith("audio/")) {
+    const blob = await valueToBase64(await response.arrayBuffer());
+    contents = blob == null ? [] : [{ uri: uri.toString(), blob, mimeType }];
+  } else {
+    const text = await response.text();
+    contents = [{ uri: uri.toString(), mimeType, text }];
+  }
+
+  return { contents };
+}
+{{- end }}
+
+export function createRegisterResource(
+  logger: ConsoleLogger,
+  server: McpServer,
+  getSDK: () => {{ $coreName }},
+  allowedScopes: Set<MCPScope>,
+): (resource: ResourceDefinition) => void {
+  return (resource: ResourceDefinition): void => {
+    const scopes = resource.scopes ?? [];
+    if (allowedScopes.size > 0 && scopes.length === 0) {
+      return;
+    }
+
+    if (allowedScopes.size > 0 && !scopes.every((s: MCPScope) => allowedScopes.has(s))) {
+      return;
+    }
+
+    const metadata: ResourceMetadata = {
+      ...resource.metadata,
+      description: resource.description,
+    };
+
+    server.resource(
+      resource.name,
+      resource.resource,
+      metadata,
+      async (uri, ctx) => resource.read(getSDK(), uri, ctx),
+    );
+
+    logger.debug("Registered resource", { name: resource.name });
+  };
+}
+
+export function createRegisterResourceTemplate(
+  logger: ConsoleLogger,
+  server: McpServer,
+  getSDK: () => {{ $coreName }},
+  allowedScopes: Set<MCPScope>,
+): (resource: ResourceTemplateDefinition) => void {
+  return (resource: ResourceTemplateDefinition): void => {
+    const scopes = resource.scopes ?? [];
+    if (allowedScopes.size > 0 && scopes.length === 0) {
+      return;
+    }
+    
+    if (allowedScopes.size > 0 && !scopes.every((s: MCPScope) => allowedScopes.has(s))) {
+      return;
+    }
+
+    const metadata: ResourceMetadata = {
+      ...resource.metadata,
+      description: resource.description,
+    };
+
+    server.resource(
+      resource.name,
+      resource.resource,
+      metadata,
+      async (uri, vars, ctx) => resource.read(getSDK(), uri, vars, ctx),
+    );
+
+    logger.debug("Registered resource template", { name: resource.name });
+  };
+}

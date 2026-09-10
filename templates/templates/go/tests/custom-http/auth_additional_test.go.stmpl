@@ -1,0 +1,37 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	customhttp "github.com/speakeasy/customhttp"
+	"github.com/speakeasy/customhttp/models/components"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAuth_CustomHTTPSchemeOnly(t *testing.T) {
+	recordTest("auth-custom-security-scheme-only")
+
+	ctx := context.Background()
+
+	testScopes := []string{"read:products", "write:products"}
+	accessCode := int64(104)
+
+	s := customhttp.New(
+		customhttp.WithSecurity(components.SchemeCustomHTTPSecurity{
+			UserID:     54321,
+			Role:       components.RoleManager,
+			Passphrase: "secure-passphrase-123",
+			AccessCode: &accessCode,
+			Scopes:     testScopes,
+		}),
+	)
+
+	res, err := s.Auth.CustomHTTPOnly(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Object)
+	assert.Equal(t, "access_granted", *res.Object.Grant)
+	assert.Equal(t, testScopes, res.Object.Scopes)
+}

@@ -1,0 +1,47 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    nameOverrideFeb2026: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  sdkHooksConfigAccess: false
+java:
+  inferUnionDiscriminators: true
+  forwardCompatibleUnionsByDefault: "true"
+  version: 0.0.1
+  artifactID: openapi
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: false
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  githubURL: github.com/owner/repo
+  groupID: org.openapis.secondary
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/components
+      webhooks: models/webhooks
+  inputModelSuffix: input
+  maxMethodParams: 5
+  ossrhURL: https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+  outputModelSuffix: output
+  packageName: org.openapis.secondary.openapi
+  projectName: openapi
+  getterStyle: raw
+  nullFriendlyParameters: true
+  httpClient: okhttp
+  asyncMode: enabled
+  templateVersion: v2

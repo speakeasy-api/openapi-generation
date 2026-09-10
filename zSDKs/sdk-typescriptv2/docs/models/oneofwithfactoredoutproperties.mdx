@@ -1,0 +1,59 @@
+---
+title: "OneOfWithFactoredOutProperties"
+---
+
+A union of two types with factored out properties.
+
+
+## Supported Types
+
+### `models.OneOfWithFactoredOutPropertiesExhaustiveObject`
+
+```typescript
+const value: models.OneOfWithFactoredOutPropertiesExhaustiveObject = {
+  str: "example",
+  bool: true,
+  integer: 999999,
+  int32: 1,
+  num: 1.1,
+  float32: 1866.41,
+  date: new Date("2020-01-01"),
+  dateTime: new Date("2020-01-01T00:00:00Z"),
+  anything: "<value>",
+  boolOpt: true,
+  intOptNull: 999999,
+  numOptNull: 1.1,
+  intEnum: OneOfWithFactoredOutPropertiesIntEnum.Third,
+  int32Enum: OneOfWithFactoredOutPropertiesInt32Enum.SixtyNine,
+  bigint: 817203,
+  decimalStr: new Decimal("8930.15"),
+  obj: {
+    str: "example",
+  },
+  map: {},
+  arr: [
+    {
+      str: "example",
+    },
+  ],
+  any: {
+    str: "example",
+  },
+  nullableIntEnum: OneOfWithFactoredOutPropertiesNullableIntEnum.Third,
+  nullableStringEnum: OneOfWithFactoredOutPropertiesNullableStringEnum.Second,
+  color: "green",
+  icon: OneOfWithFactoredOutPropertiesIcon.Tick,
+  heroWidth: OneOfWithFactoredOutPropertiesHeroWidth.FourHundredAndEighty,
+  anExtraProperty: "example",
+};
+```
+
+### `models.OneOfWithFactoredOutPropertiesSimpleObject`
+
+```typescript
+const value: models.OneOfWithFactoredOutPropertiesSimpleObject = {
+  str: "example",
+  anExtraProperty: "example",
+};
+```
+

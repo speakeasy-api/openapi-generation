@@ -1,0 +1,54 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/limitoffset/nullable_offset:
+    get:
+      operationId: paginationOffsetNullable
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests that offsetLimit pagination with nullable offset and limit
+        parameters computes the next offset only after accounting for null
+        values. When the params are marked nullable (via anyOf integer/null or
+        `nullable: true`), clients should preserve pagination progress without
+        treating a null offset or limit as an arithmetic operand.
+      tags:
+        - pagination
+      parameters:
+        - in: query
+          name: offset
+          required: true
+          schema:
+            anyOf:
+              - type: integer
+              - type: "null"
+            default: 0
+        - in: query
+          name: limit
+          required: true
+          schema:
+            anyOf:
+              - type: integer
+              - type: "null"
+            default: 10
+      responses:
+        "200":
+          $ref: "components.yaml#/components/responses/paginationResponse"
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: offset
+            in: parameters
+            type: offset
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          results: $.resultArray

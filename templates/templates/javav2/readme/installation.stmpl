@@ -1,0 +1,34 @@
+### Getting started
+
+JDK {{javaVersion}} or later is required.
+
+The samples below show how a published SDK artifact is used:
+
+Gradle:
+```groovy
+implementation '{{.Global.Config.GroupID}}:{{.Global.Config.ArtifactID}}:{{.Global.Config.SDKVersion}}'
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>{{.Global.Config.GroupID}}</groupId>
+    <artifactId>{{.Global.Config.ArtifactID}}</artifactId>
+    <version>{{.Global.Config.SDKVersion}}</version>
+</dependency>
+```
+
+### How to build
+After cloning the git repository to your file system you can build the SDK artifact from source to the `build` directory by running `./gradlew build` on *nix systems or `gradlew.bat` on Windows systems.
+
+If you wish to build from source and publish the SDK artifact to your local Maven repository (on your filesystem) then use the following command (after cloning the git repo locally):
+
+On *nix:
+```bash
+./gradlew publishToMavenLocal -Pskip.signing
+```
+On Windows:
+```bash
+gradlew.bat publishToMavenLocal -Pskip.signing
+```
+

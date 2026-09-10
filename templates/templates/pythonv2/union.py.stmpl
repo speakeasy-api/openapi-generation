@@ -1,0 +1,10 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{- $unionType := sanitizeUnionType $type $usageLocation $local -}}
+{{- if and $type.Discriminator $type.IsUnionOpen }}
+{{templateString "open-union.py.stmpl" $local}}
+{{ end }}
+{{- if not (contains "TypeAliasType" $unionType) }}{{ templateDeprecated $type.Comments }}{{end}}
+{{sanitizeClassName $type.Name}} = {{$unionType}}
+{{- templateComments $type.Comments 0}}

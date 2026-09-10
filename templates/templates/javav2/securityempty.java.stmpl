@@ -1,0 +1,7 @@
+{{- $pkg := (getModelNamespace true "shared") -}}
+package {{$pkg}};
+
+public class Security {
+    // Security not configured but we create this class 
+    // to help with SecuritySource references in sdk hook context
+}

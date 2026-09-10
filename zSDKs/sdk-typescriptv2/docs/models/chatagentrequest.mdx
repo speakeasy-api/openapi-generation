@@ -1,0 +1,24 @@
+---
+title: "ChatAgentRequest"
+---
+
+## Example Usage
+
+```typescript
+import { ChatAgentRequest } from "openapi";
+
+let value: ChatAgentRequest = {
+  agent: "<value>",
+  prompt: "<value>",
+};
+```
+
+## Fields
+
+| Field                                | Type                                 | Required                             | Description                          |
+| ------------------------------------ | ------------------------------------ | ------------------------------------ | ------------------------------------ |
+| `agent`                              | *string*                             | :heavy_check_mark:                   | N/A                                  |
+| `prompt`                             | *string*                             | :heavy_check_mark:                   | N/A                                  |
+| `stream`                             | *boolean*                            | :heavy_minus_sign:                   | Stream events as they arrive         |
+| `maxTokens`                          | *number*                             | :heavy_minus_sign:                   | Maximum number of tokens to generate |
+| `temperature`                        | *number*                             | :heavy_minus_sign:                   | Sampling temperature                 |

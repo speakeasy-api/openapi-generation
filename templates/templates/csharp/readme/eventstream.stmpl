@@ -1,0 +1,9 @@
+Server-sent events (SSE) are used to stream content from certain operations. SSE is a web standard that allows a server to push data to a client over a single HTTP connection in real-time.
+
+These operations return an instance of `EventStream`, which implements `IAsyncEnumerable<T>`, `IAsyncDisposable` and `IDisposable`. An `EventStream` can only be consumed once and cannot be replayed.
+
+Consume the stream with `await foreach`, which reads events as they arrive and disposes the stream when enumeration ends.{{if .Global.Config.EnableCancellationToken}} To cancel iteration, pass the same `CancellationToken` to the operation and to `eventStream.WithCancellation(cancellationToken)`.{{end}}
+
+{{templateUsageSection "eventstream"}}
+
+For finer-grained control, you may call `Next()` until it returns `null`. `Next()` never disposes the `EventStream`, so wrap it in `using`/`await using` or dispose it explicitly.

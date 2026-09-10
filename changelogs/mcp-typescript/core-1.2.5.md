@@ -1,0 +1,3 @@
+## core: 1.2.5 - 2026-02-10
+### :bee: New Features
+- Added `validateResponse: boolean` gen.yaml flag. When set to `true`, HTTP responses are validated using generated Zod schemas before being returned as tool results. When set to `false`, no structured deserialization and validation is done on HTTP response data, instead the raw data is passed through as MCP tool results. Disabling validation allows MCP tool calls to return data regardless of potential inconsistencies with the OpenAPI JSON Schema. This is a form of forward compatibility that is useful if there's little value to be gained in blocking LLM agents from reading data that is valuable instead of outright rejecting it *(commit by [@disintegrator](https://github.com/disintegrator))*

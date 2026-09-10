@@ -1,0 +1,10 @@
+{{recurse 1}}
+import { describe, test } from "vitest";
+
+// In the no-zod variant, smart primitive coercion is not performed at runtime
+// because schemas are pass-through. These tests are intentionally a no-op
+// placeholder so the file stays present and parse-able while preserving the
+// rest of the test suite.
+describe("Test smart primitive coercion (no-zod)", () => {
+  test("no-op (coercion tests do not apply in no-zod mode)", () => {});
+});

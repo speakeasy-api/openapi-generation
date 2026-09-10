@@ -1,0 +1,21 @@
+---
+title: "PaymentUpdatedRequest"
+---
+
+## Example Usage
+
+```typescript
+import { PaymentUpdatedRequest, PaymentUpdatedType } from "openapi";
+
+let value: PaymentUpdatedRequest = {
+  amount: "437.87",
+  type: PaymentUpdatedType.PaymentUpdated,
+};
+```
+
+## Fields
+
+| Field                                                        | Type                                                         | Required                                                     | Description                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `amount`                                                     | *string*                                                     | :heavy_check_mark:                                           | Payment amount                                               |
+| `type`                                                       | [models.PaymentUpdatedType](../models/paymentupdatedtype.mdx) | :heavy_check_mark:                                           | N/A                                                          |

@@ -1,0 +1,13 @@
+for {
+    // handle items
+
+    {{getResponseVariableName .Local.StepID}}, err = {{getResponseVariableName .Local.StepID}}.Next()
+
+    if err != nil {
+        // handle error
+    }
+
+    if {{getResponseVariableName .Local.StepID}} == nil {
+        break
+    }
+}

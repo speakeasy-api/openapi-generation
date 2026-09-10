@@ -1,0 +1,158 @@
+import { DeepObject } from "../sdk/models/shared/deepobject.js";
+import { DeepObjectCamelCase } from "../sdk/models/shared/deepobjectcamelcase.js";
+import { Enum } from "../sdk/models/shared/enum.js";
+import {
+  SimpleObject,
+  Int32Enum,
+  IntEnum,
+} from "../sdk/models/shared/simpleobject.js";
+import {
+  SimpleObjectCamelCase,
+  Int32EnumVal,
+  IntEnumVal,
+} from "../sdk/models/shared/simpleobjectcamelcase.js";
+import {
+  SimpleObjectWithType,
+  SimpleObjectWithTypeIntEnum,
+  SimpleObjectWithTypeInt32Enum,
+} from "../sdk/models/shared/simpleobjectwithtype.js";
+import { DeepObjectWithType } from "../sdk/models/shared/deepobjectwithtype.js";
+
+/**
+ * Create a Date object that serializes to YYYY-MM-DD format instead of full ISO-8601.
+ * This is used for date fields (not datetime fields) to match the SDK's date serialization.
+ */
+const createDateWithShortSerialization = (dateString: string): Date => {
+  const dateObj = new Date(dateString);
+  const originalToISOString = dateObj.toISOString.bind(dateObj);
+  const toString = () => originalToISOString().slice(0, "YYYY-MM-DD".length);
+  dateObj.toJSON = toString;
+  dateObj.toISOString = toString;
+  dateObj.toString = toString;
+  return dateObj;
+};
+
+export const createSimpleObject = (): SimpleObject => {
+  return {
+    str: "test",
+    bool: true,
+    int: 1,
+    int32: 1,
+    int32Enum: Int32Enum.FiftyFive,
+    intEnum: IntEnum.Second,
+    num: 1.1,
+    float32: 1.1,
+    enum: Enum.One,
+    any: "any",
+    date: createDateWithShortSerialization("2020-01-01"),
+    dateTime: new Date("2020-01-01T00:00:00.001Z"),
+    boolOpt: true,
+    strOpt: "testOptional",
+  };
+};
+
+export const createSimpleObjectCamelCase = (): SimpleObjectCamelCase => {
+  return {
+    strVal: "test",
+    boolVal: true,
+    intVal: 1,
+    int32Val: 1,
+    int32EnumVal: Int32EnumVal.FiftyFive,
+    intEnumVal: IntEnumVal.Second,
+    numVal: 1.1,
+    float32Val: 1.1,
+    enumVal: Enum.One,
+    anyVal: "any",
+    dateVal: createDateWithShortSerialization("2020-01-01"),
+    dateTimeVal: new Date("2020-01-01T00:00:00.001Z"),
+    boolOptVal: true,
+    strOptVal: "testOptional",
+  };
+};
+
+export const createDeepObject = (): DeepObject => {
+  return {
+    any: createSimpleObject(),
+    arr: [createSimpleObject(), createSimpleObject()],
+    bool: true,
+    int: 1,
+    map: {
+      key: createSimpleObject(),
+    },
+    num: 1.1,
+    obj: createSimpleObject(),
+    str: "test",
+  };
+};
+
+export const createDeepObjectCamelCase = (): DeepObjectCamelCase => {
+  return {
+    anyVal: createSimpleObjectCamelCase(),
+    arrVal: [createSimpleObjectCamelCase(), createSimpleObjectCamelCase()],
+    boolVal: true,
+    intVal: 1,
+    mapVal: {
+      key: createSimpleObjectCamelCase(),
+    },
+    numVal: 1.1,
+    objVal: createSimpleObjectCamelCase(),
+    strVal: "test",
+  };
+};
+
+export const createSimpleObjectWithType = (): SimpleObjectWithType & {
+  type: "simpleObjectWithType";
+} => {
+  return {
+    type: "simpleObjectWithType" as const,
+    str: "test",
+    bool: true,
+    int: 1,
+    int32: 1,
+    intEnum: SimpleObjectWithTypeIntEnum.Second,
+    int32Enum: SimpleObjectWithTypeInt32Enum.FiftyFive,
+    num: 1.1,
+    float32: 1.1,
+    enum: Enum.One,
+    any: "any",
+    date: createDateWithShortSerialization("2020-01-01"),
+    dateTime: new Date("2020-01-01"),
+    boolOpt: true,
+    strOpt: "testOptional",
+  };
+};
+
+export const createDeepObjectWithType = (): DeepObjectWithType & {
+  type: "deepObjectWithType";
+} => {
+  return {
+    type: "deepObjectWithType" as const,
+    any: createSimpleObject(),
+    num: 1.1,
+    bool: true,
+    int: 1,
+    str: "test",
+    obj: createSimpleObject(),
+    map: { key: createSimpleObject() },
+    arr: [createSimpleObject(), createSimpleObject()],
+  };
+};
+
+export const sortKeys = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(sortKeys);
+  } else if (obj && typeof obj === "object") {
+    return Object.keys(obj)
+      .sort()
+      .reduce((result, key) => {
+        if (key == "date" || key == "dateTime") {
+          result[key] = obj[key];
+          return result;
+        }
+        result[key] = sortKeys(obj[key]);
+        return result;
+      }, {} as any);
+  } else {
+    return obj;
+  }
+};

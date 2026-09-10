@@ -1,0 +1,14 @@
+# ErrorsError
+
+A not-so-long multi-line
+error model description.
+
+
+
+## Fields
+
+| Field                                                                                                            | Type                                                                                                             | Required                                                                                                         | Description                                                                                                      | Example                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `Error`                                                                                                          | *string*                                                                                                         | :heavy_check_mark:                                                                                               | N/A                                                                                                              | some example error                                                                                               |
+| `Code`                                                                                                           | *long*                                                                                                           | :heavy_check_mark:                                                                                               | N/A                                                                                                              | 2                                                                                                                |
+| `RawResponse`                                                                                                    | [UnityWebRequest](https://docs.unity3d.com/2021.3/Documentation/ScriptReference/Networking.UnityWebRequest.html) | :heavy_minus_sign:                                                                                               | Raw HTTP response; suitable for custom response parsing                                                          |                                                                                                                  |

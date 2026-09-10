@@ -1,0 +1,14 @@
+{{- $name := sanitizeEnumName .Local.Name false }}
+{{- $deprecated := and .Local.Comments .Local.Comments.Deprecated }}
+
+    {{- templateComments .Local.Comments 1 "class" false}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    public enum {{ $name }}
+    {
+        {{- templateEnums .Local }}
+    }
+{{- if eq .Local.Enum.Type.Type "string"}}
+  {{- if $deprecated }}{{"\n"}}#pragma warning disable 0618{{- end}}
+{{templateString "enum-extension.cs.stmpl" $name }}
+  {{- if $deprecated }}{{"\n"}}#pragma warning restore 0618{{- end}}
+{{- end}}

@@ -1,0 +1,111 @@
+{{- recurse 1 -}}
+package provider
+
+{{genImports}}
+{{- addGenImport "context" -}}
+{{- addGenImport "fmt" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/action" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/action/schema" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types/basetypes" -}}
+{{- addGenImport (getSDKPackage) -}}
+
+{{- $resourceTypeName := print (sanitizeClassName .Local.Action.Name) "Action" }}
+{{- $resourceModelTypeName := print $resourceTypeName "Model" }}
+{{- $sdkClassName := sanitizeClassName .Global.AST.MainSDK.Type.Name }}
+
+// Ensure provider defined types fully satisfy framework interfaces.
+var _ action.Action = (*{{ $resourceTypeName }})(nil)
+var _ action.ActionWithConfigure = (*{{ $resourceTypeName }})(nil)
+
+func New{{ $resourceTypeName }}() action.Action {
+	return &{{ $resourceTypeName }}{}
+}
+
+// {{ $resourceTypeName }} is the action implementation.
+type {{ $resourceTypeName }} struct {
+	{{ templateActionStructFields .Local }}
+}
+
+// {{ $resourceModelTypeName }} describes the data model.
+type {{ $resourceModelTypeName }} struct { {{ templateEntityDataModelFields .Local.Action }}
+}
+
+// Metadata defines the metadata for the action.
+func (r *{{ $resourceTypeName }}) Metadata(ctx context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_{{ sanitizeTFStateName .Local.Action.Name }}"
+}
+
+// Schema defines the schema for the action.
+func (r *{{ $resourceTypeName }}) Schema(ctx context.Context, req action.SchemaRequest, resp *action.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: {{ quote .Local.Action.SchemaDescription }},
+
+		Attributes: map[string]schema.Attribute{
+		    {{ generateSchema .Local.Action "action" }}
+		},
+	}
+}
+
+// Configure sets up the action from the provider configuration.
+func (r *{{ $resourceTypeName }}) Configure(ctx context.Context, req action.ConfigureRequest, resp *action.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	{{ if .Local.ProviderContext.HasConfigureData -}}
+	providerData, ok := req.ProviderData.(*{{ sanitizeClassName .Global.Config.PackageName }}ProviderConfigureData)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Action Configure Type",
+			fmt.Sprintf("Expected *{{ sanitizeClassName .Global.Config.PackageName }}ProviderConfigureData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	{{ templateActionConfigureProviderData .Local }}
+	{{ else -}}
+	client, ok := req.ProviderData.(*sdk.{{ $sdkClassName }})
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Action Configure Type",
+			fmt.Sprintf("Expected *sdk.{{ $sdkClassName }}, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+	{{ end -}}
+}
+
+// Invoke invokes the action lifecycle operations.
+func (r *{{ $resourceTypeName }}) Invoke(ctx context.Context, req action.InvokeRequest, resp *action.InvokeResponse) {
+	var data *{{ $resourceModelTypeName }}
+	var item types.Object
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &item)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(item.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.Action.GlobalFields) 0 -}}
+	{{   templateActionOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{ generateSDKCall .Local.Action .Local.Action.Operations.Invoke "invoke" }}
+}

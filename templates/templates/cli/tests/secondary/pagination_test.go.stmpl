@@ -1,0 +1,30 @@
+package tests
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPaginationLimitOffsetPageParamsFlat(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params-flat")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "limit-offset-page-params", "--page", "1"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}
+
+func TestPaginationLimitOffsetUnionOutputPageParamsFlat(t *testing.T) {
+	recordTest("pagination-limit-offset-union-output-page-params-flat")
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"pagination", "limit-offset-union-output-page-params", "--page", "0"})
+	require.NoError(t, err)
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
+}

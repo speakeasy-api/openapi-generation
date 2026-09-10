@@ -1,0 +1,34 @@
+arazzo: 1.0.1
+info:
+  title: Basic HTTP Auth Test Suite
+  summary: Tests for flattened basicHttp security.
+  version: 0.0.1
+sourceDescriptions:
+  - name: ./openapi.yaml
+    url: https://TBD.com
+    type: openapi
+workflows:
+  - workflowId: basicAuthGlobal
+    steps:
+      - stepId: test
+        operationId: basicAuthGlobal
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/authenticated == true
+          - condition: $response.body#/user == "testUser"
+    x-speakeasy-test-group: auth
+    x-speakeasy-test-internal-id: auth-basic-auth-flattened-global
+    x-speakeasy-test-targets-exclude: [mcp-typescript, php]
+  - workflowId: basicAuthHoisted
+    steps:
+      - stepId: test
+        operationId: basicAuthHoisted
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - condition: $response.body#/authenticated == true
+          - condition: $response.body#/user == "testUser"
+    x-speakeasy-test-group: auth
+    x-speakeasy-test-internal-id: auth-basic-auth-flattened-hoisted
+    x-speakeasy-test-targets-exclude: [mcp-typescript, php]

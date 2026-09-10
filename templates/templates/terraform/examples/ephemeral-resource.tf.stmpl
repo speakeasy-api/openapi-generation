@@ -1,0 +1,3 @@
+ephemeral "{{.Local.EphemeralResource.TerraformTypeName}}" "example" {
+{{templateTfResource .Local.EphemeralResource "ephemeral" -}}
+}

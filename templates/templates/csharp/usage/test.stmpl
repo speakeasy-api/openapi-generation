@@ -1,0 +1,17 @@
+{{- recurse 1 -}}
+{{- $className := sanitizeClassName .Local.Operation.ID false}}
+{{genUsageImports}}
+using System.Threading.Tasks;
+
+#nullable enable
+namespace TestProject.{{$className}}Test
+{
+
+    public class {{$className}}Test
+    {
+        public static async Task {{$className}}Async(string[] args)
+        {
+{{templateIndentedString "usage/block.stmpl" .Local 3}}
+        }
+    }
+}

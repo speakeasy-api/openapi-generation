@@ -1,0 +1,20 @@
+{{- $class := .Local.Class}}
+{{- $field := .Local.Field}}
+{{- $isAsync := .Local.IsAsync}}
+{{- if $field.IsAdditionalProperties}}
+    {{- templateCommentsForField $field}}
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonAnySetter"}}
+    public {{$class}} withAdditionalProperty({{javaImportString}} key, {{javaImportType $field.Type.ItemType}} value) {
+        // note that value can be null because of the way JsonAnySetter works
+        {{javaImportUtils}}.checkNotNull(key, "key");
+        {{sanitizeFieldName $field.Name}}.put(key, value);
+        return this;
+    }
+{{end}}
+{{- range $setter := (getSettersMetadata (parameterForField $field $isAsync))}}
+    {{- templateCommentsForField $field}}
+    public {{$class}} with{{sanitizeClassName $field.Name}}({{javaImport $setter.paramType}} {{sanitizeFieldName $field.Name}}) {
+        {{$setter.body | join "\n        " }}
+        return this;
+    }{{"\n"}}
+{{- end}}

@@ -1,0 +1,493 @@
+package tests
+
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+	"{{getGolangPackage}}/internal/flagutil"
+)
+
+// The intent commands under test are declared in
+// tests/overlays/primary/cli/overlay.yaml over the cliIntentRun operation
+// (a non-discriminated union body: model variant | agent variant, model
+// selector defaulted to "text-1") and the discriminated
+// bodyVariantOverloadsDiscriminated operation.
+
+// renderPreset mirrors the generated "render" intent: pinned to the model
+// variant, presets model + output_modalities, agent is the foreign selector.
+var renderPreset = flagutil.PresetMerge{
+	Command: "render",
+	Variant: "CliIntentModelRequest",
+	Preset:  `{"model":"render-1","output_modalities":["image"]}`,
+	Foreign: []string{"agent"},
+	Escape:  "cli cli-intents cli-intent-run",
+}
+
+// TestIntentPresetMergeMatrix pins the merge matrix (preset x user key x
+// selector presence) of flagutil.MergePresetBody.
+func TestIntentPresetMergeMatrix(t *testing.T) {
+	recordTest("intents-preset-merge-matrix")
+
+	discriminated := flagutil.PresetMerge{
+		Command:              "model-job",
+		Variant:              "BodyVariantModel",
+		Preset:               `{"model":"fixed-model"}`,
+		Foreign:              []string{"agent"},
+		DiscriminatorKey:     "kind",
+		DiscriminatorValue:   `"model"`,
+		DiscriminatorAliases: []string{`"model"`, `"llm"`},
+		Escape:               "cli request-bodies body-variant-overloads-discriminated",
+	}
+	noPreset := flagutil.PresetMerge{Command: "alias", Variant: "CliIntentModelRequest", Foreign: []string{"agent"}}
+
+	cases := []struct {
+		name      string
+		merge     flagutil.PresetMerge
+		body      string
+		want      string // canonical JSON of the merged body ("" when unchanged)
+		wantErr   string // substring of the conflict error ("" = no error)
+		untouched bool   // body returned byte-for-byte
+	}{
+		{name: "empty object: presets alone", merge: renderPreset, body: `{}`, want: `{"model":"render-1","output_modalities":["image"]}`},
+		{name: "empty string counts as {}", merge: renderPreset, body: `  `, want: `{"model":"render-1","output_modalities":["image"]}`},
+		{name: "partial body without selector: presets fill including the selector", merge: renderPreset, body: `{"input":"cat"}`, want: `{"input":"cat","model":"render-1","output_modalities":["image"]}`},
+		{name: "own selector present: user wins, other presets fill", merge: renderPreset, body: `{"model":"other-2","input":"cat"}`, want: `{"input":"cat","model":"other-2","output_modalities":["image"]}`},
+		{name: "user overrides a non-selector preset", merge: renderPreset, body: `{"output_modalities":["text"],"input":"cat"}`, want: `{"input":"cat","model":"render-1","output_modalities":["text"]}`},
+		{name: "explicit null keeps the user's null (own selector)", merge: renderPreset, body: `{"model":null,"input":"cat"}`, want: `{"input":"cat","model":null,"output_modalities":["image"]}`},
+		{name: "shallow merge: nested object replaced whole, not merged", merge: flagutil.PresetMerge{Command: "cfg", Preset: `{"config":{"a":1,"b":2}}`}, body: `{"config":{"c":3}}`, want: `{"config":{"c":3}}`},
+		{name: "raw values are preserved (large integer, precise decimal)", merge: renderPreset, body: `{"input":"cat","n":12345678901234567890,"d":0.10000000000000000001}`, want: `{"d":0.10000000000000000001,"input":"cat","model":"render-1","n":12345678901234567890,"output_modalities":["image"]}`},
+		{name: "foreign selector: hard usage error", merge: renderPreset, body: `{"agent":"helper","input":"cat"}`, wantErr: `"render" presets the CliIntentModelRequest request variant, but the supplied body names "agent"`},
+		{name: "foreign selector alongside own selector: still an error", merge: renderPreset, body: `{"agent":"helper","model":"x"}`, wantErr: `names "agent"`},
+		{name: "foreign selector set to null: presence selects the variant", merge: renderPreset, body: `{"agent":null}`, wantErr: `names "agent"`},
+		{name: "conflict error names the escape hatch", merge: renderPreset, body: `{"agent":"a"}`, wantErr: `use "cli cli-intents cli-intent-run" to send that request`},
+		{name: "array body: untouched, downstream parse error", merge: renderPreset, body: `[1,2]`, untouched: true},
+		{name: "scalar body: untouched", merge: renderPreset, body: `"cat"`, untouched: true},
+		{name: "malformed object: untouched, downstream parse error", merge: renderPreset, body: `{"input":`, untouched: true},
+		{name: "no preset, no conflict: body passes through as an object", merge: noPreset, body: `{"input":"cat"}`, want: `{"input":"cat"}`},
+		{name: "no preset, foreign selector: still an error", merge: noPreset, body: `{"agent":"a"}`, wantErr: `names "agent"`},
+		{name: "discriminated: missing discriminator is filled with the pinned value", merge: discriminated, body: `{"input":"cat"}`, want: `{"input":"cat","kind":"model","model":"fixed-model"}`},
+		{name: "discriminated: same value accepted (whitespace-insensitive)", merge: discriminated, body: `{"kind": "model", "input":"cat"}`, want: `{"input":"cat","kind":"model","model":"fixed-model"}`},
+		{name: "discriminated: other value is a conflict", merge: discriminated, body: `{"kind":"agent","input":"cat"}`, wantErr: `sets "kind" to "agent", which selects a different variant`},
+		{name: "discriminated: mapping alias of the pinned variant is accepted and kept", merge: discriminated, body: `{"kind":"llm","input":"cat"}`, want: `{"input":"cat","kind":"llm","model":"fixed-model"}`},
+		{name: "discriminated: foreign key is a conflict even without the discriminator", merge: discriminated, body: `{"agent":"a"}`, wantErr: `names "agent"`},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := flagutil.MergePresetBody(tc.body, tc.merge)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				var conflict *flagutil.PresetConflictError
+				require.True(t, errors.As(err, &conflict), "conflict must be typed for the agent envelope")
+				assert.Equal(t, "CLI_VALIDATION", conflict.CLIReason())
+				return
+			}
+			require.NoError(t, err)
+			if tc.untouched {
+				assert.Equal(t, tc.body, got)
+				return
+			}
+			assert.JSONEq(t, tc.want, got)
+		})
+	}
+}
+
+// echoedJSON returns the "json" reflection of the request body the echo
+// server saw, decoded.
+func echoedJSON(t *testing.T, stdout string) map[string]interface{} {
+	t.Helper()
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(stdout)), &resp), "stdout should be JSON, got: %s", stdout)
+	body, _ := resp["json"].(map[string]interface{})
+	require.NotNil(t, body, "echo server should reflect the request body, got: %s", stdout)
+	return body
+}
+
+func TestIntentRouteDispatchFlagPathsAndPresets(t *testing.T) {
+	recordTest("intent-route-dispatch-flag-paths")
+	s := newEchoServer()
+	defer s.Close()
+
+	t.Run("model", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "draw a lighthouse", "--model", "text-2"}))
+		body := echoedJSON(t, h.GetStdout())
+		assert.Equal(t, "text-2", body["model"])
+		assert.Equal(t, "draw a lighthouse", body["input"])
+		assert.Equal(t, true, body["background"], "command preset applies to the model route")
+		assert.Equal(t, []interface{}{"image"}, body["output_modalities"], "model preset applies only after model selection")
+		assert.NotContains(t, body, "token_budget")
+	})
+
+	t.Run("agent", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "summarize", "--agent", "helper", "--agent-profile", "standard"}))
+		body := echoedJSON(t, h.GetStdout())
+		assert.Equal(t, "helper", body["agent"])
+		assert.Equal(t, "standard", body["agent_profile"])
+		assert.Equal(t, "summarize", body["input"])
+		assert.Equal(t, true, body["background"], "command preset applies to the agent route")
+		assert.Equal(t, float64(512), body["token_budget"], "agent preset applies only after agent selection")
+		assert.NotContains(t, body, "output_modalities")
+	})
+}
+
+func TestIntentRouteDispatchDefaultAndConditionalRequired(t *testing.T) {
+	recordTest("intent-route-dispatch-default-required")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "use the default"}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "text-1", body["model"], "the union schema default is sent on the default route")
+	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "--agent-profile", "standard"})
+	require.Error(t, err)
+	assert.Equal(t, "required flag --agent not set for the Agent variant", err.Error())
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "validation errors send no request")
+}
+
+func TestIntentRouteDispatchBareInvocationIsUsageError(t *testing.T) {
+	recordTest("intent-route-dispatch-bare-help")
+	h := NewCLITestHarness(t)
+	// Like pinned intents, a bare required-input dispatch invocation is a
+	// usage failure: help and the error go to stderr, stdout stays empty, and
+	// the process exits 2. No request is attempted.
+	err := h.RunRaw([]string{"cli-intents", "cli-intent-run"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "bare usage must not print help on stdout")
+	help := h.GetStderr()
+	assert.Contains(t, help, "Request variants:")
+	assert.Contains(t, help, "Usage:")
+	assert.Contains(t, help, "cli cli-intents cli-intent-run [input] [flags]")
+	assert.Contains(t, help, "Error: missing required argument <input>")
+
+	// Structured modes return one envelope instead of the help page.
+	h = NewCLITestHarness(t)
+	err = h.RunBare([]string{"cli-intents", "cli-intent-run"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Contains(t, h.GetStderr(), `"error_reason": "CLI_VALIDATION"`)
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+}
+
+func TestIntentRouteDispatchConflictingEvidence(t *testing.T) {
+	recordTest("intent-route-dispatch-conflicting-evidence")
+
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "model and agent flags",
+			args: []string{"cli-intents", "cli-intent-run", "input", "--model", "text-2", "--agent", "helper"},
+			want: "--model and --agent select different request variants; pass exactly one",
+		},
+		{
+			name: "model flag and agent body key",
+			args: []string{"cli-intents", "cli-intent-run", "--model", "text-2", "--body", `{"agent":"helper","input":"body input"}`},
+			want: `--model and body key "agent" select different request variants; pass exactly one`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunBare(tc.args)
+			require.Error(t, err)
+			assert.Equal(t, tc.want, err.Error())
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()), "validation errors send no request")
+		})
+	}
+}
+
+func TestIntentRouteDispatchBodyEvidence(t *testing.T) {
+	recordTest("intent-route-dispatch-body-evidence")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "--body", `{"agent":"helper","input":"from body"}`}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "helper", body["agent"])
+	assert.Equal(t, "from body", body["input"])
+	assert.Equal(t, true, body["background"])
+	assert.Equal(t, float64(512), body["token_budget"])
+	assert.NotContains(t, body, "output_modalities")
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "--body", `{"model":"text-2","agent":"helper","input":"conflict"}`})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `body key "agent" and body key "model" select different request variants`)
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+}
+
+func TestIntentRouteDispatchHelpAndUsageSurfaces(t *testing.T) {
+	recordTest("intent-route-dispatch-help-usage")
+	path := []string{"cli-intents", "cli-intent-run"}
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare(append(path, "--help")))
+	help := h.GetStdout()
+	assert.Contains(t, help, "Model variant Flags:")
+	assert.Contains(t, help, "Agent variant Flags:")
+	modelGroup := strings.Index(help, "Model variant Flags:")
+	agentGroup := strings.Index(help, "Agent variant Flags:")
+	require.NotEqual(t, -1, modelGroup)
+	require.NotEqual(t, -1, agentGroup)
+	assert.Less(t, modelGroup, agentGroup, "variant help groups follow manifest route order")
+	assert.Contains(t, help, "Request variants: Model (--model; default), Agent (--agent).")
+	assert.NotContains(t, help, "--cli-intent-run-body")
+
+	h = NewCLITestHarness(t)
+	err := h.RunBare(append(path, "--cli-intent-run-body", `{}`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown flag: --cli-intent-run-body`)
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunBare(append(path, "--usage")))
+	usageSchema := h.GetStdout()
+	assert.Contains(t, usageSchema, `flag "-m --model <model>"`)
+	assert.Contains(t, usageSchema, `flag "--agent <agent>"`)
+	assert.Contains(t, usageSchema, `flag "--agent-profile <agent_profile>"`)
+	assert.Contains(t, usageSchema, `flag "--body <body>"`)
+	assert.Contains(t, usageSchema, `flag "--schema"`)
+	assert.Contains(t, usageSchema, `flag "--trace <trace>"`)
+	assert.NotContains(t, usageSchema, "cli-intent-run-body")
+}
+
+func TestIntentRouteDispatchAgentEnvelope(t *testing.T) {
+	recordTest("intent-route-dispatch-agent-envelope")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--agent-mode", "cli-intents", "cli-intent-run", "input", "--model", "text-2", "--agent", "helper"})
+	require.Error(t, err)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStderr())), &envelope), "got: %s", h.GetStderr())
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+}
+
+func TestIntentRouteDispatchInteractivePromptPlan(t *testing.T) {
+	recordTest("intent-route-dispatch-interactive-plan")
+	p := &scriptedPrompter{answers: map[string][]string{"arg:input": {"interactive input"}}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunInteractive([]string{"--dry-run", "cli-intents", "cli-intent-run"}, p))
+	require.Len(t, p.fields, 1)
+	assert.Equal(t, []string{"arg:input"}, p.fields[0])
+	assert.NotContains(t, p.fields[0], "flag:model")
+	assert.NotContains(t, p.fields[0], "flag:agent")
+	// The harness requests JSON, so the dry-run preview object is on stdout.
+	assert.Contains(t, h.GetStdout(), `"input":"interactive input"`)
+	assert.Contains(t, h.GetStdout(), `"model":"text-1"`)
+}
+
+// A complete request piped on stdin takes request control under
+// --interactive: nothing is prompted for, and the piped body is the request.
+func TestIntentInteractivePipedBodySkipsPrompts(t *testing.T) {
+	recordTest("intent-interactive-piped-body-skips-prompts")
+	withDelayedStdinPipe(t, 0, `{"input":"from stdin","model":"text-2"}`, true)
+
+	p := &scriptedPrompter{}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunInteractive([]string{"--dry-run", "cli-intents", "cli-intent-run"}, p))
+	assert.Empty(t, p.fields, "prompted despite a piped whole body")
+	assert.Contains(t, h.GetStdout(), `"input":"from stdin"`)
+	assert.Contains(t, h.GetStdout(), `"model":"text-2"`)
+}
+
+func TestIntentRouteDispatchOverrideRegisteredOnce(t *testing.T) {
+	recordTest("intent-route-dispatch-override-once")
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"cli-intents", "--help"}))
+	help := h.GetStdout()
+	assert.Equal(t, 1, strings.Count(help, "\n  cli-intent-run "), "the generated operation registration is replaced, not duplicated")
+	assert.Contains(t, help, "Run an interaction")
+}
+
+// TestIntentOrderingKeepsUndeclaredNestedGroupsAlphabetical verifies that
+// disabling Cobra's global sorting for declared root commands does not change
+// the established alphabetical order beneath an undeclared generated group,
+// in either help or the mirrored KDL usage schema.
+func TestIntentOrderingKeepsUndeclaredNestedGroupsAlphabetical(t *testing.T) {
+	recordTest("intents-undeclared-nested-group-order")
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"nested", "--help"}))
+
+	help := h.GetStdout()
+	first := strings.Index(help, "\n  first ")
+	get := strings.Index(help, "\n  get ")
+	second := strings.Index(help, "\n  second ")
+	require.NotEqual(t, -1, first, "first command missing from nested help:\n%s", help)
+	require.NotEqual(t, -1, get, "get command missing from nested help:\n%s", help)
+	require.NotEqual(t, -1, second, "second command missing from nested help:\n%s", help)
+	assert.Less(t, first, get)
+	assert.Less(t, get, second)
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"nested", "--usage"}))
+	schema := h.GetStdout()
+	first = strings.Index(schema, `cmd "first"`)
+	get = strings.Index(schema, `cmd "get"`)
+	second = strings.Index(schema, `cmd "second"`)
+	require.NotEqual(t, -1, first, "first command missing from nested usage:\n%s", schema)
+	require.NotEqual(t, -1, get, "get command missing from nested usage:\n%s", schema)
+	require.NotEqual(t, -1, second, "second command missing from nested usage:\n%s", schema)
+	assert.Less(t, first, get)
+	assert.Less(t, get, second)
+}
+
+func TestIntentPresetFromArgs(t *testing.T) {
+	recordTest("intents-preset-from-args")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "a lighthouse at dusk"}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "render-1", body["model"])
+	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+	assert.Equal(t, "a lighthouse at dusk", body["input"])
+}
+
+// TestIntentPartialBodyKeepsPresets is the regression for the preset being
+// dropped under --body: the union's default variant (model text-1) must not
+// replace the intent's pinned model.
+func TestIntentPartialBodyKeepsPresets(t *testing.T) {
+	recordTest("intents-partial-body-keeps-presets")
+	s := newEchoServer()
+	defer s.Close()
+
+	for _, surface := range []string{"--body", "--cli-intent-run-body"} {
+		t.Run(surface, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithServer(s.URL, []string{"render", surface, `{"input":"cat"}`}))
+			body := echoedJSON(t, h.GetStdout())
+			assert.Equal(t, "render-1", body["model"], "preset selector must survive a partial body")
+			assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+			assert.Equal(t, "cat", body["input"])
+		})
+	}
+}
+
+func TestIntentPartialBodyUserKeysWin(t *testing.T) {
+	recordTest("intents-partial-body-user-keys-win")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// A positional and a --body that both set the bound key is a usage
+	// error (nothing is silently dropped); the user's keys win over presets
+	// once the body alone carries the input.
+	err := h.RunWithServer(s.URL, []string{"render", "ignored positional", "--body", `{"model":"other-2","output_modalities":["text"],"input":"cat"}`})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"input"`)
+	assert.Contains(t, err.Error(), "pass exactly one")
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "--body", `{"model":"other-2","output_modalities":["text"],"input":"cat"}`}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "other-2", body["model"])
+	assert.Equal(t, []interface{}{"text"}, body["output_modalities"])
+	assert.Equal(t, "cat", body["input"])
+}
+
+func TestIntentBothBodySurfacesMerged(t *testing.T) {
+	recordTest("intents-both-body-surfaces-merged")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Supplying the request through both --body and the whole-body field
+	// flag is ambiguous and rejected; each surface on its own is merged with
+	// the presets.
+	err := h.RunWithServer(s.URL, []string{"render",
+		"--body", `{"input":"from-body"}`,
+		"--cli-intent-run-body", `{"input":"from-field"}`})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--body")
+	assert.Contains(t, err.Error(), "--cli-intent-run-body")
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render",
+		"--cli-intent-run-body", `{"input":"from-field"}`}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "from-field", body["input"])
+	assert.Equal(t, "render-1", body["model"])
+}
+
+func TestIntentForeignSelectorIsUsageError(t *testing.T) {
+	recordTest("intents-foreign-selector-usage-error")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"render", "--body", `{"agent":"helper","input":"cat"}`})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"render" presets the CliIntentModelRequest request variant`)
+	assert.Contains(t, err.Error(), `names "agent"`)
+	assert.Contains(t, err.Error(), `use "cli cli-intents cli-intent-run"`)
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "nothing must be sent")
+}
+
+// TestIntentForeignSelectorAgentEnvelope: the conflict is a CLI-originated
+// error, so in agent mode it must arrive in the reason-first envelope with the
+// intent's declared CLI_VALIDATION hint.
+func TestIntentForeignSelectorAgentEnvelope(t *testing.T) {
+	recordTest("intents-foreign-selector-agent-envelope")
+	resetAgentMode(t)
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--agent-mode", "render", "--body", `{"agent":"helper"}`})
+	require.Error(t, err)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStderr())), &envelope), "got: %s", h.GetStderr())
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	hints, _ := envelope["hints"].([]interface{})
+	assert.Contains(t, hints, "Print the exact request schema with --schema")
+}
+
+func TestIntentNonObjectBodyFallsThrough(t *testing.T) {
+	recordTest("intents-non-object-body-falls-through")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"render", "--body", `[1]`})
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "presets the")
+}
+
+// TestIntentDiscriminatedPartialBody exercises the second body surface being
+// the union field flag of a mixed operation, the discriminator conflict, and
+// the discriminator fill.
+func TestIntentDiscriminatedPartialBody(t *testing.T) {
+	recordTest("intents-discriminated-partial-body")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"model-job", "--variant-id", "v1",
+		"--discriminated-variant-body", `{"input":"cat"}`}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "model", body["kind"])
+	assert.Equal(t, "fixed-model", body["model"])
+	assert.Equal(t, "cat", body["input"])
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"model-job", "--variant-id", "v1",
+		"--body", `{"kind":"agent","agent":"a","input":"cat"}`})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"model-job" presets the BodyVariantModel request variant`)
+}

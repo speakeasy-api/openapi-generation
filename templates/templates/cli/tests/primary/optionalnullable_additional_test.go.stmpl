@@ -1,0 +1,182 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestOptionalNullable_Full(t *testing.T) {
+	recordTest("object-with-optional-nullable-full")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-true-nullable-true-field", "--scenario", "full"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify response contains expected fields
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"type"`)
+	assert.Contains(t, output, `"medicalRecord"`)
+	assert.Contains(t, output, `"fluffy is sick"`)
+}
+
+func TestOptionalNullable_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-nullable-field-absent")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-true-nullable-true-field", "--scenario", "medicalRecordAbsent"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"type"`)
+	// medicalRecord should NOT be in the response (omitted from JSON)
+	assert.NotContains(t, output, `"medicalRecord"`)
+}
+
+func TestOptionalNullable_MedicalRecordNull(t *testing.T) {
+	recordTest("object-with-optional-nullable-field-null")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-true-nullable-true-field", "--scenario", "medicalRecordNull"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"type"`)
+	// medicalRecord should be present but null
+	assert.Contains(t, output, `"medicalRecord":null`)
+}
+
+func TestOptionalFalseNullableTrue_Full(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-full")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-false-nullable-true-field", "--scenario", "full"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"medicalRecord"`)
+	assert.Contains(t, output, `"fluffy is sick"`)
+}
+
+func TestOptionalFalseNullableTrue_MedicalRecordNull(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-field-null")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-false-nullable-true-field", "--scenario", "medicalRecordNull"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	// medicalRecord should be present as null
+	assert.Contains(t, output, `"medicalRecord":null`)
+}
+
+func TestOptionalTrueNullableFalse_Full(t *testing.T) {
+	recordTest("object-with-optional-true-nullable-false-full")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-true-nullable-false-field", "--scenario", "full"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"medicalRecord"`)
+	assert.Contains(t, output, `"fluffy is sick"`)
+}
+
+func TestOptionalTrueNullableFalse_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-true-nullable-false-field-absent")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-true-nullable-false-field", "--scenario", "medicalRecordAbsent"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.NotContains(t, output, `"medicalRecord"`)
+}
+
+func TestOptionalFalseNullableFalse_Full(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-false-full")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-false-nullable-false-field", "--scenario", "full"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"medicalRecord"`)
+	assert.Contains(t, output, `"fluffy is sick"`)
+}
+
+func TestOptionalFalseNullableFalse_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-false-field-absent")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-false-nullable-false-field", "--scenario", "medicalRecordAbsent"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"type"`)
+	assert.NotContains(t, output, `"medicalRecord"`)
+}
+
+func TestOptionalFalseNullableTrue_MedicalRecordAbsent(t *testing.T) {
+	recordTest("object-with-optional-false-nullable-true-field-absent")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"optional-nullable-fields", "object-with-optional-false-nullable-true-field", "--scenario", "medicalRecordAbsent"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"id"`)
+	assert.Contains(t, output, `"type"`)
+	assert.NotContains(t, output, `"medicalRecord"`)
+}

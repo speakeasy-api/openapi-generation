@@ -1,0 +1,31 @@
+---
+title: "NamespaceConflictTest"
+---
+
+A model that references both foo.Pet and bar.Pet to test import aliasing
+
+## Example Usage
+
+```typescript
+import { NamespaceConflictTest } from "openapi";
+
+let value: NamespaceConflictTest = {
+  fooPet: {
+    id: "pet-foo-123",
+    name: "Fluffy",
+    species: "cat",
+  },
+  barPet: {
+    id: "pet-bar-456",
+    name: "Buddy",
+    owner: "John Doe",
+  },
+};
+```
+
+## Fields
+
+| Field                      | Type                       | Required                   | Description                |
+| -------------------------- | -------------------------- | -------------------------- | -------------------------- |
+| `fooPet`                   | [foo.Pet](../foo/pet.mdx)   | :heavy_check_mark:         | A pet in the foo namespace |
+| `barPet`                   | [bar.Pet](../bar/pet.mdx)   | :heavy_check_mark:         | A pet in the bar namespace |

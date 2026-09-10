@@ -1,0 +1,3 @@
+{{- if and (isFeatureUsed "decimal") (not isNoZod) }}
+export * from "decimal.js";
+{{end}}

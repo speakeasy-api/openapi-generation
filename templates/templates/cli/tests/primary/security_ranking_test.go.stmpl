@@ -1,0 +1,154 @@
+package tests
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/config"
+)
+
+// The primary spec declares several OR security alternatives; the generated
+// Security struct orders them AccessToken, APIKeyAuth, BasicHTTP,
+// ClientCredentials, CustomSchemeAppID, Oauth2. These tests pin the
+// cross-scheme ranking: the credential the caller supplied most explicitly
+// (flag > env > keyring > config) picks its scheme regardless of that order.
+
+const envPrefix = "{{.Global.Config.EnvVarPrefix}}"
+
+func TestCredentialSourceRankOrder(t *testing.T) {
+	recordTest("security-ranking-source-rank")
+	assert.Less(t, config.CredentialSourceRank("flag"), config.CredentialSourceRank("env"))
+	assert.Less(t, config.CredentialSourceRank("env"), config.CredentialSourceRank("keyring"))
+	assert.Less(t, config.CredentialSourceRank("keyring"), config.CredentialSourceRank("config"))
+	assert.Less(t, config.CredentialSourceRank("config"), config.CredentialSourceRank("unset"))
+	assert.Equal(t, config.CredentialSourceRank("unset"), config.CredentialSourceRank("garbage"))
+}
+
+// TestPickCredentialMatrix pins the ranking matrix of config.PickCredential
+// (schemes declared [A, B, C] unless an operation restriction says otherwise).
+func TestPickCredentialMatrix(t *testing.T) {
+	recordTest("security-ranking-pick-matrix")
+
+	cand := func(field string, complete bool, sources ...string) config.CredentialCandidate {
+		return config.CredentialCandidate{Field: field, Complete: complete, Sources: sources}
+	}
+	cases := []struct {
+		name       string
+		candidates []config.CredentialCandidate
+		allowed    []string
+		want       int
+	}{
+		{name: "A flag only", candidates: []config.CredentialCandidate{cand("A", true, "flag"), cand("B", false, "unset")}, want: 0},
+		{name: "B env only", candidates: []config.CredentialCandidate{cand("A", false, "unset"), cand("B", true, "env")}, want: 1},
+		{name: "A flag + B env: flag wins", candidates: []config.CredentialCandidate{cand("A", true, "flag"), cand("B", true, "env")}, want: 0},
+		{name: "A env + B flag: flag wins regardless of order", candidates: []config.CredentialCandidate{cand("A", true, "env"), cand("B", true, "flag")}, want: 1},
+		{name: "declared [B, A]: A flag + B env still picks A", candidates: []config.CredentialCandidate{cand("B", true, "env"), cand("A", true, "flag")}, want: 1},
+		{name: "A env + B env: tie keeps declared order", candidates: []config.CredentialCandidate{cand("A", true, "env"), cand("B", true, "env")}, want: 0},
+		{name: "A config + B env: env wins", candidates: []config.CredentialCandidate{cand("A", true, "config"), cand("B", true, "env")}, want: 1},
+		{name: "A keyring + B config: keyring wins", candidates: []config.CredentialCandidate{cand("A", true, "keyring"), cand("B", true, "config")}, want: 0},
+		{name: "both flags: declared order", candidates: []config.CredentialCandidate{cand("A", true, "flag"), cand("B", true, "flag")}, want: 0},
+		{name: "neither: nothing", candidates: []config.CredentialCandidate{cand("A", false, "unset"), cand("B", false, "unset", "unset")}, want: -1},
+		{name: "AND group best member is a flag beats a token from env", candidates: []config.CredentialCandidate{cand("A", true, "env"), cand("C", true, "flag", "config")}, want: 1},
+		{name: "partial group beats a complete one from a less explicit source", candidates: []config.CredentialCandidate{cand("A", true, "env"), cand("C", false, "flag", "unset")}, want: 1},
+		{name: "same source: complete beats partial", candidates: []config.CredentialCandidate{cand("C", false, "env", "unset"), cand("A", true, "env")}, want: 1},
+		{name: "same source, both partial: declared order", candidates: []config.CredentialCandidate{cand("C", false, "env", "unset"), cand("A", false, "env")}, want: 0},
+		{name: "operation allows only B: A flag ignored", candidates: []config.CredentialCandidate{cand("A", true, "flag"), cand("B", true, "env")}, allowed: []string{"B"}, want: 1},
+		{name: "operation order [B, A] breaks an env tie for B", candidates: []config.CredentialCandidate{cand("A", true, "env"), cand("B", true, "env")}, allowed: []string{"B", "A"}, want: 1},
+		{name: "operation allows only an unset scheme: nothing", candidates: []config.CredentialCandidate{cand("A", true, "flag"), cand("B", false, "unset")}, allowed: []string{"B"}, want: -1},
+		{name: "union variants share a field: credentials from flags beat a token from env", candidates: []config.CredentialCandidate{cand("U", true, "env"), cand("U", true, "flag", "flag")}, allowed: []string{"U"}, want: 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, config.PickCredential(tc.candidates, tc.allowed))
+		})
+	}
+}
+
+// echoedAuthorization returns the Authorization header the echo server saw.
+func echoedAuthorization(t *testing.T, stdout string) string {
+	t.Helper()
+	var resp map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(stdout)), &resp), "stdout should be the echoed request, got: %s", stdout)
+	headers, _ := resp["headers"].(map[string]interface{})
+	require.NotNil(t, headers, "echo server should reflect headers, got: %s", stdout)
+	for name, value := range headers {
+		if strings.EqualFold(name, "Authorization") {
+			switch v := value.(type) {
+			case string:
+				return v
+			case []interface{}:
+				if len(v) > 0 {
+					return v[0].(string)
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// TestSecurityExplicitFlagBeatsEnvOfOtherScheme is the F11 regression: an
+// explicitly passed API key must not be discarded because a bearer token of
+// another (earlier-declared) scheme sits in the environment.
+func TestSecurityExplicitFlagBeatsEnvOfOtherScheme(t *testing.T) {
+	recordTest("security-ranking-flag-beats-env")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t).WithEnv(envPrefix+"_ACCESS_TOKEN", "env-token")
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth", "--api-key-auth", "flag-key"}))
+	assert.Equal(t, "flag-key", echoedAuthorization(t, h.GetStdout()))
+
+	// And the mirror image: a token flag beats an API key from the environment.
+	h = NewCLITestHarness(t).WithEnv(envPrefix+"_API_KEY_AUTH", "env-key")
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth", "--access-token", "flag-token"}))
+	assert.Equal(t, "Bearer flag-token", echoedAuthorization(t, h.GetStdout()))
+}
+
+func TestSecurityEnvOnlyStillWorks(t *testing.T) {
+	recordTest("security-ranking-env-only")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t).WithEnv(envPrefix+"_ACCESS_TOKEN", "env-token")
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth"}))
+	assert.Equal(t, "Bearer env-token", echoedAuthorization(t, h.GetStdout()))
+}
+
+// TestSecurityEnvTieKeepsDeclaredOrder: two env credentials of equal
+// explicitness fall back to the declared order (AccessToken first).
+func TestSecurityEnvTieKeepsDeclaredOrder(t *testing.T) {
+	recordTest("security-ranking-env-tie")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t).
+		WithEnv(envPrefix+"_ACCESS_TOKEN", "env-token").
+		WithEnv(envPrefix+"_API_KEY_AUTH", "env-key")
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth"}))
+	assert.Equal(t, "Bearer env-token", echoedAuthorization(t, h.GetStdout()))
+}
+
+// TestSecurityOperationRestrictionWins: an operation that only accepts the
+// API key scheme must use the API key from the environment even when a
+// bearer token is passed as a flag — the flag's scheme is not allowed there.
+func TestSecurityOperationRestrictionWins(t *testing.T) {
+	recordTest("security-ranking-operation-restriction")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t).WithEnv(envPrefix+"_API_KEY_AUTH", "env-key")
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "api-key-auth", "--access-token", "flag-token"}))
+	assert.Equal(t, "env-key", echoedAuthorization(t, h.GetStdout()))
+}
+
+// TestSecurityBothFlagsKeepDeclaredOrder: two explicit flags tie on source
+// and fall back to the declared order, as before.
+func TestSecurityBothFlagsKeepDeclaredOrder(t *testing.T) {
+	recordTest("security-ranking-both-flags")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth", "--api-key-auth", "flag-key", "--access-token", "flag-token"}))
+	assert.Equal(t, "Bearer flag-token", echoedAuthorization(t, h.GetStdout()))
+}

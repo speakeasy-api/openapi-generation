@@ -1,0 +1,23 @@
+---
+title: "BinaryAndStringUploadRequest"
+---
+
+## Example Usage
+
+```typescript
+import { BinaryAndStringUploadRequest } from "openapi";
+
+let value: BinaryAndStringUploadRequest = {
+  binary: new Uint8Array(
+    /* Populate with bytes from file, for example test.json */
+  ),
+  string: "", // Populate with string from file, for example test.json,
+};
+```
+
+## Fields
+
+| Field              | Type               | Required           | Description        | Example            |
+| ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| `binary`           | *Uint8Array*       | :heavy_minus_sign: | N/A                | x-file: test.json  |
+| `string`           | *string*           | :heavy_minus_sign: | N/A                | x-file: test.json  |

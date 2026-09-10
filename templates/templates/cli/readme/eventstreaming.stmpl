@@ -1,0 +1,20 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+Some operations return server-sent events (SSE). These are streamed to the terminal in real-time, with each event output as a separate JSON object (one per line).
+
+{{- if $c.StreamingSSE}}
+
+```bash
+# Stream events in JSON format
+{{$c.StreamingSSE}} --output-format json
+
+# Filter streaming events with jq
+{{$c.StreamingSSE}} --output-format json --jq '.'
+```
+{{- end}}
+
+Events are output as they arrive. Use `Ctrl+C` to stop streaming.
+{{- if $c.HasOperationStreamProjection}}
+
+For operation commands with a declared streamed projection, the selected string is written raw as it arrives. When the command exposes a stream toggle flag, its default decides the response shape — the command's help says whether to pass `--stream=false` for one complete JSON response (streaming on by default) or `--stream` to request a streamed response (off by default). Use `-o json` to keep each full streamed event.
+{{- end}}

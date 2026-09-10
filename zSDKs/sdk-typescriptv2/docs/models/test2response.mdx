@@ -1,0 +1,22 @@
+---
+title: "Test2Response"
+---
+
+## Example Usage
+
+```typescript
+import { Test2Response } from "openapi";
+
+let value: Test2Response = {
+  test2: "some example response",
+  requiredNullableField: "test value",
+};
+```
+
+## Fields
+
+| Field                                                                                         | Type                                                                                          | Required                                                                                      | Description                                                                                   | Example                                                                                       |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `test2`                                                                                       | *string*                                                                                      | :heavy_minus_sign:                                                                            | N/A                                                                                           | some example response                                                                         |
+| `someConst`                                                                                   | *"someConstValue"*                                                                            | :heavy_minus_sign:                                                                            | N/A                                                                                           |                                                                                               |
+| `requiredNullableField`                                                                       | *string*                                                                                      | :heavy_check_mark:                                                                            | A required but nullable field to verify error accessor type matching for nullable-only fields | test value                                                                                    |

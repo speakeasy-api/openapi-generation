@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: JSONL Example API
+  version: 1.0.0
+  description: |
+    This API demonstrates the use of JSONL (JSON Lines) / NDJSON (Newline Delimited JSON) format in responses.
+    JSONL/NDJSON is a format where each line is a valid JSON object, making it efficient
+    for streaming large datasets.
+paths:
+  /logs:
+    get:
+      summary: Get application logs
+      operationId: getLogs
+      description: |
+        Returns application logs in JSONL format. Each line is a separate JSON object
+        containing log information. This format is particularly useful for streaming
+        large amounts of log data efficiently.
+      responses:
+        '200':
+          description: Successful response with logs in JSONL format
+          content:
+            application/jsonl:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                  level:
+                    type: string
+                  message:
+                    type: string
+                  id:
+                    type: string
+                example: |
+                  {"timestamp": "2024-03-20T10:00:00Z", "level": "INFO", "message": "Application started", "id": "123"}
+                  {"timestamp": "2024-03-20T10:00:01Z", "level": "DEBUG", "message": "Processing request", "id": "456"}
+                  {"timestamp": "2024-03-20T10:00:02Z", "level": "WARN", "message": "High memory usage detected", "id": "789"}

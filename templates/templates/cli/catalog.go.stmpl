@@ -1,0 +1,63 @@
+{{- recurse 1 -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "fmt" -}}
+{{- addImport "internal/output" true -}}
+package cli
+
+{{genImports}}
+
+func initCatalogCmds(parent *cobra.Command) error {
+{{- range .Local.Catalogs}}
+	if err := addOrMergeCatalogCmd(parent, new{{.FuncName}}CatalogCmd()); err != nil {
+		return fmt.Errorf("register {{escapeGoString .Command}} catalog: %w", err)
+	}
+{{- end}}
+	return nil
+}
+
+func addOrMergeCatalogCmd(parent *cobra.Command, catalogCmd *cobra.Command) error {
+	for _, existing := range parent.Commands() {
+		exactName := existing.Name() == catalogCmd.Name()
+		if !exactName && !existing.HasAlias(catalogCmd.Name()) {
+			continue
+		}
+		if exactName && existing.Annotations["speakeasy_cli_group"] == "true" && existing.Annotations["speakeasy_cli_promoted"] != "true" {
+			existing.RunE = catalogCmd.RunE
+			existing.Short = catalogCmd.Short
+			if catalogCmd.Long != "" {
+				existing.Long = catalogCmd.Long
+			}
+			return nil
+		}
+		return fmt.Errorf("x-speakeasy-cli-catalog command %q collides with the existing %q command; rename the catalog command", catalogCmd.Name(), existing.CommandPath())
+	}
+	parent.AddCommand(catalogCmd)
+	return nil
+}
+{{range .Local.Catalogs}}
+func new{{.FuncName}}CatalogCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "{{.Command}}",
+		Short: "{{escapeGoString .Summary}}",
+		{{- if .Description}}
+		Long:  "{{escapeGoString .Description}}",
+		{{- end}}
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			values := []map[string]interface{}{
+				{{- range .Values}}
+				{"value": "{{escapeGoString .Value}}", "description": "{{escapeGoString .Description}}", "default": {{if .IsDefault}}true{{else}}false{{end}}},
+				{{- end}}
+			}
+			if output.IsMachineMode(cmd) {
+				return output.LocalResult(cmd, values)
+			}
+			out := cmd.OutOrStdout()
+			{{- range .Values}}
+			fmt.Fprintf(out, "%-42s %s\n", "{{escapeGoString .Value}}{{if .IsDefault}} (default){{end}}", "{{escapeGoString .Description}}")
+			{{- end}}
+			return nil
+		},
+	}
+}
+{{end}}

@@ -1,0 +1,66 @@
+name: Test Python V2
+on:
+  workflow_call:
+    inputs:
+      test-group:
+        required: true
+        type: string
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  test-pythonv2:
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    timeout-minutes: 30 # :(
+    name: Test Python V2 - ${{ inputs.test-group }} - ${{ matrix.python_version }}
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          enable-cache: true
+          cache-local-path: ".uv-cache"
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install poetry (for backward compatibility)
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry --version
+
+      - name: Install pyright
+        run: npm install -g pyright@1.1.398 --ignore-scripts
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+            services/**/go.sum
+      - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: TARGET=${{ inputs.test-group }} make test-pythonv2
+      - name: git diff
+        run: ./scripts/check-generated-diff.sh
+      - name: Upload test report
+        if: inputs.test-group != 'review' && matrix.python_version == '3.10'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-pythonv2-${{ inputs.test-group }}-test-report
+          path: ./testSDKs/sdk-pythonv2-${{ inputs.test-group }}/test-python-record.txt
+          if-no-files-found: error

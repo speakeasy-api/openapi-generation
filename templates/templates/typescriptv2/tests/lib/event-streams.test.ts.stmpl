@@ -1,0 +1,89 @@
+{{- if isFeatureUsed "serverEvents"}}
+import { expect, test } from "vitest";
+import { {{eventStreamClassName}} } from "../../lib/event-streams.js";
+
+function chunkedStream(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
+  let i = 0;
+  return new ReadableStream({
+    pull(controller) {
+      if (i < chunks.length) {
+        controller.enqueue(chunks[i]!);
+        i += 1;
+      } else {
+        controller.close();
+      }
+    },
+  });
+}
+
+function bytes(s: string): Uint8Array {
+  return new TextEncoder().encode(s);
+}
+
+async function collect(
+  chunks: Uint8Array[],
+): Promise<{ data: string | undefined }[]> {
+  const stream = new {{eventStreamClassName}}(
+    chunkedStream(chunks),
+    (m) => ({ done: false, value: { data: m.data } }),
+    { dataRequired: true },
+  );
+  const out: { data: string | undefined }[] = [];
+  for await (const ev of stream) {
+    out.push(ev);
+  }
+  return out;
+}
+
+test.each([
+  // 2-byte boundaries split 1/1 across chunks
+  { chunks: ["data: x\n", "\n"], description: "LF|LF split" },
+  { chunks: ["data: x\r", "\r"], description: "CR|CR split" },
+  // 3-byte boundary (\r\n\r) split 1/2 and 2/1
+  { chunks: ["data: x\r", "\n\r"], description: "CR|LFCR split 1/2" },
+  { chunks: ["data: x\r\n", "\r"], description: "CRLF|CR split 2/1" },
+  // 4-byte boundary (\r\n\r\n) in every split shape
+  { chunks: ["data: x\r", "\n\r\n"], description: "4-byte split 1/3" },
+  { chunks: ["data: x\r\n", "\r\n"], description: "4-byte split 2/2" },
+  { chunks: ["data: x\r\n\r", "\n"], description: "4-byte split 3/1" },
+  // Boundary split across single-byte chunks (worst-case fragmentation)
+  {
+    chunks: ["data: x", "\r", "\n", "\r", "\n"],
+    description: "4-byte split 1/1/1/1",
+  },
+])(
+  "detects message boundary straddling chunk seams: $description",
+  async ({ chunks }) => {
+    const events = await collect(chunks.map(bytes));
+    expect(events.length).toBe(1);
+    expect(events[0]?.data).toBe("x");
+  },
+);
+
+test("parses a large event split across many small chunks in linear time", async () => {
+  // A single event whose data is far larger than any individual chunk, with
+  // lone CR bytes seeded throughout so every re-scan does boundary work. An
+  // implementation that re-scans or re-copies the whole accumulated buffer on
+  // each chunk degrades quadratically (tens of seconds here); the bounded
+  // re-scan parses this in well under a second.
+  const block = "a".repeat(2047) + "\r";
+  const payload = block.repeat(2048); // 4MiB of data with periodic lone CRs
+  const message = bytes("data: " + payload + "\n\n");
+  const chunkSize = 1024;
+  const chunks: Uint8Array[] = [];
+  for (let i = 0; i < message.length; i += chunkSize) {
+    chunks.push(message.subarray(i, i + chunkSize));
+  }
+
+  const startedAt = performance.now();
+  const events = await collect(chunks);
+  const elapsedMs = performance.now() - startedAt;
+
+  expect(events.length).toBe(1);
+  // Lone CRs are line terminators: every block becomes its own line and only
+  // the first carries the "data: " field prefix; subsequent lines are
+  // field-less and ignored, so the parsed data is just the first block.
+  expect(events[0]?.data).toBe(block.slice(0, -1));
+  expect(elapsedMs).toBeLessThan(10_000);
+}, 30_000);
+{{- end}}

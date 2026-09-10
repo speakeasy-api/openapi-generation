@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+#
+# zero — bootstrap a local checkout of the generator.
+#   ./zero                          fetch a license token for the API key from
+#                                   `speakeasy auth login`; offers AGPL if the
+#                                   workspace has no commercial entitlement
+#   ./zero --license agpl-3.0-only  accept AGPL-3.0-only output explicitly
+#   ./zero --license commercial     (re)fetch a commercial license token
+#   ./zero --agent | -y             non-interactive: never elects AGPL on its
+#                                   own — pass --license explicitly
+#   ./zero --force                  refresh an existing token even if still valid
+#   ./zero --server URL             self-hosted or staging platform (refetches the token)
+#   ./zero --target TARGET          fetch a token scoped to a generator target
+set -euo pipefail
+
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+cd "$ROOT_DIR"
+
+agent_mode=false
+auto_yes=false
+force=false
+switch_to_commercial=false
+license=""
+server=""
+target=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --agent) agent_mode=true ;;
+        -y|--yes) auto_yes=true ;;
+        --force) force=true ;;
+        --license)
+            if [ $# -lt 2 ] || [ -z "$2" ]; then
+                echo "--license requires a value: agpl-3.0-only or commercial (see ./zero --help)" >&2
+                exit 64
+            fi
+            shift; license="$1" ;;
+        --server)
+            if [ $# -lt 2 ] || [ -z "$2" ]; then
+                echo "--server requires a URL" >&2
+                exit 64
+            fi
+            shift; server="$1" ;;
+        --target)
+            if [ $# -lt 2 ] || [ -z "$2" ]; then
+                echo "--target requires a generator target" >&2
+                exit 64
+            fi
+            shift; target="$1" ;;
+        --license=*)
+            license="${1#--license=}"
+            if [ -z "$license" ]; then
+                echo "--license requires a value: agpl-3.0-only or commercial (see ./zero --help)" >&2
+                exit 64
+            fi ;;
+        --target=*)
+            target="${1#--target=}"
+            if [ -z "$target" ]; then
+                echo "--target requires a generator target" >&2
+                exit 64
+            fi ;;
+        -h|--help) sed -n '3,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "unknown argument: $1 (see ./zero --help)" >&2; exit 64 ;;
+    esac
+    shift
+done
+
+if [ -n "$server" ]; then
+    if [ "$license" = agpl-3.0-only ]; then
+        echo "--server only applies when fetching a commercial license token" >&2
+        exit 64
+    fi
+    force=true
+    switch_to_commercial=true
+fi
+
+if [ -n "$target" ]; then
+    if [ "$license" = agpl-3.0-only ]; then
+        echo "--target only applies when fetching a commercial license token" >&2
+        exit 64
+    fi
+    force=true
+    switch_to_commercial=true
+fi
+
+onboarding_pass=true
+check_command() {
+    local cmd=$1 instructions=$2
+    if ! command -v "$cmd" &>/dev/null; then
+        onboarding_pass=false
+        echo "## \`$cmd\` not found:"
+        echo "$instructions" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+        echo
+    fi
+}
+check_command go "Install Go (version in go.mod): https://go.dev/dl/"
+check_command git "Install git: https://git-scm.com/downloads"
+if ! command -v mise &>/dev/null; then
+    echo "ℹ️  mise not found (optional): https://mise.jdx.dev/ — \`mise run\` tasks load .env automatically."
+fi
+if [ "$onboarding_pass" = false ]; then
+    echo "❌ Onboarding checks failed. Fix the issues above and rerun ./zero." >&2
+    exit 1
+fi
+
+if [ -L .env ]; then
+    echo "❌ .env is a symlink; refusing to store a license election through it." >&2
+    exit 1
+fi
+if [ ! -f .env ]; then
+    if grep -Eq '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*=' .env.example; then
+        echo "❌ .env.example contains active assignments; it must be a commented template." >&2
+        exit 1
+    fi
+    cp .env.example .env
+    echo "✅ Created .env from .env.example"
+fi
+chmod 600 .env
+
+mkdir -p bin
+go build -o bin/licensetool ./cmd/licensetool
+licensetool() { ./bin/licensetool "$@"; }
+
+env_file_value() { sed -n "s/^$1=//p" .env 2>/dev/null | head -1; }
+
+refuse_if_exported_elsewhere() {
+    local name=$1
+    [ -n "${!name:-}" ] || return 0
+    [ "${!name}" = "$(env_file_value "$name")" ] && return 0
+    echo "❌ $name is exported in this shell and overrides .env; unset it, then rerun ./zero." >&2
+    exit 1
+}
+
+warn_stale_exports() {
+    local name
+    for name in SPEAKEASY_LICENSE_TOKEN SPEAKEASY_GENERATED_LICENSE; do
+        if [ -n "${!name:-}" ] && [ "${!name}" != "$(env_file_value "$name")" ]; then
+            echo "⚠️  $name is exported in this shell with a different value than .env; generation in this shell uses the exported value until you unset it or open a new shell (mise reloads .env)." >&2
+        fi
+    done
+}
+
+elect_agpl() {
+    refuse_if_exported_elsewhere SPEAKEASY_LICENSE_TOKEN
+    licensetool elect agpl-3.0-only --env-file .env
+    echo "✅ Generated output is licensed AGPL-3.0-only (SPEAKEASY_GENERATED_LICENSE in .env)"
+    warn_stale_exports
+}
+
+case "$license" in
+    "") ;;
+    agpl-3.0-only) elect_agpl; exit 0 ;;
+    commercial) switch_to_commercial=true ;;
+    *) echo "unknown --license value: $license (expected agpl-3.0-only or commercial)" >&2; exit 64 ;;
+esac
+
+echo "⏳ Checking the license election in .env"
+set +e
+status_output=$(licensetool status --env-file .env 2>&1)
+status_code=$?
+set -e
+case $status_code in
+    0)
+        echo "$status_output"
+        case "$status_output" in
+            "license: commercial"*)
+                if [ "$force" = false ] && [ "$switch_to_commercial" = false ]; then
+                    echo "✅ License election already configured (./zero --force refreshes the token; ./zero --license agpl-3.0-only switches)"; exit 0
+                fi ;;
+            *)
+                if [ "$switch_to_commercial" = false ]; then
+                    echo "✅ License election already configured (./zero --license commercial switches)"; exit 0
+                fi ;;
+        esac ;;
+    2) ;;
+    3) echo "ℹ️  The existing license token is expired or invalid; fetching a new one" ;;
+    6) echo "$status_output" >&2; echo "❌ Fix SPEAKEASY_GENERATED_LICENSE in .env (only agpl-3.0-only is supported) or run ./zero --license agpl-3.0-only." >&2; exit 1 ;;
+    *) echo "$status_output" >&2; exit "$status_code" ;;
+esac
+
+refuse_if_exported_elsewhere SPEAKEASY_GENERATED_LICENSE
+echo "⏳ Fetching a license token with the API key from \`speakeasy auth login\`"
+set +e
+fetch_args=(fetch --env-file .env)
+if [ -n "$server" ]; then fetch_args+=(--server "$server"); fi
+if [ -n "$target" ]; then fetch_args+=(--target "$target"); fi
+licensetool "${fetch_args[@]}"
+fetch_code=$?
+set -e
+case $fetch_code in
+    0)
+        echo "✅ Commercial license token written to .env"
+        warn_stale_exports
+        exit 0
+        ;;
+    2)
+        cat >&2 <<'MSG'
+❌ No usable Speakeasy API key (SPEAKEASY_API_KEY or ~/.speakeasy/config.yaml).
+
+   Commercial customers: run `speakeasy auth login`, then rerun ./zero.
+   Open source:          run `./zero --license agpl-3.0-only` to accept
+                         AGPL-3.0-only licensing for generated output.
+MSG
+        exit 1
+        ;;
+    4)
+        if $agent_mode || $auto_yes; then
+            cat >&2 <<'MSG'
+❌ This workspace has no commercial entitlement, so no license token was issued.
+   Non-interactive runs must elect a license explicitly:
+     ./zero --license agpl-3.0-only
+MSG
+            exit 1
+        fi
+        echo "This workspace has no commercial entitlement, so no license token was issued."
+        echo "Accept AGPL-3.0-only licensing for generated output instead?"
+        echo -n "[y/N] "
+        read -r answer
+        if [ "$(echo "$answer" | tr '[:upper:]' '[:lower:]')" = "y" ]; then
+            elect_agpl
+            exit 0
+        fi
+        echo "No license elected. Rerun ./zero after upgrading the workspace, or ./zero --license agpl-3.0-only." >&2
+        exit 1
+        ;;
+    *)
+        exit "$fetch_code"
+        ;;
+esac

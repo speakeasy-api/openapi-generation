@@ -1,0 +1,23 @@
+---
+title: "Enum"
+---
+
+## Example Usage
+
+```typescript
+import { Enum } from "openapi";
+
+let value: Enum = Enum.First;
+
+// Open enum: unrecognized values are captured as Unrecognized<string>
+```
+
+## Values
+
+| Name                   | Value                  |
+| ---------------------- | ---------------------- |
+| `First`                | First                  |
+| `Second`               | Second                 |
+| `ThirdA`               | Ex-aequo               |
+| `ThirdB`               | Ex.aequo               |
+| -                      | `Unrecognized<string>` |

@@ -1,0 +1,18 @@
+npm install --ignore-scripts
+npm install -g ts-node --ignore-scripts
+npm link
+npm link {{.Global.Config.PackageName}}
+TS_CONFIG_CONTENT=$(cat <<EOL
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "openapi": ["../src/index"],
+      "openapi/*": ["../src/*"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}
+EOL
+)
+echo "$TS_CONFIG_CONTENT" > samples/tsconfig.json

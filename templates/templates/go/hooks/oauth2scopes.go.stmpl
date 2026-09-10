@@ -1,0 +1,22 @@
+{{- recurse 1 -}}
+package hooks
+
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $constType := getOAuth2ScopeClassName $schemeKey}}
+    {{- $dedupNames := getDeduplicatedScopeEnumNames $config.AvailableScopes}}
+
+{{templateComments $config.Comments "hooks" $constType 0 "type" -}}
+type {{$constType}} string
+
+const (
+    {{- range $i, $scope := $config.AvailableScopes }}
+      {{- $constName := printf "%s%s" $constType (index $dedupNames $i)}}
+
+{{templateComments $scope.Comments "hooks" $constName 1 "field" -}}
+	{{$constName}} {{$constType}} = "{{$scope.Name}}"
+    {{- end}}
+)
+  {{- end}}
+{{- end}}

@@ -1,0 +1,154 @@
+package tests
+
+import (
+	"encoding/json"
+	"testing"
+
+	"{{getRootModulePath}}/pkg/models/shared"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestOpenUnionKnownVariant(t *testing.T) {
+	recordTest("open-union-known-variant")
+
+	// Known "car" discriminator parses to Car
+	carJSON := []byte(`{"vehicleType":"car","wheelsType":"four"}`)
+	var car shared.Vehicle
+	err := json.Unmarshal(carJSON, &car)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeCar, car.Type)
+	assert.NotNil(t, car.Car)
+	assert.False(t, car.IsUnknown())
+	assert.Nil(t, car.GetUnknownRaw())
+
+	// Known "bike" discriminator parses to Bike
+	bikeJSON := []byte(`{"vehicleType":"bike","wheelsType":"two","colour":"red"}`)
+	var bike shared.Vehicle
+	err = json.Unmarshal(bikeJSON, &bike)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeBike, bike.Type)
+	assert.NotNil(t, bike.Bike)
+	assert.Equal(t, "red", bike.Bike.Colour)
+	assert.False(t, bike.IsUnknown())
+
+	// Round-trip: marshal and unmarshal
+	marshaled, err := json.Marshal(car)
+	require.NoError(t, err)
+	var restored shared.Vehicle
+	err = json.Unmarshal(marshaled, &restored)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeCar, restored.Type)
+	assert.NotNil(t, restored.Car)
+}
+
+func TestOpenUnionUnknownDiscriminator(t *testing.T) {
+	recordTest("open-union-unknown-discriminator")
+
+	// Unknown discriminator -> stored as raw JSON
+	data := []byte(`{"vehicleType":"spaceship","thrust":9000}`)
+	var v shared.Vehicle
+	err := json.Unmarshal(data, &v)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, v.Type)
+	assert.True(t, v.IsUnknown())
+	assert.Nil(t, v.Car)
+	assert.Nil(t, v.Bike)
+	assert.NotNil(t, v.GetUnknownRaw())
+
+	// Raw payload is preserved
+	var raw map[string]interface{}
+	err = json.Unmarshal(v.GetUnknownRaw(), &raw)
+	require.NoError(t, err)
+	assert.Equal(t, "spaceship", raw["vehicleType"])
+	assert.Equal(t, float64(9000), raw["thrust"])
+
+	// Round-trip: marshal unknown preserves raw JSON
+	marshaled, err := json.Marshal(v)
+	require.NoError(t, err)
+	var restored shared.Vehicle
+	err = json.Unmarshal(marshaled, &restored)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, restored.Type)
+	assert.True(t, restored.IsUnknown())
+}
+
+func TestOpenUnionMissingDiscriminator(t *testing.T) {
+	recordTest("open-union-missing-discriminator")
+
+	// Object without discriminator field -> unknown
+	data := []byte(`{"wheelsType":"four"}`)
+	var v shared.Vehicle
+	err := json.Unmarshal(data, &v)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, v.Type)
+	assert.True(t, v.IsUnknown())
+}
+
+func TestOpenUnionInvalidPayload(t *testing.T) {
+	recordTest("open-union-invalid-payload")
+
+	// String payload -> unknown, no error
+	var v1 shared.Vehicle
+	err := json.Unmarshal([]byte(`"hello"`), &v1)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, v1.Type)
+	assert.True(t, v1.IsUnknown())
+
+	// Number payload -> unknown, no error
+	var v2 shared.Vehicle
+	err = json.Unmarshal([]byte(`42`), &v2)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, v2.Type)
+	assert.True(t, v2.IsUnknown())
+
+	// Null payload -> unknown, no error
+	var v3 shared.Vehicle
+	err = json.Unmarshal([]byte(`null`), &v3)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeUnknown, v3.Type)
+	assert.True(t, v3.IsUnknown())
+}
+
+func TestOpenUnionKnownDiscInvalidSchema(t *testing.T) {
+	recordTest("open-union-known-disc-invalid-schema")
+
+	// Known "bike" discriminator but missing required "colour" field.
+	// In Go, json.Unmarshal doesn't enforce required fields — missing
+	// string fields get zero values. So this succeeds as a known Bike.
+	data := []byte(`{"vehicleType":"bike","wheelsType":"two"}`)
+	var v shared.Vehicle
+	err := json.Unmarshal(data, &v)
+	require.NoError(t, err)
+	assert.Equal(t, shared.VehicleTypeBike, v.Type)
+	assert.NotNil(t, v.Bike)
+	assert.Equal(t, "", v.Bike.Colour)
+	assert.False(t, v.IsUnknown())
+}
+
+func TestOpenUnionEmbedded(t *testing.T) {
+	recordTest("open-union-embedded")
+
+	// Array of mixed known and unknown vehicles
+	data := []byte(`[{"vehicleType":"car","wheelsType":"four"},{"vehicleType":"spaceship","thrust":9000},{"vehicleType":"bike","wheelsType":"two","colour":"green"}]`)
+	var vehicles []shared.Vehicle
+	err := json.Unmarshal(data, &vehicles)
+	require.NoError(t, err)
+	require.Len(t, vehicles, 3)
+
+	// First: known car
+	assert.Equal(t, shared.VehicleTypeCar, vehicles[0].Type)
+	assert.NotNil(t, vehicles[0].Car)
+	assert.False(t, vehicles[0].IsUnknown())
+
+	// Second: unknown spaceship
+	assert.Equal(t, shared.VehicleTypeUnknown, vehicles[1].Type)
+	assert.True(t, vehicles[1].IsUnknown())
+	assert.NotNil(t, vehicles[1].GetUnknownRaw())
+
+	// Third: known bike
+	assert.Equal(t, shared.VehicleTypeBike, vehicles[2].Type)
+	assert.NotNil(t, vehicles[2].Bike)
+	assert.Equal(t, "green", vehicles[2].Bike.Colour)
+	assert.False(t, vehicles[2].IsUnknown())
+}

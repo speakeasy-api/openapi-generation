@@ -1,0 +1,10 @@
+{{- $context := .Local.Context -}}
+{{- $isAsync := .Local.Async -}}
+{{- $handleRetries := and ($context.Operation.Extensions.Retries) ($context.RenderFeature "retries" false) -}}
+{{- $namespace := sanitizeSDKAccess $context.SDK -}}
+{{- if $context.Operation -}}
+{{- templateUsageLocalDeclarations $context }}
+{{if $context.Operation.Response.Type}}{{getResponseVariableName $context.StepID}} = {{end}}{{if $isAsync}}await {{end}}{{templateSDKVarName}}{{$namespace}}.{{sanitizeMethodName $context.Operation}}{{if and $isAsync (eq .Global.Config.AsyncMode "both")}}_async{{end}}({{templateUsageMethodParameters $context 0}}
+        {{- if $handleRetries }},
+    {{templateString "usage/retries.stmpl" $context}}{{end}})
+{{- end}}

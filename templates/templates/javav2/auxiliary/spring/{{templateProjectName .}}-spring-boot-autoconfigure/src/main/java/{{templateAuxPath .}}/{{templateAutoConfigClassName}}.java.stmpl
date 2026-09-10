@@ -1,0 +1,365 @@
+{{- recurse 1 -}}
+{{- $sdk := .Global.AST.MainSDK -}}
+{{- $globals := (ne $sdk.Globals nil) -}}
+{{- $serverMap := (and $sdk.Servers $sdk.Servers.ServerMap) -}}
+{{- $serverVariables := and $sdk.Servers (gt (len $sdk.Servers.GetVariables) 0) -}}
+{{- $pkg := templatePackageName -}}
+{{- $className := sanitizeClassName $sdk.Type.Name -}}
+{{- $okHttp := useOkHttp -}}
+package {{$pkg}};
+
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import java.util.concurrent.TimeUnit;
+{{genImports (print $pkg "." (templateAutoConfigClassName))}}
+/**
+ * Spring Boot Auto Configuration for {{templateReadmeTitle}} SDK
+ * This configuration class automatically configures the {{templateReadmeTitle}} SDK
+ * when Spring Boot detects it on the classpath.
+ */
+@AutoConfiguration
+@ConditionalOnClass({{$className}}.class)
+@EnableConfigurationProperties({{templateAutoConfigClassName}}Properties.class)
+public class {{templateAutoConfigClassName}} {
+
+    /**
+     * Constructor.
+     */
+    public {{templateAutoConfigClassName}}() {
+    }
+
+    /**
+     * Creates a RetryConfig bean from properties if retry is enabled.
+     * 
+     * @param properties the configuration properties
+     * @return A configured RetryConfig instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "{{templateProjectName | replace "-" ""}}.retry-config", name = "strategy")
+    public {{javaImportLocal "utils.RetryConfig"}} retryConfig({{templateAutoConfigClassName}}Properties properties) {
+        {{templateAutoConfigClassName}}Properties.RetryConfig retryProps = properties.getRetryConfig();
+        
+        if ({{javaImportLocal "utils.RetryConfig"}}.Strategy.BACKOFF.equals(retryProps.getStrategy())) {
+            {{templateAutoConfigClassName}}Properties.RetryConfig.Backoff backoff = retryProps.getBackoff();
+            return {{javaImportLocal "utils.RetryConfig"}}.builder()
+                .backoff(
+                    {{javaImportLocal "utils.BackoffStrategy"}}.builder()
+                        .initialInterval(backoff.getInitialInterval().toMillis(), TimeUnit.MILLISECONDS)
+                        .maxInterval(backoff.getMaxInterval().toMillis(), TimeUnit.MILLISECONDS)
+                        .maxElapsedTime(backoff.getMaxElapsedTime().toMillis(), TimeUnit.MILLISECONDS)
+                        .baseFactor(backoff.getBaseFactor())
+                        .jitterFactor(backoff.getJitterFactor())
+                        .retryConnectError(backoff.isRetryConnectError())
+                        .retryReadTimeoutError(backoff.isRetryReadTimeoutError())
+                        .build()
+                )
+                .build();
+        }
+        
+        // Default retry config for other strategies
+        return {{javaImportLocal "utils.RetryConfig"}}.builder().build();
+    }
+
+{{- if not slf4jLoggingEnabled}}
+    /**
+     * Creates a {@code Consumer<String>} bean for HTTP debug logging if none exists.
+     * This logger is used by the SpeakeasyHTTPClient for debug output when debug logging is enabled.
+     * By default, it logs to {@code System.out}, but can be customized by providing your own {@code Consumer<String>} bean.
+     *
+     * @return A {@code Consumer<String>} that logs messages to {@code System.out}
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{javaImport "java.util.function.Consumer"}}<{{javaImportString}}> httpLogger() {
+        return {{javaImport "java.lang.System"}}.out::println;
+    }
+
+{{- end}}
+    /**
+     * Creates an HTTPClient bean if none exists.
+     *
+     * @param properties the configuration properties
+{{- if not slf4jLoggingEnabled}}
+     * @param httpLogger the logger for HTTP debug output
+{{- end}}
+     * @return A configured HTTPClient instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{javaImportLocal "utils.HTTPClient"}} httpClient({{templateAutoConfigClassName}}Properties properties{{if not slf4jLoggingEnabled}}, {{javaImport "java.util.function.Consumer"}}<{{javaImportString}}> httpLogger{{end}}) {
+        {{templateAutoConfigClassName}}Properties.HttpClient httpClientProps = properties.getHttpClient();
+{{- if not slf4jLoggingEnabled}}
+
+        // Configure the static logger
+        {{javaImportLocal "utils.SpeakeasyHTTPClient"}}.setLogger(httpLogger);
+{{- end}}
+
+        if (httpClientProps != null) {
+            // Configure debug logging
+            {{javaImportLocal "utils.SpeakeasyHTTPClient"}}.setDebugLogging(httpClientProps.isEnableDebugLogging());
+
+            // Configure redacted headers
+            if (httpClientProps.getRedactedHeaders() != null && !httpClientProps.getRedactedHeaders().isEmpty()) {
+                {{javaImportLocal "utils.SpeakeasyHTTPClient"}}.setRedactedHeaders(httpClientProps.getRedactedHeaders());
+            }
+        }
+
+        return new {{javaImportLocal "utils.SpeakeasyHTTPClient"}}();
+    }
+
+    {{- if and hasSecurity $sdk.Security $sdk.Security.Type}}
+    /**
+     * Creates a SecuritySource bean if none exists and security properties are configured.
+     *
+     * @param properties the configuration properties
+     * @return A configured SecuritySource instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnPropertyPrefix(prefix = "{{templateProjectName | replace "-" ""}}.security")
+    public SecuritySource securitySource({{templateAutoConfigClassName}}Properties properties) {
+        {{- $securityNamespace := getModelNamespace true "" $sdk.Security.Type.OutputLocation "Security" -}}
+        
+        {{templateAutoConfigClassName}}Properties.Security securityProps = properties.getSecurity();
+        {{$securityNamespace}}.Builder securityBuilder = {{$securityNamespace}}.builder();
+        boolean hasAnySecurityConfiguration = false;
+        
+        {{- range $field := $sdk.Security.Type.Fields}}
+        {{- if eq $field.Type.Type "class"}}
+        {{- $schemeName := $field.OriginalName}}
+        {{- if not $schemeName}}{{- $schemeName = $field.Name}}{{- end}}
+        // Build {{$schemeName}} security from nested properties (composite object)
+        {{templateAutoConfigClassName}}Properties.Security.{{sanitizeClassName $schemeName}} {{sanitizeFieldName $schemeName}}Props = securityProps.get{{sanitizeClassName $schemeName}}();
+        if ({{sanitizeFieldName $schemeName}}Props != null) {
+            {{javaImportType $field.Type}}.Builder {{sanitizeFieldName $field.Name}}Builder = {{javaImportType $field.Type}}.builder();
+            boolean has{{sanitizeClassName $field.Name}}Values = false;
+            
+            {{- range $securityField := $field.Type.Fields}}
+            {{- $javaBeanFieldName := sanitizeJavaBeanFieldName $securityField.Name -}}
+            if ({{sanitizeFieldName $schemeName}}Props.get{{sanitizeClassName $javaBeanFieldName}}() != null) {
+                {{sanitizeFieldName $field.Name}}Builder.{{sanitizeFieldName $securityField.Name}}({{sanitizeFieldName $schemeName}}Props.get{{sanitizeClassName $javaBeanFieldName}}());
+                has{{sanitizeClassName $field.Name}}Values = true;
+            }
+            {{- end}}
+            
+            if (has{{sanitizeClassName $field.Name}}Values) {
+                securityBuilder.{{sanitizeFieldName $field.Name}}({{sanitizeFieldName $field.Name}}Builder.build());
+                hasAnySecurityConfiguration = true;
+            }
+        }
+        {{- else}}
+        {{- $schemeName := $field.OriginalName}}
+        {{- if not $schemeName}}{{- $schemeName = $field.Name}}{{- end}}
+        // Build {{$schemeName}} security from direct properties (primitive value)
+        if (securityProps.get{{sanitizeClassName $schemeName}}() != null) {
+            securityBuilder.{{sanitizeFieldName $field.Name}}(securityProps.get{{sanitizeClassName $schemeName}}());
+            hasAnySecurityConfiguration = true;
+        }
+        {{- end}}
+        {{- end}}
+        
+        if (!hasAnySecurityConfiguration) {
+            throw new {{javaImport "java.lang.IllegalStateException"}}("Security configuration is present but no security options are configured. " +
+                "Please configure at least one security option in your application properties.");
+        }
+        
+        return SecuritySource.of(securityBuilder.build());
+    }
+    {{- end}}
+
+    /**
+     * Creates the SDKConfiguration bean as the single source of truth for all SDK configuration.
+     *
+     * @param properties the configuration properties
+     * @param httpClient the HTTP client bean
+     * @param hooks the hooks bean
+     {{- if asyncEnabled}}
+     * @param asyncHooks the async hooks bean
+     {{- end}}
+     {{- if hasSecurity}}
+     * @param securitySource the security source bean (optional)
+     {{- end}}
+     {{- if $globals}}
+     * @param globals the globals configuration bean
+     {{- end}}
+     * @param retryConfig the retry config bean (optional)
+     * @return A configured SDKConfiguration instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public SDKConfiguration sdkConfiguration(
+            {{templateAutoConfigClassName}}Properties properties,
+            {{javaImportLocal "utils.HTTPClient"}} httpClient,
+            {{templatePackageName}}.utils.Hooks hooks,
+            {{- if asyncEnabled}}
+            {{templatePackageName}}.utils.AsyncHooks asyncHooks,
+            {{- end}}
+            {{- if hasSecurity}}
+            SecuritySource securitySource,
+            {{- end}}
+            {{- if $globals}}
+            {{templatePackageName}}.utils.Globals globals,
+            {{- end}}
+            {{javaImportOptional}}<{{javaImportLocal "utils.RetryConfig"}}> retryConfig) {
+        
+        SDKConfiguration sdkConfiguration = new SDKConfiguration();
+        
+        sdkConfiguration.setClient(httpClient);
+        
+        sdkConfiguration.setHooks(hooks);
+        
+        {{- if asyncEnabled}}
+        sdkConfiguration.setAsyncHooks(asyncHooks);
+        {{- end}}
+        
+        {{- if hasSecurity}}
+        sdkConfiguration.setSecuritySource(securitySource);
+        {{- end}}
+        
+        if (properties.getServerUrl() != null) {
+            sdkConfiguration.setServerUrl(properties.getServerUrl());
+        }
+        
+        {{- if $serverMap}}
+        if (properties.getServer() != null) {
+            sdkConfiguration.setServer(properties.getServer());
+        }
+        {{- else if $sdk.Servers}}
+        sdkConfiguration.setServerIdx(properties.getServerIdx());
+        {{- end}}
+        
+        {{- if $globals}}
+        sdkConfiguration.setGlobals(globals);
+        {{- end}}
+        
+        sdkConfiguration.setRetryConfig(retryConfig);
+        
+        return sdkConfiguration;
+    }
+
+    /**
+     * Creates the main SDK bean using the configured SDKConfiguration.
+     *
+     * @param sdkConfiguration the configured SDKConfiguration bean
+     * @return A configured {{$className}} instance
+     */
+    @Bean{{if $okHttp}}(destroyMethod = ""){{end}}
+    @ConditionalOnMissingBean
+    public {{$className}} {{sanitizeFieldName $sdk.Type.Name}}(SDKConfiguration sdkConfiguration) {
+        return new {{$className}}(sdkConfiguration);
+    }
+
+    {{- if $globals}}
+    {{- "\n"}}
+    /**
+     * Creates a Globals configuration bean if none exists, populated from properties.
+     *
+     * @param properties the configuration properties
+     * @return A configured Globals instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{templatePackageName}}.utils.Globals globals({{templateAutoConfigClassName}}Properties properties) {
+        {{templatePackageName}}.utils.Globals globals = new {{templatePackageName}}.utils.Globals();
+        
+        // Populate globals from properties
+        {{templateAutoConfigClassName}}Properties.Globals globalProps = properties.getGlobals();
+        {{- range $field := $sdk.Globals.Fields}}
+        if (globalProps.get{{sanitizeClassName $field.Name}}() != null) {
+            globals.putParam("{{getParameterType $field}}", "{{getOperationParameterName $field}}", globalProps.get{{sanitizeClassName $field.Name}}());
+        }
+        {{- end}}
+        
+        return globals;
+    }
+    {{- end}}
+
+    {{- if asyncEnabled}}
+    {{- "\n"}}
+    /**
+     * Creates an AsyncHooks bean if none exists.
+     * 
+     * @return A configured AsyncHooks instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{templatePackageName}}.utils.AsyncHooks asyncHooks() {
+        return new {{templatePackageName}}.utils.AsyncHooks();
+    }
+
+    /**
+     * Creates a ScheduledExecutorService for async retry operations if none exists.
+     * 
+     * @return A configured ScheduledExecutorService instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler() {
+        return {{javaImport "java.util.concurrent.Executors"}}.newSingleThreadScheduledExecutor();
+    }
+    {{- end}}
+
+    /**
+     * Creates a Hooks configuration bean if none exists.
+     *
+     * @return A configured Hooks instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{templatePackageName}}.utils.Hooks hooks() {
+        return new {{templatePackageName}}.utils.Hooks();
+    }
+
+    {{- range $sdk.SubSDKs}}
+    {{- if ne .Type.Name ""}}
+    /**
+     * Creates a {{sanitizeClassName .Type.Name}} sub-SDK bean if none exists.
+     *
+     * @param {{sanitizeFieldName $sdk.Type.Name}} the main SDK instance
+     * @return A configured {{sanitizeClassName .Type.Name}} instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public {{sanitizeClassName .Type.Name}} {{sanitizeFieldName .FieldName}}({{$className}} {{sanitizeFieldName $sdk.Type.Name}}) {
+        return {{sanitizeFieldName $sdk.Type.Name}}.{{sanitizeFieldName .FieldName}}();
+    }
+    {{- end}}
+    {{- end}}
+
+    {{- if asyncEnabled}}
+    {{- "\n"}}
+    /**
+     * Creates the async SDK bean if none exists.
+     *
+     * @param {{sanitizeFieldName $sdk.Type.Name}} the main SDK instance
+     * @param sdkConfiguration the configured SDKConfiguration bean
+     * @return A configured Async{{$className}} instance
+     */
+    @Bean{{if $okHttp}}(destroyMethod = ""){{end}}
+    @ConditionalOnMissingBean
+    public Async{{$className}} async{{$className}}({{$className}} {{sanitizeFieldName $sdk.Type.Name}}, SDKConfiguration sdkConfiguration) {
+        return new Async{{$className}}({{sanitizeFieldName $sdk.Type.Name}}, sdkConfiguration);
+    }
+
+    {{- range $sdk.SubSDKs}}
+    {{- if ne .Type.Name ""}}
+    /**
+     * Creates an Async{{sanitizeClassName .Type.Name}} sub-SDK bean if none exists.
+     *
+     * @param async{{$className}} the async SDK instance
+     * @return A configured Async{{sanitizeClassName .Type.Name}} instance
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public Async{{sanitizeClassName .Type.Name}} async{{sanitizeClassName .Type.Name}}(Async{{$className}} async{{$className}}) {
+        return async{{$className}}.{{sanitizeFieldName .FieldName}}();
+    }
+    {{- end}}
+    {{- end}}
+    {{- end}}
+}

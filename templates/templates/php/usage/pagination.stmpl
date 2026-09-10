@@ -1,0 +1,10 @@
+{{- $responseFormat := getResponseFormat }}
+foreach ($responses as $response) {
+    {{- if eq $responseFormat "envelope-http"}}
+    if ($response->httpMeta->response->getStatusCode() === 200) {
+    {{- else}}
+    if ($response->statusCode === 200) {
+    {{- end}}
+        // handle response
+    }
+}

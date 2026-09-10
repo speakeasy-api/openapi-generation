@@ -1,0 +1,12 @@
+diff --git a/reviewtask.go b/reviewtask.go
+index 9445053b46..f8b045be3d 100644
+--- a/reviewtask.go
++++ b/reviewtask.go
+@@ -45,3 +45,7 @@ func (r *ReviewTask) GetPolicy() MCPPolicy {
+ 	}
+ 	return r.Policy
+ }
++
++func (r ReviewTask) String() string {
++	return r.Name + " (" + r.ID + ")"
++}

@@ -1,0 +1,124 @@
+---
+title: "GetPolymorphismResponse"
+---
+
+OK
+
+## Example Usage
+
+```typescript
+import {
+  Enum,
+  GetPolymorphismResponse,
+  HeroWidth,
+  Icon,
+  Int32Enum,
+  IntEnum,
+  NullableIntEnum,
+  NullableStringEnum,
+  OneOfWithFactoredOutPropertiesHeroWidth,
+  OneOfWithFactoredOutPropertiesIcon,
+  OneOfWithFactoredOutPropertiesInt32Enum,
+  OneOfWithFactoredOutPropertiesIntEnum,
+  OneOfWithFactoredOutPropertiesNullableIntEnum,
+} from "openapi";
+import { Decimal } from "openapi/types";
+
+let value: GetPolymorphismResponse = {
+  oneOfWithUnionDescription: {
+    str: "example",
+    bool: true,
+    integer: 999999,
+    int32: 1,
+    num: 1.1,
+    float32: 7119.62,
+    enumProp: Enum.First,
+    date: new Date("2020-01-01"),
+    dateTime: new Date("2020-01-01T00:00:00Z"),
+    anything: "<value>",
+    boolOpt: true,
+    intOptNull: 999999,
+    numOptNull: 1.1,
+    intEnum: IntEnum.Third,
+    int32Enum: Int32Enum.SixtyNine,
+    bigint: 439366,
+    bigintStr: 12345678901234567890n,
+    decimalStr: new Decimal("2008.86"),
+    obj: {
+      str: "example",
+    },
+    map: {
+      "key": {
+        str: "example",
+      },
+    },
+    arr: [],
+    any: "<value>",
+    type: "0",
+    nullableIntEnum: NullableIntEnum.Third,
+    nullableStringEnum: NullableStringEnum.Second,
+    color: "green",
+    icon: Icon.Tick,
+    heroWidth: HeroWidth.FourHundredAndEighty,
+  },
+  oneOfWithFactoredOutProperties: {
+    str: "example",
+    bool: true,
+    integer: 999999,
+    int32: 1,
+    num: 1.1,
+    float32: 9902.86,
+    enumProp: Enum.First,
+    date: new Date("2020-01-01"),
+    dateTime: new Date("2020-01-01T00:00:00Z"),
+    anything: "<value>",
+    boolOpt: true,
+    intOptNull: 999999,
+    numOptNull: 1.1,
+    intEnum: OneOfWithFactoredOutPropertiesIntEnum.Third,
+    int32Enum: OneOfWithFactoredOutPropertiesInt32Enum.SixtyNine,
+    bigint: 320288,
+    bigintStr: 12345678901234567890n,
+    decimalStr: new Decimal("9515.7"),
+    obj: {
+      str: "example",
+    },
+    map: {},
+    arr: [
+      {
+        str: "example",
+      },
+    ],
+    any: {
+      str: "example",
+    },
+    type: "0",
+    nullableIntEnum: OneOfWithFactoredOutPropertiesNullableIntEnum.Third,
+    nullableStringEnum: null,
+    color: "green",
+    icon: OneOfWithFactoredOutPropertiesIcon.Tick,
+    heroWidth: OneOfWithFactoredOutPropertiesHeroWidth.FourHundredAndEighty,
+    anExtraProperty: "example",
+  },
+  simpleAllOf: {
+    str: "example",
+    bool: true,
+  },
+  allOfWithFactoredOutProperties: {
+    anOverridingProperty: "example",
+    anotherProperty: "example",
+    anExtraProperty: "example",
+  },
+};
+```
+
+## Fields
+
+| Field                                                                                                             | Type                                                                                                              | Required                                                                                                          | Description                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `oneOfWithUnionDescription`                                                                                       | *models.OneOfWithUnionDescription*                                                                                | :heavy_minus_sign:                                                                                                | A union of two types.                                                                                             |
+| `oneOfWithFactoredOutProperties`                                                                                  | *models.OneOfWithFactoredOutProperties*                                                                           | :heavy_minus_sign:                                                                                                | A union of two types with factored out properties.                                                                |
+| `simpleAllOf`                                                                                                     | [models.SimpleAllOf](../models/simpleallof.mdx)                                                                    | :heavy_minus_sign:                                                                                                | N/A                                                                                                               |
+| `allOfWithFactoredOutProperties`                                                                                  | [models.AllOfWithFactoredOutProperties](../models/allofwithfactoredoutproperties.mdx)                              | :heavy_minus_sign:                                                                                                | An object with allOf and factored out properties.                                                                 |
+| `circularUnion`                                                                                                   | *models.CircularUnion*                                                                                            | :heavy_minus_sign:                                                                                                | N/A                                                                                                               |
+| `recursiveFormField`                                                                                              | *models.RecursiveFormField*                                                                                       | :heavy_minus_sign:                                                                                                | A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items. |

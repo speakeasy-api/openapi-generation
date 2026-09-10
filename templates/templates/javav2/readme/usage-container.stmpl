@@ -1,0 +1,22 @@
+{{- $examples := collectAllUsageExamples}}
+{{- templateUsageSectionWithContexts $examples "### Example"}}
+
+{{- if asyncEnabled}}
+#### Asynchronous Call
+An asynchronous SDK client is also available that returns a [`CompletableFuture<T>`][comp-fut]. See [Asynchronous Support](#asynchronous-support) for more details on async benefits and reactive library integration.
+{{templateUsageSection "usage" "" nil nil nil true}}
+
+[comp-fut]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
+{{- end}}
+
+{{- if hasUnionTypesInSDK}}
+
+#### Union Consumption Patterns
+
+When a response field is a union model:
+
+- Discriminated unions: branch on the discriminator (`switch`) and then narrow to the concrete type.
+- Non-discriminated unions: use generated accessors (for example `string()`, `asLong()`, `simpleObject()`) to determine the active variant.
+
+For full model-specific examples (including Java 11/16/21 variants), see each union model's **Supported Types** section in the generated model docs.
+{{- end}}

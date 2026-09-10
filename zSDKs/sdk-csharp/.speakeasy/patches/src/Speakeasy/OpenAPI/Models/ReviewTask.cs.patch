@@ -1,0 +1,17 @@
+diff --git a/src/Speakeasy/OpenAPI/Models/ReviewTask.cs b/src/Speakeasy/OpenAPI/Models/ReviewTask.cs
+index f6dce5f..930c948 100644
+--- a/src/Speakeasy/OpenAPI/Models/ReviewTask.cs
++++ b/src/Speakeasy/OpenAPI/Models/ReviewTask.cs
+@@ -28,5 +28,10 @@ namespace Speakeasy.OpenAPI
+         /// </summary>
+         [JsonProperty("policy", Required = Newtonsoft.Json.Required.Always)]
+         public MCPPolicy Policy { get; set; } = new();
++
++        public override string ToString()
++        {
++            return Utilities.ToString(this);
++        }
+     }
+-}
+\ No newline at end of file
++}

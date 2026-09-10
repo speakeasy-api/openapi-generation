@@ -1,0 +1,8 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}
+{
+    public interface IOpenUnion
+    {
+        bool IsUnknown();
+    }
+}

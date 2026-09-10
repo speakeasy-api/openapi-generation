@@ -1,0 +1,85 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+{{- $retryVisibility := retryFlagsVisibility -}}
+Some operations in this CLI support automatic retries with exponential backoff.
+
+{{ if ne $retryVisibility "visible" -}}
+### Configure retries
+
+{{ if eq $retryVisibility "hidden" -}}
+Retry flags are supported but intentionally omitted from `--help`. For persistent agent configuration, use `~/.config/{{$cliName}}/config.yaml`:
+{{ else -}}
+Retry flags are not registered. Configure retries in `~/.config/{{$cliName}}/config.yaml`:
+{{ end }}
+```yaml
+timeout: 30s
+no_retries: false
+retry_connection_errors: true
+retry_max_elapsed_time: 1m
+# retry_config replaces the whole policy (overrides retry_max_elapsed_time):
+# retry_config: '{"strategy":"backoff","backoff":{"initialInterval":500,"maxInterval":60000,"exponent":1.5,"maxElapsedTime":300000}}'
+```
+
+{{ if eq $retryVisibility "hidden" -}}
+The equivalent hidden flags are `--no-retries`, `--retry-config`, `--retry-connection-errors`, and `--retry-max-elapsed-time`.
+
+{{ end -}}
+{{ else -}}
+### Retry controls
+
+```bash
+# Disable retries for one command
+{{$c.Showcase}} --no-retries
+
+# Replace the retry policy with backoff capped by elapsed time
+{{$c.Showcase}} --retry-max-elapsed-time 5s
+
+# Retry eligible connection errors
+{{$c.Showcase}} --retry-connection-errors
+
+# Supply the complete retry configuration
+{{$c.Showcase}} --retry-config '{"strategy":"backoff","backoff":{"initialInterval":500,"maxInterval":60000,"exponent":1.5,"maxElapsedTime":300000}}'
+{{ if hasAttemptCountRetries -}}
+
+# Bound retries by attempt count instead
+{{$c.Showcase}} --retry-config '{"strategy":"attempt-count-backoff","maxRetries":2,"backoff":{"initialInterval":500,"maxInterval":60000,"exponent":2,"maxElapsedTime":300000}}'
+{{ end -}}
+```
+
+### Persist retry settings
+
+Add retry configuration with `{{$cliName}} configure` or edit `~/.config/{{$cliName}}/config.yaml`:
+
+```yaml
+timeout: 30s
+no_retries: false
+retry_connection_errors: true
+retry_max_elapsed_time: 1m
+# retry_config replaces the whole policy (overrides retry_max_elapsed_time):
+# retry_config: '{"strategy":"backoff","backoff":{"initialInterval":500,"maxInterval":60000,"exponent":1.5,"maxElapsedTime":300000}}'
+```
+
+{{ end -}}
+{{ if eq (retryMethodPolicy) "safe-methods" -}}
+### Method retry policy
+
+Root-level retry policies apply only to safe HTTP methods: `GET`, `HEAD`, `OPTIONS`, and `TRACE`. An explicit operation-level retry policy may opt another method in. Runtime retry settings cannot enable retries for an operation that has no generated retry loop.
+
+{{ end -}}
+### Retry-After
+
+`Retry-After` (integer seconds or an RFC1123 date) and `retry-after-ms` override the next computed interval. With the `backoff` strategy, a server-directed wait that exceeds the remaining `maxElapsedTime` budget is not slept; the last response is returned.{{ if hasAttemptCountRetries }} With `attempt-count-backoff`, `maxRetries` bounds attempts, while `timeout` bounds wall-clock time; `maxElapsedTime` does not apply.{{ end }}
+
+### Timeout
+
+`timeout` and `--timeout` bound the whole operation, including retry sleeps:
+
+```bash
+{{$c.Showcase}} --timeout 30s
+```
+
+{{ if eq $retryVisibility "none" -}}
+**Precedence**: `no_retries` > `retry_config` > `retry_max_elapsed_time`/`retry_connection_errors` > API specification defaults.
+{{ else -}}
+**Precedence**: `--no-retries` > `--retry-config` > individual flags > config file > API specification defaults.
+{{ end }}

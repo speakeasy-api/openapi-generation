@@ -1,0 +1,201 @@
+# OpenAPI Specification Property Definitions
+# These definitions provide hover documentation for standard OpenAPI properties
+
+"openapi":
+  name: "OpenAPI Version"
+  description: "Specifies the version of the OpenAPI Specification that this document uses"
+  required: true
+  type: "String"
+  example: "3.0.3"
+
+"info":
+  name: "API Information"
+  description: "Provides metadata about the API. The metadata MAY be used by the clients if needed"
+  required: true
+  type: "Object"
+
+"info.title":
+  name: "API Title"
+  description: "The title of the API"
+  required: true
+  type: "String"
+  example: "My API"
+
+"title":
+  name: "Title"
+  description: "A title for the object"
+  type: "String"
+
+"info.version":
+  name: "API Version"
+  description: "The version of the OpenAPI document"
+  required: true
+  type: "String"
+  example: "1.0.0"
+
+"version":
+  name: "Version"
+  description: "Version information"
+  type: "String"
+
+"description":
+  name: "Description"
+  description: "A description of the API or component. CommonMark syntax MAY be used for rich text representation"
+  type: "String"
+
+"paths":
+  name: "Paths"
+  description: "The available paths and operations for the API"
+  required: true
+  type: "Object"
+  details: "Each key is a path template and the value describes the operations available on that path"
+
+"components":
+  name: "Components"
+  description: "An element to hold various schemas for the specification"
+  type: "Object"
+  details: "Holds a set of reusable objects for different aspects of the OAS"
+
+"servers":
+  name: "Servers"
+  description: "An array of Server Objects providing connectivity information to a target server"
+  type: "Array"
+  default: '[{"url": "/"}]'
+
+"security":
+  name: "Security Requirements"
+  description: "A declaration of which security mechanisms can be used across the API"
+  type: "Array"
+  details: "Each item is a Security Requirement Object"
+
+"tags":
+  name: "Tags"
+  description: "A list of tags used by the specification with additional metadata"
+  type: "Array"
+  details: "Each tag name should be unique within the list"
+
+"type":
+  name: "Schema Type"
+  description: "Specifies the data type of the schema"
+  type: "String"
+  validValues: "null, boolean, object, array, number, string, integer"
+
+"format":
+  name: "Format"
+  description: "Provides additional information about the data type"
+  type: "String"
+  examples: "date-time, email, uuid, binary"
+
+"properties":
+  name: "Properties"
+  description: "Defines the properties of an object schema"
+  type: "Object"
+  details: "Each key is a property name and the value is a schema describing that property"
+
+"required":
+  name: "Required Properties"
+  description: "Specifies which properties are required in an object schema"
+  type: "Array of Strings"
+  details: "Each item must be a property name defined in the properties object"
+
+"items":
+  name: "Array Items"
+  description: "Defines the schema for items in an array"
+  type: "Schema Object"
+  details: "Only applicable when type is array"
+
+"enum":
+  name: "Enumeration"
+  description: "Restricts the value to a fixed set of values"
+  type: "Array"
+  details: "Each item should be of the same type as the schema"
+
+"example":
+  name: "Example Value"
+  description: "Provides an example of the schema value"
+  type: "Any"
+  details: "Should conform to the schema definition"
+
+"default":
+  name: "Default Value"
+  description: "Specifies a default value for the schema"
+  type: "Any"
+  details: "Should conform to the schema definition"
+
+"responses":
+  name: "Responses"
+  description: "The list of possible responses as they are returned from executing this operation"
+  required: true
+  type: "Object"
+  details: "Each key is an HTTP status code and the value describes the response"
+
+"parameters":
+  name: "Parameters"
+  description: "A list of parameters that are applicable for this operation"
+  type: "Array"
+  details: "Each item is a Parameter Object or Reference Object"
+
+"requestBody":
+  name: "Request Body"
+  description: "The request body applicable for this operation"
+  type: "Object"
+  details: "Describes the request body content and requirements"
+
+"operationId":
+  name: "Operation ID"
+  description: "Unique string used to identify the operation"
+  type: "String"
+  details: "Should be unique among all operations described in the API"
+
+"summary":
+  name: "Summary"
+  description: "A short summary of what the operation does"
+  type: "String"
+  details: "Should be less than 120 characters"
+
+"deprecated":
+  name: "Deprecated"
+  description: "Declares this operation to be deprecated"
+  type: "Boolean"
+  default: "false"
+
+# HTTP Methods
+"get":
+  name: "HTTP GET Operation"
+  description: "Defines the GET operation for this path"
+  type: "Operation Object"
+
+"post":
+  name: "HTTP POST Operation"
+  description: "Defines the POST operation for this path"
+  type: "Operation Object"
+
+"put":
+  name: "HTTP PUT Operation"
+  description: "Defines the PUT operation for this path"
+  type: "Operation Object"
+
+"delete":
+  name: "HTTP DELETE Operation"
+  description: "Defines the DELETE operation for this path"
+  type: "Operation Object"
+
+"options":
+  name: "HTTP OPTIONS Operation"
+  description: "Defines the OPTIONS operation for this path"
+  type: "Operation Object"
+
+"head":
+  name: "HTTP HEAD Operation"
+  description: "Defines the HEAD operation for this path"
+  type: "Operation Object"
+
+"patch":
+  name: "HTTP PATCH Operation"
+  description: "Defines the PATCH operation for this path"
+  type: "Operation Object"
+
+"trace":
+  name: "HTTP TRACE Operation"
+  description: "Defines the TRACE operation for this path"
+  type: "Operation Object"

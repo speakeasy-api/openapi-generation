@@ -1,0 +1,21 @@
+Certain SDK methods accept file objects as part of a request body or multi-part request. It is possible and typically recommended to upload files as a stream rather than reading the entire contents into memory. This avoids excessive memory consumption and potentially crashing with out-of-memory errors when working with very large files.
+
+The SDK provides a [`Blob`]({{getSourceDirectory}}/utils/Blob.java) utility class for efficient file handling. It supports various input sources including file paths, streams, strings, and byte arrays, while providing memory-efficient streaming{{if useOkHttp}}.{{else}} and reactive processing.{{end}}
+
+```java
+// Recommended for large files - streams data efficiently
+Blob fileBlob = Blob.from(Paths.get("large-document.pdf"));
+
+// For in-memory data
+Blob textBlob = Blob.from("Hello, World!");
+Blob dataBlob = Blob.from(myByteArray);
+```
+
+> [!TIP]
+> For comprehensive documentation including all factory methods, consumption patterns, and advanced usage examples, see the [Blob Utility Documentation](docs/utils/Blob.md).
+
+The following example demonstrates how to attach a file to a request:
+
+{{- if useBlob}}
+{{templateUsageSection "file-upload" }}
+{{- end}}

@@ -1,0 +1,8 @@
+{{- $namespace := getScopeNamespace "hooks" true}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+class FailEarlyException extends \Exception
+{
+}

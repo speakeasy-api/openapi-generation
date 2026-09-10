@@ -1,0 +1,22 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $typedDictName := .Local.TypedDictName -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{- $fields := (sortFields $type.Fields) -}}
+{{- $className := sanitizeClassName $type.Name -}}
+{{- $startsWithTest := hasPrefix "Test" $className -}}
+{{- $comments := templateComments $type.Comments 1 -}}
+{{- addImport "typing_extensions" "TypedDict" -}}
+{{- templateDeprecated $type.Comments }}
+class {{$typedDictName}}(TypedDict):
+{{- $comments}}
+    {{- if needsTypedDictPassStatement $type $comments}}
+    pass{{end -}}
+    {{- if $startsWithTest}}
+    __test__ = False # pyright: ignore[reportGeneralTypeIssues]
+    {{- end}}
+    {{- if or $comments $startsWithTest}}{{/* Add a newline before the fields if necessary */}}
+    {{end}}
+    {{range $fields}}{{if not .IsAdditionalProperties}}{{$fieldName := sanitizeFieldName .Name}}{{$fieldName}}: {{sanitizeTypedDictField . $usageLocation $local}}
+{{- templateComments .Comments 1 }}
+    {{end}}{{end}}

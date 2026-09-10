@@ -1,0 +1,66 @@
+name: Test CSharp
+on:
+  workflow_call:
+    inputs:
+      test-group:
+        required: true
+        type: string
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  test-csharp:
+    timeout-minutes: 15
+    name: Test CSharp - ${{ inputs.test-group }}
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Add this step to install the compatible libssl1.1
+      - name: Install libssl1.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          rm libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        env:
+          # Prevent "Unable to locate dotnet CLI" transient errors
+          # Reference: https://github.com/dotnet/sdk/issues/44957
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/.dotnet
+        with:
+          dotnet-version: |
+            5.x
+            6.x
+            8.x
+            10.x
+
+      - name: Verify dotnet versions installed
+        run: dotnet --list-sdks
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+            services/**/go.sum
+      - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: USAGE_GROUP=all TARGET=${{ inputs.test-group }} make test-csharp
+      - name: git diff
+        run: ./scripts/check-generated-diff.sh
+      - name: Upload test report
+        if: inputs.test-group != 'review'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sdk-csharp-${{ inputs.test-group }}-test-report
+          path: ./testSDKs/sdk-csharp-${{ inputs.test-group }}/**/test-csharp-record.txt
+          if-no-files-found: error

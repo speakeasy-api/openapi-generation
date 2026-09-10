@@ -1,0 +1,20 @@
+{{- recurse 1 -}}
+{{- $handlers := .Local -}}
+{{- if gt (len $handlers) 0 }}
+{{- addImport "net/http" -}}
+{{- end }}
+{{- addImport "context" -}}
+{{- addImport "mockserver/internal/logging" -}}
+{{- addImport "mockserver/internal/tracking" -}}
+package handler
+
+{{genImports}}
+
+// GeneratedHandlers returns all generated handlers.
+func GeneratedHandlers(ctx context.Context, dir *logging.HTTPFileDirectory, rt *tracking.RequestTracker) []*GeneratedHandler {
+	return []*GeneratedHandler{
+		{{- range $handlers }}
+		NewGeneratedHandler(ctx, {{ templateGoNetHTTPMethod .Method }}, "{{ .Path }}", {{ .FunctionName }}(dir, rt)),
+		{{- end }}
+	}
+}

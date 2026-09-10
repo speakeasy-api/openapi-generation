@@ -1,0 +1,58 @@
+# This overlay setups the quaternary SDK which is mainly trying to test Global Security Flattening Features + Named Servers (with variables)
+# 1. Global security flattening applies when flattenGlobalSecurity is true and there is a single global scheme.
+#    If additionally this scheme has only a single field (in this case apiKey), it is further promoted to a top-level SDK constructor parameter.
+#    Refer to the basic-http.yaml spec for an example of a flattened global http:basic scheme: altough the username and password
+#    fields get flattened in the global security model, they never get promoted as top-level fields
+# 2. When x-speakeasy-server-id is used, servers (and their associatedvariables) are mapped by name.
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/quaternary.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  # Even if Info section is missing sdk generation should succeed
+  - target: $["info"][*]
+    remove: true
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with servers using server ids
+  - target: $["servers"]
+    update:
+      - url: http://localhost:35123
+        x-speakeasy-server-id: DEFAULT
+      - url: http://broken
+        description: A server url to a non-existent server.
+        x-speakeasy-server-id: BROKEN
+      - url: http://{hostname}:{port}
+        x-speakeasy-server-id: TEMPLATED
+        description: A named server with templated variables.
+        variables:
+          port:
+            default: "35123"
+            description: The port on which the server is running.
+          hostname:
+            default: localhost
+            description: The hostname of the server.
+  # Remove global security so we can replace it
+  - target: $["security"][*]
+    remove: true
+  # Remove all operation-level security nodes
+  - target: $.paths.*.*.security
+    remove: true
+  - target: $["security"]
+    update:
+      - apiKeyAuth: []
+  # Restore apiKeyAuth security to test security hoisting
+  - target: $.paths["/bearer#operation"].get
+    update:
+      security:
+        - apiKeyAuth: []
+  # Delete the testHooks operation as the hook required for it is only added in the primary test
+  # TODO: should we look at always adding all the hooks?
+  - target: $.paths.*.*[?(@.operationId == 'testHooks')]
+    remove: true
+  - target: $["x-speakeasy-webhooks"]
+    remove: true
+  - target: $.webhooks
+    remove: true

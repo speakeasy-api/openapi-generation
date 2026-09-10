@@ -1,0 +1,177 @@
+{{- $usageCtx := .Local.Context}}
+{{- $isAsync := .Local.Async}}
+{{- $mode := .Local.Mode}}
+{{- $resVar := getResponseVariableName $usageCtx.StepID}}
+{{- if $usageCtx.Operation -}}
+    {{- if eq $mode "eventstream"}}
+      {{- if $isAsync}}
+        {{- if useOkHttp}}
+        // handle async event stream: the future completes with a blocking
+        // EventStream iterator, which must be closed after use!
+        {{$resVar}}.thenAccept(events -> {
+            try ({{javaImportLocal "utils.EventStream"}}<{{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}}> stream = events) {
+                for ({{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}} event : stream) {
+                    System.out.println(event);
+                }
+            } catch ({{javaImport "java.io.IOException"}} e) {
+                e.printStackTrace();
+            }
+        }).exceptionally(e -> {
+            e.printStackTrace();
+            return null;
+        });
+        {{- else}}
+        // handle async event stream using Reactive Streams Publisher
+        // EventStream is a Reactive Streams Publisher, providing broad compatibility with reactive libraries
+
+        // Example using Project Reactor (illustrative)
+        {{javaImport "reactor.core.publisher.Flux"}}<{{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}}>  flux = {{javaImport "reactor.core.publisher.Flux"}}.from({{$resVar}});
+        flux.subscribe(
+            event -> System.out.println(event),
+            error -> error.printStackTrace(),
+            () -> System.out.println("Event stream completed")
+        );
+        {{- end}}
+      {{- else}}
+        // handle event stream, must be closed after use!
+        try ({{javaImportLocal "utils.EventStream"}}<{{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}}> events = {{$resVar}}.events()) {
+            // Option 1: Use for-each loop
+            for ({{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}} event : events) {
+                System.out.println(event);
+            }
+
+            // Option 2: Use Stream API
+            try ({{javaImport "java.util.stream.Stream"}}<{{javaImport (eventStreamInnerType $usageCtx.Operation.Response.Type "")}}> stream = events.stream()) {
+                 stream.forEach(System.out::println);
+            }
+        {{- with (getSSEPatternMatchingExample $usageCtx.Operation)}}
+
+{{.}}
+        {{- end}}
+        }
+      {{- end}}
+    {{- else if eq $mode "jsonl"}}
+      {{- if $isAsync}}
+        {{- if useOkHttp}}
+        // handle async JSONL stream: the future completes with a blocking
+        // JsonLStream iterator, which must be closed after use!
+        {{$resVar}}.thenAccept(events -> {
+            try ({{javaImportLocal "utils.JsonLStream"}}<{{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}}> stream = events) {
+                for ({{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}} event : stream) {
+                    System.out.println(event);
+                }
+            } catch ({{javaImport "java.io.IOException"}} e) {
+                e.printStackTrace();
+            }
+        }).exceptionally(e -> {
+            e.printStackTrace();
+            return null;
+        });
+        {{- else}}
+        // handle async JSONL stream using Reactive Streams Publisher
+        // JsonLStream is a Reactive Streams Publisher, providing broad compatibility with reactive libraries
+
+        // Example using Project Reactor (illustrative)
+        {{javaImport "reactor.core.publisher.Flux"}}<{{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}}>  flux = {{javaImport "reactor.core.publisher.Flux"}}.from({{$resVar}});
+        flux.subscribe(
+            event -> System.out.println(event),
+            error -> error.printStackTrace(),
+            () -> System.out.println("JSONL stream completed")
+        );
+        {{- end}}
+      {{- else}}
+        // handle JSONL stream, must be closed after use!
+        try ({{javaImportLocal "utils.JsonLStream"}}<{{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}}> events = {{$resVar}}.events()) {
+            // Option 1: Use for-each loop
+            for ({{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}} event : events) {
+                System.out.println(event);
+            }
+            
+            // Option 2: Use Stream API
+            try ({{javaImport "java.util.stream.Stream"}}<{{javaImport (jsonLStreamInnerType $usageCtx.Operation.Response.Type "")}}>  stream = events.stream()) {
+                stream.forEach(System.out::println);
+            }
+        }
+      {{- end}}
+    {{- else if eq $mode "pagination"}}
+    {{- else if eq $mode "file-upload"}}
+    {{- else if eq $mode "file-download"}}
+        {{- $resFieldName := getResponseFieldName $usageCtx.Operation }}
+        {{- if $resFieldName}}
+          {{- $resField := sanitizeFieldName $resFieldName}}
+          {{- if $isAsync}}
+            {{- if useOkHttp}}
+        // Stream response body to a file once the response arrives.
+        CompletableFuture<Void> writtenPath = {{$resVar}}Fut.thenAccept({{$resVar}} -> {
+              {{- if isRawGetter}}
+            try ({{javaImport "java.io.InputStream"}} body = {{javaImport "java.util.Objects"}}.requireNonNull({{$resVar}}.responseStream(), "Body is empty")) {
+              {{- else}}
+            try ({{javaImport "java.io.InputStream"}} body = {{$resVar}}.responseStream().orElseThrow(() -> new {{javaImport "java.lang.IllegalArgumentException"}}("Body is empty"))) {
+              {{- end}}
+                {{javaImport "java.nio.file.Files"}}.copy(body, {{javaImport "java.nio.file.Paths"}}.get("file.bin"), {{javaImport "java.nio.file.StandardCopyOption"}}.REPLACE_EXISTING);
+            } catch ({{javaImport "java.io.IOException"}} e) {
+                e.printStackTrace();
+            }
+        });
+            {{- else}}
+        // Stream response body to a file.
+        // See docs/utils/Blob.md for alternative ways to consume a Blob
+        CompletableFuture<{{javaImport "java.nio.file.Path"}}> writtenPath = {{$resVar}}Fut.thenCompose({{$resVar}} -> {
+              {{- if isRawGetter}}
+            {{javaImportLocal "utils.Blob"}} blob = {{javaImport "java.util.Objects"}}.requireNonNull({{$resVar}}.responseStream(), "Body is empty");
+              {{- else}}
+            {{javaImportLocal "utils.Blob"}} blob = {{$resVar}}.responseStream().orElseThrow(() -> new {{javaImport "java.lang.IllegalArgumentException"}}("Body is empty"));
+              {{- end}}
+            return blob.toFile({{javaImport "java.nio.file.Paths"}}.get("file.bin"));
+        });
+            {{- end}}
+          {{- else if isRawGetter}}
+        if ({{$resVar}}.{{$resField}}() != null) {
+            // handle response
+        }
+          {{- else}}
+        if ({{$resVar}}.{{$resField}}().isPresent()) {
+            // handle response
+        }
+          {{- end}}{{/* endif $isAsync */}}
+        {{- else}}{{/* no $resFieldName */}}
+        // handle response
+        {{- end}}
+    {{- else}}{{/* default $mode */}}
+        {{- $resFieldName := getResponseFieldName $usageCtx.Operation }}
+        {{- if $resFieldName}}
+            {{- $resField := sanitizeFieldName $resFieldName}}
+            {{- $presenceCheck := ".isPresent()"}}
+            {{- $valueSuffix := "().get()"}}
+            {{- if isRawGetter}}
+                {{- $presenceCheck = " != null"}}
+                {{- $valueSuffix = "()"}}
+            {{- end}}
+            {{- if $isAsync}}
+        {{$resVar}}Fut.thenAccept({{$resVar}} -> {
+                {{- if isOperationResponseUnion $usageCtx.Operation}}
+            if ({{$resVar}}.{{$resField}}(){{$presenceCheck}}) {
+{{indentLines (regexSplit "\n" (templateOperationResponseUnionHandling $usageCtx.Operation (printf "%s.%s%s" $resVar $resField $valueSuffix)) -1) 4}}
+            }
+                {{- else}}
+            if ({{$resVar}}.{{$resField}}(){{$presenceCheck}}) {
+                System.out.println({{$resVar}}.{{$resField}}{{$valueSuffix}});
+            }
+                {{- end}}
+        });
+            {{- else}}
+                {{- if isOperationResponseUnion $usageCtx.Operation}}
+        if ({{$resVar}}.{{$resField}}(){{$presenceCheck}}) {
+{{indentLines (regexSplit "\n" (templateOperationResponseUnionHandling $usageCtx.Operation (printf "%s.%s%s" $resVar $resField $valueSuffix)) -1) 3}}
+        }
+                {{- else}}
+        if ({{$resVar}}.{{$resField}}(){{$presenceCheck}}) {
+            System.out.println({{$resVar}}.{{$resField}}{{$valueSuffix}});
+        }
+                {{- end}}
+            {{- end}}
+        {{- else}}
+        // handle response
+        {{- end}}
+    {{- end}}
+{{- end}}

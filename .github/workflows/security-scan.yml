@@ -1,0 +1,28 @@
+name: Daily Security Scan
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # Daily at 9 AM UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "go.mod"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "zSDKs/**/package-lock.json"
+
+      - name: Run Security Scan
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          SECURITY_NOTIFICATIONS_SLACK_WEBHOOK: ${{ secrets.SECURITY_NOTIFICATIONS_SLACK_WEBHOOK }}
+        run: go run ./cmd/security -scan -osv-severity=low -npm-audit=moderate

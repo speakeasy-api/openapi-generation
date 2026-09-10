@@ -1,0 +1,36 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2PasswordEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+java:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  artifactID: openapi
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: true
+  companyEmail: info@mycompany.com
+  companyName: My Company
+  companyURL: www.mycompany.com
+  githubURL: github.com/owner/repo
+  groupID: org.openapis.oauth2password
+  imports:
+    option: openapi
+    paths:
+      callbacks: models/callbacks
+      errors: models/errors
+      operations: models/operations
+      shared: models/shared
+      webhooks: models/webhooks
+  maxMethodParams: 5
+  ossrhURL: https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/
+  packageName: org.openapis.oauth2password.openapi
+  projectName: openapi
+  nullFriendlyParameters: true
+  asyncMode: disabled
+  templateVersion: v2

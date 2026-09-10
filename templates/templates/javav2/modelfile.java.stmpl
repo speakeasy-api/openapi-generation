@@ -1,0 +1,17 @@
+{{- recurse 1 -}}
+{{- $scope := .Local.Scope -}}
+{{- $isAsync := .Local.IsAsync -}}
+{{- $outputLoc := .Local.Type.OutputLocation -}}
+{{- $pkg := (getModelPackage true $scope $outputLoc "" $isAsync) -}}
+package {{$pkg}};
+{{- $class := (sanitizeClass .Local.Type $scope true) -}}
+{{- $fullClassName := (print $pkg "." $class) }}
+{{genImports $fullClassName}}// #region imports{{"\n"}}// #endregion imports{{"\n"}}
+{{- if eq .Local.Type.Type "enum"}}
+    {{- if isOpenEnum .Local.Type}}{{templateString "enum-open.java.stmpl" .Local.Type}}
+    {{- else }}{{templateString "enum.java.stmpl" .Local.Type}}
+    {{- end }}
+{{ else if eq .Local.Type.Type "error"}}{{templateString "error.java.stmpl" .Local}}
+{{ else if (isOneOfNonDiscriminated .Local.Type) }}{{templateString "model-oneof-non-disc.java.stmpl" .Local}}
+{{ else if (isOneOfDiscriminated .Local.Type) }}{{templateString "model-oneof-disc.java.stmpl" .Local}}
+{{ else }}{{templateString "model.java.stmpl" .Local}}{{end}}

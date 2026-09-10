@@ -1,0 +1,26 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"{{getRootModulePath}}/pkg/models/sdkerrors"
+)
+
+func TestGlobalSecurityFlattening(t *testing.T) {
+	recordTest("auth-api-key-auth-global")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Auth.APIKeyAuthGlobal(context.Background())
+	require.Error(t, err)
+	var sdkErr *sdkerrors.SDKError
+	if assert.ErrorAs(t, err, &sdkErr) {
+		assert.Equal(t, err.Error(), "API error occurred: Status 401")
+	}
+	assert.Nil(t, res)
+}

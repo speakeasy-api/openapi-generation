@@ -1,0 +1,18 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $modelName := (sanitizeFieldName .Local.Name) -}}
+package {{sanitizeModelPackageName .Local.OutputLocation}}
+
+{{genImports}}
+
+{{range .Local.Types}}
+{{- $dgt := getDocGroupedType . $dg -}}
+{{- if eq .Type "enum"}}
+{{templateString "enum.go.stmpl" $dgt}}
+{{- else if eq .Type "union"}}
+{{templateString "union.go.stmpl" $dgt}}
+{{- else if eq .Type "error"}}
+{{templateString "error.go.stmpl" $dgt}}
+{{- else}}
+{{templateString "model.go.stmpl" $dgt}}
+{{end}}{{end}}

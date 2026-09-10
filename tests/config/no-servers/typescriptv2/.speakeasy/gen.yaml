@@ -1,0 +1,23 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+typescript:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  moduleFormat: dual
+  templateVersion: v2
+  enableMCPServer: true
+  constFieldsAlwaysOptional: false
+  imports:
+    option: openapi
+    paths:
+      shared: models/shared
+      operations: models/operations
+      errors: models/errors
+      callbacks: models/callbacks
+      webhooks: models/webhooks
+  acceptHeaderEnum: true
+  legacyFileNaming: true

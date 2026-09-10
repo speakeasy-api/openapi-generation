@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+{{- $op := .Local.Operation -}}
+{{- $sdk := .Local.SDK -}}
+{{- $isAsync := .Local.IsAsync -}}
+{{- $className := templateRequestBuilderSimpleClassName $op -}}
+{{- $pkg := (getModelNamespace true "operations" "" "" $isAsync) -}}
+{{- $fullClassName := (print $pkg "." $className) -}}
+package {{$pkg}};
+{{genImports $fullClassName}}public class {{$className}} {
+{{templateRequestBuilderContent .Local $className}}
+}

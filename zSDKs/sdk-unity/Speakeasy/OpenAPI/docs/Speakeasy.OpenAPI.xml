@@ -1,0 +1,2545 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Speakeasy.OpenAPI</name>
+    </assembly>
+    <members>
+        <member name="T:Speakeasy.OpenAPI.Bar.Bike">
+            <summary>
+            A bike in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Bar.Car">
+            <summary>
+            A car in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Bar.Pet">
+            <summary>
+            A pet in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Bar.Pet.Owner">
+            <summary>
+            The owner of the pet
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Bar.PetOwner">
+            <summary>
+            A pet owner in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Bar.PetOwner.Pet">
+            <summary>
+            A pet in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Bar.PetStatus">
+            <summary>
+            Status of a pet in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Bar.Vehicle">
+            <summary>
+            A non-discriminated union of vehicle types in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Baz.Pet">
+            <summary>
+            A pet in the baz namespace with completely different schema
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IConflicts.GetNamespaceConflictAsync">
+            <summary>
+            Get Namespace Conflict Test
+            
+            <remarks>
+            This endpoint tests the x-speakeasy-model-namespace extension by returning<br/>
+            a model that references two different Pet types from different namespaces.<br/>
+            The SDK should properly import and alias both Pet types.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IConflicts.PutNamespaceConflictAsync(Speakeasy.OpenAPI.ObjWithRenamedProperties)">
+            <summary>
+            Put Property Name Conflicts Behind
+            
+            <remarks>
+            This endpoint tests property name conflict resolution through<br/>
+            x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IConflicts.CreateNamespaceConflictAsync(Speakeasy.OpenAPI.Foo.Pet)">
+            <summary>
+            Create Namespace Conflict Test
+            
+            <remarks>
+            This endpoint tests creating with models from different namespaces.<br/>
+            Uses foo.Pet in the request and bar.Pet in the response.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IConflicts.GetTripleNamespaceConflictAsync">
+            <summary>
+            Get Triple Namespace Conflict Test
+            
+            <remarks>
+            This endpoint tests the x-speakeasy-model-namespace extension by returning<br/>
+            a model that references three different Pet types from different namespaces.<br/>
+            The SDK should properly import and alias all three Pet types.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IConflicts.GetPetOwnersAsync">
+            <summary>
+            Get Pet Owners
+            
+            <remarks>
+            This endpoint tests using PetOwner models from different namespaces.<br/>
+            Returns both foo.PetOwner and bar.PetOwner in the response.
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Address">
+            <summary>
+            Inline address object should end up in foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Address.Location">
+            <summary>
+            Deeply nested inline object should also end up in foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Animal">
+            <summary>
+            A discriminated union of animal types in the foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Cat">
+            <summary>
+            A cat in the foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Department">
+            <summary>
+            Inline department in array items should end up in foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Dog">
+            <summary>
+            A dog in the foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Location">
+            <summary>
+            Deeply nested inline object should also end up in foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Organization">
+            <summary>
+            An organization with nested inline schemas in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Organization.Address">
+            <summary>
+            Inline address object should end up in foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.Pet">
+            <summary>
+            A pet in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Species">
+            <summary>
+            The species of the pet (e.g., dog, cat)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Models">
+            <summary>
+            A field name that often collides
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Request">
+            <summary>
+            A field name that often collides
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Operations">
+            <summary>
+            A field name that often collides
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Errors">
+            <summary>
+            A field name that often collides
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Foo.Pet.Utils">
+            <summary>
+            A field name that often collides
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.PetOwner">
+            <summary>
+            A pet owner in the foo namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Foo.PetSpecies">
+            <summary>
+            Species of a pet in the foo namespace
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IGroup.RootGroupOpAsync">
+            <summary>
+            An operation at the group&apos;s root level
+            
+            <remarks>
+            &apos;group&apos; differs from &apos;TestGroup&apos; in that it not only contains subgroups,<br/>
+            but also an operation.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.AllOfWithFactoredOutProperties">
+            <summary>
+            An object with allOf and factored out properties.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AllOfWithFactoredOutProperties.AnOverridingProperty">
+            <summary>
+            An overriding property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AllOfWithFactoredOutProperties.AnotherProperty">
+            <summary>
+            Another property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AllOfWithFactoredOutProperties.AnExtraProperty">
+            <summary>
+            An extra property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ApprovalConfig">
+            <summary>
+            Approval configuration with escalation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ApprovalConfig.Escalation">
+            <summary>
+            Escalation configuration with string-encoded integer expiration
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AuthResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AuthResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.AuthResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.BadRequestResponseException">
+            <summary>
+            Bad Request
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.StatusCode">
+            <summary>
+            HTTP status code
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.Error">
+            <summary>
+            Contains an explanation of the status_code as defined in HTTP/1.1 standard (RFC 7231)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.TypeName">
+            <summary>
+            The type of error returned
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException._message">
+            <summary>
+            A human-readable message providing more details about the error.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.Detail">
+            <summary>
+            Contains parameter or domain specific information related to the error and why it occurred.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.Ref">
+            <summary>
+            Link to documentation of error type
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BadRequestResponseException.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BaseUser.MetadataAny">
+            <summary>
+            A metadata object with additionalProperties true (any type) - should be flattened
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BinaryAndStringUploadResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BinaryAndStringUploadResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.BinaryAndStringUploadResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ImageRecord">
+            <summary>
+            An image record
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ImageRecord.Type">
+            <summary>
+            Record type discriminator
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Circle">
+            <summary>
+            A circle shape
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Circle.Type">
+            <summary>
+            Shape type discriminator
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Circle.Radius">
+            <summary>
+            The radius of the circle
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Circle.Color">
+            <summary>
+            Optional color of the circle
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Color.Red">
+            <summary>
+            The color red
+            Often used to represent urgent states.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Color.Green">
+            <summary>
+            The color green
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Color.Blue">
+            <summary>
+            The color blue
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateNamespaceConflictResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateNamespaceConflictResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateNamespaceConflictResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateNamespaceConflictResponse.Pet">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateSingleNamespaceFooPetResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateSingleNamespaceFooPetResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateSingleNamespaceFooPetResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateSingleNamespaceFooPetResponse.Pet">
+            <summary>
+            Created
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateUserResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateUserResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateUserResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateUserResponse.User">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionRequest.DryRun">
+            <summary>
+            If true, validates without creating
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.CreateWithUnionResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.CreateWithUnionResponseBody.Shape">
+            <summary>
+            A discriminated union of shape types
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.DeleteUserResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.DeleteUserResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.DeleteUserResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Deprecated1Response.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Deprecated1Response.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Deprecated1Response.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.DetailUnion">
+            <summary>
+            Contains parameter or domain specific information related to the error and why it occurred.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Emoji.Wave">
+            <summary>
+            A short greeting wave emoji
+            This value is often used for friendly acknowledgements.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Emoji.Smiley">
+            <summary>
+            A classic smiling face
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Emoji.Thumbsup">
+            <summary>
+            Indicates approval
+            The receiving system may treat this as a positive affirmation.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Emoji.Tada">
+            <summary>
+            Celebration emoji with confetti
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ErrorsError">
+            <summary>
+            A not-so-long multi-line<br/>
+            
+            <remarks>
+            error model description.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ErrorsError.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Escalation">
+            <summary>
+            Escalation configuration with string-encoded integer expiration
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Escalation.Expiration">
+            <summary>
+            Expiration in seconds, encoded as a string in the API response
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ExhaustiveObject">
+            <summary>
+            A simple object that uses all our supported primitive types and enums and has optional properties.
+            
+            <see>https://speakeasy.com} - A link to the external docs.</see>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Str">
+            <summary>
+            A string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Bool">
+            <summary>
+            A boolean property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Integer">
+            <summary>
+            An integer property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Int32">
+            <summary>
+            An int32 property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Num">
+            <summary>
+            A number property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Float32">
+            <summary>
+            A float32 property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Date">
+            <summary>
+            A date property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.DateTime">
+            <summary>
+            A date-time property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Anything">
+            <summary>
+            An any property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.StrOpt">
+            <summary>
+            An optional string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.BoolOpt">
+            <summary>
+            An optional boolean property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.IntOptNull">
+            <summary>
+            An optional integer property will be null for tests.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.NumOptNull">
+            <summary>
+            An optional number property will be null for tests.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.IntEnum">
+            <summary>
+            An integer enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.Int32Enum">
+            <summary>
+            An int32 enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ExhaustiveObject.SomePropertyWithDots">
+            <summary>
+            A property with dots.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.FailedResponseException">
+            <summary>
+            An error response with an empty object schema
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.FailedResponseException.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetBinaryDefaultResponseResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetBinaryDefaultResponseResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetBinaryDefaultResponseResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetBinaryDefaultResponseResponse.Bytes">
+            <summary>
+            Error
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetDuplicateExportCollisionResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetDuplicateExportCollisionResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetDuplicateExportCollisionResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetDuplicateExportCollisionResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.GetDuplicateExportCollisionResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetEmptyObjectErrorResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetEmptyObjectErrorResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetEmptyObjectErrorResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetEmptyObjectErrorResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.GetEmptyObjectErrorResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetErrorOnlyExampleResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetErrorOnlyExampleResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetErrorOnlyExampleResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetErrorOnlyExampleResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.GetErrorOnlyExampleResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetFullyFlattenedRequestResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetFullyFlattenedRequestResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetFullyFlattenedRequestResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamedPrimitiveUnionResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamedPrimitiveUnionResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamedPrimitiveUnionResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamedPrimitiveUnionResponse.SomeUnion">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceAnimalResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceAnimalResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceAnimalResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceAnimalResponse.Animal">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceConflictResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceConflictResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceConflictResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceConflictResponse.NamespaceConflictTest">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceOrganizationResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceOrganizationResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceOrganizationResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceOrganizationResponse.Organization">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceTypesResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceTypesResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceTypesResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceTypesResponse.NamespaceTypesTest">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceVehicleResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceVehicleResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceVehicleResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNamespaceVehicleResponse.Vehicle">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNestedIntegerStringResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNestedIntegerStringResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNestedIntegerStringResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetNestedIntegerStringResponse.TaskResponse">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.GetPetOwnersResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponseBody.FooPetOwner">
+            <summary>
+            A pet owner in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPetOwnersResponseBody.BarPetOwner">
+            <summary>
+            A pet owner in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.GetPolymorphismResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponseBody.OneOfWithUnionDescription">
+            <summary>
+            A union of two types.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponseBody.OneOfWithFactoredOutProperties">
+            <summary>
+            A union of two types with factored out properties.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponseBody.AllOfWithFactoredOutProperties">
+            <summary>
+            An object with allOf and factored out properties.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetPolymorphismResponseBody.RecursiveFormField">
+            <summary>
+            A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetRequestBodyFlattenedAwayResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetRequestBodyFlattenedAwayResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetRequestBodyFlattenedAwayResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceBarPetResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceBarPetResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceBarPetResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceBarPetResponse.Pet">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceFooPetResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceFooPetResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceFooPetResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetSingleNamespaceFooPetResponse.Pet">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetTripleNamespaceConflictResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetTripleNamespaceConflictResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetTripleNamespaceConflictResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetTripleNamespaceConflictResponse.TripleNamespaceConflictTest">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetUserResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetUserResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetUserResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.GetUserResponse.User">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Int32Enum">
+            <summary>
+            An int32 enum property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.IntegerMapFormat">
+            <summary>
+            Integer enum with x-speakeasy-enums as map (full coverage)
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.IntegerPartialMapFormat">
+            <summary>
+            Integer enum with x-speakeasy-enums as map (partial coverage)
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.IntEnum">
+            <summary>
+            An integer enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ListTest1Request.QueryParam2">
+            <summary>
+            An <a href="https://enum.com">enum</a> &quot;query parameter&quot;<br/>
+            
+            <remarks>
+            that is not easily described in a single line.<br/>
+            <br/>
+            **Available Values:**<br/>
+            | Value | Description |<br/>
+            |-------|-------------|<br/>
+            | 0     | No data     |<br/>
+            | 1     | Partial     |<br/>
+            | 2     | Complete    |
+            </remarks>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ListTest1Response.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ListTest1Response.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ListTest1Response.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ListTest1Response.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ListTest1ResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.LoginResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.LoginResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.LoginResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.LoginResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.LoginResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.TextRecord">
+            <summary>
+            A text record
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TextRecord.Type">
+            <summary>
+            Record type discriminator
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.MetadataAny">
+            <summary>
+            A metadata object with additionalProperties true (any type) - should be flattened
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.NamespaceConflictTest">
+            <summary>
+            A model that references both foo.Pet and bar.Pet to test import aliasing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceConflictTest.FooPet">
+            <summary>
+            A pet in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceConflictTest.BarPet">
+            <summary>
+            A pet in the bar namespace
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.NamespaceTypesTest">
+            <summary>
+            A model that references enums and unions from different namespaces
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceTypesTest.FooSpecies">
+            <summary>
+            Species of a pet in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceTypesTest.BarStatus">
+            <summary>
+            Status of a pet in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceTypesTest.FooAnimal">
+            <summary>
+            A discriminated union of animal types in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceTypesTest.BarVehicle">
+            <summary>
+            A non-discriminated union of vehicle types in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NamespaceTypesTest.FooOrg">
+            <summary>
+            An organization with nested inline schemas in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NestedGroupOpResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NestedGroupOpResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.NestedGroupOpResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.OneOfWithFactoredOutProperties">
+            <summary>
+            A union of two types with factored out properties.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject">
+            <summary>
+            A simple object that uses all our supported primitive types and enums and has optional properties.
+            
+            <see>https://speakeasy.com} - A link to the external docs.</see>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Str">
+            <summary>
+            A string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Bool">
+            <summary>
+            A boolean property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Integer">
+            <summary>
+            An integer property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Int32">
+            <summary>
+            An int32 property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Num">
+            <summary>
+            A number property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Float32">
+            <summary>
+            A float32 property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Date">
+            <summary>
+            A date property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.DateTime">
+            <summary>
+            A date-time property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Anything">
+            <summary>
+            An any property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.StrOpt">
+            <summary>
+            An optional string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.BoolOpt">
+            <summary>
+            An optional boolean property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.IntOptNull">
+            <summary>
+            An optional integer property will be null for tests.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.NumOptNull">
+            <summary>
+            An optional number property will be null for tests.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.IntEnum">
+            <summary>
+            An integer enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.Int32Enum">
+            <summary>
+            An int32 enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.SomePropertyWithDots">
+            <summary>
+            A property with dots.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesExhaustiveObject.AnExtraProperty">
+            <summary>
+            An extra property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesInt32Enum">
+            <summary>
+            An int32 enum property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesIntEnum">
+            <summary>
+            An integer enum property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesSimpleObject.Str">
+            <summary>
+            A string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OneOfWithFactoredOutPropertiesSimpleObject.AnExtraProperty">
+            <summary>
+            An extra property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.OneOfWithUnionDescription">
+            <summary>
+            A union of two types.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OperationWithLeadingAndTrailingUnderscoresRequest.Qp1">
+            <summary>
+            This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OperationWithLeadingAndTrailingUnderscoresResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OperationWithLeadingAndTrailingUnderscoresResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.OperationWithLeadingAndTrailingUnderscoresResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ParenthesesInPathAllowedResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ParenthesesInPathAllowedResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ParenthesesInPathAllowedResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ParenthesesInPathAllowedResponse.TemplateBracesTest">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentCreatedRequest.Amount">
+            <summary>
+            Payment amount
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentCreatedResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentCreatedResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentCreatedResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentUpdatedRequest.Amount">
+            <summary>
+            Payment amount
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentUpdatedResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentUpdatedResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PaymentUpdatedResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Policy">
+            <summary>
+            A policy object with steps
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.PolicyStep">
+            <summary>
+            A step in the policy
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PolicyStep.Approval">
+            <summary>
+            Approval configuration with escalation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileRequest.Upload">
+            <summary>
+            A file
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileResponse.File">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.PostFileWithEncodingMetadata">
+            <summary>
+            JSON metadata about the file
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingRequest.File">
+            <summary>
+            The file to upload (supports CSV, PNG, JPEG, or PDF)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingRequest.Attachment">
+            <summary>
+            An optional binary attachment
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingRequest.FileName">
+            <summary>
+            Optional custom file name
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingRequest.FilePurpose">
+            <summary>
+            Purpose of the file upload
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingRequest.Metadata">
+            <summary>
+            JSON metadata about the file
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostFileWithEncodingResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.PostFileWithEncodingResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostTest2Response.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostTest2Response.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PostTest2Response.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PutNamespaceConflictResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PutNamespaceConflictResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.PutNamespaceConflictResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.QueryParam2">
+            <summary>
+            An <a href="https://enum.com">enum</a> &quot;query parameter&quot;<br/>
+            
+            <remarks>
+            that is not easily described in a single line.<br/>
+            <br/>
+            **Available Values:**<br/>
+            | Value | Description |<br/>
+            |-------|-------------|<br/>
+            | 0     | No data     |<br/>
+            | 1     | Partial     |<br/>
+            | 2     | Complete    |
+            </remarks>
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.QueryParam2.Zero">
+            <summary>
+            No additional data returned
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.QueryParam2.One">
+            <summary>
+            Partial data set returned
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.QueryParam2.Two">
+            <summary>
+            Complete data set returned
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Rectangle">
+            <summary>
+            A rectangle shape
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Rectangle.Type">
+            <summary>
+            Shape type discriminator
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Rectangle.Width">
+            <summary>
+            The width of the rectangle
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Rectangle.Height">
+            <summary>
+            The height of the rectangle
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Rectangle.Color">
+            <summary>
+            Optional color of the rectangle
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.RecursiveFormField">
+            <summary>
+            A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.RecursiveFormFieldArray">
+            <summary>
+            An array field that contains nested form fields
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.RecursiveFormFieldArray.ItemType">
+            <summary>
+            A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.RecursiveFormFieldNumber">
+            <summary>
+            A number field
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.RecursiveFormFieldText">
+            <summary>
+            A text field
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.RequestTimeoutError">
+            <summary>
+            A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.RequestTimeoutError.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ReviewTask">
+            <summary>
+            A task object with nested policy
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ReviewTask.Policy">
+            <summary>
+            A policy object with steps
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.VariantRecord">
+            <summary>
+            A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.RootGroupOpResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.RootGroupOpResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.RootGroupOpResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Shape">
+            <summary>
+            A discriminated union of shape types
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ShapeRequest">
+            <summary>
+            Request body with a discriminated union shape field
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ShapeRequest.Name">
+            <summary>
+            Name for the shape
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ShapeRequest.Shape">
+            <summary>
+            A discriminated union of shape types
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ShapeRequest.Description">
+            <summary>
+            Optional description
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SimpleAllOf.Str">
+            <summary>
+            A string property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SimpleAllOf.Bool">
+            <summary>
+            A boolean property.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SimpleObject.Str">
+            <summary>
+            A string property.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.SomeUnion">
+            <summary>
+            A union demonstrating title and x-speakeasy-name-override on primitive types
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.StringArrayFormat">
+            <summary>
+            String enum with x-speakeasy-enums as array (full coverage)
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.StringMapFormat">
+            <summary>
+            String enum with x-speakeasy-enums as map (full coverage)
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.StringPartialMapFormat">
+            <summary>
+            String enum with x-speakeasy-enums as map (partial coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SubGroupOpResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SubGroupOpResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.SubGroupOpResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.TaskResponse">
+            <summary>
+            A task response containing deeply nested structures with string-encoded integers
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TaskResponse.Task">
+            <summary>
+            A task object with nested policy
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.TemplateBracesTest">
+            <summary>
+            A string with {{ double braces }} and { single braces }<br/>
+            
+            <remarks>
+            and \{\{ escaped curlies \}\} and `backticks`.<br/>
+            and \`escaped backticks\` and double slashes\\<br/>
+            and &apos;single quotes&apos; and &quot;double quotes&quot;.<br/>
+            and  \&apos;escaped single quotes\&apos; and \&quot;escaped double quotes\&quot;.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TemplateBracesTest.FieldWithBracesInDescription">
+            <summary>
+            A string with {{ double braces }} and { single braces }<br/>
+            
+            <remarks>
+            and \{\{ escaped curlies \}\} and `backticks`.<br/>
+            and \`escaped backticks\` and double slashes\\<br/>
+            and &apos;single quotes&apos; and &quot;double quotes&quot;.<br/>
+            and  \&apos;escaped single quotes\&apos; and \&quot;escaped double quotes\&quot;.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Test2Request.Obj">
+            <summary>
+            A simple object that uses all our supported primitive types and enums and has optional properties.
+            
+            <see>https://speakeasy.com} - A link to the external docs.</see>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Test2Response.RequiredNullableField">
+            <summary>
+            A required but nullable field to verify error accessor type matching for nullable-only fields
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Test2ResponseException.RequiredNullableField">
+            <summary>
+            A required but nullable field to verify error accessor type matching for nullable-only fields
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Test2ResponseException.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEndpointResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEndpointResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEndpointResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsRequest.StringArrayFormat">
+            <summary>
+            String enum with x-speakeasy-enums as array (full coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsRequest.StringMapFormat">
+            <summary>
+            String enum with x-speakeasy-enums as map (full coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsRequest.StringPartialMapFormat">
+            <summary>
+            String enum with x-speakeasy-enums as map (partial coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsRequest.IntegerMapFormat">
+            <summary>
+            Integer enum with x-speakeasy-enums as map (full coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsRequest.IntegerPartialMapFormat">
+            <summary>
+            Integer enum with x-speakeasy-enums as map (partial coverage)
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TestEnumFormatsResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.TestEnumFormatsResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.TripleNamespaceConflictTest">
+            <summary>
+            A model that references Pet from foo, bar, and baz namespaces
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TripleNamespaceConflictTest.FooPet">
+            <summary>
+            A pet in the foo namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TripleNamespaceConflictTest.BarPet">
+            <summary>
+            A pet in the bar namespace
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.TripleNamespaceConflictTest.BazPet">
+            <summary>
+            A pet in the baz namespace with completely different schema
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UpdateUserResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UpdateUserResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UpdateUserResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UpdateUserResponse.User">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UrlValidationStressTestResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UrlValidationStressTestResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.UrlValidationStressTestResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.User.MetadataAny">
+            <summary>
+            A metadata object with additionalProperties true (any type) - should be flattened
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ValidateResponse.ContentType">
+            <summary>
+            HTTP response content type for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ValidateResponse.StatusCode">
+            <summary>
+            HTTP response status code for this operation
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ValidateResponse.RawResponse">
+            <summary>
+            Raw HTTP response; suitable for custom response parsing
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ValidateResponse.Object">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ValidateResponseBody">
+            <summary>
+            OK
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.IObsolete">
+            <summary>
+            A subSDK in which all operations are deprecated.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.IObsolete.Deprecated1Async(System.String)">
+            <summary>
+            Deprecated Operation
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Obsolete">
+            <summary>
+            A subSDK in which all operations are deprecated.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Obsolete.Deprecated1ServerList">
+            <summary>
+            List of server URLs available for the deprecated1 operation.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ServerPORT">
+            <summary>
+            The port on which the server is running.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ISDK">
+            <summary>
+            SDK Review: A test document for reviewing the SDK.
+            
+            <remarks>
+            This document will show case as many of our features as possible in as little operations/models as possible.<br/>
+            This will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.
+            </remarks>
+            
+            <see>https://speakeasy.com/docs} - Speakeasy Docs</see>
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ISDK.Tag1">
+            <summary>
+            The first tag.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.ISDK.Obsolete">
+            <summary>
+            A subSDK in which all operations are deprecated.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.PostFileAsync(Speakeasy.OpenAPI.PostFileRequest)">
+            <summary>
+            Post File
+            
+            <remarks>
+            This is a test endpoint.<br/>
+            It has a description.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.CreateWithUnionAsync(Speakeasy.OpenAPI.ShapeRequest,System.Nullable{System.Boolean})">
+            <summary>
+            Create with discriminated union request body
+            
+            <remarks>
+            Test CLI generation for discriminated unions with dot-notation flags
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.CreateUserAsync(Speakeasy.OpenAPI.BaseUser)">
+            <summary>
+            Create User
+            
+            <remarks>
+            Creates a new user in the system. Multiple named examples demonstrate<br/>
+            different pairing scenarios for documentation generation.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetUserAsync(System.String)">
+            <summary>
+            Get User
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.UpdateUserAsync(System.String,Speakeasy.OpenAPI.User)">
+            <summary>
+            Update User
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.DeleteUserAsync(System.String)">
+            <summary>
+            Delete User
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.LoginAsync">
+            <summary>
+            Login
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.ValidateAsync">
+            <summary>
+            Validate
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.TestEnumFormatsAsync(Speakeasy.OpenAPI.TestEnumFormatsRequest)">
+            <summary>
+            Test x-speakeasy-enums in different formats
+            
+            <remarks>
+            This endpoint tests the x-speakeasy-enums extension in both array and map formats,<br/>
+            including partial map coverage and both string and integer enum types.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetDuplicateExportCollisionAsync">
+            <summary>
+            Tests that a spec-defined error type colliding with a built-in SDK error name does not cause TS2308
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetNamedPrimitiveUnionAsync">
+            <summary>
+            Test named primitive union options using title and x-speakeasy-name-override
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetEmptyObjectErrorAsync">
+            <summary>
+            Get Empty Object Error
+            
+            <remarks>
+            This endpoint tests the behavior when an error response has an empty object schema.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.ParenthesesInPathAllowedAsync(System.String,Speakeasy.OpenAPI.TemplateBracesTest)">
+            <summary>
+            A string with {{ double braces }} and { single braces }<br/>
+            and \{\{ escaped curlies \}\} and `backticks`.<br/>
+            and \`escaped backticks\` and double slashes\\<br/>
+            and &apos;single quotes&apos; and &quot;double quotes&quot;.<br/>
+            and  \&apos;escaped single quotes\&apos; and \&quot;escaped double quotes\&quot;.<br/>
+            
+            
+            <remarks>
+            A string with {{ double braces }} and { single braces }<br/>
+            and \{\{ escaped curlies \}\} and `backticks`.<br/>
+            and \`escaped backticks\` and double slashes\\<br/>
+            and &apos;single quotes&apos; and &quot;double quotes&quot;.<br/>
+            and  \&apos;escaped single quotes\&apos; and \&quot;escaped double quotes\&quot;.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetNestedIntegerStringAsync">
+            <summary>
+            Test nested struct with integer:string tag
+            
+            <remarks>
+            This endpoint tests the behavior when a deeply nested struct contains<br/>
+            an integer field that should be unmarshaled from a string.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISDK.GetErrorOnlyExampleAsync">
+            <summary>
+            Operation with example only on error response
+            
+            <remarks>
+            This endpoint tests that when an operation has a named example only on<br/>
+            an error response (not on the success response), we still generate<br/>
+            a default example for the success response.
+            </remarks>
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.SDKConfig.ServerList">
+            <summary>
+            List of server URLs available to the SDK.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.SDK">
+            <summary>
+            SDK Review: A test document for reviewing the SDK.
+            
+            <remarks>
+            This document will show case as many of our features as possible in as little operations/models as possible.<br/>
+            This will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.
+            </remarks>
+            
+            <see>https://speakeasy.com/docs} - Speakeasy Docs</see>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISingleBar.GetSingleNamespaceBarPetAsync">
+            <summary>
+            Get Single Namespace Bar Pet
+            
+            <remarks>
+            This endpoint tests using a single component from the bar namespace.<br/>
+            No import aliasing should be needed since there&apos;s no conflict within this group.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISingleFoo.GetSingleNamespaceFooPetAsync">
+            <summary>
+            Get Single Namespace Foo Pet
+            
+            <remarks>
+            This endpoint tests using a single component from the foo namespace.<br/>
+            No import aliasing should be needed since there&apos;s no conflict within this group.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISingleFoo.CreateSingleNamespaceFooPetAsync(Speakeasy.OpenAPI.Foo.Pet)">
+            <summary>
+            Create Single Namespace Foo Pet
+            
+            <remarks>
+            This endpoint tests creating a component in the foo namespace.<br/>
+            No import aliasing should be needed since there&apos;s no conflict within this group.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ISubGroup.SubGroupOpAsync">
+            <summary>
+            An operation at the group&apos;s top level
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.ITag1">
+            <summary>
+            The first tag.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag1.Deprecated1Async(System.String)">
+            <summary>
+            Deprecated Operation
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag1.AuthAsync(Speakeasy.OpenAPI.AuthSecurity)">
+            <summary>
+            This operation aims at testing available OAuth2 scopes collection:<br/>
+             - only operation with oauth2 authorizationCode security flow<br/>
+             - belongs to a subSDK<br/>
+            
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag1.ListTest1Async(System.Int64,Speakeasy.OpenAPI.QueryParam2,System.String,System.String,System.String)">
+            <summary>
+            Get Test1
+            
+            <remarks>
+            This is a {{test}} endpoint.<br/>
+            It has a description.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag1.PostFileWithEncodingAsync(Speakeasy.OpenAPI.PostFileWithEncodingRequest)">
+            <summary>
+            Post File With Encoding
+            
+            <remarks>
+            This endpoint tests the encoding field with multipart/form-data content type.<br/>
+            According to OpenAPI 3.0.3 spec, the encoding field is valid for both<br/>
+            application/x-www-form-urlencoded and multipart/* media types.<br/>
+            <br/>
+            This test includes multiple content types for the file field to verify<br/>
+            handling of comma-separated content types in encoding.
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Tag1">
+            <summary>
+            The first tag.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Tag1.Deprecated1ServerList">
+            <summary>
+            List of server URLs available for the deprecated1 operation.
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Tag1.ListTest1Servers">
+            <summary>
+            Server identifiers available for the listTest1 operation.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Tag1.ListTest1ServerMap">
+            <summary>
+            Server URLs available for the listTest1 operation.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag2.PostTestAsync(Speakeasy.OpenAPI.Test2Request,System.String,System.String,System.String)">
+            <summary>
+            Post Test2
+            
+            <remarks>
+            This is a test endpoint.<br/>
+            It has a description.
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Tag2.PostTest2Servers">
+            <summary>
+            Server identifiers available for the postTest2 operation.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Tag2.PostTest2ServerMap">
+            <summary>
+            Server URLs available for the postTest2 operation.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITag3.PostTestAsync(Speakeasy.OpenAPI.Test2Request,System.String,System.String,System.String)">
+            <summary>
+            Post Test2
+            
+            <remarks>
+            This is a test endpoint.<br/>
+            It has a description.
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Tag3.PostTest2Servers">
+            <summary>
+            Server identifiers available for the postTest2 operation.
+            </summary>
+        </member>
+        <member name="F:Speakeasy.OpenAPI.Tag3.PostTest2ServerMap">
+            <summary>
+            Server URLs available for the postTest2 operation.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITail.NestedGroupOpAsync">
+            <summary>
+            An operation at the group&apos;s deepest level
+            
+            <remarks>
+            Notice that &apos;group.flattened&apos; has no operations.<br/>
+            
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITypes.GetNamespaceTypesAsync">
+            <summary>
+            Get Namespace Types Test
+            
+            <remarks>
+            This endpoint tests x-speakeasy-model-namespace with enums, discriminated unions,<br/>
+            non-discriminated unions, and models with nested inline schemas.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITypes.GetNamespaceAnimalAsync">
+            <summary>
+            Get Namespace Animal (Discriminated Union)
+            
+            <remarks>
+            This endpoint tests a discriminated union type in a custom namespace.<br/>
+            The response can be either a foo.Dog or foo.Cat.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITypes.GetNamespaceVehicleAsync">
+            <summary>
+            Get Namespace Vehicle (Non-Discriminated Union)
+            
+            <remarks>
+            This endpoint tests a non-discriminated union type in a custom namespace.<br/>
+            The response can be either a bar.Car or bar.Bike.
+            </remarks>
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.ITypes.GetNamespaceOrganizationAsync">
+            <summary>
+            Get Namespace Organization (Nested Inline Schemas)
+            
+            <remarks>
+            This endpoint tests nested inline object schemas in a custom namespace.<br/>
+            The organization model contains nested address and department types that<br/>
+            should inherit the foo namespace.
+            </remarks>
+            </summary>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Utils.DateOnly">
+            <summary>
+             This class is a polyfill for a class in .NET 6
+             The data only class is not available in the .NET framework.  The .NET framework is what Unity uses.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.MinValue">
+            <summary>
+            Gets the earliest possible date that can be created.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.MaxValue">
+            <summary>
+            Gets the latest possible date that can be created.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Creates a new instance of the <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> structure to the specified year, month, and day.
+            </summary>
+            <param name="year">The year (1 through 9999).</param>
+            <param name="month">The month (1 through 12).</param>
+            <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.#ctor(System.Int32,System.Int32,System.Int32,System.Globalization.Calendar)">
+            <summary>
+            Creates a new instance of the <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> structure to the specified year, month, and day for the specified calendar.
+            </summary>
+            <param name="year">The year (1 through the number of years in calendar).</param>
+            <param name="month">The month (1 through the number of months in calendar).</param>
+            <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+            <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.FromDayNumber(System.Int32)">
+            <summary>
+            Creates a new instance of the <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> structure to the specified number of days.
+            </summary>
+            <param name="dayNumber">The number of days since January 1, 0001 in the Proleptic Gregorian calendar.</param>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.Year">
+            <summary>
+            Gets the year component of the date represented by this instance.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.Month">
+            <summary>
+            Gets the month component of the date represented by this instance.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.Day">
+            <summary>
+            Gets the day component of the date represented by this instance.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.DayOfWeek">
+            <summary>
+            Gets the day of the week represented by this instance.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.DayOfYear">
+            <summary>
+            Gets the day of the year represented by this instance.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.DateOnly.DayNumber">
+            <summary>
+            Gets the number of days since January 1, 0001 in the Proleptic Gregorian calendar represented by this instance.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.AddDays(System.Int32)">
+            <summary>
+            Adds the specified number of days to the value of this instance.
+            </summary>
+            <param name="value">The number of days to add. To subtract days, specify a negative number.</param>
+            <returns>An instance whose value is the sum of the date represented by this instance
+            and the number of days represented by <paramref name="value"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.AddMonths(System.Int32)">
+            <summary>
+            Adds the specified number of months to the value of this instance.
+            </summary>
+            <param name="value">A number of months. The months parameter can be negative or positive.</param>
+            <returns>An object whose value is the sum of the date represented by this instance
+            and the number of months represented by <paramref name="value"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.AddYears(System.Int32)">
+            <summary>
+            Adds the specified number of years to the value of this instance.
+            </summary>
+            <param name="value">A number of years. The value parameter can be negative or positive.</param>
+            <returns>An object whose value is the sum of the date represented by this instance
+            and the number of years represented by <paramref name="value"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_Equality(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether two specified instances of <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> are equal.
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> represent the same date;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_Inequality(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether two specified instances of <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> are not equal.
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> and <paramref name="right"/> do not represent the same date;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_GreaterThan(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether one specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> is later than another specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/>.
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> is later than <paramref name="right"/>;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_GreaterThanOrEqual(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether one specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> represents a date that is the same as or later than another specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/>.
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> is the same as or later than <paramref name="right"/>;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_LessThan(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether one specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> is earlier than another specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> .
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> is earlier than <paramref name="right"/>;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.op_LessThanOrEqual(Speakeasy.OpenAPI.Utils.DateOnly,Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Determines whether one specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> represents a date that is the same as or earlier than another specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/>.
+            </summary>
+            <param name="left">The first object to compare.</param>
+            <param name="right">The second object to compare.</param>
+            <returns><see langword="true"/> if <paramref name="left"/> is the same as or earlier than <paramref name="right"/>;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.FromDateTime(System.DateTime)">
+            <summary>
+            Returns a <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> instance that is set to the date part of the specified <see cref="T:System.DateTime"/>.
+            </summary>
+            <param name="dateTime">The <see cref="T:System.DateTime"/> instance.</param>
+            <returns>The <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> instance composed of the date part of <paramref name="dateTime"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.CompareTo(Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Compares the value of this instance to a specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> value and returns an integer that indicates whether this instance is earlier than, the same as, or later than the specified value.
+            </summary>
+            <param name="value">The object to compare to the current instance.</param>
+            <returns>Less than zero if this instance is earlier than <paramref name="value"/>.
+            Greater than zero if this instance is later than <paramref name="value"/>.
+            Zero if this instance is the same as <paramref name="value"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.CompareTo(System.Object)">
+            <summary>
+            Compares the value of this instance to a specified object that contains a specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> value, and returns an integer that indicates whether this instance is earlier than, the same as, or later than the specified value.
+            </summary>
+            <param name="value">A boxed object to compare, or <see langword="null"/>.</param>
+            <returns>Less than zero if this instance is earlier than <paramref name="value"/>.
+            Greater than zero if this instance is later than <paramref name="value"/>.
+            Zero if this instance is the same as <paramref name="value"/>.</returns>
+            <exception cref="T:System.ArgumentException"><paramref name="value"/> is neither <see langword="null"/> nor an instance of <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/>.</exception>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.Equals(Speakeasy.OpenAPI.Utils.DateOnly)">
+            <summary>
+            Returns a value indicating whether the value of this instance is equal to the value of the specified <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> instance.
+            </summary>
+            <param name="value">The object to compare to this instance.</param>
+            <returns><see langword="true"/> if <paramref name="value"/> equals the value of this instance;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.Equals(System.Object)">
+            <summary>
+            Returns a value indicating whether this instance is equal to a specified object.
+            </summary>
+            <param name="value">The object to compare to this instance.</param>
+            <returns><see langword="true"/> if <paramref name="value"/> is an instance of <see cref="T:Speakeasy.OpenAPI.Utils.DateOnly"/> and equals the value of this instance;
+            otherwise, <see langword="false"/>.</returns>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.DateOnly.GetHashCode">
+            <summary>
+            Returns the hash code for this instance.
+            </summary>
+            <returns>A 32-bit signed integer hash code.</returns>
+        </member>
+        <member name="T:Speakeasy.OpenAPI.Utils.MemoryQueueBufferStream">
+            <summary>
+            This stream maintains data only until the data is read, then it is purged from the stream.
+            </summary>
+        </member>
+        <member name="P:Speakeasy.OpenAPI.Utils.MemoryQueueBufferStream.Complete">
+            <summary>
+            Indicates whether Unity marked the response this stream is associated with as complete.
+            If complete is true, then more data may not be added to the stream.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.MemoryQueueBufferStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads data from the stream. 
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.Utilities.IsDate(System.Object)">
+            <summary>
+             Check if the object is a 'date time' or 'date only' object.
+            </summary>
+        </member>
+        <member name="M:Speakeasy.OpenAPI.Utils.ExtensionMethods.GetAwaiter(UnityEngine.AsyncOperation)">
+            <summmary>
+             This extension to allow using await with async web requests
+            </summmary>
+        </member>
+    </members>
+</doc>

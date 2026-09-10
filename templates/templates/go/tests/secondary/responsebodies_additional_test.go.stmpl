@@ -1,0 +1,25 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestResponseBodyNameOverride_NameOverrideBleeds(t *testing.T) {
+	// Important: `nameOverrideFeb2026: false` is set in 'secondary' target.
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	res, err := s.Generation.NameOverride(context.Background(), operations.EnumNameOverrideValue1, "test-query-param")
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Nil(t, res.AsIs)
+	assert.Nil(t, res.Inline)
+	assert.Nil(t, res.Reference)
+	assert.Nil(t, res.Ignored)
+	assert.Nil(t, res.IgnoredPreviouslyHoisted)
+	assert.Nil(t, res.IgnoredPreviouslyWon)
+}

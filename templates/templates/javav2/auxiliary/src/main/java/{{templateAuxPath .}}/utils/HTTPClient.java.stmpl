@@ -1,0 +1,174 @@
+{{- if useOkHttp -}}
+package {{templatePackageName}}.utils;
+
+import java.io.IOException;
+import java.io.InputStream;
+{{- if asyncEnabled}}
+import java.util.concurrent.CompletableFuture;
+{{- end}}
+
+import {{templatePackageName}}.utils.transport.HttpRequest;
+import {{templatePackageName}}.utils.transport.HttpResponse;
+
+public interface HTTPClient extends java.lang.AutoCloseable {
+
+    /**
+     * Releases resources owned by this client.
+     *
+     * <p>The default is a no-op so custom implementations that borrow an
+     * externally owned client are not forced to tear down resources they do
+     * not own. Implementations that own resources should override this method.
+     *
+     * @throws Exception if an owned resource cannot be released
+     */
+    @Override
+    default void close() throws Exception {
+        // Default no-op
+    }
+
+    /**
+     * Sends an HTTP request and returns the response.
+     *
+     * <p>
+     * Note that {@link HttpRequest} is immutable. To modify the request use
+     * {@link HttpRequest#toBuilder()} which copies the request into a builder.
+     *
+     * @param request HTTP request
+     * @return HTTP response
+     * @throws IOException
+     */
+    HttpResponse<InputStream> send(HttpRequest request) throws IOException;
+
+    {{- if asyncEnabled}}
+
+    /**
+     * Sends an HTTP request asynchronously and returns a response whose body is
+     * exposed as an {@link InputStream} (the same body type as the synchronous
+     * {@link #send(HttpRequest)}).
+     * <p>
+     * The request is dispatched without blocking the calling thread. The
+     * returned {@code CompletableFuture} completes when the response headers
+     * are received — the body is not read at that point — or completes
+     * exceptionally if an error occurs during the request or response
+     * processing.
+     *
+     * @param request the HTTP request to send
+     * @return a {@code CompletableFuture} containing the HTTP response with an
+     * {@code InputStream} body
+     */
+    CompletableFuture<HttpResponse<InputStream>> sendAsync(HttpRequest request);
+    {{- end}}
+
+    /**
+     * Controls the debug flag that can be used by clients to perform conditional
+     * debugging actions like logging HTTP requests and responses.
+     * This is currently implemented in SpeakeasyHTTPClient but custom client
+     * implementations are free to use this method similarly if they wish.
+     *
+     * @param enabled Whether to enable debug flag
+     */
+    default void enableDebugLogging(boolean enabled) {
+        // do nothing
+    }
+
+    /**
+     * Returns whether debug logging is enabled.
+     *
+     * @return Whether debug logging is enabled
+     */
+    default boolean isDebugLoggingEnabled() {
+        return false;
+    }
+}
+{{- else -}}
+package {{templatePackageName}}.utils;
+{{- if asyncEnabled}}
+
+import {{templatePackageName}}.utils.Blob;
+{{- end}}
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+{{- if asyncEnabled}}
+
+import java.util.concurrent.CompletableFuture;
+{{- end}}
+
+public interface HTTPClient {
+    HttpClient client = HttpClient.newHttpClient();
+
+    /**
+     * Sends an HTTP request and returns the response.
+     *
+     * <p>
+     * Note that {@link HttpRequest} is immutable. To modify the request you can
+     * use
+     * {@code HttpRequest#newBuilder(HttpRequest, BiPredicate<String, String>)}
+     * with JDK 16 and later (which will copy the request for modification in a
+     * builder). If that method is not available then use {@link Helpers#copy}
+     * (which also returns a builder).
+     *
+     * @param request HTTP request
+     * @return HTTP response
+     * @throws IOException
+     * @throws InterruptedException
+     * @throws URISyntaxException
+     */
+    default HttpResponse<InputStream> send(HttpRequest request)
+            throws IOException, InterruptedException, URISyntaxException {
+        return client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+    }
+
+    {{- if asyncEnabled}}
+
+    /**
+    * Sends an HTTP request asynchronously and returns a response whose body is
+    * exposed as a {@link Blob}.
+    * <p>
+    * This method uses the {@code HttpResponse.BodyHandlers.ofPublisher()} to
+    * obtain the response body as a {@code Flow.Publisher<List<ByteBuffer>>},
+    * which is then wrapped in a {@code Blob} for non-blocking,
+    * reactive consumption of the response data.
+    * <p>
+    * The returned {@code CompletableFuture} completes when the response is
+    * received, or completes exceptionally if an error occurs during the
+    * request or response processing.
+    *
+    * @param request the HTTP request to send
+    * @return a {@code CompletableFuture} containing the HTTP response with a
+    * {@code Blob} body
+    */
+   default CompletableFuture<HttpResponse<Blob>> sendAsync(
+           HttpRequest request) {
+       return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
+               .thenApply(resp ->
+                       new ResponseWithBody<>(resp, Blob::from));
+   }
+    {{- end}}
+
+    /**
+     * Controls the debug flag that can be used by clients to perform conditional
+     * debugging actions like logging HTTP requests and responses.
+     * This is currently implemented in SpeakeasyHTTPClient but custom client
+     * implementations are free to use this method similarly if they wish.
+     *
+     * @param enabled Whether to enable debug flag
+     */
+    default void enableDebugLogging(boolean enabled) {
+        // do nothing
+    }
+
+    /**
+     * Returns whether debug logging is enabled.
+     *
+     * @return Whether debug logging is enabled
+     */
+    default boolean isDebugLoggingEnabled() {
+        return false;
+    }
+}
+{{- end}}

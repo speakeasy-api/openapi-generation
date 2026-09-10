@@ -1,0 +1,136 @@
+{{- recurse 1 -}}
+{{- $operationsPath := .Global.Config.Imports.GetOperationsPath -}}
+{{- $opt := getOptionNames -}}
+package {{sanitizeModelPackageName $operationsPath false}}
+
+{{genImports}}
+
+{{- range $metadata := getGoOperationOptionMetadataList }}
+{{- if gt (len $metadata.optionalArguments) 0 }}
+const (
+	{{- range $argument := $metadata.optionalArguments }}
+	{{$argument.supportedOptionName}} = "{{$argument.storageKey}}"
+	{{- end }}
+)
+
+{{- range $argument := $metadata.optionalArguments }}
+// {{$argument.name}} sets the {{$argument.field.Name}} {{$argument.location}} argument for {{$metadata.prefix}}.
+{{- $description := getGoMethodArgumentOptionDescription $argument }}
+{{- if $description }}
+//
+// {{$description}}
+{{- end }}
+//
+// If omitted, the argument remains unset.{{if $argument.field.Nullable}} Pass nil to explicitly set the nullable argument to null.{{end}}
+// If supplied more than once, the last value wins.
+func {{$argument.name}}({{sanitizePrivateFieldName $argument.field.Name}} {{getGoMethodArgumentInputType $argument}}) {{if eq $metadata.mode "method-options"}}{{$metadata.optionType}}{{else}}Option{{end}} {
+	{{- if eq $metadata.mode "method-options" }}
+	return func(opts *{{$metadata.optionsType}}) error {
+		opts.setMethodArgument({{$argument.supportedOptionName}}, {{templateGoMethodArgumentStoredValue $argument (sanitizePrivateFieldName $argument.field.Name)}})
+		return nil
+	}
+	{{- else }}
+	return func(opts *Options, supportedOptions ...string) error {
+		if !{{addImport "utils"}}utils.Contains(supportedOptions, {{$argument.supportedOptionName}}) {
+			return {{addImport "fmt"}}fmt.Errorf("%w: {{$argument.name}}", ErrUnsupportedOption)
+		}
+		opts.setMethodArgument({{$argument.supportedOptionName}}, {{templateGoMethodArgumentStoredValue $argument (sanitizePrivateFieldName $argument.field.Name)}})
+		return nil
+	}
+	{{- end }}
+}
+
+{{- end }}
+{{- end }}
+
+{{- if eq $metadata.mode "method-options" }}
+type {{$metadata.optionsType}} struct {
+	Options
+}
+
+type {{$metadata.optionType}} func(*{{$metadata.optionsType}}) error
+
+func (o *{{$metadata.optionsType}}) GetOptions() *Options {
+	return &o.Options
+}
+
+// With{{$metadata.prefix}}ServerURL allows providing an alternative server URL for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}ServerURL(serverURL string) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.ServerURL}}(serverURL)(&opts.Options)
+	}
+}
+
+// With{{$metadata.prefix}}TemplatedServerURL allows providing an alternative templated server URL for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}TemplatedServerURL(serverURL string, params map[string]string) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.TemplatedServerURL}}(serverURL, params)(&opts.Options)
+	}
+}
+
+// With{{$metadata.prefix}}Timeout sets the request timeout for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}Timeout(timeout {{addImport "time"}}time.Duration) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		opts.Timeout = &timeout
+		return nil
+	}
+}
+
+// With{{$metadata.prefix}}SetHeaders sets request headers for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}SetHeaders(headers map[string]string) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.SetHeaders}}(headers)(&opts.Options)
+	}
+}
+
+{{- if $metadata.operation.Extensions.Retries }}
+// With{{$metadata.prefix}}Retries customizes retry behavior for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}Retries(config {{addImport "retry"}}retry.Config) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.Retries}}(config)(&opts.Options, SupportedOptionRetries)
+	}
+}
+
+{{- end }}
+{{- if $metadata.operation.Extensions.Polling }}
+// With{{$metadata.prefix}}Polling enables polling for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}Polling(configFunc {{addImport "polling"}}polling.ConfigFunc, pollingOptions ...polling.Option) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.Polling}}(configFunc, pollingOptions...)(&opts.Options, SupportedOptionPolling)
+	}
+}
+
+{{- end }}
+{{- if gt (len $metadata.operation.GetAcceptTypes) 1 }}
+// With{{$metadata.prefix}}AcceptHeaderOverride overrides the Accept header for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}AcceptHeaderOverride(acceptHeaderOverride AcceptHeaderEnum) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.AcceptHeaderOverride}}(acceptHeaderOverride)(&opts.Options, SupportedOptionAcceptHeaderOverride)
+	}
+}
+
+{{- end }}
+{{- if hasPaginationURL $metadata.operation }}
+// With{{$metadata.prefix}}URLOverride overrides the request URL for {{$metadata.prefix}}.
+func With{{$metadata.prefix}}URLOverride(urlOverride string) {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return {{$opt.URLOverride}}(urlOverride)(&opts.Options, SupportedOptionURLOverride)
+	}
+}
+
+{{- end }}
+{{- if isSkipDeserializationEnabled }}
+// With{{$metadata.prefix}}SkipDeserialization skips typed deserialization of successful JSON
+// responses for {{$metadata.prefix}}. The body is still consumed while the operation context is
+// alive and replayed on the HTTP response, so the caller can read it via the HTTPMeta.Response
+// field after the method returns. Non-JSON responses and error responses are always deserialized
+// regardless of this option.
+func With{{$metadata.prefix}}SkipDeserialization() {{$metadata.optionType}} {
+	return func(opts *{{$metadata.optionsType}}) error {
+		return WithSkipDeserialization()(&opts.Options, SupportedOptionSkipDeserialization)
+	}
+}
+
+{{- end }}
+{{- end }}
+{{- end }}

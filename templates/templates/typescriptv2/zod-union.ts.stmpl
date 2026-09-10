@@ -1,0 +1,56 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+{{- $isOptional := or .Local.Optional (eq .Local.Type.Type "any") }}
+{{- if isNoZod -}}
+{{- /* No-zod: unions don't have a real discriminating schema. Wire shape
+       equals TS shape — emit nothing here; parent custom-shape models
+       reference the union by its plain TS name. */ -}}
+{{- else -}}
+{{- $outboundType := resolveOutbound (dict "usageLocation" $usageLocation "typeDef" $rootType "rootTypeDef" $rootType "optional" $isOptional "nullable" .Local.Nullable) -}}
+{{- $inboundType := resolveInbound (dict "usageLocation" $usageLocation "typeDef" $rootType "rootTypeDef" $rootType "optional" $isOptional "nullable" .Local.Nullable) -}}
+{{- if shouldIncludeInboundOrOutboundSchema .Local.Type -}}
+{{- addZodPackageImport }}
+{{- end }}
+
+{{- if shouldIncludeInboundSchema .Local.Type }}
+/** @internal */
+export const {{$zodName}}inboundSchema: {{zodType $typeName "unknown"}} = {{callImportTypesFunc $inboundType.importZodTypes}}{{ $inboundType.zod }};
+{{- end }}
+
+{{- if shouldIncludeOutboundSchema .Local.Type }}
+/** @internal */
+export type {{$zodName}}Outbound = {{callImportTypesFunc $outboundType.importOutputTypes}}{{ $outboundType.outputType }};
+
+
+{{ $outboundIn := $typeName }}
+{{ if eq .Local.Type.Scope "errors" }}
+  {{ $outboundIn = "" }}
+{{ end }}
+/** @internal */
+export const {{$zodName}}outboundSchema: {{zodType (printf "%sOutbound" $zodName) $outboundIn}} = {{callImportTypesFunc $outboundType.importZodTypes}}{{ $outboundType.zod }};
+{{- end }}
+{{- end }}
+
+{{- if shouldIncludeSchemaNamespace .Local.Type }}
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace {{$zodName}} {
+  {{- if shouldIncludeInboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}inboundSchema` instead. */
+  export const inboundSchema = {{$zodName}}inboundSchema;
+  {{- end }}
+  {{- if shouldIncludeOutboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}outboundSchema` instead. */
+  export const outboundSchema = {{$zodName}}outboundSchema;
+  /** @deprecated use `{{$zodName}}Outbound` instead. */
+  export type Outbound = {{$zodName}}Outbound;
+  {{- end }}
+}
+{{- end }}
+
+{{ templateString "model-serialization.ts.stmpl" .Local }}

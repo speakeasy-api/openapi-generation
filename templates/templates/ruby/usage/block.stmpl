@@ -1,0 +1,17 @@
+{{- $sdkModuleName := (sanitizeModuleName .Global.Config.Module) -}}
+Models = ::{{$sdkModuleName}}::Models
+{{templateString "usage/init.stmpl" .Local}}
+{{- if .Local.Operation -}}
+  {{- if .Local.RenderFeature "errors" false}}
+
+begin
+{{templateString "usage/call.stmpl" .Local | trim | indentPresent 4}}
+
+{{templateString "usage/result.stmpl" .Local | trim | indentPresent 4}}
+{{templateString "usage/errors.stmpl" .Local | trim}}
+end
+  {{- else}}
+{{templateString "usage/call.stmpl" .Local}}
+{{templateString "usage/result.stmpl" .Local}}
+  {{- end}}
+{{- end}}

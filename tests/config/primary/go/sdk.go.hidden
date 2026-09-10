@@ -1,0 +1,24 @@
+// This incomplete file will trick the generator into applying the custom code
+// regions to the actual final output version of this sdk file.
+
+// #region sdk-class-body
+func (s *SDK) CustomHealthCheck(ctx context.Context) (bool, error) {
+	res, err := s.Health.Check(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return res.HTTPMeta.Response.StatusCode == http.StatusOK, nil
+}
+
+func (s *SDK) UnwieldyGetFlattened(ctx context.Context, opts ...operations.Option) ([]string, error) {
+	res, err := s.UnwieldyGet(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if res.UnwieldyComponent == nil {
+		return nil, nil
+	}
+	return res.UnwieldyComponent.DeeplyNestedAttributes(), nil
+}
+// #endregion sdk-class-body

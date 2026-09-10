@@ -1,0 +1,15 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test }}
+{{- $workflow := $test.Workflow }}
+{{templateTestDisabledAnnotation $test}}    @{{javaImport "org.junit.jupiter.api.Test"}}
+    public void test{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}() throws {{javaImportException}} {
+{{if $test.Incomplete}}        {{javaImport "org.junit.jupiter.api.Assumptions"}}.assumeTrue(false, "{{templateTestIncompleteMessage $test.Incomplete}}");
+{{else }}{{templateTestID $test}}{{templateTestEnvVars $test}}
+        {{templateJdkVar (print (templatePackageName) ".utils.HTTPClient") "testHttpClient"}} = {{javaImportUtils}}.createTestHTTPClient("{{$test.Name}}");
+{{- if $workflow}}
+{{- range $workflow.Steps}}
+{{- if eq .Type "operation"}}{{templateString "usage/init.stmpl" (dict "Context" .UsageContext)}}
+{{templateString "usage/call.stmpl" (dict "Context" .UsageContext)}}
+{{templateAssertions .UsageContext | indentPresent 8 }}
+{{else}}{{templateWorkflow $workflow . | indentPresent 8 }}
+{{end}}{{end}}{{- end}}{{end}}    }

@@ -1,0 +1,42 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $modelName := (sanitizeFieldName .Local.Name) -}}
+package {{sanitizeModelPackageName .Local.OutputLocation false}}
+
+{{genImports}}
+
+{{- if .Local.Servers}}
+{{- if .Local.Servers.ServerMap}}
+const (
+	{{- range .Local.Servers.Servers}}
+	{{templateComments .Comments $dg (templateConstName .ID (print $modelName "Server")) 1 "const" -}}
+	{{templateConstName .ID (print $modelName "Server")}} string = "{{ .ID }}"
+	{{- end}}
+)
+
+var {{$modelName}}ServerList = map[string]string{
+	{{- range .Local.Servers.Servers}}
+	{{templateComments .Comments $dg (print $modelName "ServerList[" .URL "]") 1 "var" -}}
+	{{templateConstName .ID (print $modelName "Server")}}: "{{ .URL }}",
+	{{- end}}
+}
+{{- else}}
+var {{$modelName}}ServerList = []string{
+	{{- range .Local.Servers.Servers}}
+	"{{ .URL }}",
+	{{- end}}
+}
+{{- end}}
+{{- end}}
+
+{{range .Local.Types}}
+{{- $dgt := getDocGroupedType . $dg -}}
+{{- if eq .Type "enum"}}
+{{templateString "enum.go.stmpl" $dgt}}
+{{- else if eq .Type "union"}}
+{{templateString "union.go.stmpl" $dgt}}
+{{- else if eq .Type "error"}}
+{{templateString "error.go.stmpl" $dgt}}
+{{- else}}
+{{templateString "model.go.stmpl" $dgt}}
+{{end}}{{end}}

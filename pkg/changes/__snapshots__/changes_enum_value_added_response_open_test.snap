@@ -1,0 +1,78 @@
+
+[TestChanges_EnumValueAddedResponseOpen - 1]
+# Test: enum_value_added_response_open
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-speakeasy-unknown-values: allow
+                    enum:
+                      - pending
+                      - processing
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    x-speakeasy-unknown-values: allow
+                    enum:
+                      - pending
+                      - processing
+                      - shipped
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getOrder()`:  `response.status.enum(shipped)` **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getOrder()`:  `response.status.enum(shipped)` **Added**
+
+---

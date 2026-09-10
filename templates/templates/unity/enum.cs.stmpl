@@ -1,0 +1,41 @@
+{{- $name := sanitizeClassName .Local.Name false }}
+{{- templateComments .Local.Comments 1 "enum" false }}
+{{- $replacement := "" }}
+    {{- if .Local.Comments }}
+    {{- $replacement = sanitizeDeprecationReplacement .Local.Comments.DeprecationReplacement "class" }}
+    {{- end }}
+    {{- if (and .Local.Comments .Local.Comments.Deprecated) }}[Obsolete("This enum will be removed in a future release, please migrate away from it as soon as possible{{ if $replacement }}. Use {{ $replacement }} instead{{ end }}")]{{- end }}
+    public enum {{ $name }}
+    {
+        {{- templateEnums .Local }}
+    }
+    {{- if eq .Local.Enum.Type.Type "string"}}{{"\n"}}
+{{- if (and .Local.Comments .Local.Comments.Deprecated) }}{{"\n"}}#pragma warning disable 0618{{- end}}
+    public static class {{ $name }}Extension
+    {
+        public static string Value(this {{ $name }} value)
+        {
+            return ((JsonPropertyAttribute)value.GetType().GetMember(value.ToString())[0].GetCustomAttributes(typeof(JsonPropertyAttribute), false)[0]).PropertyName ?? value.ToString();
+        }
+
+        public static {{ $name }} ToEnum(this string value)
+        {
+            foreach(var field in typeof({{ $name }}).GetFields())
+            {
+                var attributes = field.GetCustomAttributes(typeof(JsonPropertyAttribute), false);
+                if (attributes.Length == 0)
+                {
+                    continue;
+                }
+
+                var attribute = attributes[0] as JsonPropertyAttribute;
+                if (attribute != null && attribute.PropertyName == value)
+                {
+                    return ({{ $name }})field.GetValue(null);
+                }
+            }
+
+            throw new Exception($"Unknown value {value} for enum {{ $name }}");
+        }
+    }{{- if (and .Local.Comments .Local.Comments.Deprecated) }}
+#pragma warning restore 0618{{- end}}{{- end}}

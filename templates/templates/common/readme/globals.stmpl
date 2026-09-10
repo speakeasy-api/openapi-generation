@@ -1,0 +1,41 @@
+```sjs
+context.LocalComputed.CertainParameters = "Certain parameters"
+context.LocalComputed.TheseParameters = "These parameters"
+context.LocalComputed.TheseGlobalValues = "These global values"
+context.LocalComputed.Defaults = "defaults"
+context.LocalComputed.Them = "them"
+context.LocalComputed.Parameters = "parameters"
+context.LocalComputed.Are = "are"
+if (context.Local.ParameterLen == 1) {
+  context.LocalComputed.CertainParameters = "A parameter"
+  context.LocalComputed.TheseParameters = "This parameter"
+  context.LocalComputed.TheseGlobalValues = "This global value"
+  context.LocalComputed.Defaults = "the default"
+  context.LocalComputed.Them = "it"
+  context.LocalComputed.Parameters = "parameter"
+  context.LocalComputed.Are = "is"
+}
+
+context.LocalComputed.May = "may"
+if (context.Local.HasRequired) {
+  context.LocalComputed.May = "must"
+}
+sjs```
+{{- $op := .Local.Usage.Operation -}}
+
+{{.LocalComputed.CertainParameters}} {{.LocalComputed.Are}} configured globally. {{.LocalComputed.TheseParameters}} {{.LocalComputed.May}} be set on the SDK client instance itself during initialization. When configured as an option during SDK initialization, {{.LocalComputed.TheseGlobalValues}} will be used as {{.LocalComputed.Defaults}} on the operations that use {{.LocalComputed.Them}}. When such operations are called, there is a place in each to override the global value, if needed.
+{{with .Local.ExampleParameter}}
+For example, you can set `{{.Name}}` to `{{templateReadmeGlobalValue .}}` at SDK initialization and then you do not have to pass the same value on calls to operations like `{{sanitizeMethodName $op}}`. But if you want to do so you may, which will locally override the global setting. See the example code below for a demonstration.
+{{end}}
+
+### Available Globals
+
+The following global {{.LocalComputed.Parameters}} {{.LocalComputed.Are}} available.{{if .Local.HasRequired}} The required {{.LocalComputed.Parameters}} must be set when you initialize the SDK client.{{end}}
+
+{{- if .Global.Config.EnvVarPrefix }}
+Global parameters can also be set via environment variable.
+{{- end}}
+
+{{templateGlobalsTable}}
+
+{{templateUsageSectionWithContext .Local.Usage "### Example"}}

@@ -1,0 +1,32 @@
+using Xunit;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using No_Security.API;
+using No_Security.API.Models.Errors;
+
+public class AuthShould
+{
+    [Fact]
+    public async Task NoAuth()
+    {
+        CommonHelpers.RecordTest("auth-no-auth");
+
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        var res = await sdk.Auth.NoAuthAsync();
+
+        Assert.NotNull(res);
+        Assert.Equal(200, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task ApiKeyAuthGlobal()
+    {
+        CommonHelpers.RecordTest("auth-api-key-auth-global");
+
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+        var ex2 = await Assert.ThrowsAsync<SDKException>(() => sdk.Auth.ApiKeyAuthGlobalAsync());
+        Assert.NotNull(ex2);
+        Assert.Equal(401, ex2.StatusCode);
+    }
+}

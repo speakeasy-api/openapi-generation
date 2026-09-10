@@ -1,0 +1,55 @@
+# This overlay setups the client-credentials SDK which has some unique constraints when it comes to the security setup to enable oauth handling
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/client-credentials.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with the speakeasy-api-test-service server as the default as the client credentials token url needs to use this
+  # TODO: we can probably remove this requirement and make it work against both global and operation level servers
+  - target: $["servers"]
+    update:
+      - url: http://localhost:35456
+        description: The default server.
+  # Remove global security
+  - target: $["security"][*]
+    remove: true
+  # Enable composite security with clientCredentials and basicAuth
+  - target: $["security"]
+    update:
+      - clientCredentials: [read, write]
+        basicAuth: []
+  # Enable same security on operationId=authenticatedRequest
+  # First we remove any existing security definitions
+  - target: $.paths.*.*[?(@.operationId == 'authenticatedRequest')]["security"][*]
+    remove: true
+  # Then we add the composite security requirement
+  - target: $.paths.*.*[?(@.operationId == 'authenticatedRequest')]
+    update:
+      security:
+        - clientCredentials: [read, write]
+          basicAuth: []
+  # Match all endpoints that don't have servers and set them to the httpbin server as that was the original default
+  # Required for generated tests to still run
+  - target: $.paths.*.*[?(@.responses && !@.servers && @.operationId != 'authenticatedRequest' && @.operationId != 'authenticatedRequestGlobalServer')]
+    update:
+      servers:
+        - url: http://localhost:35123
+          description: The default servers.
+  # Disable clientCredentials security on anything without it already defined
+  # Required for generated tests to still run
+  # Exclude operations that intentionally use global security (authenticatedRequestGlobalServer, authenticatedRequestGlobalSecurity)
+  - target: $.paths.*.*[?(@.responses && !@.security && @.operationId != 'authenticatedRequestGlobalServer' && @.operationId != 'authenticatedRequestGlobalSecurity')]
+    update:
+      security:
+        - {} 
+  # Delete the testHooks operation as the hook required for it is only added in the primary test
+  # TODO: should we look at always adding all the hooks?
+  - target: $.paths.*.*[?(@.operationId == 'testHooks')]
+    remove: true
+  - target: $["components"]["securitySchemes"]["clientCredentials"]["flows"]["clientCredentials"]
+    update:
+      x-speakeasy-token-endpoint-authentication: client_secret_basic

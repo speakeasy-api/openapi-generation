@@ -1,0 +1,3112 @@
+openapi: 3.1.0
+info:
+  title: SDK Review
+  version: 0.1.0
+  summary: A test document for reviewing the SDK.
+  description: |-
+    This document will show case as many of our features as possible in as little operations/models as possible.
+    This will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.
+externalDocs:
+  url: https://speakeasy.com/docs
+  description: Speakeasy Docs
+servers:
+  - url: http://localhost:35123
+    description: The default server.
+  - url: http://{subdomain}.domain.com/v{version}
+    # a server with no descriptions
+    variables:
+      subdomain:
+        default: "api"
+      version:
+        default: "1"
+  - url: http://{HostName}:{PORT}
+    description: A server with an enum variable.
+    variables:
+      HostName:
+        default: localhost
+        description: The hostname of the server.
+      PORT:
+        enum:
+          - "80"
+          - "8080"
+          - "443"
+        default: "8080"
+        description: The port on which the server is running.
+# Declared error conventions for the review CLI: every x-speakeasy-cli-errors
+# surface is exercised — a detail-style primary carrier (reasonPointer), an
+# additional status-style probe, the single-element error-array unwrap, typed
+# and hint rules, and declared account-state types with their own hints.
+x-speakeasy-cli-errors:
+  version: 1
+  reasonPointer: $.details[*].reason
+  unwrapErrorArray: true
+  reasons:
+    ACCOUNT_KEY_REVOKED:
+      type: authentication_error
+      hints: Replace the revoked account key before retrying
+    ACCOUNT_SERVICE_PAUSED:
+      type: service_disabled
+    ACCOUNT_BILLING_PAUSED:
+      type: billing_disabled
+    CLI_PROTOCOL:
+      hints: Report the response payload and CLI version to the API operator
+  probes:
+    - pointer: $.status
+      reasons:
+        ACCESS_DENIED:
+          type: authorization_error
+  types:
+    service_disabled:
+      hints: Ask the account owner to resume this service before retrying
+    billing_disabled:
+      hints: Restore billing for the account before retrying
+x-speakeasy-globals:
+  parameters:
+    - name: queryParam1
+      description: |
+        A long winded, multi-line description
+        for the query parameter number one.
+      in: query
+      required: true
+      schema:
+        type: string
+        example: "some example query param"
+    - name: deprecatedQueryParam1
+      in: query
+      description: A deprecated description
+      deprecated: true
+      schema:
+        type: string
+        example: "some example query param"
+    - name: deprecatedQueryParam2
+      in: query
+      required: true
+      deprecated: true
+      schema:
+        type: string
+        example: "some example query param"
+    - $ref: "#/components/parameters/loneQueryParam"
+x-speakeasy-name-override:
+  - operationId: postTest2
+    methodNameOverride: postTest
+tags:
+  - name: tag1
+    description: The first tag.
+    x-speakeasy-docs:
+      go:
+        description: Testing for documentation extensions in Go.
+      python:
+        description: Testing for documentation extensions in Python.
+      typescript:
+        description: Testing for documentation extensions in TypeScript.
+  - name: obsolete
+    description: A subSDK in which all operations are deprecated.
+security:
+  - basicHttp: []
+  - bearerAuth: []
+    apiKey: []
+  - oauth2: []
+  - customSchemeAppId: []
+  - mobileAuth: [read]
+  - clientCredentials: [read]
+  - apiKey: []
+  - {}
+x-speakeasy-cli-commands:
+  version: 1
+  categories: [Create, Manage]
+  commands:
+    invite:
+      category: Create
+      summary: Invite a user by email
+      description: |-
+        Create a user record from an email address. Full request control:
+        "cli create-user".
+      op: createUser
+      args:
+        email:
+          to: $.email
+          variadic: true
+          summary: Email address to invite
+      flags:
+        given-name:
+          to: $.first_name
+          summary: First name to record
+        user-gender:
+          to: $.gender
+          summary: Gender to record
+      preset:
+        $.associatedIds: seed-user
+      hints:
+        CLI_VALIDATION: Print the exact request schema with --schema
+      examples:
+        basic:
+          summary: Invite by email
+          command: cli invite someone@example.com
+        named: cli invite someone@example.com --given-name John
+      jq: .id
+    enroll:
+      category: Manage
+      summary: Enroll a user by email
+      op: createUser
+      flags:
+        enrollment-email:
+          to: $.email
+          required: true
+          summary: Email address to enroll
+      examples:
+        basic: cli enroll --enrollment-email someone@example.com
+    tag1 recent:
+      category: Manage
+      summary: List recent test1 pages via tag1
+      op: listTest1
+    render:
+      category: Create
+      summary: Render an image asset to a file
+      help:
+        defaults: output_modalities image
+        learn: cli docs render
+        escalate: full request control via cli render-asset
+      description: |-
+        Render an image from a text prompt and write it to a file; stdout
+        carries the file path. Full request control: "cli render-asset".
+      op: renderAsset
+      args:
+        prompt:
+          to: $.prompt
+          variadic: true
+          summary: Text prompt to render
+      preset:
+        $.output_modalities: image
+      output:
+        artifact:
+          contentPointer: $.steps[*].content[*]
+          kind: image
+          defaultPath: "render-{timestamp}-{rand}.{ext}"
+      examples:
+        basic: cli render "a lighthouse at sunset"
+    produce:
+      category: Create
+      summary: Produce an image asset and wait for completion
+      description: |-
+        Start an asset job, poll it to a terminal state, and write the image
+        to a file. Use --async to return only the operation handle.
+      op: renderAsset
+      args:
+        prompt:
+          to: $.prompt
+          variadic: true
+          summary: Text prompt to render
+      preset:
+        $.output_modalities: image
+      async:
+        op: getAsset
+        id:
+          from: $.id
+          to: {in: path, name: id}
+        params:
+          stream: false
+        statePointer: $.status
+        states:
+          in_progress: pending
+          completed: success
+          failed: failure
+          requires_action: handoff
+        interval: 20ms
+        backoff: 1.5
+        maxInterval: 60ms
+        timeout: 5s
+      output:
+        artifact:
+          contentPointer: $.steps[*].content[*]
+          kind: image
+          defaultPath: "produce-{timestamp}-{rand}.{ext}"
+      hints:
+        CLI_ASYNC_FAILED: Inspect the terminal response and resume command
+        CLI_ASYNC_TIMEOUT: Resume polling with the returned handle
+        CLI_ASYNC_UNKNOWN_STATE: Regenerate the CLI against the current API schema
+      examples:
+        basic: cli produce "a lighthouse at sunrise"
+    observe:
+      category: Manage
+      summary: Produce an asset and print its terminal status
+      op: renderAsset
+      args:
+        prompt:
+          to: $.prompt
+          variadic: true
+          summary: Text prompt to render
+      preset:
+        $.output_modalities: image
+      async:
+        op: getAsset
+        id:
+          from: $.id
+          to: {in: path, name: id}
+        params:
+          stream: false
+        statePointer: $.status
+        states:
+          in_progress: pending
+          completed: success
+          failed: failure
+          requires_action: handoff
+        interval: 20ms
+        backoff: 1.5
+        maxInterval: 60ms
+        timeout: 5s
+      jq: .status
+    say:
+      category: Create
+      summary: Stream a chat reply
+      description: |-
+        Send a prompt and print the reply as it streams. Full request
+        control: "cli chat".
+      op: chat#ChatModelRequest
+      args:
+        prompt:
+          to: $.prompt
+          variadic: true
+          summary: Prompt to send
+      preset:
+        $.stream: true
+      flags:
+        stream:
+          to: $.stream
+          type: bool
+          defaultFrom: schema
+          summary: Stream events as they arrive
+      output:
+        stream:
+          select: $.data.content
+      examples:
+        basic: cli say "hello there"
+    archive:
+      category: Manage
+      summary: Archive a user account
+      planned: >-
+        "archive" needs an account-lifecycle API surface that is not part of
+        this build. Meanwhile use "cli delete-user".
+    test-group: {category: Manage, group: true}
+  operations:
+    chat:
+      output:
+        stream:
+          select: $.data.content
+      flags:
+        stream:
+          to: $.stream
+          type: bool
+          default: true
+          summary: Stream events as they arrive
+        max-tokens:
+          to: $.max_tokens
+          summary: Maximum number of tokens to generate
+        temperature:
+          to: $.temperature
+          summary: Sampling temperature
+paths:
+  /deprecated:
+    get:
+      operationId: deprecated1
+      tags:
+        - tag1
+        - obsolete
+      summary: Deprecated Operation
+      deprecated: true
+      x-speakeasy-deprecation-message: This endpoint is deprecated.
+      x-speakeasy-deprecation-replacement: getRequestBodyFlattenedAway
+      servers:
+        - url: http://localhost:12345
+          description: A deprecated server
+      responses:
+        "200":
+          description: OK
+  /auth:
+    get:
+      operationId: auth
+      description: |
+        This operation aims at testing available OAuth2 scopes collection:
+         - only operation with oauth2 authorizationCode security flow
+         - belongs to a subSDK
+      security:
+        - accessToken: [impersonation]
+      tags:
+        - tag1
+      x-speakeasy-errors:
+        statusCodes:
+          - 401
+          - 500
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+        "403":
+          description: Forbidden
+  /test_operation_id_with_underscores:
+    get:
+      parameters:
+        - name: queryParam1
+          in: query
+          required: true
+          schema:
+            type: string
+          x-speakeasy-name-override: qp1
+          example: "renamed"
+          description: >-
+            This parameter will not be filled in with the queryParam1 global
+            because it uses x-speakeasy-name-override which results in a
+            non-matching name.
+      operationId: _operation_with_leading_and_trailing_underscores_
+      x-speakeasy-name-override: _operation_with_leading_and_trailing_underscores_
+      x-speakeasy-errors:
+        statusCodes:
+          - "default"
+          - "3XX"
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Not Found
+        "5XX":
+          description: Server Error
+  /test1/{page}:
+    get:
+      operationId: listTest1
+      tags:
+        - tag1
+      summary: Get Test1
+      description: |-
+        This is a {{test}} endpoint.
+        It has a description.
+      x-speakeasy-timeout: 50000
+      x-speakeasy-usage-example:
+        title: "A custom readme heading"
+        description: "A custom usage description"
+        position: 2
+        tags:
+          - usage
+          - pagination
+      x-speakeasy-docs-rate-limits:
+        - strategy: sliding_window
+          sliding_window:
+            rate: 3
+            period: second
+          identifier: appID
+          description: Rate Limit 1 Description
+        - strategy: sliding_window
+          sliding_window:
+            rate: 100
+            period: minute
+          identifier: IP Address
+          description: Rate Limit 2 Description
+      security:
+        - apiKey: []
+        - clientCredentials: [read, write]
+      servers:
+        - url: http://localhost:35123
+          description: The only server.
+          x-speakeasy-server-id: Main
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: parameters
+            type: page
+        outputs:
+          results: $.resultArray
+      parameters:
+        - name: queryParam1
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "some {{example}} query param"
+        - name: queryParam2
+          description: |-
+            An [enum](https://enum.com) "query parameter"
+            that is not easily described in a single line.
+
+            **Available Values:**
+            | Value | Description |
+            |-------|-------------|
+            | 0     | No data     |
+            | 1     | Partial     |
+            | 2     | Complete    |
+          in: query
+          required: true
+          schema:
+            type: integer
+            enum: [0, 1, 2]
+            x-speakeasy-enum-descriptions:
+              - No additional data returned
+              - Partial data set returned
+              - Complete data set returned
+            example: 1
+        - name: page
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 100
+        - name: headerParam1
+          in: header
+          required: true
+          schema:
+            type: string
+            example: "some example header param"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resultArray:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        test1:
+                          type: string
+                          example: "some example response"
+                      required:
+                        - test1
+                  totalCount:
+                    type: integer
+                    example: 100
+                  type:
+                    $ref: "#/components/schemas/Enum"
+                required:
+                  - resultArray
+                  - totalCount
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /test2:
+    post:
+      operationId: postTest2
+      summary: Post Test2
+      x-speakeasy-deprecated: true
+      x-speakeasy-group:
+        - testGroup.tag2
+        - testGroup.tag3
+      x-speakeasy-usage-example: true
+      description: |-
+        This is a test endpoint.
+        It has a description.
+      security:
+        - apiKey: [ ]
+      parameters:
+        - name: deprecatedQueryParam1
+          in: query
+          deprecated: true
+          schema:
+            type: string
+            example: "some {{example}} query param"
+        - name: deprecatedQueryParam2
+          in: query
+          deprecated: true
+          required: true
+          schema:
+            type: string
+            example: "some {{example}} query param"
+      servers:
+        - url: http://localhost:35123
+          description: The default server.
+          x-speakeasy-server-id: default
+        - url: http://{hostname}:{port}
+          description: A server url with templated variables.
+          variables:
+            port:
+              default: "35123"
+              description: The port on which the server is running.
+            hostname:
+              default: localhost
+              description: The hostname of the server.
+          x-speakeasy-server-id: templatable
+      requestBody:
+        $ref: "#/components/requestBodies/Test2Request"
+      responses:
+        "200":
+          description: OK
+          content:
+            multipart/form-data:
+              schema:
+                $ref: "#/components/schemas/Test2Response"
+        default:
+          description: successful operation
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Test2Response"
+      x-speakeasy-retries:
+        strategy: backoff
+        backoff:
+          initialInterval: 10 # 10 ms
+          maxInterval: 200 # 200 ms
+          maxElapsedTime: 1000 # 1 seconds
+          exponent: 1.5
+        statusCodes:
+          - 404
+        retryConnectionErrors: false
+  /file:
+    post:
+      operationId: postFile
+      summary: Post File
+      description: |-
+        This is a test endpoint.
+        It has a description.
+      x-speakeasy-usage-example:
+        tags:
+          - usage
+          - security
+          - server
+          - retries # ignored since endpoint does not support retries
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  x-speakeasy-name-override: upload
+                  $ref: "#/components/schemas/File"
+              required:
+                - file
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/File"
+        "415":
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "4XX":
+          description: Client Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "5XX":
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /fileWithEncoding:
+    post:
+      operationId: postFileWithEncoding
+      summary: Post File With Encoding
+      description: |-
+        This endpoint tests the encoding field with multipart/form-data content type.
+        According to OpenAPI 3.0.3 spec, the encoding field is valid for both
+        application/x-www-form-urlencoded and multipart/* media types.
+
+        This test includes multiple content types for the file field to verify
+        handling of comma-separated content types in encoding.
+      tags:
+        - tag1
+      x-speakeasy-usage-example:
+        tags:
+          - usage
+          - file-upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload (supports CSV, PNG, JPEG, or PDF)
+                attachment:
+                  type: string
+                  format: binary
+                  description: An optional binary attachment
+                fileName:
+                  type: string
+                  description: Optional custom file name
+                filePurpose:
+                  type: string
+                  description: Purpose of the file upload
+                metadata:
+                  type: object
+                  description: JSON metadata about the file
+                  properties:
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    tags:
+                      type: array
+                      items:
+                        type: string
+              required:
+                - file
+            encoding:
+              file:
+                contentType: text/csv, image/png, image/jpeg, application/pdf
+              attachment:
+                contentType: application/octet-stream
+              filePurpose:
+                contentType: text/plain
+              metadata:
+                contentType: application/json
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  size:
+                    type: integer
+                  contentType:
+                    type: string
+                  metadata:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - fileName
+                  - size
+        "415":
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /polymorphism:
+    get:
+      operationId: getPolymorphism
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  oneOfWithUnionDescription:
+                    description: "A union of two types."
+                    oneOf:
+                      - $ref: "#/components/schemas/ExhaustiveObject"
+                      - $ref: "#/components/schemas/SimpleObject"
+                    x-some-extension: "doesn't interfere with type generation"
+                  oneOfWithFactoredOutProperties:
+                    $ref: "#/components/schemas/OneOfWithFactoredOutProperties"
+                  simpleAllOf:
+                    allOf:
+                      - type: object
+                        properties:
+                          str:
+                            type: string
+                            description: "A string property."
+                            example: "example"
+                      - type: object
+                        properties:
+                          bool:
+                            type: boolean
+                            description: "A boolean property."
+                            example: true
+                  allOfWithFactoredOutProperties:
+                    description: "An object with allOf and factored out properties."
+                    properties:
+                      anExtraProperty:
+                        type: string
+                        description: "An extra property."
+                        example: "example"
+                      anOverridingProperty:
+                        type: string
+                        description: "An overriding property."
+                        example: "example"
+                    allOf:
+                      - type: object
+                        properties:
+                          anOverridingProperty:
+                            type: integer
+                            description: "An overriding property."
+                            example: 1
+                      - type: object
+                        properties:
+                          anOverridingProperty:
+                            type: number
+                            description: "An overriding property."
+                            example: 1.1
+                          anotherProperty:
+                            type: string
+                            description: "Another property."
+                            example: "example"
+                  circularUnion:
+                    $ref: "#/components/schemas/CircularUnion"
+                  recursiveFormField:
+                    $ref: "#/components/schemas/RecursiveFormField"
+  /unionErrors:
+    get:
+      operationId: getUnionErrors
+      x-speakeasy-usage-example:
+        tags:
+          - errors
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: parameters
+            type: page
+        outputs:
+          results: $.pages
+      x-speakeasy-react-hook:
+        disabled: true
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+          example: 12
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pages:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - pages
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "4XX":
+          description: Something went wrong
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TaggedError1"
+                  - $ref: "#/components/schemas/TaggedError2"
+                discriminator:
+                  propertyName: tag
+                  mapping:
+                    tag1: "#/components/schemas/TaggedError1"
+                    tag2: "#/components/schemas/TaggedError2"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorType1"
+                  - $ref: "#/components/schemas/ErrorType2"
+  /requestBodyFlattenedAway:
+    get:
+      operationId: getRequestBodyFlattenedAway
+      parameters:
+        - $ref: "#/components/parameters/loneQueryParam"
+      responses:
+        "200":
+          description: OK
+  /fullyFlattenedRequest:
+    post:
+      operationId: getFullyFlattenedRequest
+      security:
+        - clientCredentials: []
+        - apiKey: []
+        - {}
+      x-speakeasy-flatten-request: true
+      x-speakeasy-react-hook:
+        type: query
+        name: FlatRequest
+      parameters:
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+          examples:
+            namedExampleThatIsntMatchedAcrossDifferentExamples:
+              value: "en"
+        - name: max_length
+          in: query
+          required: false
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                emoji:
+                  type: string
+                  enum: [wave, smiley, thumbsup, tada]
+                  x-speakeasy-enum-descriptions:
+                    wave: |
+                      A short greeting wave emoji
+                      This value is often used for friendly acknowledgements.
+                    smiley: A classic smiling face
+                    thumbsup: |
+                      Indicates approval
+                      The receiving system may treat this as a positive affirmation.
+                    tada: Celebration emoji with confetti
+                gif:
+                  type: string
+                reply:
+                  type: boolean
+                private:
+                  type: boolean
+        required: true
+      responses:
+        "200":
+          description: OK
+  /unionRequestBody:
+    post:
+      operationId: createWithUnion
+      summary: Create with discriminated union request body
+      description: Test CLI generation for discriminated unions with dot-notation flags
+      x-speakeasy-flatten-request: true
+      parameters:
+        - name: dryRun
+          in: query
+          schema:
+            type: boolean
+          description: If true, validates without creating
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShapeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  shape:
+                    $ref: "#/components/schemas/Shape"
+  /test/endpoint/{testName}:
+    post:
+      operationId: testEndpoint
+      parameters:
+        - name: testName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                test:
+                  type: string
+              required:
+                - test
+        required: true
+      responses:
+        "200":
+          description: OK
+  /user:
+    put:
+      operationId: createUser
+      summary: Create User
+      description: |
+        Creates a new user in the system. Multiple named examples demonstrate
+        different pairing scenarios for documentation generation.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BaseUser"
+            examples:
+              request-only:
+                summary: Request example without matching response
+                value:
+                  email: "request-only@example.com"
+              paired-example:
+                summary: Request example with matching response
+                value:
+                  email: "paired@example.com"
+                  first_name: "John"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              examples:
+                paired-example:
+                  summary: Response example with matching request
+                  value:
+                    id: "user-paired"
+                    email: "paired@example.com"
+                    first_name: "John"
+                response-only:
+                  summary: Response example without matching request
+                  value:
+                    id: "user-response"
+                    email: "response-only@example.com"
+  /user/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getUser
+      summary: Get User
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              examples:
+                success:
+                  value: {
+                    "id": "8ffac18c-7d88-4879-b057-e5f45b9ce7dg",
+                    "email": "Trystan_Crooks@hotmail.com",
+                  }
+    post:
+      operationId: updateUser
+      summary: Update User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      summary: Delete User
+      responses:
+        "200":
+          description: OK
+  /auth/login:
+    get:
+      x-speakeasy-test: false
+      operationId: login
+      summary: Login
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                required:
+                  - token
+  /auth/validate:
+    get:
+      x-speakeasy-test: false
+      operationId: validate
+      summary: Validate
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  id:
+                    type: string
+                  lastLogin:
+                    type: string
+                    format: date-time
+  /chat:
+    post:
+      operationId: chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/ChatModelRequest"
+                - $ref: "#/components/schemas/ChatAgentRequest"
+        required: true
+      responses:
+        "200":
+          description: A stream containing chat completion tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+            text/event-stream:
+              x-speakeasy-sse-sentinel: "[DONE]"
+              schema:
+                title: ChatStream
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [token]
+                    properties:
+                      content:
+                        type: string
+  /binaryDefaultResponse:
+    get:
+      operationId: getBinaryDefaultResponse
+      responses:
+        "200":
+          description: Import OK
+        default:
+          description: Error
+          content:
+            application/octet-stream:
+              schema:
+                title: bytes
+                type: string
+                format: binary
+                example: "0xf58AcDF799"
+  /enumFormats:
+    post:
+      operationId: testEnumFormats
+      summary: Test x-speakeasy-enums in different formats
+      description: |-
+        This endpoint tests the x-speakeasy-enums extension in both array and map formats,
+        including partial map coverage and both string and integer enum types.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stringArrayFormat:
+                  type: string
+                  description: "String enum with x-speakeasy-enums as array (full coverage)"
+                  enum:
+                    - pending_review
+                    - approved_final
+                    - rejected_permanently
+                    - arch_x86
+                    - mobile_ios
+                    - custom_field
+                  x-speakeasy-enums:
+                    - AwaitingReviewProcess
+                    - CompletelyApprovedAndFinalized
+                    - PermanentlyRejectedForever
+                    - X86_64
+                    - iOS_app
+                    - my_CUSTOM_name
+                  example: pending_review
+                stringMapFormat:
+                  type: string
+                  description: "String enum with x-speakeasy-enums as map (full coverage)"
+                  enum:
+                    - low_priority
+                    - medium_priority
+                    - high_priority
+                    - critical_urgent
+                  x-speakeasy-enums:
+                    low_priority: MinimalImportanceLevel
+                    medium_priority: ModerateImportanceLevel
+                    high_priority: SignificantImportanceLevel
+                    critical_urgent: ExtremelyUrgentAndCritical
+                  example: medium_priority
+                stringPartialMapFormat:
+                  type: string
+                  description: "String enum with x-speakeasy-enums as map (partial coverage)"
+                  enum:
+                    - draft_mode
+                    - under_review
+                    - published_live
+                    - archived_old
+                  x-speakeasy-enums:
+                    draft_mode: InitialDraftVersion
+                    published_live: LivePublishedContent
+                  example: draft_mode
+                integerMapFormat:
+                  type: integer
+                  description: "Integer enum with x-speakeasy-enums as map (full coverage)"
+                  enum:
+                    - 100
+                    - 200
+                    - 300
+                    - 400
+                  x-speakeasy-enums:
+                    100: ContinueProcessingRequest
+                    200: SuccessfulOperationComplete
+                    300: RedirectToAnotherLocation
+                    400: ClientSideErrorOccurred
+                  example: 200
+                integerPartialMapFormat:
+                  type: integer
+                  description: "Integer enum with x-speakeasy-enums as map (partial coverage)"
+                  enum:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
+                  x-speakeasy-enums:
+                    1: PrimaryFirstOption
+                    3: MiddleThirdChoice
+                    5: FinalFifthSelection
+                  example: 1
+              required:
+                - stringArrayFormat
+                - stringMapFormat
+                - stringPartialMapFormat
+                - integerMapFormat
+                - integerPartialMapFormat
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Enum formats processed successfully"
+                required:
+                  - message
+  /binaryAndStringUpload:
+    post:
+      operationId: binaryAndStringUpload
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                binary:
+                  type: string
+                  format: binary
+                  example: "x-file: test.json"
+                string:
+                  type: string
+                  example: "x-file: test.json"
+        required: true
+      responses:
+        "200":
+          description: OK
+  /errorInUnion:
+    get:
+      operationId: getErrorInUnion
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Error"
+                  - $ref: "#/components/schemas/TaggedError1"
+  /duplicateExportCollision:
+    get:
+      x-speakeasy-errors:
+        statusCodes:
+          - "408"
+      operationId: getDuplicateExportCollision
+      summary: Tests that a spec-defined error type colliding with a built-in SDK error name does not cause TS2308
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+        "408":
+          description: Request Timeout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestTimeoutErrorData"
+  /namedPrimitiveUnion:
+    get:
+      operationId: getNamedPrimitiveUnion
+      summary: Test named primitive union options using title and x-speakeasy-name-override
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SomeUnion"
+  /group/root:
+    get:
+      operationId: rootGroupOp
+      x-speakeasy-group: Group
+      summary: An operation at the group's root level
+      description: |
+        'group' differs from 'TestGroup' in that it not only contains subgroups,
+        but also an operation.
+      responses:
+        "200":
+          description: OK
+  /group/subgroup:
+    get:
+      operationId: subGroupOp
+      x-speakeasy-group: Group.SubGroup
+      summary: An operation at the group's top level
+      responses:
+        "200":
+          description: OK
+  /group/nested:
+    get:
+      operationId: nestedGroupOp
+      x-speakeasy-group: Group.SubGroup.empty.Tail
+      summary: An operation at the group's deepest level
+      description: |
+        Notice that 'group.flattened' has no operations.
+      responses:
+        "200":
+          description: OK
+  /emptyObjectError:
+    get:
+      operationId: getEmptyObjectError
+      summary: Get Empty Object Error
+      description: This endpoint tests the behavior when an error response has an empty object schema.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FailedResponse"
+  /AZaz09-._~!$&'*+,;=:@/%20%25/-._~!$&'()*+,;=:@:
+    get:
+      operationId: urlValidationStressTest
+      responses:
+        "200":
+          description: OK
+  /namespaceConflict:
+    get:
+      operationId: getNamespaceConflict
+      x-speakeasy-group: namespaceTests.conflicts
+      summary: Get Namespace Conflict Test
+      description: |-
+        This endpoint tests the x-speakeasy-model-namespace extension by returning
+        a model that references two different Pet types from different namespaces.
+        The SDK should properly import and alias both Pet types.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamespaceConflictTest"
+    put:
+      operationId: putNamespaceConflict
+      x-speakeasy-group: namespaceTests.conflicts
+      summary: Put Property Name Conflicts Behind
+      description: |-
+        This endpoint tests property name conflict resolution through
+        x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/objWithRenamedProperties"
+      responses:
+        "200":
+          description: OK
+    post:
+      operationId: createNamespaceConflict
+      x-speakeasy-group: namespaceTests.conflicts
+      summary: Create Namespace Conflict Test
+      description: |-
+        This endpoint tests creating with models from different namespaces.
+        Uses foo.Pet in the request and bar.Pet in the response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/foo_Pet"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/bar_Pet"
+  /tripleNamespaceConflict:
+    get:
+      operationId: getTripleNamespaceConflict
+      x-speakeasy-group: namespaceTests.conflicts
+      summary: Get Triple Namespace Conflict Test
+      description: |-
+        This endpoint tests the x-speakeasy-model-namespace extension by returning
+        a model that references three different Pet types from different namespaces.
+        The SDK should properly import and alias all three Pet types.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripleNamespaceConflictTest"
+  /petOwners:
+    get:
+      operationId: getPetOwners
+      x-speakeasy-group: namespaceTests.conflicts
+      summary: Get Pet Owners
+      description: |-
+        This endpoint tests using PetOwner models from different namespaces.
+        Returns both foo.PetOwner and bar.PetOwner in the response.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fooPetOwner:
+                    $ref: "#/components/schemas/foo_PetOwner"
+                  barPetOwner:
+                    $ref: "#/components/schemas/bar_PetOwner"
+                required:
+                  - fooPetOwner
+                  - barPetOwner
+  /singleNamespace/foo/pet:
+    get:
+      operationId: getSingleNamespaceFooPet
+      x-speakeasy-group: namespaceTests.singleFoo
+      summary: Get Single Namespace Foo Pet
+      description: |-
+        This endpoint tests using a single component from the foo namespace.
+        No import aliasing should be needed since there's no conflict within this group.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/foo_Pet"
+    post:
+      operationId: createSingleNamespaceFooPet
+      x-speakeasy-group: namespaceTests.singleFoo
+      summary: Create Single Namespace Foo Pet
+      description: |-
+        This endpoint tests creating a component in the foo namespace.
+        No import aliasing should be needed since there's no conflict within this group.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/foo_Pet"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/foo_Pet"
+  /singleNamespace/bar/pet:
+    get:
+      operationId: getSingleNamespaceBarPet
+      x-speakeasy-group: namespaceTests.singleBar
+      summary: Get Single Namespace Bar Pet
+      description: |-
+        This endpoint tests using a single component from the bar namespace.
+        No import aliasing should be needed since there's no conflict within this group.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/bar_Pet"
+  /namespaceTypes:
+    get:
+      operationId: getNamespaceTypes
+      x-speakeasy-group: namespaceTests.types
+      summary: Get Namespace Types Test
+      description: |-
+        This endpoint tests x-speakeasy-model-namespace with enums, discriminated unions,
+        non-discriminated unions, and models with nested inline schemas.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NamespaceTypesTest"
+  /namespaceAnimal:
+    get:
+      operationId: getNamespaceAnimal
+      x-speakeasy-group: namespaceTests.types
+      summary: Get Namespace Animal (Discriminated Union)
+      description: |-
+        This endpoint tests a discriminated union type in a custom namespace.
+        The response can be either a foo.Dog or foo.Cat.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/foo_Animal"
+  /namespaceVehicle:
+    get:
+      operationId: getNamespaceVehicle
+      x-speakeasy-group: namespaceTests.types
+      summary: Get Namespace Vehicle (Non-Discriminated Union)
+      description: |-
+        This endpoint tests a non-discriminated union type in a custom namespace.
+        The response can be either a bar.Car or bar.Bike.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/bar_Vehicle"
+  /namespaceOrganization:
+    get:
+      operationId: getNamespaceOrganization
+      x-speakeasy-group: namespaceTests.types
+      summary: Get Namespace Organization (Nested Inline Schemas)
+      description: |-
+        This endpoint tests nested inline object schemas in a custom namespace.
+        The organization model contains nested address and department types that
+        should inherit the foo namespace.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/foo_Organization"
+  /jobs/job({id}):
+    post:
+      operationId: parenthesesInPathAllowed
+      summary: |
+        A string with {{ double braces }} and { single braces }
+        and \{\{ escaped curlies \}\} and `backticks`.
+        and \`escaped backticks\` and double slashes\\
+        and 'single quotes' and "double quotes".
+        and  \'escaped single quotes\' and \"escaped double quotes\".
+      description: |
+        A string with {{ double braces }} and { single braces }
+        and \{\{ escaped curlies \}\} and `backticks`.
+        and \`escaped backticks\` and double slashes\\
+        and 'single quotes' and "double quotes".
+        and  \'escaped single quotes\' and \"escaped double quotes\".
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateBracesTest"
+            example:
+              fieldWithBracesInDescription: |
+                A string with {{ double braces }} and { single braces }
+                and \{\{ escaped curlies \}\} and `backticks`.
+                and \`escaped backticks\` and double slashes\\
+                and 'single quotes' and "double quotes".
+                and  \'escaped single quotes\' and \"escaped double quotes\".
+              fieldWithBracesInDefault: |
+                A string with {{ double braces }} and { single braces }
+                and \{\{ escaped curlies \}\} and `backticks`.
+                and \`escaped backticks\` and double slashes\\
+                and 'single quotes' and "double quotes".
+                and  \'escaped single quotes\' and \"escaped double quotes\".
+              fieldWithBracesInConst: |
+                A string with {{ double braces }} and { single braces }
+                and \{\{ escaped curlies \}\} and `backticks`.
+                and \`escaped backticks\` and double slashes\\
+                and 'single quotes' and "double quotes".
+                and  \'escaped single quotes\' and \"escaped double quotes\".
+              fieldWithBracesInTitle: |
+                A string with {{ double braces }} and { single braces }
+                and \{\{ escaped curlies \}\} and `backticks`.
+                and \`escaped backticks\` and double slashes\\
+                and 'single quotes' and "double quotes".
+                and  \'escaped single quotes\' and \"escaped double quotes\".
+              fieldWithBracesInExample: |
+                A string with {{ double braces }} and { single braces }
+                and \{\{ escaped curlies \}\} and `backticks`.
+                and \`escaped backticks\` and double slashes\\
+                and 'single quotes' and "double quotes".
+                and  \'escaped single quotes\' and \"escaped double quotes\".
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateBracesTest"
+              example:
+                fieldWithBracesInDescription: |
+                  A string with {{ double braces }} and { single braces }
+                  and \{\{ escaped curlies \}\} and `backticks`.
+                  and \`escaped backticks\` and double slashes\\
+                  and 'single quotes' and "double quotes".
+                  and  \'escaped single quotes\' and \"escaped double quotes\".
+                fieldWithBracesInDefault: |
+                  A string with {{ double braces }} and { single braces }
+                  and \{\{ escaped curlies \}\} and `backticks`.
+                  and \`escaped backticks\` and double slashes\\
+                  and 'single quotes' and "double quotes".
+                  and  \'escaped single quotes\' and \"escaped double quotes\".
+                fieldWithBracesInConst: |
+                  A string with {{ double braces }} and { single braces }
+                  and \{\{ escaped curlies \}\} and `backticks`.
+                  and \`escaped backticks\` and double slashes\\
+                  and 'single quotes' and "double quotes".
+                  and  \'escaped single quotes\' and \"escaped double quotes\".
+                fieldWithBracesInTitle: |
+                  A string with {{ double braces }} and { single braces }
+                  and \{\{ escaped curlies \}\} and `backticks`.
+                  and \`escaped backticks\` and double slashes\\
+                  and 'single quotes' and "double quotes".
+                  and  \'escaped single quotes\' and \"escaped double quotes\".
+                fieldWithBracesInExample: |
+                  A string with {{ double braces }} and { single braces }
+                  and \{\{ escaped curlies \}\} and `backticks`.
+                  and \`escaped backticks\` and double slashes\\
+                  and 'single quotes' and "double quotes".
+                  and  \'escaped single quotes\' and \"escaped double quotes\".
+  /nestedIntegerString:
+    get:
+      operationId: getNestedIntegerString
+      summary: Test nested struct with integer:string tag
+      description: |-
+        This endpoint tests the behavior when a deeply nested struct contains
+        an integer field that should be unmarshaled from a string.
+      x-speakeasy-include-targets: [go]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+  /assets/render:
+    post:
+      operationId: renderAsset
+      summary: Render Asset
+      description: Render a media asset from a text prompt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                output_modalities:
+                  type: array
+                  items:
+                    type: string
+                    enum: [text, image]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetResult"
+            text/event-stream:
+              schema:
+                title: AssetStream
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AssetResult"
+  /assets/{id}:
+    get:
+      operationId: getAsset
+      summary: Get Asset
+      description: Get the current result of an asset job.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stream
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetResult"
+            text/event-stream:
+              schema:
+                title: AssetStatusStream
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AssetResult"
+  /errorOnlyExample:
+    get:
+      operationId: getErrorOnlyExample
+      summary: Operation with example only on error response
+      description: |-
+        This endpoint tests that when an operation has a named example only on
+        an error response (not on the success response), we still generate
+        a default example for the success response.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  status:
+                    type: string
+                required:
+                  - id
+                  - name
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                notFoundExample:
+                  summary: Resource not found
+                  value:
+                    error: "Resource not found"
+                    code: 404
+x-speakeasy-webhooks:
+  security:
+    type: signature
+    headerName: x-webhook-signature
+    signatureTextEncoding: base64
+    algorithm: hmac-sha256
+webhooks:
+  payment-created:
+    post:
+      operationId: paymentCreated
+      x-speakeasy-group: hooks
+      summary: Send Payment Created Webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                  description: Payment amount
+                type:
+                  type: string
+                  enum:
+                    - payment.created
+              required:
+                - amount
+                - type
+      responses:
+        "200":
+          description: Consumer's response
+  payment-updated:
+    post:
+      operationId: paymentUpdated
+      x-speakeasy-group: hooks
+      summary: Send Payment Updated Webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: string
+                  description: Payment amount
+                type:
+                  type: string
+                  enum:
+                    - payment.updated
+              required:
+                - amount
+                - type
+      responses:
+        "200":
+          description: Consumer's response
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      name: api_key
+      in: header
+      x-speakeasy-name-override: MyApiKey  # does not take effect in `SecurityOption2` (AND)
+    basicHttp:
+      type: http
+      scheme: basic
+      x-speakeasy-example: <USERNAME>;<PASSWORD>
+      x-speakeasy-name-override: UserPassAuth
+    bearerAuth:
+      type: http
+      scheme: bearer
+      x-speakeasy-example: <YOUR_JWT>
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http://localhost:35123/oauth2/authorize
+          scopes: {}
+      x-speakeasy-example: Bearer <YOUR_OAUTH2_TOKEN>
+    mobileAuth:
+      type: oauth2
+      description: |-
+        OAuth2 Password flow, a flow that is too
+        long to describe in a single line.
+      flows:
+        password:
+          tokenUrl: http://localhost:35456/oauth2/token
+          scopes:
+            read: Read your data
+            write: Write to your data
+      x-speakeasy-example: Bearer <YOUR_OAUTH2_TOKEN>
+    clientCredentials:
+      type: oauth2
+      description: "Client Credentials flow."
+      flows:
+        clientCredentials:
+          tokenUrl: /clientcredentials/token
+          x-speakeasy-overridable-scopes: false
+          scopes:
+            read: Read access
+            write: Write access
+            unused: |-
+              Not only this scope is not used
+              but it has a pretty long comment.
+    accessToken:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://oauth/auth"
+          tokenUrl: "https://oauth/token"
+          scopes:
+            models:read: Grants read access on models
+            store_manage: Allows management operations
+            impersonation: ""
+    customSchemeAppId:
+      type: http
+      scheme: custom
+      x-speakeasy-custom-security-scheme:
+        usesScopes: false
+        schema:
+          type: object
+          properties:
+            appId:
+              type: string
+              example: app-speakeasy-123
+            secret:
+              type: string
+              example: MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI
+          required:
+            - appId
+            - secret
+  schemas:
+    ChatModelRequest:
+      type: object
+      required: [prompt]
+      properties:
+        model:
+          type: string
+          default: review-model
+          description: Model to use
+        prompt:
+          type: string
+          example: "What is the largest city in the world?"
+        stream:
+          type: boolean
+          default: true
+          description: Stream events as they arrive
+        max_tokens:
+          type: integer
+          description: Maximum number of tokens to generate
+        temperature:
+          type: number
+          description: Sampling temperature
+    ChatAgentRequest:
+      type: object
+      required: [agent, prompt]
+      properties:
+        agent:
+          type: string
+        prompt:
+          type: string
+        stream:
+          type: boolean
+          default: true
+          description: Stream events as they arrive
+        max_tokens:
+          type: integer
+          description: Maximum number of tokens to generate
+        temperature:
+          type: number
+          description: Sampling temperature
+    # Pathological test case for template delimiter escaping
+    TemplateBracesTest:
+      type: object
+      description: |
+        A string with {{ double braces }} and { single braces }
+        and \{\{ escaped curlies \}\} and `backticks`.
+        and \`escaped backticks\` and double slashes\\
+        and 'single quotes' and "double quotes".
+        and  \'escaped single quotes\' and \"escaped double quotes\".
+      properties:
+        fieldWithBracesInDescription:
+          type: string
+          description: |
+            A string with {{ double braces }} and { single braces }
+            and \{\{ escaped curlies \}\} and `backticks`.
+            and \`escaped backticks\` and double slashes\\
+            and 'single quotes' and "double quotes".
+            and  \'escaped single quotes\' and \"escaped double quotes\".
+        fieldWithBracesInDefault:
+          type: string
+          default: |
+            A string with {{ double braces }} and { single braces }
+            and \{\{ escaped curlies \}\} and `backticks`.
+            and \`escaped backticks\` and double slashes\\
+            and 'single quotes' and "double quotes".
+            and  \'escaped single quotes\' and \"escaped double quotes\".
+        fieldWithBracesInConst:
+          type: string
+          const: |
+            A string with {{ double braces }} and { single braces }
+            and \{\{ escaped curlies \}\} and `backticks`.
+            and \`escaped backticks\` and double slashes\\
+            and 'single quotes' and "double quotes".
+            and  \'escaped single quotes\' and \"escaped double quotes\".
+        fieldWithBracesInTitle:
+          type: string
+          title: |
+            A string with {{ double braces }} and { single braces }
+            and \{\{ escaped curlies \}\} and `backticks`.
+            and \`escaped backticks\` and double slashes\\
+            and 'single quotes' and "double quotes".
+            and  \'escaped single quotes\' and \"escaped double quotes\".
+        fieldWithBracesInExample:
+          type: string
+          example: |
+            A string with {{ double braces }} and { single braces }
+            and \{\{ escaped curlies \}\} and `backticks`.
+            and \`escaped backticks\` and double slashes\\
+            and 'single quotes' and "double quotes".
+            and  \'escaped single quotes\' and \"escaped double quotes\".
+    OneOfWithFactoredOutProperties:
+      description: "A union of two types with factored out properties."
+      properties:
+        anExtraProperty:
+          type: string
+          description: "An extra property."
+          example: "example"
+      oneOf:
+        - $ref: "#/components/schemas/ExhaustiveObject"
+        - $ref: "#/components/schemas/SimpleObject"
+    # ========================================
+    # Discriminated union for CLI testing
+    # ========================================
+    ShapeRequest:
+      type: object
+      description: Request body with a discriminated union shape field
+      required:
+        - name
+        - shape
+      properties:
+        name:
+          type: string
+          description: Name for the shape
+        shape:
+          $ref: "#/components/schemas/Shape"
+        description:
+          type: string
+          description: Optional description
+    Shape:
+      description: A discriminated union of shape types
+      oneOf:
+        - $ref: "#/components/schemas/Circle"
+        - $ref: "#/components/schemas/Rectangle"
+      discriminator:
+        propertyName: type
+        mapping:
+          circle: "#/components/schemas/Circle"
+          rectangle: "#/components/schemas/Rectangle"
+    Circle:
+      type: object
+      description: A circle shape
+      required:
+        - type
+        - radius
+      properties:
+        type:
+          type: string
+          description: Shape type discriminator
+        radius:
+          type: number
+          description: The radius of the circle
+        color:
+          type: string
+          description: Optional color of the circle
+    Rectangle:
+      type: object
+      description: A rectangle shape
+      required:
+        - type
+        - width
+        - height
+      properties:
+        type:
+          type: string
+          description: Shape type discriminator
+        width:
+          type: number
+          description: The width of the rectangle
+        height:
+          type: number
+          description: The height of the rectangle
+        color:
+          type: string
+          description: Optional color of the rectangle
+    Error:
+      description: |
+        A not-so-long multi-line
+        error model description.
+      type: object
+      properties:
+        error:
+          type: string
+          example: "some example error"
+          x-speakeasy-error-message: true
+        code:
+          type: integer
+          example: 2
+      required:
+        - error
+        - code
+    Test2Response:
+      type: object
+      properties:
+        test2:
+          type: [string, "null"]
+          example: "some example response"
+        someConst:
+          type: string
+          const: someConstValue
+        requiredNullableField:
+          type: [string, "null"]
+          description: "A required but nullable field to verify error accessor type matching for nullable-only fields"
+          example: "test value"
+      required:
+        - requiredNullableField
+    ExhaustiveObject:
+      description: "A simple object that uses all our supported primitive types and enums and has optional properties."
+      externalDocs:
+        description: "A link to the external docs."
+        url: "https://speakeasy.com"
+      type: object
+      properties:
+        str:
+          type: string
+          description: "A string property."
+          example: "example"
+        bool:
+          type: boolean
+          description: "A boolean property."
+          example: true
+        int:
+          type: integer
+          description: "An integer property."
+          example: 999999
+          x-speakeasy-name-override: integer
+        int32:
+          type: integer
+          format: int32
+          description: "An int32 property."
+          example: 1
+        num:
+          type: number
+          description: "A number property."
+          example: 1.1
+        float32:
+          type: number
+          format: float
+          description: "A float32 property."
+        enumProp:
+          $ref: "#/components/schemas/Enum"
+        date:
+          type: string
+          format: date
+          description: "A date property."
+          example: "2020-01-01"
+        dateTime:
+          type: string
+          format: date-time
+          description: "A date-time property."
+          example: "2020-01-01T00:00:00Z"
+        anything:
+          description: "An any property."
+        strOpt:
+          type: string
+          description: "An optional string property."
+        boolOpt:
+          type: boolean
+          description: "An optional boolean property."
+          example: true
+        intOptNull:
+          type: integer
+          description: "An optional integer property will be null for tests."
+          example: 999999
+        numOptNull:
+          type: number
+          description: "An optional number property will be null for tests."
+          example: 1.1
+        intEnum:
+          type: integer
+          description: "An integer enum property."
+          enum:
+            - 1
+            - 2
+            - 3
+          example: 3
+          x-speakeasy-enums:
+            - First
+            - Second
+            - Third
+          default: 2
+        int32Enum:
+          type: integer
+          format: int32
+          description: "An int32 enum property."
+          enum:
+            - 55
+            - 69
+            - 181
+          example: 69
+        bigint:
+          type: integer
+          format: bigint
+        bigintStr:
+          type: string
+          format: bigint
+          default: "12345678901234567890"
+        decimal:
+          type: number
+          format: decimal
+          const: 3.141592653589
+        decimalStr:
+          type: string
+          format: decimal
+        obj:
+          $ref: "#/components/schemas/SimpleObject"
+        map:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/SimpleObject"
+        arr:
+          type: array
+          items:
+            $ref: "#/components/schemas/SimpleObject"
+        any:
+          anyOf:
+            - $ref: "#/components/schemas/SimpleObject"
+            - type: string
+        type:
+          type: string
+          default: "0"
+        some.property.with.dots:
+          type: string
+          description: "A property with dots."
+        nullableIntEnum:
+          type: ["integer", "null"]
+          enum:
+            - 1
+            - 2
+            - 3
+            - null
+          example: 3
+          x-speakeasy-enums:
+            - First
+            - Second
+            - Third
+            - null
+          default: 2
+        nullableStringEnum:
+          type: ["string", "null"]
+          enum:
+            - First
+            - Second
+            - Third
+            - null
+        color:
+          $ref: "#/components/schemas/Color"
+        icon:
+          type: string
+          enum: [tick, thumbs-up, fire]
+          example: tick
+        heroWidth:
+          type: integer
+          enum: [480, 720, 1080]
+          example: 480
+          x-speakeasy-unknown-values: allow
+      required:
+        - str
+        - bool
+        - int
+        - int32
+        - num
+        - float32
+        - enumProp
+        - date
+        - dateTime
+        - anything
+        - intEnum
+        - int32Enum
+        - obj
+        - map
+        - arr
+        - any
+        - type
+        - bigint
+        - decimalStr
+        - nullableStringEnum
+        - color
+        - icon
+    SimpleObject:
+      type: object
+      properties:
+        str:
+          type: string
+          description: "A string property."
+          example: "example"
+      required:
+        - str
+    Enum:
+      type: string
+      enum:
+        - First
+        - Second
+        - Ex-aequo
+        - Ex.aequo
+      x-speakeasy-enums:
+        - First
+        - Second
+        - ThirdA
+        - ThirdB
+      example: "First"
+      default: "First"
+    File:
+      description: A file
+      format: binary
+      type: string
+    ErrorType1:
+      type: object
+      description: "An error of type one."
+      properties:
+        code:
+          description: "Error code"
+          type: string
+          const: rate_limit_exceeded
+          default: rate_limit_exceeded
+        error:
+          type: string
+        message:
+          description: "Error message"
+          type: integer
+          example: 1001
+      required:
+        - code
+        - error
+        - message
+    ErrorType2:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      required:
+        - error
+    TaggedError1:
+      type: object
+      properties:
+        tag:
+          type: string
+          enum: [tag1]
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - tag
+        - error
+        - message
+    TaggedError2:
+      type: object
+      properties:
+        tag:
+          type: string
+          const: tag2
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+          required:
+            - message
+      required:
+        - tag
+        - error
+    CircularUnion:
+      oneOf:
+        - type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CircularUnion"
+        - type: string
+        - type: integer
+        - type: boolean
+        - type: array
+          items:
+            $ref: "#/components/schemas/CircularUnion"
+        - type: number
+    # Test case for recursive anyOf where one variant is an object
+    # with a property that contains an array of the union type. This tests
+    # that array wrapper types (like RecursiveFormFieldArray) are properly
+    # included in circular referenced models for Pydantic model_rebuild().
+    RecursiveFormField:
+      description: >-
+        A form field schema that can be recursive - the array type variant
+        contains an array of RecursiveFormField items.
+      anyOf:
+        - type: object
+          description: A text field
+          properties:
+            type:
+              type: string
+              const: text
+            label:
+              type: string
+            required:
+              type: boolean
+          required:
+            - label
+            - type
+        - type: object
+          description: A number field
+          properties:
+            type:
+              type: string
+              const: number
+            label:
+              type: string
+            required:
+              type: boolean
+          required:
+            - label
+            - type
+        - type: object
+          description: An array field that contains nested form fields
+          properties:
+            type:
+              type: string
+              const: array
+            label:
+              type: string
+            required:
+              type: boolean
+            item_type:
+              $ref: "#/components/schemas/RecursiveFormField"
+          required:
+            - label
+            - type
+            - item_type
+    AssetResult:
+      description: The result of a render request.
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, failed, requires_action]
+        steps:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AssetNoteStep"
+              - $ref: "#/components/schemas/AssetOutputStep"
+    AssetNoteStep:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: note
+        text:
+          type: string
+    AssetOutputStep:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: output
+        content:
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/AssetTextBlock"
+              - $ref: "#/components/schemas/AssetImageBlock"
+    AssetTextBlock:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: text
+        text:
+          type: string
+    AssetImageBlock:
+      type: object
+      required: [type]
+      properties:
+        type:
+          const: image
+        data:
+          type: string
+          format: byte
+        mime_type:
+          type: string
+        uri:
+          type: string
+    BaseUser:
+      type: object
+      required: [email]
+      properties:
+        id:
+          type: string
+          example: "8ffac18c-7d88-4879-b057-e5f45b9ce7de"
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        age:
+          type: number
+        postal_code:
+          type: string
+        gender:
+          $ref: "#/components/schemas/Gender"
+        associatedIds:
+          type: array
+          items:
+            type: string
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        metadataAny:
+          $ref: "#/components/schemas/MetadataAny"
+    User:
+      allOf:
+        - $ref: "#/components/schemas/BaseUser"
+        - required: ["id"]
+    Gender:
+      type: string
+      enum: [male, female, other]
+      example: other
+    Metadata:
+      type: object
+      properties:
+        allergies:
+          type: string
+      additionalProperties:
+        type: string
+    MetadataAny:
+      description: A metadata object with additionalProperties true (any type) - should be flattened
+      type: object
+      properties:
+        notes:
+          type: string
+      additionalProperties: true
+    Color:
+      type: string
+      enum: [red, green, blue]
+      example: green
+      default: blue
+      x-speakeasy-unknown-values: allow
+      x-speakeasy-enum-format: union
+      x-speakeasy-enum-descriptions:
+        red: |-
+          The color red
+          Often used to represent urgent states.
+        green: The color green
+        blue: The color blue
+    DisriminatedUnionWithOneMember:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/ExhaustiveObject"
+      discriminator:
+        propertyName: type
+        mapping:
+          type1: "#/components/schemas/ExhaustiveObject"
+    # Test nested structs with integer:"string" tags
+    TaskResponse:
+      description: A task response containing deeply nested structures with string-encoded integers
+      type: object
+      properties:
+        task:
+          $ref: "#/components/schemas/ReviewTask"
+      required:
+        - task
+    ReviewTask:
+      description: A task object with nested policy
+      type: object
+      properties:
+        id:
+          type: string
+          example: "task-123"
+        name:
+          type: string
+          example: "Review Task"
+        policy:
+          $ref: "#/components/schemas/McpPolicy"
+      required:
+        - id
+        - name
+        - policy
+    McpPolicy:
+      description: A policy object with steps
+      type: object
+      properties:
+        policyId:
+          type: string
+          example: "policy-456"
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyStep"
+      required:
+        - policyId
+        - steps
+    PolicyStep:
+      description: A step in the policy
+      type: object
+      properties:
+        stepId:
+          type: string
+          example: "step-1"
+        approval:
+          $ref: "#/components/schemas/ApprovalConfig"
+      required:
+        - stepId
+        - approval
+    ApprovalConfig:
+      description: Approval configuration with escalation
+      type: object
+      properties:
+        approvers:
+          type: array
+          items:
+            type: string
+          example: ["user-1", "user-2"]
+        escalation:
+          $ref: "#/components/schemas/Escalation"
+      required:
+        - approvers
+        - escalation
+    Escalation:
+      description: Escalation configuration with string-encoded integer expiration
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        expiration:
+          description: Expiration in seconds, encoded as a string in the API response
+          type: string
+          format: int64
+          example: "86400"
+        fallbackApprovers:
+          type: array
+          items:
+            type: string
+          example: ["admin-1"]
+      required:
+        - enabled
+        - expiration
+        - fallbackApprovers
+    FailedResponse:
+      description: An error response with an empty object schema
+      type: object
+      properties: {}
+    RequestTimeoutErrorData:
+      x-speakeasy-name-override: RequestTimeoutError
+      description: A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+    # Model namespace test cases - same name in different namespaces
+    foo_Pet:
+      x-speakeasy-name-override: Pet
+      x-speakeasy-model-namespace: foo
+      type: object
+      description: A pet in the foo namespace
+      properties:
+        id:
+          type: string
+          example: "pet-foo-123"
+        name:
+          type: string
+          example: "Fluffy"
+        species:
+          type: string
+          description: The species of the pet (e.g., dog, cat)
+          example: "cat"
+        models:
+          type: string
+          description: A field name that often collides
+        request:
+          type: string
+          description: A field name that often collides
+        operations:
+          type: string
+          description: A field name that often collides
+        errors:
+          type: string
+          description: A field name that often collides
+        utils:
+          type: string
+          description: A field name that often collides
+      required:
+        - id
+        - name
+        - species
+    bar_Pet:
+      x-speakeasy-name-override: Pet
+      x-speakeasy-model-namespace: bar
+      type: object
+      description: A pet in the bar namespace
+      properties:
+        id:
+          type: string
+          example: "pet-bar-456"
+        name:
+          type: string
+          example: "Buddy"
+        owner:
+          type: string
+          description: The owner of the pet
+          example: "John Doe"
+      required:
+        - id
+        - name
+        - owner
+    # Model that references both foo.Pet and bar.Pet to test import aliasing
+    NamespaceConflictTest:
+      type: object
+      description: A model that references both foo.Pet and bar.Pet to test import aliasing
+      properties:
+        fooPet:
+          $ref: "#/components/schemas/foo_Pet"
+        barPet:
+          $ref: "#/components/schemas/bar_Pet"
+      required:
+        - fooPet
+        - barPet
+    # Additional namespace test - third namespace with Pet
+    baz_Pet:
+      x-speakeasy-name-override: Pet
+      x-speakeasy-model-namespace: baz
+      type: object
+      description: A pet in the baz namespace with completely different schema
+      properties:
+        petId:
+          type: integer
+          example: 789
+        petName:
+          type: string
+          example: "Rex"
+        adoptedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+      required:
+        - petId
+        - petName
+    # Model that references all three Pet types from different namespaces
+    TripleNamespaceConflictTest:
+      type: object
+      description: A model that references Pet from foo, bar, and baz namespaces
+      properties:
+        fooPet:
+          $ref: "#/components/schemas/foo_Pet"
+        barPet:
+          $ref: "#/components/schemas/bar_Pet"
+        bazPet:
+          $ref: "#/components/schemas/baz_Pet"
+      required:
+        - fooPet
+        - barPet
+        - bazPet
+    # Model in a namespace that uses another namespaced model
+    foo_PetOwner:
+      x-speakeasy-name-override: PetOwner
+      x-speakeasy-model-namespace: foo
+      type: object
+      description: A pet owner in the foo namespace
+      properties:
+        id:
+          type: string
+          example: "owner-123"
+        name:
+          type: string
+          example: "Jane Doe"
+        pets:
+          type: array
+          items:
+            $ref: "#/components/schemas/foo_Pet"
+      required:
+        - id
+        - name
+    bar_PetOwner:
+      x-speakeasy-name-override: PetOwner
+      x-speakeasy-model-namespace: bar
+      type: object
+      description: A pet owner in the bar namespace
+      properties:
+        ownerId:
+          type: integer
+          example: 456
+        fullName:
+          type: string
+          example: "Bob Smith"
+        pet:
+          $ref: "#/components/schemas/bar_Pet"
+      required:
+        - ownerId
+        - fullName
+    # ========================================
+    # Enum in custom namespace test cases
+    # ========================================
+    foo_PetSpecies:
+      x-speakeasy-name-override: PetSpecies
+      x-speakeasy-model-namespace: foo
+      type: string
+      description: Species of a pet in the foo namespace
+      enum:
+        - dog
+        - cat
+        - bird
+        - fish
+      example: "cat"
+    bar_PetStatus:
+      x-speakeasy-name-override: PetStatus
+      x-speakeasy-model-namespace: bar
+      type: string
+      description: Status of a pet in the bar namespace
+      enum:
+        - available
+        - adopted
+        - pending
+        - unavailable
+      example: "available"
+    # ========================================
+    # Discriminated oneOf/union in custom namespace test cases
+    # ========================================
+    foo_Animal:
+      x-speakeasy-name-override: Animal
+      x-speakeasy-model-namespace: foo
+      description: A discriminated union of animal types in the foo namespace
+      oneOf:
+        - $ref: "#/components/schemas/foo_Dog"
+        - $ref: "#/components/schemas/foo_Cat"
+      discriminator:
+        propertyName: animalType
+        mapping:
+          dog: "#/components/schemas/foo_Dog"
+          cat: "#/components/schemas/foo_Cat"
+    foo_Dog:
+      x-speakeasy-name-override: Dog
+      x-speakeasy-model-namespace: foo
+      type: object
+      description: A dog in the foo namespace
+      properties:
+        animalType:
+          type: string
+          enum: [dog]
+          example: "dog"
+        breed:
+          type: string
+          example: "Labrador"
+        barkVolume:
+          type: integer
+          example: 8
+      required:
+        - animalType
+        - breed
+    foo_Cat:
+      x-speakeasy-name-override: Cat
+      x-speakeasy-model-namespace: foo
+      type: object
+      description: A cat in the foo namespace
+      properties:
+        animalType:
+          type: string
+          enum: [cat]
+          example: "cat"
+        furLength:
+          type: string
+          example: "short"
+        meowFrequency:
+          type: integer
+          example: 5
+      required:
+        - animalType
+        - furLength
+    # ========================================
+    # Non-discriminated oneOf/union in custom namespace test cases
+    # ========================================
+    bar_Vehicle:
+      x-speakeasy-name-override: Vehicle
+      x-speakeasy-model-namespace: bar
+      description: A non-discriminated union of vehicle types in the bar namespace
+      oneOf:
+        - $ref: "#/components/schemas/bar_Car"
+        - $ref: "#/components/schemas/bar_Bike"
+    bar_Car:
+      x-speakeasy-name-override: Car
+      x-speakeasy-model-namespace: bar
+      type: object
+      description: A car in the bar namespace
+      properties:
+        wheels:
+          type: integer
+          const: 4
+        engineType:
+          type: string
+          example: "V8"
+      required:
+        - wheels
+        - engineType
+    bar_Bike:
+      x-speakeasy-name-override: Bike
+      x-speakeasy-model-namespace: bar
+      type: object
+      description: A bike in the bar namespace
+      properties:
+        wheels:
+          type: integer
+          const: 2
+        hasPedals:
+          type: boolean
+          example: true
+      required:
+        - wheels
+        - hasPedals
+    # ========================================
+    # Nested inline schemas in custom namespace test cases
+    # ========================================
+    foo_Organization:
+      x-speakeasy-name-override: Organization
+      x-speakeasy-model-namespace: foo
+      type: object
+      description: An organization with nested inline schemas in the foo namespace
+      properties:
+        name:
+          type: string
+          example: "Acme Corp"
+        address:
+          type: object
+          description: Inline address object should end up in foo namespace
+          properties:
+            street:
+              type: string
+              example: "123 Main St"
+            city:
+              type: string
+              example: "Springfield"
+            location:
+              type: object
+              description: Deeply nested inline object should also end up in foo namespace
+              properties:
+                latitude:
+                  type: number
+                  example: 37.7749
+                longitude:
+                  type: number
+                  example: -122.4194
+              required:
+                - latitude
+                - longitude
+          required:
+            - street
+            - city
+        departments:
+          type: array
+          items:
+            type: object
+            description: Inline department in array items should end up in foo namespace
+            properties:
+              deptName:
+                type: string
+                example: "Engineering"
+              headCount:
+                type: integer
+                example: 50
+            required:
+              - deptName
+              - headCount
+      required:
+        - name
+        - address
+    # ========================================
+    # Model referencing namespace types (cross-namespace test)
+    # ========================================
+    NamespaceTypesTest:
+      type: object
+      description: A model that references enums and unions from different namespaces
+      properties:
+        fooSpecies:
+          $ref: "#/components/schemas/foo_PetSpecies"
+        barStatus:
+          $ref: "#/components/schemas/bar_PetStatus"
+        fooAnimal:
+          $ref: "#/components/schemas/foo_Animal"
+        barVehicle:
+          $ref: "#/components/schemas/bar_Vehicle"
+        fooOrg:
+          $ref: "#/components/schemas/foo_Organization"
+      required:
+        - fooSpecies
+        - barStatus
+        - fooAnimal
+        - barVehicle
+        - fooOrg
+    # ========================================
+    # Union with title and x-speakeasy-name-override on primitive members
+    # ========================================
+    SomeUnion:
+      description: A union demonstrating title and x-speakeasy-name-override on primitive types
+      oneOf:
+        - type: string
+          title: myString
+        - type: object
+          title: myObject
+        - type: boolean
+          x-speakeasy-name-override: foo
+    # ========================================
+    # x-speakeasy-discriminator test cases
+    # ========================================
+    VariantRecord:
+      x-speakeasy-include: true
+      description: A discriminated union with $-prefixed keys and x-speakeasy-discriminator overrides
+      oneOf:
+        - $ref: "#/components/schemas/TextRecord"
+        - $ref: "#/components/schemas/ImageRecord"
+      discriminator:
+        propertyName: type
+        mapping:
+          $text: "#/components/schemas/TextRecord"
+          $image: "#/components/schemas/ImageRecord"
+      x-speakeasy-discriminator:
+        $text: text
+        $image: image
+    TextRecord:
+      type: object
+      description: A text record
+      required:
+        - type
+        - text
+      properties:
+        type:
+          type: string
+          description: Record type discriminator
+        text:
+          type: string
+          example: "sample text"
+        note:
+          type: string
+          example: "sample note"
+    ImageRecord:
+      type: object
+      description: An image record
+      required:
+        - type
+        - imageId
+      properties:
+        type:
+          type: string
+          description: Record type discriminator
+        imageId:
+          type: string
+          example: "image-001"
+        caption:
+          type: string
+          example: "sample caption"
+  requestBodies:
+    Test2Request:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              obj:
+                $ref: "#/components/schemas/ExhaustiveObject"
+              type:
+                type: string
+                enum:
+                  - type1
+                  - type2
+                x-speakeasy-enums:
+                  - SuperType1
+                  - SuperType2
+                example: "type1"
+            required:
+              - obj
+      required: true
+  responses:
+    BadRequestResponse:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status_code:
+                type: number
+                description: HTTP status code
+                example: 400
+              error:
+                type: string
+                description: Contains an explanation of the status_code as defined in HTTP/1.1 standard (RFC 7231)
+                example: Bad Request
+              type_name:
+                type: string
+                description: The type of error returned
+                example: RequestValidationError
+              message:
+                type: string
+                description: A human-readable message providing more details about the error.
+                example: Invalid Params
+              detail:
+                anyOf:
+                  - type: string
+                    example: Missing property foobar
+                  - type: object
+                    example:
+                      missing:
+                        - foobar: required
+                description: Contains parameter or domain specific information related to the error and why it occurred.
+              ref:
+                type: string
+                description: Link to documentation of error type
+  parameters:
+    loneQueryParam:
+      name: loneQueryParam
+      x-speakeasy-globals-hidden: true
+      in: query
+      required: false
+      schema:
+        type: string

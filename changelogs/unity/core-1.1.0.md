@@ -1,0 +1,3 @@
+## core: 1.1.0 - 2023-11-03
+### :bee: New Features
+- add support for customizable imports *(commit by [@TristanSpeakeasy](https://github.com/TristanSpeakeasy))*

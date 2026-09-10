@@ -1,0 +1,30 @@
+---
+title: "BaseUser"
+---
+
+## Example Usage
+
+```typescript
+import { BaseUser, Gender } from "openapi";
+
+let value: BaseUser = {
+  id: "8ffac18c-7d88-4879-b057-e5f45b9ce7de",
+  email: "Michael28@hotmail.com",
+  gender: Gender.Other,
+};
+```
+
+## Fields
+
+| Field                                                                             | Type                                                                              | Required                                                                          | Description                                                                       | Example                                                                           |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `id`                                                                              | *string*                                                                          | :heavy_minus_sign:                                                                | N/A                                                                               | 8ffac18c-7d88-4879-b057-e5f45b9ce7de                                              |
+| `email`                                                                           | *string*                                                                          | :heavy_check_mark:                                                                | N/A                                                                               |                                                                                   |
+| `firstName`                                                                       | *string*                                                                          | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `lastName`                                                                        | *string*                                                                          | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `age`                                                                             | *number*                                                                          | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `postalCode`                                                                      | *string*                                                                          | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `gender`                                                                          | [models.Gender](../models/gender.mdx)                                              | :heavy_minus_sign:                                                                | N/A                                                                               | other                                                                             |
+| `associatedIds`                                                                   | *string*[]                                                                        | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `metadata`                                                                        | [models.Metadata](../models/metadata.mdx)                                          | :heavy_minus_sign:                                                                | N/A                                                                               |                                                                                   |
+| `metadataAny`                                                                     | [models.MetadataAny](../models/metadataany.mdx)                                    | :heavy_minus_sign:                                                                | A metadata object with additionalProperties true (any type) - should be flattened |                                                                                   |

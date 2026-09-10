@@ -1,0 +1,699 @@
+{{- recurse 1 -}}
+{{- $global := .Global -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $hasSubSDKs := (gt (len .Local.SubSDKs) 0) -}}
+{{- $hasOperations := (gt (len .Local.Operations) 0) -}}
+{{- $hasRawResponseHelpers := and (pythonRawResponseHelpersEnabled) (or $hasSubSDKs $hasOperations) -}}
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $hasServers := (and .Local.Servers .Local.Servers.HasAbsoluteURL) -}}
+{{- $hasAnyServers := or $hasServers .Global.AST.MainSDK.HasAnyOperationServers -}}
+{{- if $hasServers }}{{addUtilsImport}}{{- end -}}
+{{- $globals := .Local.Globals -}}
+{{- if $globals }}{{addUtilsImport}}{{- end -}}
+{{- addImport "weakref" "" -}}
+{{- addImport "httpx" "" -}}
+{{- if and $hasSubSDKs (useRelativeImports) -}}
+{{- addImport "importlib.util" "" -}}
+{{- end -}}
+{{- addImport "typing" "Optional" -}}
+{{- addImport "typing" "cast" -}}
+{{- addImport ".sdkconfiguration" "SDKConfiguration" -}}
+{{- addHooksImport "SDKHooks" -}}
+{{- if useAsyncHooks -}}
+{{- addHooksImport "AsyncSDKHooks" -}}
+{{- if (accountHasFeatureAccess "sdkHooks") -}}
+{{- addHooksImport "init_async_hooks" -}}
+{{- end -}}
+{{- end -}}
+{{- addImport ".utils.retries" "RetryConfig" -}}
+{{- addImport ".utils.logger" "Logger" -}}
+{{- addImport ".utils.logger" "get_default_logger" -}}
+{{addImport ".httpclient" "HttpClient"}}
+{{addImport ".httpclient" "AsyncHttpClient"}}
+{{- addImport ".httpclient" "close_clients" -}}
+{{- addImport ".httpclient" "ClientOwner" -}}
+{{- addImport ".basesdk" "BaseSDK" -}}
+{{- if and $hasRawResponseHelpers $hasOperations }}
+{{- addImport "utils" "response_helpers" true -}}
+{{- end }}
+{{if isSplitMode }}
+{{- addImport ".basesdk" "AsyncBaseSDK" -}}
+{{- addImport ".httpclient" "close_clients_async" -}}
+{{ end }}
+{{- precomputeModuleCollisions .Local.Operations }}
+{{ genImports }}
+# region imports
+# endregion imports
+
+{{ genLazyImports }}
+{{- range .Local.Operations}}
+
+{{- if and (gt (len .GetAcceptTypes) 1) (not .Extensions.SSEOverload) }}
+{{- addImport "enum" "Enum" }}
+class {{sanitizeAcceptEnumClass .}}(str, Enum):
+    {{- range .GetAcceptTypes}}
+    {{sanitizeAcceptEnumMember . }}
+    {{- end}}
+{{- end}}
+{{- end}}
+
+
+class {{$sdkClassName}}(BaseSDK):
+{{- templateComments .Local.Comments 1 -}}
+    {{- if $hasRawResponseHelpers}}
+    @property
+    def with_raw_response(self):
+        return {{$sdkClassName}}WithRawResponse(self)
+
+    @property
+    def with_streaming_response(self):
+        return {{$sdkClassName}}WithStreamingResponse(self)
+
+    {{- end}}
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
+    {{$fieldName}}: {{sanitizeClassNameForLazyLoading .Type.Name}}
+{{- templateComments .Comments 1}}{{end}}{{end}}
+
+{{- if $hasSubSDKs}}
+    _sub_sdk_map = {
+        {{- range .Local.SubSDKs}}
+            {{- if ne .Type.Name ""}}
+                {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
+                {{- $modPath := getDynamicImportPath (sanitizeSDKFileName .Type.Name) }}
+                {{- $className := sanitizeClassName .Type.Name }}
+                "{{$fieldName}}": ("{{$modPath}}", "{{$className}}"),
+            {{- end}}
+        {{- end}}
+    }
+{{- end}}
+
+    def __init__(
+        self,
+        {{- if not $hasAnyServers }}
+        server_url: str,
+        {{- end }}
+
+    {{- if .Local.Security}}
+        {{- addImport "typing" "Union"}}
+        {{- addImport "typing" "Callable"}}
+        {{- $globalSecurityType := (templateSimpleType .Local.Security.Type)}}
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity }}
+        {{- $securityField := (first .Local.Security.Type.Fields) }}
+        {{- $securityType := (sanitizePydanticType $securityField) }}
+        {{sanitizeFieldName $securityField.Name}}: {{if $securityField.Optional}}Optional[{{end}}Union[{{$securityType}}, Callable[[], {{$securityType}}]]{{if $securityField.Optional}}] = None{{end}},
+        {{- else}}
+        security: {{if .Local.Security.Optional}}Optional[{{end}}Union[{{$globalSecurityType}}, Callable[[], {{$globalSecurityType}}]]{{if .Local.Security.Optional}}] = None{{end}},
+        {{- end}}
+    {{- end}}
+    {{- if .Local.Globals}}{{range .Local.Globals.Fields}}
+        {{templateSDKInitFieldName .Name "global"}}: Optional[{{sanitizeInputParameterType . (dict "optional" false "nullable" false)}}] = None,{{end}}{{end}}{{if $serverVariables}}{{range $variable := .Local.Servers.GetVariables}}
+        {{templateSDKInitFieldName $variable.Name "server"}}: Optional[{{if eq .Type.Type "enum"}}{{sanitizeClassName .Type.Name}}{{else}}{{sanitizeInputParameterType $variable (dict "optional" false "nullable" false)}}{{end}}] = None,{{end}}
+    {{- end}}
+    {{- if $hasServers }}
+    {{- addImport "typing" "Dict" -}}
+    {{- if $serverMap}}
+        server: Optional[str] = None,
+    {{- else }}
+        server_idx: Optional[int] = None,
+    {{- end }}
+        url_params: Optional[Dict[str, str]] = None,
+    {{- end }}
+    {{- if $hasAnyServers }}
+        server_url: Optional[str] = None,
+    {{- end }}
+        client: Optional[HttpClient] = None,
+        {{- if includeAsyncProp}}
+        async_client: Optional[AsyncHttpClient] = None,
+        {{- end}}
+        {{- addImport "types" "UNSET" true}}
+        {{- addImport "types" "OptionalNullable" true}}
+        retry_config: OptionalNullable[RetryConfig] = UNSET,
+        timeout_ms: Optional[int] = None,
+        debug_logger: Optional[Logger] = None
+    ) -> None:
+{{- templateSDKCtorComments .Local false }}
+        client_supplied = True
+        if client is None:
+            client = httpx.Client(follow_redirects=True)
+            client_supplied = False
+
+        assert issubclass(
+            type(client), HttpClient
+        ), "The provided client must implement the HttpClient protocol."
+        {{if includeAsyncProp}}
+        async_client_supplied = True
+        if async_client is None:
+            async_client = httpx.AsyncClient(follow_redirects=True)
+            async_client_supplied = False
+        {{end}}
+        {{- /* TODO: Move this below the async client check when we can make changes to all python sdks */}}
+        if debug_logger is None:
+            debug_logger = get_default_logger()
+        {{if includeAsyncProp}}
+        assert issubclass(
+            type(async_client), AsyncHttpClient
+        ), "The provided async_client must implement the AsyncHttpClient protocol."
+        {{- end}}
+    {{- if .Local.Security}}
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+        {{- $fieldName := sanitizeFieldName (first .Local.Security.Type.Fields).Name }}
+        {{addImport "typing" "Any"}}
+        security: Any = None
+        if {{$fieldName}} is None:
+            security = None
+        elif callable({{$fieldName}}):
+            # pylint: disable=unnecessary-lambda-assignment
+            security = lambda: {{templateSimpleType .Local.Security.Type}}({{$fieldName}} = {{$fieldName}}())
+        else:
+            security = {{templateSimpleType .Local.Security.Type}}({{$fieldName}} = {{sanitizeFieldName (first .Local.Security.Type.Fields).Name}})
+        {{- end}}
+    {{- end}}
+
+    {{ if $hasServers }}
+        if server_url is not None:
+            if url_params is not None:
+                server_url = {{resolveModuleRef "utils"}}.template_url(server_url, url_params)
+      {{- if $serverVariables}}
+        {{- addImport "typing" "Dict"}}
+          {{- if $serverMap}}
+
+        server_defaults: Dict[str, Dict[str, str]] = {
+            {{- range .Local.Servers.Servers}}
+            "{{.ID}}": {
+                {{- range $variable := .Variables}}
+                {{- if eq $variable.Type.Type "enum"}}{{addImport ".sdkconfiguration" (sanitizeClassName $variable.Type.Name)}}{{end}}
+                "{{$variable.Name}}": {{templateSDKInitFieldName $variable.Name "server"}} or "{{$variable.Default}}",
+                {{- end}}
+            },
+            {{- end}}
+        }
+          {{- else}}
+        {{- addImport "typing" "List"}}
+        server_defaults: List[Dict[str, str]] = [
+            {{- range .Local.Servers.Servers}}
+            {
+                {{- range $variable := .Variables}}
+                {{- if eq $variable.Type.Type "enum"}}{{addImport ".sdkconfiguration" (sanitizeClassName $variable.Type.Name)}}{{end}}
+                "{{$variable.Name}}": {{templateSDKInitFieldName $variable.Name "server"}} or "{{$variable.Default}}",
+                {{- end}}
+            },
+            {{- end}}
+        ]
+          {{- end}}
+      {{- end}}
+    {{- end}}
+    {{if .Local.Globals}}
+        _globals = {{templatePydanticClassType (typeDefToFieldDef .Local.Globals)}}(
+            {{- range .Local.Globals.Fields}}
+            {{sanitizeFieldName .Name}}={{resolveModuleRef "utils"}}.get_global_from_env({{templateSDKInitFieldName .Name "global"}}, "{{templateGlobalEnvVars .}}", {{castSanitizedType . (dict "optional" false "nullable" false) "sdk"}}),
+            {{- end}}
+        )
+    {{- end}}
+
+        BaseSDK.__init__(
+            self,
+            SDKConfiguration(
+                client=client,
+                client_supplied=client_supplied,
+                {{- if includeAsyncProp}}
+                async_client=async_client,
+                async_client_supplied=async_client_supplied,
+                {{- else}}
+                async_client=None,
+                async_client_supplied=False,
+                {{- end}}
+                {{- if .Local.Globals}}
+                globals=_globals,
+                {{- end}}
+                {{- if .Local.Security}}
+                security=security,
+                {{- end}}
+                server_url=server_url,
+                {{- if $hasServers }}
+                {{- if $serverMap}}
+                server=server,
+                {{- else }}
+                server_idx=server_idx,
+                {{- end}}
+                {{- if $serverVariables}}
+                server_defaults=server_defaults,
+                {{- end}}
+                {{- end}}
+                retry_config=retry_config,
+                timeout_ms=timeout_ms,
+                debug_logger=debug_logger
+            ),
+            parent_ref=self,
+        )
+
+        hooks = SDKHooks()
+        {{- if useAsyncHooks}}
+        async_hooks = AsyncSDKHooks()
+        {{- end}}
+
+        # pylint: disable=protected-access
+        self.sdk_configuration.__dict__["_hooks"] = hooks
+        {{- if useAsyncHooks}}
+        self.sdk_configuration.__dict__["_async_hooks"] = async_hooks
+
+        {{- if (accountHasFeatureAccess "sdkHooks")}}
+        init_async_hooks(async_hooks)
+        {{- end}}
+        {{- end}}
+
+        {{if .Global.Config.SDKHooksConfigAccess}}
+        self.sdk_configuration = hooks.sdk_init(self.sdk_configuration)
+        {{else}}
+        current_server_url, *_ = self.sdk_configuration.get_server_details()
+        server_url, self.sdk_configuration.client = hooks.sdk_init(current_server_url, client)
+        if current_server_url != server_url:
+            self.sdk_configuration.server_url = server_url
+        {{end}}
+        weakref.finalize(
+            self,
+            close_clients,
+            cast(ClientOwner, self.sdk_configuration),
+            self.sdk_configuration.client,
+            self.sdk_configuration.client_supplied,
+            {{- if includeAsyncProp}}
+            self.sdk_configuration.async_client,
+            self.sdk_configuration.async_client_supplied,
+            {{- end}}
+        )
+
+{{- if $hasSubSDKs}}
+    {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name "" -}}
+            {{- addLazyImportForSubSDK .}}
+        {{- end}}
+    {{- end}}
+{{- end}}
+{{- if $hasSubSDKs}}
+
+    def dynamic_import(self, modname, retries=3):
+        for attempt in range(retries):
+            try:
+                return importlib.import_module(modname{{if useRelativeImports}}, package=__package__{{end}})
+            except KeyError:
+                # Clear any half-initialized module and retry
+            {{- if useRelativeImports}}
+                resolved = importlib.util.resolve_name(modname, __package__)
+                sys.modules.pop(resolved, None)
+            {{- else}}
+                sys.modules.pop(modname, None)
+            {{- end}}
+                if attempt == retries - 1:
+                    break
+        raise KeyError(f"Failed to import module '{modname}' after {retries} attempts")
+
+    def __getattr__(self, name: str):
+        if name in self._sub_sdk_map:
+            module_path, class_name = self._sub_sdk_map[name]
+            try:
+                {{- addImport "importlib" ""}}
+                {{- addImport "sys" ""}}
+                module = self.dynamic_import(module_path)
+                klass = getattr(module, class_name)
+                instance = klass(self.sdk_configuration, parent_ref=self)
+                setattr(self, name, instance)
+                return instance
+            except ImportError as e:
+                raise AttributeError(f"Failed to import module {module_path} for attribute {name}: {e}") from e
+            except AttributeError as e:
+                raise AttributeError(f"Failed to find class {class_name} in module {module_path} for attribute {name}: {e}") from e
+        
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    def __dir__(self):
+        default_attrs = list(super().__dir__())
+        lazy_attrs = list(self._sub_sdk_map.keys())
+        return sorted(list(set(default_attrs + lazy_attrs)))
+{{end}}
+    def __enter__(self):
+        return self
+    {{if includeAsyncProp}}
+    async def __aenter__(self):
+        return self
+    {{- end}}
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.sdk_configuration.client is not None and not self.sdk_configuration.client_supplied:
+            self.sdk_configuration.client.close()
+        self.sdk_configuration.client = None
+    {{if includeAsyncProp}}
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.sdk_configuration.async_client is not None and not self.sdk_configuration.async_client_supplied:
+            await self.sdk_configuration.async_client.aclose()
+        self.sdk_configuration.async_client = None
+    {{- end}}
+
+    # region sdk-class-body
+    # endregion sdk-class-body
+
+
+    {{range .Local.Operations}}
+    {{- $src := rewriteMethodLocals . (templateString "method.py.stmpl" (dict "Operation" .)) }}
+    {{ sanitizeSynchronousMethod $src }}
+    {{if includeAsyncProp}}
+    {{- if and .Extensions.Pagination isAsyncPaginationSep2025Fix}}{{addImport "typing" "Awaitable"}}{{end}}
+    {{ sanitizeAsynchronousMethod $src }}
+    {{- end}}
+    {{end}}
+
+
+{{- if $hasRawResponseHelpers}}
+class {{$sdkClassName}}WithRawResponse:
+    def __init__(self, sdk: {{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- if and includeAsyncProp (not isSplitMode)}}
+        self.{{sanitizeMethodName .}}_async = response_helpers.async_to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}_async, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_raw_response
+
+    {{- end}}{{end}}
+
+
+class {{$sdkClassName}}WithStreamingResponse:
+    def __init__(self, sdk: {{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- if and includeAsyncProp (not isSplitMode)}}
+        self.{{sanitizeMethodName .}}_async = response_helpers.async_to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}_async, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_streaming_response
+
+    {{- end}}{{end}}
+{{- end}}
+
+
+{{/* 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 */}}
+{{ if isSplitMode }}
+class Async{{$sdkClassName}}(AsyncBaseSDK):
+{{- templateComments .Local.Comments 1 -}}
+    {{- if $hasRawResponseHelpers}}
+    @property
+    def with_raw_response(self):
+        return Async{{$sdkClassName}}WithRawResponse(self)
+
+    @property
+    def with_streaming_response(self):
+        return Async{{$sdkClassName}}WithStreamingResponse(self)
+
+    {{- end}}
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
+    {{$fieldName}}: {{sanitizeClassNameForLazyLoadingAsync .Type.Name}}
+{{- templateComments .Comments 1}}{{end}}{{end}}
+
+{{- if $hasSubSDKs}}
+    _sub_sdk_map = {
+        {{- range .Local.SubSDKs}}
+            {{- if ne .Type.Name ""}}
+                {{- $fieldName := sanitizeSubSDKFieldName .FieldName }}
+                {{- $modPath := getDynamicImportPath (sanitizeSDKFileName .Type.Name) }}
+                {{- $className := sanitizeClassName .Type.Name }}
+                "{{$fieldName}}": ("{{$modPath}}", "Async{{$className}}"),
+            {{- end}}
+        {{- end}}
+    }
+{{- end}}
+
+    def __init__(
+        self,
+        {{- if not $hasAnyServers }}
+        server_url: str,
+        {{- end }}
+
+    {{- if .Local.Security}}
+        {{- addImport "typing" "Union"}}
+        {{- addImport "typing" "Callable"}}
+        {{- $globalSecurityType := (templateSimpleType .Local.Security.Type)}}
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity }}
+        {{- $securityField := (first .Local.Security.Type.Fields) }}
+        {{- $securityType := (sanitizePydanticType $securityField) }}
+        {{sanitizeFieldName $securityField.Name}}: {{if $securityField.Optional}}Optional[{{end}}Union[{{$securityType}}, Callable[[], {{$securityType}}]]{{if $securityField.Optional}}] = None{{end}},
+        {{- else}}
+        security: {{if .Local.Security.Optional}}Optional[{{end}}Union[{{$globalSecurityType}}, Callable[[], {{$globalSecurityType}}]]{{if .Local.Security.Optional}}] = None{{end}},
+        {{- end}}
+    {{- end}}
+    {{- if .Local.Globals}}{{range .Local.Globals.Fields}}
+        {{templateSDKInitFieldName .Name "global"}}: Optional[{{sanitizeInputParameterType . (dict "optional" false "nullable" false)}}] = None,{{end}}{{end}}{{if $serverVariables}}{{range $variable := .Local.Servers.GetVariables}}
+        {{templateSDKInitFieldName $variable.Name "server"}}: Optional[{{if eq .Type.Type "enum"}}{{sanitizeClassName .Type.Name}}{{else}}{{sanitizeInputParameterType $variable (dict "optional" false "nullable" false)}}{{end}}] = None,{{end}}
+    {{- end}}
+    {{- if $hasServers }}
+    {{- addImport "typing" "Dict" -}}
+    {{- if $serverMap}}
+        server: Optional[str] = None,
+    {{- else }}
+        server_idx: Optional[int] = None,
+    {{- end }}
+        url_params: Optional[Dict[str, str]] = None,
+    {{- end }}
+    {{- if $hasAnyServers }}
+        server_url: Optional[str] = None,
+    {{- end }}
+        async_client: Optional[AsyncHttpClient] = None,
+        {{- addImport "types" "UNSET" true}}
+        {{- addImport "types" "OptionalNullable" true}}
+        retry_config: OptionalNullable[RetryConfig] = UNSET,
+        timeout_ms: Optional[int] = None,
+        debug_logger: Optional[Logger] = None
+    ) -> None:
+{{- templateSDKCtorComments .Local true }}
+        async_client_supplied = True
+        if async_client is None:
+            async_client = httpx.AsyncClient(follow_redirects=True)
+            async_client_supplied = False
+        {{- /* TODO: Move this below the async client check when we can make changes to all python sdks */}}
+        if debug_logger is None:
+            debug_logger = get_default_logger()
+        assert issubclass(
+            type(async_client), AsyncHttpClient
+        ), "The provided async_client must implement the AsyncHttpClient protocol."
+    {{- if .Local.Security}}
+        {{- if and (eq (len .Local.Security.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity}}
+        {{- $fieldName := sanitizeFieldName (first .Local.Security.Type.Fields).Name }}
+        {{addImport "typing" "Any"}}
+        security: Any = None
+        if {{$fieldName}} is None:
+            security = None
+        elif callable({{$fieldName}}):
+            # pylint: disable=unnecessary-lambda-assignment
+            security = lambda: {{templateSimpleType .Local.Security.Type}}({{$fieldName}} = {{$fieldName}}())
+        else:
+            security = {{templateSimpleType .Local.Security.Type}}({{$fieldName}} = {{sanitizeFieldName (first .Local.Security.Type.Fields).Name}})
+        {{- end}}
+    {{- end}}
+
+    {{ if $hasServers }}
+        if server_url is not None:
+            if url_params is not None:
+                server_url = {{resolveModuleRef "utils"}}.template_url(server_url, url_params)
+      {{- if $serverVariables}}
+        {{- addImport "typing" "Dict"}}
+          {{- if $serverMap}}
+
+        server_defaults: Dict[str, Dict[str, str]] = {
+            {{- range .Local.Servers.Servers}}
+            "{{.ID}}": {
+                {{- range $variable := .Variables}}
+                {{- if eq $variable.Type.Type "enum"}}{{addImport ".sdkconfiguration" (sanitizeClassName $variable.Type.Name)}}{{end}}
+                "{{$variable.Name}}": {{templateSDKInitFieldName $variable.Name "server"}} or "{{$variable.Default}}",
+                {{- end}}
+            },
+            {{- end}}
+        }
+          {{- else}}
+        {{- addImport "typing" "List"}}
+        server_defaults: List[Dict[str, str]] = [
+            {{- range .Local.Servers.Servers}}
+            {
+                {{- range $variable := .Variables}}
+                {{- if eq $variable.Type.Type "enum"}}{{addImport ".sdkconfiguration" (sanitizeClassName $variable.Type.Name)}}{{end}}
+                "{{$variable.Name}}": {{templateSDKInitFieldName $variable.Name "server"}} or "{{$variable.Default}}",
+                {{- end}}
+            },
+            {{- end}}
+        ]
+          {{- end}}
+      {{- end}}
+    {{- end}}
+    {{if .Local.Globals}}
+        _globals = {{templatePydanticClassType (typeDefToFieldDef .Local.Globals)}}(
+            {{- range .Local.Globals.Fields}}
+            {{sanitizeFieldName .Name}}={{resolveModuleRef "utils"}}.get_global_from_env({{templateSDKInitFieldName .Name "global"}}, "{{templateGlobalEnvVars .}}", {{castSanitizedType . (dict "optional" false "nullable" false) "sdk"}}),
+            {{- end}}
+        )
+    {{- end}}
+
+        AsyncBaseSDK.__init__(
+            self,
+            SDKConfiguration(
+                client=None,
+                client_supplied=False,
+                async_client=async_client,
+                async_client_supplied=async_client_supplied,
+                {{- if .Local.Globals}}
+                globals=_globals,
+                {{- end}}
+                {{- if .Local.Security}}
+                security=security,
+                {{- end}}
+                server_url=server_url,
+                {{- if $hasServers }}
+                {{- if $serverMap}}
+                server=server,
+                {{- else }}
+                server_idx=server_idx,
+                {{- end}}
+                {{- if $serverVariables}}
+                server_defaults=server_defaults,
+                {{- end}}
+                {{- end}}
+                retry_config=retry_config,
+                timeout_ms=timeout_ms,
+                debug_logger=debug_logger
+            ),
+            parent_ref=self,
+        )
+
+        hooks = SDKHooks()
+        {{- if useAsyncHooks}}
+        async_hooks = AsyncSDKHooks()
+        {{- end}}
+
+        # pylint: disable=protected-access
+        self.sdk_configuration.__dict__["_hooks"] = hooks
+        {{- if useAsyncHooks}}
+        self.sdk_configuration.__dict__["_async_hooks"] = async_hooks
+
+        {{- if (accountHasFeatureAccess "sdkHooks")}}
+        init_async_hooks(async_hooks)
+        {{- end}}
+        {{- end}}
+        {{if .Global.Config.SDKHooksConfigAccess}}
+        self.sdk_configuration = hooks.sdk_init(self.sdk_configuration)
+
+        weakref.finalize(
+            self,
+            close_clients_async,
+            cast(ClientOwner, self.sdk_configuration), 
+            self.sdk_configuration.async_client,
+            self.sdk_configuration.async_client_supplied,
+        )
+        {{else}}
+        {{raiseError "Implementations using asyncMode 'split' should set generation.sdkHooksConfigAccess to be true in the config."}}
+        {{end}}
+
+{{- if $hasSubSDKs}}
+    {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name "" -}}
+            {{- addLazyImportForSubSDKAsync .}}
+        {{- end}}
+    {{- end}}
+{{- end}}
+{{- if $hasSubSDKs}}
+
+    def dynamic_import(self, modname, retries=3):
+        for attempt in range(retries):
+            try:
+                return importlib.import_module(modname{{if useRelativeImports}}, package=__package__{{end}})
+            except KeyError:
+                # Clear any half-initialized module and retry
+            {{- if useRelativeImports}}
+                resolved = importlib.util.resolve_name(modname, __package__)
+                sys.modules.pop(resolved, None)
+            {{- else}}
+                sys.modules.pop(modname, None)
+            {{- end}}
+                if attempt == retries - 1:
+                    break
+        raise KeyError(f"Failed to import module '{modname}' after {retries} attempts")
+
+    def __getattr__(self, name: str):
+        if name in self._sub_sdk_map:
+            module_path, class_name = self._sub_sdk_map[name]
+            try:
+                {{- addImport "importlib" ""}}
+                {{- addImport "sys" ""}}
+                module = self.dynamic_import(module_path)
+                klass = getattr(module, class_name)
+                instance = klass(self.sdk_configuration, parent_ref=self)
+                setattr(self, name, instance)
+                return instance
+            except ImportError as e:
+                raise AttributeError(f"Failed to import module {module_path} for attribute {name}: {e}") from e
+            except AttributeError as e:
+                raise AttributeError(f"Failed to find class {class_name} in module {module_path} for attribute {name}: {e}") from e
+        
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    def __dir__(self):
+        default_attrs = list(super().__dir__())
+        lazy_attrs = list(self._sub_sdk_map.keys())
+        return sorted(list(set(default_attrs + lazy_attrs)))
+{{end}}
+    async def __aenter__(self):
+        return self
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.sdk_configuration.async_client is not None and not self.sdk_configuration.async_client_supplied:
+            await self.sdk_configuration.async_client.aclose()
+        self.sdk_configuration.async_client = None
+
+    # region sdk-class-body
+    # endregion sdk-class-body
+
+
+    {{range .Local.Operations}}
+    {{- $src := rewriteMethodLocals . (templateString "method.py.stmpl" (dict "Operation" .)) }}
+    {{- if and .Extensions.Pagination isAsyncPaginationSep2025Fix}}{{addImport "typing" "Awaitable"}}{{end}}
+    {{ sanitizeAsynchronousMethod $src }}
+    {{end}}
+
+
+{{- if $hasRawResponseHelpers}}
+class Async{{$sdkClassName}}WithRawResponse:
+    def __init__(self, sdk: Async{{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.async_to_raw_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_raw_response
+
+    {{- end}}{{end}}
+
+
+class Async{{$sdkClassName}}WithStreamingResponse:
+    def __init__(self, sdk: Async{{$sdkClassName}}) -> None:
+        self._sdk = sdk
+        {{- range .Local.Operations}}
+        self.{{sanitizeMethodName .}} = response_helpers.async_to_streamed_response_wrapper(sdk.{{sanitizeMethodName .}}, "{{if pythonMethodRequestExtrasEnabled}}extra_headers{{else}}http_headers{{end}}")
+        {{- end}}
+
+    {{- range .Local.SubSDKs}}{{if ne .Type.Name ""}}
+    @property
+    def {{sanitizeSubSDKFieldName .FieldName}}(self):
+        return self._sdk.{{sanitizeSubSDKFieldName .FieldName}}.with_streaming_response
+
+    {{- end}}{{end}}
+{{- end}}
+
+{{ end }}

@@ -1,0 +1,72 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestBasicAuthFlattenedGlobal(t *testing.T) {
+	recordTest("auth-basic-auth-flattened-global")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "basic-auth-global",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+}
+
+func TestBasicAuthFlattenedHoisted(t *testing.T) {
+	recordTest("auth-basic-auth-flattened-hoisted")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "basic-auth-hoisted",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+}
+
+func TestBasicAuthOperationOptional(t *testing.T) {
+	recordTest("auth-basic-auth-operation-optional")
+
+	// Pass correct per-operation credentials (overriding wrong global creds via env)
+	// → expect 200 with authenticated=true.
+	h := NewCLITestHarness(t)
+	t.Setenv("CLI_USERNAME", "wrongUser")
+	t.Setenv("CLI_PASSWORD", "wrongPass")
+
+	err := h.RunBare([]string{
+		"auth", "basic-auth-optional",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+
+	// Omit per-operation credentials entirely — even though global creds are set,
+	// the optional security produces empty credentials → expect 401.
+	h2 := NewCLITestHarness(t)
+	t.Setenv("CLI_USERNAME", "testUser")
+	t.Setenv("CLI_PASSWORD", "testPass")
+
+	err = h2.RunBare([]string{
+		"auth", "basic-auth-optional",
+	})
+	require.Error(t, err)
+}

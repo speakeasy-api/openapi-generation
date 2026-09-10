@@ -1,0 +1,93 @@
+{{- $pagination := .Local.Extensions.Pagination -}}
+{{- $paramFlattening := operationParametersFlattened .Local -}}
+{{- $limitInput := getPaginationInput $pagination "limit" -}}
+{{- $pageInput := getPaginationInput $pagination "page" -}}
+{{- $offsetInput := getPaginationInput $pagination "offset" -}}
+{{- $cursorInput := getPaginationInput $pagination "cursor" -}}
+() -> {
+                    if (request == null) {
+                        return {{javaImportOptional}}.empty();
+                    }
+                    {{javaImportString}} _stringBody = new {{javaImportString}}(_fullResponse, {{javaImport "java.nio.charset.StandardCharsets"}}.UTF_8);
+                    {{javaImport "com.jayway.jsonpath.Configuration"}} _config = {{javaImport "com.jayway.jsonpath.Configuration"}}.defaultConfiguration()
+                            .addOptions({{javaImport "com.jayway.jsonpath.Option"}}.SUPPRESS_EXCEPTIONS);
+                    {{javaImport "com.jayway.jsonpath.ReadContext"}} _body = {{javaImport "com.jayway.jsonpath.JsonPath"}}.using(_config).parse(_stringBody);
+                    {{- if (eq $pagination.Type "offsetLimit") }}
+                    {{- if $pageInput }}
+                    long _newPage = request.{{ sanitizeFieldName $pageInput.Name }}(){{ if $pageInput.Optional }}.orElse(0L){{ end }} + 1;
+                    {{- if $pagination.Outputs.NumPages }}
+                    long _numPages = _body.read("{{ sanitizeJsonPath $pagination.Outputs.NumPages }}", Long.class);
+
+                    if (_newPage > _numPages) {
+                        return {{javaImportOptional}}.empty();
+                    };
+                    {{- end }}
+                    {{- end }}
+                    {{- if $offsetInput }}
+                    long _requestOffset = {{javaImportUtils}}.valueOrNull({{ if (eq $offsetInput.In "params") }}{{ else }}request.{{ end }}{{ sanitizeFieldName $offsetInput.Name }}());
+                    {{- end }}
+                    {{- else }}
+                    {{- range (sortMethodParamsIntoCopy .Local.Request.Field.Type.Fields) }}
+                    {{- if (eq .Name $cursorInput.Name) }}
+                    {{- $fieldType := javaImportTypeMandatoryNonPrimitive .Type }}
+                    {{ $fieldType }} _nextCursor = _body.read("{{ sanitizeJsonPath $pagination.Outputs.NextCursor }}", {{$fieldType}}.class);
+                    if (_nextCursor == null) {
+                        return {{javaImportOptional}}.empty();
+                    }
+                    {{- end }}{{end}}{{end}}
+                    {{- if $limitInput }}
+                    long _resolvedLimit = {{javaImportUtils}}.valueOrNull(request.{{ sanitizeFieldName $limitInput.Name }}());
+                    {{ end }}
+                    {{- if $pagination.Outputs.Results }}
+                    @{{javaImportSuppressWarnings}}("unchecked")
+                    {{javaImportList}}<{{javaImport "java.lang.Long"}}> _firstResult = _body.read("{{ sanitizeJsonPath $pagination.Outputs.Results }}", {{javaImportList}}.class);
+                    if (_firstResult == null || _firstResult.isEmpty()){
+                        return {{javaImportOptional}}.empty();
+                    };
+                    {{- if $limitInput }}
+                    if (_firstResult.size() < _resolvedLimit) {
+                        return {{javaImportOptional}}.empty();
+                    };
+                    {{- end }}
+
+                    {{- if $offsetInput }}
+                    long _newOffset = _requestOffset + _firstResult.size();
+                    {{- end }}
+                    {{- end }}
+                    {{- $requestBuilderFullClassName := (print (templatePackageName) ".models.operations." (sanitizeClassName .Local.ID) "RequestBuilder")}} 
+                    {{javaImport $requestBuilderFullClassName}} _nextRequest = {{ sanitizeMethodName .Local true }}()
+                    {{- if .Local.Security }}
+                            .security(security)
+                    {{- end }}
+                    {{- if $paramFlattening }}
+                    {{- range .Local.Request.Field.Type.Fields }}
+                    {{- if (eq .Name $pageInput.Name) }}
+                            .{{ sanitizeFieldName .Name }}(_newPage)
+                    {{- else }}
+                    {{- if (eq .Name $offsetInput.Name) }}
+                            .{{ sanitizeFieldName .Name }}(_newOffset)
+                    {{- else }}
+                    {{- if (eq .Name $cursorInput.Name) }}
+                            .{{ sanitizeFieldName .Name }}(_nextCursor)
+                    {{- else }}
+                    {{- if (eq .Name $limitInput.Name)}}
+                            .{{ sanitizeFieldName .Name}}(_resolvedLimit)
+                    {{- else}}
+                            .{{ sanitizeFieldName .Name }}(request.{{ sanitizeFieldName .Name }}())
+                    {{- end }}
+                    {{- end }}
+                    {{- end }}
+                    {{- end }}
+                    {{- end }}
+                    {{- else }}
+                    {{- if .Local.Request }}
+                            .request(new {{javaImportTypeMandatory .Local.Request.Field.Type}}(
+                                {{ templateRequestParams .Local.Request.Field.Type.Fields $pageInput $offsetInput $cursorInput }}
+                             ))
+                    {{- end }}
+                    {{- end }}
+                    {{- if .Local.Servers}}
+                            .serverURL(serverURL)
+                    {{- end }}{{- print ";"}}
+                    return {{javaImportOptional}}.of(_nextRequest.call());
+                }

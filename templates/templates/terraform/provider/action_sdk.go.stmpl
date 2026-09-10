@@ -1,0 +1,6 @@
+{{- recurse 1 -}}
+package provider
+
+{{ genImports }}
+
+{{ generateSDKMethods .Local.Action }}

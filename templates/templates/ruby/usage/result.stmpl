@@ -1,0 +1,21 @@
+{{- $responseFormat := getResponseFormat }}
+{{- if .Local.Operation -}}
+{{-   $resFieldName := getResponseFieldName .Local.Operation }}
+{{-   if operationUsesEventStreams .Local.Operation }}
+{{     templateString "usage/eventstream.stmpl" .Local }}
+{{-   else if $resFieldName}}
+unless res{{if not (eq $responseFormat "flat")}}.{{sanitizeFieldName $resFieldName}}{{end}}.nil?
+  # handle response
+end
+{{-   else}}
+{{-     if .Local.Operation.Response.Type}}
+{{-       if eq $responseFormat "envelope-http"}}
+if res.http_meta.response.status == 200
+{{-       else}}
+if res.status_code == 200
+{{-       end}}
+  # handle response
+end
+{{-     end}}
+{{-   end}}
+{{- end}}

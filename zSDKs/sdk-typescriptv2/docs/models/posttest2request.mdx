@@ -1,0 +1,70 @@
+---
+title: "PostTest2Request"
+---
+
+## Example Usage
+
+```typescript
+import {
+  HeroWidth,
+  Icon,
+  Int32Enum,
+  IntEnum,
+  NullableIntEnum,
+  NullableStringEnum,
+  PostTest2Request,
+  Type,
+} from "openapi";
+import { Decimal } from "openapi/types";
+
+let value: PostTest2Request = {
+  test2Request: {
+    obj: {
+      str: "example",
+      bool: true,
+      integer: 999999,
+      int32: 1,
+      num: 1.1,
+      float32: 3608.9,
+      date: new Date("2020-01-01"),
+      dateTime: new Date("2020-01-01T00:00:00Z"),
+      anything: "<value>",
+      boolOpt: true,
+      intOptNull: 999999,
+      numOptNull: 1.1,
+      intEnum: IntEnum.Third,
+      int32Enum: Int32Enum.SixtyNine,
+      bigint: 209900,
+      decimalStr: new Decimal("5760.77"),
+      obj: {
+        str: "example",
+      },
+      map: {
+        "key": {
+          str: "example",
+        },
+      },
+      arr: [
+        {
+          str: "example",
+        },
+      ],
+      any: "<value>",
+      nullableIntEnum: NullableIntEnum.Third,
+      nullableStringEnum: NullableStringEnum.Second,
+      color: "green",
+      icon: Icon.Tick,
+      heroWidth: HeroWidth.FourHundredAndEighty,
+    },
+    type: Type.SuperType1,
+  },
+};
+```
+
+## Fields
+
+| Field                                                                                                                   | Type                                                                                                                    | Required                                                                                                                | Description                                                                                                             | Example                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| ~~`deprecatedQueryParam1`~~                                                                                             | *string*                                                                                                                | :heavy_minus_sign:                                                                                                      | : warning: ** DEPRECATED **: This will be removed in a future release, please migrate away from it as soon as possible. | some example query param                                                                                                |
+| ~~`deprecatedQueryParam2`~~                                                                                             | *string*                                                                                                                | :heavy_minus_sign:                                                                                                      | : warning: ** DEPRECATED **: This will be removed in a future release, please migrate away from it as soon as possible. | some example query param                                                                                                |
+| `test2Request`                                                                                                          | [models.Test2Request](../models/test2request.mdx)                                                                        | :heavy_check_mark:                                                                                                      | N/A                                                                                                                     |                                                                                                                         |

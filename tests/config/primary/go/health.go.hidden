@@ -1,0 +1,13 @@
+// This incomplete file will trick the generator into applying the custom code
+// regions to the actual final output version of this sdk file.
+
+// #region sdk-class-body
+func (s *Health) CustomHealthCheck(ctx context.Context) (bool, error) {
+	res, err := s.Check(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return res.HTTPMeta.Response.StatusCode == http.StatusOK, nil
+}
+// #endregion sdk-class-body

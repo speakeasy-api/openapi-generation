@@ -1,0 +1,121 @@
+{{- if isFeatureUsed "jsonlResponses"}}
+package jsonl
+
+import (
+	"bufio"
+	"bytes"
+	"context"
+	"io"
+	"sync"
+)
+
+const (
+	LF          = 0x0a
+	CR          = 0x0d
+	RIGHT_BRACE = 0x7d
+)
+
+var messageBoundaries = [][]byte{
+	{RIGHT_BRACE, CR, LF},
+	{RIGHT_BRACE, LF},
+}
+
+type JsonLStream[T any] struct {
+	reader      io.Reader
+	scanner     *bufio.Scanner
+	decoder     func(rawEvent []byte) (T, error)
+	cancel      context.CancelFunc
+	releaseOnce sync.Once
+	buffer      []byte
+	position    int
+}
+
+func NewJsonLStream[T any](
+	reader io.Reader,
+	decoder func(rawEvent []byte) (T, error),
+	opts ...func(*JsonLStream[T]),
+) *JsonLStream[T] {
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(scanJsonL)
+
+	js := &JsonLStream[T]{
+		reader:  reader,
+		scanner: scanner,
+		decoder: decoder,
+	}
+	for _, opt := range opts {
+		opt(js)
+	}
+	return js
+}
+
+// WithCancel hands ownership of a context cancel function (typically the
+// request timeout's) to the stream. The deadline keeps bounding the whole
+// stream; the stream releases the context when it ends or is closed instead
+// of the caller cancelling it before iteration. A nil cancel is ignored.
+func WithCancel[T any](cancel context.CancelFunc) func(*JsonLStream[T]) {
+	return func(js *JsonLStream[T]) {
+		if cancel != nil {
+			js.cancel = cancel
+		}
+	}
+}
+
+// release cancels the owned context, once.
+func (js *JsonLStream[T]) release() {
+	js.releaseOnce.Do(func() {
+		if js.cancel != nil {
+			js.cancel()
+		}
+	})
+}
+
+func scanJsonL(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	for _, boundary := range messageBoundaries {
+		if len(data) < len(boundary) {
+			continue
+		}
+
+		for i := 0; i <= len(data)-len(boundary); i++ {
+			if bytes.Equal(data[i:i+len(boundary)], boundary) {
+				return i + len(boundary), data[:i+1], nil
+			}
+		}
+	}
+
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return 0, nil, nil
+}
+
+func (js *JsonLStream[T]) Next() bool {
+	if js.scanner.Scan() {
+		return true
+	}
+	js.release()
+	return false
+}
+
+func (js *JsonLStream[T]) Value() (T, error) {
+	data := js.scanner.Bytes()
+	return js.decoder(data)
+}
+
+func (js *JsonLStream[T]) Err() error {
+	return js.scanner.Err()
+}
+
+func (js *JsonLStream[T]) Close() error {
+	defer js.release()
+	if closer, ok := js.reader.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
+}
+{{end}}

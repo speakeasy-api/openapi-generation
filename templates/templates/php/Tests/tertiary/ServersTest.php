@@ -1,0 +1,54 @@
+declare(strict_types=1);
+
+namespace OpenAPI\OpenAPI\Tests;
+
+use OpenAPI\OpenAPI\ServerSomething;
+use OpenAPI\OpenAPI\Tests\CommonHelpers;
+use PHPUnit\Framework\TestCase;
+
+final class ServersTest extends TestCase
+{
+    public function testSelectGlobalServerByIdDefault()
+    {
+        CommonHelpers::recordTest("servers-select-global-server-by-id-default");
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(CommonHelpers::getHttpBinUrl())->build();
+
+        $response = $sdk->servers->selectGlobalServer();
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->statusCode);
+    }
+
+    public function testSelectGlobalServerByIdValid()
+    {
+        CommonHelpers::recordTest("servers-select-global-server-by-id-valid");
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(CommonHelpers::getHttpBinUrl())->build();
+
+        $response = $sdk->servers->selectGlobalServer();
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->statusCode);
+    }
+
+    public function testSelectGlobalServerByIdInValid()
+    {
+        CommonHelpers::recordTest("servers-select-global-server-by-id-invalid");
+
+        $this->expectException(\OutOfBoundsException::class);
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerIndex(2)->build();
+        
+        $response = $sdk->servers->selectGlobalServer();
+    }
+
+    public function testSelectGlobalServerByIdBroken(): void
+    {
+        CommonHelpers::recordTest('servers-select-global-server-by-id-broken');
+
+        $this->expectException(\GuzzleHttp\Exception\ConnectException::class);
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerIndex(1)->build();
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->servers->selectGlobalServer();
+
+    }
+}

@@ -1,0 +1,51 @@
+{{- $additionalProps := false }}
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "class" }}
+export type {{ $typeName }} = {
+  {{- range .Local.Type.Fields }}
+  {{- if .IsAdditionalProperties }}
+  {{-   $additionalProps = . }}
+  {{-   continue }}
+  {{- end }}
+  {{- $fieldName := sanitizeFieldName (originalFieldName .) -}}
+  {{- $isOptional := or .Const (isInputOptional .) -}}
+  {{- $fieldType := resolveOutbound (
+      dict
+        "constValue" .Const
+        "defaultValue" .Default
+        "nullable" .Nullable
+        "optional" $isOptional
+        "rootTypeDef" $rootType
+        "streamable" (isMultipartFileField .)
+        "typeDef" .Type
+        "usageLocation" $usageLocation
+    ) -}}
+  {{- callImportTypesFunc $fieldType.importInputTypes -}}
+  {{ $fieldName }}{{ if $isOptional }}?{{ end }}: {{ $fieldType.inputType }};
+  {{- end}}
+  {{- if $additionalProps }}
+  {{-   $fieldName := sanitizeFieldName $additionalProps.Name -}}
+  {{-   $isOptional := isInputOptional $additionalProps -}}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "rootTypeDef" $rootType
+            "streamable" (isMultipartFileField $additionalProps)
+            "typeDef" $additionalProps.Type
+            "usageLocation" $usageLocation
+        ) -}}
+  {{-   callImportTypesFunc $fieldType.importInputTypes -}}
+  {{ "" }}
+  {{    $fieldName }}{{ if $isOptional }}?{{ end }}: {{ $fieldType.inputType }};
+  {{- end }}
+}
+
+export const {{ $zodName }}: z.ZodType<{{ $typeName }}> = {{ zodObjectFromTypeDef .Local.Type }};
+{{- if $additionalProps }}
+
+export const {{ $zodName }}Outbound: z.ZodType<any> = {{ zodObjectFromTypeDefOutbound .Local.Type }};
+{{- end }}

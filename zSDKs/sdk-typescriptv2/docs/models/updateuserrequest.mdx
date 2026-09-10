@@ -1,0 +1,25 @@
+---
+title: "UpdateUserRequest"
+---
+
+## Example Usage
+
+```typescript
+import { Gender, UpdateUserRequest } from "openapi";
+
+let value: UpdateUserRequest = {
+  id: "<id>",
+  user: {
+    id: "8ffac18c-7d88-4879-b057-e5f45b9ce7de",
+    email: "Donnell_Quitzon@gmail.com",
+    gender: Gender.Other,
+  },
+};
+```
+
+## Fields
+
+| Field                            | Type                             | Required                         | Description                      |
+| -------------------------------- | -------------------------------- | -------------------------------- | -------------------------------- |
+| `id`                             | *string*                         | :heavy_check_mark:               | N/A                              |
+| `user`                           | [models.User](../models/user.mdx) | :heavy_check_mark:               | N/A                              |

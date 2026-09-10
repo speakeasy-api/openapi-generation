@@ -1,0 +1,460 @@
+{{- recurse 1 -}}
+{{- $op := .Local.Op -}}
+{{- $opCommandName := .Local.OpCommandName -}}
+{{- $promoted := .Local.PromotedToParent -}}
+{{- $cmdName := sanitizeCommandName $op.GetID -}}
+{{- $initFuncName := sanitizeInitFuncName $cmdName -}}
+{{- $runFuncName := sanitizeRunFuncName $cmdName -}}
+{{- $cliOp := getCLIOperationCtx $op -}}
+{{- $executeFuncName := print "execute" $cmdName -}}
+{{- $asyncCreate := isAsyncCreateOperation $op -}}
+{{- $hasFlags := operationHasFlags $op -}}
+{{- $hasSecurity := operationHasSecurity $op -}}
+{{- $hasServers := operationHasServers $op -}}
+{{- $paginationProbe := getPaginationProbe $op -}}
+{{- $paginationProbeHasContinuation := paginationProbeHasContinuation $paginationProbe -}}
+{{- /* Compute request building strategy once — used by both init and run */ -}}
+{{- $useMetadataFlags := false -}}
+{{- if $op.Request -}}
+{{- if $op.Request.IsRequestBody -}}
+{{- $sm := $op.GetSerializationMethod -}}
+{{- if or (and (eq $sm "multipart") (operationHasFlagMetadata $op)) (and (or (eq $sm "json") (eq $sm "form")) (isRequestBodyExpandable $op)) -}}
+{{- $useMetadataFlags = true -}}
+{{- end -}}
+{{- else -}}
+{{- if (operationHasFlagMetadata $op) -}}
+{{- $useMetadataFlags = true -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- addImport "github.com/spf13/cobra" -}}
+{{- addImport "internal/output" true -}}
+{{- addImport "internal/client" true -}}
+{{- addImport "internal/usage" true -}}
+package {{.Local.Package}}
+
+{{genImports}}
+{{- if $op.Request}}{{- $metaVar := templateFlagMetadataVar $op}}{{- if $metaVar}}
+
+{{$metaVar}}
+{{- end}}{{- end}}
+
+// {{$initFuncName}} initializes the {{sanitizeCLICommand $op.GetID}} command.
+func {{$initFuncName}}(parent *cobra.Command) error {
+    {{- if $promoted}}
+    // Promoted: this operation's RunE is set directly on the parent group command.
+    parent.RunE = {{$runFuncName}}
+    parent.Long = {{templateCmdLong $op}}
+    parent.Example = {{templateCmdExample $op}}
+    if parent.Annotations == nil {
+        parent.Annotations = map[string]string{}
+    }
+    parent.Annotations["speakeasy_operation"] = "{{escapeGoString $op.OriginalID}}"
+    parent.Annotations["speakeasy_cli_promoted"] = "true"
+    {{- if and $cliOp $cliOp.StreamSelect}}
+    parent.Annotations["speakeasy_stream_select"] = "{{escapeGoString $cliOp.StreamSelect}}"
+    {{- end}}
+    {{- if or $hasSecurity $op.Request (hasPagination $op) (hasBinaryResponse $op) (and $cliOp $cliOp.Flags)}}
+    cmd := parent // register flags on the parent
+    {{- end}}
+    {{- else}}
+    var cmd = &cobra.Command{
+        Use:     "{{$opCommandName}}",
+        Short:   {{templateCmdShort $op}},
+        Long:    {{templateCmdLong $op}},
+        Example: {{templateCmdExample $op}},
+        Args:    cobra.NoArgs,
+        RunE:    {{$runFuncName}},
+        {{- if .Local.Aliases}}
+        Aliases: []string{ {{- range $i, $a := .Local.Aliases}}{{if $i}}, {{end}}"{{$a}}"{{end -}} },
+        {{- end}}
+        Annotations: map[string]string{
+            "speakeasy_operation": "{{escapeGoString $op.OriginalID}}",
+            {{- if and $cliOp $cliOp.StreamSelect}}
+            "speakeasy_stream_select": "{{escapeGoString $cliOp.StreamSelect}}",
+            {{- end}}
+        },
+    }
+    {{- end}}
+    {{- if $hasSecurity}}
+    {{templateSecurityFlagRegistration $op | indent 4 | trim}}
+    {{- end}}
+    {{- if $op.Request}}
+    {{- if $useMetadataFlags}}
+    {{templateRegisterFlagsCall $op | indent 4 | trim}}
+    {{templateValidateMetaCall $op | indent 4 | trim}}
+    {{- if templateHasBodyFlag $op}}
+    cmd.Flags().String("body", "", "{{templateBodyFlagDescription $op}}")
+    {{- addImport "fmt"}}
+    _ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
+    cmd.Annotations[flagutil.AnnotationWholeBodyFlag] = "body"
+    if err := flagutil.AnnotateBodyFields(cmd, {{templateMetaVarName $op}}, "{{templateBodyFieldPath $op}}", "body"); err != nil {
+        return fmt.Errorf("annotate body fields for {{sanitizeCLICommand $op.GetID}}: %w", err)
+    }
+    {{- end}}
+    {{- else if $op.Request.IsRequestBody}}
+    cmd.Flags().String("{{getRequestBodyFlagName $op.Request.RequestBody}}", "", "{{templateRequestBodyDescription $op.Request.RequestBody}}")
+    {{- addImport "internal/flagutil" true}}
+    _ = flagutil.AnnotatePromptFlag(cmd, "{{getRequestBodyFlagName $op.Request.RequestBody}}", flagutil.PromptFlagSpec{Required: {{templateRequestBodyRequired $op}}, Kind: "json", BodyFlag: true})
+    cmd.Annotations[flagutil.AnnotationWholeBodyFlag] = "{{getRequestBodyFlagName $op.Request.RequestBody}}"
+    {{- else}}
+    cmd.Flags().String("body", "", "Request body (JSON)")
+    {{- addImport "internal/flagutil" true}}
+    _ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Required: true, Kind: "json", BodyFlag: true})
+    cmd.Annotations[flagutil.AnnotationWholeBodyFlag] = "body"
+    {{- end}}
+    {{- end}}
+    {{- if and $op.Request (hasBodySchemaForOp $op)}}
+    cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
+    {{- addImport "internal/flagutil" true}}
+    _ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
+    {{- end}}
+    {{- if hasPagination $op}}
+    cmd.Flags().BoolP("all", "a", false, "Automatically paginate and fetch all results (streams NDJSON for JSON output)")
+    cmd.Flags().Int("max-pages", 0, "Maximum number of pages to fetch when using --all (0 = no limit)")
+    {{- end}}
+    {{- if hasBinaryResponse $op}}
+    cmd.Flags().String("output-file", "", "Save the response body to a file path (recommended for binary/file responses)")
+    cmd.Flags().Bool("output-b64", false, "Encode binary response as base64 and print to stdout")
+    {{- if isOnlyBinaryResponse $op}}
+    cmd.MarkFlagFilename("output-file")
+    {{- end}}
+    {{- end}}
+    {{- if and $cliOp $cliOp.Flags}}
+    {{- addImport "internal/flagutil" true}}
+    {{- range $cliOp.Flags}}
+    {{- if eq .Type "bool"}}
+    cmd.Flags().BoolP("{{.Name}}", "{{.Shorthand}}", {{.DefaultLiteral}}, "{{escapeGoString .Summary}}")
+    {{- else if eq .Type "int"}}
+    cmd.Flags().Int64P("{{.Name}}", "{{.Shorthand}}", {{.DefaultLiteral}}, "{{escapeGoString .Summary}}")
+    {{- else if eq .Type "float"}}
+    cmd.Flags().Float64P("{{.Name}}", "{{.Shorthand}}", {{.DefaultLiteral}}, "{{escapeGoString .Summary}}")
+    {{- else}}
+    cmd.Flags().StringP("{{.Name}}", "{{.Shorthand}}", {{.DefaultLiteral}}, "{{escapeGoString .Summary}}")
+    {{- end}}
+    if err := cmd.Flags().SetAnnotation("{{.Name}}", flagutil.AnnotationOpDeclaredInput, []string{"{{escapeGoString .Key}}"}); err != nil {
+        return err
+    }
+    _ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
+        PromptOptional: true,
+        Kind: "{{.Kind}}",
+        DefaultResolves: {{if .DefaultResolves}}true{{else}}false{{end}},
+    })
+    {{- end}}
+    {{- end}}
+    {{- if not $promoted}}
+    parent.AddCommand(cmd)
+    {{- end}}
+    return nil
+}
+
+// {{$runFuncName}} executes the {{sanitizeCLICommand $op.GetID}} command.
+func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
+    if usage.UsageRequested(cmd) {
+        return usage.EmitSchema(cmd, cmd.OutOrStdout())
+    }
+    {{- if and $op.Request (hasBodySchemaForOp $op)}}
+    if requested, _ := cmd.Flags().GetBool("schema"); requested {
+        return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $op.OriginalID}})
+    }
+    {{- end}}
+    {{- if and $cliOp $cliOp.Flags}}
+    {{- addImport "internal/flagutil" true}}
+    if err := flagutil.MergeOperationDeclaredInputs(cmd, []string{
+        {{- range $cliOp.BodyFlags}}
+        "{{escapeGoString .}}",
+        {{- end}}
+    }, "{{escapeGoString $cliOp.CanonicalBodyFlag}}", {{if $cliOp.BodyRequired}}true{{else}}false{{end}}); err != nil {
+        return err
+    }
+    {{- end}}
+    {{- if hasPagination $op}}
+    {{- addImport "internal/flagutil" true}}
+    {{- addImport "fmt"}}
+    allPages, _ := flagutil.GetBoolFlag(cmd, "all")
+    maxPages, _ := flagutil.GetIntFlag(cmd, "max-pages")
+    if maxPages < 0 {
+        return flagutil.WithCLIValidation(fmt.Errorf("--max-pages must be zero or greater"))
+    }
+    if flagutil.FlagChanged(cmd, "max-pages") && !allPages {
+        return flagutil.WithCLIValidation(fmt.Errorf("--max-pages requires --all"))
+    }
+    {{- end}}
+    {{- if $asyncCreate}}
+    res, err := {{$executeFuncName}}(cmd, args, false)
+    if err != nil {
+        return err
+    }
+    if res == nil {
+        return nil
+    }
+    {{- if hasBinaryResponse $op}}
+    {{- addImport "internal/flagutil" true}}
+    if outputFile, _ := flagutil.GetStringFlag(cmd, "output-file"); outputFile != "" {
+        return output.WriteToFile(cmd, res, outputFile)
+    }
+    if outputB64, _ := flagutil.GetBoolFlag(cmd, "output-b64"); outputB64 {
+        return output.WriteBase64(cmd, res)
+    }
+    {{- if isOnlyBinaryResponse $op}}
+    if !client.IsDryRun(cmd) && output.IsBinaryTTYBlocked(cmd, res) {
+        {{- addImport "fmt"}}
+        return flagutil.WithCLIValidation(fmt.Errorf("binary response cannot be written to a terminal; use --output-file <path>, --output-b64, or pipe to another command"))
+    }
+    {{- end}}
+    {{- end}}
+    if err := output.Result(cmd, res); err != nil {
+        return err
+    }
+    {{- if $paginationProbeHasContinuation}}
+    if !client.IsDryRun(cmd) && !output.IsMachineMode(cmd) && output.HasMorePages(res, output.PaginationProbe{
+        Type: {{goStringLiteral $paginationProbe.Type}},
+        CursorKind: {{goStringLiteral $paginationProbe.CursorKind}},
+        NextCursor: {{goStringLiteral $paginationProbe.NextCursor}},
+        NextURL: {{goStringLiteral $paginationProbe.NextURL}},
+        Results: {{goStringLiteral $paginationProbe.Results}},
+        HasLimit: {{$paginationProbe.HasLimit}},
+    }) {
+        {{- with getPaginationFlagHint $op}}
+        fmt.Fprintln(cmd.ErrOrStderr(), "Hint: more pages available. Use --all to fetch all results, or {{.}} for manual pagination.")
+        {{- else}}
+        fmt.Fprintln(cmd.ErrOrStderr(), "Hint: more pages available. Use --all to fetch all results.")
+        {{- end}}
+    }
+    {{- end}}
+    return nil
+    {{- else}}
+    {{- $reqObjName := "req"}}
+    {{- if $hasSecurity}}
+    {{templateSecurityParsing $op | indent 4 | trim}}
+    {{templateSecurityConstruction $op | indent 4 | trim}}
+    {{- end}}
+    {{- if $op.Request}}
+    {{- if or $op.Request.IsRequestBody (not $useMetadataFlags)}}{{- $reqObjName = "request" }}{{- end}}
+    {{- if $useMetadataFlags}}
+    {{$reqObjName}}, err := {{templateBuildRequestCall $op}}
+    {{- else}}
+    {{$reqObjName}}, err := {{templateBuildRequestBodyCall $op}}
+    {{- end}}
+    if err != nil {
+        {{- addImport "internal/flagutil" true}}
+        return flagutil.WithCLIValidation(err)
+    }
+    {{- end}}
+    {{- $hoisted := and (not $op.Security) $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+    s, err := client.NewClient(cmd{{if $hoisted}}{{range $op.HoistedSecurityConfig.Fields}}, "{{sanitizeFieldName .Name}}"{{end}}{{end}})
+    if err != nil {
+        return err
+    }
+    {{- addImport "operations"}}
+    sdkOpts, err := output.PrepareCallOpts(cmd)
+    if err != nil {
+        return err
+    }
+    {{- if and cliDefaultTimeout (not (operationHasDeferredBody $op))}}
+    sdkOpts = append(sdkOpts, output.DefaultTimeoutOpts(cmd)...)
+    {{- end}}
+    // Dry-run: force skip deserialization so the synthetic empty response
+    // does not cause parse failures in typed response handling.
+    if client.IsDryRun(cmd) {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- if $hasServers}}
+    {{- addImport "internal/flagutil" true}}
+    if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
+        sdkOpts = append(sdkOpts, operations.WithServerURL(serverURL))
+    {{- if ne (serverSelectionFlag) "none"}}
+    } else if serverFlag, _ := flagutil.GetStringFlag(cmd, "server"); serverFlag != "" {
+        {{templateOperationServerResolution $op | indent 8 | trim}}
+    {{- end}}
+    }
+    {{- else if and sdkHasServers (ne (serverSelectionFlag) "none")}}
+    {{templateGlobalServerValidation | indent 4 | trim}}
+    {{- end}}
+    {{- if hasPagination $op}}
+    if allPages && !client.IsDryRun(cmd) {
+        res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+        if err != nil {
+            return output.Error(cmd, err)
+        }
+        return output.PaginatedResult(cmd, res, "{{getPaginationContentFieldName $op}}", "{{getPaginationResultsFieldName $op}}", maxPages, output.PaginationProbe{
+            Type: {{goStringLiteral $paginationProbe.Type}},
+            CursorKind: {{goStringLiteral $paginationProbe.CursorKind}},
+            NextCursor: {{goStringLiteral $paginationProbe.NextCursor}},
+            NextURL: {{goStringLiteral $paginationProbe.NextURL}},
+            Results: {{goStringLiteral $paginationProbe.Results}},
+            HasLimit: {{$paginationProbe.HasLimit}},
+        })
+    }
+    {{- end}}
+    {{- if hasStreamingResponse $op}}
+    // Streaming response — iterate events and output incrementally.
+    // Skip streaming iteration in dry-run mode (synthetic response has no stream).
+    if !client.IsDryRun(cmd) {
+        res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+        if err != nil {
+            return output.Error(cmd, err)
+        }
+        return output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}")
+    }
+    {{- end}}
+    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
+    if output.WantsRawJSON(cmd) {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- end}}
+    res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+    if err != nil {
+        return output.Error(cmd, err)
+    }
+    {{- if $paginationProbeHasContinuation}}
+    morePages := output.HasMorePages(res, output.PaginationProbe{
+        Type: {{goStringLiteral $paginationProbe.Type}},
+        CursorKind: {{goStringLiteral $paginationProbe.CursorKind}},
+        NextCursor: {{goStringLiteral $paginationProbe.NextCursor}},
+        NextURL: {{goStringLiteral $paginationProbe.NextURL}},
+        Results: {{goStringLiteral $paginationProbe.Results}},
+        HasLimit: {{$paginationProbe.HasLimit}},
+    })
+    {{- end}}
+    {{- if hasResponseTransform $op}}
+
+    // Drain the raw HTTP body so the output module uses the deserialized
+    // (transformed) result instead of the raw API response.
+    output.DrainRawBody(res)
+    {{- end}}
+    {{- if hasBinaryResponse $op}}
+    {{- addImport "internal/flagutil" true}}
+    if outputFile, _ := flagutil.GetStringFlag(cmd, "output-file"); outputFile != "" {
+        return output.WriteToFile(cmd, res, outputFile)
+    }
+    if outputB64, _ := flagutil.GetBoolFlag(cmd, "output-b64"); outputB64 {
+        return output.WriteBase64(cmd, res)
+    }
+    {{- if isOnlyBinaryResponse $op}}
+    if !client.IsDryRun(cmd) && output.IsBinaryTTYBlocked(cmd, res) {
+        {{- addImport "fmt"}}
+        return flagutil.WithCLIValidation(fmt.Errorf("binary response cannot be written to a terminal; use --output-file <path>, --output-b64, or pipe to another command"))
+    }
+    {{- end}}
+    {{- end}}
+
+    if err := output.Result(cmd, res); err != nil {
+        return err
+    }
+    {{- if $paginationProbeHasContinuation}}
+    if morePages && !client.IsDryRun(cmd) && !output.IsMachineMode(cmd) {
+        {{- with getPaginationFlagHint $op}}
+        fmt.Fprintln(cmd.ErrOrStderr(), "Hint: more pages available. Use --all to fetch all results, or {{.}} for manual pagination.")
+        {{- else}}
+        fmt.Fprintln(cmd.ErrOrStderr(), "Hint: more pages available. Use --all to fetch all results.")
+        {{- end}}
+    }
+    {{- end}}
+    return nil
+    {{- end}}
+}
+
+{{- if $asyncCreate}}
+func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) ({{sanitizeResponseType $op.Response.Type}}, error) {
+    {{- $reqObjName := "req"}}
+    {{- if $hasSecurity}}
+    {{templateSecurityParsing $op | indent 4 | trim}}
+    {{templateSecurityConstruction $op | indent 4 | trim}}
+    {{- end}}
+    {{- if $op.Request}}
+    {{- if or $op.Request.IsRequestBody (not $useMetadataFlags)}}{{- $reqObjName = "request" }}{{- end}}
+    {{- if $useMetadataFlags}}
+    {{$reqObjName}}, err := {{templateBuildRequestCall $op}}
+    {{- else}}
+    {{$reqObjName}}, err := {{templateBuildRequestBodyCall $op}}
+    {{- end}}
+    if err != nil {
+        {{- addImport "internal/flagutil" true}}
+        return nil, flagutil.WithCLIValidation(err)
+    }
+    {{- end}}
+    {{- $hoisted := and (not $op.Security) $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+    s, err := client.NewClient(cmd{{if $hoisted}}{{range $op.HoistedSecurityConfig.Fields}}, "{{sanitizeFieldName .Name}}"{{end}}{{end}})
+    if err != nil {
+        return nil, err
+    }
+    {{- addImport "operations"}}
+    sdkOpts, err := output.PrepareCallOpts(cmd)
+    if err != nil {
+        return nil, err
+    }
+    {{- if cliDefaultTimeout}}
+    {{- if operationHasDeferredBody $op}}
+    if asyncIntent {
+        sdkOpts = append(sdkOpts, output.DefaultTimeoutOpts(cmd)...)
+    }
+    {{- else}}
+    sdkOpts = append(sdkOpts, output.DefaultTimeoutOpts(cmd)...)
+    {{- end}}
+    {{- end}}
+    if client.IsDryRun(cmd) || asyncIntent {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- if $hasServers}}
+    {{- addImport "internal/flagutil" true}}
+    if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
+        sdkOpts = append(sdkOpts, operations.WithServerURL(serverURL))
+    {{- if ne (serverSelectionFlag) "none"}}
+    } else if serverFlag, _ := flagutil.GetStringFlag(cmd, "server"); serverFlag != "" {
+        {{templateOperationServerResolution $op "nil, " | indent 8 | trim}}
+    {{- end}}
+    }
+    {{- else if and sdkHasServers (ne (serverSelectionFlag) "none")}}
+    {{templateGlobalServerValidation "nil, " | indent 4 | trim}}
+    {{- end}}
+    {{- if hasPagination $op}}
+    {{- addImport "internal/flagutil" true}}
+    if allPages, _ := flagutil.GetBoolFlag(cmd, "all"); allPages && !client.IsDryRun(cmd) && !asyncIntent {
+        maxPages, _ := flagutil.GetIntFlag(cmd, "max-pages")
+        res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+        if err != nil {
+            return nil, output.Error(cmd, err)
+        }
+        if err := output.PaginatedResult(cmd, res, "{{getPaginationContentFieldName $op}}", "{{getPaginationResultsFieldName $op}}", maxPages, output.PaginationProbe{
+            Type: {{goStringLiteral $paginationProbe.Type}},
+            CursorKind: {{goStringLiteral $paginationProbe.CursorKind}},
+            NextCursor: {{goStringLiteral $paginationProbe.NextCursor}},
+            NextURL: {{goStringLiteral $paginationProbe.NextURL}},
+            Results: {{goStringLiteral $paginationProbe.Results}},
+            HasLimit: {{$paginationProbe.HasLimit}},
+        }); err != nil {
+            return nil, err
+        }
+        return nil, nil
+    }
+    {{- end}}
+    {{- if hasStreamingResponse $op}}
+    if !client.IsDryRun(cmd) && !asyncIntent {
+        res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+        if err != nil {
+            return nil, output.Error(cmd, err)
+        }
+        if err := output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}"); err != nil {
+            return nil, err
+        }
+        return nil, nil
+    }
+    {{- end}}
+    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
+    if asyncIntent || output.WantsRawJSON(cmd) {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- end}}
+    res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+    if err != nil {
+        return nil, output.Error(cmd, err)
+    }
+    {{- if hasResponseTransform $op}}
+    if !asyncIntent {
+        output.DrainRawBody(res)
+    }
+    {{- end}}
+    return res, nil
+}
+{{- end}}

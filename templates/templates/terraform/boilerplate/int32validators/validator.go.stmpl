@@ -1,0 +1,34 @@
+package int32validators
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+)
+{{- $validatorName := sanitizeClassName .Local.ValidatorName}}
+var _ validator.Int32 = Int32{{$validatorName}}Validator{}
+
+type Int32{{$validatorName}}Validator struct{}
+
+// Description describes the validation in plain text formatting.
+func (v Int32{{$validatorName}}Validator) Description(_ context.Context) string {
+	return "TODO: add validator description"
+}
+
+// MarkdownDescription describes the validation in Markdown formatting.
+func (v Int32{{$validatorName}}Validator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+// Validate performs the validation.
+func (v Int32{{$validatorName}}Validator) ValidateInt32(ctx context.Context, req validator.Int32Request, resp *validator.Int32Response) {
+    resp.Diagnostics.AddAttributeError(
+        req.Path,
+        "TODO: implement int32validator {{$validatorName}} logic",
+        req.Path.String()+": "+v.Description(ctx),
+    )
+}
+
+func {{$validatorName}}() validator.Int32 {
+	return Int32{{$validatorName}}Validator{}
+}

@@ -1,0 +1,87 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"sync/atomic"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSafeMethodPolicyDoesNotRetryInheritedPost(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{
+		"methods", "method-post",
+		"--body", `{"id":"test123"}`,
+		"--retry-config", `{"strategy":"backoff","backoff":{"initialInterval":1,"maxInterval":1,"exponent":1,"maxElapsedTime":50}}`,
+	})
+
+	assert.Error(t, err)
+	assert.EqualValues(t, 1, requests.Load())
+}
+
+func TestSafeMethodPolicyRetriesInheritedGet(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"methods", "method-get"})
+
+	assert.Error(t, err)
+	assert.Greater(t, requests.Load(), int32(1))
+}
+
+func TestSafeMethodPolicyAllowsExplicitPostRetries(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		request := requests.Add(1)
+		if request <= 2 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]int{"retries": 2}); err != nil {
+			t.Errorf("encode response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{
+		"retries", "post",
+		"--request-id", "explicit-post-policy",
+		"--num-retries", "2",
+		"--field-one", "one",
+	})
+
+	require.NoError(t, err)
+	assert.EqualValues(t, 3, requests.Load())
+}
+
+func TestSafeMethodPolicyDocumented(t *testing.T) {
+	readme, err := os.ReadFile("../README.md")
+	require.NoError(t, err)
+
+	contents := string(readme)
+	assert.Contains(t, contents, "Root-level retry policies apply only to safe HTTP methods")
+	assert.Contains(t, contents, "Retry flags are supported but intentionally omitted from `--help`")
+	assert.Contains(t, contents, "retry_config:")
+	assert.NotContains(t, strings.ToLower(contents), "per-request http timeout")
+}

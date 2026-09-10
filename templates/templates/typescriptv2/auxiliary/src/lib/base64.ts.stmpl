@@ -1,0 +1,39 @@
+{{- recurse 1 -}}
+{{- genImports -}}
+{{- if not isNoZod }}
+{{- addZodPackageImport }}
+{{- end }}
+
+export function bytesToBase64(u8arr: Uint8Array): string {
+  return btoa(String.fromCodePoint(...u8arr));
+}
+
+export function bytesFromBase64(encoded: string): Uint8Array {
+  return Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+}
+
+export function stringToBytes(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
+}
+
+export function stringFromBytes(u8arr: Uint8Array): string {
+  return new TextDecoder().decode(u8arr);
+}
+
+export function stringToBase64(str: string): string {
+  return bytesToBase64(stringToBytes(str));
+}
+
+export function stringFromBase64(b64str: string): string {
+  return stringFromBytes(bytesFromBase64(b64str));
+}
+
+{{ if isNoZod -}}
+{{- /* No-zod: zodOutbound/zodInbound aren't referenced — the matcher dispatches
+       M.bytes by `enc` and reads response.arrayBuffer() directly, and request
+       bodies ship `payload` as-is. The constants are dropped entirely. */ -}}
+{{- else -}}
+export const zodOutbound = {{templateBase64OutboundSchema}};
+
+export const zodInbound = {{templateBase64InboundSchema}};
+{{- end }}

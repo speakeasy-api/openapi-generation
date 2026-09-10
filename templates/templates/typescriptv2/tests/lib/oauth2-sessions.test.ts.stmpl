@@ -1,0 +1,198 @@
+{{- if or (isFeatureUsed "oauth2Password") (isFeatureUsed "oauth2ClientCredentials")}}
+import { expect, test } from "vitest";
+import { OAuth2SessionStore } from "../../lib/oauth2-sessions.js";
+
+function addDays(days: number, reference?: Date) {
+  const out = reference == null ? new Date() : new Date(reference);
+  out.setDate(out.getDate() + days);
+  return out;
+}
+
+test("session store holds access tokens", () => {
+  const store = new OAuth2SessionStore();
+
+  const expiresAt = addDays(1).getTime();
+  store.storeSession("client-id", ["read"], {
+    token: "fancy-token",
+    expiresAt,
+    scopes: ["read"],
+  });
+
+  const session = store.getSession("client-id", ["read"]);
+  expect(session).toEqual({
+    token: "fancy-token",
+    expiresAt,
+    scopes: ["read"],
+  });
+
+  expect(store.statistics()).toEqual({ total: 1, active: 1, expired: 0 });
+});
+
+test("session store distinguishes tokens by scope", () => {
+  const store = new OAuth2SessionStore();
+
+  const readExpiry = addDays(1).getTime();
+  store.storeSession("client-id", ["read"], {
+    token: "read-token",
+    expiresAt: readExpiry,
+    scopes: ["read"],
+  });
+
+  const writeExpiry = addDays(-1).getTime();
+  store.storeSession("client-id", ["write", "read"], {
+    token: "read-write-token",
+    expiresAt: writeExpiry,
+    scopes: ["write", "read"],
+  });
+
+  expect(store.statistics()).toEqual({ total: 2, active: 1, expired: 1 });
+});
+
+test("session store returns nothing if no token available for scope", () => {
+  const store = new OAuth2SessionStore();
+
+  const readExpiry = addDays(1).getTime();
+  store.storeSession("client-id", ["read"], {
+    token: "read-token",
+    expiresAt: readExpiry,
+    scopes: ["read"],
+  });
+
+  const session = store.getSession("client-id", ["admin"]);
+  expect(session).toBeUndefined();
+
+  expect(store.statistics()).toEqual({ total: 1, active: 1, expired: 0 });
+});
+
+test("session store returns token with superset scope", () => {
+  const store = new OAuth2SessionStore();
+
+  const expiresAt = addDays(1).getTime();
+  store.storeSession("client-id", ["write", "read", "delete"], {
+    token: "rwd-token",
+    expiresAt,
+    scopes: ["write", "read", "delete"],
+  });
+
+  // Should return superset scope tokens for subset requests
+  const session = store.getSession("client-id", ["write", "delete"]);
+  expect(session).toEqual({
+    token: "rwd-token",
+    expiresAt,
+    scopes: ["write", "read", "delete"],
+  });
+
+  // And exact match should also work
+  const exactSession = store.getSession("client-id", ["write", "read", "delete"]);
+  expect(exactSession).toEqual({
+    token: "rwd-token",
+    expiresAt,
+    scopes: ["write", "read", "delete"],
+  });
+
+  expect(store.statistics()).toEqual({ total: 1, active: 1, expired: 0 });
+});
+
+test("session store returns first valid match", () => {
+  const store = new OAuth2SessionStore();
+
+  store.storeSession("client-id", ["read", "delete"], {
+    token: "expired-rd-token",
+    expiresAt: addDays(-1).getTime(),
+    scopes: ["read", "delete"],
+  });
+  store.storeSession("different-client-id", ["delete"], {
+    token: "valid-delete-token-1",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["delete"],
+  });
+  store.storeSession("client-id", ["delete"], {
+    token: "valid-delete-token-2",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["delete"],
+  });
+  store.storeSession("client-id", ["write", "read", "delete"], {
+    token: "rwd-token",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["write", "read", "delete"],
+  });
+
+  const session1 = store.getSession("client-id", ["write", "delete"]);
+  expect(session1).toEqual(
+    expect.objectContaining({
+      token: "rwd-token",
+    }),
+  );
+
+  const session2 = store.getSession("client-id", ["delete"]);
+  expect(session2).toEqual(
+    expect.objectContaining({
+      token: "valid-delete-token-2",
+    }),
+  );
+
+  expect(store.statistics()).toEqual({ total: 4, active: 3, expired: 1 });
+});
+
+test("session store deletes tokens", () => {
+  const store = new OAuth2SessionStore();
+
+  store.storeSession("client-id", ["admin"], {
+    token: "expired-admin-token",
+    expiresAt: addDays(-1).getTime(),
+    scopes: ["admin"],
+  });
+  store.storeSession("different-client-id", ["delete"], {
+    token: "valid-delete-token-1",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["delete"],
+  });
+  store.storeSession("client-id", ["delete"], {
+    token: "valid-delete-token-2",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["delete"],
+  });
+  store.storeSession("client-id", ["write", "read", "delete"], {
+    token: "rwd-token",
+    expiresAt: addDays(1).getTime(),
+    scopes: ["write", "read", "delete"],
+  });
+
+  expect(store.statistics()).toEqual({ total: 4, active: 3, expired: 1 });
+
+  // Expired tokens should not be returned, even if exact match exists in cache
+  expect(store.getSession("client-id", ["admin"])).toBeUndefined();
+  expect(store.getSession("different-client-id", ["delete"])).toEqual(
+    expect.objectContaining({
+      token: "valid-delete-token-1",
+    }),
+  );
+  expect(store.getSession("client-id", ["delete"])).toEqual(
+    expect.objectContaining({
+      token: "valid-delete-token-2",
+    }),
+  );
+  expect(store.getSession("client-id", ["read", "write", "delete"])).toEqual(
+    expect.objectContaining({
+      token: "rwd-token",
+    }),
+  );
+
+  store.deleteSession("client-id", ["delete"]);
+  expect(store.statistics()).toEqual({ total: 3, active: 2, expired: 1 });
+  expect(store.getSession("client-id", ["delete"])).toEqual(
+    expect.objectContaining({
+      token: "rwd-token",
+    }),
+  );
+
+  store.deleteSession("client-id", ["read", "write", "delete"]);
+  expect(store.statistics()).toEqual({ total: 2, active: 1, expired: 1 });
+  expect(store.getSession("client-id", ["delete"])).toBeUndefined();
+
+  // After deleting the last session for "client-id", owner map should be removed
+  store.deleteSession("client-id", ["admin"]);
+  expect(store.statistics()).toEqual({ total: 1, active: 1, expired: 0 });
+  expect(store.cache.has("client-id")).toBe(false);
+});
+{{- end }}

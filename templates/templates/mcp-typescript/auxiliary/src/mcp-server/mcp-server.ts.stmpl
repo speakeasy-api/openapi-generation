@@ -1,0 +1,30 @@
+import process from "node:process";
+import { buildApplication, buildRouteMap, run } from "@stricli/core";
+{{- if .Global.Config.EvalProvider }}
+import { evalCommand } from "./cli/eval/command.js";
+{{- end }}
+import { serveCommand } from "./cli/serve/command.js";
+import { startCommand } from "./cli/start/command.js";
+import { buildContext } from "./cli.js";
+
+const routes = buildRouteMap({
+  routes: {
+    start: startCommand,
+    serve: serveCommand,
+{{- if .Global.Config.EvalProvider }}
+    eval: evalCommand,
+{{- end }}
+  },
+  docs: {
+    brief: "MCP server CLI",
+  },
+});
+
+export const app = buildApplication(routes, {
+  name: "mcp",
+  versionInfo: {
+    currentVersion: "{{ .Global.Config.SDKVersion }}",
+  },
+});
+
+run(app, process.argv.slice(2), buildContext(process));

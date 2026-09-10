@@ -1,0 +1,64 @@
+{{- $global := .Global -}}
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $scope := $type.Scope -}}
+{{- $isJSON := false }}
+{{- $pagination := .Local.Type.Extensions.Pagination -}}
+{{- range $type.Fields}}{{ if hasAnnotation . "json" }}{{ $isJSON = true }}{{end}}{{end}}
+{{ templateComments $type.Comments nil 3 "class"}}
+      class {{sanitizeClass $type "" true}}{{if eq .Local.Type.Type "error"}} < StandardError{{end}}
+        {{sorbetTSig}}
+        include Crystalline::MetadataFields
+        {{- if $pagination }}
+        {{- if sorbetEnabled }}
+        sig { returns(T.proc.returns(T.nilable({{sanitizeClass $type "" true}}))) }
+        {{- end }}
+        attr_accessor :next_page
+        {{- end }}
+
+{{$fields := (sortFields $type.Fields)}}{{range $fields}}{{ templateComments .Comments nil 4 true}}
+        field :{{deduplicatedFieldName .Name $fields}}, {{sanitizeCrystallineType .Type .Optional .Nullable}}{{if gt (len .Annotations) 0}}, {{templateAnnotations .}}{{end}}
+{{end}}
+
+      {{- $n := len $fields}}
+        {{if and (gt (len $fields) 0) sorbetEnabled}}sig { params{{if gt $n 0}}({{range $index, $field := $fields}}{{deduplicatedFieldName $field.Name $fields}}: {{sanitizeType .Type .Optional .Nullable}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}}).void{{end}} }{{end}}
+      {{- if eq $n 0}}
+        def initialize; end
+      {{- else }}
+        def initialize({{range $index, $field := $fields}}{{deduplicatedFieldName $field.Name $fields}}:{{if $field.Const}} {{templateConstValue $field}}{{else if $field.Default}} {{templateDefaultFieldValue $field}}{{else if $field.Optional}} nil{{else if $field.Nullable}} nil{{end}}{{if not (eq (add1 $index) $n)}}, {{end}}{{end}})
+        {{- range $fields}}
+          {{- if .Const}}
+          {{ templateCompareConst . $fields}}
+            raise ArgumentError, 'Invalid value for {{deduplicatedFieldName .Name $fields}}'
+          end
+          @{{deduplicatedFieldName .Name $fields}} = {{templateConstValue .}}
+          {{- else }}
+          @{{deduplicatedFieldName .Name $fields}} = {{deduplicatedFieldName .Name $fields}}
+          {{- end}}
+        {{- end}}
+        end
+      {{- end }}
+
+        {{if sorbetEnabled}}sig { params(other: T.untyped).returns(T::Boolean) }{{end}}
+        def ==(other)
+          return false unless other.is_a? self.class
+          {{- range $fields}}
+          return false unless @{{deduplicatedFieldName .Name $fields}} == other.{{deduplicatedFieldName .Name $fields}}
+          {{- end}}
+          true
+        end
+
+        {{- if $pagination }}
+
+        def each
+          page = self
+          loop do
+            yield page
+            next_page = page.next_page.call if page.next_page
+            break if next_page.nil?
+            page = {{sorbetMust "next_page"}}
+          end
+        end
+
+        {{- end }}
+      end

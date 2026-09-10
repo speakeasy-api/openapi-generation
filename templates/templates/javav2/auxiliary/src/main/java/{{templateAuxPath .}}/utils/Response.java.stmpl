@@ -1,0 +1,22 @@
+{{- recurse 1 -}}
+package {{templatePackageName}}.utils;
+import java.io.InputStream;
+import {{if useOkHttp}}{{templatePackageName}}.utils.transport.HttpResponse{{else}}java.net.http.HttpResponse{{end}};
+
+public interface Response {
+    
+    /**
+     * Returns the value of the Content-Type header.
+     **/
+    String contentType();
+    
+    /** 
+     * Returns the HTTP status code.
+     **/
+    int statusCode();
+    
+    /**
+     * Returns the raw response.
+     **/
+    HttpResponse<InputStream> rawResponse();
+}

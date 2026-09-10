@@ -1,0 +1,101 @@
+{{- recurse 1 -}}
+{{- $coreName := sanitizeCoreSDKName }}
+{{ genImports }}
+{{- addImport "./console-logger.js" "ConsoleLogger" }}
+{{- addImport "../core.js" $coreName }}
+{{- addImport "./scopes.js" "MCPScope" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "GetPromptResult" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
+{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
+{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
+{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
+{{- addZodPackageImport "objectOutputType" }}
+{{- addZodPackageImport "ZodOptional" }}
+{{- addZodPackageImport "ZodType" }}
+{{- addZodPackageImport "ZodTypeAny" }}
+{{- addZodPackageImport "ZodTypeDef" }}
+
+// '@modelcontextprotocol/sdk' currently does not export this type
+export type PromptArgsRawShape = {
+  [k: string]: ZodType<string, ZodTypeDef, string> | ZodOptional<ZodType<string, ZodTypeDef, string>>;
+};
+
+export type PromptDefinition<Args extends undefined | PromptArgsRawShape = undefined> =
+  Args extends PromptArgsRawShape ? {
+      name: string;
+      description?: string;
+      scopes?: MCPScope[];
+      args: Args;
+      prompt: (
+        client: {{$coreName}},
+        args: objectOutputType<Args, ZodTypeAny>,
+        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+      ) => GetPromptResult | Promise<GetPromptResult>;
+    }
+    : {
+      name: string;
+      description?: string;
+      scopes?: MCPScope[];
+      args?: undefined;
+      prompt: (
+        client: {{$coreName}},
+        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+      ) => GetPromptResult | Promise<GetPromptResult>;
+    };
+
+// Optional function to assist with formatting prompt results
+export async function formatResult(value: string): Promise<GetPromptResult> {
+  return {
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: value,
+        },
+      },
+    ],
+  };
+}
+
+export function createRegisterPrompt(
+  logger: ConsoleLogger,
+  server: McpServer,
+  sdk: {{$coreName}},
+  allowedScopes: Set<MCPScope>,
+): <A extends PromptArgsRawShape | undefined>(prompt: PromptDefinition<A>) => void {
+  return <A extends PromptArgsRawShape | undefined>(prompt: PromptDefinition<A>): void => {
+    const scopes = prompt.scopes ?? [];
+    if (allowedScopes.size > 0 && scopes.length === 0) {
+      return;
+    }
+    
+    if (allowedScopes.size > 0 && !scopes.every((s: MCPScope) => allowedScopes.has(s))) {
+      return;
+    }
+
+    if (prompt.args) {
+      if (prompt.description) {
+        server.prompt(prompt.name, prompt.description, prompt.args, async (args, ctx) =>
+          prompt.prompt(sdk, args, ctx)
+        );
+      } else {
+        server.prompt(prompt.name, prompt.args, async (args, ctx) =>
+          prompt.prompt(sdk, args, ctx)
+        );
+      }
+    } else {
+      if (prompt.description) {
+        server.prompt(prompt.name, prompt.description, async (ctx) =>
+          prompt.prompt(sdk, ctx)
+        );
+      } else {
+        server.prompt(prompt.name, async (ctx) =>
+          prompt.prompt(sdk, ctx)
+        );
+      }
+    }
+
+    logger.debug("Registered prompt", { name: prompt.name });
+  };
+}

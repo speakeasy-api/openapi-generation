@@ -1,0 +1,74 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /sse-overload-optional-stream:
+    get:
+      operationId: sseOverloadOptionalStream
+      description: >-
+        Verifies that x-speakeasy-sse-overload generates valid signatures
+        when the `stream` discriminator is optional in the spec and is
+        preceded by another optional positional argument. The generated
+        non-streaming and streaming overloads must emit `stream?: false`
+        and `stream?: true` so no required positional follows an optional
+        one (TS1016).
+      tags:
+        - sseOverloads
+      parameters:
+        - name: optional_before_stream
+          in: query
+          schema:
+            type: string
+        - name: stream
+          in: query
+          schema:
+            type: boolean
+      x-speakeasy-sse-overload: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+            text/event-stream:
+              schema:
+                type: object
+  /sse-overload-required-nullable-stream:
+    get:
+      operationId: sseOverloadRequiredNullableStream
+      description: >-
+        Sanity check for x-speakeasy-sse-overload when the `stream`
+        discriminator is both required and nullable (`type: [boolean,
+        null]`). The required selector sorts ahead of optional siblings,
+        and the overloads emit literal `stream: false` / `stream: true`
+        while the implementation signature carries `boolean | null`.
+      tags:
+        - sseOverloads
+      parameters:
+        - name: optional_sibling
+          in: query
+          schema:
+            type: string
+        - name: stream
+          in: query
+          required: true
+          schema:
+            type: [boolean, "null"]
+      x-speakeasy-sse-overload: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+            text/event-stream:
+              schema:
+                type: object

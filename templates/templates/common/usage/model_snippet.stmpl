@@ -1,0 +1,6 @@
+{{- /*
+This is a stub template. If a target wants to add additional content related to
+model usage examples for an operation, it can do so by implementing this
+template. If you plan on templating out a code snippet then make sure to run it
+through `formatUsageSnippetOutput` to format it nicely.
+*/ -}}

@@ -1,0 +1,9 @@
+Handling errors in this SDK should largely match your expectations. All operations return a response object or an error, they will never return both.
+
+By Default, an API error will return `{{templateDefaultError true}}`. When custom error responses are specified for an operation, the SDK may also return their associated error. You can refer to respective *Errors* tables in SDK docs for more details on possible error types for each operation.
+
+For example, the `{{sanitizeMethodName .Local.UsageContext.Operation}}` function may return the following errors:
+
+{{templateErrorsTable .Local.UsageContext.Operation}}
+
+{{templateUsageExample .Local.UsageContext "### Example"}}

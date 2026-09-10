@@ -1,0 +1,11 @@
+module usage
+
+go 1.25.10
+
+require {{getGolangPackage}} v0.0.0
+
+require (
+	{{templateDependencies | indent 4 | trim}}
+)
+
+replace {{getGolangPackage}} => {{.Global.Config.Usage.SourceDir}}

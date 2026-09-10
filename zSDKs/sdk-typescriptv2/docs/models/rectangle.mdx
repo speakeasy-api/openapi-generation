@@ -1,0 +1,26 @@
+---
+title: "Rectangle"
+---
+
+A rectangle shape
+
+## Example Usage
+
+```typescript
+import { Rectangle } from "openapi";
+
+let value: Rectangle = {
+  type: "rectangle",
+  width: 518.96,
+  height: 6835.15,
+};
+```
+
+## Fields
+
+| Field                           | Type                            | Required                        | Description                     |
+| ------------------------------- | ------------------------------- | ------------------------------- | ------------------------------- |
+| `type`                          | *"rectangle"*                   | :heavy_check_mark:              | Shape type discriminator        |
+| `width`                         | *number*                        | :heavy_check_mark:              | The width of the rectangle      |
+| `height`                        | *number*                        | :heavy_check_mark:              | The height of the rectangle     |
+| `color`                         | *string*                        | :heavy_minus_sign:              | Optional color of the rectangle |

@@ -1,0 +1,8 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+csharp:
+  inferUnionDiscriminators: true
+  enableFormatting: true
+  version: 0.0.1
+  packageName: Speakeasy.CustomHttp

@@ -1,0 +1,62 @@
+{{- $sdkName := sanitizeSDKName .Local.Type.Name -}}
+{{- $interfaceName := printf "I%s" $sdkName -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+#nullable enable
+namespace {{ getSDKNamespace }}
+{
+{{templateSDKImports .Local false }}
+    {{- templateComments .Local.Comments 1 "class"}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    public interface {{ $interfaceName }}
+    {
+    {{- range $idx, $sub := .Local.SubSDKs}}
+      {{- if ne $sub.Type.Name "" -}}
+        {{- templateComments $sub.Comments 2 "field" (ne $idx 0)}}
+        public I{{sanitizeSDKName $sub.Type.Name}} {{sanitizeFieldName $sub.FieldName}} { get; }
+      {{- end -}}
+    {{- end -}}
+    {{- range $idx, $op := .Local.Operations}}
+        {{- templateComments (getMethodComments .) 2 "method" (ne $idx 0)}}
+        {{- templateMethodDefinition $op $interfaceName 2 true}};
+    {{- end }}
+    }
+    {{- templateComments .Local.Comments 1 "class"}}
+    public class {{ $sdkName }}: {{ $interfaceName }}
+    {
+    {{- range .Local.Operations }}
+      {{- if .Servers}}
+        {{- templateString "servers.cs.stmpl" . }}
+      {{- end }}
+    {{- end }}
+        /// <summary>
+        /// SDK Configuration.
+        /// <see cref="SDKConfig"/>
+        /// </summary>
+        public SDKConfig SDKConfiguration { get; private set; }
+
+        {{- range .Local.SubSDKs -}}
+          {{- if ne .Type.Name ""}}
+          {{- $subSDKType := printf "I%s" (sanitizeSDKName .Type.Name)}}
+          {{- $subSDKName := sanitizeFieldName .FieldName}}
+
+        /// <summary>
+        /// {{$subSDKName}} SubSDK.
+        /// <see cref="{{$subSDKType}}"/>
+        /// </summary>
+        public {{$subSDKType}} {{$subSDKName}} { get; private set; }
+          {{- end }}
+        {{- end }}
+
+        public {{ $sdkName }}(SDKConfig config)
+        {
+            SDKConfiguration = config;
+            {{- range .Local.SubSDKs }}
+            {{- if ne .Type.Name "" }}
+            {{ sanitizeFieldName .FieldName}} = new {{ sanitizeSDKName .Type.Name }}(SDKConfiguration);
+            {{- end }}{{- end }}
+        }
+        {{- range .Local.Operations }}
+          {{- templateString "method.cs.stmpl" . }}
+        {{- end }}
+    }
+}

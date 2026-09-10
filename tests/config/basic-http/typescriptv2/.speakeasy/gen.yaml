@@ -1,0 +1,13 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+typescript:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  version: 0.0.1
+  responseFormat: envelope-http
+  templateVersion: v2
+  legacyFileNaming: true

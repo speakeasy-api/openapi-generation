@@ -1,0 +1,208 @@
+declare(strict_types=1);
+
+namespace OpenAPI\OpenAPI\Tests;
+
+use OpenAPI\OpenAPI\Tests\CommonHelpers;
+use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
+use OpenAPI\OpenAPI\Tests\RequestLogEntry;
+use function OpenAPI\OpenAPI\Tests\createRequestRecorderClient;
+use OpenAPI\OpenAPI\Utils\JSON;
+use OpenAPI\OpenAPI\Models\Shared;
+use OpenAPI\OpenAPI\Models\Operations;
+use OpenAPI\OpenAPI\Hooks\ClientCredentialsOAuth2Scope;
+use OpenAPI\OpenAPI\Hooks\OAuth2Scope;
+use PHPUnit\Framework\TestCase;
+
+final class HooksTest extends TestCase
+{
+    public function testHooks(): void
+    {
+        CommonHelpers::recordTest('test-hooks');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->hooks->testHooks("someInitialValue");
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertEquals('overriddenParam', $response->res->args->someParam);
+        $this->assertEquals('added by client', $response->res->headers->clientLevelHeader);
+        $this->assertEquals('some-key', $response->res->headers->idempotencyKey);
+        $this->assertEquals(Helpers::getHttpBinUrl() . "/anything/hooks?someParam=overriddenParam", $response->res->url);
+    }
+
+    public function testHooksAfterResponse(): void
+    {
+        CommonHelpers::recordTest('test-hooks-after-response');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        try {
+            $sdk->hooks->testHooksAfterResponse();
+            $this->assertTrue(false);
+        } catch(\Exception $e) {
+            $this->assertEquals("An error occurred while calling AfterSuccess hook.", $e->getMessage());
+            $this->assertEquals("validation failed", $e->getPrevious()->getMessage());
+        }
+    }
+
+    public function testHooksError(): void
+    {
+        CommonHelpers::recordTest("test-hooks-error");
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        try {
+            $sdk->hooks->testHooksError();
+            $this->assertTrue(false);
+        } catch(\Exception $e) {
+            //   this error was returned normally by the AfterError hook and raised from inside the method
+            //   it does not get wrapped with more context since it is directed at the end user.
+            $this->assertEquals("special test error case", $e->getMessage());
+        }
+    }
+
+    public function testHooksAuthorizationHeaderModification(): void
+    {
+        CommonHelpers::recordTest('hooks-authorization-header-modification');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->setSecuritySource(fn() => new Shared\Security(apiKeyAuth: "Bearer testToken"))->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->hooks->authorizationHeaderModification();
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertTrue($response->token->authenticated);
+        $this->assertEquals('testToken modified', $response->token->token);
+    }
+
+    public function testHooksCustomUserAgent(): void
+    {
+        CommonHelpers::recordTest('hooks-custom-user-agent');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $response = $sdk->hooks->hooksCustomUserAgent();
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $headers = $response->customUserAgentEcho->headers;
+        $this->assertEquals('acme-corp/{{.Global.Config.SDKVersion}} acme-corp/'.PHP_VERSION, $headers['User-Agent']);
+        $this->assertEquals('{{.Global.Config.GenVersion}}', $headers['X-Test-Gen-Version']);
+        $this->assertEquals('{{.Global.Config.DocVersion}}', $headers['X-Test-Doc-Version']);
+        $this->assertEquals('{{.Global.Config.SDKVersion}}', $headers['X-Test-Init-Sdk-Version']);
+    }
+
+    public function testHooksBeforeCreateRequest(): void
+    {
+        CommonHelpers::recordTest('test-hooks-before-create-request');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->setSecurity(new Shared\Security(apiKeyAuth: "Token YOUR_API_KEY"))->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->hooks->testHooksBeforeCreateRequestPaths("foo/bar");
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertEquals(Helpers::getHttpBinUrl() . "/anything/hooks/beforeCreateRequestPaths/foo/bar", $response->res->url);
+        $this->assertEquals("/anything/hooks/beforeCreateRequestPaths/foo/bar", $response->res->headers->oldPathname);
+    }
+
+    public function testClientCredentialsOptionSuccess(): void
+    {
+        CommonHelpers::recordTest('hooks-client-credentials-option-success');
+
+        $log = [];
+        $client = createRequestRecorderClient($log);
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())
+            ->setClient($client)
+            ->setSecurity(new Shared\Security(
+                clientCredentials: new Shared\SchemeClientCredentials(
+                    clientID: 'speakeasy-sdks',
+                    clientSecret: 'supersecret-' . CommonHelpers::randSequence(10),
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                    {{ sanitizeFieldName (originalFieldName $f) }}: '',
+{{- end }}
+                )
+            ))
+            ->build();
+
+        $response = $sdk->hooks->authenticatedRequestGlobalSecurity(null);
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+
+        // The requested token is still valid, so it should be reused.
+        $response = $sdk->hooks->authenticatedRequestGlobalSecurity(null);
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertFalse($response->httpMeta->response->hasHeader("clientId"));
+        $this->assertFalse($response->httpMeta->response->hasHeader("clientSecret"));
+
+        // Check that only a single token request was made
+        $tokenUrl = '/clientcredentials/token?expires_in=90';
+        $tokenRequests = array_filter($log, function($entry) use ($tokenUrl) {
+            return str_contains($entry->requestUri, $tokenUrl) && str_contains($entry->requestBody, 'scope=read+write');
+        });
+        $this->assertCount(1, $tokenRequests);
+    }
+
+    public function testClientCredentialsOptionSuccessfullyAuthenticatesWithAltTokenUrl(): void
+    {
+        CommonHelpers::recordTest('hooks-client-credentials-option-success-alt-token-url');
+
+        $log = [];
+        $client = createRequestRecorderClient($log);
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())
+            ->setClient($client)
+            ->setSecurity(new Shared\Security(
+                clientCredentials: new Shared\SchemeClientCredentials(
+                    clientID: 'speakeasy-sdks',
+                    clientSecret: 'supersecret-'.CommonHelpers::randSequence(10),
+                    tokenURL: '/clientcredentials/alt/token',
+                    scopes: ['alt:one', ClientCredentialsOAuth2Scope::AltTwo->value],
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                    {{ sanitizeFieldName (originalFieldName $f) }}: '',
+{{- end }}
+                )
+            ))
+            ->build();
+
+        $response = $sdk->hooks->authenticatedRequestGlobalSecurity(null);
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+
+        // The token received is already expired so another one should be requested.
+        $response = $sdk->hooks->authenticatedRequestGlobalSecurity(null);
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+
+        // Check that 2 token requests were made (tokens expire immediately)
+        $recordedTokenUrl = '/clientcredentials/alt/token';
+        $tokenRequests = array_filter($log, function($entry) use ($recordedTokenUrl) {
+            return str_contains($entry->requestUri, $recordedTokenUrl) && str_contains($entry->requestBody, 'scope=alt%3Aone+alt%3Atwo');
+        });
+        $this->assertCount(2, $tokenRequests);
+    }
+
+    public function testHooksAvailableOAuth2Scopes(): void
+    {
+        CommonHelpers::recordTest('hooks-available-oauth2-scopes');
+
+        $this->assertEquals('read', ClientCredentialsOAuth2Scope::Read->value);
+        $this->assertEquals('models:read', OAuth2Scope::ModelsRead->value);
+
+        $this->assertEquals(ClientCredentialsOAuth2Scope::Write, ClientCredentialsOAuth2Scope::tryFrom('write'));
+        $this->assertEquals(OAuth2Scope::StoreManage, OAuth2Scope::tryFrom('store_manage'));
+
+        $this->assertNull(OAuth2Scope::tryFrom('unknown'));
+    }
+}

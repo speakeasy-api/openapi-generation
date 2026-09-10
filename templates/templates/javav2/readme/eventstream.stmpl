@@ -1,0 +1,25 @@
+[Server-sent events][mdn-sse] are used to stream content from certain
+operations. These operations will expose the stream as an iterable that
+can be consumed using a simple `for` loop. The loop will
+terminate when the server no longer has any events to send and closes the
+underlying connection.
+
+{{templateUsageSection "eventstream"}}
+
+{{- if asyncEnabled}}
+  {{- if useOkHttp}}
+#### Asynchronous Event Streaming
+An asynchronous SDK client is also available for event streaming. It returns a [`CompletableFuture`][comp-fut] that completes with the same blocking `EventStream<T>` iterator once the stream is connected. See [Asynchronous Support](#asynchronous-support) for more details.
+{{templateUsageSection "eventstream" "" nil nil nil true}}
+
+[mdn-sse]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+[comp-fut]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
+  {{- else}}
+#### Reactive Streams Interoperability
+An asynchronous SDK client is also available for event streaming that returns a [`Flow.Publisher<T>`][flow-pub]. See [Asynchronous Support](#asynchronous-support) for more details on async benefits and reactive library integration.
+{{templateUsageSection "eventstream" "" nil nil nil true}}
+
+[mdn-sse]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
+[flow-pub]: https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.Publisher.html
+  {{- end}}
+{{- end}}

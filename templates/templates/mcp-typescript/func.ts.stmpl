@@ -1,0 +1,865 @@
+{{- recurse 1 -}}
+{{- if hasAttemptCountRetries -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $op := .Local.Operation -}}
+{{- $coreName := sanitizeCoreSDKName -}}
+{{- $emptyRequest := or (not $op.Request) (not $op.Request.Field) $op.Request.Field.Type.IsEmpty -}}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $hasRequestBody := (and $op.Request $op.Request.Field (not $op.Request.Field.Type.IsEmpty)) -}}
+{{- $inputVar := "input$" -}}
+{{- $isGlobalSecurityFlattened := and $op.GlobalSecurity (eq (len $op.GlobalSecurity.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity -}}
+{{- $opState := opTemplateState $op "funcs" -}}
+{{- $requestTypes := "" -}}
+{{- $returnType := $opState.signature.returnType }}
+{{- $usageLocation := "funcs" -}}
+
+{{- if and $op.Request $op.Request.Field }}
+  {{- $requestTypes = resolveOutbound (
+    dict
+      "constValue" $op.Request.Field.Const
+      "defaultValue" $op.Request.Field.Default
+      "nullable" $op.Request.Field.Nullable
+      "optional" $op.Request.Field.Optional
+      "rootTypeDef" $op.OwningSDK.Type
+      "typeDef" $op.Request.Field.Type
+      "usageLocation" $usageLocation
+  )}}
+{{- end }}
+
+{{- addImport "../core.js" $coreName -}}
+{{- addInternalImport "sdks" "RequestOptions" "funcs" -}}
+{{- addTypeImport "async" "APICall" "funcs" -}}
+{{- addTypeImport "async" "APIPromise" "funcs" -}}
+{{- addTypeImport "fp" "Result" "funcs" -}}
+{{- callImportTypesFunc $opState.inboundResponse.importOutputTypes -}}
+{{- callImportTypesFunc $opState.importErrorTypes -}}
+
+{{- genImports }}
+
+{{- $dedupedAcceptTypes := deduplicateAcceptTypes $op.GetAcceptTypes }}
+{{- if gt (len $dedupedAcceptTypes) 1 }}
+
+export enum {{ sanitizeAcceptEnumName $op }} {
+  {{- range $dedupedAcceptTypes }}
+  {{    sanitizeAcceptEnumKey . }} = "{{ sanitizeAcceptEnumValue . }}",
+  {{- end}}
+}
+{{- end }}
+
+{{ templateComments $op.Comments $dg $funcName 0 "method" false (getHoistedSecurityRemark $op) }}
+export function {{ $funcName }}(
+  client$: {{ $coreName }},
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+            "nullable" $field.Nullable
+            "optional" $field.Optional
+            "rootTypeDef" $op.OwningSDK.Type
+            "streamable" (isMultipartFileField $field)
+            "typeDef" $field.Type
+            "usageLocation" $usageLocation
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }}{{ if $field.Optional }}?{{ end }}: {{ $fieldType.inputType }},
+  {{- end }}
+  options?: RequestOptions,
+): APIPromise<{{ $returnType }}> {
+  return new APIPromise($do(
+    client$,
+    {{- range $field := $op.Arguments.Sorted }}
+    {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }},
+    {{- end }}
+    options,
+  ));
+}
+
+async function $do(
+  client$: {{ $coreName }},
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+            "nullable" $field.Nullable
+            "optional" $field.Optional
+            "rootTypeDef" $op.OwningSDK.Type
+            "streamable" (isMultipartFileField $field)
+            "typeDef" $field.Type
+            "usageLocation" $usageLocation
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }}{{ if $field.Optional }}?{{ end }}: {{ $fieldType.inputType }},
+  {{- end }}
+  options?: {{ templateMethodOptions $op }},
+): Promise<[{{ $returnType }}, APICall]> {
+  {{- if not $emptyRequest }}
+  {{-   if or (eq $op.Arguments.Flattening "body") (eq $op.Arguments.Flattening "all") }}
+  {{-     fail (printf "flattening scheme '%s' not supported: %s" $op.Arguments.Flattening $op.ID) }}
+  {{-   else if eq $op.Arguments.Flattening "params" }}
+  {{-     callImportTypesFunc $requestTypes.importInputTypes }}
+  const input$: {{ $requestTypes.inputType}} = {{ "{" }}
+  {{-     range $field := $op.Arguments.Sorted }}
+  {{-       if hasAnnotation $field "opSecurity" }}{{ continue }}{{ end }}
+  {{        sanitizeFieldName (originalFieldName $field) }}: {{ sanitizeFieldName $field.Name }},
+  {{-     end}}
+  {{ "};" }}
+  {{-   else }}
+  {{-     $inputVar = "request" }}
+  {{-   end }}
+  {{- end}}
+
+{{/* > Request 🔴 */}}
+  {{- if $hasRequestBody }}
+  {{-   $paramFlattening := operationParametersFlattened $op -}}
+  {{-   $reqBodyOptional := isRequestBodyOptional $op.Request }}
+  {{-   $requestSchema := $requestTypes.zod }}
+  {{-   callImportTypesFunc $requestTypes.importZodTypes }}
+  {{-   addInternalImport "schemas" "safeParse" "funcs" "typeImport" }}
+  const parsed$ = safeParse(
+    {{  $inputVar }},
+    (value$) => {{ $requestSchema }}.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  {{-   $bodyType := getRequestBodyType $op }}
+  {{-   $bodyRef := getRequestBodyAccessor $op "payload$" }}
+  {{-   if not $bodyRef }}
+  const body$ = null;
+  {{-   else }}
+  {{-     if usesSerialization $op "json" }}
+  {{-       addInternalImport "encodings" "encodeJSON" "funcs" "typeImport"}}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : encodeJSON("body", {{ $bodyRef }}, { explode: true });
+  {{-       else }}
+  const body$ = encodeJSON("body", {{ $bodyRef }}, { explode: true });
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "string" }}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : {{ $bodyRef }};
+  {{-       else }}
+  const body$ = {{ $bodyRef }};
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "raw" }}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : {{ $bodyRef }};
+  {{-       else }}
+  const body$ = {{ $bodyRef }};
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "form" }}
+  {{-       if $bodyType := "map" }}{{/* THIS IS A BUG THAT NEEDS RESOLVING THE CORRECT CODE IS BELOW BUT IT EXPOSES CODE NOT HANDLING CERTAIN CASES CORRECTLY */}}
+  {{/*- if eq $bodyType.Type "map" */}}
+  {{-         addInternalImport "encodings" "encodeBodyForm" "funcs" "typeImport" }}
+  const body$ = Object.entries({{ $bodyRef }} || {}).map(([k, v]) => {
+    return encodeBodyForm(k, v, { charEncoding: "percent" });
+  }).join("&");
+  {{-       else }}
+  const body$ = [
+    {{-       range $bodyType.Fields }}
+    {{-         $fieldName := sanitizeFieldName (originalFieldName .)}}
+    {{          genFormBodyEncoder . (sanitizeAccessor $bodyRef $fieldName $reqBodyOptional) }},
+    {{-       end }}
+  ].filter(Boolean).join("&");
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "multipart" }}
+  const body$ = new FormData();
+  {{-       if not $op.Request.IsRequestBodyRequired }}
+  if ({{ $bodyRef }} != null) {
+  {{-       end }}{{/* Start optional body check */}}
+  {{-       if eq $bodyType.Type "map" }}
+  {{-         addInternalImport "encodings" "appendForm" "funcs" "typeImport" }}
+  for (const [key$, value$] of Object.entries({{ $bodyRef }} || {})) {
+    appendForm(body$, key$, value$);
+  }
+  {{-       else }}
+  {{-       range sortOptionalFieldDefs $bodyType.Fields }}
+  {{-         $fieldName := sanitizeFieldName (originalFieldName .) }}
+  {{-         $fieldAccessor := sanitizeAccessor $bodyRef $fieldName $reqBodyOptional }}
+  {{-         $isFieldOptional := or .Optional (eq .Type.Type "any") }}
+  {{-         if $isFieldOptional }}
+  if ({{ $fieldAccessor }} !== undefined) {
+    {{          genMultiPartEncoder . "body$" $fieldAccessor }};
+  }
+  {{-         else }}
+  {{            genMultiPartEncoder . "body$" $fieldAccessor }};
+  {{-         end }}
+  {{-       end }}
+  {{-       end }}
+  {{-       if not $op.Request.IsRequestBodyRequired }}
+  }
+  {{-       end }}
+
+  {{-     else }}
+  const body$ = null;
+
+  {{-     end}}
+  {{-   end}}
+  {{- end}}
+{{- /* < Request */}}
+
+{{- /* > URL 🔴 */}}
+  {{- if $op.Servers }}
+  {{-   addInternalImport "url" "pathToFunc" "funcs" }}
+  {{-   $opServerVars := $op.Servers.GetVariables }}
+  {{-   if $op.Servers.ServerMap }}
+  const baseURL$ = options?.serverURL || pathToFunc({{ templateServerListName $op "funcs" }}[{{ templateServerID $op $op.Servers.Default "funcs" }}], { charEncoding: "percent" })(
+  {{-   else }}
+  const baseURL$ = options?.serverURL || pathToFunc({{ templateServerListName $op "funcs" }}[0], { charEncoding: "percent" })(
+  {{-   end }}
+  {{-   if gt (len $opServerVars) 0 }}
+    {
+      {{- range $variable := $opServerVars }}
+      {{    sanitizeKey $variable.Name }}: {{if isGlobalServerVar $variable.Name }}client$?._options?.{{sanitizeKey $variable.Name }} ||{{end}} "{{ $variable.Default }}",
+      {{- end }}
+    }
+  {{-   end }}
+  );
+  {{- end }}
+{{- /* < URL */}}
+{{- /* > Params 🔴 */}}
+  {{- $requestParams := generateParamsSpec (dict "op" $op "localKey" "payload$" "globalKey" "client$._options") }}
+  {{- $hasPathParams := gt (len $requestParams.path) 0 }}
+  {{- $hasQueryParams := gt (len $requestParams.query) 0 }}
+
+  {{- if $hasPathParams }}
+
+  const pathParams$ = {
+    {{-   range $unused, $spec := $requestParams.path }}
+    {{      sanitizeKey $spec.name}}: {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
+    {{-   end }}
+  };
+  {{- end}}
+  {{- addInternalImport "url" "pathToFunc" "funcs" }}
+  const path$ = pathToFunc("{{ $op.Path }}")(
+    {{- if $hasPathParams }}
+    pathParams$,
+    {{- end }}
+  );
+
+  {{- if $hasQueryParams }}
+  const query$ = {{genQueryParamEncoder $requestParams.query}};
+  {{- end }}
+
+  {{- addInternalImport "primitives" "compactMap" "funcs" }}
+
+  const headers$ = new Headers(compactMap({
+    {{- $opMediaType := getRequestMediaType $op }}
+    {{- $contentType := "" }}
+    {{- if isMultipartRequest $op }}
+    {{- /* The header for multipart requests is generated by `fetch` + `FormData` */}}
+    {{- else if $opMediaType }}
+    {{-   $contentType = $opMediaType | quote }}
+    {{- else if usesSerialization $op "raw" }}
+    {{-   $contentType = "body$ instanceof Blob && body$.type ? body$.type : undefined" }}
+    {{- end }}
+    {{- if $contentType }}
+    "Content-Type": {{ $contentType }},
+    {{- end }}
+    {{- if gt (len $dedupedAcceptTypes) 1 }}
+    Accept: options?.acceptHeaderOverride || "{{ $dedupedAcceptTypes | join ", " }}",
+    {{- else }}
+    Accept: "{{ first $op.GetAcceptTypes }}",
+    {{- end }}
+    {{- range $unused, $spec := $requestParams.header }}
+    "{{ $spec.name }}": {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
+    {{- end}}
+  }));
+{{- /* < Params */}}
+
+{{- /* > Security 🔴 */}}
+  {{- $securitySourceCtx := "" }}
+  {{- if and $op.GlobalSecurity (not $op.Security) }}
+  {{-   addInternalImport "security" "resolveGlobalSecurity" "funcs" }}
+  {{-   addInternalImport "security" "extractSecurity" "funcs" }}
+  {{-   if $isGlobalSecurityFlattened }}
+  {{-     $securityFieldName := sanitizeFieldName (first $op.GlobalSecurity.Type.Fields).Name }}
+  {{-     $securityAccessor := printf "client$._options.%s" $securityFieldName }}
+  {{-     $securitySourceCtx = printf "securitySource: %s," $securityAccessor }}
+  const secConfig = await extractSecurity({{ $securityAccessor }});
+  const securityInput = secConfig == null ? {} : { {{ $securityFieldName }}: secConfig };
+  {{-   else }}
+  {{-     $securitySourceCtx = "securitySource: client$._options.security," }}
+  const securityInput = await extractSecurity(client$._options.security)
+  {{-   end }}
+  {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+  const requestSecurity = resolveGlobalSecurity(securityInput{{if $needsAllowedFields}}, {{templateHoistedSecurityIndices $op}}{{end}});
+  {{- else if $op.Security }}{{ "\n" }}
+  {{-   $securitySourceCtx = "securitySource: security," }}
+  {{-   $securitySpecs := genSecuritySpecs $op.Security.Type "security" "" }}
+  {{-   addInternalImport "security" "resolveSecurity" "funcs" }}
+  const requestSecurity = resolveSecurity(
+    {{- range $requirements := $securitySpecs }}
+    [
+      {{- range $opt := $requirements }}
+      {
+        {{ if $opt.fieldName }}fieldName: "{{ $opt.fieldName }}",{{ end }}
+        type: "{{ $opt.type }}",
+        value: {{ $opt.value }},
+      },
+      {{- end }}
+    ],
+    {{- end }}
+  );
+  {{- else }}
+  {{-   $securitySourceCtx = "securitySource: null," }}
+  {{- end }}
+
+{{- if not $securitySourceCtx }}
+  {{- fail (printf "%s: no security source context was set" $op.ID) }}
+{{- end }}
+{{- /* < Security */}}
+
+{{/* > Context 🔴 */}}
+  const context = {
+    options: client$._options,
+    {{- if $op.Servers }}
+    baseURL: baseURL$ ?? "",
+    {{- else }}
+    baseURL: options?.serverURL ?? client$._baseURL ?? "",
+    {{- end }}
+    operationID: "{{ $op.ID }}",
+    oAuth2Scopes: {{ templateOAuth2Scopes $op }},
+    {{- if or $op.GlobalSecurity $op.Security }}
+    resolvedSecurity: requestSecurity,
+    {{- else }}
+    resolvedSecurity: null,
+    {{- end }}
+    {{ $securitySourceCtx }}
+    {{- if $op.Extensions.Retries }}
+    retryConfig:
+      options?.retries ||
+      client$._options.retryConfig ||
+      {{- if not $op.Extensions.Retries.DefaultApplied }}
+      {
+        strategy: "{{$op.Extensions.Retries.Strategy }}",
+        {{- if $op.Extensions.Retries.Backoff }}
+        backoff: {
+          initialInterval: {{ $op.Extensions.Retries.Backoff.InitialInterval }},
+          maxInterval: {{ $op.Extensions.Retries.Backoff.MaxInterval }},
+          exponent: {{ $op.Extensions.Retries.Backoff.Exponent }},
+          maxElapsedTime: {{ $op.Extensions.Retries.Backoff.MaxElapsedTime }},
+        },
+        retryConnectionErrors: {{ $op.Extensions.Retries.RetryConnectionErrors }},
+        {{- end}}
+        {{- if eq $op.Extensions.Retries.Strategy "attempt-count-backoff" }}
+        maxRetries: {{ $op.Extensions.Retries.MaxRetries }},
+        {{- end }}
+      } ||
+      {{- end }}
+      { strategy: "none" },
+    retryCodes: options?.retryCodes || [
+      {{- if gt (len $op.Extensions.Retries.StatusCodes) 0 }}
+      {{-   range $i, $statusCode := $op.Extensions.Retries.StatusCodes }}
+      "{{ $statusCode }}",
+      {{-   end }}
+      {{- end }}
+    ],
+    {{- else }}
+    retryConfig: options?.retries || { strategy: "none" },
+    retryCodes: options?.retryCodes || ["429", "500", "502", "503", "504"],
+{{- end}}
+  };
+{{- /* < Context */}}
+
+{{/* > Create request 🔴 */}}
+  const requestRes = client$._createRequest(context, {
+    {{- if or $op.GlobalSecurity $op.Security }}
+    security: requestSecurity,
+    {{- end }}
+    method: "{{ $op.Method | upper }}",
+    {{- if $op.Servers }}
+    baseURL: baseURL$,
+    {{- else }}
+    baseURL: options?.serverURL,
+    {{- end }}
+    path: path$,
+    headers: headers$,
+    {{- if $hasQueryParams }}
+    query: query$,
+    {{- end }}
+    {{- if $hasRequestBody }}
+    body: body$,
+    {{- end }}
+    {{- if $op.UsesUserAgentHeader }}
+    uaHeader: "x-speakeasy-user-agent",
+    {{- end }}
+    userAgent: client$._options.userAgent,
+    timeoutMs: options?.timeoutMs || client$._options.timeoutMs ||
+    {{- if $op.Extensions.Timeout }}
+      {{ $op.Extensions.Timeout }}
+    {{- else }}
+      -1
+    {{- end }},
+  }, options);
+  if (!requestRes.ok) {
+    return [requestRes, { status: "invalid" }];
+  }
+  const req$ = requestRes.value;
+{{- /* < Create request */}}
+
+{{/* > Send 🔴 */}}
+  const doResult = await client$._do(req$, {
+    context,
+    errorCodes: {{ templateErrorStatusCodes $op.Response }},
+    retryConfig: context.retryConfig,
+    retryCodes: context.retryCodes,
+  });
+  if (!doResult.ok) {
+    return [doResult, { status: "request-error", request: req$ }];
+  }
+{{- /* < Send */}}
+
+{{- /* > Response 🔴 */}}
+  {{- if isStrictMCPServer }}
+  const response = doResult.value;
+  const responseFields$ = {
+    HttpMeta: { Response: response, Request: req$ },
+  };
+
+  {{ templateResponseMatcher $opState }}
+
+  return [result$, { status: "complete", request: req$, response }];
+  {{- else }}
+  return [doResult, {status: 'complete', 'request': req$, response: doResult.value}];
+  {{- end }}
+{{- /* < Response */}}
+}
+{{- else -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $op := .Local.Operation -}}
+{{- $coreName := sanitizeCoreSDKName -}}
+{{- $emptyRequest := or (not $op.Request) (not $op.Request.Field) $op.Request.Field.Type.IsEmpty -}}
+{{- $funcName := sanitizeFuncName $op -}}
+{{- $hasRequestBody := (and $op.Request $op.Request.Field (not $op.Request.Field.Type.IsEmpty)) -}}
+{{- $inputVar := "input$" -}}
+{{- $isGlobalSecurityFlattened := and $op.GlobalSecurity (eq (len $op.GlobalSecurity.Type.Fields) 1) .Global.Config.FlattenGlobalSecurity -}}
+{{- $opState := opTemplateState $op "funcs" -}}
+{{- $requestTypes := "" -}}
+{{- $returnType := $opState.signature.returnType }}
+{{- $usageLocation := "funcs" -}}
+
+{{- if and $op.Request $op.Request.Field }}
+  {{- $requestTypes = resolveOutbound (
+    dict
+      "constValue" $op.Request.Field.Const
+      "defaultValue" $op.Request.Field.Default
+      "nullable" $op.Request.Field.Nullable
+      "optional" $op.Request.Field.Optional
+      "rootTypeDef" $op.OwningSDK.Type
+      "typeDef" $op.Request.Field.Type
+      "usageLocation" $usageLocation
+  )}}
+{{- end }}
+
+{{- addImport "../core.js" $coreName -}}
+{{- addInternalImport "sdks" "RequestOptions" "funcs" -}}
+{{- addTypeImport "async" "APICall" "funcs" -}}
+{{- addTypeImport "async" "APIPromise" "funcs" -}}
+{{- addTypeImport "fp" "Result" "funcs" -}}
+{{- callImportTypesFunc $opState.inboundResponse.importOutputTypes -}}
+{{- callImportTypesFunc $opState.importErrorTypes -}}
+
+{{- genImports }}
+
+{{- $dedupedAcceptTypes := deduplicateAcceptTypes $op.GetAcceptTypes }}
+{{- if gt (len $dedupedAcceptTypes) 1 }}
+
+export enum {{ sanitizeAcceptEnumName $op }} {
+  {{- range $dedupedAcceptTypes }}
+  {{    sanitizeAcceptEnumKey . }} = "{{ sanitizeAcceptEnumValue . }}",
+  {{- end}}
+}
+{{- end }}
+
+{{ templateComments $op.Comments $dg $funcName 0 "method" false (getHoistedSecurityRemark $op) }}
+export function {{ $funcName }}(
+  client$: {{ $coreName }},
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+            "nullable" $field.Nullable
+            "optional" $field.Optional
+            "rootTypeDef" $op.OwningSDK.Type
+            "streamable" (isMultipartFileField $field)
+            "typeDef" $field.Type
+            "usageLocation" $usageLocation
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }}{{ if $field.Optional }}?{{ end }}: {{ $fieldType.inputType }},
+  {{- end }}
+  options?: RequestOptions,
+): APIPromise<{{ $returnType }}> {
+  return new APIPromise($do(
+    client$,
+    {{- range $field := $op.Arguments.Sorted }}
+    {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }},
+    {{- end }}
+    options,
+  ));
+}
+
+async function $do(
+  client$: {{ $coreName }},
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveOutbound (
+          dict
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+            "nullable" $field.Nullable
+            "optional" $field.Optional
+            "rootTypeDef" $op.OwningSDK.Type
+            "streamable" (isMultipartFileField $field)
+            "typeDef" $field.Type
+            "usageLocation" $usageLocation
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importInputTypes }}
+  {{    if and $emptyRequest (not (hasAnnotation $field "opSecurity")) }}_{{ end }}{{ sanitizeFieldName (originalFieldName $field) }}{{ if $field.Optional }}?{{ end }}: {{ $fieldType.inputType }},
+  {{- end }}
+  options?: {{ templateMethodOptions $op }},
+): Promise<[{{ $returnType }}, APICall]> {
+  {{- if not $emptyRequest }}
+  {{-   if or (eq $op.Arguments.Flattening "body") (eq $op.Arguments.Flattening "all") }}
+  {{-     fail (printf "flattening scheme '%s' not supported: %s" $op.Arguments.Flattening $op.ID) }}
+  {{-   else if eq $op.Arguments.Flattening "params" }}
+  {{-     callImportTypesFunc $requestTypes.importInputTypes }}
+  const input$: {{ $requestTypes.inputType}} = {{ "{" }}
+  {{-     range $field := $op.Arguments.Sorted }}
+  {{-       if hasAnnotation $field "opSecurity" }}{{ continue }}{{ end }}
+  {{        sanitizeFieldName (originalFieldName $field) }}: {{ sanitizeFieldName $field.Name }},
+  {{-     end}}
+  {{ "};" }}
+  {{-   else }}
+  {{-     $inputVar = "request" }}
+  {{-   end }}
+  {{- end}}
+
+{{/* > Request 🔴 */}}
+  {{- if $hasRequestBody }}
+  {{-   $paramFlattening := operationParametersFlattened $op -}}
+  {{-   $reqBodyOptional := isRequestBodyOptional $op.Request }}
+  {{-   $requestSchema := $requestTypes.zod }}
+  {{-   callImportTypesFunc $requestTypes.importZodTypes }}
+  {{-   addInternalImport "schemas" "safeParse" "funcs" "typeImport" }}
+  const parsed$ = safeParse(
+    {{  $inputVar }},
+    (value$) => {{ $requestSchema }}.parse(value$),
+    "Input validation failed",
+  );
+  if (!parsed$.ok) {
+    return [parsed$, { status: "invalid" }];
+  }
+  const payload$ = parsed$.value;
+  {{-   $bodyType := getRequestBodyType $op }}
+  {{-   $bodyRef := getRequestBodyAccessor $op "payload$" }}
+  {{-   if not $bodyRef }}
+  const body$ = null;
+  {{-   else }}
+  {{-     if usesSerialization $op "json" }}
+  {{-       addInternalImport "encodings" "encodeJSON" "funcs" "typeImport"}}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : encodeJSON("body", {{ $bodyRef }}, { explode: true });
+  {{-       else }}
+  const body$ = encodeJSON("body", {{ $bodyRef }}, { explode: true });
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "string" }}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : {{ $bodyRef }};
+  {{-       else }}
+  const body$ = {{ $bodyRef }};
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "raw" }}
+  {{-       if $reqBodyOptional }}
+  const body$ = payload$ === undefined ? null : {{ $bodyRef }};
+  {{-       else }}
+  const body$ = {{ $bodyRef }};
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "form" }}
+  {{-       if $bodyType := "map" }}{{/* THIS IS A BUG THAT NEEDS RESOLVING THE CORRECT CODE IS BELOW BUT IT EXPOSES CODE NOT HANDLING CERTAIN CASES CORRECTLY */}}
+  {{/*- if eq $bodyType.Type "map" */}}
+  {{-         addInternalImport "encodings" "encodeBodyForm" "funcs" "typeImport" }}
+  const body$ = Object.entries({{ $bodyRef }} || {}).map(([k, v]) => {
+    return encodeBodyForm(k, v, { charEncoding: "percent" });
+  }).join("&");
+  {{-       else }}
+  const body$ = [
+    {{-       range $bodyType.Fields }}
+    {{-         $fieldName := sanitizeFieldName (originalFieldName .)}}
+    {{          genFormBodyEncoder . (sanitizeAccessor $bodyRef $fieldName $reqBodyOptional) }},
+    {{-       end }}
+  ].filter(Boolean).join("&");
+  {{-       end }}
+
+  {{-     else if usesSerialization $op "multipart" }}
+  const body$ = new FormData();
+  {{-       if not $op.Request.IsRequestBodyRequired }}
+  if ({{ $bodyRef }} != null) {
+  {{-       end }}{{/* Start optional body check */}}
+  {{-       if eq $bodyType.Type "map" }}
+  {{-         addInternalImport "encodings" "appendForm" "funcs" "typeImport" }}
+  for (const [key$, value$] of Object.entries({{ $bodyRef }} || {})) {
+    appendForm(body$, key$, value$);
+  }
+  {{-       else }}
+  {{-       range sortOptionalFieldDefs $bodyType.Fields }}
+  {{-         $fieldName := sanitizeFieldName (originalFieldName .) }}
+  {{-         $fieldAccessor := sanitizeAccessor $bodyRef $fieldName $reqBodyOptional }}
+  {{-         $isFieldOptional := or .Optional (eq .Type.Type "any") }}
+  {{-         if $isFieldOptional }}
+  if ({{ $fieldAccessor }} !== undefined) {
+    {{          genMultiPartEncoder . "body$" $fieldAccessor }};
+  }
+  {{-         else }}
+  {{            genMultiPartEncoder . "body$" $fieldAccessor }};
+  {{-         end }}
+  {{-       end }}
+  {{-       end }}
+  {{-       if not $op.Request.IsRequestBodyRequired }}
+  }
+  {{-       end }}
+
+  {{-     else }}
+  const body$ = null;
+
+  {{-     end}}
+  {{-   end}}
+  {{- end}}
+{{- /* < Request */}}
+
+{{- /* > URL 🔴 */}}
+  {{- if $op.Servers }}
+  {{-   addInternalImport "url" "pathToFunc" "funcs" }}
+  {{-   $opServerVars := $op.Servers.GetVariables }}
+  {{-   if $op.Servers.ServerMap }}
+  const baseURL$ = options?.serverURL || pathToFunc({{ templateServerListName $op "funcs" }}[{{ templateServerID $op $op.Servers.Default "funcs" }}], { charEncoding: "percent" })(
+  {{-   else }}
+  const baseURL$ = options?.serverURL || pathToFunc({{ templateServerListName $op "funcs" }}[0], { charEncoding: "percent" })(
+  {{-   end }}
+  {{-   if gt (len $opServerVars) 0 }}
+    {
+      {{- range $variable := $opServerVars }}
+      {{    sanitizeKey $variable.Name }}: {{if isGlobalServerVar $variable.Name }}client$?._options?.{{sanitizeKey $variable.Name }} ||{{end}} "{{ $variable.Default }}",
+      {{- end }}
+    }
+  {{-   end }}
+  );
+  {{- end }}
+{{- /* < URL */}}
+{{- /* > Params 🔴 */}}
+  {{- $requestParams := generateParamsSpec (dict "op" $op "localKey" "payload$" "globalKey" "client$._options") }}
+  {{- $hasPathParams := gt (len $requestParams.path) 0 }}
+  {{- $hasQueryParams := gt (len $requestParams.query) 0 }}
+
+  {{- if $hasPathParams }}
+
+  const pathParams$ = {
+    {{-   range $unused, $spec := $requestParams.path }}
+    {{      sanitizeKey $spec.name}}: {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
+    {{-   end }}
+  };
+  {{- end}}
+  {{- addInternalImport "url" "pathToFunc" "funcs" }}
+  const path$ = pathToFunc("{{ $op.Path }}")(
+    {{- if $hasPathParams }}
+    pathParams$,
+    {{- end }}
+  );
+
+  {{- if $hasQueryParams }}
+  const query$ = {{genQueryParamEncoder $requestParams.query}};
+  {{- end }}
+
+  {{- addInternalImport "primitives" "compactMap" "funcs" }}
+
+  const headers$ = new Headers(compactMap({
+    {{- $opMediaType := getRequestMediaType $op }}
+    {{- $contentType := "" }}
+    {{- if isMultipartRequest $op }}
+    {{- /* The header for multipart requests is generated by `fetch` + `FormData` */}}
+    {{- else if $opMediaType }}
+    {{-   $contentType = $opMediaType | quote }}
+    {{- else if usesSerialization $op "raw" }}
+    {{-   $contentType = "body$ instanceof Blob && body$.type ? body$.type : undefined" }}
+    {{- end }}
+    {{- if $contentType }}
+    "Content-Type": {{ $contentType }},
+    {{- end }}
+    {{- if gt (len $dedupedAcceptTypes) 1 }}
+    Accept: options?.acceptHeaderOverride || "{{ $dedupedAcceptTypes | join ", " }}",
+    {{- else }}
+    Accept: "{{ first $op.GetAcceptTypes }}",
+    {{- end }}
+    {{- range $unused, $spec := $requestParams.header }}
+    "{{ $spec.name }}": {{ genSingleParamEncoder $spec.fieldDef $spec.accessor }},
+    {{- end}}
+  }));
+{{- /* < Params */}}
+
+{{- /* > Security 🔴 */}}
+  {{- $securitySourceCtx := "" }}
+  {{- if and $op.GlobalSecurity (not $op.Security) }}
+  {{-   addInternalImport "security" "resolveGlobalSecurity" "funcs" }}
+  {{-   addInternalImport "security" "extractSecurity" "funcs" }}
+  {{-   if $isGlobalSecurityFlattened }}
+  {{-     $securityFieldName := sanitizeFieldName (first $op.GlobalSecurity.Type.Fields).Name }}
+  {{-     $securityAccessor := printf "client$._options.%s" $securityFieldName }}
+  {{-     $securitySourceCtx = printf "securitySource: %s," $securityAccessor }}
+  const secConfig = await extractSecurity({{ $securityAccessor }});
+  const securityInput = secConfig == null ? {} : { {{ $securityFieldName }}: secConfig };
+  {{-   else }}
+  {{-     $securitySourceCtx = "securitySource: client$._options.security," }}
+  const securityInput = await extractSecurity(client$._options.security)
+  {{-   end }}
+  {{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent)}}
+  const requestSecurity = resolveGlobalSecurity(securityInput{{if $needsAllowedFields}}, {{templateHoistedSecurityIndices $op}}{{end}});
+  {{- else if $op.Security }}{{ "\n" }}
+  {{-   $securitySourceCtx = "securitySource: security," }}
+  {{-   $securitySpecs := genSecuritySpecs $op.Security.Type "security" "" }}
+  {{-   addInternalImport "security" "resolveSecurity" "funcs" }}
+  const requestSecurity = resolveSecurity(
+    {{- range $requirements := $securitySpecs }}
+    [
+      {{- range $opt := $requirements }}
+      {
+        {{ if $opt.fieldName }}fieldName: "{{ $opt.fieldName }}",{{ end }}
+        type: "{{ $opt.type }}",
+        value: {{ $opt.value }},
+      },
+      {{- end }}
+    ],
+    {{- end }}
+  );
+  {{- else }}
+  {{-   $securitySourceCtx = "securitySource: null," }}
+  {{- end }}
+
+{{- if not $securitySourceCtx }}
+  {{- fail (printf "%s: no security source context was set" $op.ID) }}
+{{- end }}
+{{- /* < Security */}}
+
+{{/* > Context 🔴 */}}
+  const context = {
+    options: client$._options,
+    {{- if $op.Servers }}
+    baseURL: baseURL$ ?? "",
+    {{- else }}
+    baseURL: options?.serverURL ?? client$._baseURL ?? "",
+    {{- end }}
+    operationID: "{{ $op.ID }}",
+    oAuth2Scopes: {{ templateOAuth2Scopes $op }},
+    {{- if or $op.GlobalSecurity $op.Security }}
+    resolvedSecurity: requestSecurity,
+    {{- else }}
+    resolvedSecurity: null,
+    {{- end }}
+    {{ $securitySourceCtx }}
+    {{- if $op.Extensions.Retries }}
+    retryConfig:
+      options?.retries ||
+      client$._options.retryConfig ||
+      {{- if not $op.Extensions.Retries.DefaultApplied }}
+      {
+        strategy: "{{$op.Extensions.Retries.Strategy }}",
+        {{- if $op.Extensions.Retries.Backoff }}
+        backoff: {
+          initialInterval: {{ $op.Extensions.Retries.Backoff.InitialInterval }},
+          maxInterval: {{ $op.Extensions.Retries.Backoff.MaxInterval }},
+          exponent: {{ $op.Extensions.Retries.Backoff.Exponent }},
+          maxElapsedTime: {{ $op.Extensions.Retries.Backoff.MaxElapsedTime }},
+        },
+        retryConnectionErrors: {{ $op.Extensions.Retries.RetryConnectionErrors }},
+        {{- end}}
+      } ||
+      {{- end }}
+      { strategy: "none" },
+    retryCodes: options?.retryCodes || [
+      {{- if gt (len $op.Extensions.Retries.StatusCodes) 0 }}
+      {{-   range $i, $statusCode := $op.Extensions.Retries.StatusCodes }}
+      "{{ $statusCode }}",
+      {{-   end }}
+      {{- end }}
+    ],
+    {{- else }}
+    retryConfig: options?.retries || { strategy: "none" },
+    retryCodes: options?.retryCodes || ["429", "500", "502", "503", "504"],
+{{- end}}
+  };
+{{- /* < Context */}}
+
+{{/* > Create request 🔴 */}}
+  const requestRes = client$._createRequest(context, {
+    {{- if or $op.GlobalSecurity $op.Security }}
+    security: requestSecurity,
+    {{- end }}
+    method: "{{ $op.Method | upper }}",
+    {{- if $op.Servers }}
+    baseURL: baseURL$,
+    {{- else }}
+    baseURL: options?.serverURL,
+    {{- end }}
+    path: path$,
+    headers: headers$,
+    {{- if $hasQueryParams }}
+    query: query$,
+    {{- end }}
+    {{- if $hasRequestBody }}
+    body: body$,
+    {{- end }}
+    {{- if $op.UsesUserAgentHeader }}
+    uaHeader: "x-speakeasy-user-agent",
+    {{- end }}
+    userAgent: client$._options.userAgent,
+    timeoutMs: options?.timeoutMs || client$._options.timeoutMs ||
+    {{- if $op.Extensions.Timeout }}
+      {{ $op.Extensions.Timeout }}
+    {{- else }}
+      -1
+    {{- end }},
+  }, options);
+  if (!requestRes.ok) {
+    return [requestRes, { status: "invalid" }];
+  }
+  const req$ = requestRes.value;
+{{- /* < Create request */}}
+
+{{/* > Send 🔴 */}}
+  const doResult = await client$._do(req$, {
+    context,
+    errorCodes: {{ templateErrorStatusCodes $op.Response }},
+    retryConfig: context.retryConfig,
+    retryCodes: context.retryCodes,
+  });
+  if (!doResult.ok) {
+    return [doResult, { status: "request-error", request: req$ }];
+  }
+{{- /* < Send */}}
+
+{{- /* > Response 🔴 */}}
+  {{- if isStrictMCPServer }}
+  const response = doResult.value;
+  const responseFields$ = {
+    HttpMeta: { Response: response, Request: req$ },
+  };
+
+  {{ templateResponseMatcher $opState }}
+
+  return [result$, { status: "complete", request: req$, response }];
+  {{- else }}
+  return [doResult, {status: 'complete', 'request': req$, response: doResult.value}];
+  {{- end }}
+{{- /* < Response */}}
+}
+{{- end }}

@@ -1,0 +1,16 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+Some operations return newline-delimited JSON (JSONL) responses. Each JSON object is streamed to the terminal as it arrives, one per line.
+
+{{- if $c.StreamingJSONL}}
+
+```bash
+# Stream JSONL responses
+{{$c.StreamingJSONL}} --output-format json
+
+# Apply a jq expression to each item as it arrives ('.' passes it through unchanged)
+{{$c.StreamingJSONL}} --output-format json --jq '.'
+```
+{{- end}}
+
+Use `Ctrl+C` to stop streaming.

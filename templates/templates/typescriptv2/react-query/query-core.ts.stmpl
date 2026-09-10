@@ -1,0 +1,223 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup }}
+{{- $op := .Local.Operation }}
+{{- $usageLocation := "react-query" }}
+{{- $opState := opTemplateState .Local.Operation $usageLocation }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $hookName := sanitizeReactQueryHookName $op }}
+{{- $coreName := sanitizeCoreSDKName }}
+{{- $args := $op.Arguments }}
+{{- $returnType := $opState.valueType }}
+{{- $returnTypePaginated := $opState.signature.unwrappedReturnType }}
+{{- $responseTypes := $opState.inboundResponse }}
+{{- $funcOptions := templateMethodOptions $op false }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+{{- $tupleType := reactQueryTupleType $op $usageLocation }}
+{{- callImportTypesFunc $tupleType.pathImports }}
+{{- callImportTypesFunc $tupleType.variableImports }}
+{{- $argTypes := reactQueryOperationArgTypes $op $usageLocation }}
+{{- $emptyRequest := or (not $op.Request) (not $op.Request.Field) $op.Request.Field.Type.IsEmpty }}
+{{- $builderFuncName := sanitizeReactQueryName $op "query-factory" }}
+{{- $infiniteBuilderFuncName := sanitizeReactQueryName $op "query-infinite-factory" }}
+{{- $queryKeyFuncName := sanitizeReactQueryName $op "query-key" }}
+{{- $infiniteQueryKeyFuncName := sanitizeReactQueryName $op "query-key-infinite" }}
+{{- $queryDataType := sanitizeClassName (print $hookName "_QueryData") }}
+{{- $infiniteQueryDataType := sanitizeClassName (print $hookName "_InfiniteQueryData") }}
+{{- $pageParamsType := sanitizeClassName (print $hookName "_PageParams") }}
+{{- $requestTypes := ""}}
+{{- $hasRequestBody := (and $op.Request $op.Request.Field (not $op.Request.Field.Type.IsEmpty)) }}
+{{- if and $op.Request $op.Request.Field }}
+  {{- $requestTypes = resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" $op.Request.Field.Type
+      "rootTypeDef" $op.OwningSDK.Type
+      "optional" $op.Request.Field.Optional
+      "nullable" $op.Request.Field.Nullable
+      "constValue" $op.Request.Field.Const
+      "defaultValue" $op.Request.Field.Default
+  )}}
+{{- end }}
+
+{{- /* Register imports - these will be collected by genImports */}}
+{{- addImport "@tanstack/react-query" "QueryClient" }}
+{{- addImport "@tanstack/react-query" "QueryFunctionContext" }}
+{{- addImport "@tanstack/react-query" "QueryKey" }}
+{{- addImport "../core.js" $coreName }}
+{{- addFuncImport $op $usageLocation }}
+{{- addImport "../lib/primitives.js" "combineSignals" }}
+{{- addImport "../lib/sdks.js" "RequestOptions" }}
+{{- addTypeImport "fp" "unwrapAsync" $usageLocation }}
+{{- if $isPaginated }}
+{{- addTypeImport "operations" "unwrapResultIterator" $usageLocation }}
+{{- addTypeImport "operations" "PageIterator" $usageLocation}}
+{{- addImport "./_types.js" "pageIteratorToJSON" }}
+{{- if hasPaginationURL $op }}
+{{- addTypeImport "operations" "URL_OVERRIDE" $usageLocation }}
+{{- end }}
+{{- end }}
+{{- if shouldTemplateAcceptHeaderEnum $op }}
+{{- addFuncAcceptEnumImport $op $usageLocation }}
+{{- end }}
+{{- /* This registers all component/operations imports needed for response types */}}
+{{- callImportTypesFunc $responseTypes.importOutputTypes }}
+{{genImports}}
+export type {{$queryDataType}} = {{$returnType}};
+{{- if $isPaginated}}
+
+export type {{$infiniteQueryDataType}} = {{$returnTypePaginated}};
+
+export type {{$pageParamsType}} = {{$returnTypePaginated}}["~next"];
+{{- end}}
+
+export function {{sanitizeReactQueryName $op "query-prefetch"}}(
+  queryClient: QueryClient,
+  client$: {{$coreName}},
+  {{$argTypes}}
+  options?: {{ $funcOptions }},
+): Promise<void> {
+  return queryClient.prefetchQuery({
+    ...{{$builderFuncName}}(
+      client$,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    )
+	});
+}
+
+{{if $isPaginated}}
+export function {{sanitizeReactQueryName $op "query-prefetch-infinite"}}(
+  queryClient: QueryClient,
+  client$: {{$coreName}},
+  {{$argTypes}}
+  options?: {{ $funcOptions }},
+): Promise<void> {
+  return queryClient.prefetchInfiniteQuery({
+    ...{{$infiniteBuilderFuncName}}(
+      client$,
+      {{- range $field := $args.Sorted }}
+      {{sanitizeFieldName $field.Name}},
+      {{- end }}
+      options,
+    ),
+    initialPageParam: undefined as {{$pageParamsType}},
+    getNextPageParam: (previousPage: {{$infiniteQueryDataType}}) => previousPage["~next"],
+  });
+}
+{{end}}
+
+export function {{$builderFuncName}}(
+  client$: {{$coreName}},
+  {{$argTypes}}
+  options?: {{ $funcOptions }},
+): {
+  queryKey: QueryKey;
+  queryFn: (context: QueryFunctionContext) => Promise<{{$queryDataType}}>;
+} {
+  return {
+    queryKey: {{$queryKeyFuncName}}({{reactQueryFillTupleFromRequest $op $usageLocation}}),
+    queryFn: async function {{$hookName}}QueryFn(ctx): Promise<{{$queryDataType}}> {
+      const sig = combineSignals(ctx.signal, options?.signal, options?.{{constants.fetchOptions}}?.signal);
+      const mergedOptions = { ...options?.{{constants.fetchOptions}}, ...options, signal: sig };
+
+      return unwrapAsync({{$funcName}}(
+        client$,
+        {{- range $field := $args.Sorted }}
+        {{sanitizeFieldName $field.Name}},
+        {{- end }}
+        mergedOptions,
+      ));
+    }
+  };
+}
+
+{{ if $isPaginated }}
+export function {{$infiniteBuilderFuncName}}(
+  client$: {{$coreName}},
+  {{$argTypes}}
+  options?: {{ $funcOptions }},
+): {
+  queryKey: QueryKey;
+  queryFn: (context: QueryFunctionContext<QueryKey, {{$pageParamsType}}>) => Promise<{{$infiniteQueryDataType}}>;
+} {
+  {{- $inputVar := "" }}
+  {{- if not $emptyRequest }}
+  {{-   if or (eq $args.Flattening "body") (eq $args.Flattening "all") }}
+  {{-     fail (printf "flattening scheme '%s' not supported: %s" $args.Flattening $op.ID) }}
+  {{-   else if eq $args.Flattening "params" }}
+  {{- /*  Nothing to do here. */}}
+  {{-   else }}
+  {{-     $inputVar = "request" }}
+  {{-   end }}
+  {{- end}}
+
+  return {
+    queryKey: {{$infiniteQueryKeyFuncName}}({{reactQueryFillTupleFromRequest $op $usageLocation}}),
+    queryFn: async function {{$hookName}}Query(ctx): Promise<{{$infiniteQueryDataType}}> {
+      const sig = combineSignals(ctx.signal, options?.{{constants.fetchOptions}}?.signal);
+      const mergedOptions = { ...options, {{constants.fetchOptions}}: { ...options?.{{constants.fetchOptions}}, signal: sig } };
+
+      if (!ctx.pageParam) {
+        const pageResult = await unwrapResultIterator({{$funcName}}(
+          client$,
+          {{- range $field := $args.Sorted }}
+          {{sanitizeFieldName $field.Name}},
+          {{- end }}
+          mergedOptions,
+        ));
+        return pageIteratorToJSON(pageResult);
+      }
+
+      {{- $callOptions := dict
+        "operation" $op
+        "clientVar" "client$"
+        "inputVar" $inputVar
+        "reqOptionsVar" "mergedOptions"
+        "nextPageAccessor" "ctx.pageParam.page"
+        "nextOffsetAccessor" "ctx.pageParam.offset"
+        "nextCursorAccessor" "ctx.pageParam.cursor"
+        "nextURLAccessor" "ctx.pageParam.url"
+      }}
+      const pageResult = await unwrapResultIterator({{ templateString "func-nextcall.ts.stmpl" $callOptions | indent 4 | trim }});
+      return pageIteratorToJSON(pageResult);
+    }
+  };
+}
+{{end}}
+
+{{if $tupleType.inert}}
+export function {{$queryKeyFuncName}}(): QueryKey {
+  return {{$tupleType.prefix}};
+}
+{{- if $isPaginated}}
+
+export function {{$infiniteQueryKeyFuncName}}(): QueryKey {
+  return [{{$tupleType.prefix | sliceString 1 -1}}, "infinite"];
+}
+{{- end}}
+{{else}}
+export function {{$queryKeyFuncName}}({{$tupleType.base | sliceString 1 -1}}): QueryKey {
+  return [{{$tupleType.prefix | sliceString 1 -1}},
+    {{- range $field := $tupleType.baseFields -}}
+    {{- sanitizeFieldName $field.Name}},
+    {{- end -}}
+    {{- if gt (len $tupleType.variableFields) 0}}parameters,{{end -}}
+    {{- if $tupleType.hasBody}}body,{{end -}}
+  ];
+}
+{{- if $isPaginated}}
+
+export function {{$infiniteQueryKeyFuncName}}({{$tupleType.base | sliceString 1 -1}}): QueryKey {
+  return [{{$tupleType.prefix | sliceString 1 -1}}, "infinite",
+    {{- range $field := $tupleType.baseFields -}}
+    {{- sanitizeFieldName $field.Name}},
+    {{- end -}}
+    {{- if gt (len $tupleType.variableFields) 0}}parameters,{{end -}}
+    {{- if $tupleType.hasBody}}body,{{end -}}
+  ];
+}
+{{- end}}
+{{end}}

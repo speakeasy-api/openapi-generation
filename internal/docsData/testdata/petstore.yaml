@@ -1,0 +1,212 @@
+openapi: 3.0.0
+info:
+  title: Petstore API
+  description: A simple API for managing a pet store
+  version: 1.0.0
+  contact:
+    name: Petstore API
+    url: https://petstore.swagger.io/v2
+    email: petstore@swagger.io
+  license:
+    name: MIT
+    url: https://petstore.swagger.io/v2
+servers:
+  - url: https://petstore.swagger.io/v2
+security:
+  - ApiKey: []
+  - OAuth2: ['read']
+paths:
+  /pets:
+    get:
+      summary: Get all pets
+      description: Returns a list of all pets in the store
+      operationId: getPets
+      deprecated: true
+      security:
+        - HttpBasicAuth: []
+      x-codeSamples:
+        - lang: "cURL"
+          label: "CLI"
+          source: |
+            curl --request POST \
+            --url 'https://data.apiexample.com/api/example/batch_query/json?format=json' \
+            --header 'content-type: application/octet-stream: ' \
+            --data '{}'
+      responses:
+        "200":
+          description: A list of pets
+          examples:
+            - "GET /pets"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Dog"
+                    - $ref: "#/components/schemas/Cat"
+    post:
+      summary: Add a new pet
+      operationId: addPet
+      tags:
+        - Pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Dog"
+                - $ref: "#/components/schemas/Cat"
+            examples:
+              dog:
+                value: {
+                  "id": 1,
+                  "name": "Rambo",
+                  "details": {
+                    "breed": "Terrier",
+                    "age": 13
+                  }
+                }
+              cat:
+                value: {
+                  "id": 1,
+                  "name": "Whiskers",
+                  "details": {
+                    "breed": "Tabby",
+                    "age": 7
+                  }
+                }
+      responses:
+        "201":
+          description: Pet added successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Dog"
+                  - $ref: "#/components/schemas/Cat"
+  /pets/{petId}:
+    get:
+      summary: Get a pet by ID
+      operationId: getPetById
+      tags:
+        - Pet.Individual
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pet details
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Dog"
+                  - $ref: "#/components/schemas/Cat"
+              examples:
+                dog:
+                  value: {
+                    "id": 1,
+                    "name": "Rambo",
+                    "details": {
+                      "breed": "Terrier",
+                      "age": 13
+                    }
+                  }
+                cat:
+                  value: {
+                    "id": 1,
+                    "name": "Whiskers",
+                    "details": {
+                      "breed": "Tabby",
+                      "age": 7
+                    }
+                  }
+        "404":
+          description: Pet not found
+components:
+  schemas:
+    Dog:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          description: The name of the dog
+          example: Rambo
+          minLength: 1
+          maxLength: 100
+        details:
+          type: object
+          properties:
+            breed:
+              type: string
+              enum:
+                - Terrier
+                - Labrador
+                - German Shepherd
+              description: The breed of the dog
+              example: Terrier
+            age:
+              type: integer
+              description: The age of the dog
+              example: 13
+    Cat:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          format: uuid
+          description: The name of the cat
+          example: Whiskers
+        details:
+          type: object
+          properties:
+            breed:
+              type: string
+              enum:
+                - Tabby
+                - Siamese
+                - Persian
+              description: The breed of the cat
+              example: Tabby
+            age:
+              type: integer
+              description: The age of the cat
+              example: 7
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      description: My API Key security
+      name: api_key
+      in: header
+    HttpBasicAuth:
+      type: http
+      description: My HTTP Basic Auth security
+      name: user_auth
+      in: header
+      scheme: basic
+    OAuth2:
+      type: oauth2
+      description: My OAuth2 security
+      flows:
+        authorizationUrl: https://petstore.swagger.io/v2/oauth2/authorize
+        tokenUrl: https://petstore.swagger.io/v2/oauth2/token
+        refreshUrl: https://petstore.swagger.io/v2/oauth2/refresh
+        scopes:
+          read: Read access
+          write: Write access
+tags:
+  - name: Pet
+    description: Pet description
+  - name: Pet.Individual
+    description: Pet individual description

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>{{ getPackageId }}</PackageId>
+    <Version>{{ .Global.Config.SDKVersion }}</Version>
+    <Authors>{{ .Global.Config.Author }}</Authors>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <DocumentationFile>docs/{{ getPackageId }}.xml</DocumentationFile>
+    <NoWarn>1591</NoWarn>
+  {{- if eq .Global.Config.GeneratedLicense "agpl"}}
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+  {{- end}}
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="{{getRootLocationRelativeToPackage}}README.md" Pack="true" PackagePath="\"/>
+    <None Include="{{getRootLocationRelativeToPackage}}docs\**\*" Pack="true" PackagePath="\docs"  CopyToOutputDirectory="PreserveNewest"/>
+
+    <PackageReference Include="newtonsoft.json" Version="13.0.3" />
+    <PackageReference Include="nodatime" Version="3.1.9" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(UNITY_PATH)/Managed/UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

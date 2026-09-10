@@ -1,0 +1,59 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /flattening/nullable-body/{requiredParam}:
+    put:
+      operationId: nullableBodyWithRequiredParam
+      description: >-
+        Tests that when a nullable-but-required request body is flattened
+        alongside required path parameters, the generated method signature
+        places required parameters before nullable ones. In PHP 8.0+, placing
+        a parameter with a default value (= null) before a required parameter
+        triggers a deprecation warning.
+      tags:
+        - flattening
+      parameters:
+        - in: path
+          name: requiredParam
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NullableBodyObject"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NullableBodyResponse"
+components:
+  schemas:
+    NullableBodyObject:
+      type: object
+      nullable: true
+      properties:
+        name:
+          type: string
+        value:
+          type: integer
+    NullableBodyResponse:
+      type: object
+      properties:
+        json:
+          $ref: "#/components/schemas/NullableBodyObject"
+        url:
+          type: string
+      required:
+        - url

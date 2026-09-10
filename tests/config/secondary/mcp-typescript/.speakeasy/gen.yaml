@@ -1,0 +1,23 @@
+configVersion: 2.0.0
+generation:
+  fixes:
+    nameOverrideFeb2026: false
+  sdkClassName: SDK
+mcp-typescript:
+  inferUnionDiscriminators: true
+  author: Speakeasy
+  packageName: openapi
+  version: 0.0.1
+  responseFormat: envelope
+  validateResponse: true
+  dxtManifestOverlay:
+    keywords:
+      - custom
+      - added
+      - keywords
+    user_config:
+      overlay_param1:
+        type: string
+        title: overlayParam1
+        description: Description of overlayParam1
+        required: false

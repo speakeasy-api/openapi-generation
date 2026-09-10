@@ -1,0 +1,40 @@
+{{- $serversName := templateConstName "SERVERS" (sanitizeClassName .Local.ID) -}}
+{{- if .Local.Servers.ServerMap}}{{- $serversEnumName := print (sanitizeClassName .Local.ID) "Servers" -}}
+    /**
+     * {{$serversEnumName}} contains identifiers for the servers available to the SDK.
+     */
+    public enum {{$serversEnumName}} {
+        {{- $index := 0 -}}
+        {{- $length := len .Local.Servers.Servers}}
+        {{- range .Local.Servers.Servers}}
+        {{- $index = (add $index 1)}}
+{{templateCommentsStripped .Comments (templateConstName .ID "") 2 true}}
+        {{templateConstName .ID ""}}("{{ .ID }}"){{if ne $index $length}},{{else}};{{end}}
+        {{- end}}
+
+        private final String server;
+
+        {{$serversEnumName}}(String server) {
+            this.server = server;
+        }
+
+        public String server() {
+            return server;
+        }
+    }
+
+    /**
+     * {{$serversName}} contains the list of server urls available to the SDK.
+     */
+    public static final java.util.Map<{{$serversEnumName}}, String> {{$serversName}} = new java.util.HashMap<{{$serversEnumName}}, String>() {{"{ {"}}
+        {{- range .Local.Servers.Servers}}
+        put({{$serversEnumName}}.{{templateConstName .ID ""}}, "{{ .URL }}");
+        {{- end}}
+    {{"} };"}}
+{{- else}}
+    /**
+     * {{$serversName}} contains the list of server urls available to the SDK.
+     */
+    public static final String[] {{$serversName}} = {
+{{ range .Local.Servers.Servers}}{{templateComments .Comments nil 2 }}        "{{ .URL }}",{{"\n"}}{{ end}}    };
+{{- end}}

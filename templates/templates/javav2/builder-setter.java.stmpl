@@ -1,0 +1,86 @@
+{{- $field := .Local.Field}}
+{{- $isAsync := .Local.IsAsync}}
+{{- $useBuilderDeser := .Local.UseBuilderDeser}}
+{{- $withNullables := isFeatureUsed "nullables" -}}
+{{- with $field}}
+    {{- if not .IsAdditionalProperties }}
+        {{- if and .Optional .Nullable }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}({{javaImportFieldBase . $isAsync}} {{sanitizeFieldName .Name}}) {
+            {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+            this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{sanitizeFieldName .Name}});
+            return this;
+        }
+            {{- if (isBigint .Type) }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(long {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{javaImport "java.math.BigInteger"}}.valueOf({{sanitizeFieldName .Name}}));
+            return this;
+        }
+            {{- else if (isDecimal .Type) }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(double {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = {{javaImportJsonNullable}}.of({{javaImport "java.math.BigDecimal"}}.valueOf({{sanitizeFieldName .Name}}));
+            return this;
+        }
+            {{- end}}
+        {{- else if and (or .Optional .Nullable) }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}({{javaImportFieldBase . $isAsync}} {{sanitizeFieldName .Name}}) {
+            {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+            this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.ofNullable({{sanitizeFieldName .Name}});
+            return this;
+        }
+            {{- if (isBigint .Type) }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(long {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.of({{javaImport "java.math.BigInteger"}}.valueOf({{sanitizeFieldName .Name}}));
+            return this;
+        }
+            {{- else if (isDecimal .Type) }}
+    {{- "\n"}}{{templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(double {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = {{javaImportOptional}}.of({{javaImport "java.math.BigDecimal"}}.valueOf({{sanitizeFieldName .Name}}));
+            return this;
+        }
+            {{- end}}
+        {{- else if (isBigint .Type) }}
+    {{- "\n"}}{{templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(long {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = BigInteger.valueOf({{sanitizeFieldName .Name}});
+            return this;
+        }
+        {{- else if (isDecimal .Type) }}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        public Builder {{sanitizeFieldName .Name}}(double {{sanitizeFieldName .Name}}) {
+            this.{{sanitizeFieldName .Name}} = BigDecimal.valueOf({{sanitizeFieldName .Name}});
+            return this;
+        }
+        {{- end}}
+    {{- end}}
+    {{- if .IsAdditionalProperties }}
+        {{- if $useBuilderDeser}}
+        @{{javaImport "com.fasterxml.jackson.annotation.JsonAnySetter"}}
+        {{- end}}
+        public Builder additionalProperty({{javaImportString}} key, {{javaImportType .Type.ItemType}} value) {
+            {{javaImportUtils}}.checkNotNull(key, "key");
+            {{- if $withNullables }}
+            // we could be strict about null values (force the user
+            // to pass `JsonNullable.of(null)`) but likely to be a bit 
+            // annoying for additional properties building so we'll 
+            // relax preconditions.
+            {{- end }}
+            this.{{sanitizeFieldName .Name}}.put(key, value);
+            return this;
+        }
+    {{- end}}
+    {{- "\n"}}{{- templateCommentsForField . 2}}
+        {{- if $useBuilderDeser}}
+        @{{javaImport "com.fasterxml.jackson.annotation.JsonProperty"}}("{{propertyName .}}")
+        {{- end}}
+        public Builder {{sanitizeFieldName .Name}}({{javaImportField . $isAsync}} {{sanitizeFieldName .Name}}) {
+            {{javaImportUtils}}.checkNotNull({{sanitizeFieldName .Name}}, "{{sanitizeFieldName .Name}}");
+            this.{{sanitizeFieldName .Name}} = {{sanitizeFieldName .Name}};
+            return this;
+        }
+{{- end}}

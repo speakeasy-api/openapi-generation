@@ -1,0 +1,66 @@
+package customtypes
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+// Ensure the implementation satisfies the expected interfaces
+var _ basetypes.BoolTypable = BoolType{}
+
+type BoolType struct {
+	basetypes.BoolType
+}
+
+func (t BoolType) Equal(o attr.Type) bool {
+	other, ok := o.(BoolType)
+
+	if !ok {
+		return false
+	}
+
+	return t.BoolType.Equal(other.BoolType)
+}
+
+func (t BoolType) String() string {
+	return "BoolType"
+}
+
+func (t BoolType) ValueFromBool(ctx context.Context, in basetypes.BoolValue) (basetypes.BoolValuable, diag.Diagnostics) {
+	value := BoolValue{
+		BoolValue: in,
+	}
+
+	return value, nil
+}
+
+func (t BoolType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	attrValue, err := t.BoolType.ValueFromTerraform(ctx, in)
+
+	if err != nil {
+		return nil, err
+	}
+
+	boolValue, ok := attrValue.(basetypes.BoolValue)
+
+	if !ok {
+		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
+	}
+
+	boolValuable, diags := t.ValueFromBool(ctx, boolValue)
+
+	if diags.HasError() {
+		return nil, fmt.Errorf("unexpected error converting BoolValue to BoolValuable: %v", diags)
+	}
+
+	return boolValuable, nil
+}
+
+func (t BoolType) ValueType(ctx context.Context) attr.Value {
+	return BoolValue{}
+}

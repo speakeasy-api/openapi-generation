@@ -1,0 +1,248 @@
+{{- $sdkName := (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+{{- if useOkHttp -}}
+The Java SDK makes API calls through the default `SpeakeasyHTTPClient`, an `HTTPClient` implementation backed by
+[OkHttp](https://square.github.io/okhttp/) that supports hooks for modifying requests and handling responses or errors.
+Requests and responses use the `HttpRequest` and `HttpResponse` types from the `{{templatePackageName}}.utils.transport` package.
+The SDK
+{{- if asyncEnabled}} and its async counterpart implement `AutoCloseable`; closing either
+{{- else}} implements `AutoCloseable`; closing it
+{{- end}} releases the default client's dispatcher, connection pool, and optional cache.
+Use try-with-resources or call `close()` after all requests and streams have completed.
+{{- if springBootStarterEnabled}}
+Do not however manually close a Spring-managed SDK because the Spring container owns and closes its `HTTPClient` bean.
+{{- end}}
+
+For custom transport behavior you may provide your own `HTTPClient` implementation. Custom implementations inherit a no-op
+`close()` and should override it only when they own the resources they use. If a closeable custom client is shared by
+multiple SDK instances, coordinate its lifetime externally or use a borrowing wrapper whose `close()` remains a no-op.
+The following example wraps the default client to add a custom header, so it also delegates `close()` to that client:
+
+```java
+import {{templatePackageName}}.{{$sdkName}};
+import {{templatePackageName}}.utils.HTTPClient;
+import {{templatePackageName}}.utils.SpeakeasyHTTPClient;
+import {{templatePackageName}}.utils.transport.HttpRequest;
+import {{templatePackageName}}.utils.transport.HttpResponse;
+
+import java.io.IOException;
+import java.io.InputStream;
+{{- if asyncEnabled}}
+import java.util.concurrent.CompletableFuture;
+{{- end}}
+
+public class Application {
+    public static void main(String[] args) throws Exception {
+        // Create a custom HTTP client with hooks
+        HTTPClient httpClient = new HTTPClient() {
+            private final HTTPClient defaultClient = new SpeakeasyHTTPClient();
+
+            @Override
+            public HttpResponse<InputStream> send(HttpRequest request) throws IOException {
+                // Add a custom header using HttpRequest.toBuilder()
+                HttpRequest modifiedRequest = request.toBuilder()
+                    .header("x-custom-header", "custom value")
+                    .build();
+
+                try {
+                    HttpResponse<InputStream> response = defaultClient.send(modifiedRequest);
+                    // Log successful response
+                    System.out.println("Request successful: " + response.statusCode());
+                    return response;
+                } catch (Exception error) {
+                    // Log error
+                    System.err.println("Request failed: " + error.getMessage());
+                    throw error;
+                }
+            }
+{{- if asyncEnabled}}
+
+            @Override
+            public CompletableFuture<HttpResponse<InputStream>> sendAsync(HttpRequest request) {
+                // Add a custom header using HttpRequest.toBuilder()
+                HttpRequest modifiedRequest = request.toBuilder()
+                    .header("x-custom-header", "custom value")
+                    .build();
+                return defaultClient.sendAsync(modifiedRequest);
+            }
+{{- end}}
+
+            @Override
+            public void close() throws Exception {
+                // This custom HTTPClient owns defaultClient, so it is responsible for closing it.
+                defaultClient.close();
+            }
+        };
+
+        try ({{$sdkName}} sdk = {{$sdkName}}.builder()
+                .client(httpClient)
+                .build()) {
+
+            // SDK calls here
+
+            // sdk.close() runs upon exiting the try block
+        }
+    }
+}
+```
+{{- if asyncEnabled}}
+
+The `sendAsync` method powers the async SDK methods and returns a `CompletableFuture<HttpResponse<InputStream>>` that
+completes as soon as the response headers arrive. Blocking body reading and parsing run on a follow-up asynchronous
+completion stage rather than on the HTTP client's dispatcher threads.
+{{- end}}
+
+You can also enable debug logging on the default `SpeakeasyHTTPClient`:
+
+```java
+import {{templatePackageName}}.{{$sdkName}};
+import {{templatePackageName}}.utils.SpeakeasyHTTPClient;
+
+public class Application {
+    public static void main(String[] args) throws Exception {
+        SpeakeasyHTTPClient httpClient = new SpeakeasyHTTPClient();
+        httpClient.enableDebugLogging(true);
+
+        try ({{$sdkName}} sdk = {{$sdkName}}.builder()
+                .client(httpClient)
+                .build()) {
+
+            // SDK calls here
+
+            // sdk.close() runs upon exiting the try block
+        }
+    }
+}
+```
+{{- else}}
+The Java SDK makes API calls using an `HTTPClient` that wraps the native
+[HttpClient](https://docs.oracle.com/en/java/javase/11/docs/api/java.net.http/java/net/http/HttpClient.html). This
+client provides the ability to attach hooks around the request lifecycle that can be used to modify the request or handle
+errors and response.
+
+The `HTTPClient` interface allows you to either use the default `SpeakeasyHTTPClient` that comes with the SDK,
+or provide your own custom implementation with customized configuration such as custom executors, SSL context,
+connection pools, and other HTTP client settings.
+
+The interface provides synchronous (`send`) methods{{if asyncEnabled}} and asynchronous (`sendAsync`) methods. The `sendAsync` method
+is used to power the async SDK methods and returns a `CompletableFuture<HttpResponse<Blob>>` for non-blocking operations{{end}}.
+
+The following example shows how to add a custom header and handle errors:
+
+```java
+import {{templatePackageName}}.{{$sdkName}};
+import {{templatePackageName}}.utils.HTTPClient;
+import {{templatePackageName}}.utils.SpeakeasyHTTPClient;
+import {{templatePackageName}}.utils.Utils;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.io.InputStream;
+import java.time.Duration;
+
+public class Application {
+    public static void main(String[] args) {
+        // Create a custom HTTP client with hooks
+        HTTPClient httpClient = new HTTPClient() {
+            private final HTTPClient defaultClient = new SpeakeasyHTTPClient();
+            
+            @Override
+            public HttpResponse<InputStream> send(HttpRequest request) throws IOException, URISyntaxException, InterruptedException {
+                // Add custom header and timeout using Utils.copy()
+                HttpRequest modifiedRequest = Utils.copy(request)
+                    .header("x-custom-header", "custom value")
+                    .timeout(Duration.ofSeconds(30))
+                    .build();
+                    
+                try {
+                    HttpResponse<InputStream> response = defaultClient.send(modifiedRequest);
+                    // Log successful response
+                    System.out.println("Request successful: " + response.statusCode());
+                    return response;
+                } catch (Exception error) {
+                    // Log error
+                    System.err.println("Request failed: " + error.getMessage());
+                    throw error;
+                }
+            }
+        };
+
+        {{$sdkName}} sdk = {{$sdkName}}.builder()
+            .client(httpClient)
+            .build();
+    }
+}
+```
+
+<details>
+<summary>Custom HTTP Client Configuration</summary>
+
+You can also provide a completely custom HTTP client with your own configuration:
+
+```java
+import {{templatePackageName}}.{{$sdkName}};
+import {{templatePackageName}}.utils.HTTPClient;{{if asyncEnabled}}
+import {{templatePackageName}}.utils.Blob;
+import {{templatePackageName}}.utils.ResponseWithBody;{{end}}
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.concurrent.Executors;{{if asyncEnabled}}
+import java.util.concurrent.CompletableFuture;{{end}}
+
+public class Application {
+    public static void main(String[] args) {
+        // Custom HTTP client with custom configuration
+        HTTPClient customHttpClient = new HTTPClient() {
+            private final HttpClient client = HttpClient.newBuilder()
+                .executor(Executors.newFixedThreadPool(10))
+                .connectTimeout(Duration.ofSeconds(30))
+                // .sslContext(customSslContext) // Add custom SSL context if needed
+                .build();
+
+            @Override
+            public HttpResponse<InputStream> send(HttpRequest request) throws IOException, URISyntaxException, InterruptedException {
+                return client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            }
+{{if asyncEnabled}}
+            @Override
+            public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
+                // Convert response to HttpResponse<Blob> for async operations
+                return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
+                    .thenApply(resp -> new ResponseWithBody<>(resp, Blob::from));
+            }
+{{end}}        };
+
+        {{$sdkName}} sdk = {{$sdkName}}.builder()
+            .client(customHttpClient)
+            .build();
+    }
+}
+```
+
+</details>
+
+You can also enable debug logging on the default `SpeakeasyHTTPClient`:
+
+```java
+import {{templatePackageName}}.{{$sdkName}};
+import {{templatePackageName}}.utils.SpeakeasyHTTPClient;
+
+public class Application {
+    public static void main(String[] args) {
+        SpeakeasyHTTPClient httpClient = new SpeakeasyHTTPClient();
+        httpClient.enableDebugLogging(true);
+
+        {{$sdkName}} sdk = {{$sdkName}}.builder()
+            .client(httpClient)
+            .build();
+    }
+}
+```
+{{- end}}

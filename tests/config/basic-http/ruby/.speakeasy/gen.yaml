@@ -1,0 +1,11 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+ruby:
+  enableFormatting: true
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  responseFormat: envelope

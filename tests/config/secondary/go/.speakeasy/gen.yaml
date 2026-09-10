@@ -1,0 +1,36 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+    nameOverrideFeb2026: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  sdkHooksConfigAccess: false
+go:
+  inferUnionDiscriminators: true
+  forwardCompatibleUnionsByDefault: tagged-only
+  version: 0.0.1
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: false
+  imports:
+    option: openapi
+    paths:
+      callbacks: pkg/models/callbacks
+      errors: pkg/models/sdkerrors
+      operations: pkg/models/operations
+      shared: pkg/models/shared
+      webhooks: pkg/models/webhooks
+  includeEmptyObjects: false
+  maxMethodParams: 5
+  # Verify no changes required for legacy packageName with sdkPackageAlias
+  packageName: openapi
+  sdkPackageAlias: examplealias
+  responseFormat: flat
+  envVarPrefix: SPEAKEASY

@@ -1,0 +1,26 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- if isNoZod -}}
+{{- /* No-zod: omit fromJSON/toJSON entirely. Users can JSON.parse/stringify
+       directly and cast to the declared TS type. */ -}}
+{{- else -}}
+
+{{- if shouldIncludeOutboundSchema .Local.Type }}
+export function {{sanitizeToJSONFuncName $rootType}}({{sanitizeVariableName $typeName "value"}}: {{$typeName}}): string {
+  return JSON.stringify({{$zodName}}outboundSchema.parse({{sanitizeVariableName $typeName "value"}}))
+}
+{{- end }}
+
+{{- if shouldIncludeInboundSchema .Local.Type }}
+export function {{sanitizeFromJSONFuncName $rootType}}(jsonString: string): SafeParseResult<{{$typeName}}, SDKValidationError> {
+  {{- addTypeImport "fp" "Result as SafeParseResult" $usageLocation }}
+  {{- addErrorTypeImport "SDKValidationError" $usageLocation }}
+  {{- addInternalImport "schemas" "safeParse" $usageLocation }}
+  return safeParse(jsonString, (x) => {{$zodName}}inboundSchema.parse(JSON.parse(x)), `Failed to parse '{{$typeName}}' from JSON`)
+}
+{{- end }}
+{{- end }}

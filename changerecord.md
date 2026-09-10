@@ -1,0 +1,376 @@
+# generator changes
+
+- 2026-08-24 - feat: require an explicit license election for generation — --license agpl-3.0-only (or SPEAKEASY_GENERATED_LICENSE) accepts AGPL output, a commercial license token establishes commercial output, and bare runs are refused
+- 2026-08-18 - feat: validate registry-signed license tokens to establish commercial generation access
+- 2026-08-20 - fix: skip inaccessible directories instead of aborting when walking the filesystem
+- 2026-07-30 - feat: add built-in lint rule that fails generation on the unsupported JSON Schema not keyword, shipped in the new opt-in speakeasy-unsupported-constructs ruleset (off unless a lint.yaml selects it)
+- 2026-07-28 - feat: add generic snapshot dispatch integration
+- 2026-02-20 - fix: set NODE_OPTIONS --max-old-space-size-percentage=80 for typescript and mcp-typescript lint and build compile steps to prevent OOM on large specs
+- 2026-02-13 - fix(go): skip standalone SSE comment blocks between events in discriminated union streams
+- 2026-02-13 - fix: pin staticcheck to v0.6.1 to avoid SA5008 false positives from v0.7.0
+- 2026-02-09 - fix: increase bufio.Scanner max line size to prevent silent truncation of large generated files
+- 2026-02-05 - fix: honor versioningStrategy: manual config option to skip automatic version bumps
+- 2026-02-05 - fix(typescript,mcp): upgrade @modelcontextprotocol/sdk to 1.26.0 to fix GHSA-345p-7cg4-v4c7
+- 2025-11-27 - chore: remove "Detected" from changelog
+- 2025-08-20 - chore: Update Speakeasy badge in customer README
+- 2025-08-08 - fix: update go-git for latest bug fix
+- 2025-07-01 - feat: always write failed format files to debug directory
+- 2025-06-03 - fix: update wasm to recover gracefully
+- 2025-05-21 - feat: create automated docs page for supported features
+- 2025-05-21 - fix: update wasm snippet generation to use operation id filter env var
+- 2025-05-20 - fix: update wasm usage snippet generation to enable enterprise tier by default
+- 2025-05-17 - fix: update snapshot test executor build deps
+- 2025-05-17 - fix: language server
+- 2025-05-16 - fix: snapshot workflow
+- 2025-05-16 - fix: whitespace between usage snippets
+- 2025-05-16 - fix: move filesystem to public pkg
+- 2025-05-13 - feat: usage snippets in wasm
+- 2025-05-12 - feat: add support for nested operations in editor ui
+- 2025-05-07 - fix: reorganise wasm directories
+- 2025-05-05 - fix: ast tests
+- 2025-05-03 - fix: fix JSONPath handling of missing operationIds in sandbox AST
+- 2025-05-03 - fix: fix JSONPath handling of missing operationIds in sandbox AST
+- 2025-05-02 - fix: add JSONPath to sandbox ast
+- 2025-05-02 - fix: fix AST serialization
+- 2025-05-01 - fix: dont exclude operations without ids from sandbox AST
+- 2025-04-24 - feat: update sandbox ast to be faster
+- 2025-04-10 - feat: new name resolution will now be the default for new SDKs
+- 2025-04-17 - fix: handle empty params in example injection
+- 2025-04-17 - fix: optimizations for highly cyclical specs
+- 2025-04-17 - feat: add groups to docs flavoured AST
+- 2025-04-16 - feat: add docs flavoured AST
+- 2025-04-16 - fix: add --watch mode for wasm build script
+- 2025-04-14 - feat: example injection for usage snippet generation
+- 2025-04-14 - fix: update language server diagnostic help link
+- 2025-03-12 - feat: more naming improvements to nameResolutionFeb2025
+- 2025-03-17 - feat: expose websocket server for language server
+- 2025-03-06 - feat: support for deduplicating errors by their schema
+- 2025-03-12 - fix: reverted unintentional churn to type naming recently introduced by CLI version 1.508.0
+- 2025-02-28 - feat: nameResolutionFeb2025 is now the default for new SDKs
+- 2025-02-17 - feat: improved naming set nameResolutionFeb2025 to true in gen.yaml to trial
+- 2025-02-03 - feat: populate generator metadata in testing events
+- 2025-01-29 - feat: outputting json schemas for language configs
+- 2024-10-31 - fix: make flat methods the default for python
+- 2024-11-13 - fix: remove sanity check on error types pt 2
+- 2024-11-11 - fix: remove sanity check on error types
+- 2024-11-05 - feat: support label based bumping
+- 2024-11-06 - fix: sanitize multi-line descriptions in global parameters markdown table
+- 2024-10-06 - chore: add option to generate markdown tables with variable column widths
+- 2024-10-28 - chore: add test case for required request body with all properties optional
+- 2024-10-21 - chore: Enable unparam and unused Go linters
+- 2024-10-18 - chore: make SSE business and enterprise access
+- 2024-10-18 - fix: libopenapi indexing of operation refs
+- 2024-10-18 - chore: Enable golangci-lint in CI
+- 2024-10-18 - chore: Minor mockserver Docker build optimizations
+- 2024-10-17 - chore: add filter arg to the manual execution of snapshot tests
+- 2024-10-17 - chore: Disable AST loading from gen.lock (internal usage only)
+- 2024-10-17 - chore: speed up binary by delaying dprint initialization
+- 2024-10-16 - fix: Add missing feature usage recording for bigint, stringNumberFormats, and uploadStreams
+- 2024-10-15 - chore: Switch compilation configuration to getGeneratorConfig
+- 2024-10-11 - chore: Tidy terraform redactSecurityHeaders for accuracy and add apiKey security scheme to review provider
+- 2024-10-11 - fix: Prevent unhandled rule overrides and deduplicate used rules
+- 2024-10-07 - chore: migrate compilation to new processrunner package
+- 2024-10-04 - fix: updated libopenapi to include a fix for index building
+- 2024-10-01 - feat: snapshot test runner script
+- 2024-09-25 - fix: updated libopenapi to include optimizations to schema building
+- 2024-09-26 - fix: issue with numbers in features
+- 2024-09-24 - feat: support serializing ast to disk to aid quicker future iteration
+- 2024-09-25 - chore: add reboot loop around boot-services.sh
+- 2024-09-24 - chore: add prove to snapshot tests
+- 2024-09-25 - chore: stage, safety and contention checker in snapshot testing
+- 2024-09-24 - chore: Update Posthog client dependency
+- 2024-09-24 - fix: sourceDirectory validation regex C#
+- 2024-09-23 - chore: Update telemetry and logging dependencies
+- 2024-09-23 - chore: Remove extraneous golang.org/x/exp dependency
+- 2024-09-23 - chore: Remove faker-js deprecation warnings
+- 2024-09-23 - fix: line numbers are off by one for pagination rule
+- 2024-09-20 - chore: Generator memory optimizations for large schemas
+- 2024-09-20 - feat: add lint rule for missing retries
+- 2024-09-20 - chore: Enable additional mockserver features to generate additional response handling
+- 2024-09-20 - feat: add lint rule for suspected paginated endpoints
+- 2024-09-20 - chore: improve caching for an external API fixture
+- 2024-09-20 - chore: upgrade goja, esbuild and faker dependencies
+- 2024-09-20 - chore: refactor precalculate examples to run mainly in goja
+- 2024-09-19 - fix: downgrade some lint errors to warning severity
+- 2024-09-18 - chore: more snapshots
+- 2024-09-18 - fix: add validation warning for missing security schema definitions
+- 2024-09-18 - fix: discriminator mapping linting rule should not panic
+- 2024-09-18 - fix: add new validation rule disallowing non-object schemas for multipart request bodies
+- 2024-09-17 - chore: snapshot test fixes
+- 2024-09-17 - fix: update lint rule for operations missing any error responses
+- 2024-09-17 - feat: add new lint rule for operations missing any error responses
+- 2024-09-16 - chore: mark php as beta
+- 2024-09-06 - chore: do not pre-calculate examples when validating
+- 2024-09-06 - chore: speed up github actions
+- 2024-09-05 - feat: promote pythonv2 to GA
+- 2024-09-05 - chore: Prevent generator changes from reordering gen.lock generatedFiles
+- 2024-09-05 - chore: promote nullables to a required-beta feature
+- 2024-09-05 - chore: Introduce bespoke tests for all supported OAS HTTP methods
+- 2024-09-05 - chore: add go mod tidy to snapshot tests'
+- 2024-09-03 - feat: improved example generation performance
+- 2024-08-29 - fix: set new readme section insert point based on weight
+- 2024-08-28 - feat: track failing line numbers for operation validity
+- 2024-08-27 - chore: configure snapshot test workflow
+- 2024-08-20 - chore: set up snippet compilation for typescriptV2
+- 2024-08-16 - chore: precalculate examples for mockserver
+- 2024-08-19 - chore: update error-related tests in typescriptV2
+- 2024-08-19 - fix: move templateEventStream from pythonv2 to common templates
+- 2024-08-16 - fix: if skip versioning or force generation is true, always generate 
+- 2024-08-16 - chore: Rename mockserver/auxiliary .go files to .go.stmpl
+- 2024-08-15 - chore: upgrade dependencies
+- 2024-08-15 - fix: devcontainer libssl arm64 url
+- 2024-08-14 - fix: csharp libssl setup in Dockerfile, remove redundant apt update
+- 2024-08-12 - chore: add validation warning for non-class error content
+- 2024-08-10 - fix: pythonv2 publishing in pr mode
+- 2024-08-09 - chore: ensure we run changelog tests
+- 2024-08-09 - feat: add skip version command 
+- 2024-08-08 - chore: remove typescript and java v1
+- 2024-08-07 - chore: add Makefile recipe to generate standalone usage snippets
+- 2024-08-05 - feat: support checking feature access based on account type
+- 2024-07-31 - add a security into the terraform review sdk
+- 2024-07-29 - chore: Update terraform-plugin-* dependencies to latest
+- 2024-07-29 - fix: improve pagination error message for invalid limit input
+- 2024-07-25 - chore: support verbose mode for end users
+- 2024-07-25 - fix: fix speakeasy domain in autogenerated notice
+- 2024-07-23 - fix: update links to speakeasy homepage
+- 2024-07-23 - fix: add check for invalid url to prevent package rejection from NuGet
+- 2024-07-23 - fix: remove flakiness in errors-connection-error
+- 2024-07-22 - chore: promote pythonv2 to be the default python target
+- 2024-07-22 - fix: standalone usage generation due to configuration mismatch
+- 2024-07-22 - chore: improving changelog message and version report metadata
+- 2024-07-17 - ci: enabled dependency caching for go jobs
+- 2024-07-17 - chore: rework usage snippet compilation
+- 2024-07-17 - chore: add errorUnions tests
+- 2024-07-17 - ci: improve parallelism of running tests
+- 2024-07-11 - fix: raw response type recursion
+- 2024-07-12 - chore: only write the changerecord title if we have some change sections 
+- 2024-07-11 - chore: log "operation valid" at debug level
+- 2024-07-11 - chore: add pagination-limit-offset-deep-outputs-page-body test case
+- 2024-07-11 - feat: add titles to PR section using versioning pathway
+- 2024-07-10 - chore: logging improvements
+- 2024-07-10 - revert change to usage snippet generation
+- 2024-07-09 - chore: add discriminated union of errors endpoint
+- 2024-07-08 - fix: prevent changelog entries for sunset targets
+- 2024-07-03 - chore: add an AI-model fixture to regression suite
+- 2024-07-02 - chore: redo usage snippet compilation inside testproject
+- 2024-07-03 - feat: derive json schema types from const values when missing
+- 2024-06-28 - chore: fatter runners for tests
+- 2024-06-27 - feat: exclusions for certain undesirable faker words
+- 2024-06-26 - fix: better descriminated union handling
+- 2024-06-21 - chore: revert allow templating all usage snippets inside testproject
+- 2024-06-21 - fix: re-format one line YAML files
+- 2024-06-21 - chore: upgrade package and build toolchain to go 1.22
+- 2024-06-21 - chore: use better config defaults for TS SDKs
+- 2024-06-20 - chore: disable swift from regression suite
+- 2024-06-18 - chore: disable flattening by default for TS SDKs
+- 2024-06-13 - chore: allow templating usage snippets inside testproject
+- 2024-06-12 - feat: disable posthog telemetry cross org
+- 2024-06-10 - chore: update sdk-docs
+- 2024-06-06 - chore: updated vacuum and libopenapi
+- 2024-06-03 - fix: fix linting report background
+- 2024-05-31 - feat: increment prereleases in the generator
+- 2024-05-30 - chore: add policy fixtures to the Java/C# regression suite
+- 2024-05-28 - fix: support csharp build in .devcontainers/Dockerfile
+- 2024-05-23 - feat: adjust filename examples
+- 2024-05-21 - fix: template testprojects in separate directories
+- 2024-05-21 - chore: fix download links in.devcontainer/Dockerfile
+- 2024-05-16 - chore: fix hoisted-security tests in Unity
+- 2024-05-15 - chore: more regression suite targets
+- 2024-05-14 - chore: expand testusage scope to other test files
+- 2024-05-08 - feat: add linting to PHP target
+- 2024-05-10 - feat: include number of operations used in CLI events
+- 2024-05-08 - chore: remove config for allowing remote refs
+- 2024-05-07 - fix: fixed methods not being flattened as expected
+- 2024-05-02 - feat: add support for generating feature reports
+- 2024-05-07 - fix: switch to amannn/action-semantic-pull-request
+- 2024-05-02 - feat: propagate simple parameter examples into examples of that type  
+- 2024-04-30 - feat: return operationValidity when linting
+- 2024-04-29 - fix: makefile test-swift-sdk not throwing failures
+- 2024-04-29 - fix: test failures not returning exit code 1
+- 2024-04-29 - fix: remove checked in lock file
+- 2024-04-24 - fix: csharp union handling and better tests
+- 2024-04-26 - feat: add maturity levels for targets
+- 2024-04-23 - fix: treat string with format:int64 as bigint
+- 2024-04-17 - feat: improve csharp request testing
+- 2024-04-17 - feat: improved auth examples
+- 2024-04-16 - fix: potential nil httpRes returned from AfterError hooks
+- 2024-04-16 - chore: use regex patterns to define untracked and unignored files
+- 2024-04-16 - fix: make sure validation doesn't run resolve names
+- 2024-04-16 - chore: adding tracing docs
+- 2024-04-08 - feat: add support for creating a linting report
+- 2024-04-08 - fix: compilation to make it optional
+- 2024-03-28 - fix: handling of input/output models during registration
+- 2024-03-19 - chore: fix hoisted-security test in TypescriptV2
+- 2024-03-19 - feat: add ability to configure the rules used by the linter
+- 2024-03-25 - fix: handle apis with missing success responses
+- 2024-03-24 - chore: add a devcontainer to ease testing on arm macs
+- 2024-03-19 - feat: force generation in options
+- 2024-03-19 - fix: python additional metadata url
+- 2024-03-19 - fix: handling of enums with mixed casing
+- 2024-03-18 - fix: use correct oauth token in tsv2 test
+- 2024-03-18 - fix: update config regexes to be accurate
+- 2024-03-15 - fix: added validation for unsupported use of unions as errors
+- 2024-03-08 - fix: support linux-aarch64 environments in ruby target
+- 2024-03-07 - chore: cheaper runners
+- 2024-02-27 - chore: interopt from terraform to go
+- 2024-03-07 - feat: support interopt templating a target
+- 2024-03-07 - chore: default java to generate v2 for new sdks
+- 2024-03-07 - fix: improve validation rules to use gen.yaml as context
+- 2024-03-01 - feat: support for generating usage for all operations
+- 2024-03-01 - fix: handling of defaults for examples in parameters
+- 2024-02-29 - fix: use defaults for usage snippet rendering if example not available
+- 2024-02-29 - feat: add usage tracking of features and configuration
+- 2024-02-28 - fix: set operation level security to disabled
+- 2024-02-27 - fix: fix update gen.lock in review sdks
+- 2024-02-26 - fix: fixed issue with per operation security not being hoisted correctly
+- 2024-02-27 - feat: support tracing code generation with OpenTelemetry
+- 2024-02-22 - feat: don't regenerate if no version bump detected
+- 2024-02-16 - feat: add account type to context
+- 2024-02-14 - feat: bump core lib
+- 2024-02-14 - fix: handle nullable enums correctly
+- 2024-02-13 - chore: update regression test workflow to target tsv2
+- 2024-02-10 - feat: added a language server for power a vscode extension
+- 2024-02-09 - chore: upgrade vacuum
+- 2024-02-07 - fix: config version changes can happen automatically: make them not bump but warn instead
+- 2024-02-08 - chore: some logging improvements
+- 2024-02-07 - chore: support enrichment of telemetry events
+- 2024-02-06 - fix: compile using python3 instead of 3.8 exactly
+- 2024-02-06 - fix: ensure response description validation is ignored correctly
+- 2024-02-05 - chore: python compile command
+- 2024-02-02 - fix: add multipart schema validation
+- 2024-02-05 - fix: allow inline schemas to be named after their parent request/response components
+- 2024-02-05 - fix: nil check for request body
+- 2024-02-05 - chore: update regression test workflow
+- 2024-02-05 - chore: upgrade to the latest version of vacuum and libopenapi
+- 2024-02-02 - chore: track template name in posthog analytics
+- 2024-02-02 - fix: ensure major version bumps don't happen automatically in go and fixed genignore
+- 2024-02-02 - fix: ensure we validate enum const/default values
+- 2024-01-18 - fix: remove obsolete recursive cleanup code
+- 2024-02-01 - feat: github action logging groups
+- 2024-02-01 - fix: ensure parameters of different types still respect openapi order
+- 2024-02-01 - fix: fixed backwards compatiblity for finding the gen.yaml file
+- 2024-02-01 - fix: don't validate response descriptions
+- 2024-02-01 - fix: potential hang when dealing with circular references through maps
+- 2024-01-31 - fix: improve filtering and line numbers of validation errors
+- 2024-01-31 - feat: added validation for invalid const/default values
+- 2024-01-22 - chore: add helper script to update permissions
+- 2024-01-18 - chore: logging clean up
+- 2024-01-17 - fix: ensure serialization method suffix is retain when overriding method names
+- 2024-01-16 - fix: speed up terraform gen and improve logging
+- 2024-01-15 - fix: ensure changelogs get bumped correctly
+- 2024-01-15 - fix: fail early on generation
+- 2024-01-15 - fix: determining language with missing templateVersion
+- 2024-01-15 - feat: enable javav2 via templateVersion, defaults to v1
+- 2024-01-14 - refactor: support v2 languages natively
+- 2024-01-12 - fix: do not swallow template errors
+- 2024-01-12 - chore: (tsv2) remove trailing semicolons after enums
+- 2024-01-11 - chore: update sdk-gen-config dependency
+- 2024-01-09 - feat: add support for compilation via the CLI
+- 2024-01-09 - chore: speed up SDK Docs CI
+- 2024-01-09 - fix: (tsv2) support unions discriminated by enums
+- 2024-01-08 - feat: (tsv2) add support for consts and defaults
+- 2024-01-05 - fix: fix unintentional version bumps when using dev containers
+- 2024-01-05 - feat: add conditional license field to python gen.yaml
+- 2024-01-05 - fix: fixes upgrade to config v2.0.0 and handling releaseVersion correctly
+- 2024-01-03 - chore: update readme to specify supported node.js versions
+- 2023-12-19 - fix: handling of file paths to support windows
+- 2023-12-12 - fix: sidebar wrapping path matching
+- 2023-12-12 - fix: untracked theme files for language based routing in docs
+- 2023-12-11 - chore: use an enum to list sections and order them
+- 2023-12-11 - fix: ensure property names overriden with extension can pass validation
+- 2023-12-07 - fix: attempt to fix infinite yaml parsing in libopenapi
+- 2023-12-06 - chore: allow existing targets to redirect to new targets for new sdks
+- 2023-12-05 - feat: fix operation-id selection in usage generation
+- 2023-12-05 - fix: remove checked-in SDK
+- 2023-11-28 - fix: add missing request body on getGlobalNameOverride in primary spec
+- 2023-11-27 - feat: add javav2 base
+- 2023-11-21 - fix: example map ordering to ensure deterministic test runs
+- 2023-11-21 - fix: validating schema and usage snippet generation
+- 2023-11-20 - feat: modify default badges
+- 2023-11-20 - chore: relax urllib3 dependency version
+- 2023-11-17 - fix: ensure response field names don't clash with errors
+- 2023-11-15 - feat: add test generation for python
+- 2023-11-15 - fix: revert disabling of global security when operation security array is empty
+- 2023-11-15 - chore: disable analytics for internal workflows
+- 2023-11-15 - chore: improve data captured in analytics
+- 2023-11-10 - refactor: do imports differently in go
+- 2023-11-20 - chore: move generated curl test output to tests/
+- 2023-11-14 - fix: fix a potential panic when validating json schema
+- 2023-11-13 - fix: disable global security when operation security array is empty
+- 2023-11-10 - refactor: do imports differently in go
+- 2023-11-13 - fix: disable global security when operation security array is empty
+- 2023-11-13 - chore: fix file permissions
+- 2023-11-09 - chore: add compilation testing for sdk docs
+- 2023-11-10 - chore: fix prettier workflow config
+- 2023-11-10 - refactor: do imports differently in go
+- 2023-11-09 - fix: handling of type tracking for infinite recursion
+- 2023-11-08 - chore: add json and yaml tags to import config
+- 2023-11-09 - chore: consolidate usage snippet generation
+- 2023-11-09 - feat: allow optional properties in usage snippets to be conditionally rendered
+- 2023-11-09 - fix: ensure permissions file order is maintained
+- 2023-11-09 - fix: ensure files permissions get updated
+- 2023-11-08 - fix: improve config descriptions
+- 2023-11-07 - chore: format codebase with prettier
+- 2023-11-07 - fix: fix loading openapi documents from local filesystem with lots of sibling files
+- 2023-11-07 - feat: make generated docs languages configurable and make build-docs target generate fewer docs languages
+- 2023-11-07 - fix: unset baseURL on default axios client
+- 2023-11-06 - chore: bump test-docs timeout for GH actions
+- 2023-11-03 - fix: fixes circular reference handling for advanced use cases
+- 2023-11-05 - feat: add feature to maintain original order of openapi document
+- 2023-10-31 - fix: changelog parsing for docs/terraform
+- 2023-10-27 - chore: capture original name of object fields
+- 2023-10-26 - chore: disable iOS test workflow as it times out / is expensive
+- 2023-10-25 - chore: generate docs wrapping in parallel
+- 2023-10-20 - chore: update how changelogs are handled
+- 2023-10-20 - chore: dry regression suite: add terraform tests
+- 2023-10-20 - chore: add support for tf regression tests
+- 2023-10-18 - fix: handling of configs during upgrade without a version
+- 2023-10-17 - chore: adjust PR function name for regression suite as it runs in merge pipeline now.
+- 2023-10-16 - chore: bump github action runners for build
+- 2023-10-11 - chore: [Makefile] add build-docs target as dependency of build-sdks
+- 2023-10-10 - chore: add annotation predicate and utility functions to common
+- 2023-10-07 - fix: compile using local NPM deps
+- 2023-10-06 - fix: reverse feature guard in python
+- 2023-10-02 - feat: support multiple spec files in test
+- 2023-10-06 - chore: auto upgrade speakeasy-registry
+- 2023-10-04 - fix: circular reference errors in allOfs, anyOf type namespacing when merging
+- 2023-10-02 - fix: nil pointer in allOf properties
+- 2023-10-02 - fix: on new projects, badges are no longer hardcoded
+- 2023-09-30 - fix: fixed handling of allOf loops to more robustly allow or deny circular references
+- 2023-09-29 - fix: handling of complex oneOf/allOf loops causing infinite circular references
+- 2023-09-29 - chore: add ./tests to test-generator Makefile target
+- 2023-09-28 - feat: improve heuristics in usage example generation
+- 2023-09-28 - chore: generate tests into another folder and zSDKs is a review SDK
+- 2023-09-27 - chore: add init-dev-environment make target
+- 2023-09-27 - fix: config for spec validation
+- 2023-09-27 - fix: duplicate tags no longer cause duplicate-operation-id validation errors
+- 2023-09-25 - feat: ensure random values in usage examples are stable
+- 2023-09-22 - feat: usage snippets for nested operations
+- 2023-09-20 - feat: introduce boilerplate for intertemplate calls
+- 2023-09-18 - feat: treat anyOf as oneOf
+- 2023-09-13 - fix: multiple level tagging names with different structure
+- 2023-09-08 - fix: missing-examples validation rule for objects
+- 2023-09-07 - fix: comments of shared types getting overriden
+- 2023-09-06 - fix: unsupported extension docs when no docs extension used
+- 2023-09-06 - feat: root example for ondemand usage snippets
+- 2023-09-06 - feat: add on demand usage snippets for more languages
+- 2023-09-06 - chore: clean up handling of testprojects folder so things like csproj files can be templated
+- 2023-09-06 - feat: standalone usage snippets
+- 2023-09-05 - fix: response error handling and type validation causing regression test failures
+- 2023-09-04 - fix: github action https://github.com/dorny/paths-filter/issues/181#issuecomment-1382385469
+- 2023-09-04 - fix: handling of floats in tests
+- 2023-08-31 - feat: add support for rewriting extensions with x-speakeasy-extension-rewrite
+- 2023-08-31 - docs: add documentation for the different features we have
+- 2023-08-30 - fix: file permissions for .gitattributes
+- 2023-08-25 - fix: relax circular reference to allow nested allOf to work
+- 2023-08-25 - chore: validate casing for array/map of object & deep object for json serialization
+- 2023-08-23 - feat: handle type arrays in type validation
+- 2023-08-18 - chore: add a merge driver implementation
+- 2023-08-17 - fix: fixes validation of oneOf objects with nested references
+- 2023-08-15 - chore: add github actions changes to ensure we only run relevant tests depending on the file changeset.
+- 2023-08-15 - chore: rename sdks to zsdks to make reviews a little easier
+- 2023-08-15 - fix: revert types validation due to regression in support
+- 2023-08-14 - chore: upgrade to go 1.21
+- 2023-08-11 - feat: ensure types are checked for all schemas during validation time
+- 2023-08-08 - feat: add ability to get latest feature versions for language
+- 2023-08-08 - feat: add ability to get latest feature versions for language

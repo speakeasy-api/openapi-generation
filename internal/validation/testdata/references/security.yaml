@@ -1,0 +1,4 @@
+api-key:
+  type: apiKey
+  name: api-key
+  in: header

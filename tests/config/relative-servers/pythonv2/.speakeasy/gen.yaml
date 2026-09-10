@@ -1,0 +1,19 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+python:
+  fixFlags:
+    conflictResistantModelImportsFeb2026: true
+  forwardCompatibleEnumsByDefault: true
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  pytestFilterWarnings:
+    - error::RuntimeWarning
+    # Ensure __del__ method warnings are raised
+    - error::pytest.PytestUnraisableExceptionWarning
+  pytestTimeout: 300
+  templateVersion: v2
+  packageManager: uv

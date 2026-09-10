@@ -1,0 +1,5 @@
+{{- recurse 1 -}}
+{{ genImports }}
+{{range .Local.Helpers}}
+{{templateString "testhelper.py.stmpl" .}} 
+{{end}}

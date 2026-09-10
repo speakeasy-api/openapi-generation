@@ -1,0 +1,9 @@
+# TestEndpointRequest
+
+
+## Fields
+
+| Field                                                                         | Setter Type                                                                   | Getter Type                                                                   | Required                                                                      | Description                                                                   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `testName`                                                                    | *String*                                                                      | *String*                                                                      | :heavy_check_mark:                                                            | N/A                                                                           |
+| `requestBody`                                                                 | [TestEndpointRequestBody](../../models/operations/TestEndpointRequestBody.md) | [TestEndpointRequestBody](../../models/operations/TestEndpointRequestBody.md) | :heavy_check_mark:                                                            | N/A                                                                           |

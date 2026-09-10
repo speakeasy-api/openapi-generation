@@ -1,0 +1,91 @@
+{
+  "name": "html-report",
+  "version": "0.1.0",
+  "description": "Generated HTML reporting for vacuum",
+  "main": "index.js",
+  "repository": "https://github.com/daveshanley/vacuum",
+  "author": "Dave Shanley",
+  "license": "MIT",
+  "scripts": {
+    "start-dev-server": "webpack serve --open",
+    "start": "webpack --mode=development --watch",
+    "build": "webpack --mode=production",
+    "lint": "eslint --ext .ts,.html . --ignore-path .eslintignore && prettier \"**/*.ts\" --check --ignore-path .eslintignore",
+    "format": "eslint --ext .ts,.html . --fix --ignore-path .eslintignore && prettier \"**/*.ts\" --write --ignore-path .eslintignore",
+    "test": "tsc && wtr --coverage",
+    "test:watch": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wtr --watch\""
+  },
+  "devDependencies": {
+    "@open-wc/eslint-config": "^10.0.0",
+    "@types/chart.js": "^2.9.37",
+    "@typescript-eslint/eslint-plugin": "^5.38.1",
+    "@typescript-eslint/parser": "^5.38.1",
+    "@web/dev-server-esbuild": "^0.3.3",
+    "@web/test-runner": "^0.15.1",
+    "@web/test-runner-commands": "^0.6.5",
+    "@web/test-runner-playwright": "^0.9.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-lit-a11y": "^2.3.0",
+    "eslint-plugin-wc": "^1.3.2",
+    "lint-staged": "^13.0.3",
+    "mini-css-extract-plugin": "^2.6.1",
+    "prettier": "^2.7.1",
+    "webpack": "^5.74.0",
+    "webpack-cli": "^5.0.1",
+    "webpack-dev-server": "^4.11.1"
+  },
+  "dependencies": {
+    "@open-wc/testing": "^3.1.7",
+    "chart.js": "^4.2.1",
+    "css-loader": "^6.7.1",
+    "lit": "^2.4.1",
+    "style-loader": "^3.3.1",
+    "terminal.css": "^0.7.2",
+    "ts-loader": "^9.4.1",
+    "typescript": "^5.0.2"
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:@typescript-eslint/recommended"
+    ],
+    "rules": {
+      "no-unused-vars": "off",
+      "no-unused-expressions": "off",
+      "comma-dangle": "off",
+      "no-var-requires": "off",
+      "linebreak-style": "off",
+      "no-plusplus": "off",
+      "no-param-reassign": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error"
+      ],
+      "import/no-unresolved": "off"
+    }
+  },
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "avoid"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+# Security
+
+
+## Fields
+
+| Field                                                                         | Type                                                                          | Required                                                                      | Description                                                                   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `user_pass_auth`                                                              | [T.nilable(Components::UserPassAuth)](../models/shared/userpassauth.md)       | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `option2`                                                                     | [T.nilable(Components::SecurityOption2)](../models/shared/securityoption2.md) | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `option3`                                                                     | [T.nilable(Components::SecurityOption3)](../models/shared/securityoption3.md) | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `option4`                                                                     | [T.nilable(Components::SecurityOption4)](../models/shared/securityoption4.md) | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `option5`                                                                     | [T.nilable(Components::SecurityOption5)](../models/shared/securityoption5.md) | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `option6`                                                                     | [T.nilable(Components::SecurityOption6)](../models/shared/securityoption6.md) | :heavy_minus_sign:                                                            | N/A                                                                           |
+| `my_api_key`                                                                  | [T.nilable(Components::MyApiKey)](../models/shared/myapikey.md)               | :heavy_minus_sign:                                                            | N/A                                                                           |

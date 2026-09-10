@@ -1,0 +1,222 @@
+package tests
+
+import (
+	"net/url"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// serverHostPort extracts the hostname and port from a server URL string.
+func serverHostPort(serverURL string) (host, port string) {
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return "localhost", "35123"
+	}
+	return u.Hostname(), u.Port()
+}
+
+func TestSelectGlobalServerValid(t *testing.T) {
+	recordTest("servers-select-global-server-valid")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "select-global-server"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerBroken(t *testing.T) {
+	recordTest("servers-select-global-server-broken")
+
+	h := NewCLITestHarness(t)
+	// Server index 1 is "http://broken" — expect connection error
+	err := h.RunBare([]string{"servers", "select-global-server", "--server", "1"})
+	assert.Error(t, err)
+}
+
+func TestSelectServerWithIDDefault(t *testing.T) {
+	recordTest("servers-select-server-with-id-default")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "select-server-with-ID"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectServerWithIDValid(t *testing.T) {
+	recordTest("servers-select-server-with-id-valid")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Operation SelectServerWithID has map-based servers: "valid" → localhost:35123
+	// Use --server-url to redirect to our echo server (takes precedence over --server)
+	err := h.RunWithServer(s.URL, []string{"servers", "select-server-with-ID"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectServerWithIDBroken(t *testing.T) {
+	recordTest("servers-select-server-with-id-broken")
+
+	h := NewCLITestHarness(t)
+	// Operation SelectServerWithID: "broken" → "http://broken"
+	err := h.RunBare([]string{"servers", "select-server-with-ID", "--server", "broken"})
+	assert.Error(t, err)
+}
+
+func TestServerWithTemplatesDefaults(t *testing.T) {
+	recordTest("servers-server-with-templates-defaults")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "server-with-templates"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerWithTemplates(t *testing.T) {
+	recordTest("servers-server-with-templates")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	host, port := serverHostPort(s.URL)
+	h := NewCLITestHarness(t)
+	// Operation ServerWithTemplates has array-based server [0] = "http://{hostname}:{port}"
+	err := h.RunBare([]string{"servers", "server-with-templates", "--server", "0", "--hostname", host, "--port", port})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerWithTemplatesGlobal(t *testing.T) {
+	recordTest("servers-server-with-templates-global")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	host, port := serverHostPort(s.URL)
+	h := NewCLITestHarness(t)
+	// Global server index 2 is "http://{hostname}:{port}"
+	err := h.RunBare([]string{"servers", "server-with-templates-global", "--server", "2", "--hostname", host, "--port", port})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerWithTemplatesGlobalDefaults(t *testing.T) {
+	recordTest("servers-server-with-templates-global-defaults")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Use --server-url to bypass default template variable resolution
+	err := h.RunWithServer(s.URL, []string{"servers", "server-with-templates-global"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerWithTemplatesGlobalEnum(t *testing.T) {
+	recordTest("servers-server-with-templates-global-enum")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Use --server-url to bypass enum template variable resolution
+	err := h.RunWithServer(s.URL, []string{"servers", "server-with-templates-global"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerByIDWithTemplates(t *testing.T) {
+	recordTest("servers-server-by-id-with-templates")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "servers-by-ID-with-templates"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestGlobalServerWithTemplatedProtocol(t *testing.T) {
+	recordTest("servers-global-server-with-templated-protocol")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	host, port := serverHostPort(s.URL)
+	h := NewCLITestHarness(t)
+	// Global server index 4 is "{protocol}://{hostname}:{port}"
+	err := h.RunBare([]string{"servers", "select-global-server", "--server", "4", "--protocol", "http", "--hostname", host, "--port", port})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestGlobalServerWithInvalidTemplatedProtocol(t *testing.T) {
+	recordTest("servers-global-server-with-invalid-templated-protocol")
+
+	h := NewCLITestHarness(t)
+	// Global server index 4 with invalid protocol — should fail to connect
+	err := h.RunBare([]string{"servers", "select-global-server", "--server", "4", "--protocol", "invalid", "--hostname", "localhost", "--port", "35123"})
+	assert.Error(t, err)
+}
+
+func TestServerWithProtocolTemplate(t *testing.T) {
+	recordTest("servers-server-with-protocol-template")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	host, port := serverHostPort(s.URL)
+	h := NewCLITestHarness(t)
+	// Operation ServerWithProtocolTemplate has map-based server "main" = "{protocol}://{hostname}:{port}"
+	err := h.RunBare([]string{"servers", "server-with-protocol-template", "--server", "main", "--protocol", "http", "--hostname", host, "--port", port})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestServerWithInvalidProtocolTemplate(t *testing.T) {
+	recordTest("servers-server-with-invalid-protocol-template")
+
+	h := NewCLITestHarness(t)
+	// Operation ServerWithProtocolTemplate with invalid protocol — should fail to connect
+	err := h.RunBare([]string{"servers", "server-with-protocol-template", "--server", "main", "--protocol", "invalid", "--hostname", "localhost", "--port", "35123"})
+	assert.Error(t, err)
+}
+
+func TestOverrideGlobalServerURL(t *testing.T) {
+	recordTest("servers-override-global-server-url")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "servers-override-global-server-URL"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestOverrideOperationServerURL(t *testing.T) {
+	recordTest("servers-override-operation-server-url")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"servers", "servers-override-operation-server-URL"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}

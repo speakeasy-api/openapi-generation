@@ -1,0 +1,8 @@
+{{- recurse 1 -}}
+{{- if and .Global .Global.Config .Global.Config.GramEnabled -}}
+import { defineConfig } from "@gram-ai/functions/build";
+
+export default defineConfig({
+  entrypoint: "esm/mcp-server/gram.js",
+});
+{{- end -}}

@@ -1,0 +1,11 @@
+{{- recurse 1 -}}
+{{- addUsageImport .Global.Config.PackageName (sanitizeClassName .Global.AST.MainSDK.Type.Name) -}}
+{{genImports "UsageImports"}}
+
+{{templateString "usage/init.stmpl" .Local | trim }}
+
+async function run() {
+{{templateString "usage/call.stmpl" .Local | indentPresent 2}}
+}
+
+run();

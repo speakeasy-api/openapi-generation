@@ -1,0 +1,43 @@
+declare(strict_types=1);
+
+namespace OpenAPI\OpenAPI\Tests;
+
+use OpenAPI\OpenAPI\Tests\CommonHelpers;
+use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
+use PHPUnit\Framework\TestCase;
+
+final class TelemetryTest extends TestCase
+{
+    public function testTelemetryUserAgentGet(): void
+    {
+        CommonHelpers::recordTest('telemetry-user-agent-get');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $response = $sdk->telemetry->telemetryUserAgentGet();
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertEquals('speakeasy-sdk/php {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}', $response->res->headers['X-Speakeasy-User-Agent']);
+    }
+
+    public function testTelemetrySpeakeasyUserAgentGet(): void
+    {
+        CommonHelpers::recordTest('telemetry-speakeasy-user-agent-get');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        $userAgent = 'test user agent';
+
+        $response = $sdk->telemetry->telemetrySpeakeasyUserAgentGet($userAgent);
+
+        $this->assertNotNull($response);
+        $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+        $this->assertEquals($userAgent, $response->res->headers['User-Agent']);
+        $this->assertEquals('speakeasy-sdk/php {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}', $response->res->headers['X-Speakeasy-User-Agent']);
+    }
+}

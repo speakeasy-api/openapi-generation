@@ -1,0 +1,44 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The oauth2-password variant has one named server but forces
+// cli.serverSelectionFlag: visible.
+
+func TestServerSelectionFlagVisibleShownInHelp(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--help"})
+	require.NoError(t, err)
+
+	assert.Contains(t, h.GetStdout(), "--server string")
+}
+
+func TestServerSelectionFlagVisibleParses(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"version", "--server", "main"})
+	require.NoError(t, err)
+}
+
+func TestServerSelectionFlagVisibleInUsage(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--usage"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	var serverLine string
+	for _, line := range strings.Split(stdout, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, `flag "--server <server>"`) {
+			serverLine = line
+			break
+		}
+	}
+	require.NotEmpty(t, serverLine, "server flag missing from usage schema")
+	assert.NotContains(t, serverLine, "hide=#true")
+}

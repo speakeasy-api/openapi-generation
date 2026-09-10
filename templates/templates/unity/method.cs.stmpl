@@ -1,0 +1,182 @@
+{{- $op := .Local -}}
+{{- $paramFlattening := operationParametersFlattened .Local -}}
+{{- $responses := $op.Response.Responses -}}
+{{- $replacement := "" -}}
+{{- $pagination := .Local.Extensions.Pagination -}}
+{{- $owningClassName := sanitizeClassName $.Local.OwningSDK.Type.Name -}}
+{{- $defaultError := getDefaultErrorClassName -}}
+{{- if .Local.Comments -}}
+{{- $replacement = sanitizeDeprecationReplacement .Local.Comments.DeprecationReplacement "method" -}}
+{{- end }}
+        {{ if (and .Local.Comments .Local.Comments.Deprecated) -}}
+        [Obsolete("This method will be removed in a future release, please migrate away from it as soon as possible{{ if $replacement }}. Use {{ $replacement }} instead{{ end }}")]{{- end}}
+        public async Task<{{ sanitizeType .Local.Response.Type false "" $owningClassName }}> {{ sanitizeMethodName .Local true }}({{ templateMethodArguments .Local "" }})
+        {
+            {{- $request := .Local.Request }}
+            {{- $optional := isRequestOptional $request }}
+            {{- if $paramFlattening }}
+            var request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}()
+            { {{- range (sortMethodParams $request.Field.Type.Fields) }}
+                {{ sanitizeFieldName .Name (sanitizeClassName $request.Field.Type.Name false) }} = {{ sanitizeMethodParamName .Name }},{{- end }}
+            };
+            {{- end }}
+
+            {{- $globalParamsToSet := getGlobalParametersToSet $request -}}
+            {{- if gt (len $globalParamsToSet) 0 }}
+            {{- if and (not $paramFlattening) (not $optional) }}
+            if (request == null)
+            {
+                request = new {{ sanitizeType $request.Field.Type false "" $owningClassName }}();
+            }
+            {{- end}}
+            {{- range $globalParamsToSet }}
+            request.{{ . }} ??= SDKConfiguration.{{ . }};
+            {{- end}}
+            {{end}}
+            {{- if .Local.Servers }}
+            {{- if .Local.Servers.ServerMap }}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerMap" .Local.ID}}[{{print (sanitizeFieldName .Local.ID) "Servers"}}.{{getEnumName .Local.Servers.Default}}], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+                {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (!string.IsNullOrEmpty(serverUrl))
+            {
+                baseUrl = serverUrl;
+            }
+            {{- else}}
+            string baseUrl = Utilities.TemplateUrl({{templateConstName "ServerList" .Local.ID}}[0], new Dictionary<string, string>(){{"{"}}{{- range $variable := .Local.Servers.GetVariables}}
+            {"{{$variable.Name}}", "{{$variable.Default}}"},{{end}}
+            {{"}"}});
+            if (serverUrl != null)
+            {
+                baseUrl = serverUrl;
+            }
+            {{- end}}
+            {{- else}}
+            string baseUrl = this.SDKConfiguration.GetTemplatedServerDetails();
+            {{- end}}
+            {{- if and .Local.Request .Local.Request.Params (or .Local.Request.Params.HasPathParams .Local.Request.Params.HasQueryParams)}}
+            var urlString = URLBuilder.Build(baseUrl, "{{ .Local.Path }}", request);
+            {{- else}}
+            var urlString = baseUrl + "{{ .Local.Path }}";
+            {{- end}}
+
+            var httpRequest = new UnityWebRequest(urlString, {{templateRequestMethod .Local.Method}});
+            DownloadHandlerStream downloadHandler = new DownloadHandlerStream();
+            httpRequest.downloadHandler = downloadHandler;
+            httpRequest.SetRequestHeader({{ if .Local.UsesUserAgentHeader }}"x-speakeasy-user-agent"{{ else }}"user-agent"{{ end }}, _userAgent);
+            {{- if and .Local.Request .Local.Request.Params .Local.Request.Params.HasHeaderParams }}
+            HeaderSerializer.PopulateHeaders(ref httpRequest, request);
+            {{- end}}
+            {{- if and $request .Local.SerializationMethod }}
+            {{- $format := getDataTypeFormat $request }}
+
+            var serializedBody = RequestBodySerializer.Serialize(request, "{{ sanitizeFieldName $request.RequestBody.Name (sanitizeClassName $request.Field.Type.Name false) }}", "{{.Local.SerializationMethod}}", {{$request.RequestBody.Nullable}}, {{$request.RequestBody.Optional}}{{if $format}}, "{{$format}}"{{end}});
+            if (serializedBody != null)
+            {
+                httpRequest.uploadHandler = new UploadHandlerRaw(serializedBody.Body);
+                httpRequest.SetRequestHeader("Content-Type", serializedBody.ContentType);
+            }
+            {{- end}}
+            {{- if .Local.Security }}
+
+            var client = SecuritySerializer.Apply(_defaultClient, () => security);
+            {{- else if .Local.GlobalSecurity }}
+
+            var client = _defaultClient;
+            if (_securitySource != null)
+            {
+                client = SecuritySerializer.Apply(_defaultClient, _securitySource);
+            }
+            {{- else }}
+
+            var client = _defaultClient;
+            {{- end }}
+
+            var httpResponse = await client.SendAsync(httpRequest);
+            int? errorCode = null;
+            string? contentType = null;
+            switch (httpResponse.result)
+            {
+                case UnityWebRequest.Result.ConnectionError:
+                case UnityWebRequest.Result.DataProcessingError:
+                case UnityWebRequest.Result.ProtocolError:
+                    errorCode = (int)httpRequest.responseCode;
+                    contentType = httpRequest.GetResponseHeader("Content-Type");
+                    httpRequest.Dispose();
+                    break;
+                case UnityWebRequest.Result.Success:
+                    break;
+            }
+
+            {{- if $pagination }}
+            {{ templateString "pagination.cs.stmpl" .Local}}
+            {{- end}}
+
+            if (contentType == null)
+            {
+                contentType = httpResponse.GetResponseHeader("Content-Type") ?? "application/octet-stream";
+            }
+            {{- $responseType := (sanitizeType .Local.Response.Type false "" $owningClassName)}}
+            {{- $responseFormat := getResponseFormat }}
+            {{- if eq $responseFormat "envelope" }}
+            int httpCode = errorCode ?? (int)httpResponse.responseCode;
+            var response = new {{ $responseType }}
+            {
+                StatusCode = httpCode,
+                ContentType = contentType,
+                RawResponse = httpResponse{{ if $pagination }},
+                Next = nextFunc{{ end }}
+            };
+            {{- end}}
+            {{- $returnResponse := true }}
+            {{- $nullValueHandling := "NullValueHandling.Ignore" }}
+            {{- if isRequestOptional $request }}{{ $nullValueHandling = "NullValueHandling.Include" }}{{end}}
+            {{- $hasDefault := false}}
+            {{- if gt (len $op.Response.Responses) 0 }}
+            {{- range $index, $response := .Local.Response.Responses }}
+            {{- if or (gt (len $responses) 1) (.Headers) (gt (len $response.Content) 0)}}
+            {{ if includes $response.Code "default"}}{{$hasDefault = true}}{{ if gt (len $responses) 1 }}else{{else}}if (true){{end}}{{else}}{{if gt $index 0}}else if{{else}}if{{end}} ({{templateStatusCode $response.Code}}){{end}}
+            {
+                {{- if ne (len $response.Content) 0}}
+                {{- range $index, $content := $response.Content }}
+                {{if and (gt (len $response.Content) 0) (gt $index 0)}}else if{{else}}if{{end}}(Utilities.IsContentTypeMatch("{{ .ContentType }}",response.ContentType))
+                {
+                    {{- templateResponseHandler $op $response $content | indent 20}}
+                }
+                {{- end}}
+                {{- if and $op.Response.Type $op.Response.Type.ResponseEnvelope}}
+                else
+                {
+                throw new {{$defaultError}}("API error occurred", httpCode, httpResponse.downloadHandler.text, httpResponse);
+                }
+                {{- end}}
+                {{- else if $response.Error}}
+                throw new {{$defaultError}}("API error occurred", httpCode, httpResponse.downloadHandler.text, httpResponse);
+                {{- else if not .Headers}}
+                {{- end }}
+            }
+
+            {{- else}}
+            if (response.StatusCode == 200)
+            {
+                {{- if (eq .SerializationMethod "json") }}
+                response.{{ sanitizeFieldName .Content.Name true (sanitizeClassName $response.Type.Name false) }} = JsonConvert.DeserializeObject<{{ sanitizeType .Content.Type false "" $owningClassName }}>(httpResponse.downloadHandler.text, new JsonSerializerSettings(){ NullValueHandling = {{$nullValueHandling}}, Converters = Utilities.GetJsonDeserializers({{ sanitizeType .Content.Type false "" $owningClassName }})});
+                {{- else }}
+                {{- $returnResponse = false }}
+                httpResponse.Dispose();
+                throw new {{$defaultError}}("API returned unexpected status code or content type");
+                {{- end}}
+            }
+            {{- end }}
+            {{- end }}
+            {{- if not $hasDefault}}
+            else
+            {
+                throw new {{$defaultError}}("unknown status code received", httpCode, httpResponse.downloadHandler.text, httpResponse);
+            }
+            {{- end}}
+            {{- end}}
+            {{- if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}
+            return response;{{else}}
+            return;{{end}}
+        }

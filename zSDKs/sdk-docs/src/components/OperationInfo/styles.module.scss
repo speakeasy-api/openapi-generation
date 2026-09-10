@@ -1,0 +1,29 @@
+@import '@/src/styles/utils/mixins';
+
+.operationInfo {
+  display: flex;
+  flex-direction: row;
+  margin-top: -1rem;
+  margin-bottom: 2rem;
+
+  .path {
+    @include generatePxToRem(margin-left, 12);
+    @include generatePxToRem(font-size, 16);
+    line-height: 1.650;
+    font-family: var(--font-family-mono);
+
+    .placeholder {
+      color: var(--primary-color);
+    }
+
+    .separator {
+      opacity: 0.3;
+      font-weight: 600;
+      @include generatePxToRem(padding, 0 2);
+    }
+
+    span {
+      display: inline-block;
+    }
+  }
+}

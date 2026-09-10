@@ -1,0 +1,56 @@
+name: Go Lint
+on:
+  merge_group:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  golangci-lint:
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.11.2
+          args: --timeout=10m --verbose
+  gomodtidy:
+    name: go mod tidy diff
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            services/**/go.sum
+            zSDKs/**/go.sum
+      - name: "go mod tidy -diff (.)"
+        run: "go mod tidy -diff"
+      - name: "go mod tidy -diff (cmd/wasm)"
+        run: "go mod tidy -diff"
+        working-directory: cmd/wasm
+      - name: "go mod tidy -diff (cmd/wasm/ast)"
+        run: "GOWORK=off go mod tidy -diff"
+        working-directory: cmd/wasm/ast
+      - name: "go mod tidy -diff (cmd/wasm/full-stack)"
+        run: "GOWORK=off go mod tidy -diff"
+        working-directory: cmd/wasm/full-stack
+      - name: "go mod tidy -diff (cmd/wasm/overlay)"
+        run: "GOWORK=off go mod tidy -diff"
+        working-directory: cmd/wasm/overlay
+      - name: "go mod tidy -diff (services/speakeasy-api-test-service)"
+        run: "GOWORK=off go mod tidy -diff"
+        working-directory: services/speakeasy-api-test-service

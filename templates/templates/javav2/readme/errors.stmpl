@@ -1,0 +1,42 @@
+Handling errors in this SDK should largely match your expectations. All operations return a response object or raise an exception.
+
+{{ $baseClass := getBaseErrorClassName}}
+[`{{ $baseClass }}`]({{ linkToErrorTypeFromReadMe $baseClass }}) is the base class for all HTTP error responses. It has the following properties:
+
+{{templateBaseErrorClassTable}}
+
+### Example
+{{templateUsageExample .Local.UsageContext ""}}
+
+### Error Classes
+
+{{- $groups := groupGlobalErrorsByErrorType }}
+**Primary error{{ if gt $groups.PrimaryErrorCount 0 }}s{{ end }}:**
+* [`{{ $baseClass }}`]({{ linkToErrorTypeFromReadMe $baseClass }}): The base class for HTTP error responses.
+{{- range $groups.PrimaryErrors }}
+  * {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+
+{{- $count := $groups.LessCommonErrorCount}}
+{{- $builtInCount := 6}}
+{{- $count := add $count $builtInCount}}
+
+<details><summary>Less common errors ({{$count}})</summary>
+
+<br />
+
+**Network errors:**
+* `java.io.IOException` (always wrapped by `java.io.UncheckedIOException`). Commonly encountered subclasses of
+`IOException` include `java.net.ConnectException`, `java.net.SocketTimeoutException`, `EOFException` (there are
+many more subclasses in the JDK platform).
+
+**Inherit from [`{{ $baseClass }}`]({{ linkToErrorTypeFromReadMe $baseClass }})**:
+{{- range $groups.LessCommonErrors }}
+* {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+
+
+</details>
+{{ if $groups.HasErrorsApplicableToNotAllOperations }}
+\* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
+{{- end }}

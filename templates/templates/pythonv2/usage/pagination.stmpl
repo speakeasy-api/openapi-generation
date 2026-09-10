@@ -1,0 +1,5 @@
+{{- $resVar := getResponseVariableName .Local.StepID -}}
+while {{$resVar}} is not None:
+    # Handle items
+
+    {{$resVar}} = {{$resVar}}.next()

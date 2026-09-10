@@ -1,0 +1,5 @@
+{{- recurse 1 -}}
+{{- addImport (getModuleImport) (sanitizeClassName .Global.AST.MainSDK.Type.Name)  -}}
+{{genImports}}
+
+{{templateString "usage/sync/block.stmpl" .Local}}

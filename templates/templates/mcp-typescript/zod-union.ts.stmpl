@@ -1,0 +1,21 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $isOptional := or .Local.Optional (eq .Local.Type.Type "any") }}
+{{- $rootType := .Local.Type -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation }}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- $fieldType := resolveOutbound (
+      dict
+        "usageLocation" $usageLocation
+        "typeDef" $rootType
+        "rootTypeDef" $rootType
+        "optional" $isOptional
+        "nullable" .Local.Nullable
+) -}}
+{{- callImportTypesFunc $fieldType.importInputTypes -}}
+
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "class" }}
+export type {{$typeName}} = {{ $fieldType.inputType }};
+
+export const {{ $zodName }}: z.ZodType<{{ $typeName }}> = {{ zodUnionFromTypeDef .Local.Type }};

@@ -1,0 +1,51 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/field-named-model-collision:
+    get:
+      operationId: primaryFieldNamedModelCollision
+      description: >
+        Exercises the case where a schema has a field named "model" that is an
+        open enum. The generator produces a @field_serializer method named
+        serialize_model for the enum, which would collide with the
+        @model_serializer method also named serialize_model if not sanitized.
+        This is a compile-time test — if pylint/mypy/pyright pass, the fix works.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectWithFieldNamedModel"
+components:
+  schemas:
+    DeviceModel:
+      type: string
+      enum:
+        - MODEL_A
+        - MODEL_B
+        - MODEL_C
+      x-speakeasy-unknown-values: allow
+    ObjectWithFieldNamedModel:
+      type: object
+      required:
+        - id
+        - model
+      properties:
+        id:
+          type: string
+        model:
+          $ref: "#/components/schemas/DeviceModel"
+          description: The model of the device — an open enum field named "model".
+        description:
+          type:
+            - string
+            - "null"
+          description: Optional nullable description to trigger @model_serializer generation.

@@ -1,0 +1,174 @@
+{{- recurse 1 -}}
+package provider
+
+{{genImports}}
+{{- addGenImport "context" -}}
+{{- addGenImport "fmt" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/ephemeral" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types/basetypes" -}}
+{{- addGenImport (getSDKPackage) -}}
+
+{{- $resourceTypeName := .Local.EphemeralResource.GoTypeName }}
+{{- $dataModelTypeName := .Local.EphemeralResource.GoDataModelTypeName }}
+{{- $privateDataModelTypeName := .Local.EphemeralResource.GoPrivateDataModelTypeName }}
+{{- $sdkClassName := sanitizeClassName .Global.AST.MainSDK.Type.Name }}
+
+// Ensure provider defined types fully satisfy framework interfaces.
+var _ ephemeral.EphemeralResource = (*{{ $resourceTypeName }})(nil)
+var _ ephemeral.EphemeralResourceWithConfigure = (*{{ $resourceTypeName }})(nil)
+{{- if .Local.EphemeralResource.HasCloseOperations }}
+var _ ephemeral.EphemeralResourceWithClose = (*{{ $resourceTypeName }})(nil)
+{{- end }}
+
+func New{{ $resourceTypeName }}() ephemeral.EphemeralResource {
+	return &{{ $resourceTypeName }}{}
+}
+
+// {{ $resourceTypeName }} is the ephemeral resource implementation.
+type {{ $resourceTypeName }} struct {
+	{{ templateEphemeralResourceStructFields .Local }}
+}
+
+// {{ $dataModelTypeName }} describes the data model.
+type {{ $dataModelTypeName }} struct { {{ templateEntityDataModelFields .Local.EphemeralResource }}
+}
+{{- if .Local.EphemeralResource.HasCloseOperations }}
+
+{{ templateDataModelToPrivateDataModelMethod .Local.EphemeralResource }}
+
+// {{ $privateDataModelTypeName }} describes the private data model
+// used to transfer data from Open to Close via Terraform private state.
+type {{ $privateDataModelTypeName }} struct {
+{{ templateEphemeralResourcePrivateDataModelFields .Local.EphemeralResource }}
+}
+
+{{ templatePrivateDataModelToDataModelMethod .Local.EphemeralResource }}
+{{- end }}
+
+// Metadata defines the metadata for the ephemeral resource.
+func (r *{{ $resourceTypeName }}) Metadata(ctx context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_{{ sanitizeTFStateName .Local.EphemeralResource.Name }}"
+}
+
+// Schema defines the schema for the ephemeral resource.
+func (r *{{ $resourceTypeName }}) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		MarkdownDescription: {{ quote .Local.EphemeralResource.SchemaDescription }},
+
+		Attributes: map[string]schema.Attribute{
+		    {{ generateSchema .Local.EphemeralResource "ephemeral" }}
+		},
+	}
+}
+
+// Configure sets up the ephemeral resource from the provider configuration. 
+func (r *{{ $resourceTypeName }}) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	{{ if .Local.ProviderContext.HasConfigureData -}}
+	providerData, ok := req.ProviderData.(*{{ sanitizeClassName .Global.Config.PackageName }}ProviderConfigureData)
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Ephemeral Resource Configure Type",
+			fmt.Sprintf("Expected *{{ sanitizeClassName .Global.Config.PackageName }}ProviderConfigureData, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	{{ templateEphemeralResourceConfigureProviderData .Local }}
+	{{ else -}}
+	client, ok := req.ProviderData.(*sdk.{{ $sdkClassName }})
+
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Ephemeral Resource Configure Type",
+			fmt.Sprintf("Expected *sdk.{{ $sdkClassName }}, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+	{{ end -}}
+}
+
+// Open invokes the ephemeral resource open lifecycle operations.
+func (r *{{ $resourceTypeName }}) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
+	var data *{{ $dataModelTypeName }}
+	var item types.Object
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &item)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(item.As(ctx, &data, basetypes.ObjectAsOptions{
+		UnhandledNullAsEmpty:    true,
+		UnhandledUnknownAsEmpty: true,
+	})...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ if gt (len .Local.EphemeralResource.GlobalFields) 0 -}}
+	{{   templateEphemeralResourceOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{ generateSDKCall .Local.EphemeralResource .Local.EphemeralResource.Operations.Open "open" }}
+
+	resp.Diagnostics.Append(resp.Result.Set(ctx, &data)...)
+
+	{{- if .Local.EphemeralResource.HasCloseOperations }}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	privateData := data.toPrivateDataModel()
+	privateDataBytes, err := json.Marshal(privateData)
+
+	if err != nil {
+		resp.Diagnostics.AddError("failed to marshal private data", err.Error())
+		return
+	}
+
+	resp.Private.SetKey(ctx, "PrivateDataModel", privateDataBytes)
+	{{- end }}
+}
+{{- if .Local.EphemeralResource.HasCloseOperations }}
+
+// Close invokes the ephemeral resource close lifecycle operations.
+func (r *{{ $resourceTypeName }}) Close(ctx context.Context, req ephemeral.CloseRequest, resp *ephemeral.CloseResponse) {
+	privateDataBytes, privateDataBytesDiags := req.Private.GetKey(ctx, "PrivateDataModel")
+
+	resp.Diagnostics.Append(privateDataBytesDiags...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var privateData {{ $privateDataModelTypeName }}
+
+	if err := json.Unmarshal(privateDataBytes, &privateData); err != nil {
+		resp.Diagnostics.AddError("failed to unmarshal private data", err.Error())
+		return
+	}
+
+	data := privateData.toDataModel()
+
+	{{ if gt (len .Local.EphemeralResource.GlobalFields) 0 -}}
+	{{   templateEphemeralResourceOperationGlobals .Local }}
+
+	{{ end -}}
+
+	{{ generateSDKCall .Local.EphemeralResource .Local.EphemeralResource.Operations.Close "close" }}
+}
+{{- end }}

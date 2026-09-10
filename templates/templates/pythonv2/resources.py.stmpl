@@ -1,0 +1,15 @@
+{{- range .Local.Imports }}
+from {{.Module}} import {{range $i, $s := .Specifiers}}{{if $i}}, {{end}}{{$s.Name}}{{if ne $s.Name $s.Alias}} as {{$s.Alias}}{{end}}{{end}}
+{{- end }}
+{{- range .Local.SubPackages }}
+from . import {{.}}
+{{- end }}
+{{- range .Local.Assignments }}
+{{.Name}} = {{.Target}}
+{{- end }}
+
+{{- if .Local.Exports }}
+{{.Local.Exports}}
+{{- else }}
+# package
+{{- end }}

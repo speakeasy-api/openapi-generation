@@ -1,0 +1,16 @@
+// This incomplete file will trick the generator into applying the custom code
+// regions to the actual final output version of this model file.
+
+// #region class-body-unwieldycomponent
+func (u *UnwieldyComponent) DeeplyNestedAttributes() []string {
+	var result []string
+	for _, ol := range u.GetOptionalList() {
+		if oi := ol.GetOptionalItem(); oi != nil {
+			if attr := oi.GetDeeplyNestedAttribute(); attr != nil {
+				result = append(result, *attr)
+			}
+		}
+	}
+	return result
+}
+// #endregion class-body-unwieldycomponent

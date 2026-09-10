@@ -1,0 +1,200 @@
+{{- $className := sanitizeClassName .Local.Type.Name -}}
+{{- $discriminator := .Local.Type.Discriminator -}}
+{{- $outputLocation := "operations" -}}
+{{- $unionType := (getUnionTypeName $className $outputLocation) -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $isOptional := .Local.Nullable }}
+
+    public class {{$unionType}}
+    {
+        private {{$unionType}}(string value) { Value = value; }
+
+        public string Value { get; private set; }
+        {{- if $discriminator}}
+        {{range $discriminator.Mapping}}
+        public static {{$unionType}} {{sanitizeClassName .Name}} { get { return new {{$unionType}}({{sanitizeEnumValue .Name "string"}}); } }
+        {{end}}
+        {{- else}}
+        {{- range .Local.Type.AssociatedTypes}}
+        {{- $name := sanitizeUnionTypeName .}}
+        public static {{$unionType}} {{sanitizeClassName $name}} { get { return new {{$unionType}}({{sanitizeEnumValue $name "string"}}); } }
+        {{- end}}
+        {{- end}}
+        public static {{$unionType}} Null { get { return new {{$unionType}}("null"); } }
+
+        public override string ToString() { return Value; }
+        public static implicit operator String({{$unionType}} v) { return v.Value; }
+        public static {{$unionType}} FromString(string v) {
+            switch(v) {
+                {{- if $discriminator -}}
+                {{- range $discriminator.Mapping}}
+                case {{sanitizeEnumValue .Name "string"}}: return {{sanitizeClassName .Name}};
+                {{- end -}}
+                {{- else -}}
+                {{- range .Local.Type.AssociatedTypes}}{{ $name := sanitizeUnionTypeName . }}
+                case {{sanitizeEnumValue $name "string"}}: return {{sanitizeClassName $name}};
+                {{- end -}}
+                {{- end}}
+                case "null": return Null;
+                default: throw new ArgumentException("Invalid value for {{$unionType}}");
+            }
+        }
+        public override bool Equals(object? obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+            return Value.Equals((({{$unionType}})obj).Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
+    }
+    {{templateComments .Local.Type.Comments $dg $className 0 "type"}}
+    [JsonConverter(typeof({{$className}}.{{$className}}Converter))]
+    public class {{$className}} {
+        public {{$className}}({{$unionType}} type) {
+            Type = type;
+        }
+
+        {{- range .Local.Type.AssociatedTypes}}
+        {{- $name := sanitizeUnionTypeName .}}
+        public {{sanitizeType . true $outputLocation}}? {{sanitizeFieldName $name}} { get; set; } {{end}}
+
+        public {{$unionType}} Type {get; set; }
+
+{{if $discriminator}}
+{{- range $discriminator.Mapping}}
+        public static {{$className}} Create{{sanitizeClassName .Name}}({{sanitizeType .Type false $outputLocation}} {{sanitizePrivateClassName .Name}}) {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName .Name}};
+        {{if eq .Type.Type "class"}}
+            {{- $field := .Type.Fields.GetField $discriminator.TypePropertyName}}
+        {{- if not $field.Const }}
+            string typStr = {{$unionType}}.{{sanitizeClassName .Name}}.ToString();
+            {{ if eq $field.Type.Type "enum" }}
+            {{sanitizePrivateClassName .Name}}.{{sanitizeFieldName $field.Name}} = {{sanitizeType $field.Type}}Extension.ToEnum({{$unionType}}.{{sanitizeClassName .Name}}.ToString());
+            {{- else}}
+            {{sanitizePrivateClassName .Name}}.{{sanitizeFieldName $field.Name}} = typStr;
+            {{- end}}
+        {{- else}}
+            {{sanitizePrivateClassName .Name}}.{{sanitizeFieldName $field.Name}} = typ;
+        {{- end}}{{end}}
+            {{$className}} res = new {{$className}}(typ);
+            res.{{sanitizeFieldName (sanitizeUnionTypeName .Type)}} = {{sanitizePrivateClassName .Name}};
+            return res;
+        }
+{{- end -}}
+{{- else -}}
+{{- range .Local.Type.AssociatedTypes}}
+{{- $name := sanitizeUnionTypeName .}}
+        public static {{$className}} Create{{sanitizeClassName $name}}({{sanitizeType . false $outputLocation}} {{sanitizePrivateClassName $name}}) {
+            {{$unionType}} typ = {{$unionType}}.{{sanitizeClassName $name}};
+
+            {{$className}} res = new {{$className}}(typ);
+            res.{{sanitizeFieldName $name}} = {{sanitizePrivateClassName $name}};
+            return res;
+        }
+{{end}}{{end}}
+        public static {{$className}} CreateNull() {
+            {{$unionType}} typ = {{$unionType}}.Null;
+            return new {{$className}}(typ);
+        }
+
+        public class {{$className}}Converter : JsonConverter
+        {
+
+            public override bool CanConvert(System.Type objectType) => objectType == typeof({{$className}});
+
+            public override bool CanRead => true;
+
+            public override object? ReadJson(JsonReader reader, System.Type objectType, object? existingValue, JsonSerializer serializer)
+            {
+                {{- if $discriminator}}
+                JObject jo = JObject.Load(reader);
+                string discriminator = jo.GetValue({{sanitizeEnumValue $discriminator.TypePropertyName "string"}})?.ToString() ?? throw new ArgumentNullException("Could not find discriminator field.");
+                {{- range $discriminator.Mapping}}
+                if (discriminator == {{$unionType}}.{{sanitizeClassName .Name }}.ToString())
+                {
+                    {{- $variableName := (sanitizeVariableName .Type.Name)}}
+                    {{sanitizeType .Type false $outputLocation}}? {{$variableName}} = JsonConvert.DeserializeObject<{{ sanitizeType .Type false "" $outputLocation }}>(jo.ToString(), new JsonSerializerSettings(){ NullValueHandling = NullValueHandling.Ignore, MissingMemberHandling = MissingMemberHandling.Error, Converters = Utilities.GetJsonDeserializers(typeof({{ sanitizeType .Type false "" $outputLocation }}))});
+                    return new {{$className}}({{$unionType}}.{{sanitizeClassName .Name}}) {
+                        {{sanitizeType .Type false $outputLocation}} = {{$variableName}},
+                    };
+                }
+                {{- end -}} {{/* range over discriminator mapping */}}
+                {{- else}} {{/* if not discriminator */}}
+                var json = JRaw.Create(reader).ToString();
+
+                if (json == "null") {
+                    return null;
+                }
+
+                {{- range sortTypeDefFieldCount .Local.Type.AssociatedTypes -}}
+                {{- $name := sanitizeUnionTypeName . }}
+                    {{- if isPrimitive . -}}
+                    {{- if eq .Type "string"}}
+                if (json[0] == '"' && json[^1] == '"'){
+                    return new {{$className}}({{$unionType}}.{{ sanitizeFieldName $name }}) {
+                        {{sanitizeFieldName $name}} = json[1..^1]
+                    };
+                }
+                    {{- else}} {{/* if not string */}}
+                try {
+                    var converted = Convert.{{primitiveConvertFunction .}}(json);
+                    return new {{$className}}({{$unionType}}.{{ sanitizeFieldName $name }}) {
+                        {{sanitizeFieldName $name}} = converted
+                    };
+                } catch (System.FormatException) {
+                    // try next option
+                }
+                    {{- end -}} {{/* end primitive handling */}}
+                    {{- else}}
+                try
+                {
+                    {{sanitizeType .}}? {{sanitizeVariableName $name}} = JsonConvert.DeserializeObject<{{ sanitizeType . false "" $outputLocation }}>(json, new JsonSerializerSettings(){ NullValueHandling = NullValueHandling.Ignore, MissingMemberHandling = MissingMemberHandling.Error, Converters = Utilities.GetJsonDeserializers(typeof({{ sanitizeType . false "" $outputLocation }}))});
+                    return new {{$className}}({{$unionType}}.{{ sanitizeFieldName $name }}) {
+                        {{sanitizeFieldName $name}} = {{sanitizeVariableName $name}}
+                    };
+                }
+                catch (Exception ex)
+                {
+                    if (!(ex is Newtonsoft.Json.JsonReaderException || ex is Newtonsoft.Json.JsonSerializationException)) {
+                        throw ex;
+                    }
+                }
+
+                    {{- end -}}
+                {{end}}{{end}}
+
+                throw new InvalidOperationException("Could not deserialize into any supported types.");
+            }
+
+            public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+            {
+                if (value == null) {
+                    writer.WriteRawValue("null");
+                    return;
+                }
+                {{$className}} res = ({{$className}})value;
+                if ({{$className}}Type.FromString(res.Type).Equals({{$className}}Type.Null))
+                {
+                    writer.WriteRawValue("null");
+                    return;
+                }
+
+                {{- range .Local.Type.AssociatedTypes}}
+                {{- $name := sanitizeUnionTypeName .}}
+                if (res.{{sanitizeFieldName $name}} != null)
+                {
+                    writer.WriteRawValue(Utilities.SerializeJSON(res.{{sanitizeFieldName $name}}{{if .Format}}, "{{.Format}}"{{end}}));
+                    return;
+                }
+                {{- end}}
+
+            }
+        }
+
+    }

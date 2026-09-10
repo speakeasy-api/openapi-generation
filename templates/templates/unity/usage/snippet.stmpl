@@ -1,0 +1,4 @@
+{{ templateUsageImports .Local }}
+
+{{templateString "usage/init.stmpl" .Local}}
+{{templateString "usage/call.stmpl" .Local}}

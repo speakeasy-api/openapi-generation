@@ -1,0 +1,114 @@
+{{- if templateDryRunShowcaseTestEnabled}}
+package tests
+
+import (
+	"bufio"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	{{- if hasGlobalSecurity}}
+	"github.com/zalando/go-keyring"
+
+	"{{getGolangPackage}}/internal/config"
+	{{- end}}
+)
+
+{{- if hasGlobalSecurity}}
+type dryRunMatrixKeyring struct{ reads int }
+
+func (r *dryRunMatrixKeyring) Get(service, key string) (string, error) {
+	r.reads++
+	return "", keyring.ErrNotFound
+}
+func (*dryRunMatrixKeyring) Set(service, key, value string) error { return nil }
+func (*dryRunMatrixKeyring) Delete(service, key string) error     { return nil }
+{{- end}}
+
+func newDryRunMatrixRequestTracker(t *testing.T) (*httptest.Server, *int) {
+	t.Helper()
+	requests := new(int)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		(*requests)++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(server.Close)
+	return server, requests
+}
+
+func dryRunMatrixArgs(args ...string) []string {
+	base := []string{"--dry-run"}
+	{{- if isAnyInteractiveEnabled}}
+	base = append(base, "--no-interactive")
+	{{- end}}
+	return append(base, args...)
+}
+
+func assertDryRunPreviewLines(t *testing.T, stdout string) int {
+	t.Helper()
+	count := 0
+	scanner := bufio.NewScanner(strings.NewReader(stdout))
+	for scanner.Scan() {
+		count++
+		var preview struct {
+			DryRun  bool `json:"dry_run"`
+			Request struct {
+				Method  string              `json:"method"`
+				URL     string              `json:"url"`
+				Headers map[string][]string `json:"headers"`
+				Body    interface{}         `json:"body"`
+			} `json:"request"`
+		}
+		require.NoError(t, json.Unmarshal(scanner.Bytes(), &preview))
+		assert.True(t, preview.DryRun)
+		assert.NotEmpty(t, preview.Request.Method)
+		assert.NotEmpty(t, preview.Request.URL)
+		assert.NotNil(t, preview.Request.Headers)
+	}
+	require.NoError(t, scanner.Err())
+	return count
+}
+
+// The document-selected showcase is a keyless, input-free API operation. The
+// table pins the human protocol, explicit JSON, and caller-jq protocol without
+// encoding fixture-specific command names into the customer-shipped test.
+func TestDryRunCommandMatrix(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		args []string
+		json bool
+	}{
+		{name: "human", args: dryRunMatrixArgs({{templateDryRunShowcaseTestArgs}})},
+		{name: "json", args: dryRunMatrixArgs("--output-format", "json", {{templateDryRunShowcaseTestArgs}}), json: true},
+		{name: "caller jq is protocol selector", args: dryRunMatrixArgs("--jq", ".does_not_filter", {{templateDryRunShowcaseTestArgs}}), json: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			{{- if hasGlobalSecurity}}
+			recorder := &dryRunMatrixKeyring{}
+			config.SetKeyringBackend(recorder)
+			t.Cleanup(config.ResetKeyring)
+			{{- end}}
+			server, requests := newDryRunMatrixRequestTracker(t)
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithStdinServerRaw(server.URL, tt.args, ""))
+			assert.Zero(t, *requests, "dry-run must not reach the HTTP server")
+			if tt.json {
+				assert.Empty(t, h.GetStderr())
+				assert.Equal(t, 1, assertDryRunPreviewLines(t, h.GetStdout()))
+			} else {
+				assert.Empty(t, h.GetStdout())
+				assert.Contains(t, h.GetStderr(), "[DRY-RUN] Would send:")
+				assert.Contains(t, h.GetStderr(), "[DRY-RUN] Network call skipped.")
+			}
+			{{- if hasGlobalSecurity}}
+			assert.Zero(t, recorder.reads, "API dry-run must not touch the keyring")
+			{{- end}}
+		})
+	}
+}
+{{- end}}

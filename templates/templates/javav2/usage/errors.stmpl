@@ -1,0 +1,17 @@
+{{- $scope := .Local.Operation.Scope}}
+{{- range .Local.Operation.Response.Responses }}
+ {{- if .Error -}}
+  {{- range .Content }}
+        } catch ({{sanitizeType .Content.Type false false $scope}} e) {
+            // handle exception
+            throw e;
+  {{- end -}}
+ {{- end -}}
+{{- end }}
+{{ if not .Local.Operation.Response.Type.Extensions.Pagination }}        } catch ({{javaImport (printf "%s.%s" getErrorsPackage getDefaultErrorClassName)}} e) {
+            // handle exception
+            throw e;
+{{end}}        } catch ({{javaImportException}} e) {
+            // handle exception
+            throw e;
+        }

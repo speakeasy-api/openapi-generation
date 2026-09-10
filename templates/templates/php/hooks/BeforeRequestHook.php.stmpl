@@ -1,0 +1,11 @@
+{{- $namespace := getScopeNamespace "hooks" true}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+use Psr\Http\Message\RequestInterface;
+
+interface BeforeRequestHook
+{
+    public function beforeRequest(BeforeRequestContext $context, RequestInterface $request): RequestInterface;
+}

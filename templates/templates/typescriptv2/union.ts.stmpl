@@ -1,0 +1,13 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation }}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $isOptional := or .Local.Optional (eq .Local.Type.Type "any") }}
+{{- $fieldType := resolveOutbound (dict "usageLocation" $usageLocation "typeDef" $rootType "rootTypeDef" $rootType "optional" $isOptional "nullable" .Local.Nullable) -}}
+{{- $inboundType := resolveInbound (dict "usageLocation" $usageLocation "typeDef" $rootType "rootTypeDef" $rootType "optional" $isOptional "nullable" .Local.Nullable) -}}
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "class"}}
+{{- if and .Local.Type.Discriminator .Local.Type.IsUnionOpen }}
+export type {{$typeName}} = {{callImportTypesFunc $inboundType.importOutputTypes}}{{ $inboundType.outputType }};
+{{- else }}
+export type {{$typeName}} = {{callImportTypesFunc $fieldType.importInputTypes}}{{ $fieldType.inputType }};
+{{- end }}

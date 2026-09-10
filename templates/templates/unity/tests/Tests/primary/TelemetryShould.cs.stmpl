@@ -1,0 +1,50 @@
+using System.Collections;
+using NUnit.Framework;
+using UnityEngine.TestTools;
+using Openapi;
+
+public class TelemetryShould
+{
+    [UnityTest]
+    public IEnumerator UserAgentGet()
+    {
+        CommonHelpers.RecordTest("telemetry-user-agent-get");
+
+        yield return CommonHelpers.Await(async () =>
+        {
+            var sdk = new SDK();
+
+            using (var res = await sdk.Telemetry.TelemetryUserAgentGetAsync())
+            {
+                Assert.AreEqual(200, res.StatusCode);
+                Assert.AreEqual(
+                    "speakeasy-sdk/unity {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} Openapi",
+                    res.Res.Headers["X-Speakeasy-User-Agent"]
+                );
+            }
+        });
+    }
+
+    [UnityTest]
+    public IEnumerator SpeakeasyUserAgentGet()
+    {
+        CommonHelpers.RecordTest("telemetry-speakeasy-user-agent-get");
+
+        yield return CommonHelpers.Await(async () =>
+        {
+            var sdk = new SDK();
+
+            var userAgent = "test user agent";
+
+            using (var res = await sdk.Telemetry.TelemetrySpeakeasyUserAgentGetAsync(userAgent))
+            {
+                Assert.AreEqual(200, res.StatusCode);
+                Assert.AreEqual(userAgent, res.Res.Headers["User-Agent"]);
+                Assert.AreEqual(
+                    "speakeasy-sdk/unity {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} Openapi",
+                    res.Res.Headers["X-Speakeasy-User-Agent"]
+                );
+            }
+        });
+    }
+}

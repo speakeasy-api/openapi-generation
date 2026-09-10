@@ -1,0 +1,337 @@
+
+[TestChanges_DeeplyNestedMethods/deeply_nested_method_added - 1]
+# Test: deeply_nested_method_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+x-speakeasy-globals:
+  parameters:
+    - x-speakeasy-globals: true
+paths:
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments:
+    get:
+      operationId: listDeployments
+      x-speakeasy-group: organizations.projects.environments.deployments
+      x-speakeasy-name-override: list
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+x-speakeasy-globals:
+  parameters:
+    - x-speakeasy-globals: true
+paths:
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments:
+    get:
+      operationId: listDeployments
+      x-speakeasy-group: organizations.projects.environments.deployments
+      x-speakeasy-name-override: list
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /organizations/{orgId}/projects/{projectId}/environments/{envId}/deployments/{deploymentId}/logs:
+    get:
+      operationId: getDeploymentLogs
+      x-speakeasy-group: organizations.projects.environments.deployments.logs
+      x-speakeasy-name-override: get
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: envId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.organizations.projects.environments.deployments.logs.get(): **Added**
+
+---
+
+[TestChanges_DeeplyNestedMethods/deeply_nested_method_changed - 1]
+# Test: deeply_nested_method_changed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /admin/analytics/reports/revenue/daily/summary:
+    get:
+      operationId: getDailyRevenueSummary
+      x-speakeasy-group: admin.analytics.reports.revenue.daily
+      x-speakeasy-name-override: getSummary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: number
+                  date:
+                    type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /admin/analytics/reports/revenue/daily/summary:
+    get:
+      operationId: getDailyRevenueSummary
+      x-speakeasy-group: admin.analytics.reports.revenue.daily
+      x-speakeasy-name-override: getSummary
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: number
+                  date:
+                    type: string
+                  currency:
+                    type: string
+                  breakdown:
+                    type: object
+                    properties:
+                      morning:
+                        type: number
+                      afternoon:
+                        type: number
+                      evening:
+                        type: number
+```
+
+## Changes Detected:
+* sdk.admin.analytics.reports.revenue.daily.get_summary(): **Changed** response
+
+---
+
+[TestChanges_DeeplyNestedMethods/multiple_deeply_nested_changes - 1]
+# Test: multiple_deeply_nested_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/v1/users/profile/settings/privacy:
+    get:
+      operationId: getPrivacySettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getPrivacy
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/notifications:
+    get:
+      operationId: getNotificationSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getNotifications
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /api/v1/users/profile/settings/privacy:
+    get:
+      operationId: getPrivacySettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getPrivacy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                includeDefaults:
+                  type: boolean
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/notifications:
+    get:
+      operationId: getNotificationSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: getNotifications
+      deprecated: true
+      responses:
+        '200':
+          description: Success
+  /api/v1/users/profile/settings/appearance:
+    post:
+      operationId: updateAppearanceSettings
+      x-speakeasy-group: api.v1.users.profile.settings
+      x-speakeasy-name-override: updateAppearance
+      responses:
+        '201':
+          description: Created
+```
+
+## Changes Detected:
+* sdk.api.v1.users.profile.settings.updateAppearance(): **Added**
+* sdk.api.v1.users.profile.settings.getPrivacy(): **Deleted**
+* sdk.api.v1.users.profile.settings.getNotifications(): **Deprecated**
+
+---
+
+[TestChanges_DeeplyNestedMethods/deeply_nested_with_different_languages - 1]
+# Test: deeply_nested_with_different_languages
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /cloud/regions/{regionId}/clusters/{clusterId}/nodes/{nodeId}/metrics:
+    get:
+      operationId: getNodeMetrics
+      x-speakeasy-group: cloud.regions.clusters.nodes
+      x-speakeasy-name-override: getMetrics
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /cloud/regions/{regionId}/clusters/{clusterId}/nodes/{nodeId}/metrics:
+    get:
+      operationId: getNodeMetrics
+      x-speakeasy-group: cloud.regions.clusters.nodes
+      x-speakeasy-name-override: getMetrics
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.cloud.regions.clusters.nodes.getMetrics(): **Added** request.period [breaking]
+
+---

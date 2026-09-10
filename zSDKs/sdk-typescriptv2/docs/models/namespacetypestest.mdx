@@ -1,0 +1,53 @@
+---
+title: "NamespaceTypesTest"
+---
+
+A model that references enums and unions from different namespaces
+
+## Example Usage
+
+```typescript
+import { NamespaceTypesTest } from "openapi";
+import { PetStatus } from "openapi/bar";
+import { PetSpecies } from "openapi/foo";
+
+let value: NamespaceTypesTest = {
+  fooSpecies: PetSpecies.Cat,
+  barStatus: PetStatus.Available,
+  fooAnimal: {
+    animalType: "cat",
+    furLength: "short",
+  },
+  barVehicle: {
+    wheels: 4,
+    engineType: "V8",
+  },
+  fooOrg: {
+    name: "Acme Corp",
+    address: {
+      street: "123 Main St",
+      city: "Springfield",
+      location: {
+        latitude: 37.7749,
+        longitude: -122.4194,
+      },
+    },
+    departments: [
+      {
+        deptName: "Engineering",
+        headCount: 50,
+      },
+    ],
+  },
+};
+```
+
+## Fields
+
+| Field                                                           | Type                                                            | Required                                                        | Description                                                     | Example                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `fooSpecies`                                                    | [foo.PetSpecies](../foo/petspecies.mdx)                          | :heavy_check_mark:                                              | Species of a pet in the foo namespace                           | cat                                                             |
+| `barStatus`                                                     | [bar.PetStatus](../bar/petstatus.mdx)                            | :heavy_check_mark:                                              | Status of a pet in the bar namespace                            | available                                                       |
+| `fooAnimal`                                                     | *foo.Animal*                                                    | :heavy_check_mark:                                              | A discriminated union of animal types in the foo namespace      |                                                                 |
+| `barVehicle`                                                    | *bar.Vehicle*                                                   | :heavy_check_mark:                                              | A non-discriminated union of vehicle types in the bar namespace |                                                                 |
+| `fooOrg`                                                        | [foo.Organization](../foo/organization.mdx)                      | :heavy_check_mark:                                              | An organization with nested inline schemas in the foo namespace |                                                                 |

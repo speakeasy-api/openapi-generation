@@ -1,0 +1,10 @@
+Utils::RetryConfig.new(
+  backoff: Utils::BackoffStrategy.new(
+    exponent: 1.1,
+    initial_interval: 1,
+    max_elapsed_time: 100,
+    max_interval: 50
+  ),
+  retry_connection_errors: false,
+  strategy: 'backoff'
+)

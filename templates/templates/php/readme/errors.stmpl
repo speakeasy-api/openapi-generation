@@ -1,0 +1,21 @@
+Handling errors in this SDK should largely match your expectations. All operations return a response object or throw an exception.
+
+By default an API error will raise a `{{templateDefaultError true}}` exception, which has the following properties:
+
+| Property       | Type                                    | Description           |
+|----------------|-----------------------------------------|-----------------------|
+| `$message`     | *string*                                | The error message     |
+{{- if eq getResponseFormat "envelope-http" }}
+| `$request`     | *?\Psr\Http\Message\RequestInterface*   | The HTTP request      |
+| `$response`    | *?\Psr\Http\Message\ResponseInterface * | The HTTP response     |
+{{- else}}
+| `$statusCode`  | *int*                                   | The HTTP status code  |
+| `$rawResponse` | *?\Psr\Http\Message\ResponseInterface*  | The raw HTTP response |
+| `$body`        | *string*                                | The response content  |
+{{- end}}
+
+When custom error responses are specified for an operation, the SDK may also throw their associated exception. You can refer to respective *Errors* tables in SDK docs for more details on possible exception types for each operation. For example, the `{{sanitizeMethodName .Local.UsageContext.Operation}}` method throws the following exceptions:
+
+{{templateErrorsTable .Local.UsageContext.Operation ""}}
+
+{{templateUsageExample .Local.UsageContext "### Example"}}

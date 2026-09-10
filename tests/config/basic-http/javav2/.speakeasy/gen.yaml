@@ -1,0 +1,13 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+java:
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  version: 0.0.1
+  artifactID: basicHttp
+  groupID: org.openapis.basichttp
+  templateVersion: v2

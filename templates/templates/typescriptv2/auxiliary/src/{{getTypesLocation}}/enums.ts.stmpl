@@ -1,0 +1,17 @@
+{{- recurse 1 -}}
+{{- addZodPackageImport }}
+{{genImports}}
+{{- if not isNoZod }}
+import { Unrecognized, unrecognized } from "./{{ getUnrecognizedFileName }}.js";
+{{- end }}
+
+export type ClosedEnum<T extends Readonly<Record<string, string | number>>> = T[keyof T];
+{{- if isNoZod }}
+export type OpenEnum<T extends Readonly<Record<string, string | number>>> = T[keyof T];
+{{- else }}
+export type OpenEnum<T extends Readonly<Record<string, string | number>>> =
+  | T[keyof T]
+  | Unrecognized<T[keyof T] extends number ? number : string>;
+{{- end }}
+
+{{templateOpenEnumInboundHelperFunc}}

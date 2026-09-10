@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+$LOAD_PATH.push File.expand_path('lib', __dir__)
+
+Gem::Specification.new do |s|
+  s.name        = '{{.Global.Config.PackageName}}'
+  s.version     = '{{.Global.Config.SDKVersion}}'
+  s.platform    = Gem::Platform::RUBY
+  s.licenses    = ['{{if eq .Global.Config.GeneratedLicense "agpl"}}AGPL-3.0-only{{else}}{{.Global.Config.License}}{{end}}']
+  s.summary     = ''{{- if .Global.Config.RepoURL}}
+  s.homepage    = '{{.Global.Config.RepoURL}}'{{end}}
+  s.description = '{{.Global.Config.Description}}'
+  s.authors     = ['{{.Global.Config.Author}}']
+  {{- if .Global.Config.RepoURL}}
+  s.metadata    = {
+    'homepage_uri' => '{{.Global.Config.RepoURL}}',
+    'documentation_uri' => '{{.Global.Config.RepoURL}}',
+    'source_code_uri' => '{{.Global.Config.RepoURL}}'
+  }{{end}}
+
+  s.files         = Dir['{lib,test}/**/*'].reject { |f| f.start_with?('test/mockserver') }
+  s.require_paths = ['lib']
+  s.required_ruby_version = '>= 3.2'
+
+  {{ templateDependencies .Global.Config.AdditionalDependencies }}
+end

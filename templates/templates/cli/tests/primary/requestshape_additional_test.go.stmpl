@@ -1,0 +1,445 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+// Request-shape guards: a whole-body JSON document supplied by the caller
+// (--body, stdin, or the whole-body metadata flag) is never silently reshaped
+// into a request the caller did not write. Fixture: cliInteract (mixed
+// param+body operation whose body is a non-discriminated union selected by
+// "model" | "agent", model carrying a schema default), cliOpenNote (open
+// additionalProperties body), and the declared "generate" intent command bound
+// to the model variant (tests/specs/fragments/primary/cli-request-shape.yaml,
+// tests/overlays/primary/cli/overlay.yaml).
+
+// --- Key loss (--body / stdin / whole-body flag) ---
+
+func TestBodyTypoKeyIsRejectedWithSuggestion(t *testing.T) {
+	recordTest("request-shape-body-typo-key-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// "agnet" would be dropped and the schema's default model merged in:
+	// the request would run the wrong target.
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"agnet":"research-bot","input":"hello"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `--body`)
+	assert.Contains(t, err.Error(), `"agnet"`)
+	assert.Contains(t, err.Error(), `did you mean "agent"`)
+}
+
+func TestStdinTypoKeyIsRejected(t *testing.T) {
+	recordTest("request-shape-stdin-typo-key-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"request-bodies", "cli-interact"},
+		`{"agnet":"research-bot","input":"hello"}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin")
+	assert.Contains(t, err.Error(), `"agnet"`)
+	assert.Contains(t, err.Error(), `did you mean "agent"`)
+}
+
+func TestWholeBodyFlagTypoKeyIsRejected(t *testing.T) {
+	recordTest("request-shape-whole-body-flag-typo-key-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--request-body", `{"agnet":"research-bot","input":"hello"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `--request-body`)
+	assert.Contains(t, err.Error(), `"agnet"`)
+	assert.Contains(t, err.Error(), `did you mean "agent"`)
+}
+
+func TestExpandedBodyTypoKeyIsRejected(t *testing.T) {
+	resetAgentMode(t)
+	recordTest("request-shape-expanded-body-typo-key-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Expanded IsRequestBody operation (plain struct decode, no union).
+	err := h.RunWithServer(s.URL, []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge",
+		"--body", `{"name":"from-body","staus":"active"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"staus"`)
+	assert.Contains(t, err.Error(), `did you mean "status"`)
+}
+
+// Outside explicit agent mode (and off manifest-declared commands), an
+// unrecognized key in a PLAIN request body keeps the legacy acceptance
+// contract: the typed decode drops it, the request still goes out, and the
+// diagnostic surfaces as a stderr warning instead of a rejection. Union
+// bodies are exempt — a dropped selector key can run the wrong variant, so
+// they reject on every surface (the cli-interact tests above).
+func TestExpandedBodyTypoKeyWarnsAndProceedsWithoutAgentMode(t *testing.T) {
+	resetAgentMode(t)
+	recordTest("request-shape-expanded-body-typo-key-lenient-warning")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "request-body-post-flag-defaults-body-merge",
+		"--body", `{"name":"from-body","staus":"active"}`,
+	})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStderr(), "Warning:")
+	assert.Contains(t, h.GetStderr(), `"staus"`)
+	assert.Equal(t, "from-body", jsonGetString(strings.TrimSpace(h.GetStdout()), "json.name"))
+}
+
+func TestBodyDefaultSelectorStillMergesWhenNoneNamed(t *testing.T) {
+	recordTest("request-shape-body-default-selector-merges")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"input":"hello"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "model-default-1", jsonGetString(output, "json.model"))
+	assert.Equal(t, "hello", jsonGetString(output, "json.input"))
+}
+
+func TestBodyNullOptionalKeyIsNotReported(t *testing.T) {
+	recordTest("request-shape-body-null-optional-key-allowed")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// An optional field set to null serializes as absent, exactly like the SDK
+	// would send it: not a lost key.
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"model":"m1","input":"hello","background":null}`,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "m1", jsonGetString(strings.TrimSpace(h.GetStdout()), "json.model"))
+}
+
+func TestOpenSchemaBodyKeepsUnknownKeys(t *testing.T) {
+	recordTest("request-shape-open-schema-keeps-unknown-keys")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// additionalProperties: true — a key the CLI does not know reaches the
+	// wire; API additivity is untouched by the key-loss guard.
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-open-note",
+		"--body", `{"title":"t","futureField":"kept"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "t", jsonGetString(output, "json.title"))
+	assert.Equal(t, "kept", jsonGetString(output, "json.futureField"))
+}
+
+// --- Selector ambiguity ---
+
+func TestBodyNamingBothSelectorsIsRejected(t *testing.T) {
+	recordTest("request-shape-body-both-selectors-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"model":"m1","agent":"research-bot","input":"hello"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"model"`)
+	assert.Contains(t, err.Error(), `"agent"`)
+	assert.Contains(t, err.Error(), "keep exactly one")
+}
+
+func TestBodySingleSelectorAgentVariant(t *testing.T) {
+	recordTest("request-shape-body-agent-variant")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"agent":"research-bot","input":"hello"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "research-bot", jsonGetString(output, "json.agent"))
+	assert.False(t, jsonExists(output, "json.model"), "no default model merged when a selector is named")
+}
+
+// --- --body vs whole-body metadata flag ---
+
+func TestBodyAndWholeBodyFlagTogetherRejected(t *testing.T) {
+	recordTest("request-shape-body-and-whole-body-flag-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--body", `{"model":"m1","input":"from-body"}`,
+		"--request-body", `{"model":"m2","input":"from-flag"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--body")
+	assert.Contains(t, err.Error(), "--request-body")
+}
+
+func TestWholeBodyFlagWinsOverStdinLikeBody(t *testing.T) {
+	recordTest("request-shape-whole-body-flag-wins-over-stdin")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// The whole-body metadata flag has --body's precedence over stdin: stdin is
+	// not read at all (its content cannot even fail to parse).
+	err := h.RunWithStdinServer(s.URL, []string{"request-bodies", "cli-interact",
+		"--request-body", `{"model":"m1","input":"from-flag"}`,
+	}, `{not json`)
+	require.NoError(t, err)
+	assert.Equal(t, "from-flag", jsonGetString(strings.TrimSpace(h.GetStdout()), "json.input"))
+}
+
+// --- Intent command: positional + supplied body ---
+
+func TestIntentPositionalAndBodyBothSettingKeyRejected(t *testing.T) {
+	recordTest("request-shape-intent-positional-and-body-conflict")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generate", "important",
+		"--body", `{"input":"wins"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "prompt")
+	assert.Contains(t, err.Error(), `"input"`)
+	assert.Contains(t, err.Error(), "--body")
+}
+
+func TestIntentPositionalMergedIntoBodyLackingKey(t *testing.T) {
+	recordTest("request-shape-intent-positional-merged-into-body")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generate", "hello there",
+		"--body", `{"model":"m2"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "hello there", jsonGetString(output, "json.input"))
+	assert.Equal(t, "m2", jsonGetString(output, "json.model"))
+}
+
+func TestIntentPositionalMergedIntoWholeBodyFlag(t *testing.T) {
+	recordTest("request-shape-intent-positional-merged-into-whole-body-flag")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// "generate" is pinned to the model variant, so a body naming the
+	// agent selector is rejected as a foreign variant; with a same-variant
+	// body the positional fills the missing input key.
+	err := h.RunWithServer(s.URL, []string{"generate", "hello",
+		"--request-body", `{"agent":"research-bot"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"agent"`)
+
+	h = NewCLITestHarness(t)
+	err = h.RunWithServer(s.URL, []string{"generate", "hello",
+		"--request-body", `{"model":"m-explicit"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "hello", jsonGetString(output, "json.input"))
+	assert.Equal(t, "m-explicit", jsonGetString(output, "json.model"))
+}
+
+func TestIntentDeclaredFlagAndBodyBothSettingKeyRejected(t *testing.T) {
+	recordTest("request-shape-intent-flag-and-body-conflict")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generate", "--model", "requested",
+		"--body", `{"model":"m1","input":"hi"}`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--model")
+	assert.Contains(t, err.Error(), `"model"`)
+	assert.Contains(t, err.Error(), "--body")
+}
+
+func TestIntentDeclaredFlagMergedIntoBodyLackingKey(t *testing.T) {
+	recordTest("request-shape-intent-flag-merged-into-body")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// Without the merge the schema default model would be sent instead of the
+	// explicitly requested one.
+	err := h.RunWithServer(s.URL, []string{"generate", "--model", "requested",
+		"--body", `{"input":"hi"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "requested", jsonGetString(output, "json.model"))
+	assert.Equal(t, "hi", jsonGetString(output, "json.input"))
+}
+
+func TestIntentDeclaredZeroValueFlagMergedIntoBody(t *testing.T) {
+	recordTest("request-shape-intent-zero-value-flag-merged")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// An explicitly passed zero value (--background=false) is a set input:
+	// it is merged as JSON false, not treated as absent.
+	err := h.RunWithServer(s.URL, []string{"generate", "hi", "--background=false",
+		"--body", `{"model":"m1"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.True(t, jsonExists(output, "json.background"), "explicit false must reach the body")
+	assert.False(t, jsonGetBool(output, "json.background"))
+	assert.Equal(t, "hi", jsonGetString(output, "json.input"))
+}
+
+// --- Intent command: piped stdin ---
+
+func TestIntentPipedStdinRunsRequest(t *testing.T) {
+	recordTest("request-shape-intent-stdin-runs-request")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"generate"}, `{"model":"m1","input":"hi from stdin"}`)
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.NotContains(t, output, "Usage:", "piped JSON must run the request, not show help")
+	assert.Equal(t, "hi from stdin", jsonGetString(output, "json.input"))
+	assert.Equal(t, "m1", jsonGetString(output, "json.model"))
+}
+
+func TestIntentPipedStdinWithPositionalMerges(t *testing.T) {
+	recordTest("request-shape-intent-stdin-with-positional")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"generate", "hello"}, `{"model":"m1"}`)
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "hello", jsonGetString(output, "json.input"))
+	assert.Equal(t, "m1", jsonGetString(output, "json.model"))
+}
+
+func TestIntentPipedStdinTypoKeyIsRejected(t *testing.T) {
+	recordTest("request-shape-intent-stdin-typo-key-rejected")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"generate"}, `{"agnet":"research-bot","input":"hi"}`)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin")
+	assert.Contains(t, err.Error(), `did you mean "agent"`)
+}
+
+func TestIntentEmptyStdinIsUsageError(t *testing.T) {
+	recordTest("request-shape-intent-empty-stdin-usage")
+	s, count := newRequestTracker()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	// A pipe that closes without data (EOF) is not a body: it has the same
+	// structured usage outcome as a bare invocation and sends no request.
+	err := h.RunWithStdinServer(s.URL, []string{"generate"}, "")
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+	assert.Contains(t, h.GetStderr(), "generate --help")
+	assert.Equal(t, 0, *count)
+}
+
+func TestIntentBareInvocationIsUsageError(t *testing.T) {
+	recordTest("request-shape-intent-bare-usage")
+	s, count := newRequestTracker()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generate"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+	assert.Contains(t, h.GetStderr(), "generate --help")
+	assert.Equal(t, 0, *count)
+}
+
+func TestIntentSynthesizedBodyUnchanged(t *testing.T) {
+	recordTest("request-shape-intent-synthesized-body")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"generate", "hello", "--model", "m3"})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "hello", jsonGetString(output, "json.input"))
+	assert.Equal(t, "m3", jsonGetString(output, "json.model"))
+}
+
+// --- Nested union defaults ---
+
+func TestNestedUnionBodyDefaultSelectorMerges(t *testing.T) {
+	recordTest("request-shape-nested-union-body-default-selector-merges")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-create-interaction-trigger",
+		"--body", `{"cron":"* * * * *","interaction":{"input":"hello"}}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "model-default-1", jsonGetString(output, "json.interaction.model"))
+	assert.Equal(t, "hello", jsonGetString(output, "json.interaction.input"))
+}
+
+func TestNestedUnionStdinDefaultSelectorMerges(t *testing.T) {
+	recordTest("request-shape-nested-union-stdin-default-selector-merges")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithStdinServer(s.URL, []string{"request-bodies", "cli-create-interaction-trigger"},
+		`{"cron":"* * * * *","interaction":{"input":"hello"}}`)
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "model-default-1", jsonGetString(output, "json.interaction.model"))
+	assert.Equal(t, "hello", jsonGetString(output, "json.interaction.input"))
+}
+
+func TestNestedUnionExplicitAgentSelectorDoesNotMergeDefault(t *testing.T) {
+	recordTest("request-shape-nested-union-agent-selector-no-default")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-create-interaction-trigger",
+		"--body", `{"cron":"* * * * *","interaction":{"agent":"research-bot","input":"hi"}}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "research-bot", jsonGetString(output, "json.interaction.agent"))
+	assert.False(t, jsonExists(output, "json.interaction.model"), "no default model merged when the agent selector is named")
+}
+
+func TestNestedUnionOwnFlagDefaultSelectorMerges(t *testing.T) {
+	recordTest("request-shape-nested-union-own-flag-default-selector-merges")
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"request-bodies", "cli-create-interaction-trigger",
+		"--cron", "* * * * *", "--interaction", `{"input":"hi"}`,
+	})
+	require.NoError(t, err)
+	output := strings.TrimSpace(h.GetStdout())
+	assert.Equal(t, "model-default-1", jsonGetString(output, "json.interaction.model"))
+	assert.Equal(t, "hi", jsonGetString(output, "json.interaction.input"))
+}

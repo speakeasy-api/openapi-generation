@@ -1,0 +1,53 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/nullable-discriminator-union:
+    get:
+      operationId: primaryNullableDiscriminatorUnion
+      responses:
+        "200":
+          description: A response that exercises a discriminated union with nullable discriminator fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscriminatedUnionWithNullableDiscriminator"
+components:
+  schemas:
+    DiscriminatedUnionWithNullableDiscriminator:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/NullableDiscriminatorTextQuestion"
+        - $ref: "#/components/schemas/NullableDiscriminatorParagraphQuestion"
+      discriminator:
+        propertyName: type
+    NullableDiscriminatorTextQuestion:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: ["string", "null"]
+          enum:
+            - text
+        label:
+          type: string
+    NullableDiscriminatorParagraphQuestion:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: ["string", "null"]
+          enum:
+            - paragraph
+        label:
+          type: string

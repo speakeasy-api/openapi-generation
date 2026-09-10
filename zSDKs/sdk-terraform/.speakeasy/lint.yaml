@@ -1,0 +1,11 @@
+lintVersion: 2.0.0
+defaultRuleset: reviewRuleset
+rulesets:
+  reviewRuleset:
+    rulesets:
+      - speakeasy-recommended
+    rules:
+      - id: generator-missing-error-response
+        disabled: true
+      - id: generator-missing-examples
+        disabled: true

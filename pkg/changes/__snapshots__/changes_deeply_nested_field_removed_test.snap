@@ -1,0 +1,99 @@
+
+[TestChanges_DeeplyNestedFields_DeeplyNestedFieldRemoved - 1]
+# Test: deeply_nested_field_removed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      operationId: getProduct
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catalog:
+                    type: object
+                    properties:
+                      inventory:
+                        type: object
+                        properties:
+                          warehouse:
+                            type: object
+                            properties:
+                              locations:
+                                type: object
+                                properties:
+                                  primary:
+                                    type: object
+                                    properties:
+                                      shelf:
+                                        type: object
+                                        properties:
+                                          row:
+                                            type: string
+                                          column:
+                                            type: integer
+                                          level:
+                                            type: integer
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      operationId: getProduct
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  catalog:
+                    type: object
+                    properties:
+                      inventory:
+                        type: object
+                        properties:
+                          warehouse:
+                            type: object
+                            properties:
+                              locations:
+                                type: object
+                                properties:
+                                  primary:
+                                    type: object
+                                    properties:
+                                      shelf:
+                                        type: object
+                                        properties:
+                                          row:
+                                            type: string
+```
+
+## Compact Mode:
+## Python SDK Changes:
+* `sdk.get_product()`:  `response.catalog.inventory.warehouse.locations.primary.shelf` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Python SDK Changes:
+* `sdk.get_product()`: `response.catalog.inventory.warehouse.locations.primary.shelf` **Changed** (Breaking ⚠️)
+    - `column` **Removed** (Breaking ⚠️)
+    - `level` **Removed** (Breaking ⚠️)
+
+---

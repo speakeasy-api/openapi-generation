@@ -1,0 +1,178 @@
+{{- recurse 1 -}}
+{{- $globalSDK := .Global.AST.MainSDK -}}
+{{- $usageLocation := "mcp-server/cli/start" -}}
+{{- $serverVariables := and $globalSDK.Servers (gt (len $globalSDK.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
+{{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
+import { buildCommand } from "@stricli/core";
+import * as z from "zod";
+import { consoleLoggerLevels } from "../../console-logger.js";
+{{- if gt (len .Local.Scopes) 0 }}
+import { mcpScopes } from "../../scopes.js";
+{{- end }}
+{{ genImports }}
+
+export const startCommand = buildCommand({
+  loader: async () => {
+    const { main } = await import("./impl.js");
+    return main;
+  },
+  parameters: {
+    flags: {
+      transport: {
+        kind: "enum",
+        brief: "The transport to use for communicating with the server",
+        default: "stdio",
+        values: ["stdio", "sse"],
+      },
+      port: {
+        kind: "parsed",
+        brief: "The port to use when the SSE transport is enabled",
+        default: "2718",
+        parse: (val: string) =>
+          z.coerce.number().int().gte(0).lt(65536).parse(val),
+      },
+      tool: {
+        kind: "parsed",
+        brief: "Specify tools to mount on the server",
+        optional: true,
+        variadic: true,
+        parse: (value) => {
+          return z.string().parse(value);
+        },
+      },
+      mode: {
+        kind: "enum",
+        brief: "Server mode (dynamic: expose list_tools, describe_tool_input, and execute_tool instead of individual tools)",
+        values: ["dynamic"],
+        optional: true,
+      },
+      "tool-annotations": {
+        kind: "parsed",
+        brief: "Filter tools by annotations (comma-separated: readOnly, destructive, idempotent, openWorld). Listed = required true, unlisted = required false.",
+        optional: true,
+        parse: (value) => value.split(",").map(s => s.trim()),
+      },
+      {{- if gt (len .Local.Scopes) 0 }}
+      scope: {
+        kind: "enum",
+        brief: "Mount tools/resources that match given scope (repeatable flag)",
+        values: mcpScopes,
+        variadic: true,
+        optional: true,
+      },
+      {{- end }}
+      {{- if $globalSDK.Security }} 
+      {{-   range $field := unnestSecurityEnvFields $globalSDK.Security.Type }}
+      {{-     $fieldName := sanitizeMCPCLIFlag $field.Name true }}
+      {{      $fieldName }}: {
+        kind: "parsed",
+        brief: "{{ print "Sets the " (sanitizeFieldName $field.Name) " auth field for the API" }}",
+        optional: true,
+        parse: (value) => {
+        {{-   $schema := resolveEnvSchema $field $usageLocation (dict "ignoreOptional" true) }}
+          return {{ $schema }}.parse(value);
+        },
+      },
+      {{-   end }}
+      {{- end }}
+      {{- if ne $globalSDK.Globals nil }}
+      {{-   range $field := $globalSDK.Globals.Fields }}
+      {{-     $fieldName := templateGlobalFieldName $field.Name }}
+      {{-     $flag := sanitizeMCPCLIFlag $fieldName true }}
+      {{-     $schema := resolveEnvSchema $field $usageLocation (dict "ignoreOptional" true) }}
+      {{ $flag }}: {
+        kind: "parsed",
+        brief: "{{ print "Allows setting the " $fieldName " parameter for all supported operations" }}",
+        optional: true,
+        parse: (value) => {
+          return {{ $schema }}.parse(value);
+        },
+      },
+      {{-   end}}
+      {{- end}}
+      "server-url": {
+        kind: "parsed",
+        brief: "Overrides the default server URL used by the SDK",
+        {{- if $hasServers }}
+        optional: true,
+        {{- else }}
+        optional: false,
+        {{- end}}
+        parse: (value) => new URL(value).toString(),
+      },
+      {{- if $globalSDK.Servers }}
+      {{-   if $serverMap }}
+      {{-     addImport "../../../lib/config.js" "ServerList" }}
+      server: {
+        kind: "enum",
+        brief: "Selects a predefined server used by the SDK",
+        optional: true,
+        values: Object.keys(ServerList) as Array<keyof typeof ServerList>,
+      },
+      {{-   else}}
+      "server-index": {
+        kind: "parsed",
+        brief: "Selects a predefined server used by the SDK",
+        optional: true,
+        {{- addImport "@stricli/core" "numberParser" }}
+        parse: numberParser,
+      },
+      {{-   end }}
+      {{-   range $variable := $globalSDK.Servers.GetVariables }}
+      {{-     $name := $variable.Name }}
+      {{-     if eq $variable.Type.Type "enum" }}
+      {{-       $enumName := sanitizeClassName $variable.Type.Name }}
+      {{        sanitizeMCPCLIFlag $name true }}: {
+        kind: "enum",
+        brief: "{{ print "Sets the " $name " variable for url substitution" }}",
+        optional: true,
+        {{-     addImport "../../../lib/config.js" $enumName }}
+        values: Object.values({{ $enumName }}) as Array<{{ $enumName }}>,
+      },
+      {{-     else}}
+      {{ sanitizeMCPCLIFlag $name true }}: {
+        kind: "parsed",
+        brief: "{{ print "Sets the " $name " variable for url substitution" }}",
+        optional: true,
+        parse: (value) => value,
+      },
+      {{-     end}}
+      {{-   end}}
+      {{- end}}
+      "log-level": {
+        kind: "enum",
+        brief: "The log level to use for the server",
+        default: "info",
+        values: consoleLoggerLevels,
+      },
+      env: {
+        kind: "parsed",
+        brief: "Environment variables made available to the server",
+        optional: true,
+        variadic: true,
+        parse: (val: string) =>{
+          const sepIdx = val.indexOf("=");
+          if (sepIdx === -1) {
+            throw new Error("Invalid environment variable format");
+          }
+
+          const key = val.slice(0, sepIdx);
+          const value = val.slice(sepIdx + 1);
+
+          return [
+            z.string().nonempty({
+              message: "Environment variable key must be a non-empty string",
+            }).parse(key),
+            z.string().nonempty({
+              message: "Environment variable value must be a non-empty string",
+            }).parse(value),
+          ] satisfies [string, string];
+        }
+      },
+    },
+  },
+  docs: {
+    brief: "Run the Model Context Protocol server",
+  },
+});

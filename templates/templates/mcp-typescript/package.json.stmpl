@@ -1,0 +1,69 @@
+{{- $hasTests := or .Global.AST.MainSDK.OutputTests (sdkHasTests .Global.AST) -}}
+{{- $peerDependencies := templatePeerDependencies | indent 4 | trim -}}
+{
+  "name": "{{ .Global.Config.PackageName }}",
+  "version": "{{ .Global.Config.SDKVersion }}",
+  {{- if .Global.Config.McpName }}
+  "mcpName": "{{ .Global.Config.McpName }}",
+  {{- end }}
+  "author": "{{ .Global.Config.Author }}",
+  {{- if eq .Global.Config.GeneratedLicense "agpl" }}
+  "license": "AGPL-3.0-only",
+  {{- end }}
+  "type": "module",
+  "sideEffects": false,
+  {{- if .Global.Config.RepoURL }}
+  "repository": {
+    "type": "git",
+    "url": "{{ .Global.Config.RepoURL }}"
+    {{- if .Global.Config.RepoSubDirectory }},
+    "directory": "{{ .Global.Config.RepoSubDirectory }}"
+    {{- end }}
+  },
+  {{- end }}
+  "bin": {
+    {{- if not (eq .Global.Config.PackageName "mcp")  }}
+    "{{ .Global.Config.PackageName }}": "bin/mcp-server.js",
+    {{- end }}
+    "mcp": "bin/mcp-server.js"
+  },
+  "scripts": {
+    "build": "bun i && bun src/mcp-server/build.mts && tsc",
+    "mcpb:build": "bun i && bun src/mcp-server/build.mts --pack && tsc",
+    {{- if .Global.Config.CloudflareEnabled }}
+    "types": "wrangler types",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    {{- end }}
+    {{- if .Global.Config.GramEnabled }}
+    "gram:build": "npx gf build",
+    {{- end }}
+    "check": "{{ if $hasTests -}} npm run test && {{ end -}} npm run lint",
+    "lint": "eslint --cache --max-warnings=0 src",
+    "prepublishOnly": "npm run build"
+    {{- if $hasTests }},
+    "test": "vitest run src --reporter=junit --outputFile=.speakeasy/reports/tests.xml --reporter=default"
+    {{- end}}
+  },
+  "dependencies": {
+    {{ templateDependencies | indent 4 | trim }}
+  },
+  {{- if $peerDependencies }}
+  "peerDependencies": {
+    {{ $peerDependencies }}
+  },
+  {{- end }}
+  "overrides": {
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "hono": ">=4.12.34",
+    "fast-uri": ">=4.1.2 <5.0.0",
+    "js-yaml": ">=4.3.1 <5.0.0",
+    "ip-address": ">=10.3.1 <11.0.0",
+    "nanoid@^5.0.0": ">=5.1.16 <6.0.0",
+    "brace-expansion@^2.0.0": ">=2.1.4 <3.0.0",
+    "body-parser": ">=2.3.0 <3.0.0"
+  },
+  "devDependencies": {
+    {{ templateDevDependencies | indent 4 | trim }}
+  }
+}

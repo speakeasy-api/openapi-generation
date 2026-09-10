@@ -1,0 +1,12 @@
+# PostFileWithEncodingRequest
+
+
+## Fields
+
+| Field                                                          | Setter Type                                                    | Getter Type                                                    | Required                                                       | Description                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| `file`                                                         | [File](../../models/operations/File.md)                        | [File](../../models/operations/File.md)                        | :heavy_check_mark:                                             | The file to upload (supports CSV, PNG, JPEG, or PDF)           |
+| `attachment`                                                   | @Nullable [Attachment](../../models/operations/Attachment.md)  | Optional\<[Attachment](../../models/operations/Attachment.md)> | :heavy_minus_sign:                                             | An optional binary attachment                                  |
+| `fileName`                                                     | @Nullable *String*                                             | Optional\<*String*>                                            | :heavy_minus_sign:                                             | Optional custom file name                                      |
+| `filePurpose`                                                  | @Nullable *String*                                             | Optional\<*String*>                                            | :heavy_minus_sign:                                             | Purpose of the file upload                                     |
+| `metadata`                                                     | @Nullable [Metadata](../../models/operations/Metadata.md)      | Optional\<[Metadata](../../models/operations/Metadata.md)>     | :heavy_minus_sign:                                             | JSON metadata about the file                                   |

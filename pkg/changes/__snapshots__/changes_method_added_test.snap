@@ -1,0 +1,56 @@
+
+[TestChanges_MethodChanges_MethodAdded - 1]
+# Test: method_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUsers
+      responses:
+        '200':
+          description: Success
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Created
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: **Added**
+
+---

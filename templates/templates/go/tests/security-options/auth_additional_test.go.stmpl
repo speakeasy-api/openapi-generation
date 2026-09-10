@@ -1,0 +1,114 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	sdk "securityOptions"
+	"securityOptions/models/components"
+	sdkerrors "securityOptions/models/errors"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGlobalSecurityOptionBasicHttp(t *testing.T) {
+	recordTest("auth-basic-http-global-option")
+
+	s := sdk.New(sdk.WithSecurity(components.Security{
+		BasicHTTP:   &components.BasicHTTP{Username: "testUser", Password: "testPass"},
+		AccessToken: &components.AccessToken{AccessToken: "Bearer ignored"},
+	}))
+
+	// Expected to succeed since BasicHTTP takes priority over AccessToken in global security definition
+	res, err := s.Auth.GlobalSecurityOptionBasicHTTP(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.BasicAuth)
+	assert.True(t, res.BasicAuth.Authenticated)
+	assert.Equal(t, "testUser", res.BasicAuth.User)
+}
+
+func TestGlobalSecurityOptionFieldsOrdering(t *testing.T) {
+	recordTest("auth-global-security-option-fields-ordering")
+
+	s := sdk.New(sdk.WithSecurity(components.Security{
+		APIKeyAuth: &components.APIKeyAuth{APIKeyAuth: "Bearer test_api_key"},
+		BasicHTTP:  &components.BasicHTTP{Username: "testUser", Password: "testPass"},
+	}))
+
+	// Expected to fail since APIKeyAuth takes priority over BasicHTTP in global security definition
+	_, err := s.Auth.GlobalSecurityOptionBasicHTTP(context.Background())
+	require.Error(t, err)
+	var apiErr *sdkerrors.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}
+
+func TestHoistedSecurityOptionAccessTokenFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-option-access-token-first")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (components.Security, error) {
+		return components.Security{
+			APIKeyAuth:  &components.APIKeyAuth{APIKeyAuth: "testApiKey"},
+			AccessToken: &components.AccessToken{AccessToken: "Bearer ghp_xxxx"},
+		}, nil
+	}))
+
+	res, err := s.Auth.HoistedSecurityOptionAccessTokenFirst(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.TokenAuthResponse)
+	assert.Equal(t, "Bearer ghp_xxxx", res.TokenAuthResponse.Token)
+}
+
+func TestHoistedSecurityOptionApiKeyFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-option-api-key-first")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (components.Security, error) {
+		return components.Security{
+			APIKeyAuth:  &components.APIKeyAuth{APIKeyAuth: "testApiKey"},
+			AccessToken: &components.AccessToken{AccessToken: "Bearer ghp_xxxx"},
+		}, nil
+	}))
+
+	res, err := s.Auth.HoistedSecurityOptionAPIKeyFirst(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.TokenAuthResponse)
+	assert.Equal(t, "testApiKey", res.TokenAuthResponse.Token)
+}
+
+func TestHoistedSecurityOptionBasicHTTPOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-option-basic-http-only")
+
+	s := sdk.New(sdk.WithSecurity(components.Security{
+		BasicHTTP:   &components.BasicHTTP{Username: "testUser", Password: "testPass"},
+		APIKeyAuth:  &components.APIKeyAuth{APIKeyAuth: "testApiKey"},
+		AccessToken: &components.AccessToken{AccessToken: "Bearer ghp_xxxx"},
+	}))
+
+	res, err := s.Auth.HoistedSecurityOptionBasicHTTPOnly(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.BasicAuth)
+	assert.True(t, res.BasicAuth.Authenticated)
+	assert.Equal(t, "testUser", res.BasicAuth.User)
+}
+
+func TestHoistedSecurityOptionsInvalidOption(t *testing.T) {
+	recordTest("auth-hoisted-security-invalid-option")
+
+	s := sdk.New(sdk.WithSecuritySource(func(ctx context.Context) (components.Security, error) {
+		return components.Security{
+			BasicHTTP: &components.BasicHTTP{Username: "user", Password: "pass"},
+		}, nil
+	}))
+
+	_, err := s.Auth.HoistedSecurityOptionAccessTokenFirst(context.Background())
+	require.Error(t, err)
+	var apiErr *sdkerrors.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, http.StatusUnauthorized, apiErr.StatusCode)
+}

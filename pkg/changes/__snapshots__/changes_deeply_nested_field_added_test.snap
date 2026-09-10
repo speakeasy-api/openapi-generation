@@ -1,0 +1,104 @@
+
+[TestChanges_DeeplyNestedFields_DeeplyNestedFieldAdded - 1]
+# Test: deeply_nested_field_added
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: object
+                  properties:
+                    personal:
+                      type: object
+                      properties:
+                        details:
+                          type: object
+                          properties:
+                            contact:
+                              type: object
+                              properties:
+                                primary:
+                                  type: object
+                                  properties:
+                                    email:
+                                      type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: object
+                  properties:
+                    personal:
+                      type: object
+                      properties:
+                        details:
+                          type: object
+                          properties:
+                            contact:
+                              type: object
+                              properties:
+                                primary:
+                                  type: object
+                                  properties:
+                                    email:
+                                      type: string
+                                    phone:
+                                      type: string
+                                    address:
+                                      type: object
+                                      properties:
+                                        street:
+                                          type: string
+                                        city:
+                                          type: string
+                                        country:
+                                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  *  `request.profile.personal.details.contact.primary` **Changed**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  * `request.profile.personal.details.contact.primary` **Changed**
+    - `address` **Added**
+    - `phone` **Added**
+
+---

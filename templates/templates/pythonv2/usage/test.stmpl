@@ -1,0 +1,9 @@
+{{- recurse 1 -}}
+{{- addImport (getModuleImport) (sanitizeClassName .Global.AST.MainSDK.Type.Name)  -}}
+{{- addImport "asyncio" "" -}}
+{{genImports}}
+
+def sync():
+{{templateString "usage/sync/block.stmpl" .Local | indentPresent 4}}
+
+{{templateString "usage/async/block.stmpl" .Local}}

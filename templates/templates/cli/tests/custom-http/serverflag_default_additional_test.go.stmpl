@@ -1,0 +1,47 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The custom-http variant has one global server and no cli.serverSelectionFlag
+// configuration: it pins the generator default. The default must stay
+// "visible" — regenerating a legacy single-server CLI keeps --server in help
+// and, above all, keeps `--server 0` parsing so existing scripts survive.
+
+func TestServerSelectionFlagDefaultVisibleOnSingleServer(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--help"})
+	require.NoError(t, err)
+
+	stdout := h.GetStdout()
+	assert.Contains(t, stdout, "--server string")
+	assert.Contains(t, stdout, "--server-url string")
+}
+
+func TestServerSelectionFlagDefaultParsesIndex(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"version", "--server", "0"})
+	require.NoError(t, err)
+}
+
+func TestServerSelectionFlagDefaultInUsageWithoutHide(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"--usage"})
+	require.NoError(t, err)
+
+	var serverLine string
+	for _, line := range strings.Split(h.GetStdout(), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, `flag "--server <server>"`) {
+			serverLine = line
+			break
+		}
+	}
+	require.NotEmpty(t, serverLine, "server flag missing from usage schema")
+	assert.NotContains(t, serverLine, "hide=#true")
+}

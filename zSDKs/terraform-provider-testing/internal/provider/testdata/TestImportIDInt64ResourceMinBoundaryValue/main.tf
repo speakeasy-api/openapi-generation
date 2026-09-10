@@ -1,0 +1,11 @@
+variable "server_url" {
+  type = string
+}
+
+provider "testing" {
+  server_url = var.server_url
+}
+
+resource "testing_import_id_int64" "my_importidint64" {
+}
+

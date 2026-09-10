@@ -1,0 +1,80 @@
+# This overlay setups the client-credentials SDK which has some unique constraints when it comes to the security setup to enable oauth handling
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/client-credentials.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/uber.yaml
+actions:
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with the speakeasy-api-test-service server as the default as the client credentials token url needs to use this
+  # TODO: we can probably remove this requirement and make it work against both global and operation level servers
+  - target: $["servers"]
+    update:
+      - url: http://localhost:35456
+        description: The default server.
+  # Remove global security
+  - target: $["security"][*]
+    remove: true
+  # Enable the clientCredentials security
+  - target: $["security"]
+    update:
+      - clientCredentials: [read, write]
+  # Match all endpoints that don't have servers and set them to the httpbin server as that was the original default
+  # Required for generated tests to still run
+  - target: $.paths.*.*[?(@.responses && !@.servers && @.operationId != 'authenticatedRequest' && @.operationId != 'authenticatedRequestGlobalServer')]
+    update:
+      servers:
+        - url: http://localhost:35123
+          description: The default servers.
+  # Disable clientCredentials security on anything without it already defined
+  # Required for generated tests to still run
+  # Exclude operations that intentionally use global security (authenticatedRequestGlobalServer, authenticatedRequestGlobalSecurity)
+  - target: $.paths.*.*[?(@.responses && !@.security && @.operationId != 'authenticatedRequestGlobalServer' && @.operationId != 'authenticatedRequestGlobalSecurity')]
+    update:
+      security:
+        - {} 
+  # Delete the testHooks operation as the hook required for it is only added in the primary test
+  # TODO: should we look at always adding all the hooks?
+  - target: $.paths.*.*[?(@.operationId == 'testHooks')]
+    remove: true
+  # Add a per-operation client credentials security scheme that differs from global.
+  # This tests that the hooks OperationID switch uses the raw operationId (op.ID)
+  # rather than the overridden name (op.GetID()) when dispatching credentials.
+  - target: $.components.securitySchemes
+    update:
+      alternateClientCredentials:
+        type: oauth2
+        flows:
+          clientCredentials:
+            tokenUrl: /clientcredentials/token?expires_in=90
+            scopes:
+              read: Read access
+              write: Write access
+  - target: $.paths
+    update:
+      /clientcredentials/authenticatedrequest#perOperationSecurity:
+        post:
+          operationId: authenticatedRequestPerOperationSecurity
+          x-speakeasy-name-override: authReqOverridden
+          description: |
+            Tests that per-operation client credentials with a name override
+            use the raw operationId in the hooks OperationID switch.
+          tags:
+            - hooks
+          servers:
+            - url: http://localhost:35456
+          security:
+            - alternateClientCredentials: [read, write]
+          requestBody:
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+          responses:
+            '200':
+              description: OK

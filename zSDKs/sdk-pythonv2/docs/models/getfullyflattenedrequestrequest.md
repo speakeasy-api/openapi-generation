@@ -1,0 +1,10 @@
+# GetFullyFlattenedRequestRequest
+
+
+## Fields
+
+| Field                                                                                          | Type                                                                                           | Required                                                                                       | Description                                                                                    |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `lang`                                                                                         | *str*                                                                                          | :heavy_check_mark:                                                                             | N/A                                                                                            |
+| `max_length`                                                                                   | *Optional[int]*                                                                                | :heavy_minus_sign:                                                                             | N/A                                                                                            |
+| `request_body`                                                                                 | [models.GetFullyFlattenedRequestRequestBody](../models/getfullyflattenedrequestrequestbody.md) | :heavy_check_mark:                                                                             | N/A                                                                                            |

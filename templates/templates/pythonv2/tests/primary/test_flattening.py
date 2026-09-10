@@ -1,0 +1,163 @@
+import pytest
+from pydantic import ValidationError
+
+from openapi import SDK
+from openapi.models.operations import *
+from openapi.models.shared import *
+from openapi.utils import *
+
+from .common_helpers import *
+from .test_helpers import *
+
+
+def test_component_body_and_param_no_conflict():
+    record_test("flattening-component-body-and-param-no-conflict-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    obj = create_simple_object()
+
+    res = s.flattening.component_body_and_param_no_conflict(
+        param_str="param test",
+        any_=obj.any,
+        bool_=obj.bool_,
+        bool_opt=obj.bool_opt,
+        date_=obj.date_,
+        date_time=obj.date_time,
+        enum=obj.enum,
+        float32=obj.float32,
+        int_=obj.int_,
+        int32=obj.int32,
+        int32_enum=obj.int32_enum,
+        int_enum=obj.int_enum,
+        int_opt_null=obj.int_opt_null,
+        num=obj.num,
+        num_opt_null=obj.num_opt_null,
+        str_=obj.str_,
+        str_opt=obj.str_opt,
+    )
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.args["paramStr"] == "param test"
+    compare_simple_object(res.res.json_, obj)
+
+
+def test_component_body_and_param_conflict():
+    record_test("flattening-component-body-and-param-conflict-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    obj = create_simple_object()
+
+    res = s.flattening.component_body_and_param_conflict(
+        str_param="param test",
+        any_=obj.any,
+        bool_=obj.bool_,
+        bool_opt=obj.bool_opt,
+        date_=obj.date_,
+        date_time=obj.date_time,
+        enum=obj.enum,
+        float32=obj.float32,
+        int_=obj.int_,
+        int32=obj.int32,
+        int32_enum=obj.int32_enum,
+        int_enum=obj.int_enum,
+        int_opt_null=obj.int_opt_null,
+        num=obj.num,
+        num_opt_null=obj.num_opt_null,
+        str_=obj.str_,
+        str_opt=obj.str_opt,
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.args["str"] == "param test"
+    compare_simple_object(res.res.json_, obj)
+
+
+def test_inline_body_and_param_conflict():
+    record_test("flattening-inline-body-and-param-conflict-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    res = s.flattening.inline_body_and_param_conflict(
+        str_param="param test",
+        str_="body test",
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.args["str"] == "param test"
+    assert res.res.json_.str_ == "body test"
+
+
+def test_inline_body_and_param_no_conflict():
+    record_test("flattening-inline-body-and-param-no-conflict-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    res = s.flattening.inline_body_and_param_no_conflict(
+        param_str="param test",
+        body_str="body test",
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.args["paramStr"] == "param test"
+    assert res.res.json_.body_str == "body test"
+
+
+def test_conflicting_params():
+    record_test("flattening-conflicting-params-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    res = s.flattening.conflicting_params(
+        str_path_parameter="pathParam", str_query_parameter="queryParam"
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert "/pathParam?" in res.res.url
+    assert res.res.args["str"] == "queryParam"
+
+
+def test_required_body_all_optional():
+    record_test("flattening-required-body-all-optional-flatten-requests")
+
+    s = SDK(server_url=HTTPBIN_URL)
+    assert s is not None
+
+    res = s.flattening.required_body_all_optional(
+            opt_str="body test",
+            opt_int=1,
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.json_.opt_str == "body test"
+    assert res.res.json_.opt_int == 1
+

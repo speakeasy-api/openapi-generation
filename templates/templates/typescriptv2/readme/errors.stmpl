@@ -1,0 +1,44 @@
+{{- $baseClass := getBaseErrorClassName}}
+{{- $baseClassLink := templateErrorMarkdownLink $baseClass}}
+{{$baseClassLink}} is the base class for all HTTP error responses. It has the following properties:
+
+{{templateBaseErrorClassTable}}
+
+### Example
+{{templateUsageExample .Local.UsageContext ""}}
+
+### Error Classes
+
+{{- $groups := groupGlobalErrorsByErrorType }}
+**Primary error{{ if gt $groups.PrimaryErrorCount 0 }}s{{ end }}:**
+* {{$baseClassLink}}: The base class for HTTP error responses.
+{{- range $groups.PrimaryErrors }}
+  * {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+
+{{- $count := $groups.LessCommonErrorCount}}
+{{- $builtInCount := 6}}
+{{- $count := add $count $builtInCount}}
+
+<details><summary>Less common errors ({{$count}})</summary>
+
+<br />
+
+**Network errors:**
+* {{templateErrorMarkdownLink "ConnectionError"}}: HTTP client was unable to make a request to a server.
+* {{templateErrorMarkdownLink "RequestTimeoutError"}}: HTTP request timed out due to an AbortSignal signal.
+* {{templateErrorMarkdownLink "RequestAbortedError"}}: HTTP request was aborted by the client.
+* {{templateErrorMarkdownLink "InvalidRequestError"}}: Any input used to create a request is invalid.
+* {{templateErrorMarkdownLink "UnexpectedClientError"}}: Unrecognised or unexpected error.
+
+
+**Inherit from {{$baseClassLink}}**:
+{{- range $groups.LessCommonErrors }}
+* {{templateErrorGroup . $groups.TotalOperationCount}}
+{{- end }}
+* {{templateErrorMarkdownLink "ResponseValidationError"}}: Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
+
+</details>
+{{ if $groups.HasErrorsApplicableToNotAllOperations }}
+\* Check [the method documentation](#available-resources-and-operations) to see if the error is applicable.
+{{- end }}

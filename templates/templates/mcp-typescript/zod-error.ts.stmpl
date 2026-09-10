@@ -1,0 +1,53 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- $additionalPropsInbound := false }}
+{{- range .Local.Type.Fields }}
+{{-   if .IsAdditionalProperties }}
+{{-     $additionalPropsInbound = resolveInbound (
+          dict
+            "usageLocation" $usageLocation
+            "typeDef" .Type.ItemType
+            "rootTypeDef" $rootType
+        ) }}
+{{-     break }}
+{{-   end }}
+{{- end }}
+{{- $inboundRemaps := templateFieldRemaps "inbound" .Local.Type.Fields }}
+
+{{ addImport "zod" "z" "aliasImport" }}
+/** @internal */
+export const {{ $zodName }} =
+  {{- if $inboundRemaps.additionalPropsField }}
+  {{-   addInternalImport "schemas" "collectExtraKeys as collectExtraKeys$" $usageLocation }}
+  collectExtraKeys$(
+  {{- end }}
+  z.object({
+    {{- range .Local.Type.Fields }}
+    {{-   if .IsAdditionalProperties }}{{ continue }}{{ end }}
+
+    {{-   $fieldName := sanitizeFieldName .Name -}}
+    {{-   $isOptional := isErrorFieldOptional . }}
+    {{-   $fieldType := resolveInbound (dict
+            "usageLocation" $usageLocation
+            "typeDef" .Type
+            "rootTypeDef" $rootType
+            "optional" $isOptional
+            "nullable" .Nullable
+            "constValue" .Const
+            "defaultValue" .Default
+          ) -}}
+    {{    "" }}
+    {{-   callImportTypesFunc $fieldType.importZodTypes }}
+    {{    sanitizeKey (originalFieldName .) }}: {{ $fieldType.zod }},
+    {{- end }}
+  })
+  {{- if $inboundRemaps.additionalPropsField }}
+  .catchall(
+    {{- callImportTypesFunc $additionalPropsInbound.importZodTypes }}
+    {{- $additionalPropsInbound.zod }}
+  ), "{{ sanitizeFieldName $inboundRemaps.additionalPropsField.Name }}", {{ $inboundRemaps.additionalPropsField.Optional }})
+  {{- end -}}
+  ;

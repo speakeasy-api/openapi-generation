@@ -1,0 +1,73 @@
+{{- $op := .Local.Operation -}}
+{{- $sdkVar := sanitizeFieldName .Global.AST.MainSDK.Type.Name }}
+{{- $coreName := sanitizeCoreSDKName }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $args := templateUsageMethodParameters .Local 0 }}
+{{- if $args }}
+{{-   $args = printf "%s, %s" $sdkVar $args }}
+{{- else }}
+{{-   $args = $sdkVar }}
+{{- end }}
+### Standalone function
+
+The standalone function version of this method:
+
+```typescript
+{{templateString "usage/snippet-func.stmpl" (dict "UsageContext" .Local) }}
+```
+
+{{- if and isReactQueryEnabled (hasReactQuery $op) }}
+{{- $packageName := .Global.Config.PackageName }}
+{{- $filename := sanitizeFuncFilename $op }}
+{{- $queryKeyTupleType := reactQueryTupleType $op "" }}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $isPaginated := and $pagination $op.Response (gt (len $op.Response.Responses) 0) }}
+
+### React hooks and utilities
+
+This method can be used in React components through the following hooks and
+associated utilities.
+
+> Check out [this guide][hook-guide] for information about each of the utilities
+> below and how to get started using React hooks.
+
+[hook-guide]: ../../../REACT_QUERY.md
+
+{{-   if hasQueryHook $op }}
+
+```tsx
+import {
+  // Query hooks for fetching data.
+  {{sanitizeReactQueryName $op "query"}},
+  {{sanitizeReactQueryName $op "query-suspense"}},
+
+  {{- if $isPaginated }}
+  // Query hooks suitable for building infinite scrolling or "load more" UIs.
+  {{sanitizeReactQueryName $op "query-infinite"}},
+  {{sanitizeReactQueryName $op "query-infinite-suspense"}},
+  {{- end }}
+
+  // Utility for prefetching data during server-side rendering and in React
+  // Server Components that will be immediately available to client components
+  // using the hooks.
+  {{sanitizeReactQueryName $op "query-prefetch"}},
+  
+  // {{ if $queryKeyTupleType.inert }}Utility{{else}}Utilities{{end}} to invalidate the query cache for this query in response to
+  // mutations and other user actions.
+  {{ if not $queryKeyTupleType.inert -}}
+  {{sanitizeReactQueryName $op "query-invalidate"}},
+  {{ end -}}
+  {{sanitizeReactQueryName $op "query-invalidate-all"}},
+} from "{{$packageName}}/react-query/{{$funcName}}.js";
+```
+
+{{-   else }}
+
+```tsx
+import {
+  // Mutation hook for triggering the API call.
+  {{sanitizeReactQueryName $op "mutation"}}
+} from "{{$packageName}}/react-query/{{$funcName}}.js";
+```
+{{-   end }}
+{{- end }}

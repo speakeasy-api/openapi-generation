@@ -1,0 +1,71 @@
+{{- if and getGitHubRepo shouldGenerateReleaseFiles -}}
+{{- /* The quick-install one-liners fetch scripts/install.sh|ps1, which only
+       exist — and only have released binaries to install — when the release
+       pipeline (goreleaser + release workflow) is generated. */ -}}
+### Quick Install (Linux/macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/{{getGitHubRepo}}/main/scripts/install.sh | bash
+```
+
+### Quick Install (Windows PowerShell)
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/{{getGitHubRepo}}/main/scripts/install.ps1 | iex
+```
+
+{{- if isHomebrewEnabled }}
+### Homebrew (macOS/Linux)
+
+```bash
+{{getHomebrewInstallCommand}}
+```
+
+{{- end }}
+
+{{- if isWingetEnabled }}
+### WinGet (Windows)
+
+```powershell
+{{getWingetInstallCommand}}
+```
+
+{{- end }}
+
+{{- if isNFPMEnabled }}
+### Linux Packages
+
+Download Linux packages from the [releases page](https://github.com/{{getGitHubRepo}}/releases).
+
+{{- if or (hasNFPMFormat "deb") (hasNFPMFormat "rpm") }}
+```bash
+{{- if hasNFPMFormat "deb" }}
+sudo dpkg -i {{sanitizeCliName}}_*_amd64.deb
+{{- end }}
+{{- if hasNFPMFormat "rpm" }}
+sudo rpm -i {{sanitizeCliName}}_*_amd64.rpm
+{{- end }}
+```
+{{- end }}
+
+{{- end }}
+
+### Go Install
+
+Alternatively, install directly via Go:
+
+```bash
+go install {{getGolangPackage}}/cmd/{{sanitizeCliName}}@latest
+```
+
+### Manual Download
+
+Download pre-built binaries for your platform from the [releases page](https://github.com/{{getGitHubRepo}}/releases).
+{{- else -}}
+To install the CLI, use `go install`:
+```bash
+go install {{getGolangPackage}}/cmd/{{sanitizeCliName}}@latest
+```
+
+Or download a pre-built binary from the [releases page](https://{{getRootModulePath}}/releases) if available.
+{{- end -}}

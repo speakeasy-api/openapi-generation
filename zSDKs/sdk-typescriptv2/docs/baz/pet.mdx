@@ -1,0 +1,25 @@
+---
+title: "Pet"
+---
+
+A pet in the baz namespace with completely different schema
+
+## Example Usage
+
+```typescript
+import { Pet } from "openapi/baz";
+
+let value: Pet = {
+  petId: 789,
+  petName: "Rex",
+  adoptedAt: new Date("2024-01-15T10:30:00Z"),
+};
+```
+
+## Fields
+
+| Field                                                                                         | Type                                                                                          | Required                                                                                      | Description                                                                                   | Example                                                                                       |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `petId`                                                                                       | *number*                                                                                      | :heavy_check_mark:                                                                            | N/A                                                                                           | 789                                                                                           |
+| `petName`                                                                                     | *string*                                                                                      | :heavy_check_mark:                                                                            | N/A                                                                                           | Rex                                                                                           |
+| `adoptedAt`                                                                                   | [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) | :heavy_minus_sign:                                                                            | N/A                                                                                           | 2024-01-15T10:30:00Z                                                                          |

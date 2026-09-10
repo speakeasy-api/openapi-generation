@@ -1,0 +1,3 @@
+data "{{.Local.DataSource.TerraformTypeName}}" "my_{{sanitizeLocalName .Local.DataSource.Name}}" {
+{{templateTfResource .Local.DataSource "data" -}}
+}

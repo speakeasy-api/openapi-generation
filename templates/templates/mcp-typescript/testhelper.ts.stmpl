@@ -1,0 +1,20 @@
+{{- $helper := .Local -}}
+{{- $sdkClassName := sanitizeCoreSDKName }}
+{{- $sdk := sanitizeClassName .Global.AST.MainSDK.Type.Name }}
+export async function {{sanitizePrivateMethodName $helper.Name}}({{if $helper.Inputs}}inputs: any{{end}}){{if $helper.Outputs}}: Promise<any>{{end}} {
+{{- addTestImport "../core.js" (printf "%s as %s" $sdkClassName $sdk) -}}
+{{- addTestImport "./testclient.js" "createTestHTTPClient" -}}
+  const testHttpClient = createTestHTTPClient("{{$helper.Name}}");
+{{range $helper.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" .UsageContext | trim | indent 2}}
+
+{{templateString "usage/call-unguarded.stmpl" .UsageContext | trim | indent 2}}
+
+  if (!{{getResponseVariableName .UsageContext.StepID}}.ok) throw {{getResponseVariableName .UsageContext.StepID}}.error;
+{{templateMCPAssertions .UsageContext | trim | indent 2}}
+{{- else}}
+{{templateWorkflow $helper . | trim | indent 2}}
+{{end}}{{end}}
+{{templateHelperOutputs $helper | indentPresent 4}}
+}

@@ -1,0 +1,28 @@
+---
+title: "ReviewTask"
+---
+
+A task object with nested policy
+
+## Example Usage
+
+```typescript
+import { ReviewTask } from "openapi";
+
+let value: ReviewTask = {
+  id: "task-123",
+  name: "Review Task",
+  policy: {
+    policyId: "policy-456",
+    steps: [],
+  },
+};
+```
+
+## Fields
+
+| Field                                      | Type                                       | Required                                   | Description                                | Example                                    |
+| ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ | ------------------------------------------ |
+| `id`                                       | *string*                                   | :heavy_check_mark:                         | N/A                                        | task-123                                   |
+| `name`                                     | *string*                                   | :heavy_check_mark:                         | N/A                                        | Review Task                                |
+| `policy`                                   | [models.MCPPolicy](../models/mcppolicy.mdx) | :heavy_check_mark:                         | A policy object with steps                 |                                            |

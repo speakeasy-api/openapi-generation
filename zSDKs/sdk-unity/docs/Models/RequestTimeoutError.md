@@ -1,0 +1,12 @@
+# RequestTimeoutError
+
+A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts
+
+
+## Fields
+
+| Field                                                                                                            | Type                                                                                                             | Required                                                                                                         | Description                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `Code`                                                                                                           | *long*                                                                                                           | :heavy_minus_sign:                                                                                               | N/A                                                                                                              |
+| `Message`                                                                                                        | *string*                                                                                                         | :heavy_minus_sign:                                                                                               | N/A                                                                                                              |
+| `RawResponse`                                                                                                    | [UnityWebRequest](https://docs.unity3d.com/2021.3/Documentation/ScriptReference/Networking.UnityWebRequest.html) | :heavy_minus_sign:                                                                                               | Raw HTTP response; suitable for custom response parsing                                                          |

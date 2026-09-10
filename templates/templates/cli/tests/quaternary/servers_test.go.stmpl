@@ -1,0 +1,55 @@
+package tests
+
+import (
+	"net/url"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// serverHostPort extracts the hostname and port from a server URL string.
+func serverHostPort(serverURL string) (host, port string) {
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		return "localhost", "35123"
+	}
+	return u.Hostname(), u.Port()
+}
+
+func TestSelectGlobalServerByNameWithTemplatesDefaults(t *testing.T) {
+	recordTest("servers-select-global-server-by-name-with-templates-defaults")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// --server "TEMPLATED" selects the template server, --server-url redirects to echo.
+	// Default template variable values are used by the SDK internally.
+	err := h.RunWithServer(s.URL, []string{"servers", "select-global", "--server", "TEMPLATED"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerByNameWithTemplatesValid(t *testing.T) {
+	recordTest("servers-select-global-server-by-name-with-templates-valid")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	host, port := serverHostPort(s.URL)
+	h := NewCLITestHarness(t)
+	// --server "TEMPLATED" selects "http://{hostname}:{port}", template vars resolve to echo server
+	err := h.RunBare([]string{"servers", "select-global", "--server", "TEMPLATED", "--hostname", host, "--port", port})
+	require.NoError(t, err)
+	assert.NotEmpty(t, h.GetStdout())
+}
+
+func TestSelectGlobalServerByNameWithTemplatesBroken(t *testing.T) {
+	recordTest("servers-select-global-server-by-name-with-templates-broken")
+
+	h := NewCLITestHarness(t)
+	// --server "TEMPLATED" with broken hostname/port — expect connection error
+	err := h.RunBare([]string{"servers", "select-global", "--server", "TEMPLATED", "--hostname", "broken", "--port", "12345"})
+	assert.Error(t, err)
+}

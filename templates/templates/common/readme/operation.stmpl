@@ -1,0 +1,45 @@
+{{- $op := .Local.Operation -}}
+{{- $deprecated := (and $op.Comments $op.Comments.Deprecated) -}}
+## {{if $deprecated}}~~{{end}}{{sanitizeMethodName $op}}{{if $deprecated}}~~{{end}}
+{{if $op.Comments}}{{if $op.Comments.Description}}
+{{$op.Comments.Description}}
+{{else if $op.Comments.Summary}}
+{{$op.Comments.Summary}}
+{{end}}{{if $op.Comments.ExternalDocs}}{{if $op.Comments.ExternalDocs.Description}}
+{{$op.Comments.ExternalDocs.Description}}{{end}}
+<{{$op.Comments.ExternalDocs.URL}}>
+{{end}}{{if $deprecated}}
+{{- $deprecationReplacement := sanitizeDeprecationReplacement $op.Comments.DeprecationReplacement "method"}}
+> :warning: **DEPRECATED**: {{$op.Comments.DeprecationMessage}}.{{if $deprecationReplacement}} Use `{{$deprecationReplacement}}` instead.{{end}}
+{{end}}{{end}}
+{{- $usageContexts := createUsageContextsForOperation .Local.SDK .Local.Operation .Local.Operation.Extensions.UsageExample -}}
+{{- $numExamples := len $usageContexts -}}
+{{- range $idx, $ctx := $usageContexts}}
+### Example Usage{{if gt $numExamples 1}}{{if $ctx.ExampleName}}: {{$ctx.ExampleName}}{{else}}: Example {{add $idx 1}}{{end}}{{end}}
+
+<!-- UsageSnippet language={{stringify $.Global.Config.Language}} operationID={{stringify $ctx.Operation.BaseOperation.ID}} method={{stringify $ctx.Operation.Method}} path={{stringify $ctx.Operation.Path}}{{if $ctx.ExampleName}} example={{stringify $ctx.ExampleName}}{{end}} -->
+```{{templateLanguageName $.Global.Config.Language}}
+{{ addServerSelectionScopeIfInConfig $ctx }}{{templateString "usage/snippet.stmpl" $ctx}}
+```
+{{- $exampleAfter := templateString "readme/operation.example_after.stmpl" $ctx}}
+{{- if $exampleAfter}}
+{{ $exampleAfter }}
+{{- end}}
+{{- end}}
+
+{{- $parameterDocumentation := templateMethodParametersDocs .Local.Operation}}
+{{- if $parameterDocumentation}}
+
+### Parameters
+
+{{$parameterDocumentation}}
+{{- end}}
+{{- $responseDocumentation := templateMethodResponseDocs .Local.Operation}}
+{{- if $responseDocumentation}}
+
+### Response
+
+{{$responseDocumentation}}
+{{- end}}
+
+{{templateErrorsTable .Local.Operation "### Errors" true}}

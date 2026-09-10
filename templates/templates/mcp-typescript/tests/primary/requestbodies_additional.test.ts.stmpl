@@ -1,0 +1,95 @@
+{{- if isStrictMCPServer }}
+import * as fs from "fs";
+{{- end }}
+import * as path from "path";
+import { expect, test } from "vitest";
+import { SDKCore as SDK } from "../core.js";
+import { filesToByteArray } from "./files.js";
+import { API_TEST_SERVICE_URL, recordTest } from "./common_helpers.js";
+import { requestBodiesRequestBodyPutBytes } from "../funcs/requestBodiesRequestBodyPutBytes.js";
+import { methodsMethodGet } from "../funcs/methodsMethodGet.js";
+import { requestBodiesRequestBodyPostWildcard } from "../funcs/requestBodiesRequestBodyPostWildcard.js";
+import { requestBodiesFormRequestBodyStringArray } from "../funcs/requestBodiesFormRequestBodyStringArray.js";
+
+test("Request Body Put Bytes", async () => {
+  recordTest("request-bodies-put-bytes");
+
+  const s = new SDK();
+
+  const filePath = path.resolve(__dirname, "./testdata/testUpload.json");
+
+  const result = await requestBodiesRequestBodyPutBytes(
+    s,
+    await filesToByteArray(filePath),
+  );
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  const data = fs.readFileSync(filePath);
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.res).toBeDefined();
+  expect(result.value.res?.data).toEqual(data.toString());
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Request Body No Body No Content Type", async () => {
+  recordTest("request-bodies-no-body-no-content-type");
+
+  const s = new SDK();
+
+  const result = await methodsMethodGet(s, {
+    serverURL: API_TEST_SERVICE_URL,
+  });
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+  expect(result.value.object).toEqual({ status: "OK" });
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Request Body Wildcard No Content Type", async () => {
+  recordTest("request-bodies-wildcard-no-content-type");
+
+  const s = new SDK();
+
+  const result = await requestBodiesRequestBodyPostWildcard(s);
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});
+
+test("Test Form Encoded String Array", async () => {
+  recordTest("request-bodies-form-encoded-string-array");
+
+  const sdk = new SDK({});
+
+  const result = await requestBodiesFormRequestBodyStringArray(sdk, {
+    stuff: ["item1", "item2", "item3"],
+  });
+
+  if (!result.ok) throw result.error;
+
+{{- if isStrictMCPServer }}
+  expect(result.value.StatusCode).toBe(200);
+
+  expect(result.value.res?.form).toBeDefined();
+  expect(result.value.res?.form["stuff"]?.length).toBe(3);
+  expect(result.value.res?.form["stuff"]).toContain("item1");
+  expect(result.value.res?.form["stuff"]).toContain("item2");
+  expect(result.value.res?.form["stuff"]).toContain("item3");
+{{- else }}
+  expect(result.value.status).toBe(200);
+{{- end }}
+});

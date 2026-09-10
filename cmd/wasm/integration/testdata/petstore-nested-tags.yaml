@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: Pet Store API
+  description: Pet Store API with x-speakeasy-group extension at both tag and operation levels (pets only)
+  version: 1.0.0
+
+tags:
+  - name: pets
+    description: All pet operations
+  - name: dogs
+    description: Operations about dogs
+  - name: large_dogs
+    description: Operations about large dogs
+  - name: small_dogs
+    description: Operations about small dogs
+  - name: cats
+    description: Operations about cats
+
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List all pets
+      tags:
+        - pets
+      x-speakeasy-group: pets
+      responses:
+        '200':
+          description: A list of pets
+
+  /pets/dogs:
+    get:
+      operationId: listDogs
+      summary: List all dogs
+      tags:
+        - dogs
+      x-speakeasy-group: pets.dogs
+      responses:
+        '200':
+          description: A list of dogs
+
+  /pets/dogs/large:
+    get:
+      operationId: listLargeDogs
+      summary: List all large dogs
+      tags:
+        - large_dogs
+      x-speakeasy-group: pets.dogs.large_dogs
+      responses:
+        '200':
+          description: A list of large dogs
+
+  /pets/dogs/small:
+    get:
+      operationId: listSmallDogs
+      summary: List all small dogs
+      tags:
+        - small_dogs
+      x-speakeasy-group: pets.dogs.small_dogs
+      responses:
+        '200':
+          description: A list of small dogs
+
+  /pets/cats:
+    get:
+      operationId: listCats
+      summary: List all cats
+      tags:
+        - cats
+      x-speakeasy-group: pets.cats
+      responses:
+        '200':
+          description: A list of cats

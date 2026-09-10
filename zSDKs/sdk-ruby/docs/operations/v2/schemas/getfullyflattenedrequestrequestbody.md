@@ -1,0 +1,12 @@
+# GetFullyFlattenedRequestRequestBody
+
+
+## Fields
+
+| Field                                                                            | Type                                                                             | Required                                                                         | Description                                                                      |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `name`                                                                           | *::String*                                                                       | :heavy_check_mark:                                                               | N/A                                                                              |
+| `emoji`                                                                          | [T.nilable(Operations::V2::Schemas::Emoji)](../../../models/operations/emoji.md) | :heavy_minus_sign:                                                               | N/A                                                                              |
+| `gif`                                                                            | *T.nilable(::String)*                                                            | :heavy_minus_sign:                                                               | N/A                                                                              |
+| `reply`                                                                          | *T.nilable(T::Boolean)*                                                          | :heavy_minus_sign:                                                               | N/A                                                                              |
+| `private`                                                                        | *T.nilable(T::Boolean)*                                                          | :heavy_minus_sign:                                                               | N/A                                                                              |

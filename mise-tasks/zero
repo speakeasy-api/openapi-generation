@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Bootstrap a local checkout: elect a license for generated output (./zero)"
+
+set -euo pipefail
+
+readonly ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." &>/dev/null && pwd)"
+exec "$ROOT_DIR/zero" "$@"

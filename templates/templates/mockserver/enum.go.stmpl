@@ -1,0 +1,38 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $enum := .Local.Type.Enum -}}
+{{- $enumType := (sanitizeClass .Local.Type .Local.Type.OutputLocation true) -}}
+{{- $values := $enum.Values -}}
+{{- $outputLocation := .Local.Type.OutputLocation -}}
+{{templateComments .Local.Type.Comments $dg $enumType 0 "type" -}}
+type {{$enumType}} {{sanitizeType $enum.Type false $outputLocation}}
+
+const (
+    {{templateEnums .Local.Type}}
+)
+
+func (e {{$enumType}}) ToPointer() *{{$enumType}} {
+    return &e
+}    
+
+{{- if not $enum.Open }}
+func (e *{{$enumType}}) UnmarshalJSON(data []byte) error {
+    var v {{sanitizeType $enum.Type false $outputLocation}}
+    {{- addImport "encoding/json"}}
+    if err := json.Unmarshal(data, &v); err != nil {
+        return err
+    }
+    switch v {
+    {{- range $idx, $val := $values}}
+    case {{sanitizeEnumValue $val $enum.Type.Type }}:
+    {{- if ne $idx (sub (len $values) 1)}}
+        fallthrough
+    {{- else}}
+        *e = {{$enumType}}(v)
+        return nil
+    {{- end}}{{end}}
+    default:
+        {{- addImport "fmt"}}
+        return fmt.Errorf("invalid value for {{$enumType}}: %v", v)
+    }
+}
+{{- end }}

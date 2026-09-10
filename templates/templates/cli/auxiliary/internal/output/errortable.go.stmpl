@@ -1,0 +1,66 @@
+{{- $table := cliErrorTable -}}
+{{- $probes := cliErrorProbes -}}
+package output
+
+// Generated from the x-speakeasy-cli-errors document extension.
+
+// errorProbes lists this build's reason carriers in classification order:
+// the primary carrier (the declared reasonPointer, default $.reason) first,
+// then each declared probe.
+var errorProbes = []errorProbe{
+	{{- range $probes}}
+	{
+		// {{.Display}}
+		segments: []reasonCarrierSegment{
+			{{- range .Segments}}
+			{{- if .IsWild}}
+			{isWild: true},
+			{{- else}}
+			{field: {{goStringLiteral .Field}}},
+			{{- end}}
+			{{- end}}
+		},
+		rules: map[string]errorRule{
+			{{- range .Rules}}
+			{{goStringLiteral .Reason}}: {
+				{{- if .Type}}
+				Type: ErrorType({{goStringLiteral .Type}}),
+				{{- end}}
+				{{- if .HasHints}}
+				Hints: []string{
+					{{- range .Hints}}
+					{{goStringLiteral .}},
+					{{- end}}
+				},
+				{{- end}}
+			},
+			{{- end}}
+		},
+		{{- if .Declared}}
+		promote: true,
+		{{- end}}
+	},
+	{{- end}}
+}
+
+// runtimeReasonHints replaces the generated guidance for the runtime-owned
+// CLI_* reasons the local runtime emits.
+var runtimeReasonHints = map[string][]string{
+	{{- range cliErrorRuntimeRules}}
+	{{goStringLiteral .Reason}}: {
+		{{- range .Hints}}
+		{{goStringLiteral .}},
+		{{- end}}
+	},
+	{{- end}}
+}
+
+var declaredTypeHints = map[ErrorType][]string{
+	{{- range $table.Types}}
+	ErrorType({{goStringLiteral .Type}}): {
+		{{- range .Hints}}
+		{{goStringLiteral .}},
+		{{- end}}
+	},
+	{{- end}}
+}

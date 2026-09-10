@@ -1,0 +1,78 @@
+
+[TestChanges_UnionOptionAddedRequest - 1]
+# Test: union_option_added_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        c:
+                          oneOf:
+                            - type: string
+                            - type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        c:
+                          oneOf:
+                            - type: string
+                            - type: integer
+                            - type: boolean
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  *  `request.a.b.c.union(boolean)` **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.createUser()`: 
+  *  `request.a.b.c.union(boolean)` **Added**
+
+---

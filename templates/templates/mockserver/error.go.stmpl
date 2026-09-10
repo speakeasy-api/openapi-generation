@@ -1,0 +1,17 @@
+{{- $outputLocation := .Local.Type.OutputLocation -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $className := sanitizeClass .Local.Type $outputLocation true -}}
+{{templateComments .Local.Type.Comments $dg $className 0 "type" -}}
+type {{$className}} struct {
+    {{range .Local.Type.Fields -}}
+    {{- $fieldName := sanitizeErrorFieldName .Name -}}
+    {{- templateComments .Comments $dg (printf "%s.%s" $className $fieldName) 1 "field" true -}}
+    {{$fieldName}} {{sanitizeType .Type (or .Optional .Nullable) $outputLocation}} {{templateAnnotations .}}
+    {{end}}
+}
+
+var _ error = &{{$className}}{}
+
+func (e *{{$className}}) Error() string {
+    {{templateErrorMessage .Local.Type "e" | indent 4}}
+}

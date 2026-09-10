@@ -1,0 +1,8 @@
+{{recurse 1}}
+{{genImports}}
+import { describe, expect, test } from "vitest";
+import * as z from "zod";
+
+describe("Environment variable coercion", () => {
+{{templateEnvCoercionTests}}
+});

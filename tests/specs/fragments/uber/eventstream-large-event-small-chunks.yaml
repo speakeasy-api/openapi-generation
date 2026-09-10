@@ -1,0 +1,105 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /eventstreams/split-boundaries:
+    post:
+      operationId: splitBoundaries
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests SSE boundary detection when the message terminator (one of
+        \r\n\r\n, \r\n\r, \r\n\n, \r\r\n, \n\r\n, \r\r, \n\r, \n\n) is
+        deliberately flushed across the seam between two network reads. The
+        server emits a sequence of sample events tagged with the seam shape
+        used to terminate each one (e.g. "lf-lf-1-1", "crlf-crlf-2-2",
+        "crlfcr-lf-3-1") and a final "expected" event whose data contains a
+        JSON array of the tags in order. Parsers must reassemble each
+        terminator from its flushed fragments and produce the events in the
+        correct order; any parser that only inspects the newest chunk in
+        isolation will drop or misalign events.
+      tags:
+        - eventstreams
+      responses:
+        "200":
+          description: Ok
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SplitBoundaryEvent"
+  /eventstreams/large-event-small-chunks:
+    post:
+      operationId: largeEventSmallChunks
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests server-sent event parsing when a single event is much larger
+        than any individual network read. The server streams a small lead-in
+        event, one event whose data content is hundreds of kilobytes (well
+        above common fixed scanner/token limits such as 64KB), and a small
+        trailing event, flushing in fixed ~1.5KB chunks. Parsers must
+        reassemble the large event across many reads without truncating it,
+        failing on internal buffer limits, or rescanning the accumulated
+        buffer from the start on every read (which degrades quadratically
+        with event size).
+      tags:
+        - eventstreams
+      parameters:
+        - in: query
+          name: size
+          required: false
+          description: >-
+            Size in bytes of the large event's content field. The content is
+            "S" followed by repeated "a" and a final "E" so clients can verify
+            the payload was reassembled completely and in order.
+          schema:
+            type: integer
+            default: 2097152
+      responses:
+        "200":
+          description: Ok
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/LargeChunkedEvent"
+components:
+  schemas:
+    LargeChunkedEvent:
+      description: Represents a single event in the large chunked json stream
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [content]
+          properties:
+            content:
+              type: string
+    SplitBoundaryEvent:
+      description: Either a tagged sample event or the final expected manifest.
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [kind, tags]
+          properties:
+            kind:
+              type: string
+              enum: [sample, expected]
+              description: >-
+                "sample" for a single tagged seam event, "expected" for the
+                final manifest carrying all tags in order.
+            tags:
+              type: array
+              items:
+                type: string
+              description: >-
+                For kind=sample, a single-element list with the seam tag.
+                For kind=expected, all seam tags in emission order.

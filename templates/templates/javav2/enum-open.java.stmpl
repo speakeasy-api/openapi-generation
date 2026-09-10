@@ -1,0 +1,117 @@
+{{- $enum := .Local.Enum -}}
+{{- $scope := .Local.Scope -}}
+{{- $enumClass := (enumSimpleClassName .Local) -}}
+{{- $class := (sanitizeClass .Local $scope true) -}}
+{{- $members := (javaEnumMembers .Local) -}}
+/**
+ * Wrapper for an "open" enum that can handle unknown values from API responses
+ * without runtime errors. Instances are immutable singletons with reference equality.
+ * Use {@code asEnum()} for switch expressions.
+ */
+{{templateComments .Local.Comments $class 0 "enum" }}{{if and .Local.Comments .Local.Comments.Deprecated}}@{{javaImportDeprecated}}{{"\n"}}{{end -}}
+public class {{$class}} { {{- $valueType := (javaImportTypeMandatory $enum.Type)}}{{- $valueTypeNonPrimitive := (javaImportTypeMandatoryNonPrimitive $enum.Type)}}
+{{ range $members}}
+    public static final {{$class}} {{.Identifier}} = new {{$class}}({{.Value}});{{ end }}
+
+    // This map will grow whenever a Color gets created with a new
+    // unrecognized value (a potential memory leak if the user is not
+    // careful). Keep this field lower case to avoid clashing with
+    // generated member names which will always be upper cased (Java
+    // convention)
+    private static final {{javaImportMap}}<{{$valueTypeNonPrimitive}}, {{$class}}> values = createValuesMap();
+    private static final {{javaImportMap}}<{{$valueTypeNonPrimitive}}, {{$enumClass}}> enums = createEnumsMap();
+
+    private final {{$valueType}} value;
+
+    private {{$class}}({{$valueType}} value) {
+        this.value = value;
+    }
+
+    /**
+     * Returns a {{$class}} with the given value. For a specific value the 
+     * returned object will always be a singleton so reference equality 
+     * is satisfied when the values are the same.
+     * 
+     * @param value value to be wrapped as {{$class}}
+     */ 
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonCreator"}}
+    public static {{$class}} of({{$valueType}} value) {
+        synchronized ({{$class}}.class) {
+            return values.computeIfAbsent(value, v -> new {{$class}}(v));
+        }
+    }
+
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonValue"}}
+    public {{$valueType}} value() {
+        return value;
+    }
+
+    public {{javaImportOptional}}<{{$enumClass}}> asEnum() {
+        return {{javaImportOptional}}.ofNullable(enums.getOrDefault(value, null));
+    }
+
+    public boolean isKnown() {
+        return asEnum().isPresent();
+    }
+
+    @{{javaImportOverride}}
+    public int hashCode() {
+        return {{javaImport "java.util.Objects"}}.hash(value);
+    }
+
+    @{{javaImportOverride}}
+    public boolean equals(java.lang.Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        {{$class}} other = ({{$class}}) obj;
+        return {{javaImport "java.util.Objects"}}.equals(value, other.value);
+    }
+
+    @{{javaImportOverride}}
+    public {{javaImportString}} toString() {
+        return "{{$class}} [value=" + value + "]";
+    }
+
+    // return an array just like an enum
+    public static {{$class}}[] values() {
+        synchronized ({{$class}}.class) {
+            return values.values().toArray(new {{$class}}[] {});
+        }
+    }
+
+    private static final {{javaImportMap}}<{{$valueTypeNonPrimitive}}, {{$class}}> createValuesMap() {
+        {{javaImportMap}}<{{$valueTypeNonPrimitive}}, {{$class}}> map = new {{javaImport "java.util.LinkedHashMap"}}<>();
+        {{- range $members}}
+        map.put({{.Value}}, {{.Identifier}});{{end}}
+        return map;
+    }
+
+    private static final {{javaImportMap}}<{{$valueTypeNonPrimitive}}, {{$enumClass}}> createEnumsMap() {
+        Map<{{$valueTypeNonPrimitive}}, {{$enumClass}}> map = new {{javaImportHashMap}}<>();
+        {{- range $members}}
+        map.put({{.Value}}, {{$enumClass}}.{{.Identifier}});{{end}}
+        return map;
+    }
+    
+    // #region class-body
+    // #endregion class-body
+    
+    public enum {{$enumClass}} {
+{{ range $members}}
+        {{.Identifier}}({{.Value}}),{{end}};
+
+        private final {{$valueType}} value;
+
+        private {{$enumClass}}({{$valueType}} value) {
+            this.value = value;
+        }
+
+        public {{$valueType}} value() {
+            return value;
+        }
+    }
+}

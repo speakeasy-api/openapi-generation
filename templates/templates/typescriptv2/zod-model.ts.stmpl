@@ -1,0 +1,102 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $rootType := .Local.Type -}}
+{{- $usageLocation := getModelsLocation $rootType.OutputLocation -}}
+{{- $typeName := sanitizeClassName .Local.Type.Name -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- if isNoZod -}}
+{{- /* No-zod variant: emit only the user-facing TS type. The matcher handles SSE wrapping and error class
+       construction directly; there are no per- model $inboundSchema, $outboundSchema, or $Outbound symbols.
+       preserveModelFieldNames is auto-forced to true  in configuration.go so wire keys == TS identifiers. */ -}}
+{{ templateString "model-serialization.ts.stmpl" .Local }}
+{{- else -}}
+{{- $additionalPropsInbound := false }}
+{{- $additionalPropsOutbound := false }}
+{{- $additionalPropsField := false }}
+{{- range .Local.Type.Fields}}
+{{- if .IsAdditionalProperties }}
+{{- $additionalPropsField = . }}
+{{- $additionalPropsInbound = resolveInbound (
+  dict
+    "usageLocation" $usageLocation
+    "typeDef" .Type.ItemType
+    "rootTypeDef" $rootType
+) }}
+{{- $additionalPropsOutbound = resolveOutbound (
+  dict
+    "usageLocation" $usageLocation
+    "typeDef" .Type
+    "rootTypeDef" $rootType
+    "optional" (isOutputOptional .)
+) }}
+{{- break }}
+{{- end }}
+{{- end}}
+{{- $inboundRemaps := templateFieldRemaps "inbound" .Local.Type.Fields }}
+{{- $outboundRemaps := templateFieldRemaps "outbound" .Local.Type.Fields }}
+
+{{- if shouldIncludeInboundSchema .Local.Type }}
+{{ addZodPackageImport }}
+{{templateInboundSchemaDeclaration $zodName $typeName .Local.Type.Fields $rootType $usageLocation $inboundRemaps $additionalPropsInbound}}
+{{- end }}
+
+{{- if shouldIncludeOutboundSchema .Local.Type }}
+/** @internal */
+export type {{$zodName}}Outbound = {
+{{- range .Local.Type.Fields}}
+  {{- if .IsAdditionalProperties }}{{ continue }}{{ end }}
+
+  {{- $keyName := outboundSecurityKeyName . $rootType.Fields}}
+  {{- if isParameterField .}}{{$keyName = .Name}}{{end}}
+  {{- $fieldName := sanitizeFieldName .Name -}}
+  {{- $isOptional := isOutputOptional . }}
+  {{- $fieldType := resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" .Type
+      "rootTypeDef" $rootType
+      "optional" $isOptional
+      "nullable" .Nullable
+      "streamable" (isMultipartFileField .)
+      "constValue" .Const
+      "defaultValue" .Default
+  ) -}}
+  {{""}}
+  {{sanitizeKey $keyName}}{{if $isOptional}}?{{end}}:{{callImportTypesFunc $fieldType.importOutputTypes}}{{$fieldType.outputType}};
+{{- end }}
+{{- if $additionalPropsOutbound }}
+  {{- if (shouldFlattenAdditionalProperties $additionalPropsField) }}
+  [additionalProperties: string]: unknown;
+};
+  {{- else }}
+  [additionalProperties: string]: unknown;
+};
+  {{- end }}
+{{- else }}
+};
+{{- end }}
+{{ addZodPackageImport }}
+{{templateOutboundSchemaDeclaration $zodName $typeName .Local.Type.Fields $rootType $usageLocation $outboundRemaps $additionalPropsOutbound}}
+{{- end }}
+
+{{- if shouldIncludeSchemaNamespace .Local.Type }}
+/**
+ * @internal
+ * @deprecated This namespace will be removed in future versions. Use schemas and types that are exported directly from this module.
+ */
+export namespace {{$zodName}} {
+  {{- if shouldIncludeInboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}inboundSchema` instead. */
+  export const inboundSchema = {{$zodName}}inboundSchema;
+  {{- end }}
+  {{- if shouldIncludeOutboundSchema .Local.Type }}
+  /** @deprecated use `{{$zodName}}outboundSchema` instead. */
+  export const outboundSchema = {{$zodName}}outboundSchema;
+  /** @deprecated use `{{$zodName}}Outbound` instead. */
+  export type Outbound = {{$zodName}}Outbound;
+  {{- end }}
+}
+{{- end }}
+
+{{ templateString "model-serialization.ts.stmpl" .Local }}
+{{- end -}}

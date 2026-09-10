@@ -1,0 +1,203 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.speakeasy-api/openapi-server",
+  "version": "0.0.1",
+  "description": "SDK Review: A test document for reviewing the SDK.",
+  "title": "SDK Review: A test document for reviewing the SDK.",
+  "repository": {
+    "url": "https://github.com/speakeasy-sdks/test-sdk",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "openapi",
+      "version": "0.0.1",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SERVER_INDEX",
+          "description": "Available servers: [http://localhost:35123, http://{subdomain}.domain.com/v{version}, http://{HostName}:{PORT}]"
+        },
+        {
+          "name": "SUBDOMAIN",
+          "description": " Templated in http://{subdomain}.domain.com/v{version}."
+        },
+        {
+          "name": "API_VERSION",
+          "description": " Templated in http://{subdomain}.domain.com/v{version}."
+        },
+        {
+          "name": "API_HOST_NAME",
+          "description": "The hostname of the server. Templated in http://{HostName}:{PORT}."
+        },
+        {
+          "name": "API_PORT",
+          "description": "The port on which the server is running. Templated in http://{HostName}:{PORT}. Options: [80, 8080, 443]."
+        },
+        {
+          "name": "USERNAME",
+          "description": "The Username for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "PASSWORD",
+          "description": "The Password for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "BEARER_AUTH",
+          "description": "The bearerAuth for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "MY_API_KEY",
+          "description": "The MyApiKey for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "OAUTH2",
+          "description": "The oauth2 for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "APP_ID",
+          "description": "The appId for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "SECRET",
+          "description": "The secret for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "MOBILE_AUTH",
+          "description": "The mobileAuth for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "CLIENT_CREDENTIALS",
+          "description": "The clientCredentials for the server",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "QUERY_PARAM1",
+          "description": "A long winded, multi-line description\nfor the query parameter number one.\n"
+        },
+        {
+          "name": "DEPRECATED_QUERY_PARAM1",
+          "description": "A deprecated description"
+        },
+        {
+          "name": "DEPRECATED_QUERY_PARAM2",
+          "description": "The deprecatedQueryParam2 for the server"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "start",
+          "valueHint": "start_command"
+        },
+        {
+          "type": "named",
+          "name": "--server-index",
+          "value": "{SERVER_INDEX}"
+        },
+        {
+          "type": "named",
+          "name": "--subdomain",
+          "value": "{SUBDOMAIN}"
+        },
+        {
+          "type": "named",
+          "name": "--api-version",
+          "value": "{API_VERSION}"
+        },
+        {
+          "type": "named",
+          "name": "--api-host-name",
+          "value": "{API_HOST_NAME}"
+        },
+        {
+          "type": "named",
+          "name": "--api-port",
+          "value": "{API_PORT}"
+        },
+        {
+          "type": "named",
+          "name": "--username",
+          "value": "{USERNAME}"
+        },
+        {
+          "type": "named",
+          "name": "--password",
+          "value": "{PASSWORD}"
+        },
+        {
+          "type": "named",
+          "name": "--bearer-auth",
+          "value": "{BEARER_AUTH}"
+        },
+        {
+          "type": "named",
+          "name": "--my-api-key",
+          "value": "{MY_API_KEY}"
+        },
+        {
+          "type": "named",
+          "name": "--oauth2",
+          "value": "{OAUTH2}"
+        },
+        {
+          "type": "named",
+          "name": "--app-id",
+          "value": "{APP_ID}"
+        },
+        {
+          "type": "named",
+          "name": "--secret",
+          "value": "{SECRET}"
+        },
+        {
+          "type": "named",
+          "name": "--mobile-auth",
+          "value": "{MOBILE_AUTH}"
+        },
+        {
+          "type": "named",
+          "name": "--client-credentials",
+          "value": "{CLIENT_CREDENTIALS}"
+        },
+        {
+          "type": "named",
+          "name": "--query-param1",
+          "value": "{QUERY_PARAM1}"
+        },
+        {
+          "type": "named",
+          "name": "--deprecated-query-param1",
+          "value": "{DEPRECATED_QUERY_PARAM1}"
+        },
+        {
+          "type": "named",
+          "name": "--deprecated-query-param2",
+          "value": "{DEPRECATED_QUERY_PARAM2}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{{- addImport "jsonpath" "JSONPath"}}
+{{- addImport "typing" "Union"}}
+{{- addImport "typing" "Dict"}}
+{{- addImport "typing" "List"}}
+{{- addImport "typing" "Any"}}
+{{- $pagination := .Local.Extensions.Pagination }}
+{{- $op := .Local }}
+{{- $sseTypes := getSSEResponseTypes $op }}
+{{- $canOverrideAcceptHeader := shouldAllowAcceptHeaderOverride $op $sseTypes }}
+{{- $defaults := getPaginationDefaults $op }}
+{{- $hasPaginationURL := hasPaginationURL .Local }}
+        def next_func() -> {{asyncOnlyPagination "Awaitable["}}Optional[{{sanitizeClass .Local.Response.Type "" false}}]{{asyncOnlyPagination "]"}}:
+            {{- $limitInput := getPaginationInput $pagination "limit" }}
+            {{- $pageInput := getPaginationInput $pagination "page" }}
+            {{- $offsetInput := getPaginationInput $pagination "offset" }}
+            {{- $cursorInput := getPaginationInput $pagination "cursor" }}
+            body = utils_.unmarshal_json(http_res_.text, Union[Dict[Any, Any], List[Any]])
+            {{- if paginationRequestIsNullableBody $op }}
+            {{- /* narrow the nullable model/TypedDict union once; the operation body has already unmarshalled any dict into the model */}}
+            request_body_ = request_ if isinstance(request_, {{templatePydanticClassType $op.Request.Field}}) else None
+            {{- end }}
+            {{- if paginationRequestNeedsWrapperAlias $op }}
+            {{- addImport "typing" "cast"}}
+            {{- /* the operation body has already unmarshalled any dict into the model */}}
+            request_wrapper_ = cast({{templatePydanticClassType $op.Request.Field}}, request_)
+            {{- end }}
+            {{- if isAsyncPaginationSep2025Fix}}
+            {{asyncOnly "async def empty_result(): return None"}}
+            
+            {{end -}}
+            {{- if (eq $pagination.Type "offsetLimit") }}
+            {{- if $pageInput }}
+            {{- $pageInputParam := sanitizePaginationAccess $op $pageInput }}
+            {{- if paginationInputNeedsNarrowing $op $pageInput }}
+            page = {{$pageInputParam}} if {{paginationRequestNoneGuard $op $pageInput}}isinstance({{$pageInputParam}}, int) else {{$defaults.page}}
+            {{- else }}
+            page = {{$pageInputParam}}
+            {{- end }}
+            next_page = page + 1
+            {{ if $pagination.Outputs.NumPages }}
+            num_pages = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.NumPages }}").parse(body)
+            if len(num_pages) == 0 or num_pages[0] <= page:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+            {{- end }}
+            {{- end }}
+
+            {{- if $offsetInput }}
+            {{- $offsetInputParam := sanitizePaginationAccess $op $offsetInput }}
+            {{- if paginationInputNeedsNarrowing $op $offsetInput }}
+            offset = {{$offsetInputParam}} if {{paginationRequestNoneGuard $op $offsetInput}}isinstance({{$offsetInputParam}}, int) else {{$defaults.offset}}
+            {{- else }}
+            offset = {{$offsetInputParam}}
+            {{- end }}
+            {{- end }}
+
+            if not http_res_.text:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+            {{- else if $hasPaginationURL}}
+            next_url_match = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.NextURL }}").parse(body)
+            if len(next_url_match) == 0:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+
+            next_url = next_url_match[0]
+            if not next_url:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+            
+            if next_url[0] == "/":
+                url = self._get_url(base_url_, url_variables_)
+                next_url = url + next_url
+            {{- else }}
+            next_cursor = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.NextCursor }}").parse(body)
+
+            if len(next_cursor) == 0:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+
+            next_cursor = next_cursor[0]
+            if next_cursor is None or str(next_cursor).strip() == "":
+                return {{asyncSelectPagination "empty_result()" "None"}}
+            {{- end }}
+
+            {{- if $pagination.Outputs.Results }}
+            results = JSONPath("{{ sanitizeJsonPath $pagination.Outputs.Results }}").parse(body)
+            if len(results) == 0 or len(results[0]) == 0:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+
+            {{- if $limitInput }}
+            {{- $limitInputParam := sanitizePaginationAccess $op $limitInput }}
+            {{- if paginationInputNeedsNarrowing $op $limitInput }}
+            limit_ = {{$limitInputParam}} if {{paginationRequestNoneGuard $op $limitInput}}isinstance({{$limitInputParam}}, int) else {{$defaults.limit}}
+            {{- else }}
+            limit_ = {{$limitInputParam}}
+            {{- end }}
+            if len(results[0]) < limit_:
+                return {{asyncSelectPagination "empty_result()" "None"}}
+            {{- end }}
+
+            {{- if $offsetInput }}
+            next_offset = offset + len(results[0])
+            {{- end }}
+            {{- end }}
+
+            return self.{{ sanitizeMethodName .Local }}{{asyncOnlyInBothModePagination "_async"}}(
+                {{- if has $op.Arguments.Flattening (list "all" "body") }}
+
+                {{- range $op.Arguments.Sorted }}
+                {{- $paramName := sanitizeParameterName .Name }}
+                {{- if (eq .Name $pageInput.Name) }}
+                {{ $paramName }}=next_page,
+                {{- else if (eq .Name $offsetInput.Name) }}
+                {{ $paramName }}=next_offset,
+                {{- else if (eq .Name $cursorInput.Name) }}
+                {{ $paramName }}=next_cursor,
+                {{- else }}
+                {{ $paramName }}={{ $paramName }},
+                {{- end }}
+                {{- end }}
+
+                {{- else if eq $op.Arguments.Flattening "params" }}
+
+                {{- range $op.Arguments.Sorted }}
+                {{- if eq $op.Arguments.BodyField . }}{{continue}}{{end}}
+                {{- $paramName := sanitizeParameterName .Name }}
+                {{- if and (eq $pageInput.In "parameters") (eq .Name $pageInput.Name ) }}
+                {{ $paramName }}=next_page,
+                {{- else if and (eq $offsetInput.In "parameters") (eq .Name $offsetInput.Name ) }}
+                {{ $paramName }}=next_offset,
+                {{- else if and (eq $cursorInput.In "parameters") (eq .Name $cursorInput.Name ) }}
+                {{ $paramName }}=next_cursor,
+                {{- else }}
+                {{ $paramName }}={{ $paramName }},
+                {{- end }}
+                {{- end }}
+
+                {{- if $op.Arguments.BodyField }}
+                {{- $bodyParamName := sanitizeParameterName $op.Arguments.BodyField.Name}}
+                {{- if isClassThatContainsPaginationFields $op.Arguments.BodyField.Type $pageInput $offsetInput $cursorInput}}
+                {{$bodyParamName}}={{templatePydanticClassType $op.Arguments.BodyField}}(
+                    {{- range $op.Arguments.BodyField.Type.Fields }}
+                    {{- $fieldName := sanitizeFieldName .Name }}
+                    {{- if and (eq $pageInput.In "requestBody") (eq .Name $pageInput.Name ) }}
+                    {{ $fieldName }}=next_page,
+                    {{- else if and (eq $offsetInput.In "requestBody") (eq .Name $offsetInput.Name ) }}
+                    {{ $fieldName }}=next_offset,
+                    {{- else if and (eq $cursorInput.In "requestBody") (eq .Name $cursorInput.Name ) }}
+                    {{ $fieldName }}=next_cursor,
+                    {{- else }}
+                    {{ $fieldName }}={{ paginationWrappedBodyFieldCopy $op $op.Arguments.BodyField.Name .Name }},
+                    {{- end }}
+                    {{- end }}
+                ),
+                {{ else }}
+                {{$bodyParamName}}={{$bodyParamName}},
+                {{- end }}{{/* if eq $op.Arguments.BodyField.Type.Type "class" */}}
+                {{- end}}
+
+                {{- else }}
+
+                {{- if .Local.Request }}
+                    {{- range $op.Arguments.Sorted}}
+                        {{- $paramName := sanitizeParameterName .Name }}
+                        {{- if ne $paramName "request"}}
+                {{ $paramName }}={{ $paramName }},
+                        {{- else }}
+                request={{templatePydanticClassType $op.Request.Field}}(
+                            {{- range (sortMethodParams $op.Request.Field.Type.Fields) }}
+                                {{- if eq .Name $pageInput.Name }}
+                    {{ sanitizeFieldName $pageInput.Name }}=next_page,
+                                {{- else if eq .Name $offsetInput.Name }}
+                    {{ sanitizeFieldName $offsetInput.Name }}=next_offset,
+                                {{- else if eq .Name $cursorInput.Name }}
+                    {{ sanitizeFieldName $cursorInput.Name }}=next_cursor,
+                                {{- else if and $op.Request.RequestBody (eq .Name $op.Request.RequestBody.Name) (isClassThatContainsPaginationFields .Type $pageInput $offsetInput $cursorInput) }}
+                                {{- $bodyField := . }}
+                    {{ sanitizeFieldName .Name }}={{ templatePydanticClassType . }}(
+                                {{- range .Type.Fields }}
+                                    {{- if and (eq $pageInput.In "requestBody") (eq .Name $pageInput.Name) }}
+                        {{ sanitizeFieldName .Name }}=next_page,
+                                    {{- else if and (eq $offsetInput.In "requestBody") (eq .Name $offsetInput.Name) }}
+                        {{ sanitizeFieldName .Name }}=next_offset,
+                                    {{- else if and (eq $cursorInput.In "requestBody") (eq .Name $cursorInput.Name) }}
+                        {{ sanitizeFieldName .Name }}=next_cursor,
+                                    {{- else }}
+                        {{ sanitizeFieldName .Name }}={{ paginationWrappedBodyFieldCopy $op $bodyField.Name .Name }},
+                                    {{- end }}
+                                {{- end }}
+                    ),
+                                {{- else }}
+                    {{ sanitizeFieldName .Name }}={{ paginationRequestFieldCopy $op .Name }},
+                                {{- end }}
+                            {{- end }}
+                ),
+                        {{- end }}
+                    {{- end }}
+                {{- end }}
+                {{- end }}
+                {{- if and .Local.Extensions.Retries (not pythonMethodRequestExtrasEnabled) }}
+                retries=retries,
+                {{- end }}
+                {{- if not pythonMethodRequestExtrasEnabled }}
+                server_url=server_url,
+                {{- end }}
+                {{pythonMethodTimeoutArgumentName}}={{templatePaginationTimeoutArgumentValue}},
+                {{- if $canOverrideAcceptHeader }}
+                accept_header_override=accept_header_override,
+                {{- end}}
+                {{- if pythonMethodRequestExtrasEnabled }}
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                {{- if pythonMethodExtraBodyEnabled .Local }}
+                extra_body=extra_body,
+                {{- end }}
+                {{- else }}
+                http_headers=http_headers,
+                {{- end }}
+                {{- if $hasPaginationURL}}
+                url_override=next_url,
+                {{- end }}
+            )

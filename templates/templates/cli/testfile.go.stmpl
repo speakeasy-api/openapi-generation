@@ -1,0 +1,10 @@
+{{- recurse 1 -}}
+{{- $testGroup := .Local.Name -}}
+{{- addImport "testing" -}}
+package tests
+
+{{genImports}}
+
+{{range .Local.Tests}}
+{{templateString "test.go.stmpl" (dict "TestGroup" $testGroup "Test" .)}}
+{{end}}

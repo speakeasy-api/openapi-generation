@@ -1,0 +1,97 @@
+{{- recurse 1 -}}
+{{- $usageLocation := "mcp-server/tools" }}
+{{- $op := .Local.Operation }}
+{{- $hasArgs := gt (len $op.Arguments.Sorted) 0 }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $customPath := printf "%s/%s.custom.ts" .Local.Dir .Local.Filename }}
+{{- $hasCustomFile := fileExists $customPath }}
+{{ genImports }}
+import { formatResult, ToolDefinition } from "../tools.js";
+
+{{- if $hasCustomFile }}
+{{-   addImport (printf "./%s.custom.js" .Local.Filename) "customizer" "aliasImport" }}
+{{- end }}
+
+{{ if $hasArgs }}
+const args = {
+  {{- range $field := $op.Arguments.Sorted }}
+  {{-   $fieldType := resolveInbound (
+          dict
+            "constValue" $field.Const
+            "defaultValue" $field.Default
+            "nullable" $field.Nullable
+            "optional" $field.Optional
+            "rootTypeDef" $op.OwningSDK.Type
+            "streamable" (isMultipartFileField $field)
+            "typeDef" $field.Type
+            "usageLocation" $usageLocation
+          ) }}
+  {{-   callImportTypesFunc $fieldType.importZodTypes }}
+  {{-   $fieldDesc := sanitizeMCPFieldDescription $field $fieldType.zod }}
+  {{    sanitizeFieldName $field.Name}}: {{$fieldType.zod}}{{if $fieldDesc}}.describe(`{{$fieldDesc}}`){{end}},
+  {{- end }}
+};
+{{ end }}
+
+export const {{ sanitizeMCPPrimitiveExport $op }}: ToolDefinition{{ if $hasArgs }}<typeof args>{{ end }} = {
+  name: "{{ sanitizeMCPPrimitiveName $op }}",
+  description: `{{ sanitizeMCPPrimitiveDescription $op }}`,
+  {{- if and $op.Extensions.MCP $op.Extensions.MCP.Scopes }}
+  scopes: {{ $op.Extensions.MCP.Scopes | toJson }},
+  {{- end }}
+  annotations: {{ sanitizeMCPAnnotations $op }},
+  {{- if $hasArgs}}
+  args,
+  {{- end}}
+  tool: async (client{{ if $hasArgs }}, args{{ end }}, ctx) => {
+    {{- addFuncImport $op $usageLocation }}
+    const [result{{ if isStrictMCPServer }}, apiCall{{ end }}] = await {{ $funcName }}(
+      client,
+      {{- range $field := $op.Arguments.Sorted }}
+      {{    sanitizeAccessor "args" (sanitizeFieldName $field.Name) }},
+      {{- end }}
+      { fetchOptions: { signal: ctx.signal } },
+    ).$inspect();
+
+    if (!result.ok) {
+      return {
+        content: [{ type: "text", text: result.error.message }],
+        isError: true,
+      };
+    }
+
+    {{ if isStrictMCPServer }}
+    {{- if hasResponseBody $op }}
+
+    const value = result.value;
+
+    {{-   if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(value, apiCall);
+    }
+    {{-   end }}
+
+    return formatResult(value, apiCall);
+    {{- else }}
+    {{-   if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(void 0, apiCall);
+    }
+    {{-   end }}
+
+    return formatResult(void 0, apiCall);
+    {{- end }}
+    {{- else }}
+    {{-   if $hasCustomFile }}
+
+    if ("formatResult" in customizer) {
+      return customizer.formatResult(result.value);
+    }
+    {{-   end }}
+
+    return formatResult(result.value);
+    {{- end }}
+  }
+};

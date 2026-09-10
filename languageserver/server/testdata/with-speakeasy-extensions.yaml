@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: API with Speakeasy Extensions
+  version: 1.0.0
+  x-speakeasy-name-override: CustomAPI
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      summary: Get users
+      operationId: getUsers
+      x-speakeasy-usage-example:
+        lang: typescript
+        source: |
+          const users = await client.users.getUsers();
+      x-speakeasy-retries:
+        strategy: backoff
+        backoff:
+          initial_interval: 500
+          max_interval: 60000
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          x-speakeasy-errors:
+            status_codes:
+              - 4XX
+              - 5XX
+      parameters:
+        - name: limit
+          in: query
+          x-speakeasy-param-name: maxResults
+          schema:
+            type: integer
+components:
+  schemas:
+    User:
+      type: object
+      x-speakeasy-name-override: Customer
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          x-speakeasy-pagination:
+            type: cursor
+            cursor:
+              page: page_token
+              next: next_page_token

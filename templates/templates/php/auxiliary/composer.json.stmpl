@@ -1,0 +1,51 @@
+{
+  "name": "{{.Global.Config.PackageName}}",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+{{templateAutoload | indent 6}}
+{{- $autoloadDev := templateAutoloadDev}}
+{{- if $autoloadDev}}
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+{{$autoloadDev | indent 6}}
+{{- end}}
+    }
+  },
+  "license": "{{if eq .Global.Config.GeneratedLicense "agpl"}}AGPL-3.0-only{{else}}MIT{{end}}",
+  "require": {
+{{templateDependencies | indent 4}}
+  },
+  "require-dev": {
+{{templateDevDependencies | indent 4}}
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "config": {
+    "optimize-autoloader": true,
+    "classmap-authoritative": true,
+    "sort-packages": true,
+    "process-timeout": 60
+  },{{if .Global.Config.LaravelServiceProvider.enabled}}
+  "extra": {
+    "laravel": {
+      "providers": [
+        "{{escapeNamespace .Global.Config.Namespace}}\\PackageServiceProvider"
+      ]
+    }
+  },{{end}}
+  "scripts": {
+    "test": [
+      "./vendor/bin/phpunit --testdox --display-warnings --colors=always"
+    ],
+    "stan": [
+      "./vendor/bin/phpstan analyse --memory-limit=2g --error-format=table"
+    ]
+  },
+  "script-descriptions": {
+    "test": "Run PhpUnit test scripts.",
+    "stan": "Run PhpStan static analysis."
+  }
+}

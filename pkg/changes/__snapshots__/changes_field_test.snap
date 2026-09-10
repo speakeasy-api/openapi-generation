@@ -1,0 +1,398 @@
+
+[TestChanges_FieldChanges/field_added_request - 1]
+# Test: field_added_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        existingField:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        existingField:
+                          type: string
+                        c:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.createUser(): **Added** request.a.b.existingField
+
+---
+
+[TestChanges_FieldChanges/field_removed_request - 1]
+# Test: field_removed_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        c:
+                          type: string
+                        keepField:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        keepField:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.createUser(): **Removed** request.a.b.keepField [breaking]
+
+---
+
+[TestChanges_FieldChanges/field_changed_type_request - 1]
+# Test: field_changed_type_request
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        c:
+                          type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                a:
+                  type: object
+                  properties:
+                    b:
+                      type: object
+                      properties:
+                        c:
+                          type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## Changes Detected:
+* sdk.createUser(): **Changed** request.a.b.c [breaking]
+
+---
+
+[TestChanges_FieldChanges/field_added_response - 1]
+# Test: field_added_response
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          existingField:
+                            type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          existingField:
+                            type: string
+                          c:
+                            type: string
+```
+
+## Changes Detected:
+* sdk.getUser(): **Added** response.a.b.c
+
+---
+
+[TestChanges_FieldChanges/field_removed_response - 1]
+# Test: field_removed_response
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          c:
+                            type: string
+                          keepField:
+                            type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          keepField:
+                            type: string
+```
+
+## Changes Detected:
+* sdk.getUser(): **Removed** response.a.b.c [breaking]
+
+---
+
+[TestChanges_FieldChanges/field_changed_type_response - 1]
+# Test: field_changed_type_response
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          c:
+                            type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      operationId: getUser
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  a:
+                    type: object
+                    properties:
+                      b:
+                        type: object
+                        properties:
+                          c:
+                            type: integer
+```
+
+## Changes Detected:
+* sdk.getUser(): **Changed** response.a.b.c [breaking]
+
+---

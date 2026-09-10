@@ -1,0 +1,79 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/cursor/nullable#results:
+    get:
+      operationId: paginationCursorNullableResults
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests cursor pagination whose results array is required but nullable
+        ($.results, where results may be explicitly null on a terminating page).
+        Clients should treat a null results array as an empty page while still
+        honoring the nullable cursor termination signal. Exercises nullability
+        on the item path itself, not merely on the pagination inputs or the
+        stop-condition path.
+      tags:
+        - pagination
+      parameters:
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 5
+        - in: query
+          name: null_terminal
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginationCursorNullableResults"
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          results: $.results
+          nextCursor: $.next_cursor
+components:
+  schemas:
+    PaginationCursorNullableResults:
+      type: object
+      required:
+        - results
+        - next_cursor
+      properties:
+        next_cursor:
+          anyOf:
+            - type: string
+            - type: "null"
+        results:
+          anyOf:
+            - type: array
+              items:
+                type: string
+            - type: "null"

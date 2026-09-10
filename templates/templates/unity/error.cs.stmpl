@@ -1,0 +1,28 @@
+
+{{- $usageLocation := .Local.OutputLocation -}}
+{{- $className := sanitizeClassName .Local.Name false }}
+
+{{- templateComments .Local.Comments 1 "class" false }}
+{{- $replacement := "" }}
+{{- if .Local.Comments }}
+{{- $replacement = sanitizeDeprecationReplacement .Local.Comments.DeprecationReplacement "class" }}
+{{- end }}
+{{- if (and .Local.Comments .Local.Comments.Deprecated) }}[Obsolete("{{.Local.Comments.DeprecationMessage}}.{{ if $replacement }} Use {{ $replacement }} instead.{{ end }}")]{{ end }}
+    public class {{ sanitizeClassName .Local.Name false }} : Exception
+    {
+        {{- if .Local.Extensions.Pagination }}
+        public Func<Task<{{ sanitizeClassName .Local.Name false }}?>>? Next {get;set;}
+        {{- end }}
+        {{- ""}}{{range .Local.Fields}}
+        {{- $anno := templateAnnotations .}}
+{{- templateComments .Comments 2 "field" true true}}
+        {{- if $anno}}
+        {{$anno}}{{end}}
+        {{- $optional := or (or .Optional .Nullable) (eq .Name "ContentType")}}
+        {{- if eq .Name "message"}}
+        private string? _message { get; set; }
+        public override {{ sanitizeType .Type false $usageLocation }} {{ sanitizeFieldName .Name $className }} { get {return _message ?? "";} }
+        {{- else}}
+        public {{ sanitizeType .Type false $usageLocation }}{{ if $optional }}?{{ end }} {{ sanitizeFieldName .Name $className }} { get; set; }{{if not .Optional}} = default!;{{end}}{{end}}
+        {{- end}}
+    }

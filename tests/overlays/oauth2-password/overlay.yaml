@@ -1,0 +1,39 @@
+# This overlay setups the oauth2-password SDK which has some unique constraints when it comes to the security setup to enable oauth handling
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/ecommerce.yaml => ./tests/specs/ecommerce-oauth2-password.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/ecommerce.yaml
+actions:
+  - target: $.components.securitySchemes
+    update:
+      bearerAuth:
+        type: http
+        scheme: bearer
+      oauth2:
+        type: oauth2
+        flows:
+          password:
+            tokenUrl: http://localhost:35456/oauth2/token
+            scopes:
+              products:read: Permission to read/list products
+              products:create: Permission to create products
+              products:delete: Permission to delete products
+              admin: Full permission including managing product inventories
+  - target: $
+    update:
+      security:
+        - oauth2: [products:read]
+  - target: $.paths.*.*[?(@.operationId == 'createProduct')]
+    update:
+      security:
+        - oauth2: [products:create]
+  - target: $.paths.*.*[?(@.operationId == 'updateProduct')]
+    update:
+      security:
+        - oauth2: [products:read, products:create]
+  - target: $.paths.*.*[?(@.operationId == 'updateProductStock')]
+    update:
+      security:
+        - bearerAuth: []
+        - oauth2: [admin]

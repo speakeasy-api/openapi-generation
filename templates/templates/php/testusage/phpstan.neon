@@ -1,0 +1,6 @@
+parameters:
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - '#.*?\(DateTime\) does not accept DateTime\|false\.$#'
+        - '#.*?expects DateTime, DateTime\|false given\.$#'
+        - identifier: missingType.generics

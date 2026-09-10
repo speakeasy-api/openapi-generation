@@ -1,0 +1,907 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/{{getNullableLocation}}"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPaginationLimitOffsetPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	var page int64 = 1
+	res, err := s.Pagination.PaginationLimitOffsetPageParams(context.Background(), page)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, serverLimit, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 0, len(nextRes.Res.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetPageParamsConst(t *testing.T) {
+	recordTest("pagination-limit-offset-page-params-const")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	constPageSize := 5
+	totalItems := 20
+	var page int64 = 1
+	res, err := s.Pagination.PaginationLimitOffsetPageParamsConst(context.Background(), &page)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	// With const pageSize=5, we should get 5 items per page
+	assert.Equal(t, constPageSize, len(res.Res.ResultArray))
+
+	// Page through all results (20 items / 5 per page = 4 pages)
+	itemsReceived := constPageSize
+	currentRes := res
+
+	for itemsReceived < totalItems {
+		nextRes, err := currentRes.Next()
+		require.NoError(t, err)
+		require.NotNil(t, nextRes)
+		assert.Equal(t, constPageSize, len(nextRes.Res.ResultArray))
+		itemsReceived += len(nextRes.Res.ResultArray)
+		currentRes = nextRes
+	}
+
+	// Next call should return empty array (no more items)
+	emptyRes, err := currentRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, emptyRes)
+	assert.Equal(t, 0, len(emptyRes.Res.ResultArray))
+
+	// Final call should return nil (pagination complete)
+	nullRes, err := emptyRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetNilPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-nil-page-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	res, err := s.Pagination.PaginationLimitOffsetOptionalPageParams(context.Background(), nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, serverLimit, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 0, len(nextRes.Res.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetUnionOutputPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-union-output-page-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	res, err := s.Pagination.PaginationLimitOffsetUnionOutputPageParams(
+		context.Background(),
+		sdk.Int64(0),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res.ResultObject)
+	assert.Equal(t, serverLimit, len(res.Res.ResultObject.ResultArray))
+
+	require.Equal(t, "0", res.HTTPMeta.Request.URL.Query().Get("page"))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	assert.NotNil(t, nextRes.Res.ResultObject)
+	require.Equal(t, 20, len(nextRes.Res.ResultObject.ResultArray))
+
+	require.Equal(t, "1", nextRes.HTTPMeta.Request.URL.Query().Get("page"))
+}
+
+func TestPaginationLimitOffsetZeroPageParams(t *testing.T) {
+	recordTest("pagination-limit-offset-zero-page-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	serverLimit := 20
+	res, err := s.Pagination.PaginationLimitOffsetOptionalPageParams(context.Background(), sdk.Int64(0))
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.Equal(t, serverLimit, len(res.Res.ResultArray))
+
+	require.Equal(t, "0", res.HTTPMeta.Request.URL.Query().Get("page"))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	require.Equal(t, 20, len(nextRes.Res.ResultArray))
+
+	require.Equal(t, "1", nextRes.HTTPMeta.Request.URL.Query().Get("page"))
+}
+
+func TestPaginationLimitOffsetPageBody(t *testing.T) {
+	recordTest("pagination-limit-offset-page-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var page int64 = 1
+	var limit int64 = 15
+	request := shared.LimitOffsetConfig{
+		Page:  &page,
+		Limit: &limit,
+	}
+	res, err := s.Pagination.PaginationLimitOffsetPageBody(context.Background(), request)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(limit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.True(t, int(limit) > len(nextRes.Res.ResultArray))
+
+	nilRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
+func TestPaginationLimitOffsetPageBodyNullable(t *testing.T) {
+	recordTest("pagination-limit-offset-page-body-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// first request sends a null body; later pages materialize one with the
+	// advanced page (wire sequence enforced by the test service)
+	res, err := s.Pagination.PaginationLimitOffsetPageBodyNullable(context.Background(), nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, []int64{0, 1, 2, 3, 4, 5, 6}, res.Res.ResultArray)
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, http.StatusOK, nextRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, nextRes.Res)
+	assert.Equal(t, []int64{7, 8, 9, 10, 11, 12, 13}, nextRes.Res.ResultArray)
+
+	lastRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, lastRes)
+	assert.Equal(t, http.StatusOK, lastRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, lastRes.Res)
+	assert.Equal(t, []int64{14, 15, 16, 17, 18, 19}, lastRes.Res.ResultArray)
+
+	nilRes, err := lastRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
+func TestPaginationWrappedOptionalBody(t *testing.T) {
+	recordTest("pagination-wrapped-optional-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// the body is omitted entirely; later pages materialize one carrying the
+	// advanced offset
+	res, err := s.Pagination.PaginationWrappedOptionalBody(context.Background(), &operations.PaginationWrappedOptionalBodyRequest{}, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	assert.Len(t, res.Res.ResultArray, 20)
+
+	emptyRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, emptyRes)
+	assert.Equal(t, http.StatusOK, emptyRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, emptyRes.Res)
+	assert.Empty(t, emptyRes.Res.ResultArray)
+
+	nilRes, err := emptyRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
+func TestPaginationLimitOffsetDeepOutputsPageBody(t *testing.T) {
+	recordTest("pagination-limit-offset-deep-outputs-page-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var page int64 = 1
+	var limit int64 = 15
+	request := shared.LimitOffsetConfig{
+		Page:  &page,
+		Limit: &limit,
+	}
+	res, err := s.Pagination.PaginationLimitOffsetDeepOutputsPageBody(context.Background(), request)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(limit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.True(t, int(limit) > len(nextRes.Res.ResultArray))
+
+	nilRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
+func TestPaginationLimitOffsetOffsetParams(t *testing.T) {
+	recordTest("pagination-limit-offset-offset-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var limit int64 = 15
+	var offset int64 = 0
+	res, err := s.Pagination.PaginationLimitOffsetOffsetParams(context.Background(), &limit, &offset)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(limit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, int(20-limit), len(nextRes.Res.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetOffsetBody(t *testing.T) {
+	recordTest("pagination-limit-offset-offset-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var offset int64 = 0
+	var limit int64 = 15
+	request := shared.LimitOffsetConfig{
+		Offset: &offset,
+		Limit:  &limit,
+	}
+	res, err := s.Pagination.PaginationLimitOffsetOffsetBody(context.Background(), request)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(limit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.True(t, int(limit) > len(nextRes.Res.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetNilOffsetParams(t *testing.T) {
+	recordTest("pagination-limit-offset-nil-offset-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	defaultLimit := 20
+	res, err := s.Pagination.PaginationLimitOffsetOffsetParams(context.Background(), nil, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(defaultLimit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, int(20-defaultLimit), len(nextRes.Res.ResultArray))
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetNullable(t *testing.T) {
+	recordTest("pagination-limit-offset-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Passing nil for the required+nullable offset/limit forces the SDK to
+	// serialise null values; the generated paginator must narrow them to int64
+	// before computing the next offset and comparing against limit, otherwise
+	// strict type checkers reject the arithmetic on a potentially-null operand.
+	serverLimit := 10
+	res, err := s.Pagination.PaginationOffsetNullable(context.Background(), nil, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, serverLimit, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, serverLimit, len(nextRes.Res.ResultArray))
+
+	emptyRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, emptyRes)
+	assert.Equal(t, 0, len(emptyRes.Res.ResultArray))
+
+	nullRes, err := emptyRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationLimitOffsetDefaultOffsetBody(t *testing.T) {
+	recordTest("pagination-limit-offset-default-offset-body")
+
+	client := paginationTestClient{}
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(&client))
+
+	request := shared.LimitOffsetConfigWithDefaults{}
+	res, err := s.Pagination.PaginationLimitOffsetDefaultOffsetBody(context.Background(), request)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	require.Len(t, client.logs, 1)
+	body := make(map[string]any)
+	require.NoError(t, json.Unmarshal(client.logs[0].body, &body))
+	require.Equal(t, float64(15), body["limit"])
+	require.Equal(t, float64(10), body["offset"])
+}
+
+func TestPaginationURLParams(t *testing.T) {
+	recordTest("pagination-url")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Pagination.PaginationURLParams(context.Background(), 3, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, 9, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, http.StatusOK, nextRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, 6, len(nextRes.Res.ResultArray))
+
+	penultimateRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, penultimateRes)
+	assert.Equal(t, http.StatusOK, penultimateRes.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, 3, len(penultimateRes.Res.ResultArray))
+
+	nullRes, err := penultimateRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+
+	isReferencePath2 := "true"
+	res2, err := s.Pagination.PaginationURLParams(context.Background(), 3, &isReferencePath2)
+
+	require.NoError(t, err)
+	require.NotNil(t, res2)
+	assert.Equal(t, http.StatusOK, res2.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res2.Res)
+	assert.Equal(t, 9, len(res2.Res.ResultArray))
+
+	nextRes2, err := res2.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes2)
+	assert.Equal(t, http.StatusOK, nextRes2.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, 6, len(nextRes2.Res.ResultArray))
+
+	penultimateRes2, err := nextRes2.Next()
+	require.NoError(t, err)
+	require.NotNil(t, penultimateRes2)
+	assert.Equal(t, http.StatusOK, penultimateRes2.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, 3, len(penultimateRes2.Res.ResultArray))
+
+	nullRes2, err := penultimateRes2.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes2)
+}
+
+func TestPaginationCursorParams(t *testing.T) {
+	recordTest("pagination-cursor-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var cursor int64 = -1
+	res, err := s.Pagination.PaginationCursorParams(context.Background(), cursor)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, int(15), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 5, len(nextRes.Res.ResultArray))
+
+	penultimateRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, penultimateRes)
+	assert.Equal(t, 0, len(penultimateRes.Res.ResultArray))
+
+	nullRes, err := penultimateRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationNextUsesCallerContextWithTimeout(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+
+		var results []int64
+		switch r.URL.Query().Get("cursor") {
+		case "-1":
+			results = []int64{0}
+		case "0":
+			results = []int64{1}
+		case "1":
+			results = []int64{}
+		default:
+			t.Errorf("unexpected cursor %q", r.URL.Query().Get("cursor"))
+			http.Error(w, "unexpected cursor", http.StatusBadRequest)
+			return
+		}
+
+		assert.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{
+			"numPages":    3,
+			"resultArray": results,
+		}))
+	}))
+	defer server.Close()
+
+	// The caller's context carries a value and a deadline sooner than the SDK
+	// timeout. Every page's request must observe both, so a Next() that
+	// substituted context.Background() for the caller's context would fail
+	// the per-request assertions below.
+	callerDeadline := time.Now().Add(30 * time.Second)
+	ctx, cancel := context.WithDeadline(
+		context.WithValue(context.Background(), paginationCtxKey{}, "caller"),
+		callerDeadline,
+	)
+	defer cancel()
+
+	client := &paginationCtxObservingClient{}
+
+	// The operation declares its own servers, so the per-call option is what
+	// redirects it (and Next() forwards per-call options to later pages).
+	s := sdk.New(sdk.WithTimeout(5*time.Minute), sdk.WithClient(client))
+
+	res, err := s.Pagination.PaginationCursorParams(ctx, -1, operations.WithServerURL(server.URL))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	for res != nil {
+		res, err = res.Next()
+		require.NoError(t, err)
+	}
+	assert.Equal(t, int32(3), requests.Load())
+
+	require.Len(t, client.observations, 3)
+	for i, observed := range client.observations {
+		assert.Equal(t, "caller", observed.callerValue, "request %d lost the caller's context value", i+1)
+		require.True(t, observed.hasDeadline, "request %d has no deadline", i+1)
+		// The caller's deadline is sooner than the 5m SDK timeout, so it must
+		// win on every page, including pages fetched via Next().
+		assert.True(t, observed.deadline.Equal(callerDeadline),
+			"request %d deadline %v is not the caller's deadline %v", i+1, observed.deadline, callerDeadline)
+	}
+}
+
+func TestPaginationNextTimeoutBoundsStalledPage(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.URL.Query().Get("cursor") != "-1" {
+			select {
+			case <-r.Context().Done():
+			case <-time.After(20 * time.Second):
+			}
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		assert.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{
+			"numPages":    3,
+			"resultArray": []int64{0},
+		}))
+	}))
+	defer server.Close()
+
+	s := sdk.New(sdk.WithTimeout(2 * time.Second))
+
+	res, err := s.Pagination.PaginationCursorParams(context.Background(), -1, operations.WithServerURL(server.URL))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	next, err := res.Next()
+	require.Error(t, err)
+	assert.Nil(t, next)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	// The stalled page may or may not reach the server before the deadline
+	// fires under load; the first page must have, and nothing beyond it.
+	assert.Contains(t, []int32{1, 2}, requests.Load())
+}
+
+func TestPaginationNextReturnsCallerContextCancellation(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"numPages":    3,
+			"resultArray": []int64{0},
+		}))
+	}))
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	s := sdk.New(sdk.WithTimeout(5 * time.Second))
+
+	res, err := s.Pagination.PaginationCursorParams(ctx, -1, operations.WithServerURL(server.URL))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	// Cancel the caller's context between pages. Next() derives each page's
+	// context from the caller's, so the second fetch must fail client-side
+	// with the caller's cancellation and never reach the server.
+	cancel()
+
+	next, err := res.Next()
+	require.Error(t, err)
+	assert.Nil(t, next)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, int32(1), requests.Load())
+}
+
+func TestPaginationCursorBody(t *testing.T) {
+	recordTest("pagination-cursor-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var cursor int64 = -1
+	request := operations.PaginationCursorBodyRequestBody{
+		Cursor: cursor,
+	}
+	res, err := s.Pagination.PaginationCursorBody(context.Background(), request)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, 15, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 5, len(nextRes.Res.ResultArray))
+
+	penultimateRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, penultimateRes)
+	assert.Equal(t, 0, len(penultimateRes.Res.ResultArray))
+
+	nullRes, err := penultimateRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationCursorNonNumeric(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Pagination.PaginationCursorNonNumeric(context.Background(), nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, 15, len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 5, len(nextRes.Res.ResultArray))
+
+	penultimateRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.NotNil(t, penultimateRes)
+	assert.Equal(t, 0, len(penultimateRes.Res.ResultArray))
+
+	nullRes, err := penultimateRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationCursorNonNumericNullable(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Pagination.PaginationCursorNonNumericNullable(
+		context.Background(),
+		optionalnullable.From(sdk.String("2")),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, 15, len(res.Res.ResultArray))
+	assert.Equal(t, optionalnullable.From(sdk.String("17")), res.Res.Cursor)
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 2, len(nextRes.Res.ResultArray))
+	require.Equal(t, optionalnullable.From[string](nil), nextRes.Res.Cursor)
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationCursorNonNumericEmptyString(t *testing.T) {
+	recordTest("pagination-cursor-non-numeric-empty-string")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Pagination.PaginationCursorNonNumericEmptyString(
+		context.Background(),
+		"",
+		sdk.String("2"),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Res)
+	assert.Equal(t, 15, len(res.Res.ResultArray))
+	assert.Equal(t, optionalnullable.From(sdk.String("17")), res.Res.Cursor)
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.Equal(t, 2, len(nextRes.Res.ResultArray))
+	assert.Equal(t, optionalnullable.From(sdk.String("")), nextRes.Res.Cursor)
+
+	nullRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nullRes)
+}
+
+func TestPaginationWithRetries(t *testing.T) {
+	recordTest("pagination-with-retries")
+
+	client := newPaginationTestClient()
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(client))
+
+	faultSettings := sdk.String(`{"error_code": 503, "error_count": 3}`)
+
+	res, err := s.Pagination.PaginationWithRetries(context.Background(), nil, faultSettings, nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Res, "(1) expected response to have non-nil body")
+	count := len(res.Res.ResultArray)
+
+	res, err = res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Res, "(2) expected response to have non-nil body")
+	count += len(res.Res.ResultArray)
+
+	res, err = res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Res, "(3) expected response to have non-nil body")
+	count += len(res.Res.ResultArray)
+
+	res, err = res.Next()
+	require.NoError(t, err)
+	require.Nil(t, res)
+
+	failattempt := paginationRequestLog{
+		status: http.StatusServiceUnavailable,
+		method: http.MethodGet,
+		path:   "/pagination/cursor_non_numeric",
+	}
+	successattempt := paginationRequestLog{
+		status: http.StatusOK,
+		method: http.MethodGet,
+		path:   "/pagination/cursor_non_numeric",
+	}
+
+	require.Equal(t, 20, count, "expected 20 results")
+	require.Equal(t, 6, len(client.logs), "expected 6 http calls")
+	require.Equal(t, failattempt, client.logs[0], "expected first call to fail")
+	require.Equal(t, failattempt, client.logs[1], "expected second call to fail")
+	require.Equal(t, failattempt, client.logs[2], "expected third call to fail")
+	require.Equal(t, successattempt, client.logs[3], "expected fourth call to succeed")
+	require.Equal(t, successattempt, client.logs[4], "expected fifth call to succeed")
+	require.Equal(t, successattempt, client.logs[5], "expected sixth call to succeed")
+}
+
+func TestPaginationCursorNullableLimit(t *testing.T) {
+	recordTest("pagination-cursor-nullable-limit")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	defaultLimit := 10
+	// Call without setting cursor or limit — both are OptionalNullable and
+	// should default to unset. The server defaults limit to 10.
+	var cursor optionalnullable.OptionalNullable[string]
+	var limit optionalnullable.OptionalNullable[int64]
+	res, err := s.Pagination.PaginationCursorNullableLimit(context.Background(), cursor, limit)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.PaginationCursorNullableLimitNextCursor)
+	assert.Equal(t, defaultLimit, len(res.PaginationCursorNullableLimitNextCursor.Results))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	assert.NotNil(t, nextRes.PaginationCursorNullableLimitNextCursor)
+	assert.Equal(t, defaultLimit, len(nextRes.PaginationCursorNullableLimitNextCursor.Results))
+
+	// Paginate until exhausted
+	lastRes := nextRes
+	for {
+		n, err := lastRes.Next()
+		require.NoError(t, err)
+		if n == nil {
+			break
+		}
+		lastRes = n
+	}
+
+	assert.NotNil(t, lastRes.PaginationCursorNullableLimitNextCursor)
+}
+
+type paginationTestClient struct {
+	http.Client
+	reqID string
+	logs  []paginationRequestLog
+}
+
+func newPaginationTestClient() *paginationTestClient {
+	return &paginationTestClient{
+		Client: http.Client{},
+		reqID:  pseudo_uuid(),
+		logs:   []paginationRequestLog{},
+	}
+}
+
+func (c *paginationTestClient) Do(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Request-ID", c.reqID)
+
+	var buf bytes.Buffer
+	body := req.Body
+	if body != nil {
+		defer body.Close()
+		req.Body = io.NopCloser(io.TeeReader(body, &buf))
+	}
+
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	c.logs = append(c.logs, paginationRequestLog{
+		status: res.StatusCode,
+		method: req.Method,
+		path:   req.URL.Path,
+		body:   buf.Bytes(),
+	})
+
+	return res, nil
+}
+
+type paginationRequestLog struct {
+	status int
+	method string
+	path   string
+	body   []byte
+}
+
+// paginationCtxKey marks a value planted on a caller's context so tests can
+// prove the caller's context reaches every page request.
+type paginationCtxKey struct{}
+
+type paginationCtxObservation struct {
+	callerValue any
+	deadline    time.Time
+	hasDeadline bool
+}
+
+// paginationCtxObservingClient records each request context's caller-planted
+// value and effective deadline before performing the request.
+type paginationCtxObservingClient struct {
+	http.Client
+	observations []paginationCtxObservation
+}
+
+func (c *paginationCtxObservingClient) Do(req *http.Request) (*http.Response, error) {
+	deadline, hasDeadline := req.Context().Deadline()
+	c.observations = append(c.observations, paginationCtxObservation{
+		callerValue: req.Context().Value(paginationCtxKey{}),
+		deadline:    deadline,
+		hasDeadline: hasDeadline,
+	})
+	return c.Client.Do(req)
+}

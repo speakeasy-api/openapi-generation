@@ -1,0 +1,9 @@
+{{- recurse 1 -}}
+{{- $pkg := templatePackageName -}}
+{{- $class := "TestHelpers" -}}
+{{- $fullClassName := (print $pkg "." $class) -}}
+package {{$pkg}};
+{{genImports $fullClassName}}public class {{$class}} { 
+{{range .Local.Helpers}}{{templateString "testhelper.java.stmpl" .}}
+{{end}}
+}

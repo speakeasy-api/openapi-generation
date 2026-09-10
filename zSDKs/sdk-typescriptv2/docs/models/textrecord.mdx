@@ -1,0 +1,25 @@
+---
+title: "TextRecord"
+---
+
+A text record request
+
+## Example Usage
+
+```typescript
+import { TextRecord } from "openapi";
+
+let value: TextRecord = {
+  type: "<value>",
+  text: "sample text",
+  note: "sample note",
+};
+```
+
+## Fields
+
+| Field                              | Type                               | Required                           | Description                        | Example                            |
+| ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
+| `type`                             | *string*                           | :heavy_check_mark:                 | Record type discriminator |                                    |
+| `text`                        | *string*                           | :heavy_check_mark:                 | N/A                                | sample text                        |
+| `note`                        | *string*                           | :heavy_minus_sign:                 | N/A                                | sample note                        |

@@ -1,0 +1,19 @@
+package tests
+
+import (
+	"log"
+	"os"
+)
+
+//lint:ignore U1000 usage is injected by internal testing
+func recordTest(id string) {
+	f, err := os.OpenFile("test-cli-record.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+
+	if _, err = f.WriteString(id + "\n"); err != nil {
+		log.Println(err)
+	}
+}

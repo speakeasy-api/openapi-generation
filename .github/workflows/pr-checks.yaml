@@ -1,0 +1,141 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+      - labeled
+      - unlabeled
+  merge_group:
+
+jobs:
+  snapshot_dispatch_contract:
+    name: Snapshot dispatcher contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - run: node --test scripts/test-snapshot-dispatch.mjs scripts/test-fork-safe-pr-workflows.mjs scripts/test-release-changelog.mjs
+
+  check_pr_title:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    name: Check PR Title Format
+    steps:
+      - name: Acknowledge pull request validation
+        if: github.event_name == 'merge_group'
+        run: echo "The pull request title was validated before this pull request entered the merge queue."
+      - name: Validate PR title format
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+
+            // Format description used in error messages
+            const formatDescription =
+              `Valid formats:\n` +
+              `- chore: <description>\n` +
+              `- fix(<scope>): <description>\n` +
+              `- feat(<scope>): <description>\n\n` +
+              `Valid scopes: typescript, python, go, java, csharp, php, ruby, unity, terraform, postman, mcp, mockserver, cli, all\n` +
+              `Multiple scopes can be comma-separated (except "all" that must be standalone).\n\n` +
+              `Examples:\n` +
+              `- chore: update dependencies\n` +
+              `- fix(typescript): handle optional parameters correctly\n` +
+              `- feat(python,go): add retry mechanism\n` +
+              `- fix(all): resolve critical security issue`;
+
+            // Extract the start (everything before the colon)
+            const colonIndex = title.indexOf(':');
+            if (colonIndex === -1) {
+              core.setFailed(
+                `PR title must contain a colon (:).\n\n` +
+                `Current title: "${title}"\n\n` +
+                formatDescription
+              );
+              return;
+            }
+
+            const start = title.substring(0, colonIndex);
+
+            // If it's just "chore:", that's valid
+            if (start === 'chore') {
+              core.info(`PR title format is valid: "${title}"`);
+              return;
+            }
+
+            // Check if it starts with "fix(" or "feat(" and ends with ")"
+            const choreMatch = start.match(/^chore\((.+)\)$/);
+            const fixMatch = start.match(/^fix\((.+)\)$/);
+            const featMatch = start.match(/^feat\((.+)\)$/);
+
+            if (!choreMatch && !fixMatch && !featMatch) {
+              core.setFailed(
+                `PR title must start with "chore:", "chore(<scope>):", "fix(<scope>):", or "feat(<scope>):".\n\n` +
+                `Current title: "${title}"\n\n` +
+                formatDescription
+              );
+              return;
+            }
+
+            // Extract the scope (content inside parentheses)
+            let scope = "";
+
+            if (choreMatch) {
+              scope = choreMatch[1];
+            } else if (fixMatch) {
+              scope = fixMatch[1];
+            } else if (featMatch) {
+              scope = featMatch[1];
+            } 
+
+            // Special case: 'all' must be standalone
+            if (scope === 'all') {
+              core.info(`PR title format is valid: "${title}"`);
+              return;
+            }
+
+            // Valid scopes (excluding 'all' which is a special case)
+            const validScopes = [
+              'typescript',  // a.k.a. typescriptv2
+              'python',
+              'go',
+              'java',
+              'csharp',
+              'php',
+              'ruby',
+              'unity',
+              'terraform',
+              'postman',
+              'mcp',  // a.k.a. mcp-typescript
+              'mockserver',
+              'cli'
+            ];
+
+            // Split by comma and trim whitespace
+            const scopes = scope.split(',').map(s => s.trim());
+
+            // Check if all scopes are valid
+            const invalidScopes = scopes.filter(s => !validScopes.includes(s));
+
+            if (invalidScopes.length > 0) {
+              core.setFailed(
+                `Invalid scope(s) in PR title: ${invalidScopes.join(', ')}\n\n` +
+                `Current title: "${title}"\n\n` +
+                formatDescription
+              );
+              return;
+            }
+
+            core.info(`PR title format is valid: "${title}"`);

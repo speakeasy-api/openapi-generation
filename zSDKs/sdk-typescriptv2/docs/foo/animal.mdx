@@ -1,0 +1,29 @@
+---
+title: "Animal"
+---
+
+A discriminated union of animal types in the foo namespace
+
+
+## Supported Types
+
+### `foo.Dog`
+
+```typescript
+const value: foo.Dog = {
+  animalType: "dog",
+  breed: "Labrador",
+  barkVolume: 8,
+};
+```
+
+### `foo.Cat`
+
+```typescript
+const value: foo.Cat = {
+  animalType: "cat",
+  furLength: "short",
+  meowFrequency: 5,
+};
+```
+

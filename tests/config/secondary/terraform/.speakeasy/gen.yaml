@@ -1,0 +1,26 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+    nameOverrideFeb2026: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+terraform:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  author: speakeasy
+  imports:
+    option: openapi
+    paths:
+      callbacks: callbacks
+      errors: sdkerrors
+      operations: operations
+      shared: shared
+      webhooks: webhooks
+  packageName: hoisted-security
+  includeEmptyObjects: false

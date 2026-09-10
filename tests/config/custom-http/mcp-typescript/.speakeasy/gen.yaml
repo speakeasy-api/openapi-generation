@@ -1,0 +1,9 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+mcp-typescript:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  packageName: customhttp
+  responseFormat: envelope
+  validateResponse: true

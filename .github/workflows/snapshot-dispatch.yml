@@ -1,0 +1,286 @@
+name: Snapshot tests dispatcher
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+      - unlabeled
+      - closed
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: snapshot-dispatch-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: >-
+      ${{
+        github.repository_id == '1364456527' && github.repository == 'speakeasy-api/openapi-generation-release'
+      }}
+    name: Snapshot tests dispatch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.GENERATOR_BOT_APP_ID }}
+          private-key: ${{ secrets.GENERATOR_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: openapi-generation-snapshots
+          permission-contents: write
+
+      - name: Validate request and dispatch
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          SNAPSHOT_DISPATCH_TOKEN: ${{ steps.app-token.outputs.token }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const receiver = {
+              owner: 'speakeasy-api',
+              repo: 'openapi-generation-snapshots',
+            };
+            const allowedGeneratorRepositories = new Map([
+              [1364456527, 'speakeasy-api/openapi-generation-release'],
+            ]);
+            const approvalAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+            // Only generic selectors cross the repository boundary. Customer/repository
+            // labels remain private companion state and are intentionally not mirrored here.
+            const selectorAliases = new Map([
+              ['snapshot', 'snapshot'],
+              ['snapshot-all', 'snapshot-all'],
+              ['cli', 'snapshot-cli'],
+              ['csharp', 'snapshot-csharp'],
+              ['go', 'snapshot-go'],
+              ['java', 'snapshot-java'],
+              ['mcp-typescript', 'snapshot-mcp-typescript'],
+              ['php', 'snapshot-php'],
+              ['postman', 'snapshot-postman'],
+              ['python', 'snapshot-python'],
+              ['ruby', 'snapshot-ruby'],
+              ['terraform', 'snapshot-terraform'],
+              ['typescript', 'snapshot-typescript'],
+              ['snapshot-cli', 'snapshot-cli'],
+              ['snapshot-csharp', 'snapshot-csharp'],
+              ['snapshot-go', 'snapshot-go'],
+              ['snapshot-java', 'snapshot-java'],
+              ['snapshot-mcp-typescript', 'snapshot-mcp-typescript'],
+              ['snapshot-php', 'snapshot-php'],
+              ['snapshot-postman', 'snapshot-postman'],
+              ['snapshot-python', 'snapshot-python'],
+              ['snapshot-ruby', 'snapshot-ruby'],
+              ['snapshot-terraform', 'snapshot-terraform'],
+              ['snapshot-typescript', 'snapshot-typescript'],
+            ]);
+            const statusContext = 'Snapshot tests';
+            const repository = context.payload.repository;
+            let pullRequest = context.payload.pull_request;
+
+            const generatorRepo = `${context.repo.owner}/${context.repo.repo}`;
+            if (allowedGeneratorRepositories.get(repository.id) !== generatorRepo
+              || repository.full_name !== generatorRepo) {
+              core.info('Snapshot dispatch is inactive for this repository identity');
+              return;
+            }
+
+            if (context.eventName === 'issue_comment') {
+              const approvalPattern = /^\/snapshot approve [0-9a-f]{40}$/;
+              const commentLines = (context.payload.comment.body || '')
+                .split(/\r?\n/)
+                .map((line) => line.trim());
+              if (
+                !context.payload.issue.pull_request ||
+                !approvalAssociations.has(context.payload.comment.author_association) ||
+                !commentLines.some((line) => approvalPattern.test(line))
+              ) {
+                core.info('Comment is not an authorized pull request snapshot approval; nothing to do');
+                return;
+              }
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.issue.number,
+              });
+              pullRequest = response.data;
+              if (pullRequest.head.repo?.id === pullRequest.base.repo.id) {
+                core.info('Snapshot approval comments apply only to fork pull requests');
+                return;
+              }
+              const approvalLine = `/snapshot approve ${pullRequest.head.sha}`;
+              if (!commentLines.includes(approvalLine)) {
+                core.info('Snapshot approval does not match the current pull request head SHA');
+                return;
+              }
+            }
+
+            const setStatus = async (state, description) => {
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: pullRequest.head.sha,
+                state,
+                context: statusContext,
+                description,
+              });
+            };
+
+            const dispatch = async (eventType, clientPayload) => {
+              const token = process.env.SNAPSHOT_DISPATCH_TOKEN;
+              if (!token) {
+                throw new Error('SNAPSHOT_DISPATCH_TOKEN is not configured');
+              }
+
+              const response = await fetch(
+                `https://api.github.com/repos/${receiver.owner}/${receiver.repo}/dispatches`,
+                {
+                  method: 'POST',
+                  headers: {
+                    accept: 'application/vnd.github+json',
+                    authorization: `Bearer ${token}`,
+                    'content-type': 'application/json',
+                    'x-github-api-version': '2022-11-28',
+                  },
+                  body: JSON.stringify({
+                    event_type: eventType,
+                    client_payload: clientPayload,
+                  }),
+                },
+              );
+              if (!response.ok) {
+                throw new Error(`Snapshot dispatch was rejected with HTTP ${response.status}`);
+              }
+            };
+
+            if (context.payload.action === 'closed') {
+              if (!pullRequest.merged) {
+                await setStatus('success', 'Snapshot run abandoned because the PR was closed');
+                core.info('PR closed without merge; no snapshot cleanup dispatch is required');
+                return;
+              }
+              await dispatch('snapshot_pr_merged', {
+                schema_version: 2,
+                event: 'snapshot_pr_merged',
+                generator_repo: generatorRepo,
+                generator_repository_id: repository.id,
+                pr: {
+                  number: pullRequest.number,
+                  head_sha: pullRequest.head.sha,
+                  merge_commit_sha: pullRequest.merge_commit_sha,
+                },
+              });
+              core.info('Dispatched merged-PR snapshot cleanup');
+              return;
+            }
+
+            if (pullRequest.state !== 'open' || pullRequest.merged) {
+              core.info('PR is not open; no snapshot request will be dispatched');
+              return;
+            }
+
+            if (
+              context.eventName === 'pull_request_target' &&
+              (context.payload.action === 'labeled' || context.payload.action === 'unlabeled') &&
+              !selectorAliases.has(context.payload.label.name)
+            ) {
+              core.info('Changed label is not a snapshot selector; nothing to do');
+              return;
+            }
+
+            const selectors = [...new Set(
+              pullRequest.labels
+                .map((label) => selectorAliases.get(label.name))
+                .filter(Boolean),
+            )].sort();
+
+            if (selectors.length === 0) {
+              await setStatus('success', 'No snapshot selectors requested');
+              core.info('No snapshot selectors requested');
+              return;
+            }
+
+            if (!pullRequest.head.repo) {
+              await setStatus('failure', 'Snapshot source repository is unavailable');
+              throw new Error('Pull request head repository metadata is unavailable');
+            }
+
+            const isSafeRef = (ref) =>
+              /^[A-Za-z0-9._/-]+$/.test(ref) &&
+              !ref.includes('..') &&
+              !ref.includes('//') &&
+              !ref.startsWith('/') &&
+              !ref.endsWith('/') &&
+              !ref.endsWith('.') &&
+              !ref.endsWith('.lock');
+            if (!isSafeRef(pullRequest.base.ref) || !isSafeRef(pullRequest.head.ref)) {
+              await setStatus('failure', 'Snapshot request contains an unsupported Git ref');
+              throw new Error('Pull request refs do not satisfy the receiver contract');
+            }
+
+            const isFork = pullRequest.head.repo.id !== pullRequest.base.repo.id;
+            if (isFork) {
+              const approvalLine = `/snapshot approve ${pullRequest.head.sha}`;
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullRequest.number,
+                per_page: 100,
+              });
+              const approval = comments.find((comment) =>
+                approvalAssociations.has(comment.author_association) &&
+                (comment.body || '').split(/\r?\n/).some((line) => line.trim() === approvalLine)
+              );
+              if (!approval) {
+                await setStatus('success', 'Snapshot run requires approval for this exact SHA');
+                core.info('Fork snapshot request is not approved for the current head SHA');
+                return;
+              }
+
+            }
+
+            const idempotencyKey = [
+              repository.id,
+              pullRequest.number,
+              pullRequest.head.sha,
+              selectors.join(','),
+            ].join(':');
+            const payload = {
+              schema_version: 2,
+              event: 'snapshot_requested',
+              idempotency_key: idempotencyKey,
+              generator_repo: generatorRepo,
+              generator_repository_id: repository.id,
+              pr: {
+                number: pullRequest.number,
+                base_ref: pullRequest.base.ref,
+                base_sha: pullRequest.base.sha,
+                head_repo: pullRequest.head.repo.full_name,
+                head_ref: pullRequest.head.ref,
+                head_sha: pullRequest.head.sha,
+              },
+              is_fork: isFork,
+              selectors,
+              public_run_id: String(context.runId),
+              comment_mode: 'aggregate',
+            };
+
+            await setStatus('pending', 'Snapshot request accepted for private execution');
+            try {
+              await dispatch('snapshot_requested', payload);
+              core.info(`Dispatched ${selectors.length} generic snapshot selector(s)`);
+            } catch (error) {
+              await setStatus('failure', 'Snapshot request could not be dispatched');
+              throw error;
+            }

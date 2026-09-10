@@ -1,0 +1,10 @@
+{{recurse 1}}
+{{genImports}}
+import { test, expect, describe } from "vitest";
+{{addZodPackageImport}}
+import * as types from "../sdk/types/primitives.js";
+
+
+describe("Test smart primitive coercion", () => {
+  {{templateSmartPrimitiveCoercionTests}}
+})

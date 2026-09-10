@@ -1,0 +1,51 @@
+{/* Start Go Errors */}
+Handling errors in this SDK should largely match your expectations.  All operations return a response object or an error, they will never return both.  When specified by the OpenAPI spec document, the SDK will return the appropriate subclass.
+
+
+
+### Example
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	"log"
+	"openapi"
+	"openapi/models/components"
+	"openapi/models/sdkerrors"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithSecurity(components.Security{
+			Option1: &components.SecurityOption1{
+				Username: "<USERNAME>",
+				Password: "<PASSWORD>",
+			},
+		}),
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+
+	ctx := context.Background()
+	res, err := s.GetUnionErrors(ctx)
+	if err != nil {
+
+		var e *sdkerrors.GetUnionErrorsResponseBody
+		if errors.As(err, &e) {
+			// handle error
+			log.Fatal(e.Error())
+		}
+
+		var e *sdkerrors.SDKError
+		if errors.As(err, &e) {
+			// handle error
+			log.Fatal(e.Error())
+		}
+	}
+}
+
+```
+{/* End Go Errors */}

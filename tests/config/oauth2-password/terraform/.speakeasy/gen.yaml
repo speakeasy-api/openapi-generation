@@ -1,0 +1,15 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2PasswordEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+terraform:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  packageName: client-credentials
+  includeEmptyObjects: false

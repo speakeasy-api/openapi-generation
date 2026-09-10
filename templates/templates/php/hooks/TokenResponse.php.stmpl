@@ -1,0 +1,11 @@
+{{- $namespace := getScopeNamespace "hooks" true}}
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+class TokenResponse
+{
+    public ?string $accessToken;
+    public ?string $tokenType;
+    public ?int $expiresIn;
+}

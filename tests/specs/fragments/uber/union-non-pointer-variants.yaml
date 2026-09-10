@@ -1,0 +1,27 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+components:
+  schemas:
+    # Tests union deserialization when active variants are non-pointer Go
+    # kinds — slice, map, and interface{} (any). Languages that treat these
+    # as already-pointer-like (Go, etc.) emit them as bare `[]T`/`map[K]V`/
+    # `any` rather than `*[]T`/`*map[K]V`/`*any`. The union-candidate counter
+    # must walk through such variants without assuming every active variant
+    # is a pointer it can dereference.
+    UnionNonPointerVariants:
+      x-speakeasy-include: true
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: object
+          additionalProperties:
+            type: string
+        - {}

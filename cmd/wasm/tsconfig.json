@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "include": ["**/*.ts"]
+}

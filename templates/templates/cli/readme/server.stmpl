@@ -1,0 +1,50 @@
+{{- $sdk := .Global.AST.MainSDK -}}
+{{- $cliName := sanitizeCliName -}}
+{{- $showcase := .Local.Example.ShowcaseArgs -}}
+{{- if $sdk.Servers}}
+{{- if and (eq (serverSelectionFlag) "visible") $sdk.Servers.ServerMap}}
+### Select Server by Name
+
+Use `--server <name>` to select a named server (default: `{{$sdk.Servers.Default}}`):
+
+{{ templateServersTable $sdk }}
+
+```bash
+{{$cliName}} --server {{$sdk.Servers.Default}} {{$showcase}}
+```
+
+{{- else if and (eq (serverSelectionFlag) "visible") (gt (len $sdk.Servers.Servers) 1) }}
+### Select Server by Index
+
+Use `--server <index>` to select a server by its zero-based index (default: `0`):
+
+{{ templateServersTable $sdk }}
+
+```bash
+{{$cliName}} --server 0 {{$showcase}}
+```
+
+{{- end}}
+{{if sdkHasServerVariables }}
+### Server Variables
+
+Some server URLs contain template variables (e.g., `https://{hostname}:{port}/v1`). Set these via dedicated flags:
+
+{{ templateServerVariablesTable $sdk }}
+
+```bash
+{{$cliName}} {{templateServerVariableFlagExample}} {{$showcase}}
+```
+
+Server variable flags are combined with the {{if eq (serverSelectionFlag) "visible"}}selected{{else}}active{{end}} server URL to produce the final endpoint.
+{{- end}}
+### Override Server URL
+
+Use `--server-url` to override the server URL entirely{{if eq (serverSelectionFlag) "visible"}}, bypassing any named or indexed server selection{{end}}:
+
+```bash
+{{$cliName}} --server-url https://custom-api.example.com {{$showcase}}
+```
+
+{{if eq (serverSelectionFlag) "none"}}**Precedence**: `--server-url` > default{{else}}**Precedence**: `--server-url` > `--server` > default{{end}}
+{{- end }}

@@ -1,0 +1,8 @@
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}}\Utils\Retry;
+
+abstract class RetryConfig
+{
+    public RetryStrategy $strategy;
+}

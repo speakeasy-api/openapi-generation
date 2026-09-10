@@ -1,0 +1,316 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply-changesets:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: release-apply-changesets-${{ github.ref }}
+      cancel-in-progress: false
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Generate automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.GENERATOR_BOT_APP_ID }}
+          private-key: ${{ secrets.GENERATOR_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Configure git for private modules
+        env:
+          GIT_AUTH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        run: git config --global url."https://speakeasybot:${GIT_AUTH_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+
+      - name: Apply changesets
+        run: |
+          if ls .changesets/*.yaml 1>/dev/null 2>&1; then
+            go run cmd/changeset/apply/main.go
+            git config user.email "bot@speakeasyapi.dev"
+            git config user.name "Speakeasy Bot"
+            git add .changesets/ changelogs/ templates/templates/ zSDKs/
+            git commit -m "ci: apply changesets [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No changesets to apply"
+          fi
+
+  release:
+    needs: apply-changesets
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.conventionalcommits.outputs.tag }}
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Generate automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.GENERATOR_BOT_APP_ID }}
+          private-key: ${{ secrets.GENERATOR_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          ref: main
+          fetch-depth: 0
+
+      - id: conventionalcommits
+        name: Conventional Commits
+        uses: TriPSs/conventional-changelog-action@ee43def3241429afddab215ba89090cbf64fb45c # v6.4.0
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          skip-commit: "true"
+          skip-tag: "true"
+          git-push: "false"
+          output-file: "false"
+          skip-on-empty: "false"
+          preset: conventionalcommits
+
+      - name: Identify release source
+        id: release-source
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "previous=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+
+      - id: changelog
+        name: Update CHANGELOG
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        uses: speakeasy-api/changelog-action@40b363faa9ea3040290bb4d2fc05319ace934f4a # v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fromTag: ${{ steps.release-source.outputs.sha }}
+          toTag: ${{ steps.release-source.outputs.previous }}
+          includeRefIssues: false
+          excludeTypes: build,docs,other,style,test,ci
+          includePRLinks: false
+
+      - name: Finalize release version
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        env:
+          RELEASE_SOURCE: ${{ steps.release-source.outputs.sha }}
+          RELEASE_TAG: ${{ steps.conventionalcommits.outputs.tag }}
+        run: node scripts/finalize-release-changelog.mjs
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Verify embedded release version
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        env:
+          EXPECTED_RELEASE_VERSION: ${{ steps.conventionalcommits.outputs.tag }}
+        run: go test . -run '^TestGetLatestVersion$' -count=1 -v
+
+      - id: commit
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        name: Commit CHANGELOG.md
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          branch: main
+          commit_message: "docs: update CHANGELOG.md for ${{ steps.conventionalcommits.outputs.tag }} [skip ci]"
+          file_pattern: CHANGELOG.md
+
+      - name: Tag the release commit
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        env:
+          RELEASE_TAG: ${{ steps.conventionalcommits.outputs.tag }}
+        run: |
+          git -c tag.gpgSign=false tag --annotate "$RELEASE_TAG" --message "$RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+      - name: Create Release
+        uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
+        if: steps.conventionalcommits.outputs.skipped == 'false'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        with:
+          tag_name: ${{ steps.conventionalcommits.outputs.tag }}
+          release_name: ${{ steps.conventionalcommits.outputs.tag }}
+          body: ${{ steps.changelog.outputs.changes }}
+  features-report:
+    # Prevent conflicting Git pushes
+    needs:
+      - release
+    timeout-minutes: 15
+    name: Generate Features Report
+    runs-on: ubicloud-standard-2
+    steps:
+      - name: Generate automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.GENERATOR_BOT_APP_ID }}
+          private-key: ${{ secrets.GENERATOR_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Configure git for private modules
+        env:
+          GIT_AUTH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        run: git config --global url."https://speakeasybot:${GIT_AUTH_TOKEN}@github.com".insteadOf "https://github.com"
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+      - name: Pull latest changes
+        run: git pull
+      - name: Generate report
+        shell: bash
+        run: |
+          go run cmd/features/main.go
+      - id: commit
+        name: Commit features report
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+        with:
+          branch: main
+          commit_message: "docs: update features report [skip ci]"
+          file_pattern: reports/*
+
+  release-wasm:
+    # Production delivery stays disabled until this same repository has the
+    # canonical name and an explicitly approved repository variable opts in.
+    if: >-
+      github.repository_id == '1327468509' &&
+      github.repository == 'speakeasy-api/openapi-generation' &&
+      vars.RELEASE_WASM_PRODUCTION_ENABLED == 'true'
+    name: Release WASM Engine
+    runs-on: ubuntu-latest
+    needs: release
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Generate automation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.GENERATOR_BOT_APP_ID }}
+          private-key: ${{ secrets.GENERATOR_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Configure git for private modules
+        env:
+          GIT_AUTH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        run: git config --global url."https://speakeasybot:${GIT_AUTH_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "./cmd/wasm/go.mod"
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+
+      - name: Install Brotli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y brotli
+
+      - name: Build WASM
+        run: cd ./cmd/wasm && ./build-all.sh
+        env:
+          VERSION: ${{ needs.release.outputs.tag }}
+
+      - name: Create temp directory
+        run: mkdir -p /tmp/wasm-release
+
+      - name: Copy WASM files
+        run: |
+          # Copy all granular WASM binaries
+          cp ./cmd/wasm/assets/wasm/overlay.wasm.br /tmp/wasm-release/overlay.latest.wasm.br
+          cp ./cmd/wasm/assets/wasm/overlay.wasm.gz /tmp/wasm-release/overlay.latest.wasm.gz
+          cp ./cmd/wasm/assets/wasm/ast.wasm.br /tmp/wasm-release/ast.latest.wasm.br
+          cp ./cmd/wasm/assets/wasm/ast.wasm.gz /tmp/wasm-release/ast.latest.wasm.gz
+          cp ./cmd/wasm/assets/wasm/full-stack.wasm.br /tmp/wasm-release/full-stack.latest.wasm.br
+          cp ./cmd/wasm/assets/wasm/full-stack.wasm.gz /tmp/wasm-release/full-stack.latest.wasm.gz
+          # Copy the legacy monolithic binary as engine.latest for backward compatibility
+          cp ./cmd/wasm/assets/wasm/full-stack.wasm.br /tmp/wasm-release/engine.latest.wasm.br
+          cp ./cmd/wasm/assets/wasm/full-stack.wasm.gz /tmp/wasm-release/engine.latest.wasm.gz
+          cp ./cmd/wasm/assets/wasm/wasm_exec.js /tmp/wasm-release/wasm_exec.js
+
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          token_format: "access_token"
+          workload_identity_provider: "projects/409661704476/locations/global/workloadIdentityPools/ga-pool/providers/github-oidc-provider"
+          service_account: "speakeasy-registry-ga-ci@linen-analyst-344721.iam.gserviceaccount.com"
+      - name: "Set up Cloud SDK"
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        with:
+          version: ">= 467.0.0"
+
+      - name: Upload files to GCS bucket
+        run: |
+          # Upload granular WASM binaries
+          gsutil cp /tmp/wasm-release/overlay.latest.wasm.br gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/overlay.latest.wasm.gz gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/ast.latest.wasm.br gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/ast.latest.wasm.gz gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/full-stack.latest.wasm.br gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/full-stack.latest.wasm.gz gs://speakeasy-static-backend-bucket/engine/
+          # Upload legacy engine.latest for backward compatibility
+          gsutil cp /tmp/wasm-release/engine.latest.wasm.br gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/engine.latest.wasm.gz gs://speakeasy-static-backend-bucket/engine/
+          gsutil cp /tmp/wasm-release/wasm_exec.js gs://speakeasy-static-backend-bucket/engine/
+
+      - name: Set Cache-Control metadata
+        run: |
+          # Set cache control for granular binaries
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/overlay.latest.wasm.br
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/overlay.latest.wasm.gz
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/ast.latest.wasm.br
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/ast.latest.wasm.gz
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/full-stack.latest.wasm.br
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/full-stack.latest.wasm.gz
+          # Set cache control for legacy files
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/engine.latest.wasm.br
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/engine.latest.wasm.gz
+          gsutil setmeta -h "Cache-Control:public, max-age=300" gs://speakeasy-static-backend-bucket/engine/wasm_exec.js

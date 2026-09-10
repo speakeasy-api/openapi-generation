@@ -1,0 +1,25 @@
+{{- $helper := .Local -}}
+{{- if $helper.Inputs}}
+{{templateString "model.py.stmpl" (dict "Type" $helper.Inputs.Type  "ModelName" $helper.Inputs.Type.Name)}}
+{{end}}
+{{- if $helper.Outputs}}
+{{templateString "model.py.stmpl" (dict "Type" $helper.Outputs.Type "ModelName" $helper.Outputs.Type.Name)}}
+{{end}}
+{{- addImport "typing" "Optional"}}
+def {{sanitizePrivateMethodName $helper.Name}}({{if $helper.Inputs}}inputs: {{sanitizeClassName $helper.Inputs.Type.Name}}{{end}}){{if $helper.Outputs}} -> Optional[{{sanitizeClassName $helper.Outputs.Type.Name}}]{{end}}:
+{{- addImport "tests.test_client" "create_test_http_client"}}
+    test_http_client = create_test_http_client("{{$helper.Name}}")
+{{range $idx, $step := $helper.Steps}}
+{{- if eq $step.Type "operation"}}
+{{templateString "usage/init.stmpl" (dict "Context" $step.UsageContext "Async" false) | indentPresent 4}}
+        assert {{templateSDKVarName}} is not None
+
+{{templateString "usage/call.stmpl" (dict "Context" $step.UsageContext "Async" false) | indentPresent 8}}
+{{templateAssertions $step.UsageContext | indentPresent 8}}
+{{- else}}
+{{- if eq $idx 0}}
+{{templateWorkflow $helper $step | indentPresent 4}}
+{{- else}}
+{{templateWorkflow $helper $step | indentPresent 8}}
+{{- end}}{{end}}{{end}}
+{{templateHelperOutputs $helper | indentPresent 4}}

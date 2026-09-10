@@ -1,0 +1,11 @@
+diff --git a/src/speakeasy/new_openapi/models/reviewtask.py b/src/speakeasy/new_openapi/models/reviewtask.py
+index 170fc25bfc..a05942a72a 100644
+--- a/src/speakeasy/new_openapi/models/reviewtask.py
++++ b/src/speakeasy/new_openapi/models/reviewtask.py
+@@ -24,3 +24,6 @@ class ReviewTask(BaseModel):
+ 
+     policy: MCPPolicy
+     r"""A policy object with steps"""
++
++    def __str__(self) -> str:
++        return f"{self.name} ({self.id})"

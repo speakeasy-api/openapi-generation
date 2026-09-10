@@ -1,0 +1,53 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+{{- $paged := $c.Paginated -}}
+Some operations in this CLI support automatic pagination. These operations accept `--all` to automatically fetch all pages and stream results incrementally.
+
+### Basic usage
+
+```bash
+# Fetch a single page (default behavior)
+{{$paged}}
+
+# Automatically fetch all pages
+{{$paged}} --all
+```
+
+### Limiting pages
+
+Use `--max-pages` with `--all` to cap the number of pages fetched. A negative value is invalid; `0` means unlimited. Passing `--max-pages` without `--all` is an error.
+
+```bash
+# Fetch at most 5 pages
+{{$paged}} --all --max-pages 5
+```
+
+### Output formats
+
+When using `--all`, output is streamed as each page is fetched. Operations whose pagination declaration names an `outputs.results` array emit one item at a time. Other operations emit one complete page object at a time, preserving the single-page response shape and any continuation cursor.
+
+| Format | Behavior |
+|--------|----------|
+| `--output-format json` | One JSON object per line ([NDJSON](https://github.com/ndjson/ndjson-spec)) |
+| `--output-format yaml` | YAML documents separated by `---` |
+| `--output-format toon` | One TOON-encoded block per item, separated by blank lines |
+| Default (pretty) | Pretty-printed items separated by blank lines |
+
+```bash
+# Stream all results as NDJSON
+{{$paged}} --all --output-format json
+
+# Pipe to jq for further processing
+{{$paged}} --all --output-format json | jq '.'
+
+# Use the built-in --jq flag
+{{$paged}} --all --jq '.'
+```
+
+### How it works
+
+Under the hood, `--all` calls the operation once, then follows the underlying `Next()` pagination closure to fetch subsequent pages. Results are written to stdout as they arrive rather than buffered in memory, so this works well even with large result sets.
+
+Without `--all`, paginated operations behave like any other command — pass cursor, page, offset, or limit flags manually and get a single page of results. In pretty or table output, a cursor response that proves another page exists prints a hint on stderr. JSON, YAML, TOON, `--jq`, and agent mode keep stderr silent on success. Offset/limit responses do not guess from a full result page. Cursor operations that declare both a results array and a mutable limit also suppress the hint because the client cannot safely reproduce the SDK's runtime limit check.
+
+Pagination can fail after earlier pages have already been written. A later-page API failure or a repeated/cyclic continuation cursor stops with a non-zero exit status; callers should treat stdout as partial whenever the command exits non-zero. `--all` tracks cursor values and stops before issuing another request when the server repeats one; the same applies to next URLs when the target generator supports them.

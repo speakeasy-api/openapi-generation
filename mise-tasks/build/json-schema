@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Generate JSON Schema for one language"
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: mise run build:json-schema <language>" >&2
+  exit 2
+fi
+
+readonly ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." &>/dev/null && pwd)"
+cd "$ROOT_DIR"
+
+go run ./cmd/jsonschema/main.go -o ./jsonschemas -l "$1"

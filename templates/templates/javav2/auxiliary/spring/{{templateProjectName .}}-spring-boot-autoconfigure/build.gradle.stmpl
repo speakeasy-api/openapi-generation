@@ -1,0 +1,36 @@
+description = '{{templateReadmeTitle}} Spring Boot Auto Configuration'
+{{- $artifactId := (print templateProjectName "-spring-boot-autoconfigure")}}
+
+// Publishing configuration overrides
+ext {
+    publishingConfig = [
+        groupId: rootProject.group,
+        artifactId: '{{$artifactId}}',
+        version: rootProject.version,
+        name: '{{.Global.Config.CompanyName}} Java SDK - Spring Boot Auto Configuration',
+        description: 'Spring Boot auto-configuration for the {{.Global.Config.CompanyName}} Java SDK.',
+    ]
+}
+
+dependencies {
+    api project(':')
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    dependsOn 'generatePomFileForMavenPublication'
+    archiveBaseName = '{{$artifactId}}'
+    into("META-INF/maven/{{.Global.Config.GroupID}}/{{$artifactId}}") {
+        from(layout.buildDirectory.file("pom.xml")) {
+            // Only include if it exists to avoid build ordering issues
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
+    }
+}

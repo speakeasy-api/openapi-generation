@@ -1,0 +1,9 @@
+{{- recurse 1 -}}
+{{- $typeDef := .Local }}
+## Example Usage
+
+```typescript
+{{genImports "UsageImports"}}
+
+{{ templateModelSnippet $typeDef }}
+```

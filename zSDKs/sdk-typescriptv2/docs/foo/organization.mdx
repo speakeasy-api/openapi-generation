@@ -1,0 +1,37 @@
+---
+title: "Organization"
+---
+
+An organization with nested inline schemas in the foo namespace
+
+## Example Usage
+
+```typescript
+import { Organization } from "openapi/foo";
+
+let value: Organization = {
+  name: "Acme Corp",
+  address: {
+    street: "123 Main St",
+    city: "Springfield",
+    location: {
+      latitude: 37.7749,
+      longitude: -122.4194,
+    },
+  },
+  departments: [
+    {
+      deptName: "Engineering",
+      headCount: 50,
+    },
+  ],
+};
+```
+
+## Fields
+
+| Field                                                | Type                                                 | Required                                             | Description                                          | Example                                              |
+| ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- |
+| `name`                                               | *string*                                             | :heavy_check_mark:                                   | N/A                                                  | Acme Corp                                            |
+| `address`                                            | [foo.Address](../foo/address.mdx)                     | :heavy_check_mark:                                   | Inline address object should end up in foo namespace |                                                      |
+| `departments`                                        | [foo.Department](../foo/department.mdx)[]             | :heavy_minus_sign:                                   | N/A                                                  |                                                      |

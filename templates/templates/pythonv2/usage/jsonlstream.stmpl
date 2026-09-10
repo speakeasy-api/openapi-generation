@@ -1,0 +1,8 @@
+{{- $context := .Local.Context -}}
+{{- $isAsync := .Local.Async -}}
+{{- $responseFormat := getResponseFormat -}}
+{{- $resFieldName := sanitizeFieldName (getResponseFieldName $context.Operation "jsonl") -}}
+{{if $isAsync}}async {{end}}with {{getResponseVariableName .Local.StepID}}{{if and (not (eq $responseFormat "flat")) $resFieldName}}.{{$resFieldName}}{{end}} as jsonl_stream:
+    {{if $isAsync}}async {{end}}for event in jsonl_stream:
+        # handle event
+        print(event, flush=True)

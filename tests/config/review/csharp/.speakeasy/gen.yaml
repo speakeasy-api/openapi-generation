@@ -1,0 +1,84 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  sdkHooksConfigAccess: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+  repoUrl: https://github.com/speakeasy-sdks/test-sdk
+csharp:
+  version: 0.0.1
+  additionalDependencies:
+    - package: Polly
+      version: 7.2.2
+    - excludeAssets: none
+      includeAssets: all
+      package: RestSharp
+      privateAssets: contentFiles; build; native; analyzers; buildTransitive
+      version: 106.12.0
+  author: Speakeasy
+  baseErrorName: SDKBaseException
+  clientServerStatusCodesAsErrors: true
+  customCasings:
+    mcp:
+      initialism: true
+  defaultErrorName: SDKException
+  description: test description
+  disableNamespacePascalCasingApr2024: true
+  dotnetVersion: net10.0
+  enableCancellationToken: true
+  enableFormatting: true
+  enableSourceLink: true
+  flattenGlobalSecurity: true
+  flatteningOrder: parameters-first
+  forwardCompatibleEnumsByDefault: true
+  forwardCompatibleUnionsByDefault: tagged-and-untagged
+  httpClientPrefix: Speakeasy
+  imports:
+    option: openapi
+    paths:
+      callbacks: ""
+      errors: ""
+      operations: ""
+      shared: ""
+      webhooks: ""
+  includeDebugSymbols: true
+  inferUnionDiscriminators: true
+  inputModelSuffix: input
+  maxMethodParams: 4
+  methodArguments: infer-optional-args
+  multipartArrayFormat: standard
+  outputModelSuffix: output
+  packageName: Speakeasy.OpenAPI
+  packageTags: Speakeasy API SDK-Generation
+  presenceAwareJsonSerialization: true
+  respectTitlesForPrimitiveUnionMembers: true
+  responseFormat: envelope-http
+  schemaValidation: lenient
+  sourceDirectory: src
+  targetFramework: netstandard2.0
+  unionStrategy: populated-fields
+  useNodatime: true

@@ -1,0 +1,30 @@
+{{- if .Global.Config.UseIndexModules}}
+{{- if not isNoZod }}
+export { RFCDate } from "./rfcdate.js";
+{{- end }}
+{{- if isNoZod }}
+export { isBlobLike } from "./blobs.js";
+{{- else }}
+export { blobLikeSchema, isBlobLike } from "./blobs.js";
+{{- end }}
+export type { Paginator, PageIterator } from "./operations.js";
+export { createPageIterator } from "./operations.js";
+{{- if not isNoZod }}
+export type { OpenEnum, ClosedEnum } from "./enums.js";
+export * from "./{{ getUnrecognizedFileName }}.js"
+{{- end }}
+export type { Result } from "./fp.js";
+{{- if isLaxMode }}
+export * from "./{{ getDefaultToZeroValueFileName }}.js"
+export * from "./primitives.js";
+{{- end}}
+{{- if and (isFeatureUsed "decimal") (not isNoZod) }}
+export { Decimal } from "./decimal.js";
+{{- end}}
+{{- if isFeatureUsed "webhooks"}}
+export type { WebhookRecipient } from "./webhooks.js";
+{{- if hasWebhookSecurity }}
+export type { WebhookAuthenticationError } from "./webhooks.js";
+{{- end}}
+{{- end}}
+{{- end}}

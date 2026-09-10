@@ -1,0 +1,119 @@
+
+[TestChanges_UnionOptionAddedResponseOpen - 1]
+# Test: union_option_added_response_open
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pet:
+                    x-speakeasy-unknown-values: allow
+                    oneOf:
+                      - $ref: '#/components/schemas/Dog'
+                      - $ref: '#/components/schemas/Cat'
+                    discriminator:
+                      propertyName: kind
+                      mapping:
+                        dog: '#/components/schemas/Dog'
+                        cat: '#/components/schemas/Cat'
+components:
+  schemas:
+    Dog:
+      type: object
+      required: [kind, bark]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Cat:
+      type: object
+      required: [kind, meow]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: getPet
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pet:
+                    x-speakeasy-unknown-values: allow
+                    oneOf:
+                      - $ref: '#/components/schemas/Dog'
+                      - $ref: '#/components/schemas/Cat'
+                      - $ref: '#/components/schemas/Bird'
+                    discriminator:
+                      propertyName: kind
+                      mapping:
+                        dog: '#/components/schemas/Dog'
+                        cat: '#/components/schemas/Cat'
+                        bird: '#/components/schemas/Bird'
+components:
+  schemas:
+    Dog:
+      type: object
+      required: [kind, bark]
+      properties:
+        kind:
+          type: string
+        bark:
+          type: boolean
+    Cat:
+      type: object
+      required: [kind, meow]
+      properties:
+        kind:
+          type: string
+        meow:
+          type: boolean
+    Bird:
+      type: object
+      required: [kind, chirp]
+      properties:
+        kind:
+          type: string
+        chirp:
+          type: boolean
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getPet()`:  `response.pet.union(bird)` **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getPet()`:  `response.pet.union(bird)` **Added**
+
+---

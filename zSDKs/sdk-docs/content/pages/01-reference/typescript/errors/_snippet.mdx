@@ -1,0 +1,51 @@
+{/* Start Typescript Errors */}
+Handling errors in this SDK should largely match your expectations.  All operations return a response object or throw an error.  If Error objects are specified in your OpenAPI Spec, the SDK will throw the appropriate Error type.
+
+
+
+Example
+
+```typescript
+import { SDK } from "openapi";
+import { ListTest1Request, ListTest1Security } from "openapi/dist/models/operations";
+
+async function run() {
+    const sdk = new SDK({
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const page: number = 100;
+    const headerParam1: string = "some example header param";
+    const queryParam1: string = "some example query param";
+    const operationSecurity: ListTest1Security = "<YOUR_API_KEY>";
+
+    let res;
+    try {
+        res = await sdk.tag1.listTest1(operationSecurity, page, headerParam1, queryParam1);
+    } catch (err) {
+        if (err instanceof errors.BadRequestResponse) {
+            console.error(err); // handle exception
+            throw err;
+        } else if (err instanceof errors.ErrorT) {
+            console.error(err); // handle exception
+            throw err;
+        } else if (err instanceof errors.SDKError) {
+            console.error(err); // handle exception
+            throw err;
+        }
+    }
+
+    if (res.statusCode == 200) {
+        do {
+            // handle items
+
+            res = res.next();
+        } while (res);
+    }
+}
+
+run();
+
+```
+{/* End Typescript Errors */}

@@ -1,0 +1,14 @@
+/*
+!/templates
+!/tests
+!/testSDKs
+/templates/dependencies
+/tests/config/primary/typescriptv2/src/sdk/sdk.ts
+/tests/config/primary/typescriptv2/src/sdk/health.ts
+*.css
+*.scss
+*.json
+*.md
+*.json
+*.yaml
+*.yml

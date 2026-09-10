@@ -1,0 +1,29 @@
+description = 'openapi Spring Boot Starter'
+
+// Publishing configuration overrides
+ext {
+    publishingConfig = [
+        groupId: rootProject.group,
+        artifactId: 'openapi-spring-boot-starter',
+        version: rootProject.version,
+        name: 'My Company Java SDK - Spring Boot Starter',
+        description: 'Spring Boot starter for the My Company Java SDK.',
+    ]
+}
+
+dependencies {
+    api project(':')
+    api project(':openapi-spring-boot-autoconfigure')
+    api "org.springframework.boot:spring-boot-starter:${rootProject.springBootVersion}"
+}
+
+jar {
+    dependsOn 'generatePomFileForMavenPublication'
+    archiveBaseName = 'openapi-spring-boot-starter'
+    into("META-INF/maven/org.openapis.review/openapi-spring-boot-starter") {
+        from(layout.buildDirectory.file("pom.xml")) {
+            // Only include if it exists to avoid build ordering issues
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
+    }
+}

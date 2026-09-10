@@ -1,0 +1,197 @@
+{/* Start Go Security Options */}
+### Per-Client Security Schemes
+
+This SDK supports multiple security scheme combinations globally. You can choose from one of the alternatives by using the `WithSecurity` option when initializing the SDK client instance. The selected option will be used by default to authenticate with the API for all operations that support it.
+
+#### Option1
+
+The `Option1` alternative relies on the following scheme:
+
+
+
+Example:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/components"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithSecurity(components.Security{
+			Option1: &components.SecurityOption1{
+				Username: "<USERNAME>",
+				Password: "<PASSWORD>",
+			},
+		}),
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	request := operations.PostFileRequestBody{
+		File: components.File{
+			FileName: "your_file_here",
+			Content:  []byte("0x8fBAEeAAE7"),
+		},
+	}
+	ctx := context.Background()
+	res, err := s.PostFile(ctx, request)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.File != nil {
+		// handle response
+	}
+}
+
+```
+
+#### Option2
+
+All of the following schemes must be satisfied to use the `Option2` alternative:
+
+
+
+Example:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/components"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithSecurity(components.Security{
+			Option2: &components.SecurityOption2{
+				BearerAuth: "<YOUR_JWT>",
+				APIKey:     "<YOUR_API_KEY>",
+			},
+		}),
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	request := operations.PostFileRequestBody{
+		File: components.File{
+			FileName: "your_file_here",
+			Content:  []byte("0x8fBAEeAAE7"),
+		},
+	}
+	ctx := context.Background()
+	res, err := s.PostFile(ctx, request)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.File != nil {
+		// handle response
+	}
+}
+
+```
+
+#### Option3
+
+The `Option3` alternative relies on the following scheme:
+
+
+
+Example:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/components"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithSecurity(components.Security{
+			Option3: &components.SecurityOption3{
+				Oauth2: "Bearer <YOUR_OAUTH2_TOKEN>",
+			},
+		}),
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	request := operations.PostFileRequestBody{
+		File: components.File{
+			FileName: "your_file_here",
+			Content:  []byte("0x8fBAEeAAE7"),
+		},
+	}
+	ctx := context.Background()
+	res, err := s.PostFile(ctx, request)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.File != nil {
+		// handle response
+	}
+}
+
+```
+
+### Per-Operation Security Schemes
+
+Some operations in this SDK require the security scheme to be specified at the request level. For example:
+```go
+package main
+
+import (
+	"context"
+	"log"
+	"openapi"
+	"openapi/models/operations"
+)
+
+func main() {
+	s := openapi.New(
+		openapi.WithQueryParam1("some example query param"),
+		openapi.WithDeprecatedQueryParam2("some example query param"),
+	)
+	security := operations.ListTest1Security{
+		APIKey: "<YOUR_API_KEY>",
+	}
+
+	var page int64 = 100
+
+	var headerParam1 string = "some example header param"
+
+	var queryParam1 *string = openapi.String("some example query param")
+	ctx := context.Background()
+	res, err := s.Tag1.ListTest1(ctx, security, page, headerParam1, queryParam1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if res.Object != nil {
+		for {
+			// handle items
+
+			res, err = res.Next()
+
+			if err != nil {
+				// handle error
+			}
+
+			if res == nil {
+				break
+			}
+		}
+
+	}
+}
+
+```
+{/* End Go Security Options */}

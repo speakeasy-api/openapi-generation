@@ -1,0 +1,32 @@
+{{- recurse 1 -}}
+{{genImports "UsageImports"}}
+{{- $ctx := .Local.UsageContext }}
+{{- $showErrs := .Local.ExhaustiveErrors }}
+{{- $op := $ctx.Operation -}}
+{{- $sdkVar := sanitizeFieldName .Global.AST.MainSDK.Type.Name }}
+{{- $coreName := sanitizeCoreSDKName }}
+{{- $funcName := sanitizeFuncName $op }}
+{{- $args := templateUsageMethodParameters $ctx 0 | indent 2 | trim }}
+{{- if $args }}
+{{-   $args = printf "%s, %s" $sdkVar $args }}
+{{- else }}
+{{-   $args = $sdkVar }}
+{{- end }}
+{{- addFuncUsageImport $op }}
+{{- addCoreSDKUsageImport $op }}
+
+// Use `{{$coreName}}` for best tree-shaking performance.
+// You can create one instance of it to use across an application.
+const {{$sdkVar}} = new {{$coreName}}({{ templateUsageSDKOptions $ctx }});
+
+async function run() {
+  const res = await {{$funcName}}({{$args}});
+  if (res.ok) {
+    const { value: result } = res;
+  {{templateString "usage/result.stmpl" $ctx | trim | indent 2}}
+  } else {
+    console.log("{{$funcName}} failed:", res.error);
+  }
+}
+
+run();

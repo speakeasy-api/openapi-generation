@@ -1,0 +1,10 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+typescript:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  templateVersion: v2
+  packageName: customHttpAuth
+  enableMCPServer: true
+  legacyFileNaming: true

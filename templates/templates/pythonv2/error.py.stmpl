@@ -1,0 +1,48 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{$fields := (sortFields $type.Fields) -}}
+{{- importBaseError -}}
+{{- addImport "httpx" "" -}}
+{{- addImport "typing" "Optional" -}}
+{{- addImport "dataclasses" "dataclass" -}}
+{{- addImport "dataclasses" "field" -}}
+{{- $className := sanitizeClassName $type.Name -}}
+{{- $subTypeName := $className -}}
+{{- if eq $type.Type "error"}}{{$subTypeName = print $className "Data"}}{{else}}{{$subTypeName = print $className "Union"}}{{end -}}
+{{- if eq $type.Type "error"}}
+{{- addImport "types" "BaseModel" true -}}
+class {{$className}}Data(BaseModel):
+    {{- range $fields}}
+    {{-   $fieldName := sanitizeFieldName .Name}}
+    {{    if and .Const useUpperCaseConsts}}{{upper $fieldName}}{{else}}{{$fieldName}}{{end}}: {{sanitizeFieldTypeAndAnnotations . $usageLocation $local}}{{templateDefaultValue . $usageLocation $local}}
+    {{-   templateComments .Comments 1}}
+    {{- else}}
+    pass
+    {{- end}}
+{{- else}}
+{{- if and $type.Discriminator $type.IsUnionOpen }}
+{{templateString "open-union.py.stmpl" $local}}
+{{ end }}
+{{- templateDeprecated $type.Comments }}
+{{$className}}Union = {{sanitizeUnionType $type $usageLocation $local "Data" "Union"}}
+{{- templateComments $type.Comments 0}}
+{{- end}}
+
+{{templateDeprecated $type.Comments }}
+@dataclass(unsafe_hash=True)
+class {{$className}}({{getBaseErrorClassName}}):
+{{- templateComments $type.Comments 1}}
+
+    data: {{$subTypeName}} = field(hash=False)
+
+    def __init__(self, data: {{$subTypeName}}, raw_response: httpx.Response, body: Optional[str] = None):
+        {{- $errorMessageField := getErrorMessageAccessorString $type "data"}}
+        {{- if $errorMessageField}}
+        fallback = body or raw_response.text
+        message = {{$errorMessageField}}
+        {{- else}}
+        message = body or raw_response.text
+        {{- end}}
+        super().__init__(message, raw_response, body)
+        object.__setattr__(self, 'data', data)

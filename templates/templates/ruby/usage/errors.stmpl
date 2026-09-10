@@ -1,0 +1,13 @@
+{{- range .Local.Operation.Response.Responses }}
+  {{- if .Error }}
+    {{- range .Content }}
+      {{- $errorType := sanitizeType .Content.Type false false "" "usage" }}
+rescue {{$errorType}} => e
+  # handle e.container data
+  raise e
+    {{- end}}{{/* end range .Content */}}
+  {{- end}}
+{{- end}}
+rescue {{templateDefaultError}} => e
+  # handle default exception
+  raise e

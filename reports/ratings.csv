@@ -1,0 +1,14 @@
+Template,Tier
+typescriptv2,Gold :dollar:
+go,GA :shipit:
+php,GA :shipit:
+pythonv2,GA :shipit:
+csharp,Beta :chart_with_upwards_trend:
+javav2,Beta :chart_with_upwards_trend:
+ruby,Beta :chart_with_upwards_trend:
+terraform,Beta :chart_with_upwards_trend:
+postman,Alpha :baby_bottle:
+unity,Alpha :baby_bottle:
+cli,WIP :hammer:
+mcp-typescript,WIP :hammer:
+mockserver,WIP :hammer:

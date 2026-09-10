@@ -1,0 +1,10 @@
+retryConfig: new RetryConfig(
+    strategy: RetryConfig.RetryStrategy.BACKOFF,
+    backoff: new BackoffStrategy(
+        initialIntervalMs: 1L,
+        maxIntervalMs: 50L,
+        maxElapsedTimeMs: 100L,
+        exponent: 1.1
+    ),
+    retryConnectionErrors: false
+)

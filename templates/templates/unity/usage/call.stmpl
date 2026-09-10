@@ -1,0 +1,20 @@
+{{- $handleErrors := (.Local.RenderFeature "errors" false) -}}
+{{- if .Local.Operation }}
+{{- $namespace := sanitizeSDKAccess .Local.SDK }}
+{{- $paramFlattening := operationParametersFlattened .Local.Operation -}}
+{{- if and .Local.Operation.Request (not $paramFlattening)}}
+{{sanitizeType .Local.Operation.Request.Field.Type}} req = {{templateModelUsageForOperationField .Local .Local.Operation.Request.Field 0 (dict "usageContext" .Local)}};
+{{end}}
+{{if $handleErrors -}}
+try
+{
+    using(var res = await sdk{{ $namespace }}.{{ sanitizeMethodName .Local.Operation }}Async({{ templateUsageMethodParameters .Local 0}}))
+    {{"{"}}
+        {{templateString "usage/result.stmpl" .Local}}
+    {{"}"}}
+{{templateString "usage/errors.stmpl" .Local}}{{else}}
+using(var res = await sdk{{ $namespace }}.{{ sanitizeMethodName .Local.Operation }}Async({{ templateUsageMethodParameters .Local 0}}))
+{{"{"}}
+{{templateString "usage/result.stmpl" .Local}}
+{{"}"}}
+{{end}}{{end}}

@@ -1,0 +1,733 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// getAPITestServiceURL returns the URL of the API test service that serves
+// SSE/JSONL endpoints. The mock server doesn't generate streaming handlers,
+// so streaming tests connect directly to the API test service.
+func getAPITestServiceURL() string {
+	port := os.Getenv("API_TEST_SERVICE_PORT")
+	if port == "" {
+		port = "35456"
+	}
+	return "http://localhost:" + port
+}
+
+// parseNDJSON parses newline-delimited JSON output into a slice of maps.
+func parseNDJSON(t *testing.T, stdout string) []map[string]interface{} {
+	t.Helper()
+	stdout = strings.TrimSpace(stdout)
+	if stdout == "" {
+		return nil
+	}
+	lines := strings.Split(stdout, "\n")
+	var results []map[string]interface{}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var obj map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(line), &obj), "failed to parse NDJSON line: %s", line)
+		results = append(results, obj)
+	}
+	return results
+}
+
+func TestEventStreamJSONData(t *testing.T) {
+	recordTest("event-stream-json-data")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "json"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 4, len(events), "expected 4 JSON events")
+
+	// Concatenate content from all events
+	var msg string
+	for _, event := range events {
+		data, ok := event["data"].(map[string]interface{})
+		require.True(t, ok, "event should have data object")
+		msg += data["content"].(string)
+	}
+	assert.Equal(t, "Hello world!", msg)
+}
+
+func TestEventStreamTextData(t *testing.T) {
+	recordTest("event-stream-text-data")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "text"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 4, len(events), "expected 4 text events")
+
+	// Concatenate data from all events
+	var msg string
+	for _, event := range events {
+		msg += event["data"].(string)
+	}
+	assert.Equal(t, "Hello world!", msg)
+}
+
+func TestEventStreamMultilineData(t *testing.T) {
+	recordTest("event-stream-multiline-data")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "multiline"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 1, len(events), "expected 1 multiline event")
+	assert.Equal(t, "YHOO\n+2\n10", events[0]["data"].(string))
+}
+
+func TestEventStreamRichEvents(t *testing.T) {
+	recordTest("event-stream-rich-events")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "rich"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 3, len(events), "expected 3 rich events")
+}
+
+func TestEventStreamChatSentinel(t *testing.T) {
+	recordTest("event-stream-chat-sentinel-event")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "chat", "--prompt", "Print test content"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	// Chat with sentinel: 4 content events + 1 sentinel event = 5
+	assert.Equal(t, 5, len(events), "expected 5 chat events (including sentinel)")
+}
+
+func TestEventStreamChatSkipSentinel(t *testing.T) {
+	recordTest("event-stream-chat-skip-sentinel")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "chat-skip-sentinel", "--prompt", "Print test content"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	// Skip sentinel: only content events, no sentinel in output
+	assert.Equal(t, 4, len(events), "expected 4 chat events (sentinel skipped)")
+
+	// Verify content
+	var msg string
+	for _, event := range events {
+		data, ok := event["data"].(map[string]interface{})
+		require.True(t, ok, "event should have data object")
+		msg += data["content"].(string)
+	}
+	assert.Equal(t, "Hello world!", msg)
+}
+
+func TestEventStreamChatHeartbeatSkipsDataless(t *testing.T) {
+	recordTest("event-stream-chat-heartbeat-skips-dataless")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "chat-heartbeat"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	// Server sends: data("Hello1"), heartbeat (skipped), data("Hello 2"), data("!"), [DONE]
+	assert.Equal(t, 3, len(events), "expected 3 data events (heartbeat skipped)")
+
+	// Verify content
+	var msg string
+	for _, event := range events {
+		data, ok := event["data"].(map[string]interface{})
+		require.True(t, ok, "event should have data object")
+		msg += data["content"].(string)
+	}
+	assert.Equal(t, "Hello1Hello 2!", msg)
+}
+
+func TestEventStreamDifferentDataSchemas(t *testing.T) {
+	recordTest("event-stream-different-data-schemas")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "different-data-schemas"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 6, len(events), "expected 6 events with different data schemas")
+
+	// Verify event IDs are present
+	for i, event := range events {
+		_, hasID := event["id"]
+		assert.True(t, hasID, "event %d should have id field", i)
+	}
+}
+
+func TestEventStreamErrorResponse(t *testing.T) {
+	recordTest("event-stream-error-response")
+
+	// Create a server that returns a 418 teapot error instead of SSE
+	teapotServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTeapot)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "I'm a teapot",
+			"code":    418,
+		})
+	}))
+	defer teapotServer.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(teapotServer.URL, []string{"eventstreams", "text"})
+
+	// Should return an error
+	assert.Error(t, err)
+}
+
+func TestEventStreamPartialWithComments(t *testing.T) {
+	recordTest("event-stream-partial-with-comments")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "partial-with-comments"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 5, len(events), "expected 5 events (comments filtered by SSE parser)")
+}
+
+func TestEventStreamWPTCompliance(t *testing.T) {
+	recordTest("event-stream-wpt-compliance")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "wpt-compliance"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// Verify output contains valid NDJSON lines
+	lines := strings.Split(stdout, "\n")
+	assert.Greater(t, len(lines), 0, "expected at least 1 event")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		assert.True(t, json.Valid([]byte(line)), "expected valid JSON line: %s", line)
+	}
+}
+
+func TestEventStreamStayOpenSentinel(t *testing.T) {
+	recordTest("event-stream-stay-open-sentinel")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "stay-open"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 4, len(events), "expected 4 events before sentinel")
+
+	// Verify event data
+	expectedData := []string{"event 1", "event 2", "event 3", "event 4"}
+	for i, event := range events {
+		assert.Equal(t, expectedData[i], event["data"].(string), "event %d data mismatch", i)
+	}
+}
+
+func TestEventStreamOptionalDataField(t *testing.T) {
+	recordTest("event-stream-optional-data-field")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "optional-data"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 5, len(events), "expected 5 events")
+
+	// Some events have data, some don't
+	eventsWithData := 0
+	for _, event := range events {
+		if _, hasData := event["data"]; hasData && event["data"] != nil {
+			eventsWithData++
+		}
+	}
+	assert.Equal(t, 3, eventsWithData, "expected 3 events with data field")
+}
+
+func TestEventStreamMixedData(t *testing.T) {
+	recordTest("event-stream-mixed-data")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "mixed-data"})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 4, len(events), "expected 4 mixed data events")
+
+	// Events: completion (JSON), text (string), loading (string), completion (JSON)
+	assert.Equal(t, "completion", events[0]["event"])
+	assert.Equal(t, "text", events[1]["event"])
+	assert.Equal(t, "loading", events[2]["event"])
+	assert.Equal(t, "completion", events[3]["event"])
+
+	// First event: JSON data with messageEvent content
+	data0, ok := events[0]["data"].(map[string]interface{})
+	require.True(t, ok, "first event data should be a JSON object")
+	assert.Equal(t, "Hello world", data0["content"])
+
+	// Middle events: plain text string data
+	assert.Equal(t, "Processing your request...", events[1]["data"])
+	assert.Equal(t, "Almost done", events[2]["data"])
+
+	// Last event: JSON data with messageEvent content
+	data3, ok := events[3]["data"].(map[string]interface{})
+	require.True(t, ok, "last event data should be a JSON object")
+	assert.Equal(t, "Done!", data3["content"])
+}
+
+// Cross-cutting test: JSON error envelope for broken server
+func TestEventStreamErrorJSON(t *testing.T) {
+	// Create a server that returns a plain-text error. Non-JSON body forces
+	// output.Error() to wrap it in a {"error": "..."} envelope.
+	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("I'm a teapot"))
+	}))
+	defer errorServer.Close()
+
+	h := NewCLITestHarness(t)
+	// RunWithServer adds --output-format json
+	err := h.RunWithServer(errorServer.URL, []string{"eventstreams", "text"})
+	assert.Error(t, err)
+
+	// Error should be written as JSON envelope to stderr
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr, "expected JSON error envelope on stderr")
+	assert.True(t, json.Valid([]byte(stderr)), "expected valid JSON error output: %s", stderr)
+
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope))
+	_, hasError := envelope["error"]
+	assert.True(t, hasError, "expected 'error' field in JSON envelope")
+}
+
+// Cross-cutting test: --jq filter applied per-event
+func TestEventStreamWithJq(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "json", "--jq", ".data.content"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	lines := strings.Split(stdout, "\n")
+	assert.Equal(t, 4, len(lines), "expected 4 filtered values")
+
+	// Each line should be a JSON string
+	var msg string
+	for _, line := range lines {
+		var s string
+		require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(line)), &s))
+		msg += s
+	}
+	assert.Equal(t, "Hello world!", msg)
+}
+
+// Cross-cutting test: YAML output with separators
+func TestEventStreamYAMLOutput(t *testing.T) {
+	h := NewCLITestHarness(t)
+	// RunWithServer prepends --output-format json, but --output-format yaml here overwrites it (last flag wins)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "text", "--output-format", "yaml"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, stdout)
+
+	// YAML output should contain --- separators between events
+	assert.Contains(t, stdout, "---", "expected YAML document separators between events")
+}
+
+func TestEventStreamLargeEventSmallChunks(t *testing.T) {
+	recordTest("event-stream-large-event-small-chunks")
+
+	// Content larger than bufio.Scanner's 64KB default token cap; streamed by
+	// the server in ~1.5KB flushed chunks so the SDK must reassemble one
+	// event across many reads.
+	size := 256 * 1024
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "large-event-small-chunks", "--size", strconv.Itoa(size)})
+	require.NoError(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Equal(t, 3, len(events), "expected 3 events")
+
+	contents := make([]string, 0, len(events))
+	for _, event := range events {
+		data, ok := event["data"].(map[string]interface{})
+		require.True(t, ok, "event should have data object")
+		contents = append(contents, data["content"].(string))
+	}
+
+	assert.Equal(t, "start", contents[0])
+	assert.Equal(t, "end", contents[2])
+
+	big := contents[1]
+	require.Len(t, big, size)
+	assert.Equal(t, uint8('S'), big[0])
+	assert.Equal(t, uint8('E'), big[len(big)-1])
+	assert.Equal(t, size-2, strings.Count(big, "a"))
+}
+
+// newSSEServer serves the given SSE frames verbatim (each frame is one
+// `data:` payload) and then closes the stream. Used for scenarios the API test
+// service does not model: in-band error events and undecodable payloads.
+func newSSEServer(t *testing.T, frames ...string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		flusher, _ := w.(http.Flusher)
+		for _, frame := range frames {
+			_, _ = w.Write([]byte("data: " + frame + "\n\n"))
+			if flusher != nil {
+				flusher.Flush()
+			}
+		}
+	}))
+}
+
+// An in-band error event (discriminator names the error variant) must not be
+// printed as a regular data item with exit 0: it is routed through Error()
+// so the process exits non-zero and the event body is surfaced as the error.
+func TestEventStreamErrorEventExitsNonZero(t *testing.T) {
+	recordTest("event-stream-error-event-exits-non-zero")
+
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"Hello"}`,
+		`{"event_type":"error","error":{"code":"OVERLOADED","message":"quota exceeded","status":"OVERLOADED"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events"})
+	require.Error(t, err, "an in-band error event must fail the command")
+
+	// The delta before the error event is still streamed.
+	events := parseNDJSON(t, h.GetStdout())
+	require.Equal(t, 1, len(events), "only the events before the error are data output: %s", h.GetStdout())
+	data, ok := events[0]["data"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Equal(t, "Hello", data["text"])
+
+	// The error event is rendered as a JSON error envelope on stderr, with
+	// the event's error object intact for reason-first classification.
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.True(t, json.Valid([]byte(stderr)), "expected JSON error envelope on stderr, got: %s", stderr)
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope))
+	errObj, ok := envelope["error"].(map[string]interface{})
+	require.True(t, ok, "expected the event's error object in the envelope: %s", stderr)
+	assert.Equal(t, "quota exceeded", errObj["message"])
+	assert.NotContains(t, stderr, "connection", "an in-band error event is not a connection failure")
+}
+
+// The same error event in pretty mode: nothing on stdout for the error, a
+// non-zero exit, and the error body on stderr.
+func TestEventStreamErrorEventPretty(t *testing.T) {
+	recordTest("event-stream-error-event-pretty")
+
+	server := newSSEServer(t,
+		`{"event_type":"error","error":{"code":"INTERNAL","message":"boom"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", "pretty"})
+	require.Error(t, err)
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "the error event must not be printed as data")
+	assert.Contains(t, h.GetStderr(), "boom")
+}
+
+// Agent mode classifies an in-band error event reason-first (the declared
+// status probe maps OVERLOADED -> rate_limit_error), never as a connection
+// error.
+func TestEventStreamErrorEventAgentModeClassification(t *testing.T) {
+	recordTest("event-stream-error-event-agent-mode")
+
+	server := newSSEServer(t,
+		`{"event_type":"error","error":{"code":"OVERLOADED","message":"quota exceeded","status":"OVERLOADED"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "rate_limit_error", envelope["error_type"], stderr)
+	assert.Equal(t, "OVERLOADED", envelope["error_reason"], stderr)
+}
+
+// An error event the reason-first classifier cannot place is an API error
+// (the server reported it), not a connection error.
+func TestEventStreamErrorEventAgentModeFallbackIsAPIError(t *testing.T) {
+	recordTest("event-stream-error-event-agent-mode-fallback")
+
+	server := newSSEServer(t,
+		`{"event_type":"error","error":{"code":"SOMETHING_ODD","message":"unclassified"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "api_error", envelope["error_type"], stderr)
+	assert.NotContains(t, stderr, "Check network connectivity")
+}
+
+// Negative case: an undiscriminated oneOf with an error-shaped variant
+// carries no wire discriminator declaring an error, so every event is data
+// and the command exits 0 — generator variant naming never fails a command.
+func TestEventStreamUndiscriminatedErrorShapedVariantIsData(t *testing.T) {
+	recordTest("event-stream-undiscriminated-error-shaped-variant-is-data")
+
+	server := newSSEServer(t,
+		`{"text":"Hello"}`,
+		`{"error":{"code":"E1","message":"looks like an error but is data"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "undiscriminated-events"})
+	require.NoError(t, err, "no discriminator names an error: %s", h.GetStderr())
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Equal(t, 2, len(events), "both events are data: %s", h.GetStdout())
+	data, ok := events[1]["data"].(map[string]interface{})
+	require.True(t, ok)
+	assert.Contains(t, data, "error")
+}
+
+// Non-JSON renderers must show the wire shape of streamed union events:
+// no Go union wrapper keys, no struct-tag options in keys, no null sibling
+// variants, and JSON (not lowercased Go) field names.
+func TestEventStreamUnionEventsRenderWireShape(t *testing.T) {
+	recordTest("event-stream-union-events-render-wire-shape")
+
+	for _, format := range []string{"yaml", "toon", "pretty"} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t,
+				`{"event_type":"delta","text":"Hello"}`,
+				`{"event_type":"delta","text":"world"}`,
+			)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err)
+
+			stdout := h.GetStdout()
+			require.NotEmpty(t, stdout)
+			assert.Contains(t, stdout, "Hello")
+			assert.Contains(t, stdout, "world")
+			assert.Contains(t, stdout, "event_type", "%s output must use the JSON field name", format)
+			assert.NotContains(t, stdout, "DiscriminatedDeltaEvent", "%s output leaks the Go union wrapper", format)
+			assert.NotContains(t, stdout, "DiscriminatedErrorEvent", "%s output leaks sibling union variants", format)
+			assert.NotContains(t, stdout, "omitzero", "%s output leaks struct-tag options", format)
+			assert.NotContains(t, stdout, "omitempty", "%s output leaks struct-tag options", format)
+			assert.NotContains(t, stdout, "null", "%s output leaks null sibling variants", format)
+			assert.NotContains(t, stdout, "eventtype", "%s output uses lowercased Go field names", format)
+		})
+	}
+}
+
+// Numbers survive normalization: int64 beyond 2^53, integers beyond int64
+// (bigint) and decimals beyond float64 precision keep their exact lexeme in
+// yaml and pretty output. (TOON's encoder goes through float64 for native
+// numbers, so only the non-float-exact lexemes are asserted there.)
+func TestEventStreamNumbersKeepPrecision(t *testing.T) {
+	recordTest("event-stream-numbers-keep-precision")
+
+	frame := `{"event_type":"delta","text":"n","seq":9007199254740993,"big":9223372036854775808,"precise":1.000000000000000000001}`
+	for _, format := range []string{"yaml", "pretty", "toon", "json"} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, frame)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			stdout := h.GetStdout()
+			assert.Contains(t, stdout, "9223372036854775808", "%s output lost the bigint lexeme", format)
+			assert.Contains(t, stdout, "1.000000000000000000001", "%s output lost the decimal lexeme", format)
+			if format != "toon" {
+				assert.Contains(t, stdout, "9007199254740993", "%s output rounded an int64 beyond 2^53", format)
+			}
+		})
+	}
+}
+
+// A stream event the server did deliver but that fails strict decode (a
+// numeric error code where the schema declares a string) is a protocol
+// mismatch, not a connection failure: agent mode classifies it
+// protocol_error / CLI_PROTOCOL with an honest hint, never
+// "Check network connectivity".
+func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
+	recordTest("event-stream-decode-failure-is-protocol-error")
+
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"Hello"}`,
+		`{"event_type":"error","error":{"code":429,"message":"quota exceeded"}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "protocol_error", envelope["error_type"], stderr)
+	assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"], stderr)
+	assert.NotContains(t, stderr, "Check network connectivity")
+	assert.NotContains(t, stderr, "connection_error")
+	hints, _ := envelope["hints"].([]interface{})
+	require.NotEmpty(t, hints, "expected protocol hints: %s", stderr)
+	assert.Equal(t, "Report the response payload and CLI version to the API operator", hints[0])
+
+	// The decode error itself is surfaced (it names the field and carries
+	// the raw event data), and events before it were still streamed.
+	assert.Contains(t, envelope["error"], "code")
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 1, len(events))
+}
+
+// A genuine connection failure still classifies as connection_error: the
+// protocol class must not swallow it.
+func TestEventStreamConnectionRefusedStaysConnectionError(t *testing.T) {
+	recordTest("event-stream-connection-refused-stays-connection-error")
+
+	server := newSSEServer(t)
+	server.Close() // nothing listening
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "connection_error", envelope["error_type"], stderr)
+	assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"], stderr)
+}
+
+// Decode failures that are not encoding/json error types (here a malformed
+// date, rejected by the SDK's date parser) are still recognised through the
+// SDK's response-decode wrapper message.
+func TestEventStreamDecodeFailureWithoutJSONErrorTypeIsProtocolError(t *testing.T) {
+	recordTest("event-stream-decode-failure-without-json-error-type")
+
+	server := newSSEServer(t, `{"event_type":"delta","text":"Hello","when":"not-a-date"}`)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "protocol_error", envelope["error_type"], stderr)
+	assert.Equal(t, "CLI_PROTOCOL", envelope["error_reason"], stderr)
+}
+
+// A server error whose body happens to contain the SDK's decode wrapper text
+// keeps its status-based classification: the protocol class only applies to
+// status-less errors.
+func TestEventStreamServerErrorMentioningDecodeIsNotProtocolError(t *testing.T) {
+	recordTest("event-stream-server-error-mentioning-decode-is-not-protocol-error")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":{"message":"error unmarshaling json response body: upstream said so"}}`))
+	}))
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "validation_error", envelope["error_type"], stderr)
+	assert.NotEqual(t, "CLI_PROTOCOL", envelope["error_reason"], stderr)
+}
+
+// --timeout bounds the whole stream instead of cancelling it before the CLI
+// iterates: a stream that completes within the timeout is streamed fully.
+func TestEventStreamWithTimeoutStreamsToCompletion(t *testing.T) {
+	recordTest("event-stream-with-timeout-streams-to-completion")
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(getAPITestServiceURL(), []string{"eventstreams", "json", "--timeout", "30s"})
+	require.NoError(t, err, h.GetStderr())
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Equal(t, 4, len(events), "expected all 4 events with --timeout: %s", h.GetStdout())
+}
+
+// The deadline still applies to the whole stream: a stream that stalls past
+// --timeout ends with an error after the events that did arrive.
+func TestEventStreamTimeoutStillBoundsSlowStream(t *testing.T) {
+	recordTest("event-stream-timeout-still-bounds-slow-stream")
+
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`data: {"event_type":"delta","text":"first"}` + "\n\n"))
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	defer slow.Close()
+
+	h := NewCLITestHarness(t)
+	start := time.Now()
+	err := h.RunWithServer(slow.URL, []string{"eventstreams", "discriminated-events", "--timeout", "500ms"})
+	require.Error(t, err, "a stalled stream must end with the deadline error")
+	assert.Less(t, time.Since(start), 4*time.Second, "--timeout must cut the stalled stream short")
+
+	events := parseNDJSON(t, h.GetStdout())
+	assert.Equal(t, 1, len(events), "the event before the stall is still streamed: %s", h.GetStdout())
+}

@@ -1,0 +1,72 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+{{- $b := $c.Body -}}
+{{- if $b}}
+Commands that accept a request body take it three ways, with a clear priority chain. The examples use `{{$b.Command}}`; every body-bearing command works the same way{{if $b.HasSchema}} and prints its exact request schema with `--schema`{{end}}.
+{{- if $b.HasFlags}}
+
+### Individual flags (highest priority)
+
+Each top-level body field is a flag:
+
+```bash
+{{$b.Command}}{{range $b.Flags}} {{.Arg}}{{end}}
+```
+{{- end}}
+
+### `--{{$b.BodyFlag}}` flag
+
+Provide the entire request body as a JSON string:
+
+```bash
+{{$b.Command}} --{{$b.BodyFlag}} '{{$b.BodyJSON}}'
+```
+{{- if $b.FirstFlag}}
+
+Individual flags override `--{{$b.BodyFlag}}` values:
+
+```bash
+# Sends {{$b.FirstFlagOverrideJSON}}
+{{$b.Command}} --{{$b.BodyFlag}} '{{$b.BodyJSON}}' {{$b.OverrideValue}}
+```
+{{- end}}
+
+### Stdin piping (lowest priority)
+
+Pipe JSON into any command that accepts a request body:
+
+```bash
+echo '{{$b.BodyJSON}}' | {{$b.Command}}
+```
+{{- if $b.FirstFlag}}
+
+Individual flags override stdin values:
+
+```bash
+# Sends {{$b.FirstFlagOverrideJSON}}
+echo '{{$b.BodyJSON}}' | {{$b.Command}} {{$b.OverrideValue}}
+```
+{{- end}}
+
+This is useful for chaining commands, reading from files, or scripting:
+
+```bash
+# Read body from a file
+{{$b.Command}} < request.json
+
+# Pipe from another command
+curl -s https://example.com/request.json | {{$b.Command}}
+```
+
+### Priority
+
+When multiple input methods are used, the priority is:
+
+| Priority | Source | Description |
+|----------|--------|-------------|
+| 1 (highest) | Individual flags | {{if $b.FirstFlag}}`--{{$b.FirstFlag.Flag}} ...`{{else}}A field flag{{end}} always wins |
+| 2 | `--{{$b.BodyFlag}}` flag | Whole-body JSON via flag |
+| 3 (lowest) | Stdin | Piped JSON input |
+{{- else}}
+Commands that accept a request body take it three ways, with a clear priority chain: individual field flags (highest priority), the whole body as JSON via `--body`, and JSON piped on stdin (lowest priority). Later sources never override earlier ones{{if $c.Schema}}; a body-bearing command prints its exact request schema with `--schema`{{end}}.
+{{- end}}

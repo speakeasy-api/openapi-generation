@@ -1,0 +1,23 @@
+---
+title: "Location"
+---
+
+Deeply nested inline object should also end up in foo namespace
+
+## Example Usage
+
+```typescript
+import { Location } from "openapi/foo";
+
+let value: Location = {
+  latitude: 37.7749,
+  longitude: -122.4194,
+};
+```
+
+## Fields
+
+| Field              | Type               | Required           | Description        | Example            |
+| ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| `latitude`         | *number*           | :heavy_check_mark: | N/A                | 37.7749            |
+| `longitude`        | *number*           | :heavy_check_mark: | N/A                | -122.4194          |

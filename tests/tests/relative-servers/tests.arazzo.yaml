@@ -1,0 +1,172 @@
+arazzo: 1.0.1
+info:
+  title: Test Suite
+  summary: Migrated from .speakeasy/tests.yaml
+  version: 0.0.1
+sourceDescriptions:
+  - name: ./openapi.yaml
+    url: https://TBD.com
+    type: openapi
+workflows:
+  - workflowId: listObjects
+    steps:
+      - stepId: test
+        operationId: listObjects
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              [
+                {
+                  "str": "test",
+                  "bool": true,
+                  "int": 1,
+                  "int32": 1,
+                  "num": 1.1,
+                  "float32": 1.1,
+                  "enum": "one",
+                  "date": "2020-01-01",
+                  "dateTime": "2020-01-01T00:00:00.001Z",
+                  "any": "any",
+                  "strOpt": "testOptional",
+                  "boolOpt": true,
+                  "intEnum": 2,
+                  "int32Enum": 55,
+                  "bigint": 8821239038968084,
+                  "bigintStr": "9223372036854775808",
+                  "decimal": 3.141592653589793,
+                  "decimalStr": "3.14159265358979344719667586",
+                  "int64Str": "100",
+                  "float64Str": "1.1"
+                }
+              ]
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-server:
+      baseUrl: 'x-env: TEST_SERVER_URL'
+    x-speakeasy-test-internal-id: relative-servers
+  - workflowId: createObject
+    steps:
+      - stepId: test
+        operationId: createObject
+        requestBody:
+          contentType: application/json
+          payload:
+            any: any
+            bigint: 8821239038968084
+            bigintStr: "9223372036854775808"
+            bool: true
+            boolOpt: true
+            date: "2020-01-01"
+            dateTime: "2020-01-01T00:00:00.001Z"
+            decimal: 3.141592653589793
+            decimalStr: "3.14159265358979344719667586"
+            enum: one
+            float32: 1.1
+            float64Str: "1.1"
+            int: 1
+            int32: 1
+            int32Enum: 55
+            int64Str: "100"
+            intEnum: 2
+            num: 1.1
+            str: test
+            strOpt: testOptional
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "str": "test",
+                "bool": true,
+                "int": 1,
+                "int32": 1,
+                "num": 1.1,
+                "float32": 1.1,
+                "enum": "one",
+                "date": "2020-01-01",
+                "dateTime": "2020-01-01T00:00:00.001Z",
+                "any": "any",
+                "strOpt": "testOptional",
+                "boolOpt": true,
+                "intEnum": 2,
+                "int32Enum": 55,
+                "bigint": 8821239038968084,
+                "bigintStr": "9223372036854775808",
+                "decimal": 3.141592653589793,
+                "decimalStr": "3.14159265358979344719667586",
+                "int64Str": "100",
+                "float64Str": "1.1"
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-server:
+      baseUrl: 'x-env: TEST_SERVER_URL'
+    x-speakeasy-test-internal-id: relative-servers
+  - workflowId: getObject
+    steps:
+      - stepId: test
+        operationId: getObject
+        parameters:
+          - name: id
+            in: path
+            value: <id>
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "str": "test",
+                "bool": true,
+                "int": 1,
+                "int32": 1,
+                "num": 1.1,
+                "float32": 1.1,
+                "enum": "one",
+                "date": "2020-01-01",
+                "dateTime": "2020-01-01T00:00:00.001Z",
+                "any": "any",
+                "strOpt": "testOptional",
+                "boolOpt": true,
+                "intEnum": 2,
+                "int32Enum": 55,
+                "bigint": 8821239038968084,
+                "bigintStr": "9223372036854775808",
+                "decimal": 3.141592653589793,
+                "decimalStr": "3.14159265358979344719667586",
+                "int64Str": "100",
+                "float64Str": "1.1"
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-server:
+      baseUrl: 'x-env: TEST_SERVER_URL'
+    x-speakeasy-test-internal-id: relative-servers
+  - workflowId: paginationObjects
+    steps:
+      - stepId: test
+        operationId: paginationObjects
+        parameters:
+          - name: attempts
+            in: query
+            value: 922163
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.header.Content-Type == application/json
+          - context: $response.body
+            condition: |
+              {
+                "numPages": 124089,
+                "resultArray": [
+                  561431,
+                  340085
+                ]
+              }
+            type: simple
+    x-speakeasy-test-group: SDK
+    x-speakeasy-test-server:
+      baseUrl: 'x-env: TEST_SERVER_URL'
+    x-speakeasy-test-internal-id: relative-servers

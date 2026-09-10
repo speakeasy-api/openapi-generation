@@ -1,0 +1,1121 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+      - hotfixes
+  merge_group:
+  pull_request:
+    branches:
+      - main
+      - hotfixes
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  actions: read
+env:
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  detect-targets:
+    uses: ./.github/workflows/detect-targets.yml
+
+  test-generator:
+    timeout-minutes: 45
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    env:
+      SPEAKEASY_DEBUG: "false" # Override SPEAKEASY_DEBUG to false for generator tests or they will fail
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+            services/**/go.sum
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: "corretto"
+          java-version: "11"
+      - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+        with:
+          gradle-version: "8.14"
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
+      - name: Configure Composer
+        run: |
+          composer config --global preferred-install auto
+          composer config --global process-timeout 300
+      - name: Get Composer cache dir
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-dir)" >> "$GITHUB_OUTPUT"
+      - name: Cache Composer packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-php-dist-v3-${{ runner.os }}-${{ hashFiles('templates/templates/php/**/composer.json.stmpl') }}
+
+      - name: Build Generator
+        run: make build
+
+      - name: Test Generator
+        env:
+          GO_TEST_TIMEOUT: 25m
+          SPEAKEASY_LICENSE_TOKEN: ${{ secrets.SPEAKEASY_LICENSE_TOKEN }}
+          SPEAKEASY_GENERATED_LICENSE: ${{ secrets.SPEAKEASY_LICENSE_TOKEN == '' && 'agpl-3.0-only' || '' }}
+        run: make test-generator
+
+      - name: Test Validator
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: make test-validate
+
+      - name: Test Readme
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: make test-readme
+
+  test-cli-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "primary"
+  test-cli-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "secondary"
+  test-cli-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "tertiary"
+  test-cli-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "quaternary"
+  test-cli-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "client-credentials"
+  test-cli-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-cli-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "basic-http"
+  test-cli-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "custom-http"
+  test-cli-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "oauth2-password"
+  test-cli-no-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "no-servers"
+  test-cli-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "security-options"
+  test-cli-relative-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "relative-servers"
+  test-cli-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    uses: ./.github/workflows/test-cli.yml
+    with:
+      test-group: "review"
+  test-cli:
+    if: always() && needs.detect-targets.outputs.run-cli == 'true'
+    needs:
+      - detect-targets
+      - test-cli-primary
+      - test-cli-secondary
+      - test-cli-tertiary
+      - test-cli-quaternary
+      - test-cli-client-credentials
+      - test-cli-client-credentials-basic
+      - test-cli-basic-http
+      - test-cli-custom-http
+      - test-cli-oauth2-password
+      - test-cli-no-servers
+      - test-cli-security-options
+      - test-cli-relative-servers
+      - test-cli-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-cli-coverage:
+    needs: [test-cli]
+    if: needs.test-cli.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "cli"
+
+  test-csharp-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "primary"
+  test-csharp-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "secondary"
+  test-csharp-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "tertiary"
+  test-csharp-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "quaternary"
+  test-csharp-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "client-credentials"
+  test-csharp-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-csharp-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "basic-http"
+  test-csharp-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "security-options"
+  # The C# custom-http and oauth2-password variants are not currently supported.
+  test-csharp-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-csharp == 'true'
+    uses: ./.github/workflows/test-csharp.yml
+    with:
+      test-group: "review"
+  test-csharp:
+    if: always() && needs.detect-targets.outputs.run-csharp == 'true'
+    needs:
+      - detect-targets
+      - test-csharp-primary
+      - test-csharp-secondary
+      - test-csharp-tertiary
+      - test-csharp-quaternary
+      - test-csharp-client-credentials
+      - test-csharp-basic-http
+      - test-csharp-security-options
+      - test-csharp-client-credentials-basic
+      # - test-csharp-custom-http
+      # - test-csharp-oauth2-password
+      - test-csharp-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-csharp-coverage:
+    needs: [test-csharp]
+    if: needs.test-csharp.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "csharp"
+  test-go-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "primary"
+  test-go-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "secondary"
+  test-go-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "tertiary"
+  test-go-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "quaternary"
+  test-go-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "client-credentials"
+  test-go-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "basic-http"
+  test-go-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "security-options"
+  test-go-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "custom-http"
+  test-go-no-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "no-servers"
+  test-go-relative-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "relative-servers"
+  test-go-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "oauth2-password"
+  test-go-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-go == 'true'
+    uses: ./.github/workflows/test-go.yml
+    with:
+      test-group: "review"
+  test-go:
+    if: always() && needs.detect-targets.outputs.run-go == 'true'
+    needs:
+      - detect-targets
+      - test-go-primary
+      - test-go-secondary
+      - test-go-tertiary
+      - test-go-quaternary
+      - test-go-basic-http
+      - test-go-security-options
+      - test-go-client-credentials
+      - test-go-custom-http
+      - test-go-no-servers
+      - test-go-relative-servers
+      - test-go-oauth2-password
+      - test-go-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-go-coverage:
+    needs: [test-go]
+    if: needs.test-go.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "go"
+  test-javav2-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "primary"
+  test-javav2-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "secondary"
+  test-javav2-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "tertiary"
+  test-javav2-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "quaternary"
+  test-javav2-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "client-credentials"
+  test-javav2-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-javav2-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "basic-http"
+  test-javav2-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "security-options"
+  # The Java custom-http variant is not currently supported.
+  test-javav2-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "oauth2-password"
+  test-javav2-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-javav2 == 'true'
+    uses: ./.github/workflows/test-javav2.yml
+    with:
+      test-group: "review"
+  test-javav2:
+    if: always() && needs.detect-targets.outputs.run-javav2 == 'true'
+    needs:
+      - detect-targets
+      - test-javav2-primary
+      - test-javav2-secondary
+      - test-javav2-tertiary
+      - test-javav2-quaternary
+      - test-javav2-client-credentials
+      - test-javav2-basic-http
+      - test-javav2-security-options
+      - test-javav2-client-credentials-basic
+      # - test-javav2-custom-http
+      - test-javav2-oauth2-password
+      - test-javav2-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-javav2-coverage:
+    needs: [test-javav2]
+    if: needs.test-javav2.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "javav2"
+  test-mcp-typescript-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "primary"
+  test-mcp-typescript-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "secondary"
+  test-mcp-typescript-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "tertiary"
+  test-mcp-typescript-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "quaternary"
+  test-mcp-typescript-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "client-credentials"
+  test-mcp-typescript-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-mcp-typescript-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "basic-http"
+  test-mcp-typescript-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "security-options"
+  test-mcp-typescript-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "custom-http"
+  test-mcp-typescript-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "oauth2-password"
+  test-mcp-typescript-no-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "no-servers"
+  test-mcp-typescript-relative-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "relative-servers"
+  test-mcp-typescript-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    uses: ./.github/workflows/test-mcp-typescript.yml
+    with:
+      test-group: "review"
+  test-mcp-typescript:
+    if: always() && needs.detect-targets.outputs.run-mcp-typescript == 'true'
+    needs:
+      - detect-targets
+      - test-mcp-typescript-primary
+      - test-mcp-typescript-secondary
+      - test-mcp-typescript-tertiary
+      - test-mcp-typescript-quaternary
+      - test-mcp-typescript-client-credentials
+      - test-mcp-typescript-basic-http
+      - test-mcp-typescript-security-options
+      - test-mcp-typescript-client-credentials-basic
+      - test-mcp-typescript-custom-http
+      - test-mcp-typescript-oauth2-password
+      - test-mcp-typescript-no-servers
+      - test-mcp-typescript-relative-servers
+      - test-mcp-typescript-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-mcp-typescript-coverage:
+    needs: [test-mcp-typescript]
+    if: needs.test-mcp-typescript.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "mcp-typescript"
+  test-php-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "primary"
+  test-php-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "secondary"
+  test-php-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "tertiary"
+  test-php-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "quaternary"
+  test-php-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "client-credentials"
+  test-php-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "basic-http"
+  test-php-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "security-options"
+  test-php-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "custom-http"
+  # The PHP oauth2-password variant is not currently supported.
+  test-php-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-php == 'true'
+    uses: ./.github/workflows/test-php.yml
+    with:
+      test-group: "review"
+  test-php:
+    if: always() && needs.detect-targets.outputs.run-php == 'true'
+    needs:
+      - detect-targets
+      - test-php-primary
+      - test-php-secondary
+      - test-php-tertiary
+      - test-php-quaternary
+      - test-php-basic-http
+      - test-php-security-options
+      - test-php-client-credentials
+      - test-php-custom-http
+      # - test-php-oauth2-password
+      - test-php-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-php-coverage:
+    needs: [test-php]
+    if: needs.test-php.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "php"
+  test-pythonv2-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "primary"
+  test-pythonv2-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "secondary"
+  test-pythonv2-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "tertiary"
+  test-pythonv2-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "quaternary"
+  test-pythonv2-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "client-credentials"
+  test-pythonv2-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-pythonv2-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "basic-http"
+  test-pythonv2-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "security-options"
+  test-pythonv2-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "custom-http"
+  test-pythonv2-no-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "no-servers"
+  test-pythonv2-relative-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "relative-servers"
+  # The Python v2 oauth2-password variant is not currently supported.
+  test-pythonv2-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-pythonv2 == 'true'
+    uses: ./.github/workflows/test-pythonv2.yml
+    with:
+      test-group: "review"
+  test-pythonv2:
+    if: always() && needs.detect-targets.outputs.run-pythonv2 == 'true'
+    needs:
+      - detect-targets
+      - test-pythonv2-primary
+      - test-pythonv2-secondary
+      - test-pythonv2-tertiary
+      - test-pythonv2-quaternary
+      - test-pythonv2-client-credentials
+      - test-pythonv2-basic-http
+      - test-pythonv2-security-options
+      - test-pythonv2-client-credentials-basic
+      - test-pythonv2-custom-http
+      - test-pythonv2-no-servers
+      - test-pythonv2-relative-servers
+      # - test-pythonv2-oauth2-password
+      - test-pythonv2-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-pythonv2-coverage:
+    needs: [test-pythonv2]
+    if: needs.test-pythonv2.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "pythonv2"
+  test-ruby-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "primary"
+  test-ruby-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "secondary"
+  test-ruby-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "tertiary"
+  test-ruby-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "quaternary"
+  test-ruby-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "basic-http"
+  test-ruby-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "security-options"
+  test-ruby-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "custom-http"
+  test-ruby-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "client-credentials"
+  test-ruby-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-ruby-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "oauth2-password"
+  test-ruby-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-ruby == 'true'
+    uses: ./.github/workflows/test-ruby.yml
+    with:
+      test-group: "review"
+  test-ruby:
+    if: always() && needs.detect-targets.outputs.run-ruby == 'true'
+    needs:
+      - detect-targets
+      - test-ruby-primary
+      - test-ruby-secondary
+      - test-ruby-tertiary
+      - test-ruby-quaternary
+      - test-ruby-basic-http
+      - test-ruby-security-options
+      - test-ruby-custom-http
+      - test-ruby-client-credentials
+      - test-ruby-client-credentials-basic
+      - test-ruby-oauth2-password
+      - test-ruby-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-ruby-coverage:
+    needs: [test-ruby]
+    if: needs.test-ruby.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "ruby"
+  test-terraform-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "primary"
+  test-terraform-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "secondary"
+  test-terraform-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "tertiary"
+  test-terraform-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "quaternary"
+  test-terraform-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "client-credentials"
+  # The Terraform oauth2-password variant is not currently supported.
+  test-terraform-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-terraform == 'true'
+    uses: ./.github/workflows/test-terraform.yml
+    with:
+      test-group: "review"
+  test-typescriptv2-primary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "primary"
+  test-typescriptv2-secondary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "secondary"
+  test-typescriptv2-tertiary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "tertiary"
+  test-typescriptv2-quaternary:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "quaternary"
+  test-typescriptv2-client-credentials:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "client-credentials"
+  test-typescriptv2-client-credentials-basic:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "client-credentials-basic"
+  test-typescriptv2-basic-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "basic-http"
+  test-typescriptv2-security-options:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "security-options"
+  test-typescriptv2-custom-http:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "custom-http"
+  test-typescriptv2-oauth2-password:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "oauth2-password"
+  test-typescriptv2-no-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "no-servers"
+  test-typescriptv2-relative-servers:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "relative-servers"
+  test-typescriptv2-no-zod:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "no-zod"
+  test-typescriptv2-review:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    uses: ./.github/workflows/test-typescriptv2.yml
+    with:
+      test-group: "review"
+  test-typescriptv2:
+    if: always() && needs.detect-targets.outputs.run-typescriptv2 == 'true'
+    needs:
+      - detect-targets
+      - test-typescriptv2-primary
+      - test-typescriptv2-secondary
+      - test-typescriptv2-tertiary
+      - test-typescriptv2-quaternary
+      - test-typescriptv2-client-credentials
+      - test-typescriptv2-basic-http
+      - test-typescriptv2-security-options
+      - test-typescriptv2-client-credentials-basic
+      - test-typescriptv2-custom-http
+      - test-typescriptv2-oauth2-password
+      - test-typescriptv2-no-servers
+      - test-typescriptv2-relative-servers
+      - test-typescriptv2-no-zod
+      - test-typescriptv2-review
+    uses: ./.github/workflows/check-variants.yml
+    with:
+      needs-json: ${{ toJSON(needs) }}
+  test-typescriptv2-coverage:
+    needs: [test-typescriptv2]
+    if: needs.test-typescriptv2.result == 'success'
+    uses: ./.github/workflows/test-coverage.yml
+    with:
+      target: "typescriptv2"
+  test-postman:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-postman == 'true'
+    timeout-minutes: 15
+    name: Test Postman
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      actions: "read"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+      - name: Test
+        env:
+          SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
+        run: make build-postman
+
+      - name: Check if working tree is dirty
+        run: ./scripts/check-generated-diff.sh
+
+  check:
+    timeout-minutes: 15
+    if: always()
+    name: Check
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions: {}
+    needs:
+      - detect-targets
+      - test-generator
+      - test-cli
+      - test-cli-coverage
+      - test-csharp
+      - test-csharp-coverage
+      - test-go
+      - test-go-coverage
+      - test-javav2
+      - test-javav2-coverage
+      - test-mcp-typescript
+      - test-mcp-typescript-coverage
+      - test-php
+      - test-php-coverage
+      - test-pythonv2
+      - test-pythonv2-coverage
+      - test-ruby
+      - test-ruby-coverage
+      - test-terraform-primary
+      - test-terraform-secondary
+      - test-terraform-tertiary
+      - test-terraform-quaternary
+      - test-terraform-client-credentials
+      # - test-terraform-oauth2-password
+      - test-terraform-review
+      - test-typescriptv2
+      - test-typescriptv2-coverage
+      - test-postman
+      # - test-unity
+    steps:
+      - name: Verify every selected test target completed successfully
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          RUN_CLI: ${{ needs.detect-targets.outputs.run-cli }}
+          RUN_CSHARP: ${{ needs.detect-targets.outputs.run-csharp }}
+          RUN_GO: ${{ needs.detect-targets.outputs.run-go }}
+          RUN_JAVAV2: ${{ needs.detect-targets.outputs.run-javav2 }}
+          RUN_MCP_TYPESCRIPT: ${{ needs.detect-targets.outputs.run-mcp-typescript }}
+          RUN_PHP: ${{ needs.detect-targets.outputs.run-php }}
+          RUN_PYTHONV2: ${{ needs.detect-targets.outputs.run-pythonv2 }}
+          RUN_RUBY: ${{ needs.detect-targets.outputs.run-ruby }}
+          RUN_TERRAFORM: ${{ needs.detect-targets.outputs.run-terraform }}
+          RUN_TYPESCRIPTV2: ${{ needs.detect-targets.outputs.run-typescriptv2 }}
+          RUN_POSTMAN: ${{ needs.detect-targets.outputs.run-postman }}
+        run: |
+          set -euo pipefail
+
+          require_success() {
+            local job="$1"
+            local result
+            result="$(jq -r --arg job "$job" '.[$job].result' <<< "$NEEDS_JSON")"
+            if [[ "$result" != "success" ]]; then
+              echo "::error::Required job $job completed with $result"
+              return 1
+            fi
+          }
+
+          require_success detect-targets
+          require_success test-generator
+
+          if [[ "$RUN_CLI" == "true" ]]; then
+            require_success test-cli
+            require_success test-cli-coverage
+          fi
+          if [[ "$RUN_CSHARP" == "true" ]]; then
+            require_success test-csharp
+            require_success test-csharp-coverage
+          fi
+          if [[ "$RUN_GO" == "true" ]]; then
+            require_success test-go
+            require_success test-go-coverage
+          fi
+          if [[ "$RUN_JAVAV2" == "true" ]]; then
+            require_success test-javav2
+            require_success test-javav2-coverage
+          fi
+          if [[ "$RUN_MCP_TYPESCRIPT" == "true" ]]; then
+            require_success test-mcp-typescript
+            require_success test-mcp-typescript-coverage
+          fi
+          if [[ "$RUN_PHP" == "true" ]]; then
+            require_success test-php
+            require_success test-php-coverage
+          fi
+          if [[ "$RUN_PYTHONV2" == "true" ]]; then
+            require_success test-pythonv2
+            require_success test-pythonv2-coverage
+          fi
+          if [[ "$RUN_RUBY" == "true" ]]; then
+            require_success test-ruby
+            require_success test-ruby-coverage
+          fi
+          if [[ "$RUN_TERRAFORM" == "true" ]]; then
+            require_success test-terraform-primary
+            require_success test-terraform-secondary
+            require_success test-terraform-tertiary
+            require_success test-terraform-quaternary
+            require_success test-terraform-client-credentials
+            require_success test-terraform-review
+          fi
+          if [[ "$RUN_TYPESCRIPTV2" == "true" ]]; then
+            require_success test-typescriptv2
+            require_success test-typescriptv2-coverage
+          fi
+          if [[ "$RUN_POSTMAN" == "true" ]]; then
+            require_success test-postman
+          fi

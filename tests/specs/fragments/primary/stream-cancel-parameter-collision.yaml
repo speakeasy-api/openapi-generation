@@ -1,0 +1,46 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/stream-cancel-parameter-collision:
+    get:
+      operationId: primaryStreamCancelParameterCollision
+      description: >-
+        Tests that a required parameter named "streamCancel" on an operation
+        with a streaming (server-sent events) response does not collide with
+        internal variables a generator declares in the method body to manage
+        the stream's timeout cancellation. The generator must rename the user
+        parameter to avoid the conflict. This is a compile-time test.
+      tags:
+        - generation
+      parameters:
+        - in: query
+          name: streamCancel
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/StreamCancelCollisionEvent"
+components:
+  schemas:
+    StreamCancelCollisionEvent:
+      description: A single event on the stream used by the streamCancel collision test.
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            message:
+              type: string

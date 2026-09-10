@@ -1,0 +1,9 @@
+# This overlay remove a schema that is incompatible with typescriptv2 which has preserved model field names enabled
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/uber.yaml => ./tests/specs/secondary.yaml
+  version: 0.0.0
+actions:
+  # Remove the existing example in stronglyTypedOneOfPostWithNonStandardDiscriminatorName
+  - target: $.paths.*.*[?(@.operationId == 'stronglyTypedOneOfPostWithNonStandardDiscriminatorName')]
+    remove: true

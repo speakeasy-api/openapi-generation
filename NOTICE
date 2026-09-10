@@ -1,0 +1,73 @@
+# Third-party notices
+
+This repository includes the third-party-derived material identified below.
+This notice is informational and does not change the license terms that apply
+to the repository or to the identified third-party material.
+
+## Embedded formatter artifacts
+
+The following artifacts are committed under `internal/format/` and embedded
+into the generator binary with Go's `embed` package. They are redistributed as
+part of builds of this repository.
+
+| Artifact                        | Upstream source                                                                                                                                         | License                                     | Artifact SHA-256                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| `clangfmt.wasm`                 | LLVM/clang-format, built by `formatters/clangfmt/build.sh` from LLVM 22.1.0-rc3                                                                         | Apache-2.0 with LLVM Exceptions             | `1f4ca60cfa09920631ca69f9e44ae16128a1093fe4a274afd00c59416fc59c85` |
+| `rubyfmt.wasm`                  | [`fables-tales/rubyfmt`](https://github.com/fables-tales/rubyfmt) at `435c1625399d366ccda67bbed6e8ffafd1b20a97`, built by `formatters/rubyfmt/build.sh` | MIT                                         | `f4da0451d15a1a16a460884021b1a997b8a32a7d11f468ba3c439546b4c7fdb8` |
+| `dprint-plugin-typescript.wasm` | dprint plugin registry; embedded metadata identifies `dprint-plugin-typescript` v0.91.8 and David Sherret                                               | MIT                                         | `db0a870dc92c33bfa309d86e1b9d9b8bc096c1e1ab592476f38eb3b9b49b3bf1` |
+| `dprint-plugin-java.wasm`       | [`speakeasy-api/dprint-plugin-java`](https://github.com/speakeasy-api/dprint-plugin-java); embedded metadata identifies v0.5.2                          | Apache-2.0                                  | `2b13c0cf0aa8730061ba8a91c524e8ea7a63615022a6be4fa9c89f7d62a3f78e` |
+| `dprint-plugin-mago.wasm`       | [dprint Mago plugin](https://github.com/dprint/dprint-plugin-mago) v0.5.2; embedded metadata identifies Mago 1.13.3 and dprint-plugin-mago 0.5.2        | Mago: MIT or Apache-2.0; dprint plugin: MIT | `bbd3acad670104cf6a46670020da165cd9567d9b8ca7d29f06045f957bea257e` |
+| `dprint-plugin-ruff.wasm`       | dprint plugin registry; embedded metadata identifies `dprint-plugin-ruff` v0.3.9, David Sherret, and Ruff by Charles Marsh                              | MIT                                         | `d792271d0805f5cd09b38c94271999d68363d4ed7a141535daefc63a8692009f` |
+
+The License column identifies the verified top-level formatter component only;
+it is not an inventory of transitive components compiled into an artifact. The
+standard license texts for those verified top-level components are bundled in
+[`THIRD_PARTY_LICENSES/`](THIRD_PARTY_LICENSES/):
+
+- [`LLVM-22.1.0-rc3.txt`](THIRD_PARTY_LICENSES/LLVM-22.1.0-rc3.txt) is the
+  license text from LLVM's pinned `llvmorg-22.1.0-rc3` release, including the
+  Apache-2.0 text, LLVM Exceptions, and legacy LLVM notice.
+- [`MIT.txt`](THIRD_PARTY_LICENSES/MIT.txt) is the standard MIT license form
+  used by Rubyfmt and the identified MIT-licensed dprint components. Their
+  component-specific copyright notices remain identified by their upstream
+  sources in the artifact table.
+- [`Apache-2.0.txt`](THIRD_PARTY_LICENSES/Apache-2.0.txt) is the standard
+  Apache License, Version 2.0 text for `dprint-plugin-java.wasm` and the
+  Apache-2.0 option for Mago.
+
+Applicable component-specific copyright, permission, and license notices must
+also accompany redistribution. Apache-2.0 redistributions must preserve all
+applicable upstream `NOTICE` file contents.
+
+## Terraform formatter source
+
+`internal/format/tfFormat.go` contains a modified and relocated subset of the
+Terraform CLI formatter implementation from:
+
+<https://github.com/hashicorp/terraform/blob/55792309eb6320d38ac6cad52eb379d0dd745366/internal/command/fmt.go>
+
+That source revision is governed by the Mozilla Public License, version 2.0
+(MPL-2.0). The upstream commit is dated 2023-07-26, before Terraform's later
+license change. `internal/format/tfFormat.go` carries HashiCorp's copyright and
+MPL-2.0 SPDX notice and identifies the upstream source. The standard MPL-2.0
+text is bundled at
+[`THIRD_PARTY_LICENSES/MPL-2.0.txt`](THIRD_PARTY_LICENSES/MPL-2.0.txt). The
+MPL-2.0 notice and its source-availability obligations apply to the copied
+material.
+
+## Scope and follow-up
+
+This notice inventories the embedded formatter artifacts and the known inlined
+Terraform source identified by the repository's formatter inventory. It bundles
+the standard texts for each verified top-level license above, but it is not a
+complete redistribution notice package: the compiled artifacts may contain
+additional transitive components and their component-specific copyright or
+Apache `NOTICE` text has not been collected. Before public visibility or a
+public release, obtain immutable artifact-to-source/toolchain provenance,
+complete a source-level audit, collect every required license, copyright, and
+Apache `NOTICE` text, and validate the result against the actual artifact source
+revisions.
+
+The generated-output commercial exception, trademark policy, contributor
+relicensing terms, and user-spec-derived-content terms are not defined by this
+notice and require separately approved policy text.

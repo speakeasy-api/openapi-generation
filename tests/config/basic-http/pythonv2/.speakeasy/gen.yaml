@@ -1,0 +1,15 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  tests:
+    generateTests: true
+    generateNewTests: false
+python:
+  fixFlags:
+    conflictResistantModelImportsFeb2026: true
+  forwardCompatibleEnumsByDefault: true
+  inferUnionDiscriminators: true
+  flattenGlobalSecurity: true
+  version: 0.0.1
+  responseFormat: envelope-http
+  templateVersion: v2

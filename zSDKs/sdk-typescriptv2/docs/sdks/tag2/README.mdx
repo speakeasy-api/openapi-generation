@@ -1,0 +1,191 @@
+---
+title: "TestGroup.Tag2"
+---
+
+## Overview
+
+### Available Operations
+
+* [postTest](#posttest) - Post Test2
+
+## postTest
+
+This is a test endpoint.
+It has a description.
+
+### Example Usage
+
+```typescript
+import {
+  HeroWidth,
+  Icon,
+  Int32Enum,
+  IntEnum,
+  NullableIntEnum,
+  NullableStringEnum,
+  SDK,
+  Type,
+} from "openapi";
+import { Decimal } from "openapi/types";
+
+const sdk = new SDK({
+  deprecatedQueryParam1: "some example query param",
+  deprecatedQueryParam2: "some example query param",
+  security: {
+    myApiKey: {
+      myApiKey: process.env["SPEAKEASY_MY_API_KEY"] ?? "",
+    },
+  },
+});
+
+async function run() {
+  const result = await sdk.testGroup.tag2.postTest({
+    obj: {
+      str: "example",
+      bool: true,
+      integer: 999999,
+      int32: 1,
+      num: 1.1,
+      float32: 8499.3,
+      date: new Date("2020-01-01"),
+      dateTime: new Date("2020-01-01T00:00:00Z"),
+      anything: "<value>",
+      boolOpt: true,
+      intOptNull: 999999,
+      numOptNull: 1.1,
+      intEnum: IntEnum.Third,
+      int32Enum: Int32Enum.SixtyNine,
+      bigint: 593288,
+      decimalStr: new Decimal("7028.3"),
+      obj: {
+        str: "example",
+      },
+      map: {
+
+      },
+      arr: [],
+      any: "<value>",
+      nullableIntEnum: NullableIntEnum.Third,
+      nullableStringEnum: NullableStringEnum.Second,
+      color: "green",
+      icon: Icon.Tick,
+      heroWidth: HeroWidth.FourHundredAndEighty,
+    },
+    type: Type.SuperType1,
+  });
+
+  console.log(result);
+}
+
+run();
+```
+
+### Standalone function
+
+The standalone function version of this method:
+
+```typescript
+import { HeroWidth, Icon, Int32Enum, IntEnum, NullableIntEnum, NullableStringEnum, Type } from "openapi";
+import { SDKCore } from "openapi/core.js";
+import { testGroupTag2PostTest } from "openapi/funcs/testGroupTag2PostTest.js";
+import { Decimal } from "openapi/types";
+
+// Use `SDKCore` for best tree-shaking performance.
+// You can create one instance of it to use across an application.
+const sdk = new SDKCore({
+  deprecatedQueryParam1: "some example query param",
+  deprecatedQueryParam2: "some example query param",
+  security: {
+    myApiKey: {
+      myApiKey: process.env["SPEAKEASY_MY_API_KEY"] ?? "",
+    },
+  },
+});
+
+async function run() {
+  const res = await testGroupTag2PostTest(sdk, {
+    obj: {
+      str: "example",
+      bool: true,
+      integer: 999999,
+      int32: 1,
+      num: 1.1,
+      float32: 8499.3,
+      date: new Date("2020-01-01"),
+      dateTime: new Date("2020-01-01T00:00:00Z"),
+      anything: "<value>",
+      boolOpt: true,
+      intOptNull: 999999,
+      numOptNull: 1.1,
+      intEnum: IntEnum.Third,
+      int32Enum: Int32Enum.SixtyNine,
+      bigint: 593288,
+      decimalStr: new Decimal("7028.3"),
+      obj: {
+        str: "example",
+      },
+      map: {
+  
+      },
+      arr: [],
+      any: "<value>",
+      nullableIntEnum: NullableIntEnum.Third,
+      nullableStringEnum: NullableStringEnum.Second,
+      color: "green",
+      icon: Icon.Tick,
+      heroWidth: HeroWidth.FourHundredAndEighty,
+    },
+    type: Type.SuperType1,
+  });
+  if (res.ok) {
+    const { value: result } = res;
+    console.log(result);
+  } else {
+    console.log("testGroupTag2PostTest failed:", res.error);
+  }
+}
+
+run();
+```
+
+### React hooks and utilities
+
+This method can be used in React components through the following hooks and
+associated utilities.
+
+> Check out [this guide][hook-guide] for information about each of the utilities
+> below and how to get started using React hooks.
+
+[hook-guide]: ../../../REACT_QUERY.md
+
+```tsx
+import {
+  // Mutation hook for triggering the API call.
+  useTestGroupTag2PostTestMutation
+} from "openapi/react-query/testGroupTag2PostTest.js";
+```
+
+### Parameters
+
+| Parameter                                                                                                                                                                      | Type                                                                                                                                                                           | Required                                                                                                                                                                       | Description                                                                                                                                                                    | Example                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test2Request`                                                                                                                                                                 | [models.Test2Request](../../models/test2request.mdx)                                                                                                                            | :heavy_check_mark:                                                                                                                                                             | N/A                                                                                                                                                                            |                                                                                                                                                                                |
+| `deprecatedQueryParam1`                                                                                                                                                        | *string*                                                                                                                                                                       | :heavy_minus_sign:                                                                                                                                                             | : warning: ** DEPRECATED **: This will be removed in a future release, please migrate away from it as soon as possible.                                                        | some example query param                                                                                                                                                       |
+| `deprecatedQueryParam2`                                                                                                                                                        | *string*                                                                                                                                                                       | :heavy_minus_sign:                                                                                                                                                             | : warning: ** DEPRECATED **: This will be removed in a future release, please migrate away from it as soon as possible.                                                        | some example query param                                                                                                                                                       |
+| `options`                                                                                                                                                                      | RequestOptions                                                                                                                                                                 | :heavy_minus_sign:                                                                                                                                                             | Used to set various options for making HTTP requests.                                                                                                                          |                                                                                                                                                                                |
+| `options.fetchOptions`                                                                                                                                                         | [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request#options)                                                                                        | :heavy_minus_sign:                                                                                                                                                             | Options that are passed to the underlying HTTP request. This can be used to inject extra headers for examples. All `Request` options, except `method` and `body`, are allowed. |                                                                                                                                                                                |
+| `options.retries`                                                                                                                                                              | [RetryConfig](../../lib/utils/retryconfig.mdx)                                                                                                                                  | :heavy_minus_sign:                                                                                                                                                             | Enables retrying HTTP requests under certain failure conditions.                                                                                                               |                                                                                                                                                                                |
+| `options.serverURL`                                                                                                                                                            | *string*                                                                                                                                                                       | :heavy_minus_sign:                                                                                                                                                             | An optional server URL to use.                                                                                                                                                 | http://localhost:8080                                                                                                                                                          |
+
+### Response
+
+**Promise\<[Uint8Array](../../models/.mdx)\>**
+
+### Errors
+
+| Error Type                     | Status Code                    | Content Type                   |
+| ------------------------------ | ------------------------------ | ------------------------------ |
+| models.BadRequestResponseError | 400                            | application/json               |
+| models.ErrorsError             | 404                            | application/json               |
+| models.Test2ResponseError      | 500                            | application/json               |
+| models.SDKError                | 4XX, 5XX                       | \*/\*                          |

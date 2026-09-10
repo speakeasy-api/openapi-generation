@@ -1,0 +1,80 @@
+
+[TestChanges_ArrayAdded - 1]
+# Test: TestChanges_ArrayAdded
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: Get all users
+      operationId: getUsers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: Get all users
+      operationId: getUsers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  permissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        resource:
+                          type: string
+                        actions:
+                          type: array
+                          items:
+                            type: string
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getUsers()`:  `response` **Changed**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getUsers()`: `response` **Changed**
+    - `permissions` **Added**
+    - `tags` **Added**
+
+---

@@ -1,0 +1,42 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/hooks/operationMetadata:
+    get:
+      operationId: hooksOperationMetadata
+      description: >
+        Exercises exposing OpenAPI operation metadata on the SDK hook context.
+        The operation declares `tags`, a custom `x-` extension, and an internal
+        `x-speakeasy-*` directive so generators that surface metadata on the hook
+        context (e.g. `tags` and `extensions` fields) can be verified at runtime:
+        the custom extension and tags must reach the hook, while `x-speakeasy-*`
+        codegen directives must be filtered out. The custom extension value also
+        embeds `{{ }}` delimiters to ensure metadata serialized into generated
+        source is escaped and not re-interpreted as a templating directive.
+      tags:
+        - hooks
+      x-speakeasy-group: hooks
+      x-test-operation-metadata: visibility-internal
+      x-test-template-delimiters: "use {{token}} in the header"
+      responses:
+        "200":
+          description: A response whose hook context carries the operation tags and extensions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationMetadataResponse"
+components:
+  schemas:
+    OperationMetadataResponse:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        ok:
+          type: boolean

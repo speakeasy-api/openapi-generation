@@ -1,0 +1,37 @@
+---
+title: "TripleNamespaceConflictTest"
+---
+
+A model that references Pet from foo, bar, and baz namespaces
+
+## Example Usage
+
+```typescript
+import { TripleNamespaceConflictTest } from "openapi";
+
+let value: TripleNamespaceConflictTest = {
+  fooPet: {
+    id: "pet-foo-123",
+    name: "Fluffy",
+    species: "cat",
+  },
+  barPet: {
+    id: "pet-bar-456",
+    name: "Buddy",
+    owner: "John Doe",
+  },
+  bazPet: {
+    petId: 789,
+    petName: "Rex",
+    adoptedAt: new Date("2024-01-15T10:30:00Z"),
+  },
+};
+```
+
+## Fields
+
+| Field                                                       | Type                                                        | Required                                                    | Description                                                 |
+| ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| `fooPet`                                                    | [foo.Pet](../foo/pet.mdx)                                    | :heavy_check_mark:                                          | A pet in the foo namespace                                  |
+| `barPet`                                                    | [bar.Pet](../bar/pet.mdx)                                    | :heavy_check_mark:                                          | A pet in the bar namespace                                  |
+| `bazPet`                                                    | [baz.Pet](../baz/pet.mdx)                                    | :heavy_check_mark:                                          | A pet in the baz namespace with completely different schema |

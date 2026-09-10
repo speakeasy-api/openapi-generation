@@ -1,0 +1,24 @@
+{
+  "name": "testproject",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint --max-warnings=0 src",
+{{- if eq .Global.Config.ModuleFormat "dual" }}
+    "build": "tshy",
+{{- else }}
+    "build": "tsgo",
+{{- end }}
+    "prepare": "npm run build"
+  },
+  "main": "index.js",
+  "peerDependencies": {
+    {{templatePeerDependencies | indent 4 | trim}}
+  },
+  "devDependencies": {
+    {{templateDevDependencies | indent 4 | trim}}
+  },
+  "dependencies": {
+    {{templateDependencies | indent 4 | trim}},
+    "openapi": "file:{{.Global.Config.TestProject.SourceDir}}"
+  }
+}

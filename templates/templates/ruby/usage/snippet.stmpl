@@ -1,0 +1,3 @@
+require '{{sanitizeFileName .Global.Config.PackageName}}'
+{{templateUsageImports .Local.Operation}}
+{{templateString "usage/block.stmpl" .Local}}

@@ -1,0 +1,455 @@
+{{- recurse 1 -}}
+import { StatusCodePredicate, matchResponse, matchStatusCode } from "./http.js";
+import { isPlainObject } from "./primitives.js";
+{{- if and isNoZod (isFeatureUsed "serverEvents") }}
+import { wrapEventStreamResponse } from "./event-streams.js";
+{{- end }}
+{{- addErrorTypeImport getDefaultErrorClassName "lib" }}
+{{- if not isNoZod }}
+{{- addErrorTypeImport "ResponseValidationError" "lib" }}
+{{- end }}
+{{- addTypeImport "fp" "Result" "lib" }}
+{{- if not isNoZod }}
+{{- addTypeImport "fp" "OK" "lib" }}
+{{- addTypeImport "fp" "ERR" "lib" }}
+{{- end }}
+{{genImports}}
+
+{{- $responseFormat := getResponseFormat }}
+{{- $defaultError := getDefaultErrorClassName }}
+
+export type Encoding =
+  | "jsonl"
+  | "json"
+  | "text"
+  | "bytes"
+  | "stream"
+  | "sse"
+  | "nil"
+  | "fail";
+
+const DEFAULT_CONTENT_TYPES: Record<Encoding, string> = {
+  jsonl: "application/jsonl",
+  json: "application/json",
+  text: "text/plain",
+  bytes: "application/octet-stream",
+  stream: "application/octet-stream",
+  sse: "text/event-stream",
+  nil: "*",
+  fail: "*",
+};
+
+{{ if isNoZod -}}
+export type SseOptions = { sentinel?: string; flattened?: boolean; dataRequired?: boolean };
+export type ErrorClassType = new (
+  data: any,
+  httpMeta: { request: Request; response: Response; body: string },
+) => unknown;
+{{- else -}}
+type Schema<T> = { parse(raw: unknown): T };
+{{- end }}
+
+type MatchOptions = { ctype?: string; hdrs?: boolean; key?: string, sseSentinel?: string };
+
+export type ValueMatcher<V> = MatchOptions & {
+  enc: Encoding;
+  codes: StatusCodePredicate;
+{{- if isNoZod }}
+  __value?: V;
+  sse?: SseOptions;
+{{- else }}
+  schema: Schema<V>;
+{{- end }}
+};
+
+export type ErrorMatcher<E> = MatchOptions & {
+  enc: Encoding;
+  codes: StatusCodePredicate;
+{{- if isNoZod }}
+  __error?: E;
+  errorClass: ErrorClassType | undefined;
+  sse?: SseOptions;
+{{- else }}
+  schema: Schema<E>;
+{{- end }}
+  err: true;
+};
+
+export type FailMatcher = {
+  enc: "fail";
+  codes: StatusCodePredicate;
+};
+
+export type Matcher<T, E> = ValueMatcher<T> | ErrorMatcher<E> | FailMatcher;
+
+{{ if isNoZod -}}
+export function jsonErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "json", codes, errorClass };
+}
+export function json<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "json", codes };
+}
+
+export function jsonl<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "jsonl", codes };
+}
+
+export function jsonlErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "jsonl", codes, errorClass };
+}
+
+export function textErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "text", codes, errorClass };
+}
+export function text<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "text", codes };
+}
+
+export function bytesErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "bytes", codes, errorClass };
+}
+export function bytes<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "bytes", codes };
+}
+
+export function streamErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "stream", codes, errorClass };
+}
+export function stream<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "stream", codes };
+}
+
+export function sseErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, sse?: SseOptions, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "sse", codes, errorClass, ...(sse ? { sse } : {}) };
+}
+export function sse<T>(codes: StatusCodePredicate, sse?: SseOptions, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "sse", codes, ...(sse ? { sse } : {}) };
+}
+
+export function nilErr<E>(codes: StatusCodePredicate, errorClass: ErrorClassType | undefined, options?: MatchOptions): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "nil", codes, errorClass };
+}
+export function nil<T>(codes: StatusCodePredicate, options?: MatchOptions): ValueMatcher<T> {
+  return { ...options, enc: "nil", codes };
+}
+{{- else }}
+export function jsonErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "json", codes, schema };
+}
+export function json<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "json", codes, schema };
+}
+
+export function jsonl<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "jsonl", codes, schema };
+}
+
+
+export function jsonlErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true ,enc: "jsonl", codes, schema };
+}
+export function textErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "text", codes, schema };
+}
+export function text<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "text", codes, schema };
+}
+
+export function bytesErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "bytes", codes, schema };
+}
+export function bytes<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "bytes", codes, schema };
+}
+
+export function streamErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "stream", codes, schema };
+}
+export function stream<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "stream", codes, schema };
+}
+
+export function sseErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "sse", codes, schema };
+}
+export function sse<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "sse", codes, schema };
+}
+
+export function nilErr<E>(
+  codes: StatusCodePredicate,
+  schema: Schema<E>,
+  options?: MatchOptions,
+): ErrorMatcher<E> {
+  return { ...options, err: true, enc: "nil", codes, schema };
+}
+export function nil<T>(
+  codes: StatusCodePredicate,
+  schema: Schema<T>,
+  options?: MatchOptions,
+): ValueMatcher<T> {
+  return { ...options, enc: "nil", codes, schema };
+}
+{{- end }}
+
+export function fail(codes: StatusCodePredicate): FailMatcher {
+  return { enc: "fail", codes };
+}
+
+export type MatchedValue<Matchers> = Matchers extends Matcher<infer T, any>[]
+  ? T
+  : never;
+export type MatchedError<Matchers> = Matchers extends Matcher<any, infer E>[]
+  ? E
+  : never;
+export type MatchFunc<T, E> = (
+  response: Response,
+  request: Request,
+  options?: { resultKey?: string; extraFields?: Record<string, unknown> },
+) => Promise<[result: Result<T, E>, raw: unknown]>;
+
+export function match<T, E>(
+  ...matchers: Array<Matcher<T, E>>
+): MatchFunc<T, E | {{$defaultError}}{{ if not isNoZod }} | ResponseValidationError{{ end }}> {
+  return async function matchFunc(
+    response: Response,
+    request: Request,
+    options?: { resultKey?: string; extraFields?: Record<string, unknown> },
+  ): Promise<[result: Result<T, E | {{$defaultError}}{{ if not isNoZod }} | ResponseValidationError{{ end }}>, raw: unknown]> {
+    let raw: unknown;
+    let matcher: Matcher<T, E> | undefined;
+    for (const match of matchers) {
+      const { codes } = match;
+      const ctpattern =
+        "ctype" in match ? match.ctype : DEFAULT_CONTENT_TYPES[match.enc];
+      if (ctpattern && matchResponse(response, codes, ctpattern)) {
+        matcher = match;
+        break;
+      } else if (!ctpattern && matchStatusCode(response, codes)) {
+        matcher = match;
+        break;
+      }
+    }
+
+    if (!matcher) {
+      return [{ ok: false, error: new {{$defaultError}}("Unexpected Status or Content-Type", {
+          response,
+          request,
+          body: await response.text().catch(() => ""),
+        }),
+      }, raw];
+    }
+
+    const encoding = matcher.enc;
+    let body = "";
+    switch (encoding) {
+      case "json":
+        body = await response.text();
+        raw = JSON.parse(body);
+        break;
+       case "jsonl":
+        raw = response.body;
+        break;
+      case "bytes":
+        raw = new Uint8Array(await response.arrayBuffer());
+        break;
+      case "stream":
+        raw = response.body;
+        break;
+      case "text":
+        body = await response.text();
+        raw = body;
+        break;
+      case "sse":
+        {{- if and isNoZod (isFeatureUsed "serverEvents") }}
+        if (response.body) {
+          const sseOpts = ("sse" in matcher && matcher.sse) || {};
+          raw = wrapEventStreamResponse(response.body, sseOpts);
+        } else {
+          raw = null;
+        }
+        {{- else }}
+        raw = response.body;
+        {{- end }}
+        break;
+      case "nil":
+        body = await response.text();
+        raw = undefined;
+        break;
+      case "fail":
+        body = await response.text();
+        {{- if eq $responseFormat "envelope-http" }}
+        raw = undefined;
+        {{- else}}
+        raw = body;
+        {{- end }}
+        break;
+      default:
+        throw new Error(`Unsupported response type: ${encoding satisfies never}`);
+    }
+
+    if (matcher.enc === "fail") {
+      return [{ ok: false, error: new {{$defaultError}}("API error occurred", { request, response, body })}, raw];
+    }
+
+    const resultKey = matcher.key || options?.resultKey;
+    let data: unknown;
+    {{- if isNoZod }}
+    {{- /* No-zod: emit the header field name in the same casing the public
+         type uses (camelCase). In zod mode the inbound schema's transform
+         would convert `Headers` → `headers`; without zod we have to emit
+         the camelCase form directly. */ -}}
+    const headersField = matcher.hdrs ? { headers: unpackHeaders(response.headers) } : null;
+    {{- end }}
+
+    if ("err" in matcher) {
+      data = {
+        ...options?.extraFields,
+        ...{{ if isNoZod }}headersField{{ else }}(matcher.hdrs ? { Headers: unpackHeaders(response.headers) } : null){{ end }},
+        ...(isPlainObject(raw) ? raw : null),
+        {{- if not isNoZod }}
+        request$: request,
+        response$: response,
+        body$: body,
+        {{- end }}
+      };
+    } else if (resultKey) {
+      data = {
+        ...options?.extraFields,
+        ...{{ if isNoZod }}headersField{{ else }}(matcher.hdrs ? { Headers: unpackHeaders(response.headers) } : null){{ end }},
+        [resultKey]: raw,
+      };
+    {{ if eq $responseFormat "flat" }}
+    } else if (matcher.hdrs) {
+      data = {
+        ...options?.extraFields,
+        ...{{ if isNoZod }}headersField{{ else }}(matcher.hdrs ? { Headers: unpackHeaders(response.headers) } : null){{ end }},
+        ...(isPlainObject(raw) ? raw : null),
+      };
+    {{ end }}
+    } else {
+      {{ if eq $responseFormat "flat" }}
+      data = raw;
+      {{ else }}
+      data = {
+        ...options?.extraFields,
+        ...{{ if isNoZod }}headersField{{ else }}(matcher.hdrs ? { Headers: unpackHeaders(response.headers) } : null){{ end }},
+      };
+      {{ end }}
+    }
+
+    {{ if isNoZod -}}
+    if ("err" in matcher) {
+      // When the spec error response is a single error class, instantiate
+      // it with the data + httpMeta. When the spec defines a discriminated
+      // union of error variants (no class), `errorClass` is undefined and
+      // we pass the parsed payload through as the error value directly.
+      const errValue = matcher.errorClass
+        ? new matcher.errorClass(data, { request, response, body }) as E
+        : data as E;
+      return [{ ok: false, error: errValue }, raw];
+    }
+    return [{ ok: true, value: data as T }, raw];
+    {{- else }}
+    if ("err" in matcher) {
+      const result = safeParseResponse(
+        data,
+        (v: unknown) => matcher.schema.parse(v),
+        "Response validation failed",
+        { request, response, body }
+      );
+      return [result.ok ? { ok: false, error: result.value } : result, raw];
+    } else {
+      return [safeParseResponse(
+        data,
+        (v: unknown) => matcher.schema.parse(v),
+        "Response validation failed",
+        { request, response, body }
+      ), raw];
+    }
+    {{- end }}
+  };
+}
+
+const headerValRE = /, */;
+/**
+ * Iterates over a Headers object and returns an object with all the header
+ * entries. Values are represented as an array to account for repeated headers.
+ */
+export function unpackHeaders(headers: Headers): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+
+  for (const [k, v] of headers.entries()) {
+    out[k] = v.split(headerValRE);
+  }
+
+  return out;
+}
+
+{{ if not isNoZod -}}
+function safeParseResponse<Inp, Out>(
+  rawValue: Inp,
+  fn: (value: Inp) => Out,
+  errorMessage: string,
+  httpMeta: { response: Response; request: Request; body: string }
+): Result<Out, ResponseValidationError> {
+  try {
+    return OK(fn(rawValue));
+  } catch (err) {
+    return ERR(new ResponseValidationError(errorMessage, {
+      cause: err,
+      rawValue,
+      rawMessage: errorMessage,
+      ...httpMeta,
+    }));
+  }
+}
+{{- end }}

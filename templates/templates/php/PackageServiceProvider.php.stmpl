@@ -1,0 +1,67 @@
+{{- $global := .Global}}
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}};
+
+{{getServiceProviderImports}}
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\ServiceProvider;
+
+final class PackageServiceProvider extends ServiceProvider implements DeferrableProvider
+{
+    public function boot(): void
+    {
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/services.php',
+            'services',
+        );
+    }
+
+    public function register(): void
+    {
+        {{- if and .Local.Security .Local.Security.Type}}
+            {{- $outputLocation := .Local.Security.Type.OutputLocation}}
+            {{- $globalSecurity := getModelNamespace $outputLocation false "Security"}}
+            {{- if eq (len .Local.Security.Type.Fields) 1}}
+                {{- $first := (first .Local.Security.Type.Fields)}}
+                {{- if $global.Config.FlattenGlobalSecurity}}
+        $security = config('services.{{$global.Config.LaravelServiceProvider.svcName}}.{{sanitizeMapKey $first.Name}}');
+                {{- else }}{{/* else $global.Config.FlattenGlobalSecurity */}}
+
+        $security = new {{$globalSecurity}}(
+            config('services.{{$global.Config.LaravelServiceProvider.svcName}}.{{sanitizeMapKey $first.Name}}')
+        );
+                {{- end}}{{/* end $global.Config.FlattenGlobalSecurity */}}
+            {{- else if and (eq (len .Local.Security.Type.Fields) 2) (isSecuritySpecial (first .Local.Security.Type.Fields))}}
+        $security = new {{$globalSecurity}}(
+                {{- range $local := .Local.Security.Type.Fields}}
+            {{sanitizeFieldName .Name}}: config('services.{{$global.Config.LaravelServiceProvider.svcName}}.{{sanitizeMapKey $local.Name}}_{{sanitizeMapKey .Name}}'),
+                {{- end}}{{/* end range .Type.Fields */}}
+        );
+            {{- else}}{{/* else eq (len .Local.Security.Type.Fields) 1 */}}
+        $security = null;
+                {{- range $local := .Local.Security.Type.Fields}}
+        if (config('services.{{$global.Config.LaravelServiceProvider.svcName}}.enable_{{sanitizeMapKey .Name}}')) {
+            $security = new {{$globalSecurity}}(
+                    {{- if or .Type.IsPrimitive (eq .Type.Type "array")}}
+                {{sanitizeFieldName .Name}}: config('services.{{$global.Config.LaravelServiceProvider.svcName}}.{{sanitizeMapKey $local.Name}}'),
+                    {{- else}}
+                {{sanitizeFieldName .Name}}: new {{getModelNamespace .Type.OutputLocation false (sanitizeClassName .Type.Name)}}(
+                        {{- range .Type.Fields}}
+                    {{sanitizeFieldName .Name}}: config('services.{{$global.Config.LaravelServiceProvider.svcName}}.{{sanitizeMapKey $local.Name}}_{{sanitizeMapKey .Name}}'),
+                        {{- end}}{{/* end range .Type.Fields */}}
+                )
+                    {{- end}}{{/* end .Type.IsPrimitive */}}
+            );
+        }
+                    {{- end}}{{/* end range .Local.Security.Type.Fields */}}
+            {{- end}}{{/* end eq (len .Local.Security.Type.Fields) 1 */}}
+        {{- end}}{{/* end .Local.Security */}}
+        $this->app->singleton(
+            abstract: {{templateSDKUsage $global.Config.Namespace}}::class,
+            concrete: fn (): {{templateSDKUsage $global.Config.Namespace}} => {{templateSDKUsage $global.Config.Namespace}}::builder(){{if .Local.Security}}->setSecurity(
+                $security
+            ){{end}}->build(),
+        );
+    }
+}

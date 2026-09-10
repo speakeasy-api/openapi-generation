@@ -1,0 +1,90 @@
+
+[TestChanges_FormattingByLanguage_CsharpPascalCase - 1]
+# Test: csharp_pascal_case
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /user-profiles/{userId}:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+  /admin/system-config:
+    post:
+      operationId: updateSystemConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRetries:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+  /analytics/user-events:
+    post:
+      operationId: trackUserEvents
+      responses:
+        '201':
+          description: Created
+```
+
+## Compact Mode:
+## Csharp SDK Changes:
+* `Sdk.TrackUserEvents()`: **Added**
+* `Sdk.UpdateSystemConfig()`: 
+  *  `request.MaxRetries` **Added**
+
+## Full Mode:
+## Csharp SDK Changes:
+* `Sdk.TrackUserEvents()`: **Added**
+* `Sdk.UpdateSystemConfig()`: 
+  *  `request.MaxRetries` **Added**
+
+---

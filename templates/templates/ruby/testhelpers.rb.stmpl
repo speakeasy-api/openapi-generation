@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+require_relative '../lib/{{sanitizeFileName .Global.Config.PackageName}}'
+require_relative 'test_client'
+require_relative 'common_helper_test'
+
+module {{ sanitizeModuleName .Global.Config.Module }}
+  module Tests
+{{range .Local.Helpers}}
+{{templateString "testhelper.rb.stmpl" . | indentPresent 4}}
+{{end}}
+  end
+end
+
+require 'minitest'
+Minitest::Test.include({{ sanitizeModuleName .Global.Config.Module }}::Tests)

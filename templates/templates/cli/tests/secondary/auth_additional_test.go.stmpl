@@ -1,0 +1,98 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCustomSchemeAppId_FlattenedScheme(t *testing.T) {
+	recordTest("auth-custom-security-scheme-app-id")
+
+	// Uses operation-level server (http://localhost:35456), so RunBare() to avoid
+	// mock server override. In the secondary variant, --app-id and --secret are
+	// local flags on the command (operation-level security).
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth-new", "custom-scheme-app-id",
+		"--app-id", "testAppID",
+		"--secret", "testSecret",
+	})
+	require.NoError(t, err)
+}
+
+func TestNoAuth(t *testing.T) {
+	recordTest("auth-hoisted-no-auth-retained")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth", "no"})
+	require.NoError(t, err)
+}
+
+func TestBasicAuth(t *testing.T) {
+	recordTest("auth-hoisted-basic-auth")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth", "basic",
+		"--passwd", "testPass",
+		"--user", "testUser",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the echoed response contains the Authorization header (Basic auth)
+	assert.Contains(t, output, `"Authorization"`)
+}
+
+func TestHoistedOperationAuthRetained(t *testing.T) {
+	recordTest("auth-hoisted-operation-auth-retained")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// --username and --password must be passed after the command name to set the local
+	// (operation-level security) flags, not just the persistent flags.
+	err := h.RunWithServer(s.URL, []string{"auth-new", "multiple-mixed-options-auth",
+		"--username", "testUser",
+		"--password", "testPass",
+		"--basic-auth", `{"username":"testUser","password":"testPass"}`,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the echoed response contains the Authorization header (Basic auth from operation-level security)
+	assert.Contains(t, output, `"Authorization"`)
+}
+
+func TestMultipleSimpleSchemeAuth(t *testing.T) {
+	recordTest("auth-multiple-simple-scheme-auth")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth-new", "multiple-simple-scheme-auth",
+		"--api-key-auth-new", "test_api_key",
+		"--oauth2", "Bearer testToken",
+		"--header-auth", `[{"expectedValue":"test_api_key","headerName":"x-api-key"},{"expectedValue":"Bearer testToken","headerName":"Authorization"}]`,
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the echoed request body was sent
+	assert.Contains(t, output, `"headerAuth"`)
+}

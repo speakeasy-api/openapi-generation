@@ -1,0 +1,176 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"os"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGlobalsQueryParameterGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-query-parameter-get-uses-global")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalQueryParam("test"))
+
+	res, err := s.Globals.GlobalsQueryParameterGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "test", res.Res.Args.GlobalQueryParam)
+}
+
+func TestGlobalsQueryParameterGet_UsesLocal(t *testing.T) {
+	recordTest("globals-query-parameter-get-uses-local")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalQueryParam("test"))
+
+	res, err := s.Globals.GlobalsQueryParameterGet(context.Background(), sdk.String("local"))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "local", res.Res.Args.GlobalQueryParam)
+}
+
+func TestGlobalPathParameterGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-path-parameter-get-uses-global")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalPathParam(1))
+
+	res, err := s.Globals.GlobalPathParameterGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, getHTTPBinURL()+"/anything/globals/pathParameter/1", res.Res.URL)
+}
+
+func TestGlobalPathParameterGet_UsesLocal(t *testing.T) {
+	recordTest("globals-path-parameter-get-uses-local")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalPathParam(1))
+
+	res, err := s.Globals.GlobalPathParameterGet(context.Background(), sdk.Int64(2))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, getHTTPBinURL()+"/anything/globals/pathParameter/2", res.Res.URL)
+}
+
+func TestGlobalHeaderGet_UsesGlobal(t *testing.T) {
+	recordTest("globals-header-get-uses-global")
+	os.Setenv("SPEAKEASY_GLOBAL_HEADER_PARAM", "true")
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Globals.GlobalsHeaderGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "true", res.Res.Headers["Globalheaderparam"])
+	os.Unsetenv("SPEAKEASY_GLOBAL_HEADER_PARAM")
+}
+
+func TestGlobalHeaderGet_UsesLocal(t *testing.T) {
+	recordTest("globals-header-get-uses-local")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalHeaderParam(true))
+
+	res, err := s.Globals.GlobalsHeaderGet(context.Background(), sdk.Bool(false))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "false", res.Res.Headers["Globalheaderparam"])
+}
+
+func TestGlobalHeaderKeepsCustomClientHeaders(t *testing.T) {
+	recordTest("globals-header-keeps-custom-client-headers")
+
+	httpClient := NewCustomHeaderClient()
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalHeaderParam(true), sdk.WithClient(httpClient))
+
+	res, err := s.Globals.GlobalsHeaderGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "true", res.Res.Headers["Globalheaderparam"])
+	assert.Equal(t, "someValue", res.Res.Headers["X-Custom-Header"])
+}
+
+func TestGlobalsHiddenPost(t *testing.T) {
+	recordTest("globals-hidden-post")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithGlobalHiddenQueryParam("hello"), sdk.WithGlobalHiddenHeaderParam("world"), sdk.WithGlobalHiddenPathParam("test"))
+
+	res, err := s.Globals.GlobalsHiddenPost(context.Background(), operations.GlobalsHiddenPostRequestBody{
+		Test:  "friend",
+		Other: 37,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "hello", res.Res.Args.GlobalHiddenQueryParam)
+	assert.Equal(t, "friend", res.Res.JSON.Test)
+	assert.EqualValues(t, 37, res.Res.JSON.Other)
+	assert.Equal(t, "world", res.Res.Headers["Globalhiddenheaderparam"])
+	assert.Equal(t, getHTTPBinURL()+"/anything/globals/hidden/test?globalHiddenQueryParam=hello", res.Res.URL)
+}
+
+func TestGlobalsOperationParamsOnly(t *testing.T) {
+	recordTest("globals-operation-params-only")
+
+	// Initialize SDK with ALL global parameters
+	s := sdk.New(
+		sdk.WithServerURL(getHTTPBinURL()),
+		sdk.WithGlobalQueryParam("globalQueryValue"),
+		sdk.WithGlobalPathParam(999),
+		sdk.WithGlobalHeaderParam(true),
+		sdk.WithGlobalHiddenQueryParam("hiddenQueryValue"),
+		sdk.WithGlobalHiddenHeaderParam("hiddenHeaderValue"),
+		sdk.WithGlobalHiddenPathParam("hiddenPathValue"),
+	)
+
+	// Call operation with operation-specific parameters
+	res, err := s.Globals.GlobalsOperationScopedExclusive(
+		context.Background(),
+		"operationHeader",
+		"operationPath",
+		"operationQuery",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+
+	// Verify that ONLY operation-specific parameters are present in the request
+	// Query params should NOT contain global params
+	assert.NotContains(t, res.Res.Args, "globalQueryParam",
+		"Global query param should NOT be included when operation defines its own params")
+	assert.NotContains(t, res.Res.Args, "globalHiddenQueryParam",
+		"Global hidden query param should NOT be included when operation defines its own params")
+
+	// URL should contain operation path param, NOT global path param
+	assert.Equal(t, getHTTPBinURL()+"/anything/globals/operationScopedExclusive/operationPath?operationQueryParam=operationQuery",
+		res.Res.URL, "URL should use operation-specific path parameter, not global")
+
+	// Headers should NOT contain global headers
+	assert.NotContains(t, res.Res.Headers, "Globalheaderparam",
+		"Global header param should NOT be included when operation defines its own params")
+	assert.NotContains(t, res.Res.Headers, "Globalhiddenheaderparam",
+		"Global hidden header param should NOT be included when operation defines its own params")
+}
+
+func TestGlobalsKebabCaseParamGet(t *testing.T) {
+	recordTest("globals-kebab-case-param-get")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithKebabCaseParam("kebab-case-value"))
+
+	res, err := s.Globals.GlobalsKebabCaseParamGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.Equal(t, "kebab-case-value", res.Res.Args["kebab-case-param"])
+}

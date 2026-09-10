@@ -1,0 +1,64 @@
+# Add 'default' label to any changes
+default:
+  - changed-files:
+      - any-glob-to-any-file: '*'
+
+# Add 'csharp' label to any changes to csharp templates
+csharp:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/csharp/**'
+
+# Add 'go' label to any changes to go templates
+go:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/go/**'
+
+# Add 'java' label to any changes to java templates
+java:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/javav2/**'
+
+# Add 'mcp-typescript' label to any changes to typescript templates
+mcp-typescript:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/mcp-typescript/**'
+
+# Add 'mockserver' label to any changes to mockserver templates
+mockserver:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/mockserver/**'
+
+# Add 'php' label to any changes to php templates
+php:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/php/**'
+
+# Add 'postman' label to any changes to postman templates
+postman:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/postman/**'
+
+# Add 'python' label to any changes to python templates
+python:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/pythonv2/**'
+
+# Add 'ruby' label to any changes to ruby templates
+ruby:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/ruby/**'
+
+# Add 'terraform' label to any changes to terraform templates
+terraform:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/terraform/**'
+
+# Add 'typescript' label to any changes to typescript templates
+typescript:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/typescriptv2/**'
+
+# Add 'unity' label to any changes to unity templates
+unity:
+  - changed-files:
+      - any-glob-to-any-file: 'templates/templates/unity/**'

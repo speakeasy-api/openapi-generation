@@ -1,0 +1,12 @@
+{{templateComments .Local.Comments (sanitizeClass .Local "" true) 0 "class"}}
+class {{sanitizeClass .Local "" true}}{{if and (not .Local.Enum.Open) sorbetEnabled}} < T::Enum{{end}}
+{{- if or (not sorbetEnabled) .Local.Enum.Open }}
+  include ::Crystalline::Enum
+{{- end }}
+  enums do
+{{templateEnums .Local | indent 4}}
+  end
+{{- if .Local.Enum.Open }}
+  open!
+{{- end }}
+end

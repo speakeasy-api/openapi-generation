@@ -1,0 +1,30 @@
+description = '{{templateReadmeTitle}} Spring Boot Starter'
+{{- $artifactId := (print templateProjectName "-spring-boot-starter")}}
+
+// Publishing configuration overrides
+ext {
+    publishingConfig = [
+        groupId: rootProject.group,
+        artifactId: '{{$artifactId}}',
+        version: rootProject.version,
+        name: '{{.Global.Config.CompanyName}} Java SDK - Spring Boot Starter',
+        description: 'Spring Boot starter for the {{.Global.Config.CompanyName}} Java SDK.',
+    ]
+}
+
+dependencies {
+    api project(':')
+    api project(':{{templateProjectName}}-spring-boot-autoconfigure')
+    api "org.springframework.boot:spring-boot-starter:${rootProject.springBootVersion}"
+}
+
+jar {
+    dependsOn 'generatePomFileForMavenPublication'
+    archiveBaseName = '{{$artifactId}}'
+    into("META-INF/maven/{{.Global.Config.GroupID}}/{{$artifactId}}") {
+        from(layout.buildDirectory.file("pom.xml")) {
+            // Only include if it exists to avoid build ordering issues
+            duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
+    }
+}

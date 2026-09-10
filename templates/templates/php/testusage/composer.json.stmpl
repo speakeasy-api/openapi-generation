@@ -1,0 +1,31 @@
+{
+  "name": "speakeasy/testusage",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "Speakeasy\\TestUsage\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Speakeasy\\TestUsage\\Test\\": "tests/"
+    }
+  },
+  "require": {
+{{templateDependencies | indent 4}},
+    "{{.Global.Config.PackageName}}": "@dev"
+  },
+  "require-dev": {
+{{templateDevDependencies | indent 4}}
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "{{.Global.Config.Usage.SourceDir}}"
+    }
+  ],
+  "minimum-stability": "dev",
+  "config": {
+    "process-timeout": 60
+  }
+}

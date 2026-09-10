@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="sl-theme-dark">
+{{- template "header" . -}}
+<body class="terminal">
+<div class="container vacuum-container">
+    <section class="terminal-nav">
+        <header class="terminal-logo">
+            <div class="logo">
+                Linting Report
+            </div>
+        </header>
+        <div class="generated"> [{{ .Version }}] Generated: {{ timeGenerated .Generated }}</div>
+        <div class="mobile-warning">
+            The mobile experience is still being developed. This may look/feel a bit odd for now.
+        </div>
+        <div class="header-statistics">
+            {{- if gt .Statistics.TotalErrors 0 -}}
+            <header-statistic value='{{ .Statistics.TotalErrors }}' label='Errors' preset='error-count'></header-statistic>
+            {{- end -}}
+            {{- if gt .Statistics.TotalWarnings 0 -}}
+            <header-statistic value='{{ .Statistics.TotalWarnings }}' label='Warnings' preset='warning-count'></header-statistic>
+            {{- end -}}
+            {{- if gt .Statistics.TotalHints 0 -}}
+                <header-statistic value='{{ .Statistics.TotalHints }}' label='Hints' preset='info-count'></header-statistic>
+            {{- end -}}
+        </div>
+    </section>
+    <hr class="header-divider"/>
+    <html-report>
+        <section class="report-grid" slot="navigation">
+            <nav>
+                <rule-category-navigation default="all">
+                {{- with .RuleCategories -}}
+                {{- range . }}
+                    <rule-category-link name="{{ .ID }}" description="{{ .Description }}">
+                        {{ .Name }}
+                    </rule-category-link>
+                {{- end }}
+                {{- end }}
+                </rule-category-navigation>
+                <section id="category-description">
+                </section>
+            </nav>
+            <result-grid slot="reports">
+                {{- $allResults := .RuleResults -}}
+                {{- $specString := .SpecString -}}
+                {{- $maxViolations := .MaxViolations -}}
+                {{- with .RuleCategories -}}
+                {{- range . }}
+                <category-report slot="violation" id="{{ .ID }}">
+                    {{- $ruleResults := extractResultsForCategory .ID $allResults -}}
+                    {{- $groupedByRule := groupByRule $ruleResults -}}
+                    {{- $ruleKeys := getRuleKeys $groupedByRule -}}
+                    <category-rules id="{{ .ID }}">
+                    {{- range $ruleKeys }}
+                        {{- $ruleID := . -}}
+                        {{- $resultsForRule := index $groupedByRule $ruleID -}}
+                        {{- $firstResult := index $resultsForRule 0 -}}
+                        {{- $ruleMeta := index $.RuleMetadata $ruleID -}}
+                        <category-rule maxViolations="{{ $maxViolations }}"
+                                       totalRulesViolated="{{ len $ruleKeys }}"
+                                       ruleIcon="{{ ruleSeverityIcon $firstResult.Severity }}"
+                                       ruleId="{{ $ruleID }}"
+                                       description="{{ if $ruleMeta }}{{ if $ruleMeta.Summary }}{{ $ruleMeta.Summary }}{{ else }}{{ $ruleMeta.Description }}{{ end }}{{ else }}{{ $ruleID }}{{ end }}"
+                                       numResults={{ len $resultsForRule }}>
+                            {{- $totalCount := len $resultsForRule -}}
+                            {{- $limitedResults := limitResults $resultsForRule $maxViolations -}}
+                            {{- range $limitedResults }}
+                            <category-rule-result slot="results" message="{{ formatErrorMessage .UnderlyingError }}" ruleId="{{ .Rule }}" startLine='{{ getNodeLine .Node }}' startCol='{{ getNodeColumn .Node }}' endLine='{{ getNodeLine .Node }}' endCol='{{ getNodeColumn .Node }}'{{ if and $ruleMeta $ruleMeta.HowToFix }} howToFix="{{ $ruleMeta.HowToFix }}"{{ end }} description="{{ if $ruleMeta }}{{ $ruleMeta.Description }}{{ end }}">
+                                {{- renderSource . $specString -}}
+                            </category-rule-result>
+                            {{- end -}}
+                            {{- if hasMore $totalCount $maxViolations -}}
+                            <div slot="results" class="more-results">+ {{ moreCount $totalCount $maxViolations }} more</div>
+                            {{- end -}}
+                        </category-rule>
+                    {{- end -}}
+                    </category-rules>
+                </category-report>
+                {{- end }}
+                {{- end }}
+                <violation-drawer slot="details"></violation-drawer>
+            </result-grid>
+        </section>
+    </html-report>
+</div>
+<div class="container">
+{{- template "footer" . -}}
+</div>
+</body>
+</html>

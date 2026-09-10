@@ -1,0 +1,8 @@
+{{- $local := .Local -}}
+{{- $type := .Local.Type -}}
+{{- $typedDictName := .Local.TypedDictName -}}
+{{- $usageLocation := (getModelsLocation $type.OutputLocation) -}}
+{{- $unionType := sanitizeTypedDictUnionType $type $usageLocation $local -}}
+{{- if not (contains "TypeAliasType" $unionType) }}{{ templateDeprecated $type.Comments }}{{end}}
+{{$typedDictName}} = {{$unionType}}
+{{- templateComments $type.Comments 0}}

@@ -1,0 +1,188 @@
+package org.openapis.openapi;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.openapis.openapi.CommonHelpers.recordTest;
+import static org.openapis.openapi.Helpers.HTTPBIN_URL;
+
+import java.net.HttpURLConnection;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.openapis.openapi.models.operations.AuthorizationHeaderModificationResponse;
+import org.openapis.openapi.models.operations.HooksCustomUserAgentResponse;
+import org.openapis.openapi.models.errors.AuthException;
+import org.openapis.openapi.models.operations.AuthenticatedRequestGlobalSecurityResponse;
+import org.openapis.openapi.models.operations.AuthenticatedRequestGlobalServerResponse;
+import org.openapis.openapi.models.operations.AuthenticatedRequestResponse;
+import org.openapis.openapi.models.shared.SchemeClientCredentials;
+import org.openapis.openapi.models.shared.Security;
+import org.openapis.openapi.utils.Helpers;
+import org.openapis.openapi.utils.RecordingClient;
+import org.openapis.openapi.hooks.OAuth2Scopes;
+
+public class HooksAdditionalTest {
+
+    @Test
+    void testHooksAfterResponse() throws Exception {
+        recordTest("test-hooks-after-response");
+
+        SDK s = SDK.builder().serverURL(HTTPBIN_URL) //
+                .security(Security.builder() //
+                        .apiKeyAuth("Token YOUR_API_KEY")
+                        .build()) //
+                .build();
+
+        RuntimeException e = assertThrows(RuntimeException.class, () -> s.hooks().testHooksAfterResponse().call());
+        assertEquals("validation failed", e.getMessage());
+    }
+
+    @Test
+    void testHooksError() throws Exception {
+        recordTest("test-hooks-error");
+        SDK s = SDK.builder().serverURL(HTTPBIN_URL) //
+                .security(Security.builder() //
+                        .apiKeyAuth("Token YOUR_API_KEY")
+                        .build()) //
+                .build();
+        Exception e = assertThrows(IllegalStateException.class, () -> s.hooks().testHooksError().call());
+        assertEquals("special test error case", e.getMessage());
+    }
+
+    @Test
+    public void testHooksAuthorizationHeaderModification() throws Exception {
+        recordTest("hooks-authorization-header-modification");
+        SDK s = SDK.builder().serverURL(HTTPBIN_URL) //
+                .security(Security.builder() //
+                        .apiKeyAuth("Bearer testToken")
+                        .build()) //
+                .build();
+        AuthorizationHeaderModificationResponse res = s.hooks().authorizationHeaderModification().call();
+        assertEquals(200, res.rawResponse().statusCode());
+        assertTrue(res.token().get().authenticated());
+        assertEquals("testToken modified", res.token().get().token());
+    }
+
+    @Test
+    public void testHooksCustomUserAgent() throws Exception {
+        recordTest("hooks-custom-user-agent");
+        SDK s = SDK.builder().serverURL(HTTPBIN_URL).build();
+        HooksCustomUserAgentResponse res = s.hooks().hooksCustomUserAgent().call();
+        assertEquals(200, res.rawResponse().statusCode());
+        Map<String, String> headers = res.customUserAgentEcho().get().headers();
+        assertEquals("acme-corp/{{.Global.Config.SDKVersion}} acme-corp/" + System.getProperty("java.version"), headers.get("User-Agent"));
+        assertEquals("{{.Global.Config.GenVersion}}", headers.get("X-Test-Gen-Version"));
+        assertEquals("{{.Global.Config.DocVersion}}", headers.get("X-Test-Doc-Version"));
+        assertEquals("{{.Global.Config.SDKVersion}}", headers.get("X-Test-Init-Sdk-Version"));
+    }
+
+
+    @Test
+    public void testClientCredentialsOptionSuccessfullyAuthenticates() throws Exception {
+        CommonHelpers.recordTest("hooks-client-credentials-option-success");
+
+        RecordingClient client = new RecordingClient();
+        SDK sdk = SDK.builder().serverURL(HTTPBIN_URL) //
+                .client(client)
+                .security(Security.builder() //
+                          .clientCredentials(SchemeClientCredentials.builder() //
+                                             .clientID("speakeasy-sdks") //
+                                             .clientSecret("supersecret-" + CommonHelpers.randomId()) //
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                                             .{{ sanitizeFieldName (originalFieldName $f) }}("") //
+{{- end }}
+                                             .build()) //
+                          .build()) //
+                .build();
+        {
+            AuthenticatedRequestGlobalSecurityResponse res = sdk.hooks().authenticatedRequestGlobalSecurity().call();
+            assertEquals(HttpURLConnection.HTTP_OK, res.statusCode());
+        }
+        {
+            AuthenticatedRequestGlobalSecurityResponse res = sdk.hooks().authenticatedRequestGlobalSecurity().call();
+            assertEquals(HttpURLConnection.HTTP_OK, res.statusCode());
+        }
+
+        // Check that only a single token request was made
+        String tokenURL = "/clientcredentials/token?expires_in=90";
+        long tokenRequests = client.requests().stream()
+            .filter(request -> request.uri().toString().contains(tokenURL))
+            .filter(request -> {
+                String body = Helpers.bodyUtf8(request);
+                return body.contains("scope=read+write");
+            })
+            .count();
+        assertEquals(1, tokenRequests);
+    }
+
+    @Test
+    public void testClientCredentialsOptionSuccessfullyAuthenticatesWithAltTokenURL() throws Exception {
+        CommonHelpers.recordTest("hooks-client-credentials-option-success-alt-token-url");
+
+        RecordingClient client = new RecordingClient();
+        String tokenURL = "/clientcredentials/alt/token";
+        SDK sdk = SDK.builder().serverURL(HTTPBIN_URL) //
+                .client(client)
+                .security(Security.builder() //
+                        .clientCredentials(SchemeClientCredentials.builder() //
+                                .clientID("speakeasy-sdks") //
+                                .clientSecret("supersecret-" + CommonHelpers.randomId()) //
+                                .tokenURL(tokenURL) //
+                                .scopes(java.util.Arrays.asList("alt:one", OAuth2Scopes.ClientCredentials.AltTwo.value())) //
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                                .{{ sanitizeFieldName (originalFieldName $f) }}("") //
+{{- end }}
+                                .build()) //
+                          .build()) //
+                .build();
+        {
+            AuthenticatedRequestGlobalSecurityResponse res = sdk.hooks().authenticatedRequestGlobalSecurity().call();
+            assertEquals(HttpURLConnection.HTTP_OK, res.statusCode());
+        }
+        // The token received is already expired so another one should be requested.
+        {
+            AuthenticatedRequestGlobalSecurityResponse res = sdk.hooks().authenticatedRequestGlobalSecurity().call();
+            assertEquals(HttpURLConnection.HTTP_OK, res.statusCode());
+        }
+
+        // Check that 2 token requests were made (tokens expire immediately)
+        long tokenRequests = client.requests().stream()
+            .filter(request -> request.uri().toString().contains(tokenURL))
+            .filter(request -> {
+                String body = Helpers.bodyUtf8(request);
+                return body.contains("scope=alt%3Aone+alt%3Atwo");
+            })
+            .count();
+        assertEquals(2, tokenRequests);
+    }
+
+    @Test
+    public void testClientCredentialsOptionAuthenticationFails() throws Exception {
+        SDK sdk = SDK.builder().serverURL(HTTPBIN_URL) //
+                .security(Security.builder() //
+                          .clientCredentials(SchemeClientCredentials.builder() //
+                                             .clientID("speakeasy-sdks") //
+                                             .clientSecret("badsecret") //
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                                             .{{ sanitizeFieldName (originalFieldName $f) }}("") //
+{{- end }}
+                                             .build()) //
+                          .build()) //
+                .build();
+        assertThrows(AuthException.class, () -> sdk.hooks().authenticatedRequestGlobalSecurity().call());
+    }
+
+    @Test
+    public void testHooksAvailableOAuth2Scopes() throws Exception {
+        recordTest("hooks-available-oauth2-scopes");
+
+        assertEquals("read", OAuth2Scopes.ClientCredentials.Read.value());
+        assertEquals("models:read", OAuth2Scopes.Oauth2.ModelsRead.value());
+
+        assertEquals(OAuth2Scopes.ClientCredentials.Write, OAuth2Scopes.ClientCredentials.fromValue("write").get());
+        assertEquals(OAuth2Scopes.Oauth2.StoreManage, OAuth2Scopes.Oauth2.fromValue("store_manage").get());
+        assertTrue(OAuth2Scopes.Oauth2.fromValue("unknown").isEmpty());
+    }
+
+}

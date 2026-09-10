@@ -1,0 +1,94 @@
+package tests
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+)
+
+func TestHooks_TestHooksAfterResponse(t *testing.T) {
+	recordTest("test-hooks-after-response")
+
+	// The afterSuccess hook returns error("validation failed") for this operation.
+	// Any 2xx response triggers it, so an echo server suffices.
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"hooks", "test-hooks-after-response"})
+	assert.Error(t, err)
+
+	output := h.GetStderr()
+	assert.Contains(t, output, "validation failed")
+}
+
+func TestHooks_TestHooksError(t *testing.T) {
+	recordTest("test-hooks-error")
+
+	// The afterError hook returns error("special test error case") when it
+	// receives a 400 response for this operation.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error":"bad request"}`))
+	}))
+	defer srv.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(srv.URL, []string{"hooks", "test-hooks-error"})
+	assert.Error(t, err)
+
+	output := h.GetStderr()
+	assert.Contains(t, output, "special test error case")
+}
+
+func TestHooks_AuthorizationHeaderModification(t *testing.T) {
+	recordTest("hooks-authorization-header-modification")
+
+	// The beforeRequest hook appends " modified" to the Authorization header
+	// when operationID is "authorizationHeaderModification".
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"hooks", "authorization-header-modification",
+		"--api-key-auth", "Bearer testToken",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// The hook should have modified the Authorization header
+	authHeader := jsonGetString(output, "headers.Authorization")
+	assert.Contains(t, authHeader, "testToken modified")
+}
+
+func TestHooks_CustomUserAgent(t *testing.T) {
+	recordTest("hooks-custom-user-agent")
+
+	require.NotEqual(t, "0.0.1", cli.Version)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"hooks", "hooks-custom-user-agent"})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	assert.Equal(t, "acme-corp/"+cli.Version+" acme-corp/"+runtime.Version(), jsonGetString(output, "headers.User-Agent"))
+	assert.Equal(t, "{{.Global.Config.GenVersion}}", jsonGetString(output, "headers.X-Test-Gen-Version"))
+	assert.Equal(t, "{{.Global.Config.DocVersion}}", jsonGetString(output, "headers.X-Test-Doc-Version"))
+	assert.Equal(t, cli.Version, jsonGetString(output, "headers.X-Test-Init-Sdk-Version"))
+}

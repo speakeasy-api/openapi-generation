@@ -1,0 +1,398 @@
+{{- $outputLocation := .Local.Type.OutputLocation -}}
+{{- $className := sanitizeClass .Local.Type $outputLocation true -}}
+{{- $originalName := .Local.Type.OriginalName -}}
+{{- $discriminator := .Local.Type.Discriminator -}}
+{{- $unionType := (getUnionTypeName $className $outputLocation) -}}
+{{- $isError := eq .Local.Type.Scope "errors" -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $enumNames := "" -}}
+{{- $isUnionOpen := .Local.Type.IsUnionOpen -}}
+{{if $discriminator}}
+{{- $enumNames = getUnionEnumNamesFromDiscriminator $unionType $discriminator.Mapping $outputLocation}}
+{{else}}
+{{- $enumNames = getUnionEnumNamesFromAssociatedTypes $unionType .Local.Type.AssociatedTypes $outputLocation}}
+{{end}}
+type {{$unionType}} string
+{{if $discriminator}}
+const (
+	{{range $i, $mapping := $discriminator.Mapping}}
+	{{index $enumNames $i}} {{$unionType}} = {{sanitizeEnumValue $mapping.Name "string"}}{{end}}
+{{- if $isUnionOpen}}
+	{{openUnionUnknownEnumName $unionType}} {{$unionType}} = {{openUnionUnknownEnumValue .Local.Type $unionType $outputLocation}}
+{{- end}}
+)
+{{else}}
+const (
+	{{- range $i, $assocType := .Local.Type.AssociatedTypes}}
+	{{- $name := sanitizeUnionTypeName $assocType}}
+	{{index $enumNames $i}} {{$unionType}} = {{sanitizeEnumValue $name "string"}}{{end}}
+{{- if $isUnionOpen}}
+	{{openUnionUnknownEnumName $unionType}} {{$unionType}} = {{openUnionUnknownEnumValue .Local.Type $unionType $outputLocation}}
+{{- end}}
+)
+{{end}}
+{{templateComments .Local.Type.Comments $dg $className 0 "type" -}}
+type {{$className}} struct {
+	{{- range .Local.Type.AssociatedTypes}}
+	{{- $name := sanitizeUnionTypeName .}}
+	{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+	{{$fieldName}} {{sanitizeType . true $outputLocation}} `queryParam:"inline" union:"member"`{{end}}
+{{- if $isUnionOpen}}
+	{{- addImport "encoding/json"}}
+	UnknownRaw json.RawMessage `json:"-" union:"unknown"`
+{{- end}}
+
+	Type {{$unionType}}
+
+	{{range .Local.Type.Fields -}}
+    {{- $fieldName := sanitizeScopedFieldName .Name $.Local.Type -}}
+    {{- $fieldType := sanitizeType .Type (or .Optional .Nullable) $outputLocation -}}
+    {{- templateComments .Comments $dg (printf "%s.%s" $className $fieldName) 1 "field" true -}}
+    {{$fieldName}} {{$fieldType}} {{templateAnnotations .}}
+    {{end}}
+}
+{{if $isError}}
+var _ error = &{{$className}}{}
+{{end}}
+
+{{- if .Global.Config.UnionGenerics}}
+  {{- if isGenericUnion .Local.Type}}
+    {{- $memberConstraint := unionConstraintName $className $outputLocation}}
+type {{$memberConstraint}} interface {
+	{{templateUnionConstraintTerms .Local.Type}}
+}
+
+func New{{$className}}[T {{$memberConstraint}}](val T) {{$className}} {
+	switch v := any(val).(type) {
+	{{- if $discriminator}}
+      {{- range $i, $mapping := $discriminator.Mapping}}
+        {{- $fieldName := sanitizeScopedFieldName (sanitizeUnionTypeName $mapping.Type) $.Local.Type}}
+	case {{sanitizeType $mapping.Type false $outputLocation}}:
+		typ := {{index $enumNames $i}}
+          {{- if eq $mapping.Type.Type "class"}}
+            {{- $field := $mapping.Type.Fields.GetField $discriminator.TypePropertyName -}}
+            {{- if not $field.Const }}
+		typStr := {{sanitizeUnionCast $field.Type $outputLocation}}(typ)
+		v.{{sanitizeFieldName $field.Name}} = {{if or $field.Optional $field.Nullable}}&{{end}}typStr
+            {{- end}}
+          {{- end}}
+		return {{$className}}{
+			{{$fieldName}}: {{if not (isPointerType $mapping.Type)}}&{{end}}v,
+			Type: typ,
+		}
+      {{- end}}{{/* end range discr. mapping */}}
+    {{- else}}{{/* no discriminator */}}
+      {{- range $i, $assocType := .Local.Type.AssociatedTypes}}
+        {{- $fieldName := sanitizeScopedFieldName (sanitizeUnionTypeName $assocType) $.Local.Type}}
+	case {{sanitizeType $assocType false $outputLocation}}:
+		return {{$className}}{
+			{{$fieldName}}: {{if not (isPointerType $assocType)}}&{{end}}v,
+			Type: {{index $enumNames $i}},
+		}
+      {{- end}}
+    {{- end}}
+	}
+	{{- addImport "fmt"}}
+	panic(fmt.Sprintf("unreachable: %T is not a member of union {{$className}}", val))
+}
+  {{- else if $discriminator}}
+    {{- range $i, $mapping := $discriminator.Mapping}}
+func New{{$className}}{{sanitizeClassName (getDiscriminatorDisplayName $mapping)}}({{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}} {{sanitizeType $mapping.Type false $outputLocation}}) {{$className}} {
+	typ := {{index $enumNames $i}}
+      {{- if eq $mapping.Type.Type "class"}}
+        {{- $field := $mapping.Type.Fields.GetField $discriminator.TypePropertyName -}}
+        {{- if not $field.Const }}
+	typStr := {{sanitizeUnionCast $field.Type $outputLocation}}(typ)
+	{{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}}.{{sanitizeFieldName $field.Name}} = {{if or $field.Optional $field.Nullable}}&{{end}}typStr
+        {{- end}}
+      {{- end}}
+      {{- $fieldName := sanitizeScopedFieldName (sanitizeUnionTypeName $mapping.Type) $.Local.Type}}
+	return {{$className}}{
+		{{$fieldName}}: {{if not (isPointerType $mapping.Type)}}&{{end}}{{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}},
+		Type: typ,
+	}
+}
+    {{- end}}
+  {{- else}}
+  {{- range $i, $assocType := .Local.Type.AssociatedTypes}}
+    {{- $name := sanitizeUnionTypeName $assocType}}
+func New{{$className}}{{sanitizeClassName $name}}({{sanitizePrivateClassName $name}} {{sanitizeType $assocType false $outputLocation}}) {{$className}} {
+	typ := {{index $enumNames $i}}
+
+	return {{$className}}{
+		{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+		{{$fieldName}}: {{if not (isPointerType $assocType)}}&{{end}}{{sanitizePrivateClassName $name}},
+		Type: typ,
+	}
+}
+  {{- end}}
+{{- end}}
+{{- if $isUnionOpen}}
+func New{{$className}}Unknown(raw json.RawMessage) {{$className}} {
+	return {{$className}}{
+		UnknownRaw: raw,
+		Type:       {{openUnionUnknownEnumName $unionType}},
+	}
+}
+{{- end}}
+{{else}}
+{{if $discriminator}}
+{{- range $i, $mapping := $discriminator.Mapping}}
+func Create{{$className}}{{sanitizeClassName (getDiscriminatorDisplayName $mapping)}}({{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}} {{sanitizeType $mapping.Type false $outputLocation}}) {{$className}} {
+	typ := {{index $enumNames $i}}
+	{{if eq $mapping.Type.Type "class"}}
+	{{- $field := $mapping.Type.Fields.GetField $discriminator.TypePropertyName -}}
+  {{- if not $field.Const }}
+	typStr := {{sanitizeUnionCast $field.Type $outputLocation}}(typ)
+	{{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}}.{{sanitizeFieldName $field.Name}} = {{if or $field.Optional $field.Nullable}}&{{end}}typStr
+  {{- end}}
+	{{end}}
+	return {{$className}}{
+		{{- $fieldName := sanitizeScopedFieldName (sanitizeUnionTypeName $mapping.Type) $.Local.Type}}
+		{{$fieldName}}: {{if not (isPointerType $mapping.Type)}}&{{end}}{{sanitizePrivateClassName (getDiscriminatorDisplayName $mapping)}},
+		Type: typ,
+	}
+}
+{{end}}{{else}}
+{{- range $i, $assocType := .Local.Type.AssociatedTypes}}
+{{- $name := sanitizeUnionTypeName $assocType}}
+func Create{{$className}}{{sanitizeClassName $name}}({{sanitizePrivateClassName $name}} {{sanitizeType $assocType false $outputLocation}}) {{$className}} {
+	typ := {{index $enumNames $i}}
+
+	return {{$className}}{
+		{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+		{{$fieldName}}: {{if not (isPointerType $assocType)}}&{{end}}{{sanitizePrivateClassName $name}},
+		Type: typ,
+	}
+}
+{{end}}{{end}}
+{{- if $isUnionOpen}}
+func Create{{$className}}Unknown(raw json.RawMessage) {{$className}} {
+	return {{$className}}{
+		UnknownRaw: raw,
+		Type:       {{openUnionUnknownEnumName $unionType}},
+	}
+}
+{{- end}}
+{{end}}
+{{- if $isUnionOpen}}
+func (u {{$className}}) GetUnknownRaw() json.RawMessage {
+	return u.UnknownRaw
+}
+
+func (u {{$className}}) IsUnknown() bool {
+	return u.Type == {{openUnionUnknownEnumName $unionType}}
+}
+{{end}}
+{{- $hasErrorPath := or (not $isUnionOpen) $discriminator}}
+func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err error){{else}}error{{end}} {
+	{{- if or $hasErrorPath .Local.Type.Fields}}
+	previous := *u
+	{{- end}}
+	*u = {{$className}}{
+		{{- range .Local.Type.Fields}}
+		{{- $fieldName := sanitizeScopedFieldName .Name $.Local.Type}}
+		{{$fieldName}}: previous.{{$fieldName}},
+		{{- end}}
+	}
+	{{- if $hasErrorPath}}
+	defer func() {
+		if err != nil {
+			*u = previous
+		}
+	}()
+	{{- end}}
+	{{if $discriminator}}
+	{{- $fieldName := sanitizeScopedFieldName $discriminator.TypePropertyName $.Local.Type}}
+	type discriminator struct {
+		{{$fieldName}} string `json:"{{$discriminator.TypePropertyName}}"`
+	}
+
+	dis := new(discriminator)
+    {{- addImport "encoding/json"}}
+	{{- addImport "fmt"}}
+	if err := json.Unmarshal(data, &dis); err != nil {
+		{{- if $isUnionOpen}}
+		u.UnknownRaw = json.RawMessage(data)
+		u.Type = {{openUnionUnknownEnumName $unionType}}
+		return nil
+		{{- else}}
+		return fmt.Errorf("could not unmarshal discriminator: %w", err)
+		{{- end}}
+	}
+
+	{{- if $isUnionOpen}}
+	if dis == nil {
+		u.UnknownRaw = json.RawMessage(data)
+		u.Type = {{openUnionUnknownEnumName $unionType}}
+		return nil
+	}
+	{{- end}}
+
+	switch dis.{{$fieldName}} {
+		{{- range $i, $mapping := $discriminator.Mapping}}
+		case {{sanitizeEnumValue $mapping.Name "string"}}:
+			{{- $variableName := (sanitizeVariableName $mapping.Type.Name)}}{{if eq $variableName "data"}}{{$variableName = "dataVal"}}{{end}}
+			{{- $assignFieldName := sanitizeScopedFieldName (sanitizeUnionTypeName $mapping.Type) $.Local.Type}}
+			{{$variableName}} := new({{sanitizeType $mapping.Type false $outputLocation}})
+	   		{{- addImport "utils"}}
+			{{- addImport "fmt"}}
+			if err := utils.UnmarshalJSON(data, &{{$variableName}}, {{templateTypeAnnotations $mapping.Type true true}}, true, nil); err != nil {
+				return fmt.Errorf("could not unmarshal `%s` into expected ({{$fieldName}} == {{sanitizeEnumValue $mapping.Name "string" | trimAll "\""}}) type {{sanitizeType $mapping.Type false $outputLocation}} within {{$className}}: %w", string(data), err)
+			}
+
+			u.{{$assignFieldName}} = {{$variableName}}
+			u.Type = {{index $enumNames $i}}
+			return nil{{end}}
+		{{- if $isUnionOpen}}
+		default:
+			u.UnknownRaw = json.RawMessage(data)
+			u.Type = {{openUnionUnknownEnumName $unionType}}
+			return nil
+		{{- end}}
+	}
+	{{else}}
+	{{- $sortedTypes := sortTypeDefRequiredFieldsDescending .Local.Type.AssociatedTypes}}
+	{{- $sortedEnumNames := getUnionEnumNamesFromAssociatedTypes $unionType $sortedTypes $outputLocation}}
+	{{- addImport "utils"}}
+	{{- if isUnionStrategyPopulatedFields}}
+	{{- /* For populated-fields strategy, use spec order instead of sorted order */}}
+	{{- $sortedTypes = .Local.Type.AssociatedTypes}}
+	{{- $sortedEnumNames = getUnionEnumNamesFromAssociatedTypes $unionType $sortedTypes $outputLocation}}
+	var candidates []utils.UnionCandidate
+
+	// Collect all valid candidates
+	{{- range $i, $assocType := $sortedTypes}}
+	{{- $name := sanitizeUnionTypeName $assocType}}
+	{{- $varName := sanitizeVariableName $name}}{{if eq $varName "data"}}{{$varName = "dataVal"}}{{end}}
+	var {{$varName}} {{sanitizeType $assocType false $outputLocation true}} = {{templateZero $assocType false $outputLocation true}}
+	if err := utils.UnmarshalJSON(data, &{{$varName}}, {{templateTypeAnnotations $assocType true true}}, true, nil); err == nil {
+		candidates = append(candidates, utils.UnionCandidate{
+			Type:       {{index $sortedEnumNames $i}},
+			Value:      {{if not (isPointerType $assocType)}}&{{end}}{{$varName}},
+		})
+	}
+	{{end}}
+
+	if len(candidates) == 0 {
+		{{- if $isUnionOpen}}
+		{{- addImport "encoding/json"}}
+		u.UnknownRaw = json.RawMessage(data)
+		u.Type = {{openUnionUnknownEnumName $unionType}}
+		return nil
+		{{- else}}
+		{{- addImport "fmt"}}
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+		{{- end}}
+	}
+
+	// Pick the best candidate using multi-stage filtering
+	best := utils.PickBestUnionCandidate(candidates, data)
+	if best == nil {
+		{{- if $isUnionOpen}}
+		{{- addImport "encoding/json"}}
+		u.UnknownRaw = json.RawMessage(data)
+		u.Type = {{openUnionUnknownEnumName $unionType}}
+		return nil
+		{{- else}}
+		{{- addImport "fmt"}}
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+		{{- end}}
+	}
+
+	// Set the union type and value based on the best candidate
+	u.Type = best.Type.({{$unionType}})
+	switch best.Type {
+	{{- range $i, $assocType := $sortedTypes}}
+	{{- $name := sanitizeUnionTypeName $assocType}}
+	{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+	case {{index $sortedEnumNames $i}}:
+		u.{{$fieldName}} = best.Value.({{sanitizeType $assocType true $outputLocation}})
+		return nil
+	{{- end}}
+	}
+	{{- else}}
+	{{- range $i, $assocType := $sortedTypes}}
+	{{- $name := sanitizeUnionTypeName $assocType}}
+	{{- $varName := sanitizeVariableName $name}}{{if eq $varName "data"}}{{$varName = "dataVal"}}{{end}}
+	var {{$varName}} {{sanitizeType $assocType false $outputLocation true}} = {{templateZero $assocType false $outputLocation true}}
+	if err := utils.UnmarshalJSON(data, &{{$varName}}, {{templateTypeAnnotations $assocType true true}}, true, nil); err == nil {
+		{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+		u.{{$fieldName}} = {{if not (isPointerType $assocType)}}&{{end}}{{$varName}}
+		u.Type = {{index $sortedEnumNames $i}}
+		return nil
+	}
+	{{end}}
+	{{- end}}
+	{{end}}
+	{{- if not (and $discriminator $isUnionOpen)}}
+
+	{{- if $isUnionOpen}}
+	{{- addImport "encoding/json"}}
+	u.UnknownRaw = json.RawMessage(data)
+	u.Type = {{openUnionUnknownEnumName $unionType}}
+	return nil
+	{{- else}}
+	{{- addImport "fmt"}}
+	return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+	{{- end}}
+	{{- end}}
+}
+
+func (u {{$className}}) MarshalJSON() ([]byte, error) {
+	{{- range .Local.Type.AssociatedTypes}}
+	{{- $name := sanitizeUnionTypeName .}}
+	{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+	if u.{{$fieldName}} != nil {
+		{{- addImport "utils"}}
+		return utils.MarshalJSON(u.{{$fieldName}}, {{templateTypeAnnotations . true true}}, true)
+	}
+	{{end}}
+{{- if $isUnionOpen}}
+	if u.UnknownRaw != nil {
+		return json.RawMessage(u.UnknownRaw), nil
+	}
+{{- end}}
+
+	{{- addImport "errors"}}
+	return nil, errors.New("could not marshal union type {{$className}}: all fields are null")
+}
+{{- if and  .Local.Type.EventStreamEnvelope $discriminator}}
+
+func (o {{$className}}) GetEventEncoding(event string) (string, error) {
+    switch event {
+		{{- range $discriminator.Mapping}}
+		case {{sanitizeEnumValue .Name "string"}}:
+			return "{{getEventEncoding .Type}}", nil{{end}}
+	}
+	return "string", nil
+}
+{{end}}
+{{if $isError}}
+func (u {{$className}}) Error() string {
+	switch u.Type {
+	{{- if $discriminator}}
+		{{- range $i, $mapping := $discriminator.Mapping}}
+		{{- $name := sanitizeUnionTypeName $mapping.Type}}
+		case {{index $enumNames $i}}:
+			{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+			{{templateErrorMessage $mapping.Type (print "u." ($fieldName)) | indent 12}}{{end}}
+	{{- else}}
+		{{- range $i, $assocType := .Local.Type.AssociatedTypes}}
+		{{- $name := sanitizeUnionTypeName $assocType}}
+		case {{index $enumNames $i}}:
+			{{- $fieldName := sanitizeScopedFieldName $name $.Local.Type}}
+			{{templateErrorMessage $assocType (print "u." ($fieldName)) | indent 12}}{{end}}
+	{{- end}}
+	{{- if $isUnionOpen}}
+		case {{openUnionUnknownEnumName $unionType}}:
+			if u.UnknownRaw != nil {
+				return string(u.UnknownRaw)
+			}
+			return "unknown error"
+	{{- end}}
+		default:
+			return "unknown error"
+	}
+}
+{{end}}

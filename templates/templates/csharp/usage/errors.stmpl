@@ -1,0 +1,55 @@
+{{- $selectedError := pickBestErrorToHandle .Local.Operation }}
+{{- $maxErrorFields := 2 }}
+{{- $isErrorEnvelope := eq getResponseFormat "envelope-http"}}
+// ex.ToString() provides a detailed error message
+System.Console.WriteLine(ex);
+
+// Base exception fields
+  {{- if $isErrorEnvelope}}
+HttpRequestMessage request = ex.Request;
+HttpResponseMessage response = ex.Response;
+var statusCode = (int)response.StatusCode; 
+  {{- else}}
+HttpResponseMessage rawResponse = ex.RawResponse;
+HttpResponseHeaders headers = ex.Headers;
+int statusCode = ex.StatusCode;
+string? contentType = ex.ContentType;
+  {{- end}}
+var responseBody = ex.Body;
+
+{{- if $selectedError}}
+  {{- $type := sanitizeType $selectedError}}
+
+if (ex is {{$type}}) // different exceptions may be thrown depending on the method
+{
+  {{- $payloadType := print $type "Payload"}}
+    // Check error data fields
+    {{$payloadType}} payload = ex.Payload;
+  {{- range $i, $field := $selectedError.Fields }}
+    {{- if lt $i $maxErrorFields }}
+      {{- $fieldType := sanitizeType $field.Type false "" $payloadType true}}
+      {{- $fieldName := sanitizeFieldName $field.Name}}
+    {{$fieldType}} {{$fieldName}} = payload.{{$fieldName}};
+    {{- else if eq $i $maxErrorFields }}
+    // ...
+    {{- end}}
+  {{- end}}
+  {{- if schemaValidationLenient}}
+
+    // If the response body did not match the expected schema, details are made
+    // available in the DeserializationException field
+    if (ex.DeserializationException != null)
+    {
+        ResponseValidationException validationEx = ex.DeserializationException;
+        System.Console.WriteLine(validationEx.Message);
+        Exception? cause = validationEx.InnerException;
+    }
+  {{- end}}
+}
+
+// An underlying cause may be provided
+if (ex.InnerException != null)
+{
+    Exception cause = ex.InnerException;
+}
+{{- end}}

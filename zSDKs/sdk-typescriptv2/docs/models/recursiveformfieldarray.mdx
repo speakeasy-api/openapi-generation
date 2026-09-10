@@ -1,0 +1,29 @@
+---
+title: "RecursiveFormFieldArray"
+---
+
+An array field that contains nested form fields
+
+## Example Usage
+
+```typescript
+import { RecursiveFormFieldArray } from "openapi";
+
+let value: RecursiveFormFieldArray = {
+  type: "array",
+  label: "<value>",
+  itemType: {
+    type: "number",
+    label: "<value>",
+  },
+};
+```
+
+## Fields
+
+| Field                                                                                                             | Type                                                                                                              | Required                                                                                                          | Description                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `type`                                                                                                            | *"array"*                                                                                                         | :heavy_check_mark:                                                                                                | N/A                                                                                                               |
+| `label`                                                                                                           | *string*                                                                                                          | :heavy_check_mark:                                                                                                | N/A                                                                                                               |
+| `required`                                                                                                        | *boolean*                                                                                                         | :heavy_minus_sign:                                                                                                | N/A                                                                                                               |
+| `itemType`                                                                                                        | *models.RecursiveFormField*                                                                                       | :heavy_check_mark:                                                                                                | A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items. |

@@ -1,0 +1,105 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  maintainOpenAPIOrder: true
+  usageSnippets:
+    optionalPropertyRendering: withExample
+    sdkInitStyle: constructor
+  fixes:
+    nameResolutionDec2023: true
+    nameResolutionFeb2025: true
+    parameterOrderingFeb2024: false
+    requestResponseComponentNamesFeb2024: true
+    securityFeb2025: true
+    sharedErrorComponentsApr2025: true
+    sharedNestedComponentsJan2026: false
+    nameOverrideFeb2026: true
+    anyTypeRequiredDec2025: true
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+    oAuth2PasswordEnabled: false
+    hoistGlobalSecurity: true
+  sdkHooksConfigAccess: true
+  schemas:
+    allOfMergeStrategy: shallowMerge
+  requestBodyFieldName: ""
+  versioningStrategy: automatic
+  persistentEdits: {}
+  tests:
+    generateTests: true
+    generateNewTests: true
+    skipResponseBodyAssertions: false
+  documentation: mintlify
+  repoUrl: https://github.com/speakeasy-sdks/test-sdk
+typescript:
+  version: 0.0.1
+  acceptHeaderEnum: true
+  additionalDependencies:
+    dependencies:
+      uuid: ^11.1.1
+    devDependencies: {}
+    peerDependencies: {}
+  additionalPackageJSON:
+    license: UNLICENSED
+  additionalScripts:
+    echo: echo Hello, World!
+  alwaysIncludeInboundAndOutbound: false
+  apiPromiseHelpers: true
+  author: Speakeasy
+  baseErrorName: SDKBaseError
+  clientServerStatusCodesAsErrors: true
+  constFieldsAlwaysOptional: false
+  customCasings:
+    mcp:
+      initialism: true
+  defaultErrorName: SDKError
+  enableCustomCodeRegions: true
+  enableMCPServer: false
+  enableReactQuery: true
+  enumFormat: enum
+  envVarPrefix: SPEAKEASY
+  eventStreamClassName: Stream
+  exportZodModelNamespace: false
+  fixEnumNameSanitization: true
+  flatAdditionalProperties: true
+  flattenGlobalSecurity: true
+  flatteningOrder: parameters-first
+  formStringArrayEncodeMode: encoded-string
+  forwardCompatibleEnumsByDefault: true
+  forwardCompatibleUnionsByDefault: tagged-only
+  generateExamples: true
+  imports:
+    option: openapi
+    paths:
+      callbacks: ""
+      errors: ""
+      operations: ""
+      shared: ""
+      webhooks: ""
+  inferUnionDiscriminators: true
+  inputModelSuffix: input
+  jsonpath: rfc9535
+  laxMode: lax
+  legacyFileNaming: true
+  maxMethodParams: 4
+  methodArguments: infer-optional-args
+  modelPropertyCasing: camel
+  moduleFormat: dual
+  multipartArrayFormat: standard
+  outputModelSuffix: output
+  packageName: openapi
+  preApplyUnionDiscriminators: true
+  preserveModelFieldNames: false
+  privateIdentifierPrefix: __
+  requestExtras: true
+  responseFormat: flat
+  sseFlatResponse: true
+  templateVersion: v2
+  unionStrategy: populated-fields
+  usageSDKInitImports: []
+  useIndexModules: true
+  useOxlint: true
+  useTsgo: true
+  webhooks:
+    enabled: true
+  zodVersion: v4-mini

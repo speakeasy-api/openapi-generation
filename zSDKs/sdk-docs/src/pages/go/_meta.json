@@ -1,0 +1,26 @@
+{
+  "-- guides": {
+    "title": "Guides",
+    "type": "separator"
+  },
+  "client_sdks": "Client SDKs",
+  "installation": "Installation",
+  "custom_http_client": "Custom Http Client",
+  "security_options": "Security Options",
+  "pagination": "Pagination",
+  "global_parameters": "Global Parameters",
+  "errors": "Errors",
+  "server_options": "Server Options",
+  "retries": "Retries",
+  "-- resources": {
+    "title": "Resources",
+    "type": "separator"
+  },
+  "tag1": "Tag1",
+  "test_group": "Test Group",
+  "post_file": "Post File",
+  "get_polymorphism": "Get Polymorphism",
+  "get_union_errors": "Get Union Errors",
+  "get_request_body_flattened_away": "Get Request Body Flattened Away",
+  "get_user": "Get User"
+}

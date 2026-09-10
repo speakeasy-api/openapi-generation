@@ -1,0 +1,63 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/requestBodies/post/flagDefaultsBodyMerge:
+    post:
+      operationId: requestBodyPostFlagDefaultsBodyMerge
+      description: >-
+        Regression: a request-body property with a schema default
+        also gets a dedicated typed CLI flag. When the caller supplies that
+        property via --body or stdin and does not pass the dedicated flag, the
+        body/stdin value must be preserved. The flag default must only be
+        applied when the flag is explicitly set, or when building from flags
+        alone (no body/stdin).
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlagDefaultBodyMerge"
+            example:
+              name: from-body
+              status: active
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/FlagDefaultBodyMerge"
+                  url:
+                    type: string
+                required:
+                  - url
+components:
+  schemas:
+    FlagDefaultBodyMerge:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Required name field without a default
+        status:
+          type: string
+          description: Optional status with a schema default used by the CLI flag
+          default: pending
+        count:
+          type: integer
+          description: Optional count with a non-zero schema default
+          default: 42

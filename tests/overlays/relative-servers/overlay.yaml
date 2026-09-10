@@ -1,0 +1,16 @@
+# This overlay setups the relative-servers SDK which is mainly trying to test relative servers
+overlay: 1.0.0
+info:
+  title: Overlay ./tests/specs/no-servers.yaml => ./tests/specs/relative-servers.yaml
+  version: 0.0.0
+  x-base-spec: ./tests/specs/no-servers.yaml
+actions:
+  # Remove the global servers
+  - target: $["servers"][*]
+    remove: true
+  # Replace them with servers using relative urls
+  - target: $["servers"]
+    update:
+      - url: /relative-url
+        description: A server with a relative URL
+        x-speakeasy-server-id: relative-server

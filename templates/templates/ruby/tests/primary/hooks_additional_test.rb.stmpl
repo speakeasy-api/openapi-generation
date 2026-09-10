@@ -1,0 +1,177 @@
+# frozen_string_literal: true
+# typed: true
+
+require_relative "../lib/openapi"
+require_relative "../lib/crystalline"
+require_relative "common_helper_test"
+require_relative "helper_test"
+
+require "minitest/autorun"
+require "minitest/focus"
+require "rack"
+require "securerandom"
+
+module OpenApiSDK
+  class TestHooksAdditional < Minitest::Test
+    def setup
+      @sdk = OpenApiSDK::SDK.new(
+        server_url: CommonHelpers.httpbin_url,
+        security: Models::Shared::Security.new(
+          api_key_auth: "Bearer test_api_key"
+        )
+      )
+    end
+
+    def test_hooks
+      record_test("test-hooks")
+
+      res = @sdk.hooks.test_hooks(some_param: "someInitialValue")
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      refute_nil(res.res.args)
+      assert_equal("overriddenParam", res.res.args.some_param)
+      refute_nil(res.res.headers)
+      assert_equal("added by client", res.res.headers.client_level_header)
+      assert_equal("some-key", res.res.headers.idempotency_key)
+      assert_equal("#{CommonHelpers.httpbin_url}/anything/hooks?someParam=overriddenParam", res.res.url)
+    end
+
+    def test_hooks_after_response
+      record_test("test-hooks-after-response")
+
+      error = nil
+
+      begin
+        @sdk.hooks.test_hooks_after_response
+      rescue RuntimeError => e
+        error = e
+      end
+
+      refute_nil(error)
+      assert_equal("validation failed", error.message)
+    end
+
+    def test_hooks_before_create_request
+      record_test("test-hooks-before-create-request")
+
+      res = @sdk.hooks.test_hooks_before_create_request_paths(namespace: "foo/bar")
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.res)
+      assert_equal(res.res.headers.old_pathname, "/anything/hooks/beforeCreateRequestPaths/foo/bar")
+      assert_equal(res.res.url, "#{CommonHelpers.httpbin_url}/anything/hooks/beforeCreateRequestPaths/foo/bar")
+    end
+
+    def test_hooks_error
+      record_test("test-hooks-error")
+
+      error = nil
+
+      begin
+        @sdk.hooks.test_hooks_error
+      rescue RuntimeError => e
+        error = e
+      end
+
+      refute_nil(error)
+      assert_equal("special test error case", error.message)
+    end
+
+    def test_hooks_authorization_header_modification
+      record_test("hooks-authorization-header-modification")
+
+      res = @sdk.hooks.authorization_header_modification
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.token)
+      assert(res.token.authenticated)
+      assert_equal("test_api_key modified", res.token.token)
+    end
+
+    def test_hooks_custom_user_agent
+      record_test("hooks-custom-user-agent")
+
+      res = @sdk.hooks.hooks_custom_user_agent
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+      refute_nil(res.custom_user_agent_echo)
+      headers = res.custom_user_agent_echo.headers
+      assert_equal("acme-corp/{{.Global.Config.SDKVersion}} acme-corp/#{RUBY_VERSION}", headers["User-Agent"])
+      assert_equal("{{.Global.Config.GenVersion}}", headers["X-Test-Gen-Version"])
+      assert_equal("{{.Global.Config.DocVersion}}", headers["X-Test-Doc-Version"])
+      assert_equal("{{.Global.Config.SDKVersion}}", headers["X-Test-Init-Sdk-Version"])
+    end
+
+    def test_client_credentials_option_successfully_authenticates
+      record_test("hooks-client-credentials-option-success")
+
+      s = OpenApiSDK::SDK.new(
+        security: Models::Shared::Security.new(
+          client_credentials: Models::Shared::SchemeClientCredentials.new(
+            client_id: "speakeasy-sdks",
+            client_secret: "supersecret-#{SecureRandom.hex(5)}",
+{{- range $f := collectClientCredentialsAdditionalFields }}
+            {{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+          )
+        )
+      )
+      refute_nil(s)
+
+      res = s.hooks.authenticated_request(request: nil)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+
+      res = s.hooks.authenticated_request(request: nil)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+    end
+
+    def test_client_credentials_option_successfully_authenticates_with_alt_token_url
+      record_test("hooks-client-credentials-option-success-alt-token-url")
+
+      s = OpenApiSDK::SDK.new(
+        security: Models::Shared::Security.new(
+          client_credentials: Models::Shared::SchemeClientCredentials.new(
+            client_id: "speakeasy-sdks",
+            client_secret: "supersecret-#{SecureRandom.hex(5)}",
+            token_url: "/clientcredentials/alt/token",
+            scopes: ["alt:one", SDKHooks::ClientCredentialsOAuth2Scope::ALT_TWO.serialize],
+{{- range $f := collectClientCredentialsAdditionalFields }}
+            {{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+          )
+        )
+      )
+      refute_nil(s)
+
+      res = s.hooks.authenticated_request(request: nil)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+
+      res = s.hooks.authenticated_request(request: nil)
+      refute_nil(res)
+      assert_equal(Rack::Utils.status_code(:ok), res.http_meta.response.status)
+    end
+
+    def test_hooks_available_oauth2_scopes
+      record_test("hooks-available-oauth2-scopes")
+
+      assert_equal("read", SDKHooks::ClientCredentialsOAuth2Scope::READ.serialize)
+      assert_equal("models:read", SDKHooks::OAuth2Scope::MODELS_READ.serialize)
+
+      assert_equal(
+        SDKHooks::ClientCredentialsOAuth2Scope::WRITE,
+        SDKHooks::ClientCredentialsOAuth2Scope.deserialize("write")
+      )
+      assert_equal(SDKHooks::OAuth2Scope::STORE_MANAGE, SDKHooks::OAuth2Scope.deserialize("store_manage"))
+
+      error = assert_raises(KeyError) do
+        SDKHooks::OAuth2Scope.deserialize("unknown")
+      end
+
+      assert_match(/unknown/, error.message)
+    end
+  end
+end

@@ -1,0 +1,4 @@
+zSDKs/mcp-*/** merge=openapi-generated linguist-generated
+zSDKs/sdk-*/** merge=openapi-generated linguist-generated
+changerecord.md merge=union
+*.bat text eol=crlf

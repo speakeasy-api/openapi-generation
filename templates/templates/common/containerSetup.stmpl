@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Install the speakeasy CLI
+curl -fsSL https://raw.githubusercontent.com/speakeasy-api/speakeasy/main/install.sh | sh
+
+# Setup samples directory
+rmdir samples || true
+mkdir samples
+
+{{templateString "devcontainers/setup.stmpl" .}}
+
+# Generate starter usage sample with speakeasy
+speakeasy generate usage -s {{.Local.SchemaPath}} -l {{.Local.Language}} -o samples/root.{{.Local.FileSuffix}}

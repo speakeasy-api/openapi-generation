@@ -1,0 +1,3 @@
+{{- $sdkVar := sanitizeFieldName .Global.AST.MainSDK.Type.Name }}
+{{- if not .Local.SkipSDKInstantiation}}
+{{templateSDKQualifier .Local}}{{$sdkVar}} = {{templateUsageSDKInit .Local}};{{end}}

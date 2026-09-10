@@ -1,0 +1,35 @@
+package boolplanmodifier
+
+import (
+	"context"
+
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+)
+{{- $planModifierName := sanitizeClassName .Local.PlanModifierName}}
+{{- $planModifierType := printf "Bool%sPlanModifier" $planModifierName }}
+var _ planmodifier.Bool = {{$planModifierType}}{}
+
+type {{$planModifierType}} struct{}
+
+// Description describes the plan modification in plain text formatting.
+func (v {{$planModifierType}}) Description(_ context.Context) string {
+	return "TODO: add plan modifier description"
+}
+
+// MarkdownDescription describes the plan modification in Markdown formatting.
+func (v {{$planModifierType}}) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+// Validate performs the plan modification.
+func (v {{$planModifierType}}) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+	resp.Diagnostics.AddAttributeError(
+		req.Path,
+		"TODO: implement plan modifier {{$planModifierName}} logic",
+		req.Path.String()+": "+v.Description(ctx),
+	)
+}
+
+func {{$planModifierName}}() planmodifier.Bool {
+	return {{$planModifierType}}{}
+}

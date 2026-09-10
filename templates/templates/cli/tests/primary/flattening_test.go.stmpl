@@ -1,0 +1,122 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestComponentBodyAndParamNoConflict(t *testing.T) {
+	recordTest("flattening-component-body-and-param-no-conflict")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Body fields are now expanded to individual flags; use stdin for the complex body
+	simpleObj := `{"any":"any","bigint":8821239038968084,"bigintStr":"9007199254740991","bool":true,"boolOpt":true,"date":"2020-01-01","dateTime":"2020-01-01T00:00:00.000000001Z","decimal":3.141592653589793,"decimalStr":"3.14159265358979344719667586","enum":"one","float32":1.1,"float64Str":"1.1","int":1,"int32":1,"int32Enum":55,"intEnum":2,"intOptNull":null,"num":1.1,"numOptNull":null,"str":"test","strOpt":"testOptional"}`
+	err := h.RunWithStdinServer(s.URL, []string{"flattening", "component-body-and-param-no-conflict",
+		"--param-str", "param test",
+	}, simpleObj)
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify param was passed as query param and body was echoed
+	assert.Contains(t, output, `"param test"`)
+}
+
+func TestComponentBodyAndParamConflict(t *testing.T) {
+	recordTest("flattening-component-body-and-param-conflict")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	// Body fields have simple-object. prefix due to naming conflict with --str param
+	simpleObj := `{"any":"any","bigint":8821239038968084,"bigintStr":"9007199254740991","bool":true,"boolOpt":true,"date":"2020-01-01","dateTime":"2020-01-01T00:00:00.000000001Z","decimal":3.141592653589793,"decimalStr":"3.14159265358979344719667586","enum":"one","float32":1.1,"float64Str":"1.1","int":1,"int32":1,"int32Enum":55,"intEnum":2,"intOptNull":null,"num":1.1,"numOptNull":null,"str":"test","strOpt":"testOptional"}`
+	err := h.RunWithStdinServer(s.URL, []string{"flattening", "component-body-and-param-conflict",
+		"--str", "param test",
+	}, simpleObj)
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"param test"`)
+}
+
+func TestInlineBodyAndParamConflict(t *testing.T) {
+	recordTest("flattening-inline-body-and-param-conflict")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"flattening", "inline-body-and-param-conflict",
+		"--request-body.str", "body test",
+		"--str", "param test",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"body test"`)
+	assert.Contains(t, output, `"param test"`)
+}
+
+func TestInlineBodyAndParamNoConflict(t *testing.T) {
+	recordTest("flattening-inline-body-and-param-no-conflict")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"flattening", "inline-body-and-param-no-conflict",
+		"--body-str", "body test",
+		"--param-str", "param test",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"body test"`)
+	assert.Contains(t, output, `"param test"`)
+}
+
+func TestConflictingParams(t *testing.T) {
+	recordTest("flattening-conflicting-params")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"flattening", "conflicting-params",
+		"--str-path-parameter", "pathParam",
+		"--str-query-parameter", "queryParam",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"queryParam"`)
+}
+
+func TestRequiredBodyAllOptional(t *testing.T) {
+	recordTest("flattening-required-body-all-optional")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"flattening", "required-body-all-optional",
+		"--opt-str", "body test",
+		"--opt-int", "1",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"body test"`)
+}

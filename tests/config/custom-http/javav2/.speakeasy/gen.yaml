@@ -1,0 +1,9 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+java:
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  groupID: org.openapis.customhttp
+  artifactID: customhttp
+  templateVersion: v2

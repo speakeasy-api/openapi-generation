@@ -1,0 +1,26 @@
+{{- recurse 1 -}}
+{{- $scope := .Local.Scope -}}
+{{- $type := .Local.Type -}}
+{{- $class := (sanitizeClass $type $scope true) -}}
+{{- $unknownClass := printf "Unknown%s" $class -}}
+{{- $outputLoc := $type.OutputLocation -}}
+{{- $pkg := (getModelPackage true $scope $outputLoc) -}}
+{{- $fullClassName := (print $pkg "." $unknownClass) }}
+package {{$pkg}};
+{{genImports $fullClassName}}// #region imports{{"\n"}}// #endregion imports{{"\n"}}
+{{templateComments $type.Comments $unknownClass 0 "class" }}{{if and $type.Comments $type.Comments.Deprecated}}@Deprecated
+{{end}}public class {{$unknownClass}} extends {{javaImportLocal "utils.UnknownType"}} implements {{$class}} {
+
+    @{{javaImportJacksonAnn "JsonCreator"}}
+    public {{$unknownClass}}({{javaImport "com.fasterxml.jackson.databind.JsonNode"}} rawNode) {
+        super(rawNode);
+    }
+
+    @{{javaImportOverride}}
+    public {{javaImportString}} {{discriminatorFieldName $type}}() {
+        return extractDiscriminator("{{$type.Discriminator.TypePropertyName}}").orElse("{{generateSafeUnknownDiscriminator $type}}");
+    }
+
+    // #region class-body
+    // #endregion class-body
+}

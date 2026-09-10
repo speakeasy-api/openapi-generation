@@ -1,0 +1,42 @@
+{{- $sdk := .Local.SDK -}}
+# {{.Local.Title}}
+{{- if .Local.Deprecated}}
+
+> [!WARNING]
+> This SDK is **DEPRECATED**
+{{- end}}
+{{- if or $sdk.Comments $sdk.Operations}}
+
+## Overview
+{{- end}}
+
+{{- if $sdk.Comments}}
+  {{- if $sdk.Comments.Description}}
+
+{{$sdk.Comments.Description}}
+  {{- else if $sdk.Comments.Summary}}
+
+{{$sdk.Comments.Summary}}
+  {{- end}}
+  {{- if $sdk.Comments.ExternalDocs}}
+    {{- if $sdk.Comments.ExternalDocs.Description}}
+
+{{$sdk.Comments.ExternalDocs.Description}}
+    {{- end}}
+<{{$sdk.Comments.ExternalDocs.URL}}>
+  {{- end}}
+{{- end}}
+
+{{- if $sdk.Operations}}
+
+### Available Operations
+{{range $op := $sdk.Operations}}
+  {{- $deprecated := (and $op.Comments $op.Comments.Deprecated)}}
+* [{{if $deprecated}}~~{{end}}{{sanitizeMethodName $op}}{{if $deprecated}}~~{{end}}](#{{sanitizeMarkdownSlug (sanitizeMethodName $op)}}){{templateOperationSummary $op}}
+  {{- end}}
+
+  {{- range $op := $sdk.Operations}}
+
+{{templateString "readme/operation.stmpl" (createUsageContext $sdk $op $op.Extensions.UsageExample)}}
+{{- end}}
+{{- end}}

@@ -1,0 +1,15 @@
+}
+catch (Exception ex)
+{
+{{- range $index, $error := allExceptionTypes .Local.Operation.Response.Responses }}
+    {{if gt $index 0 }}{{"}"}}
+    else {{end}}if (ex is {{sanitizeType $error}})
+    {
+        // handle exception
+{{- end }}
+    }
+    else if (ex is {{getScopeNamespace "errors" true}}.{{getDefaultErrorClassName}})
+    {
+        // handle exception
+    }
+}

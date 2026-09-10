@@ -1,0 +1,231 @@
+package tests
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/interactive"
+)
+
+type scriptedPrompter struct {
+	answers map[string][]string
+	calls   int
+	fields  [][]string
+}
+
+func (p *scriptedPrompter) Prompt(_ *cobra.Command, fields []interactive.PromptField) ([]interactive.PromptAnswer, error) {
+	p.calls++
+	ids := make([]string, len(fields))
+	answers := make([]interactive.PromptAnswer, len(fields))
+	for i, field := range fields {
+		ids[i] = field.ID
+		if values, ok := p.answers[field.ID]; ok {
+			answers[i] = interactive.PromptAnswer{Set: true, Values: values}
+		}
+	}
+	p.fields = append(p.fields, ids)
+	return answers, nil
+}
+
+func TestCustomCommandHello(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"custom-hello"})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStdout(), "hello from custom command")
+}
+
+func TestInteractiveCustomRequiredFlags(t *testing.T) {
+	p := &scriptedPrompter{answers: map[string][]string{
+		"flag:cobra-value":    {"from-cobra"},
+		"flag:generated-value": {"from-generated"},
+		"flag:note":           {"optional-note"},
+	}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunInteractive([]string{"custom-required-flags"}, p))
+	require.Equal(t, 1, p.calls)
+	require.Equal(t, []string{"flag:cobra-value", "flag:generated-value", "flag:note"}, p.fields[0])
+	assert.Contains(t, h.GetStdout(), "ran: cobra=from-cobra generated=from-generated note=optional-note")
+}
+
+func TestInteractiveCustomRequiredArgDefersAndRevalidatesExactArgs(t *testing.T) {
+	p := &scriptedPrompter{answers: map[string][]string{"arg:target": {"injected-target"}}}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunInteractive([]string{"custom-required-arg"}, p))
+	require.Len(t, p.fields, 1)
+	require.Equal(t, []string{"arg:target"}, p.fields[0])
+	assert.Contains(t, h.GetStdout(), "ran: target=injected-target")
+}
+
+func TestInteractiveUnknownCommandKeepsCobraDetection(t *testing.T) {
+	p := &scriptedPrompter{}
+	h := NewCLITestHarness(t)
+	err := h.RunInteractive([]string{"bogus"}, p)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown command "bogus"`)
+	assert.Zero(t, p.calls)
+	assert.NotContains(t, h.GetStdout(), "ran:")
+}
+
+func TestDynamicCustomCommandUsageMatchesStaticDialect(t *testing.T) {
+	t.Run("required flags", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{
+			"custom-required-flags",
+			"--cobra-value", "documented-cobra",
+			"--generated-value", "documented-generated",
+			"--usage",
+		})
+		require.NoError(t, err)
+		stdout := h.GetStdout()
+		assert.Contains(t, stdout, `alias "crf"`)
+		assert.Contains(t, stdout, `flag "-x --cobra-value <cobra_value>"`)
+		assert.Contains(t, stdout, `flag "--tag <tag...>" help="Repeatable tag" var=#true`)
+		assert.Contains(t, stdout, `flag "--weird-help <weird_help>" help="Ctrl\u{1} char in help"`)
+		assertWellFormedKDLStrings(t, stdout)
+		assert.NotContains(t, stdout, `flag "--help"`)
+		assert.NotContains(t, stdout, "ran:")
+	})
+
+	t.Run("required positional", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunBare([]string{"custom-required-arg", "documented", "--usage"}))
+		assert.Contains(t, h.GetStdout(), `arg "target" help="Target to run" required=#true`)
+		assert.NotContains(t, h.GetStdout(), `flag "--help"`)
+		assert.NotContains(t, h.GetStdout(), "ran:")
+	})
+}
+
+func TestCustomRequiredInputsRemainErrorsNonInteractive(t *testing.T) {
+	t.Run("flags", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{"custom-required-flags"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "required flag")
+		assert.NotContains(t, h.GetStdout(), "ran:")
+	})
+	t.Run("arg", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{"custom-required-arg"})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "accepts 1 arg")
+		assert.NotContains(t, h.GetStdout(), "ran:")
+	})
+}
+
+func TestInteractiveFlagUsesConfiguredDefault(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	value, err := root.PersistentFlags().GetBool("interactive")
+	require.NoError(t, err)
+	assert.Equal(t, {{interactiveByDefault}}, value)
+}
+
+func TestNoInteractiveOverridesExplicitInteractive(t *testing.T) {
+	p := &scriptedPrompter{}
+	h := NewCLITestHarness(t)
+	err := h.RunInteractive([]string{"--no-interactive", "custom-required-flags"}, p)
+	require.Error(t, err)
+	assert.Zero(t, p.calls)
+	assert.Contains(t, err.Error(), "required flag")
+	assert.NotContains(t, h.GetStdout(), "ran:")
+}
+
+func TestExplicitInteractiveWorkflowsRemainRegistered(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	paths := make([][]string, 0, 3)
+	paths = append(paths, []string{"explore"}, []string{"configure"})
+	{{- if templateAuthUsageTestEnabled}}
+	paths = append(paths, []string{"auth", "login"})
+	{{- end}}
+	for _, path := range paths {
+		cmd, remaining, findErr := root.Find(path)
+		require.NoError(t, findErr, "find %v", path)
+		require.Empty(t, remaining, "unresolved path %v", path)
+		assert.Equal(t, path[len(path)-1], cmd.Name())
+	}
+}
+
+func TestInteractiveSuppressedByUsageAndAgentMode(t *testing.T) {
+	t.Run("usage", func(t *testing.T) {
+		p := &scriptedPrompter{}
+		h := NewCLITestHarness(t)
+		err := h.RunInteractive([]string{"custom-required-arg", "--usage"}, p)
+		require.Error(t, err)
+		assert.Zero(t, p.calls)
+		assert.NotContains(t, h.GetStdout(), "ran:")
+
+		p = &scriptedPrompter{}
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunInteractive([]string{"custom-required-arg", "documented", "--usage"}, p))
+		assert.Zero(t, p.calls)
+		assert.Contains(t, h.GetStdout(), `arg "target"`)
+		assert.NotContains(t, h.GetStdout(), "ran:")
+	})
+	t.Run("agent-mode", func(t *testing.T) {
+		p := &scriptedPrompter{}
+		h := NewCLITestHarness(t)
+		err := h.RunInteractive([]string{"--agent-mode", "custom-required-flags"}, p)
+		require.Error(t, err)
+		assert.Zero(t, p.calls)
+		assert.NotContains(t, h.GetStdout(), "ran:")
+	})
+}
+
+func TestInteractiveGeneratedOperationPromptsAndRuns(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	p := &scriptedPrompter{answers: map[string][]string{"flag:prompt": {"generated operation prompt"}}}
+	h := NewCLITestHarness(t)
+	err := h.RunInteractive([]string{
+		"--server-url", s.URL,
+		"generation", "react-hook-body-in-query-key-inferred-type",
+	}, p)
+	require.NoError(t, err)
+	require.Len(t, p.fields, 1)
+	require.Equal(t, []string{"flag:prompt", "flag:chat-id", "flag:message-types"}, p.fields[0])
+	assert.Equal(t, "generated operation prompt", jsonGetString(h.GetStdout(), "json.prompt"))
+}
+
+func TestInteractiveGeneratedIntentsPromptAndRun(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	t.Run("generate positional", func(t *testing.T) {
+		p := &scriptedPrompter{answers: map[string][]string{"arg:prompt": {"What happens at 1:00, and why?"}}}
+		h := NewCLITestHarness(t)
+		err := h.RunInteractive([]string{"--server-url", s.URL, "generate"}, p)
+		require.NoError(t, err)
+		require.Len(t, p.fields, 1)
+		require.Equal(t, []string{"arg:prompt"}, p.fields[0])
+		assert.Equal(t, "What happens at 1:00, and why?", jsonGetString(h.GetStdout(), "json.input"))
+	})
+
+	t.Run("render positional with declared shorthand flag", func(t *testing.T) {
+		p := &scriptedPrompter{answers: map[string][]string{"arg:prompt": {"interactive render"}}}
+		h := NewCLITestHarness(t)
+		err := h.RunInteractive([]string{"--server-url", s.URL, "render", "-m", "render-override"}, p)
+		require.NoError(t, err)
+		require.Len(t, p.fields, 1)
+		require.Equal(t, []string{"arg:prompt"}, p.fields[0])
+		assert.Equal(t, "interactive render", jsonGetString(h.GetStdout(), "json.input"))
+		assert.Equal(t, "render-override", jsonGetString(h.GetStdout(), "json.model"))
+	})
+
+	t.Run("body satisfies positional", func(t *testing.T) {
+		p := &scriptedPrompter{}
+		h := NewCLITestHarness(t)
+		err := h.RunInteractive([]string{
+			"--server-url", s.URL,
+			"generate", "--body", `{"input":"from-body","model":"body-model"}`,
+		}, p)
+		require.NoError(t, err, fmt.Sprintf("stderr: %s", h.GetStderr()))
+		assert.Zero(t, p.calls)
+		assert.Equal(t, "from-body", jsonGetString(h.GetStdout(), "json.input"))
+	})
+}

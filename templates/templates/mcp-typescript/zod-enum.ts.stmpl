@@ -1,0 +1,20 @@
+{{- $dg := .Local.DocGroup -}}
+{{- $usageLocation := getModelsLocation .Local.Type.OutputLocation -}}
+{{- $typeName := sanitizeClass .Local.Type $usageLocation true -}}
+{{- $zodName := sanitizeZodName .Local.Type.Name -}}
+
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+export const {{$typeName}} = {
+{{templateEnums .Local.Type | indent 2}}
+} as const;
+
+{{- templateComments .Local.Type.Comments $dg $typeName 0 "enum"}}
+{{- if .Local.Type.Enum.Open }}
+{{- addTypeImport "enums" "OpenEnum" $usageLocation }}
+export type {{$typeName}} = OpenEnum<typeof {{$typeName}}>;
+{{- else }}
+{{- addTypeImport "enums" "ClosedEnum" $usageLocation }}
+export type {{$typeName}} = ClosedEnum<typeof {{$typeName}}>;
+{{- end }}
+
+export const {{ $zodName }} = {{ zodEnumFromTypeDef .Local.Type }};

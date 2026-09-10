@@ -1,0 +1,46 @@
+{{- $op := .Local.Operation }}
+{{- $sdkVar := sanitizeFieldName .Global.AST.MainSDK.Type.Name }}
+{{- $namespace := sanitizeSDKAccess .Local.SDK }}
+{{- $rootTypeDef := .Local.Operation.OwningSDK.Type }}
+try {
+{{- templateUsageLocalDeclarations .Local | trim | indentPresent 2}}
+  {{if $op.Response.Type}}const {{getResponseVariableName .Local.StepID}} = {{end}}await {{$sdkVar}}{{$namespace}}.{{sanitizeMethodName .Local.Operation}}({{ templateUsageMethodParameters .Local 0 }});
+
+{{templateString "usage/result.stmpl" .Local | trim | indentPresent 2}}
+} catch (error) {
+{{$prefix := getUsageAccessErrors }}
+
+{{ $baseError := getBaseErrorClassName }}
+{{- addUsageErrorImport $baseError }}
+{{- if hasCustomResponseErrors $op }}
+// The base class for HTTP error responses
+{{- end}}
+  if (error instanceof {{$prefix}}{{$baseError}}) {
+    console.log(error.message);
+    {{- if isErrorEnvelope }}
+    console.log(error.{{constants.errorFields.httpMeta}}.response.status);
+    console.log(error.{{constants.errorFields.httpMeta}}.response.headers);
+    console.log(error.{{constants.errorFields.httpMeta}}.request);
+    {{- else }}
+    console.log(error.statusCode);
+    console.log(error.body);
+    console.log(error.headers);
+    {{- end }}
+  
+
+{{ $err := pickBestErrorToHandle $op }}
+{{- if $err }}
+    // Depending on the method different errors may be thrown
+    {{- $type := sanitizeType $err false "usage"}}
+    {{- addUsageImportForType $err "aliasImport" }}
+    if (error instanceof {{$prefix}}{{$type}}) {
+      {{- range $i, $errField := $err.Fields }}
+        {{- if lt $i 5 }}
+      console.log(error.data$.{{sanitizeFieldName $errField.Name}}); // {{ getAccessNamespace $errField.Type.Scope }}{{ sanitizeType $errField.Type false "usage" }}
+        {{- end }}
+      {{- end}}
+    }
+{{- end }}
+
+  }
+}

@@ -1,0 +1,27 @@
+---
+title: "Escalation"
+---
+
+Escalation configuration with string-encoded integer expiration
+
+## Example Usage
+
+```typescript
+import { Escalation } from "openapi";
+
+let value: Escalation = {
+  enabled: true,
+  expiration: 86400,
+  fallbackApprovers: [
+    "admin-1",
+  ],
+};
+```
+
+## Fields
+
+| Field                                                          | Type                                                           | Required                                                       | Description                                                    | Example                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
+| `enabled`                                                      | *boolean*                                                      | :heavy_check_mark:                                             | N/A                                                            | true                                                           |
+| `expiration`                                                   | *number*                                                       | :heavy_check_mark:                                             | Expiration in seconds, encoded as a string in the API response | 86400                                                          |
+| `fallbackApprovers`                                            | *string*[]                                                     | :heavy_check_mark:                                             | N/A                                                            | [<br/>"admin-1"<br/>]                                          |

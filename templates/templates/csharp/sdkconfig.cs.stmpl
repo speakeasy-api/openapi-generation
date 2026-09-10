@@ -1,0 +1,166 @@
+{{- $serverVariables := and .Local.Servers (gt (len .Local.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and .Local.Servers .Local.Servers.ServerMap) -}}
+{{- $sdkSecurity := getGlobalSecurityClass -}}
+{{- $defaultHttpClient := getDefaultHttpClient -}}
+#nullable enable
+namespace {{ getSDKNamespace }}
+{
+{{ templateSDKConfigImports .Local true }}{{"\n"}}
+    /// <summary>
+    /// Main configuration for the SDK.
+    /// </summary>
+    public struct SDKConfig
+    {
+
+    {{- if $serverMap }}
+        /// <summary>
+        /// Server identifiers available to the SDK.
+        /// </summary>
+        public enum Server {
+        {{- range .Local.Servers.Servers}}
+            {{ sanitizeClassName .ID  false}},
+        {{- end}}
+        }
+
+        /// <summary>
+        /// Server URLs available to the SDK.
+        /// </summary>
+        public static readonly Dictionary<Server, string> ServerMap = new Dictionary<Server, string>()
+        {
+            {{- range .Local.Servers.Servers}}
+            { Server.{{ sanitizeClassName .ID false }}, "{{ .URL }}" },
+            {{- end}}
+        };
+        {{- else if .Local.Servers}}
+        /// <summary>
+        /// List of server URLs available to the SDK.
+        /// </summary>
+        public static readonly string[] ServerList = {
+          {{- range .Local.Servers.Servers}}
+            "{{ .URL }}",
+          {{- end}}
+        };
+    {{- end}}
+
+        public I{{$defaultHttpClient}} Client;
+        public string ServerUrl;
+        {{- if $serverMap}}
+        public Server? ServerName;
+        {{- else if .Local.Servers}}
+        public int ServerIndex;
+        {{- end}}
+        {{- if $serverVariables}}
+        {{- if $serverMap}}
+        public Dictionary<Server, Dictionary<string, string>> ServerVariables;
+        {{- else}}
+        public List<Dictionary<string, string>> ServerVariables;
+        {{- end}}{{end}}
+
+        {{- if .Local.Globals }}
+        {{- range .Local.Globals.Fields }}
+        public {{ sanitizeType .Type true "" }} {{ sanitizeFieldName .Name }};
+        {{- end }}
+        {{- end }}
+        public string UserAgent;
+        {{- if $sdkSecurity }}
+        public Func<{{$sdkSecurity}}>? SecuritySource;
+        {{- end }}
+        public SDKHooks Hooks;
+        public RetryConfig? RetryConfig;
+
+        /// <summary>
+        /// Initializes a new instance of the SDKConfig struct with default values.
+        /// </summary>
+        public SDKConfig(I{{$defaultHttpClient}}? client = null)
+        {
+            Client = client ?? new {{$defaultHttpClient}}();
+            ServerUrl = "";
+            {{- if $serverMap}}
+            ServerName = null;
+            {{- else if .Local.Servers}}
+            ServerIndex = 0;
+            {{- end}}
+            {{- if $serverVariables}}
+                {{- if $serverMap}}
+            ServerVariables = new Dictionary<SDKConfig.Server, Dictionary<string, string>>()
+            {
+                {{- range .Local.Servers.Servers}}
+                {SDKConfig.Server.{{sanitizeClassName .ID false}}, new Dictionary<string, string>()
+                {
+                    {{- range $variable := .Variables}}
+                    {"{{$variable.Name}}", "{{$variable.Default}}"},
+                    {{- end}}
+                }},
+                {{- end}}
+            };
+                {{- else}}
+            ServerVariables = new List<Dictionary<string, string>>()
+            {
+                    {{- range .Local.Servers.Servers}}
+                new Dictionary<string, string>()
+                {
+                        {{- range $variable := .Variables}}
+                    {"{{$variable.Name}}", "{{$variable.Default}}"},
+                        {{- end}}
+                },
+                    {{- end}}
+            };
+                {{- end}}
+          {{- end}}
+            {{- if .Local.Globals }}
+            {{- range .Local.Globals.Fields }}
+            {{ sanitizeFieldName .Name }} = null;
+            {{- end }}{{end}}
+            UserAgent = "speakeasy-sdk/csharp {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{getPackageId}}";
+            {{- if $sdkSecurity }}
+            SecuritySource = null;
+            {{- end}}
+            Hooks = new SDKHooks();
+            RetryConfig = null;
+        }
+        {{- if $serverVariables}}{{print "\n"}}
+        public void SetServerVariable(string key, string value)
+        {
+            foreach (var serverVariables in this.ServerVariables{{- if $serverMap}}.Values{{- end}}.Where(dict => dict.ContainsKey(key)))
+            {
+                serverVariables[key] = value;
+            }
+        }
+        {{- end}}
+
+        public string GetTemplatedServerUrl()
+        {
+        {{- if .Local.Servers}}
+            if (!String.IsNullOrEmpty(this.ServerUrl))
+            {
+                return Utilities.TemplateUrl(Utilities.RemoveSuffix(this.ServerUrl, "/"), new Dictionary<string, string>());
+            }
+          {{- if $serverMap}}
+            if (this.ServerName is null)
+            {
+                this.ServerName = SDKConfig.Server.{{ sanitizeClassName .Local.Servers.Default false }};
+            }
+            else if (!SDKConfig.ServerMap.ContainsKey(this.ServerName.Value))
+            {
+                throw new Exception($"Invalid server \"{this.ServerName.Value}\"");
+            }
+
+            Dictionary<string, string> serverDefault = new Dictionary<string, string>();
+            {{- if $serverVariables}}
+
+            if (this.ServerVariables.ContainsKey(this.ServerName.Value))
+            {
+                serverDefault = this.ServerVariables[this.ServerName.Value];
+            }
+            {{- end}}
+
+            return Utilities.TemplateUrl(SDKConfig.ServerMap[this.ServerName.Value], serverDefault);
+          {{- else if .Local.Servers}}
+            return Utilities.TemplateUrl(SDKConfig.ServerList[this.ServerIndex], {{if $serverVariables}}this.ServerVariables[this.ServerIndex]{{else}}new Dictionary<string, string>(){{end}});
+          {{- end}}
+        {{- else}}
+            return Utilities.TemplateUrl(Utilities.RemoveSuffix(this.ServerUrl, "/"), new Dictionary<string, string>());
+        {{- end}}
+        }
+    }
+}

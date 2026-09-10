@@ -1,0 +1,26 @@
+{{- recurse 1 -}}
+{{- $modeContext := .Local -}}
+{{- $usageCtx := $modeContext.Context -}}
+{{- $isAsync := $modeContext.Async -}}
+{{- $op := $usageCtx.Operation -}}
+{{- $renderFeatureErrors := (shouldRenderFeature $usageCtx "errors" false) -}}
+package hello.world;
+{{genImportsWildcarded "hello.world.Application" -}}
+public class Application {
+
+    public static void main(String[] args){{usageMainThrowsList $op $isAsync}} {
+{{templateString "usage/init.stmpl" $modeContext}}{{if $renderFeatureErrors}}
+        try {
+{{templateIndentedString "usage/call.stmpl" $modeContext 1}}
+{{templateIndentedString "usage/result.stmpl" $modeContext 1}}
+{{- $baseError := (javaImport (getBaseErrorFullClassName))}}
+        } catch ({{$baseError}} ex) { // all SDK exceptions inherit from {{$baseError}}
+{{- templateIndentedString "usage/sdk-error-catch-block.stmpl" $usageCtx 3}}
+        } catch ({{javaImport "java.io.UncheckedIOException"}} ex) {
+            // handle IO error (connection, timeout, etc)
+        }
+{{- else}}{{/* not handling errors */}}
+{{templateIndentedString "usage/call.stmpl" $modeContext 0}}
+{{templateIndentedString "usage/result.stmpl" $modeContext 0 }}
+{{end}}    }
+}

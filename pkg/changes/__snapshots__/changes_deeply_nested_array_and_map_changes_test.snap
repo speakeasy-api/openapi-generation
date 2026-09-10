@@ -1,0 +1,105 @@
+
+[TestChanges_DeeplyNestedFields_DeeplyNestedArrayAndMapChanges - 1]
+# Test: deeply_nested_array_and_map_changes
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /data:
+    post:
+      operationId: processData
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                datasets:
+                  type: object
+                  properties:
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          metadata:
+                            type: object
+                            properties:
+                              tags:
+                                type: object
+                                additionalProperties:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      value:
+                                        type: string
+                                      priority:
+                                        type: integer
+      responses:
+        '200':
+          description: Success
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /data:
+    post:
+      operationId: processData
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                datasets:
+                  type: object
+                  properties:
+                    collections:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          metadata:
+                            type: object
+                            properties:
+                              tags:
+                                type: object
+                                additionalProperties:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      value:
+                                        type: string
+                                      priority:
+                                        type: number
+                                      category:
+                                        type: string
+      responses:
+        '200':
+          description: Success
+```
+
+## Compact Mode:
+## Java SDK Changes:
+* `sdk.processData()`: 
+  *  `request.datasets.collections[].metadata.tags.Map<Array<tag>>[]` **Changed** (Breaking ⚠️)
+
+## Full Mode:
+## Java SDK Changes:
+* `sdk.processData()`: 
+  * `request.datasets.collections[].metadata.tags.Map<Array<tag>>[]` **Changed** (Breaking ⚠️)
+    - `category` **Added**
+    - `priority` **Changed** (Breaking ⚠️)
+
+---

@@ -1,0 +1,75 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/union-primitive-path-param/{profileId}:
+    get:
+      operationId: primaryUnionPrimitivePathParam
+      description: >-
+        Exercises a path parameter whose schema is a oneOf where every member
+        resolves to the same primitive (a plain string alongside a string
+        enum). Because a path parameter cannot serialize a union, the schema
+        must collapse to that primitive rather than causing the whole operation
+        to be skipped.
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            description: Either a profile id or the literal string "me".
+            oneOf:
+              - $ref: "#/components/schemas/UnionPrimitivePathMe"
+              - type: string
+                pattern: "^pfl_.+$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+  /primary/union-closed-set-path-param/{tier}:
+    get:
+      operationId: primaryUnionClosedSetPathParam
+      description: >-
+        Exercises a path parameter whose oneOf mixes a const with an enum of the
+        same primitive. Both members describe a closed set of values, so the
+        collapsed parameter must allow the combined set rather than keeping only
+        the first member's const.
+      parameters:
+        - name: tier
+          in: path
+          required: true
+          schema:
+            description: One of the supported tiers.
+            oneOf:
+              - const: free
+              - type: string
+                enum:
+                  - pro
+                  - enterprise
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+components:
+  schemas:
+    UnionPrimitivePathMe:
+      type: string
+      enum:
+        - me

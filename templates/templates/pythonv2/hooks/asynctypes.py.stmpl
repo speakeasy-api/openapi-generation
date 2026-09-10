@@ -1,0 +1,77 @@
+{{- recurse 1 -}}
+{{- addImport "httpx" "" -}}
+{{- addImport "typing" "Optional" -}}
+{{- addImport "typing" "Tuple" -}}
+{{- addImport "typing" "Union" -}}
+{{- addImport "abc" "ABC" -}}
+{{- addImport "abc" "abstractmethod" -}}
+{{- addImport ".types" "BeforeRequestContext" -}}
+{{- addImport ".types" "AfterSuccessContext" -}}
+{{- addImport ".types" "AfterErrorContext" -}}
+{{- $rawResponseHelpers := pythonRawResponseHelpersEnabled}}
+{{- if $rawResponseHelpers }}
+{{- addImport ".types" "AfterParseErrorContext" -}}
+{{- end }}
+{{genImports}}
+
+
+class AsyncBeforeRequestHook(ABC):
+    @abstractmethod
+    async def before_request(
+        self, hook_ctx: BeforeRequestContext, request: httpx.Request
+    ) -> Union[httpx.Request, Exception]:
+        pass
+
+
+class AsyncAfterSuccessHook(ABC):
+    @abstractmethod
+    async def after_success(
+        self, hook_ctx: AfterSuccessContext, response: httpx.Response
+    ) -> Union[httpx.Response, Exception]:
+        pass
+
+
+class AsyncAfterErrorHook(ABC):
+    @abstractmethod
+    async def after_error(
+        self,
+        hook_ctx: AfterErrorContext,
+        response: Optional[httpx.Response],
+        error: Optional[Exception],
+    ) -> Union[Tuple[Optional[httpx.Response], Optional[Exception]], Exception]:
+        pass
+
+{{- if $rawResponseHelpers }}
+
+
+class AsyncAfterParseErrorHook(ABC):
+    @abstractmethod
+    async def after_parse_error(
+        self,
+        hook_ctx: AfterParseErrorContext,
+        response: httpx.Response,
+        error: Exception,
+    ) -> Exception:
+        pass
+{{- end }}
+
+
+class AsyncHooks(ABC):
+    @abstractmethod
+    def register_before_request_hook(self, hook: AsyncBeforeRequestHook):
+        pass
+
+    @abstractmethod
+    def register_after_success_hook(self, hook: AsyncAfterSuccessHook):
+        pass
+
+    @abstractmethod
+    def register_after_error_hook(self, hook: AsyncAfterErrorHook):
+        pass
+
+{{- if $rawResponseHelpers }}
+
+    @abstractmethod
+    def register_after_parse_error_hook(self, hook: AsyncAfterParseErrorHook):
+        pass
+{{- end }}

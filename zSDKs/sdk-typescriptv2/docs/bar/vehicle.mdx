@@ -1,0 +1,27 @@
+---
+title: "Vehicle"
+---
+
+A non-discriminated union of vehicle types in the bar namespace
+
+
+## Supported Types
+
+### `bar.Car`
+
+```typescript
+const value: bar.Car = {
+  wheels: 4,
+  engineType: "V8",
+};
+```
+
+### `bar.Bike`
+
+```typescript
+const value: bar.Bike = {
+  wheels: 2,
+  hasPedals: true,
+};
+```
+

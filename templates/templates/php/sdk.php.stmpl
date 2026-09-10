@@ -1,0 +1,97 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := (sanitizeClassName .Local.Type.Name) -}}
+{{- $namespace := .Global.Config.Namespace -}}
+{{- $builderClassName := (print $sdkClassName "Builder") -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $sortedOperations := sortOperations .Local.Operations -}}
+
+declare(strict_types=1);
+
+namespace {{$namespace}};
+
+{{getSDKImports}}
+
+{{templateClassComments .Local.Comments $sdkClassName $namespace 0}}
+class {{$sdkClassName}}
+{
+{{- if .Local.Servers}}
+  {{- if .Local.Servers.ServerMap}}
+    {{- range .Local.Servers.Servers}}
+{{""}}    {{- if .Comments}}
+      {{- templateComments .Comments (templateConstName .ID "Server") nil 1}}
+{{end -}}
+{{""}}    public const {{templateConstName .ID "Server"}} = '{{.ID}}';
+{{end}}{{/* end range .Local.Servers.Servers*/}}
+    public const SERVERS = [
+    {{- range .Local.Servers.Servers}}
+{{""}}    {{- if .Comments}}
+          {{- templateComments .Comments nil nil 2}}
+{{end -}}
+{{""}}        {{$sdkClassName}}::{{templateConstName .ID "Server"}} => '{{ .URL }}',
+    {{- end}}{{/* end range .Local.Servers.Servers*/}}
+    ];
+  {{- else}}{{/* else .Local.Servers.ServerMap */}}
+    public const SERVERS = [
+    {{- range .Local.Servers.Servers}}
+{{""}}    {{- if .Comments}}
+          {{- templateComments .Comments nil nil 2}}
+{{end -}}
+{{""}}        '{{ .URL }}',
+    {{- end}}{{/* end range .Local.Servers.Servers*/}}
+    ];
+  {{- end}}{{/* endif .Local.Servers.ServerMap */}}
+{{- end}}{{/* endif .Local.Servers */}}
+{{range $sortedOperations -}}
+    {{if .Servers}}{{templateString "servers.php.stmpl" .}}{{end}}
+{{- end}}
+{{- range .Local.SubSDKs}}
+{{""}}  {{- if ne .Type.Name ""}}
+    {{- if .Comments}}
+      {{- templateSubSDKFieldComments .Comments (print "$" (sanitizeFieldName .FieldName)) (sanitizeClassName .Type.Name) 1}}
+{{end -}}
+{{""}}    public {{sanitizeClassName .Type.Name}} ${{sanitizeFieldName .FieldName}};
+  {{- end}}
+{{end}}{{/* end range .Local.SubSDKs */}}
+    /**
+     * Returns a new instance of the SDK builder used to configure and create the SDK instance.
+     *
+     * @return {{$builderClassName}}
+     */
+    public static function builder(): {{$builderClassName}}
+    {
+        return new {{$builderClassName}}();
+    }
+
+    /**
+     * @param  SDKConfiguration  $sdkConfiguration
+     */
+    public function __construct(
+        public SDKConfiguration $sdkConfiguration,
+    ) {
+    {{- range .Local.SubSDKs}}
+      {{- if ne .Type.Name ""}}
+        $this->{{sanitizeFieldName .FieldName}} = new {{sanitizeClassName .Type.Name}}($this->sdkConfiguration);
+      {{- end}}
+    {{- end}}
+        $this->initHooks();
+
+    }
+
+    private function initHooks(): void
+    {
+        {{- if .Global.Config.SDKHooksConfigAccess}}
+        $this->sdkConfiguration = $this->sdkConfiguration->hooks->sdkInit($this->sdkConfiguration);
+        {{- else}}
+        $preHooksUrl = $this->sdkConfiguration->getTemplatedServerUrl();
+        $ret = $this->sdkConfiguration->hooks->sdkInit($preHooksUrl, $this->sdkConfiguration->client);
+        if ($preHooksUrl != $ret->url) {
+            $this->sdkConfiguration->serverUrl = $ret->url;
+        }
+        $this->sdkConfiguration->client = $ret->client;
+        {{- end}}
+    }
+    {{- range $sortedOperations}}
+
+{{templateString "method.php.stmpl" .}}
+    {{- end}}
+}

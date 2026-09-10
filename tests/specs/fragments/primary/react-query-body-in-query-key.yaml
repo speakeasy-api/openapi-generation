@@ -1,0 +1,121 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+tags:
+  - name: generation
+paths:
+  /anything/reactHookBodyInQueryKey:
+    post:
+      operationId: reactHookBodyInQueryKey
+      description: >-
+        Tests that a read-only POST operation exposed as a query hook via
+        x-speakeasy-react-hook can opt into including the request body in the
+        generated query key with queryKey.includeRequestBody. Without the
+        body in the key, requests that differ only by body share a cache
+        entry and return stale results. This operation has only a request
+        body and no parameters, so the request input is the body itself.
+      x-speakeasy-react-hook:
+        type: query
+        queryKey:
+          includeRequestBody: true
+      tags:
+        - generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryKeyBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /anything/reactHookBodyAndParamsInQueryKey:
+    post:
+      operationId: reactHookBodyAndParamsInQueryKey
+      description: >-
+        Tests that queryKey.includeRequestBody composes with query parameters:
+        the generated query key must contain both the parameters component and
+        the request body component when the operation has both.
+      x-speakeasy-react-hook:
+        type: query
+        queryKey:
+          includeRequestBody: true
+      tags:
+        - generation
+      parameters:
+        - in: query
+          name: scope
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryKeyBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /anything/reactHookBodyInQueryKeyInferredType:
+    post:
+      operationId: reactHookBodyInQueryKeyInferredType
+      description: >-
+        Tests that queryKey.includeRequestBody on x-speakeasy-react-hook with
+        no explicit type resolves hook type inference to query. Without this,
+        inference would fall back to the HTTP method and treat POST as a
+        mutation, generating no query hook despite the extension explicitly
+        opting the request body into query keys.
+      x-speakeasy-react-hook:
+        queryKey:
+          includeRequestBody: true
+      tags:
+        - generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryKeyBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  schemas:
+    QueryKeyBody:
+      type: object
+      description: >-
+        Request body whose fields are the real inputs of a read-only POST
+        operation and must therefore participate in query hook cache keys.
+      required:
+        - prompt
+      properties:
+        chatId:
+          type: string
+        prompt:
+          type: string
+        messageTypes:
+          type: array
+          items:
+            type: string

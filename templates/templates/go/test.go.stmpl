@@ -1,0 +1,26 @@
+{{- $testGroup := .Local.TestGroup -}}
+{{- $test := .Local.Test -}}
+{{- $workflow := $test.Workflow -}}
+func Test{{sanitizeTestName $testGroup}}_{{sanitizeTestName $test.Name}}(t *testing.T) {
+{{- if $test.Incomplete}}
+    t.Skip("{{templateTestIncompleteMessage $test.Incomplete}}")
+{{- else}}
+{{- templateTestID $test}}
+{{- templateTestEnvVars $test}}
+    ctx := context.Background()
+    {{ addImport "context"}}
+    testHTTPClient := createTestHTTPClient("{{$test.Name}}")
+{{- if $workflow}}
+{{range $workflow.Steps}}
+{{- if eq .Type "operation"}}
+{{templateString "usage/init.stmpl" .UsageContext}}
+{{templateString "usage/call.stmpl" .UsageContext}}
+{{- addImport "github.com/stretchr/testify/require"}}
+    require.NoError(t, err)
+{{templateAssertions .UsageContext | indentPresent 4}}
+{{else}}
+{{templateWorkflow $workflow . | indentPresent 4}}
+{{end}}{{end}}
+{{- end}}
+{{- end}}
+}

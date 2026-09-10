@@ -1,0 +1,55 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+The CLI includes two diagnostic flags available on all commands:
+
+### Dry Run
+
+Preview what would be sent without making any network calls:
+
+```bash
+{{$c.Showcase}} --dry-run
+```
+
+In human output modes, stdout is empty and the `[DRY-RUN]` block goes to stderr. It includes:
+- HTTP method and URL
+- Request headers (sensitive values redacted)
+- Request body preview (sensitive fields redacted)
+
+With `--output-format json`, or with a caller-explicit `--jq`, stderr is silent and stdout is NDJSON: one compact preview object per would-be request. The jq filter is not applied, and command-declared jq presets do not select the JSON protocol.
+
+```json
+{"dry_run":true,"request":{"method":"POST","url":"https://…","headers":{"Accept":["application/json"],…},"body":<JSON value | string | null>}}
+```
+
+JSON bodies remain structured; text bodies are strings; binary bodies are `"<bytes:N>"`; absent bodies are `null`. Headers retain all values as arrays, with credentials replaced by `[REDACTED]`. Dry-run never reads the OS keychain, but credentials supplied by flag, environment, or config file still appear redacted. The command exits successfully without contacting the API.
+
+Local mutation commands emit one `{"dry_run":true,"local":true,"command":"…","message":"…"}` object in place of a preview; filter with `select(.request)` or `select(.local)`.
+
+### Debug
+
+Log request and response diagnostics while running normally:
+
+```bash
+{{$c.Showcase}} --debug
+```
+
+Debug output goes to stderr and includes:
+- Request method, URL, headers, and body preview
+- Response status, headers, and body preview
+- Transport errors (if any)
+
+The command still executes normally and produces its regular output on stdout.
+
+### Flag Precedence
+
+If both `--dry-run` and `--debug` are set, `--dry-run` takes precedence and no network calls are made.
+
+### Security
+
+Sensitive information is automatically redacted in diagnostic output:
+- **Headers**: `Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`, and other security headers show `[REDACTED]`
+- **Body**: JSON fields named `password`, `secret`, `token`, `api_key`, `client_secret`, etc. show `[REDACTED]`
+- **Binary data**: binary media and canonical base64 strings are replaced with `<bytes:N>`
+- **URL query**: credential-like query parameters are replaced with `[REDACTED]`
+
+Diagnostic output should still be treated as potentially sensitive operational data.

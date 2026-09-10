@@ -1,0 +1,154 @@
+{/* Start Typescript Security Options */}
+### Per-Client Security Schemes
+
+This SDK supports multiple security scheme combinations globally. You can choose from one of the alternatives by setting the `security` optional parameter when initializing the SDK client instance. The selected option will be used by default to authenticate with the API for all operations that support it.
+
+#### Option1
+
+The `Option1` alternative relies on the following scheme:
+
+
+
+Example:
+```typescript
+import { SDK } from "openapi";
+
+async function run() {
+    const sdk = new SDK({
+        security: {
+            option1: {
+                username: "<USERNAME>",
+                password: "<PASSWORD>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+
+    const res = await sdk.postFile({
+        file: {
+            fileName: "your_file_here",
+            content: new TextEncoder().encode("0x8fBAEeAAE7"),
+        },
+    });
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+#### Option2
+
+All of the following schemes must be satisfied to use the `Option2` alternative:
+
+
+
+Example:
+```typescript
+import { SDK } from "openapi";
+
+async function run() {
+    const sdk = new SDK({
+        security: {
+            option2: {
+                bearerAuth: "<YOUR_JWT>",
+                apiKey: "<YOUR_API_KEY>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+
+    const res = await sdk.postFile({
+        file: {
+            fileName: "your_file_here",
+            content: new TextEncoder().encode("0x8fBAEeAAE7"),
+        },
+    });
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+#### Option3
+
+The `Option3` alternative relies on the following scheme:
+
+
+
+Example:
+```typescript
+import { SDK } from "openapi";
+
+async function run() {
+    const sdk = new SDK({
+        security: {
+            option3: {
+                oauth2: "Bearer <YOUR_OAUTH2_TOKEN>",
+            },
+        },
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+
+    const res = await sdk.postFile({
+        file: {
+            fileName: "your_file_here",
+            content: new TextEncoder().encode("0x8fBAEeAAE7"),
+        },
+    });
+
+    if (res.statusCode == 200) {
+        // handle response
+    }
+}
+
+run();
+
+```
+
+### Per-Operation Security Schemes
+
+Some operations in this SDK require the security scheme to be specified at the request level. For example:
+```typescript
+import { SDK } from "openapi";
+import { ListTest1Request, ListTest1Security } from "openapi/dist/models/operations";
+
+async function run() {
+    const sdk = new SDK({
+        queryParam1: "some example query param",
+        deprecatedQueryParam1: "some example query param",
+        deprecatedQueryParam2: "some example query param",
+    });
+    const page: number = 100;
+    const headerParam1: string = "some example header param";
+    const queryParam1: string = "some example query param";
+    const operationSecurity: ListTest1Security = "<YOUR_API_KEY>";
+
+    const res = await sdk.tag1.listTest1(operationSecurity, page, headerParam1, queryParam1);
+
+    if (res.statusCode == 200) {
+        do {
+            // handle items
+
+            res = res.next();
+        } while (res);
+    }
+}
+
+run();
+
+```
+{/* End Typescript Security Options */}

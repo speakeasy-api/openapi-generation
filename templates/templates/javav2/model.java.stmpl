@@ -1,0 +1,158 @@
+{{  $scope := .Local.Scope -}}
+{{- $isAsync := .Local.IsAsync -}}
+{{- $nullFriendlyParameters := .Global.Config.NullFriendlyParameters -}}
+{{- $type := .Local.Type -}}
+{{- $class := (modelSimpleClassName $type) -}}
+{{- $fields := (removeDerivedAndUndesiredFields $type) -}}
+{{- $utilsPackage := (print (templatePackageName) ".utils") -}}
+{{- $isError := (eq $type.Type "error") -}}
+{{- $useBuilderDeser := exceedsJvmParamLimit $fields -}}
+{{templateCommentsStripped $type.Comments $class 0 "class" }}
+{{- if and $type.Comments $type.Comments.Deprecated}}
+@{{javaImportDeprecated}}
+{{- end}}
+{{- if $useBuilderDeser}}
+@{{javaImport "com.fasterxml.jackson.databind.annotation.JsonDeserialize"}}(builder = {{$class}}.Builder.class)
+{{- end}}
+public{{if or $isError (eq .Local.Type.OutputLocation "tests")}} static{{end}} class {{$class}}{{modelImplements $type $scope $isAsync}} {
+{{- range $fields}}{{"\n"}}
+    {{- $anno := templateAnnotations . false}}
+    {{- if .Comments}}{{templateCommentsStripped .Comments nil 1 "field" }}{{end}}
+    {{- if $anno}}{{"\n"}}{{$anno}}{{end}}
+    private {{javaImportField . $isAsync}} {{sanitizeFieldName .Name}};{{"\n"}}
+    {{- if (includeTypeReference .)}}
+    @{{javaImportSuppressWarnings}}("unused")
+    private static final {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{javaImportField . $isAsync}}> {{sanitizeFieldName .Name}}_typeReference = new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{if isJava8}}{{javaImportField . $isAsync}}{{end}}>() {}; // only appears if JsonShape is STRING
+    {{- end}}
+{{- end}}
+    {{ templateConstructorAll $scope $type $isAsync }}
+{{- range $fields}}
+    {{- $getterStyle := fieldGetterStyle .}}
+    {{- "\n"}}{{templateCommentsForField . 1}}
+    {{- if (and (not .IsAdditionalProperties) (not (isDiscriminatorFieldName $type .Name)) (needToCastToRemoveWildcard .) (styledGetterUsesCast . $getterStyle) (not $nullFriendlyParameters))}}
+    @{{javaImportSuppressWarnings}}("unchecked")
+    {{- end}}
+    {{- if .IsAdditionalProperties}}
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonAnyGetter"}}
+    {{- else if not $nullFriendlyParameters}}
+    @{{javaImport "com.fasterxml.jackson.annotation.JsonIgnore"}}
+    {{- end}}
+
+    {{- $isBody := (and (isResponse $type) (eq "body" (sanitizeFieldName .Name)))}}
+    {{- $isBinary := and useBlob (isBinaryStream .Type)}}
+    {{- if (isDiscriminatorFieldName $type .Name)}}
+    @{{javaImportOverride}}
+    public {{javaImportString}} {{sanitizeFieldName .Name}}() {
+        return {{javaImportUtils}}.discriminatorToString({{sanitizeFieldName .Name}});
+    }
+
+    {{- else if .IsAdditionalProperties}}
+    public {{javaImportField . $isAsync}} {{sanitizeFieldName .Name}}() {
+        return {{sanitizeFieldName .Name}};
+    }
+
+    {{- else if $isBody -}}
+{{templateBodyFieldGetter . $isAsync}}
+
+    {{- else if $isBinary}}
+    {{- $blobParam := getGetterMetadata (parameterForField . $isAsync) $getterStyle}}
+    public {{javaImport $blobParam.returnType}} {{sanitizeFieldName .Name}}() {
+        {{- if $nullFriendlyParameters}}
+        return {{indentLines $blobParam.body}};
+        {{- else if eq $getterStyle "presence-aware"}}
+        return this.{{sanitizeFieldName .Name}};
+        {{- else}}
+        return {{templateStyledGetterReturn . $isAsync $getterStyle}};
+        {{- end}}
+    }
+
+    {{- else}}
+    public {{javaImportFieldNoWildcard . $isAsync $getterStyle}} {{sanitizeFieldName .Name}}() {
+        {{- if $nullFriendlyParameters}}
+        {{- $getter := getGetterMetadata (parameterForField . $isAsync) $getterStyle}}
+        return {{ $getter.body | join "\n                " }};
+        {{- else}}
+        return {{templateStyledGetterReturn . $isAsync $getterStyle}};
+        {{- end}}
+    }
+
+    {{- end}}
+{{- end}}
+    {{- templateEventStreamGetter $type $isAsync}}
+    {{- templateJsonLStreamGetter $type $isAsync}}
+
+    public static Builder builder() {
+        return new Builder();
+    }
+{{ range (nonConstFields $fields) }}
+    {{- if $nullFriendlyParameters}}
+    {{- "\n"}}{{templateString "null-friendly/setter.java.stmpl" (dict "Class" $class "Field" . "IsAsync" $isAsync) }}
+    {{- else}}
+    {{- "\n"}}{{templateString "setter.java.stmpl" (dict "Class" $class "Field" . "IsAsync" $isAsync) }}
+    {{- end}}
+{{- end }}
+
+    @{{javaImportOverride}}
+    public boolean equals(java.lang.Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        {{ if eq (len $fields) 0}}return true;
+        {{- else -}}  
+        {{$class}} other = ({{$class}}) o;
+        return 
+            {{ templateFieldsEqualityExpression $fields $isAsync}};{{end}}
+    }
+    
+    @{{javaImportOverride}}
+    public int hashCode() {
+        return {{javaImportUtils}}.enhancedHash(
+            {{ templateFieldsIndentedArgs $fields 3}});
+    }
+    
+    @{{javaImportOverride}}
+    public {{javaImportString}} toString() {
+        return {{ templateToStringExpression $class $fields }};
+    }
+
+    // #region class-body
+    // #endregion class-body
+    @SuppressWarnings("UnusedReturnValue")
+    {{- if $useBuilderDeser}}
+    @{{javaImport "com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder"}}(withPrefix = "")
+    {{jacksonBuilderVisibilityOverride}}
+    {{- end}}
+    public final static class Builder {{"{"}}
+{{- range (nonConstFields $fields)}}{{"\n"}}
+    {{- $isResponse := eq .Type.Type "response" }}
+    {{- if and .Comments .Comments.Deprecated}}
+        @{{javaImportDeprecated}}
+    {{- end}}
+    {{- if and (not .IsAdditionalProperties) (not $isResponse) }}
+        private {{javaImportFieldNonPrimitive . $isAsync}} {{sanitizeFieldName .Name}}{{templateModelBuilderInitialAssignment . $scope}};
+    {{- else}}
+        private {{javaImportFieldNonPrimitive . $isAsync}} {{sanitizeFieldName .Name}}{{if .IsAdditionalProperties}} = new {{javaImportHashMap}}<>(){{end}};
+    {{- end}}
+{{- end }}
+
+        private Builder() {
+          // force use of static builder() method
+        }
+{{- range (nonConstFields $fields)}}
+    {{- if $nullFriendlyParameters}}
+    {{- "\n"}}{{templateString "null-friendly/builder-setter.java.stmpl" (dict "Field" . "IsAsync" $isAsync "UseBuilderDeser" $useBuilderDeser) }}
+    {{- else}}
+    {{- "\n"}}{{templateString "builder-setter.java.stmpl" (dict "Field" . "IsAsync" $isAsync "UseBuilderDeser" $useBuilderDeser) }}
+    {{- end}}
+{{- end}}
+
+        public {{$class}} build() {
+            {{- templateBuilderBuild $scope $type}}
+        }
+
+        {{- "\n"}}{{templateModelDefaultValueSuppliers $fields $scope}}
+    }
+}

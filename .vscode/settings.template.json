@@ -1,0 +1,28 @@
+{
+    "files.associations": {
+      "*.sdef": "yaml",
+      "*.py.stmpl": "gotemplate",
+      "*.stmpl": "gotemplate",
+      "*.go.stmpl": "gogo",
+      "*.ts.stmpl": "gots",
+      "*.toolbelt": "yaml",
+      "*.twig": "html",
+      "*.java.stmpl": "gojava",
+      "*.php.stmpl": "gophp",
+      "*.yaml.stmpl": "goyaml",
+      "*.yml.stmpl": "goyaml"
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/zSDKs/**": true,
+    "**/testSDKs/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/.ruby-lsp": true,
+    "**/zSDKs/**": true,
+    "**/testSDKs/**": true
+  }
+}

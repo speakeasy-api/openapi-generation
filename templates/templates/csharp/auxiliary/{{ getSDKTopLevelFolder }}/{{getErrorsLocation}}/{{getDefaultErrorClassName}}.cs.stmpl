@@ -1,0 +1,53 @@
+{{- $className := getDefaultErrorClassName -}}
+{{- $baseErrorName := getBaseErrorClassName -}}
+{{- $responseFormat := getResponseFormat -}}
+{{- $isErrorEnvelope := eq getResponseFormat "envelope-http"}}
+#nullable enable
+namespace {{getScopeNamespace "errors" true}}
+{
+    using System;
+    using System.Net.Http;
+
+    /// <summary>
+    /// Default API Exception.
+    /// </summary>
+    public class {{$className}} : {{$baseErrorName}}
+    {
+        /// <summary>
+        /// Default API exception.
+        /// </summary>
+    {{- if $isErrorEnvelope }}
+        public {{$className}}(
+            string message,
+            HttpRequestMessage request,
+            HttpResponseMessage response,
+            string body
+        ): base(message, request, response, body) {}
+{{- if schemaValidationLenient}}
+
+        public {{$className}}(
+            string message,
+            HttpRequestMessage request,
+            HttpResponseMessage response,
+            string body,
+            Exception? innerException
+        ): base(message, request, response, body, innerException) {}
+{{- end}}
+    {{- else}}
+        public {{$className}}(
+            string message,
+            HttpResponseMessage rawResponse,
+            string body
+        ): base(message, rawResponse, body) {}
+{{- if schemaValidationLenient}}
+
+        public {{$className}}(
+            string message,
+            HttpResponseMessage rawResponse,
+            string body,
+            Exception? innerException
+        ): base(message, rawResponse, body, innerException) {}
+{{- end}}
+    {{- end}}
+    }
+}

@@ -1,0 +1,36 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"os"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+// version and buildTime can be set at build time using Go linker flags:
+//
+//	go build -ldflags "-X main.version=x.y.z -X main.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" ./cmd/{{sanitizeCliName}}
+var version string
+var buildTime string
+
+// #region custom-code
+// #endregion custom-code
+
+func main() {
+	if version != "" {
+		cli.Version = version
+	}
+	if buildTime != "" {
+		cli.BuildTime = buildTime
+	}
+
+	if err := cli.Execute(); err != nil {
+		var rendered interface{ Rendered() bool }
+		if !errors.As(err, &rendered) || !rendered.Rendered() {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		os.Exit(clierrors.ExitCode(err))
+	}
+}

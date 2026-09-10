@@ -1,0 +1,157 @@
+package tests
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	sdk "openapi"
+	"openapi/pkg/models/operations"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestJsonlStreamData(t *testing.T) {
+	recordTest("jsonl-stream-data-flat-responses")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Jsonl.JsonlStream(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Close()
+
+	events := []operations.JsonlStreamResponseBody{}
+	for res.Next() {
+		event, err := res.Value()
+		require.NoError(t, err)
+		events = append(events, event)
+	}
+	assert.NoError(t, res.Err())
+
+	assert.Len(t, events, 2)
+
+	// Assert first event
+	assert.Greater(t, len(events), 0)
+	firstEvent := events[0]
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Assert second event
+	assert.Greater(t, len(events), 1)
+	secondEvent := events[1]
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+}
+
+func TestJsonlStreamDataWithXNdjson(t *testing.T) {
+	recordTest("x-ndjson-stream-data-envelope-http-responses")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Jsonl.XNdjsonStream(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Close()
+
+	events := []operations.XNdjsonStreamResponseBody{}
+	for res.Next() {
+		event, err := res.Value()
+		require.NoError(t, err)
+		events = append(events, event)
+	}
+	assert.NoError(t, res.Err())
+
+	assert.Len(t, events, 2)
+
+	// Assert first event
+	assert.Greater(t, len(events), 0)
+	firstEvent := events[0]
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Assert second event
+	assert.Greater(t, len(events), 1)
+	secondEvent := events[1]
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+}
+
+func TestJsonlStreamDataChunks(t *testing.T) {
+	recordTest("jsonl-stream-data-chunks-flat-response")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	startTime := time.Now()
+	res, err := s.Jsonl.JsonlStreamChunks(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Close()
+
+	// Get first event
+	require.True(t, res.Next())
+	firstEventTime := time.Since(startTime)
+	firstEvent, err := res.Value()
+	require.NoError(t, err)
+
+	// First event should take longer than 100ms because the server sends a chunk and then waits
+	assert.GreaterOrEqual(t, firstEventTime.Milliseconds(), int64(100), "First event should take at least 100ms")
+	assert.Less(t, firstEventTime.Milliseconds(), int64(190), "First event should take less than 190ms")
+
+	// Assert first event
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Get second event
+	require.True(t, res.Next())
+	secondEvent, err := res.Value()
+	require.NoError(t, err)
+
+	// Assert second event
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+
+	assert.NoError(t, res.Err())
+}
+
+func TestJsonlStreamDataChunksWithXNdjson(t *testing.T) {
+	recordTest("x-ndjson-stream-data-chunks-envelope-http-responses")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	startTime := time.Now()
+	res, err := s.Jsonl.XNdjsonStreamChunks(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	defer res.Close()
+
+	// Get first event
+	require.True(t, res.Next())
+	firstEventTime := time.Since(startTime)
+	firstEvent, err := res.Value()
+	require.NoError(t, err)
+
+	// First event should take longer than 100ms because the server sends a chunk and then waits
+	assert.GreaterOrEqual(t, firstEventTime.Milliseconds(), int64(100), "First event should take at least 100ms")
+	assert.Less(t, firstEventTime.Milliseconds(), int64(190), "First event should take less than 190ms")
+
+	// Assert first event
+	assert.Equal(t, "Peter", *firstEvent.Name)
+	assert.Equal(t, []string{"Go", "Python"}, firstEvent.Skills)
+
+	// Get second event
+	require.True(t, res.Next())
+	secondEvent, err := res.Value()
+	require.NoError(t, err)
+
+	// Assert second event
+	assert.Equal(t, "John", *secondEvent.Name)
+	assert.Equal(t, []string{"Go", "Rust"}, secondEvent.Skills)
+
+	assert.NoError(t, res.Err())
+}

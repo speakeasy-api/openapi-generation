@@ -1,0 +1,56 @@
+import {
+  Color$zodSchema,
+  HeroWidth$zodSchema,
+  Icon$zodSchema,
+} from "../models/theme.js";
+import { expect, test } from "vitest";
+import { SDKCore as SDK } from "../core.js";
+import { recordTest } from "./common_helpers.js";
+import { enumsEnumsPostOpenEnumUnrecognized } from "../funcs/enumsEnumsPostOpenEnumUnrecognized.js";
+
+test("Open Enums Round Trip", async () => {
+  recordTest("open-enums-round-trip-string-union");
+
+  expect(Icon$zodSchema.options).toContain("tick");
+  expect(Color$zodSchema.options).not.toContain("purple");
+  expect(HeroWidth$zodSchema.options).not.toContain(2160);
+
+  const s = new SDK();
+{{- if isStrictMCPServer }}
+  let result = await enumsEnumsPostOpenEnumUnrecognized(s, {
+    color: "purple",
+    icon: "tick",
+    heroWidth: 2160,
+  });
+
+  if (!result.ok) throw result.error;
+
+  const theme = result.value.themeResponse?.json;
+  if (!theme) {
+    expect.fail("Expected result.value.themeResponse?.json to be set");
+  }
+  expect(theme).toEqual({
+    color: "purple",
+    icon: "tick",
+    heroWidth: 2160,
+  });
+
+  result = await enumsEnumsPostOpenEnumUnrecognized(s, theme);
+  if (!result.ok) throw result.error;
+
+  expect(theme, "expected unrecognized enum values to roundtrip").toEqual({
+    color: "purple",
+    icon: "tick",
+    heroWidth: 2160,
+  });
+{{- else }}
+  const result = await enumsEnumsPostOpenEnumUnrecognized(s, {
+    color: "purple",
+    icon: "tick",
+    heroWidth: 2160,
+  });
+
+  if (!result.ok) throw result.error;
+  expect(result.value.status).toBe(200);
+{{- end }}
+});

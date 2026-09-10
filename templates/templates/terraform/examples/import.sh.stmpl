@@ -1,0 +1,1 @@
+terraform import {{.Local.ResourceName}}.my_{{.Local.ResourceName}} {{.Local.ImportCommandID}}

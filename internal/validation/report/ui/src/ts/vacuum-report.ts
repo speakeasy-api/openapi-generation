@@ -1,0 +1,12 @@
+import 'terminal.css';
+// import '../components/charts/category-piechart-component.init';
+import '../components/rule-category-navigation/rule-category-navigation-component';
+import '../components/rule-category-navigation/rule-category-link-component';
+import '../components/html-report/html-report-component';
+import '../components/html-report/category-report-component';
+import '../components/html-report/category-rules/category-rule-result-component';
+import '../components/html-report/category-rules/category-rule-component';
+import '../components/html-report/category-rules/category-rules-component';
+import '../components/html-report/result-grid-component';
+import '../components/violation-drawer/violation-drawer-component';
+import '../components/header/header-statistic-component';

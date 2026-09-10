@@ -1,0 +1,203 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"{{getRootModulePath}}"
+	"{{getRootModulePath}}/internal/hooks"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+)
+
+func TestHooks_TestHooksAfterResponse(t *testing.T) {
+	recordTest("test-hooks-after-response")
+
+	s := openapi.New(
+		openapi.WithSecurity(shared.Security{
+			APIKeyAuth: openapi.String("Token YOUR_API_KEY"),
+		}),
+	)
+
+	ctx := context.Background()
+	res, err := s.Hooks.TestHooksAfterResponse(ctx)
+	assert.ErrorContains(t, err, "validation failed")
+	assert.Nil(t, res)
+}
+
+func TestHooks_TestHooksError(t *testing.T) {
+	recordTest("test-hooks-error")
+
+	s := openapi.New(
+		openapi.WithSecurity(shared.Security{
+			APIKeyAuth: openapi.String("Token YOUR_API_KEY"),
+		}),
+	)
+
+	ctx := context.Background()
+	res, err := s.Hooks.TestHooksError(ctx)
+	assert.ErrorContains(t, err, "special test error case")
+	assert.Nil(t, res)
+}
+
+func TestHooks_AuthorizationHeaderModification(t *testing.T) {
+	recordTest("hooks-authorization-header-modification")
+
+	s := openapi.New(openapi.WithSecurity(shared.Security{
+		APIKeyAuth: openapi.String("Bearer testToken"),
+	}))
+
+	res, err := s.Hooks.AuthorizationHeaderModification(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.True(t, res.Token.Authenticated)
+	assert.Equal(t, "testToken modified", res.Token.Token)
+}
+
+func TestHooks_CustomUserAgent(t *testing.T) {
+	recordTest("hooks-custom-user-agent")
+
+	s := openapi.New(openapi.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Hooks.HooksCustomUserAgent(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.CustomUserAgentEcho)
+
+	headers := res.CustomUserAgentEcho.Headers
+	assert.Equal(t, "acme-corp/{{.Global.Config.SDKVersion}} acme-corp/"+runtime.Version(), headers["User-Agent"])
+	assert.Equal(t, "{{.Global.Config.GenVersion}}", headers["X-Test-Gen-Version"])
+	assert.Equal(t, "{{.Global.Config.DocVersion}}", headers["X-Test-Doc-Version"])
+	assert.Equal(t, "{{.Global.Config.SDKVersion}}", headers["X-Test-Init-Sdk-Version"])
+}
+
+func TestClientCredentials_OptionSuccessfullyAuthenticates(t *testing.T) {
+	recordTest("hooks-client-credentials-option-success")
+
+	client := NewRequestRecorderClient()
+	s := openapi.New(
+		openapi.WithClient(client),
+		openapi.WithSecurity(shared.Security{
+			ClientCredentials: &shared.SchemeClientCredentials{
+				ClientID:     "speakeasy-sdks",
+				ClientSecret: "supersecret-" + randSeq(10),
+{{- range $f := collectClientCredentialsAdditionalFields }}
+				{{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+			},
+		}),
+	)
+
+	assertAuthenticatedRequest := func(t *testing.T) {
+		res, err := s.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+		require.NoError(t, err)
+
+		assert.NotNil(t, res)
+		assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	}
+
+	// Verify concurrent access.
+	// Reference: internal issue reference
+	go assertAuthenticatedRequest(t)
+	go assertAuthenticatedRequest(t)
+	go assertAuthenticatedRequest(t)
+
+	// The requested token is still valid, so it should be reused.
+	res, err := s.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+
+	// Check that only a single token request was made
+	tokenURL := "/clientcredentials/token?expires_in=90"
+	var tokenRequests []RequestLogEntry
+	for _, entry := range client.Log {
+		if strings.Contains(entry.RequestURI, tokenURL) && strings.Contains(entry.RequestBody, "scope=read+write") {
+			tokenRequests = append(tokenRequests, entry)
+		}
+	}
+	assert.Len(t, tokenRequests, 1)
+
+	// Test environment variable credentials
+	t.Setenv("SPEAKEASY_CLIENT_ID", "speakeasy-sdks")
+	t.Setenv("SPEAKEASY_CLIENT_SECRET", "supersecret-"+randSeq(10))
+{{- range $f := collectClientCredentialsAdditionalFields }}
+	t.Setenv("{{ templateSecurityEnvVars $f }}", "")
+{{- end }}
+	s2 := openapi.New()
+	res2, err2 := s2.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+	require.NoError(t, err2)
+
+	assert.NotNil(t, res2)
+	assert.Equal(t, 200, res2.HTTPMeta.Response.StatusCode)
+}
+
+func TestClientCredentials_OptionSuccessfullyAuthenticatesWithAltTokenURL(t *testing.T) {
+	recordTest("hooks-client-credentials-option-success-alt-token-url")
+
+	client := NewRequestRecorderClient()
+	tokenURL := "/clientcredentials/alt/token"
+	s := openapi.New(
+		openapi.WithClient(client),
+		openapi.WithSecurity(shared.Security{
+			ClientCredentials: &shared.SchemeClientCredentials{
+				ClientID:     "speakeasy-sdks",
+				ClientSecret: "supersecret-" + randSeq(10),
+				TokenURL:     tokenURL,
+				Scopes:       []string{"alt:one", string(hooks.ClientCredentialsOAuth2ScopeAltTwo)},
+{{- range $f := collectClientCredentialsAdditionalFields }}
+				{{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+			},
+		}),
+	)
+
+	res, err := s.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+
+	// The token received is already expired so another one should be requested.
+	res, err = s.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+
+	var tokenRequests []RequestLogEntry
+	for _, entry := range client.Log {
+		if strings.Contains(entry.RequestURI, tokenURL) && strings.Contains(entry.RequestBody, "scope=alt%3Aone+alt%3Atwo") {
+			tokenRequests = append(tokenRequests, entry)
+		}
+	}
+	assert.Len(t, tokenRequests, 2)
+
+	// Test environment variable credentials
+	t.Setenv("SPEAKEASY_CLIENT_ID", "speakeasy-sdks")
+	t.Setenv("SPEAKEASY_CLIENT_SECRET", "supersecret-"+randSeq(10))
+{{- range $f := collectClientCredentialsAdditionalFields }}
+	t.Setenv("{{ templateSecurityEnvVars $f }}", "")
+{{- end }}
+	s2 := openapi.New()
+	res2, err2 := s2.Hooks.AuthenticatedRequestGlobalSecurity(context.Background(), &operations.AuthenticatedRequestGlobalSecurityRequestBody{})
+	require.NoError(t, err2)
+
+	assert.NotNil(t, res2)
+	assert.Equal(t, 200, res2.HTTPMeta.Response.StatusCode)
+}
+
+func TestHooks_AvailableOAuth2Scopes(t *testing.T) {
+	recordTest("hooks-available-oauth2-scopes")
+
+	assert.Equal(t, "read", string(hooks.ClientCredentialsOAuth2ScopeRead))
+	assert.Equal(t, "models:read", string(hooks.OAuth2ScopeModelsRead))
+
+	assert.Equal(t, hooks.ClientCredentialsOAuth2ScopeWrite, hooks.ClientCredentialsOAuth2Scope("write"))
+	assert.Equal(t, hooks.OAuth2ScopeStoreManage, hooks.OAuth2Scope("store_manage"))
+}

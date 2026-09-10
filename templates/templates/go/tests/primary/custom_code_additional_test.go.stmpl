@@ -1,0 +1,46 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	openapi "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCustomCodeRegionSDKMethodWithImports(t *testing.T) {
+	recordTest("custom-code-region-sdk-method-with-imports")
+
+	s := openapi.New()
+
+	res, err := s.CustomHealthCheck(context.Background())
+	require.NoError(t, err)
+	require.True(t, res)
+}
+
+func TestCustomCodeRegionSubSDKMethodWithImports(t *testing.T) {
+	recordTest("custom-code-region-sub-sdk-method-with-imports")
+
+	s := openapi.New()
+
+	res, err := s.Health.CustomHealthCheck(context.Background())
+	require.NoError(t, err)
+	require.True(t, res)
+}
+
+func TestCustomCodeRegionModelMethodWithImports(t *testing.T) {
+	recordTest("custom-code-region-model-method-with-imports")
+
+	testHTTPClient := createTestHTTPClient("unwieldyGet")
+
+	s := openapi.New(
+		openapi.WithServerURL(utils.GetEnv("TEST_SERVER_URL", "")),
+		openapi.WithClient(testHTTPClient),
+	)
+
+	res, err := s.UnwieldyGetFlattened(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 5, len(res))
+}

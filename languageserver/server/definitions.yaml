@@ -1,0 +1,216 @@
+"x-speakeasy-name-override":
+  name: "Speakeasy Extension: Name Override"
+  description: "Use it globally to change method names or inline to change the name of a method, parameter, or class."
+  example: |
+    ```yaml
+    x-speakeasy-name-override: CustomName
+    ```
+"x-speakeasy-group":
+  name: "Speakeasy Extension: Group"
+  description: "Defines custom namespaces when adding this property to any operation in the OpenAPI spec. If added, the tags for that method will be ignored."
+  example: |
+    ```yaml
+    x-speakeasy-group: MyGroup
+    ```
+"x-speakeasy-ignore":       
+  name: "Speakeasy Extension: Ignore"
+  description: "Exclude certain methods from your SDK with this extension."
+  example: |
+    ```yaml
+    x-speakeasy-ignore: true
+    ```
+"x-speakeasy-include":      
+  name: "Speakeasy Extension: Include"
+  description: "Can be used to force the generation of an unused or orphaned schema from the components section inside the main document."
+  example: |
+    ```yaml
+    x-speakeasy-include: true
+    ```
+"x-speakeasy-enums":        
+  name: "Speakeasy Extension: Enums"
+  description: "Use this extension to control generated enum members by providing alternative names for each value in the enum field."
+  example: |
+    ```yaml
+    schema:
+      type: integer
+      enum:
+        - 1
+        - 2
+        - 3
+      x-speakeasy-enums:
+        - NOT_STARTED
+        - IN_PROGRESS
+        - COMPLETE
+    ```
+"x-speakeasy-enum-format":  
+  name: "Speakeasy Extension: Enum Format"
+  description: "Customize how the enum type is generated for the schema, either enum for a native enum type or union for a union of values."
+  example: |
+    ```yaml
+    x-speakeasy-enum-format: enum
+    ```
+"x-speakeasy-retries":      
+  name: "Speakeasy Extension: Retries"
+  description: "Enable retries globally or on a per-request basis. A backoff strategy is applied to specified status codes."
+  example: | 
+    ```yaml
+    x-speakeasy-retries:
+      strategy: backoff
+      backoff:
+        initialInterval: 500 # 500 milliseconds
+        maxInterval: 60000 # 60 seconds
+        maxElapsedTime: 3600000 # 1 hour
+        exponent: 1.5
+      statusCodes:
+        - 5XX
+      retryConnectionErrors: true
+    ```
+"x-speakeasy-pagination":   
+  name: "Speakeasy Extension: Pagination"
+  description: "Use to customize offset- or cursor-based pagination rules for each API operation."
+  example: |
+    ```yaml
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: parameters
+            type: page
+        outputs:
+          results: $.resultArray
+    ```
+"x-speakeasy-usage-example":
+  name: "Speakeasy Extension: Usage Example"
+  description: "Feature a method in your SDK's README.md by adding this property to the method."
+  example: |
+    ```yaml
+    x-speakeasy-usage-example:
+      title: Add your pet
+      description: First, add your own pet.
+      position: 1
+    ```"
+"x-speakeasy-example":      
+  name: "Speakeasy Extension: Example"
+  description: "The OpenAPI specification doesn't allow example values for securityscheme property. Using this extension overcomes this limitation."
+  example: |
+    ```yaml
+    securitySchemes:
+      apiKey:
+        type: apiKey
+        name: api_key
+        in: header
+        x-speakeasy-example: YOUR_API_KEY
+    ```
+"x-speakeasy-docs":
+  name: "Speakeasy Extension: Docs"
+  description: "Configure comments that only show up in the SDK for a single language."
+  example: |
+    ```yaml
+    x-speakeasy-docs:
+      go:
+        description: The type field names the type of drink to filter the results by. If set to nil, all drinks will be returned.
+      python:
+        description: The ``type`` field names the type of drink to filter the results by. If set to ``None``, all drinks will be returned.
+      typescript:
+        description: This field is the type of drink to filter the results by. If set to null, all drinks will be returned.
+    ```
+"x-speakeasy-globals":
+  name: "Speakeasy Extension: Globals"
+  description: "Define parameters that can be configured globally on the main SDK instance and populated automatically for any operations that use them."
+"x-speakeasy-globals-hidden":
+  name: "Speakeasy Extension: Globals Hidden"
+  description: "Define parameters that can be configured globally on the main SDK instance but are not shown in the matching method's signature."
+"x-speakeasy-errors":
+  name: "Speakeasy Extension: Errors"
+  description: "Apply this extension at the level of paths, path item , or operation in the document to override the default error-handling behavior of the SDKs."
+"x-speakeasy-error-message":
+  name: "Speakeasy Extension: Error Message"
+  description: "Used to mark a field in an error response as containing the error message to use."
+"x-speakeasy-server-id":
+  name: "Speakeasy Extension: Server ID"
+  description: "Enable users to pick a server when instantiating the SDK. Use this extension to define an ID for each server in the servers array in the OpenAPI spec."
+"x-speakeasy-deprecation-message":
+  name: "Speakeasy Extension: Deprecation Message"
+  description: "Allows you to add a message to deprecated operations, parameters, and schemas."
+"x-speakeasy-deprecation-replacement":
+  name: "Speakeasy Extension: Deprecation Replacement"
+  description: "Allows you to specify an alternate operation to use in place of a deprecated operation."
+"x-speakeasy-type-override":
+  name: "Speakeasy Extension: Type Override"
+  description: "Allows the conversion of an attribute to a JSON string, accommodating dynamic structures in Terraform configurations"
+"x-speakeasy-max-method-params":
+  name: "Speakeasy Extension: Max Method Params"
+  description: "Allows you to set the maximum number of parameters that can be passed to a method. If the number of parameters exceeds this value, a request object will be used."
+"x-speakeasy-param-encoding-override":
+  name: "Speakeasy Extension: Param Encoding Override"
+  description: "When set with a value of allowReserved, path parameters will appear in a request URL with reserved characters `:/?#[]@!$&'()*+,;=` unencoded."
+"x-speakeasy-param-name":
+  name: "Speakeasy Extension: Parameter Name Override"
+  description: "Overrides the parameter name in the generated SDK"
+  example: |
+    ```yaml
+    x-speakeasy-param-name: customParamName
+    ```
+"x-speakeasy-conflicts-with":
+  name: "Speakeasy Extension: Conflicts With"
+  description: "Indicate conflicting properties to prevent incompatible combinations in Terraform configurations"
+"x-speakeasy-entity":
+  name: "Speakeasy Extension: Entity"
+  description: "Map API entities to Terraform resources by annotating objects in your OpenAPI spec as entities in the Terraform provider"
+"x-speakeasy-entity-operation":
+  name: "Speakeasy Extension: Entity Operation"
+  description: "Specify CRUD operations for API endpoints to map to Terraform resources, such as create, read, update, or delete operations"
+"x-speakeasy-entity-version":
+  name: "Speakeasy Extension: Entity Version"
+  description: "Specify the version of a Terraform resource to support state migrations for breaking changes"
+"x-speakeasy-param-force-new":
+  name: "Speakeasy Extension: Parameter Force New"
+  description: "Force resource recreation in Terraform when certain property values change"
+"x-speakeasy-param-computed":
+  name: "Speakeasy Extension: Parameter Computed"
+  description: "Force a property to be computed in resource schemas, causing Terraform to allow unknown values after apply. Explicitly setting to false will always respect configuration values when sending API request data, however the API must never change the value as compared to the configuration on create/update"
+"x-speakeasy-param-optional":
+  name: "Speakeasy Extension: Parameter Optional"
+  description: "Force a property to be optional, overriding the required attribute in JSON Schema specifications"
+"x-speakeasy-param-readonly":
+  name: "Speakeasy Extension: Parameter Read-Only"
+  description: "Mark properties as read-only in Terraform, preventing modifications by the user"
+"x-speakeasy-param-sensitive":
+  name: "Speakeasy Extension: Parameter Sensitive"
+  description: "Hide sensitive properties from Terraform console output for security purposes"
+"x-speakeasy-param-suppress-computed-diff":
+  name: "Speakeasy Extension: Parameter Suppress Computed Diff"
+  description: "Mark that the property will never change value after create. Use to reduce known after apply (unknown value) output in managed resource update plans"
+"x-speakeasy-plan-modifiers":
+  name: "Speakeasy Extension: Plan Modifiers"
+  description: "Add custom plan modification logic to Terraform plan operations for advanced default values or resource replacement logic"
+"x-speakeasy-plan-validators":
+  name: "Speakeasy Extension: Plan Validators"
+  description: "Add custom validation logic to Terraform plan operations to ensure configurations meet predefined criteria before execution"
+"x-speakeasy-required-with":
+  name: "Speakeasy Extension: Required With"
+  description: "Indicate mutually necessary properties to prevent incompatible Terraform configurations"
+"x-speakeasy-soft-delete-property":
+  name: "Speakeasy Extension: Soft Delete Property"
+  description: "Automatically cause managed resource state removal and recreation in plans if property is not null, such as a 'deleted' property"
+"x-speakeasy-terraform-alias-to":
+  name: "Speakeasy Extension: Terraform Alias To"
+  description: "Remap API response data to another property"
+"x-speakeasy-terraform-custom-type":
+  name: "Speakeasy Extension: Terraform Custom Type"
+  description: "Use a terraform-plugin-framework custom type instead of a base type"
+"x-speakeasy-terraform-ignore":
+  name: "Speakeasy Extension: Terraform Ignore"
+  description: "Use this extension to exclude properties from Terraform state management"
+"x-speakeasy-terraform-plan-only":
+  name: "Speakeasy Extension: Terraform Plan Only"
+  description: "Ensure that only values from the Terraform plan are used during updates, overriding prior state or default values"
+"x-speakeasy-wrapped-attribute":
+  name: "Speakeasy Extension: Wrapped Attribute"
+  description: "Enables additional API operation data to be placed under a specifically named attribute"
+"x-speakeasy-xor-with":
+  name: "Speakeasy Extension: XOR With"
+  description: "Indicate mutually exclusive properties to prevent incompatible combinations in Terraform configurations"
+"x-speakeasy-match":
+  name: "Speakeasy Extension: Match"
+  description: "Adjusts an API parameter name to align with a Terraform state property"

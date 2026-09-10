@@ -1,0 +1,7 @@
+# typed: true
+# frozen_string_literal: true
+
+require 'openapi'
+
+{{templateString "usage/block.stmpl" .Local}}
+

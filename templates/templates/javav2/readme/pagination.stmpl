@@ -1,0 +1,22 @@
+Some of the endpoints in this SDK support pagination. To use pagination, you can make your SDK calls using the `callAsIterable` or `callAsStream` methods.
+For certain operations, you can also use the `callAsStreamUnwrapped` method that streams individual page items directly.
+
+Here's an example depicting the different ways to use pagination:
+
+{{templateUsageSection "pagination" }}
+
+{{- if asyncEnabled}}
+  {{- if useOkHttp}}
+#### Asynchronous Pagination
+An asynchronous SDK client is also available for pagination. Use `callAsStream()` to get a [`CompletableFuture`][comp-fut] of a `Stream` of pages, or `callAsStreamUnwrapped()` for a `Stream` of individual items. The first page is fetched asynchronously; subsequent pages are fetched lazily as the stream is consumed. See [Asynchronous Support](#asynchronous-support) for more details.
+{{templateUsageSection "pagination" "" nil nil nil true}}
+
+[comp-fut]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html
+  {{- else}}
+#### Asynchronous Pagination
+An asynchronous SDK client is also available for pagination that returns a [`Flow.Publisher<T>`][flow-pub]. For async pagination, you can use `callAsPublisher()` to get pages as a publisher, or `callAsPublisherUnwrapped()` to get individual items directly. See [Asynchronous Support](#asynchronous-support) for more details on async benefits and reactive library integration.
+{{templateUsageSection "pagination" "" nil nil nil true}}
+
+[flow-pub]: https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.Publisher.html
+  {{- end}}
+{{- end}}

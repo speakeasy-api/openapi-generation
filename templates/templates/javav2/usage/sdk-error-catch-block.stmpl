@@ -1,0 +1,46 @@
+{{- $selectedError := pickBestErrorToHandle .Local.Operation }}
+{{- $maxErrorFields := 2 }}
+
+// ex.ToString() provides a detailed error message including
+// HTTP status code, headers, and error payload (if any)
+System.out.println(ex);
+
+// Base exception fields
+{{templateJdkVar javaRawResponseWildcardType "rawResponse"}} = ex.rawResponse();
+{{templateJdkVar (print (templatePackageName) ".utils.Headers") "headers"}} = ex.headers();
+{{templateJdkVar "java.util.Optional<java.lang.String>" "contentType"}} = headers.first("Content-Type");
+int statusCode = ex.code();
+{{javaImportOptional}}<byte[]> responseBody = ex.body();
+
+{{- if $selectedError}}
+  {{- $type := (javaImport (sanitizeType $selectedError))}}
+
+// different error subclasses may be thrown 
+// depending on the service call
+if (ex instanceof {{$type}}) {
+    {{templateJdkVar $type "e"}} = ({{$type}}) ex;
+    {{- $payloadType := print $type ".Data"}}
+    // Check error data fields
+    e.data().ifPresent(payload -> {
+        {{- range $i, $field := (removeDerivedAndUndesiredFields $selectedError) }}
+          {{- if lt $i $maxErrorFields }}
+            {{- $fieldType := javaImport (sanitizeType $field.Type (and (not $field.IsAdditionalProperties) $field.Optional) (and (not $field.IsAdditionalProperties) $field.Nullable) false )}}
+            {{- if ne $.Global.Config.GetterStyle "presence-aware"}}
+              {{- $fieldType = javaImportFieldNoWildcard $field}}
+            {{- end}}
+            {{- $fieldName := sanitizeFieldName $field.Name}}
+          {{$fieldType}} {{$fieldName}} = payload.{{$fieldName}}();
+          {{- else if eq $i $maxErrorFields }}
+          // ...
+          {{- end}}
+        {{- end}}
+    });
+}
+
+// An underlying cause may be provided. If the error payload 
+// cannot be deserialized then the deserialization exception 
+// will be set as the cause.
+if (ex.getCause() != null) {
+    {{templateJdkVar "Throwable" "cause"}} = ex.getCause();
+}
+{{- end}}

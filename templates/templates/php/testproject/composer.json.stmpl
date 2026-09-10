@@ -1,0 +1,29 @@
+{{- templateFile "auxiliary/phpstan.neon" (printf "%s/phpstan.neon" .Global.Config.TestProject.OutputDir) "" -}}
+{{- templateFile "auxiliary/pint.json" (printf "%s/pint.json" .Global.Config.TestProject.OutputDir) "" -}}
+{{- templateFile "auxiliary/rector.php" (printf "%s/rector.php" .Global.Config.TestProject.OutputDir) "" -}}
+{
+  "name": "{{.Global.Config.PackageName}}-test",
+  "type": "project",
+  "autoload": {
+    "psr-4": {
+      "Speakeasy\\TestProject\\": "src/"
+    }
+  },
+  "require": {
+{{templateDependencies | indent 4}},
+    "{{.Global.Config.PackageName}}": "@dev"
+  },
+  "require-dev": {
+{{templateDevDependencies | indent 4}}
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "{{.Global.Config.TestProject.SourceDir}}"
+    }
+  ],
+  "minimum-stability": "dev",
+  "config": {
+    "process-timeout": 60
+  }
+}

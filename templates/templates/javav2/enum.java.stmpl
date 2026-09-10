@@ -1,0 +1,29 @@
+{{- $enum := .Local.Enum -}}
+{{- $scope := .Local.Scope -}}
+{{- $class := (sanitizeClass .Local $scope true) -}}
+{{templateComments .Local.Comments $class 0 "enum" }}{{if and .Local.Comments .Local.Comments.Deprecated}}@{{javaImportDeprecated}}{{"\n"}}{{end -}}
+public enum {{$class}} {
+{{templateEnums .Local}};
+
+    @{{javaImportJacksonAnn "JsonValue"}}{{- $valueType := (javaImportTypeMandatory $enum.Type)}}
+    private final {{$valueType}} value;
+
+    {{$class}}({{$valueType}} value) {
+        this.value = value;
+    }
+    
+    public {{$valueType}} value() {
+        return value;
+    }
+    
+    public static {{javaImportOptional}}<{{$class}}> fromValue({{$valueType}} value) {
+        for ({{$class}} o: {{$class}}.values()) {
+            if ({{javaImport "java.util.Objects"}}.deepEquals(o.value, value)) {
+                return {{javaImportOptional}}.of(o);
+            }
+        }
+        return {{javaImportOptional}}.empty();
+    }
+    // #region class-body
+    // #endregion class-body
+}

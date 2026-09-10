@@ -1,0 +1,11 @@
+declare(strict_types=1);
+
+namespace {{getModelNamespace .Local.OutputLocation}};
+
+{{- if eq .Local.Type.Type "enum"}}
+{{templateString "enum.php.stmpl" .Local}}
+{{- else if eq .Local.Type.Type "error"}}
+{{templateString "error_container.php.stmpl" .Local}}
+{{- else}}
+{{templateString "model.php.stmpl" .Local}}
+{{- end}}

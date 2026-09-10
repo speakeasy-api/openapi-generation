@@ -1,0 +1,13 @@
+[package]
+name = "rubyfmt-wasm"
+version = "0.1.0"
+edition = "2024"
+description = "Minimal WASI wrapper around rubyfmt for use as an embedded WASM formatter"
+
+[dependencies]
+rubyfmt = { git = "https://github.com/fables-tales/rubyfmt", rev = "435c1625399d366ccda67bbed6e8ffafd1b20a97", default-features = false }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

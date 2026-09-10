@@ -1,0 +1,23 @@
+---
+title: "ChatModelRequest"
+---
+
+## Example Usage
+
+```typescript
+import { ChatModelRequest } from "openapi";
+
+let value: ChatModelRequest = {
+  prompt: "What is the largest city in the world?",
+};
+```
+
+## Fields
+
+| Field                                  | Type                                   | Required                               | Description                            | Example                                |
+| -------------------------------------- | -------------------------------------- | -------------------------------------- | -------------------------------------- | -------------------------------------- |
+| `model`                                | *string*                               | :heavy_minus_sign:                     | Model to use                           |                                        |
+| `prompt`                               | *string*                               | :heavy_check_mark:                     | N/A                                    | What is the largest city in the world? |
+| `stream`                               | *boolean*                              | :heavy_minus_sign:                     | Stream events as they arrive           |                                        |
+| `maxTokens`                            | *number*                               | :heavy_minus_sign:                     | Maximum number of tokens to generate   |                                        |
+| `temperature`                          | *number*                               | :heavy_minus_sign:                     | Sampling temperature                   |                                        |

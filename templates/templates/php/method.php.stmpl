@@ -1,0 +1,251 @@
+{{- $op := .Local}}
+{{- $needsAllowedFields := and $op.HoistedSecurityConfig (not $op.HoistedSecurityConfig.Equivalent) -}}
+{{- $responses := $op.Response.Responses}}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil)}}
+{{- $paramFlattening := operationParametersFlattened $op }}
+{{- $globalServerVariables := and .Global.AST.MainSDK.Servers (gt (len .Global.AST.MainSDK.Servers.GetVariables) 0) }}
+{{- addImportInline (printf "%s%s" (getScopeNamespace "hooks" true) "\\HookContext")}}
+{{- templateMethodComments $op "" 1}}
+{{- if $pagination}}
+    private function {{sanitizeMethodName $op}}Individual({{ templateMethodArguments $op ""}}): {{if $op.Response.Type }}{{sanitizeType $op.Response.Type false false "" "type"}}{{- else}}void{{end}}
+{{- else}}
+    public function {{sanitizeMethodName $op}}({{ templateMethodArguments $op ""}}): {{if $op.Response.Type }}{{sanitizeType $op.Response.Type false false "" "type"}}{{- else}}void{{end}}
+{{- end}}
+    {
+        {{- if and $op.Comments $op.Comments.Deprecated}}
+        trigger_error('Method '.__METHOD__.' is deprecated', E_USER_DEPRECATED);
+        {{- end}}
+
+        {{- if $op.Extensions.Retries}}
+        $retryConfig = null;
+        if ($options) {
+            $retryConfig = $options->retryConfig;
+        }
+        if ($retryConfig === null && $this->sdkConfiguration->retryConfig) {
+            $retryConfig = $this->sdkConfiguration->retryConfig;
+
+            {{- if not $op.Extensions.Retries.DefaultApplied}}
+        } else {
+                {{- if $op.Extensions.Retries.Backoff}}
+        {{- addImportInline (getScopeNamespace "retry" true)}}
+            $retryConfig = new Retry\RetryConfigBackoff(
+                initialIntervalMs: {{$op.Extensions.Retries.Backoff.InitialInterval}},
+                maxIntervalMs: {{$op.Extensions.Retries.Backoff.MaxInterval}},
+                exponent: {{$op.Extensions.Retries.Backoff.Exponent}},
+                maxElapsedTimeMs: {{$op.Extensions.Retries.Backoff.MaxElapsedTime}},
+                retryConnectionErrors: {{$op.Extensions.Retries.RetryConnectionErrors}},
+                {{- if eq $op.Extensions.Retries.Strategy "attempt-count-backoff"}}
+                strategy: Retry\RetryStrategy::ATTEMPT_COUNT_BACKOFF,
+                maxRetries: {{$op.Extensions.Retries.MaxRetries}},
+                {{- end}}
+            );
+
+                {{- else}}
+            $retryConfig = new Retry\RetryConfigNone();
+                {{- end}}
+        }
+            {{- else}}
+        }
+            {{- end}}
+        $retryCodes = null;
+        if ($options) {
+            $retryCodes = $options->retryCodes;
+        }
+        if ($retryCodes === null) {
+            $retryCodes = [
+            {{- range $i, $statusCode := $op.Extensions.Retries.StatusCodes}}
+                '{{$statusCode}}',{{end}}
+            ];
+        }
+        {{- end}}
+
+        {{- if $paramFlattening }}
+        $request = new {{sanitizeClass $op.Request.Field.Type "" false "type"}}({{range (sortMethodParams $op.Request.Field.Type.Fields)}}
+            {{sanitizeFieldName .Name}}: ${{sanitizeFieldName .Name}},{{end}}
+        );
+        {{- end}}
+        {{- if and $op.Servers }}
+        {{- if $op.Servers.ServerMap}}
+        $baseUrl = Utils\Utils::templateUrl({{sanitizeClassName $op.OwningSDK.Type.Name}}::{{templateConstName "SERVERS" (sanitizeClassName $op.ID)}}[{{sanitizeClassName $op.OwningSDK.Type.Name}}::{{templateConstName $op.Servers.Default (print (sanitizeClassName $op.ID) "Server")}}], [{{- range $variable := $op.Servers.GetVariables}}
+            '{{$variable.Name}}' => '{{$variable.Default}}',{{end}}
+        ]);
+        if (! empty($serverURL)) {
+            $baseUrl = $serverURL;
+        }
+        {{- else}}
+        $baseUrl = Utils\Utils::templateUrl({{sanitizeClassName $op.OwningSDK.Type.Name}}::{{templateConstName "SERVERS" (sanitizeClassName $op.ID)}}[0], [{{- range $variable := $op.Servers.GetVariables}}
+            '{{$variable.Name}}' => '{{$variable.Default}}',{{end}}
+        ]);
+        {{- if $op.Servers}}
+        if (! empty($serverURL)) {
+            $baseUrl = $serverURL;
+        }
+        {{- end}}
+        {{- end}}
+        {{- else}}
+        $baseUrl = $this->sdkConfiguration->getTemplatedServerUrl();
+        {{- end}}
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasPathParams}}
+        $url = Utils\Utils::generateUrl($baseUrl, '{{sanitizeURLPath $op.Path}}', {{sanitizeClass $op.Request.Field.Type "" false}}::class, $request{{if $globals}}, $this->sdkConfiguration->globals{{end}});
+        {{- else}}
+        $url = Utils\Utils::generateUrl($baseUrl, '{{sanitizeURLPath $op.Path}}');
+        {{- end}}
+        {{- if hasPaginationURL $op }}
+        if ($urlOverride != null) {
+            $url = $urlOverride;
+        }
+        {{- else}}
+        $urlOverride = null;
+        {{- end}}
+        $httpOptions = ['http_errors' => false];
+
+        {{- if and $op.Request $op.SerializationMethod }}
+        $body = Utils\Utils::serializeRequestBody($request, '{{sanitizeFieldName $op.Request.RequestBody.Name}}', '{{$op.SerializationMethod}}');
+        {{- if and $op.Request (and $op.Request.IsRequestBodyRequired (not (isRequestBodyOptional $op.Request)))}}
+        if ($body === null) {
+            throw new \Exception('Request body is required');
+        }
+        $httpOptions = array_merge_recursive($httpOptions, $body);
+        {{- else}}
+        if ($body !== null) {
+            $httpOptions = array_merge_recursive($httpOptions, $body);
+        }
+        {{- end}}
+        {{- end}}
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+
+        $qp = Utils\Utils::getQueryParams({{sanitizeClass $op.Request.Field.Type "" false "type"}}::class, $request, $urlOverride{{if $globals}}, $this->sdkConfiguration->globals{{end}});
+
+        {{- end}}
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasHeaderParams }}
+        $httpOptions = array_merge_recursive($httpOptions, Utils\Utils::getHeaders($request{{if $globals}}, $this->sdkConfiguration->globals{{end}}));
+        {{- end}}
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasHeaderParams }}
+        if (! array_key_exists('headers', $httpOptions)) {
+            $httpOptions['headers'] = [];
+        }
+        {{- end}}
+        $httpOptions['headers']['Accept'] = '{{ $op.GetAcceptTypes | join ", " }}';
+        $httpOptions['headers']['{{if $op.UsesUserAgentHeader}}x-speakeasy-user-agent{{else}}user-agent{{end}}'] = $this->sdkConfiguration->userAgent;
+        $httpRequest = new \GuzzleHttp\Psr7\Request('{{upper $op.Method}}', $url);
+        {{- if $op.Security}}
+        if ($security != null) {
+            $client = Utils\Utils::configureSecurityClient($this->sdkConfiguration->client, $security);
+        } else {
+            $client = $this->sdkConfiguration->client;
+        }
+
+        $hookContext = new HookContext($this->sdkConfiguration, $baseUrl, '{{ .Local.ID }}', {{templateOAuth2Scopes .Local}}, fn () => $security);
+        $httpRequest = $this->sdkConfiguration->hooks->beforeRequest(new {{getScopePath "hooks"}}\BeforeRequestContext($hookContext), $httpRequest);
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+        $httpOptions['query'] = Utils\QueryParameters::standardizeQueryParams($httpRequest, $qp);
+        {{- end}}
+        $httpOptions = Utils\Utils::convertHeadersToOptions($httpRequest, $httpOptions);
+        $httpRequest = Utils\Utils::removeHeaders($httpRequest);
+        try {
+            $httpResponse = {{templateClientCall "$client->send" $op}};
+        {{- else if $op.GlobalSecurity}}
+        {{- if $needsAllowedFields}}
+        $client = $this->sdkConfiguration->securitySource !== null
+            ? Utils\Utils::configureSecurityClient($this->sdkConfiguration->defaultClient, $this->sdkConfiguration->getSecurity(), [{{range $i, $f := $op.HoistedSecurityConfig.Fields}}{{if $i}}, {{end}}'{{sanitizeFieldName $f.Name}}'{{end}}])
+            : $this->sdkConfiguration->defaultClient;
+        {{- end}}
+        $hookContext = new HookContext($this->sdkConfiguration, $baseUrl, '{{ .Local.ID }}', {{templateOAuth2Scopes .Local}}, $this->sdkConfiguration->securitySource);
+        $httpRequest = $this->sdkConfiguration->hooks->beforeRequest(new {{getScopePath "hooks"}}\BeforeRequestContext($hookContext), $httpRequest);
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+        $httpOptions['query'] = Utils\QueryParameters::standardizeQueryParams($httpRequest, $qp);
+        {{- end}}
+        $httpOptions = Utils\Utils::convertHeadersToOptions($httpRequest, $httpOptions);
+        $httpRequest = Utils\Utils::removeHeaders($httpRequest);
+        try {
+            $httpResponse = {{if $needsAllowedFields}}{{templateClientCall "$client->send" $op}}{{else}}{{templateClientCall "$this->sdkConfiguration->client->send" $op}}{{end}};
+        {{- else}}
+        $hookContext = new HookContext($this->sdkConfiguration, $baseUrl, '{{ .Local.ID }}', {{templateOAuth2Scopes .Local}}, null);
+        $httpRequest = $this->sdkConfiguration->hooks->beforeRequest(new {{getScopePath "hooks"}}\BeforeRequestContext($hookContext), $httpRequest);
+        {{- if and $op.Request $op.Request.Params $op.Request.Params.HasQueryParams }}
+        $httpOptions['query'] = Utils\QueryParameters::standardizeQueryParams($httpRequest, $qp);
+        {{- end}}
+        $httpOptions = Utils\Utils::convertHeadersToOptions($httpRequest, $httpOptions);
+        $httpRequest = Utils\Utils::removeHeaders($httpRequest);
+        try {
+            $httpResponse = {{templateClientCall "$this->sdkConfiguration->client->send" $op}};
+        {{- end}}
+        } catch (\GuzzleHttp\Exception\GuzzleException $error) {
+            $res = $this->sdkConfiguration->hooks->afterError(new {{getScopePath "hooks"}}\AfterErrorContext($hookContext), null, $error);
+            $httpResponse = $res;
+        }
+        $contentType = $httpResponse->getHeader('Content-Type')[0] ?? '';
+
+        if ({{templateErrorStatusCodesCheck "$httpResponse->getStatusCode()" $op.Response}}) {
+            $res = $this->sdkConfiguration->hooks->afterError(new {{getScopePath "hooks"}}\AfterErrorContext($hookContext), $httpResponse, null);
+            $httpResponse = $res;
+        }
+
+        $statusCode = $httpResponse->getStatusCode();
+        {{- $responseFormat := getResponseFormat }}
+        {{- $hasDefault := false}}
+        {{- range $index, $response := $responses -}}
+            {{- if includes $response.Code "default"}}
+            {{- $hasDefault = true}}
+                {{- if gt (len $responses) 1 }} else {{"{"}}
+                {{- else}}
+        if (true) {{"{ /** @phpstan-ignore-line */"}}
+                {{- end}}
+            {{- else}}
+                {{- if gt $index 0}} elseif
+                {{- else}}
+        if
+                {{- end}} ({{templateStatusCodeCheck "$statusCode" $response.Code}}) {{"{"}}
+            {{- end}}
+            {{- if ne (len $response.Content) 0}}
+                {{- range $index, $content := $response.Content}}
+            {{- if and (gt (len $response.Content) 0) (gt $index 0)}} elseif{{else}}
+            if{{end}} (Utils\Utils::matchContentType($contentType, '{{ $content.ContentType }}')) {
+                $httpResponse = $this->sdkConfiguration->hooks->afterSuccess(new {{getScopePath "hooks"}}\AfterSuccessContext($hookContext), $httpResponse);
+
+{{templateResponseHandler $op $response $content | indentPresent 16}}
+            }
+                {{- end}}{{/* end content range */}}
+                {{- if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}} else {
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 16}}
+            }
+                {{- else}}
+{{templateErrorHandler "Unknown content type received" $responseFormat | indent 12}}
+                {{- end}}
+            {{- else if $response.Error}}{{/* if empty response content and strongly typed error */}}
+{{templateErrorHandler "API error occurred" $responseFormat  | indent 12}}
+            {{- else }}{{/* empty response content, with no error */}}
+            $httpResponse = $this->sdkConfiguration->hooks->afterSuccess(new {{getScopePath "hooks"}}\AfterSuccessContext($hookContext), $httpResponse);
+
+{{templateResponseHandler $op | indent 12}}
+            {{- end}}
+        }
+        {{- else}}{{/* if only one response */}}
+        if (responseStatusCode == 200) {
+            {{- if (eq .SerializationMethod "json") }}
+            $httpResponse = $this->sdkConfiguration->hooks->afterSuccess(new {{getScopePath "hooks"}}\AfterSuccessContext($hookContext), $httpResponse);
+
+{{templateResponseHandler $op $response | indent 20}}
+            {{- else }}
+{{templateErrorHandler "API returned unexpected status code or content type" $responseFormat | indent 20}}
+            {{- end}}
+            {{- if or (not (eq $responseFormat "flat")) (and $op.Response.Type $op.Response.Type.ResponseEnvelope)}}return response;{{end}}
+            }
+        {{- end}}
+        {{- if not $hasDefault}} else {
+{{templateErrorHandler "Unknown status code received" $responseFormat | indent 12}}
+        }
+        {{- end}}
+    }
+{{- if $pagination}}
+{{templateMethodComments $op "" 1 true}}
+    public function {{sanitizeMethodName $op}}({{ templateMethodArguments $op ""}}): {{if $op.Response.Type }}\Generator{{- else}}void{{end}}
+    {
+        $res = $this->{{sanitizeMethodName $op}}Individual({{ templateMethodArguments $op "" false}});
+        while ($res !== null) {
+            yield $res;
+            $res = $res->next($res);
+        }
+    }
+{{- end -}}

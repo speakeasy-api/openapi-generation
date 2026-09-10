@@ -1,0 +1,144 @@
+package tests
+
+import (
+	"context"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/apierrors"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/require"
+)
+
+func TestHeadersOverrideRequestHeaders(t *testing.T) {
+	recordTest("headers-override-request-headers")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	res, err := s.Methods.MethodGet(context.Background(), operations.WithSetHeaders(map[string]string{
+		"x-inject-header-1": "foo",
+		"x-inject-header-2": "bar",
+	}))
+
+	require.NoError(t, err)
+	require.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Object)
+	require.Equal(t, &operations.MethodGetResponseBody{Status: sdk.String("OK")}, res.Object)
+
+	require.Equal(t, "foo", res.HTTPMeta.Request.Header.Get("x-inject-header-1"))
+	require.Equal(t, "bar", res.HTTPMeta.Request.Header.Get("x-inject-header-2"))
+}
+
+func TestHeadersEmptyResponseBodyWithHeaders(t *testing.T) {
+	recordTest("headers-empty-response-body-with-headers")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	res, err := s.ResponseHeaders.ResponseBodyEmptyWithHeaders(context.Background(), 1.1, "hello")
+
+	require.NoError(t, err)
+	require.Equal(t, 200, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.HTTPMeta.Response.Header)
+	require.Equal(t, "hello", res.HTTPMeta.Response.Header.Get("X-String-Header"))
+	require.Equal(t, "1.1", res.HTTPMeta.Response.Header.Get("X-Number-Header"))
+
+	// In Go, response headers are collected in the `res.Headers` map, regardless of `responseFormat`.
+	require.NotNil(t, res.Headers)
+	require.Equal(t, []string{"hello"}, res.Headers["X-String-Header"])
+	require.Equal(t, []string{"1.1"}, res.Headers["X-Number-Header"])
+}
+
+func TestHeadersResponseWithoutHeaders(t *testing.T) {
+	recordTest("headers-response-headers-none")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	// The 200 response in `errorResponseHeaders` does not include any headers.
+	// but other responses in the same operation do.
+	res200, err := s.ResponseHeaders.ErrorResponseHeaders(context.Background(), true, 200)
+
+	require.NoError(t, err)
+	require.Equal(t, 200, res200.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res200.AuthToken)
+	require.Equal(t, "test-token", res200.AuthToken.Token)
+}
+
+func TestHeadersErrorResponsesWithoutHeaders(t *testing.T) {
+	recordTest("headers-error-response-headers-none")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	// 1. Basic error response (no body nor custom headers) whose
+	// operation includes another response that has headers.
+	_, err := s.ResponseHeaders.ResponseHeaders(context.Background(), true, 400)
+	require.Error(t, err)
+	apiErr := err.(*apierrors.APIError)
+	require.Equal(t, 400, apiErr.StatusCode)
+	require.Equal(t, "", apiErr.Body)
+
+	// 2. Error response with a body but no custom headers whose
+	// operation includes another response that has headers.
+	_, err = s.ResponseHeaders.ResponseHeaders(context.Background(), true, 500)
+	require.Error(t, err)
+	apiErr2 := err.(*apierrors.APIError)
+	require.Equal(t, 500, apiErr2.StatusCode)
+	require.Equal(t, "\"Internal server error.\"\n", apiErr2.Body)
+}
+
+func TestHeadersResponseHeadersOptional(t *testing.T) {
+	recordTest("headers-response-headers-optional")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	// 1. Success response with required header included
+	res1, err := s.ResponseHeaders.ResponseHeaders(context.Background(), true, 200)
+	require.NoError(t, err)
+	require.Equal(t, 200, res1.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res1.AuthToken)
+	require.Equal(t, "test-token", res1.AuthToken.Token)
+	require.NotNil(t, res1.HTTPMeta.Response.Header)
+	require.Equal(t, "required", res1.HTTPMeta.Response.Header.Get("X-Required-Header"))
+	require.Equal(t, "", res1.HTTPMeta.Response.Header.Get("X-Optional-Header"))
+	require.NotNil(t, res1.Headers)
+	require.Equal(t, []string{"required"}, res1.Headers["X-Required-Header"])
+	require.NotContains(t, res1.Headers, "X-Optional-Header")
+
+	// 2. Success response with required header omitted - SDK should not throw
+	res2, err := s.ResponseHeaders.ResponseHeaders(context.Background(), false, 200)
+	require.NoError(t, err)
+	require.Equal(t, 200, res2.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res2.AuthToken)
+	require.Equal(t, "test-token", res2.AuthToken.Token)
+	require.Equal(t, "", res2.HTTPMeta.Response.Header.Get("X-Required-Header"))
+	require.Equal(t, "", res2.HTTPMeta.Response.Header.Get("X-Optional-Header"))
+	require.NotContains(t, res2.Headers, "X-Required-Header")
+	require.NotContains(t, res2.Headers, "X-Optional-Header")
+}
+
+func TestHeadersErrorResponseHeadersOptional(t *testing.T) {
+	recordTest("headers-error-response-headers-optional")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	require.NotNil(t, s)
+
+	// 1. Error response with Retry-After header included
+	_, err1 := s.ResponseHeaders.ErrorResponseHeaders(context.Background(), true, 429)
+	require.Error(t, err1)
+	apiErr1 := err1.(*apierrors.APIError)
+	require.Equal(t, 429, apiErr1.StatusCode)
+	require.Equal(t, "60", apiErr1.RawResponse.Header.Get("retry-after"))
+	require.Equal(t, "\"Too many attempts. Please try again later.\"\n", apiErr1.Body)
+
+	// 2. Error response with Retry-After header omitted
+	_, err2 := s.ResponseHeaders.ErrorResponseHeaders(context.Background(), false, 429)
+	require.Error(t, err2)
+	apiErr2 := err2.(*apierrors.APIError)
+	require.Equal(t, 429, apiErr2.StatusCode)
+	require.Equal(t, "", apiErr2.RawResponse.Header.Get("retry-after"))
+	require.Equal(t, "\"Too many attempts. Please try again later.\"\n", apiErr2.Body)
+}

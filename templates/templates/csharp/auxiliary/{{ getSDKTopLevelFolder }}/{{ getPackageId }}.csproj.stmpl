@@ -1,0 +1,109 @@
+{{- $licenseFile := getLicenseFile -}}
+{{- $iconFile := getIconFile -}}
+{{- $sourceLink := and .Global.Config.Published .Global.Config.EnableSourceLink -}}
+{{- $root := getRootLocationRelativeToPackage -}}
+{{- $comments := .Global.AST.MainSDK.Comments -}}
+{{- $projectURL := getPackageProjectURL -}}
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>{{ getPackageId }}</PackageId>
+    <Version>{{ .Global.Config.SDKVersion }}</Version>
+    <TargetFramework>{{ getTargetFramework }}</TargetFramework>
+  {{- with getLangVersion}}
+    <LangVersion>{{ . }}</LangVersion>
+  {{- end}}
+    <Authors>{{ .Global.Config.Author }}</Authors>
+    <Copyright>{{ getCopyright }}</Copyright>
+  {{- if eq .Global.Config.GeneratedLicense "agpl"}}
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+  {{- end}}
+
+  {{- if .Global.Config.RepoURL}}
+    <RepositoryUrl>{{ .Global.Config.RepoURL }}</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  {{- end }}
+
+  {{- if .Global.Config.PackageTags }}
+    <PackageTags>{{ .Global.Config.PackageTags }}</PackageTags>
+  {{- end }}
+
+{{- if $projectURL }}
+    <PackageProjectUrl>{{ $projectURL }}</PackageProjectUrl>
+{{- end }}
+
+{{- if .Global.Config.Description }}
+    <Description>{{ sanitizeComments .Global.Config.Description }}</Description>
+{{- else if $comments }}
+  {{- if $comments.Description }}
+    <Description>{{ sanitizeComments $comments.Description }}</Description>
+  {{- else if $comments.Summary }}
+    <Description>{{ sanitizeComments $comments.Summary }}</Description>
+  {{- end }}
+{{- end }}
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+  {{- if $licenseFile }}
+    <PackageLicenseFile>{{$licenseFile}}</PackageLicenseFile>
+  {{- end }}
+
+  {{- if $iconFile }}
+    <PackageIcon>{{$iconFile}}</PackageIcon>
+  {{- end }}
+  </PropertyGroup>
+
+  <ItemGroup>
+  {{- if .Global.Config.Published }}
+    <None Include="{{$root}}NUGET.md" Pack="true" PackagePath="README.md"/>
+  {{- else }}
+    <None Include="{{$root}}README.md" Pack="true" PackagePath="\"/>
+  {{- end}}
+  {{- if $licenseFile }}
+    <None Include="{{$root}}{{$licenseFile}}" Pack="true" PackagePath="\"/>
+  {{- end}}
+  {{- if $iconFile }}
+    <None Include="{{$root}}{{$iconFile}}" Pack="true" PackagePath="\"/>
+  {{- end}}
+    <None Include="{{$root}}docs\**\*" Pack="true" PackagePath="\docs"  CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+{{- if .Global.Config.IncludeDebugSymbols }}
+
+  <PropertyGroup>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+  {{- if .Global.Config.Published }}
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  {{- end }}
+  </PropertyGroup>
+{{- end }}
+
+{{- if $sourceLink }}
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedAllSources>true</EmbedAllSources>
+  </PropertyGroup>
+{{- end}}
+
+  <ItemGroup>
+{{ templateSDKDependencies }}
+
+  {{- if $sourceLink }}
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+  {{- end}}
+  </ItemGroup>
+
+</Project>

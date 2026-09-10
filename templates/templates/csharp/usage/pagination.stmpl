@@ -1,0 +1,7 @@
+{{- $resVar := getResponseVariableName .Local.StepID -}}
+while({{$resVar}} != null)
+{
+    // handle items
+
+    {{$resVar}} = await {{$resVar}}.Next!();
+}

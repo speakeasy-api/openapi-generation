@@ -1,0 +1,497 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newResponseHeadersTestServer creates a mock server that handles the three
+// response-headers operations:
+//   - GET /response-headers             (responseBodyEmptyWithHeaders)
+//   - GET /response-headers/{statusCode} (responseHeaders)
+//   - GET /error-response-headers/{statusCode} (errorResponseHeaders)
+func newResponseHeadersTestServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		switch {
+		case path == "/response-headers":
+			// responseBodyEmptyWithHeaders: set query params as response headers, empty body
+			xStr := r.URL.Query().Get("X-String-Header")
+			xNum := r.URL.Query().Get("X-Number-Header")
+			if xStr != "" {
+				w.Header().Set("X-String-Header", xStr)
+			}
+			if xNum != "" {
+				w.Header().Set("X-Number-Header", xNum)
+			}
+			w.WriteHeader(200)
+
+		case strings.HasPrefix(path, "/response-headers/"):
+			// responseHeaders: path param is status code
+			statusStr := strings.TrimPrefix(path, "/response-headers/")
+			includeHeader := r.URL.Query().Get("includeRequiredHeader") == "true"
+			switch statusStr {
+			case "200":
+				if includeHeader {
+					w.Header().Set("X-Required-Header", "required")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(200)
+				json.NewEncoder(w).Encode(map[string]string{"token": "test-token"})
+			case "201":
+				// Malformed JSON response for testing _result_raw path.
+				// Content-Type says JSON but body isn't valid JSON —
+				// this triggers the non-JSON raw body branch in Result().
+				if includeHeader {
+					w.Header().Set("X-Required-Header", "required")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Custom", "malformed")
+				w.WriteHeader(200)
+				w.Write([]byte("this is not json"))
+			case "400":
+				w.WriteHeader(400)
+			case "500":
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(500)
+				w.Write([]byte("\"Internal server error.\"\n"))
+			default:
+				w.WriteHeader(500)
+			}
+
+		case strings.HasPrefix(path, "/error-response-headers/"):
+			// errorResponseHeaders: path param is status code
+			statusStr := strings.TrimPrefix(path, "/error-response-headers/")
+			includeHeader := r.URL.Query().Get("includeHeader") == "true"
+			switch statusStr {
+			case "200":
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(200)
+				json.NewEncoder(w).Encode(map[string]string{"token": "test-token"})
+			case "429":
+				if includeHeader {
+					w.Header().Set("Retry-After", "60")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(429)
+				w.Write([]byte("\"Too many attempts. Please try again later.\"\n"))
+			case "500":
+				if includeHeader {
+					w.Header().Set("X-500-Header", "error-info")
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(500)
+				w.Write([]byte("\"Internal server error.\"\n"))
+			default:
+				w.WriteHeader(500)
+			}
+
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+}
+
+func TestHeadersOverrideRequestHeaders(t *testing.T) {
+	recordTest("headers-override-request-headers")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"methods", "method-get",
+		"--header", "x-inject-header-1: foo",
+		"--header", "x-inject-header-2: bar",
+		"--output-format", "json",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// The echo server reflects request headers in the response.
+	// Go's http.Header canonicalizes keys: x-inject-header-1 → X-Inject-Header-1
+	assert.Equal(t, "foo", jsonGetString(output, "headers.X-Inject-Header-1"))
+	assert.Equal(t, "bar", jsonGetString(output, "headers.X-Inject-Header-2"))
+}
+
+// === Functional tests (matching the 5 unskipped test IDs) ===
+
+func TestHeadersEmptyBodyWithHeaders(t *testing.T) {
+	recordTest("headers-empty-response-body-with-headers")
+
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"response-headers", "response-body-empty-with-headers",
+		"--x-number-header", "1.1",
+		"--x-string-header", "hello",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Response has empty body — only _response_headers should be present
+	assert.Equal(t, "hello", jsonGetString(output, "_response_headers.X-String-Header"))
+	assert.Equal(t, "1.1", jsonGetString(output, "_response_headers.X-Number-Header"))
+}
+
+func TestHeadersResponseNone(t *testing.T) {
+	recordTest("headers-response-headers-none")
+
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// The 200 response of errorResponseHeaders does not define custom headers,
+	// even though other responses in the same operation do. Tests the
+	// isEnvelopeField fix: body should be correctly extracted, not the headers map.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"response-headers", "error-response-headers",
+		"--include-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Body content should be returned, not the headers map
+	assert.Equal(t, "test-token", jsonGetString(output, "token"))
+}
+
+func TestHeadersResponseOptional(t *testing.T) {
+	recordTest("headers-response-headers-optional")
+
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// Case 1: Success response with required header included
+	h1 := NewCLITestHarness(t)
+	err := h1.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output1 := strings.TrimSpace(h1.GetStdout())
+	require.NotEmpty(t, output1)
+	assert.Equal(t, "test-token", jsonGetString(output1, "token"))
+	assert.Equal(t, "required", jsonGetString(output1, "_response_headers.X-Required-Header"))
+
+	// Case 2: Success response with required header omitted — should not fail
+	h2 := NewCLITestHarness(t)
+	err = h2.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"response-headers", "response-headers",
+		"--include-required-header=false",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output2 := strings.TrimSpace(h2.GetStdout())
+	require.NotEmpty(t, output2)
+	assert.Equal(t, "test-token", jsonGetString(output2, "token"))
+	// X-Required-Header should not be present
+	assert.Empty(t, jsonGetString(output2, "_response_headers.X-Required-Header"))
+}
+
+func TestHeadersErrorNone(t *testing.T) {
+	recordTest("headers-error-response-headers-none")
+
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// 400 response: empty body, no custom headers
+	h1 := NewCLITestHarness(t)
+	err := h1.RunWithServer(s.URL, []string{
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "400",
+	})
+	require.Error(t, err)
+
+	// 500 response: has body but no custom headers
+	h2 := NewCLITestHarness(t)
+	err = h2.RunWithServer(s.URL, []string{
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "500",
+	})
+	require.Error(t, err)
+}
+
+func TestHeadersErrorOptional(t *testing.T) {
+	recordTest("headers-error-response-headers-optional")
+
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// 429 response with Retry-After header included
+	h1 := NewCLITestHarness(t)
+	err := h1.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"response-headers", "error-response-headers",
+		"--include-header",
+		"--status-code", "429",
+	})
+	require.Error(t, err)
+
+	output1 := strings.TrimSpace(h1.GetStderr())
+	require.NotEmpty(t, output1)
+	// Error JSON with headers injected
+	assert.Equal(t, "60", jsonGetString(output1, "_response_headers.Retry-After"))
+
+	// 429 response without Retry-After header — should not fail
+	h2 := NewCLITestHarness(t)
+	err = h2.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"response-headers", "error-response-headers",
+		"--include-header=false",
+		"--status-code", "429",
+	})
+	require.Error(t, err)
+
+	output2 := strings.TrimSpace(h2.GetStderr())
+	require.NotEmpty(t, output2)
+	// Retry-After should not be present
+	assert.Empty(t, jsonGetString(output2, "_response_headers.Retry-After"))
+}
+
+// === Output format cross-cutting tests ===
+
+func TestHeadersJSONFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"--output-format", "json",
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Verify valid JSON with _response_headers as sibling key
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(output), &parsed))
+	assert.Contains(t, parsed, "token")
+	assert.Contains(t, parsed, "_response_headers")
+}
+
+func TestHeadersYAMLFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"--include-headers",
+		"--output-format", "yaml",
+		"--server-url", s.URL,
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	require.NotEmpty(t, output)
+
+	// YAML output should contain the response headers section
+	assert.Contains(t, output, "token: test-token")
+	assert.Contains(t, output, "_response_headers:")
+	assert.Contains(t, output, "X-Required-Header: required")
+}
+
+func TestHeadersToonFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"--include-headers",
+		"--output-format", "toon",
+		"--server-url", s.URL,
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	assert.Contains(t, output, "token", "expected body field in TOON output")
+	assert.Contains(t, output, "test-token", "expected body value in TOON output")
+	assert.Contains(t, output, "_response_headers", "expected structured headers in TOON output")
+	assert.Contains(t, output, "X-Required-Header", "expected header name in TOON output")
+}
+
+func TestHeadersPrettyFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"--include-headers",
+		"--output-format", "pretty",
+		"--color", "never",
+		"--server-url", s.URL,
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	require.NotEmpty(t, output)
+
+	// Pretty output should have body content and a Response Headers section
+	assert.Contains(t, output, "test-token")
+	assert.Contains(t, output, "Response Headers:")
+	assert.Contains(t, output, "X-Required-Header")
+}
+
+func TestHeadersJqFilter(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"--jq", `._response_headers."X-Required-Header"`,
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// jq should extract just the header value
+	assert.Equal(t, "\"required\"", output)
+}
+
+func TestHeadersNoFlagRegression(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// Without --include-headers, output should be just the body — no _response_headers
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Body content present
+	assert.Equal(t, "test-token", jsonGetString(output, "token"))
+	// No _response_headers key
+	assert.NotContains(t, output, "_response_headers")
+}
+
+// === Core bug regression test ===
+
+func TestHeadersBodyExtractedOverHeaders(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// For responseHeaders (has both body AuthToken and Headers field),
+	// the body content (token) must be returned — NOT the headers map.
+	// This directly tests the isEnvelopeField fix for "Headers".
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "200",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Must be the AuthToken body, not the headers map
+	assert.Equal(t, "test-token", jsonGetString(output, "token"))
+	// Should NOT contain X-Required-Header at the top level (that would mean headers leaked)
+	assert.Empty(t, jsonGetString(output, "X-Required-Header"))
+}
+
+// === Non-JSON raw body + headers regression tests ===
+
+func TestHeadersNonJSONRawBody(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// statusCode=201 triggers malformed JSON response (Content-Type: application/json
+	// but body is "this is not json"). With --output-format json, the CLI uses
+	// WithSkipDeserialization() and tryReadRawBody() gets the raw bytes. Since
+	// json.Unmarshal fails, it should wrap as _result_raw (not _result).
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"--output-format", "json",
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "201",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// Verify it's valid JSON with _result_raw and _response_headers
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(output), &parsed))
+	assert.Contains(t, parsed, "_result_raw")
+	assert.Contains(t, parsed, "_response_headers")
+	assert.Equal(t, "this is not json", parsed["_result_raw"])
+	// Verify headers are present
+	assert.Equal(t, "malformed", jsonGetString(output, "_response_headers.X-Custom"))
+}
+
+func TestHeadersNonJSONRawBodyJq(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	defer s.Close()
+
+	// Same malformed JSON response, but with --jq to verify jq is applied against
+	// the wrapped _result_raw output (not skipped).
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"--include-headers",
+		"--jq", "._result_raw",
+		"response-headers", "response-headers",
+		"--include-required-header",
+		"--status-code", "201",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+
+	// jq should extract just the raw body string
+	assert.Equal(t, "\"this is not json\"", output)
+}

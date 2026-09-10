@@ -1,0 +1,11 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+python:
+  fixFlags:
+    conflictResistantModelImportsFeb2026: true
+  forwardCompatibleEnumsByDefault: true
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  packageName: customhttp
+  templateVersion: v2

@@ -1,0 +1,401 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/clierrors"
+	"{{getGolangPackage}}/internal/output"
+	"{{getGolangPackage}}/internal/usage"
+)
+
+type invalidExitCodeError struct{ error }
+
+func (invalidExitCodeError) ExitCode() int { return 99 }
+
+func TestExitCodeMappingTables(t *testing.T) {
+	recordTest("cli-exit-code-mapping-tables")
+
+	errorTypes := map[string]int{
+		"authentication_error": clierrors.ExitAuth,
+		"authorization_error":  clierrors.ExitAuth,
+		"validation_error":     clierrors.ExitUsage,
+		"not_found":            clierrors.ExitRuntime,
+		"rate_limit_error":     clierrors.ExitRuntime,
+		"server_error":         clierrors.ExitRuntime,
+		"api_error":            clierrors.ExitRuntime,
+		"connection_error":     clierrors.ExitRuntime,
+		"protocol_error":       clierrors.ExitRuntime,
+		"service_disabled":     clierrors.ExitRuntime,
+		"billing_disabled":     clierrors.ExitRuntime,
+		"runtime_error":        clierrors.ExitRuntime,
+		"unsupported_error":    clierrors.ExitRuntime,
+		"made_up":              clierrors.ExitRuntime,
+	}
+	for errorType, want := range errorTypes {
+		assert.Equal(t, want, clierrors.ErrorTypeExitCode(errorType), errorType)
+	}
+
+	reasons := map[string]int{
+		"CLI_VALIDATION":     clierrors.ExitUsage,
+		"CLI_AUTHENTICATION": clierrors.ExitAuth,
+		"CLI_CONNECTION":     clierrors.ExitRuntime,
+		"CLI_PROTOCOL":       clierrors.ExitRuntime,
+		"CLI_RUNTIME":        clierrors.ExitRuntime,
+		"CLI_UNAVAILABLE":    clierrors.ExitRuntime,
+		"CLI_MADE_UP":        clierrors.ExitRuntime,
+	}
+	for reason, want := range reasons {
+		assert.Equal(t, want, clierrors.CLIReasonExitCode(reason), reason)
+	}
+
+	base := errors.New("boom")
+	assert.Equal(t, clierrors.ExitOK, clierrors.ExitCode(nil))
+	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(base))
+	inner := clierrors.WithExitCode(base, clierrors.ExitUsage)
+	outer := clierrors.WithExitCode(inner, clierrors.ExitAuth)
+	assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(outer), "outer classification boundary wins")
+	assert.True(t, errors.Is(outer, base))
+	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(invalidExitCodeError{base}))
+}
+
+func TestExitCodeRootUnknownCommandPreservesCobraMessage(t *testing.T) {
+	recordTest("cli-exit-code-root-unknown-message")
+	resetAgentMode(t)
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	args := []string{"errorz"}
+	_, _, findErr := root.Find(args)
+	require.Error(t, findErr)
+	var stdout, stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	err = cli.ExecuteRoot(context.Background(), root, args)
+	require.Error(t, err)
+	assert.Equal(t, findErr.Error(), err.Error())
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+}
+
+func TestExitCodeSynthesizedGroupAndNilArgsLeaf(t *testing.T) {
+	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
+	group := &cobra.Command{Use: "custom"}
+	group.AddCommand(&cobra.Command{Use: "known", RunE: func(cmd *cobra.Command, args []string) error { return nil }})
+	root.AddCommand(group)
+	usage.Intercept(root)
+	output.InstallErrorHandling(root)
+	require.NotNil(t, group.Args)
+	err := group.Args(group, []string{"missing"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(output.CLIError(group, err)))
+
+	leafRoot := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
+	leaf := &cobra.Command{Use: "custom-leaf", RunE: func(cmd *cobra.Command, args []string) error { return nil }}
+	leafRoot.AddCommand(leaf)
+	usage.Intercept(leafRoot)
+	output.InstallErrorHandling(leafRoot)
+	assert.Nil(t, leaf.Args)
+	leafRoot.SetArgs([]string{"custom-leaf", "kept", "arbitrary"})
+	_, err = leafRoot.ExecuteC()
+	require.NoError(t, err)
+}
+
+func TestExitCodeErrorHandlingPreservesPreRun(t *testing.T) {
+	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
+	preRunCalled := false
+	leaf := &cobra.Command{
+		Use: "custom-leaf",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			preRunCalled = true
+		},
+		RunE: func(cmd *cobra.Command, args []string) error { return nil },
+	}
+	root.AddCommand(leaf)
+	usage.Intercept(root)
+	output.InstallErrorHandling(root)
+	root.SetArgs([]string{"custom-leaf"})
+	_, err := root.ExecuteC()
+	require.NoError(t, err)
+	assert.True(t, preRunCalled)
+}
+
+func runExitCodeInvocation(t *testing.T, serverURL string, modeArgs, args []string) (*CLITestHarness, error) {
+	t.Helper()
+	h := NewCLITestHarness(t)
+	fullArgs := make([]string, 0, len(modeArgs)+len(args)+2)
+	if serverURL != "" {
+		fullArgs = append(fullArgs, "--server-url", serverURL)
+	}
+	fullArgs = append(fullArgs, modeArgs...)
+	fullArgs = append(fullArgs, args...)
+	return h, h.RunRaw(fullArgs)
+}
+
+func TestExitCodesAcrossRenderingModes(t *testing.T) {
+	recordTest("cli-exit-codes-rendering-modes")
+	s := newEchoServer()
+	defer s.Close()
+
+	modes := []struct {
+		name string
+		args []string
+	}{
+		{name: "plain"},
+		{name: "agent", args: []string{"--agent-mode"}},
+		{name: "json", args: []string{"--output-format", "json"}},
+	}
+	cases := []struct {
+		name      string
+		args      []string
+		serverURL string
+		want      int
+	}{
+		{name: "unknown root command", args: []string{"no-such-command"}, want: 2},
+		{name: "unknown nested command", args: []string{"errors", "no-such-command"}, want: 2},
+		{name: "unknown flag", args: []string{"errors", "status-get-error", "--no-such-flag"}, want: 2},
+		{name: "invalid flag value", args: []string{"errors", "status-get-error", "--status-code", "wat"}, want: 2},
+		{name: "missing required flag", args: []string{"custom-required-flags"}, want: 2},
+		{name: "malformed body", args: []string{"request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "{"}, want: 2},
+		{name: "planned command", args: []string{"archive"}, want: 1},
+		{name: "builtin stray argument", args: []string{"version", "extra"}, want: 2},
+		{name: "HTTP 400", args: []string{"errors", "status-get-error", "--status-code", "400"}, serverURL: s.URL, want: 2},
+		{name: "HTTP 401", args: []string{"errors", "status-get-error", "--status-code", "401"}, serverURL: s.URL, want: 3},
+		{name: "HTTP 403", args: []string{"errors", "status-get-error", "--status-code", "403"}, serverURL: s.URL, want: 3},
+		{name: "HTTP 404", args: []string{"errors", "status-get-error", "--status-code", "404"}, serverURL: s.URL, want: 1},
+		{name: "HTTP 429", args: []string{"errors", "status-get-error", "--status-code", "429"}, serverURL: s.URL, want: 1},
+		{name: "HTTP 500", args: []string{"errors", "status-get-error", "--status-code", "500"}, serverURL: s.URL, want: 1},
+	}
+	for _, mode := range modes {
+		for _, tc := range cases {
+			t.Run(mode.name+"/"+tc.name, func(t *testing.T) {
+				h, err := runExitCodeInvocation(t, tc.serverURL, mode.args, tc.args)
+				require.Error(t, err)
+				assert.Equal(t, tc.want, clierrors.ExitCode(err), h.GetStderr())
+				if mode.name != "plain" {
+					envelope := agentEnvelope(t, h.GetStderr())
+					assert.Equal(t, float64(tc.want), envelope["exit_code"])
+				}
+			})
+		}
+	}
+}
+
+func TestExitCodeReasonFirstAndEnvelopePrecedence(t *testing.T) {
+	recordTest("cli-exit-code-reason-first")
+
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantType   string
+		wantReason string
+		wantCode   int
+	}{
+		{
+			name:       "HTTP 400 ACCOUNT_KEY_REVOKED",
+			statusCode: http.StatusBadRequest,
+			body:       `[{"error":{"message":"bad key","details":[{"reason":"ACCOUNT_KEY_REVOKED"}]}}]`,
+			wantType:   "authentication_error",
+			wantReason: "ACCOUNT_KEY_REVOKED",
+			wantCode:   3,
+		},
+		{
+			// Top-level error_type/error_reason/exit_code are reserved keys the
+			// classifier owns: an HTTP 500 without structured reason evidence is a
+			// server_error and exits 1 regardless of what the body claims.
+			name:       "reserved envelope keys never override the classifier",
+			statusCode: http.StatusInternalServerError,
+			body:       `{"error":{"message":"custom"},"error_type":"authentication_error","error_reason":"CUSTOM_AUTH","message":"custom message","hints":["custom hint"],"exit_code":99}`,
+			wantType:   "server_error",
+			wantReason: "",
+			wantCode:   1,
+		},
+		{
+			name:       "array wrapped reserved keys never override the classifier",
+			statusCode: http.StatusInternalServerError,
+			body:       `[{"error":{"message":"custom"},"error_type":"authentication_error","error_reason":"CUSTOM_AUTH","message":"custom message","hints":["custom hint"],"exit_code":99}]`,
+			wantType:   "server_error",
+			wantReason: "",
+			wantCode:   1,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			var stderr bytes.Buffer
+			cmd := &cobra.Command{}
+			cmd.SetErr(&stderr)
+			cmd.PersistentFlags().Bool("agent-mode", false, "")
+			require.NoError(t, cmd.PersistentFlags().Set("agent-mode", "true"))
+			output.InitAgentMode(cmd)
+			err := output.Error(cmd, &agentModeTestError{Body: tc.body, StatusCode: tc.statusCode})
+			require.Error(t, err)
+			assert.Equal(t, tc.wantCode, clierrors.ExitCode(err))
+			envelope := agentEnvelope(t, stderr.String())
+			assert.Equal(t, tc.wantType, envelope["error_type"])
+			if tc.wantReason == "" {
+				assert.NotContains(t, envelope, "error_reason")
+			} else {
+				assert.Equal(t, tc.wantReason, envelope["error_reason"])
+			}
+			assert.Equal(t, float64(tc.wantCode), envelope["exit_code"])
+		})
+	}
+}
+
+func TestExitCodeReasonFirstPrettyParity(t *testing.T) {
+	resetAgentMode(t)
+	// An explicit pretty format keeps this independent of the process-wide
+	// pre-parsed rendering snapshot left behind by earlier root invocations.
+	cmd, stderr := newTaxonomyCommand(t, "pretty")
+	err := output.Error(cmd, &agentModeTestError{
+		Body:       `[{"error":{"message":"bad key","details":[{"reason":"ACCOUNT_KEY_REVOKED"}]}}]`,
+		StatusCode: http.StatusBadRequest,
+	})
+	require.Error(t, err)
+	// Pretty rendering uses the same reason-first classification as the
+	// structured envelope: a 400 ACCOUNT_KEY_REVOKED is an authentication failure
+	// (exit 3) with credential guidance, not request validation.
+	assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(err))
+	assert.Contains(t, stderr.String(), "Error (authentication_error)")
+	assert.Contains(t, stderr.String(), "Reason: ACCOUNT_KEY_REVOKED (HTTP 400)")
+	assert.Contains(t, stderr.String(), "Fix:")
+}
+
+func TestExitCodeReservedKeysNonAgentJSON(t *testing.T) {
+	resetAgentMode(t)
+	var stderr bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetErr(&stderr)
+	cmd.Flags().String("output-format", "pretty", "")
+	require.NoError(t, cmd.Flags().Set("output-format", "json"))
+	err := output.Error(cmd, &agentModeTestError{
+		Body:       `{"error":{"message":"custom"},"error_type":"authentication_error","error_reason":"CUSTOM_AUTH","message":"custom message","hints":["custom hint"],"exit_code":99}`,
+		StatusCode: http.StatusInternalServerError,
+	})
+	require.Error(t, err)
+	// The classifier owns error_type, error_reason and exit_code in every
+	// structured mode; the process exit code always matches the envelope.
+	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+	envelope := agentEnvelope(t, stderr.String())
+	assert.Equal(t, "server_error", envelope["error_type"])
+	assert.NotContains(t, envelope, "error_reason")
+	assert.Equal(t, "custom", envelope["message"])
+	assert.Equal(t, float64(clierrors.ExitRuntime), envelope["exit_code"])
+}
+
+func TestExitCodeBareIntentHelpStreams(t *testing.T) {
+	recordTest("cli-exit-code-bare-intent")
+
+	t.Run("plain", func(t *testing.T) {
+		h, err := runExitCodeInvocation(t, "", nil, []string{"generate"})
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+		stderr := strings.TrimSpace(h.GetStderr())
+		assert.Contains(t, stderr, "Usage:")
+		assert.Contains(t, stderr, clierrors.HelpFooter)
+		assert.True(t, strings.HasSuffix(stderr, "Error: missing required argument <prompt> (or pass a full request with --body)"), stderr)
+		assert.True(t, output.IsRendered(err))
+	})
+
+	for _, mode := range []struct {
+		name string
+		args []string
+	}{
+		{name: "agent", args: []string{"--agent-mode"}},
+		{name: "json", args: []string{"--output-format", "json"}},
+		{name: "jq", args: []string{"--jq", "."}},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			h, err := runExitCodeInvocation(t, "", mode.args, []string{"generate"})
+			require.Error(t, err)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+			hints, ok := envelope["hints"].([]interface{})
+			require.True(t, ok)
+			assert.Contains(t, strings.Join(func() []string {
+				result := make([]string, 0, len(hints))
+				for _, hint := range hints {
+					if value, ok := hint.(string); ok {
+						result = append(result, value)
+					}
+				}
+				return result
+			}(), " "), "generate --help")
+		})
+	}
+}
+
+func TestExitCodeSuccessAndDiscovery(t *testing.T) {
+	recordTest("cli-exit-code-success-and-discovery")
+
+	modes := make([][]string, 0, 3)
+	modes = append(modes, nil)
+	modes = append(modes, []string{"--agent-mode"})
+	modes = append(modes, []string{"--output-format", "json"})
+	type discoveryCase struct {
+		args       []string
+		wantFooter bool
+	}
+	discoveryCases := make([]discoveryCase, 0, 4)
+	discoveryCases = append(discoveryCases, discoveryCase{wantFooter: true})
+	discoveryCases = append(discoveryCases, discoveryCase{args: []string{"errors"}, wantFooter: true})
+	discoveryCases = append(discoveryCases, discoveryCase{args: []string{"generate", "--help"}, wantFooter: true})
+	discoveryCases = append(discoveryCases, discoveryCase{args: []string{"version"}})
+	for _, mode := range modes {
+		for _, tc := range discoveryCases {
+			h, err := runExitCodeInvocation(t, "", mode, tc.args)
+			require.NoError(t, err)
+			assert.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err))
+			assert.NotEmpty(t, strings.TrimSpace(h.GetStdout()))
+			if tc.wantFooter {
+				assert.Contains(t, h.GetStdout(), clierrors.HelpFooter)
+			}
+			assert.Empty(t, strings.TrimSpace(h.GetStderr()))
+		}
+
+		h, err := runExitCodeInvocation(t, "http://nonexistent.invalid.", append(mode, "--dry-run"), []string{"methods", "method-get"})
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, clierrors.ExitOK, clierrors.ExitCode(err))
+	}
+}
+
+func TestExitCodeConnectionAndAgentBlock(t *testing.T) {
+	recordTest("cli-exit-code-connection-and-agent-block")
+
+	h, err := runExitCodeInvocation(t, "http://127.0.0.1:1", []string{"--agent-mode"}, []string{"methods", "method-get"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+	assert.Equal(t, float64(clierrors.ExitRuntime), agentEnvelope(t, h.GetStderr())["exit_code"])
+
+	// Agent mode never opens the configure form; with no flags the flag-only
+	// storage path is a typed usage failure.
+	h, err = runExitCodeInvocation(t, "", []string{"--agent-mode"}, []string{"configure"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	envelope := agentEnvelope(t, h.GetStderr())
+	assert.Equal(t, "validation_error", envelope["error_type"])
+	assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+	assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+}
+
+func TestExitCodeStructuredEnvelopeIsSingleDocument(t *testing.T) {
+	recordTest("cli-exit-code-single-envelope")
+	h, err := runExitCodeInvocation(t, "", []string{"--agent-mode"}, []string{"generate"})
+	require.Error(t, err)
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStderr())), &envelope))
+	assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+}

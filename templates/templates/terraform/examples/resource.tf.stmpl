@@ -1,0 +1,3 @@
+resource "{{.Local.Resource.TerraformTypeName}}" "my_{{sanitizeLocalName .Local.Resource.Name}}" {
+{{templateTfResource .Local.Resource "managed" -}}
+}

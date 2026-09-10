@@ -1,0 +1,19 @@
+{{- $responseFormat := getResponseFormat }}
+{{- $resFieldName := getResponseFieldName .Local.Operation }}
+{{- if .Local.Operation.Extensions.Pagination}}
+{{templateString "usage/pagination.stmpl" .Local.Operation}}
+{{- else}}
+{{- if $resFieldName}}
+if ($response->{{sanitizeFieldName $resFieldName}} !== null) {
+    // handle response
+}
+{{- else}}
+  {{- if eq $responseFormat "envelope-http"}}
+if ($response->httpMeta->response->getStatusCode() === 200) {
+  {{- else}}
+if ($response->statusCode === 200) {
+  {{- end}}
+    // handle response
+}
+{{- end}}
+{{- end}}

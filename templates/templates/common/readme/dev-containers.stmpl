@@ -1,0 +1,9 @@
+<div align="left">
+    {{- if and .Global.Config.RepoURL .Global.Config.DevContainerSchemaPath}}
+    <a href="https://codespaces.new/{{parseOrgAndRepo .Global.Config.RepoURL}}/tree/main"><img src="https://github.com/codespaces/badge.svg" /></a>
+    {{end}}
+</div>
+
+Experience our SDK in an enhanced sandbox environment. Try it now in **GitHub Codespaces**!
+
+* [Explore Dev Containers](.devcontainer/README.md)

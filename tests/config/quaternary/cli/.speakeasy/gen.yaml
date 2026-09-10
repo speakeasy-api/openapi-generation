@@ -1,0 +1,17 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  auth: {}
+  tests:
+    generateTests: true
+    generateNewTests: false
+cli:
+  version: 0.0.1
+  additionalDependencies: {}
+  baseErrorName: SDKError
+  cliName: cli
+  defaultErrorName: SDKDefaultError
+  envVarPrefix: CLI
+  packageName: openapi

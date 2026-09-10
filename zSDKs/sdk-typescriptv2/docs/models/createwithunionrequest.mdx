@@ -1,0 +1,26 @@
+---
+title: "CreateWithUnionRequest"
+---
+
+## Example Usage
+
+```typescript
+import { CreateWithUnionRequest } from "openapi";
+
+let value: CreateWithUnionRequest = {
+  shapeRequest: {
+    name: "<value>",
+    shape: {
+      type: "circle",
+      radius: 1816.9,
+    },
+  },
+};
+```
+
+## Fields
+
+| Field                                            | Type                                             | Required                                         | Description                                      |
+| ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| `dryRun`                                         | *boolean*                                        | :heavy_minus_sign:                               | If true, validates without creating              |
+| `shapeRequest`                                   | [models.ShapeRequest](../models/shaperequest.mdx) | :heavy_check_mark:                               | N/A                                              |

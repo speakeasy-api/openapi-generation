@@ -1,0 +1,10 @@
+{{- if isTemplateFeatureEnabled "module" }}
+module {{getRootModulePath}}
+
+go 1.25.10
+
+require (
+	{{templateDependencies | indent 4 | trim}}
+)
+{{- templateRetractions}}
+{{end}}

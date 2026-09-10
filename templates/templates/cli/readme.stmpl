@@ -1,0 +1,34 @@
+{{.Local.Header}}
+
+<br /><br />
+> [!IMPORTANT]
+> This CLI is not yet ready for production use.{{ if .Global.Config.WorkspaceUri }} To complete setup please follow the steps outlined in your [workspace]({{ .Global.Config.WorkspaceUri }}).{{end}} Delete this notice before publishing to a package manager.
+{{ range .Local.Sections }}
+<!-- Start {{ .Header }} [{{ .ID }}] -->
+## {{ .Header }}
+
+{{ .Content }}
+<!-- End {{ .Header }} [{{ .ID }}] -->
+{{ end }}
+<!-- Placeholder for Future Speakeasy SDK Sections -->
+
+# Development
+
+## Maturity
+
+This CLI is in beta, and there may be breaking changes between versions without a major version update. Therefore, we recommend pinning usage
+to a specific package version. This way, you can install the same version each time without breaking changes unless you are intentionally
+looking for the latest version.
+
+## Contributions
+
+This CLI is generated programmatically. Edits to generated files are overwritten on regeneration. To customize it:
+
+- **Configuration and behavior:** Use [OpenAPI overlays](https://www.speakeasy.com/docs/prep-openapi/overlays/create-overlays) in the Speakeasy workflow with `x-speakeasy-*` extensions (for example, `x-speakeasy-cli-commands`) to define commands, flags, help text, examples, authentication, and grouping.
+- **Persistent code changes:** Store unified diffs as [patch files](https://www.speakeasy.com/docs/sdks/customize/code/patch-files/patch-files) at `.speakeasy/patches/<path-of-generated-file>.patch`; they are re-applied on every generation.
+
+{{- if isCustomCommandsEnabled }}
+- **Hand-written commands:** Add them under `internal/cli/custom/`; the scaffold is generated once and never overwritten.
+{{- end }}
+
+### CLI Created by [Speakeasy]({{getSpeakeasyTrackingLink}})

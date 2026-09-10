@@ -1,0 +1,63 @@
+{{- $className := sanitizeClassName .Local.Name false }}
+{{- $param := lower (sanitizeVariableName $className) }}
+{{- $enumType := sanitizeType .Local.Enum.Type false "" }}
+{{- $stringEnum := eq $enumType "string" }}
+{{- $deprecated := and .Local.Comments .Local.Comments.Deprecated }}
+
+{{- if $deprecated }}
+#pragma warning disable 0618
+{{- end}}
+    {{- templateComments .Local.Comments 1 "class" false}}
+    {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
+    [JsonConverter(typeof(OpenEnumConverter))]
+    public class {{ $className }} : IEquatable<{{ $className }}>, IOpenEnum<{{ $enumType }}>
+    {
+        {{- templateOpenEnumKnownValues .Local | indentPresent 8}}
+
+        private static readonly ConcurrentDictionary<{{$enumType}}, {{$className}}> _values =
+            new ConcurrentDictionary<{{$enumType}}, {{$className}}>(_knownValues);
+
+        private {{$className}}({{$enumType}} value)
+        {
+            {{- if $stringEnum }}
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            {{- end }}
+            Value = value;
+        }
+
+        public {{$enumType}} Value { get; }
+
+        public static {{$className}} Of({{$enumType}} value)
+        {
+            return _values.GetOrAdd(value, _ => new {{$className}}(value));
+        }
+
+        public static implicit operator {{$className}}({{$enumType}} value) => Of(value);
+        public static implicit operator {{$enumType}}({{$className}} {{$param}}) => {{$param}}.Value;
+
+        public static {{$className}}[] Values()
+        {
+            return _values.Values.ToArray();
+        }
+
+        public override string ToString() => Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        public bool IsKnown()
+        {
+            return _knownValues.ContainsKey(Value);
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as {{$className}});
+
+        public bool Equals({{$className}}? other)
+        {
+            if (ReferenceEquals(this, other)) return true;
+            if (other is null) return false;
+            return string.Equals(Value, other.Value);
+        }
+
+        public override int GetHashCode() => Value.GetHashCode();
+    }
+{{- if $deprecated }}
+#pragma warning restore 0618
+{{- end}}

@@ -1,0 +1,168 @@
+{{typedDirective}}
+# frozen_string_literal: true
+
+require_relative '../sdkconfiguration'
+
+module {{sanitizeModuleName .Global.Config.Module}}
+  module SDKHooks
+    class HookContext
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig { returns(SDKConfiguration) }{{end}}
+      attr_accessor :config
+
+      {{if sorbetEnabled}}sig { returns(String) }{{end}}
+      attr_accessor :base_url
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(T::Array[String])) }{{end}}
+      attr_accessor :oauth2_scopes
+
+      {{if sorbetEnabled}}sig { returns(String) }{{end}}
+      attr_accessor :operation_id
+
+      {{if sorbetEnabled}}sig { returns(T.nilable(T.proc.returns(T.untyped))) }{{end}}
+      attr_accessor :security_source
+
+      {{if sorbetEnabled}}sig do
+        params(
+          config: SDKConfiguration,
+          base_url: String,
+          oauth2_scopes: T.nilable(T::Array[String]),
+          operation_id: String,
+          security_source: T.nilable(T.proc.returns(T.untyped))
+        ).void
+      end{{end}}
+      def initialize(config:, base_url:, oauth2_scopes:, operation_id:, security_source:)
+        @config = {{sorbetLet "config" "SDKConfiguration"}}
+        @base_url = {{sorbetLet "base_url" "String"}}
+        @oauth2_scopes = {{sorbetLet "oauth2_scopes" "T.nilable(T::Array[String])"}}
+        @operation_id = {{sorbetLet "operation_id" "String"}}
+        @security_source = {{sorbetLet "security_source" "T.nilable(T.proc.returns(T.untyped))"}}
+      end
+    end
+
+    class BeforeRequestHookContext < HookContext
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig do
+        params(
+          hook_ctx: HookContext
+        ).void
+      end{{end}}
+      def initialize(hook_ctx:)
+        super(
+          config: hook_ctx.config,
+          base_url: hook_ctx.base_url,
+          operation_id: hook_ctx.operation_id,
+          oauth2_scopes: hook_ctx.oauth2_scopes,
+          security_source: hook_ctx.security_source
+        )
+      end
+    end
+
+    class AfterSuccessHookContext < HookContext
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig do
+        params(
+          hook_ctx: HookContext
+        ).void
+      end{{end}}
+      def initialize(hook_ctx:)
+        super(
+          config: hook_ctx.config,
+          base_url: hook_ctx.base_url,
+          operation_id: hook_ctx.operation_id,
+          oauth2_scopes: hook_ctx.oauth2_scopes,
+          security_source: hook_ctx.security_source
+        )
+      end
+    end
+
+    class AfterErrorHookContext < HookContext
+      {{sorbetTSig}}
+
+      {{if sorbetEnabled}}sig do
+        params(
+          hook_ctx: HookContext
+        ).void
+      end{{end}}
+      def initialize(hook_ctx:)
+        super(
+          config: hook_ctx.config,
+          base_url: hook_ctx.base_url,
+          operation_id: hook_ctx.operation_id,
+          oauth2_scopes: hook_ctx.oauth2_scopes,
+          security_source: hook_ctx.security_source
+        )
+      end
+    end
+
+    module AbstractSDKInitHook
+      {{sorbetTSig}}
+      {{if sorbetEnabled}}extend T::Helpers{{end}}
+      {{sorbetAbstract}}
+
+      {{if sorbetEnabled}}sig { overridable.params(config: SDKConfiguration).returns(SDKConfiguration) }{{end}}
+      def sdk_init(config:)
+        Kernel.raise NotImplementedError.new
+      end
+    end
+
+    module AbstractBeforeRequestHook
+      {{sorbetTSig}}
+      {{if sorbetEnabled}}extend T::Helpers{{end}}
+      {{sorbetAbstract}}
+
+      {{if sorbetEnabled}}sig do
+        overridable.params(
+          hook_ctx: BeforeRequestHookContext,
+          request: Faraday::Request
+        ).returns(Faraday::Request)
+      end{{end}}
+      def before_request(hook_ctx:, request:)
+        Kernel.raise NotImplementedError.new
+      end
+    end
+
+    module AbstractAfterSuccessHook
+      {{sorbetTSig}}
+      {{if sorbetEnabled}}extend T::Helpers{{end}}
+      {{sorbetAbstract}}
+
+      {{if sorbetEnabled}}sig do
+        overridable.params(
+          hook_ctx: AfterSuccessHookContext,
+          response: Faraday::Response
+        ).returns(Faraday::Response)
+      end{{end}}
+      def after_success(hook_ctx:, response:)
+        Kernel.raise NotImplementedError.new
+      end
+    end
+
+    module AbstractAfterErrorHook
+      {{sorbetTSig}}
+      {{if sorbetEnabled}}extend T::Helpers{{end}}
+      {{sorbetAbstract}}
+
+      {{if sorbetEnabled}}sig do
+        overridable.params(
+          error: T.nilable(StandardError),
+          hook_ctx: AfterErrorHookContext,
+          response: T.nilable(Faraday::Response)
+        ).returns(T.nilable(Faraday::Response))
+      end{{end}}
+      def after_error(error:, hook_ctx:, response:)
+        Kernel.raise NotImplementedError.new
+      end
+    end
+
+    class AbstractSDKHook
+      include AbstractSDKInitHook
+      include AbstractBeforeRequestHook
+      include AbstractAfterSuccessHook
+      include AbstractAfterErrorHook
+    end
+  end
+end

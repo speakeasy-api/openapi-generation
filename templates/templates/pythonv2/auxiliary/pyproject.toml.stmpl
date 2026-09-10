@@ -1,0 +1,116 @@
+{{- if eq .Global.Config.PackageManager "uv" -}}
+[project]
+name = "{{.Global.Config.PackageName}}"
+version = "{{.Global.Config.SDKVersion}}"
+description = "{{.Global.Config.Description}}"
+authors = [{{range .Global.Config.Authors}}{ name = "{{.}}" },{{end}}]
+readme = "README{{ if .Global.Config.RepoURL }}-PYPI{{ end }}.md"
+requires-python = ">=3.10"
+dependencies = [
+{{ templateDependencies }}
+]
+{{- if .Global.Config.Homepage}}
+urls.homepage = "{{.Global.Config.Homepage}}"
+{{- end}}
+{{- if .Global.Config.RepoURL}}
+urls.repository = "{{.Global.Config.RepoURL}}"
+{{- end}}
+{{- if .Global.Config.DocumentationURL}}
+urls.documentation = "{{.Global.Config.DocumentationURL}}"
+{{- end}}
+{{- if eq .Global.Config.GeneratedLicense "agpl"}}
+license = { text = "AGPL-3.0-only" }
+{{- else if .Global.Config.License}}
+license = { text = "{{.Global.Config.License}}" }
+{{- end}}
+{{ templateOptionalDependencies }}
+[dependency-groups]
+{{templateAdditionalDependencies}}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "setuptools.build_meta"
+{{- else }}
+[project]
+name = "{{.Global.Config.PackageName}}"
+version = "{{.Global.Config.SDKVersion}}"
+description = "{{.Global.Config.Description}}"
+authors = [{{range .Global.Config.Authors}}{ name = "{{.}}" },{{end}}]
+readme = "README{{ if .Global.Config.RepoURL }}-PYPI{{ end }}.md"
+requires-python = ">=3.10"
+dependencies = [
+{{ templateDependencies }}
+]
+{{- if eq .Global.Config.GeneratedLicense "agpl"}}
+license = { text = "AGPL-3.0-only" }
+{{- else if .Global.Config.License}}
+license = { text = "{{.Global.Config.License}}" }
+{{- end}}
+{{ templateOptionalDependencies }}
+[tool.poetry]
+{{- if .Global.Config.Homepage}}
+homepage = "{{.Global.Config.Homepage}}"
+{{- end}}
+{{- if .Global.Config.RepoURL}}
+repository = "{{.Global.Config.RepoURL}}"
+{{- end}}
+{{- if .Global.Config.DocumentationURL}}
+documentation = "{{.Global.Config.DocumentationURL}}"
+{{- end}}
+packages = [
+    { include = "{{ getModuleRootDirectory }}", from = "src" }
+]
+include = ["py.typed", "src/{{ getModuleDirectory }}/py.typed"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed", "src/{{ getModuleDirectory }}/py.typed"]
+
+[virtualenvs]
+in-project = true
+
+[tool.poetry.group.dev.dependencies]
+{{templateAdditionalDependencies}}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+{{- end }}
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["src"]
+{{- if gt (len .Global.Config.PytestFilterWarnings) 0 }}
+filterwarnings = [
+    {{- range $warningfilter := .Global.Config.PytestFilterWarnings }}
+    '{{ $warningfilter }}',
+    {{- end }}
+]
+{{- end }}
+{{- if gt .Global.Config.PytestTimeout 0 }}
+timeout = {{ .Global.Config.PytestTimeout }}
+{{- end }}
+
+[tool.mypy]
+disable_error_code = "misc"
+explicit_package_bases = true
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = "typing_inspect"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "jsonpath"
+ignore_missing_imports = true
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+

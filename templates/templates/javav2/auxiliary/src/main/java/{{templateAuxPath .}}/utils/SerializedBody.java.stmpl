@@ -1,0 +1,51 @@
+{{- if useOkHttp -}}
+package {{templatePackageName}}.utils;
+
+import {{templatePackageName}}.utils.transport.HttpBody;
+
+public class SerializedBody {
+
+    private final String contentType;
+    private final HttpBody body;
+
+    public SerializedBody(String contentType, HttpBody body) {
+        Utils.checkNotNull(contentType, "contentType");
+        Utils.checkNotNull(body, "body");
+        this.contentType = contentType;
+        this.body = body;
+    }
+
+    public String contentType() {
+        return contentType;
+    }
+
+    public HttpBody body() {
+        return body;
+    }
+}
+{{- else -}}
+package {{templatePackageName}}.utils;
+
+import java.net.http.HttpRequest.BodyPublisher;
+
+public class SerializedBody {
+    
+    private final String contentType;
+    private final BodyPublisher body;
+    
+    public SerializedBody(String contentType, BodyPublisher body) {
+        Utils.checkNotNull(contentType, "content");
+        Utils.checkNotNull(body, "body");
+        this.contentType = contentType;
+        this.body = body;
+    }
+    
+    public String contentType() {
+        return contentType;
+    }
+    
+    public BodyPublisher body() {
+        return body;
+    }
+}
+{{- end}}

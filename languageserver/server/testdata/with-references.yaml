@@ -1,0 +1,77 @@
+openapi: 3.0.3
+info:
+  title: API with References
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      responses:
+        '200':
+          $ref: '#/components/responses/UserListResponse'
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/UserRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/UserResponse'
+  /users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      responses:
+        '200':
+          $ref: '#/components/responses/UserResponse'
+components:
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  requestBodies:
+    UserRequest:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+  responses:
+    UserResponse:
+      description: A single user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+    UserListResponse:
+      description: A list of users
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+    Profile:
+      type: object
+      properties:
+        bio:
+          type: string
+        avatar:
+          $ref: '#/components/schemas/Image'
+    Image:
+      type: object
+      properties:
+        url:
+          type: string
+        alt:
+          type: string

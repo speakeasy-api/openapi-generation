@@ -1,0 +1,33 @@
+{{- $field := .Local.Field}}
+{{- $isAsync := .Local.IsAsync}}
+{{- $useBuilderDeser := .Local.UseBuilderDeser}}
+{{- $withNullables := isFeatureUsed "nullables" -}}
+{{- with $field}}
+    {{- if .IsAdditionalProperties }}
+        {{- templateCommentsForField $field 2}}
+        {{- if $useBuilderDeser}}
+        @{{javaImport "com.fasterxml.jackson.annotation.JsonAnySetter"}}
+        {{- end}}
+        public Builder additionalProperty({{javaImportString}} key, {{javaImportType .Type.ItemType}} value) {
+            {{javaImportUtils}}.checkNotNull(key, "key");
+            {{- if $withNullables }}
+            // we could be strict about null values (force the user
+            // to pass `JsonNullable.of(null)`) but likely to be a bit 
+            // annoying for additional properties building so we'll 
+            // relax preconditions.
+            {{- end }}
+            this.{{sanitizeFieldName .Name}}.put(key, value);
+            return this;
+        }
+    {{- end}}
+    {{- range $i, $setter := (getBuilderMetadata (parameterForField $field $isAsync)).setters}}
+    {{- templateCommentsForField $field 2}}
+        {{- if and $useBuilderDeser (eq $i 0)}}
+        @{{javaImport "com.fasterxml.jackson.annotation.JsonProperty"}}("{{propertyName $field}}")
+        {{- end}}
+        public Builder {{sanitizeFieldName $field.Name}}({{javaImport $setter.paramType}} {{sanitizeFieldName $field.Name}}) {
+            {{ $setter.body | join "\n            " }}
+            return this;
+        }
+    {{- end}}
+{{- end}}

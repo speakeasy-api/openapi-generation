@@ -1,0 +1,12 @@
+# TestEnumFormatsRequest
+
+
+## Fields
+
+| Field                                                           | Type                                                            | Required                                                        | Description                                                     | Example                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `StringArrayFormat`                                             | [StringArrayFormat](../Models/StringArrayFormat.md)             | :heavy_check_mark:                                              | String enum with x-speakeasy-enums as array (full coverage)     | pending_review                                                  |
+| `StringMapFormat`                                               | [StringMapFormat](../Models/StringMapFormat.md)                 | :heavy_check_mark:                                              | String enum with x-speakeasy-enums as map (full coverage)       | medium_priority                                                 |
+| `StringPartialMapFormat`                                        | [StringPartialMapFormat](../Models/StringPartialMapFormat.md)   | :heavy_check_mark:                                              | String enum with x-speakeasy-enums as map (partial coverage)    | draft_mode                                                      |
+| `IntegerMapFormat`                                              | [IntegerMapFormat](../Models/IntegerMapFormat.md)               | :heavy_check_mark:                                              | Integer enum with x-speakeasy-enums as map (full coverage)      | 200                                                             |
+| `IntegerPartialMapFormat`                                       | [IntegerPartialMapFormat](../Models/IntegerPartialMapFormat.md) | :heavy_check_mark:                                              | Integer enum with x-speakeasy-enums as map (partial coverage)   | 1                                                               |

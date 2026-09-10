@@ -1,0 +1,52 @@
+package tests
+
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCatalogListsValues(t *testing.T) {
+	recordTest("catalog-lists-values")
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"hygiene-models"})
+	require.NoError(t, err)
+	stdout := h.GetStdout()
+	assert.Contains(t, stdout, "standard")
+	assert.Contains(t, stdout, "(default)")
+	assert.Contains(t, stdout, "fast")
+}
+
+func TestCatalogStructuredOutput(t *testing.T) {
+	recordTest("catalog-structured-output")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"hygiene-models"})
+	require.NoError(t, err)
+	var values []struct {
+		Value       string `json:"value"`
+		Description string `json:"description"`
+		Default     bool   `json:"default"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &values))
+	require.NotEmpty(t, values)
+	assert.Equal(t, "standard", values[0].Value)
+	assert.True(t, values[0].Default)
+	assert.Empty(t, h.GetStderr())
+}
+
+func TestCatalogRejectsPositionalArgument(t *testing.T) {
+	recordTest("catalog-rejects-positional-argument")
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"hygiene-models", "extra"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "extra")
+	assert.NotContains(t, h.GetStdout(), "standard")
+}

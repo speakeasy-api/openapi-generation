@@ -1,0 +1,117 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/openUnionDateTime:
+    post:
+      operationId: openUnionDateTimePost
+      description: >-
+        Tests that date-time-shaped strings inside unrecognized open-union
+        payloads are captured raw and replayed verbatim through an echo round
+        trip, without timezone normalization or reformatting. The unions are
+        opened per-schema with x-speakeasy-unknown-values: allow.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenUnionDateTimeEnvelope"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/OpenUnionDateTimeEnvelope"
+                required:
+                  - json
+components:
+  schemas:
+    OpenUnionDateTimeEnvelope:
+      description: >-
+        Envelope carrying one discriminated and one untagged open union whose
+        variants hold date-time fields.
+      type: object
+      x-speakeasy-name-override: OpenUnionDateTimeEnvelope
+      properties:
+        tagged:
+          $ref: "#/components/schemas/OpenDateTimeTaggedUnion"
+        untagged:
+          $ref: "#/components/schemas/OpenDateTimeUntaggedUnion"
+    OpenDateTimeTaggedUnion:
+      description: "An open discriminated union with date-time payload fields."
+      oneOf:
+        - $ref: "#/components/schemas/DateTimeEventStarted"
+        - $ref: "#/components/schemas/DateTimeEventStopped"
+      discriminator:
+        propertyName: kind
+        mapping:
+          started: "#/components/schemas/DateTimeEventStarted"
+          stopped: "#/components/schemas/DateTimeEventStopped"
+      x-speakeasy-unknown-values: allow
+    DateTimeEventStarted:
+      type: object
+      x-speakeasy-name-override: DateTimeEventStarted
+      required:
+        - kind
+        - occurredAt
+      properties:
+        kind:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+    DateTimeEventStopped:
+      type: object
+      x-speakeasy-name-override: DateTimeEventStopped
+      required:
+        - kind
+        - stoppedAt
+      properties:
+        kind:
+          type: string
+        stoppedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+    OpenDateTimeUntaggedUnion:
+      description: "An open untagged union with date-time payload fields."
+      oneOf:
+        - $ref: "#/components/schemas/DateTimeRecordAlpha"
+        - $ref: "#/components/schemas/DateTimeRecordBeta"
+      x-speakeasy-unknown-values: allow
+    DateTimeRecordAlpha:
+      type: object
+      x-speakeasy-name-override: DateTimeRecordAlpha
+      required:
+        - alphaAt
+      properties:
+        alphaAt:
+          type: string
+          format: date-time
+        name:
+          type: string
+    DateTimeRecordBeta:
+      type: object
+      x-speakeasy-name-override: DateTimeRecordBeta
+      required:
+        - betaAt
+      properties:
+        betaAt:
+          type: string
+          format: date-time
+        count:
+          type: integer

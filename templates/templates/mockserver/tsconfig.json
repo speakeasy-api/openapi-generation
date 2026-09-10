@@ -1,0 +1,12 @@
+{
+    "extends": "../../../tsconfig",
+    "include": [
+        "../common/common/*",
+        "../common/go/*",
+        "../common/readme/includes/*.ts",
+        "../common/readme/sections/*.ts",
+        "features.ts",
+        "includes/*.ts",
+        "main.ts"
+    ]
+}

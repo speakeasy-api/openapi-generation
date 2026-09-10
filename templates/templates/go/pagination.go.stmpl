@@ -1,0 +1,341 @@
+{{- $pagination := .Local.Extensions.Pagination }}
+{{- $paramFlattening := operationParametersFlattened .Local }}
+{{- $limitInput := getPaginationInput $pagination "limit" }}
+{{- $pageInput := getPaginationInput $pagination "page" }}
+{{- $offsetInput := getPaginationInput $pagination "offset" }}
+{{- $cursorInput := getPaginationInput $pagination "cursor" }}
+{{- $hasPaginationURL := hasPaginationURL .Local }}
+{{- $opsNamespace := getAccessNamespace "" "operations"}}
+{{- $methodState := methodTemplateState .Local }}
+{{- $args := $methodState.arguments }}
+{{- $optionMetadata := getGoOperationOptionMetadata .Local }}
+{{- addImport "github.com/spyzhov/ajson"}}
+{{- $defaults := getPaginationDefaults .Local }}
+{{- $cursorBodyWrapper := findPaginationCursorBodyWrapper .Local }}
+func() (*{{sanitizeClass .Local.Response.Type "" false}}, error){
+    {{- if eq $optionMetadata.mode "method-options" }}
+    nextOpts := append([]{{$opsNamespace}}{{$optionMetadata.optionType}}(nil), opts...)
+    {{- else if eq $optionMetadata.mode "shared-options" }}
+    nextOpts := append([]{{$opsNamespace}}Option(nil), opts...)
+    {{- end }}
+    {{- if and (not $paramFlattening) .Local.Request }}
+        {{- $requestOption := getGoMethodArgumentOption .Local .Local.Request.Field }}
+        {{- $requestOmittable := and (ne $optionMetadata.mode "pointers") $requestOption }}
+        {{- /* the request arrives as nil when omitted via a method option or when a nullable body is passed as nil; paging reads inputs off it and mutates it between pages */}}
+        {{- if or $requestOmittable .Local.Request.Field.Nullable .Local.Request.Field.Optional }}
+            {{- $requestArgument := sanitizePrivateFieldName .Local.Request.Field.Name }}
+    if {{$requestArgument}} == nil {
+        {{$requestArgument}} = &{{sanitizeClass .Local.Request.Field.Type "" false}}{}
+    }
+            {{- end }}
+        {{- $bodyWrapper := findPaginationBodyWrapper .Local }}
+        {{- if and $bodyWrapper (or $bodyWrapper.Optional $bodyWrapper.Nullable) (not (and $bodyWrapper.Optional $bodyWrapper.Nullable $.Global.Config.NullableOptionalWrapper)) }}
+            {{- $requestArgument := sanitizePrivateFieldName .Local.Request.Field.Name }}
+            {{- /* an omitted or null body arrives as nil, but paging reads inputs off it and mutates it between pages */}}
+    if {{$requestArgument}}.{{sanitizeFieldName $bodyWrapper.Name}} == nil {
+        {{$requestArgument}}.{{sanitizeFieldName $bodyWrapper.Name}} = &{{sanitizeType $bodyWrapper.Type false ""}}{}
+    }
+        {{- end }}
+        {{- end }}
+    rawBody, err := {{- addImport "utils"}}utils.ConsumeRawBody(httpRes)
+    if err != nil {
+        return nil, err
+    }
+
+    b, err := ajson.Unmarshal(rawBody)
+    if err != nil {
+        return nil, err
+    }
+
+    {{- if (eq $pagination.Type "offsetLimit") }}
+    {{- if $pageInput }}
+    {{- $pageInputType := "int" }}
+    {{- $pageField := findPaginationFieldDeep .Local.Request.Field.Type $pageInput.Name }}
+    {{- if $pageField }}
+    {{- $pageInputType = sanitizeType $pageField.Type false "" }}
+    {{- end }}
+
+    {{- $pageVar := ""}}
+    {{- if and (not (eq $pageInput.In "params")) (not $paramFlattening) }}
+        {{- $pageVar = getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $pageInput.Name }}
+    {{- else }}
+        {{- $pageVar = getPaginationFlattenedAccessor .Local.Request.Field.Type.Fields $pageInput.Name }}
+    {{- end }}
+
+    {{- $isPageOptionalNullable := and $pageField $pageField.Nullable $pageField.Optional $.Global.Config.NullableOptionalWrapper }}
+    {{- if or $pageInput.Optional (and $pageField $pageField.Nullable) }}
+    var p {{ $pageInputType }} = {{ $defaults.page }}
+    {{- if $isPageOptionalNullable }}
+    if pageVal, ok := {{ $pageVar }}.Get(); ok && pageVal != nil {
+        p = {{ $pageInputType }}(*pageVal)
+    }
+    {{- else }}
+    if {{ $pageVar }} != nil {
+        p = *{{ $pageVar }}
+    }
+    {{- end }}
+    {{- else }}
+    p := {{ $pageVar }}
+    {{- end }}
+    nP := {{ $pageInputType }}(p + 1)
+    {{- if $pagination.Outputs.NumPages }}
+    nPs, err := ajson.Eval(b, "{{ $pagination.Outputs.NumPages }}")
+    if err != nil {
+        return nil, err
+    }
+    if !nPs.IsNumeric() {
+        return nil, nil
+    }
+
+    nPsVal, err := nPs.GetNumeric()
+    if err != nil {
+        return nil, err
+    }
+    // GetNumeric returns as float64
+    if int(nPsVal) <= int(p) {
+        return nil, nil
+    }
+    {{- end }}
+    {{- end }}
+    {{- if $offsetInput }}
+    {{- $offsetVar := "" }}
+    {{- if and (not (eq $offsetInput.In "params")) (not $paramFlattening) }}
+        {{- $offsetVar = getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $offsetInput.Name }}
+    {{- else }}
+        {{- $offsetVar = getPaginationFlattenedAccessor .Local.Request.Field.Type.Fields $offsetInput.Name }}
+    {{- end }}
+    {{- $offsetField := findPaginationFieldDeep .Local.Request.Field.Type $offsetInput.Name }}
+    {{- $isOffsetOptionalNullable := and $offsetField $offsetField.Nullable $offsetField.Optional $.Global.Config.NullableOptionalWrapper }}
+    {{- if or $offsetInput.Optional (and $offsetField $offsetField.Nullable) }}
+
+    oS := {{ $defaults.offset }}
+    {{- if $isOffsetOptionalNullable }}
+    if offsetVal, ok := {{ $offsetVar }}.Get(); ok && offsetVal != nil {
+        oS = int(*offsetVal)
+    }
+    {{- else }}
+    if {{ $offsetVar }} != nil {
+        oS = int(*{{ $offsetVar }})
+    }
+    {{- end }}
+    {{- else }}
+
+    oS := int({{ $offsetVar }})
+    {{- end }}
+    {{- end }}
+    {{- else if $hasPaginationURL}}
+    {{- addImport "fmt"}}
+    {{- addImport "operations"}}
+
+    nextURLNode, err := ajson.Eval(b, "{{ $pagination.Outputs.NextURL }}")
+    if err != nil {
+        return nil, fmt.Errorf("error evaluating next URL: %w", err)
+    }
+    if !nextURLNode.IsString() {
+        return nil, nil
+    }
+    nextURL, err := nextURLNode.GetString()
+    if err != nil {
+        return nil, fmt.Errorf("error getting next URL string: %w", err)
+    }
+    if nextURL == "" {
+        return nil, nil
+    }
+    if nextURL[0] == '/' {
+        nextURL = baseURL + nextURL
+    }
+    {{- if eq $optionMetadata.mode "method-options" }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}With{{$optionMetadata.prefix}}URLOverride(nextURL))
+    {{- else if eq $optionMetadata.mode "shared-options" }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}WithURLOverride(nextURL))
+    {{- else }}
+    opts = append(opts, {{$opsNamespace}}WithURLOverride(nextURL))
+    {{- end }}
+    {{- else }}
+    {{- $cursorField := findPaginationCursorField .Local }}
+    nC, err := ajson.Eval(b, "{{ $pagination.Outputs.NextCursor }}")
+    if err != nil {
+        return nil, err
+    }
+
+    {{- if $cursorField }}
+    var nCVal {{ sanitizeType $cursorField.Type false "" }}
+
+
+    if nC.IsNumeric() {
+        numVal, err := nC.GetNumeric()
+        if err != nil {
+            return nil, err
+        }
+        // GetNumeric returns as float64 so convert to the appropriate type.
+        nCVal = {{ convertFloatToType "numVal" $cursorField.Type }}
+    } else {
+        val, err := nC.Value()
+        if err != nil {
+            return nil, err
+        }
+        if val == nil {
+            return nil, nil
+        }
+        {{- $valType := sanitizeType $cursorField.Type false ""}}
+        nCVal = val.({{$valType}})
+        {{- if eq $valType "string" }}
+        if {{ addImport "strings" }}strings.TrimSpace(nCVal) == "" {
+            return nil, nil
+        }
+        {{- end }}
+    }
+    {{- end }}
+    {{- end }}
+
+    {{- if $pagination.Outputs.Results }}
+    r, err := ajson.Eval(b, "{{ $pagination.Outputs.Results }}");
+    if err != nil {
+        return nil, err
+    }
+    if !r.IsArray() {
+        return nil, nil
+    }
+    arr, err := r.GetArray()
+    if err != nil {
+        return nil, err
+    }
+    if len(arr) == 0 {
+        return nil, nil
+    }
+    {{- if $limitInput }}
+    {{- $limitField := findPaginationFieldDeep .Local.Request.Field.Type $limitInput.Name }}
+    {{- if not (and $limitField $limitField.Const) }}
+    {{- /* For non-const limit fields, check if we got fewer results than requested */}}
+    {{- $limitVar := "" }}
+    {{- if and (not (eq $limitInput.In "params")) (not $paramFlattening) }}
+        {{- $limitVar = getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $limitInput.Name }}
+    {{- else }}
+        {{- $limitVar = getPaginationFlattenedAccessor .Local.Request.Field.Type.Fields $limitInput.Name }}
+    {{- end }}
+    {{- $isLimitOptionalNullable := and $limitField $limitField.Nullable $limitField.Optional $.Global.Config.NullableOptionalWrapper }}
+    {{- if or $limitInput.Optional (and $limitField $limitField.Nullable) }}
+
+    l := {{ $defaults.limit }}
+    {{- if $isLimitOptionalNullable }}
+    if limitVal, ok := {{$limitVar}}.Get(); ok && limitVal != nil {
+        l = int(*limitVal)
+    }
+    {{- else }}
+    if {{$limitVar}} != nil {
+        l = int(*{{$limitVar}})
+    }
+    {{- end }}
+    {{- else }}
+
+    l := int({{$limitVar}})
+    {{- end }}
+    if len(arr) < l {
+        return nil, nil
+    }
+    {{- end }}
+    {{- end }}
+    {{- if $offsetInput }}
+    {{- $offsetInputType := "int" }}
+    {{- $offsetField := findPaginationFieldDeep .Local.Request.Field.Type $offsetInput.Name }}
+    {{- if $offsetField }}
+    {{- $offsetInputType = sanitizeType $offsetField.Type false "" }}
+    {{- end }}
+    nOS := {{ $offsetInputType }}(oS + len(arr))
+    {{- end }}
+    {{- end }}
+
+    {{- if ne $optionMetadata.mode "pointers" }}
+    {{- if $paramFlattening }}
+    {{- range $argument := $optionMetadata.optionalArguments }}
+    {{- if and $pageInput (eq (originalFieldName $argument.field) $pageInput.Name) }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}{{$argument.name}}({{templateGoPaginationOptionValue $argument "nP"}}))
+    {{- else if and $offsetInput (eq (originalFieldName $argument.field) $offsetInput.Name) }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}{{$argument.name}}({{templateGoPaginationOptionValue $argument "nOS"}}))
+    {{- else if and $cursorInput (eq (originalFieldName $argument.field) $cursorInput.Name) }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}{{$argument.name}}({{templateGoPaginationOptionValue $argument "nCVal"}}))
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+    {{- if not $paramFlattening }}
+    {{- /* Update pagination fields on the existing request rather than constructing a new struct */}}
+    {{- if $pageInput }}
+    {{- $pageVar := getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $pageInput.Name }}
+    {{- $pageField := findPaginationFieldDeep .Local.Request.Field.Type $pageInput.Name }}
+    {{- if $pageField }}
+    {{ $pageVar }} = {{ templateFieldValueInit $pageField "nP" }}
+    {{- end }}
+    {{- end }}
+    {{- if $offsetInput }}
+    {{- $offsetVar := getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $offsetInput.Name }}
+    {{- $offsetField := findPaginationFieldDeep .Local.Request.Field.Type $offsetInput.Name }}
+    {{- if $offsetField }}
+    {{ $offsetVar }} = {{ templateFieldValueInit $offsetField "nOS" }}
+    {{- end }}
+    {{- end }}
+    {{- if $cursorInput }}
+    {{- $cursorVar := getPaginationNonFlattenedAccessor .Local.Request.Field.Type.Fields $cursorInput.Name }}
+    {{- $cursorField := findPaginationFieldDeep .Local.Request.Field.Type $cursorInput.Name }}
+    {{- if $cursorField }}
+    {{ $cursorVar }} = {{ templateFieldValueInit $cursorField "nCVal" }}
+    {{- end }}
+    {{- end }}
+    {{- if and (ne $optionMetadata.mode "pointers") .Local.Request }}
+    {{- $requestOption := getGoMethodArgumentOption .Local .Local.Request.Field }}
+    {{- if $requestOption }}
+    nextOpts = append(nextOpts, {{$opsNamespace}}{{$requestOption.name}}({{templateGoMethodArgumentInputValue $requestOption (sanitizePrivateFieldName $requestOption.field.Name)}}))
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+    return s.{{ sanitizeMethodName .Local }}(
+        paginationCtx,
+        {{- if eq $optionMetadata.mode "pointers" }}
+        {{- if $paramFlattening }}
+        {{- range $args.merged}}
+        {{- if (eq .Name $pageInput.Name) }}
+        {{ templateFieldValueInit . "nP" }},
+        {{- else }}
+        {{- if (eq .Name $offsetInput.Name) }}
+        {{ templateFieldValueInit . "nOS" }},
+        {{- else }}
+        {{- if (eq .Name $cursorInput.Name) }}
+        {{ templateFieldValueInit . "nCVal" }},
+        {{- else }}
+        {{- if and $cursorBodyWrapper (eq .Name $cursorBodyWrapper.Name) }}
+        {{ templatePaginationBodyReconstruct $.Local . (sanitizePrivateFieldName .Name) }},
+        {{- else }}
+        {{- $isOptionalNullable := and .Nullable .Optional $.Global.Config.NullableOptionalWrapper}}
+        {{- $fieldAccessor := getPaginationFlattenedAccessor $.Local.Request.Field.Type.Fields .Name}}
+        {{if $isOptionalNullable}}{{$fieldAccessor}}{{else}}{{ templateFieldValueInit . $fieldAccessor false }}{{end}},
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        {{- else }}
+        {{- range $args.merged}}
+        {{sanitizePrivateFieldName .Name}},
+        {{- end }}
+        {{- end }}
+        opts...,
+        {{- else }}
+        {{- range $optionMetadata.requiredArguments}}
+        {{- if and $pageInput (eq (originalFieldName .) $pageInput.Name) }}
+        {{ templateFieldValueInit . "nP" }},
+        {{- else if and $offsetInput (eq (originalFieldName .) $offsetInput.Name) }}
+        {{ templateFieldValueInit . "nOS" }},
+        {{- else if and $cursorInput (eq (originalFieldName .) $cursorInput.Name) }}
+        {{ templateFieldValueInit . "nCVal" }},
+        {{- else if and $cursorBodyWrapper (eq .Name $cursorBodyWrapper.Name) }}
+        {{ templatePaginationBodyReconstruct $.Local . (sanitizePrivateFieldName .Name) }},
+        {{- else }}
+        {{sanitizePrivateFieldName .Name}},
+        {{- end }}
+        {{- end }}
+        nextOpts...,
+        {{- end }}
+    )
+}

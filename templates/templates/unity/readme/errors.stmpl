@@ -1,0 +1,21 @@
+Handling errors in this SDK should largely match your expectations. All operations return a response object or throw an exception.
+
+By default, an API error will raise a `{{templateDefaultError true}}` exception, which has the following properties:
+
+| Property      | Type                  | Description           |
+|---------------|-----------------------|-----------------------|
+| `Message`     | *string*              | The error message     |
+{{- if eq getResponseFormat "envelope-http" }}
+| `Request`     | *HttpRequestMessage*  | The HTTP request      |
+| `Response`    | *HttpResponseMessage* | The HTTP response     |
+{{- else}}
+| `StatusCode`  | *int*                 | The raw HTTP response |
+| `RawResponse` | *HttpResponseMessage* | The raw HTTP response |
+| `Body`        | *string*              | The response content  |
+{{- end}}
+
+When custom error responses are specified for an operation, the SDK may also throw their associated exception. You can refer to respective *Errors* tables in SDK docs for more details on possible exception types for each operation. For example, the `{{sanitizeMethodName .Local.UsageContext.Operation}}Async` method throws the following exceptions:
+
+{{templateErrorsTable .Local.UsageContext.Operation}}
+
+{{templateUsageExample .Local.UsageContext "### Example"}}

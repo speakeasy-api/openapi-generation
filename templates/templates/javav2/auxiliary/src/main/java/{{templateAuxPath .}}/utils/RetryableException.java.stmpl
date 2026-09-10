@@ -1,0 +1,21 @@
+{{- $okHttp := useOkHttp -}}
+package {{templatePackageName}}.utils;
+
+import java.io.InputStream;
+{{- if $okHttp}}
+import {{templatePackageName}}.utils.transport.HttpResponse;
+{{- else}}
+import java.net.http.HttpResponse;
+{{- end}}
+
+public final class RetryableException extends Exception {
+    private final HttpResponse<InputStream> response;
+
+    public RetryableException(HttpResponse<InputStream> response) {
+        this.response = response;
+    }
+
+    public HttpResponse<InputStream> response() {
+        return response;
+    }
+}

@@ -1,0 +1,407 @@
+package tests
+
+import (
+	"context"
+	"crypto/rand"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/apierrors"
+	"{{getRootModulePath}}/pkg/retry"
+	"{{getRootModulePath}}/pkg/utils"
+
+	sdk "{{getRootModulePath}}"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestRetriesSucceeds(t *testing.T) {
+	recordTest("retries-succeeds")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+    res, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), nil)
+    require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 3, res.Retries.Retries)
+}
+
+func TestRetriesWithBodySucceeds(t *testing.T) {
+	recordTest("retries-succeeds-with-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+    res, err := s.Retries.RetriesPost(context.Background(), pseudo_uuid(), &operations.RetriesPostRequestBody{
+        FieldOne: "one",
+    }, nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 3, res.Retries.Retries)
+}
+
+func TestRetriesRequestTimeout(t *testing.T) {
+	recordTest("retries-request-timeout")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithTimeout(1 * time.Millisecond))
+
+    _, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), nil)
+    assert.Error(t, err)
+}
+
+func TestRetriesRetryConnectionErrorsReject(t *testing.T) {
+	recordTest("retries-retry-connection-errors-reject")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	faultSettings := `{"reject_count": 1}`
+	numRetries := int64(2)
+	uuid := pseudo_uuid()
+
+	res, err := s.Retries.RetriesGetRetryConnectionErrors(context.Background(), faultSettings, numRetries, uuid, uuid)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 2, res.Retries.Retries)
+}
+
+func TestRetriesRetryConnectionErrorsReset(t *testing.T) {
+	recordTest("retries-retry-connection-errors-reset")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	faultSettings := `{"reset_count": 1}`
+	numRetries := int64(2)
+	uuid := pseudo_uuid()
+
+	res, err := s.Retries.RetriesGetRetryConnectionErrors(context.Background(), faultSettings, numRetries, uuid, uuid)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 2, res.Retries.Retries)
+}
+
+func TestRetriesTimeout(t *testing.T) {
+	recordTest("retries-timeout")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), sdk.Int64(1000000000), operations.WithRetries(retry.Config{
+		Strategy: "backoff",
+		Backoff: &retry.BackoffStrategy{
+			InitialInterval: 1,
+			MaxInterval:     50,
+			Exponent:        1.1,
+			MaxElapsedTime:  100,
+		},
+		RetryConnectionErrors: false,
+	}))
+	assert.Error(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+}
+
+func TestGlobalRetryConfigDisable(t *testing.T) {
+	recordTest("retries-global-config-disable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithRetryConfig(retry.Config{Strategy: ""}))
+
+	res, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), sdk.Int64(2))
+	assert.Error(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+}
+
+func TestGlobalRetryConfigSuccess(t *testing.T) {
+	recordTest("retries-global-config-success")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithRetryConfig(retry.Config{
+		Strategy: "backoff",
+		Backoff: &retry.BackoffStrategy{
+			InitialInterval: 1,
+			MaxInterval:     50,
+			Exponent:        1.1,
+			MaxElapsedTime:  1000,
+		},
+		RetryConnectionErrors: false,
+	}))
+
+	res, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), sdk.Int64(20))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 20, res.Retries.Retries)
+}
+
+func TestGlobalRetryConfigTimeout(t *testing.T) {
+	recordTest("retries-global-config-timeout")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithRetryConfig(retry.Config{
+		Strategy: "backoff",
+		Backoff: &retry.BackoffStrategy{
+			InitialInterval: 1,
+			MaxInterval:     50,
+			Exponent:        1.1,
+			MaxElapsedTime:  100,
+		},
+		RetryConnectionErrors: false,
+	}))
+
+	res, err := s.Retries.RetriesGet(context.Background(), pseudo_uuid(), sdk.Int64(30))
+	assert.Error(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+}
+
+func TestRespectRetryAfter(t *testing.T) {
+	recordTest("retries-header")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithRetryConfig(retry.Config{
+		Strategy: "backoff",
+		Backoff: &retry.BackoffStrategy{
+			InitialInterval: 5000,
+			MaxInterval:     10000,
+			Exponent:        1.1,
+			MaxElapsedTime:  10000,
+		},
+		RetryConnectionErrors: false,
+	}))
+
+	res, err := s.Retries.RetriesAfter(context.Background(), pseudo_uuid(), sdk.Int64(3), sdk.Int64(1))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 3, res.Retries.Retries)
+}
+
+func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
+	t.Run("wait beyond remaining budget returns the last response", func(t *testing.T) {
+		var requests atomic.Int32
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requests.Add(1)
+			w.Header().Set("Retry-After", "60")
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  300,
+			},
+			RetryConnectionErrors: false,
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		require.IsType(t, &apierrors.APIError{}, err)
+		assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+		assert.EqualValues(t, 1, requests.Load())
+	})
+
+	t.Run("wait within remaining budget is honored", func(t *testing.T) {
+		var requests atomic.Int32
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			request := requests.Add(1)
+			if request == 1 {
+				w.Header().Set("Retry-After", "1")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"retries":1}`))
+		}))
+		defer server.Close()
+
+		s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  2500,
+			},
+			RetryConnectionErrors: false,
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		start := time.Now()
+		res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		assert.EqualValues(t, 2, requests.Load())
+		assert.GreaterOrEqual(t, time.Since(start), 900*time.Millisecond)
+	})
+}
+
+type closeCountingBody struct {
+	io.Reader
+	closes *atomic.Int32
+}
+
+func (b closeCountingBody) Close() error {
+	b.closes.Add(1)
+	return nil
+}
+
+func retryableResponse(req *http.Request, closes *atomic.Int32) *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusServiceUnavailable,
+		Status:     "503 Service Unavailable",
+		Header:     http.Header{"Retry-After": []string{"60"}},
+		Body:       closeCountingBody{Reader: strings.NewReader(""), closes: closes},
+		Request:    req,
+	}
+}
+
+type cancelThenRetryableResponse struct {
+	cancel context.CancelFunc
+	closes *atomic.Int32
+}
+
+func (c cancelThenRetryableResponse) Do(req *http.Request) (*http.Response, error) {
+	c.cancel()
+	return retryableResponse(req, c.closes), nil
+}
+
+func TestRetryableResponseAfterContextCancelReturnsContextError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var closes atomic.Int32
+	s := sdk.New(
+		sdk.WithClient(cancelThenRetryableResponse{cancel: cancel, closes: &closes}),
+		sdk.WithRetryConfig(retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  300,
+			},
+			RetryConnectionErrors: false,
+		}),
+	)
+
+	res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil)
+
+	require.Error(t, err)
+	assert.Nil(t, res)
+	assert.ErrorIs(t, err, context.Canceled)
+	assert.EqualValues(t, 1, closes.Load(), "the dropped retryable response body must be closed")
+}
+
+func TestRetryTemporaryErrorWithoutResponseReturnsError(t *testing.T) {
+	retries := utils.Retries{
+		Config: &retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  300,
+			},
+			RetryConnectionErrors: true,
+		},
+		StatusCodes: []string{"5XX"},
+	}
+
+	t.Run("temporary error before any response", func(t *testing.T) {
+		res, err := utils.Retry(context.Background(), retries, func(attempt int) (*http.Response, error) {
+			return nil, retry.Temporary("before request hook rejected the attempt")
+		})
+
+		assert.Nil(t, res)
+		require.Error(t, err)
+		var tempErr *retry.TemporaryError
+		assert.ErrorAs(t, err, &tempErr)
+	})
+
+	t.Run("temporary error after a retryable response", func(t *testing.T) {
+		var attempts, closes atomic.Int32
+		res, err := utils.Retry(context.Background(), retries, func(_ int) (*http.Response, error) {
+			if attempts.Add(1) == 1 {
+				req, _ := http.NewRequest(http.MethodGet, "http://localhost/retries", nil)
+				first := retryableResponse(req, &closes)
+				first.Header.Del("Retry-After")
+				return first, nil
+			}
+			return nil, retry.Temporary("before request hook rejected the retry")
+		})
+
+		assert.Nil(t, res)
+		require.Error(t, err)
+		var tempErr *retry.TemporaryError
+		assert.ErrorAs(t, err, &tempErr)
+		assert.EqualValues(t, 2, attempts.Load())
+		assert.EqualValues(t, 1, closes.Load(), "the superseded response body must be closed")
+	})
+}
+
+func TestRetriesAttemptCountBackoff(t *testing.T) {
+	recordTest("retries-attempt-count-backoff")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Retries.RetriesAttemptCount(
+		context.Background(),
+		pseudo_uuid(),
+		sdk.Int64(3),
+		sdk.Int64(1),
+		nil,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.Retries)
+	assert.EqualValues(t, 3, res.Retries.Retries)
+}
+
+func TestRetriesAttemptCountBackoffZero(t *testing.T) {
+	recordTest("retries-attempt-count-zero")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Retries.RetriesAttemptCountZero(
+		context.Background(),
+		pseudo_uuid(),
+		sdk.Int64(2),
+		sdk.Int64(1),
+	)
+	assert.Error(t, err)
+	assert.Nil(t, res)
+	assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+}
+
+func pseudo_uuid() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}

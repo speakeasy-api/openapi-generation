@@ -1,0 +1,62 @@
+{{- $c := .Local -}}
+{{- $cliName := $c.CliName -}}
+Every command supports a `--output-format` flag that controls how the response is rendered to stdout.
+
+### Available formats
+
+| Format | Flag | Description |
+|--------|------|-------------|
+| Pretty | `--output-format pretty` (default) | Aligned key-value pairs with color, nested indentation. Human-readable at a glance. |
+| JSON | `--output-format json` | JSON output. Passthrough when the response is already JSON (preserves original field order and numeric precision). Falls back to typed marshaling otherwise. |
+| YAML | `--output-format yaml` | YAML output via standard marshaling. |
+| Table | `--output-format table` | Tabular output for array responses. |
+| TOON | `--output-format toon` | [Token-Oriented Object Notation](https://github.com/toon-format/spec) — a compact, line-oriented format that typically uses 30–60% fewer tokens than JSON. Well-suited for piping responses into LLM prompts. |
+
+```bash
+# Default pretty output
+{{$c.Showcase}}
+
+# Machine-readable JSON
+{{$c.Showcase}} --output-format json
+
+# TOON for LLM-friendly compact output
+{{$c.Showcase}} --output-format toon
+
+# Pipe JSON to jq without using --output-format
+{{$c.Showcase}} --output-format json | jq '.'
+```
+
+### jq filtering
+
+Use `--jq` to filter or transform the response inline using a [jq](https://jqlang.org) expression. This always outputs JSON and overrides `--output-format`:
+
+```bash
+# Extract a single field
+{{$c.Showcase}} --jq '.'
+
+# Reshape with any jq program; --raw-output prints string results as plain text (like jq -r)
+{{$c.Showcase}} --jq '.' --raw-output
+```
+
+### Color control
+
+Use `--color` to control terminal colors:
+
+| Value | Behavior |
+|-------|----------|
+| `auto` (default) | Color when stdout is a TTY, plain text otherwise |
+| `always` | Always colorize |
+| `never` | Never colorize |
+
+The `NO_COLOR` and `FORCE_COLOR` environment variables are also respected.
+
+### Streaming and pagination
+
+When using `--all` (pagination) or streaming operations, output is written incrementally as items arrive:
+
+| Format | Streaming behavior |
+|--------|-------------------|
+| `json` | One compact JSON object per line ([NDJSON](https://github.com/ndjson/ndjson-spec)) |
+| `yaml` | YAML documents separated by `---` |
+| `toon` | One TOON-encoded object per block, separated by blank lines |
+| `pretty` (default) | Pretty-printed items separated by blank lines |

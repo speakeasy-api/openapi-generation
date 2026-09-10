@@ -1,0 +1,18 @@
+{{- $usageLocation := .Local.UsageLocation -}}
+{{- $methodName := sanitizeWebhookHandlerMethodName -}}
+{{- $funcName := sanitizeWebhookHandlerFuncName -}}
+
+async {{$methodName}}({ 
+  request, 
+  {{- if shouldTemplateSecretForWebhookConsumer -}} secret, {{- end -}}
+  }: {
+  request: { body: string; headers: Record<string, string> | Headers; url: string; method: string } | Request;
+   {{- if shouldTemplateSecretForWebhookConsumer -}} secret: string {{- end -}}
+}): Promise<{{.Local.WebhookHandlerReturnType}}> {
+  {{- addTypeImport "fp" "unwrapAsync" $usageLocation }}
+  {{- addWebhookHandlerFuncImport $usageLocation}}
+  return unwrapAsync({{$funcName}}(
+    this,
+      { request, {{- if shouldTemplateSecretForWebhookConsumer -}} secret {{- end -}} },
+  ));
+};

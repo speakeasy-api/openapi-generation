@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>Speakeasy.OpenAPI</PackageId>
+    <Version>0.0.1</Version>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
+    <Authors>Speakeasy</Authors>
+    <Copyright>Copyright (c) Speakeasy 2026</Copyright>
+    <RepositoryUrl>https://github.com/speakeasy-sdks/test-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Speakeasy API SDK-Generation</PackageTags>
+    <PackageProjectUrl>https://speakeasy.com/docs</PackageProjectUrl>
+    <Description>test description.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\..\LICENSE.txt" Pack="true" PackagePath="\"/>
+    <None Include="..\..\..\icon.png" Pack="true" PackagePath="\"/>
+    <None Include="..\..\..\docs\**\*" Pack="true" PackagePath="\docs"  CopyToOutputDirectory="PreserveNewest"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="newtonsoft.json" Version="13.0.3" />
+    <PackageReference Include="nodatime" Version="3.1.9" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+    <PackageReference Include="Polly" Version="7.2.2" />
+    <PackageReference Include="RestSharp" Version="106.12.0">
+      <IncludeAssets>all</IncludeAssets>
+      <ExcludeAssets>none</ExcludeAssets>
+      <PrivateAssets>contentFiles; build; native; analyzers; buildTransitive</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

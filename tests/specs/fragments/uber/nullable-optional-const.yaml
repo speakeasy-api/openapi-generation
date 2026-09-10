@@ -1,0 +1,62 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+components:
+  schemas:
+    NullableOptionalConstValues:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        operator:
+          anyOf:
+            - type: string
+              const: eq
+            - type: "null"
+          default: eq
+        enum_value:
+          type: ["string", "null"]
+          enum:
+            - list
+          const: list
+        string_value:
+          type: ["string", "null"]
+          const: eq
+        bool_value:
+          type: ["boolean", "null"]
+          const: true
+        int_value:
+          type: ["integer", "null"]
+          format: int32
+          const: 42
+        integer_value:
+          type: ["integer", "null"]
+          const: 922337203685477580
+        float32_value:
+          type: ["number", "null"]
+          format: float
+          const: 3.14
+        number_value:
+          type: ["number", "null"]
+          const: 3.14
+        bigint_value:
+          type: ["string", "null"]
+          format: bigint
+          const: "123456789012345678901"
+        decimal_value:
+          type: ["string", "null"]
+          format: decimal
+          const: "3.141592653589793238462643383279"
+        date_value:
+          type: ["string", "null"]
+          format: date
+          const: "2026-03-12"
+        datetime_value:
+          type: ["string", "null"]
+          format: date-time
+          const: "2026-03-12T00:00:00Z"

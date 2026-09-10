@@ -1,0 +1,26 @@
+{{- $helper := .Local -}}
+{{- if $helper.Inputs}}
+{{templateString "model.rb.stmpl" (dict "Type" $helper.Inputs.Type "ModelName" $helper.Inputs.Type.Name) | dedent}}
+{{end}}
+{{- if $helper.Outputs}}
+{{templateString "model.rb.stmpl" (dict "Type" $helper.Outputs.Type "ModelName" $helper.Outputs.Type.Name) | dedent}}
+{{end}}
+def {{sanitizePrivateMethodName $helper.Name}}{{if $helper.Inputs}}(inputs){{end}}
+  test_http_client = create_test_http_client('{{$helper.Name}}')
+{{range $idx, $step := $helper.Steps}}
+{{- if eq $step.Type "operation"}}
+{{templateString "usage/init.stmpl" $step.UsageContext | indentPresent 2}}
+  refute_nil(s)
+
+{{templateString "usage/call.stmpl" $step.UsageContext | indentPresent 2}}
+{{- if operationHasResponseBody $step.UsageContext}}
+  refute_nil({{getResponseVariableName $step.UsageContext.StepID}})
+{{templateAssertions $step.UsageContext | indentPresent 2}}
+{{- else}}
+  _ = {{getResponseVariableName $step.UsageContext.StepID}}
+{{- end}}
+{{- else}}
+{{templateWorkflow $helper $step | indentPresent 2}}
+{{- end}}{{end}}
+{{- templateHelperOutputs $helper | indentPresent 2}}
+end

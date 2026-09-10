@@ -1,0 +1,18 @@
+import importlib.metadata
+
+__title__: str = "{{.Global.Config.PackageName}}"
+__version__: str = "{{.Global.Config.SDKVersion}}"
+{{- if pythonRawResponseHelpersEnabled }}
+__response_mode_header__: str = "x-{{lower .Global.Config.PackageName}}-response-mode"
+{{- end }}
+{{- if ne .Global.Config.DocVersion ""}}
+__openapi_doc_version__: str = "{{.Global.Config.DocVersion}}"
+{{- end}}
+__gen_version__: str = "{{.Global.Config.GenVersion}}"
+__user_agent__: str = "speakeasy-sdk/python {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}"
+
+try:
+    if __package__ is not None:
+        __version__ = importlib.metadata.version(__package__)
+except importlib.metadata.PackageNotFoundError:
+    pass

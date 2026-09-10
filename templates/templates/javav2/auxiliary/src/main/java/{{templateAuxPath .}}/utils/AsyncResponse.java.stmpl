@@ -1,0 +1,26 @@
+{{- recurse 1 -}}
+package {{templatePackageName}}.utils;
+{{- if useOkHttp}}
+import java.io.InputStream;
+{{- else}}
+import {{templatePackageName}}.utils.Blob;
+{{- end}}
+import {{javaHttpResponseFqn}};
+
+public interface AsyncResponse {
+    
+    /**
+     * Returns the value of the Content-Type header.
+     **/
+    String contentType();
+    
+    /** 
+     * Returns the HTTP status code.
+     **/
+    int statusCode();
+    
+    /**
+     * Returns the raw response.
+     **/
+    HttpResponse<{{if useOkHttp}}InputStream{{else}}Blob{{end}}> rawResponse();
+}

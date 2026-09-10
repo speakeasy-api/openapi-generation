@@ -1,0 +1,78 @@
+
+[TestChanges_EnumValueAddedResponseClosed - 1]
+# Test: enum_value_added_response_closed
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - processing
+                    x-speakeasy-unknown-values: disallow
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+paths:
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                      - processing
+                      - shipped
+                    x-speakeasy-unknown-values: disallow
+```
+
+## Compact Mode:
+## Csharp SDK Changes:
+* `Sdk.GetOrder()`:  `response.status.Enum(shipped)` **Added** (Breaking ⚠️)
+
+## Full Mode:
+## Csharp SDK Changes:
+* `Sdk.GetOrder()`:  `response.status.Enum(shipped)` **Added** (Breaking ⚠️)
+
+---

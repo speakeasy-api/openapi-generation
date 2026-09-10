@@ -1,0 +1,156 @@
+
+[TestChanges_TypeScriptChanges - 1]
+# Test: TestChanges_TypeScriptChanges
+
+## Old Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: TypeScript SDK API
+  version: 1.0.0
+paths:
+  /products:
+    get:
+      summary: Get products
+      operationId: getProducts
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    price:
+                      type: number
+                      format: double
+```
+
+## New Spec:
+```yaml
+openapi: 3.0.0
+info:
+  title: TypeScript SDK API
+  version: 1.1.0
+paths:
+  /products:
+    get:
+      summary: Get products with filters
+      operationId: getProducts
+      parameters:
+        - name: request
+          in: query
+          required: true
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              category:
+                type: string
+              minPrice:
+                type: number
+              maxPrice:
+                type: number
+              inStock:
+                type: boolean
+      responses:
+        '200':
+          description: Filtered list of products
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        price:
+                          type: number
+                          format: double
+                        stock:
+                          type: integer
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                  metadata:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      filtered:
+                        type: integer
+    post:
+      summary: Create a new product
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+                  format: double
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  price:
+                    type: number
+                  createdAt:
+                    type: string
+                    format: date-time
+```
+
+## Compact Mode:
+## Typescript SDK Changes:
+* `sdk.getProducts()`: 
+  *  `request` **Changed** (Breaking ⚠️)
+  *  `response` **Changed** (Breaking ⚠️)
+* `sdk.createProduct()`: **Added**
+
+## Full Mode:
+## Typescript SDK Changes:
+* `sdk.getProducts()`: 
+  * `request` **Changed** (Breaking ⚠️)
+    - `category` **Removed** (Breaking ⚠️)
+    - `request` **Added** (Breaking ⚠️)
+  *  `response` **Changed** (Breaking ⚠️)
+* `sdk.createProduct()`: **Added**
+
+---

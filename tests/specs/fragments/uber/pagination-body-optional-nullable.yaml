@@ -1,0 +1,41 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/limitoffset/page#optionalNullableBody:
+    put:
+      operationId: paginationLimitOffsetPageBodyOptionalNullable
+      servers:
+        - url: http://localhost:35456
+      description: >-
+        Tests offsetLimit pagination where the page and limit inputs live in a
+        JSON request body and are both optional and nullable.
+      tags:
+        - pagination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/nullableLimitOffsetConfig"
+      responses:
+        "200":
+          $ref: "components.yaml#/components/responses/paginationResponse"
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: requestBody
+            type: page
+          - name: limit
+            in: requestBody
+            type: limit
+        outputs:
+          numPages: $.numPages
+          results: $.resultArray

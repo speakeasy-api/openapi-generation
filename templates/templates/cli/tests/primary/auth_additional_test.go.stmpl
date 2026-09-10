@@ -1,0 +1,142 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+{{- if templateAuthUsageTestEnabled}}
+func TestAuthLoginConfirmationUsesStdout(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"auth", "login", "--username", "test-user"})
+	require.NoError(t, err)
+	assert.Contains(t, h.GetStdout(), "Configuration saved to")
+	assert.NotContains(t, h.GetStderr(), "Configuration saved to")
+}
+{{- end}}
+
+func TestGlobalSecurityFieldsOrdering(t *testing.T) {
+	recordTest("auth-global-security-fields-ordering")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "global-security-basic-http",
+		"--api-key-auth", "testApiKey",
+		"--username", "testUser",
+		"--password", "testPass",
+	})
+	require.Error(t, err)
+}
+
+func TestHoistedSecurityBasicHttpOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-basic-http-only")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-basic-http-only",
+		"--api-key-auth", "testApiKey",
+		"--username", "testUser",
+		"--password", "testPass",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, true, jsonGetBool(output, "authenticated"))
+	assert.Equal(t, "testUser", jsonGetString(output, "user"))
+}
+
+func TestHoistedSecurityAccessTokenOnly(t *testing.T) {
+	recordTest("auth-hoisted-security-access-token-only")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-access-token-only",
+		"--api-key-auth", "testApiKey",
+		"--username", "testUser",
+		"--password", "testPass",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, "Bearer ghp_xxxx", jsonGetString(output, "token"))
+}
+
+func TestHoistedSecurityAccessTokenFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-access-token-first")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-access-token-first",
+		"--api-key-auth", "testApiKey",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, "Bearer ghp_xxxx", jsonGetString(output, "token"))
+}
+
+func TestHoistedSecurityApiKeyFirst(t *testing.T) {
+	recordTest("auth-hoisted-security-api-key-first")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-api-key-first",
+		"--api-key-auth", "testApiKey",
+		"--access-token", "Bearer ghp_xxxx",
+	})
+	require.NoError(t, err)
+
+	output := h.GetStdout()
+	assert.Equal(t, "testApiKey", jsonGetString(output, "token"))
+}
+
+func TestHoistedSecurityInvalidField(t *testing.T) {
+	recordTest("auth-hoisted-security-invalid-field")
+
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth", "hoisted-security-access-token-first",
+		"--username", "user",
+		"--password", "pass",
+	})
+	require.Error(t, err)
+}
+
+func TestCustomSchemeAppId_GlobalSecurityOption(t *testing.T) {
+	recordTest("auth-custom-security-option-app-id")
+
+	// Uses operation-level server (http://localhost:35456), so RunBare() to avoid
+	// mock server override. The custom security hook sets X-Security-App-Id and
+	// X-Security-Secret headers from the --app-id and --secret flags.
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{
+		"auth-new", "custom-scheme-app-id",
+		"--app-id", "testAppID",
+		"--secret", "testSecret",
+	})
+	require.NoError(t, err)
+}
+
+func TestFunctionCallbacksOAuthGlobalSecurity(t *testing.T) {
+	recordTest("auth-function-callbacks-oauth-global-security")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	// CLI equivalent of WithSecuritySource callback: pass OAuth2 token via flag.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth",
+		"--oauth2", "Bearer global",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, "Bearer global")
+}

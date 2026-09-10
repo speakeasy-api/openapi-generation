@@ -1,0 +1,125 @@
+{{- recurse 1 -}}
+{{- addImport "../lib/http.js" "RequestInput" -}}
+{{- if .Global.Config.SDKHooksConfigAccess -}}
+{{- addImport "../lib/config.js" "SDKOptions" -}}
+{{- end -}}
+
+import { Hook, AfterErrorContext, AfterErrorHook, AfterSuccessContext, AfterSuccessHook, BeforeRequestContext, BeforeRequestHook, BeforeCreateRequestHook, BeforeCreateRequestContext, Hooks, SDKInitHook{{if not .Global.Config.SDKHooksConfigAccess }}, SDKInitOptions{{end}}, } from "./types.js";
+{{- if (accountHasFeatureAccess "sdkHooks")}}
+import { initHooks } from "./registration.js";
+{{- end }}
+
+{{ genImports }}
+
+export class SDKHooks implements Hooks {
+    sdkInitHooks: SDKInitHook[] = [];
+    beforeCreateRequestHooks: BeforeCreateRequestHook[] = [];
+    beforeRequestHooks: BeforeRequestHook[] = [];
+    afterSuccessHooks: AfterSuccessHook[] = [];
+    afterErrorHooks: AfterErrorHook[] = [];
+
+    constructor() {
+        const presetHooks: Array<Hook> = [
+          {{- if hasClientCredentials}}
+          {{- addImport "./clientcredentials.js" "ClientCredentialsHook" }}
+          new ClientCredentialsHook(),
+          {{- end}}
+          {{- if hasOAuth2PasswordFlow}}
+          {{- addImport "./oauth2password.js" "ResourceOwnerPassswordCredentialsHook" }}
+          new ResourceOwnerPassswordCredentialsHook(),
+          {{- end}}
+        ]
+        
+        for (const hook of presetHooks) {
+            if ("sdkInit" in hook) {
+                this.registerSDKInitHook(hook);
+            }
+            if ("beforeCreateRequest" in hook) {
+                this.registerBeforeCreateRequestHook(hook)
+            }
+            if ("beforeRequest" in hook) {
+                this.registerBeforeRequestHook(hook);
+            }
+            if ("afterSuccess" in hook) {
+                this.registerAfterSuccessHook(hook);
+            }
+            if ("afterError" in hook) {
+                this.registerAfterErrorHook(hook);
+            }
+        }
+        {{- if (accountHasFeatureAccess "sdkHooks")}}
+        initHooks(this);{{end}}
+    }
+
+    registerSDKInitHook(hook: SDKInitHook) {
+        this.sdkInitHooks.push(hook);
+    }
+
+    registerBeforeCreateRequestHook(hook: BeforeCreateRequestHook) {
+        this.beforeCreateRequestHooks.push(hook);
+    }
+
+    registerBeforeRequestHook(hook: BeforeRequestHook) {
+        this.beforeRequestHooks.push(hook);
+    }
+
+    registerAfterSuccessHook(hook: AfterSuccessHook) {
+        this.afterSuccessHooks.push(hook);
+    }
+
+    registerAfterErrorHook(hook: AfterErrorHook) {
+        this.afterErrorHooks.push(hook);
+    }
+
+    {{if .Global.Config.SDKHooksConfigAccess }}
+    sdkInit(opts: SDKOptions): SDKOptions {
+        return this.sdkInitHooks.reduce((opts, hook) => hook.sdkInit(opts), opts);
+    }
+    {{else}}
+    sdkInit(opts: SDKInitOptions): SDKInitOptions {
+        return this.sdkInitHooks.reduce((opts, hook) => hook.sdkInit(opts), opts);
+    }
+    {{end}}
+    beforeCreateRequest(hookCtx: BeforeCreateRequestContext, input: RequestInput): RequestInput {
+        let inp = input;
+
+        for (const hook of this.beforeCreateRequestHooks) {
+            inp = hook.beforeCreateRequest(hookCtx, inp);
+        }
+
+        return inp;
+    }
+
+    async beforeRequest(hookCtx: BeforeRequestContext, request: Request): Promise<Request> {
+        let req = request;
+
+        for (const hook of this.beforeRequestHooks) {
+            req = await hook.beforeRequest(hookCtx, req);
+        }
+
+        return req;
+    }
+
+    async afterSuccess(hookCtx: AfterSuccessContext, response: Response): Promise<Response> {
+        let res = response;
+
+        for (const hook of this.afterSuccessHooks) {
+            res = await hook.afterSuccess(hookCtx, res);
+        }
+
+        return res;
+    }
+
+    async afterError(hookCtx: AfterErrorContext, response: Response | null, error: unknown): Promise<{ response: Response | null; error: unknown; }> {
+        let res = response;
+        let err = error;
+
+        for (const hook of this.afterErrorHooks) {
+            const result = await hook.afterError(hookCtx, res, err);
+            res = result.response;
+            err = result.error;
+        }
+
+        return { response: res, error: err };
+    }
+}

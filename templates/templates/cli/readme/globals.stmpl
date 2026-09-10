@@ -1,0 +1,55 @@
+```sjs
+context.LocalComputed.CertainParameters = "Certain parameters"
+context.LocalComputed.TheseParameters = "These parameters"
+context.LocalComputed.TheseGlobalValues = "These global values"
+context.LocalComputed.Defaults = "defaults"
+context.LocalComputed.Them = "them"
+context.LocalComputed.Parameters = "parameters"
+context.LocalComputed.Are = "are"
+if (context.Local.ParameterLen == 1) {
+  context.LocalComputed.CertainParameters = "A parameter"
+  context.LocalComputed.TheseParameters = "This parameter"
+  context.LocalComputed.TheseGlobalValues = "This global value"
+  context.LocalComputed.Defaults = "the default"
+  context.LocalComputed.Them = "it"
+  context.LocalComputed.Parameters = "parameter"
+  context.LocalComputed.Are = "is"
+}
+sjs```
+
+`{{sanitizeCliName}} configure` stores your settings in `~/.config/{{sanitizeCliName}}/config.yaml`. You can run it interactively to set credentials and persistent preferences, or edit the config file directly.
+
+For authentication credentials specifically, see [Authentication](#authentication).
+
+### Global Parameters
+
+{{.LocalComputed.CertainParameters}} {{.LocalComputed.Are}} configured globally and applied to all commands that use {{.LocalComputed.Them}}. {{.LocalComputed.TheseParameters}} can be set via CLI flags, environment variables, or the config file. Individual commands can override global values with their own flags when needed.
+
+Priority: CLI flags > environment variables > config file
+
+| Source | Example |
+|--------|---------|
+| CLI flag | `{{sanitizeCliName}} {{templateGlobalFlagExample}} {{templateGlobalExampleCommand}}` |
+{{- if .Global.Config.EnvVarPrefix }}
+| Environment variable | `{{templateGlobalEnvVarExample}} {{sanitizeCliName}} {{templateGlobalExampleCommand}}` |
+{{- end}}
+| Config file | `{{sanitizeCliName}} configure` |
+
+#### Available Global Parameters
+
+{{templateCLIGlobalsTable}}
+
+### Example
+
+```bash
+# Set a global parameter via flag
+{{sanitizeCliName}} {{templateGlobalFlagExample}} {{templateGlobalExampleCommand}}
+{{- if .Global.Config.EnvVarPrefix }}
+
+# Or set via environment variable
+{{templateGlobalEnvVarExample}} {{sanitizeCliName}} {{templateGlobalExampleCommand}}
+{{- end}}
+
+# Or configure globally (persisted to config file)
+{{sanitizeCliName}} configure
+```

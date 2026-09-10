@@ -1,0 +1,26 @@
+{{.Local.Header}}
+
+## 🏗 **Welcome to your new Terraform Provider!** 🏗
+
+It has been generated successfully based on your OpenAPI spec. However, it is not yet ready for production use. Here are some next steps:
+- [ ] 🛠 Add resources and datasources to your SDK by [annotating your OAS](https://www.speakeasy.com/docs/customize-terraform/terraform-extensions#map-api-entities-to-terraform-resources)
+- [ ] ♻️ Refine your terraform provider quickly by iterating locally with the [Speakeasy CLI](https://github.com/speakeasy-api/speakeasy)
+- [ ] 🎁 Publish your terraform provider to hashicorp registry by [configuring automatic publishing](https://www.speakeasy.com/docs/terraform-publishing)
+- [ ] ✨ When ready to productionize, delete this section from the README
+{{ range .Local.Sections }}
+<!-- Start {{ .Header }} [{{ .ID }}] -->
+## {{ .Header }}
+
+{{ .Content }}
+<!-- End {{ .Header }} [{{ .ID }}] -->
+{{ end }}
+<!-- Placeholder for Future Speakeasy SDK Sections -->
+
+# Development
+
+## Contributions
+
+While we value open-source contributions to this terraform provider, this library is generated programmatically. Any manual changes added to internal files will be overwritten on the next generation.
+We look forward to hearing your feedback. Feel free to open a PR or an issue with a proof of concept and we'll do our best to include it in a future release. 
+
+### SDK Created by [Speakeasy]({{getSpeakeasyTrackingLink}})

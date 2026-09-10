@@ -1,0 +1,62 @@
+{{- recurse 1 -}}
+{{- $globals := (ne .Global.AST.MainSDK.Globals nil) -}}
+{{- $sortedOperations := sortOperations .Local.Operations -}}
+declare(strict_types=1);
+
+namespace {{.Global.Config.Namespace}};
+
+{{getSDKImports}}
+
+class {{sanitizeClassName .Local.Type.Name}}
+{
+{{- range $sortedOperations}}
+    {{- if .Servers}}
+    {{- templateString "servers.php.stmpl" .}}{{end}}
+{{- end}}
+    private SDKConfiguration $sdkConfiguration;
+{{- range .Local.SubSDKs}}
+{{""}}  {{- if ne .Type.Name ""}}
+    {{- if .Comments}}
+      {{- templateSubSDKFieldComments .Comments (print "$" (sanitizeFieldName .FieldName)) (sanitizeClassName .Type.Name) 1}}
+{{end -}}
+{{""}}    public {{sanitizeClassName .Type.Name}} ${{sanitizeFieldName .FieldName}};
+  {{- end}}
+{{end}}{{/* end range .Local.SubSDKs */}}
+    /**
+     * @param  SDKConfiguration  $sdkConfig
+     */
+    public function __construct(public SDKConfiguration $sdkConfig)
+    {
+        $this->sdkConfiguration = $sdkConfig;
+        {{- range .Local.SubSDKs}}
+        {{- if ne .Type.Name ""}}
+        $this->{{sanitizeFieldName .FieldName}} = new {{sanitizeClassName .Type.Name}}($this->sdkConfiguration);
+        {{- end}}
+        {{- end}}
+    }
+    /**
+     * @param  string  $baseUrl
+     * @param  array<string, string>  $urlVariables
+     *
+     * @return string
+     */
+    public function getUrl(string $baseUrl, array $urlVariables): string
+    {
+        $serverDetails = $this->sdkConfiguration->getServerDetails();
+
+        if ($baseUrl == null) {
+            $baseUrl = $serverDetails->baseUrl;
+        }
+
+        if ($urlVariables == null) {
+            $urlVariables = $serverDetails->options;
+        }
+
+        return Utils\Utils::templateUrl($baseUrl, $urlVariables);
+    }
+    {{- range $sortedOperations}}
+
+{{templateString "method.php.stmpl" .}}
+    {{- end}}
+
+}

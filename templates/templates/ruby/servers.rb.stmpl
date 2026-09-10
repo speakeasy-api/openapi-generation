@@ -1,0 +1,20 @@
+{{- $serversName := templateConstName "SERVERS" (sanitizeClassName .Local.ID) -}}
+{{- if .Local.Servers.ServerMap}}{{- $serversEnumName := print (sanitizeClassName .Local.ID) "Servers" -}}
+    # {{$serversEnumName}} contains identifiers for the servers available to the SDK.
+  {{- range .Local.Servers.Servers}}
+    {{- if .}}
+{{templateComments .Comments (templateConstName .ID $serversEnumName) 2}}
+    {{templateConstName .ID $serversEnumName}} = :{{ .ID }}
+  {{- end}}{{end}}
+    # {{$serversName}} contains the list of server urls available to the SDK.
+    {{$serversName}} = {
+    {{- range .Local.Servers.Servers}}
+      {{.ID}}: '{{ .URL }}',
+    {{- end}}
+    }.freeze
+{{- else}}
+    # {{$serversName}} contains the list of server urls available to the SDK.
+    {{$serversName}} = [{{ range .Local.Servers.Servers}}
+      '{{ .URL }}', {{templateComments .Comments nil 0 }}
+    {{ end}}].freeze
+{{- end}}

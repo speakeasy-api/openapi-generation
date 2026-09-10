@@ -1,0 +1,37 @@
+package naming
+
+// GoReservedNames contains Go reserved keywords and builtin type names that
+// cannot be used as generated type symbol names in Terraform provider code.
+var GoReservedNames = map[string]struct{}{
+	"append":      {},
+	"break":       {},
+	"case":        {},
+	"chan":        {},
+	"const":       {},
+	"continue":    {},
+	"default":     {},
+	"defer":       {},
+	"else":        {},
+	"fallthrough": {},
+	"float32":     {},
+	"float64":     {},
+	"for":         {},
+	"func":        {},
+	"go":          {},
+	"goto":        {},
+	"if":          {},
+	"import":      {},
+	"int":         {},
+	"int32":       {},
+	"int64":       {},
+	"interface":   {},
+	"map":         {},
+	"package":     {},
+	"range":       {},
+	"return":      {},
+	"select":      {},
+	"struct":      {},
+	"switch":      {},
+	"type":        {},
+	"var":         {},
+}

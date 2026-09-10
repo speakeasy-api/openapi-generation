@@ -1,0 +1,193 @@
+{{- recurse 1 -}}
+{{- $sdk := .Local.SDK -}}
+{{- $op := .Local.Operation -}}
+{{- $isAsync := .Local.IsAsync -}}
+{{- $okHttp := useOkHttp -}}
+{{- $pkg := (getModelNamespace true "operations" "" "" $isAsync) -}}
+package {{$pkg}};
+{{ $className := templateRequestBuilderSimpleClassName $op -}}
+{{- $pojoBuilderClassName := templatePojoBuilderClassName $op -}}
+{{- $fullClassName := (print $pkg "." $className) -}}
+{{- genImports $fullClassName}}
+{{- $res := $op.Response.Type -}}
+{{- $methodParams := methodParameters $op "" $isAsync -}}
+{{- $reqParam := getRequestParameter $op $isAsync -}}
+{{- $opParams := operationParameters $op $sdk}}
+{{- $opHelper := (javaImportLocal (printf "%s.%s" "operations" (templateOperationSimpleClassName $op)))}}
+{{- $resType := (javaImportResponseReturnType $op $isAsync)}}
+{{- $sdkConfig := (javaImport (print templatePackageName ".SDKConfiguration")) -}}
+{{- $options := supportedMethodOptions $op -}}
+{{- $optionsParam := methodOptionsParameter -}}
+{{- $auxiliaryParams := getAuxiliaryParameters $methodParams -}}
+{{- $paramsFlattened := operationParametersFlattened $op -}}
+public class {{$className}} {
+    private final {{$sdkConfig}} sdkConfiguration;
+    private final {{javaImportLocal "utils.Headers"}} _headers = new {{javaImportLocal "utils.Headers"}}();
+    {{- if $pojoBuilderClassName}}
+    private final {{javaImport $pojoBuilderClassName}}.Builder pojoBuilder;
+    {{- end}}
+    {{- if (and $reqParam $paramsFlattened)}}
+    private {{javaImportNullableIfRequired $reqParam true}} request;
+    {{- end}}
+    {{- range $param := $auxiliaryParams}}
+    {{- $paramName := sanitizeFieldName $param.Name}}
+    private {{javaImportNullableIfRequired $param true}} {{$paramName}};
+    {{- end}}
+    {{- if $options}}
+    private final {{javaImport $optionsParam.Type}}.Builder optionsBuilder;
+    {{- end}}
+    {{- if $pojoBuilderClassName}}
+    private boolean _setterCalled;
+    {{- end}}
+
+    public {{$className}}({{$sdkConfig}} sdkConfiguration) {
+        this.sdkConfiguration = sdkConfiguration;
+        {{- if $pojoBuilderClassName}}
+        this.pojoBuilder = {{javaImport $pojoBuilderClassName}}.builder();
+        {{- end}}
+        {{- if (and $reqParam (useNullableWrapperForParam $reqParam true))}}
+          {{- if $reqParam.Optional}}
+        this.request = {{javaImportJsonNullable}}.undefined();
+          {{- else}}
+        this.request = {{javaImportJsonNullable}}.of(null);
+          {{- end}}
+        {{- end}}
+        {{- if $options}}
+        this.optionsBuilder = {{javaImport $optionsParam.Type}}.builder();
+        {{- end}}
+    }
+    {{- "\n" }}
+    {{- range $param := $methodParams -}}
+        {{- range $setter := (getSettersMetadata $param)}}
+            {{- if $param.IsFlattened}}
+            {{- $paramName := sanitizeFieldName $param.Name}}
+    public {{$className}} {{$paramName}}({{javaImport $setter.paramType}} {{$paramName}}) {
+        this.pojoBuilder.{{$paramName}}({{$paramName}});
+        this._setterCalled = true;
+        return this;
+    }{{"\n"}}
+        {{- end}}{{end}}{{end}}
+    {{- range $option := $options}}
+    public {{$className}} {{$option.Name}}({{javaImport $option.Type}} {{$option.Name}}) {
+        this.optionsBuilder.{{$option.Name}}({{$option.Name}});
+        return this;
+    }{{"\n"}}
+    {{- end}}
+    {{- range $param := $auxiliaryParams}}
+    {{- $paramName := sanitizeFieldName $param.Name}}
+    {{- $setters := getSettersMetadata $param}}
+    {{- range $setter := $setters}}
+    public {{$className}} {{$paramName}}({{javaImport $setter.paramType}} {{$paramName}}) {
+        {{ $setter.body | join "\n" }}
+        return this;
+    }{{"\n"}}
+        {{- end }}
+    {{- end}}
+    {{- if $reqParam}}
+    private {{javaImportNullableIfRequired $reqParam true}} _buildRequest() {
+        {{- if $pojoBuilderClassName}}
+        if (this._setterCalled) {
+            this.request = {{if useNullableWrapperForParam $reqParam}}{{wrapNullable "this.pojoBuilder.build()"}}{{else}}this.pojoBuilder.build(){{end}};
+        }
+        {{- end}}
+        return this.request;
+    }
+    {{- end}}
+    
+    public {{$className}} header(String name, String value) {
+        {{javaImportUtils}}.checkNotNull(name, "name");
+        {{javaImportUtils}}.checkNotNull(value, "value");
+        this._headers.add(name, value);
+        return this;
+    }
+
+    /**
+    * Executes the request and returns the response.
+    *{{- if (and $isAsync (isStreamingOperation $op))}}
+{{- if $okHttp}}
+    *{{- if (isSSEOperation $op)}}
+    * <p>This operation returns a {@link {{javaImportLocal "utils.EventStream"}}<{{getStreamingItemType $op}}>} blocking SSE (Server-Sent Events) stream.
+    *{{- else}}
+    * <p>This operation returns a {@link {{javaImportLocal "utils.JsonLStream"}}<{{getStreamingItemType $op}}>} blocking JSONL stream.
+    *{{- end}}
+    * <p>
+    * The returned CompletableFuture completes with the blocking event stream once response headers are received.
+    * Iterating the stream blocks the calling thread; close it after use.
+{{- else}}
+    *{{- if (isSSEOperation $op)}}
+    * <p>This operation returns a {@link {{javaImportReactivePublisher}}<{{getStreamingItemType $op}}>} that implements reactive SSE (Server-Sent Events).
+    *{{- else}}
+    * <p>This operation returns a {@link {{javaImportReactivePublisher}}<{{getStreamingItemType $op}}>} that implements reactive JSONL streaming.
+    *{{- end}}
+    * <p>
+    * The publisher is compliant with the Reactive Streams specification and is interoperable with all reactive-streams
+    * compliant toolkits including RxJava, Project Reactor, and Java 9+ Flow API. The underlying response is directly
+    * accessible from this construct.
+{{- end}}
+    *{{- end}}
+    * @return {{if (and $isAsync (isStreamingOperation $op))}}{{if $okHttp}}A CompletableFuture that completes with a blocking event stream of typed events from the server{{else}}A reactive streaming {@link {{javaImportReactivePublisher}}} that emits typed events from the server{{end}}{{else}}The response from the server{{end}}.
+    */
+    public {{$resType}} call() {
+{{- if $options}}
+        {{javaImport $optionsParam.Type}} options = optionsBuilder.build();
+{{- end}}
+{{- if $isAsync}}
+      {{- templateAsyncOperationInit .Local false}}
+  {{- if $okHttp}}
+    {{- if (isStreamingOperation $op)}}
+      {{- if (isSSEOperation $op)}}
+        {{- $sentinel := (getSSESentinel $op)}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}),
+                operation::handleResponse)
+                .thenApplyAsync(response -> new {{javaImportLocal "utils.EventStream"}}<{{getStreamingItemType $op}}>(
+                        response.rawResponse().body(),
+                        new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{getStreamingItemType $op}}>() {
+                        },
+                        {{javaImportUtils}}.mapper(),
+                        {{if eq $sentinel "null"}}{{javaImportOptional}}.empty(){{else}}{{javaImportOptional}}.of({{$sentinel}}){{end}}{{if not (getSSEDataRequired $op)}},
+                        false{{end}}), {{javaImportLocal "operations.Operations"}}.streamCompletionExecutor()), operation);
+      {{- else}}{{/* not SSE op */}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}),
+                operation::handleResponse)
+                .thenApplyAsync(response -> new {{javaImportLocal "utils.JsonLStream"}}<{{getStreamingItemType $op}}>(
+                        response.rawResponse().body(),
+                        new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{getStreamingItemType $op}}>() {
+                        },
+                        {{javaImportUtils}}.mapper()), {{javaImportLocal "operations.Operations"}}.streamCompletionExecutor()), operation);
+      {{- end}}
+    {{- else}}{{/* not streaming op */}}
+        return {{javaImportLocal "operations.Operations"}}.relayCancel({{javaImportLocal "operations.Operations"}}.applyBodyReadAsync(operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}),
+            operation::handleResponse), operation);
+    {{- end}}
+  {{- else}}{{/* not OkHttp */}}
+    {{- if (isStreamingOperation $op)}}
+      {{- if (isSSEOperation $op)}}
+        {{- $sentinel := (getSSESentinel $op)}}
+        return {{javaImportLocal "utils.reactive.EventStream"}}.forSSE(
+                operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}).thenCompose(operation::handleResponse),
+                new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{templateStreamingTypeRefParam $op}}>() {
+                },
+                {{javaImportUtils}}.mapper(),
+                {{$sentinel}});
+      {{- else}}{{/* not SSE op */}}
+        return {{javaImportLocal "utils.reactive.EventStream"}}.forJsonL(
+                operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}).thenCompose(operation::handleResponse),
+                new {{javaImport "com.fasterxml.jackson.core.type.TypeReference"}}<{{templateStreamingTypeRefParam $op}}>() {
+                },
+                {{javaImportUtils}}.mapper());
+      {{- end}}
+    {{- else}}{{/* not streaming op */}}
+        return operation.doRequest({{if $reqParam}}this._buildRequest(){{end}})
+            .thenCompose(operation::handleResponse);
+    {{- end}}
+  {{- end}}{{/* $okHttp */}}
+{{- else}}{{/* not async */}}
+        {{- templateOperationInit .Local false}}
+        return operation.handleResponse(operation.doRequest({{if $reqParam}}this._buildRequest(){{end}}));
+{{- end}}
+    }
+
+{{- if $op.Response.Type.Extensions.Pagination }}
+    {{templateString "null-friendly/pagination.java.stmpl" .Local}}
+{{- end}}
+}

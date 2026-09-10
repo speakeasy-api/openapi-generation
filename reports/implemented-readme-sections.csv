@@ -1,0 +1,12 @@
+Template,mcp-typescript,cli,csharp,go,javav2,mockserver,php,pythonv2,ruby,typescriptv2,unity
+debug,:no_entry:,:no_entry:,:no_entry:,:no_entry:,:white_check_mark:,:no_entry:,:no_entry:,:white_check_mark:,:no_entry:,:no_entry:,:no_entry:
+errors,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:no_entry:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:
+global-parameters,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+http-client,:no_entry:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+installation,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+operations,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+pagination,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:no_entry:,:white_check_mark:,:no_entry:,:white_check_mark:,:no_entry:
+retries,:no_entry:,:no_entry:,:no_entry:,:white_check_mark:,:white_check_mark:,:no_entry:,:no_entry:,:white_check_mark:,:no_entry:,:white_check_mark:,:no_entry:
+security,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+server,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:
+usage,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:no_entry:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:,:white_check_mark:

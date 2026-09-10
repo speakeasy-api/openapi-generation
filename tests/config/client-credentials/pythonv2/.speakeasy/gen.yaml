@@ -1,0 +1,33 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  tests:
+    generateTests: true
+    generateNewTests: false
+  fixes:
+    securityFeb2025: true
+python:
+  fixFlags:
+    conflictResistantModelImportsFeb2026: true
+  forwardCompatibleEnumsByDefault: true
+  inferUnionDiscriminators: true
+  version: 0.0.1
+  imports:
+    option: "openapi"
+    paths:
+      shared: "models/components"
+      operations: "models/operations"
+      errors: "models/errors"
+      callbacks: "models/callbacks"
+      webhooks: "models/webhooks"
+  responseFormat: envelope-http
+  templateVersion: v2
+  envVarPrefix: SPEAKEASY
+  pytestFilterWarnings:
+    - error::RuntimeWarning
+    # Ensure __del__ method warnings are raised
+    - error::pytest.PytestUnraisableExceptionWarning
+  pytestTimeout: 300
+  packageManager: uv

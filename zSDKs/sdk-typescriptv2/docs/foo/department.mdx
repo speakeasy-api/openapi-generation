@@ -1,0 +1,23 @@
+---
+title: "Department"
+---
+
+Inline department in array items should end up in foo namespace
+
+## Example Usage
+
+```typescript
+import { Department } from "openapi/foo";
+
+let value: Department = {
+  deptName: "Engineering",
+  headCount: 50,
+};
+```
+
+## Fields
+
+| Field              | Type               | Required           | Description        | Example            |
+| ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| `deptName`         | *string*           | :heavy_check_mark: | N/A                | Engineering        |
+| `headCount`        | *number*           | :heavy_check_mark: | N/A                | 50                 |

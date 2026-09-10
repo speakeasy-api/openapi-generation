@@ -1,0 +1,175 @@
+{{- recurse 1 -}}
+{{- $globalSDK := .Global.AST.MainSDK }}
+{{- $serverVariables := and $globalSDK.Servers (gt (len $globalSDK.Servers.GetVariables) 0) -}}
+{{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
+{{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
+{{- $hasAnyServers := or $hasServers $globalSDK.HasAnyOperationServers -}}
+{{- $globalSecurity := $globalSDK.Security }}
+{{- $dg := "src/lib/config.ts" }}
+{{- $isGlobalSecurityFlattened := and $globalSecurity (canFlattenGlobalSecurity) }}
+{{- addImport "./http.js" "HTTPClient" -}}
+{{- addImport "./url.js" "pathToFunc" -}}
+{{- addImport "./retries.js" "RetryConfig" -}}
+{{- addImport "./logger.js" "Logger" -}}
+{{- if $globalSecurity}}{{addLibImport $globalSecurity.Type}}{{end -}}
+{{genImports}}
+
+{{- $securityTypes := false }}
+{{- if and $globalSecurity (not $isGlobalSecurityFlattened) }}
+{{- $securityTypes = resolveOutbound (dict "usageLocation" "lib" "typeDef" $globalSecurity.Type "rootTypeDef" $globalSecurity.Type) -}}
+{{- end }}
+
+{{if $serverMap}}
+{{- range $globalSDK.Servers.Servers}}
+{{- $constName := templateConstName .ID "Server" -}}
+{{- templateComments .Comments $dg $constName 0 "const"}}
+export const {{$constName}} = "{{ .ID }}";
+{{- end}}
+
+{{- templateBuiltinComment $dg "ServerList" "Contains the list of servers available to the SDK" 0}}
+export const ServerList = {
+	{{- range $globalSDK.Servers.Servers}}
+	[{{templateConstName .ID "Server"}}]: "{{ .URL }}",
+	{{- end}}
+} as const;
+{{- else if $hasServers}}
+{{- templateBuiltinComment $dg "ServerList" "Contains the list of servers available to the SDK" 0}}
+export const ServerList = [
+	{{- range $globalSDK.Servers.Servers}}
+{{- templateComments .Comments $dg (print "ServerList[" .URL "]") 1 "var"}}
+	"{{ .URL }}",
+	{{- end}}
+] as const;
+{{- end}}
+{{- if $serverVariables}}
+{{- range $variable := $globalSDK.Servers.GetVariables}}
+{{- if eq $variable.Type.Type "enum"}}
+{{ templateString "enum.ts.stmpl" (getDocGroupedType $variable.Type $dg)}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+export type SDKOptions = {
+  {{- if $globalSecurity}}
+  {{- if canFlattenGlobalSecurity}}
+  {{- $securityFieldType := resolveOutbound (dict "usageLocation" "lib" "typeDef" (first $globalSecurity.Type.Fields).Type "rootTypeDef" (first $globalSecurity.Type.Fields).Type) }}
+  {{- callImportTypesFunc $securityFieldType.importInputTypes}}
+  {{sanitizeFieldName (first $globalSecurity.Type.Fields).Name}}?: {{$securityFieldType.inputType}} | (() => Promise<{{$securityFieldType.inputType}}>) | undefined;{{else -}}
+  {{- templateBuiltinComment $dg "SDKOptions.security" "The security details required to authenticate the SDK" 1}}
+  {{constants.security}}?: {{$securityTypes.inputType}}  | (() => Promise<{{$securityTypes.inputType}}>) | undefined;
+  {{- callImportTypesFunc $securityTypes.importInputTypes}}
+  {{- end}}{{end}}
+  {{if (ne $globalSDK.Globals nil)}}
+  {{range $globalSDK.Globals.Fields}}
+  {{- $parameterTypes := resolveOutbound (dict "usageLocation" "lib" "typeDef" .Type "rootTypeDef" $globalSDK.Type "optional" .Optional)}}
+  {{- callImportTypesFunc $parameterTypes.importInputTypes}}
+  {{- $fieldName := templateGlobalFieldName .Name}}
+  {{ templateBuiltinComment $dg (printf "%s.%s" "SDKProps" $fieldName) (print "Allows setting the " $fieldName " parameter for all supported operations") 1}}
+  {{$fieldName}}?: {{$parameterTypes.inputType}};{{end}}
+  {{end}}
+  {{constants.httpClient}}?: HTTPClient;
+  {{- if $hasServers}}{{if $serverMap}}
+  {{- templateBuiltinComment $dg "SDKOptions.server" "Allows overriding the default server used by the SDK" 1}}
+  {{constants.server}}?: keyof typeof ServerList | undefined;
+  {{- else}}
+  {{- templateBuiltinComment $dg (printf "SDKOptions.%s" constants.serverIdx) "Allows overriding the default server used by the SDK" 1}}
+  {{constants.serverIdx}}?: number | undefined;
+  {{- end}}
+  {{- range $variable := $globalSDK.Servers.GetVariables}}
+  {{- $name := $variable.Name }}
+  {{- $fieldName := sanitizeFieldName $name }}
+  {{- templateBuiltinComment $dg (print "SDKOptions." $fieldName) (print "Sets the " $name " variable for url substitution") 1}}
+  {{- if eq $variable.Type.Type "enum"}}
+  {{$fieldName}}?: {{sanitizeClassName $variable.Type.Name}} | undefined;
+  {{- else}}
+  {{$fieldName}}?: {{sanitizeType $variable.Type false "lib"}} | undefined;
+  {{- end}}
+  {{- end}}
+  {{- end}}{{/* range $variable := $globalSDK.Servers.GetVariables */}}
+  {{- if not $hasAnyServers }}
+  {{- templateBuiltinComment $dg (printf "SDKOptions.%s" constants.serverURL) "Specifies the server URL to be used by the SDK" 1}}
+  {{constants.serverURL}}: string;
+  {{- else }}
+  {{- templateBuiltinComment $dg (printf "SDKOptions.%s" constants.serverURL) "Allows overriding the default server URL used by the SDK" 1}}
+  {{constants.serverURL}}?: string | undefined;
+  {{- end }}
+  {{- templateBuiltinComment $dg (printf "SDKOptions.%s" constants.userAgent) "Allows overriding the default user agent used by the SDK" 1}}
+  {{constants.userAgent}}?: string | undefined;
+  {{- templateBuiltinComment $dg (printf "SDKOptions.%s" constants.retryConfig) "Allows overriding the default retry config used by the SDK" 1}}
+  {{constants.retryConfig}}?: RetryConfig;
+  {{constants.timeoutMs}}?: number;
+  {{constants.debugLogger}}?: Logger;
+};
+
+export function serverURLFromOptions(options: SDKOptions): URL | null {
+  {{if or $serverMap $hasServers}}let{{else}}const{{end}} serverURL = options.{{constants.serverURL}};
+  {{if $serverVariables}}
+  {{if $serverMap}}
+  {{- addImport "./url.js" "Params" }}
+  const serverParams: Record<string, Params> = {
+    {{- range $globalSDK.Servers.Servers}}
+    "{{.ID}}": {
+      {{- range $variable := .Variables}}
+      {{- $name := $variable.Name }}
+      "{{$name}}": options.{{sanitizeFieldName $name}} ?? "{{$variable.Default}}",
+      {{- end}}
+    },
+    {{- end}}
+  };
+  {{else}}
+  {{- addImport "./url.js" "Params" }}
+  const serverParams: Params[] = [
+    {{- range $globalSDK.Servers.Servers}}
+    {
+      {{- range $variable := .Variables}}
+      {{- $name := $variable.Name }}
+      "{{$name}}": options.{{sanitizeFieldName $name}} ??  "{{$variable.Default}}",
+      {{- end}}
+    },
+    {{- end}}
+  ]
+  {{- end}}
+  {{- end}}
+
+  {{- if $serverMap}}
+  {{ addImport "./url.js" "Params" }}
+  {{if $serverVariables}}let{{else}}const{{end}} params: Params = {};
+
+  if (!serverURL) {
+    const server = options.{{constants.server}} ?? {{templateConstName $globalSDK.Servers.Default "Server"}};
+    serverURL = ServerList[server] || "";{{if $serverVariables}}
+    params = serverParams[server] || {};{{end}}
+  }
+  {{- else if $hasServers}}
+  {{- addImport "./url.js" "Params" }}
+  {{if $serverVariables}}let{{else}}const{{end}} params: Params = {};
+
+  if (!serverURL) {
+    const serverIdx = options.{{constants.serverIdx}} ?? 0;
+    if (serverIdx < 0 || serverIdx >= ServerList.length) {
+      throw new Error(`Invalid server index ${serverIdx}`);
+    }
+    serverURL = ServerList[serverIdx] || "";{{if $serverVariables}}
+    params = serverParams[serverIdx] || {};{{end}}
+  }
+  {{- else }}
+  if (!serverURL) {
+    return null;
+  }
+
+  const params: Record<string, string | undefined> = {};
+  {{- end}}
+
+  const u = pathToFunc(serverURL)(params);
+  return new URL(u);
+}
+
+export const SDK_METADATA = {
+  language: "typescript",
+  {{- if ne .Global.Config.DocVersion ""}}
+  openapiDocVersion: "{{.Global.Config.DocVersion}}",
+  {{- end}}
+  sdkVersion: "{{.Global.Config.SDKVersion}}",
+  genVersion: "{{.Global.Config.GenVersion}}",
+  userAgent: "speakeasy-sdk/typescript {{.Global.Config.SDKVersion}} {{.Global.Config.GenVersion}}{{if ne .Global.Config.DocVersion ""}} {{.Global.Config.DocVersion}}{{end}} {{.Global.Config.PackageName}}",
+} as const;

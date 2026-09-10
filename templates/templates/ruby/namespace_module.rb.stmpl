@@ -1,0 +1,8 @@
+{{typedDirective}}
+# frozen_string_literal: true
+
+module {{sanitizeModuleName .Global.Config.Module}}
+{{templateModuleDeclarations .Local.OutputLocation 1}}
+{{getModuleAutoloads .Local.PathString .Local.ModuleName .Local.Models .Local.NamespaceDepth}}
+{{templateModuleClosures .Local.OutputLocation 1}}
+end

@@ -1,0 +1,94 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $opState := .Local.TemplateState }}
+{{- $op := $opState.operation -}}
+{{- $globalSDK := .Global.AST.MainSDK }}
+{{- $webhook := $op.Webhook }}
+{{- $coreName := sanitizeCoreSDKName }}
+import { {{$coreName}} } from "../core.js";
+{{- genImports -}}
+{{- $usageLocation := "funcs" -}}
+{{- addTypeImport "fp" "Result" $usageLocation }}
+{{- if not isNoZod }}
+{{- addTypeImport "fp" "ERR" $usageLocation }}
+{{- addErrorTypeImport "SDKValidationError" $usageLocation }}
+{{- end }}
+{{ if hasWebhookSecurity }}
+{{- addTypeImport "webhooks" "WebhookAuthenticationError" $usageLocation }}
+{{ end }}
+{{- $handlerFuncName := sanitizeWebhookHandlerFuncName $op -}}
+{{- $inboundRequestTypes := webhookHandlerInboundTypes $usageLocation -}}
+{{- $outboundRequestTypes := webhookHandlerOutboundTypes $usageLocation -}}
+{{- $returnType := webhookHandlerReturnType $usageLocation -}}
+
+{{- range $outboundRequestType := $outboundRequestTypes -}}
+{{- callImportTypesFunc $outboundRequestType.importInputTypes }}
+{{- end }}
+
+export async function {{$handlerFuncName}}(
+  {{- if hasWebhookSecurity -}}
+  client: {{$coreName}},
+  {{- else -}}
+  _client: {{$coreName}},
+  {{- end -}}
+  {
+    request: rawRequest,
+    {{- if shouldTemplateSecretForWebhookConsumer -}}
+    secret,
+    {{- end -}}
+  }: { request: { body: BodyInit, method: string, url: string, headers: Record<string, string> | Headers } | Request,
+    {{- if shouldTemplateSecretForWebhookConsumer -}}
+    secret: string,
+    {{- end -}}
+  },
+): Promise<Result<{{$returnType}}, {{- if isNoZod -}}
+  {{- if hasWebhookSecurity }}WebhookAuthenticationError{{ else }}never{{ end -}}
+{{- else -}}
+  SDKValidationError{{ if hasWebhookSecurity }} | WebhookAuthenticationError{{ end -}}
+{{- end }}>> {
+  const request = normalizeRequest(rawRequest);
+
+  {{- if hasWebhookSecurity -}}
+  const verifyResult = await client._verifyWebhook({ request, {{- if shouldTemplateSecretForWebhookConsumer -}} secret, {{- end -}} });
+  if (!verifyResult.ok) {
+    return verifyResult;
+  }
+  {{- end -}}
+
+  const jsonString = await request.text();
+
+  {{- if isNoZod }}
+  {{- /* No-zod: no validation. Cast the JSON-parsed body straight through.
+         Malformed JSON throws SyntaxError natively — uncaught — since the
+         no-zod surface intentionally does not wrap arbitrary runtime errors. */ -}}
+  return { ok: true, value: JSON.parse(jsonString) as {{$returnType}} };
+  {{- else }}
+  const knownSchemas = [
+    {{- range $inboundRequestType := $inboundRequestTypes -}}
+      {{- addFromJSONImport $inboundRequestType $usageLocation -}},
+    {{- end -}}
+  ];
+
+  for (const schema of knownSchemas) {
+    const ret = schema(jsonString);
+    if (ret.ok) {
+      return ret;
+    }
+  }
+
+  return ERR(
+    new SDKValidationError(
+      "No matching schema found for the given webhook payload",
+      jsonString,
+      jsonString,
+    )
+  );
+  {{- end }}
+}
+
+function normalizeRequest(request: { body: BodyInit; method: string; url: string; headers: Record<string, string> | Headers } | Request): Request {
+  if (request instanceof Request) {
+    return request;
+  }
+  return new Request(request.url, request);
+}

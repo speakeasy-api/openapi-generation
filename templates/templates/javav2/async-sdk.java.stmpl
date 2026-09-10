@@ -1,0 +1,71 @@
+{{- recurse 1 -}}
+{{- $sdkClassName := sanitizeClassName .Local.Type.Name -}}
+{{- $asyncSDKClassName := (print "Async" $sdkClassName) -}}
+{{- $globals := (ne .Local.Globals nil) -}}
+{{- $sdk := .Local -}}
+{{- $serverMap := (sdkHasServerMap $sdk) -}}
+{{- $pkg := templatePackageName -}}
+{{- $fullClassName := (print $pkg "." $sdkClassName) -}}
+{{- $okHttp := useOkHttp -}}
+package {{$pkg}};
+{{genImports $fullClassName -}}
+// #region imports
+// #endregion imports{{"\n"}}{{- templateComments .Local.Comments nil 0 }}public class {{$asyncSDKClassName}}{{if $okHttp}} implements java.lang.AutoCloseable{{end}} {
+    private static final {{javaImportLocal "utils.Headers"}} _headers = {{javaImportLocal "utils.Headers"}}.EMPTY;
+    {{- range .Local.SubSDKs}}
+        {{- $asyncSubSDKClassName := (print "Async" (sanitizeClassName .Type.Name)) -}}
+        {{- if ne .Type.Name ""}}
+        {{- "\n"}}{{templateCommentsStripped .Comments nil 1 }}
+    private final {{$asyncSubSDKClassName}} {{sanitizeFieldName .FieldName}};
+        {{- end}}
+    {{- end}}
+    {{- range .Local.SubSDKs}}
+        {{- $asyncSubSDKClassName := (print "Async" (sanitizeClassName .Type.Name)) -}}
+        {{- if ne .Type.Name ""}}
+        {{- "\n"}}{{templateCommentsStripped .Comments nil 1}}
+    public {{$asyncSubSDKClassName}} {{sanitizeFieldName .FieldName}}() {
+        return {{sanitizeFieldName .FieldName}};
+    }
+        {{- end}}
+    {{- end}}
+
+    private {{if not (and useHooks .Global.Config.SDKHooksConfigAccess)}}final {{end}}SDKConfiguration sdkConfiguration;
+    private final {{$sdkClassName}} syncSDK;
+
+    {{$asyncSDKClassName}}({{javaImportLocal $sdkClassName}} syncSDK, SDKConfiguration sdkConfiguration) {
+        this.syncSDK = syncSDK;
+        this.sdkConfiguration = sdkConfiguration;
+        {{- range .Local.SubSDKs}}
+        {{- $asyncSubSDKClassName := (print "Async" (sanitizeClassName .Type.Name)) -}}
+        {{- if ne .Type.Name ""}}
+        this.{{sanitizeFieldName .FieldName}} = new {{$asyncSubSDKClassName}}(syncSDK.{{sanitizeFieldName .FieldName}}(), sdkConfiguration);
+        {{- end}}{{end}}
+    }
+
+    /**
+     * Switches to the sync SDK.
+     * 
+     * @return The sync SDK
+     */
+    public {{$sdkClassName}} {{sanitizeModeMethodName "sync" $sdk}}() {
+        return syncSDK;
+    }
+    {{- if $okHttp}}
+
+    /**
+     * Releases the configured HTTP client's owned resources. The sync and
+     * async SDKs share one client, which is closed at most once.
+     *
+     * @throws Exception if the configured client cannot be closed
+     */
+    @Override
+    public void close() throws Exception {
+        this.sdkConfiguration.closeClient();
+    }
+    {{- end}}
+    // #region class-body
+    // #endregion class-body
+  {{- range .Local.Operations -}}
+{{templateString "async-method.java.stmpl" (dict "Operation" . "SDK" $sdk)}}
+  {{- end}}
+}

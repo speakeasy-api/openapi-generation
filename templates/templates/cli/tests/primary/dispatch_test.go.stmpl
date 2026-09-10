@@ -1,0 +1,173 @@
+package tests
+
+import (
+	"errors"
+	"io"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/flagutil"
+)
+
+func newIntentDispatchTestCommand() *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("body", "", "body")
+	cmd.Flags().String("model", "", "model")
+	cmd.Flags().String("agent", "", "agent")
+	cmd.Flags().String("agent-profile", "", "agent config")
+	return cmd
+}
+
+func intentDispatchTestTable() flagutil.DispatchTable {
+	return flagutil.DispatchTable{
+		Command:  "interaction run",
+		BodyFlag: "body",
+		Escape:   "cli interactions create",
+		Routes: []flagutil.DispatchRoute{
+			{
+				ID: "model", Label: "Model", SelectorFlag: "model", Default: true,
+				PresetJSON: `{"route":"model"}`,
+			},
+			{ID: "agent", Label: "Agent", SelectorFlag: "agent"},
+			{ID: "batch", Label: "Batch", SelectorFlag: "batch"},
+		},
+		Inputs: []flagutil.DispatchInput{
+			{
+				Name: "input", BodyKey: "input", Kind: flagutil.FlagKindString, Positional: true,
+				RouteIDs: []string{"model", "agent", "batch"}, RequiredRouteIDs: []string{"model", "agent", "batch"},
+			},
+			{Name: "model", BodyKey: "model", Kind: flagutil.FlagKindString, RouteIDs: []string{"model"}},
+			{Name: "agent", BodyKey: "agent", Kind: flagutil.FlagKindString, RouteIDs: []string{"agent"}, RequiredRouteIDs: []string{"agent"}},
+			{Name: "agent-profile", BodyKey: "agent_profile", Kind: flagutil.FlagKindString, RouteIDs: []string{"agent"}},
+		},
+		Keys: []flagutil.DispatchKey{
+			{BodyKey: "input", RouteIDs: []string{"model", "agent", "batch"}},
+			{BodyKey: "model", RouteIDs: []string{"model"}},
+			{BodyKey: "agent", RouteIDs: []string{"agent"}},
+			{BodyKey: "agent_profile", RouteIDs: []string{"agent"}},
+			{BodyKey: "duo", RouteIDs: []string{"model", "agent"}},
+			{BodyKey: "workflow", UnroutedVariants: []string{"Workflow"}},
+		},
+	}
+}
+
+func TestIntentDispatchSelectMatrix(t *testing.T) {
+	recordTest("intent-dispatch-select-matrix")
+	cases := []struct {
+		name      string
+		args      []string
+		configure func(*cobra.Command, *flagutil.DispatchTable)
+		wantRoute string
+		wantErr   string
+	}{
+		{name: "none uses default", args: []string{"hello"}, wantRoute: "model"},
+		{
+			name: "none without default",
+			configure: func(_ *cobra.Command, table *flagutil.DispatchTable) {
+				table.Routes[0].Default = false
+			},
+			wantErr: "pass one of --model, --agent, --batch",
+		},
+		{
+			name: "one flag selects route", args: []string{"hello"},
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("agent", "helper"))
+			},
+			wantRoute: "agent",
+		},
+		{
+			name: "conflicting flags", args: []string{"hello"},
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("model", "text-1"))
+				require.NoError(t, cmd.Flags().Set("agent", "helper"))
+			},
+			wantErr: "--model and --agent select different request variants; pass exactly one",
+		},
+		{
+			name: "multiple candidates use default", args: []string{"hello"},
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("body", `{"duo":true}`))
+			},
+			wantRoute: "model",
+		},
+		{
+			name: "multiple candidates without default",
+			configure: func(cmd *cobra.Command, table *flagutil.DispatchTable) {
+				table.Routes[0].Default = false
+				require.NoError(t, cmd.Flags().Set("body", `{"duo":true,"input":"hello"}`))
+			},
+			wantErr: "pass one of --model, --agent",
+		},
+		{
+			name: "unrouted body key",
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("body", `{"workflow":"nightly"}`))
+			},
+			wantErr: `body key "workflow" selects the unrouted Workflow request variant; use "cli interactions create" to send that request`,
+		},
+		{
+			name: "non object body",
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("body", `[1]`))
+			},
+			wantErr: "route dispatch requires --body or stdin to contain a JSON object",
+		},
+		{
+			name: "conditional required after optional evidence",
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("agent-profile", "standard"))
+			},
+			wantErr: "required flag --agent not set for the Agent variant",
+		},
+		{
+			name: "body key satisfies required input",
+			configure: func(cmd *cobra.Command, _ *flagutil.DispatchTable) {
+				require.NoError(t, cmd.Flags().Set("body", `{"agent":"helper","input":"hello"}`))
+			},
+			wantRoute: "agent",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newIntentDispatchTestCommand()
+			table := intentDispatchTestTable()
+			if tc.configure != nil {
+				tc.configure(cmd, &table)
+			}
+			route, err := flagutil.Select(cmd, tc.args, table)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				var typed interface{ CLIReason() string }
+				require.True(t, errors.As(err, &typed))
+				assert.Equal(t, "CLI_VALIDATION", typed.CLIReason())
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, route)
+			assert.Equal(t, tc.wantRoute, route.ID)
+			assert.True(t, flagutil.FlagChanged(cmd, "body"))
+		})
+	}
+}
+
+func TestIntentDispatchResolvesStdinOnce(t *testing.T) {
+	recordTest("intent-dispatch-resolves-stdin-once")
+	cmd := newIntentDispatchTestCommand()
+	cmd.SetIn(strings.NewReader(`{"agent":"helper","input":"from stdin"}`))
+
+	route, err := flagutil.Select(cmd, nil, intentDispatchTestTable())
+	require.NoError(t, err)
+	assert.Equal(t, "agent", route.ID)
+	assert.True(t, flagutil.FlagChanged(cmd, "body"))
+	body, _ := cmd.Flags().GetString("body")
+	assert.JSONEq(t, `{"agent":"helper","input":"from stdin"}`, body)
+	remaining, err := io.ReadAll(cmd.InOrStdin())
+	require.NoError(t, err)
+	assert.Empty(t, remaining, "dispatch consumed stdin and replayed it through --body")
+}

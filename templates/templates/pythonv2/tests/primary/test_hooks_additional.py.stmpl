@@ -1,0 +1,465 @@
+import os
+import platform
+import pytest
+from openapi.models import shared
+from openapi import SDK
+from openapi.models.operations import *
+from openapi._hooks.oauth2scopes import ClientCredentialsOAuth2Scope, OAuth2Scope
+from openapi.types import BaseModel
+
+from .common_helpers import record_test, rand_seq, RequestRecorderClient, HTTPBIN_URL
+
+
+class _CountModel(BaseModel):
+    count: int
+
+
+def test_hooks_after_response():
+    record_test("test-hooks-after-response")
+
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(
+            api_key_auth="Token YOUR_API_KEY",
+        )
+    )
+
+    assert s is not None
+
+    with pytest.raises(Exception, match="validation failed"):
+        s.hooks.test_hooks_after_response()
+
+
+def test_hooks_custom_user_agent():
+    record_test("hooks-custom-user-agent")
+
+    s = SDK(server_url=HTTPBIN_URL)
+
+    res = s.hooks.hooks_custom_user_agent()
+
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.custom_user_agent_echo is not None
+    headers = res.custom_user_agent_echo.headers
+    assert headers["User-Agent"] == f"acme-corp/{{.Global.Config.SDKVersion}} acme-corp/{platform.python_version()}"
+    assert headers["X-Test-Gen-Version"] == "{{.Global.Config.GenVersion}}"
+    assert headers["X-Test-Doc-Version"] == "{{.Global.Config.DocVersion}}"
+    assert headers["X-Test-Init-Sdk-Version"] == "{{.Global.Config.SDKVersion}}"
+
+
+def test_hooks_error():
+    record_test("test-hooks-error")
+
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(
+            api_key_auth="Token YOUR_API_KEY",
+        )
+    )
+
+    assert s is not None
+
+    with pytest.raises(Exception, match="special test error case"):
+        s.hooks.test_hooks_error()
+
+
+def test_hooks_authorization_header_modification():
+    record_test("hooks-authorization-header-modification")
+
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(
+            api_key_auth="Bearer testToken",
+        )
+    )
+
+    assert s is not None
+
+    res = s.hooks.authorization_header_modification()
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+    assert res.token is not None
+    assert res.token.authenticated is True
+    assert res.token.token == "testToken modified"
+
+
+@pytest.mark.asyncio()
+async def test_hooks_before_create_request():
+    record_test("test-hooks-before-create-request")
+
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(
+            api_key_auth="Token YOUR_API_KEY",
+        )
+    )
+    assert s is not None
+
+    res = await s.hooks.test_hooks_before_create_request_paths_async(
+        namespace="foo/bar"
+    )
+
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    assert res.res is not None
+    assert res.res == TestHooksBeforeCreateRequestPathsRes(
+        url=f"{HTTPBIN_URL}/anything/hooks/beforeCreateRequestPaths/foo/bar",
+        headers=TestHooksBeforeCreateRequestPathsHeaders(
+            old_pathname="/anything/hooks/beforeCreateRequestPaths/foo/bar"
+        ),
+    )
+
+
+def test_client_credentials_option_successfully_authenticates():
+    record_test("hooks-client-credentials-option-success")
+
+    client = RequestRecorderClient()
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        client=client,
+        security=shared.Security(
+            client_credentials=shared.SchemeClientCredentials(
+                client_id="speakeasy-sdks",
+                client_secret="supersecret-" + rand_seq(10),
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                {{ sanitizeFieldName (originalFieldName $f) }}="",
+{{- end }}
+            )
+        )
+    )
+    assert s is not None
+
+    res = s.hooks.authenticated_request(request=None)
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    # The requested token is still valid, so it should be reused.
+    res = s.hooks.authenticated_request(request=None)
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    # Checking that only a single token request was made
+    token_url = "/clientcredentials/token?expires_in=90"
+    token_requests = [entry for entry in client.log if
+                      entry.request_url.endswith(token_url) and "scope=read+write" in entry.request_body]
+    assert len(token_requests) == 1
+
+    # Testing .env var credentials
+    os.environ["SPEAKEASY_CLIENT_ID"] = "speakeasy-sdks"
+    os.environ["SPEAKEASY_CLIENT_SECRET"] = "supersecret-" + rand_seq(10)
+{{- range $f := collectClientCredentialsAdditionalFields }}
+    os.environ["{{ templateSecurityEnvVars $f }}"] = "test"
+{{- end }}
+    s2 = SDK(server_url=HTTPBIN_URL)
+    assert s2 is not None
+
+    res2 = s2.hooks.authenticated_request(request=None)
+    assert res2 is not None
+    assert res2.http_meta is not None
+    assert res2.http_meta.response is not None
+    assert res2.http_meta.response.status_code == 200
+    os.environ.pop("SPEAKEASY_CLIENT_ID", None)
+    os.environ.pop("SPEAKEASY_CLIENT_SECRET", None)
+{{- range $f := collectClientCredentialsAdditionalFields }}
+    os.environ.pop("{{ templateSecurityEnvVars $f }}", None)
+{{- end }}
+
+
+def test_client_credentials_option_successfully_authenticates_with_alt_token_url():
+    record_test("hooks-client-credentials-option-success-alt-token-url")
+
+    client = RequestRecorderClient()
+    token_url = "/clientcredentials/alt/token"
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        client=client,
+        security=shared.Security(
+            client_credentials=shared.SchemeClientCredentials(
+                client_id="speakeasy-sdks",
+                client_secret="supersecret-" + rand_seq(10),
+                token_url=token_url,
+                scopes=["alt:one", ClientCredentialsOAuth2Scope.ALT_TWO],
+{{- range $f := collectClientCredentialsAdditionalFields }}
+                {{ sanitizeFieldName (originalFieldName $f) }}="",
+{{- end }}
+            )
+        )
+    )
+    assert s is not None
+
+    res = s.hooks.authenticated_request(request=None)
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    # The token received is already expired so another one should be requested.
+    res = s.hooks.authenticated_request(request=None)
+    assert res is not None
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    assert res.http_meta.response.status_code == 200
+
+    token_requests = [
+        entry for entry in client.log if
+        (
+            entry.request_url.endswith(token_url) and
+         "scope=alt%3Aone+alt%3Atwo" in entry.request_body
+        )
+    ]
+    assert len(token_requests) == 2
+
+
+def test_response_mode_propagates_to_after_error_hook():
+    """`HookContext.response.mode` reaches `AfterErrorHook` for all three modes.
+
+    The test hook echoes `hook_ctx.response.mode` back via the
+    `x-test-response-mode` header on its substitute response (only for
+    `statusGetDefaultError` 418 case).
+    """
+    s = SDK()
+
+    res = s.errors.status_get_default_error(status_code=418)
+    assert res.http_meta.response.headers.get("x-test-response-mode") == "parsed"
+
+    raw = s.errors.with_raw_response.status_get_default_error(status_code=418)
+    assert raw.http_response.headers.get("x-test-response-mode") == "raw"
+
+    with s.errors.with_streaming_response.status_get_default_error(
+        status_code=418
+    ) as streamed:
+        assert streamed.http_response.headers.get("x-test-response-mode") == "streaming"
+
+
+def test_after_parse_error_hook_fires_eagerly_for_raw_response():
+    """4XX via `with_raw_response` runs the parser eagerly at the request call,
+    so `after_parse_error` fires there — not on a deferred `.parse()`."""
+    s = SDK()
+    with pytest.raises(RuntimeError, match=r"parse_error fired mode=raw"):
+        s.errors.with_raw_response.get_malformed_error_response(
+            status_code=400,
+            shape="malformed-json",
+            http_headers={"x-test-after-parse-error": "true"},
+        )
+
+
+def test_after_error_hook_fires_eagerly_for_raw_response():
+    """`after_error` fires for a 4XX via `with_raw_response`; its substituted
+    error preempts the parser and raises at the request call."""
+    s = SDK()
+    with pytest.raises(RuntimeError, match=r"error fired mode=raw"):
+        s.errors.with_raw_response.get_malformed_error_response(
+            status_code=400,
+            shape="malformed-json",
+            http_headers={"x-test-after-error": "true"},
+        )
+
+
+def test_after_parse_error_hook_fires_for_raw_parse_time_failure():
+    """A non-error (200) body that fails typed parsing fires `after_parse_error`
+    when the caller invokes `.parse()` — the eager 4XX path doesn't touch 2xx."""
+    s = SDK()
+    raw = s.errors.with_raw_response.get_malformed_error_response(
+        status_code=200,
+        shape="wrong-type",
+        http_headers={"x-test-after-parse-error": "true"},
+    )
+    with pytest.raises(RuntimeError, match=r"parse_error fired mode=raw"):
+        raw.parse(to=_CountModel)
+
+
+def test_after_parse_error_hook_fires_for_parsed_default_call():
+    """`AfterParseErrorHook` fires for the default (non-raw) call path with `mode=parsed`.
+
+    Locks `method.py.stmpl`'s direct `_speakeasy_parse_response(http_res_)`
+    try/except wrap. Uses the malformed-error endpoint to force a real parse
+    failure.
+    """
+    s = SDK()
+    with pytest.raises(RuntimeError, match=r"parse_error fired mode=parsed"):
+        s.errors.get_malformed_error_response(
+            status_code=400,
+            shape="malformed-json",
+            http_headers={"x-test-after-parse-error": "true"},
+        )
+
+
+@pytest.mark.asyncio()
+async def test_after_parse_error_hook_fires_eagerly_for_async_raw_response():
+    """Async variant: parser runs eagerly, `after_parse_error` fires at the
+    request call via native `AsyncSDKHooks.after_parse_error`."""
+    async with SDK() as s:
+        with pytest.raises(
+            RuntimeError,
+            match=r"async parse_error fired mode=raw execution=async",
+        ):
+            await s.errors.with_raw_response.get_malformed_error_response_async(
+                status_code=400,
+                shape="malformed-json",
+                http_headers={"x-test-after-parse-error": "true"},
+            )
+
+
+@pytest.mark.asyncio()
+async def test_after_error_hook_fires_eagerly_for_async_raw_response():
+    """Async `after_error` fires for a 4XX via `with_raw_response`."""
+    async with SDK() as s:
+        with pytest.raises(RuntimeError, match=r"error fired mode=raw"):
+            await s.errors.with_raw_response.get_malformed_error_response_async(
+                status_code=400,
+                shape="malformed-json",
+                http_headers={"x-test-after-error": "true"},
+            )
+
+
+def test_after_parse_error_hook_fires_eagerly_for_streaming_response():
+    """4XX via `with_streaming_response` raises on context entry (eager parse)."""
+    s = SDK()
+    with pytest.raises(RuntimeError, match=r"parse_error fired mode=streaming"):
+        with s.errors.with_streaming_response.get_malformed_error_response(
+            status_code=400,
+            shape="malformed-json",
+            http_headers={"x-test-after-parse-error": "true"},
+        ):
+            pass
+
+
+def test_after_error_hook_fires_eagerly_for_streaming_response():
+    """`after_error` fires for a 4XX via `with_streaming_response`."""
+    s = SDK()
+    with pytest.raises(RuntimeError, match=r"error fired mode=streaming"):
+        with s.errors.with_streaming_response.get_malformed_error_response(
+            status_code=400,
+            shape="malformed-json",
+            http_headers={"x-test-after-error": "true"},
+        ):
+            pass
+
+
+def test_after_parse_error_hook_preserves_original_exception_when_unhandled():
+    """Hook returns the original exception → caller sees the parser's exception.
+
+    Guards against accidental swallowing. Omits the test-only
+    `x-test-after-parse-error` header so the test hook returns the
+    original parser exception.
+    """
+    s = SDK(server_url=HTTPBIN_URL)
+    raw = s.methods.with_raw_response.method_get()
+
+    with pytest.raises(Exception) as exc_info:
+        raw.parse(to=int)
+    assert not isinstance(exc_info.value, RuntimeError) or "parse_error fired" not in str(exc_info.value)
+
+
+def test_operation_metadata_propagates_to_hook_context():
+    """OpenAPI `tags` and `x-` extensions reach the hook context at runtime.
+
+    `hooksOperationMetadata` declares `tags: [hooks]`, a custom
+    `x-test-operation-metadata` extension, an `x-test-template-delimiters`
+    extension whose value embeds `{{"{{"}} }}` delimiters, and an `x-speakeasy-group`
+    directive. The test hook echoes `hook_ctx.tags`, both custom extensions, and
+    any `x-speakeasy-*` keys back via response headers, so we can assert the tags
+    and custom extensions reach the hook while `x-speakeasy-*` directives are
+    filtered out.
+
+    The `x-test-template-delimiters` value round-trips byte-for-byte: its `{{"{{"}} }}`
+    must survive being baked into generated source as a Python literal (escaped
+    so the templating engine doesn't re-interpret it) and reach the hook intact.
+    """
+    record_test("hooks-access-operation-metadata")
+
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(
+            api_key_auth="Token YOUR_API_KEY",
+        ),
+    )
+
+    res = s.hooks.hooks_operation_metadata()
+
+    assert res.http_meta is not None
+    assert res.http_meta.response is not None
+    headers = res.http_meta.response.headers
+    assert headers.get("x-test-tags") == "hooks"
+    assert headers.get("x-test-extension") == "visibility-internal"
+    # An extension value containing `{{"{{"}} }}` templating delimiters must round-trip
+    # byte-for-byte: escaped into the generated literal, never re-interpreted.
+    assert headers.get("x-test-template-delimiters") == "use {{"{{"}}token}} in the header"
+    # x-speakeasy-* codegen directives must not leak into the hook context.
+    assert headers.get("x-test-speakeasy-keys") == "none"
+
+
+def test_operation_metadata_threads_through_hook_context_subclasses():
+    """`tags` and `extensions` round-trip from `HookContext` into subclasses.
+
+    Pure construction test (no network): locks the threading edits in
+    `types.py.stmpl` independently of the runtime hook path.
+    """
+    from openapi._hooks.types import (
+        HookContext,
+        ResponseContext,
+        BeforeRequestContext,
+        AfterSuccessContext,
+        AfterErrorContext,
+    )
+
+    tags = ["hooks", "internal"]
+    extensions = {"x-test-operation-metadata": "visibility-internal"}
+
+    ctx = HookContext(
+        config=None,
+        base_url="https://example.com",
+        operation_id="op",
+        oauth2_scopes=None,
+        security_source=None,
+        tags=tags,
+        extensions=extensions,
+        response=ResponseContext(),
+    )
+
+    assert ctx.tags == tags
+    assert ctx.extensions == extensions
+    for subclass in (BeforeRequestContext, AfterSuccessContext, AfterErrorContext):
+        assert subclass(ctx).tags == tags
+        assert subclass(ctx).extensions == extensions
+
+    none_ctx = HookContext(
+        config=None,
+        base_url="https://example.com",
+        operation_id="op",
+        oauth2_scopes=None,
+        security_source=None,
+        tags=None,
+        extensions=None,
+        response=ResponseContext(),
+    )
+
+    assert none_ctx.tags is None
+    assert none_ctx.extensions is None
+    for subclass in (BeforeRequestContext, AfterSuccessContext, AfterErrorContext):
+        assert subclass(none_ctx).tags is None
+        assert subclass(none_ctx).extensions is None
+
+
+def test_hooks_available_oauth2_scopes():
+    record_test("hooks-available-oauth2-scopes")
+
+    assert ClientCredentialsOAuth2Scope.READ.value == "read"
+    assert OAuth2Scope.MODELS_READ.value == "models:read"
+
+    assert ClientCredentialsOAuth2Scope("write") == ClientCredentialsOAuth2Scope.WRITE
+    assert OAuth2Scope("store_manage") == OAuth2Scope.STORE_MANAGE
+
+    with pytest.raises(ValueError):
+        OAuth2Scope("unknown")

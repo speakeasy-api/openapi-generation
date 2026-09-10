@@ -1,0 +1,17 @@
+declare(strict_types=1);
+
+namespace {{getModelNamespace .Local.OutputLocation}};
+
+{{- $type := .Local.Type}}
+{{- $class := (sanitizeClass $type $type.OutputLocation true)}}
+
+class {{$class}}Throwable extends \RuntimeException
+{
+    public {{$class}} $container;
+
+    public function __construct(string $message, int $statusCode, {{$class}} $container)
+    {
+        parent::__construct($message, $statusCode);
+        $this->container = $container;
+    }
+}

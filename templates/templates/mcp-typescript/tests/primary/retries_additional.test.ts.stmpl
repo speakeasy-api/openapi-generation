@@ -1,0 +1,46 @@
+import { expect, test } from "vitest";
+
+import { SDKCore as SDK } from "../core.js";
+import { retriesRetriesAttemptCount } from "../funcs/retriesRetriesAttemptCount.js";
+import { retriesRetriesAttemptCountZero } from "../funcs/retriesRetriesAttemptCountZero.js";
+
+import { HTTPBIN_URL, recordTest } from "./common_helpers.js";
+
+test("Test Attempt Count Backoff", async () => {
+  recordTest("retries-attempt-count-backoff");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+
+  const result = await retriesRetriesAttemptCount(sdk, {
+    requestId: pseudoUUID(),
+    numRetries: 3,
+    retryAfterMsVal: 1,
+  });
+  if (!result.ok) throw result.error;
+
+  expect(result.value.status).toBe(200);
+});
+
+test("Test Attempt Count Backoff Max Retries Zero", async () => {
+  recordTest("retries-attempt-count-zero");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+
+  const result = await retriesRetriesAttemptCountZero(sdk, {
+    requestId: pseudoUUID(),
+    numRetries: 2,
+    retryAfterMsVal: 1,
+  });
+
+  if (!result.ok) throw result.error;
+
+  expect(result.value.status).toBe(503);
+});
+
+function pseudoUUID() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c == "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}

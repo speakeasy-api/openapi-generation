@@ -1,0 +1,73 @@
+# A complete openapi spec with no servers
+openapi: 3.1.0
+info:
+  title: No Servers
+  version: 0.0.0
+paths:
+  /objects:
+    get:
+      operationId: listObjects
+      responses:
+        '200':
+          description: A list of objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "components.yaml#/components/schemas/simpleObject"
+        '404':
+          description: Object not found.
+    post:
+      operationId: createObject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/simpleObject"
+      responses:
+        '200':
+          description: Object created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/components/schemas/simpleObject"
+        '400':
+          description: Invalid request.
+  /objects/{id}:
+    get:
+      operationId: getObject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object found.
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/components/schemas/simpleObject"
+        '400':
+          description: Invalid request.
+        '404':
+          description: Object not found.
+  /pagination/objects:
+    get:
+      operationId: paginationObjects
+      parameters:
+        - name: attempts
+          in: query
+          schema:
+            type: integer
+          required: true      
+      responses:
+        "200":
+          $ref: "components.yaml#/components/responses/paginationResponse"
+      x-speakeasy-pagination:
+        type: url
+        outputs:
+          nextUrl: $.next        

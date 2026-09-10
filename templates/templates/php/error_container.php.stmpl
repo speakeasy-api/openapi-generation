@@ -1,0 +1,58 @@
+{{- recurse 1 -}}
+{{- $type := .Local.Type}}
+{{- $class := (sanitizeClass $type $type.OutputLocation true)}}
+{{getModelImports}}
+{{- if $type.Comments}}
+{{templateClassComments $type.Comments $class (getModelNamespace $type.OutputLocation) 0}}
+{{- end}}
+class {{$class}}
+{
+{{- range $type.Fields}}
+{{- $anno := templateAnnotations . $type.OutputLocation}}
+  {{- if needsFieldComments .Comments .}}
+{{templateFieldComments .Comments . $type.OutputLocation 1}}
+  {{- end}}
+{{templateModelField . $type.OutputLocation | indentPresent 4}}
+{{end}}{{/* end range $type.Fields */}}
+{{templateModelConstructorComments $type | indentPresent 4}}
+    public function __construct({{templateModelConstructorArgs $type}})
+    {
+        {{- range $type.Fields}}
+        $this->{{sanitizeFieldName .Name}} = ${{sanitizeFieldName .Name}};
+        {{- end}}
+    }
+
+    public function toException(): {{$class}}Throwable
+    {
+        {{- $errorMessageField := getErrorMessageField $type}}
+        {{- if $errorMessageField}}{{if not (or $errorMessageField.Optional $errorMessageField.Nullable)}}
+        $message = $this->{{sanitizeFieldName $errorMessageField.Name}};
+        {{- else}}
+        if ($this->{{sanitizeFieldName $errorMessageField.Name}} !== null) {
+            $message = $this->{{sanitizeFieldName $errorMessageField.Name}};
+        } else {
+            $message = 'unknown error';
+        }
+        {{- end}}
+        {{- else}}
+        {{- addImportInline "utils" (getModelNamespace .Local.OutputLocation)}}
+        $serializer = Utils\JSON::createSerializer();
+        $message = $serializer->serialize($this, 'json');
+        {{- end}}
+        {{- $errorCodeField := getErrorCodeField $type}}
+        {{- if $errorCodeField}}{{if not (or $errorCodeField.Optional $errorCodeField.Nullable)}}
+        $code = $this->{{sanitizeFieldName $errorCodeField.Name}};
+        {{- else}}
+        if ($this->{{sanitizeFieldName $errorCodeField.Name}} !== null) {
+            $code = $this->{{sanitizeFieldName $errorCodeField.Name}};
+        } else {
+            $code = -1;
+        }
+        {{- end}}
+        {{- else}}
+        $code = -1;
+        {{- end}}
+
+        return new {{$class}}Throwable($message, (int) $code, $this);
+    }
+}

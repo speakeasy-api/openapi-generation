@@ -1,0 +1,11 @@
+.speakeasy/reports
+.env
+.env.local
+**/.speakeasy/temp/
+**/.speakeasy/logs/
+.DS_Store
+.speakeasy/logs/
+.speakeasy/temp/
+obj/
+bin/
+debug/

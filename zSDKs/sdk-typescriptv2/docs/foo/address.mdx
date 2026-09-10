@@ -1,0 +1,28 @@
+---
+title: "Address"
+---
+
+Inline address object should end up in foo namespace
+
+## Example Usage
+
+```typescript
+import { Address } from "openapi/foo";
+
+let value: Address = {
+  street: "123 Main St",
+  city: "Springfield",
+  location: {
+    latitude: 37.7749,
+    longitude: -122.4194,
+  },
+};
+```
+
+## Fields
+
+| Field                                                           | Type                                                            | Required                                                        | Description                                                     | Example                                                         |
+| --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `street`                                                        | *string*                                                        | :heavy_check_mark:                                              | N/A                                                             | 123 Main St                                                     |
+| `city`                                                          | *string*                                                        | :heavy_check_mark:                                              | N/A                                                             | Springfield                                                     |
+| `location`                                                      | [foo.Location](../foo/location.mdx)                              | :heavy_minus_sign:                                              | Deeply nested inline object should also end up in foo namespace |                                                                 |

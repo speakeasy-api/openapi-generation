@@ -1,0 +1,23 @@
+package tests
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	sdk "openapi"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestFollowRedirects(t *testing.T) {
+	recordTest("redirects-are-followed")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Redirects.RedirectsAreFollowed(context.Background())
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+	fmt.Println(res)
+	assert.Equal(t, "John Doe", *res.Name)
+}

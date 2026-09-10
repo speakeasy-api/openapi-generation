@@ -1,0 +1,153 @@
+{{- recurse 1 -}}
+{{- $hasServers := (and .Global.AST.MainSDK.Servers .Global.AST.MainSDK.Servers.HasAbsoluteURL) -}}
+{{- addGenImport "context" -}}
+{{- addGenImport "net/http" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/datasource" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/ephemeral" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/action" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/list" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/function" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/provider" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/provider/schema" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/resource" -}}
+{{- addGenImport "github.com/hashicorp/terraform-plugin-framework/types" -}}
+{{- addGenImport getSDKPackage -}}
+package provider
+
+{{ genImports }}
+{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "imports" }}
+
+var _ provider.Provider = (*{{sanitizeClassName .Global.Config.PackageName}}Provider)(nil)
+var _ provider.ProviderWithActions = (*{{sanitizeClassName .Global.Config.PackageName}}Provider)(nil)
+var _ provider.ProviderWithEphemeralResources = (*{{sanitizeClassName .Global.Config.PackageName}}Provider)(nil)
+var _ provider.ProviderWithFunctions = (*{{sanitizeClassName .Global.Config.PackageName}}Provider)(nil)
+
+
+type {{sanitizeClassName .Global.Config.PackageName}}Provider struct {
+	// version is set to the provider version on release, "dev" when the
+	// provider is built and ran locally, and "test" when running acceptance
+	// testing.
+	version string
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "provider-struct" }}
+}
+
+{{ if hasProviderConfigureData .Local -}}
+// {{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData describes provider configuration data passed to resources.
+type {{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData struct {
+	{{ templateProviderConfigureDataStructFields .Local }}
+}
+
+{{ end -}}
+
+// {{sanitizeClassName .Global.Config.PackageName}}ProviderModel describes the provider data model.
+type {{sanitizeClassName .Global.Config.PackageName}}ProviderModel struct {
+	{{ templateProviderDataModel .Local }}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "{{.Global.AST.TerraformProvider.TerraformTypeName}}"
+	resp.Version = p.version
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = {{ templateProviderSchema .Local }}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data {{sanitizeClassName .Global.Config.PackageName}}ProviderModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	{{ templateProviderServerURLConfiguration .Local }}
+
+	{{ templateProviderConfigureGlobals .Global.AST.MainSDK.Globals }}
+	{{ templateProviderConfigureSecurity .Global.AST.MainSDK.Security }}
+
+	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
+		SetHeaders: make(map[string]string),
+		Transport:  http.DefaultTransport,
+	}
+
+	{{ templateProviderHTTPTransportOptsSetHeaders .Local "data" "providerHTTPTransportOpts" }}
+	{{ templateProviderHTTPTransportTlsSkipVerify .Local "data" "providerHTTPTransportOpts" }}
+
+	httpClient := http.DefaultClient
+	httpClient.Transport = NewProviderHTTPTransport(providerHTTPTransportOpts)
+
+	{{ templateProviderConfigureSDKOptions .Global.AST.MainSDK }}
+
+	{{ templateCodeRegion .Global.Config.EnableCustomCodeRegions "provider-configure" }}
+
+	{{ if $hasServers -}}
+	client := sdk.New(opts...)
+	{{ else -}}
+	client := sdk.New(ServerURL, opts...)
+
+	{{ end -}}
+
+	{{ if hasProviderConfigureData .Local -}}
+	configureData := &{{sanitizeClassName .Global.Config.PackageName}}ProviderConfigureData{
+		{{ templateProviderConfigureData .Local }}
+	}
+
+	resp.ActionData = configureData
+	resp.DataSourceData = configureData
+	resp.EphemeralResourceData = configureData
+	resp.ListResourceData = configureData
+	resp.ResourceData = configureData
+	{{ else -}}
+	resp.ActionData = client
+	resp.DataSourceData = client
+	resp.EphemeralResourceData = client
+	resp.ListResourceData = client
+	resp.ResourceData = client
+	{{ end -}}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Functions(_ context.Context) []func() function.Function {
+	return []func() function.Function{
+{{generateFunctions .Local.Functions}}
+	}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Actions(_ context.Context) []func() action.Action {
+	return []func() action.Action{
+{{generateActions .Local.Actions}}
+	}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+{{generateResources .Local.Resources}}
+	}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+{{generateDataSources .Local.DataSources}}
+	}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+{{generateEphemeralResources .Local.EphemeralResources}}
+	}
+}
+
+func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) ListResources(ctx context.Context) []func() list.ListResource {
+	return []func() list.ListResource{
+{{generateListResources .Local.ListResources}}
+	}
+}
+
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &{{sanitizeClassName .Global.Config.PackageName}}Provider{
+			version: version,
+		}
+	}
+}

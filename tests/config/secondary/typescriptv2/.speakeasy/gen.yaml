@@ -1,0 +1,52 @@
+configVersion: 2.0.0
+generation:
+  sdkClassName: SDK
+  usageSnippets:
+    optionalPropertyRendering: withExample
+  fixes:
+    nameResolutionDec2023: false
+    securityFeb2025: true
+    nameOverrideFeb2026: false
+  tests:
+    generateTests: true
+    generateNewTests: false
+  auth:
+    oAuth2ClientCredentialsEnabled: true
+  sdkHooksConfigAccess: false
+typescript:
+  inferUnionDiscriminators: true
+  privateIdentifierPrefix: $
+  version: 0.0.1
+  author: Speakeasy
+  clientServerStatusCodesAsErrors: true
+  flattenGlobalSecurity: false
+  constFieldsAlwaysOptional: false
+  imports:
+    option: openapi
+    paths:
+      callbacks: sdk/models/callbacks
+      errors: sdk/models/errors
+      operations: sdk/models/operations
+      shared: sdk/models/shared
+      webhooks: sdk/models/webhooks
+  maxMethodParams: 5
+  packageName: openapi
+  responseFormat: flat
+  enumFormat: enum
+  templateVersion: v2
+  apiPromiseHelpers: true
+  enableReactQuery: true
+  enableMCPServer: true
+  moduleFormat: commonjs
+  modelPropertyCasing: "camel"
+  preserveModelFieldNames: true
+  jsonpath: legacy
+  acceptHeaderEnum: true
+  laxMode: lax
+  forwardCompatibleUnionsByDefault: tagged-only
+  webhooks:
+    enabled: true
+  formStringArrayEncodeMode: encoded-string
+  flatAdditionalProperties: true
+  legacyFileNaming: true
+  eventStreamClassName: SseStream

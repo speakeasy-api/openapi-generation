@@ -1,0 +1,12 @@
+# Pet
+
+A pet in the baz namespace with completely different schema
+
+
+## Fields
+
+| Field                                                                                 | Type                                                                                  | Required                                                                              | Description                                                                           | Example                                                                               |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `PetId`                                                                               | *long*                                                                                | :heavy_check_mark:                                                                    | N/A                                                                                   | 789                                                                                   |
+| `PetName`                                                                             | *string*                                                                              | :heavy_check_mark:                                                                    | N/A                                                                                   | Rex                                                                                   |
+| `AdoptedAt`                                                                           | [DateTime](https://learn.microsoft.com/en-us/dotnet/api/system.datetime?view=net-5.0) | :heavy_minus_sign:                                                                    | N/A                                                                                   | 2024-01-15T10:30:00Z                                                                  |

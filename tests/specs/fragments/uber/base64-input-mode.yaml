@@ -1,0 +1,71 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/requestBodies/post/application/json/base64-input-mode:
+    post:
+      operationId: postBase64InputMode
+      tags:
+        - requestBodies
+      x-speakeasy-include: true
+      x-speakeasy-test: true
+      description: |-
+        Exercises x-speakeasy-base64-input-mode: file. Opted-in request fields accept
+        str / PathLike / binary IO and must be base64-encoded before JSON serialization.
+        Request and response use separate component schemas so the response-side parity
+        guarantee (fields remain plain str) can be verified.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/base64InputFileModeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    $ref: "components.yaml#/components/schemas/base64InputFileModeResponse"
+                required:
+                  - json
+  /anything/requestBodies/post/application/json/base64-input-mode#sharedComponent:
+    post:
+      operationId: postBase64InputModeShared
+      tags:
+        - requestBodies
+      x-speakeasy-include: true
+      x-speakeasy-test: true
+      description: |-
+        Same component is referenced from both request body and response.
+        Spec authors who care about strict response typing should split into separate
+        request/response schemas (see the non-shared variant above).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/components/schemas/base64InputFileModeShared"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  json:
+                    $ref: "components.yaml#/components/schemas/base64InputFileModeShared"
+                required:
+                  - json

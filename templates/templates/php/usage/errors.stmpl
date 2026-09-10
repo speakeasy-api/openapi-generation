@@ -1,0 +1,13 @@
+{{- range .Local.Operation.Response.Responses }}
+  {{- if .Error }}
+    {{- range .Content }}
+      {{- $errorType := sanitizeType .Content.Type false false "" "usage" }}
+} catch ({{$errorType}}Throwable $e) {
+    // handle $e->$container data
+    throw $e;
+    {{- end}}{{/* end range .Content */}}
+  {{- end}}
+{{- end}}
+} catch ({{templateDefaultError}} $e) {
+    // handle default exception
+    throw $e;

@@ -1,0 +1,82 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestResponseStreamWithTimeoutReadsAfterReturn(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(http.StatusOK)
+		w.(http.Flusher).Flush()
+		time.Sleep(200 * time.Millisecond)
+		_, _ = w.Write(bytes.Repeat([]byte("a"), 100))
+	}))
+	defer server.Close()
+
+	s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithTimeout(10*time.Second))
+
+	res, err := s.ResponseBodies.ResponseBodyBytesGet(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	defer res.Bytes.Close()
+
+	body, err := io.ReadAll(res.Bytes)
+	require.NoError(t, err)
+	assert.Len(t, body, 100)
+}
+
+func TestResponseStreamTimeoutStillBoundsStalledBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("first"))
+		w.(http.Flusher).Flush()
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	defer server.Close()
+
+	s := sdk.New(sdk.WithServerURL(server.URL))
+
+	res, err := s.ResponseBodies.ResponseBodyBytesGet(context.Background(), nil, operations.WithOperationTimeout(500*time.Millisecond))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	defer res.Bytes.Close()
+
+	start := time.Now()
+	_, err = io.ReadAll(res.Bytes)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 4*time.Second)
+}
+
+func TestResponseBodyNameOverride(t *testing.T) {
+	// We only need this on one language as this is a generator feature
+	// Important: `nameOverrideFeb2026: true` is set in 'primary' target.
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+	res, err := s.Generation.NameOverride(context.Background(), operations.EnumNameOverrideValue1, "test-query-param")
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	assert.NotNil(t, res.OverriddenResponse)
+	assert.Nil(t, res.OverriddenResponse.AsIs)
+	assert.Nil(t, res.OverriddenResponse.Inline)
+	assert.Nil(t, res.OverriddenResponse.Reference)
+	assert.Nil(t, res.OverriddenResponse.RenamedAllOf)
+	assert.Nil(t, res.OverriddenResponse.AllOf)
+	assert.Nil(t, res.OverriddenResponse.NestedAllOf)
+}

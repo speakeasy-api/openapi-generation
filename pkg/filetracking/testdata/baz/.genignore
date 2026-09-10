@@ -1,0 +1,3 @@
+corge
+*.txt
+!qux.txt

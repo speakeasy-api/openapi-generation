@@ -1,0 +1,28 @@
+{{- $utils := getScopeNamespace "utils" -}}
+
+#nullable enable
+namespace {{getScopeNamespace "hooks" true}}
+{
+    using System;
+    using Newtonsoft.Json;
+
+{{- $scopesMap := .Local }}
+{{- range $schemeKey, $config := $scopesMap }}
+  {{- if gt (len $config.AvailableScopes) 0}}
+    {{- $enumName := getOAuth2ScopeClassName $schemeKey}}
+    {{- $dedupNames := getDeduplicatedScopeEnumNames $config.AvailableScopes}}
+
+    {{- templateComments $config.Comments 1 "class"}}
+    public enum {{$enumName}}
+    {
+    {{- range $index, $scope := $config.AvailableScopes }}
+        {{- templateComments .Comments 2 "field" (ne $index 0)}}
+        [JsonProperty("{{$scope.Name}}")]
+        {{index $dedupNames $index}},
+    {{- end}}
+    }
+
+{{templateString "enum-extension.cs.stmpl" $enumName}}
+  {{- end}}
+{{- end}}
+}

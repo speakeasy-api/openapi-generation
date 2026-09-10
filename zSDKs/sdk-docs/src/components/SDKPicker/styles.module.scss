@@ -1,0 +1,170 @@
+@import '@/src/styles/utils/mixins';
+
+.sdkPicker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  @include generatePxToRem(column-gap, 16);
+  @include generatePxToRem(row-gap, 16);
+
+  @include tabletsMax1050 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @include desktopMin1400 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .item {
+    @include generatePxToRem(padding, 6 12);
+    border: 1px solid var(--hr-color);
+    border-radius: var(--base-border-radius);
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    @include generatePxToRem(font-size, 14);
+    font-weight: 600;
+    letter-spacing: 0.01rem;
+
+    .icon {
+      width: 48px;
+      height: 48px;
+      @include generatePxToRem(margin-right, 8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .goIcon svg {
+      width: 48px;
+      height: 48px;
+      margin-left: -6px;
+    }
+
+    .pythonIcon svg {
+      width: 34px;
+      height: 34px;
+    }
+
+    .csharpIcon svg {
+      width: 38px;
+      height: 38px;
+      margin-left: 2px;
+    }
+
+    .unityIcon svg {
+      width: 40px;
+      height: 40px;
+      margin-left: 4px;
+    }
+
+    .javaIcon svg {
+      width: 40px;
+      height: 40px;
+      margin-top: -4px;
+    }
+
+    .typescriptIcon svg {
+      width: 45px;
+      height: 45px;
+      margin-left: 0;
+    }
+
+    &:not(.active):hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    &.active {
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+  }
+}
+
+.sdkPicker {
+  .item {
+    &.active {
+      .label {
+        color: var(--primary-color);
+      }
+
+      .icon svg path {
+        fill: var(--primary-color);
+      }
+    }
+
+    &:not(.active) {
+      .label {
+        color: rgb(58, 57, 50);
+        opacity: 0.6;
+      }
+
+      .icon svg path {
+        fill: rgb(58, 57, 50);
+        opacity: 0.6;
+      }
+
+      &:hover {
+        .label {
+          color: var(--primary-color);
+          opacity: 0.7;
+        }
+
+        .icon svg path {
+          fill: var(--primary-color);
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+}
+
+:global(.dark) .sdkPicker {
+  .item {
+    &.active {
+      .label {
+        color: var(--primary-color);
+      }
+
+      .icon svg path {
+        fill: var(--primary-color);
+      }
+    }
+
+    &:not(.active) {
+      .label {
+        color: #fff;
+        opacity: 0.5;
+      }
+
+      .icon svg path {
+        fill: #fff;
+        opacity: 0.5;
+      }
+
+      &:hover {
+        .label {
+          color: var(--primary-color);
+          opacity: 1;
+        }
+
+        .icon svg path {
+          fill: var(--primary-color);
+          opacity: 1;
+        }
+      }
+    }
+
+    &:not(.active):hover {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    &.active {
+      background-color: rgba(0, 0, 0, 0.15);
+    }
+  }
+}

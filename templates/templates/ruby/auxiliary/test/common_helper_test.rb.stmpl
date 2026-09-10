@@ -1,0 +1,162 @@
+{{- if sdkHasTests .Global.AST -}}
+# frozen_string_literal: true
+
+require 'minitest'
+require 'minitest/reporters'
+
+Minitest.load_plugins
+Minitest::Reporters.use! [
+  Minitest::Reporters::DefaultReporter.new,
+  Minitest::Reporters::JUnitReporter.new('.speakeasy/reports', true, single_file: true)
+]
+
+Minitest.after_run do
+  src = '.speakeasy/reports/TEST-minitest.xml'
+  File.rename(src, '.speakeasy/reports/tests.xml') if File.exist?(src)
+end
+
+# Test service URLs - read from environment with defaults for local development
+HTTPBIN_PORT = ENV['HTTPBIN_PORT'] || '35123'
+API_TEST_SERVICE_PORT = ENV['API_TEST_SERVICE_PORT'] || '35456'
+HTTPBIN_URL = "http://localhost:#{HTTPBIN_PORT}".freeze
+API_TEST_SERVICE_URL = "http://localhost:#{API_TEST_SERVICE_PORT}".freeze
+
+module CommonHelpers
+  def self.httpbin_url
+    HTTPBIN_URL
+  end
+
+  def self.api_test_service_url
+    API_TEST_SERVICE_URL
+  end
+end
+
+def record_test(test_id)
+  File.open('test-ruby-record.txt', 'a') do |f|
+    f.write "#{test_id}\n"
+  end
+end
+
+def sort_query_parameters(url, json_params: [])
+  parts = url.split('?', 2)
+  return url if parts.length == 1
+
+  query = parts[1]
+  params = query.split('&')
+
+  unless json_params.empty?
+    params.each_with_index do |param, i|
+      key, value = param.split('=', 2)
+      next unless json_params.include?(key)
+
+      decoded = URI.decode_www_form_component(value)
+      sorted = JSON.parse(decoded).sort.to_h.to_json
+      params[i] = "#{key}=#{URI.encode_www_form_component(sorted)}"
+    end
+  end
+
+  params.sort_by! { |p| p.split('=', 2)[0] }
+  query = params.join('&')
+  "#{parts[0]}?#{query}"
+end
+
+def sort_serialized_maps(input, regex, delim)
+  sort_map_string = lambda do |str|
+    str.gsub(regex) do |entire_match|
+      match_data = Regexp.last_match
+      (1...match_data.length).each do |i|
+        group = match_data[i]
+        next if group.nil?
+
+        if group.include?('=')
+          pairs = group.split(delim)
+          pairs.sort_by! { |p| p.split('=', 2)[0] }
+        else
+          values = group.split(delim)
+          if values.length == 1
+            pairs = values
+          else
+            pairs = []
+            (0...values.length).step(2) do |j|
+              pairs << "#{values[j]}#{delim}#{values[j + 1]}"
+            end
+          end
+          pairs.sort_by! { |p| p.split(delim, 2)[0] }
+        end
+
+        entire_match = entire_match.sub(group, pairs.join(delim))
+      end
+      entire_match
+    end
+  end
+
+  case input
+  when String
+    sort_map_string.call(input)
+  when Array
+    input.map { |v| sort_serialized_maps(v, regex, delim) }
+  when Hash
+    input.transform_values { |v| sort_serialized_maps(v, regex, delim) }
+  else
+    raise "Unsupported type: #{input.class}"
+  end
+end
+
+def sort_json_object_keys(value, fields = [])
+  sort_keys = lambda do |obj|
+    as_string = obj.is_a?(String)
+    obj = JSON.parse(obj) if as_string
+
+    case obj
+    when Hash
+      sorted = obj.sort.to_h
+      sorted.each do |k, v|
+        sorted[k] = sort_keys.call(v) if v.is_a?(Hash)
+        if v.is_a?(Array)
+          sorted[k] = v.map { |item| item.is_a?(Hash) ? sort_keys.call(item) : item }
+        end
+      end
+      obj = sorted
+    when Array
+      obj = obj.map { |item| item.is_a?(Hash) ? sort_keys.call(item) : item }
+    else
+      return as_string ? obj.to_json : obj
+    end
+
+    as_string ? obj.to_json : obj
+  end
+
+  case value
+  when String
+    sort_keys.call(value)
+  when Hash
+    if fields.empty?
+      sort_keys.call(value)
+    else
+      value.each do |k, v|
+        value[k] = sort_keys.call(v) if fields.include?(k) && v.is_a?(String)
+      end
+      value
+    end
+  else
+    raise "Unsupported type: #{value.class}"
+  end
+end
+
+def sanitize_timestamp(value)
+  truncate = lambda do |ts|
+    ts.sub(/(\.\d*?)(0*)(Z)/) { "#{Regexp.last_match(1)}#{Regexp.last_match(3)}" }
+  end
+
+  case value
+  when String
+    value.gsub(/\d{4}-\d{2}-\d{2}T\d{2}.*?\d{2}.*?\d{2}\.*\d*Z*/) { |m| truncate.call(m) }
+  when Array
+    value.map { |v| sanitize_timestamp(v) }
+  when Hash
+    value.transform_values { |v| sanitize_timestamp(v) }
+  else
+    value
+  end
+end
+{{- end}}

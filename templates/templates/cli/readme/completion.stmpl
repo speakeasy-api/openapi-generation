@@ -1,0 +1,37 @@
+{{- $cliName := sanitizeCliName -}}
+Shell completions are available for Bash, Zsh, Fish, and PowerShell.
+
+### Bash
+
+```bash
+# Add to ~/.bashrc:
+source <({{$cliName}} completion bash)
+
+# Or install permanently:
+{{$cliName}} completion bash > /etc/bash_completion.d/{{$cliName}}
+```
+
+### Zsh
+
+```zsh
+# Add to ~/.zshrc:
+source <({{$cliName}} completion zsh)
+
+# Or install permanently:
+{{$cliName}} completion zsh > "${fpath[1]}/_{{$cliName}}"
+```
+
+### Fish
+
+```fish
+{{$cliName}} completion fish | source
+
+# Or install permanently:
+{{$cliName}} completion fish > ~/.config/fish/completions/{{$cliName}}.fish
+```
+
+### PowerShell
+
+```powershell
+{{$cliName}} completion powershell | Out-String | Invoke-Expression
+```

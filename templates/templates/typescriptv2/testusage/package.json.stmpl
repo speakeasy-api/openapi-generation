@@ -1,0 +1,25 @@
+{
+  "name": "testusage",
+  "type": "module",
+  "scripts": {
+    "prepare": "tsc --build",
+    "check:tsc": "tsc --noEmit --skipLibCheck",
+{{- if .Global.Config.UseOxlint }}
+    "check:lint": "oxlint --max-warnings=0 --deny-warnings --no-error-on-unmatched-pattern src",
+{{- else }}
+    "check:lint": "eslint --max-warnings=0 src",
+{{- end }}
+    "check": "npm run check:tsc && npm run check:lint"
+  },
+  "main": "index.js",
+  "peerDependencies": {
+    {{templatePeerDependencies | indent 4 | trim}}
+  },
+  "devDependencies": {
+    {{templateDevDependencies | indent 4 | trim}}
+  },
+  "dependencies": {
+    {{templateDependencies | indent 4 | trim}},
+    "openapi": "file:{{.Global.Config.Usage.SourceDir}}"
+  }
+}

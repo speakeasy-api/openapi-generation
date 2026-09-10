@@ -1,0 +1,129 @@
+{{- $op := .Local.operation }}
+{{- $args := $op.Arguments }}
+{{- $usageLocation := .Local.usageLocation -}}
+{{- $resultType := .Local.resultType }}
+{{- $returnType := printf "Paginator<%s>" $resultType }}
+{{- $paramFlattening := operationParametersFlattened $op -}}
+{{- $pagination := $op.Extensions.Pagination }}
+{{- $canSimplify := $pagination.Outputs.CanUseDotNotation }}
+{{- $inputVar := funcLocal "input" }}
+{{- if eq $args.Flattening "none" }}
+{{- $inputVar = "request" }}
+{{- end }}
+{{- $nextPageState := templateNextPageState $op }}
+{{- $defaults := getPaginationDefaults $op }}
+const nextFunc = (responseData: unknown): { next: {{$returnType}}, "~next"?: {{$nextPageState.staticType}} } => { 
+  {{- $limitInput := getPaginationInput $pagination "limit" }}
+  {{- $pageInput := getPaginationInput $pagination "page" }}
+  {{- $offsetInput := getPaginationInput $pagination "offset" }}
+  {{- $cursorInput := getPaginationInput $pagination "cursor" }}
+  {{- $hasPaginationURL := hasPaginationURL $op }}
+  {{- if (eq $pagination.Type "offsetLimit") }}
+  {{- if $pageInput }}
+  const page = {{templatePaginationInputAccessor $op $inputVar $pageInput}} ?? {{ $defaults.page }};
+  const nextPage = page + 1;
+
+  {{- if $pagination.Outputs.NumPages }}
+
+  {{- if and $canSimplify (not $pagination.Outputs.NumPagesDot) }}
+  const numPages = responseData;
+  {{- else if $pagination.Outputs.NumPagesDot }}
+  const numPages = {{ templateDotPathExpression "responseData" $pagination.Outputs.NumPagesDot $op }};
+  {{- else }}
+  const numPages = {{ templateJSONPathExpression "responseData" $pagination.Outputs.NumPages }};
+  {{- end }}
+  if(typeof numPages !== "number" || numPages <= page) {
+      return { next: () => null };
+  }
+  {{- end }}
+
+  {{- end }}
+  {{- if $offsetInput }}
+  const offset = {{templatePaginationInputAccessor $op $inputVar $offsetInput}} ?? {{ $defaults.offset }};
+  {{- end }}
+
+  if(!responseData) {
+      return { next: () => null };
+  }
+  {{- else if $hasPaginationURL }}
+    
+    {{- if and $canSimplify (not $pagination.Outputs.NextURLDot) }}
+    const nextURLValue = responseData;
+    {{- else if $pagination.Outputs.NextURLDot }}
+    const nextURLValue = {{ templateDotPathExpression "responseData" $pagination.Outputs.NextURLDot $op }};
+    {{- else }}
+    const nextURLValue = {{ templateJSONPathExpression "responseData" $pagination.Outputs.NextURL }};
+    {{- end }}
+    if(typeof nextURLValue !== "string") {
+        return { next: () => null };
+    }
+    let nextURL = nextURLValue;
+
+    try {
+        if (nextURL.startsWith("/")) {
+        {{- if $op.Servers }}
+            nextURL = new URL(nextURL, {{ funcLocal "baseURL" }}).href;
+        {{- else }}
+            nextURL = new URL(nextURL, {{ funcLocal "client" }}._baseURL ?? "").href;
+        {{- end }}
+        }
+        new URL(nextURL);
+    } catch (_error) {
+        return { next: () => null };
+    }
+  {{- else }}
+
+  {{- if and $canSimplify (not $pagination.Outputs.NextCursorDot) }}
+  const nextCursor = responseData;
+  {{- else if $pagination.Outputs.NextCursorDot }}
+  const nextCursor = {{ templateDotPathExpression "responseData" $pagination.Outputs.NextCursorDot $op }};
+  {{- else }}
+  const nextCursor = {{ templateJSONPathExpression "responseData" $pagination.Outputs.NextCursor }};
+  {{- end }}
+  if(typeof nextCursor !== "{{$nextPageState.bareType}}") {
+      return { next: () => null };
+  }
+  {{- if eq $nextPageState.bareType "string" }}
+  if(nextCursor.trim() === "") {
+      return { next: () => null };
+  }
+  {{- end }}
+  {{- end }}
+
+  {{- if $pagination.Outputs.Results }}
+
+  {{- if and $canSimplify (not $pagination.Outputs.ResultsDot) }}{{"\n"}}
+  const results = responseData;
+  {{ else if $pagination.Outputs.ResultsDot }}
+  const results = {{ templateDotPathExpression "responseData" $pagination.Outputs.ResultsDot $op }};
+  {{- else }}
+  const results = {{ templateJSONPathExpression "responseData" $pagination.Outputs.Results }};
+  {{- end }}
+  if(!Array.isArray(results) || !results.length) {
+      return { next: () => null };
+  }
+  {{- if $limitInput }}
+  const limit = {{templatePaginationInputAccessor $op $inputVar $limitInput}} ?? {{ $defaults.limit }};
+  if(results.length < limit) {
+      return { next: () => null };
+  }
+  {{- end }}
+  {{- if $offsetInput }}
+  const nextOffset = offset + results.length;
+  {{- end }}
+  {{- end }}
+
+  {{ $templateOptions:= dict
+    "operation" $op
+    "inputVar" $inputVar
+    "clientVar" (funcLocal "client")
+    "reqOptionsVar" "options"
+    "nextPageAccessor" "nextPage"
+    "nextOffsetAccessor" "nextOffset"
+    "nextCursorAccessor" "nextCursor"
+    "nextURLAccessor" "nextURL"
+  }}
+  const nextVal = () => {{ templateString "func-nextcall.ts.stmpl" $templateOptions | indent 2 | trim }};
+
+  return { next: nextVal, "~next": {{$nextPageState.value}} }
+}

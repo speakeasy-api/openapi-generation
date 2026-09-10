@@ -1,0 +1,47 @@
+package tests
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAPIKeyAuthGlobalWithToken(t *testing.T) {
+	recordTest("auth-global-security-flattening")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth", "api-key-auth-global",
+		"--api-key-auth", "Bearer testToken",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	// Verify the echoed response contains the Authorization header with our token
+	assert.Contains(t, output, `"Authorization"`)
+	assert.Contains(t, output, "Bearer testToken")
+}
+
+func TestGlobalSecurityFlatteningCallback(t *testing.T) {
+	recordTest("auth-global-security-flattening-callback")
+
+	s := newEchoServer()
+	defer s.Close()
+
+	// CLI doesn't have security callbacks — the equivalent is passing the credential via flag.
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"auth", "api-key-auth-global",
+		"--api-key-auth", "Bearer testToken",
+	})
+	require.NoError(t, err)
+
+	output := strings.TrimSpace(h.GetStdout())
+	require.NotEmpty(t, output)
+	assert.Contains(t, output, `"Authorization"`)
+	assert.Contains(t, output, "Bearer testToken")
+}

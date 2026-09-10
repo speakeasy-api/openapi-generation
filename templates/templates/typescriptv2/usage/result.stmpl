@@ -1,0 +1,11 @@
+{{- if .Local.Operation -}}
+{{- if isFirstContentTypeEventStream .Local.Operation }}
+{{ templateString "usage/eventstream.stmpl" .Local }}
+{{- else if .Local.Operation.Extensions.Pagination }}
+{{ templateString "usage/pagination.stmpl" .Local }}
+{{- else if isFirstContentTypeJsonLStream .Local.Operation }}
+{{ templateString "usage/jsonlstream.stmpl" .Local }}
+{{- else if .Local.Operation.Response.Type }}
+console.log({{getResponseVariableName .Local.StepID}});
+{{- end }}
+{{- end }}

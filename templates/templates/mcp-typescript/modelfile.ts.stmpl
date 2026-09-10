@@ -1,0 +1,53 @@
+{{- recurse 1 -}}
+{{- $dg := .Local.DocGroup -}}
+{{- $modelName := .Local.Name -}}
+
+{{- genImports -}}
+
+{{ "\n" }}
+{{- if .Local.Servers }}
+{{-   if .Local.Servers.ServerMap }}
+{{-     range .Local.Servers.Servers }}
+{{-       templateComments .Comments $dg $modelName 0}}
+export const {{ templateConstName .ID (print (sanitizeFieldName $modelName) "Server") }} = "{{ .ID }}";
+{{-     end}}
+
+export const {{ templateConstName $modelName ""}}ServerList = {
+  {{-   range .Local.Servers.Servers }}
+  [{{ templateConstName .ID (print (sanitizeFieldName $modelName) "Server") }}]: "{{ .URL }}",
+  {{-   end }}
+};
+{{-   else }}
+{{-     $constName := (print (templateConstName $modelName "") "ServerList") }}
+export const {{$constName}} = [
+  {{-   range .Local.Servers.Servers}}
+  {{-     templateComments .Comments $dg (print $constName "[" .URL "]") 1 }}
+  "{{ .URL }}",
+  {{-   end }}
+] as const;
+{{-   end }}
+{{- end }}
+
+{{- /* Enums are dependency-free leaves; emit them first so their zod consts
+       are declared before any same-file schema that references them,
+       regardless of type registration order. */ -}}
+{{- range .Local.Types }}
+{{-   $dgt := getDocGroupedType . $dg -}}
+{{-   if eq .Type "enum" }}
+{{ "\n" }}
+{{-     templateString "zod-enum.ts.stmpl" $dgt -}}
+{{-   end -}}
+{{- end -}}
+{{- range .Local.Types }}
+{{-   $dgt := getDocGroupedType . $dg -}}
+{{-   if eq .Type "union" }}
+{{ "\n" }}
+{{-     templateString "zod-union.ts.stmpl" $dgt -}}
+{{-   else if eq .Type "error" -}}
+{{ "\n" }}
+{{-     templateString "zod-error.ts.stmpl" $dgt -}}
+{{-   else if eq .Type "class" -}}
+{{ "\n" }}
+{{-     templateString "zod-model.ts.stmpl" $dgt -}}
+{{-   end -}}
+{{- end -}}

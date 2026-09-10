@@ -1,0 +1,7 @@
+The SDK can be installed using [RubyGems](https://rubygems.org/):
+
+```bash{{if .Global.Config.Published}}
+gem install {{.Global.Config.PackageName}}{{else}}
+gem install specific_install
+gem specific_install {{.Global.Config.InstallationURL}} {{end}}
+```

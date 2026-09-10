@@ -1,0 +1,115 @@
+name: Detect Affected Targets
+on:
+  workflow_call:
+    outputs:
+      run-cli:
+        description: "Whether to run CLI tests"
+        value: ${{ jobs.detect.outputs.run-cli }}
+      run-csharp:
+        description: "Whether to run C# tests"
+        value: ${{ jobs.detect.outputs.run-csharp }}
+      run-go:
+        description: "Whether to run Go tests"
+        value: ${{ jobs.detect.outputs.run-go }}
+      run-javav2:
+        description: "Whether to run Java tests"
+        value: ${{ jobs.detect.outputs.run-javav2 }}
+      run-mcp-typescript:
+        description: "Whether to run MCP TypeScript tests"
+        value: ${{ jobs.detect.outputs.run-mcp-typescript }}
+      run-php:
+        description: "Whether to run PHP tests"
+        value: ${{ jobs.detect.outputs.run-php }}
+      run-pythonv2:
+        description: "Whether to run Python tests"
+        value: ${{ jobs.detect.outputs.run-pythonv2 }}
+      run-ruby:
+        description: "Whether to run Ruby tests"
+        value: ${{ jobs.detect.outputs.run-ruby }}
+      run-terraform:
+        description: "Whether to run Terraform tests"
+        value: ${{ jobs.detect.outputs.run-terraform }}
+      run-typescriptv2:
+        description: "Whether to run TypeScript tests"
+        value: ${{ jobs.detect.outputs.run-typescriptv2 }}
+      run-postman:
+        description: "Whether to run Postman tests"
+        value: ${{ jobs.detect.outputs.run-postman }}
+      run-unity:
+        description: "Whether to run Unity tests"
+        value: ${{ jobs.detect.outputs.run-unity }}
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect Affected Targets
+    timeout-minutes: 5
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    outputs:
+      run-cli: ${{ steps.detect.outputs.run-cli }}
+      run-csharp: ${{ steps.detect.outputs.run-csharp }}
+      run-go: ${{ steps.detect.outputs.run-go }}
+      run-javav2: ${{ steps.detect.outputs.run-javav2 }}
+      run-mcp-typescript: ${{ steps.detect.outputs.run-mcp-typescript }}
+      run-php: ${{ steps.detect.outputs.run-php }}
+      run-pythonv2: ${{ steps.detect.outputs.run-pythonv2 }}
+      run-ruby: ${{ steps.detect.outputs.run-ruby }}
+      run-terraform: ${{ steps.detect.outputs.run-terraform }}
+      run-typescriptv2: ${{ steps.detect.outputs.run-typescriptv2 }}
+      run-postman: ${{ steps.detect.outputs.run-postman }}
+      run-unity: ${{ steps.detect.outputs.run-unity }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect affected targets
+        id: detect
+        run: |
+          # Run the detection script
+          AFFECTED_TARGETS=$(./scripts/detect-affected-targets.sh)
+
+          echo "Affected targets: $AFFECTED_TARGETS"
+
+          # If empty, skip all target tests (only CI/docs changes)
+          if [ -z "$AFFECTED_TARGETS" ]; then
+            echo "No targets affected - only CI/documentation changes detected"
+            echo "run-cli=false" >> $GITHUB_OUTPUT
+            echo "run-csharp=false" >> $GITHUB_OUTPUT
+            echo "run-go=false" >> $GITHUB_OUTPUT
+            echo "run-javav2=false" >> $GITHUB_OUTPUT
+            echo "run-mcp-typescript=false" >> $GITHUB_OUTPUT
+            echo "run-php=false" >> $GITHUB_OUTPUT
+            echo "run-pythonv2=false" >> $GITHUB_OUTPUT
+            echo "run-ruby=false" >> $GITHUB_OUTPUT
+            echo "run-terraform=false" >> $GITHUB_OUTPUT
+            echo "run-typescriptv2=false" >> $GITHUB_OUTPUT
+            echo "run-postman=false" >> $GITHUB_OUTPUT
+            echo "run-unity=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Convert comma-separated list to bash array
+          IFS=',' read -ra TARGETS <<< "$AFFECTED_TARGETS"
+
+          # Check each target and set output
+          for target in cli csharp go javav2 mcp-typescript php pythonv2 ruby terraform typescriptv2 postman unity; do
+            found=false
+            for affected in "${TARGETS[@]}"; do
+              if [ "$affected" = "$target" ]; then
+                found=true
+                break
+              fi
+            done
+
+            if [ "$found" = true ]; then
+              echo "✓ Will run tests for: $target"
+              echo "run-${target}=true" >> $GITHUB_OUTPUT
+            else
+              echo "✗ Skipping tests for: $target"
+              echo "run-${target}=false" >> $GITHUB_OUTPUT
+            fi
+          done
