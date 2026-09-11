@@ -304,19 +304,18 @@ class Utils
             }
 
             $path = [];
-            $prevPart = '';
             foreach ($pathParts as $part) {
                 if ($part == '..') {
                     // Cancel out the parent directory; a '..' above the root is dropped
                     array_pop($path);
-                } elseif ($prevPart != '' || ($part != '.' && $part != '')) {
-                    // Don't include empty or current-directory components
-                    if ($part == '.') {
-                        $part = '';
-                    }
+                } elseif ($part != '.') {
                     array_push($path, $part);
                 }
-                $prevPart = $part;
+            }
+            $lastPart = end($pathParts);
+            if ($lastPart == '.' || $lastPart == '..') {
+                // A path ending in '.' or '..' resolves to a directory, keeping its trailing slash
+                array_push($path, '');
             }
             $merged['path'] = '/'.implode('/', $path);
         }

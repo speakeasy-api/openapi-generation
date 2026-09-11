@@ -1,6 +1,6 @@
 id: 1789043812-597ec700
 features:
-    - core
+    - oauth2ClientCredentials
 targets:
     - php
 type: fix

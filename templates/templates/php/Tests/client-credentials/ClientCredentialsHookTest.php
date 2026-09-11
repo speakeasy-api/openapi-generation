@@ -36,6 +36,12 @@ final class ClientCredentialsHookTest extends TestCase
         // parent segments above the root are dropped
         $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api', '../auth/token'));
         $this->assertEquals('https://example.com/x', Utils::urljoin('https://example.com/', '../../x'));
+
+        // current-directory segments collapse; a trailing '.' or '..' keeps the trailing slash
+        $this->assertEquals('https://example.com/api/token', Utils::urljoin('https://example.com/api/', './token'));
+        $this->assertEquals('https://example.com/api/auth/token', Utils::urljoin('https://example.com/api/', 'auth/./token'));
+        $this->assertEquals('https://example.com/api/', Utils::urljoin('https://example.com/api/auth/token', '..'));
+        $this->assertEquals('https://example.com/api/', Utils::urljoin('https://example.com/api/token', '.'));
     }
 
     public function testClientCredentialsHookSuccessfullyAuthenticates(): void
