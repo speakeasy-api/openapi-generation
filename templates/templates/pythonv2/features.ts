@@ -9,7 +9,7 @@ const supportedFeatures = {
   globalServerURLs: "3.2.1",
   methodServerURLs: "3.1.2",
   globals: "3.0.0",
-  enums: "3.2.0",
+  enums: "3.2.1",
   serverIDs: "3.0.0",
   nameOverrides: "3.0.3",
   includes: "3.0.0",

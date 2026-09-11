@@ -8,7 +8,7 @@ const supportedFeatures = {
   globalServerURLs: "2.83.1",
   methodServerURLs: "2.82.2",
   globals: "2.82.4",
-  enums: "2.82.0",
+  enums: "2.82.1",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.5",
   includes: "2.81.1",

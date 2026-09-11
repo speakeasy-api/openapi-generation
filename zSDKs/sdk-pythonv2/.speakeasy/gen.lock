@@ -26,7 +26,7 @@ features:
     docs: 1.5.3
     downloadStreams: 1.0.1
     enumUnions: 0.1.1
-    enums: 3.2.0
+    enums: 3.2.1
     envVarSecurityUsage: 0.3.3
     errorUnions: 1.0.2
     errors: 3.4.5
