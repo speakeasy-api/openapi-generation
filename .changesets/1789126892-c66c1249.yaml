@@ -1,0 +1,10 @@
+id: 1789126892-c66c1249
+features:
+    - unions
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: restrict open discriminated union Unknown fallback to response deserialization
+author: AshGodfrey
+date: "2026-09-11"

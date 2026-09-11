@@ -553,6 +553,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-with-operation-timeout-streams-to-completion",
     "jsonl-stream-timeout-still-bounds-slow-stream",
     "jsonl-stream-with-timeout-streams-to-completion",
+    "open-union-strict-request-validation",
   ].includes(test);
 }
 

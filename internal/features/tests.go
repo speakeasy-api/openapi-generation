@@ -620,6 +620,7 @@ const (
 	TestOpenUnionMissingDiscriminator
 	TestOpenUnionInvalidPayload
 	TestOpenUnionKnownDiscInvalidSchema
+	TestOpenUnionStrictRequestValidation
 	TestOpenUnionEmbedded
 	TestOpenUnionSmartUnionInterop
 	TestTimeoutMsOverrideIsRespected

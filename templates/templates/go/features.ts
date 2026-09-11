@@ -424,6 +424,7 @@ function isTestSkipped(test: string): boolean {
     "security-ranking-operation-restriction",
     "security-ranking-pick-matrix",
     "security-ranking-source-rank",
+    "open-union-strict-request-validation",
   ].includes(test);
 }
 
