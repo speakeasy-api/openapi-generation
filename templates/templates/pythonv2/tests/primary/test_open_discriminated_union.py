@@ -20,14 +20,16 @@ schema is open):
   (lets pydantic try sibling union branches, e.g. None in Optional[Vehicle])
 """
 
+import httpx
 import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+from openapi import SDK
 from openapi.models.shared.vehicle import Vehicle, UnknownVehicle
 from openapi.models.shared.car import Car
 from openapi.models.shared.bike import Bike
 from openapi.utils import ALLOW_UNKNOWN_UNION_VARIANTS
-from .common_helpers import record_test
+from .common_helpers import record_test, HTTPBIN_URL
 
 RESPONSE_CONTEXT = {ALLOW_UNKNOWN_UNION_VARIANTS: True}
 
@@ -108,28 +110,38 @@ class TestOpenUnionStrictWithoutResponseContext:
     payloads raise locally instead of degrading to the Unknown fallback and
     being sent to the server."""
 
-    def test_unknown_discriminator_raises(self):
+    def test_strict_request_validation(self):
         record_test("open-union-strict-request-validation")
 
-        adapter = TypeAdapter(Vehicle)
+        # Vehicle is a shared component used as both the request body and the
+        # response schema of discriminatedOneMultipleMemberships. Any request
+        # reaching the transport fails the test: invalid payloads must raise
+        # before going on the wire.
+        def reject_transport(request):
+            raise AssertionError(
+                "invalid open-union request must not reach transport"
+            )
 
+        s = SDK(
+            server_url=HTTPBIN_URL,
+            client=httpx.Client(transport=httpx.MockTransport(reject_transport)),
+        )
+
+        # Unknown discriminator raises locally instead of degrading to Unknown
         with pytest.raises(ValidationError):
-            adapter.validate_python({"vehicleType": "spaceship", "thrust": 9000})
+            s.unions.discriminated_one_multiple_memberships(
+                request={"vehicleType": "spaceship", "thrust": 9000}
+            )
 
-    def test_known_disc_invalid_payload_raises(self):
-        record_test("open-union-strict-request-validation")
-
-        adapter = TypeAdapter(Vehicle)
-
-        # Known "bike" discriminator with a misspelled required field must
-        # surface the variant's error, not silently become Unknown
+        # Known "bike" discriminator with a missing required field surfaces
+        # the variant's error, not a silent Unknown fallback
         with pytest.raises(ValidationError) as exc_info:
-            adapter.validate_python({"vehicleType": "bike", "wheelsType": "two"})
+            s.unions.discriminated_one_multiple_memberships(
+                request={"vehicleType": "bike", "wheelsType": "two"}
+            )
         assert "colour" in str(exc_info.value)
 
-    def test_known_disc_invalid_embedded_in_parent_raises(self):
-        record_test("open-union-strict-request-validation")
-
+        # Invalid union nested inside a larger request model also raises
         class Garage(BaseModel):
             name: str
             vehicle: Vehicle
@@ -140,17 +152,19 @@ class TestOpenUnionStrictWithoutResponseContext:
                 "vehicle": {"vehicleType": "bike", "wheelsType": "two"},
             })
 
-    def test_received_unknown_instance_passes_through(self):
-        record_test("open-union-strict-request-validation")
-
-        adapter = TypeAdapter(Vehicle)
-
         # An Unknown instance received from a response can be echoed back
         # into a request without re-validation rejecting it
+        adapter = TypeAdapter(Vehicle)
         received = adapter.validate_python(
             {"vehicleType": "spaceship", "thrust": 9000}, context=RESPONSE_CONTEXT
         )
         assert adapter.validate_python(received) is received
+
+        # A non-mapping validation context stays strict instead of crashing
+        with pytest.raises(ValidationError):
+            adapter.validate_python(
+                {"vehicleType": "spaceship", "thrust": 9000}, context=object()
+            )
 
 
 class TestOpenUnionMissingDiscriminator:
