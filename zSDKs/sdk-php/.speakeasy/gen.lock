@@ -1005,7 +1005,7 @@ trackedFiles:
   src/Utils/UnionHandler.php:
     last_write_checksum: sha1:9e079c99d6d93ed33645806e8092ad0f4ab3d0d2
   src/Utils/Utils.php:
-    last_write_checksum: sha1:acc9a8ab9b503acf8de9852b1424445cd755b25f
+    last_write_checksum: sha1:ea4f1fa242882dc0d16d33194140c5b53b4b0bb3
   src/ValidateResponse.php:
     last_write_checksum: sha1:bce76154b02a0b719f0eb3bf4c64ceb09ed85545
   src/ValidateResponseBody.php:
