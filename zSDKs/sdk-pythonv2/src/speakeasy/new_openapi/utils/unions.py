@@ -2,12 +2,14 @@
 
 from typing import Any
 
-from pydantic import BaseModel, TypeAdapter, ValidationError
-from .serializers import construct_unvalidated
+from pydantic import BaseModel, TypeAdapter, ValidationError, ValidationInfo
+
+from .serializers import ALLOW_UNKNOWN_UNION_VARIANTS, construct_unvalidated
 
 
 def parse_open_union(
     v: Any,
+    info: ValidationInfo,
     *,
     disc_key: str,
     variants: dict[str, Any],
@@ -18,10 +20,15 @@ def parse_open_union(
     """Parse an open discriminated union value with forward-compatibility.
 
     Known discriminator values are dispatched to their variant types.
-    Unknown discriminator values — or known discriminator values whose
-    payload fails variant validation (e.g. a partial variant emitted by a
-    newer server) — produce an instance of the fallback class, preserving
-    the raw payload for inspection.
+
+    The Unknown fallback only applies when the validation context carries
+    ALLOW_UNKNOWN_UNION_VARIANTS, which the SDK sets when deserializing
+    server responses. There, unknown discriminator values — or known
+    discriminator values whose payload fails variant validation (e.g. a
+    partial variant emitted by a newer server) — produce an instance of the
+    fallback class, preserving the raw payload for inspection. Without the
+    flag (e.g. user-constructed request payloads), invalid values raise so
+    mistakes surface locally instead of being sent to the server.
 
     Non-dict values and dicts missing the discriminator deliberately raise
     instead of falling back, so pydantic can try sibling branches of an
@@ -31,15 +38,23 @@ def parse_open_union(
         return v
     if not isinstance(v, dict) or disc_key not in v:
         raise ValueError(f"{union_name}: expected object with '{disc_key}' field")
+    context = info.context
+    fallback_allowed = context is not None and bool(
+        context.get(ALLOW_UNKNOWN_UNION_VARIANTS)
+    )
     disc = v[disc_key]
     variant_cls = variants.get(disc)
-    if variant_cls is not None:
-        try:
-            if isinstance(variant_cls, type) and issubclass(variant_cls, BaseModel):
-                return variant_cls.model_validate(v)
-            return TypeAdapter(variant_cls).validate_python(v)
-        except ValidationError:
-            if lenient:
-                return construct_unvalidated(v, variant_cls)
+    if variant_cls is None:
+        if fallback_allowed:
             return unknown_cls(raw=v)
-    return unknown_cls(raw=v)
+        raise ValueError(f"{union_name}: unrecognized {disc_key} value {disc!r}")
+    try:
+        if isinstance(variant_cls, type) and issubclass(variant_cls, BaseModel):
+            return variant_cls.model_validate(v, context=context)
+        return TypeAdapter(variant_cls).validate_python(v, context=context)
+    except ValidationError:
+        if not fallback_allowed:
+            raise
+        if lenient:
+            return construct_unvalidated(v, variant_cls)
+        return unknown_cls(raw=v)
