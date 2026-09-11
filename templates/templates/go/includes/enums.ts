@@ -8,7 +8,7 @@ function templateEnums(typeDef: TypeDef): string {
 
   typeDef.Enum.Values.forEach((value, index) => {
     const description = descriptions[`${value}`];
-    if (description) {
+    if (typeof description === "string" && description) {
       enums.push(
         ...formatGoEnumDescriptionComments(enumNames[index], description),
       );

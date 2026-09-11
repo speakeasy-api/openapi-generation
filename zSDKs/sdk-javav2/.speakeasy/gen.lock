@@ -21,7 +21,7 @@ features:
     deprecations: 2.81.2
     docs: 0.4.3
     downloadStreams: 0.1.1
-    enums: 2.82.0
+    enums: 2.82.1
     errors: 1.0.3
     examples: 2.81.9
     flattening: 2.81.1

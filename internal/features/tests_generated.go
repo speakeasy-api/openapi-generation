@@ -568,6 +568,8 @@ func (t Test) String() string {
         return "open-union-missing-discriminator"
     case TestOpenUnionSmartUnionInterop:
         return "open-union-smart-union-interop"
+    case TestOpenUnionStrictRequestValidation:
+        return "open-union-strict-request-validation"
     case TestOpenUnionUnknownDiscriminator:
         return "open-union-unknown-discriminator"
     case TestOptionalNullableArrayParamsNullAndUnset:
@@ -2060,6 +2062,8 @@ func TestFromString(s string) Test {
         return TestOpenUnionMissingDiscriminator
     case "open-union-smart-union-interop":
         return TestOpenUnionSmartUnionInterop
+    case "open-union-strict-request-validation":
+        return TestOpenUnionStrictRequestValidation
     case "open-union-unknown-discriminator":
         return TestOpenUnionUnknownDiscriminator
     case "optional-nullable-array-params-null-and-unset":
@@ -3269,6 +3273,7 @@ var testList = []Test{
     TestOpenUnionKnownVariant,
     TestOpenUnionMissingDiscriminator,
     TestOpenUnionSmartUnionInterop,
+    TestOpenUnionStrictRequestValidation,
     TestOpenUnionUnknownDiscriminator,
     TestOptionalNullableArrayParamsNullAndUnset,
     TestOptionalNullableArrayParamsSet,

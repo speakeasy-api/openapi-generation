@@ -26,7 +26,7 @@ features:
     docs: 1.5.3
     downloadStreams: 1.0.1
     enumUnions: 0.1.1
-    enums: 3.2.0
+    enums: 3.2.1
     envVarSecurityUsage: 0.3.3
     errorUnions: 1.0.2
     errors: 3.4.5
@@ -59,7 +59,7 @@ features:
     serverIDs: 3.0.0
     stringNumberFormats: 1.0.0
     tests: 1.19.10
-    unions: 3.1.9
+    unions: 3.1.10
     uploadStreams: 1.0.3
     webhooks: 2.0.0
 trackedFiles:
@@ -746,7 +746,7 @@ trackedFiles:
   src/speakeasy/new_openapi/types_.py:
     last_write_checksum: sha1:05e36f6428f04b1ea7d2609aa55f3966868b58f0
   src/speakeasy/new_openapi/utils/__init__.py:
-    last_write_checksum: sha1:7bab4464f8e01656349d991d21d1e093b012b7bc
+    last_write_checksum: sha1:b9cb5851a618ff388d0c56127f6a7c595aa51978
   src/speakeasy/new_openapi/utils/annotations.py:
     last_write_checksum: sha1:a4824ad65f730303e4e1e3ec1febf87b4eb46dbc
   src/speakeasy/new_openapi/utils/datetimes.py:
@@ -774,9 +774,9 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/security.py:
     last_write_checksum: sha1:e553de0abe14cbfcc18c6d9a710bdf364d8dd40d
   src/speakeasy/new_openapi/utils/serializers.py:
-    last_write_checksum: sha1:a890170f69fb1975f9afdd7fa4938fa6089a5c23
+    last_write_checksum: sha1:24df2ceb4c7ac20b632c284c6cacf33384eda03f
   src/speakeasy/new_openapi/utils/unions.py:
-    last_write_checksum: sha1:c393e4ac3b1f2fde17fe9fdf46f6eb4c84548aa7
+    last_write_checksum: sha1:17ab6b95a0fe6402da6ee0f4b706ac1738031683
   src/speakeasy/new_openapi/utils/unmarshal_json_response.py:
     last_write_checksum: sha1:83cd95f038788d5273770fa4465edeac1202355a
   src/speakeasy/new_openapi/utils/url.py:

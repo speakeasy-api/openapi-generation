@@ -8,7 +8,7 @@ const supportedFeatures = {
   globalServerURLs: "2.83.1",
   methodServerURLs: "2.82.2",
   globals: "2.82.4",
-  enums: "2.82.0",
+  enums: "2.82.1",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.5",
   includes: "2.81.1",
@@ -463,6 +463,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-with-operation-timeout-streams-to-completion",
     "jsonl-stream-timeout-still-bounds-slow-stream",
     "jsonl-stream-with-timeout-streams-to-completion",
+    "open-union-strict-request-validation",
     "optional-nullable-object-property-params",
   ].includes(test);
 }

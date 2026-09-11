@@ -19,7 +19,7 @@ features:
     deprecations: 0.0.0
     docs: 0.3.0
     downloadStreams: 0.0.2
-    enums: 0.0.1
+    enums: 0.0.2
     errorUnions: 0.0.0
     errors: 0.2.0
     examples: 0.1.0

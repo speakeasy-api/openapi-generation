@@ -7,20 +7,31 @@ Tests use the generated Vehicle discriminated union which has:
 - UnknownVehicle: vehicle_type=Literal["UNKNOWN"], raw=Any, is_unknown=True, frozen=True
 Discriminator field: vehicleType (JSON alias) / vehicle_type (Python)
 
-Forward-compatibility contract (mirrors TypeScript discriminatedUnion):
-- Unknown discriminator value -> Unknown fallback with raw payload
-- Known discriminator whose payload fails variant validation -> Unknown fallback
-- Missing discriminator / non-dict payload -> ValidationError (lets pydantic
-  try sibling union branches, e.g. None in Optional[Vehicle])
+Forward-compatibility contract (mirrors TypeScript, where only the inbound
+schema is open):
+- The Unknown fallback applies only when validating with the
+  ALLOW_UNKNOWN_UNION_VARIANTS context flag, which the SDK sets on response
+  deserialization. There:
+  - Unknown discriminator value -> Unknown fallback with raw payload
+  - Known discriminator whose payload fails variant validation -> Unknown fallback
+- Without the flag (user-built request payloads), both cases raise
+  ValidationError so mistakes surface locally instead of going on the wire.
+- Missing discriminator / non-dict payload -> ValidationError in both modes
+  (lets pydantic try sibling union branches, e.g. None in Optional[Vehicle])
 """
 
+import httpx
 import pytest
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
+from openapi import SDK
 from openapi.models.shared.vehicle import Vehicle, UnknownVehicle
 from openapi.models.shared.car import Car
 from openapi.models.shared.bike import Bike
-from .common_helpers import record_test
+from openapi.utils import ALLOW_UNKNOWN_UNION_VARIANTS
+from .common_helpers import record_test, HTTPBIN_URL
+
+RESPONSE_CONTEXT = {ALLOW_UNKNOWN_UNION_VARIANTS: True}
 
 
 class TestOpenUnionKnownVariant:
@@ -59,7 +70,8 @@ class TestOpenUnionKnownVariant:
 
 
 class TestOpenUnionUnknownDiscriminator:
-    """Unknown discriminator values produce Unknown fallback with raw payload."""
+    """Unknown discriminator values produce Unknown fallback with raw payload
+    when validating with the response context."""
 
     def test_unknown_discriminator(self):
         record_test("open-union-unknown-discriminator")
@@ -68,7 +80,7 @@ class TestOpenUnionUnknownDiscriminator:
 
         # Unknown discriminator -> UnknownVehicle with raw payload
         payload = {"vehicleType": "spaceship", "thrust": 9000}
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownVehicle)
         assert result.vehicle_type == "UNKNOWN"
         assert result.raw == payload
@@ -77,7 +89,7 @@ class TestOpenUnionUnknownDiscriminator:
 
         # Preserves full payload including nested objects
         nested = {"vehicleType": "hovercraft", "specs": {"weight": 500}}
-        result2 = adapter.validate_python(nested)
+        result2 = adapter.validate_python(nested, context=RESPONSE_CONTEXT)
         assert isinstance(result2, UnknownVehicle)
         assert result2.vehicle_type == "UNKNOWN"
         assert result2.raw["specs"]["weight"] == 500
@@ -93,6 +105,68 @@ class TestOpenUnionUnknownDiscriminator:
             result.vehicle_type = "other"
 
 
+class TestOpenUnionStrictWithoutResponseContext:
+    """Without the response context flag — the request-building path — invalid
+    payloads raise locally instead of degrading to the Unknown fallback and
+    being sent to the server."""
+
+    def test_strict_request_validation(self):
+        record_test("open-union-strict-request-validation")
+
+        # Vehicle is a shared component used as both the request body and the
+        # response schema of discriminatedOneMultipleMemberships. Any request
+        # reaching the transport fails the test: invalid payloads must raise
+        # before going on the wire.
+        def reject_transport(request):
+            raise AssertionError(
+                "invalid open-union request must not reach transport"
+            )
+
+        s = SDK(
+            server_url=HTTPBIN_URL,
+            client=httpx.Client(transport=httpx.MockTransport(reject_transport)),
+        )
+
+        # Unknown discriminator raises locally instead of degrading to Unknown
+        with pytest.raises(ValidationError):
+            s.unions.discriminated_one_multiple_memberships(
+                request={"vehicleType": "spaceship", "thrust": 9000}
+            )
+
+        # Known "bike" discriminator with a missing required field surfaces
+        # the variant's error, not a silent Unknown fallback
+        with pytest.raises(ValidationError) as exc_info:
+            s.unions.discriminated_one_multiple_memberships(
+                request={"vehicleType": "bike", "wheelsType": "two"}
+            )
+        assert "colour" in str(exc_info.value)
+
+        # Invalid union nested inside a larger request model also raises
+        class Garage(BaseModel):
+            name: str
+            vehicle: Vehicle
+
+        with pytest.raises(ValidationError):
+            Garage.model_validate({
+                "name": "my garage",
+                "vehicle": {"vehicleType": "bike", "wheelsType": "two"},
+            })
+
+        # An Unknown instance received from a response can be echoed back
+        # into a request without re-validation rejecting it
+        adapter = TypeAdapter(Vehicle)
+        received = adapter.validate_python(
+            {"vehicleType": "spaceship", "thrust": 9000}, context=RESPONSE_CONTEXT
+        )
+        assert adapter.validate_python(received) is received
+
+        # A non-mapping validation context stays strict instead of crashing
+        with pytest.raises(ValidationError):
+            adapter.validate_python(
+                {"vehicleType": "spaceship", "thrust": 9000}, context=object()
+            )
+
+
 class TestOpenUnionMissingDiscriminator:
     """Missing discriminator field raises validation error."""
 
@@ -104,6 +178,9 @@ class TestOpenUnionMissingDiscriminator:
         with pytest.raises(ValidationError):
             adapter.validate_python({"wheelsType": "four"})
 
+        with pytest.raises(ValidationError):
+            adapter.validate_python({"wheelsType": "four"}, context=RESPONSE_CONTEXT)
+
 
 class TestOpenUnionInvalidPayload:
     """Non-object payloads (null, primitives) raise validation error."""
@@ -114,21 +191,22 @@ class TestOpenUnionInvalidPayload:
         adapter = TypeAdapter(Vehicle)
 
         with pytest.raises(ValidationError):
-            adapter.validate_python(None)
+            adapter.validate_python(None, context=RESPONSE_CONTEXT)
 
         with pytest.raises(ValidationError):
-            adapter.validate_python("not an object")
+            adapter.validate_python("not an object", context=RESPONSE_CONTEXT)
 
         with pytest.raises(ValidationError):
-            adapter.validate_python(42)
+            adapter.validate_python(42, context=RESPONSE_CONTEXT)
 
 
 class TestOpenUnionKnownDiscInvalidSchema:
     """Known discriminator whose payload fails variant validation falls back
-    to the Unknown variant, preserving the raw payload (matches TypeScript
-    discriminatedUnion behavior). Servers may stream partial variants (for
-    example a `step.start` event carrying a known step type without its
-    required fields yet); the SDK must degrade gracefully, not crash."""
+    to the Unknown variant when validating with the response context,
+    preserving the raw payload (matches TypeScript discriminatedUnion
+    behavior). Servers may stream partial variants (for example a
+    `step.start` event carrying a known step type without its required
+    fields yet); the SDK must degrade gracefully, not crash."""
 
     def test_known_disc_missing_required_field(self):
         record_test("open-union-known-disc-invalid-schema")
@@ -137,7 +215,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
 
         # "bike" is known but missing required "colour" field
         payload = {"vehicleType": "bike", "wheelsType": "two"}
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownVehicle)
         assert result.vehicle_type == "UNKNOWN"
         assert result.is_unknown is True
@@ -150,7 +228,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
 
         # "bike" is known but "colour" has the wrong type
         payload = {"vehicleType": "bike", "wheelsType": "two", "colour": 123}
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownVehicle)
         assert result.vehicle_type == "UNKNOWN"
         assert result.raw == payload
@@ -162,7 +240,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
 
         # "car" is known but "wheelsType" violates its const
         payload = {"vehicleType": "car", "wheelsType": "three"}
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownVehicle)
         assert result.vehicle_type == "UNKNOWN"
         assert result.raw == payload
@@ -178,7 +256,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
             "wheelsType": "two",
             "extras": {"nested": [1, 2, 3]},
         }
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownVehicle)
         assert result.raw == payload
         assert result.raw["extras"]["nested"] == [1, 2, 3]
@@ -201,7 +279,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
         garage = Garage.model_validate({
             "name": "my garage",
             "vehicle": {"vehicleType": "bike", "wheelsType": "two"},
-        })
+        }, context=RESPONSE_CONTEXT)
         assert isinstance(garage.vehicle, UnknownVehicle)
         assert garage.vehicle.raw == {"vehicleType": "bike", "wheelsType": "two"}
 
@@ -217,7 +295,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
                 {"vehicleType": "bike", "wheelsType": "two"},  # invalid known
                 {"vehicleType": "spaceship", "thrust": 9000},  # unknown disc
             ],
-        })
+        }, context=RESPONSE_CONTEXT)
         assert isinstance(fleet.vehicles[0], Car)
         assert isinstance(fleet.vehicles[1], UnknownVehicle)
         assert isinstance(fleet.vehicles[2], UnknownVehicle)
@@ -240,7 +318,7 @@ class TestOpenUnionKnownDiscInvalidSchema:
 
         # Known "a" discriminator but matches neither TypeA1 nor TypeA2
         payload = {"type": "a"}
-        result = adapter.validate_python(payload)
+        result = adapter.validate_python(payload, context=RESPONSE_CONTEXT)
         assert isinstance(result, UnknownNestedDiscUnion)
         assert result.type == "UNKNOWN"
         assert result.raw == payload
@@ -254,10 +332,10 @@ class TestOpenUnionKnownDiscInvalidSchema:
             vehicle: Optional[Vehicle] = None
 
         # None must stay None, not become an Unknown fallback
-        slot = Slot.model_validate({"vehicle": None})
+        slot = Slot.model_validate({"vehicle": None}, context=RESPONSE_CONTEXT)
         assert slot.vehicle is None
 
-        slot_default = Slot.model_validate({})
+        slot_default = Slot.model_validate({}, context=RESPONSE_CONTEXT)
         assert slot_default.vehicle is None
 
 
@@ -283,7 +361,7 @@ class TestOpenUnionEmbedded:
         garage_unknown = Garage.model_validate({
             "name": "my garage",
             "vehicle": {"vehicleType": "spaceship", "thrust": 9000},
-        })
+        }, context=RESPONSE_CONTEXT)
         assert isinstance(garage_unknown.vehicle, UnknownVehicle)
         assert garage_unknown.vehicle.vehicle_type == "UNKNOWN"
         assert garage_unknown.vehicle.raw == {"vehicleType": "spaceship", "thrust": 9000}
@@ -298,7 +376,7 @@ class TestOpenUnionEmbedded:
                 {"vehicleType": "spaceship", "thrust": 9000},
                 {"vehicleType": "bike", "wheelsType": "two", "colour": "green"},
             ],
-        })
+        }, context=RESPONSE_CONTEXT)
         assert len(fleet.vehicles) == 3
         assert isinstance(fleet.vehicles[0], Car)
         assert isinstance(fleet.vehicles[1], UnknownVehicle)

@@ -679,11 +679,14 @@ function collectCliCatalogs(): CliCatalog[] {
           const defaultValue =
             ext.default !== undefined ? `${ext.default}` : "";
           const values: CliCatalogValue[] = (t.Enum.Values || []).map(
-            (v: string) => ({
-              Value: v,
-              Description: t.Enum.Descriptions?.[v] || "",
-              IsDefault: defaultValue !== "" && v === defaultValue,
-            }),
+            (v: string) => {
+              const description = t.Enum.Descriptions?.[v];
+              return {
+                Value: v,
+                Description: typeof description === "string" ? description : "",
+                IsDefault: defaultValue !== "" && v === defaultValue,
+              };
+            },
           );
           if (values.length === 0) continue;
           catalogs.push({

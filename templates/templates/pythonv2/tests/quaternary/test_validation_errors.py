@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 import httpx
 import pytest
-from pydantic import BeforeValidator
+from pydantic import BeforeValidator, ValidationError
 from typing_extensions import Annotated
 
 from openapi.models import errors
@@ -15,7 +15,7 @@ from openapi.models.shared import (
     UnknownConstDiscriminatedOneOf,
 )
 from openapi.types import BaseModel
-from openapi.utils.serializers import construct_unvalidated
+from openapi.utils.serializers import ALLOW_UNKNOWN_UNION_VARIANTS, construct_unvalidated
 from openapi.utils.unions import parse_open_union
 from openapi.utils.unmarshal_json_response import unmarshal_json_response
 
@@ -176,9 +176,18 @@ class _UnknownStep(BaseModel):
 _VARIANTS = {"search": _SearchStep}
 
 
-def _dispatch(value, *, lenient):
+class _Info:
+    def __init__(self, context):
+        self.context = context
+
+
+_RESPONSE_INFO = _Info({ALLOW_UNKNOWN_UNION_VARIANTS: True})
+
+
+def _dispatch(value, *, lenient, info=_RESPONSE_INFO):
     return parse_open_union(
         value,
+        info,
         disc_key="type",
         variants=_VARIANTS,
         unknown_cls=_UnknownStep,
@@ -244,6 +253,20 @@ def test_open_union_already_constructed_model_passes_through():
 def test_open_union_missing_discriminator_raises():
     with pytest.raises(ValueError):
         _dispatch({"id": "c1"}, lenient=True)
+
+
+def test_open_union_without_response_context_unknown_disc_raises():
+    with pytest.raises(ValueError):
+        _dispatch({"type": "future-step", "id": "c1"}, lenient=True, info=_Info(None))
+
+
+def test_open_union_without_response_context_variant_error_propagates():
+    with pytest.raises(ValidationError):
+        _dispatch(
+            {"type": "search", "arguments": "not-an-object"},
+            lenient=True,
+            info=_Info(None),
+        )
 
 
 class _ConstEnvelope(BaseModel):
