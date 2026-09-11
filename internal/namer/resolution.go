@@ -107,7 +107,7 @@ func (r *Resolver) getOpenAPIBuckets(registeredTypes *sequencedmap.Map[string, *
 
 		// Rename the type with any frames that must be applied then create sub buckets based on the type name
 		if !resolveEnums {
-			renameWithMustFrames(t, r.subsystem.Config.Generation.Fixes)
+			renameWithMustFrames(t, r.subsystem.Config.Generation.GetNameResolution())
 		}
 
 		if resolveEnums && r.enumNamer != nil && t.Type == ast.DataTypeEnum {
@@ -139,7 +139,7 @@ func (r *Resolver) resolveBucket(ctx context.Context, bucket *sequencedmap.Map[s
 			continue
 		}
 
-		if r.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+		if r.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 			_ = r.RenameTypesWithDuplicateNames(ctx, types)
 			continue
 		}
@@ -526,7 +526,7 @@ func (r *Resolver) renameSharedModel(ctx context.Context, t *ast.TypeDef, other 
 		}
 	}
 
-	if r.subsystem.Config.Generation.Fixes.NameResolutionDec2023 {
+	if r.subsystem.Config.Generation.NameResolutionAtLeastOrdered() {
 		// Special case to rename a oneOf subtype with the oneOf name first
 		if t.ContextStack.HasFrameOfType(ast.ContextTypeOneOf) {
 			oneOfFrame := t.ContextStack.FindLastFrameOfType(ast.ContextTypeOneOf)
@@ -566,7 +566,7 @@ func (r *Resolver) renameOperationModel(ctx context.Context, t *ast.TypeDef, _ *
 		}
 	}
 
-	if r.subsystem.Config.Generation.Fixes.NameResolutionDec2023 {
+	if r.subsystem.Config.Generation.NameResolutionAtLeastOrdered() {
 		// Special case to rename a oneOf subtype with the oneOf name first
 		if t.ContextStack.HasFrameOfType(ast.ContextTypeOneOf) {
 			oneOfFrame := t.ContextStack.FindLastFrameOfType(ast.ContextTypeOneOf)
@@ -801,7 +801,7 @@ func (r *Resolver) renameWithContextStack(ctx context.Context, t *ast.TypeDef) {
 		frame := &t.ContextStack[i]
 
 		// We don't want to rename with the ref type or if the frame is already used
-		if frame.Used || (r.subsystem.Config.Generation.Fixes.NameResolutionDec2023 && frame.Type == ast.ContextTypeRefType) || frame.Type == ast.ContextTypeRegisterDuplicate {
+		if frame.Used || (r.subsystem.Config.Generation.NameResolutionAtLeastOrdered() && frame.Type == ast.ContextTypeRefType) || frame.Type == ast.ContextTypeRegisterDuplicate {
 			continue
 		}
 
@@ -839,8 +839,8 @@ func incrementName(ctx context.Context, t *ast.TypeDef) {
 	t.Name = utils.IncrementName(t.Name)
 }
 
-func renameWithMustFrames(t *ast.TypeDef, fixes *config.Fixes) {
-	if fixes.NameResolutionFeb2025 {
+func renameWithMustFrames(t *ast.TypeDef, mode config.NameResolutionMode) {
+	if mode.AtLeast(config.NameResolutionShortest) {
 		return
 	}
 	for i := len(t.ContextStack) - 1; i >= 0; i-- {
@@ -857,7 +857,7 @@ func renameWithMustFrames(t *ast.TypeDef, fixes *config.Fixes) {
 }
 
 func (r *Resolver) ensureNamingConventions(ctx context.Context, t *ast.TypeDef) {
-	if !r.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+	if !r.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 		return
 	}
 

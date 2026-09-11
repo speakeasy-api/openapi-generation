@@ -75,7 +75,7 @@ func (g *Generator) handleOperation(ctx context.Context, params handleOpParams) 
 		id := params.OpID
 		serializationMethodSuffix := ""
 		if len(reqs) > 1 && req != nil && req.RequestBody != nil && req.RequestBody.SerializationMethod != nil {
-			if !g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 || *req.RequestBody.SerializationMethod != ast.SerializationMethodJSON {
+			if !g.subsystem.Config.Generation.NameResolutionAtLeastShortest() || *req.RequestBody.SerializationMethod != ast.SerializationMethodJSON {
 				// Only add the serialization method suffix if it's not JSON
 				id = fmt.Sprintf("%s_%s", id, *req.RequestBody.SerializationMethod)
 				serializationMethodSuffix = fmt.Sprintf("_%s", *req.RequestBody.SerializationMethod)

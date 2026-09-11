@@ -163,6 +163,7 @@ generation:
     optionalPropertyRendering: withExample
     sdkInitStyle: constructor
   useClassNamesForArrayFields: true
+  nameResolution: shortest
   fixes:
     nameResolutionDec2023: true
     nameResolutionFeb2025: true
@@ -1190,6 +1191,7 @@ generation:
     optionalPropertyRendering: withExample
     sdkInitStyle: constructor
   useClassNamesForArrayFields: true
+  nameResolution: shortest
   fixes:
     nameResolutionDec2023: true
     nameResolutionFeb2025: true
@@ -2269,6 +2271,7 @@ generation:
     optionalPropertyRendering: withExample
     sdkInitStyle: constructor
   useClassNamesForArrayFields: true
+  nameResolution: shortest
   fixes:
     nameResolutionDec2023: true
     nameResolutionFeb2025: true

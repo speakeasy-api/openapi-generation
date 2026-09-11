@@ -11,6 +11,7 @@ type:
           identifier: OASOneOfRequest
         - type: component
           identifier: "true"
+          used: true
     type: class
     fields:
         - name: optional_discriminator_request_and_response
@@ -38,6 +39,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -78,6 +80,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -118,6 +121,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -165,6 +169,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -207,6 +212,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -249,6 +255,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -307,6 +314,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -347,6 +355,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -387,6 +396,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -434,6 +444,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -476,6 +487,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -518,6 +530,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -576,6 +589,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -616,6 +630,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -656,6 +671,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -703,6 +719,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -745,6 +762,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -787,6 +805,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1061,6 +1080,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -1090,6 +1110,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -1139,6 +1160,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -1168,6 +1190,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -1281,6 +1304,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1321,6 +1345,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1361,6 +1386,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1408,6 +1434,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1450,6 +1477,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1492,6 +1520,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1549,6 +1578,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1589,6 +1619,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1629,6 +1660,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1676,6 +1708,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1718,6 +1751,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1760,6 +1794,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1817,6 +1852,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1857,6 +1893,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1897,6 +1934,7 @@ type:
                       identifier: OASOneOfDiscriminatorObjectAllOf
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: discriminator
@@ -1944,6 +1982,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectAllOf
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -1986,6 +2025,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectNumber
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -2028,6 +2068,7 @@ type:
                               identifier: OASOneOfDiscriminatorObjectString
                             - type: component
                               identifier: "true"
+                              used: true
                         type: class
                         fields:
                             - name: discriminator
@@ -2297,6 +2338,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -2326,6 +2368,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number
@@ -2374,6 +2417,7 @@ type:
                       identifier: OASOneOfObjectString
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_string
@@ -2403,6 +2447,7 @@ type:
                       identifier: OASOneOfObjectNumber
                     - type: component
                       identifier: "true"
+                      used: true
                   type: class
                   fields:
                     - name: object_number

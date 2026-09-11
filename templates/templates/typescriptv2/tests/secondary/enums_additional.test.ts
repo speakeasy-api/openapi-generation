@@ -1,4 +1,8 @@
-import { Color, HeroWidth, Icon } from "../sdk/models/shared/theme.js";
+import {
+  ThemeColor,
+  ThemeHeroWidth,
+  ThemeIcon,
+} from "../sdk/models/shared/theme.js";
 import { expect, test } from "vitest";
 
 import { SDK } from "../index.js";
@@ -7,14 +11,14 @@ import { HTTPBIN_URL, recordTest } from "./common_helpers.js";
 test("Open Enums Round Trip", async () => {
   recordTest("open-enums-round-trip");
 
-  expect(Object.values(Icon)).toContain("tick");
-  expect(Object.values(Color)).not.toContain("purple");
-  expect(Object.values(HeroWidth)).not.toContain(2160);
+  expect(Object.values(ThemeIcon)).toContain("tick");
+  expect(Object.values(ThemeColor)).not.toContain("purple");
+  expect(Object.values(ThemeHeroWidth)).not.toContain(2160);
 
   const s = new SDK({ serverURL: HTTPBIN_URL });
   let result = await s.enums.enumsPostOpenEnumUnrecognized({
     color: "purple",
-    icon: Icon.Tick,
+    icon: ThemeIcon.Tick,
     heroWidth: 2160,
   });
 

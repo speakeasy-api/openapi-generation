@@ -920,6 +920,8 @@ func (g *Generator) saveConfig(ctx context.Context) (configChecksum string, errs
 		config.WithFileSystem(g),
 	}
 
+	g.subsystem.Config.Generation.SyncNameResolution()
+
 	if err := config.SaveConfig(g.outDir, &g.subsystem.Config.Configuration, configOpts...); err != nil {
 		return "", []error{err}
 	}

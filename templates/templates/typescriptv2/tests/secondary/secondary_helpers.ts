@@ -3,8 +3,8 @@ import { DeepObjectCamelCase } from "../sdk/models/shared/deepobjectcamelcase.js
 import { Enum } from "../sdk/models/shared/enum.js";
 import {
   SimpleObject,
-  Int32Enum,
-  IntEnum,
+  SimpleObjectInt32Enum,
+  SimpleObjectIntEnum,
 } from "../sdk/models/shared/simpleobject.js";
 import {
   SimpleObjectCamelCase,
@@ -23,8 +23,8 @@ export const createSimpleObject = (): SimpleObject => {
     bool: true,
     int: 1,
     int32: 1,
-    int32Enum: Int32Enum.FiftyFive,
-    intEnum: IntEnum.Second,
+    int32Enum: SimpleObjectInt32Enum.FiftyFive,
+    intEnum: SimpleObjectIntEnum.Second,
     num: 1.1,
     float32: 1.1,
     enum: Enum.One,

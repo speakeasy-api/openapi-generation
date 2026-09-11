@@ -403,7 +403,7 @@ TestSchema:
 					WithContextStack(ast.ContextStack{
 						{Type: "refType", Identifier: "Schemas", IdentifierForNaming: &[]string{""}[0]},
 						{Type: "refName", Identifier: "ObjectType"},
-						{Type: "component", Identifier: "true"},
+						{Type: "component", Identifier: "true", Used: true},
 					}).
 					WithFields(
 						testutils.NewFieldDef("name",

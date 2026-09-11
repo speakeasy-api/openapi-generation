@@ -695,7 +695,7 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 		return nil, err
 	}
 
-	if s.Config.Generation.Fixes.NameResolutionFeb2025 {
+	if s.Config.Generation.NameResolutionAtLeastShortest() {
 		// Certain properties can aid in name resolution, so we will add them to the context stack
 		identifiers := s.extractIdentifiersFromProperties(ctx, params.ParentOneOfSchema, params.Schema, params.DocInfo)
 		for _, v := range identifiers.All() {
@@ -717,6 +717,19 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 			Optional: nullable,
 			Nullable: nullable,
 		}, nil
+	}
+
+	// Under qualified name resolution, an inline object with an explicit name
+	// (title, anchor, or x-speakeasy-name-override) is the nearest enclosing
+	// named schema for its own unnamed children: push it as their naming root
+	// so they qualify from the explicit name rather than the component above it.
+	if s.Config.Generation.NameResolutionAtLeastQualified() &&
+		!params.Schema.IsReference() && refType == "" && typeName != "" &&
+		params.ContextStack.HasFrameOfType(ast.ContextTypeRefName) &&
+		s.hasExplicitSchemaName(schema) {
+		// ContextStack may have been appended above (shares params.ContextStack's backing array)
+		params.ContextStack = params.ContextStack.Clone()
+		params.ContextStack.Append(ast.ContextTypeRefName, typeName)
 	}
 
 	var additionalProperties *ast.FieldDef = nil
@@ -1137,11 +1150,11 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 			}
 
 			switch {
-			case f.Type.IsInput(s.Config.Generation.Fixes.NameResolutionDec2023):
+			case f.Type.IsInput(s.Config.Generation.NameResolutionAtLeastOrdered()):
 				inputModel = true
 				resolvedFullInput = resolvedFullInput && true
 				resolvedFullOutput = false
-			case f.Type.IsOutput(s.Config.Generation.Fixes.NameResolutionDec2023):
+			case f.Type.IsOutput(s.Config.Generation.NameResolutionAtLeastOrdered()):
 				outputModel = true
 				resolvedFullInput = false
 				resolvedFullOutput = resolvedFullOutput && true
@@ -1514,7 +1527,7 @@ func (s *Schemas) handleEnum(ctx context.Context, params Params, nullable bool) 
 		}
 	}
 
-	if len(enumValues) == 1 && !isOpen && s.Subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+	if len(enumValues) == 1 && !isOpen && s.Subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 		// The enum value, will be available for naming disambiguation if this is in a oneOf/anyOf
 		contextStack.AppendWithHumanized(ast.ContextTypeConstProperty, enumValues[0], strcase.ToGoPascal(enumValues[0]))
 	}
@@ -1961,7 +1974,7 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 
 		// If it was merged with the parent schema and changed then it is no longer the referenced type so we need to add the namespace
 		if !emptyBaseSchema && firstSchema.IsReference() && !resolvedSchema.GetSchema().IsEqual(merged) {
-			if s.Config.Generation.Fixes.NameResolutionDec2023 {
+			if s.Config.Generation.NameResolutionAtLeastOrdered() {
 				refName, _ := namer.GetRefName(firstSchema.GetRef())
 
 				params.ContextStack = append(childContextStack, ast.ContextFrame{
@@ -2260,7 +2273,7 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			var mergedSchema *oas3.JSONSchema[oas3.Referenceable]
 			if subSchema.schema.IsReference() {
 				if !emptyBaseSchema && !resolvedSubSchema.GetSchema().IsEqual(merged) {
-					if s.Config.Generation.Fixes.NameResolutionDec2023 {
+					if s.Config.Generation.NameResolutionAtLeastOrdered() {
 						refName, _ := namer.GetRefName(originalRef)
 
 						refParams.ContextStack = append(childContextStack, ast.ContextFrame{
@@ -2399,14 +2412,14 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 		associatedTypes = append(associatedTypes, typeMap.Type)
 
 		var input bool
-		if s.Config.Generation.Fixes.NameResolutionDec2023 {
+		if s.Config.Generation.NameResolutionAtLeastOrdered() {
 			input = typeMap.Type.IsInput(true)
 		} else {
 			input = typeMap.Type.Input
 		}
 
 		var output bool
-		if s.Config.Generation.Fixes.NameResolutionDec2023 {
+		if s.Config.Generation.NameResolutionAtLeastOrdered() {
 			output = typeMap.Type.IsOutput(true)
 		} else {
 			output = typeMap.Type.Output
@@ -2910,6 +2923,16 @@ func (s *Schemas) mergeAllOfSchemas(ctx context.Context, allOfSchema *oas3.Schem
 	return baseSchema, nil
 }
 
+// hasExplicitSchemaName reports whether the schema carries a name of its own:
+// a title, an anchor, or an x-speakeasy-name-override extension.
+func (s *Schemas) hasExplicitSchemaName(schema *oas3.Schema) bool {
+	if schema.GetTitle() != "" || schema.GetAnchor() != "" {
+		return true
+	}
+	nameOverride, err := s.Subsystem.Extensions.HandleClassNameExtension(schema.GetExtensions())
+	return err == nil && nameOverride != nil
+}
+
 func hoistChildExtensionPredicate(fixes *config.Fixes, exts *extensions.Extensions) func(string) bool {
 	if fixes == nil || !fixes.NameOverrideFeb2026 {
 		return func(string) bool { return true }
@@ -2962,7 +2985,7 @@ func (s *Schemas) handleReferencedType(ctx context.Context, params *Params, sche
 	params.ParentComponentDescription = ""
 
 	// It's okay to have an empty typeName, if we don't have a decent name - let the namer package work out the best name
-	if typeName == "" && !s.Config.Generation.Fixes.NameResolutionFeb2025 {
+	if typeName == "" && !s.Config.Generation.NameResolutionAtLeastShortest() {
 		panic("typeName should never be empty")
 	}
 
@@ -2978,7 +3001,7 @@ func (s *Schemas) handleReferencedType(ctx context.Context, params *Params, sche
 		contextStack = append(contextStack, ast.ContextFrame{
 			Type:       ast.ContextTypeComponent,
 			Identifier: "true",
-			Used:       s.Config.Generation.Fixes.NameResolutionDec2023,
+			Used:       s.Config.Generation.NameResolutionAtLeastOrdered(),
 		})
 
 		// Add model namespace to context stack for type differentiation

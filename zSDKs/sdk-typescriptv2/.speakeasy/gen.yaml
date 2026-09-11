@@ -5,6 +5,7 @@ generation:
   usageSnippets:
     optionalPropertyRendering: withExample
     sdkInitStyle: constructor
+  nameResolution: shortest
   fixes:
     nameResolutionDec2023: true
     nameResolutionFeb2025: true

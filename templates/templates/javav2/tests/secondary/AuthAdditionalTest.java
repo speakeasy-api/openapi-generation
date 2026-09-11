@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.openapis.secondary.openapi.models.components.AuthServiceRequestBody;
-import org.openapis.secondary.openapi.models.components.BasicAuth;
+import org.openapis.secondary.openapi.models.components.AuthServiceRequestBodyBasicAuth;
 import org.openapis.secondary.openapi.models.components.SchemeBasicAuth;
 import org.openapis.secondary.openapi.models.components.SchemeClientCredentials;
 import org.openapis.secondary.openapi.models.components.Security;
@@ -59,7 +59,7 @@ public class AuthAdditionalTest {
                                 .password("testPass").build())
                         .build())
                 .request(AuthServiceRequestBody.builder().basicAuth(
-                        BasicAuth.builder().username("testUser").password("testPass").build())
+                        AuthServiceRequestBodyBasicAuth.builder().username("testUser").password("testPass").build())
                         .build())
                 .call();
 

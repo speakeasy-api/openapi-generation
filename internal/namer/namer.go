@@ -2,11 +2,13 @@ package namer
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/ettle/strcase"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/ast"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/openapi"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/sanitization"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/features"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/subsystem"
@@ -94,8 +96,14 @@ func (n *Namer) GetTypeName(ctx context.Context, s *oas3.JSONSchema[oas3.Referen
 	if lastFrame != nil {
 		name := lastFrame.Identifier
 
-		if n.Subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+		if n.Subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 			name = lastFrame.DisplayName()
+		}
+
+		if s.GetRef() == "" && n.Subsystem.Config.Generation.NameResolutionAtLeastQualified() {
+			if qualifiedName, qualifiedStack, ok := qualifyInlineName(contextStack); ok {
+				return qualifiedName, "", qualifiedStack, nil
+			}
 		}
 
 		if name != "" {
@@ -105,6 +113,85 @@ func (n *Namer) GetTypeName(ctx context.Context, s *oas3.JSONSchema[oas3.Referen
 	}
 
 	return "", "", contextStack, nil
+}
+
+// qualifyInlineName implements the "qualified" name resolution mode: an
+// unnamed inline schema is named after its property path from the nearest
+// enclosing named schema so names stay stable when later spec additions
+// introduce conflicts.
+//
+// Returns false when:
+//   - the schema has no component ancestor (no refName frame)
+//   - any frame between the component and the property is not part of a plain
+//     property chain (operations, request/response bodies, oneOf positions, ...)
+//
+// A property chain that already carries the component prefix is qualified
+// without repeating it (Redundant.redundantStatus stays RedundantStatus,
+// Redundant.redundantSettings.inner -> RedundantSettingsInner).
+func qualifyInlineName(contextStack ast.ContextStack) (string, ast.ContextStack, bool) {
+	lastFrame := contextStack.LastFrame()
+	if lastFrame == nil || lastFrame.Type != ast.ContextTypeProperty {
+		return "", nil, false
+	}
+
+	refNameIdx := contextStack.FindLastFrameIndexOfType(ast.ContextTypeRefName)
+	if refNameIdx == -1 {
+		return "", nil, false
+	}
+
+	chain := []string{contextStack[refNameIdx].DisplayName()}
+	for i := refNameIdx + 1; i < len(contextStack); i++ {
+		switch contextStack[i].Type.QualificationClass() {
+		case ast.QualificationContributes:
+			chain = append(chain, contextStack[i].DisplayName())
+		case ast.QualificationStructural:
+			// Contributes nothing to the name but does not break the property chain.
+		default: // ast.QualificationBarrier
+			return "", nil, false
+		}
+	}
+
+	if slices.Contains(chain, "") {
+		return "", nil, false
+	}
+
+	chain, consumedRefName := stripRedundantParent(chain)
+
+	qualifiedStack := contextStack.Clone()
+	for i := refNameIdx; i < len(qualifiedStack)-1; i++ {
+		frame := &qualifiedStack[i]
+		switch {
+		case frame.Type == ast.ContextTypeRefName:
+			// Leave the refName frame available to the resolver when the redundant-prefix
+			// strip excluded it from the emitted name; otherwise a residual conflict cannot
+			// be resolved with the parent label and degrades to numeric increments.
+			if consumedRefName {
+				frame.MarkUsed()
+			}
+		case frame.Type.QualificationClass() == ast.QualificationContributes:
+			// Only name-contributing frames were folded into the emitted name, so
+			// only they are consumed; structural frames stay available.
+			frame.MarkUsed()
+		}
+	}
+	qualifiedStack.PopLastFrame()
+
+	return strings.Join(chain, "_"), qualifiedStack, true
+}
+
+// stripRedundantParent drops chain[0] when the first property segment already
+// leads with the parent as a whole-word prefix (Redundant.redundantStatus stays
+// RedundantStatus; Order.order.status keeps the qualifier -> OrderOrderStatus so
+// it never collides with Order.status). Only the first segment is compared: a
+// deeper leaf that happens to start with the parent must not fold away the whole
+// chain. Returns the chain to emit and whether the refName frame was consumed.
+func stripRedundantParent(chain []string) ([]string, bool) {
+	parent := strcase.ToSnake(sanitization.SanitizeName(chain[0]))
+	firstProp := strcase.ToSnake(sanitization.SanitizeName(chain[1]))
+	if parent != "" && strings.HasPrefix(firstProp, parent+"_") {
+		return chain[1:], false
+	}
+	return chain, true
 }
 
 func GetRefName(reference references.Reference) (string, string) {
