@@ -707,7 +707,7 @@ trackedFiles:
   internal/utils/headers.go:
     last_write_checksum: sha1:420459676470b03b793844a640afe6e81139367d
   internal/utils/json.go:
-    last_write_checksum: sha1:94b979afc3166ebd95e03ba8a8371b08090a1139
+    last_write_checksum: sha1:5f7cba52fb2417ce3afd5c855508173505698223
   internal/utils/pathparams.go:
     last_write_checksum: sha1:70803b845cf11142b020c8573c4bf67fd2c16325
   internal/utils/queryparams.go:
@@ -751,9 +751,9 @@ trackedFiles:
   operationwithleadingandtrailingunderscoresop.go:
     last_write_checksum: sha1:700ce7646614f1bb787d03c34e91f51465de60bb
   optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:d6aff1a420c31e025ea21d46cf056e305ae76fe8
+    last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:9b3752c65a93a51001e8e9275a6d1494c44103c8
+    last_write_checksum: sha1:bcbb60c6433b09b1017f8d822768d258c7adaafa
   options.go:
     last_write_checksum: sha1:c9a0462a1f852f76048b5c63d2f3020dfca317b4
   parenthesesinpathallowedop.go:

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"math/big"
 	"net/http"
 	"os"
 	"testing"
@@ -11,8 +13,10 @@ import (
 	sdk "{{getRootModulePath}}"
 	"{{getRootModulePath}}/pkg/models/operations"
 	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/types"
 	"{{getRootModulePath}}/pkg/utils"
 	"{{getRootModulePath}}/{{getNullableLocation}}"
+	"github.com/ericlagergren/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -115,6 +119,147 @@ func TestRequestBodyPostNullableRequiredProperty(t *testing.T) {
 			assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
 		})
 	}
+}
+
+// Serialize-level pin for the wire format of tag-driven encodings
+// (bigint:"string", decimal:"number") on OptionalNullable-wrapped fields.
+// A round-trip echo cannot catch these regressions because both legs share
+// the same defect, so the exact bytes are asserted here.
+func TestRequestBodyOptionalNullableWireFormats(t *testing.T) {
+	bigIntVal := types.MustNewBigIntFromString("9223372036854775808")
+	bigIntArr := []*big.Int{
+		types.MustNewBigIntFromString("1"),
+		types.MustNewBigIntFromString("18446744073709551616"),
+	}
+	decimalNum := types.MustNewDecimalFromString("1.5")
+	decimalStr := types.MustNewDecimalFromString("3.25")
+	decimalMap := map[string]*decimal.Big{"a": types.MustNewDecimalFromString("2.75")}
+	var nilBigInt *big.Int
+	var nilDecimal *decimal.Big
+
+	tests := []struct {
+		name     string
+		arg      shared.ObjectWithOptionalNullableFields
+		wantJson string
+	}{
+		{
+			name: "wrapped bigint and decimal formats follow their field tags",
+			arg: shared.ObjectWithOptionalNullableFields{
+				ReqStr:               "base",
+				OptNullBigInt:        optionalnullable.From(&bigIntVal),
+				OptNullBigIntStr:     optionalnullable.From(&bigIntVal),
+				OptNullBigIntStrArr:  optionalnullable.From(&bigIntArr),
+				OptNullDecimal:       optionalnullable.From(&decimalNum),
+				OptNullDecimalStr:    optionalnullable.From(&decimalStr),
+				OptNullDecimalStrMap: optionalnullable.From(&decimalMap),
+			},
+			wantJson: `{"optNullBigInt":9223372036854775808,` +
+				`"optNullBigIntStr":"9223372036854775808",` +
+				`"optNullBigIntStrArr":["1","18446744073709551616"],` +
+				`"optNullDecimal":1.5,` +
+				`"optNullDecimalStr":"3.25",` +
+				`"optNullDecimalStrMap":{"a":"2.75"},` +
+				`"reqStr":"base"}`,
+		},
+		{
+			name: "explicit null survives the tagged path",
+			arg: shared.ObjectWithOptionalNullableFields{
+				ReqStr:           "base",
+				OptNullBigIntStr: optionalnullable.From[*big.Int](nil),
+			},
+			wantJson: `{"optNullBigIntStr":null,"reqStr":"base"}`,
+		},
+		{
+			// A wrapper set to a nil inner pointer (From(&p) with p nil) must
+			// marshal as null like the bare nil pointer would, not panic in
+			// the tag-dispatch path.
+			name: "wrapped nil inner pointer marshals as null",
+			arg: shared.ObjectWithOptionalNullableFields{
+				ReqStr:            "base",
+				OptNullBigIntStr:  optionalnullable.From(&nilBigInt),
+				OptNullDecimalStr: optionalnullable.From(&nilDecimal),
+			},
+			wantJson: `{"optNullBigIntStr":null,"optNullDecimalStr":null,"reqStr":"base"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader, _, err := utils.SerializeRequestBody(context.Background(), tt.arg, false, false, "Request", "json", "")
+			require.NoError(t, err)
+			serializedBody := new(bytes.Buffer)
+			_, err = serializedBody.ReadFrom(reader)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantJson, serializedBody.String())
+		})
+	}
+}
+
+func TestRequestBodyOptionalNullableWireFormatsDeserialize(t *testing.T) {
+	in := `{"reqStr":"base",` +
+		`"optNullBigInt":9223372036854775808,` +
+		`"optNullBigIntStr":"9223372036854775808",` +
+		`"optNullBigIntStrArr":["1","18446744073709551616"],` +
+		`"optNullDecimal":1.5,` +
+		`"optNullDecimalStr":"3.25",` +
+		`"optNullDecimalStrMap":{"a":"2.75"},` +
+		`"optNullStr":null}`
+
+	var body shared.ObjectWithOptionalNullableFields
+	require.NoError(t, json.Unmarshal([]byte(in), &body))
+
+	bigIntStr, ok := body.OptNullBigIntStr.Get()
+	require.True(t, ok)
+	require.NotNil(t, bigIntStr)
+	assert.Equal(t, "9223372036854775808", (*bigIntStr).String())
+
+	bigIntNum, ok := body.OptNullBigInt.Get()
+	require.True(t, ok)
+	require.NotNil(t, bigIntNum)
+	assert.Equal(t, "9223372036854775808", (*bigIntNum).String())
+
+	bigIntArr, ok := body.OptNullBigIntStrArr.Get()
+	require.True(t, ok)
+	require.NotNil(t, bigIntArr)
+	require.Len(t, *bigIntArr, 2)
+	assert.Equal(t, "18446744073709551616", (*bigIntArr)[1].String())
+
+	decimalNum, ok := body.OptNullDecimal.Get()
+	require.True(t, ok)
+	require.NotNil(t, decimalNum)
+	assert.Equal(t, "1.5", (*decimalNum).String())
+
+	decimalStr, ok := body.OptNullDecimalStr.Get()
+	require.True(t, ok)
+	require.NotNil(t, decimalStr)
+	assert.Equal(t, "3.25", (*decimalStr).String())
+
+	decimalMap, ok := body.OptNullDecimalStrMap.Get()
+	require.True(t, ok)
+	require.NotNil(t, decimalMap)
+	assert.Equal(t, "2.75", (*decimalMap)["a"].String())
+
+	assert.True(t, body.OptNullStr.IsSet())
+	assert.True(t, body.OptNullStr.IsNull())
+	assert.False(t, body.OptNullInt.IsSet())
+}
+
+// Default values on OptionalNullable-wrapped fields must be rendered against
+// the inner value's type, so tag-driven wire formats apply to them too.
+func TestOptionalNullableDefaultFollowsWireFormatTags(t *testing.T) {
+	type body struct {
+		BigIntStr optionalnullable.OptionalNullable[*big.Int] `default:"123" bigint:"string" json:"bigIntStr"`
+	}
+
+	out, err := utils.MarshalJSON(body{}, "", true)
+	require.NoError(t, err)
+	assert.Equal(t, `{"bigIntStr":"123"}`, string(out))
+
+	var in body
+	require.NoError(t, utils.UnmarshalJSON([]byte(`{}`), &in, "", true, nil))
+	v, ok := in.BigIntStr.Get()
+	require.True(t, ok)
+	require.NotNil(t, v)
+	assert.Equal(t, "123", (*v).String())
 }
 
 func TestRequestBodyNoBodyNoContentType(t *testing.T) {

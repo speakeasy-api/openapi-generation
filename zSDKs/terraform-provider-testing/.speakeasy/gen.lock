@@ -2380,7 +2380,7 @@ trackedFiles:
   internal/sdk/internal/utils/jq.go:
     last_write_checksum: sha1:2e75ed7a7db1f91e97dac1ac4ca7801b2beb69b5
   internal/sdk/internal/utils/json.go:
-    last_write_checksum: sha1:ef0c30377177b833fd43628b39cba9d619ddee8b
+    last_write_checksum: sha1:8563d8abb453e12d7abf247b92335b37bcb7e3c3
   internal/sdk/internal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/internal/utils/oauth2_sessions.go:
@@ -3528,9 +3528,9 @@ trackedFiles:
   internal/sdk/models/shared/xwrappedattributewrappedrequest.go:
     last_write_checksum: sha1:d3e419592782995b3b1f9fe01b04fd1f457fd05b
   internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:d6aff1a420c31e025ea21d46cf056e305ae76fe8
+    last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:9b3752c65a93a51001e8e9275a6d1494c44103c8
+    last_write_checksum: sha1:bcbb60c6433b09b1017f8d822768d258c7adaafa
   internal/sdk/polling/config.go:
     last_write_checksum: sha1:03925c7547c53642f0a85808205d88775a328f4c
   internal/sdk/polling/errors.go:

@@ -1,0 +1,10 @@
+id: 1788530043-51100c5f
+features:
+    - nullables
+targets:
+    - go
+type: fix
+bump: patch
+description: apply bigint/decimal string and number field tag formats to OptionalNullable-wrapped JSON fields
+author: AshGodfrey
+date: "2026-09-04"

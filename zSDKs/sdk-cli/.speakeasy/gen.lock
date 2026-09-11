@@ -548,9 +548,9 @@ trackedFiles:
   internal/sdk/obsolete.go:
     last_write_checksum: sha1:738a1c2da700e4228766af10990dac3baf426d46
   internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:d6aff1a420c31e025ea21d46cf056e305ae76fe8
+    last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:9b3752c65a93a51001e8e9275a6d1494c44103c8
+    last_write_checksum: sha1:bcbb60c6433b09b1017f8d822768d258c7adaafa
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
@@ -574,7 +574,7 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/headers.go:
     last_write_checksum: sha1:8727cf90c693c8067f44efeedbfac47bb647a259
   internal/sdk/sdkinternal/utils/json.go:
-    last_write_checksum: sha1:4743775735bec35dc59c5b1170055fd214eeb104
+    last_write_checksum: sha1:0ea263e5b4017af097efb9b62c015a33104cc7a3
   internal/sdk/sdkinternal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:
