@@ -459,6 +459,11 @@ function isTestSkipped(test: string): boolean {
     "errors-response-body-validation-lenient-union-variant",
     "event-stream-malformed-frame-lenient",
     "event-stream-malformed-frame-strict",
+    "optional-nullable-array-params-null-and-unset",
+    "optional-nullable-array-params-set",
+    "optional-nullable-deep-object-param",
+    "optional-nullable-special-header-params",
+    "optional-nullable-urlencoded-body",
     "agent-mode-does-not-leak-between-invocations",
     "catalog-lists-values",
     "catalog-rejects-positional-argument",
@@ -576,6 +581,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-with-operation-timeout-streams-to-completion",
     "jsonl-stream-timeout-still-bounds-slow-stream",
     "jsonl-stream-with-timeout-streams-to-completion",
+    "optional-nullable-object-property-params",
   ].includes(test);
 }
 

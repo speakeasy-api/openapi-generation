@@ -1,0 +1,256 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/optionalNullableArrayParams:
+    get:
+      operationId: optionalNullableArrayParams
+      tags:
+        - parameters
+      description: >-
+        Tests that parameters which are both optional and nullable with a
+        composite schema type still follow the style and explode serialization
+        rules for their own type. Targets that represent optional-nullable
+        parameters with a dedicated wrapper type must unwrap the value and
+        serialize the array itself, rather than rendering the wrapper or the
+        array with a language-native string conversion.
+      parameters:
+        - name: nonExplodedArrayParam
+          in: query
+          explode: false
+          description: An optional-nullable array serialized as a single comma-delimited value.
+          schema:
+            type: [array, "null"]
+            items:
+              type: string
+        - name: explodedArrayParam
+          in: query
+          explode: true
+          description: An optional-nullable array serialized as one query pair per item.
+          schema:
+            type: [array, "null"]
+            items:
+              type: string
+        - name: array-header-param
+          in: header
+          description: An optional-nullable array serialized as a comma-delimited header value.
+          schema:
+            type: [array, "null"]
+            items:
+              type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                  headers:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - headers
+  /anything/optionalNullableDeepObjectParam:
+    get:
+      operationId: optionalNullableDeepObjectParam
+      tags:
+        - parameters
+      description: >-
+        Tests that a query parameter which is itself both optional and nullable
+        with an object schema and deepObject style serializes its properties as
+        deepObject key-value pairs. Targets that represent optional-nullable
+        parameters with a dedicated wrapper type must unwrap the parameter
+        before applying deepObject serialization, and omit it entirely when it
+        is unset or explicitly null.
+      parameters:
+        - name: filter
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: [object, "null"]
+            properties:
+              name:
+                type: string
+              count:
+                type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url
+  /anything/optionalNullableSpecialHeaders:
+    get:
+      operationId: optionalNullableSpecialHeaders
+      tags:
+        - parameters
+      description: >-
+        Tests that header parameters whose schemas map to dedicated date-time,
+        date, big-integer and decimal representations serialize as their
+        formatted single value rather than being treated as an empty compound
+        structure, both as plain required headers and wrapped in an
+        optional-nullable representation.
+      parameters:
+        - name: bare-date-time-header
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: bare-date-header
+          in: header
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: bare-bigint-header
+          in: header
+          required: true
+          schema:
+            type: integer
+            format: bigint
+        - name: bare-decimal-header
+          in: header
+          required: true
+          schema:
+            type: number
+            format: decimal
+        - name: wrapped-date-time-header
+          in: header
+          schema:
+            type: [string, "null"]
+            format: date-time
+        - name: wrapped-bigint-header
+          in: header
+          schema:
+            type: [integer, "null"]
+            format: bigint
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  headers:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - headers
+  /anything/optionalNullableUrlencodedBody:
+    post:
+      # The cli target cannot yet pass an optional-nullable top-level body
+      # through its generated command layer
+      x-speakeasy-exclude-test-sdk: [cli]
+      operationId: optionalNullableUrlencodedBody
+      tags:
+        - requestBodies
+      description: >-
+        Tests that a url-encoded request body which is both optional and
+        nullable with an object schema serializes its properties as form
+        fields. Targets that represent the optional-nullable body with a
+        dedicated wrapper type must unwrap the body before form encoding, and
+        send no fields when it is unset or explicitly null.
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: [object, "null"]
+              title: NullableFormBody
+              properties:
+                name:
+                  type: string
+                count:
+                  type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  form:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - form
+  /anything/optionalNullableObjectPropertyParams/{objectPathParam}:
+    get:
+      operationId: optionalNullableObjectPropertyParams
+      tags:
+        - parameters
+      description: >-
+        Tests that object-valued parameters whose properties are both optional
+        and nullable serialize each set property as its bare value across
+        form-style query, simple header and simple path serialization, and
+        omit properties that are unset or explicitly null. Targets that
+        represent optional-nullable properties with a dedicated wrapper type
+        must unwrap the property value rather than rendering the wrapper with
+        a language-native string conversion.
+      parameters:
+        - name: objectQueryParam
+          in: query
+          style: form
+          explode: false
+          schema:
+            $ref: "#/components/schemas/ObjectWithOptionalNullableProperty"
+        - name: object-header-param
+          in: header
+          schema:
+            $ref: "#/components/schemas/ObjectWithOptionalNullableProperty"
+        - name: objectPathParam
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectWithOptionalNullableProperty"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                  headers:
+                    type: object
+                    additionalProperties: true
+                required:
+                  - url
+                  - headers
+components:
+  schemas:
+    ObjectWithOptionalNullableProperty:
+      type: object
+      properties:
+        plain:
+          type: string
+        optNullProp:
+          type: [string, "null"]
+      required:
+        - plain

@@ -3,9 +3,17 @@ package tests
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
+	"time"
 
     sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/optionalnullable"
+	"{{getRootModulePath}}/pkg/types"
+
+	"github.com/ericlagergren/decimal"
 	"github.com/stretchr/testify/require"
 )
 
@@ -250,4 +258,206 @@ func TestOptionalFalseNullableFalse_MedicalRecordAbsent(t *testing.T) {
 	// MedicalRecord will be zero-valued since it's missing from response
 	medicalRecord := res.ObjectWithOptionalFalseNullableFalseField.GetMedicalRecord()
 	require.Nil(t, medicalRecord.GetDiagnosis())
+}
+
+func TestOptionalNullableArrayParams_Set(t *testing.T) {
+	recordTest("optional-nullable-array-params-set")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	nonExploded := []string{"x", "y"}
+	exploded := []string{"a", "b"}
+	header := []string{"h1", "h2"}
+
+	res, err := s.Parameters.OptionalNullableArrayParams(
+		context.Background(),
+		optionalnullable.From(&header),
+		optionalnullable.From(&exploded),
+		optionalnullable.From(&nonExploded),
+	)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.URL)
+
+	expectedURL := getHTTPBinURL() + "/anything/optionalNullableArrayParams?" +
+		"explodedArrayParam=a&explodedArrayParam=b&nonExplodedArrayParam=x%2Cy"
+	require.Equal(t, expectedURL, sortQueryParameters(*res.Res.URL))
+
+	require.Equal(t, "h1,h2", res.Res.Headers["Array-Header-Param"])
+}
+
+func TestOptionalNullableArrayParams_NullAndUnset(t *testing.T) {
+	recordTest("optional-nullable-array-params-null-and-unset")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Parameters.OptionalNullableArrayParams(
+		context.Background(),
+		nil,
+		optionalnullable.From[[]string](nil),
+		nil,
+	)
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotNil(t, res.Res.URL)
+
+	require.Equal(t, getHTTPBinURL()+"/anything/optionalNullableArrayParams", *res.Res.URL)
+
+	_, present := res.Res.Headers["Array-Header-Param"]
+	require.False(t, present, "unset header parameter should not be sent")
+}
+
+func TestOptionalNullableDeepObjectTypedNilPointerOmitted(t *testing.T) {
+	// A wrapper set to a typed-nil pointer (From(&nilPtr)) carries no value to
+	// serialize: the deepObject key must be omitted, exactly like a bare nil
+	// pointer field, rather than rendering a language-native nil marker.
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	var nilDecimal *decimal.Big
+	objParam := createSimpleObject()
+	objParam.DecimalNullableOpt = optionalnullable.From(&nilDecimal)
+
+	res, err := s.Parameters.DeepObjectQueryParamsObject(context.Background(), objParam, nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.NotContains(t, res.Res.URL, "decimalNullableOpt")
+
+	// A set pointer value serializes as the value itself.
+	setDecimal := types.MustNewDecimalFromString("2.5")
+	objParam.DecimalNullableOpt = optionalnullable.From(&setDecimal)
+
+	res, err = s.Parameters.DeepObjectQueryParamsObject(context.Background(), objParam, nil)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.NotNil(t, res.Res)
+	require.True(t,
+		strings.Contains(res.Res.URL, "objParam%5BdecimalNullableOpt%5D=2.5") ||
+			strings.Contains(res.Res.URL, "objParam[decimalNullableOpt]=2.5"),
+		"expected set decimal in URL, got %s", res.Res.URL)
+}
+
+func TestOptionalNullableDeepObjectParam(t *testing.T) {
+	recordTest("optional-nullable-deep-object-param")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	name := "widget"
+	count := int64(2)
+	res, err := s.Parameters.OptionalNullableDeepObjectParam(context.Background(),
+		optionalnullable.From(&operations.Filter{Name: &name, Count: &count}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.True(t,
+		strings.Contains(res.Res.URL, "filter[name]=widget") ||
+			strings.Contains(res.Res.URL, "filter%5Bname%5D=widget"),
+		"expected deepObject name pair in URL, got %s", res.Res.URL)
+	require.True(t,
+		strings.Contains(res.Res.URL, "filter[count]=2") ||
+			strings.Contains(res.Res.URL, "filter%5Bcount%5D=2"),
+		"expected deepObject count pair in URL, got %s", res.Res.URL)
+
+	nullRes, err := s.Parameters.OptionalNullableDeepObjectParam(context.Background(),
+		optionalnullable.From[operations.Filter](nil))
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	require.NotContains(t, nullRes.Res.URL, "filter", "explicitly null parameter should be omitted")
+
+	unsetRes, err := s.Parameters.OptionalNullableDeepObjectParam(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, unsetRes.Res)
+	require.NotContains(t, unsetRes.Res.URL, "filter", "unset parameter should be omitted")
+}
+
+func TestOptionalNullableObjectPropertyParams(t *testing.T) {
+	recordTest("optional-nullable-object-property-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	propVal := "hello"
+	setObj := shared.ObjectWithOptionalNullableProperty{
+		Plain:       "base",
+		OptNullProp: optionalnullable.From(&propVal),
+	}
+
+	res, err := s.Parameters.OptionalNullableObjectPropertyParams(context.Background(), setObj, &setObj, &setObj)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.Equal(t, "optNullProp,hello,plain,base", res.Res.Headers["Object-Header-Param"])
+	require.Contains(t, res.Res.URL, "/anything/optionalNullableObjectPropertyParams/optNullProp,hello,plain,base")
+	require.Contains(t, res.Res.URL, "objectQueryParam=optNullProp%2Chello%2Cplain%2Cbase")
+
+	nullObj := shared.ObjectWithOptionalNullableProperty{
+		Plain:       "base",
+		OptNullProp: optionalnullable.From[string](nil),
+	}
+
+	nullRes, err := s.Parameters.OptionalNullableObjectPropertyParams(context.Background(), nullObj, &nullObj, &nullObj)
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	require.Equal(t, "plain,base", nullRes.Res.Headers["Object-Header-Param"])
+	require.Contains(t, nullRes.Res.URL, "/anything/optionalNullableObjectPropertyParams/plain,base")
+	require.Contains(t, nullRes.Res.URL, "objectQueryParam=plain%2Cbase")
+	require.NotContains(t, nullRes.Res.URL, "optNullProp", "explicitly null property must be omitted")
+
+	unsetRes, err := s.Parameters.OptionalNullableObjectPropertyParams(context.Background(),
+		shared.ObjectWithOptionalNullableProperty{Plain: "base"}, nil, nil)
+	require.NoError(t, err)
+	require.NotNil(t, unsetRes.Res)
+	_, headerPresent := unsetRes.Res.Headers["Object-Header-Param"]
+	require.False(t, headerPresent, "unset header parameter should not be sent")
+	require.Contains(t, unsetRes.Res.URL, "/anything/optionalNullableObjectPropertyParams/plain,base")
+	require.NotContains(t, unsetRes.Res.URL, "objectQueryParam")
+}
+
+func TestOptionalNullableSpecialHeaders(t *testing.T) {
+	recordTest("optional-nullable-special-header-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	wrappedDateTime := types.MustTimeFromString("2024-02-03T04:05:06Z")
+	wrappedBigInt := types.MustNewBigIntFromString("9223372036854775808")
+	res, err := s.Parameters.OptionalNullableSpecialHeaders(context.Background(), operations.OptionalNullableSpecialHeadersRequest{
+		BareDateTimeHeader:    types.MustTimeFromString("2024-01-02T03:04:05Z"),
+		BareDateHeader:        types.MustDateFromString("2024-01-02"),
+		BareBigintHeader:      types.MustNewBigIntFromString("8821239038968084"),
+		BareDecimalHeader:     types.MustNewDecimalFromString("3.141592653589793"),
+		WrappedDateTimeHeader: optionalnullable.From(&wrappedDateTime),
+		WrappedBigintHeader:   optionalnullable.From(&wrappedBigInt),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.Equal(t, "2024-01-02T03:04:05Z", res.Res.Headers["Bare-Date-Time-Header"])
+	require.Equal(t, "2024-01-02", res.Res.Headers["Bare-Date-Header"])
+	require.Equal(t, "8821239038968084", res.Res.Headers["Bare-Bigint-Header"])
+	require.Equal(t, "3.141592653589793", res.Res.Headers["Bare-Decimal-Header"])
+	require.Equal(t, "2024-02-03T04:05:06Z", res.Res.Headers["Wrapped-Date-Time-Header"])
+	require.Equal(t, "9223372036854775808", res.Res.Headers["Wrapped-Bigint-Header"])
+
+	nullRes, err := s.Parameters.OptionalNullableSpecialHeaders(context.Background(), operations.OptionalNullableSpecialHeadersRequest{
+		BareDateTimeHeader:    types.MustTimeFromString("2024-01-02T03:04:05Z"),
+		BareDateHeader:        types.MustDateFromString("2024-01-02"),
+		BareBigintHeader:      types.MustNewBigIntFromString("8821239038968084"),
+		BareDecimalHeader:     types.MustNewDecimalFromString("3.141592653589793"),
+		WrappedDateTimeHeader: optionalnullable.From[time.Time](nil),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	_, dateTimePresent := nullRes.Res.Headers["Wrapped-Date-Time-Header"]
+	require.False(t, dateTimePresent, "explicitly null header should not be sent")
+	_, bigIntPresent := nullRes.Res.Headers["Wrapped-Bigint-Header"]
+	require.False(t, bigIntPresent, "unset header should not be sent")
 }

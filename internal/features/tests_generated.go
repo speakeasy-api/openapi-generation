@@ -570,6 +570,18 @@ func (t Test) String() string {
         return "open-union-smart-union-interop"
     case TestOpenUnionUnknownDiscriminator:
         return "open-union-unknown-discriminator"
+    case TestOptionalNullableArrayParamsNullAndUnset:
+        return "optional-nullable-array-params-null-and-unset"
+    case TestOptionalNullableArrayParamsSet:
+        return "optional-nullable-array-params-set"
+    case TestOptionalNullableDeepObjectParam:
+        return "optional-nullable-deep-object-param"
+    case TestOptionalNullableObjectPropertyParams:
+        return "optional-nullable-object-property-params"
+    case TestOptionalNullableSpecialHeaderParams:
+        return "optional-nullable-special-header-params"
+    case TestOptionalNullableUrlencodedBody:
+        return "optional-nullable-urlencoded-body"
     case TestPaginationAmbiguousInput:
         return "pagination-ambiguous-input"
     case TestPaginationBodyFlattenedOptionalSecurity:
@@ -2050,6 +2062,18 @@ func TestFromString(s string) Test {
         return TestOpenUnionSmartUnionInterop
     case "open-union-unknown-discriminator":
         return TestOpenUnionUnknownDiscriminator
+    case "optional-nullable-array-params-null-and-unset":
+        return TestOptionalNullableArrayParamsNullAndUnset
+    case "optional-nullable-array-params-set":
+        return TestOptionalNullableArrayParamsSet
+    case "optional-nullable-deep-object-param":
+        return TestOptionalNullableDeepObjectParam
+    case "optional-nullable-object-property-params":
+        return TestOptionalNullableObjectPropertyParams
+    case "optional-nullable-special-header-params":
+        return TestOptionalNullableSpecialHeaderParams
+    case "optional-nullable-urlencoded-body":
+        return TestOptionalNullableUrlencodedBody
     case "pagination-ambiguous-input":
         return TestPaginationAmbiguousInput
     case "pagination-body-flattened-optional-security":
@@ -3246,6 +3270,12 @@ var testList = []Test{
     TestOpenUnionMissingDiscriminator,
     TestOpenUnionSmartUnionInterop,
     TestOpenUnionUnknownDiscriminator,
+    TestOptionalNullableArrayParamsNullAndUnset,
+    TestOptionalNullableArrayParamsSet,
+    TestOptionalNullableDeepObjectParam,
+    TestOptionalNullableObjectPropertyParams,
+    TestOptionalNullableSpecialHeaderParams,
+    TestOptionalNullableUrlencodedBody,
     TestPaginationAmbiguousInput,
     TestPaginationBodyFlattenedOptionalSecurity,
     TestPaginationBodyFlattenedWithSecurity,

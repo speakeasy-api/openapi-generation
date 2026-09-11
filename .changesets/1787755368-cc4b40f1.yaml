@@ -1,0 +1,10 @@
+id: 1787755368-cc4b40f1
+features:
+    - core
+targets:
+    - go
+type: fix
+bump: patch
+description: serialize optional-nullable composite parameters using their own style and explode rules
+author: AshGodfrey
+date: "2026-08-26"

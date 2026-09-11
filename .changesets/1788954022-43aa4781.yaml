@@ -1,0 +1,10 @@
+id: 1788954022-43aa4781
+features:
+    - core
+targets:
+    - go
+type: fix
+bump: patch
+description: serialize optional-nullable properties of object-valued form, header and path parameters as their bare value, omitting unset and null properties
+author: AshGodfrey
+date: "2026-09-09"

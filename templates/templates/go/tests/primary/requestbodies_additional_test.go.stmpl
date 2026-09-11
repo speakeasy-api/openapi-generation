@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"math/big"
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	sdk "{{getRootModulePath}}"
 	"{{getRootModulePath}}/pkg/models/operations"
 	"{{getRootModulePath}}/pkg/models/shared"
+	"{{getRootModulePath}}/pkg/types"
 	"{{getRootModulePath}}/pkg/utils"
 	"{{getRootModulePath}}/{{getNullableLocation}}"
+	"github.com/ericlagergren/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -179,4 +183,486 @@ func TestRequestBodiesWildcardNoContentType(t *testing.T) {
 	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
 	
 	require.Len(t, res.HTTPMeta.Request.Header.Values("Content-Type"), 0)
+}
+
+// ── Optional-nullable request bodies ─────────────────────────────────────────
+//
+// ObjectWithOptionalNullableFields is shared across form, multipart and JSON
+// request bodies. JSON must preserve the absent / explicit-null / set
+// tri-state. Ordinary form and multipart fields have no null encoding, so
+// absent and explicit-null fields are omitted there; JSON-tagged fields carry
+// a JSON document, so explicit null is transmitted as the literal null. Set
+// fields must serialize as their bare value, never as a language-native
+// rendering of the wrapper.
+
+func requireOptionalNullableSet[T any](t *testing.T, n optionalnullable.OptionalNullable[T]) T {
+	t.Helper()
+	v, ok := n.Get()
+	require.True(t, ok)
+	require.NotNil(t, v)
+	return *v
+}
+
+func requireOptionalNullableNull[T any](t *testing.T, n optionalnullable.OptionalNullable[T]) {
+	t.Helper()
+	require.True(t, n.IsSet())
+	require.True(t, n.IsNull())
+}
+
+// Arrays are single-element: the echoed form model types every field as a
+// string, and repeated form keys echo back as a JSON array instead.
+func optionalNullableFieldsSet() shared.ObjectWithOptionalNullableFields {
+	str := "hello"
+	intVal := int64(7)
+	num := 1.5
+	boolVal := true
+	bigInt := types.MustNewBigIntFromString("8821239038968084")
+	bigIntStr := types.MustNewBigIntFromString("9223372036854775808")
+	dec := types.MustNewDecimalFromString("3.141592653589793")
+	decStr := types.MustNewDecimalFromString("3.14159265358979344719667586")
+	dateTime := types.MustTimeFromString("2024-01-02T03:04:05Z")
+	date := types.MustDateFromString("2024-01-02")
+	enum := shared.OptNullEnumFirst
+	arr := []string{"a"}
+	bigIntStrArr := []*big.Int{types.MustNewBigIntFromString("9223372036854775808")}
+	m := map[string]string{"k": "v"}
+	decStrMap := map[string]*decimal.Big{"pi": decStr}
+	obj := shared.OptNullObj{InnerReqStr: "inner"}
+
+	return shared.ObjectWithOptionalNullableFields{
+		ReqStr:              "base",
+		OptStr:              sdk.String("opt"),
+		OptNullStr:          optionalnullable.From(&str),
+		OptNullInt:          optionalnullable.From(&intVal),
+		OptNullNum:          optionalnullable.From(&num),
+		OptNullBool:         optionalnullable.From(&boolVal),
+		OptNullBigInt:       optionalnullable.From(&bigInt),
+		OptNullBigIntStr:    optionalnullable.From(&bigIntStr),
+		OptNullDecimal:      optionalnullable.From(&dec),
+		OptNullDecimalStr:   optionalnullable.From(&decStr),
+		OptNullDateTime:     optionalnullable.From(&dateTime),
+		OptNullDate:         optionalnullable.From(&date),
+		OptNullEnum:         optionalnullable.From(&enum),
+		OptNullArr:          optionalnullable.From(&arr),
+		OptNullBigIntStrArr: optionalnullable.From(&bigIntStrArr),
+		OptNullMap:           optionalnullable.From(&m),
+		OptNullDecimalStrMap: optionalnullable.From(&decStrMap),
+		OptNullObj:           optionalnullable.From(&obj),
+	}
+}
+
+func optionalNullableFieldsNull() shared.ObjectWithOptionalNullableFields {
+	return shared.ObjectWithOptionalNullableFields{
+		ReqStr:               "base",
+		OptNullStr:           optionalnullable.From[string](nil),
+		OptNullInt:           optionalnullable.From[int64](nil),
+		OptNullNum:           optionalnullable.From[float64](nil),
+		OptNullBool:          optionalnullable.From[bool](nil),
+		OptNullBigInt:        optionalnullable.From[*big.Int](nil),
+		OptNullBigIntStr:     optionalnullable.From[*big.Int](nil),
+		OptNullDecimal:       optionalnullable.From[*decimal.Big](nil),
+		OptNullDecimalStr:    optionalnullable.From[*decimal.Big](nil),
+		OptNullDateTime:      optionalnullable.From[time.Time](nil),
+		OptNullDate:          optionalnullable.From[types.Date](nil),
+		OptNullEnum:          optionalnullable.From[shared.OptNullEnum](nil),
+		OptNullArr:           optionalnullable.From[[]string](nil),
+		OptNullBigIntStrArr:  optionalnullable.From[[]*big.Int](nil),
+		OptNullMap:           optionalnullable.From[map[string]string](nil),
+		OptNullDecimalStrMap: optionalnullable.From[map[string]*decimal.Big](nil),
+		OptNullUnion:         optionalnullable.From[shared.OptNullUnion](nil),
+		OptNullObj:           optionalnullable.From[shared.OptNullObj](nil),
+	}
+}
+
+// Both form and multipart echo models expose the same getters.
+type optionalNullableFormEcho interface {
+	GetReqStr() string
+	GetOptStr() *string
+	GetOptNullStr() *string
+	GetOptNullInt() *string
+	GetOptNullNum() *string
+	GetOptNullBool() *string
+	GetOptNullBigInt() *string
+	GetOptNullBigIntStr() *string
+	GetOptNullDecimal() *string
+	GetOptNullDecimalStr() *string
+	GetOptNullDateTime() *string
+	GetOptNullDate() *string
+	GetOptNullEnum() *string
+	GetOptNullArr() *string
+	GetOptNullBigIntStrArr() *string
+	GetOptNullMap() *string
+	GetOptNullDecimalStrMap() *string
+	GetOptNullUnion() *string
+	GetOptNullObj() *string
+}
+
+func assertFormField(t *testing.T, want string, got *string) {
+	t.Helper()
+	require.NotNil(t, got)
+	assert.Equal(t, want, *got)
+}
+
+func assertOptionalNullableFormSet(t *testing.T, form optionalNullableFormEcho) {
+	t.Helper()
+	assert.Equal(t, "base", form.GetReqStr())
+	assertFormField(t, "opt", form.GetOptStr())
+	assertFormField(t, "hello", form.GetOptNullStr())
+	assertFormField(t, "7", form.GetOptNullInt())
+	assertFormField(t, "1.5", form.GetOptNullNum())
+	assertFormField(t, "true", form.GetOptNullBool())
+	assertFormField(t, "8821239038968084", form.GetOptNullBigInt())
+	assertFormField(t, "9223372036854775808", form.GetOptNullBigIntStr())
+	assertFormField(t, "3.141592653589793", form.GetOptNullDecimal())
+	assertFormField(t, "3.14159265358979344719667586", form.GetOptNullDecimalStr())
+	assertFormField(t, "2024-01-02T03:04:05Z", form.GetOptNullDateTime())
+	assertFormField(t, "2024-01-02", form.GetOptNullDate())
+	assertFormField(t, "first", form.GetOptNullEnum())
+	assertFormField(t, "a", form.GetOptNullArr())
+	assertFormField(t, "9223372036854775808", form.GetOptNullBigIntStrArr())
+	assertFormField(t, `{"k":"v"}`, form.GetOptNullMap())
+	assertFormField(t, `{"pi":"3.14159265358979344719667586"}`, form.GetOptNullDecimalStrMap())
+	assertFormField(t, `{"innerReqStr":"inner"}`, form.GetOptNullObj())
+	assert.Nil(t, form.GetOptNullUnion())
+}
+
+func assertOptionalNullableFormOmitted(t *testing.T, form optionalNullableFormEcho) {
+	t.Helper()
+	assert.Equal(t, "base", form.GetReqStr())
+	assert.Nil(t, form.GetOptStr())
+	assert.Nil(t, form.GetOptNullStr())
+	assert.Nil(t, form.GetOptNullInt())
+	assert.Nil(t, form.GetOptNullNum())
+	assert.Nil(t, form.GetOptNullBool())
+	assert.Nil(t, form.GetOptNullBigInt())
+	assert.Nil(t, form.GetOptNullBigIntStr())
+	assert.Nil(t, form.GetOptNullDecimal())
+	assert.Nil(t, form.GetOptNullDecimalStr())
+	assert.Nil(t, form.GetOptNullDateTime())
+	assert.Nil(t, form.GetOptNullDate())
+	assert.Nil(t, form.GetOptNullEnum())
+	assert.Nil(t, form.GetOptNullArr())
+	assert.Nil(t, form.GetOptNullBigIntStrArr())
+	assert.Nil(t, form.GetOptNullMap())
+	assert.Nil(t, form.GetOptNullDecimalStrMap())
+	assert.Nil(t, form.GetOptNullUnion())
+	assert.Nil(t, form.GetOptNullObj())
+}
+
+// Explicit null is transmitted as the JSON literal for JSON-tagged fields and
+// omitted everywhere else.
+func assertOptionalNullableFormExplicitNull(t *testing.T, form optionalNullableFormEcho) {
+	t.Helper()
+	assert.Equal(t, "base", form.GetReqStr())
+	assert.Nil(t, form.GetOptStr())
+	assert.Nil(t, form.GetOptNullStr())
+	assert.Nil(t, form.GetOptNullInt())
+	assert.Nil(t, form.GetOptNullNum())
+	assert.Nil(t, form.GetOptNullBool())
+	assert.Nil(t, form.GetOptNullBigInt())
+	assert.Nil(t, form.GetOptNullBigIntStr())
+	assert.Nil(t, form.GetOptNullDecimal())
+	assert.Nil(t, form.GetOptNullDecimalStr())
+	assert.Nil(t, form.GetOptNullDateTime())
+	assert.Nil(t, form.GetOptNullDate())
+	assert.Nil(t, form.GetOptNullEnum())
+	assert.Nil(t, form.GetOptNullArr())
+	assert.Nil(t, form.GetOptNullBigIntStrArr())
+	assertFormField(t, "null", form.GetOptNullMap())
+	assertFormField(t, "null", form.GetOptNullDecimalStrMap())
+	assert.Nil(t, form.GetOptNullUnion())
+	assertFormField(t, "null", form.GetOptNullObj())
+}
+
+
+// A wrapper set to a typed-nil pointer or nil container carries no value:
+// form encodings must omit the field entirely.
+func optionalNullableFieldsTypedNil() shared.ObjectWithOptionalNullableFields {
+	var nilBigInt *big.Int
+	var nilMap map[string]string
+	var nilArr []string
+	return shared.ObjectWithOptionalNullableFields{
+		ReqStr:        "base",
+		OptNullBigInt: optionalnullable.From(&nilBigInt),
+		OptNullMap:    optionalnullable.From(&nilMap),
+		OptNullArr:    optionalnullable.From(&nilArr),
+	}
+}
+
+func TestRequestBodyPostFormOptionalNullableJSONShared(t *testing.T) {
+	recordTest("request-bodies-post-form-optional-nullable-json-shared")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	setRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullableJSONShared(context.Background(), optionalNullableFieldsSet())
+	require.NoError(t, err)
+	require.NotNil(t, setRes)
+	assert.Equal(t, http.StatusOK, setRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, setRes.Res)
+	setForm := setRes.Res.Form
+	assertOptionalNullableFormSet(t, &setForm)
+
+	nullRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullableJSONShared(context.Background(), optionalNullableFieldsNull())
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	nullForm := nullRes.Res.Form
+	assertOptionalNullableFormExplicitNull(t, &nullForm)
+
+	absentRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullableJSONShared(context.Background(), shared.ObjectWithOptionalNullableFields{ReqStr: "base"})
+	require.NoError(t, err)
+	require.NotNil(t, absentRes.Res)
+	absentForm := absentRes.Res.Form
+	assertOptionalNullableFormOmitted(t, &absentForm)
+
+	typedNilRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullableJSONShared(context.Background(), optionalNullableFieldsTypedNil())
+	require.NoError(t, err)
+	require.NotNil(t, typedNilRes.Res)
+	typedNilForm := typedNilRes.Res.Form
+	assertOptionalNullableFormOmitted(t, &typedNilForm)
+}
+
+func TestRequestBodyPutMultipartOptionalNullableJSONShared(t *testing.T) {
+	recordTest("request-bodies-put-multipart-optional-nullable-json-shared")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	setRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullableJSONShared(context.Background(), optionalNullableFieldsSet())
+	require.NoError(t, err)
+	require.NotNil(t, setRes)
+	assert.Equal(t, http.StatusOK, setRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, setRes.Res)
+	setForm := setRes.Res.Form
+	assertOptionalNullableFormSet(t, &setForm)
+
+	nullRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullableJSONShared(context.Background(), optionalNullableFieldsNull())
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	nullForm := nullRes.Res.Form
+	assertOptionalNullableFormExplicitNull(t, &nullForm)
+
+	absentRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullableJSONShared(context.Background(), shared.ObjectWithOptionalNullableFields{ReqStr: "base"})
+	require.NoError(t, err)
+	require.NotNil(t, absentRes.Res)
+	absentForm := absentRes.Res.Form
+	assertOptionalNullableFormOmitted(t, &absentForm)
+
+	typedNilRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullableJSONShared(context.Background(), optionalNullableFieldsTypedNil())
+	require.NoError(t, err)
+	require.NotNil(t, typedNilRes.Res)
+	typedNilForm := typedNilRes.Res.Form
+	assertOptionalNullableFormOmitted(t, &typedNilForm)
+}
+
+func TestRequestBodyPostFormOptionalNullable(t *testing.T) {
+	recordTest("request-bodies-post-form-optional-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	str := "hello"
+	setRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{
+		ReqStr:     "base",
+		OptNullStr: optionalnullable.From(&str),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, setRes.Res)
+	assert.Equal(t, "base", setRes.Res.Form.ReqStr)
+	assertFormField(t, "hello", setRes.Res.Form.OptNullStr)
+
+	nullRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{
+		ReqStr:     "base",
+		OptNullStr: optionalnullable.From[string](nil),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	assert.Equal(t, "base", nullRes.Res.Form.ReqStr)
+	assert.Nil(t, nullRes.Res.Form.OptNullStr)
+
+	absentRes, err := s.RequestBodies.RequestBodyPostFormOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{ReqStr: "base"})
+	require.NoError(t, err)
+	require.NotNil(t, absentRes.Res)
+	assert.Equal(t, "base", absentRes.Res.Form.ReqStr)
+	assert.Nil(t, absentRes.Res.Form.OptNullStr)
+}
+
+func TestRequestBodyPutMultipartOptionalNullable(t *testing.T) {
+	recordTest("request-bodies-put-multipart-optional-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	str := "hello"
+	setRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{
+		ReqStr:     "base",
+		OptNullStr: optionalnullable.From(&str),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, setRes.Res)
+	assert.Equal(t, "base", setRes.Res.Form.ReqStr)
+	assertFormField(t, "hello", setRes.Res.Form.OptNullStr)
+
+	nullRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{
+		ReqStr:     "base",
+		OptNullStr: optionalnullable.From[string](nil),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	assert.Equal(t, "base", nullRes.Res.Form.ReqStr)
+	assert.Nil(t, nullRes.Res.Form.OptNullStr)
+
+	absentRes, err := s.RequestBodies.RequestBodyPutMultipartOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableField{ReqStr: "base"})
+	require.NoError(t, err)
+	require.NotNil(t, absentRes.Res)
+	assert.Equal(t, "base", absentRes.Res.Form.ReqStr)
+	assert.Nil(t, absentRes.Res.Form.OptNullStr)
+}
+
+func TestRequestBodyPostJSONOptionalNullable(t *testing.T) {
+	recordTest("request-bodies-post-json-optional-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	body := optionalNullableFieldsSet()
+	m := map[string]string{"k": "v"}
+	decimalStrMap := map[string]*decimal.Big{
+		"pi":   types.MustNewDecimalFromString("3.14159265358979344719667586"),
+		"none": nil,
+	}
+	union := shared.CreateOptNullUnionStr("u")
+	inner := "innerval"
+	obj := shared.OptNullObj{InnerReqStr: "in", InnerOptNullStr: optionalnullable.From(&inner)}
+	body.OptNullMap = optionalnullable.From(&m)
+	body.OptNullDecimalStrMap = optionalnullable.From(&decimalStrMap)
+	body.OptNullUnion = optionalnullable.From(&union)
+	body.OptNullObj = optionalnullable.From(&obj)
+
+	setRes, err := s.RequestBodies.RequestBodyPostJSONOptionalNullable(context.Background(), body)
+	require.NoError(t, err)
+	require.NotNil(t, setRes)
+	assert.Equal(t, http.StatusOK, setRes.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, setRes.Res)
+	setJSON := setRes.Res.JSON
+	assert.Equal(t, "base", setJSON.ReqStr)
+	assertFormField(t, "opt", setJSON.OptStr)
+	assert.Equal(t, "hello", requireOptionalNullableSet(t, setJSON.OptNullStr))
+	assert.Equal(t, int64(7), requireOptionalNullableSet(t, setJSON.OptNullInt))
+	assert.Equal(t, 1.5, requireOptionalNullableSet(t, setJSON.OptNullNum))
+	assert.Equal(t, true, requireOptionalNullableSet(t, setJSON.OptNullBool))
+	assert.Equal(t, "8821239038968084", requireOptionalNullableSet(t, setJSON.OptNullBigInt).String())
+	assert.Equal(t, "9223372036854775808", requireOptionalNullableSet(t, setJSON.OptNullBigIntStr).String())
+	assert.Equal(t, "3.141592653589793", requireOptionalNullableSet(t, setJSON.OptNullDecimal).String())
+	assert.Equal(t, "3.14159265358979344719667586", requireOptionalNullableSet(t, setJSON.OptNullDecimalStr).String())
+	assert.True(t, requireOptionalNullableSet(t, setJSON.OptNullDateTime).Equal(types.MustTimeFromString("2024-01-02T03:04:05Z")))
+	assert.Equal(t, "2024-01-02", requireOptionalNullableSet(t, setJSON.OptNullDate).String())
+	assert.Equal(t, shared.OptNullEnumFirst, requireOptionalNullableSet(t, setJSON.OptNullEnum))
+	assert.Equal(t, []string{"a"}, requireOptionalNullableSet(t, setJSON.OptNullArr))
+	echoedBigArr := requireOptionalNullableSet(t, setJSON.OptNullBigIntStrArr)
+	require.Len(t, echoedBigArr, 1)
+	assert.Equal(t, "9223372036854775808", echoedBigArr[0].String())
+	assert.Equal(t, m, requireOptionalNullableSet(t, setJSON.OptNullMap))
+	echoedDecimalStrMap := requireOptionalNullableSet(t, setJSON.OptNullDecimalStrMap)
+	require.NotNil(t, echoedDecimalStrMap["pi"])
+	assert.Equal(t, "3.14159265358979344719667586", echoedDecimalStrMap["pi"].String())
+	assert.Nil(t, echoedDecimalStrMap["none"])
+	echoedUnion := requireOptionalNullableSet(t, setJSON.OptNullUnion)
+	require.NotNil(t, echoedUnion.Str)
+	assert.Equal(t, "u", *echoedUnion.Str)
+	echoedObj := requireOptionalNullableSet(t, setJSON.OptNullObj)
+	assert.Equal(t, "in", echoedObj.InnerReqStr)
+	assert.Equal(t, "innerval", requireOptionalNullableSet(t, echoedObj.InnerOptNullStr))
+
+	// Explicit null: JSON keeps every key with a null value (set and null).
+	nullRes, err := s.RequestBodies.RequestBodyPostJSONOptionalNullable(context.Background(), optionalNullableFieldsNull())
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	nullJSON := nullRes.Res.JSON
+	assert.Equal(t, "base", nullJSON.ReqStr)
+	requireOptionalNullableNull(t, nullJSON.OptNullStr)
+	requireOptionalNullableNull(t, nullJSON.OptNullInt)
+	requireOptionalNullableNull(t, nullJSON.OptNullNum)
+	requireOptionalNullableNull(t, nullJSON.OptNullBool)
+	requireOptionalNullableNull(t, nullJSON.OptNullBigInt)
+	requireOptionalNullableNull(t, nullJSON.OptNullBigIntStr)
+	requireOptionalNullableNull(t, nullJSON.OptNullDecimal)
+	requireOptionalNullableNull(t, nullJSON.OptNullDecimalStr)
+	requireOptionalNullableNull(t, nullJSON.OptNullDateTime)
+	requireOptionalNullableNull(t, nullJSON.OptNullDate)
+	requireOptionalNullableNull(t, nullJSON.OptNullEnum)
+	requireOptionalNullableNull(t, nullJSON.OptNullArr)
+	requireOptionalNullableNull(t, nullJSON.OptNullBigIntStrArr)
+	requireOptionalNullableNull(t, nullJSON.OptNullMap)
+	requireOptionalNullableNull(t, nullJSON.OptNullDecimalStrMap)
+	requireOptionalNullableNull(t, nullJSON.OptNullUnion)
+	requireOptionalNullableNull(t, nullJSON.OptNullObj)
+
+	// Absent: every key omitted entirely (neither set nor null).
+	absentRes, err := s.RequestBodies.RequestBodyPostJSONOptionalNullable(context.Background(), shared.ObjectWithOptionalNullableFields{ReqStr: "base"})
+	require.NoError(t, err)
+	require.NotNil(t, absentRes.Res)
+	absentJSON := absentRes.Res.JSON
+	assert.Equal(t, "base", absentJSON.ReqStr)
+	assert.False(t, absentJSON.OptNullStr.IsSet())
+	assert.False(t, absentJSON.OptNullInt.IsSet())
+	assert.False(t, absentJSON.OptNullArr.IsSet())
+	assert.False(t, absentJSON.OptNullMap.IsSet())
+	assert.False(t, absentJSON.OptNullObj.IsSet())
+	assert.False(t, absentJSON.OptNullUnion.IsSet())
+}
+
+func TestRequestBodyPostJSONOptionalNullableBodyAndParam(t *testing.T) {
+	recordTest("request-bodies-post-json-optional-nullable-body-and-param")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// The shared component keeps the tri-state in the JSON body while the
+	// deepObject query parameter unwraps to the bare value on the wire.
+	bodyVal := "b"
+	filterVal := "q"
+	setRes, err := s.RequestBodies.RequestBodyPostJSONOptionalNullableBodyAndParam(context.Background(),
+		shared.OptionalNullableBodyAndParam{OptNullStr: optionalnullable.From(&bodyVal)},
+		&shared.OptionalNullableBodyAndParam{OptNullStr: optionalnullable.From(&filterVal)},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, setRes.Res)
+	assert.Equal(t, "b", requireOptionalNullableSet(t, setRes.Res.JSON.OptNullStr))
+	assert.Equal(t, "q", setRes.Res.Args["filter[optNullStr]"])
+
+	// Explicit null survives in the JSON body and is omitted from the URL.
+	nullRes, err := s.RequestBodies.RequestBodyPostJSONOptionalNullableBodyAndParam(context.Background(),
+		shared.OptionalNullableBodyAndParam{OptNullStr: optionalnullable.From[string](nil)},
+		&shared.OptionalNullableBodyAndParam{OptNullStr: optionalnullable.From[string](nil)},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	requireOptionalNullableNull(t, nullRes.Res.JSON.OptNullStr)
+	assert.NotContains(t, nullRes.Res.Args, "filter[optNullStr]")
+}
+
+func TestOptionalNullableUrlencodedBodyTopLevel(t *testing.T) {
+	recordTest("optional-nullable-urlencoded-body")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// Set: the wrapped body serializes its properties as ordinary form fields.
+	name := "widget"
+	count := int64(2)
+	res, err := s.RequestBodies.OptionalNullableUrlencodedBody(context.Background(),
+		optionalnullable.From(&operations.OptionalNullableUrlencodedBodyNullableFormBody{Name: &name, Count: &count}))
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, "widget", res.Res.Form["name"])
+	assert.Equal(t, "2", res.Res.Form["count"])
+
+	// Explicit null: no fields are sent.
+	nullRes, err := s.RequestBodies.OptionalNullableUrlencodedBody(context.Background(),
+		optionalnullable.From[operations.OptionalNullableUrlencodedBodyNullableFormBody](nil))
+	require.NoError(t, err)
+	require.NotNil(t, nullRes.Res)
+	assert.Empty(t, nullRes.Res.Form)
+
+	// Unset: no fields are sent.
+	unsetRes, err := s.RequestBodies.OptionalNullableUrlencodedBody(context.Background(), nil)
+	require.NoError(t, err)
+	require.NotNil(t, unsetRes.Res)
+	assert.Empty(t, unsetRes.Res.Form)
 }

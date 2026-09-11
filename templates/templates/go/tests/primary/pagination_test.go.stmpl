@@ -224,6 +224,37 @@ func TestPaginationLimitOffsetPageBodyNullable(t *testing.T) {
 	require.Nil(t, nilRes)
 }
 
+func TestPaginationLimitOffsetPageBodyOptionalNullable(t *testing.T) {
+	recordTest("pagination-limit-offset-page-body-optional-nullable")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	// page and limit are optional-nullable body fields; the paginator must
+	// unwrap them before computing the next page
+	page := int64(1)
+	limit := int64(15)
+	res, err := s.Pagination.PaginationLimitOffsetPageBodyOptionalNullable(context.Background(), shared.NullableLimitOffsetConfig{
+		Page:  optionalnullable.From(&page),
+		Limit: optionalnullable.From(&limit),
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	assert.Equal(t, int(limit), len(res.Res.ResultArray))
+
+	nextRes, err := res.Next()
+	require.NoError(t, err)
+	require.NotNil(t, nextRes)
+	require.NotNil(t, nextRes.Res)
+	assert.True(t, int(limit) > len(nextRes.Res.ResultArray))
+
+	nilRes, err := nextRes.Next()
+	require.NoError(t, err)
+	require.Nil(t, nilRes)
+}
+
 func TestPaginationWrappedOptionalBody(t *testing.T) {
 	recordTest("pagination-wrapped-optional-body")
 
