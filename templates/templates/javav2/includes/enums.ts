@@ -7,7 +7,7 @@ function templateEnums(typeDef: TypeDef, indent: number = 1): string {
   members.forEach((member, idx) => {
     const value = typeDef.Enum.Values[idx];
     const description = descriptions[`${value}`];
-    if (description) {
+    if (typeof description === "string" && description) {
       lines.push(...formatJavaEnumDescriptionComments(description));
     }
 

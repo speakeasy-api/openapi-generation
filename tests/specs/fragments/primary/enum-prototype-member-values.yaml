@@ -1,0 +1,63 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/enum-prototype-member-values:
+    post:
+      operationId: primaryEnumPrototypeMemberValues
+      description: >-
+        Exercises closed enums whose values are named after built-in object
+        member names (constructor, toString, valueOf, hasOwnProperty). Template
+        runtimes that look up per-value enum descriptions by key can resolve
+        such values to inherited members instead of an absent entry, which must
+        not be rendered as a description or crash generation. One enum has no
+        description entries at all and the other describes only a value that
+        does not collide, so lookups for the colliding values miss in both an
+        absent and a sparse description map. The enums are only used in the
+        request so they render as closed enums regardless of the configured
+        forward-compatibility default.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrototypeMemberNameSelection"
+      responses:
+        "204":
+          description: Accepted with no content.
+components:
+  schemas:
+    PrototypeMemberNameSelection:
+      type: object
+      required:
+        - kind
+        - describedKind
+      properties:
+        kind:
+          $ref: "#/components/schemas/PrototypeMemberNameEnum"
+        describedKind:
+          $ref: "#/components/schemas/SparselyDescribedPrototypeMemberNameEnum"
+    PrototypeMemberNameEnum:
+      x-speakeasy-unknown-values: disallow
+      type: string
+      enum:
+        - standard
+        - constructor
+        - toString
+        - valueOf
+        - hasOwnProperty
+    SparselyDescribedPrototypeMemberNameEnum:
+      x-speakeasy-unknown-values: disallow
+      type: string
+      enum:
+        - standard
+        - constructor
+        - toString
+      x-speakeasy-enum-descriptions:
+        standard: A member kind that does not collide with built-in object member names.
