@@ -104,7 +104,6 @@ func TestParseNPMAudit_CrossTemplateDedup(t *testing.T) {
 	fastURI := acc.findings["GHSA-q3j6-qgpj-74h6|fast-uri"]
 	if fastURI == nil {
 		t.Fatal("fast-uri missing")
-		return
 	}
 	if !slices.Equal(fastURI.Templates, []string{"mcp-typescript", "sdk-typescriptv2"}) {
 		t.Errorf("templates not merged: %v", fastURI.Templates)
