@@ -331,7 +331,9 @@ func marshalValue(v interface{}, tag reflect.StructTag) (json.RawMessage, error)
 			for _, key := range val.MapKeys() {
 				if key.Bool() {
 					if inner := val.MapIndex(key); !inner.IsNil() {
-						return marshalValue(inner.Interface(), tag)
+						if _, innerVal := dereferencePointers(inner.Type(), inner); innerVal.IsValid() {
+							return marshalValue(inner.Interface(), tag)
+						}
 					}
 					break
 				}

@@ -134,6 +134,8 @@ func TestRequestBodyOptionalNullableWireFormats(t *testing.T) {
 	decimalNum := types.MustNewDecimalFromString("1.5")
 	decimalStr := types.MustNewDecimalFromString("3.25")
 	decimalMap := map[string]*decimal.Big{"a": types.MustNewDecimalFromString("2.75")}
+	var nilBigInt *big.Int
+	var nilDecimal *decimal.Big
 
 	tests := []struct {
 		name     string
@@ -166,6 +168,18 @@ func TestRequestBodyOptionalNullableWireFormats(t *testing.T) {
 				OptNullBigIntStr: optionalnullable.From[*big.Int](nil),
 			},
 			wantJson: `{"optNullBigIntStr":null,"reqStr":"base"}`,
+		},
+		{
+			// A wrapper set to a nil inner pointer (From(&p) with p nil) must
+			// marshal as null like the bare nil pointer would, not panic in
+			// the tag-dispatch path.
+			name: "wrapped nil inner pointer marshals as null",
+			arg: shared.ObjectWithOptionalNullableFields{
+				ReqStr:            "base",
+				OptNullBigIntStr:  optionalnullable.From(&nilBigInt),
+				OptNullDecimalStr: optionalnullable.From(&nilDecimal),
+			},
+			wantJson: `{"optNullBigIntStr":null,"optNullDecimalStr":null,"reqStr":"base"}`,
 		},
 	}
 	for _, tt := range tests {

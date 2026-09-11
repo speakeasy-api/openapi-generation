@@ -574,7 +574,7 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/headers.go:
     last_write_checksum: sha1:8727cf90c693c8067f44efeedbfac47bb647a259
   internal/sdk/sdkinternal/utils/json.go:
-    last_write_checksum: sha1:bfb53c6e28ab414dd6020f63f7d109d33bd21fcd
+    last_write_checksum: sha1:6a3e40ae9fe0554600c37a53e741d44b125bc769
   internal/sdk/sdkinternal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:

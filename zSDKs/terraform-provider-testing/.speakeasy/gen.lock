@@ -2380,7 +2380,7 @@ trackedFiles:
   internal/sdk/internal/utils/jq.go:
     last_write_checksum: sha1:2e75ed7a7db1f91e97dac1ac4ca7801b2beb69b5
   internal/sdk/internal/utils/json.go:
-    last_write_checksum: sha1:7d0a2f25f9760d711c10bfabcb9ccbbc4d989da1
+    last_write_checksum: sha1:27879889b4479528f17395c798f329e610588ee5
   internal/sdk/internal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/internal/utils/oauth2_sessions.go:
