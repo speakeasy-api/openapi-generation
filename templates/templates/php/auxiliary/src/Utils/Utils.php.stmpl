@@ -276,21 +276,27 @@ class Utils
         }
 
         $merged = array_merge($pbase, $prel);
+        $isRelativePath = false;
+        $normalizePath = false;
         if (isset($prel['host'])) {
+            // A reference with its own authority is used as given, dot segments included
             $merged['path'] = $prel['path'] ?? '';
         } elseif (isset($prel['path']) && $prel['path'] !== '') {
-            if ($prel['path'][0] == '/' || ! isset($pbase['path'])) {
+            $normalizePath = true;
+            if ($prel['path'][0] == '/') {
                 $merged['path'] = $prel['path'];
             } else {
                 // Relative path
-                $dir = preg_replace('@/[^/]*$@', '', $pbase['path']);
+                $isRelativePath = true;
+                $dir = isset($pbase['path']) ? preg_replace('@/[^/]*$@', '', $pbase['path']) : '';
                 $merged['path'] = $dir.'/'.$prel['path'];
             }
         } else {
+            // A query- or fragment-only reference keeps the base path as given
             $merged['path'] = $pbase['path'] ?? '';
         }
 
-        if ($merged['path'] !== '') {
+        if ($normalizePath && $merged['path'] !== '') {
             // Get the path components, and remove the initial empty one
             $pathParts = explode('/', $merged['path']);
             if ($pathParts[0] === '') {
@@ -302,13 +308,18 @@ class Utils
                 if ($part == '..') {
                     // Cancel out the parent directory; a '..' above the root is dropped
                     array_pop($path);
-                } elseif ($part != '.') {
+                } elseif ($part == '.') {
+                    continue;
+                } elseif ($part !== '' || ! $isRelativePath) {
+                    // Merging a relative path collapses empty components; an
+                    // absolute reference keeps them
                     array_push($path, $part);
                 }
             }
             $lastPart = end($pathParts);
-            if ($lastPart == '.' || $lastPart == '..') {
-                // A path ending in '.' or '..' resolves to a directory, keeping its trailing slash
+            if ($lastPart == '.' || $lastPart == '..' || ($isRelativePath && $lastPart === '')) {
+                // A path ending in '.', '..', or a collapsed empty component
+                // resolves to a directory, keeping its trailing slash
                 array_push($path, '');
             }
             $merged['path'] = '/'.implode('/', $path);

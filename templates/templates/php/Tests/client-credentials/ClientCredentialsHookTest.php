@@ -42,6 +42,16 @@ final class ClientCredentialsHookTest extends TestCase
         $this->assertEquals('https://example.com/api/auth/token', Utils::urljoin('https://example.com/api/', 'auth/./token'));
         $this->assertEquals('https://example.com/api/', Utils::urljoin('https://example.com/api/auth/token', '..'));
         $this->assertEquals('https://example.com/api/', Utils::urljoin('https://example.com/api/token', '.'));
+
+        // redundant slashes collapse in relative paths but are kept in absolute paths
+        $this->assertEquals('https://example.com/api/a/b', Utils::urljoin('https://example.com/api/', 'a//b'));
+        $this->assertEquals('https://example.com/api/a/', Utils::urljoin('https://example.com/api/', 'a//'));
+        $this->assertEquals('https://example.com/api/a', Utils::urljoin('https://example.com/api/', './/a'));
+        $this->assertEquals('https://example.com/oauth//token', Utils::urljoin('https://example.com/api/', '/oauth//token'));
+
+        // references with their own authority are used as given, dot segments included
+        $this->assertEquals('https://auth.example.com/a//b', Utils::urljoin('https://example.com/api', 'https://auth.example.com/a//b'));
+        $this->assertEquals('https://auth.example.com/a/../b', Utils::urljoin('https://example.com/api', 'https://auth.example.com/a/../b'));
     }
 
     public function testClientCredentialsHookSuccessfullyAuthenticates(): void
