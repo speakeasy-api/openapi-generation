@@ -5,10 +5,38 @@ namespace Speakeasy\Client\Credentials\Tests;
 use Speakeasy\Client\Credentials\Tests\CommonHelpers;
 use Speakeasy\Client\Credentials\Models\Components\Security;
 use Speakeasy\Client\Credentials\Hooks\ClientCredentialsOAuth2Scope;
+use Speakeasy\Client\Credentials\Utils\Utils;
 use PHPUnit\Framework\TestCase;
 
 final class ClientCredentialsHookTest extends TestCase
 {
+    public function testUrljoinResolvesTokenUrlAgainstBaseUrl(): void
+    {
+        // absolute-path token URLs replace the base URL's path
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api', '/auth/token'));
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api/', '/auth/token'));
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api/v1', '/auth/token'));
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com', '/auth/token'));
+        $this->assertEquals('https://example.com:8443/auth/token', Utils::urljoin('https://example.com:8443/api', '/auth/token'));
+        $this->assertEquals('https://example.com/auth/token?a=b', Utils::urljoin('https://example.com/api', '/auth/token?a=b'));
+
+        // relative token URLs resolve against the base URL's path
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com', 'auth/token'));
+        $this->assertEquals('https://example.com/api/auth/token', Utils::urljoin('https://example.com/api/', 'auth/token'));
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api', 'auth/token'));
+
+        // fully-qualified token URLs win outright, host-only URLs keep their empty path
+        $this->assertEquals('https://auth.example.com/token', Utils::urljoin('https://example.com/api', 'https://auth.example.com/token'));
+        $this->assertEquals('https://auth.example.com', Utils::urljoin('https://example.com/api', 'https://auth.example.com'));
+
+        // an empty token URL leaves the base URL untouched, query and fragment included
+        $this->assertEquals('https://example.com/api', Utils::urljoin('https://example.com/api', ''));
+        $this->assertEquals('https://example.com/api?a=b#f', Utils::urljoin('https://example.com/api?a=b#f', ''));
+
+        // parent segments above the root are dropped
+        $this->assertEquals('https://example.com/auth/token', Utils::urljoin('https://example.com/api', '../auth/token'));
+        $this->assertEquals('https://example.com/x', Utils::urljoin('https://example.com/', '../../x'));
+    }
 
     public function testClientCredentialsHookSuccessfullyAuthenticates(): void
     {

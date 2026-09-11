@@ -1,0 +1,10 @@
+id: 1789043812-597ec700
+features:
+    - core
+targets:
+    - php
+type: fix
+bump: patch
+description: resolve absolute-path and fully-qualified token URLs correctly in urljoin
+author: AshGodfrey
+date: "2026-09-10"
