@@ -47,7 +47,7 @@ def test_sdk_get_user_test_with_response_body():
             email="Trystan_Crooks@hotmail.com",
             first_name="Trystan",
             last_name="Crooks",
-            age=32,
+            age=32.0,
             postal_code="94110",
             metadata=models.Metadata(
                 allergies="none",

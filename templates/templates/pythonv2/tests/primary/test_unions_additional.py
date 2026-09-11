@@ -819,3 +819,20 @@ def test_circular_reference_recursive_one_of():
     assert res.http_meta.response.status_code == 200
     assert res.object is not None
     assert res.object.json_.value == payload
+
+
+def test_whole_number_float_default_survives_nullable_union_serialization():
+    """A whole-number float default (80.0) must serialize as a float so the
+    populated list inside an OptionalNullable union is not dropped in favor
+    of the Unset sentinel branch."""
+    holder = shared.WholeNumberDefaultHolder(items=[shared.WholeNumberDefaultItem()])
+
+    assert isinstance(holder.items[0].score, float)
+    assert holder.model_dump(mode="json", by_alias=True) == {
+        "items": [{"score": 80.0}]
+    }
+
+    assert shared.WholeNumberDefaultHolder().model_dump(mode="json", by_alias=True) == {}
+    assert shared.WholeNumberDefaultHolder(items=None).model_dump(
+        mode="json", by_alias=True
+    ) == {"items": None}
