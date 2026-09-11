@@ -1,0 +1,51 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /primary/float-whole-number-default:
+    post:
+      operationId: primaryFloatWholeNumberDefault
+      description: >-
+        Exercises number-typed properties whose default and const values are
+        whole numbers (80.0). These literals must keep their number typing in
+        generated code so that a model relying on them still matches the
+        schema during serialization, including when the model sits inside a
+        nullable composite (anyOf with null), where a type mismatch can cause
+        serializers to reject the branch and drop the populated value.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WholeNumberDefaultHolder"
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    WholeNumberDefaultItem:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        score:
+          type: number
+          default: 80.0
+        constant_score:
+          type: number
+          const: 80.0
+    WholeNumberDefaultHolder:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        items:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/WholeNumberDefaultItem"
+            - type: "null"

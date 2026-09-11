@@ -2276,7 +2276,8 @@ function templateFloatValue(
     return `Decimal("${val}")`;
   }
 
-  return `${val}`;
+  const s = `${val}`;
+  return /^-?\d+$/.test(s) ? `${s}.0` : s;
 }
 
 // @ts-ignore

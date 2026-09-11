@@ -1200,9 +1200,9 @@ trackedFiles:
   tests/test_conflicts.py:
     last_write_checksum: sha1:c438ba231ca96085cfbdba5866babca577f2f1b0
   tests/test_helpers.py:
-    last_write_checksum: sha1:842d9eaf5cf7a08e4348b78ebb8ee18a7c58acb3
+    last_write_checksum: sha1:b29a701f677e87910c35cdf23a7bbb860db6506d
   tests/test_sdk.py:
-    last_write_checksum: sha1:a9b5b71ab10283fd8b4240f12d4cfc8a803df285
+    last_write_checksum: sha1:19af146846bad1b1ca567757e71e05ec4b1b0a8f
   tests/test_singlebar.py:
     last_write_checksum: sha1:a84c4597f3823bac4b8701b8cecaff8027f9ab0a
   tests/test_singlefoo.py:

@@ -72,7 +72,7 @@ def user_setup() -> Optional[UserSetupOutputs]:
             id="8ffac18c-7d88-4879-b057-e5f45b9ce7de",
             first_name="Trystan",
             last_name="Crooks",
-            age=32,
+            age=32.0,
             postal_code="94110",
             gender="other",
             metadata=models.Metadata(

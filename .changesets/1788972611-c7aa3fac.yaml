@@ -1,0 +1,10 @@
+id: 1788972611-c7aa3fac
+features:
+    - constsAndDefaults
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: emit float literals for whole-number float defaults and consts so populated nullable fields are not dropped during serialization
+author: AshGodfrey
+date: "2026-09-09"
