@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.937.15] - 2026-09-11
+### :bug: Bug Fixes
+- [`e0a5d13`](https://github.com/speakeasy-api/openapi-generation/commit/e0a5d13fd61b36b6dcf87f3a83ce20a5b286d8c7) - **python**: render whole-number float defaults and consts as float literals ([#14](https://github.com/speakeasy-api/openapi-generation/pull/14)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.937.14] - 2026-09-11
 ### :bug: Bug Fixes
 - [`e753e8a`](https://github.com/speakeasy-api/openapi-generation/commit/e753e8a53f63bf41f33bc27a6e6d1daa1953447c) - **python**: restrict open discriminated union Unknown fallback to response deserialization ([#12](https://github.com/speakeasy-api/openapi-generation/pull/12)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20108,3 +20113,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.937.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.11...v2.937.12
 [v2.937.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.12...v2.937.13
 [v2.937.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.13...v2.937.14
+[v2.937.15]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.14...v2.937.15
