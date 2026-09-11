@@ -4,8 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel, TypeAdapter, ValidationError, ValidationInfo
 
-from .serializers import ALLOW_UNKNOWN_UNION_VARIANTS, construct_unvalidated
-
 
 def parse_open_union(
     v: Any,
@@ -34,6 +32,9 @@ def parse_open_union(
     instead of falling back, so pydantic can try sibling branches of an
     enclosing union (e.g. None in Optional[...]).
     """
+    # pylint: disable=import-outside-toplevel
+    from .serializers import ALLOW_UNKNOWN_UNION_VARIANTS
+
     if isinstance(v, BaseModel):
         return v
     if not isinstance(v, dict) or disc_key not in v:
@@ -56,5 +57,8 @@ def parse_open_union(
         if not fallback_allowed:
             raise
         if lenient:
+            # pylint: disable=import-outside-toplevel
+            from .serializers import construct_unvalidated
+
             return construct_unvalidated(v, variant_cls)
         return unknown_cls(raw=v)
