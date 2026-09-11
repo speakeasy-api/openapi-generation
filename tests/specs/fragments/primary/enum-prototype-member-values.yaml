@@ -17,9 +17,11 @@ paths:
         runtimes that look up per-value enum descriptions by key can resolve
         such values to inherited members instead of an absent entry, which must
         not be rendered as a description or crash generation. One enum has no
-        description entries at all and the other describes only a value that
-        does not collide, so lookups for the colliding values miss in both an
-        absent and a sparse description map. The enums are only used in the
+        description entries at all; the other describes a non-colliding value
+        and one colliding value while leaving another colliding value
+        undescribed, covering a lookup miss on an absent map, a miss on a
+        sparse map, and a hit on a key that shadows a built-in member (which
+        must still render its description). The enums are only used in the
         request so they render as closed enums regardless of the configured
         forward-compatibility default.
       requestBody:
@@ -61,3 +63,4 @@ components:
         - toString
       x-speakeasy-enum-descriptions:
         standard: A member kind that does not collide with built-in object member names.
+        constructor: A described member kind whose value shadows a built-in object member name.

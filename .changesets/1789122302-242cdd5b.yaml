@@ -2,6 +2,7 @@ id: 1789122302-242cdd5b
 features:
     - enums
 targets:
+    - typescriptv2
     - javav2
     - csharp
     - go
