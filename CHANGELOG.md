@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.937.13] - 2026-09-11
+### :bug: Bug Fixes
+- [`eaddfa7`](https://github.com/speakeasy-api/openapi-generation/commit/eaddfa7ca031a25674d83f223380d5551b32ad7b) - **typescript,java,csharp,go,php,python,ruby,unity,cli**: guard per-value enum description lookups against inherited object members ([#11](https://github.com/speakeasy-api/openapi-generation/pull/11)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.937.12] - 2026-09-10
 ### :wrench: Chores
 - [`6932d77`](https://github.com/speakeasy-api/openapi-generation/commit/6932d77bee4e86a9c43e4b8365fc1db14541311a) - clarify readme *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -20096,3 +20101,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.937.10]: https://github.com/speakeasy-api/openapi-generation-release/compare/v2.937.9...v2.937.10
 [v2.937.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.10...v2.937.11
 [v2.937.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.11...v2.937.12
+[v2.937.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.937.12...v2.937.13
