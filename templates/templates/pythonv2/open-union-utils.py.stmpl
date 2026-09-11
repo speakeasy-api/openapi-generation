@@ -1,5 +1,5 @@
 {{- $lenientValidationMode := responseSchemaValidationLenient -}}
-from typing import Any
+from typing import Any, Mapping
 
 from pydantic import BaseModel, TypeAdapter, ValidationError, ValidationInfo
 
@@ -41,7 +41,7 @@ def parse_open_union(
     if not isinstance(v, dict) or disc_key not in v:
         raise ValueError(f"{union_name}: expected object with '{disc_key}' field")
     context = info.context
-    fallback_allowed = context is not None and bool(
+    fallback_allowed = isinstance(context, Mapping) and bool(
         context.get(ALLOW_UNKNOWN_UNION_VARIANTS)
     )
     disc = v[disc_key]
@@ -52,8 +52,8 @@ def parse_open_union(
         raise ValueError(f"{union_name}: unrecognized {disc_key} value {disc!r}")
     try:
         if isinstance(variant_cls, type) and issubclass(variant_cls, BaseModel):
-            return variant_cls.model_validate(v, context=context)
-        return TypeAdapter(variant_cls).validate_python(v, context=context)
+            return variant_cls.model_validate(v, context=info.context)
+        return TypeAdapter(variant_cls).validate_python(v, context=info.context)
     except ValidationError:
         if not fallback_allowed:
             raise
