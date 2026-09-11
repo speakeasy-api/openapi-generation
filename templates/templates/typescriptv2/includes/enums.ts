@@ -46,8 +46,9 @@ function templateEnums(typeDef: TypeDef): string {
   return rawValues
     .map((val, index) => {
       const value = sanitizeEnumValue(val, en.Type.Type);
+      const description = en.Descriptions?.[`${val}`];
       const comment = formatTypeScriptEnumDescription(
-        en.Descriptions?.[`${val}`],
+        typeof description === "string" ? description : undefined,
       );
 
       const lines: string[] = [];

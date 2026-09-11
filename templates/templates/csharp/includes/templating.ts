@@ -20,7 +20,7 @@ function templateEnums(typeDef: TypeDef): string {
 
   typeDef.Enum.Values.forEach((value, index) => {
     const description = descriptions[`${value}`];
-    if (description) {
+    if (typeof description === "string" && description) {
       lines.push(
         ...templateCommentElement("summary", null, description, 0).split("\n"),
       );

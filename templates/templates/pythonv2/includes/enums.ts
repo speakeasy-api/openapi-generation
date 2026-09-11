@@ -6,7 +6,7 @@ function templateEnums(typeDef: TypeDef): string {
 
     typeDef.Enum.Values.forEach((value) => {
       const description = descriptions[`${value}`];
-      if (description) {
+      if (typeof description === "string" && description) {
         lines.push(...formatPythonEnumDescriptionComments(description));
       }
 
@@ -21,7 +21,7 @@ function templateEnums(typeDef: TypeDef): string {
 
     typeDef.Enum.Values.forEach((value, index) => {
       const description = descriptions[`${value}`];
-      if (description) {
+      if (typeof description === "string" && description) {
         enums.push(
           ...formatPythonEnumDescriptionComments(description).map(
             (line) => `    ${line}`,
