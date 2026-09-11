@@ -5,6 +5,6 @@ targets:
     - go
 type: fix
 bump: patch
-description: serialize date-time, date and big-integer header parameters instead of sending an empty value
+description: serialize date-time, date, big-integer and decimal header parameters instead of sending an empty value
 author: AshGodfrey
 date: "2026-08-26"

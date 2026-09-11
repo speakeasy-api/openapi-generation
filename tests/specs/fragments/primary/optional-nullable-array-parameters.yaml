@@ -106,8 +106,8 @@ paths:
         Tests that header parameters whose schemas map to dedicated date-time,
         date, big-integer and decimal representations serialize as their
         formatted single value rather than being treated as an empty compound
-        structure, both as plain required headers and wrapped in an
-        optional-nullable representation.
+        structure, as plain required headers, with date-time and big-integer
+        also wrapped in an optional-nullable representation.
       parameters:
         - name: bare-date-time-header
           in: header
