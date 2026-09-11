@@ -1,0 +1,10 @@
+id: 1788256423-3221b0d4
+features:
+    - core
+targets:
+    - go
+type: fix
+bump: patch
+description: serialize optional-nullable fields in multipart and urlencoded bodies as their bare value, transmitting explicit null only for JSON-tagged fields, and skip typed-nil wrapped pointers in deepObject parameters
+author: AshGodfrey
+date: "2026-09-01"
