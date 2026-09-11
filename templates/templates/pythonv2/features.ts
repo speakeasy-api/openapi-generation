@@ -32,7 +32,7 @@ const supportedFeatures = {
   duration: "0.1.1",
   devContainers: "3.0.0",
   downloadStreams: "1.0.1",
-  constsAndDefaults: "1.0.7",
+  constsAndDefaults: "1.0.8",
   additionalProperties: "1.0.2",
   serverEvents: "1.1.1",
   tests: "1.19.10",
