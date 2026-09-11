@@ -452,6 +452,9 @@ func handleDefaultConstValue(tagValue string, val interface{}, tag reflect.Struc
 	}
 
 	typ := dereferenceTypePointer(reflect.TypeOf(val))
+	if optionalnullable.IsOptionalNullableType(typ) {
+		typ = dereferenceTypePointer(typ.Elem())
+	}
 	switch typ {
 	case reflect.TypeOf(time.Time{}):
 		return []byte(fmt.Sprintf(`"%s"`, tagValue))

@@ -243,6 +243,25 @@ func TestRequestBodyOptionalNullableWireFormatsDeserialize(t *testing.T) {
 	assert.False(t, body.OptNullInt.IsSet())
 }
 
+// Default values on OptionalNullable-wrapped fields must be rendered against
+// the inner value's type, so tag-driven wire formats apply to them too.
+func TestOptionalNullableDefaultFollowsWireFormatTags(t *testing.T) {
+	type body struct {
+		BigIntStr optionalnullable.OptionalNullable[*big.Int] `default:"123" bigint:"string" json:"bigIntStr"`
+	}
+
+	out, err := utils.MarshalJSON(body{}, "", true)
+	require.NoError(t, err)
+	assert.Equal(t, `{"bigIntStr":"123"}`, string(out))
+
+	var in body
+	require.NoError(t, utils.UnmarshalJSON([]byte(`{}`), &in, "", true, nil))
+	v, ok := in.BigIntStr.Get()
+	require.True(t, ok)
+	require.NotNil(t, v)
+	assert.Equal(t, "123", (*v).String())
+}
+
 func TestRequestBodyNoBodyNoContentType(t *testing.T) {
 	recordTest("request-bodies-no-body-no-content-type")
 	
