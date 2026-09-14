@@ -305,10 +305,10 @@ class Utils
 
             $path = [];
             foreach ($pathParts as $part) {
-                if ($part == '..') {
+                if ($part === '..') {
                     // Cancel out the parent directory; a '..' above the root is dropped
                     array_pop($path);
-                } elseif ($part == '.') {
+                } elseif ($part === '.') {
                     continue;
                 } elseif ($part !== '' || ! $isRelativePath) {
                     // Merging a relative path collapses empty components; an
