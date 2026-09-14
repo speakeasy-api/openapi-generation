@@ -73,7 +73,11 @@ function getErrorMessageAccessorString(
         i == fields.length - 1
           ? "string"
           : sanitizeType(f.Type, false, usageLocation);
-      expr = `((${inner}?)Utilities.UnwrapValue(${access}))`;
+      if (isCsharpV2()) {
+        expr = `((${inner}?)${access}${nullable ? "?" : ""}.ValueOrDefault)`;
+      } else {
+        expr = `((${inner}?)Utilities.UnwrapValue(${access}))`;
+      }
       nullable = true;
     } else {
       expr = access;

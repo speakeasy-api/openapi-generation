@@ -61,3 +61,5 @@ profiles/
 # local dev binaries (go build ./cmd/regen, ./cmd/generate)
 /regen
 /generate
+.agentlink/
+.env

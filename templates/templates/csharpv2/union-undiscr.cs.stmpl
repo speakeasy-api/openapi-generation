@@ -109,6 +109,11 @@
 
         public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
         {
+            global::{{getModelNamespace ""}}.UnionScoring.RegisterUnion(typeof({{$className}}), new System.Type[] {
+              {{- range $i, $v := getUnionVariants .Local.Type}}
+                {{- if $i}},{{end}}
+                typeof({{$v.CsType}})
+              {{- end}} });
             return new {{$className}}Converter(
               {{- range $i, $v := getUnionVariants .Local.Type}}
                 {{- if $i}},{{end}}

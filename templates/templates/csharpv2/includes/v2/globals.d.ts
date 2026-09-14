@@ -113,6 +113,12 @@ declare global {
   function canTypeBeNull(typeDef: TypeDef): boolean;
   function canFieldBeNull(field: FieldDef): boolean;
 
+  // models.ts (csharp v1, presence-aware serialization)
+  function needsOptionalNullableWrapper(fieldDef: FieldDef): boolean;
+
+  // sanitization.ts (csharp v1)
+  function isValueType(typeDef: TypeDef): boolean;
+
   // form.ts (csharpv2 v2)
   function templateApplyFormBody(op: Operation): string;
   function jsonTypeInfoRef(typeDef: TypeDef): string;

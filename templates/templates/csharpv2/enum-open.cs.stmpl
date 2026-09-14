@@ -1,4 +1,5 @@
 {{- $className := sanitizeClassName .Local.Name false }}
+{{- $param := lower (sanitizeVariableName $className) }}
 {{- $enumType := sanitizeType .Local.Enum.Type false "" }}
 {{- $stringEnum := eq $enumType "string" }}
 {{- $deprecated := and .Local.Comments .Local.Comments.Deprecated }}
@@ -33,7 +34,7 @@
         }
 
         public static implicit operator {{$className}}({{$enumType}} value) => Of(value);
-        public static implicit operator {{$enumType}}({{$className}} {{lower $className}}) => {{lower $className}}.Value;
+        public static implicit operator {{$enumType}}({{$className}} {{$param}}) => {{$param}}.Value;
 
         public static {{$className}}[] Values()
         {

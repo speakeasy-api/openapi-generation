@@ -7,7 +7,7 @@ namespace {{getScopeNamespace "utils"}}.Retries
     using System.Collections.Generic;
     using System.Threading.Tasks;
     {{- $errors := getScopeNamespace "errors" }}
-    {{if $errors}}using {{$errors}};{{end}}
+    {{if and $errors (not isCsharpV2)}}using {{$errors}};{{end}}
 
     /// <summary>
     /// Handles retry logic for HTTP requests with configurable backoff strategies.

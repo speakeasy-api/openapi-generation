@@ -75,10 +75,47 @@ function getStjConverterAttribute(typeDef: TypeDef): string {
 }
 
 // @ts-ignore
+// A wrapped `format: decimalStr` field must (de)serialize its inner decimal as a JSON
+// string. The generic OptionalNullableJsonConverter<T> routes the inner through the
+// type-default (number-wire) converter, which loses precision across intermediaries that
+// parse bare numbers as float64. Returns the fully-qualified string-wire wrapper converter
+// for the scalar and string-keyed map shapes, or "" for anything else (falls back to the
+// generic wrapper).
+function optionalNullableDecimalStrConverter(fieldDef: FieldDef): string {
+  const modelNs = getModelNamespace("");
+  const top = fieldDef.Type;
+  if (!top) return "";
+  const topKind = top.Type?.toString();
+
+  if (topKind === "decimal" && top.Format === "string") {
+    return `global::${modelNs}.OptionalNullableDecimalStringJsonConverter`;
+  }
+  if (topKind === "map") {
+    const value = top.ItemType;
+    if (
+      value &&
+      value.Type?.toString() === "decimal" &&
+      value.Format === "string"
+    ) {
+      return `global::${modelNs}.OptionalNullableDecimalStringMapJsonConverter`;
+    }
+  }
+  return "";
+}
+
+// @ts-ignore
 function templateJSONAnnotation(
   fieldDef: FieldDef,
   annotation: JSONAnnotation,
 ): string {
+  if (
+    annotation.Ignore &&
+    context.Global.Config.PresenceAwareJSONSerialization &&
+    !fieldDef.IsAdditionalProperties
+  ) {
+    return "[System.Text.Json.Serialization.JsonIgnore]";
+  }
+
   const fieldName = fieldDef.IsAdditionalProperties
     ? "additionalProperties"
     : escapeString(annotation.FieldName);
@@ -90,23 +127,53 @@ function templateJSONAnnotation(
 function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
   const resolved: string[] = [];
 
+  let jsonIgnored = false;
   for (const annotation of getFieldAnnotations(fieldDef)) {
     const anno = templateFieldAnnotation(fieldDef, annotation);
     if (anno) {
       resolved.push(anno);
+      if (anno === "[System.Text.Json.Serialization.JsonIgnore]") {
+        jsonIgnored = true;
+      }
     }
   }
 
-  const stjAttr = getStjConverterAttribute(fieldDef.Type);
-  if (stjAttr) {
-    resolved.push(stjAttr);
-  }
+  if (!jsonIgnored) {
+    if (needsOptionalNullableWrapper(fieldDef)) {
+      const decimalStrConverter = optionalNullableDecimalStrConverter(fieldDef);
+      const converter = decimalStrConverter
+        ? decimalStrConverter
+        : `global::${getModelNamespace(
+            "",
+          )}.OptionalNullableJsonConverter<${sanitizeType(
+            fieldDef.Type,
+            true,
+            "",
+          )}>`;
+      resolved.push(
+        "[System.Text.Json.Serialization.JsonConverter(typeof(" +
+          `${converter}))]`,
+      );
+      resolved.push(
+        "[System.Text.Json.Serialization.JsonIgnore(" +
+          "Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]",
+      );
+    } else {
+      const stjAttr = getStjConverterAttribute(fieldDef.Type);
+      if (stjAttr) {
+        resolved.push(stjAttr);
+      }
 
-  if ((fieldDef.Optional || !fieldDef.Nullable) && canFieldBeNull(fieldDef)) {
-    resolved.push(
-      "[System.Text.Json.Serialization.JsonIgnore(" +
-        "Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]",
-    );
+      if (
+        (fieldDef.Optional || !fieldDef.Nullable) &&
+        canFieldBeNull(fieldDef)
+      ) {
+        resolved.push(
+          "[System.Text.Json.Serialization.JsonIgnore(" +
+            "Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]",
+        );
+      }
+    }
   }
 
   if (fieldDef.Comments?.Deprecated) {

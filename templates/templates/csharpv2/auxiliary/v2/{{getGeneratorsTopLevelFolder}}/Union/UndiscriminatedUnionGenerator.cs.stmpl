@@ -39,23 +39,14 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
                     distinctiveCheckClose = "}\n";
                 }
 
-                // Score variants by the count of JSON properties not covered by
-                // the variant's known property set. When the JSON root is not an
-                // Object (primitive / array roots), score 0 — the deserialize
-                // attempt itself acts as the filter. Falling back to a 0 score
-                // for non-object roots means primitive/collection variants tie
-                // on declaration order, which is the desired behaviour.
+                // Score variants by the count of JSON properties not covered by the
+                // variant's metadata, recursing through nested objects and array/collection
+                // elements (see UnionScoring.CountOverflow). Root objects that tie on their
+                // top-level property set — and array-of-object variants, whose Array root
+                // exposed no top-level signal at all — are now separated by their nested
+                // structure, so the widest structural match wins instead of declaration order.
                 var overflowLine =
-                    $"int overflowCount{index};\n" +
-                    $"if (jsonDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)\n" +
-                    "{\n" +
-                    $"    var known{index} = new System.Collections.Generic.HashSet<string>(_ti{prop.Name}.Properties.Select(p => p.Name), System.StringComparer.OrdinalIgnoreCase);\n" +
-                    $"    overflowCount{index} = jsonDoc.RootElement.EnumerateObject().Count(p => !known{index}.Contains(p.Name));\n" +
-                    "}\n" +
-                    "else\n" +
-                    "{\n" +
-                    $"    overflowCount{index} = 0;\n" +
-                    "}";
+                    $"int overflowCount{index} = global::{{getModelNamespace ""}}.UnionScoring.CountOverflow(jsonDoc.RootElement, _ti{prop.Name}, options);";
 
                 // Value-type variants: JsonTypeInfo<T> Deserialize returns T
                 // (non-nullable). JSON null throws JsonException — caught

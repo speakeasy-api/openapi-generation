@@ -4,6 +4,7 @@ require("./auxiliary.ts");
 require("./v2/constants.ts");
 require("./v2/dependencies.ts");
 require("./v2/namespaces.ts");
+require("./v2/models.ts");
 require("./v2/annotations.ts");
 require("./v2/sanitization.ts");
 require("./v2/imports.ts");

@@ -96,6 +96,33 @@ function netTypeForCSharpAlias(name: string): string | null {
   return PRIMITIVE_ALIAS_TO_NET[name] ?? null;
 }
 
+function isDistinctNullableValueKind(typeDef: TypeDef): boolean {
+  return isValueType(typeDef) && typeDef.Type?.toString() !== "enum";
+}
+
+// Renders a collection element for the JsonContext
+function jsonContextItemType(typeDef: TypeDef): string {
+  if (!typeDef.ItemType) {
+    throw new Error(
+      `jsonContextItemType: collection "${typeDef.Name}" (kind ${typeDef.Type}) has no ItemType`,
+    );
+  }
+  const contextType = csharpTypeForJsonContext(typeDef.ItemType);
+
+  // A nullable value-type element inside a List<>/Dictionary<> must be rendered as
+  // `T?` in the JsonContext so the registered JsonTypeInfo<T> matches the model's
+  // declared collection element type; otherwise typed AddJson<T> cannot infer T
+  if (
+    typeDef.ContainsNull &&
+    isValueType(typeDef.ItemType) &&
+    typeDef.ItemType.Type?.toString() !== "enum"
+  ) {
+    return `${contextType}?`;
+  }
+
+  return contextType;
+}
+
 function csharpTypeForJsonContext(typeDef: TypeDef): string {
   switch (typeDef.Type.toString()) {
     case "class":
@@ -108,19 +135,17 @@ function csharpTypeForJsonContext(typeDef: TypeDef): string {
     case "error":
       // Error TypeDefs emit two C# classes: a thrown wrapper extending
       // APIBaseException and a plain DTO `<X>Payload` carrying the wire shape.
-      // Register the Payload — the wrapper's Exception base would force STJ
+      // Register the Payload — the wrapper's Exception contextType would force STJ
       // source-gen to walk RUC-annotated System.Exception surface.
       return `${getModelNamespace(
         typeDef.OutputLocation,
         true,
       )}.${sanitizeClassName(typeDef.Name)}Payload`;
     case "array":
-      return `System.Collections.Generic.List<${csharpTypeForJsonContext(
-        typeDef.ItemType,
-      )}>`;
+      return `System.Collections.Generic.List<${jsonContextItemType(typeDef)}>`;
     case "map":
-      return `System.Collections.Generic.Dictionary<string, ${csharpTypeForJsonContext(
-        typeDef.ItemType,
+      return `System.Collections.Generic.Dictionary<string, ${jsonContextItemType(
+        typeDef,
       )}>`;
     default: {
       const raw = sanitizeType(typeDef, false, "");
@@ -145,7 +170,7 @@ function scalarValueExpr(prop: string, field: FieldDef): string {
     prop += "?";
   }
 
-  return `${prop}.Value()`;
+  return field.Type.Enum?.Open ? `${prop}.Value` : `${prop}.Value()`;
 }
 
 function jsonTypeInfoName(typeDef: TypeDef): string {
@@ -184,7 +209,14 @@ function jsonTypeInfoName(typeDef: TypeDef): string {
     return sanitizeClassName(segments.join(" ")) || raw;
   }
 
-  const raw = csharpTypeForJsonContext(typeDef).replaceAll("global::", "");
+  // Collections: csharpTypeForJsonContext renders nullable value-type elements as
+  // `T?` (from the container's ContainsNull). Turn the `?` into a `Nullable` name
+  // token so the element nullability is reflected in the property name
+  // (`Dictionary<string, decimal?>` → `...DictionaryStringSystemDecimalNullable`)
+  // and stays distinct from the non-nullable collection.
+  const raw = csharpTypeForJsonContext(typeDef)
+    .replaceAll("global::", "")
+    .replaceAll("?", " Nullable ");
   return sanitizeClassName(raw.replaceAll(/[^A-Za-z0-9_]+/g, " "));
 }
 
@@ -213,7 +245,10 @@ function emitFormField(
 
   const utilsNs = getScopeNamespace("utils", true);
   const fs = `global::${utilsNs}.FormSerializer`;
-  const prop = `${sourceExpr}.${sanitizeField(field, parentType)}`;
+  const prop = wrappedFieldAccess(
+    `${sourceExpr}.${sanitizeField(field, parentType)}`,
+    field,
+  );
   const name = formWireName(field, annotation);
   const explode = formExplode(annotation);
 
@@ -270,7 +305,10 @@ function emitScalarFormFields(
   const fs = `global::${utilsNs}.FormSerializer`;
   const entries = fields.map(({ field, annotation }) => {
     const name = formWireName(field, annotation);
-    const prop = `${sourceExpr}.${sanitizeField(field, parentType)}`;
+    const prop = wrappedFieldAccess(
+      `${sourceExpr}.${sanitizeField(field, parentType)}`,
+      field,
+    );
     return `    ("${name}", ${scalarValueExpr(prop, field)}),`;
   });
 

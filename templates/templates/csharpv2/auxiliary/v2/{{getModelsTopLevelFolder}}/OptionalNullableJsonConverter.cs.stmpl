@@ -1,0 +1,163 @@
+{{- if .Global.Config.PresenceAwareJSONSerialization -}}
+#nullable enable
+namespace {{getModelNamespace ""}}
+{
+    using System;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using System.Text.Json.Serialization.Metadata;
+
+    /// <summary>
+    /// System.Text.Json converter for <see cref="OptionalNullable{T}"/>.
+    /// </summary>
+    public sealed class OptionalNullableJsonConverter<T> : JsonConverter<OptionalNullable<T>>
+    {
+        public override OptionalNullable<T> Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return OptionalNullable<T>.Set(default);
+            }
+
+            var info = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            var value = JsonSerializer.Deserialize(ref reader, info);
+            return OptionalNullable<T>.Set(value);
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            OptionalNullable<T> value,
+            JsonSerializerOptions options
+        )
+        {
+            if (!value.IsSet || value.IsNull)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            var info = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T));
+            JsonSerializer.Serialize(writer, value.ValueOrDefault!, info);
+        }
+    }
+
+    /// <summary>
+    /// Tri-state converter for a <c>format: decimalStr</c> wrapped in
+    /// <see cref="OptionalNullable{T}"/>. The inner decimal travels as a JSON string.
+    /// </summary>
+    public sealed class OptionalNullableDecimalStringJsonConverter
+        : JsonConverter<OptionalNullable<decimal?>>
+    {
+        public override OptionalNullable<decimal?> Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return OptionalNullable<decimal?>.Set(null);
+            }
+
+            return OptionalNullable<decimal?>.Set(
+                global::{{getScopeNamespace "utils" true}}.DecimalConverterHelpers.ReadValue(ref reader)
+            );
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            OptionalNullable<decimal?> value,
+            JsonSerializerOptions options
+        )
+        {
+            if (!value.IsSet || value.IsNull)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            writer.WriteStringValue(
+                value.ValueOrDefault!.Value.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture
+                )
+            );
+        }
+    }
+
+    /// <summary>
+    /// Tri-state converter for a map of <c>format: decimalStr</c> wrapped in
+    /// <see cref="OptionalNullable{T}"/>. Each decimal travels as a JSON string.
+    /// </summary>
+    public sealed class OptionalNullableDecimalStringMapJsonConverter
+        : JsonConverter<OptionalNullable<System.Collections.Generic.Dictionary<string, decimal?>?>>
+    {
+        public override OptionalNullable<
+            System.Collections.Generic.Dictionary<string, decimal?>?
+        > Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Null)
+            {
+                return OptionalNullable<
+                    System.Collections.Generic.Dictionary<string, decimal?>?
+                >.Set(null);
+            }
+
+            if (reader.TokenType != JsonTokenType.StartObject)
+            {
+                throw new JsonException(
+                    $"Expected StartObject for Dictionary<string, decimal?>, got {reader.TokenType}"
+                );
+            }
+
+            var dict = new System.Collections.Generic.Dictionary<string, decimal?>();
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+            {
+                var key = reader.GetString()!;
+                reader.Read();
+                dict[key] =
+                    reader.TokenType == JsonTokenType.Null
+                        ? (decimal?)null
+                        : global::{{getScopeNamespace "utils" true}}.DecimalConverterHelpers.ReadValue(ref reader);
+            }
+
+            return OptionalNullable<
+                System.Collections.Generic.Dictionary<string, decimal?>?
+            >.Set(dict);
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            OptionalNullable<System.Collections.Generic.Dictionary<string, decimal?>?> value,
+            JsonSerializerOptions options
+        )
+        {
+            if (!value.IsSet || value.IsNull)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            writer.WriteStartObject();
+            foreach (var kvp in value.ValueOrDefault!)
+            {
+                writer.WritePropertyName(kvp.Key);
+                if (kvp.Value is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else
+                {
+                    writer.WriteStringValue(
+                        kvp.Value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    );
+                }
+            }
+            writer.WriteEndObject();
+        }
+    }
+}
+{{- end }}

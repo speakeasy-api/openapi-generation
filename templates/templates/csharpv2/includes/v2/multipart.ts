@@ -65,7 +65,10 @@ function emitMultipartField(
 
   const utilsNs = getScopeNamespace("utils", true);
   const ms = `global::${utilsNs}.MultipartSerializer`;
-  const prop = `${sourceExpr}.${sanitizeField(field, parentType)}`;
+  const prop = wrappedFieldAccess(
+    `${sourceExpr}.${sanitizeField(field, parentType)}`,
+    field,
+  );
   const name = multipartWireName(field, annotation);
 
   if (annotation.File) {

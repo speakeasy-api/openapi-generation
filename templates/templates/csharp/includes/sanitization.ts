@@ -873,6 +873,24 @@ function isReferenceType(typeDef: TypeDef): boolean {
 registerTemplateFunc("isReferenceType", isReferenceType);
 
 // @ts-ignore
+function isValueType(typeDef: TypeDef): boolean {
+  return [
+    "integer",
+    "int32",
+    "bigint",
+    "number",
+    "float32",
+    "decimal",
+    "boolean",
+    "date",
+    "date-time",
+    "enum",
+  ].includes(typeDef.Type.toString());
+}
+
+registerTemplateFunc("isValueType", isValueType);
+
+// @ts-ignore
 function sanitizePackageId(name: string): string {
   if (!context.Global.Config.DisableNamespacePascalCasingApr2024) {
     return name

@@ -1,0 +1,161 @@
+#nullable enable
+namespace {{getModelNamespace ""}}
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
+
+    /// <summary>
+    /// Structural scoring helper for undiscriminated-union deserialization. Counts JSON
+    /// properties that are not represented in a candidate variant's source-generated
+    /// metadata, recursing through nested objects and array/collection elements. A lower
+    /// overflow count means the JSON is a tighter structural fit for that variant, so the
+    /// widest matching variant wins instead of the first-declared variant that merely
+    /// tolerates the extra fields (System.Text.Json ignores unmatched properties on read).
+    /// </summary>
+    internal static class UnionScoring
+    {
+        // Maps a union CLR type to its variant CLR types, so a nested union (whose own
+        // JsonTypeInfo is converter-based, not Object-kind) can be scored by its variants.
+        // Populated by each union's converter factory.
+        private static readonly ConcurrentDictionary<Type, Type[]> UnionVariants =
+            new ConcurrentDictionary<Type, Type[]>();
+
+        public static void RegisterUnion(Type unionType, Type[] variantTypes)
+        {
+            UnionVariants[unionType] = variantTypes;
+        }
+
+        public static int CountOverflow(
+            JsonElement element,
+            JsonTypeInfo? typeInfo,
+            JsonSerializerOptions options
+        )
+        {
+            return CountOverflow(element, typeInfo, options, 0);
+        }
+
+        private static int CountOverflow(
+            JsonElement element,
+            JsonTypeInfo? typeInfo,
+            JsonSerializerOptions options,
+            int depth
+        )
+        {
+            // Depth cap guards against pathological self-referential metadata graphs.
+            if (typeInfo == null || depth > 10)
+            {
+                return 0;
+            }
+
+            // Nested union: score by its widest-fitting variant, not its opaque metadata.
+            if (UnionVariants.TryGetValue(typeInfo.Type, out var variantTypes))
+            {
+                int best = int.MaxValue;
+                foreach (var variantType in variantTypes)
+                {
+                    int score = CountOverflow(
+                        element,
+                        ResolveTypeInfo(variantType, options),
+                        options,
+                        depth + 1
+                    );
+                    if (score < best)
+                    {
+                        best = score;
+                    }
+                }
+                return best == int.MaxValue ? 0 : best;
+            }
+
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    // Only object-shaped metadata yields a property-overflow signal.
+                    // Dictionary / freeform objects declare no properties and must not
+                    // be penalized — they legitimately accept arbitrary keys.
+                    if (typeInfo.Kind != JsonTypeInfoKind.Object || typeInfo.Properties.Count == 0)
+                    {
+                        return 0;
+                    }
+
+                    var known = new Dictionary<string, JsonPropertyInfo>(
+                        StringComparer.OrdinalIgnoreCase
+                    );
+                    foreach (var prop in typeInfo.Properties)
+                    {
+                        known[prop.Name] = prop;
+                    }
+
+                    int overflow = 0;
+                    foreach (var jsonProp in element.EnumerateObject())
+                    {
+                        if (known.TryGetValue(jsonProp.Name, out var propInfo))
+                        {
+                            overflow += CountOverflow(
+                                jsonProp.Value,
+                                ResolveTypeInfo(propInfo.PropertyType, options),
+                                options,
+                                depth + 1
+                            );
+                        }
+                        else
+                        {
+                            overflow++;
+                        }
+                    }
+                    return overflow;
+
+                case JsonValueKind.Array:
+                    var elementType = GetElementType(typeInfo.Type);
+                    if (elementType == null)
+                    {
+                        return 0;
+                    }
+                    var elementTypeInfo = ResolveTypeInfo(elementType, options);
+                    int sum = 0;
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        sum += CountOverflow(item, elementTypeInfo, options, depth + 1);
+                    }
+                    return sum;
+
+                default:
+                    return 0;
+            }
+        }
+
+        private static JsonTypeInfo? ResolveTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            try
+            {
+                return options.GetTypeInfo(type);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // JsonTypeInfo exposes no element type, so derive it from the CLR type.
+        // Metadata-only reflection (IsArray / generic type arguments) is trim/AOT-safe.
+        private static Type? GetElementType(Type type)
+        {
+            if (type.IsArray)
+            {
+                return type.GetElementType();
+            }
+            if (type.IsGenericType)
+            {
+                var args = type.GetGenericArguments();
+                if (args.Length == 1)
+                {
+                    return args[0];
+                }
+            }
+            return null;
+        }
+    }
+}

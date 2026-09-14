@@ -54,7 +54,7 @@ function urlBuilderDictValueExpr(propAccess: string, field: FieldDef): string {
     if (supported) {
       const acc =
         field.Nullable || field.Optional ? `${propAccess}?` : propAccess;
-      return `${acc}.Value()`;
+      return field.Type.Enum?.Open ? `${acc}.Value` : `${acc}.Value()`;
     }
   }
   return propAccess;
@@ -71,7 +71,10 @@ function urlBuilderEmitObjectDict(
   for (const f of urlBuilderObjectFieldsSorted(objType)) {
     const wireName = urlBuilderJsonName(f);
     const escaped = escapeString(wireName);
-    const propAccess = `${sourceExpr}.${sanitizeField(f, objType)}`;
+    const propAccess = wrappedFieldAccess(
+      `${sourceExpr}.${sanitizeField(f, objType)}`,
+      f,
+    );
     const valueExpr = urlBuilderDictValueExpr(propAccess, f);
     const assign = `${dictVar}["${escaped}"] = ${valueExpr};`;
     if (canFieldBeNull(f)) {
@@ -85,6 +88,20 @@ function urlBuilderEmitObjectDict(
 
 function urlBuilderIsObjectParam(field: FieldDef): boolean {
   return field.Type.Type.toString() === "class";
+}
+
+// A class-based open enum is not a C# enum, so Utilities.ToString cannot stringify it as a
+// scalar path/query/header param. Emit its underlying `.Value` (a primitive) at the call
+// site. Native (closed) enums are real C# enums and serialize fine as-is.
+function urlBuilderScalarParamExpr(
+  propAccess: string,
+  field: FieldDef,
+): string {
+  if (field.Type.Type.toString() === "enum" && field.Type.Enum?.Open) {
+    const nullSafe = field.Nullable || field.Optional ? "?" : "";
+    return `${propAccess}${nullSafe}.Value`;
+  }
+  return propAccess;
 }
 
 // @ts-ignore
@@ -136,7 +153,11 @@ function templateBuildURL(op: Operation): string {
       lines.push(`}`);
     } else {
       lines.push(
-        `urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", ${propAccess}, "${style}", ${param.Explode});`,
+        `urlString = ${ub}.ReplacePathParam(urlString, "${
+          param.Name
+        }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
+          param.Explode
+        });`,
       );
     }
   }
@@ -177,7 +198,11 @@ function templateBuildURL(op: Operation): string {
         lines.push(`}`);
       } else {
         lines.push(
-          `${ub}.AppendQueryParam(__qs, "${param.Name}", ${propAccess}, "${style}", ${param.Explode}, ${allowEmpty});`,
+          `${ub}.AppendQueryParam(__qs, "${
+            param.Name
+          }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
+            param.Explode
+          }, ${allowEmpty});`,
         );
       }
     }
@@ -222,7 +247,11 @@ function templateApplyHeaders(op: Operation): string {
       lines.push(`}`);
     } else {
       lines.push(
-        `${ub}.AppendHeader(httpRequest, "${param.Name}", ${propAccess}, "${style}", ${param.Explode});`,
+        `${ub}.AppendHeader(httpRequest, "${
+          param.Name
+        }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
+          param.Explode
+        });`,
       );
     }
   }
