@@ -86,7 +86,8 @@
                 httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
             }
             {{- if and $request .Local.SerializationMethod }}
-            {{ templateSerializeRequestBody .Local }}
+
+            {{templateSerializeRequestBody .Local}}
             if (serializedBody != null)
             {
                 httpRequest.Content = serializedBody;
@@ -338,7 +339,6 @@
             {{- else}}
             string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
             {{- end}}
-
             {{templateBuildURL .Local}}
 
             {{- if and $pagination (hasPaginationURL .Local) }}
@@ -359,7 +359,8 @@
                 httpRequest.Headers.Add("Accept", "{{ .Local.GetAcceptTypes | join ", " }}");
             }
             {{- if and $request .Local.SerializationMethod }}
-            {{ templateSerializeRequestBody .Local }}
+
+            {{templateSerializeRequestBody .Local}}
             if (serializedBody != null)
             {
                 httpRequest.Content = serializedBody;

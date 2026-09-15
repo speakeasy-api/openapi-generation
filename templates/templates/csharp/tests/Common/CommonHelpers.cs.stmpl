@@ -197,6 +197,7 @@ public class CommonHelpers
     }
 
 {{- if not isCsharpV2}}
+
     // Derive test canonicalization settings from the SDK's serializer settings to prevent drift.
     private static readonly JsonSerializerSettings NormalizedJsonSettings = BuildNormalizedJsonSettings();
 
@@ -239,6 +240,7 @@ public class CommonHelpers
     }
 
 {{- if isCsharpV2}}
+
     public static string SortJSONObjectKeys(string? value, params string[] fields)
     {
         if (value == null) return "";
@@ -285,6 +287,7 @@ public class CommonHelpers
         return node;
     }
 {{- else}}
+
     public static string SortJSONObjectKeys(string? value, params string[] fields)
     {
         if (value == null) return "";
