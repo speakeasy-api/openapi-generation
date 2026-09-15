@@ -1,0 +1,10 @@
+id: 1789485212-bc609766
+features:
+    - core
+targets:
+    - csharp
+type: fix
+bump: patch
+description: resolve netstandard2.0 nullable-reference compiler warnings
+author: 2ynn
+date: "2026-09-15"

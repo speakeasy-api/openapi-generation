@@ -107,7 +107,7 @@ namespace {{getScopeNamespace "errors" true}}
         /// </summary>
         public override string ToString()
         {
-            var innerMessage = string.IsNullOrEmpty(InnerException?.Message) ? "" : $"\n{InnerException.Message}";
+            var innerMessage = string.IsNullOrEmpty(InnerException?.Message) ? "" : $"\n{InnerException{{if isNetstandard2}}!{{end}}.Message}";
     {{- if $isErrorEnvelope}}
             return $"Status: {Response.StatusCode}. {Message}{innerMessage}";
     {{- else}}

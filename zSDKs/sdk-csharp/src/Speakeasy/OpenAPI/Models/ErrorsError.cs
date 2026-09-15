@@ -57,7 +57,7 @@ namespace Speakeasy.OpenAPI
             string? message = payload.Error;
             if (!string.IsNullOrEmpty(message))
             {
-                return message;
+                return message!;
             }
 
             return "API error occurred";

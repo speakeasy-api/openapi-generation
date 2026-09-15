@@ -123,14 +123,14 @@ namespace Speakeasy.OpenAPI
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
     }
 }

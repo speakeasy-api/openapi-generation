@@ -12,6 +12,8 @@ namespace Speakeasy.OpenAPI.Utils
     using System;
     using System.Linq;
     using System.Net.Http.Headers;
+    using System.Net.Http;
+    using System.Threading.Tasks;
     using System.Collections.Generic;
     using System.Text.RegularExpressions;
     using System.Numerics;
@@ -324,6 +326,16 @@ namespace Speakeasy.OpenAPI.Utils
             }
 
             return false;
+        }
+
+        public static async Task<string> ReadContentAsStringAsync(HttpResponseMessage response)
+        {
+            return response.Content != null ? await response.Content.ReadAsStringAsync() : string.Empty;
+        }
+
+        public static async Task<byte[]> ReadContentAsByteArrayAsync(HttpResponseMessage response)
+        {
+            return response.Content != null ? await response.Content.ReadAsByteArrayAsync() : System.Array.Empty<byte>();
         }
 
         public static string PrefixBearer(string authHeaderValue)

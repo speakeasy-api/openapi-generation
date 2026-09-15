@@ -226,7 +226,7 @@
 
             {{- $responseFormat := getResponseFormat }}
             {{- $responseBody := "await httpResponse.Content.ReadAsStringAsync()" }}
-            {{- if isNetstandard2 }}{{ $responseBody = "(httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty)" }}{{ end }}
+            {{- if isNetstandard2 }}{{ $responseBody = "await Utilities.ReadContentAsStringAsync(httpResponse)" }}{{ end }}
             {{- $errorArgs := print "httpResponse, " $responseBody }}
             {{- $defaultError := templateDefaultError false}}
             {{- if eq $responseFormat "envelope-http"}}
@@ -508,7 +508,7 @@
 
             {{- $responseFormat := getResponseFormat }}
             {{- $responseBody := "await httpResponse.Content.ReadAsStringAsync()" }}
-            {{- if isNetstandard2 }}{{ $responseBody = "(httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty)" }}{{ end }}
+            {{- if isNetstandard2 }}{{ $responseBody = "await Utilities.ReadContentAsStringAsync(httpResponse)" }}{{ end }}
             {{- $errorArgs := print "httpResponse, " $responseBody }}
             {{- $defaultError := templateDefaultError false}}
             {{- if eq $responseFormat "envelope-http"}}

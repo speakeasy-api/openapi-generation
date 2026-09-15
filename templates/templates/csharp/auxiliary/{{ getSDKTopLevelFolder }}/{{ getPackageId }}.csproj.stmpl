@@ -49,10 +49,13 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(SPEAKEASY_DEBUG)' == 'true'">
+{{- if isDebug }}
+
+  <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CS0618</WarningsNotAsErrors>
   </PropertyGroup>
+{{- end }}
 
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

@@ -43,7 +43,7 @@ Func<Task<{{ sanitizeType .Local.Response.Type false "" }}?>> nextFunc = async d
         return null;
     }
 
-    if (nextURL.StartsWith("/"))
+    if (nextURL{{if isNetstandard2}}!{{end}}.StartsWith("/"))
     {
         nextURL = baseUrl + nextURL;
     }

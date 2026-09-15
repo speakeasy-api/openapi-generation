@@ -21,6 +21,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS0618</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

@@ -199,7 +199,7 @@ namespace Speakeasy.OpenAPI
             {
                 if (Utilities.IsContentTypeMatch("application/json", contentType))
                 {
-                    var httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    var httpResponseBody = await Utilities.ReadContentAsStringAsync(httpResponse);
                     NamespaceConflictTest obj;
                     try
                     {
@@ -223,18 +223,18 @@ namespace Speakeasy.OpenAPI
                     return response;
                 }
 
-                throw new SDKException("Unknown content type received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("Unknown content type received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
 
         /// <summary>
@@ -324,14 +324,14 @@ namespace Speakeasy.OpenAPI
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
 
         /// <summary>
@@ -418,7 +418,7 @@ namespace Speakeasy.OpenAPI
             {
                 if (Utilities.IsContentTypeMatch("application/json", contentType))
                 {
-                    var httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    var httpResponseBody = await Utilities.ReadContentAsStringAsync(httpResponse);
                     Speakeasy.OpenAPI.Bar.Pet obj;
                     try
                     {
@@ -442,18 +442,18 @@ namespace Speakeasy.OpenAPI
                     return response;
                 }
 
-                throw new SDKException("Unknown content type received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("Unknown content type received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
 
         /// <summary>
@@ -530,7 +530,7 @@ namespace Speakeasy.OpenAPI
             {
                 if (Utilities.IsContentTypeMatch("application/json", contentType))
                 {
-                    var httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    var httpResponseBody = await Utilities.ReadContentAsStringAsync(httpResponse);
                     TripleNamespaceConflictTest obj;
                     try
                     {
@@ -554,18 +554,18 @@ namespace Speakeasy.OpenAPI
                     return response;
                 }
 
-                throw new SDKException("Unknown content type received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("Unknown content type received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
 
         /// <summary>
@@ -639,7 +639,7 @@ namespace Speakeasy.OpenAPI
             {
                 if (Utilities.IsContentTypeMatch("application/json", contentType))
                 {
-                    var httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    var httpResponseBody = await Utilities.ReadContentAsStringAsync(httpResponse);
                     GetPetOwnersResponseBody obj;
                     try
                     {
@@ -663,18 +663,18 @@ namespace Speakeasy.OpenAPI
                     return response;
                 }
 
-                throw new SDKException("Unknown content type received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("Unknown content type received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
             else if (responseStatusCode >= 500 && responseStatusCode < 600)
             {
-                throw new SDKException("API error occurred", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
             }
 
-            throw new SDKException("Unknown status code received", httpRequest, httpResponse, (httpResponse.Content != null ? await httpResponse.Content.ReadAsStringAsync() : string.Empty));
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
         }
     }
 }

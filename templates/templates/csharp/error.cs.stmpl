@@ -80,7 +80,7 @@
             string? message = {{$errorMessageAccessor}};
             if (!string.IsNullOrEmpty(message))
             {
-                return message;
+                return message{{if isNetstandard2}}!{{end}};
             }
 
             return {{$fallbackErrorMessage}};

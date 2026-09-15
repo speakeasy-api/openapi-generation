@@ -225,7 +225,7 @@ function templateJSONHandler(
 }`;
     }
 
-    return `var httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+    return `var httpResponseBody = ${templateReadAsString()};
 ${targetType} ${varName};
 ${preamble}try
 {
@@ -358,9 +358,9 @@ function templateBodyHandler(
         return `downloadHandler.Stream`;
       case content.SerializationMethod == "raw" &&
         content.Content.Type.Type.toString() != "response-stream":
-        return `await httpResponse.Content.ReadAsByteArrayAsync()`;
+        return templateReadAsByte();
       case content.SerializationMethod == "string":
-        return `await httpResponse.Content.ReadAsStringAsync()`;
+        return templateReadAsString();
       default:
         return ".content";
     }
@@ -595,3 +595,17 @@ function getHTTPMetadata(): string {
 }
 
 registerTemplateFunc("getHTTPMetadata", getHTTPMetadata);
+
+// On netstandard2.0 HttpResponseMessage.Content is nullable; route through the
+// Utilities guard. Later frameworks annotate it non-null, so read directly.
+function templateReadAsString(): string {
+  return isNetstandard2()
+    ? "await Utilities.ReadContentAsStringAsync(httpResponse)"
+    : "await httpResponse.Content.ReadAsStringAsync()";
+}
+
+function templateReadAsByte(): string {
+  return isNetstandard2()
+    ? "await Utilities.ReadContentAsByteArrayAsync(httpResponse)"
+    : "await httpResponse.Content.ReadAsByteArrayAsync()";
+}

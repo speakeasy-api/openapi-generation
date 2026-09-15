@@ -67,7 +67,7 @@ namespace Speakeasy.OpenAPI
         /// </summary>
         public override string ToString()
         {
-            var innerMessage = string.IsNullOrEmpty(InnerException?.Message) ? "" : $"\n{InnerException.Message}";
+            var innerMessage = string.IsNullOrEmpty(InnerException?.Message) ? "" : $"\n{InnerException!.Message}";
             return $"Status: {Response.StatusCode}. {Message}{innerMessage}";
         }
     }
