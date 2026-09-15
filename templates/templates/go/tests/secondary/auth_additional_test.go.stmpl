@@ -57,7 +57,7 @@ func TestMultipleMixedOptionsAuth(t *testing.T) {
 	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
 
 	err := s.AuthNew.MultipleMixedOptionsAuth(context.Background(), shared.AuthServiceRequestBody{
-		BasicAuth: &shared.BasicAuth{
+		BasicAuth: &shared.AuthServiceRequestBodyBasicAuth{
 			Username: "testUser",
 			Password: "testPass",
 		},

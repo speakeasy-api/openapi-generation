@@ -47,8 +47,8 @@ import org.openapis.secondary.openapi.models.operations.async.RetriesAfterRespon
 import org.openapis.secondary.openapi.models.operations.async.RetriesAttemptCountResponse;
 import org.openapis.secondary.openapi.models.operations.async.RetriesGetResponse;
 import org.openapis.secondary.openapi.models.components.Enum;
-import org.openapis.secondary.openapi.models.components.Int32Enum;
-import org.openapis.secondary.openapi.models.components.IntEnum;
+import org.openapis.secondary.openapi.models.components.SimpleObjectInt32Enum;
+import org.openapis.secondary.openapi.models.components.SimpleObjectIntEnum;
 import org.openapis.secondary.openapi.models.components.JsonEvent;
 import org.openapis.secondary.openapi.models.components.LimitOffsetConfig;
 import org.openapis.secondary.openapi.models.components.SimpleObject;
@@ -84,8 +84,8 @@ public class AsyncAdditionalTest {
                 .float32(1.1f)
                 .int_(1L)
                 .int32(1)
-                .int32Enum(Int32Enum.FIFTY_FIVE)
-                .intEnum(IntEnum.Second)
+                .int32Enum(SimpleObjectInt32Enum.FIFTY_FIVE)
+                .intEnum(SimpleObjectIntEnum.Second)
                 .num(1.1)
                 .str("test")
                 .strOpt("testOptional")

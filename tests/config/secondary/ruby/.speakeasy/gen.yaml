@@ -1,12 +1,12 @@
 configVersion: 2.0.0
 generation:
+  nameResolution: qualified
   sdkClassName: SDK
   auth:
     oAuth2ClientCredentialsEnabled: true
   usageSnippets:
     optionalPropertyRendering: withExample
   fixes:
-    nameResolutionDec2023: false
     securityFeb2025: true
     nameOverrideFeb2026: false
   tests:

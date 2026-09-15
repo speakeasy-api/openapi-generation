@@ -887,16 +887,13 @@ TestSchema:
 					WithScope(ast.ScopeShared).
 					WithRegistered().
 					WithOriginalNameFrozen().
-					WithContextStack(
-						testutils.NewContextStack().WithInputOutput("Input").Build(),
-					).
+					WithContextStack(ast.ContextStack{}).
 					WithExtensions(map[string]interface{}{
 						"x-speakeasy-name-override":      "CustomNode",
 						"x-speakeasy-group":              "node-group",
 						"x-speakeasy-example":            "circular-example",
 						"x-speakeasy-reference-override": "3227167712ca05a9-allOf[#/components/schemas/NodeWithExtensions,51e94c7eb203a44b]",
 					}).
-					WithInput(true).
 					WithFields(
 						testutils.NewFieldDef("CustomNode", nodeType).
 							WithOriginalName("next").
@@ -979,15 +976,12 @@ TestSchema:
 					WithScope(ast.ScopeShared).
 					WithRegistered().
 					WithOriginalNameFrozen().
-					WithContextStack(
-						testutils.NewContextStack().WithInputOutput("Input").Build(),
-					).
+					WithContextStack(ast.ContextStack{}).
 					WithExtensions(map[string]interface{}{
 						"x-speakeasy-group":              "node-group",
 						"x-speakeasy-example":            "circular-example",
 						"x-speakeasy-reference-override": "3227167712ca05a9-allOf[#/components/schemas/NodeWithExtensions,51e94c7eb203a44b]",
 					}).
-					WithInput(true).
 					WithFields(
 						testutils.NewFieldDef("metadata", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 23, Column: 15}).Build()).
 							WithOriginalName("metadata").

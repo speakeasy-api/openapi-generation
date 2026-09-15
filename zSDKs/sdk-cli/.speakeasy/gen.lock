@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 76722ccc2d9d9b3063d91ed115926bd3
+  configChecksum: b59e14e17406501c615f3667d990c5b4
 features:
   cli:
     additionalProperties: 0.0.1

@@ -1,5 +1,6 @@
 configVersion: 2.0.0
 generation:
+  nameResolution: shortest
   sdkClassName: SDK
   repoUrl: https://github.com/speakeasy-sdks/test-sdk
   maintainOpenAPIOrder: true

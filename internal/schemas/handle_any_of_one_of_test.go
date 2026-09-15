@@ -18,13 +18,14 @@ import (
 // TestHandleAnyOfOneOf tests the handleAnyOfOneOf method with various oneOf/anyOf scenarios
 func TestHandleAnyOfOneOf(t *testing.T) {
 	tests := []struct {
-		name         string
-		schemasYAML  string
-		schemaName   string
-		fixes        *config.Fixes                        // nil means use default
-		mockFeatures func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
-		isRequest    *bool                                // nil means use default (false), otherwise use specified value
-		expected     *ast.FieldDef
+		name           string
+		schemasYAML    string
+		schemaName     string
+		nameResolution config.NameResolutionMode            // empty means derive from fixes
+		fixes          *config.Fixes                        // nil means use default
+		mockFeatures   func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
+		isRequest      *bool                                // nil means use default (false), otherwise use specified value
+		expected       *ast.FieldDef
 	}{
 		{
 			name: "StringOrNull",
@@ -621,7 +622,66 @@ TestSchema:
 				Build(),
 		},
 		{
-			name: "OneOfWithDescriptionMerging",
+			name:           "OneOfWithDescriptionMergingShortest",
+			nameResolution: config.NameResolutionShortest,
+			schemasYAML: `PersonObject:
+  type: object
+  properties:
+    name:
+      type: string
+    age:
+      type: integer
+  required:
+    - name
+TestSchema:
+  description: "A test schema with description"
+  title: "Test Schema"
+  properties:
+    extraField:
+      type: string
+  oneOf:
+    - $ref: "#/components/schemas/PersonObject"
+    - type: "null"`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("object",
+				testutils.NewTypeDef(ast.DataTypeClass).
+					WithName("PersonObject").
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithFields(
+						testutils.NewFieldDef("age", testutils.NewTypeDef(ast.DataTypeInteger).WithLocation(&yaml.Node{Line: 14, Column: 11}).Build()).
+							WithOriginalName("age").
+							WithOptional(true).
+							WithJSONAnnotation("age").
+							Build(),
+						testutils.NewFieldDef("extraField", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 22, Column: 11}).Build()).
+							WithOriginalName("extraField").
+							WithOptional(true).
+							WithJSONAnnotation("extraField").
+							Build(),
+						testutils.NewFieldDef("name", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 11}).Build()).
+							WithOriginalName("name").
+							WithOptional(false).
+							WithJSONAnnotation("name").
+							Build(),
+					).
+					WithExtensions(map[string]interface{}{
+						"x-speakeasy-reference-override": "#/components/schemas/PersonObject",
+					}).
+					WithScope(ast.ScopeShared).
+					WithRegistered().
+					WithOriginalNameFrozen().
+					WithIsComponent(false).
+					WithContextStack(
+						testutils.NewContextStack().WithOneOf("Test Schema").Build(),
+					).
+					Build()).
+				WithNullable(true).
+				WithOptional(true).
+				Build(),
+		},
+		{
+			name:           "OneOfWithDescriptionMergingLegacy",
+			nameResolution: config.NameResolutionLegacy,
 			schemasYAML: `PersonObject:
   type: object
   properties:
@@ -672,64 +732,6 @@ TestSchema:
 						testutils.NewContextStack().WithRefType("PersonObject").WithIdentifierForNaming(pointer.From("PersonObject")).Build(),
 					).
 					WithLocation(&yaml.Node{Line: 9, Column: 7}).
-					Build()).
-				WithNullable(true).
-				WithOptional(true).
-				Build(),
-		},
-		{
-			name: "OneOfWithDescriptionMergingDec2023",
-			schemasYAML: `PersonObject:
-  type: object
-  properties:
-    name:
-      type: string
-    age:
-      type: integer
-  required:
-    - name
-TestSchema:
-  description: "A test schema with description"
-  title: "Test Schema"
-  properties:
-    extraField:
-      type: string
-  oneOf:
-    - $ref: "#/components/schemas/PersonObject"
-    - type: "null"`,
-			schemaName: "TestSchema",
-			fixes:      withNameResolutionDec2023(),
-			expected: testutils.NewFieldDef("object",
-				testutils.NewTypeDef(ast.DataTypeClass).
-					WithName("PersonObject").
-					WithLocation(&yaml.Node{Line: 9, Column: 7}).
-					WithFields(
-						testutils.NewFieldDef("age", testutils.NewTypeDef(ast.DataTypeInteger).WithLocation(&yaml.Node{Line: 14, Column: 11}).Build()).
-							WithOriginalName("age").
-							WithOptional(true).
-							WithJSONAnnotation("age").
-							Build(),
-						testutils.NewFieldDef("extraField", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 22, Column: 11}).Build()).
-							WithOriginalName("extraField").
-							WithOptional(true).
-							WithJSONAnnotation("extraField").
-							Build(),
-						testutils.NewFieldDef("name", testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 11}).Build()).
-							WithOriginalName("name").
-							WithOptional(false).
-							WithJSONAnnotation("name").
-							Build(),
-					).
-					WithExtensions(map[string]interface{}{
-						"x-speakeasy-reference-override": "#/components/schemas/PersonObject",
-					}).
-					WithScope(ast.ScopeShared).
-					WithRegistered().
-					WithOriginalNameFrozen().
-					WithIsComponent(false).
-					WithContextStack(
-						testutils.NewContextStack().WithOneOf("Test Schema").Build(),
-					).
 					Build()).
 				WithNullable(true).
 				WithOptional(true).
@@ -817,7 +819,8 @@ TestSchema:
 				Build(),
 		},
 		{
-			name: "OneOfWithMergedReferencesNameResolutionDec2023",
+			name:           "OneOfWithMergedReferencesNameResolutionShortest",
+			nameResolution: config.NameResolutionShortest,
 			schemasYAML: `PersonObject:
   type: object
   properties:
@@ -846,7 +849,6 @@ TestSchema:
     - $ref: "#/components/schemas/PersonObject"
     - $ref: "#/components/schemas/CompanyObject"`,
 			schemaName: "TestSchema",
-			fixes:      withNameResolutionDec2023(),
 			expected: testutils.NewFieldDef("Test Schema",
 				testutils.NewTypeDef(ast.DataTypeUnion).
 					WithName("Test Schema").
@@ -935,7 +937,8 @@ TestSchema:
 				Build(),
 		},
 		{
-			name: "OneOfWithMergedReferencesNameResolution",
+			name:           "OneOfWithMergedReferencesNameResolutionLegacy",
+			nameResolution: config.NameResolutionLegacy,
 			schemasYAML: `PersonObject:
   type: object
   properties:
@@ -964,7 +967,6 @@ TestSchema:
     - $ref: "#/components/schemas/PersonObject"
     - $ref: "#/components/schemas/CompanyObject"`,
 			schemaName: "TestSchema",
-			// No fixes specified - uses default behavior (NameResolutionDec2023: false)
 			expected: testutils.NewFieldDef("Test Schema",
 				testutils.NewTypeDef(ast.DataTypeUnion).
 					WithName("Test Schema").
@@ -2622,9 +2624,10 @@ TestSchema:
 			}
 
 			opts := testutils.TestEnvironmentOptions{
-				OpenAPIYAML:  fullYAML,
-				Fixes:        tt.fixes,
-				MockFeatures: mockFeatures,
+				OpenAPIYAML:    fullYAML,
+				NameResolution: tt.nameResolution,
+				Fixes:          tt.fixes,
+				MockFeatures:   mockFeatures,
 			}
 
 			common, err := testutils.SetupTestEnvironment(opts)
@@ -2965,13 +2968,4 @@ TestSchema:
 			assert.Equal(t, ast.DataTypeUnion, result.Type.Type, "paramType %q", paramType)
 		}
 	})
-}
-
-// Helper function to create custom fixes configuration
-func withNameResolutionDec2023() *config.Fixes {
-	return &config.Fixes{
-		NameResolutionFeb2025:                true,
-		NameResolutionDec2023:                true, // Override to true
-		RequestResponseComponentNamesFeb2024: false,
-	}
 }
