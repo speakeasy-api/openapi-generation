@@ -457,17 +457,10 @@ function templateApplyFormBody(op: Operation): string {
     sourceExpr = `request.${sanitizeField(bodyField, requestType)}`;
   }
 
-  const lines: string[] = [`if (request == null)`, `{`];
-
-  if (!bodyField.Nullable && !bodyField.Optional) {
-    lines.push(
-      `    throw new System.ArgumentNullException(nameof(request), "request body is required");`,
-    );
-  } else {
-    lines.push(`    httpRequest.Content = null;`);
-  }
-
-  lines.push(`}`, `else`, `{`, `    var ${pairsVar} = ${fs}.CreatePairs();`);
+  const nullBranch =
+    !bodyField.Nullable && !bodyField.Optional
+      ? `throw new System.ArgumentNullException(nameof(request), "request body is required");`
+      : `httpRequest.Content = null;`;
 
   const bodyLines =
     sourceType === requestType && hasFormFields(requestType)
@@ -479,10 +472,16 @@ function templateApplyFormBody(op: Operation): string {
         )
       : emitDirectFormBody(pairsVar, sourceExpr, bodyField);
 
-  lines.push(...bodyLines.map((line) => `    ${line}`));
-  lines.push(`    httpRequest.Content = ${fs}.FromPairs(${pairsVar});`, `}`);
-
-  return lines.join("\n            ");
+  return `if (request == null)
+{
+    ${nullBranch}
+}
+else
+{
+    var ${pairsVar} = ${fs}.CreatePairs();
+${indentString(bodyLines.join("\n"), 1)}
+    httpRequest.Content = ${fs}.FromPairs(${pairsVar});
+}`;
 }
 
 registerTemplateFunc("templateApplyFormBody", templateApplyFormBody);

@@ -130,6 +130,9 @@ function templateJSONAnnotation(
 function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
   const resolved: string[] = [];
 
+  const jsonIgnore = (condition: string) =>
+    `[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.${condition})]`;
+
   let jsonIgnored = false;
   for (const annotation of getFieldAnnotations(fieldDef)) {
     const anno = templateFieldAnnotation(fieldDef, annotation);
@@ -154,13 +157,9 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
             "",
           )}>`;
       resolved.push(
-        "[System.Text.Json.Serialization.JsonConverter(typeof(" +
-          `${converter}))]`,
+        `[System.Text.Json.Serialization.JsonConverter(typeof(${converter}))]`,
       );
-      resolved.push(
-        "[System.Text.Json.Serialization.JsonIgnore(" +
-          "Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]",
-      );
+      resolved.push(jsonIgnore("WhenWritingDefault"));
     } else {
       const stjAttr = getStjConverterAttribute(fieldDef.Type);
       if (stjAttr) {
@@ -179,10 +178,7 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
           isValueType(fieldDef.Type) && !emittedNullable
             ? "WhenWritingDefault"
             : "WhenWritingNull";
-        resolved.push(
-          "[System.Text.Json.Serialization.JsonIgnore(" +
-            `Condition = System.Text.Json.Serialization.JsonIgnoreCondition.${condition})]`,
-        );
+        resolved.push(jsonIgnore(condition));
       }
     }
   }

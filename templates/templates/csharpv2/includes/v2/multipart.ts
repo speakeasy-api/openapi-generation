@@ -151,17 +151,10 @@ function templateApplyMultipartBody(op: Operation): string {
     sourceExpr = `request.${sanitizeField(bodyField, requestType)}`;
   }
 
-  const lines: string[] = [`if (request == null)`, `{`];
-
-  if (!bodyField.Nullable && !bodyField.Optional) {
-    lines.push(
-      `    throw new System.ArgumentNullException(nameof(request), "request body is required");`,
-    );
-  } else {
-    lines.push(`    httpRequest.Content = null;`);
-  }
-
-  lines.push(`}`, `else`, `{`, `    var ${formVar} = ${ms}.Create();`);
+  const nullBranch =
+    !bodyField.Nullable && !bodyField.Optional
+      ? `throw new System.ArgumentNullException(nameof(request), "request body is required");`
+      : `httpRequest.Content = null;`;
 
   const bodyLines =
     sourceType && hasMultipartFields(sourceType)
@@ -173,10 +166,16 @@ function templateApplyMultipartBody(op: Operation): string {
         )
       : [];
 
-  lines.push(...bodyLines.map((line) => `    ${line}`));
-  lines.push(`    httpRequest.Content = ${formVar};`, `}`);
-
-  return lines.join("\n            ");
+  return `if (request == null)
+{
+    ${nullBranch}
+}
+else
+{
+    var ${formVar} = ${ms}.Create();
+${indentString(bodyLines.join("\n"), 1)}
+    httpRequest.Content = ${formVar};
+}`;
 }
 
 registerTemplateFunc("templateApplyMultipartBody", templateApplyMultipartBody);

@@ -254,6 +254,22 @@ function getJsonContextConverters(): string[] {
   ];
 }
 
+function collectOpShapesForMainSDK(): Map<
+  string,
+  Map<string, { Type: string; Name: string }>
+> {
+  const opShapesPerBucket = new Map<
+    string,
+    Map<string, { Type: string; Name: string }>
+  >();
+  collectOperationJsonShapes(
+    context.Global.AST.MainSDK,
+    opShapesPerBucket,
+    new Set<string>(),
+  );
+  return opShapesPerBucket;
+}
+
 // @ts-ignore
 function getJsonContextJobs(): Job[] {
   const jobs: Job[] = [];
@@ -279,16 +295,7 @@ function getJsonContextJobs(): Job[] {
     );
   };
 
-  const opShapesPerBucket = new Map<
-    string,
-    Map<string, { Type: string; Name: string }>
-  >();
-  const opShapesVisited = new Set<string>();
-  collectOperationJsonShapes(
-    context.Global.AST.MainSDK,
-    opShapesPerBucket,
-    opShapesVisited,
-  );
+  const opShapesPerBucket = collectOpShapesForMainSDK();
 
   const bucketedTypes = sequencedMapEntries(context.Global.AST.BucketedTypes);
   const bucketsWithRefs = new Set<string>();
@@ -378,15 +385,7 @@ function getJsonOptionsJobs(): Job[] {
   // contexts (most notably the top-level ModelsJsonContext for empty bucket).
   // Register them as resolvers too so JsonOptions.SerializerOptions can find
   // their JsonTypeInfo<T> entries at runtime.
-  const opShapesPerBucket = new Map<
-    string,
-    Map<string, { Type: string; Name: string }>
-  >();
-  collectOperationJsonShapes(
-    context.Global.AST.MainSDK,
-    opShapesPerBucket,
-    new Set<string>(),
-  );
+  const opShapesPerBucket = collectOpShapesForMainSDK();
   for (const [outputLocation, deps] of opShapesPerBucket) {
     if (deps.size === 0 || seenLocations.has(outputLocation)) continue;
     contexts.push({
