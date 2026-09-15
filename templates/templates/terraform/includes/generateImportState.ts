@@ -221,6 +221,41 @@ function genIsZeroValue(
   return undefined;
 }
 
+function templateImportDefaultLiteral(field: FieldDef): string | undefined {
+  const value = field.Default?.Value;
+
+  if (value === undefined || value === null || value === "null") {
+    return undefined;
+  }
+
+  switch (field.Type.Type.toString()) {
+    case "string":
+      return typeof value === "string"
+        ? templateBuiltinString(value)
+        : undefined;
+    case "boolean":
+      return typeof value === "boolean" ? String(value) : undefined;
+    case "int32":
+    case "integer":
+      return typeof value === "number" && Number.isInteger(value)
+        ? String(value)
+        : undefined;
+    case "float32":
+    case "number":
+      return typeof value === "number" ? String(value) : undefined;
+    default:
+      return undefined;
+  }
+}
+
+function isImportPointerField(field: FieldDef): boolean {
+  return (
+    field.Optional ||
+    field.Nullable ||
+    templateImportDefaultLiteral(field) !== undefined
+  );
+}
+
 function validateAndSet(
   valSymbol: string,
   hierarchy: string[],
@@ -257,10 +292,11 @@ function validateAndSet(
 
     addGenImport("github.com/hashicorp/terraform-plugin-framework/path");
 
-    const check =
-      field.Optional || field.Nullable
-        ? `${curSymbol} == nil`
-        : genIsZeroValue(accessorType, curSymbol);
+    const isPointer = isImportPointerField(field);
+    const check = isPointer
+      ? `${curSymbol} == nil`
+      : genIsZeroValue(accessorType, curSymbol);
+    const defaultLiteral = templateImportDefaultLiteral(field);
     const frameworkType = FrameworkTypeFromFieldDef(field);
     const isGlobalField =
       curHierarchy.length === 1 && sanitizedFieldName in globalFields;
@@ -276,11 +312,7 @@ function validateAndSet(
 
       if (isGlobalField) {
         frameworkType
-          .templateTerraformToSDKImports(
-            field.Type,
-            true,
-            field.Optional || field.Nullable,
-          )
+          .templateTerraformToSDKImports(field.Type, true, isPointer)
           .forEach((importStr) => {
             addGenImport(importStr);
           });
@@ -291,7 +323,7 @@ function validateAndSet(
             sanitizedFieldName,
             field.Type,
             true,
-            field.Optional || field.Nullable,
+            isPointer,
             curSymbol,
             `r.${sanitizedFieldName}`,
             false,
@@ -302,22 +334,38 @@ function validateAndSet(
         result.push(`if ${check} {`);
       }
 
-      // Only include example hint if there's a real OAS-defined example
-      const hasExample = field.Type.Examples?.length > 0;
       const fieldName = sanitizeTFStateName(curHierarchy);
-      if (hasExample) {
-        const exampleValue = FrameworkTypeFromTypeDef(
-          field.Type,
-        ).templateExampleJSONValue(field.Type);
-        result.push(
-          `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID. It's expected to be a value alike '${exampleValue}'\`)`,
+      if (defaultLiteral !== undefined) {
+        const defaultVar = getPluralizedVarSymbolName(
+          symbolManager,
+          sanitizedFieldName,
+          "Default",
         );
+        result.push(
+          `var ${defaultVar} ${sanitizeType(
+            field.Type,
+            false,
+            "",
+          )} = ${defaultLiteral}`,
+        );
+        result.push(`${curSymbol} = &${defaultVar}`);
       } else {
-        result.push(
-          `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID.\`)`,
-        );
+        // Only include example hint if there's a real OAS-defined example
+        const hasExample = field.Type.Examples?.length > 0;
+        if (hasExample) {
+          const exampleValue = FrameworkTypeFromTypeDef(
+            field.Type,
+          ).templateExampleJSONValue(field.Type);
+          result.push(
+            `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID. It's expected to be a value alike '${exampleValue}'\`)`,
+          );
+        } else {
+          result.push(
+            `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID.\`)`,
+          );
+        }
+        result.push(`return`);
       }
-      result.push(`return`);
 
       if (isGlobalField) {
         result.push(`}`);
@@ -414,7 +462,7 @@ function templateImportJSONStruct(requiredAttributes: TypeDef): string {
     const structFieldTag = `\`json:"${attributeName}"\``;
     const structFieldType = sanitizeType(
       field.Type,
-      field.Optional || field.Nullable,
+      isImportPointerField(field),
       "",
     );
 
