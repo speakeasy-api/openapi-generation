@@ -51,6 +51,8 @@ csharp:
   enableSourceLink: true
   flattenGlobalSecurity: true
   flatteningOrder: parameters-first
+  forwardCompatibleEnumsByDefault: true
+  forwardCompatibleUnionsByDefault: tagged-and-untagged
   httpClientPrefix: Speakeasy
   imports:
     option: openapi
@@ -69,8 +71,12 @@ csharp:
   outputModelSuffix: output
   packageName: Speakeasy.OpenAPI
   packageTags: Speakeasy API SDK-Generation
+  presenceAwareJsonSerialization: true
   respectTitlesForPrimitiveUnionMembers: true
   responseFormat: envelope-http
+  schemaValidation: strict
   sourceDirectory: src
+  targetFramework: dotnetVersion
   templateVersion: v2
+  unionStrategy: populated-fields
   useNodatime: false
