@@ -313,13 +313,13 @@ function emitScalarFormFields(
   });
 
   return [
-    `foreach (var (name, value) in new (string Name, object? Value)[]`,
-    `{`,
-    ...entries,
-    `})`,
-    `{`,
-    `    ${fs}.AddScalar(${pairsVar}, name, value);`,
-    `}`,
+    `foreach (var (name, value) in new (string Name, object? Value)[]
+{
+${entries.join("\n")}
+})
+{
+    ${fs}.AddScalar(${pairsVar}, name, value);
+}`,
   ];
 }
 

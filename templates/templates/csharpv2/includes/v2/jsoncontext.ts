@@ -258,6 +258,27 @@ function getJsonContextConverters(): string[] {
 function getJsonContextJobs(): Job[] {
   const jobs: Job[] = [];
 
+  const pushContextJob = (
+    outputLocation: string,
+    types: { Type: string; Name: string }[],
+  ) => {
+    const className = getJsonContextClassName(outputLocation);
+    jobs.push(
+      createTemplateFileJob(
+        "json-context.cs.stmpl",
+        `${getSDKTopLevelFolder()}/${getJsonContextLocation(
+          outputLocation,
+        )}/${className}.cs`,
+        {
+          Types: types,
+          Namespace: getJsonContextNamespace(outputLocation),
+          ClassName: className,
+          Converters: getJsonContextConverters(),
+        },
+      ),
+    );
+  };
+
   const opShapesPerBucket = new Map<
     string,
     Map<string, { Type: string; Name: string }>
@@ -320,21 +341,7 @@ function getJsonContextJobs(): Job[] {
       if (!existingTypes.has(dep.Type)) typeRefs.push(dep);
     }
 
-    const className = getJsonContextClassName(outputLocation);
-    jobs.push(
-      createTemplateFileJob(
-        "json-context.cs.stmpl",
-        `${getSDKTopLevelFolder()}/${getJsonContextLocation(
-          outputLocation,
-        )}/${className}.cs`,
-        {
-          Types: typeRefs,
-          Namespace: getJsonContextNamespace(outputLocation),
-          ClassName: className,
-          Converters: getJsonContextConverters(),
-        },
-      ),
-    );
+    pushContextJob(outputLocation, typeRefs);
 
     bucketsWithRefs.add(outputLocation);
   }
@@ -347,21 +354,7 @@ function getJsonContextJobs(): Job[] {
   for (const [outputLocation, deps] of opShapesPerBucket) {
     if (bucketsWithRefs.has(outputLocation)) continue;
     if (deps.size === 0) continue;
-    const className = getJsonContextClassName(outputLocation);
-    jobs.push(
-      createTemplateFileJob(
-        "json-context.cs.stmpl",
-        `${getSDKTopLevelFolder()}/${getJsonContextLocation(
-          outputLocation,
-        )}/${className}.cs`,
-        {
-          Types: [...deps.values()],
-          Namespace: getJsonContextNamespace(outputLocation),
-          ClassName: className,
-          Converters: getJsonContextConverters(),
-        },
-      ),
-    );
+    pushContextJob(outputLocation, [...deps.values()]);
   }
 
   return jobs;

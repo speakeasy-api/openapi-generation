@@ -53,23 +53,26 @@ function getStjConverterAttribute(typeDef: TypeDef): string {
   }
   if (!leaf) return "";
 
+  const converterAttr = (factory: string) =>
+    `[System.Text.Json.Serialization.JsonConverter(typeof(global::${utilsNs}.${factory}))]`;
+
   const t = leaf.Type.toString();
   if (t === "bigint") {
-    const factory =
+    return converterAttr(
       leaf.Format === "string"
         ? "BigIntegerStringJsonConverterFactory"
-        : "BigIntegerJsonConverterFactory";
-    return `[System.Text.Json.Serialization.JsonConverter(typeof(global::${utilsNs}.${factory}))]`;
+        : "BigIntegerJsonConverterFactory",
+    );
   }
   if (t === "decimal") {
-    const factory =
+    return converterAttr(
       leaf.Format === "string"
         ? "DecimalStringJsonConverterFactory"
-        : "DecimalJsonConverterFactory";
-    return `[System.Text.Json.Serialization.JsonConverter(typeof(global::${utilsNs}.${factory}))]`;
+        : "DecimalJsonConverterFactory",
+    );
   }
   if (t === "date-time") {
-    return `[System.Text.Json.Serialization.JsonConverter(typeof(global::${utilsNs}.DateTimeJsonConverterFactory))]`;
+    return converterAttr("DateTimeJsonConverterFactory");
   }
   return "";
 }
