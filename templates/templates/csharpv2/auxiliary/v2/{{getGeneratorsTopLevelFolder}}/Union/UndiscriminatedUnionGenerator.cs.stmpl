@@ -39,20 +39,21 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
                     distinctiveCheckClose = "}\n";
                 }
 
-                // Score variants by the count of JSON properties not covered by the
-                // variant's metadata, recursing through nested objects and array/collection
-                // elements (see UnionScoring.CountOverflow). Root objects that tie on their
-                // top-level property set — and array-of-object variants, whose Array root
-                // exposed no top-level signal at all — are now separated by their nested
-                // structure, so the widest structural match wins instead of declaration order.
+                // Score variants by structural fit against the variant's metadata, recursing
+                // through nested objects and array/collection elements (see UnionScoring.Score).
+                // Overflow = JSON keys the variant does not declare; Missing = variant properties
+                // absent from the JSON. Root objects that tie on overflow — and array-of-object
+                // variants, whose Array root exposed no top-level signal at all — are separated by
+                // their nested structure and by Missing, so the tightest structural match wins
+                // instead of declaration order.
                 var overflowLine =
-                    $"int overflowCount{index} = global::{{getModelNamespace ""}}.UnionScoring.CountOverflow(jsonDoc.RootElement, _ti{prop.Name}, options);";
+                    $"var score{index} = global::{{getModelNamespace ""}}.UnionScoring.Score(jsonDoc.RootElement, _ti{prop.Name}, options);";
 
                 // Value-type variants: JsonTypeInfo<T> Deserialize returns T
                 // (non-nullable). JSON null throws JsonException — caught
                 // below. Skip null check (would warn CS0472/CS8073).
                 // Reference-type variants: keep null guard.
-                var addLine = $"candidates.Add((value{index}, overflowCount{index}, {index}));";
+                var addLine = $"candidates.Add((value{index}, score{index}.Overflow, score{index}.Missing, {index}));";
                 var lbrace = "{";
                 var rbrace = "}";
                 var addCandidate = prop.IsValueType
@@ -79,7 +80,7 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
 
         var tryBlocks = string.Join("\n\n", tryBlocksList);
 
-        // Best match = fewest AdditionalProperties (overflow), then earliest declaration order.
+        // Best match = fewest overflow, then fewest missing, then earliest declaration order.
         var selectionLogic = string.Join(
             "\n",
             model.Properties.Select((prop, i) =>
@@ -100,13 +101,13 @@ public class UndiscriminatedUnionGenerator : UnionGeneratorBase
             using var jsonDoc = System.Text.Json.JsonDocument.ParseValue(ref readerCopy);
             var jsonText = jsonDoc.RootElement.GetRawText();
 
-            var candidates = new System.Collections.Generic.List<(object value, int overflowCount, int index)>();
+            var candidates = new System.Collections.Generic.List<(object value, int overflowCount, int missingCount, int index)>();
 
             {{interp "tryBlocks"}}
 
             if (candidates.Count > 0)
             {
-                var bestMatch = candidates.OrderBy(c => c.overflowCount).ThenBy(c => c.index).First();
+                var bestMatch = candidates.OrderBy(c => c.overflowCount).ThenBy(c => c.missingCount).ThenBy(c => c.index).First();
                 reader = readerCopy;
 
                 {{interp "selectionLogic"}}

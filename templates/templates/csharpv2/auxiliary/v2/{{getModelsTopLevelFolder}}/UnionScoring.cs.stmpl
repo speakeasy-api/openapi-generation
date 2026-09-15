@@ -8,11 +8,47 @@ namespace {{getModelNamespace ""}}
     using System.Text.Json.Serialization.Metadata;
 
     /// <summary>
-    /// Structural scoring helper for undiscriminated-union deserialization. Counts JSON
-    /// properties that are not represented in a candidate variant's source-generated
-    /// metadata, recursing through nested objects and array/collection elements. A lower
-    /// overflow count means the JSON is a tighter structural fit for that variant, so the
-    /// widest matching variant wins instead of the first-declared variant that merely
+    /// Structural fit of a JSON payload against a candidate union variant, expressed as two
+    /// counts: <see cref="Overflow"/> — JSON properties the variant does not declare — and
+    /// <see cref="Missing"/> — variant properties absent from the JSON. Both are minimized when
+    /// ranking, so the variant whose shape most tightly matches the payload wins. Overflow alone
+    /// cannot separate two variants that both cover every JSON key (e.g. a narrow variant and a
+    /// wider one that merely declares extra optional fields); Missing breaks that tie in favor of
+    /// the narrower variant, matching the v1 smart-union ranking.
+    /// </summary>
+    internal readonly struct UnionScore
+    {
+        public readonly int Overflow;
+        public readonly int Missing;
+
+        public UnionScore(int overflow, int missing)
+        {
+            Overflow = overflow;
+            Missing = missing;
+        }
+
+        public static readonly UnionScore Zero = new UnionScore(0, 0);
+
+        public static UnionScore operator +(UnionScore a, UnionScore b) =>
+            new UnionScore(a.Overflow + b.Overflow, a.Missing + b.Missing);
+
+        // Lower is a better fit: fewer overflow first, then fewer missing.
+        public int CompareTo(UnionScore other)
+        {
+            int c = Overflow.CompareTo(other.Overflow);
+            if (c != 0)
+            {
+                return c;
+            }
+            return Missing.CompareTo(other.Missing);
+        }
+    }
+
+    /// <summary>
+    /// Structural scoring helper for undiscriminated-union deserialization. Recurses through
+    /// nested objects and array/collection elements, accumulating a <see cref="UnionScore"/>
+    /// against a candidate variant's source-generated metadata. Lower scores mean a tighter fit,
+    /// so the widest structural match wins instead of the first-declared variant that merely
     /// tolerates the extra fields (System.Text.Json ignores unmatched properties on read).
     /// </summary>
     internal static class UnionScoring
@@ -28,16 +64,16 @@ namespace {{getModelNamespace ""}}
             UnionVariants[unionType] = variantTypes;
         }
 
-        public static int CountOverflow(
+        public static UnionScore Score(
             JsonElement element,
             JsonTypeInfo? typeInfo,
             JsonSerializerOptions options
         )
         {
-            return CountOverflow(element, typeInfo, options, 0);
+            return Score(element, typeInfo, options, 0);
         }
 
-        private static int CountOverflow(
+        private static UnionScore Score(
             JsonElement element,
             JsonTypeInfo? typeInfo,
             JsonSerializerOptions options,
@@ -47,38 +83,38 @@ namespace {{getModelNamespace ""}}
             // Depth cap guards against pathological self-referential metadata graphs.
             if (typeInfo == null || depth > 10)
             {
-                return 0;
+                return UnionScore.Zero;
             }
 
-            // Nested union: score by its widest-fitting variant, not its opaque metadata.
+            // Nested union: score by its tightest-fitting variant, not its opaque metadata.
             if (UnionVariants.TryGetValue(typeInfo.Type, out var variantTypes))
             {
-                int best = int.MaxValue;
+                UnionScore? best = null;
                 foreach (var variantType in variantTypes)
                 {
-                    int score = CountOverflow(
+                    var score = Score(
                         element,
                         ResolveTypeInfo(variantType, options),
                         options,
                         depth + 1
                     );
-                    if (score < best)
+                    if (best == null || score.CompareTo(best.Value) < 0)
                     {
                         best = score;
                     }
                 }
-                return best == int.MaxValue ? 0 : best;
+                return best ?? UnionScore.Zero;
             }
 
             switch (element.ValueKind)
             {
                 case JsonValueKind.Object:
-                    // Only object-shaped metadata yields a property-overflow signal.
+                    // Only object-shaped metadata yields a property-fit signal.
                     // Dictionary / freeform objects declare no properties and must not
                     // be penalized — they legitimately accept arbitrary keys.
                     if (typeInfo.Kind != JsonTypeInfoKind.Object || typeInfo.Properties.Count == 0)
                     {
-                        return 0;
+                        return UnionScore.Zero;
                     }
 
                     var known = new Dictionary<string, JsonPropertyInfo>(
@@ -89,12 +125,14 @@ namespace {{getModelNamespace ""}}
                         known[prop.Name] = prop;
                     }
 
-                    int overflow = 0;
+                    var matched = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var result = UnionScore.Zero;
                     foreach (var jsonProp in element.EnumerateObject())
                     {
                         if (known.TryGetValue(jsonProp.Name, out var propInfo))
                         {
-                            overflow += CountOverflow(
+                            matched.Add(propInfo.Name);
+                            result += Score(
                                 jsonProp.Value,
                                 ResolveTypeInfo(propInfo.PropertyType, options),
                                 options,
@@ -103,27 +141,38 @@ namespace {{getModelNamespace ""}}
                         }
                         else
                         {
-                            overflow++;
+                            result += new UnionScore(1, 0);
                         }
                     }
-                    return overflow;
+
+                    // Variant properties the JSON never supplied — penalizes a wider variant
+                    // that merely tolerates the payload over a narrower exact-shape variant.
+                    int missing = 0;
+                    foreach (var prop in typeInfo.Properties)
+                    {
+                        if (!matched.Contains(prop.Name))
+                        {
+                            missing++;
+                        }
+                    }
+                    return result + new UnionScore(0, missing);
 
                 case JsonValueKind.Array:
                     var elementType = GetElementType(typeInfo.Type);
                     if (elementType == null)
                     {
-                        return 0;
+                        return UnionScore.Zero;
                     }
                     var elementTypeInfo = ResolveTypeInfo(elementType, options);
-                    int sum = 0;
+                    var sum = UnionScore.Zero;
                     foreach (var item in element.EnumerateArray())
                     {
-                        sum += CountOverflow(item, elementTypeInfo, options, depth + 1);
+                        sum += Score(item, elementTypeInfo, options, depth + 1);
                     }
                     return sum;
 
                 default:
-                    return 0;
+                    return UnionScore.Zero;
             }
         }
 
