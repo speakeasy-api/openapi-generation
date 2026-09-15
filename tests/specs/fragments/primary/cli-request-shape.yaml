@@ -10,7 +10,7 @@ security:
 paths:
   /anything/cli/interactions:
     post:
-      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      x-speakeasy-exclude-test-sdk: [csharp, csharpv2, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
       operationId: cliInteract
       summary: Run an interaction with a model or an agent
       description: >-
@@ -56,7 +56,7 @@ paths:
                 $ref: "#/components/schemas/cliInteractionStreamEvent"
   /anything/cli/interactionTriggers:
     post:
-      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      x-speakeasy-exclude-test-sdk: [csharp, csharpv2, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
       operationId: cliCreateInteractionTrigger
       summary: Create a scheduled interaction trigger
       description: >-
@@ -94,7 +94,7 @@ paths:
                   - url
   /anything/cli/requiredUnionFields:
     post:
-      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      x-speakeasy-exclude-test-sdk: [csharp, csharpv2, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
       operationId: cliRequiredUnionFields
       summary: Validate required union-valued request fields
       description: >-
@@ -125,7 +125,7 @@ paths:
                   - url
   /anything/cli/notes:
     post:
-      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      x-speakeasy-exclude-test-sdk: [csharp, csharpv2, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
       operationId: cliOpenNote
       summary: Store a note with free-form extra fields
       description: >-

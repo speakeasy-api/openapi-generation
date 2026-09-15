@@ -168,9 +168,17 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
         (fieldDef.Optional || !fieldDef.Nullable) &&
         canFieldBeNull(fieldDef)
       ) {
+        const emittedNullable =
+          fieldDef.Nullable ||
+          (!fieldDef.Const &&
+            (fieldDef.Optional || fieldDef.Name === "ContentType"));
+        const condition =
+          isValueType(fieldDef.Type) && !emittedNullable
+            ? "WhenWritingDefault"
+            : "WhenWritingNull";
         resolved.push(
           "[System.Text.Json.Serialization.JsonIgnore(" +
-            "Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]",
+            `Condition = System.Text.Json.Serialization.JsonIgnoreCondition.${condition})]`,
         );
       }
     }

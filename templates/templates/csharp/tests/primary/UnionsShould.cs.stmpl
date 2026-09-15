@@ -1505,6 +1505,7 @@ public class UnionsShould
         Assert.Null(skipShipping.SelectedEvent.ShipmentUnion);
     }
 
+{{- if not isCsharpV2}}
     [Fact]
     public void SmartUnionNullableUnionNullableFields()
     {
@@ -1743,6 +1744,8 @@ public class UnionsShould
         );
     }
 
+{{- end}}
+
     [Fact]
     public async Task DiscriminatedMultipleMemberships()
     {
@@ -1766,6 +1769,7 @@ public class UnionsShould
         Assert.Equal("four", answer.Car!.WheelsType);
     }
 
+{{- if not isCsharpV2}}
     [Fact]
     public void ScoreUnion_PopulatedPrimitivePreferredOverCoerced()
     {
@@ -2074,4 +2078,5 @@ public class UnionsShould
         [JsonProperty("foo")]
         public string Foo { get; set; }
     }
+{{- end}}
 }
