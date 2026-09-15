@@ -383,15 +383,14 @@ function emitFormObject(
     return [`${fs}.AddScalar(${pairsVar}, "${name}", ${sourceExpr});`];
   }
 
-  const indented = nestedLines.map((line) => `    ${line}`).join("\n");
   return [
-    `if (${sourceExpr} != null)`,
-    `{`,
-    `    ${fs}.AddObjectFlatten(${pairsVar}, "${name}", ${nestedPairs} =>`,
-    `    {`,
-    indented,
-    `    }, ${explode});`,
-    `}`,
+    `if (${sourceExpr} != null)
+{
+    ${fs}.AddObjectFlatten(${pairsVar}, "${name}", ${nestedPairs} =>
+    {
+${indentString(nestedLines.join("\n"), 2)}
+    }, ${explode});
+}`,
   ];
 }
 
@@ -405,22 +404,22 @@ function emitDirectFormBody(
   switch (bodyField.Type.Type.toString()) {
     case "map":
       return [
-        `if (${sourceExpr} != null)`,
-        `{`,
-        `    foreach (var kv in ${sourceExpr})`,
-        `    {`,
-        `        ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(kv.Value)));`,
-        `    }`,
-        `}`,
+        `if (${sourceExpr} != null)
+{
+    foreach (var kv in ${sourceExpr})
+    {
+        ${pairsVar}.Add(new System.Collections.Generic.KeyValuePair<string?, string?>(kv.Key, global::${utilsNs}.Utilities.ValueToString(kv.Value)));
+    }
+}`,
       ];
     case "array":
       return [
-        `if (${sourceExpr} != null)`,
-        `{`,
-        `    ${fs}.AddList(${pairsVar}, "${escapeString(
-          bodyField.Name,
-        )}", ${sourceExpr}, true);`,
-        `}`,
+        `if (${sourceExpr} != null)
+{
+    ${fs}.AddList(${pairsVar}, "${escapeString(
+      bodyField.Name,
+    )}", ${sourceExpr}, true);
+}`,
       ];
     case "class":
       return emitFormFields(

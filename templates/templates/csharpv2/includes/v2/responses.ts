@@ -58,6 +58,15 @@ function templateJSONHandler(
     content.Content.Type.OutputLocation,
   );
 
+  const buildResponse = (extra?: ResponseBodyContent) =>
+    templateResponseBuilder(
+      subResponse,
+      responseFormat,
+      pagination,
+      responseType,
+      extra,
+    );
+
   const httpMetaArgs =
     responseFormat == "envelope-http"
       ? "httpRequest, httpResponse, httpResponseBody"
@@ -121,12 +130,7 @@ catch (Exception ex)
     content.Content.Type,
   );
   if (responseFormat != "flat") {
-    handler += `\nvar response = ${templateResponseBuilder(
-      subResponse,
-      responseFormat,
-      pagination,
-      responseType,
-    )}`;
+    handler += `\nvar response = ${buildResponse()}`;
     if (content) {
       handler += `\nresponse.${sanitizeField(
         content.Content,
@@ -155,25 +159,14 @@ catch (Exception ex)
     }
 
     if (op.Response.Type.ResponseEnvelope) {
-      handler += `\nvar response = ${templateResponseBuilder(
-        subResponse,
-        responseFormat,
-        pagination,
-        responseType,
-        content,
-      )}\nreturn response;`;
+      handler += `\nvar response = ${buildResponse(content)}\nreturn response;`;
     } else {
       handler += `\nreturn result!;`;
     }
   } else {
     if (op.Response.Type.ResponseEnvelope) {
       handler += `\nvar result = obj!;`;
-      handler += `\nvar response = ${templateResponseBuilder(
-        subResponse,
-        responseFormat,
-        pagination,
-        responseType,
-      )}\nreturn response;`;
+      handler += `\nvar response = ${buildResponse()}\nreturn response;`;
     } else {
       handler += `\nreturn obj!;`;
     }
@@ -220,14 +213,18 @@ function templateEventStreamHandler(
   const typeInfoRef = jsonTypeInfoRef(content.Content.Type.ItemType);
   const eventStreamInit = `httpResponse.AsAsyncEnumerable<${resultType}>(${typeInfoRef}, ${sentinel}${dataRequiredArg});`;
 
-  let handler = `var eventStream = ${eventStreamInit}\n`;
-  if (responseFormat != "flat") {
-    handler += `var response = ${templateResponseBuilder(
+  const buildResponse = (extra?: ResponseBodyContent) =>
+    templateResponseBuilder(
       subResponse,
       responseFormat,
       false,
       responseType,
-    )}`;
+      extra,
+    );
+
+  let handler = `var eventStream = ${eventStreamInit}\n`;
+  if (responseFormat != "flat") {
+    handler += `var response = ${buildResponse()}`;
     if (content) {
       const sanitizeFieldNameRuntime = sanitizeFieldName as (
         name: string,
@@ -254,25 +251,14 @@ function templateEventStreamHandler(
     )}(eventStream!);`;
 
     if (op.Response.Type.ResponseEnvelope) {
-      handler += `\nvar response = ${templateResponseBuilder(
-        subResponse,
-        responseFormat,
-        false,
-        responseType,
-        content,
-      )}\nreturn response;`;
+      handler += `\nvar response = ${buildResponse(content)}\nreturn response;`;
     } else {
       handler += `\nreturn result!;`;
     }
   } else {
     if (op.Response.Type.ResponseEnvelope) {
       handler += `var result = eventStream!;`;
-      handler += `\nvar response = ${templateResponseBuilder(
-        subResponse,
-        responseFormat,
-        false,
-        responseType,
-      )}\nreturn response;`;
+      handler += `\nvar response = ${buildResponse()}\nreturn response;`;
       return handler;
     }
 

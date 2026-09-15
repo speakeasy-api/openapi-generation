@@ -77,22 +77,22 @@ function emitMultipartField(
       const { fileNameProp, contentProp } = resolveFileShape(itemType);
       const arrayName = multipartArrayFieldName(name);
       return [
-        `if (${prop} != null)`,
-        `{`,
-        `    foreach (var __mpFile in ${prop})`,
-        `    {`,
-        `        if (__mpFile == null) continue;`,
-        `        ${ms}.AddFile(${formVar}, "${arrayName}", __mpFile.${fileNameProp}, __mpFile.${contentProp});`,
-        `    }`,
-        `}`,
+        `if (${prop} != null)
+{
+    foreach (var __mpFile in ${prop})
+    {
+        if (__mpFile == null) continue;
+        ${ms}.AddFile(${formVar}, "${arrayName}", __mpFile.${fileNameProp}, __mpFile.${contentProp});
+    }
+}`,
       ];
     }
     const { fileNameProp, contentProp } = resolveFileShape(field.Type);
     return [
-      `if (${prop} != null)`,
-      `{`,
-      `    ${ms}.AddFile(${formVar}, "${name}", ${prop}.${fileNameProp}, ${prop}.${contentProp});`,
-      `}`,
+      `if (${prop} != null)
+{
+    ${ms}.AddFile(${formVar}, "${name}", ${prop}.${fileNameProp}, ${prop}.${contentProp});
+}`,
     ];
   }
 

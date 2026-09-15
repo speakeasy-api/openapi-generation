@@ -194,6 +194,17 @@ function recordOperationShape(
 
   const kind = typeDef.Type?.toString() ?? "";
 
+  const record = (bucket: string) => {
+    const csharpType = csharpTypeForJsonContext(typeDef);
+    const name = jsonTypeInfoName(typeDef);
+    let m = perBucket.get(bucket);
+    if (!m) {
+      m = new Map();
+      perBucket.set(bucket, m);
+    }
+    m.set(csharpType, { Type: csharpType, Name: name });
+  };
+
   // Class / enum / union / error already in BucketedTypes when they have an
   // OutputLocation. Their JsonContext registration is emitted by the main
   // loop. Walk fields anyway so any nested primitive / array / map shapes
@@ -205,15 +216,7 @@ function recordOperationShape(
     kind === "error"
   ) {
     if (!typeDef.OutputLocation) {
-      const bucket = "";
-      const cs = csharpTypeForJsonContext(typeDef);
-      const name = jsonTypeInfoName(typeDef);
-      let m = perBucket.get(bucket);
-      if (!m) {
-        m = new Map();
-        perBucket.set(bucket, m);
-      }
-      m.set(cs, { Type: cs, Name: name });
+      record("");
     }
     for (const field of typeDef.Fields ?? []) {
       recordOperationShape(field.Type, perBucket, visited);
@@ -222,15 +225,7 @@ function recordOperationShape(
   }
 
   if (kind === "array" || kind === "map") {
-    const cs = csharpTypeForJsonContext(typeDef);
-    const name = jsonTypeInfoName(typeDef);
-    const bucket = bucketKeyForShape(typeDef);
-    let m = perBucket.get(bucket);
-    if (!m) {
-      m = new Map();
-      perBucket.set(bucket, m);
-    }
-    m.set(cs, { Type: cs, Name: name });
+    record(bucketKeyForShape(typeDef));
     if (typeDef.ItemType) {
       recordOperationShape(typeDef.ItemType, perBucket, visited);
     }
@@ -239,14 +234,7 @@ function recordOperationShape(
 
   // Primitive scalar (string, long, decimal, bool, BigInteger, DateTime, …).
   // Bucket = "" so it lands on the top-level ModelsJsonContext.
-  const cs = csharpTypeForJsonContext(typeDef);
-  const name = jsonTypeInfoName(typeDef);
-  let m = perBucket.get("");
-  if (!m) {
-    m = new Map();
-    perBucket.set("", m);
-  }
-  m.set(cs, { Type: cs, Name: name });
+  record("");
 }
 
 // Source-gen contexts need our runtime converters baked into their `.Default`
