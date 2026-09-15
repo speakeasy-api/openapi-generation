@@ -112,14 +112,8 @@ function templateBuildURL(op: Operation): string {
   const ub = `global::${utilsNs}.URLBuilder`;
   const reqAccess = isRequestOptional(op.Request) ? "request?." : "request.";
 
-  const opPath = (() => {
-    const i = op.Path.indexOf("#");
-    return i === -1 ? op.Path : op.Path.slice(0, i);
-  })();
+  const opPath = op.Path.split("#", 1)[0];
   const lines: string[] = [`var urlString = baseUrl + "${opPath}";`];
-
-  let dictCounter = 0;
-  const nextDictVar = () => `__paramDict${dictCounter++}`;
 
   for (const { field, param } of path) {
     const propAccess = `${reqAccess}${sanitizeField(
@@ -127,6 +121,8 @@ function templateBuildURL(op: Operation): string {
       op.Request.Field.Type,
     )}`;
     const style = param.Style || "simple";
+    const templateReplacement = (d: string) =>
+      `urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", ${d}, "${style}", ${param.Explode});`;
     if (param.Serialization === "json") {
       lines.push(
         `urlString = ${ub}.ReplacePathParamJson(urlString, "${
@@ -134,30 +130,22 @@ function templateBuildURL(op: Operation): string {
         }", ${propAccess}, ${jsonTypeInfoRef(field.Type)});`,
       );
     } else if (urlBuilderIsObjectParam(field)) {
-      const dictVar = nextDictVar();
-      lines.push(`if (${propAccess} != null) {`);
-      for (const ln of urlBuilderEmitObjectDict(
-        dictVar,
-        propAccess,
-        field.Type,
-      )) {
-        lines.push(`    ${ln}`);
-      }
-      lines.push(
-        `    urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", ${dictVar}, "${style}", ${param.Explode});`,
+      const dictVar = "__paramDict";
+      const dict = indentString(
+        urlBuilderEmitObjectDict(dictVar, propAccess, field.Type).join("\n"),
+        1,
       );
-      lines.push(`} else {`);
       lines.push(
-        `    urlString = ${ub}.ReplacePathParam(urlString, "${param.Name}", null, "${style}", ${param.Explode});`,
+        `if (${propAccess} != null) {
+${dict}
+    ${templateReplacement(dictVar)}
+} else {
+    ${templateReplacement("null")}
+}`,
       );
-      lines.push(`}`);
     } else {
       lines.push(
-        `urlString = ${ub}.ReplacePathParam(urlString, "${
-          param.Name
-        }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
-          param.Explode
-        });`,
+        templateReplacement(urlBuilderScalarParamExpr(propAccess, field)),
       );
     }
   }
@@ -176,6 +164,8 @@ function templateBuildURL(op: Operation): string {
       )}`;
       const style = param.Style || "form";
       const allowEmpty = allowEmptyByField.get(field.Name) ? "true" : "false";
+      const templateAppend = (d: string) =>
+        `${ub}.AppendQueryParam(__qs, "${param.Name}", ${d}, "${style}", ${param.Explode}, ${allowEmpty});`;
       if (param.Serialization === "json") {
         lines.push(
           `${ub}.AppendQueryParamJson(__qs, "${
@@ -183,26 +173,20 @@ function templateBuildURL(op: Operation): string {
           }", ${propAccess}, ${jsonTypeInfoRef(field.Type)});`,
         );
       } else if (urlBuilderIsObjectParam(field)) {
-        const dictVar = nextDictVar();
-        lines.push(`if (${propAccess} != null) {`);
-        for (const ln of urlBuilderEmitObjectDict(
-          dictVar,
-          propAccess,
-          field.Type,
-        )) {
-          lines.push(`    ${ln}`);
-        }
-        lines.push(
-          `    ${ub}.AppendQueryParam(__qs, "${param.Name}", ${dictVar}, "${style}", ${param.Explode}, ${allowEmpty});`,
+        const dictVar = "__paramDict";
+        const dict = indentString(
+          urlBuilderEmitObjectDict(dictVar, propAccess, field.Type).join("\n"),
+          1,
         );
-        lines.push(`}`);
+        lines.push(
+          `if (${propAccess} != null) {
+${dict}
+    ${templateAppend(dictVar)}
+}`,
+        );
       } else {
         lines.push(
-          `${ub}.AppendQueryParam(__qs, "${
-            param.Name
-          }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
-            param.Explode
-          }, ${allowEmpty});`,
+          templateAppend(urlBuilderScalarParamExpr(propAccess, field)),
         );
       }
     }
@@ -224,35 +208,28 @@ function templateApplyHeaders(op: Operation): string {
   const reqAccess = isRequestOptional(op.Request) ? "request?." : "request.";
 
   const lines: string[] = [];
-  let dictCounter = 0;
   for (const { field, param } of headers) {
     const propAccess = `${reqAccess}${sanitizeField(
       field,
       op.Request.Field.Type,
     )}`;
     const style = param.Style || "simple";
+    const templateAppend = (d: string) =>
+      `${ub}.AppendHeader(httpRequest, "${param.Name}", ${d}, "${style}", ${param.Explode});`;
     if (urlBuilderIsObjectParam(field)) {
-      const dictVar = `__hdrDict${dictCounter++}`;
-      lines.push(`if (${propAccess} != null) {`);
-      for (const ln of urlBuilderEmitObjectDict(
-        dictVar,
-        propAccess,
-        field.Type,
-      )) {
-        lines.push(`    ${ln}`);
-      }
-      lines.push(
-        `    ${ub}.AppendHeader(httpRequest, "${param.Name}", ${dictVar}, "${style}", ${param.Explode});`,
+      const dictVar = "__hdrDict";
+      const dict = indentString(
+        urlBuilderEmitObjectDict(dictVar, propAccess, field.Type).join("\n"),
+        1,
       );
-      lines.push(`}`);
+      lines.push(
+        `if (${propAccess} != null) {
+${dict}
+    ${templateAppend(dictVar)}
+}`,
+      );
     } else {
-      lines.push(
-        `${ub}.AppendHeader(httpRequest, "${
-          param.Name
-        }", ${urlBuilderScalarParamExpr(propAccess, field)}, "${style}", ${
-          param.Explode
-        });`,
-      );
+      lines.push(templateAppend(urlBuilderScalarParamExpr(propAccess, field)));
     }
   }
   return lines.join("\n            ");
