@@ -632,9 +632,15 @@ func (p *TestingProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	security.Custom = custom
 
+	// Configure owns its transport: clone the default so provider-specific
+	// settings (headers, TLS skip verification) never mutate process globals.
+	transport := http.DefaultTransport
+	if t, ok := transport.(*http.Transport); ok {
+		transport = t.Clone()
+	}
 	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
 		SetHeaders: make(map[string]string),
-		Transport:  http.DefaultTransport,
+		Transport:  transport,
 	}
 
 	resp.Diagnostics.Append(data.HTTPHeaders.ElementsAs(ctx, &providerHTTPTransportOpts.SetHeaders, false)...)
@@ -648,8 +654,7 @@ func (p *TestingProvider) Configure(ctx context.Context, req provider.ConfigureR
 		transport.TLSClientConfig.InsecureSkipVerify = data.TLSSkipVerify.ValueBool()
 	}
 
-	httpClient := http.DefaultClient
-	httpClient.Transport = NewProviderHTTPTransport(providerHTTPTransportOpts)
+	httpClient := &http.Client{Transport: NewProviderHTTPTransport(providerHTTPTransportOpts)}
 
 	opts := []sdk.SDKOption{
 		sdk.WithTemplatedServerURL(serverUrl, serverUrlParams),

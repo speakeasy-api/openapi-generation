@@ -1,0 +1,10 @@
+id: 1789537146-da471faf
+features:
+    - core
+targets:
+    - terraform
+type: fix
+bump: patch
+description: stop provider Configure mutating the global http.DefaultClient and http.DefaultTransport
+author: byron-lambda
+date: "2026-09-16"
