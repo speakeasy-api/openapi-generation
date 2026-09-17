@@ -111,11 +111,7 @@ function templateJSONAnnotation(
   fieldDef: FieldDef,
   annotation: JSONAnnotation,
 ): string {
-  if (
-    annotation.Ignore &&
-    context.Global.Config.PresenceAwareJSONSerialization &&
-    !fieldDef.IsAdditionalProperties
-  ) {
+  if (annotation.Ignore && !fieldDef.IsAdditionalProperties) {
     return "[System.Text.Json.Serialization.JsonIgnore]";
   }
 

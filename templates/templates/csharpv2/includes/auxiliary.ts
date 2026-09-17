@@ -56,11 +56,9 @@ function templateAuxiliaryFiles(data: any, _unused: string) {
     );
   }
 
-  if (context.Global.Config.PresenceAwareJSONSerialization) {
-    templateFile(
-      `${v1Utils}/OptionalNullable.cs.stmpl`,
-      `${getModelsTopLevelFolder()}/OptionalNullable.cs`,
-      context.Global,
-    );
-  }
+  templateFile(
+    `${v1Utils}/OptionalNullable.cs.stmpl`,
+    `${getModelsTopLevelFolder()}/OptionalNullable.cs`,
+    context.Global,
+  );
 }

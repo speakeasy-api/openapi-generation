@@ -110,6 +110,16 @@ function upgradeConfig(oldVersion, newVersion, cfg, defaults) {
   return csharpv1.upgradeConfig(oldVersion, newVersion, cfg, defaults);
 }
 
+// csharpv2 targets AOT: System.Text.Json source generation has no reflection
+// fallback, so the tri-state OptionalNullable<T> path is mandatory. Force
+// presenceAwareJsonSerialization on — with it off, optional+nullable fields
+// silently collapse to plain T? and the absent-vs-explicit-null distinction is
+// lost at runtime. The value persists into the generated gen.yaml.
+// @ts-ignore
+function resolveConfig(cfg: Record<string, any>) {
+  cfg.presenceAwareJsonSerialization = true;
+}
+
 // @ts-ignore
 function getTestingConfiguration(genConfig): TestingConfiguration {
   return csharpv1.getTestingConfiguration(genConfig);

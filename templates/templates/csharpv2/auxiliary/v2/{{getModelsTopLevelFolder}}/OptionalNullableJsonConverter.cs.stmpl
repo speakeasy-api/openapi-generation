@@ -1,4 +1,3 @@
-{{- if .Global.Config.PresenceAwareJSONSerialization -}}
 #nullable enable
 namespace {{getModelNamespace ""}}
 {
@@ -160,4 +159,3 @@ namespace {{getModelNamespace ""}}
         }
     }
 }
-{{- end }}
