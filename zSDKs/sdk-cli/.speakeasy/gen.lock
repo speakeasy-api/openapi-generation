@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
+  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_say.go:
     last_write_checksum: sha1:d7137e29ad2375390c175b9e79f0a557341b2e95
   internal/cli/intents.go:
-    last_write_checksum: sha1:f49cade1cb44d7ba65f942b4340d12e3de539cb7
+    last_write_checksum: sha1:11c1961232079be8b4d3b5e5498c7e61c2810c03
   internal/cli/intents_order_test.go:
     last_write_checksum: sha1:16b6e0b6b7a669f7d12e25d02079fcb6c1bdb878
   internal/cli/login.go:
@@ -180,7 +180,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:9180bf33bd8735d8efb77b778a7e93092858738a
   internal/cli/root.go:
-    last_write_checksum: sha1:6af7db44e4eb3cd695ed3c5f65149e5d4c654147
+    last_write_checksum: sha1:00254488e51ff2ffd8f4ff37b6b728fdf09ce005
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:3273e90d36a4b96a5ceeab1011fd39476589de13
   internal/cli/tag1/deprecated1.go:
@@ -634,7 +634,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:ec08381fb739ee5ac8c8f8e63be5438b89e875f0
+    last_write_checksum: sha1:2cbbc715d7149113945d7903bbdf57aab2ec42b3
   scripts/install.ps1:
     last_write_checksum: sha1:9f6f80dcb8754c80dd8c3d8bee918305b5e0d546
   scripts/install.sh:
@@ -1086,7 +1086,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:4e8457a7886d80fffd2d406b09d7f5aa44049af2
+    last_write_checksum: sha1:318b3a28489fe849a72321a9bab87713b12112f2
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

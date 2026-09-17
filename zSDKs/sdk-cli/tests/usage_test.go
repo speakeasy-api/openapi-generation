@@ -3,8 +3,10 @@
 package tests
 
 import (
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"openapi/internal/cli"
 	"regexp"
 	"strings"
 	"testing"
@@ -278,6 +280,36 @@ func TestUsageSchema_PlannedCommand(t *testing.T) {
 
 	assert.Contains(t, stdout, "cmd \"archive\"")
 	assert.Empty(t, stderr)
+}
+
+func TestUsageSchema_CustomCommand(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"hello", "--usage"})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	assert.Contains(t, stdout, "cmd \"hello\"")
+	assert.Empty(t, h.GetStderr())
+
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	cmd, _, err := root.Find([]string{"hello"})
+	require.NoError(t, err)
+	assert.Equal(t, "true", cmd.Annotations["speakeasy_usage_dynamic"])
+	cmd.LocalNonPersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Name != "help" {
+			assert.Contains(t, stdout, "--"+flag.Name)
+		}
+	})
+}
+
+func TestCustomCommand_ReachesRegisteredRunE(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.RunBare([]string{"hello"})
+	if err != nil {
+		assert.NotContains(t, err.Error(), "requires a hand-written implementation")
+	}
+	assert.NotContains(t, h.GetStderr(), "requires a hand-written implementation")
 }
 
 // The built-in auth group and its subcommands honor the --usage contract:
