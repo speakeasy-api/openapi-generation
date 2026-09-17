@@ -15,6 +15,7 @@ ImportDefaultedID Resource
 ```terraform
 resource "testing_import_defaulted_id" "my_importdefaultedid" {
   request_body_property = "...my_request_body_property..."
+  tier                  = "basic"
   workspace             = "default-workspace"
 }
 ```
@@ -25,6 +26,7 @@ resource "testing_import_defaulted_id" "my_importdefaultedid" {
 ### Optional
 
 - `request_body_property` (String) Requires replacement if changed.
+- `tier` (String) Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID. Default: "basic"; must be one of ["basic", "premium"]; Requires replacement if changed.
 - `workspace` (String) Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID. Default: "default-workspace"; Requires replacement if changed.
 
 ### Read-Only
@@ -42,6 +44,7 @@ import {
   to = testing_import_defaulted_id.my_testing_import_defaulted_id
   id = jsonencode({
     id        = "..."
+    tier      = "basic"
     workspace = "..."
   })
 }
@@ -50,5 +53,5 @@ import {
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
-terraform import testing_import_defaulted_id.my_testing_import_defaulted_id '{"id": "...", "workspace": "..."}'
+terraform import testing_import_defaulted_id.my_testing_import_defaulted_id '{"id": "...", "tier": "basic", "workspace": "..."}'
 ```

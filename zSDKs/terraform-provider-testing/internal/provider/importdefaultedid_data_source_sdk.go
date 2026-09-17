@@ -28,11 +28,13 @@ func (r *ImportDefaultedIDDataSourceModel) ToOperationsGetImportDefaultedIDReque
 	var workspace string
 	workspace = r.Workspace.ValueString()
 
+	tier := operations.GetImportDefaultedIDTier(r.Tier.ValueString())
 	var id string
 	id = r.ID.ValueString()
 
 	out := operations.GetImportDefaultedIDRequest{
 		Workspace: workspace,
+		Tier:      tier,
 		ID:        id,
 	}
 

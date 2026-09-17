@@ -3,14 +3,45 @@
 package operations
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/internal/utils"
 	"net/http"
 )
 
+// DeleteImportDefaultedIDTier - Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+type DeleteImportDefaultedIDTier string
+
+const (
+	DeleteImportDefaultedIDTierBasic   DeleteImportDefaultedIDTier = "basic"
+	DeleteImportDefaultedIDTierPremium DeleteImportDefaultedIDTier = "premium"
+)
+
+func (e DeleteImportDefaultedIDTier) ToPointer() *DeleteImportDefaultedIDTier {
+	return &e
+}
+func (e *DeleteImportDefaultedIDTier) UnmarshalJSON(data []byte) error {
+	var v string
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	switch v {
+	case "basic":
+		fallthrough
+	case "premium":
+		*e = DeleteImportDefaultedIDTier(v)
+		return nil
+	default:
+		return fmt.Errorf("invalid value for DeleteImportDefaultedIDTier: %v", v)
+	}
+}
+
 type DeleteImportDefaultedIDRequest struct {
 	// Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
 	Workspace string `default:"default-workspace" pathParam:"style=simple,explode=false,name=workspace"`
-	ID        string `pathParam:"style=simple,explode=false,name=id"`
+	// Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+	Tier DeleteImportDefaultedIDTier `default:"basic" pathParam:"style=simple,explode=false,name=tier"`
+	ID   string                      `pathParam:"style=simple,explode=false,name=id"`
 }
 
 func (d DeleteImportDefaultedIDRequest) MarshalJSON() ([]byte, error) {
@@ -29,6 +60,13 @@ func (d *DeleteImportDefaultedIDRequest) GetWorkspace() string {
 		return ""
 	}
 	return d.Workspace
+}
+
+func (d *DeleteImportDefaultedIDRequest) GetTier() DeleteImportDefaultedIDTier {
+	if d == nil {
+		return DeleteImportDefaultedIDTier("")
+	}
+	return d.Tier
 }
 
 func (d *DeleteImportDefaultedIDRequest) GetID() string {

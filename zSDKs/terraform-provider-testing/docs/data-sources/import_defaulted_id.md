@@ -15,6 +15,7 @@ ImportDefaultedID DataSource
 ```terraform
 data "testing_import_defaulted_id" "my_importdefaultedid" {
   id        = "...my_id..."
+  tier      = "basic"
   workspace = "default-workspace"
 }
 ```
@@ -24,6 +25,7 @@ data "testing_import_defaulted_id" "my_importdefaultedid" {
 
 ### Required
 
+- `tier` (String) Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID. must be one of ["basic", "premium"]
 - `workspace` (String) Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
 
 ### Read-Only

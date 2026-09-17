@@ -1,1 +1,1 @@
-terraform import testing_import_defaulted_id.my_testing_import_defaulted_id '{"id": "...", "workspace": "..."}'
+terraform import testing_import_defaulted_id.my_testing_import_defaulted_id '{"id": "...", "tier": "basic", "workspace": "..."}'

@@ -222,13 +222,22 @@ function genIsZeroValue(
 }
 
 function templateImportDefaultLiteral(field: FieldDef): string | undefined {
-  const value = field.Default?.Value;
+  return templateImportDefaultValue(field.Type, field.Default?.Value);
+}
 
+function templateImportDefaultValue(
+  typeDef: TypeDef,
+  value: unknown,
+): string | undefined {
   if (value === undefined || value === null || value === "null") {
     return undefined;
   }
 
-  switch (field.Type.Type.toString()) {
+  switch (typeDef.Type.toString()) {
+    case "enum":
+      return typeDef.Enum
+        ? templateImportDefaultValue(typeDef.Enum.Type, value)
+        : undefined;
     case "string":
       return typeof value === "string"
         ? templateBuiltinString(value)

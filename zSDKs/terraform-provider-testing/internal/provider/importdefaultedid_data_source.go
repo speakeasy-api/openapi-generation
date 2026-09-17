@@ -5,8 +5,10 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk"
@@ -30,6 +32,7 @@ type ImportDefaultedIDDataSource struct {
 type ImportDefaultedIDDataSourceModel struct {
 	ID                  types.String `tfsdk:"id"`
 	RequestBodyProperty types.String `tfsdk:"request_body_property"`
+	Tier                types.String `tfsdk:"tier"`
 	Workspace           types.String `tfsdk:"workspace"`
 }
 
@@ -49,6 +52,16 @@ func (r *ImportDefaultedIDDataSource) Schema(ctx context.Context, req datasource
 			},
 			"request_body_property": schema.StringAttribute{
 				Computed: true,
+			},
+			"tier": schema.StringAttribute{
+				Required:    true,
+				Description: `Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID. must be one of ["basic", "premium"]`,
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"basic",
+						"premium",
+					),
+				},
 			},
 			"workspace": schema.StringAttribute{
 				Required:    true,

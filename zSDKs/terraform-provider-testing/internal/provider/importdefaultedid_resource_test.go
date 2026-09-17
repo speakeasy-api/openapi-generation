@@ -20,17 +20,17 @@ func TestImportDefaultedIDResourceLifecycle(t *testing.T) {
 	endpoints := tfmockserver.ResourceEndpoints{
 		Create: tfmockserver.Endpoints{
 			{
-				Endpoint: "POST /v0/import-defaulted-id/{workspace}",
+				Endpoint: "POST /v0/import-defaulted-id/{workspace}/{tier}",
 			},
 		},
 		Get: tfmockserver.Endpoints{
 			{
-				Endpoint: "GET /v0/import-defaulted-id/{workspace}/{id}",
+				Endpoint: "GET /v0/import-defaulted-id/{workspace}/{tier}/{id}",
 			},
 		},
 		Delete: tfmockserver.Endpoints{
 			{
-				Endpoint: "DELETE /v0/import-defaulted-id/{workspace}/{id}",
+				Endpoint: "DELETE /v0/import-defaulted-id/{workspace}/{tier}/{id}",
 			},
 		},
 	}
@@ -58,6 +58,11 @@ func TestImportDefaultedIDResourceLifecycle(t *testing.T) {
 						resourceAddress,
 						tfjsonpath.New("workspace"),
 						knownvalue.StringExact("default-workspace"),
+					),
+					statecheck.ExpectKnownValue(
+						resourceAddress,
+						tfjsonpath.New("tier"),
+						knownvalue.StringExact("basic"),
 					),
 					statecheck.ExpectKnownValue(
 						resourceAddress,

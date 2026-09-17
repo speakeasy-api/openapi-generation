@@ -331,7 +331,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FrameworkTypeResponse'
-  /v0/import-defaulted-id/{workspace}:
+  /v0/import-defaulted-id/{workspace}/{tier}:
     parameters:
       - name: workspace
         description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
@@ -340,6 +340,16 @@ paths:
         schema:
           type: string
           default: default-workspace
+      - name: tier
+        description: Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - basic
+            - premium
+          default: basic
     post:
       x-speakeasy-entity-operation: ImportDefaultedId#create
       description: Create a new import defaulted id resource, whose read path includes a parameter with a schema default
@@ -357,7 +367,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportDefaultedIdResponse'
-  /v0/import-defaulted-id/{workspace}/{id}:
+  /v0/import-defaulted-id/{workspace}/{tier}/{id}:
     parameters:
       - name: workspace
         description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
@@ -366,6 +376,16 @@ paths:
         schema:
           type: string
           default: default-workspace
+      - name: tier
+        description: Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - basic
+            - premium
+          default: basic
       - name: id
         in: path
         required: true

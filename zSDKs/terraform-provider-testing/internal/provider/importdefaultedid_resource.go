@@ -7,16 +7,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	speakeasy_stringplanmodifier "github.com/hashicorp/terraform-provider-testing/internal/planmodifiers/stringplanmodifier"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk"
+	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/operations"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -37,6 +40,7 @@ type ImportDefaultedIDResource struct {
 type ImportDefaultedIDResourceModel struct {
 	ID                  types.String `tfsdk:"id"`
 	RequestBodyProperty types.String `tfsdk:"request_body_property"`
+	Tier                types.String `tfsdk:"tier"`
 	Workspace           types.String `tfsdk:"workspace"`
 }
 
@@ -59,6 +63,21 @@ func (r *ImportDefaultedIDResource) Schema(ctx context.Context, req resource.Sch
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
 				Description: `Requires replacement if changed.`,
+			},
+			"tier": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				Default:  stringdefault.StaticString(`basic`),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID. Default: "basic"; must be one of ["basic", "premium"]; Requires replacement if changed.`,
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"basic",
+						"premium",
+					),
+				},
 			},
 			"workspace": schema.StringAttribute{
 				Computed: true,
@@ -282,12 +301,13 @@ func (r *ImportDefaultedIDResource) ImportState(ctx context.Context, req resourc
 	dec := json.NewDecoder(bytes.NewReader([]byte(req.ID)))
 	dec.DisallowUnknownFields()
 	var data struct {
-		ID        string  `json:"id"`
-		Workspace *string `json:"workspace"`
+		ID        string                               `json:"id"`
+		Tier      *operations.GetImportDefaultedIDTier `json:"tier"`
+		Workspace *string                              `json:"workspace"`
 	}
 
 	if err := dec.Decode(&data); err != nil {
-		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"id": "...", "workspace": "..."}': `+err.Error())
+		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"id": "...", "tier": "basic", "workspace": "..."}': `+err.Error())
 		return
 	}
 
@@ -296,6 +316,11 @@ func (r *ImportDefaultedIDResource) ImportState(ctx context.Context, req resourc
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), data.ID)...)
+	if data.Tier == nil {
+		var tierDefault operations.GetImportDefaultedIDTier = `basic`
+		data.Tier = &tierDefault
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("tier"), data.Tier)...)
 	if data.Workspace == nil {
 		var workspaceDefault string = `default-workspace`
 		data.Workspace = &workspaceDefault

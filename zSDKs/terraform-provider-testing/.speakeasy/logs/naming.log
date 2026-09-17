@@ -2238,6 +2238,18 @@ DEBUG	discriminated: Renamed to "XUnknownValuesResponse_closed_enum_string"
 	 registrationID: "scope:shared refType:Schemas refName:XUnknownValuesResponse originalName:closed_enum_string"
 DEBUG	
 
+--- Renaming 3 types with name "tier" ---
+DEBUG	discriminated: Renamed to "create_import_defaulted_id_tier" 
+	 labels: "original_name:tier operation:create_import_defaulted_id data_type:enum parameter:pathParam" 
+	 registrationID: "scope:operations operation:create-import-defaulted-id parameter:pathParam originalName:tier"
+DEBUG	discriminated: Renamed to "delete_import_defaulted_id_tier" 
+	 labels: "original_name:tier operation:delete_import_defaulted_id data_type:enum parameter:pathParam" 
+	 registrationID: "scope:operations operation:delete-import-defaulted-id parameter:pathParam originalName:tier"
+DEBUG	discriminated: Renamed to "get_import_defaulted_id_tier" 
+	 labels: "original_name:tier operation:get_import_defaulted_id data_type:enum parameter:pathParam" 
+	 registrationID: "scope:operations operation:get-import-defaulted-id parameter:pathParam originalName:tier"
+DEBUG	
+
 --- Renaming 2 types with name "id" ---
 DEBUG	discriminated: Renamed to "delete_import_id_enum_string_id" 
 	 labels: "original_name:id operation:delete_import_id_enum_string data_type:enum constProperty:Default parameter:pathParam" 
@@ -2508,13 +2520,16 @@ GetFrameworkTypeRequest (id: string)
 GetFrameworkTypeResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 UpdateFrameworkTypeRequest (id: string, FrameworkTypeRequest: FrameworkTypeRequest)
 UpdateFrameworkTypeResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
-CreateImportDefaultedIdRequest (workspace: string, ImportDefaultedIdRequest: ImportDefaultedIdRequest)
+CreateImportDefaultedIdRequest (workspace: string, tier: enum, ImportDefaultedIdRequest: ImportDefaultedIdRequest)
+ CreateImportDefaultedIdTier (enum: basic, premium)
  ImportDefaultedIdRequest (requestBodyProperty: string)
 CreateImportDefaultedIdResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
  ImportDefaultedIdResponse (id: string, workspace: string, requestBodyProperty: string)
-DeleteImportDefaultedIdRequest (workspace: string, id: string)
+DeleteImportDefaultedIdRequest (workspace: string, tier: enum, id: string)
+ DeleteImportDefaultedIdTier (enum: basic, premium)
 DeleteImportDefaultedIdResponse (ContentType: string, StatusCode: int32, RawResponse: response)
-GetImportDefaultedIdRequest (workspace: string, id: string)
+GetImportDefaultedIdRequest (workspace: string, tier: enum, id: string)
+ GetImportDefaultedIdTier (enum: basic, premium)
 GetImportDefaultedIdResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 ImportIdEnumStringRequest (empty)
 CreateImportIdEnumStringResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)

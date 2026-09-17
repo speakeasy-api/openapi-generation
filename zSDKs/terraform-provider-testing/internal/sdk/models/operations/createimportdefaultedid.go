@@ -3,14 +3,45 @@
 package operations
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/internal/utils"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/shared"
 	"net/http"
 )
 
+// CreateImportDefaultedIDTier - Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+type CreateImportDefaultedIDTier string
+
+const (
+	CreateImportDefaultedIDTierBasic   CreateImportDefaultedIDTier = "basic"
+	CreateImportDefaultedIDTierPremium CreateImportDefaultedIDTier = "premium"
+)
+
+func (e CreateImportDefaultedIDTier) ToPointer() *CreateImportDefaultedIDTier {
+	return &e
+}
+func (e *CreateImportDefaultedIDTier) UnmarshalJSON(data []byte) error {
+	var v string
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	switch v {
+	case "basic":
+		fallthrough
+	case "premium":
+		*e = CreateImportDefaultedIDTier(v)
+		return nil
+	default:
+		return fmt.Errorf("invalid value for CreateImportDefaultedIDTier: %v", v)
+	}
+}
+
 type CreateImportDefaultedIDRequest struct {
 	// Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
-	Workspace                string                          `default:"default-workspace" pathParam:"style=simple,explode=false,name=workspace"`
+	Workspace string `default:"default-workspace" pathParam:"style=simple,explode=false,name=workspace"`
+	// Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+	Tier                     CreateImportDefaultedIDTier     `default:"basic" pathParam:"style=simple,explode=false,name=tier"`
 	ImportDefaultedIDRequest shared.ImportDefaultedIDRequest `request:"mediaType=application/json"`
 }
 
@@ -30,6 +61,13 @@ func (c *CreateImportDefaultedIDRequest) GetWorkspace() string {
 		return ""
 	}
 	return c.Workspace
+}
+
+func (c *CreateImportDefaultedIDRequest) GetTier() CreateImportDefaultedIDTier {
+	if c == nil {
+		return CreateImportDefaultedIDTier("")
+	}
+	return c.Tier
 }
 
 func (c *CreateImportDefaultedIDRequest) GetImportDefaultedIDRequest() shared.ImportDefaultedIDRequest {
