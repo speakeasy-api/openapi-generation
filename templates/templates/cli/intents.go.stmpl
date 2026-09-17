@@ -67,7 +67,7 @@ func initIntentCmds(rootCmd *cobra.Command) error {
 		{{- if .Category}}
 		ensureCommandGroup(parent, "{{intentCategoryID .Category}}", "{{escapeGoString .Category}}:")
 		{{- end}}
-		parent.AddCommand(newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"))
+		parent.AddCommand({{if .Custom}}newCustomCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}"){{else}}newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"){{end}})
 		{{- if .Category}}
 	} else {
 		ensureCommandGroup(parent, "{{intentCategoryID .Category}}", "{{escapeGoString .Category}}:")
@@ -78,7 +78,7 @@ func initIntentCmds(rootCmd *cobra.Command) error {
 	}
 	{{- else}}
 	if owner := findOwningCommand(rootCmd, "{{.Name}}"); owner == nil {
-		rootCmd.AddCommand(newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"))
+		rootCmd.AddCommand({{if .Custom}}newCustomCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}"){{else}}newPlannedCmd("{{.Name}}", "{{escapeGoString .Summary}}{{if .Tagline}} {{escapeGoString .Tagline}}{{end}}", "{{escapeGoString .Description}}", "{{if .Category}}{{intentCategoryID .Category}}{{end}}", "{{escapeGoString .Note}}"){{end}})
 	} else {
 		{{- if .Category}}
 		owner.GroupID = "{{intentCategoryID .Category}}"
@@ -133,6 +133,28 @@ func newPlannedCmd(name, short, long, groupID, note string) *cobra.Command {
 	if groupID != "" {
 		cmd.GroupID = groupID
 	}
+	return cmd
+}
+
+func newCustomCmd(name, short, long, groupID string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   name,
+		Short: short,
+		Args:  cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if usage.UsageRequested(cmd) {
+				return usage.EmitSchema(cmd, cmd.OutOrStdout())
+			}
+			return fmt.Errorf("command %q requires a hand-written implementation that was not registered", name)
+		},
+	}
+	if long != "" {
+		cmd.Long = long
+	}
+	if groupID != "" {
+		cmd.GroupID = groupID
+	}
+	usage.MarkDynamic(cmd)
 	return cmd
 }
 

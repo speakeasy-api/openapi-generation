@@ -287,6 +287,10 @@ x-speakeasy-cli-commands:
         "archive" needs an account-lifecycle API surface that is not part of
         this build. Meanwhile use "cli delete-user".
     test-group: {category: Manage, group: true}
+    hello:
+      category: Manage
+      summary: Hand-written command that survives regeneration
+      custom: true
   operations:
     chat:
       output:

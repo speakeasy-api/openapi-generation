@@ -2235,8 +2235,10 @@ declare global {
     Selectors?: CLIVariantSelectors | null;
   };
 
+  type CLICommandSourceType = "operation" | "group" | "planned" | "custom";
+
   type CLICommandSource = {
-    Type: string;
+    Type: GojaEnum<CLICommandSourceType>;
     Routes: CLICommandRoute[] | null;
     Note: string;
   };

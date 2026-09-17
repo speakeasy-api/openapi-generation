@@ -159,8 +159,10 @@ function readmePlannedEntry(
   )})`;
   const summary = [planned.Summary, planned.Tagline].filter((s) => s).join(" ");
   if (summary) line += ` - ${summary}`;
-  line += ` — _not in this build_`;
-  if (planned.Note) line += `: ${planned.Note}`;
+  if (!planned.Custom) {
+    line += ` — _not in this build_`;
+    if (planned.Note) line += `: ${planned.Note}`;
+  }
   line += "\n";
   return line;
 }

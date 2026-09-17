@@ -114,7 +114,10 @@ registerTemplateFunc(
 // @ts-ignore
 function isCustomCommandsEnabled(): boolean {
   const val = context.Global.Config.EnableCustomCodeRegions;
-  return val === true || val === "true";
+  if (val === true || val === "true") return true;
+  return (context.Global.AST.CLICommands?.Commands || []).some(
+    (cmd) => cmd.Source.Type.valueOf() === "custom",
+  );
 }
 registerTemplateFunc("isCustomCommandsEnabled", isCustomCommandsEnabled);
 

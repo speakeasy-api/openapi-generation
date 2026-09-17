@@ -124,11 +124,21 @@ type CLIVariantSelectors struct {
 	DiscriminatorAliases []any  `json:"discriminatorAliases,omitempty" yaml:"discriminatorAliases,omitempty"`
 }
 
+// CLICommandSourceType discriminates what a declared command does.
+type CLICommandSourceType string
+
+const (
+	CLICommandSourceOperation CLICommandSourceType = "operation"
+	CLICommandSourceGroup     CLICommandSourceType = "group"
+	CLICommandSourcePlanned   CLICommandSourceType = "planned"
+	CLICommandSourceCustom    CLICommandSourceType = "custom"
+)
+
 // CLICommandSource discriminates what a declared command does.
 type CLICommandSource struct {
-	Type   string            `json:"type" yaml:"type"` // "operation" | "group" | "planned"
-	Routes []CLICommandRoute `json:"routes" yaml:"routes"`
-	Note   string            `json:"note" yaml:"note"` // planned: message explaining availability
+	Type   CLICommandSourceType `json:"type" yaml:"type"`
+	Routes []CLICommandRoute    `json:"routes" yaml:"routes"`
+	Note   string               `json:"note" yaml:"note"` // planned: message explaining availability
 }
 
 // CLICommandProjection is the default output projection for a command.
@@ -472,7 +482,7 @@ var cliReservedCommandKeys = map[string]string{
 
 var cliCommandKeys = []string{
 	"category", "summary", "tagline", "description",
-	"op", "routes", "planned", "group", "source", "override",
+	"op", "routes", "planned", "custom", "group", "source", "override",
 	"args", "flags", "preset", "hints", "examples", "help", "jq", "output", "async",
 }
 
@@ -806,7 +816,7 @@ func (d *cliManifestDecoder) checkPathPrefixes(manifest *CLICommandManifest) err
 		for prefixLen := 1; prefixLen < len(cmd.Path); prefixLen++ {
 			prefixKey := strings.Join(cmd.Path[:prefixLen], " ")
 			parent, declared := byKey[prefixKey]
-			if declared && parent.Source.Type != "group" {
+			if declared && parent.Source.Type != CLICommandSourceGroup {
 				return fmt.Errorf("command %q nests beneath %q, but %q is a %s command; only group commands (or generated command groups) can host nested commands", strings.Join(cmd.Path, " "), prefixKey, prefixKey, parent.Source.Type)
 			}
 		}
@@ -822,9 +832,9 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 
 	cmd := &CLICommand{ID: id, Path: path}
 	var (
-		opNode, routesNode, plannedNode, groupNode, sourceNode          *yaml.Node
-		argsNode, flagsNode, presetNode, hintsNode, exampNode, helpNode *yaml.Node
-		outputNode, asyncNode, overrideNode                             *yaml.Node
+		opNode, routesNode, plannedNode, customNode, groupNode, sourceNode *yaml.Node
+		argsNode, flagsNode, presetNode, hintsNode, exampNode, helpNode    *yaml.Node
+		outputNode, asyncNode, overrideNode                                *yaml.Node
 	)
 
 	for _, entry := range entries {
@@ -855,6 +865,8 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 			routesNode = entry.Value
 		case "planned":
 			plannedNode = entry.Value
+		case "custom":
+			customNode = entry.Value
 		case "group":
 			groupNode = entry.Value
 		case "source":
@@ -920,7 +932,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		}
 	}
 
-	if err := d.decodeSource(cmd, key, node, opNode, routesNode, plannedNode, groupNode, sourceNode); err != nil {
+	if err := d.decodeSource(cmd, key, node, opNode, routesNode, plannedNode, customNode, groupNode, sourceNode); err != nil {
 		return nil, err
 	}
 	if overrideNode != nil && routesNode == nil {
@@ -930,11 +942,11 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 	// Group tags categorize top-level command groups (help categories are
 	// root-level sections); the restriction applies to both the group: true
 	// sugar and the long-form source object.
-	if cmd.Source.Type == "group" && len(cmd.Path) > 1 {
+	if cmd.Source.Type == CLICommandSourceGroup && len(cmd.Path) > 1 {
 		return nil, fmt.Errorf("line %d: command %q: group tags categorize top-level command groups; nested group tags are not part of v1", node.Line, key)
 	}
 
-	if cmd.Source.Type != "operation" {
+	if cmd.Source.Type != CLICommandSourceOperation {
 		var illegal []string
 		for keyName, present := range map[string]*yaml.Node{
 			"args": argsNode, "flags": flagsNode, "preset": presetNode, "hints": hintsNode,
@@ -952,7 +964,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		if asyncNode != nil {
 			illegal = append(illegal, "async")
 		}
-		if cmd.Source.Type == "group" && exampNode != nil {
+		if cmd.Source.Type == CLICommandSourceGroup && exampNode != nil {
 			illegal = append(illegal, "examples")
 		}
 		if len(illegal) > 0 {
@@ -1593,18 +1605,18 @@ func cliCheckArtifactDefaultPath(pattern string) error {
 	return nil
 }
 
-func (d *cliManifestDecoder) decodeSource(cmd *CLICommand, key string, node, opNode, routesNode, plannedNode, groupNode, sourceNode *yaml.Node) error {
+func (d *cliManifestDecoder) decodeSource(cmd *CLICommand, key string, node, opNode, routesNode, plannedNode, customNode, groupNode, sourceNode *yaml.Node) error {
 	present := 0
-	for _, n := range []*yaml.Node{opNode, routesNode, plannedNode, groupNode, sourceNode} {
+	for _, n := range []*yaml.Node{opNode, routesNode, plannedNode, customNode, groupNode, sourceNode} {
 		if n != nil {
 			present++
 		}
 	}
 	if present == 0 {
-		return fmt.Errorf("line %d: command %q must declare exactly one of op, routes, planned, group, or source", node.Line, key)
+		return fmt.Errorf("line %d: command %q must declare exactly one of op, routes, planned, custom, group, or source", node.Line, key)
 	}
 	if present > 1 {
-		return fmt.Errorf("line %d: command %q declares more than one of op, routes, planned, group, source; exactly one source is allowed", node.Line, key)
+		return fmt.Errorf("line %d: command %q declares more than one of op, routes, planned, custom, group, source; exactly one source is allowed", node.Line, key)
 	}
 
 	switch {
@@ -1613,13 +1625,13 @@ func (d *cliManifestDecoder) decodeSource(cmd *CLICommand, key string, node, opN
 		if err != nil {
 			return err
 		}
-		cmd.Source = CLICommandSource{Type: "operation", Routes: routes}
+		cmd.Source = CLICommandSource{Type: CLICommandSourceOperation, Routes: routes}
 	case routesNode != nil:
 		routes, err := d.decodeDispatchRoutes(key, routesNode)
 		if err != nil {
 			return err
 		}
-		cmd.Source = CLICommandSource{Type: "operation", Routes: routes}
+		cmd.Source = CLICommandSource{Type: CLICommandSourceOperation, Routes: routes}
 	case plannedNode != nil:
 		note, err := cliScalarString(plannedNode, "planned")
 		if err != nil {
@@ -1629,14 +1641,21 @@ func (d *cliManifestDecoder) decodeSource(cmd *CLICommand, key string, node, opN
 		if note == "" {
 			return fmt.Errorf("line %d: command %q: planned requires a non-empty note that teaches the escalation path", plannedNode.Line, key)
 		}
-		cmd.Source = CLICommandSource{Type: "planned", Note: note}
+		cmd.Source = CLICommandSource{Type: CLICommandSourcePlanned, Note: note}
+	case customNode != nil:
+		isTrue, err := cliScalarBool(customNode, "custom")
+		if err != nil || !isTrue {
+			line := customNode.Line
+			return fmt.Errorf("line %d: command %q: custom must be the literal true (it reserves a name for a hand-written command supplied after generation)", line, key)
+		}
+		cmd.Source = CLICommandSource{Type: CLICommandSourceCustom}
 	case groupNode != nil:
 		isTrue, err := cliScalarBool(groupNode, "group")
 		if err != nil || !isTrue {
 			line := groupNode.Line
 			return fmt.Errorf("line %d: command %q: group must be the literal true (it tags a generated command group into a category)", line, key)
 		}
-		cmd.Source = CLICommandSource{Type: "group"}
+		cmd.Source = CLICommandSource{Type: CLICommandSourceGroup}
 	case sourceNode != nil:
 		source, err := d.decodeLongFormSource(key, sourceNode)
 		if err != nil {
@@ -1841,9 +1860,11 @@ func (d *cliManifestDecoder) decodeLongFormSource(key string, node *yaml.Node) (
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "type":
-			if source.Type, err = cliScalarString(entry.Value, "source type"); err != nil {
+			typ, err := cliScalarString(entry.Value, "source type")
+			if err != nil {
 				return nil, err
 			}
+			source.Type = CLICommandSourceType(typ)
 		case "routes":
 			routesNode = entry.Value
 		case "note":
@@ -1856,7 +1877,7 @@ func (d *cliManifestDecoder) decodeLongFormSource(key string, node *yaml.Node) (
 	}
 
 	switch source.Type {
-	case "operation":
+	case CLICommandSourceOperation:
 		if routesNode == nil || routesNode.Kind != yaml.SequenceNode || len(routesNode.Content) == 0 {
 			return nil, fmt.Errorf("line %d: command %q: source type operation requires a non-empty routes sequence", node.Line, key)
 		}
@@ -1900,7 +1921,7 @@ func (d *cliManifestDecoder) decodeLongFormSource(key string, node *yaml.Node) (
 		if source.Note != "" {
 			return nil, fmt.Errorf("line %d: command %q: note is only valid on planned sources", node.Line, key)
 		}
-	case "planned":
+	case CLICommandSourcePlanned:
 		source.Note = strings.TrimSpace(source.Note)
 		if source.Note == "" {
 			return nil, fmt.Errorf("line %d: command %q: source type planned requires a non-empty note", node.Line, key)
@@ -1908,14 +1929,14 @@ func (d *cliManifestDecoder) decodeLongFormSource(key string, node *yaml.Node) (
 		if routesNode != nil {
 			return nil, fmt.Errorf("line %d: command %q: planned sources do not take routes", node.Line, key)
 		}
-	case "group":
+	case CLICommandSourceGroup, CLICommandSourceCustom:
 		if routesNode != nil || source.Note != "" {
-			return nil, fmt.Errorf("line %d: command %q: group sources take no routes or note", node.Line, key)
+			return nil, fmt.Errorf("line %d: command %q: %s sources take no routes or note", node.Line, key, source.Type)
 		}
 	case "":
-		return nil, fmt.Errorf("line %d: command %q: source requires a type (operation, planned, or group)", node.Line, key)
+		return nil, fmt.Errorf("line %d: command %q: source requires a type (operation, planned, custom, or group)", node.Line, key)
 	default:
-		return nil, fmt.Errorf("line %d: command %q: unsupported source type %q (expected operation, planned, or group)", node.Line, key, source.Type)
+		return nil, fmt.Errorf("line %d: command %q: unsupported source type %q (expected operation, planned, custom, or group)", node.Line, key, source.Type)
 	}
 	return source, nil
 }
