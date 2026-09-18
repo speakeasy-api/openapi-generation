@@ -7,5 +7,15 @@ import "github.com/spf13/cobra"
 // been attached. This file is generated once and is never overwritten on
 // regeneration.
 func Register(root *cobra.Command) {
+	// Commands declared with `custom: true` are already attached with their
+	// manifest name, help, and category; find one by name and attach its
+	// flags and RunE:
+	//
+	//	for _, cmd := range root.Commands() {
+	//		if cmd.Name() == "example" {
+	//			cmd.Flags().String("name", "", "Who to greet")
+	//			cmd.RunE = func(cmd *cobra.Command, args []string) error { return nil }
+	//		}
+	//	}
 	_ = root
 }

@@ -115,7 +115,7 @@ func (d *cliManifestDecoder) linkManifest(manifest *CLICommandManifest) error {
 
 	for i := range manifest.Commands {
 		cmd := &manifest.Commands[i]
-		if cmd.Source.Type != "operation" {
+		if cmd.Source.Type != CLICommandSourceOperation {
 			continue
 		}
 		if err := d.linkCommand(cmd); err != nil {

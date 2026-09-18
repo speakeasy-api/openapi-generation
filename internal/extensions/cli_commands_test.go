@@ -913,7 +913,7 @@ commands:
 	assert.Equal(t, "Send content to a render engine and print the result.", render.Description)
 	assert.Equal(t, "render", render.ID)
 	assert.Equal(t, []string{"render"}, render.Path)
-	assert.Equal(t, "operation", render.Source.Type)
+	assert.Equal(t, CLICommandSourceOperation, render.Source.Type)
 	require.Len(t, render.Source.Routes, 1)
 	assert.Equal(t, "CreateTask", render.Source.Routes[0].OperationID)
 	assert.Equal(t, "#/components/schemas/CreateRenderTaskParams", render.Source.Routes[0].RequestVariant)
@@ -962,11 +962,11 @@ commands:
 	assert.True(t, image.Args[0].Required)
 
 	planned := manifest.Commands[2]
-	assert.Equal(t, "planned", planned.Source.Type)
+	assert.Equal(t, CLICommandSourcePlanned, planned.Source.Type)
 	assert.Contains(t, planned.Source.Note, "audio-capable engine")
 
 	group := manifest.Commands[3]
-	assert.Equal(t, "group", group.Source.Type)
+	assert.Equal(t, CLICommandSourceGroup, group.Source.Type)
 	assert.Equal(t, []string{"workspaces"}, group.Path)
 
 	nested := manifest.Commands[4]
@@ -1231,13 +1231,13 @@ func TestCLICommands_SourceDiscriminator(t *testing.T) {
 version: 1
 commands:
   render: {summary: No source}
-	`, "exactly one of op, routes, planned, group, or source")
+	`, "exactly one of op, routes, planned, custom, group, or source")
 
 	requireDecodeError(t, `
 version: 1
 commands:
   render: {op: GetTask, group: true}
-	`, "more than one of op, routes, planned, group, source")
+	`, "more than one of op, routes, planned, custom, group, source")
 
 	requireDecodeError(t, `
 version: 1
@@ -1250,6 +1250,18 @@ version: 1
 commands:
   render: {planned: "   "}
 `, "non-empty note")
+
+	requireDecodeError(t, `
+version: 1
+commands:
+  render: {custom: false}
+`, "custom must be the literal true")
+
+	requireDecodeError(t, `
+version: 1
+commands:
+  render: {op: GetTask, custom: true}
+	`, "more than one of op, routes, planned, custom, group, source")
 
 	requireDecodeError(t, `
 version: 1
@@ -1289,6 +1301,52 @@ commands:
 	`, "use a routes: map")
 }
 
+func TestCLICommands_CustomSource(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, `
+version: 1
+categories: [Create]
+commands:
+  tts:
+    category: Create
+    summary: Text to speech
+    tagline: (model-a)
+    custom: true
+`)
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 1)
+	tts := manifest.Commands[0]
+	assert.Equal(t, CLICommandSourceCustom, tts.Source.Type)
+	assert.Empty(t, tts.Source.Note)
+	assert.Equal(t, "Text to speech", tts.Summary)
+	assert.Equal(t, "Create", tts.Category)
+
+	manifest, _, err = decodeCLITest(t, `
+version: 1
+commands:
+  tts:
+    summary: Text to speech
+    source: {type: custom}
+`)
+	require.NoError(t, err)
+	assert.Equal(t, CLICommandSourceCustom, manifest.Commands[0].Source.Type)
+
+	requireDecodeError(t, `
+version: 1
+commands:
+  tts:
+    source: {type: custom, note: soon}
+`, "custom sources take no routes or note")
+
+	requireDecodeError(t, `
+version: 1
+commands:
+  tts:
+    custom: true
+    flags:
+      voice: {to: $.voice, type: string}
+`, "custom command and cannot declare")
+}
+
 func TestCLICommands_OpSugarExpansion(t *testing.T) {
 	manifest, _, err := decodeCLITest(t, `
 version: 1
@@ -1318,7 +1376,7 @@ commands:
           requestVariant: "#/components/schemas/CreateRenderTaskParams"
 `)
 	require.NoError(t, err)
-	assert.Equal(t, "operation", manifest.Commands[0].Source.Type)
+	assert.Equal(t, CLICommandSourceOperation, manifest.Commands[0].Source.Type)
 	assert.Equal(t, "#/components/schemas/CreateRenderTaskParams", manifest.Commands[0].Source.Routes[0].RequestVariant)
 
 	requireDecodeError(t, `

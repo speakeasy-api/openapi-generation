@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"openapi/internal/cli/custom"
 	"openapi/internal/cli/group"
 	"openapi/internal/cli/namespacetests"
 	"openapi/internal/cli/obsolete"
@@ -287,6 +288,8 @@ func NewRootCommand() (*cobra.Command, error) {
 	if err := initIntentCmds(rootCmd); err != nil {
 		return nil, err
 	}
+
+	custom.Register(rootCmd)
 
 	// Cobra creates its default help and completion commands lazily inside Execute.
 	rootCmd.InitDefaultHelpCmd()

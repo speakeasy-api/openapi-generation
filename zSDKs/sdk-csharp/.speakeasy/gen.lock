@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 0f792ecbb061014acf512f7d2dbd8c20
+  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -1430,7 +1430,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/SingleFoo.cs:
     last_write_checksum: sha1:e906a6873bf8ad1e10c503988bc84fce8af52698
   src/Speakeasy/OpenAPI/Speakeasy.OpenAPI.csproj:
-    last_write_checksum: sha1:2cc268dd452e453f6f4586c0a3f0831fe6e9c143
+    last_write_checksum: sha1:a07d1ac6c583afff62c8d70757081fc8627da6e9
   src/Speakeasy/OpenAPI/SubGroup.cs:
     last_write_checksum: sha1:bbf362ea5e1a7c364ca98fedf7cc4b0d43221d66
   src/Speakeasy/OpenAPI/Tag1.cs:

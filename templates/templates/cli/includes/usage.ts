@@ -2231,12 +2231,28 @@ registerTemplateFunc(
   templateCatalogUsageFirstValue,
 );
 
-function getPlannedUsageTestCase(): { path: string[]; name: string } | null {
+function getPlaceholderUsageTestCase(
+  custom: boolean,
+): { path: string[]; name: string } | null {
   const manifest = collectIntentManifest();
-  const planned = manifest.Planned[0];
+  const planned = manifest.Planned.find((p) => p.Custom === custom);
   if (!planned) return null;
   return { path: [...planned.ParentPath, planned.Name], name: planned.Name };
 }
+
+function getPlannedUsageTestCase(): { path: string[]; name: string } | null {
+  return getPlaceholderUsageTestCase(false);
+}
+
+function getCustomUsageTestCase(): { PathArgs: string; Name: string } | null {
+  const testCase = getPlaceholderUsageTestCase(true);
+  if (!testCase) return null;
+  return {
+    PathArgs: testCase.path.map((part) => goStringLiteral(part)).join(", "),
+    Name: testCase.name,
+  };
+}
+registerTemplateFunc("getCustomUsageTestCase", getCustomUsageTestCase);
 
 function templatePlannedUsageTestEnabled(): boolean {
   return getPlannedUsageTestCase() !== null;

@@ -427,6 +427,7 @@ Commands are grouped the way `cli --help` shows them. Every command accepts `--h
     * [`post-test`](docs/cli_test-group_tag2_post-test.md) - Post Test2
   * [`tag3`](docs/cli_test-group_tag3.md) - Operations for tag3
     * [`post-test`](docs/cli_test-group_tag3_post-test.md) - Post Test2
+* [`hello`](docs/cli_hello.md) - Hand-written command that survives regeneration
 
 ### Additional commands
 
@@ -902,5 +903,6 @@ This CLI is generated programmatically. Edits to generated files are overwritten
 
 - **Configuration and behavior:** Use [OpenAPI overlays](https://www.speakeasy.com/docs/prep-openapi/overlays/create-overlays) in the Speakeasy workflow with `x-speakeasy-*` extensions (for example, `x-speakeasy-cli-commands`) to define commands, flags, help text, examples, authentication, and grouping.
 - **Persistent code changes:** Store unified diffs as [patch files](https://www.speakeasy.com/docs/sdks/customize/code/patch-files/patch-files) at `.speakeasy/patches/<path-of-generated-file>.patch`; they are re-applied on every generation.
+- **Hand-written commands:** Add them under `internal/cli/custom/`; the scaffold is generated once and never overwritten.
 
 ### CLI Created by [Speakeasy](https://www.speakeasy.com/?utm_source=openapi&utm_campaign=cli)

@@ -70,6 +70,11 @@ func initIntentCmds(rootCmd *cobra.Command) error {
 	} else {
 		owner.GroupID = "manage"
 	}
+	if owner := findOwningCommand(rootCmd, "hello"); owner == nil {
+		rootCmd.AddCommand(newCustomCmd("hello", "Hand-written command that survives regeneration", "", "manage"))
+	} else {
+		owner.GroupID = "manage"
+	}
 	if err := setCommandGroup(rootCmd, "test-group", "manage"); err != nil {
 		return err
 	}
@@ -101,6 +106,28 @@ func newPlannedCmd(name, short, long, groupID, note string) *cobra.Command {
 	return cmd
 }
 
+func newCustomCmd(name, short, long, groupID string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   name,
+		Short: short,
+		Args:  cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if usage.UsageRequested(cmd) {
+				return usage.EmitSchema(cmd, cmd.OutOrStdout())
+			}
+			return fmt.Errorf("command %q requires a hand-written implementation that was not registered", name)
+		},
+	}
+	if long != "" {
+		cmd.Long = long
+	}
+	if groupID != "" {
+		cmd.GroupID = groupID
+	}
+	usage.MarkDynamic(cmd)
+	return cmd
+}
+
 type intentOrderEntry struct {
 	ParentPath []string
 	Name       string
@@ -116,6 +143,7 @@ var intentDeclarationOrder = []intentOrderEntry{
 	{ParentPath: []string{}, Name: "say"},
 	{ParentPath: []string{}, Name: "archive"},
 	{ParentPath: []string{}, Name: "test-group"},
+	{ParentPath: []string{}, Name: "hello"},
 }
 
 func applyDeclaredCommandOrder(rootCmd *cobra.Command) {

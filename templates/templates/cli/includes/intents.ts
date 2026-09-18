@@ -143,6 +143,7 @@ interface PlannedCmdCtx {
   Tagline: string;
   Description: string;
   Note: string;
+  Custom: boolean;
   HelpDefaults: string;
   HelpLearn: string;
   HelpEscalate: string;
@@ -751,7 +752,7 @@ function collectIntentManifest(): IntentManifestCtx {
     addCategory(cmd.Category);
     out.Order.push({ ParentPath: parentPath, Name: name });
 
-    if (cmd.Source?.Type === "group") {
+    if (cmd.Source.Type.valueOf() === "group") {
       out.GroupTags.push({
         Name: name,
         Category: cmd.Category || "",
@@ -762,7 +763,7 @@ function collectIntentManifest(): IntentManifestCtx {
       continue;
     }
 
-    if (cmd.Source?.Type === "planned") {
+    if (cmd.Source.Type.valueOf() === "planned") {
       out.Planned.push({
         Name: name,
         ParentPath: parentPath,
@@ -777,6 +778,7 @@ function collectIntentManifest(): IntentManifestCtx {
         )
           .trim()
           .replace(/[.\s]+$/, ""),
+        Custom: false,
         HelpDefaults: cmd.Help?.Defaults || "",
         HelpLearn: cmd.Help?.Learn || "",
         HelpEscalate: cmd.Help?.Escalate || "",
@@ -784,7 +786,24 @@ function collectIntentManifest(): IntentManifestCtx {
       continue;
     }
 
-    if (cmd.Source?.Type !== "operation") continue;
+    if (cmd.Source.Type.valueOf() === "custom") {
+      out.Planned.push({
+        Name: name,
+        ParentPath: parentPath,
+        Category: cmd.Category || "",
+        Summary: cmd.Summary || "",
+        Tagline: cmd.Tagline || "",
+        Description: cmd.Description || "",
+        Note: "",
+        Custom: true,
+        HelpDefaults: cmd.Help?.Defaults || "",
+        HelpLearn: cmd.Help?.Learn || "",
+        HelpEscalate: cmd.Help?.Escalate || "",
+      });
+      continue;
+    }
+
+    if (cmd.Source.Type.valueOf() !== "operation") continue;
     const routes: any[] = cmd.Source.Routes || [];
     const route = routes[0];
     const dispatch = routes.length > 1;
@@ -1666,8 +1685,8 @@ registerTemplateFunc("hasCliAsyncIntents", hasCliAsyncIntents);
 function isAsyncCreateOperation(op: Operation): boolean {
   const manifest = context.Global.AST.CLICommands;
   if (!manifest?.Commands) return false;
-  return manifest.Commands.some((cmd: any) => {
-    if (!cmd.Async || cmd.Source?.Type !== "operation") return false;
+  return manifest.Commands.some((cmd) => {
+    if (!cmd.Async || cmd.Source.Type.valueOf() !== "operation") return false;
     const routeID = cmd.Source.Routes?.[0]?.OperationID;
     return routeID === op.GetID() || routeID === op.OriginalID;
   });

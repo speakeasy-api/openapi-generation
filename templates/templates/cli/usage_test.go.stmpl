@@ -1,9 +1,14 @@
 {{- recurse 1 -}}
+{{- $custom := getCustomUsageTestCase -}}
 {{- addImport "regexp" -}}
 {{- addImport "strings" -}}
 {{- addImport "testing" -}}
 {{- addImport "github.com/stretchr/testify/assert" -}}
 {{- addImport "github.com/stretchr/testify/require" -}}
+{{- if $custom -}}
+{{- addImport "github.com/spf13/pflag" -}}
+{{- addImport "internal/cli" true -}}
+{{- end -}}
 package tests
 
 {{genImports}}
@@ -305,6 +310,39 @@ func TestUsageSchema_PlannedCommand(t *testing.T) {
 
     assert.Contains(t, stdout, "cmd \"{{templatePlannedUsageCmdName}}\"")
     assert.Empty(t, stderr)
+}
+{{- end }}
+
+{{- if $custom }}
+
+func TestUsageSchema_CustomCommand(t *testing.T) {
+    h := NewCLITestHarness(t)
+    err := h.RunBare([]string{ {{$custom.PathArgs}}, "--usage" })
+    require.NoError(t, err)
+
+    stdout := strings.TrimSpace(h.GetStdout())
+    assert.Contains(t, stdout, "cmd \"{{$custom.Name}}\"")
+    assert.Empty(t, h.GetStderr())
+
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    cmd, _, err := root.Find([]string{ {{$custom.PathArgs}} })
+    require.NoError(t, err)
+    assert.Equal(t, "true", cmd.Annotations["speakeasy_usage_dynamic"])
+    cmd.LocalNonPersistentFlags().VisitAll(func(flag *pflag.Flag) {
+        if flag.Name != "help" {
+            assert.Contains(t, stdout, "--"+flag.Name)
+        }
+    })
+}
+
+func TestCustomCommand_ReachesRegisteredRunE(t *testing.T) {
+    h := NewCLITestHarness(t)
+    err := h.RunBare([]string{ {{$custom.PathArgs}} })
+    if err != nil {
+        assert.NotContains(t, err.Error(), "requires a hand-written implementation")
+    }
+    assert.NotContains(t, h.GetStderr(), "requires a hand-written implementation")
 }
 {{- end }}
 
