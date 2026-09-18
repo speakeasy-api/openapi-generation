@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/speakeasy-api/jsonpath v0.6.3
-	github.com/speakeasy-api/openapi v1.24.1
+	github.com/speakeasy-api/openapi v1.25.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
