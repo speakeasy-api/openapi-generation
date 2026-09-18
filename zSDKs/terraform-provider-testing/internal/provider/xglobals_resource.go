@@ -886,8 +886,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalBooleanWithDefault = r.GlobalBooleanWithDefault.ValueBoolPointer()
 		}
 		if data.GlobalBooleanWithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_boolean_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalBooleanWithDefaultDefault bool = true
+			data.GlobalBooleanWithDefault = &globalBooleanWithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_boolean_with_default"), data.GlobalBooleanWithDefault)...)
@@ -976,8 +976,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalFloat32WithDefault = r.GlobalFloat32WithDefault.ValueFloat32Pointer()
 		}
 		if data.GlobalFloat32WithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_float32_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalFloat32WithDefaultDefault float32 = 1.2
+			data.GlobalFloat32WithDefault = &globalFloat32WithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_float32_with_default"), data.GlobalFloat32WithDefault)...)
@@ -996,8 +996,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalFloat64WithDefault = r.GlobalFloat64WithDefault.ValueFloat64Pointer()
 		}
 		if data.GlobalFloat64WithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_float64_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalFloat64WithDefaultDefault float64 = 3.4
+			data.GlobalFloat64WithDefault = &globalFloat64WithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_float64_with_default"), data.GlobalFloat64WithDefault)...)
@@ -1016,8 +1016,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalInt32WithDefault = typeconvert.Int32PointerToIntPointer(r.GlobalInt32WithDefault.ValueInt32Pointer())
 		}
 		if data.GlobalInt32WithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_int32_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalInt32WithDefaultDefault int = 12
+			data.GlobalInt32WithDefault = &globalInt32WithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_int32_with_default"), data.GlobalInt32WithDefault)...)
@@ -1036,8 +1036,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalInt64WithDefault = r.GlobalInt64WithDefault.ValueInt64Pointer()
 		}
 		if data.GlobalInt64WithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_int64_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalInt64WithDefaultDefault int64 = 34
+			data.GlobalInt64WithDefault = &globalInt64WithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_int64_with_default"), data.GlobalInt64WithDefault)...)
@@ -1056,8 +1056,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalIntegerWithDefault = r.GlobalIntegerWithDefault.ValueInt64Pointer()
 		}
 		if data.GlobalIntegerWithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_integer_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalIntegerWithDefaultDefault int64 = 56
+			data.GlobalIntegerWithDefault = &globalIntegerWithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_integer_with_default"), data.GlobalIntegerWithDefault)...)
@@ -1076,8 +1076,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalNumberWithDefault = r.GlobalNumberWithDefault.ValueFloat64Pointer()
 		}
 		if data.GlobalNumberWithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_number_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalNumberWithDefaultDefault float64 = 5.6
+			data.GlobalNumberWithDefault = &globalNumberWithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_number_with_default"), data.GlobalNumberWithDefault)...)
@@ -1096,8 +1096,8 @@ func (r *XGlobalsResource) ImportState(ctx context.Context, req resource.ImportS
 			data.GlobalStringWithDefault = r.GlobalStringWithDefault.ValueStringPointer()
 		}
 		if data.GlobalStringWithDefault == nil {
-			resp.Diagnostics.AddError("Missing required field", `The field global_string_with_default is required but was not found in the json encoded ID.`)
-			return
+			var globalStringWithDefaultDefault string = `DEFAULT`
+			data.GlobalStringWithDefault = &globalStringWithDefaultDefault
 		}
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("global_string_with_default"), data.GlobalStringWithDefault)...)
