@@ -6,7 +6,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/speakeasy-api/generation-context v1.1.0
 	github.com/speakeasy-api/openapi-generation/v2 v2.0.0-00010101000000-000000000000
-	github.com/speakeasy-api/sdk-gen-config v1.57.1
+	github.com/speakeasy-api/sdk-gen-config v1.59.0
 	go.uber.org/zap v1.28.0
 	gopkg.in/yaml.v3 v3.0.1
 )

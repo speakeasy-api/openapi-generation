@@ -22,9 +22,9 @@ def test_open_enums_round_trip():
 
     theme = res.json_
     assert theme is not None
-    assert theme.color == shared.Color("purple")
-    assert theme.icon == shared.Icon.TICK
-    assert theme.hero_width == shared.HeroWidth(2160)
+    assert theme.color == shared.ThemeColor("purple")
+    assert theme.icon == shared.ThemeIcon.TICK
+    assert theme.hero_width == shared.ThemeHeroWidth(2160)
 
     rt_res = s.enums.enums_post_open_enum_unrecognized(
         request=shared.ThemeRequestOpaque(
@@ -37,6 +37,6 @@ def test_open_enums_round_trip():
 
     rt_theme = rt_res.json_
     assert rt_theme is not None
-    assert rt_theme.color == shared.Color("purple")
-    assert rt_theme.icon == shared.Icon.TICK
-    assert rt_theme.hero_width == shared.HeroWidth(2160)
+    assert rt_theme.color == shared.ThemeColor("purple")
+    assert rt_theme.icon == shared.ThemeIcon.TICK
+    assert rt_theme.hero_width == shared.ThemeHeroWidth(2160)

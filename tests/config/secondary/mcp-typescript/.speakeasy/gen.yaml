@@ -1,5 +1,6 @@
 configVersion: 2.0.0
 generation:
+  nameResolution: qualified
   fixes:
     nameOverrideFeb2026: false
   sdkClassName: SDK

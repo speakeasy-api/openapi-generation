@@ -739,15 +739,15 @@ func enrichTelemetryEventPostAST(ctx context.Context, ast *ast.SDK) {
 
 // getOrCreateSubSDK: Fetch an existing SubSDK if it exists or create one for multi-level tagging traversal
 func (g *Generator) getOrCreateSubSDK(ctx context.Context, name, group string, contextStack ast.ContextStack, subSDKMap map[string]*ast.SDK) (*ast.SDK, bool) {
-	nameResolutionFeb2025 := g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025
+	nameResolutionAtLeastShortest := g.subsystem.Config.Generation.NameResolutionAtLeastShortest()
 
 	sdkTypeDef := ast.NewSDKTypeDef(name, contextStack)
 	sdkTypeDef = g.subsystem.Register.RegisterType(ctx, sdkTypeDef, false)
 	newSDK := ast.NewSubSDK(sdkTypeDef, name, group)
-	newSDKID := newSDK.ID(nameResolutionFeb2025)
+	newSDKID := newSDK.ID(nameResolutionAtLeastShortest)
 
 	if sdk, ok := subSDKMap[newSDKID]; ok {
-		if nameResolutionFeb2025 && sdkTypeDef != sdk.Type {
+		if nameResolutionAtLeastShortest && sdkTypeDef != sdk.Type {
 			// Prevent causing rename collisions - in the case the tags/sdk names differ by casing
 			g.subsystem.Register.UnregisterType(sdkTypeDef)
 		}

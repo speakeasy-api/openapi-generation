@@ -47,7 +47,7 @@ final class AuthTest extends TestCase
         $this->assertInstanceOf(\alphabetically\early\SDK::class, $sdk);
 
         $request = new \alphabetically\early\Models\Shared\AuthServiceRequestBody();
-        $request->basicAuth = new \alphabetically\early\Models\Shared\BasicAuth(
+        $request->basicAuth = new \alphabetically\early\Models\Shared\AuthServiceRequestBodyBasicAuth(
             username: 'testUser',
             password: 'testPass',
         );

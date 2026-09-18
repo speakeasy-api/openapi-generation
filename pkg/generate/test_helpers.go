@@ -126,7 +126,7 @@ func TestResolveAST(input TestResolveASTInput) (*Generator, *ast.AST, error) {
 	// Set required config values
 	g.subsystem.Config.Generation.SDKClassName = "PetStore"
 	g.subsystem.Config.Generation.DeduplicateErrors = true
-	g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 = true
+	g.subsystem.Config.Generation.NameResolution = config.NameResolutionShortest
 	g.subsystem.Config.Generation.Fixes.SharedErrorComponentsApr2025 = true
 
 	if target == "pythonv2" {

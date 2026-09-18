@@ -53,7 +53,7 @@ module AlphabeticallyEarly
           )
         ),
         request: Models::Shared::AuthServiceRequestBody.new(
-          basic_auth: Models::Shared::BasicAuth.new(
+          basic_auth: Models::Shared::AuthServiceRequestBodyBasicAuth.new(
             username: "testUser",
             password: "testPass"
           )

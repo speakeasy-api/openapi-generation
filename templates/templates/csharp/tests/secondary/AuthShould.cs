@@ -58,7 +58,7 @@ public class AuthShould
             },
             new AuthServiceRequestBody()
             {
-                BasicAuth = new BasicAuth() { Username = "testUser", Password = "testPass" },
+                BasicAuth = new AuthServiceRequestBodyBasicAuth() { Username = "testUser", Password = "testPass" },
             }
         );
     }

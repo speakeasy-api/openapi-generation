@@ -33,7 +33,7 @@ require (
 	github.com/speakeasy-api/generation-context v1.1.0 // indirect
 	github.com/speakeasy-api/jq v0.13.0 // indirect
 	github.com/speakeasy-api/jsonpath v0.6.3 // indirect
-	github.com/speakeasy-api/sdk-gen-config v1.57.1 // indirect
+	github.com/speakeasy-api/sdk-gen-config v1.59.0 // indirect
 	github.com/speakeasy-api/speakeasy-client-sdk-go/v3 v3.26.7 // indirect
 	github.com/swaggest/jsonschema-go v0.3.79 // indirect
 	github.com/swaggest/refl v1.4.0 // indirect

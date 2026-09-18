@@ -93,7 +93,7 @@ func (g *Generator) handleResponses(
 	params handleResponsesParams,
 ) (*ast.Response, error) {
 	id := contextStack.FindLastFrameOfType(ast.ContextTypeOperation).Identifier
-	if g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+	if g.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 		id = contextStack.FindLastFrameOfType(ast.ContextTypeOperation).DisplayName()
 	}
 
@@ -240,9 +240,9 @@ func (g *Generator) handleResponses(
 
 			typ, _, _ := openapi.GetResolvedType(ctx, resolvedSchema)
 
-			contentContextStack.AppendResponseStatusCode(statusCode, g.subsystem.Config.Generation.Fixes)
-			contentContextStack.AppendResponseMediaType(mediaType, g.subsystem.Config.Generation.Fixes)
-			contentContextStack.AppendResponseBody(g.subsystem.Config.Generation.Fixes)
+			contentContextStack.AppendResponseStatusCode(statusCode)
+			contentContextStack.AppendResponseMediaType(mediaType, g.subsystem.Config.Generation.GetNameResolution())
+			contentContextStack.AppendResponseBody()
 
 			var parentComponentRef references.Reference
 			parentComponentDescription := ""
@@ -348,7 +348,7 @@ func (g *Generator) handleResponses(
 				}
 
 				resField.Type.IsInlineResponseBody = resField.Type.Scope != ast.ScopeShared
-				if g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+				if g.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 					if resField.Type.IsInlineResponseBody && isErrorStatusCode(statusCode) && resField.Type.Name == ast.HumanizedResponseBody {
 						// Errors look strange if they're called "ResponseBodyError"
 						g.subsystem.Register.UnregisterType(resField.Type)
@@ -885,7 +885,7 @@ func (g *Generator) flattenResponseObject(ctx context.Context, responseObj *ast.
 			} else {
 				// Use flattened type directly when no envelope needed
 				res.Type = flattenedResponseType
-				if flattenedResponseType.IsInlineResponseBody && g.subsystem.Config.Generation.Fixes.NameResolutionFeb2025 {
+				if flattenedResponseType.IsInlineResponseBody && g.subsystem.Config.Generation.NameResolutionAtLeastShortest() {
 					// We can rename the inline schema to just "response"
 					g.renameFlattenedInlineResponseBody(ctx, flattenedResponseType, id)
 				}

@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: b4d5ec6484d94cb5ee2293a937bde56b
+  configChecksum: ac95dd771e6315d139caf4e4944ce011
 features:
   postman:
     acceptHeaders: 0.1.0
