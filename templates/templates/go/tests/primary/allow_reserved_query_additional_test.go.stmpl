@@ -1,0 +1,138 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"{{getRootModulePath}}/pkg/utils"
+)
+
+type allowReservedQueryParams struct {
+	Filter *string `queryParam:"style=form,explode=true,name=filter,allowReserved=true"`
+	Page   *int64  `queryParam:"style=form,explode=true,name=page"`
+	Label  *string `queryParam:"style=form,explode=true,name=label"`
+}
+
+type allowReservedObjectValue struct {
+	Expr *string `queryParam:"name=expr"`
+	Note *string `queryParam:"name=note"`
+}
+
+type allowReservedExplodedParams struct {
+	Query *allowReservedObjectValue `queryParam:"style=form,explode=true,name=query,allowReserved=true"`
+}
+
+type deepObjectValue struct {
+	Path string `queryParam:"name=path"`
+}
+
+type styleQueryParams struct {
+	Deep      *deepObjectValue `queryParam:"style=deepObject,explode=true,name=deep,allowReserved=true"`
+	Pipes     []string         `queryParam:"style=pipeDelimited,explode=false,name=pipes,allowReserved=true"`
+	PipesSafe []string         `queryParam:"style=pipeDelimited,explode=false,name=pipesSafe"`
+}
+
+type duplicateQueryObject struct {
+	Value *string `queryParam:"name=duplicate"`
+}
+
+type duplicateQueryParams struct {
+	Reserved *duplicateQueryObject `queryParam:"style=form,explode=true,name=object,allowReserved=true"`
+	Standard *string               `queryParam:"style=form,explode=true,name=duplicate"`
+}
+
+type globalQueryParams struct {
+	Tenant *string `queryParam:"style=form,explode=true,name=tenant,allowReserved=true"`
+}
+
+type requestWithGlobalQueryParams struct {
+	ID     string  `queryParam:"style=form,explode=true,name=id"`
+	Tenant *string `queryParam:"style=form,explode=true,name=tenant,allowReserved=true"`
+}
+
+type requestWithoutGlobalQueryParams struct {
+	ID string `queryParam:"style=form,explode=true,name=id"`
+}
+
+func populateQuery(t *testing.T, params interface{}, globals interface{}) string {
+	t.Helper()
+
+	req, err := http.NewRequest(http.MethodGet, "https://api.example.com/items", nil)
+	require.NoError(t, err)
+
+	require.NoError(t, utils.PopulateQueryParams(context.Background(), req, params, globals, nil))
+
+	return req.URL.RawQuery
+}
+
+func TestPopulateQueryParams_AllowReserved(t *testing.T) {
+	filter := "a:b/c d?(e)=f"
+	page := int64(2)
+	label := "x:y z"
+
+	got := populateQuery(t, allowReservedQueryParams{
+		Filter: &filter,
+		Page:   &page,
+		Label:  &label,
+	}, nil)
+
+	require.Equal(t, "filter=a:b/c%20d?(e)=f&label=x%3Ay+z&page=2", got)
+}
+
+func TestPopulateQueryParams_AllowReservedEncodesFragmentDelimiter(t *testing.T) {
+	filter := "a#b"
+
+	got := populateQuery(t, allowReservedQueryParams{Filter: &filter}, nil)
+
+	require.Equal(t, "filter=a%23b", got)
+}
+
+func TestPopulateQueryParams_AllowReservedExplodedObject(t *testing.T) {
+	expr := "(status:active)/all"
+	note := "a b"
+
+	got := populateQuery(t, allowReservedExplodedParams{
+		Query: &allowReservedObjectValue{Expr: &expr, Note: &note},
+	}, nil)
+
+	require.Equal(t, "expr=(status:active)/all&note=a%20b", got)
+}
+
+func TestPopulateQueryParams_AllowReservedAcrossStyles(t *testing.T) {
+	got := populateQuery(t, styleQueryParams{
+		Deep:      &deepObjectValue{Path: "a/b c"},
+		Pipes:     []string{"a/b", "c d"},
+		PipesSafe: []string{"a/b", "c d"},
+	}, nil)
+
+	require.Equal(t, "deep%5Bpath%5D=a/b%20c&pipes=a/b%7Cc%20d&pipesSafe=a%2Fb%7Cc+d", got)
+}
+
+func TestPopulateQueryParams_TracksAllowReservedPerOccurrence(t *testing.T) {
+	value := "a&b=c"
+
+	got := populateQuery(t, duplicateQueryParams{
+		Reserved: &duplicateQueryObject{Value: &value},
+		Standard: &value,
+	}, nil)
+
+	require.Equal(t, "duplicate=a&b=c&duplicate=a%26b%3Dc", got)
+}
+
+func TestPopulateQueryParams_GlobalsHonorAllowReserved(t *testing.T) {
+	tenant := "org/a:b"
+	globals := globalQueryParams{Tenant: &tenant}
+
+	tests := map[string]interface{}{
+		"global supplies missing request field": requestWithGlobalQueryParams{ID: "x/y"},
+		"global populated in second pass":       requestWithoutGlobalQueryParams{ID: "x/y"},
+	}
+
+	for name, params := range tests {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, "id=x%2Fy&tenant=org/a:b", populateQuery(t, params, globals))
+		})
+	}
+}

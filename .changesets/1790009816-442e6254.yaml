@@ -1,0 +1,12 @@
+id: 1790009816-442e6254
+features:
+    - core
+targets:
+    - go
+    - cli
+    - terraform
+type: fix
+bump: minor
+description: "percent-encode path parameters in generated URLs; values containing reserved characters such as `/` or `:` were previously sent raw and now become `%2F`/`%3A`. Set `x-speakeasy-param-encoding-override: allowReserved` on the parameter to preserve the previous behavior"
+author: 2ynn
+date: "2026-09-21"

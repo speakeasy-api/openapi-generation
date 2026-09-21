@@ -49,6 +49,7 @@ const supportedFeatures = {
   openEnums: "0.1.0",
   formatBinary: "0.2.0",
   contentMediaTypeApplicationJSON: "0.1.1",
+  allowReserved: "0.1.0",
 };
 
 //@ts-ignore

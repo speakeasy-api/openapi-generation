@@ -221,9 +221,11 @@ function templateParamAnnotation(
     },`;
   }
 
+  const allowReserved = annotation.AllowReserved ? ",allowReserved=true" : "";
+
   return {
     Tag: annotation.ParamType,
-    Value: `${serialization}name=${name}`,
+    Value: `${serialization}name=${name}${allowReserved}`,
   };
 }
 

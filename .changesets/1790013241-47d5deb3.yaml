@@ -1,0 +1,12 @@
+id: 1790013241-47d5deb3
+features:
+    - allowReserved
+targets:
+    - go
+    - cli
+    - terraform
+type: feat
+bump: minor
+description: support allowReserved to pass RFC 3986 reserved characters unencoded in query parameters and, via the param encoding override, in path parameters
+author: 2ynn
+date: "2026-09-21"
