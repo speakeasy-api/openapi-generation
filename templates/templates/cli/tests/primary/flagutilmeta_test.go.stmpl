@@ -3,6 +3,7 @@ package tests
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -242,4 +243,146 @@ func TestPreRequestRequiredUnionPreflightMirrorsSerializerOmissions(t *testing.T
 		_, err := flagutil.BuildRequest[preflightMultipartPlainBody](cmd, nil, "", "")
 		require.NoError(t, err)
 	})
+}
+
+type requiredParamsRequest struct {
+	ID     string `pathParam:"style=simple,explode=false,name=id"`
+	Filter string `queryParam:"style=form,explode=true,name=filter"`
+}
+
+type requiredPathArrayRequest struct {
+	IDs []string `pathParam:"style=simple,explode=false,name=ids"`
+}
+
+type requiredParamsBody struct {
+	Name string `json:"name" header:"name=name" pathParam:"name=name" queryParam:"name=name" form:"name=name"`
+}
+
+type requiredParamsBodyRequest struct {
+	ID   string             `pathParam:"style=simple,explode=false,name=id"`
+	Body requiredParamsBody `request:"mediaType=application/json"`
+}
+
+func newRequiredParamsCommand(meta []flagutil.FlagMeta) *cobra.Command {
+	cmd := &cobra.Command{}
+	flagutil.RegisterFlags(cmd, meta)
+	cmd.Flags().String("body", "", "body")
+	return cmd
+}
+
+func assertCLIValidation(t *testing.T, err error, flagName string) {
+	t.Helper()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--"+flagName)
+	var typed interface{ CLIReason() string }
+	require.ErrorAs(t, err, &typed)
+	assert.Equal(t, "CLI_VALIDATION", typed.CLIReason())
+}
+
+func TestBuildRequestKeepsRequiredParamsWhenNoFlagsGiven(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		flagName string
+		meta     []flagutil.FlagMeta
+	}{
+		{
+			name:     "path parameter",
+			flagName: "id",
+			meta: []flagutil.FlagMeta{
+				{FlagName: "id", FieldPath: "ID", Kind: flagutil.FlagKindString, Required: true},
+			},
+		},
+		{
+			name:     "query parameter",
+			flagName: "filter",
+			meta: []flagutil.FlagMeta{
+				{FlagName: "filter", FieldPath: "Filter", Kind: flagutil.FlagKindString, Required: true},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newRequiredParamsCommand(tc.meta)
+			_, err := flagutil.BuildRequest[requiredParamsRequest](cmd, tc.meta, "", "")
+			var missing *flagutil.MissingRequiredFlagError
+			require.ErrorAs(t, err, &missing)
+			assert.Equal(t, tc.flagName, missing.FlagName)
+		})
+	}
+}
+
+func TestBuildRequestRelaxesRequiredBodyFieldsWhenNoFlagsGiven(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "name", FieldPath: "Name", Kind: flagutil.FlagKindString, Required: true},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	_, err := flagutil.BuildRequest[requiredParamsBody](cmd, meta, "", "body")
+	require.NoError(t, err)
+}
+
+func TestBuildRequestRejectsBlankRequiredPathParam(t *testing.T) {
+	paramsMeta := []flagutil.FlagMeta{
+		{FlagName: "id", FieldPath: "ID", Kind: flagutil.FlagKindString, Required: true},
+	}
+	bodyMeta := []flagutil.FlagMeta{
+		{FlagName: "id", FieldPath: "ID", Kind: flagutil.FlagKindString, Required: true},
+		{FlagName: "name", FieldPath: "Body.Name", Kind: flagutil.FlagKindString, Required: true},
+	}
+	for _, value := range []string{"", "   "} {
+		t.Run("params only "+strconv.Quote(value), func(t *testing.T) {
+			cmd := newRequiredParamsCommand(paramsMeta)
+			require.NoError(t, cmd.Flags().Set("id", value))
+			_, err := flagutil.BuildRequest[requiredParamsRequest](cmd, paramsMeta, "", "")
+			assertCLIValidation(t, err, "id")
+		})
+		t.Run("body flags "+strconv.Quote(value), func(t *testing.T) {
+			cmd := newRequiredParamsCommand(bodyMeta)
+			require.NoError(t, cmd.Flags().Set("id", value))
+			require.NoError(t, cmd.Flags().Set("name", "widget"))
+			_, err := flagutil.BuildRequest[requiredParamsBodyRequest](cmd, bodyMeta, "Body", "body")
+			assertCLIValidation(t, err, "id")
+		})
+		t.Run("whole body "+strconv.Quote(value), func(t *testing.T) {
+			cmd := newRequiredParamsCommand(bodyMeta)
+			require.NoError(t, cmd.Flags().Set("id", value))
+			require.NoError(t, cmd.Flags().Set("body", `{"name":"widget"}`))
+			_, err := flagutil.BuildRequest[requiredParamsBodyRequest](cmd, bodyMeta, "Body", "body")
+			assertCLIValidation(t, err, "id")
+		})
+	}
+}
+
+func TestBuildRequestRejectsBlankRequiredPathParamArrayElements(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "ids", FieldPath: "IDs", Kind: flagutil.FlagKindStringArray, Required: true},
+	}
+	for _, tc := range []struct {
+		name   string
+		values []string
+	}{
+		{name: "only blank", values: []string{"   "}},
+		{name: "blank after value", values: []string{"item", "\t"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newRequiredParamsCommand(meta)
+			for _, value := range tc.values {
+				require.NoError(t, cmd.Flags().Set("ids", value))
+			}
+			_, err := flagutil.BuildRequest[requiredPathArrayRequest](cmd, meta, "", "")
+			assertCLIValidation(t, err, "ids")
+		})
+	}
+}
+
+func TestBuildRequestAllowsBlankRequiredNonPathParams(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "id", FieldPath: "ID", Kind: flagutil.FlagKindString, Required: true},
+		{FlagName: "filter", FieldPath: "Filter", Kind: flagutil.FlagKindString, Required: true},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("id", "item"))
+	require.NoError(t, cmd.Flags().Set("filter", ""))
+	req, err := flagutil.BuildRequest[requiredParamsRequest](cmd, meta, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, "item", req.ID)
+	assert.Empty(t, req.Filter)
 }
