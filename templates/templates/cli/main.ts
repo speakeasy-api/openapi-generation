@@ -148,6 +148,15 @@ function getJobs(): Job[] {
           {},
         ),
       );
+      if (getPositionalTestCase()) {
+        jobs.push(
+          createTemplateFileJob(
+            "positional_test.go.stmpl",
+            `${testDirectory}/positional_test.go`,
+            {},
+          ),
+        );
+      }
       if (templateAsyncTestEnabled()) {
         jobs.push(
           createTemplateFileJob(

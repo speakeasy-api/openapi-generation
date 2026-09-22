@@ -1,0 +1,10 @@
+id: 1790108523-927afdda
+features:
+    - core
+targets:
+    - cli
+type: feat
+bump: patch
+description: operation commands with a single path parameter accept it as a positional argument
+author: 2ynn
+date: "2026-09-22"

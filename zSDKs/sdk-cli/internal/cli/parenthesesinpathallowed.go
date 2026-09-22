@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -24,11 +25,11 @@ var parenthesesInPathAllowedCmdMeta = []flagutil.FlagMeta{
 // initParenthesesInPathAllowedCmd initializes the parentheses-in-path-allowed command.
 func initParenthesesInPathAllowedCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "parentheses-in-path-allowed",
+		Use:     "parentheses-in-path-allowed [id]",
 		Short:   "A string with \x7b\x7b double braces \x7d\x7d and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".",
 		Long:    "A string with \x7b\x7b double braces \x7d\x7d and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".",
 		Example: "  cli parentheses-in-path-allowed --id <id>",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runParenthesesInPathAllowedCmd,
 		Aliases: []string{"pipa"},
 		Annotations: map[string]string{
@@ -47,6 +48,14 @@ func initParenthesesInPathAllowedCmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)"); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "id", Summary: "string value", Required: true, SatisfiedBy: []string{"id"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for parentheses-in-path-allowed: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -58,6 +67,9 @@ func runParenthesesInPathAllowedCmd(cmd *cobra.Command, args []string) error {
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
 		return usage.EmitBodySchema(cmd.OutOrStdout(), "parenthesesInPathAllowed")
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.ParenthesesInPathAllowedRequest](cmd, parenthesesInPathAllowedCmdMeta, "TemplateBracesTest", "body")
 	if err != nil {

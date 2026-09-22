@@ -15,7 +15,7 @@ and 'single quotes' and "double quotes".
 and  \'escaped single quotes\' and \"escaped double quotes\".
 
 ```
-cli parentheses-in-path-allowed [flags]
+cli parentheses-in-path-allowed [id] [flags]
 ```
 
 ### Examples
@@ -38,7 +38,7 @@ cli parentheses-in-path-allowed [flags]
       --field-with-braces-in-example string          string value
       --field-with-braces-in-title string            string value
   -h, --help                                         help for parentheses-in-path-allowed
-  -i, --id string                                    [required]
+  -i, --id string                                    string value (or pass it as the [id] argument)
       --schema                                       Print the exact JSON Schema of the request body and exit
 ```
 

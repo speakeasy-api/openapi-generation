@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -20,11 +21,11 @@ var deleteUserCmdMeta = []flagutil.FlagMeta{
 // initDeleteUserCmd initializes the delete-user command.
 func initDeleteUserCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "delete-user",
+		Use:     "delete-user [id]",
 		Short:   "Delete User",
 		Long:    "Delete User",
 		Example: "  cli delete-user --id <id>",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runDeleteUserCmd,
 		Aliases: []string{"du"},
 		Annotations: map[string]string{
@@ -35,6 +36,14 @@ func initDeleteUserCmd(parent *cobra.Command) error {
 	if err := flagutil.ValidateMeta[operations.DeleteUserRequest](deleteUserCmdMeta); err != nil {
 		return fmt.Errorf("invalid metadata for delete-user: %w", err)
 	}
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)"); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "id", Summary: "string value", Required: true, SatisfiedBy: []string{"id"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for delete-user: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -43,6 +52,9 @@ func initDeleteUserCmd(parent *cobra.Command) error {
 func runDeleteUserCmd(cmd *cobra.Command, args []string) error {
 	if usage.UsageRequested(cmd) {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.DeleteUserRequest](cmd, deleteUserCmdMeta, "", "")
 	if err != nil {

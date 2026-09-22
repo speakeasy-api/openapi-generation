@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -21,11 +22,11 @@ var getAssetCmdMeta = []flagutil.FlagMeta{
 // initGetAssetCmd initializes the get-asset command.
 func initGetAssetCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "get-asset",
+		Use:     "get-asset [id]",
 		Short:   "Get Asset",
 		Long:    "Get the current result of an asset job.",
 		Example: "  cli get-asset --id <id>",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runGetAssetCmd,
 		Aliases: []string{"ga"},
 		Annotations: map[string]string{
@@ -36,6 +37,14 @@ func initGetAssetCmd(parent *cobra.Command) error {
 	if err := flagutil.ValidateMeta[operations.GetAssetRequest](getAssetCmdMeta); err != nil {
 		return fmt.Errorf("invalid metadata for get-asset: %w", err)
 	}
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)"); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "id", Summary: "string value", Required: true, SatisfiedBy: []string{"id"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for get-asset: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -44,6 +53,9 @@ func initGetAssetCmd(parent *cobra.Command) error {
 func runGetAssetCmd(cmd *cobra.Command, args []string) error {
 	if usage.UsageRequested(cmd) {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.GetAssetRequest](cmd, getAssetCmdMeta, "", "")
 	if err != nil {

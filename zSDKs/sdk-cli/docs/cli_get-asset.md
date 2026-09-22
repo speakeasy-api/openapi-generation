@@ -7,7 +7,7 @@ Get Asset
 Get the current result of an asset job.
 
 ```
-cli get-asset [flags]
+cli get-asset [id] [flags]
 ```
 
 ### Examples
@@ -20,7 +20,7 @@ cli get-asset [flags]
 
 ```
   -h, --help        help for get-asset
-  -i, --id string   [required]
+  -i, --id string   string value (or pass it as the [id] argument)
   -s, --stream      boolean flag (default true)
 ```
 

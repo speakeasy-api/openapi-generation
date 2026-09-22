@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -21,11 +22,11 @@ var testEndpointCmdMeta = []flagutil.FlagMeta{
 // initTestEndpointCmd initializes the test-endpoint command.
 func initTestEndpointCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "test-endpoint",
+		Use:     "test-endpoint [test-name]",
 		Short:   "Test Endpoint",
 		Long:    "Test Endpoint",
 		Example: "  cli test-endpoint --test-name <value> --test <value>",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runTestEndpointCmd,
 		Aliases: []string{"te"},
 		Annotations: map[string]string{
@@ -44,6 +45,14 @@ func initTestEndpointCmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
+	if err := flagutil.DeclarePositionalFlag(cmd, "test-name", "string value (or pass it as the [test-name] argument)"); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "test-name", Summary: "string value", Required: true, SatisfiedBy: []string{"test-name"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for test-endpoint: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -55,6 +64,9 @@ func runTestEndpointCmd(cmd *cobra.Command, args []string) error {
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
 		return usage.EmitBodySchema(cmd.OutOrStdout(), "testEndpoint")
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.TestEndpointRequest](cmd, testEndpointCmdMeta, "RequestBody", "body")
 	if err != nil {

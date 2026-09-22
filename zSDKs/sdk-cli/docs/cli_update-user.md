@@ -7,7 +7,7 @@ Update User
 Update User
 
 ```
-cli update-user [flags]
+cli update-user [id] [flags]
 ```
 
 ### Examples
@@ -21,7 +21,7 @@ cli update-user [flags]
 ```
       --body string                       Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
   -h, --help                              help for update-user
-  -i, --id string                         [required]
+  -i, --id string                         string value (or pass it as the [id] argument)
       --schema                            Print the exact JSON Schema of the request body and exit
       --user.age float                    number value
       --user.associated-ids stringArray   list of values

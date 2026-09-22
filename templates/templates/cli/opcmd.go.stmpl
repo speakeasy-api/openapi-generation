@@ -13,6 +13,7 @@
 {{- $hasServers := operationHasServers $op -}}
 {{- $paginationProbe := getPaginationProbe $op -}}
 {{- $paginationProbeHasContinuation := paginationProbeHasContinuation $paginationProbe -}}
+{{- $positional := getOperationPositional $op -}}
 {{- /* Compute request building strategy once — used by both init and run */ -}}
 {{- $useMetadataFlags := false -}}
 {{- if $op.Request -}}
@@ -59,11 +60,16 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     {{- end}}
     {{- else}}
     var cmd = &cobra.Command{
-        Use:     "{{$opCommandName}}",
+        Use:     "{{$opCommandName}}{{if $positional}} [{{$positional.FlagName}}]{{end}}",
         Short:   {{templateCmdShort $op}},
         Long:    {{templateCmdLong $op}},
         Example: {{templateCmdExample $op}},
+        {{- if $positional}}
+        {{- addImport "internal/flagutil" true}}
+        Args:    flagutil.PositionalFlagArgs,
+        {{- else}}
         Args:    cobra.NoArgs,
+        {{- end}}
         RunE:    {{$runFuncName}},
         {{- if .Local.Aliases}}
         Aliases: []string{ {{- range $i, $a := .Local.Aliases}}{{if $i}}, {{end}}"{{$a}}"{{end -}} },
@@ -142,6 +148,20 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     })
     {{- end}}
     {{- end}}
+    {{- if $positional}}
+    if err := flagutil.DeclarePositionalFlag(cmd, "{{$positional.FlagName}}", "{{escapeGoString $positional.FlagUsage}}"); err != nil {
+        return err
+    }
+    {{- if isInteractiveModeEnabled}}
+    {{- addImport "internal/interactive" true}}
+    {{- addImport "fmt"}}
+    if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+        {Name: "{{$positional.FlagName}}", Summary: "{{escapeGoString $positional.Summary}}", Required: true, SatisfiedBy: []string{"{{$positional.FlagName}}"}},
+    }}); err != nil {
+        return fmt.Errorf("declare interactive arguments for {{sanitizeCLICommand $op.GetID}}: %w", err)
+    }
+    {{- end}}
+    {{- end}}
     {{- if not $promoted}}
     parent.AddCommand(cmd)
     {{- end}}
@@ -156,6 +176,11 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
     {{- if and $op.Request (hasBodySchemaForOp $op)}}
     if requested, _ := cmd.Flags().GetBool("schema"); requested {
         return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $op.OriginalID}})
+    }
+    {{- end}}
+    {{- if $positional}}
+    if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+        return err
     }
     {{- end}}
     {{- if and $cliOp $cliOp.Flags}}
