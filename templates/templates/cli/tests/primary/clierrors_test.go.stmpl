@@ -64,8 +64,6 @@ func TestCLIErrorAgentModeMatrix(t *testing.T) {
 	}
 }
 
-// A planned command has no input contract to violate: whatever argv it is
-// given, it reports CLI_UNAVAILABLE rather than a CLI_VALIDATION parse error.
 func TestCLIErrorPlannedCommandIgnoresArgv(t *testing.T) {
 	for _, args := range [][]string{
 		{"--agent-mode", "archive"},
@@ -78,6 +76,7 @@ func TestCLIErrorPlannedCommandIgnoresArgv(t *testing.T) {
 			h := NewCLITestHarness(t)
 			err := h.RunRaw(args)
 			require.Error(t, err)
+			assert.True(t, output.IsRendered(err), "a CLI error rendered in the envelope must be marked so main prints nothing further")
 
 			envelope := agentEnvelope(t, h.GetStderr())
 			assert.Equal(t, "unsupported_error", envelope["error_type"])

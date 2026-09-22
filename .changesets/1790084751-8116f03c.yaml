@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: planned commands report CLI_UNAVAILABLE regardless of positional arguments or flags
+description: planned commands report CLI_UNAVAILABLE for arbitrary positional arguments and unknown flags
 author: 2ynn
 date: "2026-09-22"
