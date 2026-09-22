@@ -188,7 +188,7 @@ trackedFiles:
   internal/cli/tag1/intent_tag1-recent.go:
     last_write_checksum: sha1:c63e43dfb33fdab87ceb5ed41d7b32531ab36354
   internal/cli/tag1/listtest1.go:
-    last_write_checksum: sha1:091ea9498ed003639d7b761f0cbe3daefb7f2a24
+    last_write_checksum: sha1:b754ce3d930cb1fe78e7a30d5139db56a172180a
   internal/cli/tag1/postfilewithencoding.go:
     last_write_checksum: sha1:103c8a943d3f3b759fcdd752bf5fa4e2dcd0d1c3
   internal/cli/tag1/root.go:

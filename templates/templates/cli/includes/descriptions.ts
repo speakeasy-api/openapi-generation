@@ -125,16 +125,29 @@ function cliExampleHasAnglePlaceholder(value: any, depth = 0): boolean {
   return false;
 }
 
+function isRepeatableFlagField(field: FieldDef): boolean {
+  return inferKindNameForField(field) === "FlagKindStringArray";
+}
+
+function hasExampleValue(field: FieldDef, val: any): boolean {
+  if (val === undefined || val === null) return false;
+  return !(
+    Array.isArray(val) &&
+    val.length === 0 &&
+    isRepeatableFlagField(field)
+  );
+}
+
 function exampleRepeatableFlagValue(
   field: FieldDef,
   val: any,
   synthesized: boolean,
-): CLIExampleValue | undefined {
+): { Value: string[]; SynthesizedAnglePlaceholder: boolean } | undefined {
   if (!Array.isArray(val) || val.length === 0) return undefined;
   if (val.some((item) => item === null || typeof item === "object")) {
     return undefined;
   }
-  if (inferKindNameForField(field) !== "FlagKindStringArray") return undefined;
+  if (!isRepeatableFlagField(field)) return undefined;
   return {
     Value: val.map(String),
     SynthesizedAnglePlaceholder:
@@ -146,6 +159,20 @@ function exampleScalarValue(val: any): string {
   return typeof val === "object" ? JSON.stringify(val) : String(val);
 }
 
+function exampleValueFor(
+  field: FieldDef,
+  val: any,
+  synthesized: boolean,
+): CLIExampleValue {
+  return (
+    exampleRepeatableFlagValue(field, val, synthesized) ?? {
+      Value: exampleScalarValue(val),
+      SynthesizedAnglePlaceholder:
+        synthesized && cliExampleHasAnglePlaceholder(val),
+    }
+  );
+}
+
 function getCLIExampleValue(
   field: FieldDef,
   resolvedBodyExample?: Record<string, any>,
@@ -153,48 +180,26 @@ function getCLIExampleValue(
 ): CLIExampleValue {
   // Priority 1: Pre-resolved body example (parsed from operation-level examples)
   if (resolvedBodyExample) {
-    const key = originalFieldName(field);
-    const val = resolvedBodyExample[key];
-    if (val !== undefined && val !== null) {
-      const repeatable = exampleRepeatableFlagValue(
-        field,
-        val,
-        resolvedBodyExampleIsGenerated,
-      );
-      if (repeatable) return repeatable;
-      return {
-        Value: exampleScalarValue(val),
-        SynthesizedAnglePlaceholder:
-          resolvedBodyExampleIsGenerated && cliExampleHasAnglePlaceholder(val),
-      };
+    const val = resolvedBodyExample[originalFieldName(field)];
+    if (hasExampleValue(field, val)) {
+      return exampleValueFor(field, val, resolvedBodyExampleIsGenerated);
     }
   }
 
   // Priority 2: Field-level examples (from preCalculateExamples pipeline)
   // @ts-ignore — Example is a dynamic Go proxy field not in TS type defs
   const fieldExample = field.Example;
-  if (fieldExample?.Value !== undefined && fieldExample?.Value !== null) {
-    const repeatable = exampleRepeatableFlagValue(
+  if (hasExampleValue(field, fieldExample?.Value)) {
+    return exampleValueFor(
       field,
       fieldExample.Value,
       isGeneratorDefaultExample(fieldExample),
     );
-    if (repeatable) return repeatable;
-    const value = String(fieldExample.Value);
-    return {
-      Value: value,
-      SynthesizedAnglePlaceholder:
-        isGeneratorDefaultExample(fieldExample) &&
-        cliExampleHasAnglePlaceholder(value),
-    };
   }
 
   // Priority 3: Field defaults
-  if (field.Default?.Value !== undefined && field.Default?.Value !== null) {
-    return {
-      Value: String(field.Default.Value),
-      SynthesizedAnglePlaceholder: false,
-    };
+  if (hasExampleValue(field, field.Default?.Value)) {
+    return exampleValueFor(field, field.Default.Value, false);
   }
 
   const typeDef = field.Type;
@@ -233,7 +238,7 @@ function exampleFlagPart(flagName: string, val: string | string[]): string {
   if (val === "true" || val === "false") {
     return `--${flagName}=${val}`;
   }
-  return `--${flagName} ${readmeShellValue(val)}`;
+  return `--${flagName} ${exampleShellValue(val)}`;
 }
 
 /**
@@ -324,19 +329,15 @@ function templateCmdExample(op: Operation): string {
           const pex = findExampleByName(param.Examples, "");
           if (pex) {
             const pval = getExampleValue(pex);
-            if (pval !== undefined && pval !== null) {
-              const repeatable = exampleRepeatableFlagValue(
+            if (hasExampleValue(param.Field, pval)) {
+              const val = exampleValueFor(
                 param.Field,
                 pval,
                 isGeneratorDefaultExample(pex),
               );
               pushPart(
-                exampleFlagPart(
-                  flagName,
-                  repeatable?.Value ?? exampleScalarValue(pval),
-                ),
-                isGeneratorDefaultExample(pex) &&
-                  cliExampleHasAnglePlaceholder(pval),
+                exampleFlagPart(flagName, val.Value),
+                val.SynthesizedAnglePlaceholder,
               );
               continue;
             }

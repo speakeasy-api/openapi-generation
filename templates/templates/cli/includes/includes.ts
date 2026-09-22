@@ -81,9 +81,12 @@ function readmeGlobalExampleValue(field: FieldDef): string {
 
 // Quote a value for a POSIX shell. Common flag-friendly characters stay bare;
 // everything else is single-quoted so $, backticks and double quotes remain
-// literal. A single quote inside the value is emitted as: '\''.
-function readmeShellValue(value: string): string {
-  if (/^[A-Za-z0-9._@/:-]+$/.test(value)) return value;
+// literal. A single quote inside the value is emitted as: '\''. A <placeholder>
+// stays bare: it is meant to be replaced, not pasted.
+function exampleShellValue(value: string): string {
+  if (/^[A-Za-z0-9._@/:-]+$/.test(value) || /^<[^<>]+>$/.test(value)) {
+    return value;
+  }
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
@@ -93,7 +96,7 @@ function templateGlobalEnvVarExample(): string {
   if (!globals || !globals.Fields || globals.Fields.length === 0) return "";
   const field = globals.Fields[0];
   const envVar = templateGlobalEnvVars(field);
-  return `${envVar}=${readmeShellValue(readmeGlobalExampleValue(field))}`;
+  return `${envVar}=${exampleShellValue(readmeGlobalExampleValue(field))}`;
 }
 registerTemplateFunc(
   "templateGlobalEnvVarExample",
@@ -117,7 +120,7 @@ function templateGlobalFlagExample(): string {
     case "float32":
       return `--${flagName} ${value}`;
     default:
-      return `--${flagName} ${readmeShellValue(value)}`;
+      return `--${flagName} ${exampleShellValue(value)}`;
   }
 }
 registerTemplateFunc("templateGlobalFlagExample", templateGlobalFlagExample);
