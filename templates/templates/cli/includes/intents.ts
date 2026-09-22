@@ -231,7 +231,7 @@ function intentRequiredParamFallbacks(op: Operation): string[] {
       } catch (_e) {
         // Fall through to the field-level/default/type-derived example.
       }
-      if (value === undefined || value === null) {
+      if (!hasExampleValue(param.Field, value)) {
         // getCLIExampleValue returns a rendered value plus a marker for the
         // generic angle-bracket placeholder; name that placeholder after the
         // flag so the fallback stays visibly synthetic but specific.
@@ -241,8 +241,13 @@ function intentRequiredParamFallbacks(op: Operation): string[] {
           : example.Value;
       }
       if (typeof value === "boolean") return `--${flagName}=${value}`;
-      if (typeof value === "object") value = JSON.stringify(value);
-      return `--${flagName} ${intentExampleQuoted(String(value))}`;
+      const repeatable = exampleRepeatableFlagValue(param.Field, value, false);
+      if (repeatable) {
+        return repeatable.Value.map(
+          (element) => `--${flagName} ${intentExampleQuoted(element)}`,
+        ).join(" ");
+      }
+      return `--${flagName} ${intentExampleQuoted(exampleScalarValue(value))}`;
     });
 }
 
