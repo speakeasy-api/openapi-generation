@@ -204,10 +204,17 @@ function getCLIExampleValue(
 
   const typeDef = field.Type;
 
-  // Enum: use first value
-  if (typeDef.Type?.toString() === "enum" && typeDef.Enum?.Values?.length > 0) {
+  // Enum: use first value. A repeatable flag takes one value per occurrence,
+  // so its item type is what may be an enum.
+  const valueTypeDef = isRepeatableFlagField(field)
+    ? typeDef.ItemType
+    : typeDef;
+  if (
+    valueTypeDef?.Type?.toString() === "enum" &&
+    valueTypeDef.Enum?.Values?.length > 0
+  ) {
     return {
-      Value: String(typeDef.Enum.Values[0]),
+      Value: String(valueTypeDef.Enum.Values[0]),
       SynthesizedAnglePlaceholder: false,
     };
   }

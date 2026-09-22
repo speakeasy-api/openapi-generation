@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: render examples for repeatable array flags as one occurrence per element instead of a single JSON-encoded token; example values containing spaces or shell metacharacters are now single-quoted, while `<value>` placeholders stay bare
+description: render repeatable array flag examples as one occurrence per element, shell-quoting values as needed
 author: 2ynn
 date: "2026-09-21"

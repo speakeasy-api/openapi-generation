@@ -135,10 +135,11 @@ components:
         channels:
           type: array
           description: >-
-            String-item array whose example is empty; the default supplies the
-            rendered elements instead
+            Enum-item array whose example is empty; the first item enum value
+            supplies the rendered element instead
           items:
             type: string
-          default:
-            - email
+            enum:
+              - email
+              - sms
           example: []
