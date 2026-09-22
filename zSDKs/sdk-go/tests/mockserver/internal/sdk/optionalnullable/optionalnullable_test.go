@@ -1891,6 +1891,11 @@ func TestIsOptionalNullableType(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "bool-keyed pointer map without the interface method",
+			typ:  reflect.TypeOf(map[bool]*string{}),
+			want: false,
+		},
+		{
 			name: "non-map type",
 			typ:  reflect.TypeOf(""),
 			want: false,

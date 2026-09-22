@@ -242,18 +242,43 @@ func TestRequestBodyOptionalNullableWireFormatsDeserialize(t *testing.T) {
 	assert.True(t, body.OptNullStr.IsSet())
 	assert.True(t, body.OptNullStr.IsNull())
 	assert.False(t, body.OptNullInt.IsSet())
+
+	nulls := `{"reqStr":"base",` +
+		`"optNullBigIntStr":null,` +
+		`"optNullBigIntStrArr":null,` +
+		`"optNullDecimal":null,` +
+		`"optNullDecimalStrMap":null}`
+
+	var nullBody shared.ObjectWithOptionalNullableFields
+	require.NoError(t, json.Unmarshal([]byte(nulls), &nullBody))
+
+	assert.True(t, nullBody.OptNullBigIntStr.IsSet())
+	assert.True(t, nullBody.OptNullBigIntStr.IsNull())
+	assert.True(t, nullBody.OptNullBigIntStrArr.IsSet())
+	assert.True(t, nullBody.OptNullBigIntStrArr.IsNull())
+	assert.True(t, nullBody.OptNullDecimal.IsSet())
+	assert.True(t, nullBody.OptNullDecimal.IsNull())
+	assert.True(t, nullBody.OptNullDecimalStrMap.IsSet())
+	assert.True(t, nullBody.OptNullDecimalStrMap.IsNull())
+	assert.False(t, nullBody.OptNullBigInt.IsSet())
+
+	var rejected shared.ObjectWithOptionalNullableFields
+	require.Error(t, json.Unmarshal([]byte(`{"reqStr":"base","optNullBigIntStr":123}`), &rejected))
 }
 
 // Default values on OptionalNullable-wrapped fields must be rendered against
 // the inner value's type, so tag-driven wire formats apply to them too.
 func TestOptionalNullableDefaultFollowsWireFormatTags(t *testing.T) {
 	type body struct {
-		BigIntStr optionalnullable.OptionalNullable[*big.Int] `default:"123" bigint:"string" json:"bigIntStr"`
+		BigIntStr  optionalnullable.OptionalNullable[*big.Int]     `default:"123" bigint:"string" json:"bigIntStr"`
+		DecimalNum optionalnullable.OptionalNullable[*decimal.Big] `default:"1.5" decimal:"number" json:"decimalNum"`
+		DecimalStr optionalnullable.OptionalNullable[*decimal.Big] `default:"2.5" json:"decimalStr"`
+		Str        optionalnullable.OptionalNullable[string]       `default:"foo" json:"str"`
 	}
 
 	out, err := utils.MarshalJSON(body{}, "", true)
 	require.NoError(t, err)
-	assert.Equal(t, `{"bigIntStr":"123"}`, string(out))
+	assert.Equal(t, `{"bigIntStr":"123","decimalNum":1.5,"decimalStr":"2.5","str":"foo"}`, string(out))
 
 	var in body
 	require.NoError(t, utils.UnmarshalJSON([]byte(`{}`), &in, "", true, nil))
@@ -261,6 +286,21 @@ func TestOptionalNullableDefaultFollowsWireFormatTags(t *testing.T) {
 	require.True(t, ok)
 	require.NotNil(t, v)
 	assert.Equal(t, "123", (*v).String())
+
+	decNum, ok := in.DecimalNum.Get()
+	require.True(t, ok)
+	require.NotNil(t, decNum)
+	assert.Equal(t, "1.5", (*decNum).String())
+
+	decStr, ok := in.DecimalStr.Get()
+	require.True(t, ok)
+	require.NotNil(t, decStr)
+	assert.Equal(t, "2.5", (*decStr).String())
+
+	str, ok := in.Str.Get()
+	require.True(t, ok)
+	require.NotNil(t, str)
+	assert.Equal(t, "foo", *str)
 }
 
 func TestRequestBodyNoBodyNoContentType(t *testing.T) {

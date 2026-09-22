@@ -3530,7 +3530,7 @@ trackedFiles:
   internal/sdk/optionalnullable/optionalnullable.go:
     last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:bcbb60c6433b09b1017f8d822768d258c7adaafa
+    last_write_checksum: sha1:d3991667754ed67db803aeab4a6239f6f9a1be37
   internal/sdk/polling/config.go:
     last_write_checksum: sha1:03925c7547c53642f0a85808205d88775a328f4c
   internal/sdk/polling/errors.go:

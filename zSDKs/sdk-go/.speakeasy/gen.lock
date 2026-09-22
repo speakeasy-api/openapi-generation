@@ -753,7 +753,7 @@ trackedFiles:
   optionalnullable/optionalnullable.go:
     last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:bcbb60c6433b09b1017f8d822768d258c7adaafa
+    last_write_checksum: sha1:d3991667754ed67db803aeab4a6239f6f9a1be37
   options.go:
     last_write_checksum: sha1:c9a0462a1f852f76048b5c63d2f3020dfca317b4
   parenthesesinpathallowedop.go:
@@ -1207,7 +1207,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
     last_write_checksum: sha1:58d775c91b1a5ef5149b625286e4f35b96bb6f7f
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:b15e0efa4a1212d0224efa58958826cab2d91136
+    last_write_checksum: sha1:bc65a2684a85ad0d79c7643836c17a222adf1082
   tests/mockserver/internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   tests/mockserver/internal/sdk/types/date.go:
