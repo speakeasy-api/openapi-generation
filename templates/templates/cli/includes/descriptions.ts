@@ -96,7 +96,7 @@ registerTemplateFunc("templateCmdLong", templateCmdLong);
  * example, defaults, then falls back to type-appropriate placeholders.
  */
 interface CLIExampleValue {
-  Value: string;
+  Value: string | string[];
   SynthesizedAnglePlaceholder: boolean;
 }
 
@@ -125,6 +125,27 @@ function cliExampleHasAnglePlaceholder(value: any, depth = 0): boolean {
   return false;
 }
 
+function exampleRepeatableFlagValue(
+  field: FieldDef,
+  val: any,
+  synthesized: boolean,
+): CLIExampleValue | undefined {
+  if (!Array.isArray(val) || val.length === 0) return undefined;
+  if (val.some((item) => item === null || typeof item === "object")) {
+    return undefined;
+  }
+  if (inferKindNameForField(field) !== "FlagKindStringArray") return undefined;
+  return {
+    Value: val.map(String),
+    SynthesizedAnglePlaceholder:
+      synthesized && cliExampleHasAnglePlaceholder(val),
+  };
+}
+
+function exampleScalarValue(val: any): string {
+  return typeof val === "object" ? JSON.stringify(val) : String(val);
+}
+
 function getCLIExampleValue(
   field: FieldDef,
   resolvedBodyExample?: Record<string, any>,
@@ -135,16 +156,14 @@ function getCLIExampleValue(
     const key = originalFieldName(field);
     const val = resolvedBodyExample[key];
     if (val !== undefined && val !== null) {
-      if (typeof val === "object") {
-        return {
-          Value: `'${JSON.stringify(val)}'`,
-          SynthesizedAnglePlaceholder:
-            resolvedBodyExampleIsGenerated &&
-            cliExampleHasAnglePlaceholder(val),
-        };
-      }
+      const repeatable = exampleRepeatableFlagValue(
+        field,
+        val,
+        resolvedBodyExampleIsGenerated,
+      );
+      if (repeatable) return repeatable;
       return {
-        Value: String(val),
+        Value: exampleScalarValue(val),
         SynthesizedAnglePlaceholder:
           resolvedBodyExampleIsGenerated && cliExampleHasAnglePlaceholder(val),
       };
@@ -155,6 +174,12 @@ function getCLIExampleValue(
   // @ts-ignore — Example is a dynamic Go proxy field not in TS type defs
   const fieldExample = field.Example;
   if (fieldExample?.Value !== undefined && fieldExample?.Value !== null) {
+    const repeatable = exampleRepeatableFlagValue(
+      field,
+      fieldExample.Value,
+      isGeneratorDefaultExample(fieldExample),
+    );
+    if (repeatable) return repeatable;
     const value = String(fieldExample.Value);
     return {
       Value: value,
@@ -198,16 +223,17 @@ function getCLIExampleValue(
 }
 
 /**
- * Render one "--flag value" example token. Boolean values are shown inline
- * ("--flag=false"): pflag parses "--flag false" as "--flag" plus a stray
- * positional, so a spaced example would teach an invocation that generated
- * commands reject (and that would set the flag to true).
+ * Render "--flag value" tokens, shell-quoted when needed. Booleans stay inline
+ * ("--flag=false"): pflag reads "--flag false" as "--flag" plus a positional.
  */
-function exampleFlagPart(flagName: string, val: string): string {
+function exampleFlagPart(flagName: string, val: string | string[]): string {
+  if (Array.isArray(val)) {
+    return val.map((element) => exampleFlagPart(flagName, element)).join(" ");
+  }
   if (val === "true" || val === "false") {
     return `--${flagName}=${val}`;
   }
-  return `--${flagName} ${val}`;
+  return `--${flagName} ${readmeShellValue(val)}`;
 }
 
 /**
@@ -299,8 +325,16 @@ function templateCmdExample(op: Operation): string {
           if (pex) {
             const pval = getExampleValue(pex);
             if (pval !== undefined && pval !== null) {
+              const repeatable = exampleRepeatableFlagValue(
+                param.Field,
+                pval,
+                isGeneratorDefaultExample(pex),
+              );
               pushPart(
-                exampleFlagPart(flagName, String(pval)),
+                exampleFlagPart(
+                  flagName,
+                  repeatable?.Value ?? exampleScalarValue(pval),
+                ),
                 isGeneratorDefaultExample(pex) &&
                   cliExampleHasAnglePlaceholder(pval),
               );

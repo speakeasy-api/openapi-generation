@@ -1,0 +1,75 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/repeatableFlagExamples:
+    post:
+      operationId: cliRepeatableFlagExamplesPost
+      description: >-
+        Array-valued examples on required body properties. String-item and
+        enum-item arrays are repeatable inputs, so their examples must render
+        one value per element rather than a single JSON-encoded token. A
+        number-item array is a single JSON-encoded input.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliRepeatableFlagExamplesRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/CliRepeatableFlagExamplesRequest"
+                  url:
+                    type: string
+                required:
+                  - url
+components:
+  schemas:
+    CliRepeatableFlagExamplesRequest:
+      type: object
+      required:
+        - labels
+        - events
+        - weights
+      properties:
+        labels:
+          type: array
+          description: String-item array with a multi-element example
+          minItems: 1
+          items:
+            type: string
+          example:
+            - release candidate
+            - owner's pick
+        events:
+          type: array
+          description: Enum-item array without an example; synthesized from the enum
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - item.created
+              - item.deleted
+        weights:
+          type: array
+          description: Number-item array; rendered as one JSON-encoded value
+          items:
+            type: number
+          example:
+            - 1.5
+            - 2

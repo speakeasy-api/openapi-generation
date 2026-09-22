@@ -1,0 +1,10 @@
+id: 1790040993-ae47157f
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: render examples for repeatable array flags as one occurrence per element instead of a single JSON-encoded token
+author: 2ynn
+date: "2026-09-21"

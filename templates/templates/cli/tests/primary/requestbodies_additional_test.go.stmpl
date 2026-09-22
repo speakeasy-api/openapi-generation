@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
 )
 
 // --- JSON Map of Any ---
@@ -349,4 +351,48 @@ func TestRequestBodyFlagDefaultsAppliedWithoutBody(t *testing.T) {
 		"schema default should apply when building from flags alone")
 	assert.Equal(t, float64(42), jsonGetFloat64(output, "json.count"),
 		"schema default should apply when building from flags alone")
+}
+
+// --- Repeatable flag examples ---
+
+func repeatableFlagExampleCommand(t *testing.T) string {
+	t.Helper()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	cmd, remaining, err := root.Find([]string{"request-bodies", "cli-repeatable-flag-examples-post"})
+	require.NoError(t, err)
+	require.Empty(t, remaining)
+	return cmd.Example
+}
+
+func TestRepeatableFlagExampleRendersOneOccurrencePerElement(t *testing.T) {
+	example := repeatableFlagExampleCommand(t)
+	assert.Contains(t, example, `--labels 'release candidate' --labels 'owner'\''s pick'`)
+	assert.Contains(t, example, "--events item.created")
+	assert.Contains(t, example, `--weights '[1.5,2]'`)
+	assert.NotContains(t, example, `--labels '[`)
+	assert.NotContains(t, example, `--events '[`)
+}
+
+func TestRepeatableFlagExampleSendsArrayElements(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-repeatable-flag-examples-post",
+		"--events", "item.created",
+		"--labels", "release candidate",
+		"--labels", "owner's pick",
+		"--weights", "[1.5,2]",
+	}))
+	labels, ok := jsonGet(h.GetStdout(), "json.labels").([]interface{})
+	require.True(t, ok, "labels must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"release candidate", "owner's pick"}, labels)
+	events, ok := jsonGet(h.GetStdout(), "json.events").([]interface{})
+	require.True(t, ok, "events must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"item.created"}, events)
+	weights, ok := jsonGet(h.GetStdout(), "json.weights").([]interface{})
+	require.True(t, ok, "weights must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{1.5, 2.0}, weights)
 }
