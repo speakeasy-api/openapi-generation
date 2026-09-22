@@ -64,6 +64,32 @@ func TestCLIErrorAgentModeMatrix(t *testing.T) {
 	}
 }
 
+func TestCLIErrorPlannedCommandIgnoresArgv(t *testing.T) {
+	for _, args := range [][]string{
+		{"--agent-mode", "archive"},
+		{"--agent-mode", "archive", "hello world"},
+		{"--agent-mode", "archive", "--count", "3"},
+		{"--agent-mode", "archive", "hello", "--count", "3"},
+	} {
+		t.Run(strings.Join(args[1:], " "), func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(args)
+			require.Error(t, err)
+			assert.True(t, output.IsRendered(err), "a CLI error rendered in the envelope must be marked so main prints nothing further")
+
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, "unsupported_error", envelope["error_type"])
+			assert.Equal(t, "CLI_UNAVAILABLE", envelope["error_reason"])
+			assert.Equal(t, float64(1), envelope["exit_code"])
+			assert.NotContains(t, envelope["error"], "unknown command")
+			assert.NotContains(t, envelope["error"], "unknown flag")
+			assert.NotContains(t, h.GetStderr(), "--dry-run")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+		})
+	}
+}
+
 // TestCLIErrorFlagValuesAreNotRenderingFlags: a flag-looking VALUE of a real
 // flag must not switch the rendering mode: `--body --agent-mode` is a body of
 // "--agent-mode" (invalid JSON, plain error), not agent mode; `--body -o json`

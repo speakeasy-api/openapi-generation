@@ -9,6 +9,9 @@
 {{- addImport "github.com/spf13/pflag" -}}
 {{- addImport "internal/cli" true -}}
 {{- end -}}
+{{- if templatePlannedUsageTestEnabled -}}
+  {{- addImport "internal/clierrors" true -}}
+{{- end -}}
 package tests
 
 {{genImports}}
@@ -310,6 +313,23 @@ func TestUsageSchema_PlannedCommand(t *testing.T) {
 
     assert.Contains(t, stdout, "cmd \"{{templatePlannedUsageCmdName}}\"")
     assert.Empty(t, stderr)
+}
+
+func TestPlannedCommand_ArgvReportsUnavailable(t *testing.T) {
+    for _, extra := range [][]string{
+        {"hello"},
+        {"--count", "3"},
+    } {
+        t.Run(strings.Join(extra, " "), func(t *testing.T) {
+            h := NewCLITestHarness(t)
+            err := h.RunBare(append([]string{ {{templatePlannedUsagePathArgs}} }, extra...))
+            require.Error(t, err)
+
+            assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+            assert.Contains(t, h.GetStderr(), `"error_reason": "CLI_UNAVAILABLE"`)
+            assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+        })
+    }
 }
 {{- end }}
 

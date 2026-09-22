@@ -1,0 +1,10 @@
+id: 1790084751-8116f03c
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: planned commands report CLI_UNAVAILABLE for arbitrary positional arguments and unknown flags
+author: 2ynn
+date: "2026-09-22"
