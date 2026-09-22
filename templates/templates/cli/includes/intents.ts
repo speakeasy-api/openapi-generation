@@ -231,7 +231,7 @@ function intentRequiredParamFallbacks(op: Operation): string[] {
       } catch (_e) {
         // Fall through to the field-level/default/type-derived example.
       }
-      if (value === undefined || value === null) {
+      if (!hasExampleValue(param.Field, value)) {
         // getCLIExampleValue returns a rendered value plus a marker for the
         // generic angle-bracket placeholder; name that placeholder after the
         // flag so the fallback stays visibly synthetic but specific.
