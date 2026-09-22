@@ -7,6 +7,6 @@ targets:
     - terraform
 type: feat
 bump: minor
-description: support allowReserved to pass RFC 3986 reserved characters unencoded in query parameters and, via the param encoding override, in path parameters
+description: "support passing RFC 3986 reserved characters unencoded in query parameters (allowReserved: true) and path parameters (`x-speakeasy-param-encoding-override: allowReserved`). Requires `fixFlags.encodePathParams` to be enabled"
 author: 2ynn
 date: "2026-09-21"

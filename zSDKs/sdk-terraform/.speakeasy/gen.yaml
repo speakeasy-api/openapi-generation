@@ -29,6 +29,8 @@ generation:
     generateNewTests: true
     skipResponseBodyAssertions: false
 terraform:
+  fixFlags:
+    encodePathParams: true
   version: 0.0.1
   additionalActions: []
   additionalDataSources: []

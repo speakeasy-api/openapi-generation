@@ -62,7 +62,6 @@ func PopulateSecurity(ctx context.Context, req *http.Request, securitySource fun
 		for key, value := range queryParams {
 			query.Add(key, value)
 		}
-		// Append rather than re-encode: RawQuery may carry allowReserved values verbatim.
 		if req.URL.RawQuery == "" {
 			req.URL.RawQuery = query.Encode()
 		} else {

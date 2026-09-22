@@ -202,16 +202,12 @@ func escapeExceptReserved(s string) string {
 	return percentEncode(s, reservedQueryChars)
 }
 
-// Reserved characters kept verbatim when allowReserved is set. `#` is always
-// percent-encoded because it terminates both the path and the query component,
-// and `?` is percent-encoded in paths because it terminates the path.
+// `#` terminates both the path and the query, and `?` terminates the path.
 const (
 	reservedPathChars  = ":/[]@!$&'()*+,;="
 	reservedQueryChars = ":/?[]@!$&'()*+,;="
 )
 
-// percentEncode applies RFC 3986 percent-encoding, keeping unreserved
-// characters and any character listed in reservedChars as-is.
 func percentEncode(s string, reservedChars string) string {
 	const upperhex = "0123456789ABCDEF"
 	var buf strings.Builder

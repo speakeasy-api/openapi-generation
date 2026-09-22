@@ -112,6 +112,8 @@ terraform:
     - env: TESTING_USERNAME
       providerAttribute: username
   excludeEmptyObjectSchemas: true
+  fixFlags:
+    encodePathParams: true
   forwardCompatibleEnumsByDefault: false
   includeEmptyObjects: false
   inferUnionDiscriminators: true

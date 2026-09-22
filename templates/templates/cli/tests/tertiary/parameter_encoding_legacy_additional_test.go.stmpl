@@ -1,0 +1,49 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+const legacyReservedWithSpace = "abc 123:@!$&'()*+,;="
+
+func newLegacyRequestURIServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"url": r.RequestURI})
+	}))
+}
+
+func TestParametersPathEncodingLegacy(t *testing.T) {
+	recordTest("parameters-path-encoding")
+
+	s := newLegacyRequestURIServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "path-encoding", "--param1", legacyReservedWithSpace, "--param2", legacyReservedWithSpace})
+	require.NoError(t, err)
+
+	segment := "abc%20123:@%21$&%27%28%29%2A+,;="
+	got := jsonGetString(strings.TrimSpace(h.GetStdout()), "url")
+	require.Equal(t, "/anything/pathencoding/"+segment+"/"+segment, got)
+}
+
+func TestParametersQueryEncodingLegacy(t *testing.T) {
+	recordTest("parameters-query-encoding")
+
+	s := newLegacyRequestURIServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "query-encoding", "--param1", legacyReservedWithSpace})
+	require.NoError(t, err)
+
+	got := jsonGetString(strings.TrimSpace(h.GetStdout()), "url")
+	require.Equal(t, "/anything/queryencoding?param1=abc+123%3A%40%21%24%26%27%28%29%2A%2B%2C%3B%3D", got)
+}

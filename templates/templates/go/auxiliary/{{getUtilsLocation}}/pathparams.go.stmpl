@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	{{- if not encodePathParams}}
+	"net/url"
+	{{- end}}
 	"reflect"
 	"strings"
 	"time"
@@ -72,7 +75,7 @@ func populateParsedParameters(pathParams interface{}, globals interface{}, parse
 				return nil, err
 			}
 			for k, v := range vals {
-				parsedParameters[k] = escapePathValue(v, false)
+				parsedParameters[k] = {{if encodePathParams}}escapePathValue(v, false){{else}}url.PathEscape(v){{end}}
 			}
 		} else {
 			// TODO: support other styles
