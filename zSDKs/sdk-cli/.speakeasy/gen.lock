@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_say.go:
     last_write_checksum: sha1:d7137e29ad2375390c175b9e79f0a557341b2e95
   internal/cli/intents.go:
-    last_write_checksum: sha1:11c1961232079be8b4d3b5e5498c7e61c2810c03
+    last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
     last_write_checksum: sha1:16b6e0b6b7a669f7d12e25d02079fcb6c1bdb878
   internal/cli/login.go:
