@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -212,6 +212,10 @@ trackedFiles:
     last_write_checksum: sha1:f297d25c0e8c205164a5df3cedd421737bb340a4
   docs/GetPolymorphismResponseBody.md:
     last_write_checksum: sha1:ac415b1f4ee500b994944e51cedab5d13106286c
+  docs/GetPositionalDefaultRequest.md:
+    last_write_checksum: sha1:6c5d2195ba3390e243dbfcfa865abb9f405d88e8
+  docs/GetPositionalDefaultResponse.md:
+    last_write_checksum: sha1:5cd8c385a7fa1d1c5486adb9764afa41ee399ef5
   docs/GetRequestBodyFlattenedAwayRequest.md:
     last_write_checksum: sha1:41b2f3bc9a347494e4c2c418557fd63474203a3e
   docs/GetRequestBodyFlattenedAwayResponse.md:
@@ -453,7 +457,7 @@ trackedFiles:
   docs/sdks/obsolete/README.md:
     last_write_checksum: sha1:a7e8e266430b35c96a855bbc16d12c9297157cff
   docs/sdks/sdk/README.md:
-    last_write_checksum: sha1:f39878d12875d0700684dc5086d112c9d64ebd5c
+    last_write_checksum: sha1:21cd49930ca7cd241be453e26b0eee27fd8c625a
   docs/sdks/singlebar/README.md:
     last_write_checksum: sha1:2473d0a0a1349481a484ee4d4f9962f234bca7b9
   docs/sdks/singlefoo/README.md:
@@ -640,6 +644,10 @@ trackedFiles:
     last_write_checksum: sha1:e5a0e0101c86f48ed0fd72acca461fbb6269a021
   src/GetPolymorphismResponseBody.php:
     last_write_checksum: sha1:eabbf0ae2929fa4b25289340921f733b722eb9a7
+  src/GetPositionalDefaultRequest.php:
+    last_write_checksum: sha1:bdf762371dcd9c0d85824a03483ce247a09a3698
+  src/GetPositionalDefaultResponse.php:
+    last_write_checksum: sha1:31804d811f6127f1e3e3b62ab74c8bccdae49698
   src/GetRequestBodyFlattenedAwayRequest.php:
     last_write_checksum: sha1:2b22c8e29b2a4be4897fd80645f29fe606273d6e
   src/GetRequestBodyFlattenedAwayResponse.php:
@@ -831,7 +839,7 @@ trackedFiles:
   src/RootGroupOpResponse.php:
     last_write_checksum: sha1:13e355a4f2dc8115c8697ff688b8664a63480959
   src/SDK.php:
-    last_write_checksum: sha1:92471f6d1103994606b6c03f4d299cbcccf96490
+    last_write_checksum: sha1:3da40058aaea85df67547ada145c7ac8ce99099f
   src/SDKBuilder.php:
     last_write_checksum: sha1:fa5ab1af0c415d695fc2d245b23c046fe82a13e1
   src/SDKConfiguration.php:
@@ -1386,4 +1394,9 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2

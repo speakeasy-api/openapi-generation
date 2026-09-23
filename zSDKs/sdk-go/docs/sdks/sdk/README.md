@@ -42,6 +42,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [GetNestedIntegerString](#getnestedintegerstring) - Test nested struct with integer:string tag
 * [RenderAsset](#renderasset) - Render Asset
 * [GetAsset](#getasset) - Get Asset
+* [GetPositionalDefault](#getpositionaldefault) - Get an item with a default path identifier
 * [GetErrorOnlyExample](#geterroronlyexample) - Operation with example only on error response
 
 ## OperationWithLeadingAndTrailingUnderscores
@@ -1531,6 +1532,55 @@ func main() {
 ### Response
 
 **[*GetAssetResponse](../../getassetresponse.md), error**
+
+### Errors
+
+| Error Type            | Status Code           | Content Type          |
+| --------------------- | --------------------- | --------------------- |
+| examplealias.SDKError | 4XX, 5XX              | \*/\*                 |
+
+## GetPositionalDefault
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="go" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```go
+package main
+
+import(
+	"context"
+	examplealias "example.com/openapi-go-sdk"
+	"log"
+)
+
+func main() {
+    ctx := context.Background()
+
+    s := examplealias.New()
+
+    res, err := s.GetPositionalDefault(ctx, "default-id")
+    if err != nil {
+        log.Fatal(err)
+    }
+    if res != nil {
+        // handle response
+    }
+}
+```
+
+### Parameters
+
+| Parameter                                             | Type                                                  | Required                                              | Description                                           |
+| ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| `ctx`                                                 | [context.Context](https://pkg.go.dev/context#Context) | :heavy_check_mark:                                    | The context to use for the request.                   |
+| `id`                                                  | `string`                                              | :heavy_check_mark:                                    | N/A                                                   |
+| `opts`                                                | [][examplealias.Option](../../option.md)              | :heavy_minus_sign:                                    | The options for this request.                         |
+
+### Response
+
+**[*GetPositionalDefaultResponse](../../getpositionaldefaultresponse.md), error**
 
 ### Errors
 

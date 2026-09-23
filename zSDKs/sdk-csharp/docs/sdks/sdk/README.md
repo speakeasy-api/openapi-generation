@@ -42,6 +42,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [GetNestedIntegerString](#getnestedintegerstring) - Test nested struct with integer:string tag
 * [RenderAsset](#renderasset) - Render Asset
 * [GetAsset](#getasset) - Get Asset
+* [GetPositionalDefault](#getpositionaldefault) - Get an item with a default path identifier
 * [GetErrorOnlyExample](#geterroronlyexample) - Operation with example only on error response
 
 ## OperationWithLeadingAndTrailingUnderscores
@@ -1047,6 +1048,39 @@ else if (res.AssetResult != null)
 ### Response
 
 **[GetAssetResponse](../../Models/GetAssetResponse.md)**
+
+### Errors
+
+| Error Type   | Status Code  | Content Type |
+| ------------ | ------------ | ------------ |
+| SDKException | 4XX, 5XX     | \*/\*        |
+
+## GetPositionalDefault
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="csharp" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```csharp
+using Speakeasy.OpenAPI;
+
+var sdk = new SDK();
+
+var res = await sdk.GetPositionalDefaultAsync(id: "default-id");
+
+// handle response
+```
+
+### Parameters
+
+| Parameter          | Type               | Required           | Description        |
+| ------------------ | ------------------ | ------------------ | ------------------ |
+| `Id`               | *string*           | :heavy_check_mark: | N/A                |
+
+### Response
+
+**[GetPositionalDefaultResponse](../../Models/GetPositionalDefaultResponse.md)**
 
 ### Errors
 

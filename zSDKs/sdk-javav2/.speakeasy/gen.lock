@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -200,6 +200,10 @@ trackedFiles:
     last_write_checksum: sha1:748ad5e33df51eef6acc431a0c53748fed3d9c59
   docs/models/operations/GetPolymorphismResponseBody.md:
     last_write_checksum: sha1:17f56b4458ca76706894cb422dfff9ebf90cfa6e
+  docs/models/operations/GetPositionalDefaultRequest.md:
+    last_write_checksum: sha1:e2540aca45304ecd73bccf7c5838a23696833574
+  docs/models/operations/GetPositionalDefaultResponse.md:
+    last_write_checksum: sha1:996c50c7e3f375031825ab007265c0e4346f187a
   docs/models/operations/GetRequestBodyFlattenedAwayRequest.md:
     last_write_checksum: sha1:537e835b177d884a54b5338cffa721b21403c6b7
   docs/models/operations/GetRequestBodyFlattenedAwayResponse.md:
@@ -477,7 +481,7 @@ trackedFiles:
   docs/sdks/obsolete/README.md:
     last_write_checksum: sha1:7f4660f0adea3cd4569bdd3cd18a3f60e4a6f96e
   docs/sdks/sdk/README.md:
-    last_write_checksum: sha1:a667f322102360f418011887cc62035119481de1
+    last_write_checksum: sha1:76f213be1030795add6c831e20a30429f2df6c01
   docs/sdks/singlebar/README.md:
     last_write_checksum: sha1:483fb767c817868cd8123b3f004e032d2339f477
   docs/sdks/singlefoo/README.md:
@@ -535,7 +539,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/AsyncObsolete.java:
     last_write_checksum: sha1:cee13f3a56980554c84fbf2b94140fecb8c654c2
   src/main/java/org/openapis/openapi/AsyncSDK.java:
-    last_write_checksum: sha1:88e98b946de9113390c9e264de55ae0d86eda9df
+    last_write_checksum: sha1:84fb2fcd43d699a755e761cb11f6abd4b6fbde62
   src/main/java/org/openapis/openapi/AsyncSingleBar.java:
     last_write_checksum: sha1:ed25f31ac09c94d795f4ac6d7830ab7bf255918e
   src/main/java/org/openapis/openapi/AsyncSingleFoo.java:
@@ -565,7 +569,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/Obsolete.java:
     last_write_checksum: sha1:adcdfd4fd3229798b34d43a2ff74e21ae9a45247
   src/main/java/org/openapis/openapi/SDK.java:
-    last_write_checksum: sha1:42a44e662216eacd0a12da09320511f41ecf621e
+    last_write_checksum: sha1:a5307bb49b6e91beade5c1eeb04fc8ceb6e83294
   src/main/java/org/openapis/openapi/SDKConfiguration.java:
     last_write_checksum: sha1:69ee554d524fc29b8474e2a36ac2d052e0c8a9b5
   src/main/java/org/openapis/openapi/SecuritySource.java:
@@ -796,6 +800,12 @@ trackedFiles:
     last_write_checksum: sha1:4ff9ce689d1700ad0fbadeee2fde79f8429c0928
   src/main/java/org/openapis/openapi/models/operations/GetPolymorphismResponseBody.java:
     last_write_checksum: sha1:e58f49820795dbc104f4b092f49a8a2374b85429
+  src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultRequest.java:
+    last_write_checksum: sha1:6e62a14fb8982549f394ce3063e51d1fcd39af8c
+  src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultRequestBuilder.java:
+    last_write_checksum: sha1:3943bf021c0b85e34b2003042edb19c5cbb51e88
+  src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultResponse.java:
+    last_write_checksum: sha1:1f32ef8d86942039acdc4540feeb25cb0d51895c
   src/main/java/org/openapis/openapi/models/operations/GetRequestBodyFlattenedAwayRequest.java:
     last_write_checksum: sha1:2ab9a5e918e5fb7e1a97c7d1e5681499e3a4c212
   src/main/java/org/openapis/openapi/models/operations/GetRequestBodyFlattenedAwayRequestBuilder.java:
@@ -1038,6 +1048,10 @@ trackedFiles:
     last_write_checksum: sha1:0bea4e33ebc18da5bc975523f7e24706cd105eb3
   src/main/java/org/openapis/openapi/models/operations/async/GetPolymorphismResponse.java:
     last_write_checksum: sha1:b754534f52ba0ad4bce6a8e9de900da278048d2f
+  src/main/java/org/openapis/openapi/models/operations/async/GetPositionalDefaultRequestBuilder.java:
+    last_write_checksum: sha1:c44a4a4e6763e82d2cb35ce2fa41b0abfd975701
+  src/main/java/org/openapis/openapi/models/operations/async/GetPositionalDefaultResponse.java:
+    last_write_checksum: sha1:e11fa92901ba9ed94bc9c12f044ba8b5065f0d0b
   src/main/java/org/openapis/openapi/models/operations/async/GetRequestBodyFlattenedAwayRequestBuilder.java:
     last_write_checksum: sha1:c05f5fc8e433af853792fa0ef91b2880a0e59de1
   src/main/java/org/openapis/openapi/models/operations/async/GetRequestBodyFlattenedAwayResponse.java:
@@ -1370,6 +1384,8 @@ trackedFiles:
     last_write_checksum: sha1:1f60735f7e0f328f89ed7ced1a6fea0055e6195d
   src/main/java/org/openapis/openapi/operations/GetPolymorphism.java:
     last_write_checksum: sha1:a879a8bbd6947c715f86757eebfc2a0853c58ad2
+  src/main/java/org/openapis/openapi/operations/GetPositionalDefault.java:
+    last_write_checksum: sha1:56a57ee85e034b96e6e6a086a830f982aeb6876b
   src/main/java/org/openapis/openapi/operations/GetRequestBodyFlattenedAway.java:
     last_write_checksum: sha1:fe83298a3500bdd7cdaeed1eb439b8ea0f23723f
   src/main/java/org/openapis/openapi/operations/GetSingleNamespaceBarPet.java:
@@ -1874,6 +1890,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   tests/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -2295,6 +2313,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-03-09T16:23:04-04:00"

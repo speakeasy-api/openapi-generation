@@ -101,6 +101,8 @@ module OpenApiSDK
         autoload :GetPetOwnersResponse, "open_api_sdk/operations/v2/schemas/getpetowners_response.rb"
         autoload :GetPolymorphismResponseBody, "open_api_sdk/operations/v2/schemas/getpolymorphism_responsebody.rb"
         autoload :GetPolymorphismResponse, "open_api_sdk/operations/v2/schemas/getpolymorphism_response.rb"
+        autoload :GetPositionalDefaultRequest, "open_api_sdk/operations/v2/schemas/getpositionaldefault_request.rb"
+        autoload :GetPositionalDefaultResponse, "open_api_sdk/operations/v2/schemas/getpositionaldefault_response.rb"
         autoload(
           :GetRequestBodyFlattenedAwayRequest,
           "open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_request.rb"

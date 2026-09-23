@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -365,6 +365,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   Tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  Tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   Tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   Tests/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -681,6 +683,10 @@ trackedFiles:
     last_write_checksum: sha1:0418881d2b93b5a1b91f209f6598d32f1551461e
   docs/Models/GetPolymorphismResponseBody.md:
     last_write_checksum: sha1:39fe03a012785cf1f809f7730a03dda60c123860
+  docs/Models/GetPositionalDefaultRequest.md:
+    last_write_checksum: sha1:8c51ef8cb78b31d1ccd47dcaa437a3746af9035f
+  docs/Models/GetPositionalDefaultResponse.md:
+    last_write_checksum: sha1:47072933b313563df415c33bf0e14bf119960875
   docs/Models/GetRequestBodyFlattenedAwayRequest.md:
     last_write_checksum: sha1:67ad04a2055e32729f6bb929cba17b64b733eb6c
   docs/Models/GetRequestBodyFlattenedAwayResponse.md:
@@ -934,7 +940,7 @@ trackedFiles:
   docs/sdks/obsolete/README.md:
     last_write_checksum: sha1:f2947bce1acd9cc15582d04115effc8552d02597
   docs/sdks/sdk/README.md:
-    last_write_checksum: sha1:81f87f7269de234d04f193e3fe18df782f79ad5c
+    last_write_checksum: sha1:32d49ba6a70d5a9776a86f99d8d6cf7de3ed317d
   docs/sdks/singlebar/README.md:
     last_write_checksum: sha1:fd52442d18408e5047bb69f0aade739db73c73f9
   docs/sdks/singlefoo/README.md:
@@ -1165,6 +1171,10 @@ trackedFiles:
     last_write_checksum: sha1:8f4cc6f7c37e9b01d9e6e1c81399c81a2703b3eb
   src/Speakeasy/OpenAPI/Models/GetPolymorphismResponseBody.cs:
     last_write_checksum: sha1:69bfe2aa4ddd005ecaab5e51a0b4927564a7a311
+  src/Speakeasy/OpenAPI/Models/GetPositionalDefaultRequest.cs:
+    last_write_checksum: sha1:6950323cb0d2336d2d512d546efd7b15fdf91fed
+  src/Speakeasy/OpenAPI/Models/GetPositionalDefaultResponse.cs:
+    last_write_checksum: sha1:946d5c990f5587d8f31fc6b3ca1f7378106943d1
   src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayRequest.cs:
     last_write_checksum: sha1:5a07ae2786ebf7a0e0285515fda2715725e8f0f3
   src/Speakeasy/OpenAPI/Models/GetRequestBodyFlattenedAwayResponse.cs:
@@ -1422,7 +1432,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Obsolete.cs:
     last_write_checksum: sha1:d08558e7cadb61adfc01612e8069e71ea803dd1f
   src/Speakeasy/OpenAPI/SDK.cs:
-    last_write_checksum: sha1:5b53700d458e4a73e1e63af273ab18ce9a38adfc
+    last_write_checksum: sha1:98d445996db2625ee36267396c4c7b22596b7707
   src/Speakeasy/OpenAPI/SDKConfig.cs:
     last_write_checksum: sha1:3773a28e55af09936d058f1e74f5766932871730
   src/Speakeasy/OpenAPI/SingleBar.cs:
@@ -1895,6 +1905,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2024-11-26T11:24:49+02:00"

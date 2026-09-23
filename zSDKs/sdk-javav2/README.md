@@ -802,6 +802,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [getNestedIntegerString](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 * [renderAsset](docs/sdks/sdk/README.md#renderasset) - Render Asset
 * [getAsset](docs/sdks/sdk/README.md#getasset) - Get Asset
+* [getPositionalDefault](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 * [getErrorOnlyExample](docs/sdks/sdk/README.md#geterroronlyexample) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)
@@ -1484,11 +1485,11 @@ public class Application {
 many more subclasses in the JDK platform).
 
 **Inherit from [`SDKBaseException`](./src/main/java/models/errors/SDKBaseException.java)**:
-* [`org.openapis.openapi.models.errors.Error`](./src/main/java/models/errors/org.openapis.openapi.models.errors.Error.java): A not-so-long multi-line error model description. Applicable to 5 of 48 methods.*
-* [`org.openapis.openapi.models.errors.BadRequestResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.BadRequestResponseException.java): Bad Request. Status code `400`. Applicable to 2 of 48 methods.*
-* [`org.openapis.openapi.models.errors.RequestTimeoutError`](./src/main/java/models/errors/org.openapis.openapi.models.errors.RequestTimeoutError.java): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 48 methods.*
-* [`org.openapis.openapi.models.errors.FailedResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.FailedResponseException.java): An error response with an empty object schema. Status code `500`. Applicable to 1 of 48 methods.*
-* [`org.openapis.openapi.models.errors.Test2ResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.Test2ResponseException.java): Internal Server Error. Status code `500`. Applicable to 1 of 48 methods.*
+* [`org.openapis.openapi.models.errors.Error`](./src/main/java/models/errors/org.openapis.openapi.models.errors.Error.java): A not-so-long multi-line error model description. Applicable to 5 of 49 methods.*
+* [`org.openapis.openapi.models.errors.BadRequestResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.BadRequestResponseException.java): Bad Request. Status code `400`. Applicable to 2 of 49 methods.*
+* [`org.openapis.openapi.models.errors.RequestTimeoutError`](./src/main/java/models/errors/org.openapis.openapi.models.errors.RequestTimeoutError.java): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 49 methods.*
+* [`org.openapis.openapi.models.errors.FailedResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.FailedResponseException.java): An error response with an empty object schema. Status code `500`. Applicable to 1 of 49 methods.*
+* [`org.openapis.openapi.models.errors.Test2ResponseException`](./src/main/java/models/errors/org.openapis.openapi.models.errors.Test2ResponseException.java): Internal Server Error. Status code `500`. Applicable to 1 of 49 methods.*
 
 
 </details>

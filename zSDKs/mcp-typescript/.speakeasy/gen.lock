@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -56,7 +56,7 @@ trackedFiles:
   gram.config.ts:
     last_write_checksum: sha1:c6324760bff11ac568d51f1c338fc8a16910fb4f
   manifest.json:
-    last_write_checksum: sha1:76cff60e8afd75ee629bd5cc817508fc2c9ec68a
+    last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
     last_write_checksum: sha1:4656382e8095f3ea4cc61ac36f9a78cdbf312e56
   server.json:
@@ -319,6 +319,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   src/__tests__/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  src/__tests__/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   src/__tests__/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   src/__tests__/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -475,6 +477,8 @@ trackedFiles:
     last_write_checksum: sha1:ce1403bf807b8d46bbd57a18239afd43805f9437
   src/funcs/getPolymorphism.ts:
     last_write_checksum: sha1:05b0abb079112d25a8e94465559f0c930eb0f6d4
+  src/funcs/getPositionalDefault.ts:
+    last_write_checksum: sha1:562a954639cf2346e5211caf383f9948e6d71b58
   src/funcs/getRequestBodyFlattenedAway.ts:
     last_write_checksum: sha1:6163228f8a3bdfb798212e89e8b2b351b25f4672
   src/funcs/getUnionErrors.ts:
@@ -612,7 +616,7 @@ trackedFiles:
   src/mcp-server/scopes.ts:
     last_write_checksum: sha1:77d0eb95785e84f9fd0b27c4612f8c6470489fe4
   src/mcp-server/server.ts:
-    last_write_checksum: sha1:2bac8b01bf3ed0ea60c73e35c983a35aff63cec6
+    last_write_checksum: sha1:5ad3a65ce75dd80625e93c814bc09e00e91b1234
   src/mcp-server/shared.ts:
     last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
   src/mcp-server/tools.ts:
@@ -643,6 +647,8 @@ trackedFiles:
     last_write_checksum: sha1:550dca2ae377a827310a94259dd9e5bda5d066db
   src/mcp-server/tools/getPolymorphism.ts:
     last_write_checksum: sha1:ae2c6a58e0411fe4fe2013194755cee0d1960c7e
+  src/mcp-server/tools/getPositionalDefault.ts:
+    last_write_checksum: sha1:6c863eb9ade026faf530c94b20636e2c6203c16f
   src/mcp-server/tools/getRequestBodyFlattenedAway.ts:
     last_write_checksum: sha1:1286331c7c92594da9abfb11b2e37341eee4e505
   src/mcp-server/tools/getUnionErrors.ts:
@@ -823,6 +829,8 @@ trackedFiles:
     last_write_checksum: sha1:cf11dbb674eeb8c96779b380283ef27fbe03586c
   src/models/getpolymorphismop.ts:
     last_write_checksum: sha1:ddad44de8b2ee9eee48e5ad7d6208710585a316d
+  src/models/getpositionaldefaultop.ts:
+    last_write_checksum: sha1:fdb2d3de38389139dc0ddca5b2e3c225385f9c89
   src/models/getrequestbodyflattenedawayop.ts:
     last_write_checksum: sha1:6ffdb96f467764c409427ff12558cf944343e265
   src/models/getsinglenamespacebarpetop.ts:
@@ -924,7 +932,7 @@ trackedFiles:
   src/models/variantrecord.ts:
     last_write_checksum: sha1:470f96753b20bcc4cf789c7e4e3c86cfe224aa62
   src/tool-names.ts:
-    last_write_checksum: sha1:740ae4584f0f9d83325d31fa99ddaf1e887569ba
+    last_write_checksum: sha1:878aaf312e15088f00011ae5c9cfafc503b21839
   src/types/async.ts:
     last_write_checksum: sha1:675d04bb4b4081dc3482f18de98674f9b446e7b4
   src/types/bigint.ts:
@@ -1257,6 +1265,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-02-08T16:02:39Z"
