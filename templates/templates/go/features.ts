@@ -273,7 +273,6 @@ function isTestSkipped(test: string): boolean {
     "pagination-cursor-deep-nested-outputs",
     "pagination-cursor-deep-nested-outputs-iterator",
     "errors-error-body-validation-disabled",
-    "errors-error-body-validation-enabled",
     "errors-response-body-validation-disabled",
     "errors-custom-error-inheritance",
     "errors-response-body-validation-enabled",

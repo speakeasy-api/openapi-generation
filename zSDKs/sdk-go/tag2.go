@@ -248,7 +248,7 @@ func (s *Tag2) PostTest(ctx context.Context, test2Request Test2Request, deprecat
 
 			var out BadRequestResponseError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -273,7 +273,7 @@ func (s *Tag2) PostTest(ctx context.Context, test2Request Test2Request, deprecat
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -298,7 +298,7 @@ func (s *Tag2) PostTest(ctx context.Context, test2Request Test2Request, deprecat
 
 			var out Test2ResponseError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{

@@ -530,6 +530,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/go/auxiliary/tests/helpers.go.stmpl":                                         0o644,
 	"templates/go/auxiliary/tests/testclient.go.stmpl":                                      0o644,
 	"templates/go/auxiliary/{{getErrorsLocation}}":                                          0o20000000755,
+	"templates/go/auxiliary/{{getErrorsLocation}}/responsevalidationerror.go.stmpl":         0o644,
 	"templates/go/auxiliary/{{getErrorsLocation}}/{{getDefaultErrorFileName}}.go.stmpl":     0o644,
 	"templates/go/auxiliary/{{getNullableLocation}}":                                        0o20000000755,
 	"templates/go/auxiliary/{{getNullableLocation}}/optionalnullable.go.stmpl":              0o644,
