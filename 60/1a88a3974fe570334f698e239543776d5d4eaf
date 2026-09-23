@@ -1,0 +1,172 @@
+zSDKs/mcp-typescript/.speakeasy/gen.lock
+  h_9630b74bdac540 4,59,322-323,480-481,619,650-651,832-833,935,1268-1272
+zSDKs/mcp-typescript/manifest.json
+  h_9630b74bdac540 284-287
+zSDKs/mcp-typescript/src/__tests__/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/mcp-typescript/src/funcs/getPositionalDefault.ts
+  h_9630b74bdac540 1-152
+zSDKs/mcp-typescript/src/mcp-server/server.ts
+  h_9630b74bdac540 33,164
+zSDKs/mcp-typescript/src/mcp-server/tools/getPositionalDefault.ts
+  h_9630b74bdac540 1-42
+zSDKs/mcp-typescript/src/models/getpositionaldefaultop.ts
+  h_9630b74bdac540 1-31
+zSDKs/mcp-typescript/src/tool-names.ts
+  h_9630b74bdac540 99-102
+zSDKs/sdk-csharp/.speakeasy/gen.lock
+  h_9630b74bdac540 4,368-369,686-689,943,1174-1177,1435,1908-1912
+zSDKs/sdk-csharp/README.md
+  h_9630b74bdac540 466,893-901
+zSDKs/sdk-csharp/Tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-csharp/docs/Models/GetPositionalDefaultRequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-csharp/docs/Models/GetPositionalDefaultResponse.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-csharp/docs/sdks/sdk/README.md
+  h_9630b74bdac540 45,1058-1090
+zSDKs/sdk-csharp/src/Speakeasy/OpenAPI/Models/GetPositionalDefaultRequest.cs
+  h_9630b74bdac540 1-19
+zSDKs/sdk-csharp/src/Speakeasy/OpenAPI/Models/GetPositionalDefaultResponse.cs
+  h_9630b74bdac540 1-20
+zSDKs/sdk-csharp/src/Speakeasy/OpenAPI/SDK.cs
+  h_9630b74bdac540 490-507,3958-4054
+zSDKs/sdk-go/.speakeasy/gen.lock
+  h_9630b74bdac540 4,329-332,508,679-680,796,1141-1142,1625-1629
+zSDKs/sdk-go/README.md
+  h_9630b74bdac540 696
+zSDKs/sdk-go/docs/getpositionaldefaultrequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-go/docs/getpositionaldefaultresponse.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-go/docs/sdks/sdk/README.md
+  h_9630b74bdac540 45,1541-1589
+zSDKs/sdk-go/getpositionaldefaultop.go
+  h_9630b74bdac540 1-51
+zSDKs/sdk-go/sdk.go
+  h_9630b74bdac540 6129-6319
+zSDKs/sdk-go/tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-javav2/.speakeasy/gen.lock
+  h_9630b74bdac540 4,203-206,484,542,572,803-808,1051-1054,1387-1388,1893-1894,2316-2320
+zSDKs/sdk-javav2/README.md
+  h_9630b74bdac540 805,1488-1492
+zSDKs/sdk-javav2/docs/models/operations/GetPositionalDefaultRequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-javav2/docs/models/operations/GetPositionalDefaultResponse.md
+  h_9630b74bdac540 1-10
+zSDKs/sdk-javav2/docs/sdks/sdk/README.md
+  h_9630b74bdac540 43,1376-1421
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/AsyncSDK.java
+  h_9630b74bdac540 26,65-66,109,862-898
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/SDK.java
+  h_9630b74bdac540 54-56,109,1172-1210
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultRequest.java
+  h_9630b74bdac540 1-87
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultRequestBuilder.java
+  h_9630b74bdac540 1-57
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/models/operations/GetPositionalDefaultResponse.java
+  h_9630b74bdac540 1-163
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/models/operations/async/GetPositionalDefaultRequestBuilder.java
+  h_9630b74bdac540 1-59
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/models/operations/async/GetPositionalDefaultResponse.java
+  h_9630b74bdac540 1-164
+zSDKs/sdk-javav2/src/main/java/org/openapis/openapi/operations/GetPositionalDefault.java
+  h_9630b74bdac540 1-227
+zSDKs/sdk-javav2/tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-php/.speakeasy/gen.lock
+  h_9630b74bdac540 4,215-218,460,647-650,842,1397-1401
+zSDKs/sdk-php/README.md
+  h_9630b74bdac540 616
+zSDKs/sdk-php/docs/GetPositionalDefaultRequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-php/docs/GetPositionalDefaultResponse.md
+  h_9630b74bdac540 1-10
+zSDKs/sdk-php/docs/sdks/sdk/README.md
+  h_9630b74bdac540 42,1131-1173
+zSDKs/sdk-php/src/GetPositionalDefaultRequest.php
+  h_9630b74bdac540 1-29
+zSDKs/sdk-php/src/GetPositionalDefaultResponse.php
+  h_9630b74bdac540 1-47
+zSDKs/sdk-php/src/SDK.php
+  h_9630b74bdac540 994-1049
+zSDKs/sdk-postman/.speakeasy/gen.lock
+  h_9630b74bdac540 4,410-414
+zSDKs/sdk-pythonv2/.speakeasy/gen.lock
+  h_9630b74bdac540 4,224-225,443,501,618-619,725,1086-1087,1546-1550
+zSDKs/sdk-pythonv2/README.md
+  h_9630b74bdac540 945,1451-1459
+zSDKs/sdk-pythonv2/docs/models/getpositionaldefaultrequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-pythonv2/docs/sdks/sdk/README.md
+  h_9630b74bdac540 45,1732-1783
+zSDKs/sdk-pythonv2/src/speakeasy/new_openapi/models/__init__.py
+  h_9630b74bdac540 155-158,455-456,776-777
+zSDKs/sdk-pythonv2/src/speakeasy/new_openapi/models/getpositionaldefaultop.py
+  h_9630b74bdac540 1-16
+zSDKs/sdk-pythonv2/src/speakeasy/new_openapi/sdk.py
+  h_9630b74bdac540 2870-2955,5861-5946
+zSDKs/sdk-pythonv2/tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-ruby/.speakeasy/gen.lock
+  h_9630b74bdac540 4,373-376,486,984,1181-1188,1386,1745-1746,2231-2235
+zSDKs/sdk-ruby/README.md
+  h_9630b74bdac540 505
+zSDKs/sdk-ruby/docs/operations/v2/schemas/getpositionaldefaultrequest.md
+  h_9630b74bdac540 1-8
+zSDKs/sdk-ruby/docs/operations/v2/schemas/getpositionaldefaultresponse.md
+  h_9630b74bdac540 1-10
+zSDKs/sdk-ruby/docs/sdks/sdk/README.md
+  h_9630b74bdac540 43,1001-1036
+zSDKs/sdk-ruby/lib/open_api_sdk/operations/v2/schemas.rb
+  h_9630b74bdac540 104-105
+zSDKs/sdk-ruby/lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_request.rb
+  h_9630b74bdac540 1-32
+zSDKs/sdk-ruby/lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_request.rbi
+  h_9630b74bdac540 1-14
+zSDKs/sdk-ruby/lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_response.rb
+  h_9630b74bdac540 1-41
+zSDKs/sdk-ruby/lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_response.rbi
+  h_9630b74bdac540 1-26
+zSDKs/sdk-ruby/lib/open_api_sdk/sdk.rb
+  h_9630b74bdac540 4115-4247
+zSDKs/sdk-ruby/test/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-typescriptv2/.speakeasy/gen.lock
+  h_9630b74bdac540 4,227-228,444,773-774,975-976,1169-1170,1180,1325-1328,1350,1450,1829-1833
+zSDKs/sdk-typescriptv2/README.md
+  h_9630b74bdac540 546,640,725,1051-1059
+zSDKs/sdk-typescriptv2/docs/models/getpositionaldefaultrequest.mdx
+  h_9630b74bdac540 1-17
+zSDKs/sdk-typescriptv2/docs/sdks/sdk/README.mdx
+  h_9630b74bdac540 48,2615-2706
+zSDKs/sdk-typescriptv2/src/__tests__/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-typescriptv2/src/funcs/getPositionalDefault.ts
+  h_9630b74bdac540 1-172
+zSDKs/sdk-typescriptv2/src/models/getpositionaldefaultop.ts
+  h_9630b74bdac540 1-32
+zSDKs/sdk-typescriptv2/src/models/index.ts
+  h_9630b74bdac540 44
+zSDKs/sdk-typescriptv2/src/react-query/getPositionalDefault.core.ts
+  h_9630b74bdac540 1-69
+zSDKs/sdk-typescriptv2/src/react-query/getPositionalDefault.ts
+  h_9630b74bdac540 1-135
+zSDKs/sdk-typescriptv2/src/react-query/index.ts
+  h_9630b74bdac540 23
+zSDKs/sdk-typescriptv2/src/sdk/sdk.ts
+  h_9630b74bdac540 20,458-474
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "601a88a3974fe570334f698e239543776d5d4eaf",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
