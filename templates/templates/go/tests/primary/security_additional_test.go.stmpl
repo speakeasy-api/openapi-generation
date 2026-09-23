@@ -1,0 +1,107 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"net/url"
+	"testing"
+
+	"{{getRootModulePath}}/pkg/utils"
+)
+
+type headerAPIKeySecurity struct {
+	APIKey *string `security:"scheme,type=apiKey,subtype=header,name=X-API-Key"`
+}
+
+type queryAPIKeySecurity struct {
+	APIKey *string `security:"scheme,type=apiKey,subtype=query,name=api_key"`
+}
+
+func securitySourceOf(security interface{}) func(context.Context) (interface{}, error) {
+	return func(context.Context) (interface{}, error) {
+		return security, nil
+	}
+}
+
+func TestSecurity_HeaderSchemeLeavesQueryUntouched(t *testing.T) {
+	key := "secret"
+	req, err := http.NewRequest(http.MethodGet, "http://localhost/items?filter=a:b/c%20d?(e);f=g", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := req.URL.RawQuery
+
+	if err := utils.PopulateSecurity(context.Background(), req, securitySourceOf(headerAPIKeySecurity{APIKey: &key})); err != nil {
+		t.Fatal(err)
+	}
+
+	if req.Header.Get("X-API-Key") != key {
+		t.Fatalf("header not set, got %q", req.Header.Get("X-API-Key"))
+	}
+	if req.URL.RawQuery != before {
+		t.Fatalf("RawQuery changed: got %q, want %q", req.URL.RawQuery, before)
+	}
+}
+
+func TestSecurity_QuerySchemeAppendsWithoutReencoding(t *testing.T) {
+	key := "se cret"
+	req, err := http.NewRequest(http.MethodGet, "http://localhost/items?filter=a:b/c%20d", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := utils.PopulateSecurity(context.Background(), req, securitySourceOf(queryAPIKeySecurity{APIKey: &key})); err != nil {
+		t.Fatal(err)
+	}
+
+	want := "filter=a:b/c%20d&api_key=se+cret"
+	if req.URL.RawQuery != want {
+		t.Fatalf("got %q, want %q", req.URL.RawQuery, want)
+	}
+}
+
+func TestSecurity_QuerySchemeOnEmptyQuery(t *testing.T) {
+	key := "secret"
+	req, err := http.NewRequest(http.MethodGet, "http://localhost/items", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := utils.PopulateSecurity(context.Background(), req, securitySourceOf(queryAPIKeySecurity{APIKey: &key})); err != nil {
+		t.Fatal(err)
+	}
+
+	if req.URL.RawQuery != "api_key=secret" {
+		t.Fatalf("got %q", req.URL.RawQuery)
+	}
+}
+
+func TestSecurity_QuerySchemeSurvivesAllowReservedValues(t *testing.T) {
+	key := "secret"
+	filter := "a#b"
+	req, err := http.NewRequest(http.MethodGet, "http://localhost/items", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := utils.PopulateQueryParams(context.Background(), req, allowReservedQueryParams{Filter: &filter}, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := utils.PopulateSecurity(context.Background(), req, securitySourceOf(queryAPIKeySecurity{APIKey: &key})); err != nil {
+		t.Fatal(err)
+	}
+
+	parsed, err := url.Parse(req.URL.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Fragment != "" {
+		t.Fatalf("unexpected fragment %q in %q", parsed.Fragment, req.URL.String())
+	}
+	if got := parsed.Query().Get("api_key"); got != key {
+		t.Fatalf("api_key = %q, want %q", got, key)
+	}
+	if got := parsed.Query().Get("filter"); got != filter {
+		t.Fatalf("filter = %q, want %q", got, filter)
+	}
+}

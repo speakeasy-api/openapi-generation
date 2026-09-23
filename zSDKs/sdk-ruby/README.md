@@ -502,6 +502,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [get_nested_integer_string](docs/sdks/sdk/README.md#get_nested_integer_string) - Test nested struct with integer:string tag
 * [render_asset](docs/sdks/sdk/README.md#render_asset) - Render Asset
 * [get_asset](docs/sdks/sdk/README.md#get_asset) - Get Asset
+* [get_positional_default](docs/sdks/sdk/README.md#get_positional_default) - Get an item with a default path identifier
 * [get_error_only_example](docs/sdks/sdk/README.md#get_error_only_example) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)

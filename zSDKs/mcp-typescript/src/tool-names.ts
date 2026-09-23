@@ -97,6 +97,10 @@ export const toolNames: Array<{ name: string; description: string }>= [
     "description": "Test nested struct with integer:string tag\n\nThis endpoint tests the behavior when a deeply nested struct contains\nan integer field that should be unmarshaled from a string."
   },
   {
+    "name": "get-positional-default",
+    "description": "Get an item with a default path identifier\n\nCheck that a default-backed path parameter can be supplied as an argument or omitted."
+  },
+  {
     "name": "get-error-only-example",
     "description": "Operation with example only on error response\n\nThis endpoint tests that when an operation has a named example only on\nan error response (not on the success response), we still generate\na default example for the success response."
   },

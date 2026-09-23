@@ -36,6 +36,7 @@ function getJobs(): Job[] {
 
   goDefaultConfig.IdiomaticMethodCollisionNames =
     context.Global.Config.IdiomaticMethodCollisionNames;
+  goDefaultConfig.FixFlags = context.Global.Config.FixFlags;
 
   // Save test-related AST fields before intertemplate call, because
   // ExecuteInterTemplateTarget clears them when tests: false is passed.

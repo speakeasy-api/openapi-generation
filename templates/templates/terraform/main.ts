@@ -114,6 +114,7 @@ function generateEmbeddedGoSDK() {
   goDefaultConfig.SDKVersion = context.Global.Config.SDKVersion;
   goDefaultConfig.IncludeEmptyObjects =
     context.Global.Config.IncludeEmptyObjects;
+  goDefaultConfig.FixFlags = context.Global.Config.FixFlags;
   goDefaultConfig.WrapperName = "speakeasy-sdk/terraform";
   goDefaultConfig.SDKHooksConfigAccess = false;
   goDefaultConfig.NullableOptionalWrapper = false;

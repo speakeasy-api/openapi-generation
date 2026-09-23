@@ -1,0 +1,320 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"net/url"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/optionalnullable"
+	"{{getRootModulePath}}/pkg/utils"
+)
+
+const nonStructuralReserved = ":@!$&'()*+,;="
+
+const reservedWithSpace = "abc 123" + nonStructuralReserved
+const reservedWithSpaceEncoded = "abc%20123" + nonStructuralReserved
+const reservedWithSpacePercentEncoded = "abc%20123%3A%40%21%24%26%27%28%29%2A%2B%2C%3B%3D"
+
+func TestParametersPathEncoding(t *testing.T) {
+	recordTest("parameters-path-encoding")
+
+	client := NewRequestRecorderClient()
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(client))
+
+	res, err := s.Parameters.PathEncoding(context.Background(), reservedWithSpace, reservedWithSpace)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Len(t, client.Log, 1)
+
+	parts := strings.SplitN(client.Log[0].RequestURI, "/anything/pathencoding/", 2)
+	require.Len(t, parts, 2)
+	segments := strings.Split(parts[1], "/")
+	require.Len(t, segments, 2)
+	encoded, raw := segments[0], segments[1]
+
+	require.Equal(t, reservedWithSpacePercentEncoded, encoded)
+	require.Equal(t, reservedWithSpaceEncoded, raw)
+}
+
+func TestParametersQueryEncoding(t *testing.T) {
+	recordTest("parameters-query-encoding")
+
+	client := NewRequestRecorderClient()
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(client))
+
+	res, err := s.Parameters.QueryEncoding(context.Background(), reservedWithSpace)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.Len(t, client.Log, 1)
+	require.Equal(t, getHTTPBinURL()+"/anything/queryencoding?param1="+reservedWithSpaceEncoded, client.Log[0].RequestURI)
+}
+
+type scalarPathParams struct {
+	ID string `pathParam:"style=simple,explode=false,name=id"`
+}
+
+type arrayPathParams struct {
+	IDs []string `pathParam:"style=simple,explode=false,name=ids"`
+}
+
+type objectPathParams struct {
+	Obj         objectPathParam `pathParam:"style=simple,explode=false,name=obj"`
+	ObjExploded objectPathParam `pathParam:"style=simple,explode=true,name=objExploded"`
+}
+
+type objectPathParam struct {
+	Path string `pathParam:"name=path"`
+	Name string `pathParam:"name=name"`
+}
+
+type mapPathParams struct {
+	M         map[string]string `pathParam:"style=simple,explode=false,name=m"`
+	MExploded map[string]string `pathParam:"style=simple,explode=true,name=mExploded"`
+}
+
+type jsonPathParams struct {
+	Obj jsonPathObject `pathParam:"serialization=json,name=obj"`
+}
+
+type jsonPathObject struct {
+	Path string `json:"path"`
+}
+
+type allowReservedPathParams struct {
+	ID string `pathParam:"style=simple,explode=false,name=id,allowReserved=true"`
+}
+
+type allowReservedArrayPathParams struct {
+	IDs []string `pathParam:"style=simple,explode=false,name=ids,allowReserved=true"`
+}
+
+type nullablePathParams struct {
+	ID optionalnullable.OptionalNullable[string] `pathParam:"style=simple,explode=false,name=id,allowReserved=true"`
+}
+
+type globalPathParams struct {
+	Tenant *string `pathParam:"style=simple,explode=false,name=tenant,allowReserved=true"`
+}
+
+type requestWithGlobalPathParams struct {
+	ID     string  `pathParam:"style=simple,explode=false,name=id"`
+	Tenant *string `pathParam:"style=simple,explode=false,name=tenant,allowReserved=true"`
+}
+
+type generateURLCase struct {
+	name       string
+	path       string
+	pathParams interface{}
+	globals    interface{}
+	want       string
+}
+
+func runGenerateURLCases(t *testing.T, tests []generateURLCase) {
+	t.Helper()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := utils.GenerateURL(context.Background(), "http://localhost", tt.path, tt.pathParams, tt.globals)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGenerateURL_SimpleStyleEscapesReservedCharacters(t *testing.T) {
+	runGenerateURLCases(t, []generateURLCase{
+		{
+			name:       "path traversal",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: "../items/x"},
+			want:       "http://localhost/v1/resources/..%2Fitems%2Fx",
+		},
+		{
+			name:       "slash inside single segment",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: "parent/child"},
+			want:       "http://localhost/v1/resources/parent%2Fchild",
+		},
+		{
+			name:       "percent-encoded traversal stays data",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: "..%2Fitems%2Fx"},
+			want:       "http://localhost/v1/resources/..%252Fitems%252Fx",
+		},
+		{
+			name:       "literal custom method suffix",
+			path:       "/v1/resources/{id}:ping",
+			pathParams: scalarPathParams{ID: "a:b/c%"},
+			want:       "http://localhost/v1/resources/a%3Ab%2Fc%25:ping",
+		},
+		{
+			name:       "custom method separator",
+			path:       "/v1/webhooks/{id}",
+			pathParams: scalarPathParams{ID: "wh-1:ping"},
+			want:       "http://localhost/v1/webhooks/wh-1%3Aping",
+		},
+		{
+			name:       "query and fragment delimiters",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: "a b?c#d"},
+			want:       "http://localhost/v1/resources/a%20b%3Fc%23d",
+		},
+		{
+			name:       "all reserved characters",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: ":/?#[]@!$&'()*+,;="},
+			want:       "http://localhost/v1/resources/%3A%2F%3F%23%5B%5D%40%21%24%26%27%28%29%2A%2B%2C%3B%3D",
+		},
+		{
+			name:       "array elements escaped but comma delimiter kept",
+			path:       "/v1/items/{ids}",
+			pathParams: arrayPathParams{IDs: []string{"a/b", "c,d", "%2F"}},
+			want:       "http://localhost/v1/items/a%2Fb,c%2Cd,%252F",
+		},
+		{
+			name: "object fields escaped but delimiters kept",
+			path: "/v1/objs/{obj}/exploded/{objExploded}",
+			pathParams: objectPathParams{
+				Obj:         objectPathParam{Path: "a/b", Name: "c,d"},
+				ObjExploded: objectPathParam{Path: "a/b", Name: "c,d"},
+			},
+			want: "http://localhost/v1/objs/path,a%2Fb,name,c%2Cd/exploded/path=a%2Fb,name=c%2Cd",
+		},
+		{
+			name: "map entries escaped but delimiters kept",
+			path: "/v1/maps/{m}/exploded/{mExploded}",
+			pathParams: mapPathParams{
+				M:         map[string]string{"k:1/2": "v/1"},
+				MExploded: map[string]string{"k:1/2": "v/1"},
+			},
+			want: "http://localhost/v1/maps/k%3A1%2F2,v%2F1/exploded/k%3A1%2F2=v%2F1",
+		},
+		{
+			name:       "json serialized value is fully percent-encoded",
+			path:       "/v1/objs/{obj}",
+			pathParams: jsonPathParams{Obj: jsonPathObject{Path: "a/b"}},
+			want:       "http://localhost/v1/objs/%7B%22path%22%3A%22a%2Fb%22%7D",
+		},
+	})
+}
+
+func TestGenerateURL_AllowReservedKeepsReservedCharacters(t *testing.T) {
+	id := "a/b c"
+
+	runGenerateURLCases(t, []generateURLCase{
+		{
+			name:       "reserved characters pass through",
+			path:       "/v1/resources/{id}",
+			pathParams: allowReservedPathParams{ID: "groups/g:1/items/i"},
+			want:       "http://localhost/v1/resources/groups/g:1/items/i",
+		},
+		{
+			name:       "unreserved unsafe characters still encode",
+			path:       "/v1/resources/{id}",
+			pathParams: allowReservedPathParams{ID: "a b%cé"},
+			want:       "http://localhost/v1/resources/a%20b%25c%C3%A9",
+		},
+		{
+			name:       "array elements pass reserved characters through",
+			path:       "/v1/items/{ids}",
+			pathParams: allowReservedArrayPathParams{IDs: []string{"a/b", "c d"}},
+			want:       "http://localhost/v1/items/a/b,c%20d",
+		},
+		{
+			name:       "structural delimiters stay encoded so the path is not truncated",
+			path:       "/v1/resources/{id}/child",
+			pathParams: allowReservedPathParams{ID: "a?b#c"},
+			want:       "http://localhost/v1/resources/a%3Fb%23c/child",
+		},
+		{
+			name:       "array elements keep structural delimiters encoded",
+			path:       "/v1/items/{ids}",
+			pathParams: allowReservedArrayPathParams{IDs: []string{"a#b", "c?d"}},
+			want:       "http://localhost/v1/items/a%23b,c%3Fd",
+		},
+		{
+			name:       "optional nullable value honors allowReserved",
+			path:       "/v1/resources/{id}",
+			pathParams: nullablePathParams{ID: optionalnullable.From(&id)},
+			want:       "http://localhost/v1/resources/a/b%20c",
+		},
+	})
+}
+
+func TestGenerateURL_GlobalsHonorAllowReserved(t *testing.T) {
+	tenant := "org/a:b"
+	globals := globalPathParams{Tenant: &tenant}
+
+	runGenerateURLCases(t, []generateURLCase{
+		{
+			name:       "global supplies missing request field",
+			path:       "/v1/{tenant}/resources/{id}",
+			pathParams: requestWithGlobalPathParams{ID: "x/y"},
+			globals:    globals,
+			want:       "http://localhost/v1/org/a:b/resources/x%2Fy",
+		},
+		{
+			name:       "global populated in second pass",
+			path:       "/v1/{tenant}/resources/{id}",
+			pathParams: scalarPathParams{ID: "x/y"},
+			globals:    globals,
+			want:       "http://localhost/v1/org/a:b/resources/x%2Fy",
+		},
+	})
+}
+
+func TestGenerateURL_RequestTargetPreservesEscapedSegments(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value string
+		path  string
+		want  string
+	}{
+		{"traversal", "../items/x", "/v1/resources/{id}", "/v1/resources/..%2Fitems%2Fx"},
+		{"slash and custom method", "a/b:ping%", "/v1/resources/{id}:run", "/v1/resources/a%2Fb%3Aping%25:run"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := utils.GenerateURL(context.Background(), "http://localhost", tt.path, scalarPathParams{ID: tt.value}, nil)
+			require.NoError(t, err)
+
+			req, err := http.NewRequest(http.MethodGet, got, nil)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, req.URL.RequestURI())
+		})
+	}
+}
+
+func TestGenerateURL_RejectsDotSegments(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		pathParams interface{}
+	}{
+		{"parent segment", scalarPathParams{ID: ".."}},
+		{"current segment", scalarPathParams{ID: "."}},
+		{"reserved path with parent segment", allowReservedPathParams{ID: "a/../b"}},
+		{"reserved path with current segment", allowReservedPathParams{ID: "a/./b"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := utils.GenerateURL(context.Background(), "http://localhost", "/v1/resources/{id}/child", tt.pathParams, nil)
+			require.ErrorContains(t, err, `path parameter "id" contains a dot segment`)
+		})
+	}
+}
+
+func TestGenerateURL_AllowReservedURLSurvivesParsing(t *testing.T) {
+	got, err := utils.GenerateURL(context.Background(), "http://localhost", "/v1/resources/{id}/child", allowReservedPathParams{ID: "a?b#c"}, nil)
+	require.NoError(t, err)
+
+	parsed, err := url.Parse(got)
+	require.NoError(t, err)
+	require.Equal(t, "/v1/resources/a?b#c/child", parsed.Path)
+	require.Empty(t, parsed.RawQuery)
+	require.Empty(t, parsed.Fragment)
+}

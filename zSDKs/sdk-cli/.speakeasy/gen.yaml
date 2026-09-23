@@ -59,6 +59,8 @@ cli:
       repositoryOwner: ""
   enableCustomCodeRegions: false
   envVarPrefix: CLI
+  fixFlags:
+    encodePathParams: true
   generateRelease: true
   helpStyle: full
   idiomaticMethodCollisionNames: true

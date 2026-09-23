@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.47.16",
+  core: "3.48.0",
   decimal: "1.0.0",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
@@ -49,6 +49,7 @@ const supportedFeatures = {
   openEnums: "0.1.0",
   formatBinary: "0.2.0",
   contentMediaTypeApplicationJSON: "0.1.1",
+  allowReserved: "0.2.0",
 };
 
 //@ts-ignore

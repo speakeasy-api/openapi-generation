@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -224,6 +224,8 @@ trackedFiles:
     last_write_checksum: sha1:c2c3166e5370f9b1ad91d910eae906efee184518
   docs/models/getpolymorphismresponse.mdx:
     last_write_checksum: sha1:3299e5cabe903bb7b6ec28493fabc3c467e0bca2
+  docs/models/getpositionaldefaultrequest.mdx:
+    last_write_checksum: sha1:a516d4d01da447686a2569c8c17648ed732a87a5
   docs/models/getrequestbodyflattenedawayglobals.mdx:
     last_write_checksum: sha1:790712eed337ca7001539a47ca539f5e4f65a7c6
   docs/models/getrequestbodyflattenedawayrequest.mdx:
@@ -439,7 +441,7 @@ trackedFiles:
   docs/sdks/obsolete/README.mdx:
     last_write_checksum: sha1:0ede0d15208fc193b3c62c09322e9445d345b95a
   docs/sdks/sdk/README.mdx:
-    last_write_checksum: sha1:06ef94a11cd465cda4a5e6b6dcce407be16e7874
+    last_write_checksum: sha1:883e68523f947deeda435d5ed25e8fb5e290cb3e
   docs/sdks/singlebar/README.mdx:
     last_write_checksum: sha1:3a1ad80d72b88f378a903d1dc329f29a7f99f647
   docs/sdks/singlefoo/README.mdx:
@@ -768,6 +770,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   src/__tests__/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  src/__tests__/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   src/__tests__/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   src/__tests__/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -841,9 +845,9 @@ trackedFiles:
   src/__tests__/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
     last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
   src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+    last_write_checksum: sha1:58d775c91b1a5ef5149b625286e4f35b96bb6f7f
   src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+    last_write_checksum: sha1:bc65a2684a85ad0d79c7643836c17a222adf1082
   src/__tests__/mockserver/internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   src/__tests__/mockserver/internal/sdk/types/date.go:
@@ -859,7 +863,7 @@ trackedFiles:
   src/__tests__/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   src/__tests__/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
   src/__tests__/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   src/__tests__/mockserver/internal/sdk/utils/sort.go:
@@ -968,6 +972,8 @@ trackedFiles:
     last_write_checksum: sha1:6d20171f8a7f136baa56175e959188384c7ba6fa
   src/funcs/getPolymorphism.ts:
     last_write_checksum: sha1:7f1656bfb7086880a14eb2a68d79187f1c074730
+  src/funcs/getPositionalDefault.ts:
+    last_write_checksum: sha1:41972f4b00db8f4c46ae723c94bd5a2d069b04ae
   src/funcs/getRequestBodyFlattenedAway.ts:
     last_write_checksum: sha1:98fe5ed59e38549b847557ff7f7532eb54d78879
   src/funcs/getUnionErrors.ts:
@@ -1160,6 +1166,8 @@ trackedFiles:
     last_write_checksum: sha1:e011999850fd24d3439414150f002f0958b4ab1c
   src/models/getpolymorphismop.ts:
     last_write_checksum: sha1:ee55618557b5c1587ea11f3499e55a8c6f826bad
+  src/models/getpositionaldefaultop.ts:
+    last_write_checksum: sha1:cab244f3a9c929c5352219ee9ab566230ae04349
   src/models/getrequestbodyflattenedawayop.ts:
     last_write_checksum: sha1:bb6b1cd0ccc7916c2c10bc5fe4e3e25ec106ee30
   src/models/getunionerrorsop.ts:
@@ -1169,7 +1177,7 @@ trackedFiles:
   src/models/httpclienterrors.ts:
     last_write_checksum: sha1:994ced121c54fecd0af038ccfb7855fbfd3868ec
   src/models/index.ts:
-    last_write_checksum: sha1:8f2a33b878023f18f88433189ece428044f1a98a
+    last_write_checksum: sha1:078b8a01d3ac0103e44d1975c043314ab5e0ece1
   src/models/listtest1op.ts:
     last_write_checksum: sha1:057b21fef4bca0e285352558405880593b57992d
   src/models/loginop.ts:
@@ -1314,6 +1322,10 @@ trackedFiles:
     last_write_checksum: sha1:5dcd3d0c22b344a3f90fd11cba25e0bcc7e4172e
   src/react-query/getPolymorphism.ts:
     last_write_checksum: sha1:f35383fddf2e0dafe5c67a6d6a107194b2bd0cf8
+  src/react-query/getPositionalDefault.core.ts:
+    last_write_checksum: sha1:0cfc571894603fb96197b7e594cb5ec4f725a573
+  src/react-query/getPositionalDefault.ts:
+    last_write_checksum: sha1:604849d0fded8156db2b96961957bc63a8283c14
   src/react-query/getRequestBodyFlattenedAway.core.ts:
     last_write_checksum: sha1:149ce4a931a6b8e706a58271f67319974d15889f
   src/react-query/getRequestBodyFlattenedAway.ts:
@@ -1335,7 +1347,7 @@ trackedFiles:
   src/react-query/groupSubGroupSubGroupOp.ts:
     last_write_checksum: sha1:6ceb6596c3fda01cef392b4cb63e7b8a1946398f
   src/react-query/index.ts:
-    last_write_checksum: sha1:daed9713362c8fcf5969693c3df3e9391b8cd2ff
+    last_write_checksum: sha1:67e1bd0f49cd48b85b95b1f1b4b1dcc6a893e2c7
   src/react-query/login.core.ts:
     last_write_checksum: sha1:fece6bac56d7669ad2cb127b04935922bf94cc7f
   src/react-query/login.ts:
@@ -1435,7 +1447,7 @@ trackedFiles:
   src/sdk/obsolete.ts:
     last_write_checksum: sha1:b1666be8dcbe986d6f3b2bb86ff8732e9a41d2b6
   src/sdk/sdk.ts:
-    last_write_checksum: sha1:ce8d62da3ad58338ade93072a3d6c750c595c121
+    last_write_checksum: sha1:2a44b27d5c92fb690c19b3668e0897b7467eab26
   src/sdk/singlebar.ts:
     last_write_checksum: sha1:264c106e9015117ed2dc3eaec00cf3abf906fdd8
   src/sdk/singlefoo.ts:
@@ -1814,6 +1826,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-03-11T11:17:07-04:00"

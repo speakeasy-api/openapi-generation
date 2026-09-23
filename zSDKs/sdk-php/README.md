@@ -613,6 +613,7 @@ and 'single quotes' and "double quotes".
 and  \'escaped single quotes\' and \"escaped double quotes\".
 
 * [getNestedIntegerString](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
+* [getPositionalDefault](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 * [getErrorOnlyExample](docs/sdks/sdk/README.md#geterroronlyexample) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)

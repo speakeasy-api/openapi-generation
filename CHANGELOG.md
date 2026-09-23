@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.939.1] - 2026-09-23
+### :bug: Bug Fixes
+- [`3994981`](https://github.com/speakeasy-api/openapi-generation/commit/39949810728cfc1b365613dc20e9d67728a5e028) - **go**: percent-encode SDK path parameters ([#25](https://github.com/speakeasy-api/openapi-generation/pull/25)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.939.0] - 2026-09-23
 ### :bee: New Features
 - [`dd9e85f`](https://github.com/speakeasy-api/openapi-generation/commit/dd9e85fa3d4bbbe93487c6a2b8831e89f9f6e9ed) - **cli**: accept a single path parameter as a positional argument ([#28](https://github.com/speakeasy-api/openapi-generation/pull/28)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20186,3 +20191,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.938.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.4...v2.938.5
 [v2.938.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.5...v2.938.6
 [v2.939.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.6...v2.939.0
+[v2.939.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.939.0...v2.939.1

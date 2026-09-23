@@ -23,6 +23,7 @@ import org.openapis.openapi.models.operations.DeleteUserRequest;
 import org.openapis.openapi.models.operations.GetAssetRequest;
 import org.openapis.openapi.models.operations.GetFullyFlattenedRequestRequest;
 import org.openapis.openapi.models.operations.GetFullyFlattenedRequestRequestBody;
+import org.openapis.openapi.models.operations.GetPositionalDefaultRequest;
 import org.openapis.openapi.models.operations.GetRequestBodyFlattenedAwayRequest;
 import org.openapis.openapi.models.operations.GetUserRequest;
 import org.openapis.openapi.models.operations.OperationWithLeadingAndTrailingUnderscoresRequest;
@@ -61,6 +62,8 @@ import org.openapis.openapi.models.operations.async.GetNestedIntegerStringReques
 import org.openapis.openapi.models.operations.async.GetNestedIntegerStringResponse;
 import org.openapis.openapi.models.operations.async.GetPolymorphismRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetPolymorphismResponse;
+import org.openapis.openapi.models.operations.async.GetPositionalDefaultRequestBuilder;
+import org.openapis.openapi.models.operations.async.GetPositionalDefaultResponse;
 import org.openapis.openapi.models.operations.async.GetRequestBodyFlattenedAwayRequestBuilder;
 import org.openapis.openapi.models.operations.async.GetRequestBodyFlattenedAwayResponse;
 import org.openapis.openapi.models.operations.async.GetUserRequestBuilder;
@@ -103,6 +106,7 @@ import org.openapis.openapi.operations.GetFullyFlattenedRequest;
 import org.openapis.openapi.operations.GetNamedPrimitiveUnion;
 import org.openapis.openapi.operations.GetNestedIntegerString;
 import org.openapis.openapi.operations.GetPolymorphism;
+import org.openapis.openapi.operations.GetPositionalDefault;
 import org.openapis.openapi.operations.GetRequestBodyFlattenedAway;
 import org.openapis.openapi.operations.GetUser;
 import org.openapis.openapi.operations.Login;
@@ -853,6 +857,43 @@ public class AsyncSDK {
                 new TypeReference<>() {},
                 Utils.mapper(),
                 null);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @return The async call builder
+     */
+    public GetPositionalDefaultRequestBuilder getPositionalDefault() {
+        return new GetPositionalDefaultRequestBuilder(sdkConfiguration);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @return {@code CompletableFuture<GetPositionalDefaultResponse>} - The async response
+     */
+    public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefaultDirect() {
+        return getPositionalDefault(null);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @param id
+     * @return {@code CompletableFuture<GetPositionalDefaultResponse>} - The async response
+     */
+    public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefault(@Nullable String id) {
+        GetPositionalDefaultRequest request = new GetPositionalDefaultRequest(id);
+        AsyncRequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> operation =
+                new GetPositionalDefault.Async(sdkConfiguration, _headers);
+        return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
     /**

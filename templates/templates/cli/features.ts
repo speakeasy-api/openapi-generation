@@ -1,7 +1,8 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.3.5",
+  core: "0.4.0",
+  allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
   globalSecurity: "0.1.0",
@@ -168,8 +169,6 @@ function isTestSkipped(test: string): boolean {
     "webhooks-consume-custom-security",
     "webhooks-consume-bad-data",
     "webhooks-consume-bad-signature",
-    "parameters-path-encoding",
-    "parameters-query-encoding",
     "jsonl-stream-data-async-envelope-http-responses",
     "jsonl-stream-data-async-chunks-flat-response",
     "jsonl-stream-data-async-flat-response",
