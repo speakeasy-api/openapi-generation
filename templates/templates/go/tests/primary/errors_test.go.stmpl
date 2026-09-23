@@ -3,7 +3,9 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	sdk "{{getRootModulePath}}"
@@ -127,6 +129,30 @@ func TestStatusGetErrorXSpeakeasyErrors(t *testing.T) {
 		assert.Equal(t, "501", *e501.Code)
 		assert.Equal(t, 501, e501.HTTPMeta.Response.StatusCode)
 	}
+}
+
+func TestErrorBodyValidationEnabled(t *testing.T) {
+	recordTest("errors-error-body-validation-enabled")
+
+	s := sdk.New()
+
+	res, err := s.Errors.GetMalformedErrorResponse(context.Background(), operations.ShapeWrongTypeError, 429)
+	assert.Nil(t, res)
+	require.Error(t, err)
+
+	var validationErr *apierrors.ResponseValidationError
+	require.ErrorAs(t, err, &validationErr)
+	assert.Equal(t, validationErr.Cause.Error(), err.Error())
+	assert.True(t, strings.HasPrefix(err.Error(), "error unmarshaling json response body: "), err.Error())
+	assert.Equal(t, http.StatusTooManyRequests, validationErr.StatusCode)
+	assert.JSONEq(t, `{"code":{"invalid":true},"message":"degraded error"}`, validationErr.Body)
+	require.NotNil(t, validationErr.RawResponse)
+	assert.Equal(t, http.StatusTooManyRequests, validationErr.RawResponse.StatusCode)
+	require.Error(t, validationErr.Cause)
+	assert.ErrorIs(t, err, validationErr.Cause)
+
+	var typed *apierrors.Error
+	assert.False(t, errors.As(err, &typed))
 }
 
 func TestStatusGetSuccessXSpeakeasyErrorsEmptyStatusCodeList(t *testing.T) {

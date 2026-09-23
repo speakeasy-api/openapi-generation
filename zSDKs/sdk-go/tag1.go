@@ -661,7 +661,7 @@ func (s *Tag1) ListTest1(ctx context.Context, page int64, queryParam2 QueryParam
 
 			var out BadRequestResponseError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -686,7 +686,7 @@ func (s *Tag1) ListTest1(ctx context.Context, page int64, queryParam2 QueryParam
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -929,7 +929,7 @@ func (s *Tag1) PostFileWithEncoding(ctx context.Context, request PostFileWithEnc
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{

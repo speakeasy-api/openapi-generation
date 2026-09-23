@@ -50,6 +50,13 @@ function templateJSONHandler(
       
   `;
 
+  const decodeErr = subResponse.Error
+    ? `${getAccessNamespace(
+        "",
+        "errors",
+      )}NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)`
+    : "err";
+
   let handler = `${getRawBody}var out ${sanitizeType(
     content.Content.Type,
     false,
@@ -59,7 +66,7 @@ if err := utils.UnmarshalJsonFromResponseBody(${bodyAccess}, &out, ${templateAnn
     content.Content,
     true,
   )}); err != nil {
-    ${templateErrorReturn(op, "err")}
+    ${templateErrorReturn(op, decodeErr)}
 }
 `;
 

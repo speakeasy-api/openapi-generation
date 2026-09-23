@@ -1,0 +1,11 @@
+id: 1790193430-ead7b350
+features:
+    - errors
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: error responses that fail to decode against their declared schema now return ResponseValidationError carrying the status code, body and raw response
+author: AshGodfrey
+date: "2026-09-23"
