@@ -217,7 +217,7 @@ func TestArtifact_OutputFormatValueSuggestsOut(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()
 
-	for _, val := range []string{"asset.png", "asset.yaml", "asset", "renders/"} {
+	for _, val := range []string{"asset.png", "asset.yaml", "renders/"} {
 		h := NewCLITestHarness(t)
 		err := runArtifact(t, h, server.URL, dir, "--agent-mode", "-o", val)
 		require.Error(t, err)
@@ -230,13 +230,37 @@ func TestArtifact_OutputFormatValueSuggestsOut(t *testing.T) {
 		assert.Equal(t, "-o sets the output format. To write to a file, use --out "+val, envelope.Hints[0])
 	}
 
+	for _, flag := range []string{"-o", "--output-format"} {
+		h := NewCLITestHarness(t)
+		err := runArtifact(t, h, server.URL, dir, "--agent-mode", flag, "jsno")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `did you mean "json"`)
+		var envelope struct {
+			Hints []string `json:"hints"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+		for _, hint := range envelope.Hints {
+			assert.NotContains(t, hint, "--out", flag)
+		}
+	}
+
 	h := NewCLITestHarness(t)
-	err := runArtifact(t, h, server.URL, dir, "--agent-mode", "--output", "asset.png")
+	err := runArtifact(t, h, server.URL, dir, "--agent-mode", "-o", "json", "--out")
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unknown flag: --output")
+	assert.Contains(t, err.Error(), "flag needs an argument: --out")
 	var envelope struct {
 		Hints []string `json:"hints"`
 	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+	for _, hint := range envelope.Hints {
+		assert.NotContains(t, hint, "is short for")
+	}
+
+	h = NewCLITestHarness(t)
+	err = runArtifact(t, h, server.URL, dir, "--agent-mode", "--output", "asset.png")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown flag: --output")
+	envelope.Hints = nil
 	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
 	require.NotEmpty(t, envelope.Hints)
 	assert.Equal(t, "Did you mean --out?", envelope.Hints[0])

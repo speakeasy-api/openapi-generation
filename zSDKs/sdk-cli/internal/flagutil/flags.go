@@ -248,6 +248,9 @@ func ValidateOutputFormatFlag(cmd *cobra.Command, allowed []string) error {
 		}
 	}
 	err := outputFormatValidationError{value: val, allowed: allowed}
+	if !looksLikePath(val) {
+		return err
+	}
 	quoted := shellQuote(val)
 	switch {
 	case lookupFlag(cmd, "out") != nil:
@@ -258,7 +261,7 @@ func ValidateOutputFormatFlag(cmd *cobra.Command, allowed []string) error {
 		if !FlagChanged(cmd, "output-file") {
 			err.hint = fmt.Sprintf("-o sets the output format. To write the response body to a file, use --output-file %s", quoted)
 		}
-	case looksLikePath(val):
+	default:
 		err.hint = fmt.Sprintf("-o sets the output format, not a file. To save the response: -o json > %s", quoted)
 	}
 	return err
@@ -285,7 +288,7 @@ func ShorthandConfusionHint(cmd *cobra.Command, args []string, errMsg string) st
 		if global == nil {
 			continue
 		}
-		candidates := shorthandCandidates(cmd, letter)
+		candidates := shorthandCandidates(cmd, letter, args)
 		if len(candidates) == 0 {
 			continue
 		}
@@ -327,10 +330,10 @@ func ShorthandConfusionHint(cmd *cobra.Command, args []string, errMsg string) st
 	return ""
 }
 
-func shorthandCandidates(cmd *cobra.Command, letter string) []string {
+func shorthandCandidates(cmd *cobra.Command, letter string, args []string) []string {
 	var names []string
 	cmd.LocalNonPersistentFlags().VisitAll(func(f *pflag.Flag) {
-		if f.Hidden || f.Changed || f.Name == "help" || f.Shorthand != "" {
+		if f.Hidden || f.Changed || f.Name == "help" || f.Shorthand != "" || longFlagTyped(args, f.Name) {
 			return
 		}
 		if strings.EqualFold(f.Name[:1], letter) {
@@ -338,6 +341,18 @@ func shorthandCandidates(cmd *cobra.Command, letter string) []string {
 		}
 	})
 	return names
+}
+
+func longFlagTyped(args []string, name string) bool {
+	for _, arg := range args {
+		if arg == "--" {
+			return false
+		}
+		if arg == "--"+name || strings.HasPrefix(arg, "--"+name+"=") {
+			return true
+		}
+	}
+	return false
 }
 
 func shellQuote(val string) string {

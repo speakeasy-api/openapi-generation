@@ -561,17 +561,10 @@ func errorCLIHints(err error) []string {
 	return nil
 }
 
-func errorCLILeadingHints(err error) []string {
+func leadingHints(cmd *cobra.Command, err error, reason string) []string {
 	var typed interface{ CLILeadingHints() []string }
 	if errors.As(err, &typed) {
 		return typed.CLILeadingHints()
-	}
-	return nil
-}
-
-func leadingHints(cmd *cobra.Command, err error, reason string) []string {
-	if hints := errorCLILeadingHints(err); len(hints) > 0 {
-		return hints
 	}
 	if cmd == nil || reason != ReasonCLIValidation {
 		return nil
