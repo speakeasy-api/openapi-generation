@@ -24,7 +24,7 @@ func initListTest1Cmd(parent *cobra.Command) error {
 		Use:     "list-test1",
 		Short:   "Get Test1",
 		Long:    "This is a \x7b\x7btest\x7d\x7d endpoint.\nIt has a description.",
-		Example: "  cli tag1 list-test1 --page 100 --query-param2 1 --header-param1 some example header param",
+		Example: "  cli tag1 list-test1 --page 100 --query-param2 1 --header-param1 'some example header param'",
 		Args:    cobra.NoArgs,
 		RunE:    runListTest1Cmd,
 		Aliases: []string{"lt"},

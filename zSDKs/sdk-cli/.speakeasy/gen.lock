@@ -11,9 +11,9 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.1.1
+    cliCommands: 0.1.2
     constsAndDefaults: 0.0.0
-    core: 0.3.1
+    core: 0.3.3
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_say.go:
     last_write_checksum: sha1:d7137e29ad2375390c175b9e79f0a557341b2e95
   internal/cli/intents.go:
-    last_write_checksum: sha1:11c1961232079be8b4d3b5e5498c7e61c2810c03
+    last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
     last_write_checksum: sha1:16b6e0b6b7a669f7d12e25d02079fcb6c1bdb878
   internal/cli/login.go:
@@ -188,7 +188,7 @@ trackedFiles:
   internal/cli/tag1/intent_tag1-recent.go:
     last_write_checksum: sha1:c63e43dfb33fdab87ceb5ed41d7b32531ab36354
   internal/cli/tag1/listtest1.go:
-    last_write_checksum: sha1:091ea9498ed003639d7b761f0cbe3daefb7f2a24
+    last_write_checksum: sha1:b754ce3d930cb1fe78e7a30d5139db56a172180a
   internal/cli/tag1/postfilewithencoding.go:
     last_write_checksum: sha1:103c8a943d3f3b759fcdd752bf5fa4e2dcd0d1c3
   internal/cli/tag1/root.go:
@@ -242,7 +242,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:7eb71a2277fe2429c440731f98551499bc08aec2
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:1ffa33a4fcc965c8657b8f64c0a5372da463149f
+    last_write_checksum: sha1:c272e132a06157257d18bc5e8e66e23188b5f87b
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
@@ -548,9 +548,9 @@ trackedFiles:
   internal/sdk/obsolete.go:
     last_write_checksum: sha1:738a1c2da700e4228766af10990dac3baf426d46
   internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:d6aff1a420c31e025ea21d46cf056e305ae76fe8
+    last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:9b3752c65a93a51001e8e9275a6d1494c44103c8
+    last_write_checksum: sha1:d3991667754ed67db803aeab4a6239f6f9a1be37
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
@@ -574,13 +574,13 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/headers.go:
     last_write_checksum: sha1:1b0bd68e1ea0bce8c5a42b5de9fd020fede7aecc
   internal/sdk/sdkinternal/utils/json.go:
-    last_write_checksum: sha1:4743775735bec35dc59c5b1170055fd214eeb104
+    last_write_checksum: sha1:cbddebcd3cd06c607a5c462eab1d490f62bcdc1a
   internal/sdk/sdkinternal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/sdkinternal/utils/pathparams.go:
-    last_write_checksum: sha1:93fb46616b6d7751e2ae2642e9b8fc6994202da1
+    last_write_checksum: sha1:b0d54a74c4404a8ce2124527c358ab7c062cde22
   internal/sdk/sdkinternal/utils/queryparams.go:
     last_write_checksum: sha1:abd61ab1be48a6080b875d4a77603aa2c369195f
   internal/sdk/sdkinternal/utils/requestbody.go:
@@ -1024,9 +1024,9 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
     last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+    last_write_checksum: sha1:58d775c91b1a5ef5149b625286e4f35b96bb6f7f
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+    last_write_checksum: sha1:bc65a2684a85ad0d79c7643836c17a222adf1082
   tests/mockserver/internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   tests/mockserver/internal/sdk/types/date.go:
@@ -1042,7 +1042,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   tests/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
   tests/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   tests/mockserver/internal/sdk/utils/sort.go:
@@ -1086,7 +1086,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:318b3a28489fe849a72321a9bab87713b12112f2
+    last_write_checksum: sha1:7968373b2942b3a209b6f001753ef565e79dad79
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

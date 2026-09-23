@@ -14,7 +14,7 @@ cli tag1 list-test1 [flags]
 ### Examples
 
 ```
-  cli tag1 list-test1 --page 100 --query-param2 1 --header-param1 some example header param
+  cli tag1 list-test1 --page 100 --query-param2 1 --header-param1 'some example header param'
 ```
 
 ### Options

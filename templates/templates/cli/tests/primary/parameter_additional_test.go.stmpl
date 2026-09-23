@@ -162,3 +162,25 @@ func TestParametersPathParameterJson(t *testing.T) {
 	// The JSON object should be embedded in the URL path
 	assert.Contains(t, url, "/pathParams/json/")
 }
+
+func TestRepeatableQueryParamExampleRendersOneOccurrencePerElement(t *testing.T) {
+	example := renderedExample(t, "parameters", "cli-repeatable-flag-examples-get")
+	assert.Contains(t, example, "--tags urgent --tags 'needs review'")
+	assert.Contains(t, example, `--ids '[1,2]'`)
+	assert.NotContains(t, example, `--tags '[`)
+}
+
+func TestRepeatableQueryParamExampleSendsArrayElements(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	args := renderedExampleArgs(t, "parameters", "cli-repeatable-flag-examples-get")
+	require.NoError(t, h.RunWithServer(s.URL, args), "rendered example must run: %v", args)
+	tags, ok := jsonGet(h.GetStdout(), "args.tags").([]interface{})
+	require.True(t, ok, "tags must be repeated in the query: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"urgent", "needs review"}, tags)
+	ids, ok := jsonGet(h.GetStdout(), "args.ids").([]interface{})
+	require.True(t, ok, "ids must be repeated in the query: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"1", "2"}, ids)
+}

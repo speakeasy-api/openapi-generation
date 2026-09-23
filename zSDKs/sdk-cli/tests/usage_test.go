@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"openapi/internal/cli"
+	"openapi/internal/clierrors"
 	"regexp"
 	"strings"
 	"testing"
@@ -280,6 +281,23 @@ func TestUsageSchema_PlannedCommand(t *testing.T) {
 
 	assert.Contains(t, stdout, "cmd \"archive\"")
 	assert.Empty(t, stderr)
+}
+
+func TestPlannedCommand_ArgvReportsUnavailable(t *testing.T) {
+	for _, extra := range [][]string{
+		{"hello"},
+		{"--count", "3"},
+	} {
+		t.Run(strings.Join(extra, " "), func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunBare(append([]string{"archive"}, extra...))
+			require.Error(t, err)
+
+			assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
+			assert.Contains(t, h.GetStderr(), `"error_reason": "CLI_UNAVAILABLE"`)
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+		})
+	}
 }
 
 func TestUsageSchema_CustomCommand(t *testing.T) {

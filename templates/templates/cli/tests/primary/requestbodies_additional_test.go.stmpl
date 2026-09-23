@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
 )
 
 // --- JSON Map of Any ---
@@ -349,4 +351,56 @@ func TestRequestBodyFlagDefaultsAppliedWithoutBody(t *testing.T) {
 		"schema default should apply when building from flags alone")
 	assert.Equal(t, float64(42), jsonGetFloat64(output, "json.count"),
 		"schema default should apply when building from flags alone")
+}
+
+// --- Repeatable flag examples ---
+
+func renderedExample(t *testing.T, path ...string) string {
+	t.Helper()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	cmd, remaining, err := root.Find(path)
+	require.NoError(t, err)
+	require.Empty(t, remaining)
+	return cmd.Example
+}
+
+func renderedExampleArgs(t *testing.T, path ...string) []string {
+	t.Helper()
+	example := strings.TrimSpace(renderedExample(t, path...))
+	invocation, ok := parseReadmeInvocation(example)
+	require.True(t, ok, "example must parse as a single CLI invocation: %s", example)
+	return invocation.args
+}
+
+func TestRepeatableFlagExampleRendersOneOccurrencePerElement(t *testing.T) {
+	example := renderedExample(t, "request-bodies", "cli-repeatable-flag-examples-post")
+	assert.Contains(t, example, `--labels 'release candidate' --labels 'owner'\''s pick'`)
+	assert.Contains(t, example, "--events item.created")
+	assert.Contains(t, example, `--weights '[1.5,2]'`)
+	assert.Contains(t, example, "--channels email")
+	assert.NotContains(t, example, `--labels '[`)
+	assert.NotContains(t, example, `--events '[`)
+	assert.NotContains(t, example, `--channels '[`)
+}
+
+func TestRepeatableFlagExampleSendsArrayElements(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	args := renderedExampleArgs(t, "request-bodies", "cli-repeatable-flag-examples-post")
+	require.NoError(t, h.RunWithServer(s.URL, args), "rendered example must run: %v", args)
+	labels, ok := jsonGet(h.GetStdout(), "json.labels").([]interface{})
+	require.True(t, ok, "labels must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"release candidate", "owner's pick"}, labels)
+	events, ok := jsonGet(h.GetStdout(), "json.events").([]interface{})
+	require.True(t, ok, "events must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"item.created"}, events)
+	weights, ok := jsonGet(h.GetStdout(), "json.weights").([]interface{})
+	require.True(t, ok, "weights must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{1.5, 2.0}, weights)
+	channels, ok := jsonGet(h.GetStdout(), "json.channels").([]interface{})
+	require.True(t, ok, "channels must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"email"}, channels)
 }

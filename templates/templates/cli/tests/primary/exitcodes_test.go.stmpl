@@ -166,6 +166,8 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 		{name: "missing required flag", args: []string{"custom-required-flags"}, want: 2},
 		{name: "malformed body", args: []string{"request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "{"}, want: 2},
 		{name: "planned command", args: []string{"archive"}, want: 1},
+		{name: "planned command with argument", args: []string{"archive", "hello world"}, want: 1},
+		{name: "planned command with unknown flag", args: []string{"archive", "--count", "3"}, want: 1},
 		{name: "builtin stray argument", args: []string{"version", "extra"}, want: 2},
 		{name: "HTTP 400", args: []string{"errors", "status-get-error", "--status-code", "400"}, serverURL: s.URL, want: 2},
 		{name: "HTTP 401", args: []string{"errors", "status-get-error", "--status-code", "401"}, serverURL: s.URL, want: 3},

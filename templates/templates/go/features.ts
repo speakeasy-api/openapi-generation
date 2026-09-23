@@ -45,7 +45,7 @@ const supportedFeatures = {
   methodArguments: "0.2.1",
   sdkHooks: "0.3.1",
   additionalDependencies: "0.1.0",
-  nullables: "0.2.1",
+  nullables: "0.2.2",
   globalSecurityFlattening: "0.1.0",
   globalSecurityCallbacks: "0.1.0",
   intellisenseMarkdownSupport: "0.1.0",
