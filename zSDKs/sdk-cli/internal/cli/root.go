@@ -157,6 +157,9 @@ func NewRootCommand() (*cobra.Command, error) {
 	if err := initGetAssetCmd(rootCmd); err != nil {
 		return nil, fmt.Errorf("init get-asset: %w", err)
 	}
+	if err := initGetPositionalDefaultCmd(rootCmd); err != nil {
+		return nil, fmt.Errorf("init get-positional-default: %w", err)
+	}
 	if err := initGetErrorOnlyExampleCmd(rootCmd); err != nil {
 		return nil, fmt.Errorf("init get-error-only-example: %w", err)
 	}

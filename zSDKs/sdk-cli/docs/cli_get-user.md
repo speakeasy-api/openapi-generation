@@ -7,7 +7,7 @@ Get User
 Get User
 
 ```
-cli get-user [flags]
+cli get-user [id] [flags]
 ```
 
 ### Examples
@@ -20,7 +20,7 @@ cli get-user [flags]
 
 ```
   -h, --help        help for get-user
-  -i, --id string   [required]
+  -i, --id string   string value (or pass it as the [id] argument)
 ```
 
 ### Options inherited from parent commands

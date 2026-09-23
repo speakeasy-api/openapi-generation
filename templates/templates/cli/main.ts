@@ -148,6 +148,19 @@ function getJobs(): Job[] {
           {},
         ),
       );
+      if (
+        getPositionalTestCase() ||
+        getPositionalDefaultTestCase() ||
+        getPositionalOptOutTestCase()
+      ) {
+        jobs.push(
+          createTemplateFileJob(
+            "positional_test.go.stmpl",
+            `${testDirectory}/positional_test.go`,
+            {},
+          ),
+        );
+      }
       if (templateAsyncTestEnabled()) {
         jobs.push(
           createTemplateFileJob(

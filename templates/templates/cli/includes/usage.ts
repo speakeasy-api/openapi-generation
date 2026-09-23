@@ -865,11 +865,27 @@ function buildOperationUsageCommand(op: Operation): UsageCommandDef | null {
   if (isOperationOverridden(op)) return null;
   const path = getCLICommandPath(op);
   if (path.length === 0) return null;
+  const flags = getOperationUsageFlags(op);
+  const positional = getOperationPositional(op);
+  if (positional) {
+    const spec = new RegExp(`(^| )--${positional.FlagName}( |$)`);
+    for (const flag of flags) {
+      if (spec.test(flag.spec)) flag.help = positional.FlagUsage;
+    }
+  }
   return {
     name: path[path.length - 1],
     help: usageOperationHelp(op),
     aliases: getOperationCommandAliases(op),
-    flags: getOperationUsageFlags(op),
+    args: positional
+      ? [
+          {
+            name: positional.FlagName,
+            help: `${positional.Summary} (or use --${positional.FlagName})`,
+          },
+        ]
+      : undefined,
+    flags,
     commands: [],
   };
 }

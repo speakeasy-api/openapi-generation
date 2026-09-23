@@ -633,6 +633,10 @@ function templateUsageMethodParameters(
         const value = templateValue(field, fieldExample, false, ctx);
 
         if (value == "") {
+          const paramAnno = field.Annotations.Get("param") as ParamAnnotation;
+          if (paramAnno?.HasGlobal && !paramAnno.Hidden) {
+            methodParams.push("nil");
+          }
           continue;
         }
 

@@ -1,45 +1,26 @@
-## cli parentheses-in-path-allowed
+## cli get-positional-default
 
-A string with {{ double braces }} and { single braces }
-and \{\{ escaped curlies \}\} and `backticks`.
-and \`escaped backticks\` and double slashes\\
-and 'single quotes' and "double quotes".
-and  \'escaped single quotes\' and \"escaped double quotes\".
+Get an item with a default path identifier
 
 ### Synopsis
 
-A string with {{ double braces }} and { single braces }
-and \{\{ escaped curlies \}\} and `backticks`.
-and \`escaped backticks\` and double slashes\\
-and 'single quotes' and "double quotes".
-and  \'escaped single quotes\' and \"escaped double quotes\".
+Check that a default-backed path parameter can be supplied as an argument or omitted.
 
 ```
-cli parentheses-in-path-allowed [id] [flags]
+cli get-positional-default [id] [flags]
 ```
 
 ### Examples
 
 ```
-  cli parentheses-in-path-allowed --id <id>
+  cli get-positional-default --id default-id
 ```
 
 ### Options
 
 ```
-      --body string                                  Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
-      --field-with-braces-in-default string          string value (default "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n")
-      --field-with-braces-in-description backticks   A string with {{ double braces }} and { single braces }
-                                                     and \{\{ escaped curlies \}\} and backticks.
-                                                     and \`escaped backticks\` and double slashes\\
-                                                     and 'single quotes' and "double quotes".
-                                                     and  \'escaped single quotes\' and \"escaped double quotes\".
-                                                     
-      --field-with-braces-in-example string          string value
-      --field-with-braces-in-title string            string value
-  -h, --help                                         help for parentheses-in-path-allowed
-  -i, --id string                                    string value (or pass it as the [id] argument)
-      --schema                                       Print the exact JSON Schema of the request body and exit
+  -h, --help        help for get-positional-default
+  -i, --id string   string value (or pass it as the [id] argument) (default "default-id")
 ```
 
 ### Options inherited from parent commands
@@ -92,9 +73,8 @@ cli parentheses-in-path-allowed [id] [flags]
 
 ### Machine interface
 
-* `cli parentheses-in-path-allowed --usage` — this command's flags, defaults and env vars as machine-readable KDL
-* `cli parentheses-in-path-allowed --schema` — the exact JSON Schema of the request body (all `$ref`s bundled)
-* `cli parentheses-in-path-allowed --dry-run` — preview the request without OS-keychain access or a network call (human preview on stderr)
+* `cli get-positional-default --usage` — this command's flags, defaults and env vars as machine-readable KDL
+* `cli get-positional-default --dry-run` — preview the request without OS-keychain access or a network call (human preview on stderr)
 * `--dry-run --output-format json` (or a caller-explicit `--jq`) writes one preview object per request as NDJSON on stdout; jq is not applied to previews
 * `--output-format json` or `--jq <expr>` for machine-readable live output; in agent mode errors are a JSON envelope on stderr
 

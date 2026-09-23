@@ -85,6 +85,31 @@ function buildOperationMetadataEntries(
 
 const flagMetaEntryFieldPathRegex = /FieldPath: "([^"]+)"/;
 
+// requiredPathParamFlagNames returns the flag names of required path
+// parameters, which take precedence when auto-shorthand letters collide.
+function requiredPathParamFlagNames(
+  op: Operation,
+  entries: string[],
+): Set<string> {
+  const names = new Set<string>();
+  if (!op.Request || op.Request.IsRequestBody) return names;
+  const fieldPaths = new Set<string>();
+  for (const field of op.Request.Field.Type.Fields) {
+    if (field.Optional || !field.Annotations?.Has("param")) continue;
+    const paramAnno = field.Annotations.Get("param") as ParamAnnotation;
+    if (paramAnno.ParamType === "pathParam") {
+      fieldPaths.add(sanitizeFieldName(field.Name));
+    }
+  }
+  for (const entry of entries) {
+    if (!entry.includes("Required: true")) continue;
+    const fieldPath = entry.match(flagMetaEntryFieldPathRegex)?.[1];
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name && fieldPath && fieldPaths.has(fieldPath)) names.add(name);
+  }
+  return names;
+}
+
 // operationAutoShorthandOwners maps each auto-assigned single-letter
 // shorthand to its owning generated flag, mirroring templateFlagMetadataVar's
 // post-pass exactly (same entry traversal, same reservations). With
@@ -106,9 +131,14 @@ function operationAutoShorthandOwners(
     fieldPaths.set(name, entry.match(flagMetaEntryFieldPathRegex)?.[1] || "");
   }
   const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
+  const preferred = requiredPathParamFlagNames(op, built.entries);
   const bodyFieldPath = templateBodyFieldPath(op);
   const owners = new Map<string, string>();
-  for (const [name, letter] of computeFlagShorthands(names, extraReserved)) {
+  for (const [name, letter] of computeFlagShorthands(
+    names,
+    extraReserved,
+    preferred,
+  )) {
     if (nonBodyOnly) {
       const fieldPath = fieldPaths.get(name) || "";
       const isBody =
@@ -152,7 +182,11 @@ function templateFlagMetadataVar(op: Operation): string {
 
   // "-a" is reserved on paginated commands (used by --all)
   const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const shorthands = computeFlagShorthands(flagNames, extraReserved);
+  const shorthands = computeFlagShorthands(
+    flagNames,
+    extraReserved,
+    requiredPathParamFlagNames(op, entries),
+  );
 
   // Inject Shorthand field into entries that got a shorthand
   const enrichedEntries = entries.map((entry) => {
@@ -711,6 +745,154 @@ function wholeBodyFlagName(op: Operation): string {
   }
   return "";
 }
+
+interface OperationPositionalCtx {
+  FlagName: string;
+  Kind: string;
+  Required: boolean;
+  Summary: string;
+  FlagUsage: string;
+}
+
+const positionalFlagKinds = new Set([
+  "FlagKindString",
+  "FlagKindEnum",
+  "FlagKindIntEnum",
+  "FlagKindInt64",
+  "FlagKindFloat64",
+  "FlagKindDate",
+  "FlagKindDateTime",
+]);
+
+function getOperationPositional(
+  op: Operation,
+  ignoreOptOut = false,
+): OperationPositionalCtx | null {
+  if (!op.Request || op.Request.IsRequestBody) return null;
+  if (
+    !ignoreOptOut &&
+    op.Extensions?.All?.["x-speakeasy-cli-positional"] === false
+  )
+    return null;
+  // A promoted operation runs on its group command, where a positional would shadow subcommands.
+  if (intentOperationIsPromoted(op)) return null;
+
+  const globalFlags = getGlobalFlagNames();
+  const params = (op.Request.Params?.PathParams || []).filter(
+    (param) =>
+      !param.Field.Const &&
+      !globalFlags.has(sanitizeFlagNameWithReserved(param.Field.Name)),
+  );
+  if (params.length !== 1) return null;
+
+  const field = params[0].Field;
+  const flagName = sanitizeFlagNameWithReserved(field.Name);
+  const re = new RegExp(
+    `^\\{FlagName: "${flagName}", FieldPath: "${sanitizeFieldName(
+      field.Name,
+    )}", Kind: flagutil\\.(\\w+)[,}]`,
+  );
+  const kind = (buildOperationMetadataEntries(op)?.entries || [])
+    .map((entry) => entry.match(re)?.[1])
+    .find(Boolean);
+  if (!kind || !positionalFlagKinds.has(kind)) return null;
+
+  const summary =
+    getFlagDescription(field).replace(/\s*\[required\]$/, "") ||
+    getTypeHint(field);
+  return {
+    FlagName: flagName,
+    Kind: kind,
+    Required: !field.Optional && !field.Default && !field.Nullable,
+    Summary: summary,
+    FlagUsage: `${summary} (or pass it as the [${flagName}] argument)`,
+  };
+}
+registerTemplateFunc("getOperationPositional", getOperationPositional);
+
+interface PositionalTestCase {
+  PathArgs: string;
+  FlagName: string;
+}
+
+function getPositionalTestCase(): PositionalTestCase | null {
+  const globalFlags = getGlobalFlagNames();
+  for (const { op, path } of readmeAllOperations()) {
+    const positional = getOperationPositional(op);
+    if (positional?.Kind !== "FlagKindString" || !positional.Required) continue;
+    if (
+      !op.Response?.Responses?.some(
+        (response) =>
+          !response.Error &&
+          response.Code.some((code) => code === "200" || code === "2XX"),
+      )
+    )
+      continue;
+    if (getBodyFieldPath(op) !== "" || isMultipartMixedOp(op)) continue;
+    const params = [
+      ...(op.Request.Params?.PathParams || []),
+      ...(op.Request.Params?.QueryParams || []),
+      ...(op.Request.Params?.HeaderParams || []),
+    ];
+    const needsOtherInput = params.some((param) => {
+      const name = sanitizeFlagNameWithReserved(param.Field.Name);
+      return (
+        !param.Field.Const &&
+        !param.Field.Optional &&
+        !param.Field.Default &&
+        !param.Field.Nullable &&
+        name !== positional.FlagName &&
+        !globalFlags.has(name)
+      );
+    });
+    if (needsOtherInput) continue;
+    return {
+      PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
+      FlagName: positional.FlagName,
+    };
+  }
+  return null;
+}
+registerTemplateFunc("getPositionalTestCase", getPositionalTestCase);
+
+function getPositionalDefaultTestCase(): PositionalTestCase | null {
+  for (const { op, path } of readmeAllOperations()) {
+    if (op.OriginalID !== "getPositionalDefault") continue;
+    const positional = getOperationPositional(op);
+    if (
+      !positional ||
+      positional.Required ||
+      positional.Kind !== "FlagKindString"
+    )
+      continue;
+    return {
+      PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
+      FlagName: positional.FlagName,
+    };
+  }
+  return null;
+}
+registerTemplateFunc(
+  "getPositionalDefaultTestCase",
+  getPositionalDefaultTestCase,
+);
+
+function getPositionalOptOutTestCase(): PositionalTestCase | null {
+  for (const { op, path } of readmeAllOperations()) {
+    if (op.Extensions?.All?.["x-speakeasy-cli-positional"] !== false) continue;
+    const positional = getOperationPositional(op, true);
+    if (!positional) continue;
+    return {
+      PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
+      FlagName: positional.FlagName,
+    };
+  }
+  return null;
+}
+registerTemplateFunc(
+  "getPositionalOptOutTestCase",
+  getPositionalOptOutTestCase,
+);
 
 /**
  * Check if a non-IsRequestBody operation has a multipart body field.

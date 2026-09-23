@@ -30,7 +30,7 @@ features:
     globalSecurity: 2.82.15
     globalSecurityCallbacks: 0.1.0
     globalServerURLs: 2.83.1
-    globals: 2.82.2
+    globals: 2.82.3
     groups: 2.81.3
     hiddenGlobals: 0.1.0
     includes: 2.81.1
@@ -59,7 +59,7 @@ trackedFiles:
   .gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f
   USAGE.md:
-    last_write_checksum: sha1:6bd5064d0811b64b9fa12cd53eb63d55de362c00
+    last_write_checksum: sha1:8cb55fc57ec77413f94a32818c1102dd4c8faab1
   aloof.go:
     last_write_checksum: sha1:f45b1df690e6b3d6728bc9a7ac556b95b72a2b98
   approvalconfig.go:
@@ -509,11 +509,11 @@ trackedFiles:
   docs/sdks/subgroup/README.md:
     last_write_checksum: sha1:1a8b39feca77e7b42c72a08a1a93a05e5d72ea29
   docs/sdks/tag1/README.md:
-    last_write_checksum: sha1:0c805a0eee5f695833d9c46feb901c9959c6d5bf
+    last_write_checksum: sha1:3696676840193ae970039ca05ce112a85341433a
   docs/sdks/tag2/README.md:
-    last_write_checksum: sha1:d9d28432f9e06cf9119678cd16f98a2d316c436e
+    last_write_checksum: sha1:11a4c917038e9f9b9209cd09649d8a6f82b4ecc3
   docs/sdks/tag3/README.md:
-    last_write_checksum: sha1:b9fe49e9e55dd3c00deb79034a38e2021cfc6eac
+    last_write_checksum: sha1:11be62c0f201eb9d863606e7525987d187e840b0
   docs/sdks/tail/README.md:
     last_write_checksum: sha1:a0dfa07fb407408dccc19f49c000014afa87a12c
   docs/sdks/types/README.md:

@@ -7,7 +7,7 @@ Delete User
 Delete User
 
 ```
-cli delete-user [flags]
+cli delete-user [id] [flags]
 ```
 
 ### Examples
@@ -20,7 +20,7 @@ cli delete-user [flags]
 
 ```
   -h, --help        help for delete-user
-  -i, --id string   [required]
+  -i, --id string   string value (or pass it as the [id] argument)
 ```
 
 ### Options inherited from parent commands
