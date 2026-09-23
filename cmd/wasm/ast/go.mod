@@ -1,6 +1,6 @@
 module github.com/speakeasy-api/openapi-generation/v2/cmd/wasm/ast
 
-go 1.26.2
+go 1.26.8
 
 require (
 	github.com/speakeasy-api/openapi v1.24.1
