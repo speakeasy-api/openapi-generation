@@ -40,6 +40,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [getNestedIntegerString](#getnestedintegerstring) - Test nested struct with integer:string tag
 * [renderAsset](#renderasset) - Render Asset
 * [getAsset](#getasset) - Get Asset
+* [getPositionalDefault](#getpositionaldefault) - Get an item with a default path identifier
 * [getErrorOnlyExample](#geterroronlyexample) - Operation with example only on error response
 
 ## operationWithLeadingAndTrailingUnderscores
@@ -1365,6 +1366,52 @@ public class Application {
 ### Response
 
 **[GetAssetResponse](../../models/operations/GetAssetResponse.md)**
+
+### Errors
+
+| Error Type                 | Status Code                | Content Type               |
+| -------------------------- | -------------------------- | -------------------------- |
+| models/errors/SDKException | 4XX, 5XX                   | \*/\*                      |
+
+## getPositionalDefault
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="java" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```java
+package hello.world;
+
+import java.lang.Exception;
+import org.openapis.openapi.SDK;
+import org.openapis.openapi.models.operations.GetPositionalDefaultResponse;
+
+public class Application {
+
+    public static void main(String[] args) throws Exception {
+
+        SDK sdk = SDK.builder()
+            .build();
+
+        GetPositionalDefaultResponse res = sdk.getPositionalDefault()
+                .id("default-id")
+                .call();
+
+        // handle response
+    }
+}
+```
+
+### Parameters
+
+| Parameter          | Type               | Required           | Description        |
+| ------------------ | ------------------ | ------------------ | ------------------ |
+| `id`               | *String*           | :heavy_check_mark: | N/A                |
+
+### Response
+
+**[GetPositionalDefaultResponse](../../models/operations/GetPositionalDefaultResponse.md)**
 
 ### Errors
 

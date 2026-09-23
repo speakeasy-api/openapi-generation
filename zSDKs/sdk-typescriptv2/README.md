@@ -543,6 +543,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [getNestedIntegerString](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 * [renderAsset](docs/sdks/sdk/README.md#renderasset) - Render Asset
 * [getAsset](docs/sdks/sdk/README.md#getasset) - Get Asset
+* [getPositionalDefault](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 * [getErrorOnlyExample](docs/sdks/sdk/README.md#geterroronlyexample) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)
@@ -636,6 +637,7 @@ To read more about standalone functions, check [FUNCTIONS.md](./FUNCTIONS.md).
 - [`getNamedPrimitiveUnion`](docs/sdks/sdk/README.md#getnamedprimitiveunion) - Test named primitive union options using title and x-speakeasy-name-override
 - [`getNestedIntegerString`](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 - [`getPolymorphism`](docs/sdks/sdk/README.md#getpolymorphism)
+- [`getPositionalDefault`](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 - [`getRequestBodyFlattenedAway`](docs/sdks/sdk/README.md#getrequestbodyflattenedaway)
 - [`getUnionErrors`](docs/sdks/sdk/README.md#getunionerrors)
 - [`getUser`](docs/sdks/sdk/README.md#getuser) - Get User
@@ -720,6 +722,7 @@ To learn about this feature and how to get started, check
 - [`useGetNamedPrimitiveUnion`](docs/sdks/sdk/README.md#getnamedprimitiveunion) - Test named primitive union options using title and x-speakeasy-name-override
 - [`useGetNestedIntegerString`](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 - [`useGetPolymorphism`](docs/sdks/sdk/README.md#getpolymorphism)
+- [`useGetPositionalDefault`](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 - [`useGetRequestBodyFlattenedAway`](docs/sdks/sdk/README.md#getrequestbodyflattenedaway)
 - [`useGetUser`](docs/sdks/sdk/README.md#getuser) - Get User
 - [`useGroupRootGroupOp`](docs/sdks/group/README.md#rootgroupop) - An operation at the group's root level
@@ -1045,15 +1048,15 @@ run();
 
 
 **Inherit from [`SDKBaseError`](./src/models/sdkbaseerror.ts)**:
-* [`ErrorsError`](./src/models/errorserror.ts): A not-so-long multi-line error model description. Applicable to 7 of 50 methods.*
-* [`BadRequestResponseError`](./src/models/badrequestresponseerror.ts): Bad Request. Status code `400`. Applicable to 2 of 50 methods.*
-* [`TaggedError1`](./src/models/taggederror1.ts): Applicable to 2 of 50 methods.*
-* [`RequestTimeoutError`](./src/models/httpclienterrors.ts): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 50 methods.*
-* [`TaggedError2`](./src/models/taggederror2.ts): Something went wrong. Status code `4XX`. Applicable to 1 of 50 methods.*
-* [`ErrorType1`](./src/models/errortype1.ts): An error of type one. Status code `500`. Applicable to 1 of 50 methods.*
-* [`ErrorType2`](./src/models/errortype2.ts): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
-* [`FailedResponseError`](./src/models/failedresponseerror.ts): An error response with an empty object schema. Status code `500`. Applicable to 1 of 50 methods.*
-* [`Test2ResponseError`](./src/models/test2responseerror.ts): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
+* [`ErrorsError`](./src/models/errorserror.ts): A not-so-long multi-line error model description. Applicable to 7 of 51 methods.*
+* [`BadRequestResponseError`](./src/models/badrequestresponseerror.ts): Bad Request. Status code `400`. Applicable to 2 of 51 methods.*
+* [`TaggedError1`](./src/models/taggederror1.ts): Applicable to 2 of 51 methods.*
+* [`RequestTimeoutError`](./src/models/httpclienterrors.ts): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 51 methods.*
+* [`TaggedError2`](./src/models/taggederror2.ts): Something went wrong. Status code `4XX`. Applicable to 1 of 51 methods.*
+* [`ErrorType1`](./src/models/errortype1.ts): An error of type one. Status code `500`. Applicable to 1 of 51 methods.*
+* [`ErrorType2`](./src/models/errortype2.ts): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
+* [`FailedResponseError`](./src/models/failedresponseerror.ts): An error response with an empty object schema. Status code `500`. Applicable to 1 of 51 methods.*
+* [`Test2ResponseError`](./src/models/test2responseerror.ts): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
 * [`ResponseValidationError`](./src/models/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>

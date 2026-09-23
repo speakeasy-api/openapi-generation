@@ -942,6 +942,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [get_nested_integer_string](docs/sdks/sdk/README.md#get_nested_integer_string) - Test nested struct with integer:string tag
 * [render_asset](docs/sdks/sdk/README.md#render_asset) - Render Asset
 * [get_asset](docs/sdks/sdk/README.md#get_asset) - Get Asset
+* [get_positional_default](docs/sdks/sdk/README.md#get_positional_default) - Get an item with a default path identifier
 * [get_error_only_example](docs/sdks/sdk/README.md#get_error_only_example) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)
@@ -1447,15 +1448,15 @@ asyncio.run(main())
 
 
 **Inherit from [`SDKBaseError`](./src/speakeasy/new_openapi/models/sdkbaseerror.py)**:
-* [`ErrorsError`](./src/speakeasy/new_openapi/models/errorserror.py): A not-so-long multi-line error model description. Applicable to 7 of 50 methods.*
-* [`BadRequestResponseError`](./src/speakeasy/new_openapi/models/badrequestresponseerror.py): Bad Request. Status code `400`. Applicable to 2 of 50 methods.*
-* [`TaggedError1`](./src/speakeasy/new_openapi/models/taggederror1.py): Applicable to 2 of 50 methods.*
-* [`RequestTimeoutError`](./src/speakeasy/new_openapi/models/requesttimeouterror.py): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 50 methods.*
-* [`TaggedError2`](./src/speakeasy/new_openapi/models/taggederror2.py): Something went wrong. Status code `4XX`. Applicable to 1 of 50 methods.*
-* [`ErrorType1`](./src/speakeasy/new_openapi/models/errortype1.py): An error of type one. Status code `500`. Applicable to 1 of 50 methods.*
-* [`ErrorType2`](./src/speakeasy/new_openapi/models/errortype2.py): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
-* [`FailedResponseError`](./src/speakeasy/new_openapi/models/failedresponseerror.py): An error response with an empty object schema. Status code `500`. Applicable to 1 of 50 methods.*
-* [`Test2ResponseError`](./src/speakeasy/new_openapi/models/test2responseerror.py): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
+* [`ErrorsError`](./src/speakeasy/new_openapi/models/errorserror.py): A not-so-long multi-line error model description. Applicable to 7 of 51 methods.*
+* [`BadRequestResponseError`](./src/speakeasy/new_openapi/models/badrequestresponseerror.py): Bad Request. Status code `400`. Applicable to 2 of 51 methods.*
+* [`TaggedError1`](./src/speakeasy/new_openapi/models/taggederror1.py): Applicable to 2 of 51 methods.*
+* [`RequestTimeoutError`](./src/speakeasy/new_openapi/models/requesttimeouterror.py): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 51 methods.*
+* [`TaggedError2`](./src/speakeasy/new_openapi/models/taggederror2.py): Something went wrong. Status code `4XX`. Applicable to 1 of 51 methods.*
+* [`ErrorType1`](./src/speakeasy/new_openapi/models/errortype1.py): An error of type one. Status code `500`. Applicable to 1 of 51 methods.*
+* [`ErrorType2`](./src/speakeasy/new_openapi/models/errortype2.py): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
+* [`FailedResponseError`](./src/speakeasy/new_openapi/models/failedresponseerror.py): An error response with an empty object schema. Status code `500`. Applicable to 1 of 51 methods.*
+* [`Test2ResponseError`](./src/speakeasy/new_openapi/models/test2responseerror.py): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
 * [`ResponseValidationError`](./src/speakeasy/new_openapi/models/responsevalidationerror.py): Type mismatch between the response data and the expected Pydantic model. Provides access to the Pydantic validation error via the `cause` attribute.
 
 </details>

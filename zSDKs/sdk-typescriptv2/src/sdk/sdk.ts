@@ -17,6 +17,7 @@ import { getFullyFlattenedRequest } from "../funcs/getFullyFlattenedRequest.js";
 import { getNamedPrimitiveUnion } from "../funcs/getNamedPrimitiveUnion.js";
 import { getNestedIntegerString } from "../funcs/getNestedIntegerString.js";
 import { getPolymorphism } from "../funcs/getPolymorphism.js";
+import { getPositionalDefault } from "../funcs/getPositionalDefault.js";
 import { getRequestBodyFlattenedAway } from "../funcs/getRequestBodyFlattenedAway.js";
 import { getUnionErrors } from "../funcs/getUnionErrors.js";
 import { getUser } from "../funcs/getUser.js";
@@ -450,6 +451,23 @@ export class SDK extends ClientSDK {
       this,
       id,
       stream,
+      options,
+    ));
+  }
+
+  /**
+   * Get an item with a default path identifier
+   *
+   * @remarks
+   * Check that a default-backed path parameter can be supplied as an argument or omitted.
+   */
+  getPositionalDefault(
+    id: string | undefined,
+    options?: Omit<RequestOptions, "extraBody">,
+  ): APIPromise<void> {
+    return unwrapAsAPIPromise(getPositionalDefault(
+      this,
+      id,
       options,
     ));
   }

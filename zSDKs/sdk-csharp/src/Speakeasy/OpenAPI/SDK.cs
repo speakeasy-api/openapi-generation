@@ -488,6 +488,24 @@ namespace Speakeasy.OpenAPI
         );
 
         /// <summary>
+        /// Get an item with a default path identifier.
+        /// </summary>
+        /// <remarks>
+        /// Check that a default-backed path parameter can be supplied as an argument or omitted.
+        /// </remarks>
+        /// <param name="id">Description not available.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="GetPositionalDefaultResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="id"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public Task<GetPositionalDefaultResponse> GetPositionalDefaultAsync(
+            string id = "default-id",
+            CancellationToken? cancellationToken = null
+        );
+
+        /// <summary>
         /// Operation with example only on error response.
         /// </summary>
         /// <remarks>
@@ -3927,6 +3945,103 @@ namespace Speakeasy.OpenAPI
                 }
 
                 throw new SDKException("Unknown content type received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
+            }
+            else if (responseStatusCode >= 400 && responseStatusCode < 500)
+            {
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
+            }
+            else if (responseStatusCode >= 500 && responseStatusCode < 600)
+            {
+                throw new SDKException("API error occurred", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
+            }
+
+            throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
+        }
+
+        /// <summary>
+        /// Get an item with a default path identifier.
+        /// </summary>
+        /// <remarks>
+        /// Check that a default-backed path parameter can be supplied as an argument or omitted.
+        /// </remarks>
+        /// <param name="id">Description not available.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="GetPositionalDefaultResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="id"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public async Task<GetPositionalDefaultResponse> GetPositionalDefaultAsync(
+            string id = "default-id",
+            CancellationToken? cancellationToken = null
+        )
+        {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+
+            var request = new GetPositionalDefaultRequest() {
+                Id = id,
+            };
+
+            string baseUrl = this.SDKConfiguration.GetTemplatedServerUrl();
+            var urlString = URLBuilder.Build(baseUrl, "/positionalDefault/{id}", request, null);
+
+            var httpRequest = new HttpRequestMessage(HttpMethod.Get, urlString);
+            httpRequest.Headers.Add("user-agent", SDKConfiguration.UserAgent);
+
+            if (!httpRequest.Headers.Contains("Accept"))
+            {
+                httpRequest.Headers.Add("Accept", "*/*");
+            }
+
+            if (SDKConfiguration.SecuritySource != null)
+            {
+                httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource).Apply(httpRequest);
+            }
+
+            var hookCtx = new HookContext(SDKConfiguration, baseUrl, "getPositionalDefault", new List<string> { "read" }, SDKConfiguration.SecuritySource, cancellationToken);
+
+            httpRequest = await this.SDKConfiguration.Hooks.BeforeRequestAsync(new BeforeRequestContext(hookCtx), httpRequest);
+
+            HttpResponseMessage httpResponse;
+            try
+            {
+                httpResponse = await SDKConfiguration.Client.SendAsync(httpRequest, cancellationToken);
+                int _statusCode = (int)httpResponse.StatusCode;
+
+                if (_statusCode >= 400 && _statusCode < 500 || _statusCode >= 500 && _statusCode < 600)
+                {
+                    var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), httpResponse, null);
+                    if (_httpResponse != null)
+                    {
+                        httpResponse = _httpResponse;
+                    }
+                }
+            }
+            catch (Exception _hookError)
+            {
+                var _httpResponse = await this.SDKConfiguration.Hooks.AfterErrorAsync(new AfterErrorContext(hookCtx), null, _hookError);
+                if (_httpResponse != null)
+                {
+                    httpResponse = _httpResponse;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            httpResponse = await this.SDKConfiguration.Hooks.AfterSuccessAsync(new AfterSuccessContext(hookCtx), httpResponse);
+
+            var contentType = httpResponse.Content?.Headers.ContentType?.MediaType;
+            int responseStatusCode = (int)httpResponse.StatusCode;
+            if (responseStatusCode == 200)
+            {
+                return new GetPositionalDefaultResponse() {
+                    HttpMeta = new HTTPMetadata() {
+                        Response = httpResponse,
+                        Request = httpRequest
+                    }
+                };
             }
             else if (responseStatusCode >= 400 && responseStatusCode < 500)
             {

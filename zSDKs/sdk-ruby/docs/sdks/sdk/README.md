@@ -40,6 +40,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [get_nested_integer_string](#get_nested_integer_string) - Test nested struct with integer:string tag
 * [render_asset](#render_asset) - Render Asset
 * [get_asset](#get_asset) - Get Asset
+* [get_positional_default](#get_positional_default) - Get an item with a default path identifier
 * [get_error_only_example](#get_error_only_example) - Operation with example only on error response
 
 ## operation_with_leading_and_trailing_underscores_
@@ -993,6 +994,42 @@ end
 ### Response
 
 **[T.nilable(Operations::V2::Schemas::GetAssetResponse)](../../models/operations/getassetresponse.md)**
+
+### Errors
+
+| Error Type       | Status Code      | Content Type     |
+| ---------------- | ---------------- | ---------------- |
+| Errors::APIError | 4XX, 5XX         | \*/\*            |
+
+## get_positional_default
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="ruby" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```ruby
+require 'openapi'
+
+Models = ::OpenApiSDK::Models
+s = ::OpenApiSDK::SDK.new
+res = s.get_positional_default(id: 'default-id')
+
+if res.status_code == 200
+  # handle response
+end
+
+```
+
+### Parameters
+
+| Parameter          | Type               | Required           | Description        |
+| ------------------ | ------------------ | ------------------ | ------------------ |
+| `id`               | *::String*         | :heavy_check_mark: | N/A                |
+
+### Response
+
+**[T.nilable(Operations::V2::Schemas::GetPositionalDefaultResponse)](../../models/operations/getpositionaldefaultresponse.md)**
 
 ### Errors
 

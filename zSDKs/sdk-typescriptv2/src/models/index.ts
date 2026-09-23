@@ -41,6 +41,7 @@ export * from "./geterroronlyexampleop.js";
 export * from "./getfullyflattenedrequestop.js";
 export * from "./getpetownersop.js";
 export * from "./getpolymorphismop.js";
+export * from "./getpositionaldefaultop.js";
 export * from "./getrequestbodyflattenedawayop.js";
 export * from "./getunionerrorsop.js";
 export * from "./getuserop.js";
