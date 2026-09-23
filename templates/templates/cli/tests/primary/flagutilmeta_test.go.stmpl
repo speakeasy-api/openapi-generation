@@ -248,6 +248,7 @@ func TestPreRequestRequiredUnionPreflightMirrorsSerializerOmissions(t *testing.T
 type requiredParamsRequest struct {
 	ID     string `pathParam:"style=simple,explode=false,name=id"`
 	Filter string `queryParam:"style=form,explode=true,name=filter"`
+	Token  string `header:"style=simple,explode=false,name=token"`
 }
 
 type requiredPathArrayRequest struct {
@@ -303,6 +304,13 @@ func TestBuildRequestKeepsRequiredParamsWhenNoFlagsGiven(t *testing.T) {
 				{FlagName: "filter", FieldPath: "Filter", Kind: flagutil.FlagKindString, Required: true},
 			},
 		},
+		{
+			name:     "header parameter",
+			flagName: "token",
+			meta: []flagutil.FlagMeta{
+				{FlagName: "token", FieldPath: "Token", Kind: flagutil.FlagKindString, Required: true},
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cmd := newRequiredParamsCommand(tc.meta)
@@ -310,6 +318,30 @@ func TestBuildRequestKeepsRequiredParamsWhenNoFlagsGiven(t *testing.T) {
 			var missing *flagutil.MissingRequiredFlagError
 			require.ErrorAs(t, err, &missing)
 			assert.Equal(t, tc.flagName, missing.FlagName)
+		})
+	}
+}
+
+func TestBuildRequestKeepsRequiredPathParamWhenBodyProvided(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "id", FieldPath: "ID", Kind: flagutil.FlagKindString, Required: true},
+		{FlagName: "name", FieldPath: "Body.Name", Kind: flagutil.FlagKindString, Required: true},
+	}
+	for _, tc := range []struct {
+		name string
+		flag string
+		value string
+	}{
+		{name: "whole body", flag: "body", value: `{"name":"widget"}`},
+		{name: "body field", flag: "name", value: "widget"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newRequiredParamsCommand(meta)
+			require.NoError(t, cmd.Flags().Set(tc.flag, tc.value))
+			_, err := flagutil.BuildRequest[requiredParamsBodyRequest](cmd, meta, "Body", "body")
+			var missing *flagutil.MissingRequiredFlagError
+			require.ErrorAs(t, err, &missing)
+			assert.Equal(t, "id", missing.FlagName)
 		})
 	}
 }
