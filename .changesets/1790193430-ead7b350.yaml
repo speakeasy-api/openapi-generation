@@ -4,7 +4,6 @@ features:
 targets:
     - go
     - cli
-    - terraform
 type: fix
 bump: patch
 description: error responses that fail to decode against their declared schema now return ResponseValidationError carrying the status code, body and raw response
