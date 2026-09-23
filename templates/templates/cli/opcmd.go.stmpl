@@ -149,14 +149,14 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     {{- end}}
     {{- end}}
     {{- if $positional}}
-    if err := flagutil.DeclarePositionalFlag(cmd, "{{$positional.FlagName}}", "{{escapeGoString $positional.FlagUsage}}"); err != nil {
+    if err := flagutil.DeclarePositionalFlag(cmd, "{{$positional.FlagName}}", "{{escapeGoString $positional.FlagUsage}}", {{$positional.Required}}); err != nil {
         return err
     }
     {{- if isInteractiveModeEnabled}}
     {{- addImport "internal/interactive" true}}
     {{- addImport "fmt"}}
     if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
-        {Name: "{{$positional.FlagName}}", Summary: "{{escapeGoString $positional.Summary}}", Required: true, SatisfiedBy: []string{"{{$positional.FlagName}}"}},
+        {Name: "{{$positional.FlagName}}", Summary: "{{escapeGoString $positional.Summary}}", Required: {{$positional.Required}}, SatisfiedBy: []string{"{{$positional.FlagName}}"}},
     }}); err != nil {
         return fmt.Errorf("declare interactive arguments for {{sanitizeCLICommand $op.GetID}}: %w", err)
     }

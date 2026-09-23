@@ -1710,6 +1710,7 @@ paths:
   /assets/{id}:
     get:
       operationId: getAsset
+      x-speakeasy-cli-positional: false
       summary: Get Asset
       description: Get the current result of an asset job.
       parameters:
@@ -1738,6 +1739,21 @@ paths:
                 properties:
                   data:
                     $ref: "#/components/schemas/AssetResult"
+  /positionalDefault/{id}:
+    get:
+      operationId: getPositionalDefault
+      summary: Get an item with a default path identifier
+      description: Check that a default-backed path parameter can be supplied as an argument or omitted.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            default: default-id
+      responses:
+        "200":
+          description: OK
   /errorOnlyExample:
     get:
       operationId: getErrorOnlyExample

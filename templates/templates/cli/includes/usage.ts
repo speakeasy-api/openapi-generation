@@ -878,7 +878,12 @@ function buildOperationUsageCommand(op: Operation): UsageCommandDef | null {
     help: usageOperationHelp(op),
     aliases: getOperationCommandAliases(op),
     args: positional
-      ? [{ name: positional.FlagName, help: positional.Summary }]
+      ? [
+          {
+            name: positional.FlagName,
+            help: `${positional.Summary} (or use --${positional.FlagName})`,
+          },
+        ]
       : undefined,
     flags,
     commands: [],

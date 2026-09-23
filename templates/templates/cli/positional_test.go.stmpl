@@ -1,21 +1,28 @@
 {{- recurse 1 -}}
 {{- $pc := getPositionalTestCase -}}
-{{- if $pc -}}
-{{- addImport "encoding/json" -}}
-{{- addImport "strings" -}}
+{{- $default := getPositionalDefaultTestCase -}}
+{{- $optOut := getPositionalOptOutTestCase -}}
+{{- if or $pc $default $optOut -}}
 {{- addImport "testing" -}}
 {{- addImport "github.com/stretchr/testify/assert" -}}
 {{- addImport "github.com/stretchr/testify/require" -}}
+{{- if or $pc $optOut -}}
 {{- addImport "internal/clierrors" true -}}
+{{- end -}}
+{{- if $pc -}}
+{{- addImport "encoding/json" -}}
+{{- addImport "strings" -}}
 {{- addImport "internal/flagutil" true -}}
 {{- if isInteractiveModeEnabled -}}
 {{- addImport "github.com/spf13/cobra" -}}
 {{- addImport "internal/interactive" true -}}
 {{- end -}}
+{{- end -}}
 package tests
 
 {{genImports}}
 
+{{- if $pc}}
 const positionalTestValue = "positional-value"
 
 func positionalTestArgs(extra ...string) []string {
@@ -83,6 +90,7 @@ func TestPositionalArgument_UsageAdvertisesArgument(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.Run([]string{ {{- $pc.PathArgs}}, "--usage"}))
 	assert.Contains(t, h.GetStdout(), `arg "{{$pc.FlagName}}"`)
+	assert.Contains(t, h.GetStdout(), `or use --{{$pc.FlagName}}`)
 }
 {{- if isInteractiveModeEnabled}}
 
@@ -108,6 +116,32 @@ func TestPositionalArgument_InteractivePromptsForArgument(t *testing.T) {
 	assert.Contains(t, p.fieldIDs, "arg:{{$pc.FlagName}}")
 	assert.NotContains(t, p.fieldIDs, "flag:{{$pc.FlagName}}")
 	assert.Contains(t, positionalDryRunURL(t, h), positionalTestValue)
+}
+{{- end}}
+{{- end}}
+{{- if $default}}
+
+func TestPositionalArgument_DefaultDoesNotRequireInput(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{"--dry-run", {{$default.PathArgs}}}))
+	assert.Contains(t, h.GetStdout(), "default-id")
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{"--dry-run", {{$default.PathArgs}}, "provided-id"}))
+	assert.Contains(t, h.GetStdout(), "provided-id")
+}
+{{- end}}
+{{- if $optOut}}
+
+func TestPositionalArgument_OptOutKeepsFlagOnly(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.Run([]string{ {{$optOut.PathArgs}}, "positional-value"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{ {{$optOut.PathArgs}}, "--usage"}))
+	assert.NotContains(t, h.GetStdout(), `arg "{{$optOut.FlagName}}"`)
 }
 {{- end}}
 {{- end}}

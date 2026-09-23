@@ -36,7 +36,7 @@ func initGetUserCmd(parent *cobra.Command) error {
 	if err := flagutil.ValidateMeta[operations.GetUserRequest](getUserCmdMeta); err != nil {
 		return fmt.Errorf("invalid metadata for get-user: %w", err)
 	}
-	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)"); err != nil {
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)", true); err != nil {
 		return err
 	}
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{

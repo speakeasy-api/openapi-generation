@@ -317,9 +317,12 @@ func OverridePromptRequirement(cmd *cobra.Command, name string, required, prompt
 	return nil
 }
 
-const AnnotationPositionalFlag = "speakeasy_positional_flag"
+const (
+	AnnotationPositionalFlag    = "speakeasy_positional_flag"
+	annotationPositionalRequired = "speakeasy_positional_required"
+)
 
-func DeclarePositionalFlag(cmd *cobra.Command, name, usage string) error {
+func DeclarePositionalFlag(cmd *cobra.Command, name, usage string, required bool) error {
 	f := cmd.Flags().Lookup(name)
 	if f == nil {
 		return fmt.Errorf("cannot declare positional for unknown flag --%s", name)
@@ -332,6 +335,9 @@ func DeclarePositionalFlag(cmd *cobra.Command, name, usage string) error {
 		cmd.Annotations = map[string]string{}
 	}
 	cmd.Annotations[AnnotationPositionalFlag] = name
+	if required {
+		cmd.Annotations[annotationPositionalRequired] = "true"
+	}
 	return nil
 }
 
@@ -368,7 +374,7 @@ func ResolvePositionalFlag(cmd *cobra.Command, args []string) error {
 			return WithCLIValidation(err)
 		}
 	}
-	if !FlagChanged(cmd, name) {
+	if !FlagChanged(cmd, name) && cmd.Annotations[annotationPositionalRequired] == "true" {
 		return &MissingRequiredFlagError{FlagName: name, Detail: fmt.Sprintf("(or pass it as the [%s] argument)", name)}
 	}
 	return nil

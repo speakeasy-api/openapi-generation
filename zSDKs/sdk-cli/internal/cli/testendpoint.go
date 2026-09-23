@@ -45,7 +45,7 @@ func initTestEndpointCmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
-	if err := flagutil.DeclarePositionalFlag(cmd, "test-name", "string value (or pass it as the [test-name] argument)"); err != nil {
+	if err := flagutil.DeclarePositionalFlag(cmd, "test-name", "string value (or pass it as the [test-name] argument)", true); err != nil {
 		return err
 	}
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{

@@ -715,6 +715,7 @@ function wholeBodyFlagName(op: Operation): string {
 interface OperationPositionalCtx {
   FlagName: string;
   Kind: string;
+  Required: boolean;
   Summary: string;
   FlagUsage: string;
 }
@@ -729,8 +730,16 @@ const positionalFlagKinds = new Set([
   "FlagKindDateTime",
 ]);
 
-function getOperationPositional(op: Operation): OperationPositionalCtx | null {
+function getOperationPositional(
+  op: Operation,
+  ignoreOptOut = false,
+): OperationPositionalCtx | null {
   if (!op.Request || op.Request.IsRequestBody) return null;
+  if (
+    !ignoreOptOut &&
+    op.Extensions?.All?.["x-speakeasy-cli-positional"] === false
+  )
+    return null;
   // A promoted operation runs on its group command, where a positional would shadow subcommands.
   if (intentOperationIsPromoted(op)) return null;
 
@@ -760,6 +769,7 @@ function getOperationPositional(op: Operation): OperationPositionalCtx | null {
   return {
     FlagName: flagName,
     Kind: kind,
+    Required: !field.Optional && !field.Default && !field.Nullable,
     Summary: summary,
     FlagUsage: `${summary} (or pass it as the [${flagName}] argument)`,
   };
@@ -775,7 +785,15 @@ function getPositionalTestCase(): PositionalTestCase | null {
   const globalFlags = getGlobalFlagNames();
   for (const { op, path } of readmeAllOperations()) {
     const positional = getOperationPositional(op);
-    if (positional?.Kind !== "FlagKindString") continue;
+    if (positional?.Kind !== "FlagKindString" || !positional.Required) continue;
+    if (
+      !op.Response?.Responses?.some(
+        (response) =>
+          !response.Error &&
+          response.Code.some((code) => code === "200" || code === "2XX"),
+      )
+    )
+      continue;
     if (getBodyFieldPath(op) !== "" || isMultipartMixedOp(op)) continue;
     const params = [
       ...(op.Request.Params?.PathParams || []),
@@ -787,6 +805,8 @@ function getPositionalTestCase(): PositionalTestCase | null {
       return (
         !param.Field.Const &&
         !param.Field.Optional &&
+        !param.Field.Default &&
+        !param.Field.Nullable &&
         name !== positional.FlagName &&
         !globalFlags.has(name)
       );
@@ -800,6 +820,40 @@ function getPositionalTestCase(): PositionalTestCase | null {
   return null;
 }
 registerTemplateFunc("getPositionalTestCase", getPositionalTestCase);
+
+function getPositionalDefaultTestCase(): PositionalTestCase | null {
+  for (const { op, path } of readmeAllOperations()) {
+    if (op.OriginalID !== "getPositionalDefault") continue;
+    const positional = getOperationPositional(op);
+    if (!positional || positional.Required) continue;
+    return {
+      PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
+      FlagName: positional.FlagName,
+    };
+  }
+  return null;
+}
+registerTemplateFunc(
+  "getPositionalDefaultTestCase",
+  getPositionalDefaultTestCase,
+);
+
+function getPositionalOptOutTestCase(): PositionalTestCase | null {
+  for (const { op, path } of readmeAllOperations()) {
+    if (op.Extensions?.All?.["x-speakeasy-cli-positional"] !== false) continue;
+    const positional = getOperationPositional(op, true);
+    if (!positional) continue;
+    return {
+      PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
+      FlagName: positional.FlagName,
+    };
+  }
+  return null;
+}
+registerTemplateFunc(
+  "getPositionalOptOutTestCase",
+  getPositionalOptOutTestCase,
+);
 
 /**
  * Check if a non-IsRequestBody operation has a multipart body field.

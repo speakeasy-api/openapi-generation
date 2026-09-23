@@ -81,6 +81,7 @@ func TestPositionalArgument_UsageAdvertisesArgument(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.Run([]string{"get-user", "--usage"}))
 	assert.Contains(t, h.GetStdout(), `arg "id"`)
+	assert.Contains(t, h.GetStdout(), `or use --id`)
 }
 
 type positionalPrompter struct {
@@ -105,4 +106,25 @@ func TestPositionalArgument_InteractivePromptsForArgument(t *testing.T) {
 	assert.Contains(t, p.fieldIDs, "arg:id")
 	assert.NotContains(t, p.fieldIDs, "flag:id")
 	assert.Contains(t, positionalDryRunURL(t, h), positionalTestValue)
+}
+
+func TestPositionalArgument_DefaultDoesNotRequireInput(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{"--dry-run", "get-positional-default"}))
+	assert.Contains(t, h.GetStdout(), "default-id")
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{"--dry-run", "get-positional-default", "provided-id"}))
+	assert.Contains(t, h.GetStdout(), "provided-id")
+}
+
+func TestPositionalArgument_OptOutKeepsFlagOnly(t *testing.T) {
+	h := NewCLITestHarness(t)
+	err := h.Run([]string{"get-asset", "positional-value"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.Run([]string{"get-asset", "--usage"}))
+	assert.NotContains(t, h.GetStdout(), `arg "id"`)
 }

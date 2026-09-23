@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -72,9 +72,9 @@ trackedFiles:
   internal/cli/createwithunion.go:
     last_write_checksum: sha1:184cede6aa7122a1f3fbdd2cc16e615fd93facda
   internal/cli/deleteuser.go:
-    last_write_checksum: sha1:d7a5a0ad879bff4c92229ead6359615a72377eb5
+    last_write_checksum: sha1:3ab7008b2264d603fc94d1da5cbb1094104f928e
   internal/cli/getasset.go:
-    last_write_checksum: sha1:1188a6569ce39a49e05ede2d2781329a6c9b2233
+    last_write_checksum: sha1:de1608c08a8516f477d77a1d138a590462fa1f0f
   internal/cli/getbinarydefaultresponse.go:
     last_write_checksum: sha1:75df919b8b943ca85ed7299d14cd2c5ee7cb7b56
   internal/cli/getduplicateexportcollision.go:
@@ -93,12 +93,14 @@ trackedFiles:
     last_write_checksum: sha1:32661e8f33cac7918bf63f073ca6769fe39ffa53
   internal/cli/getpolymorphism.go:
     last_write_checksum: sha1:39e4083b731facab779a23bec11776dab1887443
+  internal/cli/getpositionaldefault.go:
+    last_write_checksum: sha1:2057907c804dd70fdbf791871c156b61083fe7b1
   internal/cli/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:fb94b22f12fbfa7cb2d362b876dd52ad637a4720
   internal/cli/getunionerrors.go:
     last_write_checksum: sha1:3e85e85b75cd11b8228b39119fa8a7b209d75d34
   internal/cli/getuser.go:
-    last_write_checksum: sha1:934f0d3372fbb77d2350aedfa6491f2752d73b7a
+    last_write_checksum: sha1:c24c784e04b416c9a9a117f673a8ca5d67e42a47
   internal/cli/group/root.go:
     last_write_checksum: sha1:9565d0ff582e832b11bd1abe09f3b00ea3caa795
   internal/cli/group/rootgroupop.go:
@@ -174,13 +176,13 @@ trackedFiles:
   internal/cli/operationwithleadingandtrailingunderscores.go:
     last_write_checksum: sha1:f343717240957ac39a3d47dd61feb492815c972d
   internal/cli/parenthesesinpathallowed.go:
-    last_write_checksum: sha1:5034ece67ee2d6c320d13fc9bc33bd966d2f83e3
+    last_write_checksum: sha1:36342d4ed119f8d1b80203110d23c4ac9392b77c
   internal/cli/postfile.go:
     last_write_checksum: sha1:f67d5ddcaa3ea921513ee6f97fe5eb8db9580aae
   internal/cli/renderasset.go:
     last_write_checksum: sha1:9180bf33bd8735d8efb77b778a7e93092858738a
   internal/cli/root.go:
-    last_write_checksum: sha1:00254488e51ff2ffd8f4ff37b6b728fdf09ce005
+    last_write_checksum: sha1:50b758b497300284b7c3b1ae627c79955cc1c520
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:3273e90d36a4b96a5ceeab1011fd39476589de13
   internal/cli/tag1/deprecated1.go:
@@ -188,13 +190,13 @@ trackedFiles:
   internal/cli/tag1/intent_tag1-recent.go:
     last_write_checksum: sha1:c63e43dfb33fdab87ceb5ed41d7b32531ab36354
   internal/cli/tag1/listtest1.go:
-    last_write_checksum: sha1:a1355028325354a7fab6308d3470a6d37cf0d5b8
+    last_write_checksum: sha1:e237f8e3608011e5cc8351ad7012fd202cf7776c
   internal/cli/tag1/postfilewithencoding.go:
     last_write_checksum: sha1:103c8a943d3f3b759fcdd752bf5fa4e2dcd0d1c3
   internal/cli/tag1/root.go:
     last_write_checksum: sha1:cfe60d600cb9609d9609056bfce8fb7c97134b41
   internal/cli/testendpoint.go:
-    last_write_checksum: sha1:bee918540def3d54fbe6594f238b4cc7935cffa0
+    last_write_checksum: sha1:5d7e82e5f4fb634b259f92b57edccb6e5def7538
   internal/cli/testenumformats.go:
     last_write_checksum: sha1:e11eb49456f08b1c090c15fc1bb1087ef4649d92
   internal/cli/testgroup/root.go:
@@ -208,7 +210,7 @@ trackedFiles:
   internal/cli/testgroup/tag3/root.go:
     last_write_checksum: sha1:544b5d37f18bcd87ed2b878deca97b3dba8da1e7
   internal/cli/updateuser.go:
-    last_write_checksum: sha1:cafa2daf8f55a5aedef9fbe515d00c57abde76c6
+    last_write_checksum: sha1:3772025313453ee26c1a633dfe9319a5d160b02a
   internal/cli/urlvalidationstresstest.go:
     last_write_checksum: sha1:0c42b30be81531f215e7be41911e4262a3b70e82
   internal/cli/validate.go:
@@ -242,7 +244,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:7eb71a2277fe2429c440731f98551499bc08aec2
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:b0df6895c2bd89e441b099baf3e7c3fe6862ab3a
+    last_write_checksum: sha1:8df280fe1fb9d3ff68cfdebeb868c687299310c9
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
@@ -467,6 +469,8 @@ trackedFiles:
     last_write_checksum: sha1:dc4f65104a512104863a6ebadc5eba3591995d3c
   internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:9852de09530b49e031d1ef13e07c1c805d296376
+  internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:39de29e2bb07e09cd026404312d57dfd255349dd
   internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9fa1839b5bdae5f2933858c783f8ed075c2ab62
   internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -554,7 +558,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:2ee82cfefa0b0e5d067b55960ca5a9fd7b78dcd3
+    last_write_checksum: sha1:b4bcd7e47ccf7853e53b1d6f8a8189416be5103d
   internal/sdk/sdkinternal/config/sdkconfiguration.go:
     last_write_checksum: sha1:1e813226ebfcdfdb00c61fa53bb00d34edce6431
   internal/sdk/sdkinternal/globals/globals.go:
@@ -634,7 +638,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:1648e2b63c7549a81b6d92c7098d031c729ee3a3
+    last_write_checksum: sha1:54adaaee98ca069d56a4605273ef0988aa20523f
   scripts/install.ps1:
     last_write_checksum: sha1:9f6f80dcb8754c80dd8c3d8bee918305b5e0d546
   scripts/install.sh:
@@ -951,6 +955,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   tests/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -1070,7 +1076,7 @@ trackedFiles:
   tests/opstream_test.go:
     last_write_checksum: sha1:a481f51cefd78e5c384b2e2e0a11598e9b01ee90
   tests/positional_test.go:
-    last_write_checksum: sha1:a4799b35b96995b441af54ac6f572ab786b24686
+    last_write_checksum: sha1:287e1de0ad447561c82659e4a44378f9dbcc1f64
   tests/readme_examples_test.go:
     last_write_checksum: sha1:485923b96e8c509578b7638ab51131d349fb2376
   tests/sdk_test.go:
@@ -1425,6 +1431,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-02-05T03:14:20+10:00"

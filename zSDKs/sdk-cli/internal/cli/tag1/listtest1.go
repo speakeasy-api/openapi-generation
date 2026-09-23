@@ -39,7 +39,7 @@ func initListTest1Cmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().BoolP("all", "a", false, "Automatically paginate and fetch all results (streams NDJSON for JSON output)")
 	cmd.Flags().Int("max-pages", 0, "Maximum number of pages to fetch when using --all (0 = no limit)")
-	if err := flagutil.DeclarePositionalFlag(cmd, "page", "integer value (or pass it as the [page] argument)"); err != nil {
+	if err := flagutil.DeclarePositionalFlag(cmd, "page", "integer value (or pass it as the [page] argument)", true); err != nil {
 		return err
 	}
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
