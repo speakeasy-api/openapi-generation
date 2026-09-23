@@ -360,7 +360,13 @@ func PositionalFlagArgs(cmd *cobra.Command, args []string) error {
 	}
 	// Only reachable after "--": "op -- --dry-run" must not send a live request.
 	if strings.HasPrefix(value, "-") {
-		return fmt.Errorf("argument %q looks like a flag; pass a value starting with \"-\" as --%s=%s", value, name, value)
+		f := cmd.Flags().Lookup(name)
+		if f.Value.Type() != "int64" && f.Value.Type() != "float64" {
+			return fmt.Errorf("argument %q looks like a flag; pass a value starting with \"-\" as --%s=%s", value, name, value)
+		}
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return fmt.Errorf("argument %q looks like a flag; pass a value starting with \"-\" as --%s=%s", value, name, value)
+		}
 	}
 	return cmd.Flags().Set(name, value)
 }

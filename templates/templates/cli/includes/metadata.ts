@@ -825,7 +825,12 @@ function getPositionalDefaultTestCase(): PositionalTestCase | null {
   for (const { op, path } of readmeAllOperations()) {
     if (op.OriginalID !== "getPositionalDefault") continue;
     const positional = getOperationPositional(op);
-    if (!positional || positional.Required) continue;
+    if (
+      !positional ||
+      positional.Required ||
+      positional.Kind !== "FlagKindString"
+    )
+      continue;
     return {
       PathArgs: path.map((part) => goStringLiteral(part)).join(", "),
       FlagName: positional.FlagName,

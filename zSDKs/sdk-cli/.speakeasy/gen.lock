@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:7eb71a2277fe2429c440731f98551499bc08aec2
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:6378668a2e90b8872da532bb15e48a54f2992ce9
+    last_write_checksum: sha1:351340eb19eb2203d477a622bfad29c3d8d4ec2f
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
@@ -1076,7 +1076,7 @@ trackedFiles:
   tests/opstream_test.go:
     last_write_checksum: sha1:a481f51cefd78e5c384b2e2e0a11598e9b01ee90
   tests/positional_test.go:
-    last_write_checksum: sha1:287e1de0ad447561c82659e4a44378f9dbcc1f64
+    last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:
     last_write_checksum: sha1:485923b96e8c509578b7638ab51131d349fb2376
   tests/sdk_test.go:

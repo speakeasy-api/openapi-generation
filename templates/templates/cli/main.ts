@@ -148,7 +148,11 @@ function getJobs(): Job[] {
           {},
         ),
       );
-      if (getPositionalTestCase()) {
+      if (
+        getPositionalTestCase() ||
+        getPositionalDefaultTestCase() ||
+        getPositionalOptOutTestCase()
+      ) {
         jobs.push(
           createTemplateFileJob(
             "positional_test.go.stmpl",

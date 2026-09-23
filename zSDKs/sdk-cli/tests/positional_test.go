@@ -42,6 +42,15 @@ func TestPositionalArgument_MatchesFlag(t *testing.T) {
 	assert.Equal(t, positionalDryRunURL(t, flag), url)
 }
 
+func TestPositionalArgument_EncodesValueLikeFlag(t *testing.T) {
+	value := "part one/two"
+	positional := NewCLITestHarness(t)
+	require.NoError(t, positional.Run(positionalTestArgs(value)))
+	flag := NewCLITestHarness(t)
+	require.NoError(t, flag.Run(positionalTestArgs("--id", value)))
+	assert.Equal(t, positionalDryRunURL(t, flag), positionalDryRunURL(t, positional))
+}
+
 func TestPositionalArgument_AcceptsBooleanLookingValue(t *testing.T) {
 	for _, value := range []string{"true", "false"} {
 		t.Run(value, func(t *testing.T) {

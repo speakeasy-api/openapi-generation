@@ -1,27 +1,26 @@
-## cli get-asset
+## cli get-positional-default
 
-Get Asset
+Get an item with a default path identifier
 
 ### Synopsis
 
-Get the current result of an asset job.
+Check that a default-backed path parameter can be supplied as an argument or omitted.
 
 ```
-cli get-asset [flags]
+cli get-positional-default [id] [flags]
 ```
 
 ### Examples
 
 ```
-  cli get-asset --id <id>
+  cli get-positional-default --id default-id
 ```
 
 ### Options
 
 ```
-  -h, --help        help for get-asset
-  -i, --id string   [required]
-  -s, --stream      boolean flag (default true)
+  -h, --help        help for get-positional-default
+  -i, --id string   string value (or pass it as the [id] argument) (default "default-id")
 ```
 
 ### Options inherited from parent commands
@@ -74,8 +73,8 @@ cli get-asset [flags]
 
 ### Machine interface
 
-* `cli get-asset --usage` — this command's flags, defaults and env vars as machine-readable KDL
-* `cli get-asset --dry-run` — preview the request without OS-keychain access or a network call (human preview on stderr)
+* `cli get-positional-default --usage` — this command's flags, defaults and env vars as machine-readable KDL
+* `cli get-positional-default --dry-run` — preview the request without OS-keychain access or a network call (human preview on stderr)
 * `--dry-run --output-format json` (or a caller-explicit `--jq`) writes one preview object per request as NDJSON on stdout; jq is not applied to previews
 * `--output-format json` or `--jq <expr>` for machine-readable live output; in agent mode errors are a JSON envelope on stderr
 
