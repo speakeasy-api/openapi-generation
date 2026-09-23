@@ -463,6 +463,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [`get-nested-integer-string`](docs/cli_get-nested-integer-string.md) - Test nested struct with integer:string tag
 * [`render-asset`](docs/cli_render-asset.md) - Render Asset
 * [`get-asset`](docs/cli_get-asset.md) - Get Asset
+* [`get-positional-default`](docs/cli_get-positional-default.md) - Get an item with a default path identifier
 * [`get-error-only-example`](docs/cli_get-error-only-example.md) - Operation with example only on error response
 * [`tag1`](docs/cli_tag1.md) - The first tag
   * [`recent`](docs/cli_tag1_recent.md) - List recent test1 pages via tag1

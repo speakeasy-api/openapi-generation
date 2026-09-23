@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -30,11 +31,11 @@ var updateUserCmdMeta = []flagutil.FlagMeta{
 // initUpdateUserCmd initializes the update-user command.
 func initUpdateUserCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "update-user",
+		Use:     "update-user [id]",
 		Short:   "Update User",
 		Long:    "Update User",
 		Example: "  cli update-user --id <id> --user.id 8ffac18c-7d88-4879-b057-e5f45b9ce7de --user.email Joanny.Feeney@gmail.com",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runUpdateUserCmd,
 		Aliases: []string{"uu"},
 		Annotations: map[string]string{
@@ -53,6 +54,14 @@ func initUpdateUserCmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)", true); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "id", Summary: "string value", Required: true, SatisfiedBy: []string{"id"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for update-user: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -64,6 +73,9 @@ func runUpdateUserCmd(cmd *cobra.Command, args []string) error {
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
 		return usage.EmitBodySchema(cmd.OutOrStdout(), "updateUser")
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.UpdateUserRequest](cmd, updateUserCmdMeta, "User", "body")
 	if err != nil {

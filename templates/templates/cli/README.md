@@ -15,6 +15,7 @@ Generates a fully functional Go CLI from an OpenAPI specification. The generated
   - [3. Request Building Paths](#3-request-building-paths)
 - [Key Components](#key-components)
   - [Command Generation](#command-generation)
+    - [Positional path parameter](#positional-path-parameter)
   - [Metadata-Driven Request Building](#metadata-driven-request-building)
   - [Flag Metadata Generation](#flag-metadata-generation)
   - [Union Type Handling](#union-type-handling)
@@ -380,6 +381,26 @@ func runCreateUserCmd(cmd *cobra.Command, args []string) error {
     return output.Result(cmd, res)
 }
 ```
+
+#### Positional path parameter
+
+**Files**: `opcmd.go.stmpl`, `includes/metadata.ts` (`getOperationPositional`, `getPositionalTestCase`), `includes/usage.ts` (`buildOperationUsageCommand`), `auxiliary/internal/flagutil/metadata.go.stmpl` (`DeclarePositionalFlag`, `PositionalFlagArgs`, `ResolvePositionalFlag`), `positional_test.go.stmpl`
+
+An operation command whose request has exactly one path parameter, after excluding const parameters and globals (persistent root flags), also takes that parameter as its single positional argument; the flag keeps working:
+
+```bash
+cli users get u-1          # positional
+cli users get --id u-1     # flag
+cli users get u-1 --id u-1   # usage error: pass id once
+```
+
+- **Eligibility**: non-`IsRequestBody` operations whose parameter maps to a top-level scalar flag (string, enum, int, number, date, date-time). Operations with two or more path parameters, operations marked `x-speakeasy-cli-positional: false`, and promoted operations (exact-stutter operations whose `RunE` lives on the group command, where a positional would compete with subcommand names) stay flags-only.
+- **Command shape**: `Use` becomes `<name> [<param>]` and `Args` is `flagutil.PositionalFlagArgs`. `DeclarePositionalFlag` records the flag in the `speakeasy_positional_flag` annotation, replaces the flag's help with `<summary> (or pass it as the [<param>] argument)` (no `[required]` marker), and clears its prompt annotations so help lists it under optional flags and interactive mode does not prompt for it as a flag.
+- **Argument validation** (`PositionalFlagArgs`, before any pre-run): at most one argument; the argument is folded into the flag so request building reads a single source. Rejected: an argument together with the flag (`pass <param> once`), or a flag-looking argument starting with `-` (only reachable after `--`, so `op -- --dry-run` cannot become a live request with `--dry-run` as the identifier; `--<param>=-value` still works). Valid negative numeric values remain positional for numeric path parameters. A boolean-looking value (`true`, `false`) is a valid string identifier and is accepted. Commands without the annotation keep `cobra.NoArgs` semantics.
+- **Requiredness** (`ResolvePositionalFlag`, in the run function after the `--usage`/`--schema` short-circuits): a path parameter is required when it is not optional, nullable, or default-backed. Omitting both forms yields `MissingRequiredFlagError` (`missing required flag: --<param> (or pass it as the [<param>] argument)`, exit 2). It is a no-op on commands without the annotation, so intent commands that reuse the run function are unaffected. The original flag metadata remains intact for intent commands backed by the same operation.
+- **Interactive mode**: when generated, the command declares an `interactive.ArgSpec` (`Required` follows the path parameter, `SatisfiedBy: [<param>]`); a missing required value prompts for the argument (`arg:<param>`), never the flag, and a supplied flag satisfies it.
+- **`--usage`**: the static KDL node carries `arg "<param>"` with help mentioning the flag alternative (not `required`, since the flag can satisfy it), plus the rewritten flag help.
+- **Docs**: `cmd/gendocs` renders the new `Use` line and flag help. Generated command examples keep the flag form.
 
 ### Metadata-Driven Request Building
 
@@ -1602,8 +1623,8 @@ The `Changed()` pattern is critical: Cobra tracks whether a flag was explicitly 
 
 **Files**: `opcmd.go.stmpl`, `subroot.go.stmpl`, `intentcmd.go.stmpl`, `root.go.stmpl`, `auxiliary/internal/flagutil/flags.go.stmpl`, `auxiliary/internal/flagutil/metadata.go.stmpl`, `includes/metadata.ts`
 
-- **No stray positionals**: operation commands and generated group commands set `Args: cobra.NoArgs`. Operations take flags only, so a token that is not a flag is an error (`unknown command "x" for "cli group op"`) raised by Cobra's `ValidateArgs` before `PersistentPreRun` and before any request is built. This closes the `cli agent delete --id x -- --dry-run` hole, where `--dry-run` after `--` used to become an ignored positional while the live request went out. It also turns `cli group typo` into an error instead of the group help page. Intent commands with a declared positional stay `ArbitraryArgs`.
-- **Spaced boolean values**: pflag parses `--flag false` as `--flag` (true) plus a positional `false`. On flags-only commands that is now rejected by `NoArgs`; on a variadic intent command it cannot be rejected structurally, so `flagutil.SpacedBoolValueHint` prints a stderr hint when the trailing positional is `true`/`false` and a boolean flag was set (`boolean flags take their value inline: --dry-run=false`; every changed boolean flag is named when there are several, since argv adjacency is not available). Generated tests (`includes/tests.ts` `pushFlagArg`, `includes/test-workflows.ts`) and command examples (`includes/descriptions.ts` `exampleFlagPart`) always render boolean values inline (`--flag=true`).
+- **No stray positionals**: operation commands and generated group commands set `Args: cobra.NoArgs`, except operations with a [positional path parameter](#positional-path-parameter), which accept exactly that one argument. Other operations take flags only, so a token that is not a flag is an error (`unknown command "x" for "cli group op"`) raised by Cobra's `ValidateArgs` before `PersistentPreRun` and before any request is built. This closes the `cli agent delete --id x -- --dry-run` hole, where `--dry-run` after `--` used to become an ignored positional while the live request went out. It also turns `cli group typo` into an error instead of the group help page. Intent commands with a declared positional stay `ArbitraryArgs`.
+- **Spaced boolean values**: pflag parses `--flag false` as `--flag` (true) plus a positional `false`. On flags-only commands that is now rejected by `NoArgs`. On a command with a positional path parameter the stray `false` becomes the identifier (so `--dry-run false` still previews rather than sending); a second argument is rejected by `MaximumNArgs(1)`. On a variadic intent command it cannot be rejected structurally, so `flagutil.SpacedBoolValueHint` prints a stderr hint when the trailing positional is `true`/`false` and a boolean flag was set (`boolean flags take their value inline: --dry-run=false`; every changed boolean flag is named when there are several, since argv adjacency is not available). Generated tests (`includes/tests.ts` `pushFlagArg`, `includes/test-workflows.ts`) and command examples (`includes/descriptions.ts` `exampleFlagPart`) always render boolean values inline (`--flag=true`).
 - **CLI-owned enums**: the root `PersistentPreRunE` validates `--output-format` (against `output.Formats`) and `--color` (`auto`, `always`, `never`) with `flagutil.ValidateEnumFlag` before any command runs (after the `--usage` short-circuit — documenting a command never validates its rendering flags); a typo errors with the option list and a did-you-mean suggestion (prefix or edit distance ≤ 2). Only the flag value is checked — config/env values are resolved separately in `resolveOutputFormat`.
 - **Schema-declared bounds** (`FlagMeta.MinLength`, `HasMinimum`/`Minimum`, `HasMaximum`/`Maximum`, emitted by `includes/metadata.ts` from `TypeDef.Validations`): an explicitly set string shorter than `minLength` (including `--code=` when `minLength ≥ 1`) and an explicitly set number outside `minimum`/`maximum` are rejected before the request is sent. Undeclared bounds stay with the server (it is authoritative; client-side bounds would drift), and an unconstrained string still accepts `""` (some APIs clear fields with it).
 - **Enum flags**: an explicitly set empty value (`--model=`) is rejected unless the enum declares `""` — it used to be sent as `"model": ""`. Unknown values keep listing the valid options.

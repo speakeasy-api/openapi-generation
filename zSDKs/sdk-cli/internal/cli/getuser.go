@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk"
 	"openapi/internal/sdk/models/operations"
@@ -20,11 +21,11 @@ var getUserCmdMeta = []flagutil.FlagMeta{
 // initGetUserCmd initializes the get-user command.
 func initGetUserCmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "get-user",
+		Use:     "get-user [id]",
 		Short:   "Get User",
 		Long:    "Get User",
 		Example: "  cli get-user --id <id>",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runGetUserCmd,
 		Aliases: []string{"gu"},
 		Annotations: map[string]string{
@@ -35,6 +36,14 @@ func initGetUserCmd(parent *cobra.Command) error {
 	if err := flagutil.ValidateMeta[operations.GetUserRequest](getUserCmdMeta); err != nil {
 		return fmt.Errorf("invalid metadata for get-user: %w", err)
 	}
+	if err := flagutil.DeclarePositionalFlag(cmd, "id", "string value (or pass it as the [id] argument)", true); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "id", Summary: "string value", Required: true, SatisfiedBy: []string{"id"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for get-user: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -43,6 +52,9 @@ func initGetUserCmd(parent *cobra.Command) error {
 func runGetUserCmd(cmd *cobra.Command, args []string) error {
 	if usage.UsageRequested(cmd) {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	req, err := flagutil.BuildRequest[operations.GetUserRequest](cmd, getUserCmdMeta, "", "")
 	if err != nil {
