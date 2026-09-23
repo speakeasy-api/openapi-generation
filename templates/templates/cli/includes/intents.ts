@@ -184,6 +184,7 @@ interface CLIOperationFlagCtx {
   DefaultValue: any;
   HasDefault: boolean;
   DefaultResolves: boolean;
+  Suggestions: string[];
 }
 
 interface CLIOperationCtx {
@@ -1567,6 +1568,7 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
       DefaultValue: input.Default,
       HasDefault: input.Default !== undefined && input.Default !== null,
       DefaultResolves: input.DefaultFrom === "schema",
+      Suggestions: (input.Enum || []).map((v: any) => `${v}`),
     }),
   );
   return {

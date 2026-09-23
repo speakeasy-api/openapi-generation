@@ -562,6 +562,9 @@ function getOperationUsageFlags(op: Operation): UsageFlagDef[] {
       help: f.Summary,
     };
     if (f.HasDefault) usage.defaultValue = f.DefaultValue;
+    if (f.Suggestions && f.Suggestions.length > 0) {
+      usage.suggestions = f.Suggestions;
+    }
     flags.push(usage);
   }
 

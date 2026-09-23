@@ -1386,7 +1386,7 @@ func (d *cliManifestDecoder) linkDispatchInput(cmdKey string, input *CLICommandI
 	}
 
 	if !isArg {
-		if value, ok := cliDispatchPresetDefault(declaring, input.Bind.Pointer); ok {
+		if value, ok := cliDispatchPresetDefault(declaring, input.Bind.Pointer, input.Type); ok {
 			input.DefaultFrom = "preset"
 			input.Default = value
 			defaultFromSchema = false
@@ -1444,11 +1444,11 @@ func cliDispatchPropertyShape(facts *cliPropertyFacts) string {
 // cliDispatchPresetDefault reports the value the request carries at pointer
 // when the caller omits the flag: the effective preset, provided every
 // declaring route sets the same scalar.
-func cliDispatchPresetDefault(declaring []cliDispatchInputFacts, pointer string) (any, bool) {
+func cliDispatchPresetDefault(declaring []cliDispatchInputFacts, pointer, kind string) (any, bool) {
 	var value any
 	for i, declared := range declaring {
 		candidate, ok := declared.link.presetValues[pointer]
-		if !ok || !cliIsScalarValue(candidate) {
+		if !ok || !cliIsPresetDefault(candidate, kind) {
 			return nil, false
 		}
 		if i > 0 && !cliValuesEqual(value, candidate) {
@@ -3027,6 +3027,10 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 				return fmt.Errorf("command %q %s %s suggestions: %w", cmdKey, what, input.Bind.Pointer, err)
 			}
 		}
+		if value, ok := presetValues[input.Bind.Pointer]; ok && !isArg && cliIsPresetDefault(value, input.Type) {
+			input.DefaultFrom = "preset"
+			input.Default = value
+		}
 		return nil
 	}
 
@@ -3102,7 +3106,7 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 	presetValue, presetCovered := presetValues[input.Bind.Pointer]
 	switch {
 	case isArg:
-	case presetCovered && cliIsScalarValue(presetValue):
+	case presetCovered && cliIsPresetDefault(presetValue, input.Type):
 		input.DefaultFrom = "preset"
 		input.Default = presetValue
 	case input.DefaultFrom == "schema" && presetCovered:
@@ -3648,10 +3652,12 @@ func cliCheckSuggestions(values []any, kind string) error {
 	return nil
 }
 
-func cliIsScalarValue(value any) bool {
+// cliIsPresetDefault reports whether a preset value can stand as the
+// displayed default of a flag of the given type: a scalar of that type.
+func cliIsPresetDefault(value any, kind string) bool {
 	switch value.(type) {
 	case string, bool, int64, float64:
-		return true
+		return cliCheckScalarValue(value, kind) == nil
 	}
 	return false
 }

@@ -4756,6 +4756,28 @@ commands:
 	assert.Equal(t, "preset", flags[2].DefaultFrom)
 	assert.Equal(t, int64(3), flags[2].Default)
 
+	// An explicitly open schema: the preset still becomes the default when
+	// it matches the declared flag type, and is ignored when it does not.
+	manifest, _, err = decodeCLITest(t, `
+version: 1
+commands:
+  note:
+    op: CreateNote
+    preset:
+      $.extra: fast
+      $.level: 5
+    flags:
+      extra: {to: $.extra, type: string}
+      level: {to: $.level, type: string}
+`)
+	require.NoError(t, err)
+	flags = manifest.Commands[0].Flags
+	require.Len(t, flags, 2)
+	assert.Equal(t, "preset", flags[0].DefaultFrom)
+	assert.Equal(t, "fast", flags[0].Default)
+	assert.Empty(t, flags[1].DefaultFrom)
+	assert.Nil(t, flags[1].Default)
+
 	// Dispatch: a command preset or agreeing route presets become the
 	// default; a preset on only one declaring route does not.
 	commandPreset := strings.Replace(cliRouteDispatchManifest, "    args:\n", "    preset: {$.background: true}\n    args:\n", 1)
