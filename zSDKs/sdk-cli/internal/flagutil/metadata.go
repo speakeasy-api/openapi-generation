@@ -654,7 +654,7 @@ func BuildRequest[T any](cmd *cobra.Command, meta []FlagMeta, bodyFieldPath stri
 	// When body provided via --body flag or stdin, relax Required checks for body fields
 	// so builders don't error for fields already populated
 	if bodyPrePopulated {
-		meta = relaxRequiredForBodyFields(meta, bodyFieldPath, true)
+		meta = relaxRequiredForBodyFields(meta, v.Type(), bodyFieldPath, true)
 	}
 
 	// When the entire struct IS the body (bodyFieldPath == "") and no body was
@@ -670,7 +670,7 @@ func BuildRequest[T any](cmd *cobra.Command, meta []FlagMeta, bodyFieldPath stri
 			}
 		}
 		if !anyChanged {
-			meta = relaxRequiredForBodyFields(meta, "", false)
+			meta = relaxRequiredForBodyFields(meta, v.Type(), "", false)
 		}
 	}
 
@@ -1227,11 +1227,11 @@ func unmarshalIntoField(field reflect.Value, data []byte) error {
 	return nil
 }
 
-func relaxRequiredForBodyFields(meta []FlagMeta, bodyFieldPath string, clearDefaults bool) []FlagMeta {
+func relaxRequiredForBodyFields(meta []FlagMeta, reqType reflect.Type, bodyFieldPath string, clearDefaults bool) []FlagMeta {
 	result := make([]FlagMeta, len(meta))
 	copy(result, meta)
 	for i := range result {
-		if isBodyFieldPath(result[i].FieldPath, bodyFieldPath) {
+		if isBodyFieldPath(result[i].FieldPath, bodyFieldPath) && requestParamTag(reqType, result[i].FieldPath) == "" {
 			result[i].Required = false
 			if clearDefaults {
 				result[i].HasDefault = false
@@ -1263,6 +1263,31 @@ func isBodyFieldPath(fieldPath, bodyFieldPath string) bool {
 		return true // entire struct is body
 	}
 	return fieldPath == bodyFieldPath || strings.HasPrefix(fieldPath, bodyFieldPath+".")
+}
+
+// Body models tag every location alongside their json/form tags, so those never count as params.
+func requestParamTag(reqType reflect.Type, fieldPath string) string {
+	for reqType.Kind() == reflect.Ptr {
+		reqType = reqType.Elem()
+	}
+	if reqType.Kind() != reflect.Struct {
+		return ""
+	}
+	field, ok := reqType.FieldByName(strings.Split(fieldPath, ".")[0])
+	if !ok {
+		return ""
+	}
+	for _, tag := range []string{"json", "form", "multipartForm"} {
+		if _, ok := field.Tag.Lookup(tag); ok {
+			return ""
+		}
+	}
+	for _, tag := range []string{"pathParam", "queryParam", "header"} {
+		if _, ok := field.Tag.Lookup(tag); ok {
+			return tag
+		}
+	}
+	return ""
 }
 
 // setFieldByPath navigates nested struct fields via a dot-delimited path and sets the leaf value.
@@ -1428,6 +1453,19 @@ func validateRequiredPresence(m FlagMeta, changed bool) error {
 	return nil
 }
 
+// A blank path segment would address the parent collection instead of the item.
+func validateRequiredPathParam(v reflect.Value, m FlagMeta, changed bool, values ...string) error {
+	if !m.Required || !changed || requestParamTag(v.Type(), m.FieldPath) != "pathParam" {
+		return nil
+	}
+	for _, value := range values {
+		if strings.TrimSpace(value) == "" {
+			return WithCLIValidation(fmt.Errorf("invalid value for --%s: blank; path parameters require a non-empty value", m.FlagName))
+		}
+	}
+	return nil
+}
+
 func validateEnumValue(m FlagMeta, val string, changed bool) error {
 	if m.EnumValues == nil {
 		return nil
@@ -1454,6 +1492,9 @@ func buildStringField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		return err
 	}
 	if err := validateRequiredPresence(m, changed); err != nil {
+		return err
+	}
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
 		return err
 	}
 	if shouldSkipUnchanged(m, changed) {
@@ -1525,6 +1566,9 @@ func buildStringArrayField(cmd *cobra.Command, v reflect.Value, m FlagMeta) erro
 	if m.Required && len(val) == 0 {
 		return &MissingRequiredFlagError{FlagName: m.FlagName}
 	}
+	if err := validateRequiredPathParam(v, m, changed, val...); err != nil {
+		return err
+	}
 
 	if !changed {
 		return nil
@@ -1535,6 +1579,9 @@ func buildStringArrayField(cmd *cobra.Command, v reflect.Value, m FlagMeta) erro
 
 func buildDateTimeField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateRequiredString(m, val); err != nil {
 		return err
 	}
@@ -1577,6 +1624,9 @@ func buildDateTimeField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildDateField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateRequiredString(m, val); err != nil {
 		return err
 	}
@@ -1623,6 +1673,9 @@ func buildDateField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateEnumValue(m, val, changed); err != nil {
 		return err
 	}
@@ -1642,6 +1695,9 @@ func buildEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildIntEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateEnumValue(m, val, changed); err != nil {
 		return err
 	}
