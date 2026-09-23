@@ -196,7 +196,7 @@ trackedFiles:
   internal/cli/tag1/root.go:
     last_write_checksum: sha1:cfe60d600cb9609d9609056bfce8fb7c97134b41
   internal/cli/testendpoint.go:
-    last_write_checksum: sha1:670c20e13afcd64851af05b4aa5cbc98306df6a7
+    last_write_checksum: sha1:a43d106bc6ac070daaa2173d6e6b564c1feb868f
   internal/cli/testenumformats.go:
     last_write_checksum: sha1:e11eb49456f08b1c090c15fc1bb1087ef4649d92
   internal/cli/testgroup/root.go:
