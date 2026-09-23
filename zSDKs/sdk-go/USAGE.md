@@ -130,7 +130,7 @@ func main() {
 			HeroWidth:          examplealias.HeroWidthFourHundredAndEighty.ToPointer(),
 		},
 		Type: examplealias.TypeSuperType1.ToPointer(),
-	})
+	}, nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func main() {
 		}),
 	)
 
-	res, err := s.Tag1.ListTest1(ctx, 100, examplealias.QueryParam2One, "some example header param")
+	res, err := s.Tag1.ListTest1(ctx, 100, examplealias.QueryParam2One, "some example header param", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
