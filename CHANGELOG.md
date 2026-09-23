@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.938.6] - 2026-09-23
+### :bug: Bug Fixes
+- [`e8dc2ef`](https://github.com/speakeasy-api/openapi-generation/commit/e8dc2ef2ca326a22e9cd3e977543dc743b60484d) - **cli**: give a shared shorthand letter to the required path parameter ([#31](https://github.com/speakeasy-api/openapi-generation/pull/31)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.938.5] - 2026-09-23
 ### :bug: Bug Fixes
 - [`3fa63be`](https://github.com/speakeasy-api/openapi-generation/commit/3fa63be03635a1706a7cd6b88f3ab3708f771498) - **go**: pass nil for positional global parameters in usage snippets ([#30](https://github.com/speakeasy-api/openapi-generation/pull/30)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20174,3 +20179,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.938.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.2...v2.938.3
 [v2.938.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.3...v2.938.4
 [v2.938.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.4...v2.938.5
+[v2.938.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.5...v2.938.6
