@@ -196,7 +196,7 @@ trackedFiles:
   internal/cli/tag1/root.go:
     last_write_checksum: sha1:cfe60d600cb9609d9609056bfce8fb7c97134b41
   internal/cli/testendpoint.go:
-    last_write_checksum: sha1:670c20e13afcd64851af05b4aa5cbc98306df6a7
+    last_write_checksum: sha1:a43d106bc6ac070daaa2173d6e6b564c1feb868f
   internal/cli/testenumformats.go:
     last_write_checksum: sha1:e11eb49456f08b1c090c15fc1bb1087ef4649d92
   internal/cli/testgroup/root.go:
@@ -535,6 +535,8 @@ trackedFiles:
     last_write_checksum: sha1:c0e20962bf9496c88f2b1e1e78049503400590a6
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
+  internal/sdk/models/sdkerrors/responsevalidationerror.go:
+    last_write_checksum: sha1:a8c8d89fdec906750c33be9277242a523fbcfbbf
   internal/sdk/models/sdkerrors/sdkdefaulterror.go:
     last_write_checksum: sha1:437b3a3eacb54d8648a68f80b3cd38fa5019f006
   internal/sdk/models/sdkerrors/taggederror1.go:
@@ -558,7 +560,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:b4bcd7e47ccf7853e53b1d6f8a8189416be5103d
+    last_write_checksum: sha1:ed44058323819e0897a4013b1c5df7d11d3a1e1e
   internal/sdk/sdkinternal/config/sdkconfiguration.go:
     last_write_checksum: sha1:1e813226ebfcdfdb00c61fa53bb00d34edce6431
   internal/sdk/sdkinternal/globals/globals.go:
@@ -606,11 +608,11 @@ trackedFiles:
   internal/sdk/subgroup.go:
     last_write_checksum: sha1:f78c5c64805523599cb256fefb3cb3f73b27b2ea
   internal/sdk/tag1.go:
-    last_write_checksum: sha1:b5cc3ad9cc55fc946bb688d201ab11236e2d3fd8
+    last_write_checksum: sha1:ef7471c0de106ccf872d50829345d18a71297dcf
   internal/sdk/tag2.go:
-    last_write_checksum: sha1:c32dbf08213057f722a71ddf8dd0d30f1096ba3a
+    last_write_checksum: sha1:b0c18e062eaa899c68ebea993ac33a09e90d20a3
   internal/sdk/tag3.go:
-    last_write_checksum: sha1:d3b62fab109496dde12a627c50caf6157214ec5b
+    last_write_checksum: sha1:4ad57d89ef0cc8fb1b056e8fcdc7c52c251c8b39
   internal/sdk/tail.go:
     last_write_checksum: sha1:cee9f57f61b4c6703df2270e17990554a66ee3c5
   internal/sdk/testgroup.go:
