@@ -304,7 +304,7 @@ func TestNonInteractiveDefaultDoesNotCallPrompterForRequiredOperation(t *testing
 	require.Error(t, err)
 	var missing *flagutil.MissingRequiredFlagError
 	require.ErrorAs(t, err, &missing)
-	assert.Equal(t, "missing required flag: --id", missing.Error())
+	assert.Equal(t, "missing required flag: --id (or pass it as the [id] argument)", missing.Error())
 	assert.Zero(t, p.calls)
 }
 

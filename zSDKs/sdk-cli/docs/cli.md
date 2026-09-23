@@ -78,6 +78,7 @@ cli [flags]
 * [cli get-named-primitive-union](cli_get-named-primitive-union.md)	 - Test named primitive union options using title and x-speakeasy-name-override
 * [cli get-nested-integer-string](cli_get-nested-integer-string.md)	 - Test nested struct with integer:string tag
 * [cli get-polymorphism](cli_get-polymorphism.md)	 - Get Polymorphism
+* [cli get-positional-default](cli_get-positional-default.md)	 - Get an item with a default path identifier
 * [cli get-request-body-flattened-away](cli_get-request-body-flattened-away.md)	 - Get Request Body Flattened Away
 * [cli get-union-errors](cli_get-union-errors.md)	 - Get Union Errors
 * [cli get-user](cli_get-user.md)	 - Get User

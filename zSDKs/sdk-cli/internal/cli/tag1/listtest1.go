@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"openapi/internal/client"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/sdk/models/operations"
 	"openapi/internal/usage"
@@ -21,11 +22,11 @@ var listTest1CmdMeta = []flagutil.FlagMeta{
 // initListTest1Cmd initializes the list-test1 command.
 func initListTest1Cmd(parent *cobra.Command) error {
 	var cmd = &cobra.Command{
-		Use:     "list-test1",
+		Use:     "list-test1 [page]",
 		Short:   "Get Test1",
 		Long:    "This is a \x7b\x7btest\x7d\x7d endpoint.\nIt has a description.",
 		Example: "  cli tag1 list-test1 --page 100 --query-param2 1 --header-param1 'some example header param'",
-		Args:    cobra.NoArgs,
+		Args:    flagutil.PositionalFlagArgs,
 		RunE:    runListTest1Cmd,
 		Aliases: []string{"lt"},
 		Annotations: map[string]string{
@@ -38,6 +39,14 @@ func initListTest1Cmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().BoolP("all", "a", false, "Automatically paginate and fetch all results (streams NDJSON for JSON output)")
 	cmd.Flags().Int("max-pages", 0, "Maximum number of pages to fetch when using --all (0 = no limit)")
+	if err := flagutil.DeclarePositionalFlag(cmd, "page", "integer value (or pass it as the [page] argument)", true); err != nil {
+		return err
+	}
+	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
+		{Name: "page", Summary: "integer value", Required: true, SatisfiedBy: []string{"page"}},
+	}}); err != nil {
+		return fmt.Errorf("declare interactive arguments for list-test1: %w", err)
+	}
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -46,6 +55,9 @@ func initListTest1Cmd(parent *cobra.Command) error {
 func runListTest1Cmd(cmd *cobra.Command, args []string) error {
 	if usage.UsageRequested(cmd) {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
+	}
+	if err := flagutil.ResolvePositionalFlag(cmd, args); err != nil {
+		return err
 	}
 	allPages, _ := flagutil.GetBoolFlag(cmd, "all")
 	maxPages, _ := flagutil.GetIntFlag(cmd, "max-pages")
