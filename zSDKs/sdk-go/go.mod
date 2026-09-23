@@ -1,12 +1,12 @@
 module example.com/openapi-go-sdk
 
-go 1.25.10
+go 1.26.8
 
 require (
 	github.com/ericlagergren/decimal v0.0.0-20221120152707-495c53812d05
 	github.com/google/uuid v1.6.0
-	github.com/spyzhov/ajson v0.8.0
-	github.com/stretchr/testify v1.8.4
+	github.com/spyzhov/ajson v0.9.6
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
