@@ -1,0 +1,68 @@
+zSDKs/mcp-typescript/.speakeasy/gen.lock
+  h_9630b74bdac540 395,397,413
+zSDKs/mcp-typescript/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/mcp-typescript/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/mcp-typescript/src/__tests__/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-csharp/.speakeasy/gen.lock
+  h_9630b74bdac540 441,443,459
+zSDKs/sdk-csharp/Tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-csharp/Tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-csharp/Tests/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-javav2/.speakeasy/gen.lock
+  h_9630b74bdac540 1950,1952,1968
+zSDKs/sdk-javav2/tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-javav2/tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-javav2/tests/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-mcp-typescript/.speakeasy/gen.lock
+  h_9630b74bdac540 355,357,373
+zSDKs/sdk-mcp-typescript/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-mcp-typescript/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-mcp-typescript/src/__tests__/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-pythonv2/.speakeasy/gen.lock
+  h_9630b74bdac540 1155,1157,1173
+zSDKs/sdk-pythonv2/tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-pythonv2/tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-pythonv2/tests/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-ruby/.speakeasy/gen.lock
+  h_9630b74bdac540 1806,1808,1824
+zSDKs/sdk-ruby/test/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-ruby/test/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-ruby/test/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-typescriptv2/.speakeasy/gen.lock
+  h_9630b74bdac540 844,846,862
+zSDKs/sdk-typescriptv2/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-typescriptv2/src/__tests__/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-typescriptv2/src/__tests__/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "39bd6988feeb0d41a26cde05f45f0273b8a2f63a",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
