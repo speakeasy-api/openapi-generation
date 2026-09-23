@@ -1,0 +1,15 @@
+templates/templates/cli/tests/primary/flagutilmeta_test.go.stmpl
+  h_9630b74bdac540 251,307-313,325-344
+  h_9630b74bdac540 345-348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "28e64be107ff8977fa17296ab680c51c7bffe5aa",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
