@@ -1,0 +1,37 @@
+templates/templates/cli/main.ts
+  h_9630b74bdac540 152-154
+  h_9630b74bdac540 151,155
+templates/templates/cli/README.md
+  h_9630b74bdac540 399-400
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 361-365,367
+  h_9630b74bdac540 366
+templates/templates/cli/positional_test.go.stmpl
+  h_9630b74bdac540 54-62
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 830-831
+  h_9630b74bdac540 828-829,832-833
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 247,1079
+zSDKs/sdk-cli/docs/cli.md
+  h_9630b74bdac540 81
+zSDKs/sdk-cli/docs/cli_get-asset.md
+  h_9630b74bdac540 10,23
+zSDKs/sdk-cli/docs/cli_get-positional-default.md
+  h_9630b74bdac540 1-81
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 363-369
+zSDKs/sdk-cli/tests/positional_test.go
+  h_9630b74bdac540 45-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "284d7300fa63de34c569b06cd19272ebae597858",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
