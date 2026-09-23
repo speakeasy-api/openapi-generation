@@ -329,15 +329,18 @@ const reservedShorthandLetters = new Set(["o", "H", "q", "d", "h"]);
  * Compute non-conflicting single-letter shorthands for a set of flag names.
  * Each flag's candidate is the first character of its kebab name.
  * If exactly one flag claims a letter, it gets the shorthand.
- * If two or more flags share the same first letter, neither gets one.
+ * If two or more flags share the same first letter, the letter goes to the
+ * single preferred claimant if there is exactly one, otherwise to none.
  *
  * @param flagNames - kebab-case flag names to assign shorthands for
  * @param extraReserved - additional letters to exclude (e.g., "a" on paginated commands)
+ * @param preferred - flag names that win a collision (e.g., required path parameters)
  * @returns Map from flag name to its single-letter shorthand
  */
 function computeFlagShorthands(
   flagNames: string[],
   extraReserved?: Set<string>,
+  preferred?: Set<string>,
 ): Map<string, string> {
   const candidates = new Map<string, string[]>(); // letter → flagNames
 
@@ -357,8 +360,10 @@ function computeFlagShorthands(
 
   const result = new Map<string, string>();
   for (const [letter, names] of candidates) {
-    if (names.length === 1) {
-      result.set(names[0], letter);
+    const winners =
+      names.length === 1 ? names : names.filter((n) => preferred?.has(n));
+    if (winners.length === 1) {
+      result.set(winners[0], letter);
     }
   }
   return result;

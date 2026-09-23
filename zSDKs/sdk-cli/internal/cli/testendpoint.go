@@ -15,7 +15,7 @@ import (
 )
 
 var testEndpointCmdMeta = []flagutil.FlagMeta{
-	{FlagName: "test-name", FieldPath: "TestName", Kind: flagutil.FlagKindString, Required: true, Description: "[required]"},
+	{FlagName: "test-name", Shorthand: "t", FieldPath: "TestName", Kind: flagutil.FlagKindString, Required: true, Description: "[required]"},
 	{FlagName: "test", FieldPath: "RequestBody.Test", Kind: flagutil.FlagKindString, Required: true, Description: "[required]"},
 }
 

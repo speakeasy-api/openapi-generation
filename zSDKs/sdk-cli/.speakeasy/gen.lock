@@ -11,7 +11,7 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.1.2
+    cliCommands: 0.1.3
     constsAndDefaults: 0.0.0
     core: 0.3.3
     customSecuritySchemes: 0.0.0
@@ -196,7 +196,7 @@ trackedFiles:
   internal/cli/tag1/root.go:
     last_write_checksum: sha1:cfe60d600cb9609d9609056bfce8fb7c97134b41
   internal/cli/testendpoint.go:
-    last_write_checksum: sha1:5d7e82e5f4fb634b259f92b57edccb6e5def7538
+    last_write_checksum: sha1:670c20e13afcd64851af05b4aa5cbc98306df6a7
   internal/cli/testenumformats.go:
     last_write_checksum: sha1:e11eb49456f08b1c090c15fc1bb1087ef4649d92
   internal/cli/testgroup/root.go:
