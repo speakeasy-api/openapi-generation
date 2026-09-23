@@ -21,7 +21,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  errors: "2.83.2",
+  errors: "2.83.3",
   unions: "2.87.10",
   multiLevelTagging: "2.87.3",
   bigint: "0.0.2",

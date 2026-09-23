@@ -24,7 +24,7 @@ const supportedFeatures = {
   inputOutputModels: "0.0.0",
   ignores: "0.0.0",
   typeOverrides: "0.0.0",
-  errors: "0.2.0",
+  errors: "0.2.1",
   errorUnions: "0.0.0",
   unions: "0.1.0",
   sliceUnions: "0.0.0",

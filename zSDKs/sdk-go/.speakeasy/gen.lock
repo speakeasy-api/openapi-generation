@@ -24,7 +24,7 @@ features:
     enums: 2.82.2
     envVarSecurityUsage: 0.3.2
     errorUnions: 0.1.0
-    errors: 2.83.2
+    errors: 2.83.3
     examples: 2.81.7
     flattening: 2.81.2
     globalSecurity: 2.82.15
