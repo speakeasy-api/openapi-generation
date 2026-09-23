@@ -108,6 +108,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/mockserver.ts":                                                                        0o644,
 	"templates/cli/opcmd.go.stmpl":                                                                       0o644,
 	"templates/cli/opstream_test.go.stmpl":                                                               0o644,
+	"templates/cli/positional_test.go.stmpl":                                                             0o644,
 	"templates/cli/readme":                                                                               0o20000000755,
 	"templates/cli/readme.stmpl":                                                                         0o644,
 	"templates/cli/readme/agents.stmpl":                                                                  0o644,

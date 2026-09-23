@@ -8,7 +8,7 @@ This is a {{test}} endpoint.
 It has a description.
 
 ```
-cli tag1 list-test1 [flags]
+cli tag1 list-test1 [page] [flags]
 ```
 
 ### Examples
@@ -24,7 +24,7 @@ cli tag1 list-test1 [flags]
       --header-param1 string   [required]
   -h, --help                   help for list-test1
       --max-pages int          Maximum number of pages to fetch when using --all (0 = no limit)
-  -p, --page int               [required]
+  -p, --page int               integer value (or pass it as the [page] argument)
       --query-param2 string    An [enum](https://enum.com) "query parameter"
                                that is not easily described in a single line.
                                
