@@ -1152,9 +1152,9 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
     last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+    last_write_checksum: sha1:58d775c91b1a5ef5149b625286e4f35b96bb6f7f
   tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+    last_write_checksum: sha1:bc65a2684a85ad0d79c7643836c17a222adf1082
   tests/mockserver/internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   tests/mockserver/internal/sdk/types/date.go:
@@ -1170,7 +1170,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   tests/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
   tests/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   tests/mockserver/internal/sdk/utils/sort.go:
