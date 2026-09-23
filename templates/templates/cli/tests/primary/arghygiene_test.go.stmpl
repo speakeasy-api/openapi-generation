@@ -68,6 +68,10 @@ func TestGlobalShorthandPointsToSimilarLocalFlag(t *testing.T) {
 			[]string{"parameters", "mixed-parameters-primitives", "-p", "a", "-q", "qs"},
 			"",
 		},
+		{
+			[]string{"-d", "unions", "infected-with-any", "--body", "{"},
+			"",
+		},
 	}
 	for _, tc := range cases {
 		resetAgentMode(t)

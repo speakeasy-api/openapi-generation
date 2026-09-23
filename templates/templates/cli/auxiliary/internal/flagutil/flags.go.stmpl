@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -245,13 +246,18 @@ func ValidateOutputFormatFlag(cmd *cobra.Command, allowed []string) error {
 		}
 	}
 	err := outputFormatValidationError{value: val, allowed: allowed}
+	quoted := shellQuote(val)
 	switch {
 	case lookupFlag(cmd, "out") != nil:
-		err.hint = fmt.Sprintf("-o sets the output format. To write to a file, use --out %s", val)
+		if !FlagChanged(cmd, "out") {
+			err.hint = fmt.Sprintf("-o sets the output format. To write to a file, use --out %s", quoted)
+		}
 	case lookupFlag(cmd, "output-file") != nil:
-		err.hint = fmt.Sprintf("-o sets the output format. To write the response body to a file, use --output-file %s", val)
+		if !FlagChanged(cmd, "output-file") {
+			err.hint = fmt.Sprintf("-o sets the output format. To write the response body to a file, use --output-file %s", quoted)
+		}
 	case looksLikePath(val):
-		err.hint = fmt.Sprintf("-o sets the output format, not a file. To save the response: -o json > %s", val)
+		err.hint = fmt.Sprintf("-o sets the output format, not a file. To save the response: -o json > %s", quoted)
 	}
 	return err
 }
@@ -299,7 +305,7 @@ func ShorthandConfusionHint(cmd *cobra.Command, args []string, errMsg string) st
 		if named == "" && len(candidates) == 1 {
 			named = candidates[0]
 		}
-		related := (named != "" && strings.Contains(errMsg, "--"+named)) || strings.Contains(errMsg, global.Name) || (isBool && value != "")
+		related := (named != "" && strings.Contains(errMsg, "--"+named)) || strings.Contains(errMsg, global.Name) || (isBool && value != "" && (strings.Contains(errMsg, value) || strings.Contains(errMsg, strconv.Quote(value))))
 		if !related {
 			continue
 		}
