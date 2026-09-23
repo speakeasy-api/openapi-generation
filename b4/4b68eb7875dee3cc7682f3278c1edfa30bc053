@@ -1,0 +1,68 @@
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 320,322-323,325,338-340,377
+  h_9630b74bdac540 321
+templates/templates/cli/includes/usage.ts
+  h_9630b74bdac540 884-885
+  h_9630b74bdac540 881-883,886
+templates/templates/cli/opcmd.go.stmpl
+  h_9630b74bdac540 152,159
+tests/specs/review.yaml
+  h_9630b74bdac540 1713,1742-1756
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 718,734-735,738,788-792,824-850
+  h_9630b74bdac540 733,736,739-742,772,793-796,808-809,851-857
+templates/templates/cli/README.md
+  h_9630b74bdac540 397,400-402
+templates/templates/cli/positional_test.go.stmpl
+  h_9630b74bdac540 3-5,9,11-14,25,93,122-144
+  h_9630b74bdac540 20,145-147
+.changesets/1790189904-45c039bf.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 4,75,77,96-97,103,179,185,193,199,213,247,472-473,561,641,958-959,1079,1434-1438
+zSDKs/sdk-cli/.speakeasy/logs/naming.log
+  h_9630b74bdac540 498-499
+zSDKs/sdk-cli/README.md
+  h_9630b74bdac540 466
+zSDKs/sdk-cli/internal/cli/deleteuser.go
+  h_9630b74bdac540 39
+zSDKs/sdk-cli/internal/cli/getasset.go
+  h_9630b74bdac540 24,28
+zSDKs/sdk-cli/internal/cli/getpositionaldefault.go
+  h_9630b74bdac540 1-91
+zSDKs/sdk-cli/internal/cli/getuser.go
+  h_9630b74bdac540 39
+zSDKs/sdk-cli/internal/cli/parenthesesinpathallowed.go
+  h_9630b74bdac540 51
+zSDKs/sdk-cli/internal/cli/root.go
+  h_9630b74bdac540 160-162
+zSDKs/sdk-cli/internal/cli/tag1/listtest1.go
+  h_9630b74bdac540 42
+zSDKs/sdk-cli/internal/cli/testendpoint.go
+  h_9630b74bdac540 48
+zSDKs/sdk-cli/internal/cli/updateuser.go
+  h_9630b74bdac540 57
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 322-325,327,340-342,379
+zSDKs/sdk-cli/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-cli/internal/sdk/sdk.go
+  h_9630b74bdac540 4584-4710
+zSDKs/sdk-cli/internal/usage/schema.go
+  h_9630b74bdac540 16,50-51,53-54,73-74,79-80,128-129,134,138-139,142-143,146-147
+zSDKs/sdk-cli/tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go
+  h_9630b74bdac540 1-41
+zSDKs/sdk-cli/tests/positional_test.go
+  h_9630b74bdac540 84,110-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b44b68eb7875dee3cc7682f3278c1edfa30bc053",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
