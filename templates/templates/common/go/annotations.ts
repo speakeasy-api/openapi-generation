@@ -221,9 +221,16 @@ function templateParamAnnotation(
     },`;
   }
 
+  if (annotation.AllowReserved && !encodePathParams()) {
+    warnAllowReservedIgnored(annotation);
+  }
+
+  const allowReserved =
+    annotation.AllowReserved && encodePathParams() ? ",allowReserved=true" : "";
+
   return {
     Tag: annotation.ParamType,
-    Value: `${serialization}name=${name}`,
+    Value: `${serialization}name=${name}${allowReserved}`,
   };
 }
 
@@ -399,3 +406,23 @@ function hasJSONEncodingAnnotation(fieldDef: FieldDef): boolean {
   return false;
 }
 registerTemplateFunc("hasJSONEncodingAnnotation", hasJSONEncodingAnnotation);
+
+function encodePathParams(): boolean {
+  return !!context.Global.Config.FixFlags?.["encodePathParams"];
+}
+registerTemplateFunc("encodePathParams", encodePathParams);
+
+const allowReservedIgnoredWarnings = new Set<string>();
+
+function warnAllowReservedIgnored(annotation: ParamAnnotation) {
+  const key = `${annotation.ParamType}:${annotation.Name}`;
+  if (allowReservedIgnoredWarnings.has(key)) {
+    return;
+  }
+  allowReservedIgnoredWarnings.add(key);
+
+  logWarning(
+    `parameter "${annotation.Name}" declares allowReserved, which is ignored unless fixFlags.encodePathParams is enabled`,
+    0,
+  );
+}

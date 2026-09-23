@@ -51,6 +51,9 @@ import org.openapis.openapi.models.operations.GetNestedIntegerStringRequestBuild
 import org.openapis.openapi.models.operations.GetNestedIntegerStringResponse;
 import org.openapis.openapi.models.operations.GetPolymorphismRequestBuilder;
 import org.openapis.openapi.models.operations.GetPolymorphismResponse;
+import org.openapis.openapi.models.operations.GetPositionalDefaultRequest;
+import org.openapis.openapi.models.operations.GetPositionalDefaultRequestBuilder;
+import org.openapis.openapi.models.operations.GetPositionalDefaultResponse;
 import org.openapis.openapi.models.operations.GetRequestBodyFlattenedAwayRequest;
 import org.openapis.openapi.models.operations.GetRequestBodyFlattenedAwayRequestBuilder;
 import org.openapis.openapi.models.operations.GetRequestBodyFlattenedAwayResponse;
@@ -103,6 +106,7 @@ import org.openapis.openapi.operations.GetFullyFlattenedRequest;
 import org.openapis.openapi.operations.GetNamedPrimitiveUnion;
 import org.openapis.openapi.operations.GetNestedIntegerString;
 import org.openapis.openapi.operations.GetPolymorphism;
+import org.openapis.openapi.operations.GetPositionalDefault;
 import org.openapis.openapi.operations.GetRequestBodyFlattenedAway;
 import org.openapis.openapi.operations.GetUser;
 import org.openapis.openapi.operations.Login;
@@ -1162,6 +1166,45 @@ public class SDK {
     public GetAssetResponse getAsset(@Nonnull String id, @Nullable Boolean stream) {
         GetAssetRequest request = new GetAssetRequest(id, stream);
         RequestOperation<GetAssetRequest, GetAssetResponse> operation = new GetAsset.Sync(sdkConfiguration, _headers);
+        return operation.handleResponse(operation.doRequest(request));
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @return The call builder
+     */
+    public GetPositionalDefaultRequestBuilder getPositionalDefault() {
+        return new GetPositionalDefaultRequestBuilder(sdkConfiguration);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetPositionalDefaultResponse getPositionalDefaultDirect() {
+        return getPositionalDefault(null);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @param id
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetPositionalDefaultResponse getPositionalDefault(@Nullable String id) {
+        GetPositionalDefaultRequest request = new GetPositionalDefaultRequest(id);
+        RequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> operation =
+                new GetPositionalDefault.Sync(sdkConfiguration, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 

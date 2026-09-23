@@ -12,6 +12,8 @@ generation:
   auth:
     hoistGlobalSecurity: false
 go:
+  fixFlags:
+    encodePathParams: false
   inferUnionDiscriminators: true
   version: 0.0.1
   clientServerStatusCodesAsErrors: true

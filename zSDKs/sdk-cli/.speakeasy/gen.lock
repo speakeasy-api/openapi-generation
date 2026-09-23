@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 76722ccc2d9d9b3063d91ed115926bd3
+  configChecksum: 56dc71dd8e4607dbbdd341d7136634a5
 features:
   cli:
     additionalProperties: 0.0.1
@@ -196,7 +196,7 @@ trackedFiles:
   internal/cli/tag1/root.go:
     last_write_checksum: sha1:cfe60d600cb9609d9609056bfce8fb7c97134b41
   internal/cli/testendpoint.go:
-    last_write_checksum: sha1:670c20e13afcd64851af05b4aa5cbc98306df6a7
+    last_write_checksum: sha1:a43d106bc6ac070daaa2173d6e6b564c1feb868f
   internal/cli/testenumformats.go:
     last_write_checksum: sha1:e11eb49456f08b1c090c15fc1bb1087ef4649d92
   internal/cli/testgroup/root.go:
@@ -584,21 +584,21 @@ trackedFiles:
   internal/sdk/sdkinternal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/sdkinternal/utils/pathparams.go:
-    last_write_checksum: sha1:3635d959700709cfc8fe8f5e8b24b15b76e3339e
+    last_write_checksum: sha1:b0d54a74c4404a8ce2124527c358ab7c062cde22
   internal/sdk/sdkinternal/utils/queryparams.go:
-    last_write_checksum: sha1:aa69350e7bc2c42083cbea684fe55fa8b6c664e7
+    last_write_checksum: sha1:abd61ab1be48a6080b875d4a77603aa2c369195f
   internal/sdk/sdkinternal/utils/requestbody.go:
     last_write_checksum: sha1:75d26660cf87f5f73dfa160c9449f78f2dc8536e
   internal/sdk/sdkinternal/utils/retries.go:
     last_write_checksum: sha1:b86e2f90688d384a6a8655fa0991059231297f89
   internal/sdk/sdkinternal/utils/security.go:
-    last_write_checksum: sha1:49fee4e9252239953611e6de36f4682851499ab5
+    last_write_checksum: sha1:03542ef1eae34ce2056cfb15c80beff75b726761
   internal/sdk/sdkinternal/utils/union.go:
     last_write_checksum: sha1:7c3b763d3f193617b53b5ae52909a55010cda155
   internal/sdk/sdkinternal/utils/union_test.go:
     last_write_checksum: sha1:c55e5e44c26dfae67b83359851996122a3dfc9cf
   internal/sdk/sdkinternal/utils/utils.go:
-    last_write_checksum: sha1:8f51ab06983419a5313e691e30c522632d64ec5f
+    last_write_checksum: sha1:c682bc5ef4f9ed42e4c740f82cbf0236d6dfdf47
   internal/sdk/singlebar.go:
     last_write_checksum: sha1:d4b8af8f85326ebce36bf0d6039dae458538f822
   internal/sdk/singlefoo.go:

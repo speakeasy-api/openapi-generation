@@ -463,6 +463,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [GetNestedIntegerString](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 * [RenderAsset](docs/sdks/sdk/README.md#renderasset) - Render Asset
 * [GetAsset](docs/sdks/sdk/README.md#getasset) - Get Asset
+* [GetPositionalDefault](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 * [GetErrorOnlyExample](docs/sdks/sdk/README.md#geterroronlyexample) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)
@@ -889,15 +890,15 @@ catch (System.Net.Http.HttpRequestException ex)
 * [`System.Net.Http.HttpRequestException`](https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httprequestexception): Network connectivity error. For more details about the underlying cause, inspect the `ex.InnerException`.
 
 * Inheriting from [`SDKBaseException`](./src/Speakeasy/OpenAPI/Models/SDKBaseException.cs):
-  * [`ErrorsError`](./src/Speakeasy/OpenAPI/Models/ErrorsError.cs): A not-so-long multi-line error model description. Applicable to 7 of 50 methods.*
-  * [`BadRequestResponseException`](./src/Speakeasy/OpenAPI/Models/BadRequestResponseException.cs): Bad Request. Status code `400`. Applicable to 2 of 50 methods.*
-  * [`TaggedError1`](./src/Speakeasy/OpenAPI/Models/TaggedError1.cs): Applicable to 2 of 50 methods.*
-  * [`RequestTimeoutError`](./src/Speakeasy/OpenAPI/Models/RequestTimeoutError.cs): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 50 methods.*
-  * [`TaggedError2`](./src/Speakeasy/OpenAPI/Models/TaggedError2.cs): Something went wrong. Status code `4XX`. Applicable to 1 of 50 methods.*
-  * [`ErrorType1`](./src/Speakeasy/OpenAPI/Models/ErrorType1.cs): An error of type one. Status code `500`. Applicable to 1 of 50 methods.*
-  * [`ErrorType2`](./src/Speakeasy/OpenAPI/Models/ErrorType2.cs): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
-  * [`FailedResponseException`](./src/Speakeasy/OpenAPI/Models/FailedResponseException.cs): An error response with an empty object schema. Status code `500`. Applicable to 1 of 50 methods.*
-  * [`Test2ResponseException`](./src/Speakeasy/OpenAPI/Models/Test2ResponseException.cs): Internal Server Error. Status code `500`. Applicable to 1 of 50 methods.*
+  * [`ErrorsError`](./src/Speakeasy/OpenAPI/Models/ErrorsError.cs): A not-so-long multi-line error model description. Applicable to 7 of 51 methods.*
+  * [`BadRequestResponseException`](./src/Speakeasy/OpenAPI/Models/BadRequestResponseException.cs): Bad Request. Status code `400`. Applicable to 2 of 51 methods.*
+  * [`TaggedError1`](./src/Speakeasy/OpenAPI/Models/TaggedError1.cs): Applicable to 2 of 51 methods.*
+  * [`RequestTimeoutError`](./src/Speakeasy/OpenAPI/Models/RequestTimeoutError.cs): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 51 methods.*
+  * [`TaggedError2`](./src/Speakeasy/OpenAPI/Models/TaggedError2.cs): Something went wrong. Status code `4XX`. Applicable to 1 of 51 methods.*
+  * [`ErrorType1`](./src/Speakeasy/OpenAPI/Models/ErrorType1.cs): An error of type one. Status code `500`. Applicable to 1 of 51 methods.*
+  * [`ErrorType2`](./src/Speakeasy/OpenAPI/Models/ErrorType2.cs): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
+  * [`FailedResponseException`](./src/Speakeasy/OpenAPI/Models/FailedResponseException.cs): An error response with an empty object schema. Status code `500`. Applicable to 1 of 51 methods.*
+  * [`Test2ResponseException`](./src/Speakeasy/OpenAPI/Models/Test2ResponseException.cs): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
   * [`ResponseValidationError`](./src/Speakeasy/OpenAPI/Models/ResponseValidationError.cs): Thrown when the response data could not be deserialized into the expected type.
 </details>
 

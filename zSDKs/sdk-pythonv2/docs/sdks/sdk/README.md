@@ -42,6 +42,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [get_nested_integer_string](#get_nested_integer_string) - Test nested struct with integer:string tag
 * [render_asset](#render_asset) - Render Asset
 * [get_asset](#get_asset) - Get Asset
+* [get_positional_default](#get_positional_default) - Get an item with a default path identifier
 * [get_error_only_example](#get_error_only_example) - Operation with example only on error response
 
 ## operation_with_leading_and_trailing_underscores_
@@ -1721,6 +1722,58 @@ asyncio.run(main())
 ### Response
 
 **[models.GetAssetResponse](../../models/getassetresponse.md)**
+
+### Errors
+
+| Error Type      | Status Code     | Content Type    |
+| --------------- | --------------- | --------------- |
+| models.SDKError | 4XX, 5XX        | \*/\*           |
+
+## get_positional_default
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="python" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```python
+# Synchronous Example
+from speakeasy.new_openapi import SDK
+
+
+with SDK() as sdk:
+
+    sdk.get_positional_default(id="default-id")
+
+    # Use the SDK ...
+```
+
+</br>
+
+An Async SDK client can also be used to make asynchronous requests by importing it and asyncio.
+
+```python
+# Asynchronous Example
+import asyncio
+from speakeasy.new_openapi import AsyncSDK
+
+async def main():
+
+    async with AsyncSDK() as sdk:
+
+        await sdk.get_positional_default(id="default-id")
+
+        # Use the SDK ...
+
+asyncio.run(main())
+```
+
+### Parameters
+
+| Parameter                                                           | Type                                                                | Required                                                            | Description                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `id`                                                                | *str*                                                               | :heavy_check_mark:                                                  | N/A                                                                 |
+| `retries`                                                           | [Optional[utils.RetryConfig]](../../models/utils/retryconfig.md)    | :heavy_minus_sign:                                                  | Configuration to override the default retry behavior of the client. |
 
 ### Errors
 

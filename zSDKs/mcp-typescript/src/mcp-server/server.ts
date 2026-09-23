@@ -30,6 +30,7 @@ import { tool$getFullyFlattenedRequest } from "./tools/getFullyFlattenedRequest.
 import { tool$getNamedPrimitiveUnion } from "./tools/getNamedPrimitiveUnion.js";
 import { tool$getNestedIntegerString } from "./tools/getNestedIntegerString.js";
 import { tool$getPolymorphism } from "./tools/getPolymorphism.js";
+import { tool$getPositionalDefault } from "./tools/getPositionalDefault.js";
 import { tool$getRequestBodyFlattenedAway } from "./tools/getRequestBodyFlattenedAway.js";
 import { tool$getUnionErrors } from "./tools/getUnionErrors.js";
 import { tool$getUser } from "./tools/getUser.js";
@@ -160,6 +161,7 @@ export function createMCPServer(deps: {
   tool(tool$urlValidationStressTest);
   tool(tool$parenthesesInPathAllowed);
   tool(tool$getNestedIntegerString);
+  tool(tool$getPositionalDefault);
   tool(tool$getErrorOnlyExample);
   tool(tool$tag1Deprecated1);
   tool(tool$tag1ListTest1);

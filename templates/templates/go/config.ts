@@ -375,6 +375,15 @@ function getConfigFields(
       ValidationRegex: /^(tagged-and-untagged|tagged-only|false)$/.source,
       ValidationMessage: "tagged-and-untagged, tagged-only, or false only",
     },
+    fixes: {
+      Name: "fixFlags",
+      Required: false,
+      DefaultValue: {
+        encodePathParams: newSDK,
+      },
+      Description:
+        "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
+    },
   };
 }
 

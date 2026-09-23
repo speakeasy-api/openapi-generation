@@ -693,6 +693,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [GetNestedIntegerString](docs/sdks/sdk/README.md#getnestedintegerstring) - Test nested struct with integer:string tag
 * [RenderAsset](docs/sdks/sdk/README.md#renderasset) - Render Asset
 * [GetAsset](docs/sdks/sdk/README.md#getasset) - Get Asset
+* [GetPositionalDefault](docs/sdks/sdk/README.md#getpositionaldefault) - Get an item with a default path identifier
 * [GetErrorOnlyExample](docs/sdks/sdk/README.md#geterroronlyexample) - Operation with example only on error response
 
 ### [Group](docs/sdks/group/README.md)

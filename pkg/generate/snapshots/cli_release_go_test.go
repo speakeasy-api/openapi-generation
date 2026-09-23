@@ -213,6 +213,8 @@ cli:
       repositoryOwner: ""
   enableCustomCodeRegions: false
   envVarPrefix: PETSTORE
+  fixFlags:
+    encodePathParams: true
   generateRelease: true
   helpStyle: auto
   idiomaticMethodCollisionNames: true
@@ -1240,6 +1242,8 @@ cli:
       repositoryOwner: ""
   enableCustomCodeRegions: false
   envVarPrefix: PETSTORE
+  fixFlags:
+    encodePathParams: true
   generateRelease: true
   helpStyle: auto
   idiomaticMethodCollisionNames: true
@@ -2319,6 +2323,8 @@ cli:
       repositoryOwner: example
   enableCustomCodeRegions: false
   envVarPrefix: PETSTORE
+  fixFlags:
+    encodePathParams: true
   generateRelease: true
   helpStyle: auto
   idiomaticMethodCollisionNames: true

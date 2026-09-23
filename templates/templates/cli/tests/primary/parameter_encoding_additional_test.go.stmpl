@@ -1,0 +1,52 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+const nonStructuralReserved = ":@!$&'()*+,;="
+
+const reservedWithSpace = "abc 123" + nonStructuralReserved
+const reservedWithSpaceEncoded = "abc%20123" + nonStructuralReserved
+const reservedWithSpacePercentEncoded = "abc%20123%3A%40%21%24%26%27%28%29%2A%2B%2C%3B%3D"
+
+func newRequestURIServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"url": r.RequestURI})
+	}))
+}
+
+func TestParametersPathEncoding(t *testing.T) {
+	recordTest("parameters-path-encoding")
+
+	s := newRequestURIServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "path-encoding", "--param1", reservedWithSpace, "--param2", reservedWithSpace})
+	require.NoError(t, err)
+
+	got := jsonGetString(strings.TrimSpace(h.GetStdout()), "url")
+	require.Equal(t, "/anything/pathencoding/"+reservedWithSpacePercentEncoded+"/"+reservedWithSpaceEncoded, got)
+}
+
+func TestParametersQueryEncoding(t *testing.T) {
+	recordTest("parameters-query-encoding")
+
+	s := newRequestURIServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"parameters", "query-encoding", "--param1", reservedWithSpace})
+	require.NoError(t, err)
+
+	got := jsonGetString(strings.TrimSpace(h.GetStdout()), "url")
+	require.Equal(t, "/anything/queryencoding?param1="+reservedWithSpaceEncoded, got)
+}

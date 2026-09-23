@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -370,6 +370,10 @@ trackedFiles:
     last_write_checksum: sha1:ad5e8ab25373b7df68ac46fdea274d6978a40797
   docs/operations/v2/schemas/getpolymorphismresponsebody.md:
     last_write_checksum: sha1:8d3fbea8cda1c4e5b6819e32410514349f24738b
+  docs/operations/v2/schemas/getpositionaldefaultrequest.md:
+    last_write_checksum: sha1:e37fba553880bf024473f500e55e162919115f0a
+  docs/operations/v2/schemas/getpositionaldefaultresponse.md:
+    last_write_checksum: sha1:e9581e643a93e5c28c6a256a8a6472906d2abb5d
   docs/operations/v2/schemas/getrequestbodyflattenedawayrequest.md:
     last_write_checksum: sha1:2cfc78e75a6952fa3f3e0ddbaa0084479be5ac31
   docs/operations/v2/schemas/getrequestbodyflattenedawayresponse.md:
@@ -479,7 +483,7 @@ trackedFiles:
   docs/sdks/obsolete/README.md:
     last_write_checksum: sha1:9db4b09843bacdc905525b7d054efd3ba5e1fdac
   docs/sdks/sdk/README.md:
-    last_write_checksum: sha1:50c6da959a2987dca55b2dd9d8cd61b3e90711c5
+    last_write_checksum: sha1:d05402a559975613da5d293be51a1e15eccccf57
   docs/sdks/singlebar/README.md:
     last_write_checksum: sha1:6c99100d6b0274050c6bc9778024a1a80455d410
   docs/sdks/singlefoo/README.md:
@@ -977,7 +981,7 @@ trackedFiles:
   lib/open_api_sdk/operations/callbacks.rb:
     last_write_checksum: sha1:5f294da5822b33d74c2ddd3a9253439c7bf2f63e
   lib/open_api_sdk/operations/v2/schemas.rb:
-    last_write_checksum: sha1:47f573f25026b219c716cb1b715a32e829c94dff
+    last_write_checksum: sha1:bcedff95b702fb2de1e38147f9bfdabffa2a6b45
   lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_request.rb:
     last_write_checksum: sha1:bdc98b446d0cf141a999bdffe1871709bd50c7a2
   lib/open_api_sdk/operations/v2/schemas/_operation_with_leading_and_trailing_underscores_request.rbi:
@@ -1174,6 +1178,14 @@ trackedFiles:
     last_write_checksum: sha1:9818dca894a9842449e2d129f8915d45f7b701f9
   lib/open_api_sdk/operations/v2/schemas/getpolymorphism_responsebody.rbi:
     last_write_checksum: sha1:e33c070ab0c03cb412fec293f04b19802eafe598
+  lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_request.rb:
+    last_write_checksum: sha1:2bb16f833521001782529b0f9fc7c5ff7b4bc57e
+  lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_request.rbi:
+    last_write_checksum: sha1:f2cbb973a25f50271d50c12ab190e3d6d3c56a46
+  lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_response.rb:
+    last_write_checksum: sha1:646796a86ff7cdf4fc1a60026005ab5a28d06d46
+  lib/open_api_sdk/operations/v2/schemas/getpositionaldefault_response.rbi:
+    last_write_checksum: sha1:00ea16413f979bb2978be82a6f33528dd44f591f
   lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_request.rb:
     last_write_checksum: sha1:f9dc4632150670f3039b76721b86d42c4dd4b993
   lib/open_api_sdk/operations/v2/schemas/getrequestbodyflattenedaway_request.rbi:
@@ -1371,7 +1383,7 @@ trackedFiles:
   lib/open_api_sdk/operations/v2/schemas/validate_responsebody.rbi:
     last_write_checksum: sha1:597916a0ce8f2715f5947408878c7df6d45f7b80
   lib/open_api_sdk/sdk.rb:
-    last_write_checksum: sha1:00262619e23ea77fe3f2839a00c041179e949ec9
+    last_write_checksum: sha1:add0c224e26d6a920ef49c5bff4ba87f86528424
   lib/open_api_sdk/sdk_hooks/clientcredentials.rb:
     last_write_checksum: sha1:2ec00441a0545f7f28219f9758a071dcc5aa9070
   lib/open_api_sdk/sdk_hooks/hooks.rb:
@@ -1730,6 +1742,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   test/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  test/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   test/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   test/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -1803,9 +1817,9 @@ trackedFiles:
   test/mockserver/internal/sdk/models/webhooks/paymentupdated.go:
     last_write_checksum: sha1:362f947f1bdffa84db39c905024a81f58308b2d3
   test/mockserver/internal/sdk/optionalnullable/optionalnullable.go:
-    last_write_checksum: sha1:aa5ff815f31a3657487ad5e0c3f023f573b1fcab
+    last_write_checksum: sha1:58d775c91b1a5ef5149b625286e4f35b96bb6f7f
   test/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go:
-    last_write_checksum: sha1:c0ca755fb35acd8f838567e22c2b5722592fe1c3
+    last_write_checksum: sha1:bc65a2684a85ad0d79c7643836c17a222adf1082
   test/mockserver/internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   test/mockserver/internal/sdk/types/date.go:
@@ -1821,7 +1835,7 @@ trackedFiles:
   test/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   test/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:2c860aa8b53b7d38c20290854c880368ce4fe0ec
+    last_write_checksum: sha1:5e20daa1ddf6ebe49c4c0f34fd0051c43e6b7ff9
   test/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   test/mockserver/internal/sdk/utils/sort.go:
@@ -2214,6 +2228,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-02-16T03:56:09Z"

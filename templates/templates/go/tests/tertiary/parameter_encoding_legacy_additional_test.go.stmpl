@@ -1,0 +1,160 @@
+package tests
+
+import (
+	"context"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/utils"
+)
+
+const legacyReservedWithSpace = "abc 123:@!$&'()*+,;="
+
+func TestParametersPathEncodingLegacy(t *testing.T) {
+	recordTest("parameters-path-encoding")
+
+	client := NewRequestRecorderClient()
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(client))
+
+	res, err := s.Parameters.PathEncoding(context.Background(), legacyReservedWithSpace, legacyReservedWithSpace)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Len(t, client.Log, 1)
+
+	segment := "abc%20123:@%21$&%27%28%29%2A+,;="
+	require.Equal(t, getHTTPBinURL()+"/anything/pathencoding/"+segment+"/"+segment, client.Log[0].RequestURI)
+}
+
+func TestParametersQueryEncodingLegacy(t *testing.T) {
+	recordTest("parameters-query-encoding")
+
+	client := NewRequestRecorderClient()
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()), sdk.WithClient(client))
+
+	res, err := s.Parameters.QueryEncoding(context.Background(), legacyReservedWithSpace)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Len(t, client.Log, 1)
+	require.Equal(t, getHTTPBinURL()+"/anything/queryencoding?param1=abc+123%3A%40%21%24%26%27%28%29%2A%2B%2C%3B%3D", client.Log[0].RequestURI)
+}
+
+type legacyScalarPathParams struct {
+	ID string `pathParam:"style=simple,explode=false,name=id"`
+}
+
+type legacyAllowReservedPathParams struct {
+	ID string `pathParam:"style=simple,explode=false,name=id,allowReserved=true"`
+}
+
+type legacyArrayPathParams struct {
+	IDs []string `pathParam:"style=simple,explode=false,name=ids"`
+}
+
+type legacyObjectPathParams struct {
+	Obj         legacyObjectPathParam `pathParam:"style=simple,explode=false,name=obj"`
+	ObjExploded legacyObjectPathParam `pathParam:"style=simple,explode=true,name=objExploded"`
+}
+
+type legacyObjectPathParam struct {
+	Path string `pathParam:"name=path"`
+	Name string `pathParam:"name=name"`
+}
+
+type legacyMapPathParams struct {
+	M         map[string]string `pathParam:"style=simple,explode=false,name=m"`
+	MExploded map[string]string `pathParam:"style=simple,explode=true,name=mExploded"`
+}
+
+type legacyJSONPathParams struct {
+	Obj legacyJSONPathObject `pathParam:"serialization=json,name=obj"`
+}
+
+type legacyJSONPathObject struct {
+	Path string `json:"path"`
+}
+
+func TestGenerateURL_LegacyLeavesSimpleStyleValuesUnencoded(t *testing.T) {
+	tests := []struct {
+		name       string
+		path       string
+		pathParams interface{}
+		want       string
+	}{
+		{
+			name:       "slash inside single segment",
+			path:       "/v1/resources/{id}",
+			pathParams: legacyScalarPathParams{ID: "parent/child"},
+			want:       "http://localhost/v1/resources/parent/child",
+		},
+		{
+			name:       "all reserved characters",
+			path:       "/v1/resources/{id}",
+			pathParams: legacyScalarPathParams{ID: ":/?#[]@!$&'()*+,;="},
+			want:       "http://localhost/v1/resources/:/?#[]@!$&'()*+,;=",
+		},
+		{
+			name:       "allowReserved tag has no effect",
+			path:       "/v1/resources/{id}",
+			pathParams: legacyAllowReservedPathParams{ID: "a b%c"},
+			want:       "http://localhost/v1/resources/a b%c",
+		},
+		{
+			name:       "array elements",
+			path:       "/v1/items/{ids}",
+			pathParams: legacyArrayPathParams{IDs: []string{"a/b", "c,d"}},
+			want:       "http://localhost/v1/items/a/b,c,d",
+		},
+		{
+			name: "object fields",
+			path: "/v1/objs/{obj}/exploded/{objExploded}",
+			pathParams: legacyObjectPathParams{
+				Obj:         legacyObjectPathParam{Path: "a/b", Name: "c,d"},
+				ObjExploded: legacyObjectPathParam{Path: "a/b", Name: "c,d"},
+			},
+			want: "http://localhost/v1/objs/path,a/b,name,c,d/exploded/path=a/b,name=c,d",
+		},
+		{
+			name: "map entries",
+			path: "/v1/maps/{m}/exploded/{mExploded}",
+			pathParams: legacyMapPathParams{
+				M:         map[string]string{"k:1/2": "v/1"},
+				MExploded: map[string]string{"k:1/2": "v/1"},
+			},
+			want: "http://localhost/v1/maps/k:1/2,v/1/exploded/k:1/2=v/1",
+		},
+		{
+			name:       "json serialized value uses url.PathEscape",
+			path:       "/v1/objs/{obj}",
+			pathParams: legacyJSONPathParams{Obj: legacyJSONPathObject{Path: "a/b c"}},
+			want:       "http://localhost/v1/objs/%7B%22path%22:%22a%2Fb%20c%22%7D",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := utils.GenerateURL(context.Background(), "http://localhost", tt.path, tt.pathParams, nil)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+type legacyQueryAPIKeySecurity struct {
+	APIKey *string `security:"scheme,type=apiKey,subtype=query,name=api_key"`
+}
+
+func TestSecurity_LegacyQuerySchemeReencodesSortedQuery(t *testing.T) {
+	key := "se cret"
+	req, err := http.NewRequest(http.MethodGet, "http://localhost/items?filter=a:b/c%20d", nil)
+	require.NoError(t, err)
+
+	security := func(context.Context) (interface{}, error) {
+		return legacyQueryAPIKeySecurity{APIKey: &key}, nil
+	}
+	require.NoError(t, utils.PopulateSecurity(context.Background(), req, security))
+
+	require.Equal(t, "api_key=se+cret&filter=a%3Ab%2Fc+d", req.URL.RawQuery)
+}

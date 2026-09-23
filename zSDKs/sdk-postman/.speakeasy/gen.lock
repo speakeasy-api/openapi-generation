@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -407,6 +407,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedFiles:
   - openapi_postman_collection.json

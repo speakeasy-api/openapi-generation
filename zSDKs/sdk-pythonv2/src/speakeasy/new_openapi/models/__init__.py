@@ -152,6 +152,10 @@ if TYPE_CHECKING:
         SimpleAllOf,
         SimpleAllOfTypedDict,
     )
+    from .getpositionaldefaultop import (
+        GetPositionalDefaultRequest,
+        GetPositionalDefaultRequestParam,
+    )
     from .getrequestbodyflattenedawayop import (
         GetRequestBodyFlattenedAwayGlobals,
         GetRequestBodyFlattenedAwayGlobalsTypedDict,
@@ -448,6 +452,8 @@ __all__ = [
     "GetPetOwnersResponseTypedDict",
     "GetPolymorphismResponse",
     "GetPolymorphismResponseTypedDict",
+    "GetPositionalDefaultRequest",
+    "GetPositionalDefaultRequestParam",
     "GetRequestBodyFlattenedAwayGlobals",
     "GetRequestBodyFlattenedAwayGlobalsTypedDict",
     "GetRequestBodyFlattenedAwayRequest",
@@ -767,6 +773,8 @@ _dynamic_imports: dict[str, str] = {
     "OneOfWithUnionDescriptionTypedDict": ".getpolymorphismop",
     "SimpleAllOf": ".getpolymorphismop",
     "SimpleAllOfTypedDict": ".getpolymorphismop",
+    "GetPositionalDefaultRequest": ".getpositionaldefaultop",
+    "GetPositionalDefaultRequestParam": ".getpositionaldefaultop",
     "GetRequestBodyFlattenedAwayGlobals": ".getrequestbodyflattenedawayop",
     "GetRequestBodyFlattenedAwayGlobalsTypedDict": ".getrequestbodyflattenedawayop",
     "GetRequestBodyFlattenedAwayRequest": ".getrequestbodyflattenedawayop",

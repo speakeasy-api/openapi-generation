@@ -1,12 +1,12 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 06319d7b9cbe452c31d2eae6dace8c56
+  docChecksum: dd982b4f4b37f4155da107717836388f
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 27698c18c73cb2bcca0a4060adbfd67b
+  configChecksum: 056f1077b102250a388d969a1b4d409a
 features:
   go:
     acceptHeaders: 2.81.2
@@ -326,6 +326,10 @@ trackedFiles:
     last_write_checksum: sha1:7d2a8540a61f0cf0fd692df1dd8bea2b598e6ae2
   docs/getpolymorphismresponsebody.md:
     last_write_checksum: sha1:510649e07c23a56a9ac65c5d63d09087d4c01415
+  docs/getpositionaldefaultrequest.md:
+    last_write_checksum: sha1:aa8bdb0cb5f75b97653d5ac2c70cc59316055321
+  docs/getpositionaldefaultresponse.md:
+    last_write_checksum: sha1:09958e19204fa76e22186b7dd728778e57f8203e
   docs/getrequestbodyflattenedawayglobals.md:
     last_write_checksum: sha1:2359d22b0ca5a4ff7e48ac6c984da7f16219239e
   docs/getrequestbodyflattenedawayrequest.md:
@@ -501,7 +505,7 @@ trackedFiles:
   docs/sdks/obsolete/README.md:
     last_write_checksum: sha1:979d933c0f741e280e06d66933fb1e31d8912bf5
   docs/sdks/sdk/README.md:
-    last_write_checksum: sha1:d43c749f1dcba1955e196374d52270e4f29004fc
+    last_write_checksum: sha1:8bd4ffaeece6034c0572758c3d02ae850b9b669a
   docs/sdks/singlebar/README.md:
     last_write_checksum: sha1:992db76373ef0968330c581947a2c413c23beec0
   docs/sdks/singlefoo/README.md:
@@ -672,6 +676,8 @@ trackedFiles:
     last_write_checksum: sha1:d3f3bd720db28dadaa6ce6cbeeb6d9b26a5fe83b
   getpolymorphismop.go:
     last_write_checksum: sha1:3b13c6485b9fb099801ac24ddddf6400bcb31531
+  getpositionaldefaultop.go:
+    last_write_checksum: sha1:e18045e88df66ef3d76cceb3882aaff109783306
   getrequestbodyflattenedawayop.go:
     last_write_checksum: sha1:e3379b455b44b1c9172dbb9c6649d7aaa8ffc99b
   getsinglenamespacebarpetop.go:
@@ -709,21 +715,21 @@ trackedFiles:
   internal/utils/json.go:
     last_write_checksum: sha1:785278d21e06d3c0b820630fc9d5ca38d364f9ee
   internal/utils/pathparams.go:
-    last_write_checksum: sha1:cc3c6496446ce7fe147c981d299b8f90ea234056
+    last_write_checksum: sha1:440aadb18d886ea0a79af0772eb65cdddc9eee60
   internal/utils/queryparams.go:
-    last_write_checksum: sha1:564670eda934f32ce2ae387ee78118c5b6e21401
+    last_write_checksum: sha1:6625d7f77067bf181254067b89ae437f29cbeab9
   internal/utils/requestbody.go:
     last_write_checksum: sha1:489521457a7c80b5aa4fb6f39c286c6610f6f07f
   internal/utils/retries.go:
     last_write_checksum: sha1:84e2a21403b0e0d28bf258dd8307a98e12d6e648
   internal/utils/security.go:
-    last_write_checksum: sha1:1c0b332b3cf0fa405df0c5bf4e03f335139566b6
+    last_write_checksum: sha1:982f805f707b2dc7af0c7725958be3943d18b344
   internal/utils/union.go:
     last_write_checksum: sha1:9308c9229c776771a17972ef647c7977ea0f6dad
   internal/utils/union_test.go:
     last_write_checksum: sha1:c55e5e44c26dfae67b83359851996122a3dfc9cf
   internal/utils/utils.go:
-    last_write_checksum: sha1:cf0c3298ca779d27e86a708ea7ff349d51816d0a
+    last_write_checksum: sha1:c1d0849c18660d40ed2e588d52c7f697fe2cbb41
   listtest1op.go:
     last_write_checksum: sha1:f97b37a5070bdc83454bc0d5c3f3217b9445a80c
   loginop.go:
@@ -787,7 +793,7 @@ trackedFiles:
   rootgroupopop.go:
     last_write_checksum: sha1:ae99efa01cd9e9c3c8c17c273155a99cfbb69d95
   sdk.go:
-    last_write_checksum: sha1:b5de030a1bba5188e6def5b383ec96a81d4c2bc0
+    last_write_checksum: sha1:e43b6ac2aa0932feaa487fbf4594655578b3f7e3
   sdkerror.go:
     last_write_checksum: sha1:b6d15e1f2e161acfecbf90b67b25ed667cff7e80
   security.go:
@@ -1132,6 +1138,8 @@ trackedFiles:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
     last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+  tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
+    last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:c9cf0d9205aab37c1a78a4eddba95a23438c5cc1
   tests/mockserver/internal/sdk/models/operations/getsinglenamespacebarpet.go:
@@ -1614,6 +1622,11 @@ examples:
       responses:
         "200":
           application/json: {}
+  getPositionalDefault:
+    speakeasy-default-get-positional-default:
+      parameters:
+        path:
+          id: "default-id"
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-02-05T15:31:49Z"

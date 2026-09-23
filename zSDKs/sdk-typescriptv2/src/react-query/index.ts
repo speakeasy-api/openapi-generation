@@ -20,6 +20,7 @@ export * from "./getErrorOnlyExample.js";
 export * from "./getNamedPrimitiveUnion.js";
 export * from "./getNestedIntegerString.js";
 export * from "./getPolymorphism.js";
+export * from "./getPositionalDefault.js";
 export * from "./getRequestBodyFlattenedAway.js";
 export * from "./getUser.js";
 export * from "./groupRootGroupOp.js";
