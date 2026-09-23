@@ -8,6 +8,7 @@ interface UsageFlagDef {
   longHelp?: string;
   global?: boolean;
   defaultValue?: string | number | boolean;
+  suggestions?: string[];
   env?: string;
   config?: string;
   count?: boolean;
@@ -999,10 +1000,15 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   for (const f of intent.Flags) {
     const argName =
       f.Type === "bool" ? undefined : (f.Name || "value").replace(/-/g, "_");
-    flags.push({
+    const usage: UsageFlagDef = {
       spec: usageFlagSpec(f.Name || "", f.Shorthand || undefined, argName),
       help: f.Summary,
-    });
+    };
+    if (f.HasDefault) usage.defaultValue = f.DefaultValue;
+    if (f.Suggestions && f.Suggestions.length > 0) {
+      usage.suggestions = f.Suggestions;
+    }
+    flags.push(usage);
   }
   if (intent.ArtifactJSON) {
     flags.push({
@@ -1320,10 +1326,14 @@ function renderUsageFlag(flag: UsageFlagDef, indent: number): string[] {
   pushIf(props, flag.count ? kdlProp("count", true) : "");
   pushIf(props, flag.variadic ? kdlProp("var", true) : "");
   pushIf(props, flag.hidden ? kdlProp("hide", true) : "");
+  const line = `${"  ".repeat(indent)}flag ${kdlQuoted(flag.spec)}${
+    props.length ? ` ${props.join(" ")}` : ""
+  }`;
+  if (!flag.suggestions || flag.suggestions.length === 0) return [line];
   return [
-    `${"  ".repeat(indent)}flag ${kdlQuoted(flag.spec)}${
-      props.length ? ` ${props.join(" ")}` : ""
-    }`,
+    `${line} {`,
+    `${prefix}suggestions ${flag.suggestions.map(kdlQuoted).join(" ")}`,
+    `${"  ".repeat(indent)}}`,
   ];
 }
 

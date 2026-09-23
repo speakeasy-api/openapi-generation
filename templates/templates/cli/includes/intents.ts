@@ -28,6 +28,9 @@ interface IntentBodyEntry {
   Variadic?: boolean; // positional consumes the remaining tokens
   Required?: boolean; // enforced when the body is built from inputs
   PresetCovered?: boolean; // a preset already satisfies the bound pointer
+  DefaultValue?: any; // displayed default (preset, declared, or schema)
+  HasDefault?: boolean;
+  Suggestions?: string[]; // full suggestion list for machine-readable surfaces
   RouteIDs?: string[]; // dispatch routes that declare this body key
   RequiredRouteIDs?: string[]; // routes on which this input remains required
   Group?: string; // route-specific help group ("Model variant")
@@ -557,25 +560,29 @@ function validateIntentFlagNames(
   }
 }
 
-// Suggestion suffix for a declared input backed by a schema enum. These are
-// suggestions, never validation: the server owns the value space.
-function intentEnumSuffix(input: any): string {
-  const values: any[] = input.Enum || [];
-  if (values.length === 0) return "";
-  const shown = values.slice(0, 4).map((v: any) => `${v}`);
-  const more = values.length > 4 ? ", ..." : "";
-  return ` (e.g. ${shown.join(", ")}${more})`;
-}
-
-function intentDefaultSuffix(input: any): string {
-  if (input.Default === undefined || input.Default === null) return "";
-  return ` (default: ${input.Default})`;
+// Value suffix for a declared input: one parenthetical holding the
+// suggestions (a declared list in full, else the first four schema enum
+// values) and, for flags, the default last. The default never repeats inside
+// the suggestions. These are suggestions, never validation: the server owns
+// the value space.
+function intentValueSuffix(input: any, withDefault: boolean): string {
+  const hasDefault =
+    withDefault && input.Default !== undefined && input.Default !== null;
+  const defaultText = hasDefault ? `${input.Default}` : null;
+  const values = (input.Enum || [])
+    .map((v: any) => `${v}`)
+    .filter((v: string) => v !== defaultText);
+  const declared = Boolean(input.SuggestionsDeclared);
+  const shown = declared ? values : values.slice(0, 4);
+  const more = !declared && values.length > 4 ? ", ..." : "";
+  const parts: string[] = [];
+  if (shown.length > 0) parts.push(`e.g. ${shown.join(", ")}${more}`);
+  if (defaultText !== null) parts.push(`default: ${defaultText}`);
+  return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 }
 
 function intentFlagHelp(input: any): string {
-  return `${input.Summary || ""}${intentDefaultSuffix(input)}${intentEnumSuffix(
-    input,
-  )}`.trim();
+  return `${input.Summary || ""}${intentValueSuffix(input, true)}`.trim();
 }
 
 function compactDefaultValue(value: any): string | null {
@@ -879,6 +886,9 @@ function collectIntentManifest(): IntentManifestCtx {
         Type: f.Type || "string",
         Required: Boolean(f.Required),
         PresetCovered: dispatch ? false : key in presetObj,
+        DefaultValue: f.Default,
+        HasDefault: f.Default !== undefined && f.Default !== null,
+        Suggestions: (f.Enum || []).map((v: any) => `${v}`),
         RouteIDs: (f as any).RouteIDs || [],
         RequiredRouteIDs: (f as any).RequiredRouteIDs || [],
         Group: dispatch
@@ -1284,8 +1294,9 @@ function collectIntentManifest(): IntentManifestCtx {
       Args: args,
       ArgsHelp: (cmd.Args || [])
         .map((a: any) =>
-          `  <${a.Name || "input"}>  ${a.Summary || ""}${intentEnumSuffix(
+          `  <${a.Name || "input"}>  ${a.Summary || ""}${intentValueSuffix(
             a,
+            false,
           )}`.trimEnd(),
         )
         .join("\n"),
@@ -1463,7 +1474,7 @@ function operationFlagDefaultLiteral(input: any): string {
 }
 
 function operationDeclaredFlagHelp(input: any): string {
-  return `${input.Summary || ""}${intentEnumSuffix(input)}`.trim();
+  return `${input.Summary || ""}${intentValueSuffix(input, false)}`.trim();
 }
 
 function operationGeneratedFlagNames(op: Operation): Set<string> {

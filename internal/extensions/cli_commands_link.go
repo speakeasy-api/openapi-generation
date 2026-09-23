@@ -455,8 +455,10 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 	}
 
 	presetPointers := map[string]bool{}
+	presetValues := map[string]any{}
 	for _, preset := range cmd.Presets {
 		presetPointers[preset.Bind.Pointer] = true
+		presetValues[preset.Bind.Pointer] = preset.Value
 	}
 
 	for i := range cmd.Presets {
@@ -471,12 +473,12 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 	}
 	cmd.Source.Routes[0].Selectors = selectors
 	for i := range cmd.Args {
-		if err := d.linkInput(key, &cmd.Args[i], variant, presetPointers, true); err != nil {
+		if err := d.linkInput(key, &cmd.Args[i], variant, presetPointers, presetValues, true); err != nil {
 			return err
 		}
 	}
 	for i := range cmd.Flags {
-		if err := d.linkInput(key, &cmd.Flags[i], variant, presetPointers, false); err != nil {
+		if err := d.linkInput(key, &cmd.Flags[i], variant, presetPointers, presetValues, false); err != nil {
 			return err
 		}
 	}
@@ -514,6 +516,7 @@ type cliDispatchRouteLink struct {
 	route          *CLICommandRoute
 	variant        *cliResolvedSchema
 	presetPointers map[string]bool
+	presetValues   map[string]any
 }
 
 type cliDispatchMember struct {
@@ -819,7 +822,11 @@ func (d *cliManifestDecoder) linkOperationFlag(opID string, input *CLICommandInp
 		if input.Summary == "" && facts.description != "" {
 			input.Summary = cliFirstSentence(facts.description)
 		}
-		if len(rawVariants) == 1 && len(facts.enum) > 0 {
+		if input.SuggestionsDeclared {
+			if err := cliCheckSuggestions(input.Enum, kind); err != nil {
+				return fmt.Errorf("operation %q flag %q suggestions: %w", opID, input.Name, err)
+			}
+		} else if len(rawVariants) == 1 && len(facts.enum) > 0 {
 			input.Enum = facts.enum
 		}
 		if input.DefaultFrom == "schema" {
@@ -1247,8 +1254,10 @@ func (d *cliManifestDecoder) linkDispatchPresets(cmdKey string, cmd *CLICommand,
 		}
 		link.route.Presets = cliMergeDispatchPresets(cmd.Presets, routeLocal)
 		link.presetPointers = map[string]bool{}
+		link.presetValues = map[string]any{}
 		for _, preset := range link.route.Presets {
 			link.presetPointers[preset.Bind.Pointer] = true
+			link.presetValues[preset.Bind.Pointer] = preset.Value
 		}
 	}
 	return nil
@@ -1308,7 +1317,7 @@ func (d *cliManifestDecoder) linkDispatchInput(cmdKey string, input *CLICommandI
 		shape := cliDispatchPropertyShape(declared.facts)
 		if shape == "array" || shape == "object" {
 			candidate := *input
-			return d.linkInput(cmdKey, &candidate, declared.link.variant, declared.link.presetPointers, isArg)
+			return d.linkInput(cmdKey, &candidate, declared.link.variant, declared.link.presetPointers, declared.link.presetValues, isArg)
 		}
 	}
 	for i := 1; i < len(declaring); i++ {
@@ -1350,7 +1359,7 @@ func (d *cliManifestDecoder) linkDispatchInput(cmdKey string, input *CLICommandI
 			candidate.DefaultFrom = ""
 			candidate.Default = nil
 		}
-		if err := d.linkInput(cmdKey, &candidate, declaring[i].link.variant, declaring[i].link.presetPointers, isArg); err != nil {
+		if err := d.linkInput(cmdKey, &candidate, declaring[i].link.variant, declaring[i].link.presetPointers, declaring[i].link.presetValues, isArg); err != nil {
 			return err
 		}
 		if input.Default != nil {
@@ -1372,8 +1381,17 @@ func (d *cliManifestDecoder) linkDispatchInput(cmdKey string, input *CLICommandI
 	if input.Summary == "" {
 		input.Summary = declaring[0].normalized.Summary
 	}
-	input.Enum = cliIntersectDispatchEnums(declaring)
+	if !input.SuggestionsDeclared {
+		input.Enum = cliIntersectDispatchEnums(declaring)
+	}
 
+	if !isArg {
+		if value, ok := cliDispatchPresetDefault(declaring, input.Bind.Pointer); ok {
+			input.DefaultFrom = "preset"
+			input.Default = value
+			defaultFromSchema = false
+		}
+	}
 	if defaultFromSchema {
 		presetCovered := false
 		for _, declared := range declaring {
@@ -1421,6 +1439,24 @@ func cliDispatchPropertyShape(facts *cliPropertyFacts) string {
 		return facts.kinds[0]
 	}
 	return "untyped"
+}
+
+// cliDispatchPresetDefault reports the value the request carries at pointer
+// when the caller omits the flag: the effective preset, provided every
+// declaring route sets the same scalar.
+func cliDispatchPresetDefault(declaring []cliDispatchInputFacts, pointer string) (any, bool) {
+	var value any
+	for i, declared := range declaring {
+		candidate, ok := declared.link.presetValues[pointer]
+		if !ok || !cliIsScalarValue(candidate) {
+			return nil, false
+		}
+		if i > 0 && !cliValuesEqual(value, candidate) {
+			return nil, false
+		}
+		value = candidate
+	}
+	return value, len(declaring) > 0
 }
 
 func cliIntersectDispatchEnums(declaring []cliDispatchInputFacts) []any {
@@ -2965,7 +3001,7 @@ func cliSchemaLabel(variant *cliResolvedSchema) string {
 	return "the request body schema"
 }
 
-func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, variant *cliResolvedSchema, presetPointers map[string]bool, isArg bool) error {
+func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, variant *cliResolvedSchema, presetPointers map[string]bool, presetValues map[string]any, isArg bool) error {
 	what := fmt.Sprintf("flag %q bind", input.Name)
 	if isArg {
 		what = fmt.Sprintf("arg %q bind", input.Name)
@@ -2986,6 +3022,11 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 		if input.Type == "" {
 			return fmt.Errorf("command %q %s %s targets an undeclared property; declare an explicit type: (string, int, float, or bool)", cmdKey, what, input.Bind.Pointer)
 		}
+		if input.SuggestionsDeclared {
+			if err := cliCheckSuggestions(input.Enum, input.Type); err != nil {
+				return fmt.Errorf("command %q %s %s suggestions: %w", cmdKey, what, input.Bind.Pointer, err)
+			}
+		}
 		return nil
 	}
 
@@ -3003,7 +3044,11 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 		if err != nil {
 			return fmt.Errorf("command %q %s %s: %w", cmdKey, what, input.Bind.Pointer, err)
 		}
-		if len(arm.enum) > 0 {
+		if input.SuggestionsDeclared {
+			if err := cliCheckSuggestions(input.Enum, input.Type); err != nil {
+				return fmt.Errorf("command %q %s %s suggestions: %w", cmdKey, what, input.Bind.Pointer, err)
+			}
+		} else if len(arm.enum) > 0 {
 			input.Enum = arm.enum
 		}
 		if input.Summary == "" {
@@ -3024,7 +3069,11 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 		default:
 			return fmt.Errorf("command %q %s %s targets a %s property; v1 inputs bind scalar fields only (structured construction requires the request-plan.payload-holes capability)", cmdKey, what, input.Bind.Pointer, facts.kinds[0])
 		}
-		if len(facts.enum) > 0 {
+		if input.SuggestionsDeclared {
+			if err := cliCheckSuggestions(input.Enum, input.Type); err != nil {
+				return fmt.Errorf("command %q %s %s suggestions: %w", cmdKey, what, input.Bind.Pointer, err)
+			}
+		} else if len(facts.enum) > 0 {
 			input.Enum = facts.enum
 		}
 		if input.Summary == "" {
@@ -3048,10 +3097,15 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 		}
 	}
 
-	// Display-only defaults. A preset at the same pointer supersedes the
-	// schema default, so advertising it would misdescribe the request.
+	// Display-only defaults. A preset at the same pointer is what the request
+	// carries when the flag is omitted, so it is the default help shows.
+	presetValue, presetCovered := presetValues[input.Bind.Pointer]
 	switch {
-	case input.DefaultFrom == "schema" && presetPointers[input.Bind.Pointer]:
+	case isArg:
+	case presetCovered && cliIsScalarValue(presetValue):
+		input.DefaultFrom = "preset"
+		input.Default = presetValue
+	case input.DefaultFrom == "schema" && presetCovered:
 		input.DefaultFrom = ""
 		input.Default = nil
 		d.warnf("command %q flag %q: schema-default display suppressed because a preset sets %s", cmdKey, input.Name, input.Bind.Pointer)
@@ -3580,6 +3634,26 @@ func cliCheckEnumValue(value any, facts *cliPropertyFacts) error {
 		}
 	}
 	return fmt.Errorf("value %v is not in the closed enum (%s)", value, cliCandidateList(cliEnumStrings(facts.enum)))
+}
+
+// cliCheckSuggestions validates a manifest suggestions: list against the
+// input type. The list is display-only, so the schema enum does not bound it:
+// the server owns the value space.
+func cliCheckSuggestions(values []any, kind string) error {
+	for _, value := range values {
+		if err := cliCheckScalarValue(value, kind); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cliIsScalarValue(value any) bool {
+	switch value.(type) {
+	case string, bool, int64, float64:
+		return true
+	}
+	return false
 }
 
 func cliEnumStrings(enum []any) []string {

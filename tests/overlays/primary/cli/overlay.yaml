@@ -124,6 +124,7 @@ actions:
               shorthand: m
               summary: Model to run
               defaultFrom: schema
+              suggestions: [render-1, render-2]
           preset:
             $.model: render-1
             $.output_modalities: image

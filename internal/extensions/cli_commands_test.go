@@ -2486,24 +2486,6 @@ commands:
 	assert.True(t, manifest.Commands[0].Args[0].Required)
 }
 
-func TestCLICommands_PresetSuppressesSchemaDefault(t *testing.T) {
-	manifest, warnings, err := decodeCLITest(t, `
-version: 1
-commands:
-  image:
-    op: CreateTask#CreateRenderTaskParams
-    preset:
-      $.engine: render-image-9
-    flags:
-      engine: {to: $.engine, defaultFrom: schema}
-`)
-	require.NoError(t, err)
-	engine := manifest.Commands[0].Flags[0]
-	assert.Empty(t, engine.DefaultFrom)
-	assert.Nil(t, engine.Default)
-	assert.Contains(t, strings.Join(warnings, "\n"), "schema-default display suppressed")
-}
-
 func TestCLICommands_PresetSatisfiesRequiredInference(t *testing.T) {
 	manifest, _, err := decodeCLITest(t, `
 version: 1
@@ -4609,4 +4591,186 @@ func TestCLICommands_RouteDispatchProjectionIsLinted(t *testing.T) {
 		require.Len(t, warnings, 1)
 		assert.Contains(t, warnings[0], `command "jobs run": jq projection ".id" cannot be statically verified`)
 	})
+}
+
+func TestCLICommands_InputSuggestions(t *testing.T) {
+	// A declared suggestions: list replaces the schema-derived one. It is
+	// display-only, so values outside the schema enum (open or closed) are
+	// accepted; only the input type bounds it.
+	manifest, warnings, err := decodeCLITest(t, `
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    args:
+      prompt: {to: $.input, type: string, variadic: true, suggestions: [hello, world]}
+    flags:
+      engine: {to: $.engine, defaultFrom: schema, suggestions: [render-pro-2, render-next-1]}
+      rate: {to: $.sample_rate, suggestions: [8000, 96000]}
+      priority: {to: $.priority, suggestions: []}
+      background: {to: $.background}
+  workflow:
+    op: CreateTask#CreateWorkflowTaskParams
+    flags:
+      workflow: {to: $.workflow, suggestions: [nightly, hourly]}
+      mode: {to: $.mode, suggestions: [turbo]}
+  workflow-plain:
+    op: CreateTask#CreateWorkflowTaskParams
+    flags:
+      workflow: {to: $.workflow}
+      mode: {to: $.mode}
+`)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+	require.Len(t, manifest.Commands, 3)
+
+	render := manifest.Commands[0]
+	require.Len(t, render.Args, 1)
+	assert.Equal(t, []any{"hello", "world"}, render.Args[0].Enum)
+	assert.True(t, render.Args[0].SuggestionsDeclared)
+	require.Len(t, render.Flags, 4)
+	assert.Equal(t, []any{"render-pro-2", "render-next-1"}, render.Flags[0].Enum)
+	assert.True(t, render.Flags[0].SuggestionsDeclared)
+	assert.Equal(t, "render-standard-2", render.Flags[0].Default)
+	assert.Equal(t, []any{int64(8000), int64(96000)}, render.Flags[1].Enum)
+	assert.Equal(t, "int", render.Flags[1].Type)
+	assert.Empty(t, render.Flags[2].Enum)
+	assert.True(t, render.Flags[2].SuggestionsDeclared)
+	assert.Empty(t, render.Flags[3].Enum)
+	assert.False(t, render.Flags[3].SuggestionsDeclared)
+
+	workflow := manifest.Commands[1]
+	require.Len(t, workflow.Flags, 2)
+	assert.Equal(t, []any{"nightly", "hourly"}, workflow.Flags[0].Enum)
+	assert.Equal(t, []any{"turbo"}, workflow.Flags[1].Enum)
+	plain := manifest.Commands[2]
+	require.Len(t, plain.Flags, 2)
+	assert.Equal(t, []any{"batch", "streaming"}, plain.Flags[1].Enum)
+	assert.False(t, plain.Flags[1].SuggestionsDeclared)
+
+	// Values must match the bound property's type, including on open schemas.
+	requireDecodeError(t, `
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      priority: {to: $.priority, suggestions: [high]}
+`, `command "render" flag "priority" bind /priority suggestions: value high is not an integer`)
+	requireDecodeError(t, `
+version: 1
+commands:
+  note:
+    op: CreateNote
+    flags:
+      extra: {to: $.extra, type: int, suggestions: [fast]}
+`, `command "note" flag "extra" bind /extra suggestions: value fast is not an integer`)
+
+	// Manifest shape.
+	for _, tc := range []struct{ suggestions, want string }{
+		{"fast", `input "engine": suggestions must be a list of scalar values`},
+		{"{a: b}", `input "engine": suggestions must be a list of scalar values`},
+		{"[{name: fast}]", `input "engine": suggestions entries must be scalar values`},
+		{"[fast, ~]", `input "engine": suggestions entries cannot be null`},
+		{"[fast, fast]", `input "engine": suggestions lists fast more than once`},
+	} {
+		requireDecodeError(t, `
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      engine: {to: $.engine, suggestions: `+tc.suggestions+`}
+`, tc.want)
+	}
+}
+
+func TestCLICommands_InputSuggestionsOperationsAndDispatch(t *testing.T) {
+	manifest, warnings, err := decodeCLITest(t, `
+version: 1
+operations:
+  CreateUpload:
+    flags:
+      name: {to: $.name, suggestions: [alpha, beta]}
+`)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+	require.Len(t, manifest.Operations, 1)
+	require.Len(t, manifest.Operations[0].Flags, 1)
+	assert.Equal(t, []any{"alpha", "beta"}, manifest.Operations[0].Flags[0].Enum)
+	assert.True(t, manifest.Operations[0].Flags[0].SuggestionsDeclared)
+
+	requireDecodeError(t, `
+version: 1
+operations:
+  CreateUpload:
+    flags:
+      name: {to: $.name, suggestions: [1]}
+`, `operation "CreateUpload" flag "name" suggestions: value 1 is not a string`)
+
+	// Route dispatch: a declared list wins over the cross-route intersection.
+	spec := strings.Replace(cliRouteDispatchSpec, "        output_modes:\n          type: string\n", "        output_modes:\n          type: string\n        mode: {type: string, enum: [common, engine]}\n", 1)
+	spec = strings.Replace(spec, "        pipeline_config:\n          type: string\n", "        pipeline_config:\n          type: string\n        mode: {type: string, enum: [common, pipeline]}\n", 1)
+	authored := strings.Replace(cliRouteDispatchManifest, "      background: {to: $.background}\n", "      mode: {to: $.mode, suggestions: [common, engine]}\n      engine-alias: {to: $.engine, suggestions: [text-2]}\n", 1)
+	authored = strings.Replace(authored, "      engine: {to: $.engine, defaultFrom: schema}\n", "", 1)
+	authored = strings.Replace(authored, "        selector: engine\n", "        selector: engine-alias\n", 1)
+	dispatch, err := decodeCLITestSpec(t, spec, authored)
+	require.NoError(t, err)
+	require.Len(t, dispatch.Commands[0].Flags, 3)
+	assert.Equal(t, "mode", dispatch.Commands[0].Flags[1].Name)
+	assert.Equal(t, []any{"common", "engine"}, dispatch.Commands[0].Flags[1].Enum)
+	assert.True(t, dispatch.Commands[0].Flags[1].SuggestionsDeclared)
+	assert.Equal(t, "engine-alias", dispatch.Commands[0].Flags[2].Name)
+	assert.Equal(t, []any{"text-2"}, dispatch.Commands[0].Flags[2].Enum)
+}
+
+func TestCLICommands_PresetShownAsFlagDefault(t *testing.T) {
+	// The effective preset is what the request carries when the flag is
+	// omitted, so it is the displayed default regardless of defaultFrom or
+	// an authored default; schema suggestions are kept.
+	manifest, warnings, err := decodeCLITest(t, `
+version: 1
+commands:
+  image:
+    op: CreateTask#CreateRenderTaskParams
+    preset:
+      $.engine: render-image-9
+      $.background: true
+      $.priority: 3
+    args:
+      prompt: {to: $.input, type: string, variadic: true}
+    flags:
+      engine: {to: $.engine, defaultFrom: schema}
+      background: {to: $.background}
+      priority: {to: $.priority, default: 1}
+`)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+	flags := manifest.Commands[0].Flags
+	require.Len(t, flags, 3)
+	assert.Equal(t, "preset", flags[0].DefaultFrom)
+	assert.Equal(t, "render-image-9", flags[0].Default)
+	assert.Equal(t, []any{"render-standard-2", "render-pro-2", "render-mini-1"}, flags[0].Enum)
+	assert.Equal(t, "preset", flags[1].DefaultFrom)
+	assert.Equal(t, true, flags[1].Default)
+	assert.Equal(t, "preset", flags[2].DefaultFrom)
+	assert.Equal(t, int64(3), flags[2].Default)
+
+	// Dispatch: a command preset or agreeing route presets become the
+	// default; a preset on only one declaring route does not.
+	commandPreset := strings.Replace(cliRouteDispatchManifest, "    args:\n", "    preset: {$.background: true}\n    args:\n", 1)
+	dispatch, err := decodeCLITestSpec(t, cliRouteDispatchSpec, commandPreset)
+	require.NoError(t, err)
+	background := dispatch.Commands[0].Flags[2]
+	assert.Equal(t, "background", background.Name)
+	assert.Equal(t, "preset", background.DefaultFrom)
+	assert.Equal(t, true, background.Default)
+
+	engineOnly := strings.Replace(cliRouteDispatchManifest, "        selector: engine\n", "        selector: engine\n        preset: {$.background: true}\n", 1)
+	dispatch, err = decodeCLITestSpec(t, cliRouteDispatchSpec, engineOnly)
+	require.NoError(t, err)
+	background = dispatch.Commands[0].Flags[2]
+	assert.Equal(t, "background", background.Name)
+	assert.Empty(t, background.DefaultFrom)
+	assert.Nil(t, background.Default)
 }

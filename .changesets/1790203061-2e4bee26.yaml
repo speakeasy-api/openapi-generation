@@ -1,0 +1,10 @@
+id: 1790203061-2e4bee26
+features:
+    - cliCommands
+targets:
+    - cli
+type: feat
+bump: patch
+description: declared command inputs accept a suggestions list and show the preset as the flag default
+author: AshGodfrey
+date: "2026-09-23"
