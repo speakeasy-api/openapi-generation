@@ -42,7 +42,9 @@ type GetImportDefaultedIDRequest struct {
 	Workspace string `default:"default-workspace" pathParam:"style=simple,explode=false,name=workspace"`
 	// Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
 	Tier GetImportDefaultedIDTier `default:"basic" pathParam:"style=simple,explode=false,name=tier"`
-	ID   string                   `pathParam:"style=simple,explode=false,name=id"`
+	// Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+	Region string `default:"oas-region" pathParam:"style=simple,explode=false,name=region"`
+	ID     string `pathParam:"style=simple,explode=false,name=id"`
 }
 
 func (g GetImportDefaultedIDRequest) MarshalJSON() ([]byte, error) {
@@ -68,6 +70,13 @@ func (g *GetImportDefaultedIDRequest) GetTier() GetImportDefaultedIDTier {
 		return GetImportDefaultedIDTier("")
 	}
 	return g.Tier
+}
+
+func (g *GetImportDefaultedIDRequest) GetRegion() string {
+	if g == nil {
+		return ""
+	}
+	return g.Region
 }
 
 func (g *GetImportDefaultedIDRequest) GetID() string {

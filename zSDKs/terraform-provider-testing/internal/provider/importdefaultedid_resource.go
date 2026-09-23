@@ -11,12 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-provider-testing/internal/customdefaults"
 	speakeasy_stringplanmodifier "github.com/hashicorp/terraform-provider-testing/internal/planmodifiers/stringplanmodifier"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/operations"
@@ -39,6 +41,7 @@ type ImportDefaultedIDResource struct {
 // ImportDefaultedIDResourceModel describes the resource data model.
 type ImportDefaultedIDResourceModel struct {
 	ID                  types.String `tfsdk:"id"`
+	Region              types.String `tfsdk:"region"`
 	RequestBodyProperty types.String `tfsdk:"request_body_property"`
 	Tier                types.String `tfsdk:"tier"`
 	Workspace           types.String `tfsdk:"workspace"`
@@ -54,6 +57,15 @@ func (r *ImportDefaultedIDResource) Schema(ctx context.Context, req resource.Sch
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
+			},
+			"region": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				Default:  customdefaults.String(),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
+				Description: `Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID. Requires replacement if changed.`,
 			},
 			"request_body_property": schema.StringAttribute{
 				Computed: true,
@@ -302,12 +314,13 @@ func (r *ImportDefaultedIDResource) ImportState(ctx context.Context, req resourc
 	dec.DisallowUnknownFields()
 	var data struct {
 		ID        string                               `json:"id"`
+		Region    *string                              `json:"region"`
 		Tier      *operations.GetImportDefaultedIDTier `json:"tier"`
 		Workspace *string                              `json:"workspace"`
 	}
 
 	if err := dec.Decode(&data); err != nil {
-		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"id": "...", "tier": "basic", "workspace": "..."}': `+err.Error())
+		resp.Diagnostics.AddError("Invalid ID", `The import ID is not valid. It is expected to be a JSON object string with the format: '{"id": "...", "region": "...", "tier": "basic", "workspace": "..."}': `+err.Error())
 		return
 	}
 
@@ -316,6 +329,21 @@ func (r *ImportDefaultedIDResource) ImportState(ctx context.Context, req resourc
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), data.ID)...)
+	if data.Region == nil {
+		var regionDefaultResponse defaults.StringResponse
+		customdefaults.String().DefaultString(ctx, defaults.StringRequest{Path: path.Root("region")}, &regionDefaultResponse)
+		resp.Diagnostics.Append(regionDefaultResponse.Diagnostics...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if regionDefaultResponse.PlanValue.IsNull() || regionDefaultResponse.PlanValue.IsUnknown() {
+			resp.Diagnostics.AddError("Missing required field", `The field region is required but was not found in the json encoded ID and its default resolved to no value.`)
+			return
+		}
+		regionDefault := string(regionDefaultResponse.PlanValue.ValueString())
+		data.Region = &regionDefault
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("region"), data.Region)...)
 	if data.Tier == nil {
 		var tierDefault operations.GetImportDefaultedIDTier = `basic`
 		data.Tier = &tierDefault

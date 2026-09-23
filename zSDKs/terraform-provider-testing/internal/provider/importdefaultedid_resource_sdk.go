@@ -29,6 +29,9 @@ func (r *ImportDefaultedIDResourceModel) ToOperationsCreateImportDefaultedIDRequ
 	workspace = r.Workspace.ValueString()
 
 	tier := operations.CreateImportDefaultedIDTier(r.Tier.ValueString())
+	var region string
+	region = r.Region.ValueString()
+
 	importDefaultedIDRequest, importDefaultedIDRequestDiags := r.ToSharedImportDefaultedIDRequest(ctx)
 	diags.Append(importDefaultedIDRequestDiags...)
 
@@ -39,6 +42,7 @@ func (r *ImportDefaultedIDResourceModel) ToOperationsCreateImportDefaultedIDRequ
 	out := operations.CreateImportDefaultedIDRequest{
 		Workspace:                workspace,
 		Tier:                     tier,
+		Region:                   region,
 		ImportDefaultedIDRequest: *importDefaultedIDRequest,
 	}
 
@@ -52,12 +56,16 @@ func (r *ImportDefaultedIDResourceModel) ToOperationsDeleteImportDefaultedIDRequ
 	workspace = r.Workspace.ValueString()
 
 	tier := operations.DeleteImportDefaultedIDTier(r.Tier.ValueString())
+	var region string
+	region = r.Region.ValueString()
+
 	var id string
 	id = r.ID.ValueString()
 
 	out := operations.DeleteImportDefaultedIDRequest{
 		Workspace: workspace,
 		Tier:      tier,
+		Region:    region,
 		ID:        id,
 	}
 
@@ -71,12 +79,16 @@ func (r *ImportDefaultedIDResourceModel) ToOperationsGetImportDefaultedIDRequest
 	workspace = r.Workspace.ValueString()
 
 	tier := operations.GetImportDefaultedIDTier(r.Tier.ValueString())
+	var region string
+	region = r.Region.ValueString()
+
 	var id string
 	id = r.ID.ValueString()
 
 	out := operations.GetImportDefaultedIDRequest{
 		Workspace: workspace,
 		Tier:      tier,
+		Region:    region,
 		ID:        id,
 	}
 

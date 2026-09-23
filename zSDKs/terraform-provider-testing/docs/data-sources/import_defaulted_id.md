@@ -15,6 +15,7 @@ ImportDefaultedID DataSource
 ```terraform
 data "testing_import_defaulted_id" "my_importdefaultedid" {
   id        = "...my_id..."
+  region    = "oas-region"
   tier      = "basic"
   workspace = "default-workspace"
 }
@@ -25,6 +26,7 @@ data "testing_import_defaulted_id" "my_importdefaultedid" {
 
 ### Required
 
+- `region` (String) Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
 - `tier` (String) Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID. must be one of ["basic", "premium"]
 - `workspace` (String) Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
 

@@ -31,6 +31,7 @@ type ImportDefaultedIDDataSource struct {
 // ImportDefaultedIDDataSourceModel describes the data model.
 type ImportDefaultedIDDataSourceModel struct {
 	ID                  types.String `tfsdk:"id"`
+	Region              types.String `tfsdk:"region"`
 	RequestBodyProperty types.String `tfsdk:"request_body_property"`
 	Tier                types.String `tfsdk:"tier"`
 	Workspace           types.String `tfsdk:"workspace"`
@@ -49,6 +50,10 @@ func (r *ImportDefaultedIDDataSource) Schema(ctx context.Context, req datasource
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Required: true,
+			},
+			"region": schema.StringAttribute{
+				Required:    true,
+				Description: `Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID`,
 			},
 			"request_body_property": schema.StringAttribute{
 				Computed: true,

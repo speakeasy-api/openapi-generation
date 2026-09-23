@@ -2618,7 +2618,7 @@ func (s *SDK) CreateImportDefaultedID(ctx context.Context, request operations.Cr
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}/{region}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -2754,7 +2754,7 @@ func (s *SDK) DeleteImportDefaultedID(ctx context.Context, request operations.De
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}/{region}/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}
@@ -2866,7 +2866,7 @@ func (s *SDK) GetImportDefaultedID(ctx context.Context, request operations.GetIm
 	} else {
 		baseURL = *o.ServerURL
 	}
-	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}/{id}", request, nil)
+	opURL, err := utils.GenerateURL(ctx, baseURL, "/v0/import-defaulted-id/{workspace}/{tier}/{region}/{id}", request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error generating URL: %w", err)
 	}

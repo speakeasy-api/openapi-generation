@@ -221,47 +221,67 @@ function genIsZeroValue(
   return undefined;
 }
 
-function templateImportDefaultLiteral(field: FieldDef): string | undefined {
-  return templateImportDefaultValue(field.Type, field.Default?.Value);
-}
+function templateImportCustomDefault(
+  symbolManager: Record<string, boolean>,
+  field: FieldDef,
+  sanitizedFieldName: string,
+  config: TerraformCustomDefault,
+  curSymbol: string,
+  path: string,
+  fieldName: string,
+): string[] {
+  const scalarType =
+    field.Type.Type.toString() === "enum" ? field.Type.Enum.Type : field.Type;
+  const accessor = primitiveAccessor(scalarType, false);
 
-function templateImportDefaultValue(
-  typeDef: TypeDef,
-  value: unknown,
-): string | undefined {
-  if (value === undefined || value === null || value === "null") {
-    return undefined;
+  if (!accessor) {
+    throw new Error(
+      `unsupported custom default type ${scalarType.Type} in import for ${field.Name}`,
+    );
   }
 
-  switch (typeDef.Type.toString()) {
-    case "enum":
-      return typeDef.Enum
-        ? templateImportDefaultValue(typeDef.Enum.Type, value)
-        : undefined;
-    case "string":
-      return typeof value === "string"
-        ? templateBuiltinString(value)
-        : undefined;
-    case "boolean":
-      return typeof value === "boolean" ? String(value) : undefined;
-    case "int32":
-    case "integer":
-      return typeof value === "number" && Number.isInteger(value)
-        ? String(value)
-        : undefined;
-    case "float32":
-    case "number":
-      return typeof value === "number" ? String(value) : undefined;
-    default:
-      return undefined;
-  }
+  const defaultTypeName = accessor.slice("Value".length, -"()".length);
+  const responseVar = getPluralizedVarSymbolName(
+    symbolManager,
+    sanitizedFieldName,
+    "DefaultResponse",
+  );
+  const valueVar = getPluralizedVarSymbolName(
+    symbolManager,
+    sanitizedFieldName,
+    "Default",
+  );
+
+  addGenImport(
+    "github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults",
+  );
+  config.Imports?.forEach((importPath) => addGenImport(importPath));
+
+  return [
+    `var ${responseVar} defaults.${defaultTypeName}Response`,
+    `${config.SchemaDefinition}.Default${defaultTypeName}(ctx, defaults.${defaultTypeName}Request{Path: ${path}}, &${responseVar})`,
+    `resp.Diagnostics.Append(${responseVar}.Diagnostics...)`,
+    `if resp.Diagnostics.HasError() {`,
+    `return`,
+    `}`,
+    `if ${responseVar}.PlanValue.IsNull() || ${responseVar}.PlanValue.IsUnknown() {`,
+    `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID and its default resolved to no value.\`)`,
+    `return`,
+    `}`,
+    `${valueVar} := ${sanitizeType(
+      field.Type,
+      false,
+      "",
+    )}(${responseVar}.PlanValue.${accessor})`,
+    `${curSymbol} = &${valueVar}`,
+  ];
 }
 
 function isImportPointerField(field: FieldDef): boolean {
   return (
     field.Optional ||
     field.Nullable ||
-    templateImportDefaultLiteral(field) !== undefined
+    resolveScalarDefault(field.Type, field.Default) !== undefined
   );
 }
 
@@ -305,7 +325,7 @@ function validateAndSet(
     const check = isPointer
       ? `${curSymbol} == nil`
       : genIsZeroValue(accessorType, curSymbol);
-    const defaultLiteral = templateImportDefaultLiteral(field);
+    const scalarDefault = resolveScalarDefault(field.Type, field.Default);
     const frameworkType = FrameworkTypeFromFieldDef(field);
     const isGlobalField =
       curHierarchy.length === 1 && sanitizedFieldName in globalFields;
@@ -344,20 +364,30 @@ function validateAndSet(
       }
 
       const fieldName = sanitizeTFStateName(curHierarchy);
-      if (defaultLiteral !== undefined) {
+      if (scalarDefault?.kind === "static") {
         const defaultVar = getPluralizedVarSymbolName(
           symbolManager,
           sanitizedFieldName,
           "Default",
         );
         result.push(
-          `var ${defaultVar} ${sanitizeType(
-            field.Type,
-            false,
-            "",
-          )} = ${defaultLiteral}`,
+          `var ${defaultVar} ${sanitizeType(field.Type, false, "")} = ${
+            scalarDefault.literal
+          }`,
         );
         result.push(`${curSymbol} = &${defaultVar}`);
+      } else if (scalarDefault?.kind === "custom") {
+        result.push(
+          ...templateImportCustomDefault(
+            symbolManager,
+            field,
+            sanitizedFieldName,
+            scalarDefault.config,
+            curSymbol,
+            path,
+            fieldName,
+          ),
+        );
       } else {
         // Only include example hint if there's a real OAS-defined example
         const hasExample = field.Type.Examples?.length > 0;

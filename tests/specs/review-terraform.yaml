@@ -331,7 +331,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FrameworkTypeResponse'
-  /v0/import-defaulted-id/{workspace}/{tier}:
+  /v0/import-defaulted-id/{workspace}/{tier}/{region}:
     parameters:
       - name: workspace
         description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
@@ -350,6 +350,17 @@ paths:
             - basic
             - premium
           default: basic
+      - name: region
+        description: Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: oas-region
+          x-speakeasy-terraform-custom-default:
+            imports:
+              - github.com/hashicorp/terraform-provider-testing/internal/customdefaults
+            schemaDefinition: "customdefaults.String()"
     post:
       x-speakeasy-entity-operation: ImportDefaultedId#create
       description: Create a new import defaulted id resource, whose read path includes a parameter with a schema default
@@ -367,7 +378,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportDefaultedIdResponse'
-  /v0/import-defaulted-id/{workspace}/{tier}/{id}:
+  /v0/import-defaulted-id/{workspace}/{tier}/{region}/{id}:
     parameters:
       - name: workspace
         description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
@@ -386,6 +397,17 @@ paths:
             - basic
             - premium
           default: basic
+      - name: region
+        description: Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: oas-region
+          x-speakeasy-terraform-custom-default:
+            imports:
+              - github.com/hashicorp/terraform-provider-testing/internal/customdefaults
+            schemaDefinition: "customdefaults.String()"
       - name: id
         in: path
         required: true

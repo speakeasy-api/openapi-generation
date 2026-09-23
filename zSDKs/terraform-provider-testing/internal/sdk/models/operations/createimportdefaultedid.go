@@ -41,7 +41,9 @@ type CreateImportDefaultedIDRequest struct {
 	// Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
 	Workspace string `default:"default-workspace" pathParam:"style=simple,explode=false,name=workspace"`
 	// Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
-	Tier                     CreateImportDefaultedIDTier     `default:"basic" pathParam:"style=simple,explode=false,name=tier"`
+	Tier CreateImportDefaultedIDTier `default:"basic" pathParam:"style=simple,explode=false,name=tier"`
+	// Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+	Region                   string                          `default:"oas-region" pathParam:"style=simple,explode=false,name=region"`
 	ImportDefaultedIDRequest shared.ImportDefaultedIDRequest `request:"mediaType=application/json"`
 }
 
@@ -68,6 +70,13 @@ func (c *CreateImportDefaultedIDRequest) GetTier() CreateImportDefaultedIDTier {
 		return CreateImportDefaultedIDTier("")
 	}
 	return c.Tier
+}
+
+func (c *CreateImportDefaultedIDRequest) GetRegion() string {
+	if c == nil {
+		return ""
+	}
+	return c.Region
 }
 
 func (c *CreateImportDefaultedIDRequest) GetImportDefaultedIDRequest() shared.ImportDefaultedIDRequest {
