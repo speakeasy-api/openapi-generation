@@ -22,6 +22,7 @@ function templateDependencies(): string {
     // Transitive security floors for modules pulled in by the Terraform dependencies.
     "golang.org/x/crypto": deps["golang.org/x/crypto"].version,
     "golang.org/x/net": deps["golang.org/x/net"].version,
+    "golang.org/x/text": deps["golang.org/x/text"].version,
     "google.golang.org/grpc": deps["google.golang.org/grpc"].version,
   };
 

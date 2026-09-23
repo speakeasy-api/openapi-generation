@@ -50,21 +50,28 @@ function getTemplateDependencies() {
     // Security floor pins for vulnerable transitive modules required by the Terraform dependencies.
     "golang.org/x/crypto": {
       name: "golang.org/x/crypto",
-      version: "v0.52.0",
+      version: "v0.57.0",
       cpe: "cpe:2.3:a:golang:crypto:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
     },
     "golang.org/x/net": {
       name: "golang.org/x/net",
-      version: "v0.56.0",
+      version: "v0.59.0",
       cpe: "cpe:2.3:a:golang:networking:*:*:*:*:*:go:*:*",
+      ecosystem: "Go",
+      category: "runtime",
+    },
+    "golang.org/x/text": {
+      name: "golang.org/x/text",
+      version: "v0.42.0",
+      cpe: "cpe:2.3:a:golang:text:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
     },
     "google.golang.org/grpc": {
       name: "google.golang.org/grpc",
-      version: "v1.82.1",
+      version: "v1.83.2",
       cpe: "cpe:2.3:a:grpc:grpc:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
@@ -135,9 +142,10 @@ const additionalDependencyMinimumVersions: Record<string, string> = {
   // Security floor pins: additionalDependencies merge after the template
   // defaults, so without these minimums a customer explicitly pinning an
   // older version would silently downgrade below the patched releases.
-  "golang.org/x/crypto": "v0.52.0",
-  "golang.org/x/net": "v0.56.0",
-  "google.golang.org/grpc": "v1.82.1",
+  "golang.org/x/crypto": "v0.57.0",
+  "golang.org/x/net": "v0.59.0",
+  "golang.org/x/text": "v0.42.0",
+  "google.golang.org/grpc": "v1.83.2",
 };
 
 /**
@@ -475,7 +483,7 @@ function getGoCommandDependency(): RunnerCommandDependency {
     version: {
       args: ["version"],
       regex: `(?m).*?go version go(\\d+\\.\\d+\\.\\d+).*?`,
-      minVersion: "1.25.0",
+      minVersion: "1.26.0",
     },
     installDocumentation: `Install Go by following the instructions at https://golang.org/doc/install.`,
   };
