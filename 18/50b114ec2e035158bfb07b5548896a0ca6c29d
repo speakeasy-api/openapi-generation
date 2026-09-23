@@ -1,0 +1,80 @@
+CHANGELOG.md
+  h_9630b74bdac540 7-16,20168-20170
+changelogs/cli/core-0.3.3.md
+  h_9630b74bdac540 1-3
+changelogs/go/nullables-0.2.2.md
+  h_9630b74bdac540 1-3
+templates/templates/cli/README.md
+  h_9630b74bdac540 1630-1631
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 718,734,1291,1295,1329-1353,1517-1529,1558-1560,1630-1632,1643-1645,1688-1690,1737-1739,1759-1761
+templates/templates/cli/features.ts
+  h_9630b74bdac540 4
+templates/templates/cli/tests/primary/flagutilmeta_test.go.stmpl
+  h_9630b74bdac540 6,247-449
+templates/templates/go/auxiliary/{{getNullableLocation}}/optionalnullable.go.stmpl
+  h_9630b74bdac540 221,226,232-257
+templates/templates/go/auxiliary/{{getNullableLocation}}/optionalnullable_test.go.stmpl
+  h_9630b74bdac540 1912-2004
+templates/templates/go/auxiliary/{{getUtilsLocation}}/json.go.stmpl
+  h_9630b74bdac540 15,324-343,456-458,559-579
+templates/templates/go/features.ts
+  h_9630b74bdac540 48
+templates/templates/go/tests/primary/requestbodies_additional_test.go.stmpl
+  h_9630b74bdac540 7,125-305
+templates/templates/mockserver/auxiliary/internal/sdk/optionalnullable/optionalnullable.go.stmpl
+  h_9630b74bdac540 249-274
+templates/templates/mockserver/auxiliary/internal/sdk/optionalnullable/optionalnullable_test.go.stmpl
+  h_9630b74bdac540 1858-1950
+templates/templates/mockserver/auxiliary/internal/sdk/utils/json.go.stmpl
+  h_9630b74bdac540 14,308-326,431-433,535-555
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 16,247,555,557,581,1033,1035,1051
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 720,736,1293,1297,1331-1355,1519-1531,1560-1562,1632-1634,1645-1647,1690-1692,1739-1741,1761-1763
+zSDKs/sdk-cli/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 234-259
+zSDKs/sdk-cli/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1914-2006
+zSDKs/sdk-cli/internal/sdk/sdkinternal/utils/json.go
+  h_9630b74bdac540 17,325-344,455-457,556-576
+zSDKs/sdk-cli/tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-cli/tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-cli/tests/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/sdk-go/.speakeasy/gen.lock
+  h_9630b74bdac540 43,710,754,756,1208,1210,1226
+zSDKs/sdk-go/internal/utils/json.go
+  h_9630b74bdac540 17,325-344,455-457,556-576
+zSDKs/sdk-go/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 234-259
+zSDKs/sdk-go/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1914-2006
+zSDKs/sdk-go/tests/mockserver/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 251-276
+zSDKs/sdk-go/tests/mockserver/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1860-1952
+zSDKs/sdk-go/tests/mockserver/internal/sdk/utils/json.go
+  h_9630b74bdac540 16,310-328,433-435,537-557
+zSDKs/terraform-provider-testing/.speakeasy/gen.lock
+  h_9630b74bdac540 2383,3531,3533
+zSDKs/terraform-provider-testing/internal/sdk/internal/utils/json.go
+  h_9630b74bdac540 17,323-342,442-444,538-558
+zSDKs/terraform-provider-testing/internal/sdk/optionalnullable/optionalnullable.go
+  h_9630b74bdac540 234-259
+zSDKs/terraform-provider-testing/internal/sdk/optionalnullable/optionalnullable_test.go
+  h_9630b74bdac540 1914-2006
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1850b114ec2e035158bfb07b5548896a0ca6c29d",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
