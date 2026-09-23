@@ -34,6 +34,16 @@ func GenerateURL(_ context.Context, serverURL, path string, pathParams interface
 		}
 	}
 
+	{{- if encodePathParams}}
+	for name, value := range parsedParameters {
+		for _, segment := range strings.Split(value, "/") {
+			if segment == "." || segment == ".." {
+				return "", fmt.Errorf("path parameter %q contains a dot segment", name)
+			}
+		}
+	}
+	{{- end}}
+
 	// TODO should we handle the case where there are no matching path params?
 	return ReplaceParameters(uri, parsedParameters), nil
 }

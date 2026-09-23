@@ -143,6 +143,18 @@ func TestGenerateURL_SimpleStyleEscapesReservedCharacters(t *testing.T) {
 			want:       "http://localhost/v1/resources/parent%2Fchild",
 		},
 		{
+			name:       "percent-encoded traversal stays data",
+			path:       "/v1/resources/{id}",
+			pathParams: scalarPathParams{ID: "..%2Fitems%2Fx"},
+			want:       "http://localhost/v1/resources/..%252Fitems%252Fx",
+		},
+		{
+			name:       "literal custom method suffix",
+			path:       "/v1/resources/{id}:ping",
+			pathParams: scalarPathParams{ID: "a:b/c%"},
+			want:       "http://localhost/v1/resources/a%3Ab%2Fc%25:ping",
+		},
+		{
 			name:       "custom method separator",
 			path:       "/v1/webhooks/{id}",
 			pathParams: scalarPathParams{ID: "wh-1:ping"},
@@ -163,8 +175,8 @@ func TestGenerateURL_SimpleStyleEscapesReservedCharacters(t *testing.T) {
 		{
 			name:       "array elements escaped but comma delimiter kept",
 			path:       "/v1/items/{ids}",
-			pathParams: arrayPathParams{IDs: []string{"a/b", "c,d"}},
-			want:       "http://localhost/v1/items/a%2Fb,c%2Cd",
+			pathParams: arrayPathParams{IDs: []string{"a/b", "c,d", "%2F"}},
+			want:       "http://localhost/v1/items/a%2Fb,c%2Cd,%252F",
 		},
 		{
 			name: "object fields escaped but delimiters kept",
@@ -256,6 +268,44 @@ func TestGenerateURL_GlobalsHonorAllowReserved(t *testing.T) {
 			want:       "http://localhost/v1/org/a:b/resources/x%2Fy",
 		},
 	})
+}
+
+func TestGenerateURL_RequestTargetPreservesEscapedSegments(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value string
+		path  string
+		want  string
+	}{
+		{"traversal", "../items/x", "/v1/resources/{id}", "/v1/resources/..%2Fitems%2Fx"},
+		{"slash and custom method", "a/b:ping%", "/v1/resources/{id}:run", "/v1/resources/a%2Fb%3Aping%25:run"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := utils.GenerateURL(context.Background(), "http://localhost", tt.path, scalarPathParams{ID: tt.value}, nil)
+			require.NoError(t, err)
+
+			req, err := http.NewRequest(http.MethodGet, got, nil)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, req.URL.RequestURI())
+		})
+	}
+}
+
+func TestGenerateURL_RejectsDotSegments(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		pathParams interface{}
+	}{
+		{"parent segment", scalarPathParams{ID: ".."}},
+		{"current segment", scalarPathParams{ID: "."}},
+		{"reserved path with parent segment", allowReservedPathParams{ID: "a/../b"}},
+		{"reserved path with current segment", allowReservedPathParams{ID: "a/./b"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := utils.GenerateURL(context.Background(), "http://localhost", "/v1/resources/{id}/child", tt.pathParams, nil)
+			require.ErrorContains(t, err, `path parameter "id" contains a dot segment`)
+		})
+	}
 }
 
 func TestGenerateURL_AllowReservedURLSurvivesParsing(t *testing.T) {
