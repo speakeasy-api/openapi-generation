@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.940.0] - 2026-09-23
+### :bee: New Features
+- [`17fc459`](https://github.com/speakeasy-api/openapi-generation/commit/17fc459e69cc70742c558c9414b10d4277db5308) - **cli**: point global shorthands to the intended command flag ([#34](https://github.com/speakeasy-api/openapi-generation/pull/34)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.939.2] - 2026-09-23
 ### :bug: Bug Fixes
 - [`98dc16e`](https://github.com/speakeasy-api/openapi-generation/commit/98dc16e2cdb385d5d373fc850d6259087a925da5) - **go,cli**: keep HTTP status, body and response when an error body fails to decode ([#33](https://github.com/speakeasy-api/openapi-generation/pull/33)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20198,3 +20203,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.939.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.938.6...v2.939.0
 [v2.939.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.939.0...v2.939.1
 [v2.939.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.939.1...v2.939.2
+[v2.940.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.939.2...v2.940.0
