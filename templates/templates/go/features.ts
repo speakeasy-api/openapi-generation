@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.13.58",
+  core: "3.14.0",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -50,7 +50,7 @@ const supportedFeatures = {
   globalSecurityCallbacks: "0.1.0",
   intellisenseMarkdownSupport: "0.1.0",
   openEnums: "0.1.0",
-  allowReserved: "0.1.0",
+  allowReserved: "0.2.0",
   operationPolling: "0.3.2",
   operationTimeout: "0.2.0",
   defaultEnabledRetries: "0.2.0",
