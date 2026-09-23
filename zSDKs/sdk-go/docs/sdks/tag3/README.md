@@ -75,7 +75,7 @@ func main() {
             HeroWidth: examplealias.HeroWidthFourHundredAndEighty.ToPointer(),
         },
         Type: examplealias.TypeSuperType1.ToPointer(),
-    })
+    }, nil, nil)
     if err != nil {
         log.Fatal(err)
     }
