@@ -6,7 +6,7 @@ This guide describes the toolchains needed to work on this repository. Start wit
 
 ### Go
 
-Install Go `1.26.2`, matching the version declared in [`go.mod`](go.mod), and ensure `go` is on your `PATH`.
+Install Go `1.26.8`, matching the version declared in [`go.mod`](go.mod), and ensure `go` is on your `PATH`.
 
 Install the linter used by `mise run lint`:
 

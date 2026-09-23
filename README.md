@@ -19,7 +19,7 @@
   <p>
     <a href="https://spec.openapis.org/oas/v3.1.1.html"><img alt="OpenAPI support" src="https://img.shields.io/badge/OpenAPI-3.0%20%7C%203.1-85EA2D.svg?style=for-the-badge&logo=openapiinitiative" /></a>
     <a href="https://spec.openapis.org/oas/v3.2.0.html"><img alt="OpenAPI 3.2 constructs" src="https://img.shields.io/badge/OpenAPI%203.2-selected%20constructs-85EA2D.svg?style=for-the-badge&logo=openapiinitiative" /></a>
-    <a href="https://go.dev/"><img alt="Go version" src="https://img.shields.io/badge/go-1.26.2-00ADD8.svg?style=for-the-badge&logo=go" /></a>
+    <a href="https://go.dev/"><img alt="Go version" src="https://img.shields.io/badge/go-1.26.8-00ADD8.svg?style=for-the-badge&logo=go" /></a>
     <br />
     <a href="https://github.com/speakeasy-api/openapi-generation/actions/workflows/test.yml"><img alt="GitHub Actions: Test" src="https://img.shields.io/github/actions/workflow/status/speakeasy-api/openapi-generation/test.yml?style=for-the-badge&label=CI" /></a>
     <a href="#supported-targets"><img alt="Supported targets" src="https://img.shields.io/badge/targets-12-8957E5.svg?style=for-the-badge" /></a>
@@ -82,7 +82,7 @@ OpenAPI 3.2 is not yet supported as a complete document version.
 
 ## Develop locally
 
-Install Go `1.26.2`, Node.js and npm, Docker, and the tooling required by the
+Install Go `1.26.8`, Node.js and npm, Docker, and the tooling required by the
 targets you plan to test. The full setup guide covers target-specific runtimes
 and local test services:
 
