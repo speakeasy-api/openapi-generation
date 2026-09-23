@@ -1579,6 +1579,9 @@ func buildStringArrayField(cmd *cobra.Command, v reflect.Value, m FlagMeta) erro
 
 func buildDateTimeField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateRequiredString(m, val); err != nil {
 		return err
 	}
@@ -1621,6 +1624,9 @@ func buildDateTimeField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildDateField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateRequiredString(m, val); err != nil {
 		return err
 	}
@@ -1667,6 +1673,9 @@ func buildDateField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateEnumValue(m, val, changed); err != nil {
 		return err
 	}
@@ -1686,6 +1695,9 @@ func buildEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 
 func buildIntEnumField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
+	if err := validateRequiredPathParam(v, m, changed, val); err != nil {
+		return err
+	}
 	if err := validateEnumValue(m, val, changed); err != nil {
 		return err
 	}

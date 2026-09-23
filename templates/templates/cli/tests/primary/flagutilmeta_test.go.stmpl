@@ -254,6 +254,10 @@ type requiredPathArrayRequest struct {
 	IDs []string `pathParam:"style=simple,explode=false,name=ids"`
 }
 
+type requiredPathFormatRequest struct {
+	Value string `pathParam:"style=simple,explode=false,name=value"`
+}
+
 type requiredParamsBody struct {
 	Name string `json:"name" header:"name=name" pathParam:"name=name" queryParam:"name=name" form:"name=name"`
 }
@@ -370,6 +374,31 @@ func TestBuildRequestRejectsBlankRequiredPathParamArrayElements(t *testing.T) {
 			_, err := flagutil.BuildRequest[requiredPathArrayRequest](cmd, meta, "", "")
 			assertCLIValidation(t, err, "ids")
 		})
+	}
+}
+
+func TestBuildRequestRejectsBlankRequiredFormattedPathParams(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		kind       flagutil.FlagKind
+		enumValues []string
+	}{
+		{name: "enum", kind: flagutil.FlagKindEnum, enumValues: []string{"", "active"}},
+		{name: "integer enum", kind: flagutil.FlagKindIntEnum, enumValues: []string{"1", "2"}},
+		{name: "date", kind: flagutil.FlagKindDate},
+		{name: "date-time", kind: flagutil.FlagKindDateTime},
+	} {
+		for _, value := range []string{"", "   "} {
+			t.Run(tc.name+" "+strconv.Quote(value), func(t *testing.T) {
+				meta := []flagutil.FlagMeta{
+					{FlagName: "value", FieldPath: "Value", Kind: tc.kind, Required: true, EnumValues: tc.enumValues},
+				}
+				cmd := newRequiredParamsCommand(meta)
+				require.NoError(t, cmd.Flags().Set("value", value))
+				_, err := flagutil.BuildRequest[requiredPathFormatRequest](cmd, meta, "", "")
+				assertCLIValidation(t, err, "value")
+			})
+		}
 	}
 }
 
