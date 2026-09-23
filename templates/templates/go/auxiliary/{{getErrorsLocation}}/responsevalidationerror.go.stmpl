@@ -25,6 +25,9 @@ func NewResponseValidationError(message string, statusCode int, body string, htt
 }
 
 func (e *ResponseValidationError) Error() string {
+	if e.Cause == nil {
+		return e.Message
+	}
 	return e.Cause.Error()
 }
 

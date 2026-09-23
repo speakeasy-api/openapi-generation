@@ -536,7 +536,7 @@ trackedFiles:
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
-    last_write_checksum: sha1:a8c8d89fdec906750c33be9277242a523fbcfbbf
+    last_write_checksum: sha1:77189808f8c0d0fc49a2e8cc77a8a4006e61682c
   internal/sdk/models/sdkerrors/sdkdefaulterror.go:
     last_write_checksum: sha1:437b3a3eacb54d8648a68f80b3cd38fa5019f006
   internal/sdk/models/sdkerrors/taggederror1.go:
