@@ -1,6 +1,6 @@
 module github.com/speakeasy-api/openapi-generation/v2/cmd/wasm
 
-go 1.26.2
+go 1.26.8
 
 replace github.com/speakeasy-api/openapi-generation/v2 => ../../
 

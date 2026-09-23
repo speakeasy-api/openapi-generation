@@ -1,6 +1,6 @@
 module github.com/speakeasy-api/openapi-generation/v2/cmd/wasm/overlay
 
-go 1.26.2
+go 1.26.8
 
 require (
 	github.com/speakeasy-api/jsonpath v0.6.3
