@@ -39,6 +39,7 @@ and 'single quotes' and "double quotes".
 and  \'escaped single quotes\' and \"escaped double quotes\".
 
 * [getNestedIntegerString](#getnestedintegerstring) - Test nested struct with integer:string tag
+* [getPositionalDefault](#getpositionaldefault) - Get an item with a default path identifier
 * [getErrorOnlyExample](#geterroronlyexample) - Operation with example only on error response
 
 ## operationWithLeadingAndTrailingUnderscores
@@ -1121,6 +1122,49 @@ if ($response->taskResponse !== null) {
 ### Response
 
 **[?GetNestedIntegerStringResponse](../../GetNestedIntegerStringResponse.md)**
+
+### Errors
+
+| Error Type           | Status Code          | Content Type         |
+| -------------------- | -------------------- | -------------------- |
+| OpenAPI\SDKException | 4XX, 5XX             | \*/\*                |
+
+## getPositionalDefault
+
+Check that a default-backed path parameter can be supplied as an argument or omitted.
+
+### Example Usage
+
+<!-- UsageSnippet language="php" operationID="getPositionalDefault" method="get" path="/positionalDefault/{id}" -->
+```php
+declare(strict_types=1);
+
+require 'vendor/autoload.php';
+
+use OpenAPI\OpenAPI;
+
+$sdk = OpenAPI\SDK::builder()->build();
+
+
+
+$response = $sdk->getPositionalDefault(
+    id: 'default-id'
+);
+
+if ($response->statusCode === 200) {
+    // handle response
+}
+```
+
+### Parameters
+
+| Parameter          | Type               | Required           | Description        |
+| ------------------ | ------------------ | ------------------ | ------------------ |
+| `id`               | *string*           | :heavy_check_mark: | N/A                |
+
+### Response
+
+**[?GetPositionalDefaultResponse](../../GetPositionalDefaultResponse.md)**
 
 ### Errors
 
