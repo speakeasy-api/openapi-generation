@@ -58,7 +58,7 @@ trackedFiles:
   cmd/gendocs/main_test.go:
     last_write_checksum: sha1:996dd2ec8028ecf964d97f5215dee028c743dc17
   go.mod:
-    last_write_checksum: sha1:9e2c069bc094609d07d51042c8e0b8069748830c
+    last_write_checksum: sha1:d3235ea2d627eac6510bb36c50e58cfdbe4177f4
   internal/cli/auth.go:
     last_write_checksum: sha1:71132e7d37aa65bfbe4d7efeb84d94209006a72a
   internal/cli/binaryandstringupload.go:
