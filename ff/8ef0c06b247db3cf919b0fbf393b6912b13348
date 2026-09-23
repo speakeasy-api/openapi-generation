@@ -1,0 +1,14 @@
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff8ef0c06b247db3cf919b0fbf393b6912b13348",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
