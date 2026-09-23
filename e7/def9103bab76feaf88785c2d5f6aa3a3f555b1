@@ -1,0 +1,46 @@
+CHANGELOG.md
+  h_9630b74bdac540 7-11,20175-20176
+changelogs/cli/cliCommands-0.1.3.md
+  h_9630b74bdac540 1-3
+changelogs/go/globals-2.82.3.md
+  h_9630b74bdac540 1-3
+templates/templates/cli/features.ts
+  h_9630b74bdac540 51
+templates/templates/cli/includes/flags.ts
+  h_9630b74bdac540 332-333,337,343,363-366
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 88-112,134,137-141,185-189
+templates/templates/go/features.ts
+  h_9630b74bdac540 10
+templates/templates/go/includes/templating.ts
+  h_9630b74bdac540 636-639
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 14,199
+zSDKs/sdk-cli/docs/cli_test-endpoint.md
+  h_9630b74bdac540 26
+zSDKs/sdk-cli/internal/cli/testendpoint.go
+  h_9630b74bdac540 18
+zSDKs/sdk-go/.speakeasy/gen.lock
+  h_9630b74bdac540 33,62,512,514,516
+zSDKs/sdk-go/README.md
+  h_9630b74bdac540 195,232,890,1214
+zSDKs/sdk-go/USAGE.md
+  h_9630b74bdac540 133,170
+zSDKs/sdk-go/docs/sdks/tag1/README.md
+  h_9630b74bdac540 152
+zSDKs/sdk-go/docs/sdks/tag2/README.md
+  h_9630b74bdac540 78
+zSDKs/sdk-go/docs/sdks/tag3/README.md
+  h_9630b74bdac540 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e7def9103bab76feaf88785c2d5f6aa3a3f555b1",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
