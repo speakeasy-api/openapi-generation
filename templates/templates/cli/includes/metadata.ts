@@ -85,6 +85,31 @@ function buildOperationMetadataEntries(
 
 const flagMetaEntryFieldPathRegex = /FieldPath: "([^"]+)"/;
 
+// requiredPathParamFlagNames returns the flag names of required path
+// parameters, which take precedence when auto-shorthand letters collide.
+function requiredPathParamFlagNames(
+  op: Operation,
+  entries: string[],
+): Set<string> {
+  const names = new Set<string>();
+  if (!op.Request || op.Request.IsRequestBody) return names;
+  const fieldPaths = new Set<string>();
+  for (const field of op.Request.Field.Type.Fields) {
+    if (field.Optional || !field.Annotations?.Has("param")) continue;
+    const paramAnno = field.Annotations.Get("param") as ParamAnnotation;
+    if (paramAnno.ParamType === "pathParam") {
+      fieldPaths.add(sanitizeFieldName(field.Name));
+    }
+  }
+  for (const entry of entries) {
+    if (!entry.includes("Required: true")) continue;
+    const fieldPath = entry.match(flagMetaEntryFieldPathRegex)?.[1];
+    const name = entry.match(/FlagName: "([^"]+)"/)?.[1];
+    if (name && fieldPath && fieldPaths.has(fieldPath)) names.add(name);
+  }
+  return names;
+}
+
 // operationAutoShorthandOwners maps each auto-assigned single-letter
 // shorthand to its owning generated flag, mirroring templateFlagMetadataVar's
 // post-pass exactly (same entry traversal, same reservations). With
@@ -106,9 +131,14 @@ function operationAutoShorthandOwners(
     fieldPaths.set(name, entry.match(flagMetaEntryFieldPathRegex)?.[1] || "");
   }
   const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
+  const preferred = requiredPathParamFlagNames(op, built.entries);
   const bodyFieldPath = templateBodyFieldPath(op);
   const owners = new Map<string, string>();
-  for (const [name, letter] of computeFlagShorthands(names, extraReserved)) {
+  for (const [name, letter] of computeFlagShorthands(
+    names,
+    extraReserved,
+    preferred,
+  )) {
     if (nonBodyOnly) {
       const fieldPath = fieldPaths.get(name) || "";
       const isBody =
@@ -152,7 +182,11 @@ function templateFlagMetadataVar(op: Operation): string {
 
   // "-a" is reserved on paginated commands (used by --all)
   const extraReserved = hasPagination(op) ? new Set(["a"]) : undefined;
-  const shorthands = computeFlagShorthands(flagNames, extraReserved);
+  const shorthands = computeFlagShorthands(
+    flagNames,
+    extraReserved,
+    requiredPathParamFlagNames(op, entries),
+  );
 
   // Inject Shorthand field into entries that got a shorthand
   const enrichedEntries = entries.map((entry) => {

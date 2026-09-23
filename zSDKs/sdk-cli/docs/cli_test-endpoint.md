@@ -23,7 +23,7 @@ cli test-endpoint [flags]
   -h, --help               help for test-endpoint
       --schema             Print the exact JSON Schema of the request body and exit
       --test string        [required]
-      --test-name string   [required]
+  -t, --test-name string   [required]
 ```
 
 ### Options inherited from parent commands
