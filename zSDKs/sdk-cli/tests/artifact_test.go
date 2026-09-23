@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -210,6 +211,39 @@ func TestArtifact_RawResponseBypassesFile(t *testing.T) {
 	err = runArtifact(t, h2, server.URL, dir, "--raw-response", "--out", filepath.Join(dir, "x"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot be combined with --out")
+}
+
+func TestArtifact_OutputFormatValueSuggestsOut(t *testing.T) {
+	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
+	dir := t.TempDir()
+
+	for _, val := range []string{"asset.png", "asset.yaml", "asset", "renders/"} {
+		h := NewCLITestHarness(t)
+		err := runArtifact(t, h, server.URL, dir, "--agent-mode", "-o", val)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), fmt.Sprintf("invalid value %q for -o/--output-format", val))
+		var envelope struct {
+			Hints []string `json:"hints"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+		require.NotEmpty(t, envelope.Hints)
+		assert.Equal(t, "-o sets the output format. To write to a file, use --out "+val, envelope.Hints[0])
+	}
+
+	h := NewCLITestHarness(t)
+	err := runArtifact(t, h, server.URL, dir, "--agent-mode", "--output", "asset.png")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown flag: --output")
+	var envelope struct {
+		Hints []string `json:"hints"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+	require.NotEmpty(t, envelope.Hints)
+	assert.Equal(t, "Did you mean --out?", envelope.Hints[0])
+
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "a rejected invocation must not write a file")
 }
 
 func TestArtifact_DryRunWritesNothing(t *testing.T) {
