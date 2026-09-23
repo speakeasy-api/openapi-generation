@@ -7,7 +7,7 @@ const supportedFeatures = {
   methodSecurity: "2.82.6",
   globalServerURLs: "2.83.1",
   methodServerURLs: "2.82.2",
-  globals: "2.82.2",
+  globals: "2.82.3",
   enums: "2.82.2",
   serverIDs: "2.81.1",
   nameOverrides: "2.81.4",
