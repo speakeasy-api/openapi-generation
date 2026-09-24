@@ -427,6 +427,17 @@ function templateAuxPath(ctx: Context): string {
 registerTemplateFunc("templateAuxPath", templateAuxPath);
 
 // @ts-ignore
+function gemEntrypointPath(): string {
+  const packageName = context.Global.Config.PackageName;
+  if (packageName.toLowerCase() === sanitizeFileName(packageName)) {
+    return "";
+  }
+  return `lib/${packageName}.rb`;
+}
+
+registerTemplateFunc("gemEntrypointPath", gemEntrypointPath);
+
+// @ts-ignore
 function sanitizeMap(
   typeDef: TypeDef,
   scope: string,

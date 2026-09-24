@@ -432,7 +432,7 @@
       retries ||= Utils::RetryConfig.new(
         {{- if .Local.Extensions.Retries.Backoff }}
         backoff: Utils::BackoffStrategy.new(
-          exponent: {{ .Local.Extensions.Retries.Backoff.Exponent }},
+          exponent: {{ templateFloatLiteral .Local.Extensions.Retries.Backoff.Exponent }},
           initial_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.InitialInterval }},
           max_elapsed_time: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxElapsedTime }},
           max_interval: {{ templateNumericLiteral .Local.Extensions.Retries.Backoff.MaxInterval }}

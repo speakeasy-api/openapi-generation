@@ -1,0 +1,10 @@
+id: 1790287698-5c8fc9ba
+features:
+    - core
+targets:
+    - ruby
+type: fix
+bump: patch
+description: emit a gem-name entry file when packageName differs from the snake_case module file so Bundler.require and tapioca load the SDK
+author: AshGodfrey
+date: "2026-09-24"
