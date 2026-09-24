@@ -13,7 +13,7 @@ features:
     additionalProperties: 0.1.5
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.48.1
+    core: 3.48.2
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
