@@ -331,6 +331,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FrameworkTypeResponse'
+  /v0/import-defaulted-id/{workspace}/{tier}/{region}:
+    parameters:
+      - name: workspace
+        description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: default-workspace
+      - name: tier
+        description: Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - basic
+            - premium
+          default: basic
+      - name: region
+        description: Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: oas-region
+          x-speakeasy-terraform-custom-default:
+            imports:
+              - github.com/hashicorp/terraform-provider-testing/internal/customdefaults
+            schemaDefinition: "customdefaults.String()"
+    post:
+      x-speakeasy-entity-operation: ImportDefaultedId#create
+      description: Create a new import defaulted id resource, whose read path includes a parameter with a schema default
+      operationId: create-import-defaulted-id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportDefaultedIdRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportDefaultedIdResponse'
+  /v0/import-defaulted-id/{workspace}/{tier}/{region}/{id}:
+    parameters:
+      - name: workspace
+        description: Path parameter with a schema default, which import should apply when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: default-workspace
+      - name: tier
+        description: Enum path parameter with a schema default, which import should apply through the enum's underlying type when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+            - basic
+            - premium
+          default: basic
+      - name: region
+        description: Path parameter with both a custom default extension and an OAS default, where import should apply the custom default like the schema does when the field is omitted from the JSON import ID
+        in: path
+        required: true
+        schema:
+          type: string
+          default: oas-region
+          x-speakeasy-terraform-custom-default:
+            imports:
+              - github.com/hashicorp/terraform-provider-testing/internal/customdefaults
+            schemaDefinition: "customdefaults.String()"
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      x-speakeasy-entity-operation: ImportDefaultedId#delete
+      description: Delete an import defaulted id resource
+      operationId: delete-import-defaulted-id
+      responses:
+        '200':
+          description: OK
+    get:
+      x-speakeasy-entity-operation: ImportDefaultedId#read
+      description: Get an import defaulted id resource
+      operationId: get-import-defaulted-id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportDefaultedIdResponse'
   /v0/import-id-enum-string:
     post:
       x-speakeasy-entity-operation: ImportIdEnumString#create
@@ -9148,6 +9248,23 @@ components:
         string_date_time:
           type: string
           format: date-time
+    ImportDefaultedIdRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        requestBodyProperty:
+          type: string
+    ImportDefaultedIdResponse:
+      x-speakeasy-entity: ImportDefaultedId
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        workspace:
+          type: string
+        requestBodyProperty:
+          type: string
     ImportIdEnumStringRequest:
       type: object
       additionalProperties: false

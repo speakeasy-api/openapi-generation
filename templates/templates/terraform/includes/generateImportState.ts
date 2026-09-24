@@ -221,6 +221,70 @@ function genIsZeroValue(
   return undefined;
 }
 
+function templateImportCustomDefault(
+  symbolManager: Record<string, boolean>,
+  field: FieldDef,
+  sanitizedFieldName: string,
+  config: TerraformCustomDefault,
+  curSymbol: string,
+  path: string,
+  fieldName: string,
+): string[] {
+  const scalarType =
+    field.Type.Type.toString() === "enum" ? field.Type.Enum.Type : field.Type;
+  const accessor = primitiveAccessor(scalarType, false);
+
+  if (!accessor) {
+    throw new Error(
+      `unsupported custom default type ${scalarType.Type} in import for ${field.Name}`,
+    );
+  }
+
+  const defaultTypeName = accessor.slice("Value".length, -"()".length);
+  const responseVar = getPluralizedVarSymbolName(
+    symbolManager,
+    sanitizedFieldName,
+    "DefaultResponse",
+  );
+  const valueVar = getPluralizedVarSymbolName(
+    symbolManager,
+    sanitizedFieldName,
+    "Default",
+  );
+
+  addGenImport(
+    "github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults",
+  );
+  config.Imports?.forEach((importPath) => addGenImport(importPath));
+
+  return [
+    `var ${responseVar} defaults.${defaultTypeName}Response`,
+    `${config.SchemaDefinition}.Default${defaultTypeName}(ctx, defaults.${defaultTypeName}Request{Path: ${path}}, &${responseVar})`,
+    `resp.Diagnostics.Append(${responseVar}.Diagnostics...)`,
+    `if resp.Diagnostics.HasError() {`,
+    `return`,
+    `}`,
+    `if ${responseVar}.PlanValue.IsNull() || ${responseVar}.PlanValue.IsUnknown() {`,
+    `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID and its default resolved to no value.\`)`,
+    `return`,
+    `}`,
+    `${valueVar} := ${sanitizeType(
+      field.Type,
+      false,
+      "",
+    )}(${responseVar}.PlanValue.${accessor})`,
+    `${curSymbol} = &${valueVar}`,
+  ];
+}
+
+function isImportPointerField(field: FieldDef): boolean {
+  return (
+    field.Optional ||
+    field.Nullable ||
+    resolveScalarDefault(field.Type, field.Default) !== undefined
+  );
+}
+
 function validateAndSet(
   valSymbol: string,
   hierarchy: string[],
@@ -257,10 +321,11 @@ function validateAndSet(
 
     addGenImport("github.com/hashicorp/terraform-plugin-framework/path");
 
-    const check =
-      field.Optional || field.Nullable
-        ? `${curSymbol} == nil`
-        : genIsZeroValue(accessorType, curSymbol);
+    const isPointer = isImportPointerField(field);
+    const check = isPointer
+      ? `${curSymbol} == nil`
+      : genIsZeroValue(accessorType, curSymbol);
+    const scalarDefault = resolveScalarDefault(field.Type, field.Default);
     const frameworkType = FrameworkTypeFromFieldDef(field);
     const isGlobalField =
       curHierarchy.length === 1 && sanitizedFieldName in globalFields;
@@ -276,11 +341,7 @@ function validateAndSet(
 
       if (isGlobalField) {
         frameworkType
-          .templateTerraformToSDKImports(
-            field.Type,
-            true,
-            field.Optional || field.Nullable,
-          )
+          .templateTerraformToSDKImports(field.Type, true, isPointer)
           .forEach((importStr) => {
             addGenImport(importStr);
           });
@@ -291,7 +352,7 @@ function validateAndSet(
             sanitizedFieldName,
             field.Type,
             true,
-            field.Optional || field.Nullable,
+            isPointer,
             curSymbol,
             `r.${sanitizedFieldName}`,
             false,
@@ -302,22 +363,48 @@ function validateAndSet(
         result.push(`if ${check} {`);
       }
 
-      // Only include example hint if there's a real OAS-defined example
-      const hasExample = field.Type.Examples?.length > 0;
       const fieldName = sanitizeTFStateName(curHierarchy);
-      if (hasExample) {
-        const exampleValue = FrameworkTypeFromTypeDef(
-          field.Type,
-        ).templateExampleJSONValue(field.Type);
+      if (scalarDefault?.kind === "static") {
+        const defaultVar = getPluralizedVarSymbolName(
+          symbolManager,
+          sanitizedFieldName,
+          "Default",
+        );
         result.push(
-          `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID. It's expected to be a value alike '${exampleValue}'\`)`,
+          `var ${defaultVar} ${sanitizeType(field.Type, false, "")} = ${
+            scalarDefault.literal
+          }`,
+        );
+        result.push(`${curSymbol} = &${defaultVar}`);
+      } else if (scalarDefault?.kind === "custom") {
+        result.push(
+          ...templateImportCustomDefault(
+            symbolManager,
+            field,
+            sanitizedFieldName,
+            scalarDefault.config,
+            curSymbol,
+            path,
+            fieldName,
+          ),
         );
       } else {
-        result.push(
-          `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID.\`)`,
-        );
+        // Only include example hint if there's a real OAS-defined example
+        const hasExample = field.Type.Examples?.length > 0;
+        if (hasExample) {
+          const exampleValue = FrameworkTypeFromTypeDef(
+            field.Type,
+          ).templateExampleJSONValue(field.Type);
+          result.push(
+            `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID. It's expected to be a value alike '${exampleValue}'\`)`,
+          );
+        } else {
+          result.push(
+            `resp.Diagnostics.AddError("Missing required field", \`The field ${fieldName} is required but was not found in the json encoded ID.\`)`,
+          );
+        }
+        result.push(`return`);
       }
-      result.push(`return`);
 
       if (isGlobalField) {
         result.push(`}`);
@@ -414,7 +501,7 @@ function templateImportJSONStruct(requiredAttributes: TypeDef): string {
     const structFieldTag = `\`json:"${attributeName}"\``;
     const structFieldType = sanitizeType(
       field.Type,
-      field.Optional || field.Nullable,
+      isImportPointerField(field),
       "",
     );
 

@@ -91,13 +91,17 @@ function createSchemaDefault(
     case "date":
     case "date-time":
     case "string":
-      return typeof defaultValue.Value === "string"
-        ? new StringSchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) => new StringSchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "boolean":
-      return typeof defaultValue.Value === "boolean"
-        ? new BoolSchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) => new BoolSchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "enum":
       return createSchemaDefault(
         typeDef.Enum.Type,
@@ -106,23 +110,31 @@ function createSchemaDefault(
         fieldConfig,
       );
     case "float32":
-      return typeof defaultValue.Value === "number"
-        ? new Float32SchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) =>
+          new Float32SchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "int32":
-      return typeof defaultValue.Value === "number" &&
-        Number.isInteger(defaultValue.Value)
-        ? new Int32SchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) => new Int32SchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "integer":
-      return typeof defaultValue.Value === "number" &&
-        Number.isInteger(defaultValue.Value)
-        ? new Int64SchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) => new Int64SchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "number":
-      return typeof defaultValue.Value === "number"
-        ? new Float64SchemaDefaultStatic(defaultValue.Value)
-        : undefined;
+      return staticSchemaDefault(
+        typeDef,
+        defaultValue.Value,
+        (literal) =>
+          new Float64SchemaDefaultStatic(defaultValue.Value, literal),
+      );
     case "set": {
       // Exclude set-nested (class/union item types) which become
       // SetNestedAttribute and do not support defaults.
@@ -156,6 +168,86 @@ function createSchemaDefault(
   }
 }
 
+function staticSchemaDefault(
+  typeDef: TypeDef,
+  value: unknown,
+  build: (literal: string) => SchemaDefault,
+): SchemaDefault | undefined {
+  const literal = staticDefaultGoLiteral(typeDef, value);
+  return literal === undefined ? undefined : build(literal);
+}
+
+function staticDefaultGoLiteral(
+  typeDef: TypeDef,
+  value: unknown,
+): string | undefined {
+  if (value === undefined || value === null || value === "null") {
+    return undefined;
+  }
+
+  switch (typeDef.Type.toString()) {
+    case "any":
+    case "bytes":
+    case "date":
+    case "date-time":
+    case "string":
+      return typeof value === "string"
+        ? templateBuiltinString(value)
+        : undefined;
+    case "boolean":
+      return typeof value === "boolean" ? String(value) : undefined;
+    case "enum":
+      return typeDef.Enum
+        ? staticDefaultGoLiteral(typeDef.Enum.Type, value)
+        : undefined;
+    case "float32":
+    case "number":
+      return typeof value === "number" ? String(value) : undefined;
+    case "int32":
+    case "integer":
+      return typeof value === "number" && Number.isInteger(value)
+        ? String(value)
+        : undefined;
+    default:
+      return undefined;
+  }
+}
+
+type ScalarDefault =
+  | { kind: "custom"; config: TerraformCustomDefault }
+  | { kind: "static"; literal: string };
+
+const importScalarTypes = new Set([
+  "boolean",
+  "float32",
+  "int32",
+  "integer",
+  "number",
+  "string",
+]);
+
+function resolveScalarDefault(
+  typeDef: TypeDef,
+  defaultValue: AnyValue | undefined,
+): ScalarDefault | undefined {
+  const scalarType =
+    typeDef.Type.toString() === "enum" ? typeDef.Enum?.Type : typeDef;
+
+  if (!scalarType || !importScalarTypes.has(scalarType.Type.toString())) {
+    return undefined;
+  }
+
+  const customDefaultConfig = typeDef.Extensions?.TerraformCustomDefault;
+
+  if (customDefaultConfig) {
+    return { kind: "custom", config: customDefaultConfig };
+  }
+
+  const literal = staticDefaultGoLiteral(typeDef, defaultValue?.Value);
+
+  return literal === undefined ? undefined : { kind: "static", literal };
+}
+
 /**
  * Abstract typed default for terraform-plugin-framework defaults.Bool
  * implementations. Ensures type safety when used with BoolAttribute schema
@@ -171,10 +263,12 @@ abstract class BoolSchemaDefault extends SchemaDefault {
  */
 class BoolSchemaDefaultStatic extends BoolSchemaDefault {
   private readonly value: boolean;
+  private readonly literal: string;
 
-  constructor(value: boolean) {
+  constructor(value: boolean, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -191,7 +285,7 @@ class BoolSchemaDefaultStatic extends BoolSchemaDefault {
   }
 
   template(): string {
-    return `booldefault.StaticBool(${this.value})`;
+    return `booldefault.StaticBool(${this.literal})`;
   }
 }
 
@@ -240,10 +334,12 @@ abstract class Float32SchemaDefault extends SchemaDefault {
  */
 class Float32SchemaDefaultStatic extends Float32SchemaDefault {
   private readonly value: number;
+  private readonly literal: string;
 
-  constructor(value: number) {
+  constructor(value: number, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -260,7 +356,7 @@ class Float32SchemaDefaultStatic extends Float32SchemaDefault {
   }
 
   template(): string {
-    return `float32default.StaticFloat32(${this.value})`;
+    return `float32default.StaticFloat32(${this.literal})`;
   }
 }
 
@@ -279,10 +375,12 @@ abstract class Float64SchemaDefault extends SchemaDefault {
  */
 class Float64SchemaDefaultStatic extends Float64SchemaDefault {
   private readonly value: number;
+  private readonly literal: string;
 
-  constructor(value: number) {
+  constructor(value: number, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -299,7 +397,7 @@ class Float64SchemaDefaultStatic extends Float64SchemaDefault {
   }
 
   template(): string {
-    return `float64default.StaticFloat64(${this.value})`;
+    return `float64default.StaticFloat64(${this.literal})`;
   }
 }
 
@@ -318,10 +416,12 @@ abstract class Int32SchemaDefault extends SchemaDefault {
  */
 class Int32SchemaDefaultStatic extends Int32SchemaDefault {
   private readonly value: number;
+  private readonly literal: string;
 
-  constructor(value: number) {
+  constructor(value: number, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -338,7 +438,7 @@ class Int32SchemaDefaultStatic extends Int32SchemaDefault {
   }
 
   template(): string {
-    return `int32default.StaticInt32(${this.value})`;
+    return `int32default.StaticInt32(${this.literal})`;
   }
 }
 
@@ -357,10 +457,12 @@ abstract class Int64SchemaDefault extends SchemaDefault {
  */
 class Int64SchemaDefaultStatic extends Int64SchemaDefault {
   private readonly value: number;
+  private readonly literal: string;
 
-  constructor(value: number) {
+  constructor(value: number, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -377,7 +479,7 @@ class Int64SchemaDefaultStatic extends Int64SchemaDefault {
   }
 
   template(): string {
-    return `int64default.StaticInt64(${this.value})`;
+    return `int64default.StaticInt64(${this.literal})`;
   }
 }
 
@@ -633,10 +735,12 @@ abstract class StringSchemaDefault extends SchemaDefault {
  */
 class StringSchemaDefaultStatic extends StringSchemaDefault {
   private readonly value: string;
+  private readonly literal: string;
 
-  constructor(value: string) {
+  constructor(value: string, literal: string) {
     super();
     this.value = value;
+    this.literal = literal;
   }
 
   description(): string {
@@ -653,6 +757,6 @@ class StringSchemaDefaultStatic extends StringSchemaDefault {
   }
 
   template(): string {
-    return `stringdefault.StaticString(${templateBuiltinString(this.value)})`;
+    return `stringdefault.StaticString(${this.literal})`;
   }
 }

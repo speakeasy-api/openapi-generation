@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 4739592738991be9857d1c4474c7aa95
+  docChecksum: 0cc5566564e38d98df9fd68ef8704acb
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -55,6 +55,8 @@ trackedFiles:
     last_write_checksum: sha1:a21b63c90ce67e7b78e103fb57e8b55ba8ab4073
   examples/data-sources/testing_framework_type/data-source.tf:
     last_write_checksum: sha1:5962afcf4758bc7d18e755dc83cfc85948e89f9f
+  examples/data-sources/testing_import_defaulted_id/data-source.tf:
+    last_write_checksum: sha1:9fd5403a5345d8badc85bc876d3ead0eb679d264
   examples/data-sources/testing_import_id_enum_string/data-source.tf:
     last_write_checksum: sha1:434c8e3e33f4aea19b907934669a18bda4362087
   examples/data-sources/testing_import_id_int32/data-source.tf:
@@ -287,6 +289,12 @@ trackedFiles:
     last_write_checksum: sha1:5283f92195a9546994be1b73292ba87eb5b5d245
   examples/resources/testing_framework_type/resource.tf:
     last_write_checksum: sha1:24d7d1eebf90ad3fc482138f7afd7372e79abaa5
+  examples/resources/testing_import_defaulted_id/import-by-string-id.tf:
+    last_write_checksum: sha1:0f89789edb9761026519c53c950e582bf1e8ffc3
+  examples/resources/testing_import_defaulted_id/import.sh:
+    last_write_checksum: sha1:a3c4d79e7e3ea9e4ef09737a5bef04e697047685
+  examples/resources/testing_import_defaulted_id/resource.tf:
+    last_write_checksum: sha1:a8a9564f134ce64f16eed45aff0a7120e1117589
   examples/resources/testing_import_id_enum_string/import-by-string-id.tf:
     last_write_checksum: sha1:a01b97f0a7718d85908f69d4e61d54984be46d23
   examples/resources/testing_import_id_enum_string/import.sh:
@@ -775,6 +783,14 @@ trackedFiles:
     last_write_checksum: sha1:d44c355b22f26fd7b534fb458b1cbe81b80e1919
   internal/provider/frameworktype_resource_sdk.go:
     last_write_checksum: sha1:73f3268858f1bd5ae2d73fa868e569470b6088c3
+  internal/provider/importdefaultedid_data_source.go:
+    last_write_checksum: sha1:297a3b3f17843f1f5da9317b7c3c5c3b01685867
+  internal/provider/importdefaultedid_data_source_sdk.go:
+    last_write_checksum: sha1:6c086fbfa6439b47090334c881b5f8d0f65fe7f5
+  internal/provider/importdefaultedid_resource.go:
+    last_write_checksum: sha1:c9c59d7ce9e8addd65ca0e981596bc08427b3d74
+  internal/provider/importdefaultedid_resource_sdk.go:
+    last_write_checksum: sha1:0c70caf18aa6b2ad018b21cfa0df4432f7c61486
   internal/provider/importidenumstring_data_source.go:
     last_write_checksum: sha1:e6b068f00e651ffc130fc382eb6c1c5e52ab5963
   internal/provider/importidenumstring_data_source_sdk.go:
@@ -1048,7 +1064,7 @@ trackedFiles:
   internal/provider/patch_resource_sdk.go:
     last_write_checksum: sha1:9b583e2ac47191350373ce5a86408c118bd606b1
   internal/provider/provider.go:
-    last_write_checksum: sha1:165aa656ebff0c9e83540c0fececc3cf4ab7eeeb
+    last_write_checksum: sha1:11ad9098df8c62b56d5aab92cde0913a063b03e3
   internal/provider/reflect/diags.go:
     last_write_checksum: sha1:ace8bc53054bb1d8ee8689acf3e4323de75a6297
   internal/provider/reflect/doc.go:
@@ -2194,7 +2210,7 @@ trackedFiles:
   internal/provider/xglobals_data_source_sdk.go:
     last_write_checksum: sha1:9966b8bb938807ea6bdd5a577bc18916452fc5e6
   internal/provider/xglobals_resource.go:
-    last_write_checksum: sha1:6b02d409441f40071659402765d62205490fa98c
+    last_write_checksum: sha1:5b19f7ccf451a0f49e1c1d7d3c60f72ce639baca
   internal/provider/xglobals_resource_sdk.go:
     last_write_checksum: sha1:f3e07ecf4e9205eb56c86f9ae86fc549e0b0e88f
   internal/provider/xmatch_data_source.go:
@@ -2421,6 +2437,8 @@ trackedFiles:
     last_write_checksum: sha1:715e571da7c0da9a9bf8d4d3ae3a313f623c643a
   internal/sdk/models/operations/createframeworktype.go:
     last_write_checksum: sha1:1473ee200106e11a09d436f415f66f8032147fec
+  internal/sdk/models/operations/createimportdefaultedid.go:
+    last_write_checksum: sha1:e6bafbcdd061dace291c8868c4f09f5550229c06
   internal/sdk/models/operations/createimportidenumstring.go:
     last_write_checksum: sha1:e6aff15e1e450a453ee5a3114b439a1f3ec6ac72
   internal/sdk/models/operations/createimportidint32.go:
@@ -2567,6 +2585,8 @@ trackedFiles:
     last_write_checksum: sha1:ab4a1348806216f6464dc195515e22003e987d60
   internal/sdk/models/operations/deleteframeworktype.go:
     last_write_checksum: sha1:cb1ec4b73bcc82a659f952ab412d978c3378dffb
+  internal/sdk/models/operations/deleteimportdefaultedid.go:
+    last_write_checksum: sha1:7fa0087efbb1e4e6689211ca620efefcda531e72
   internal/sdk/models/operations/deleteimportidenumstring.go:
     last_write_checksum: sha1:8dfef5bf1d30e610127bd0665fbf1ff5adedbfd3
   internal/sdk/models/operations/deleteimportidint32.go:
@@ -2705,6 +2725,8 @@ trackedFiles:
     last_write_checksum: sha1:8c3bcb9baa37be554d9fc5669e0a09b6fa536ea5
   internal/sdk/models/operations/getframeworktype.go:
     last_write_checksum: sha1:a766fb78f32a52bcca85fcbf206712c6ed0f9f00
+  internal/sdk/models/operations/getimportdefaultedid.go:
+    last_write_checksum: sha1:93856b2bf51efaf2c110f062fc3a06e356c422a1
   internal/sdk/models/operations/getimportidenumstring.go:
     last_write_checksum: sha1:d71cb665d543afccd4dfcfee12af1605c62ec001
   internal/sdk/models/operations/getimportidint32.go:
@@ -3099,6 +3121,10 @@ trackedFiles:
     last_write_checksum: sha1:883b03b0b38369abef3d5ef1877aec8efc5e9472
   internal/sdk/models/shared/globalenumstring.go:
     last_write_checksum: sha1:67206cfaee16690785fa23dc881543e87fa45f0f
+  internal/sdk/models/shared/importdefaultedidrequest.go:
+    last_write_checksum: sha1:b8523186abdd14ed6fe995f5a9a93e7606c0a549
+  internal/sdk/models/shared/importdefaultedidresponse.go:
+    last_write_checksum: sha1:2096ad5ee71a7f34272f50ec141422097f43a7f1
   internal/sdk/models/shared/importidenumstringrequest.go:
     last_write_checksum: sha1:340524eb2b7b0d43485701dcbd8cf3ce9dc49951
   internal/sdk/models/shared/importidenumstringresponse.go:
@@ -3542,7 +3568,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:f160394d83562721b762d238bbef07e10d1db48e
+    last_write_checksum: sha1:224db2187527a941b29d524d57531f33cfc70f48
   internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   internal/sdk/types/date.go:
@@ -5953,4 +5979,35 @@ examples:
         "200":
           application/json: {"name": "<value>", "kind": "alpha", "credentials": {"client_id": "<id>"}}
   delete-root-union-writeonly: {}
+  create-import-defaulted-id:
+    speakeasy-default-create-import-defaulted-id:
+      parameters:
+        path:
+          workspace: "default-workspace"
+          tier: "basic"
+          region: "oas-region"
+      requestBody:
+        application/json: {}
+      responses:
+        "200":
+          application/json: {}
+  delete-import-defaulted-id:
+    speakeasy-default-delete-import-defaulted-id:
+      parameters:
+        path:
+          workspace: "default-workspace"
+          id: "<id>"
+          tier: "basic"
+          region: "oas-region"
+  get-import-defaulted-id:
+    speakeasy-default-get-import-defaulted-id:
+      parameters:
+        path:
+          workspace: "default-workspace"
+          id: "<id>"
+          tier: "basic"
+          region: "oas-region"
+      responses:
+        "200":
+          application/json: {}
 examplesVersion: 1.0.2

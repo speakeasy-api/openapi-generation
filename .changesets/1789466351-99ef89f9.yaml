@@ -1,0 +1,10 @@
+id: 1789466351-99ef89f9
+features:
+    - core
+targets:
+    - terraform
+type: fix
+bump: patch
+description: apply path parameter schema defaults and x-speakeasy-terraform-custom-default in ImportState when omitted from the JSON import ID
+author: AshGodfrey
+date: "2026-09-15"
