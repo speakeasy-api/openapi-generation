@@ -20,6 +20,25 @@ updates:
           - patch
     schedule:
       interval: weekly
+  # Bumps here must be back-ported to templates/templates/cli/release/release-workflow.yaml.stmpl
+  # and the CLI release snapshots before zSDKs/sdk-cli regenerates cleanly.
+  - package-ecosystem: github-actions
+    labels:
+      - dependencies
+      - github_actions
+      - skip changelog
+      - skip linear
+    commit-message:
+      prefix: chore(cli)
+    directories:
+      - "/zSDKs/sdk-cli/.github/workflows"
+    groups:
+      cli-release-workflow:
+        applies-to: version-updates
+        patterns:
+          - "*"
+    schedule:
+      interval: weekly
   - package-ecosystem: gomod
     labels:
       - dependencies
