@@ -30,7 +30,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
     },
     "golang.org/x/sync": {
       name: "golang.org/x/sync",
-      version: "v0.19.0",
+      version: "v0.23.0",
       cpe: "cpe:2.3:a:golang:sync:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
@@ -75,7 +75,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
     },
     "golang.org/x/term": {
       name: "golang.org/x/term",
-      version: "v0.40.0",
+      version: "v0.46.0",
       cpe: "cpe:2.3:a:golang:x_term:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
@@ -576,7 +576,7 @@ function getGoCommandDependency(): RunnerCommandDependency {
     version: {
       args: ["version"],
       regex: `(?m).*?go version go(\\d+\\.\\d+\\.\\d+).*?`,
-      minVersion: "1.25.0",
+      minVersion: "1.26.0",
     },
     installDocumentation: `Install Go by following the instructions at https://golang.org/doc/install.`,
   };

@@ -691,7 +691,7 @@ trackedFiles:
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
-    last_write_checksum: sha1:716719b34942152011e95cd58faa12e4a8b5c774
+    last_write_checksum: sha1:fbdda8d865e5f59cfb9e776d86ec0c4c1c5e5f8f
   group.go:
     last_write_checksum: sha1:669020440a45de422e8bbf697d13322d6602d603
   httpmetadata.go:

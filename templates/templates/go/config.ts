@@ -7,7 +7,7 @@ function getTemplateDependencies() {
     // Runtime dependencies
     "github.com/spyzhov/ajson": {
       name: "github.com/spyzhov/ajson",
-      version: "v0.8.0",
+      version: "v0.9.6",
       cpe: "cpe:2.3:a:spyzhov:ajson:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
@@ -22,7 +22,7 @@ function getTemplateDependencies() {
     },
     "github.com/stretchr/testify": {
       name: "github.com/stretchr/testify",
-      version: "v1.8.4",
+      version: "v1.11.1",
       cpe: "cpe:2.3:a:stretchr:testify:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "dev",
@@ -30,7 +30,7 @@ function getTemplateDependencies() {
     },
     "golang.org/x/sync": {
       name: "golang.org/x/sync",
-      version: "v0.8.0",
+      version: "v0.23.0",
       cpe: "cpe:2.3:a:golang:sync:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
@@ -38,7 +38,7 @@ function getTemplateDependencies() {
     },
     "github.com/itchyny/gojq": {
       name: "github.com/itchyny/gojq",
-      version: "v0.12.17",
+      version: "v0.12.18",
       cpe: "cpe:2.3:a:itchyny:gojq:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",

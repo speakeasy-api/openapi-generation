@@ -1,3 +1,3 @@
 module github.com/testcontainers/testcontainers-go/wait
 
-go 1.26.2
+go 1.26.8
