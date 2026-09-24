@@ -46,7 +46,7 @@ trackedFiles:
   .gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f
   .github/workflows/release.yaml:
-    last_write_checksum: sha1:ff4e1df729b880f7e346d013376669ee52735e11
+    last_write_checksum: sha1:e2f065141111bf701e1d37427ef7538c648da4d5
   .goreleaser.yaml:
     last_write_checksum: sha1:b9387c3c18a34c200ab91b1c8fb9f1af6cf2aff9
   USAGE.md:
