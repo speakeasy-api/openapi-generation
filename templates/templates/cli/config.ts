@@ -541,6 +541,15 @@ function getConfigFields(
       Description:
         "Color theme for interactive prompts. All values are hex color strings. accentColor: primary accent (borders, titles, selectors). dimmedColor: secondary text (descriptions, blurred fields). subtleColor: muted elements (placeholders, inactive borders). errorColor: validation errors. successColor: checkmarks and confirmations.",
     },
+    fixes: {
+      Name: "fixFlags",
+      Required: false,
+      DefaultValue: {
+        encodePathParams: newSDK,
+      },
+      Description:
+        "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
+    },
   };
 }
 

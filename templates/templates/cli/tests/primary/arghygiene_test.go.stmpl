@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestOutputFormatTypoRejected(t *testing.T) {
 	h := NewCLITestHarness(t)
 	err := h.RunWithServer(s.URL, []string{"-o", "jsno", "methods", "method-get"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid value "jsno" for --output-format`)
+	assert.Contains(t, err.Error(), `invalid value "jsno" for -o/--output-format`)
 	assert.Contains(t, err.Error(), "pretty, json, yaml, table, toon")
 	assert.Contains(t, err.Error(), `did you mean "json"`)
 	assert.Equal(t, 0, *count, "an invalid output format must fail before the request is sent")
@@ -27,8 +28,69 @@ func TestOutputFormatAmbiguousTypoHasNoSuggestion(t *testing.T) {
 	h := NewCLITestHarness(t)
 	err := h.RunWithServer("http://127.0.0.1:1", []string{"-o", "t", "methods", "method-get"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid value "t" for --output-format`)
+	assert.Contains(t, err.Error(), `invalid value "t" for -o/--output-format`)
 	assert.NotContains(t, err.Error(), "did you mean")
+}
+
+func TestOutputFormatPathSuggestsRedirect(t *testing.T) {
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"--agent-mode", "-o", "hero.yaml", "methods", "method-get"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value "hero.yaml" for -o/--output-format`)
+	assert.NotContains(t, err.Error(), "did you mean")
+	var envelope struct {
+		Hints []string `json:"hints"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+	require.NotEmpty(t, envelope.Hints)
+	assert.Equal(t, "-o sets the output format, not a file. To save the response: -o json > hero.yaml", envelope.Hints[0])
+}
+
+func TestGlobalShorthandPointsToSimilarLocalFlag(t *testing.T) {
+	cases := []struct {
+		args []string
+		hint string
+	}{
+		{
+			[]string{"parameters", "mixed-parameters-primitives", "-p", "a", "--header-param", "h", "-q", "qs"},
+			"-q is short for --jq, not --query-string-param. Use --query-string-param qs",
+		},
+		{
+			[]string{"parameters", "mixed-parameters-primitives", "-p", "a", "--query-string-param", "qs", "-H", "hp"},
+			"-H is short for --header, not --header-param. Use --header-param hp",
+		},
+		{
+			[]string{"unions", "infected-with-any", "-d", `{"any":1}`},
+			`-d is short for --debug, not --data. Use --data '{"any":1}'`,
+		},
+		{
+			[]string{"parameters", "mixed-parameters-primitives", "-p", "a", "-q", "qs"},
+			"",
+		},
+		{
+			[]string{"-d", "unions", "infected-with-any", "--body", "{"},
+			"",
+		},
+	}
+	for _, tc := range cases {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer("http://127.0.0.1:1", append([]string{"--agent-mode"}, tc.args...))
+		require.Error(t, err, tc.args)
+		var envelope struct {
+			Hints []string `json:"hints"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope), h.GetStderr())
+		if tc.hint == "" {
+			for _, hint := range envelope.Hints {
+				assert.NotContains(t, hint, "is short for", tc.args)
+			}
+			continue
+		}
+		require.NotEmpty(t, envelope.Hints, tc.args)
+		assert.Equal(t, tc.hint, envelope.Hints[0], tc.args)
+	}
 }
 
 func TestColorValueRejected(t *testing.T) {

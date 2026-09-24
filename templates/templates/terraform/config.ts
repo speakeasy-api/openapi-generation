@@ -437,6 +437,15 @@ function getConfigFields(
       Description:
         "Configuration options for Terraform debug logging (TF_LOG=DEBUG). Contains settings for controlling what information is redacted or exposed in debug output.",
     },
+    fixes: {
+      Name: "fixFlags",
+      Required: false,
+      DefaultValue: {
+        encodePathParams: newSDK,
+      },
+      Description:
+        "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
+    },
   };
 }
 

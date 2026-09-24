@@ -12,6 +12,8 @@ generation:
     generateTests: true
     generateNewTests: false
 cli:
+  fixFlags:
+    encodePathParams: true
   version: 0.3.1
   additionalDependencies: {}
   baseErrorName: SDKError

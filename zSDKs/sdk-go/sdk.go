@@ -700,7 +700,7 @@ func (s *SDK) PostFile(ctx context.Context, request PostFileRequest, opts ...Opt
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -725,7 +725,7 @@ func (s *SDK) PostFile(ctx context.Context, request PostFileRequest, opts ...Opt
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -1188,7 +1188,7 @@ func (s *SDK) GetUnionErrors(ctx context.Context, page int64, opts ...Option) (*
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -1213,7 +1213,7 @@ func (s *SDK) GetUnionErrors(ctx context.Context, page int64, opts ...Option) (*
 
 			var out GetUnionErrorsInternalServerError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -1238,7 +1238,7 @@ func (s *SDK) GetUnionErrors(ctx context.Context, page int64, opts ...Option) (*
 
 			var out ClientError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -4340,7 +4340,7 @@ func (s *SDK) GetErrorInUnion(ctx context.Context, opts ...Option) (*GetErrorInU
 
 			var out GetErrorInUnionInternalServerError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -4570,7 +4570,7 @@ func (s *SDK) GetDuplicateExportCollision(ctx context.Context, opts ...Option) (
 
 			var out RequestTimeoutError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -4994,7 +4994,7 @@ func (s *SDK) GetEmptyObjectError(ctx context.Context, opts ...Option) (*GetEmpt
 
 			var out FailedResponseError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{
@@ -6511,7 +6511,7 @@ func (s *SDK) GetErrorOnlyExample(ctx context.Context, opts ...Option) (*GetErro
 
 			var out ErrorsError
 			if err := utils.UnmarshalJsonFromResponseBody(bytes.NewBuffer(rawBody), &out, ""); err != nil {
-				return nil, err
+				return nil, NewResponseValidationError("response did not match the declared error schema", httpRes.StatusCode, string(rawBody), httpRes, err)
 			}
 
 			out.HTTPMeta = HTTPMetadata{

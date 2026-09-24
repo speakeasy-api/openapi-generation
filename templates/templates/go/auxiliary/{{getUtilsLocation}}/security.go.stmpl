@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	{{- if encodePathParams}}
+	"net/url"
+	{{- end}}
 	"reflect"
 	"strings"
 )
@@ -54,11 +57,25 @@ func PopulateSecurity(ctx context.Context, req *http.Request, securitySource fun
 		req.Header.Add(key, value)
 	}
 
+	{{if encodePathParams}}
+	if len(queryParams) > 0 {
+		query := url.Values{}
+		for key, value := range queryParams {
+			query.Add(key, value)
+		}
+		if req.URL.RawQuery == "" {
+			req.URL.RawQuery = query.Encode()
+		} else {
+			req.URL.RawQuery += "&" + query.Encode()
+		}
+	}
+	{{else}}
 	query := req.URL.Query()
 	for key, value := range queryParams {
 		query.Add(key, value)
 	}
 	req.URL.RawQuery = query.Encode()
+	{{end}}
 
 	return nil
 }

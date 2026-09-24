@@ -12,6 +12,8 @@ generation:
     generateTests: true
     generateNewTests: false
 terraform:
+  fixFlags:
+    encodePathParams: true
   forwardCompatibleEnumsByDefault: false
   inferUnionDiscriminators: true
   version: 0.0.1

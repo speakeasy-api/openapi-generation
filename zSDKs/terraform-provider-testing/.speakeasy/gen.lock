@@ -6,14 +6,14 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: b0b0e0248663e9d1aa31b60bb69de753
+  configChecksum: 63c533befde268e8a1d65944db363fa2
 features:
   terraform:
     additionalDependencies: 0.1.0
     additionalProperties: 0.1.5
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.47.16
+    core: 3.48.0
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
@@ -2386,21 +2386,23 @@ trackedFiles:
   internal/sdk/internal/utils/oauth2_sessions.go:
     last_write_checksum: sha1:c4af99567451b6931fce12b06dca8300d07b79f1
   internal/sdk/internal/utils/pathparams.go:
-    last_write_checksum: sha1:6d8327a24cb4f888eab062cd1ebd48cf9ac2b1f6
+    last_write_checksum: sha1:55b50b5e3588991733a706b16867f1977829625e
   internal/sdk/internal/utils/queryparams.go:
-    last_write_checksum: sha1:50ff48a16b44e9999f32986db7efa09ec08e7e3a
+    last_write_checksum: sha1:635a0e08ad5430a0a8e2e95b9ad7e469a3d63f6c
   internal/sdk/internal/utils/requestbody.go:
     last_write_checksum: sha1:832f848d164c1edd9f5a348c23e74ab3725c09ba
   internal/sdk/internal/utils/retries.go:
     last_write_checksum: sha1:bcbc34ec6809ae5ea5d49886673d41efe46cc944
   internal/sdk/internal/utils/security.go:
-    last_write_checksum: sha1:49fee4e9252239953611e6de36f4682851499ab5
+    last_write_checksum: sha1:03542ef1eae34ce2056cfb15c80beff75b726761
   internal/sdk/internal/utils/union.go:
     last_write_checksum: sha1:d6e19289ee991d6c98bf6433c89137e46c75ba0e
   internal/sdk/internal/utils/union_test.go:
     last_write_checksum: sha1:c55e5e44c26dfae67b83359851996122a3dfc9cf
   internal/sdk/internal/utils/utils.go:
-    last_write_checksum: sha1:99cc0c84ff8f75a9c82e12dfbf587a0c3f30687f
+    last_write_checksum: sha1:2b7f8f2bd131693f165c80adb2e47f404819d65d
+  internal/sdk/models/errors/responsevalidationerror.go:
+    last_write_checksum: sha1:aa7f69462e3a38d05371225adeb8c87bb433e6c4
   internal/sdk/models/errors/sdkerror.go:
     last_write_checksum: sha1:5d65fce5049df7c5113e11c9ccb1e4c46b91901c
   internal/sdk/models/operations/closexentityoperationclosemultipleop1.go:
