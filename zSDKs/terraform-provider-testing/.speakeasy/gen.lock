@@ -1048,7 +1048,7 @@ trackedFiles:
   internal/provider/patch_resource_sdk.go:
     last_write_checksum: sha1:9b583e2ac47191350373ce5a86408c118bd606b1
   internal/provider/provider.go:
-    last_write_checksum: sha1:165aa656ebff0c9e83540c0fececc3cf4ab7eeeb
+    last_write_checksum: sha1:1da048473254e15222459129544e6a54163e660d
   internal/provider/reflect/diags.go:
     last_write_checksum: sha1:ace8bc53054bb1d8ee8689acf3e4323de75a6297
   internal/provider/reflect/doc.go:

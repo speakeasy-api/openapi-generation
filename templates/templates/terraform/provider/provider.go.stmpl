@@ -67,16 +67,21 @@ func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Configure(ctx
 	{{ templateProviderConfigureGlobals .Global.AST.MainSDK.Globals }}
 	{{ templateProviderConfigureSecurity .Global.AST.MainSDK.Security }}
 
+	// Configure owns its transport: clone the default so provider-specific
+	// settings (headers, TLS skip verification) never mutate process globals.
+	transport := http.DefaultTransport
+	if t, ok := transport.(*http.Transport); ok {
+		transport = t.Clone()
+	}
 	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
 		SetHeaders: make(map[string]string),
-		Transport:  http.DefaultTransport,
+		Transport:  transport,
 	}
 
 	{{ templateProviderHTTPTransportOptsSetHeaders .Local "data" "providerHTTPTransportOpts" }}
 	{{ templateProviderHTTPTransportTlsSkipVerify .Local "data" "providerHTTPTransportOpts" }}
 
-	httpClient := http.DefaultClient
-	httpClient.Transport = NewProviderHTTPTransport(providerHTTPTransportOpts)
+	httpClient := &http.Client{Transport: NewProviderHTTPTransport(providerHTTPTransportOpts)}
 
 	{{ templateProviderConfigureSDKOptions .Global.AST.MainSDK }}
 
