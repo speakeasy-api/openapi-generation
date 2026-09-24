@@ -563,12 +563,12 @@ function validateIntentFlagNames(
 
 // Value suffix for a declared input: one parenthetical holding the
 // suggestions (a declared list in full, else the first four schema enum
-// values) and, for flags, the default last. The default never repeats inside
-// the suggestions. These are suggestions, never validation: the server owns
-// the value space.
+// values) and, when withDefault is set, the default last. The default never
+// repeats inside the suggestions, whether it is appended here or printed by
+// Cobra from the registered flag value. These are suggestions, never
+// validation: the server owns the value space.
 function intentValueSuffix(input: any, withDefault: boolean): string {
-  const hasDefault =
-    withDefault && input.Default !== undefined && input.Default !== null;
+  const hasDefault = input.Default !== undefined && input.Default !== null;
   const defaultText = hasDefault ? `${input.Default}` : null;
   const values = (input.Enum || [])
     .map((v: any) => `${v}`)
@@ -578,7 +578,9 @@ function intentValueSuffix(input: any, withDefault: boolean): string {
   const more = !declared && values.length > 4 ? ", ..." : "";
   const parts: string[] = [];
   if (shown.length > 0) parts.push(`e.g. ${shown.join(", ")}${more}`);
-  if (defaultText !== null) parts.push(`default: ${defaultText}`);
+  if (withDefault && defaultText !== null) {
+    parts.push(`default: ${defaultText}`);
+  }
   return parts.length > 0 ? ` (${parts.join(", ")})` : "";
 }
 
@@ -860,6 +862,7 @@ function collectIntentManifest(): IntentManifestCtx {
         Variadic: Boolean(a.Variadic),
         Required: Boolean(a.Required),
         PresetCovered: dispatch ? false : key in presetObj,
+        Suggestions: (a.Enum || []).map((v: any) => `${v}`),
         RouteIDs: (a as any).RouteIDs || [],
         RequiredRouteIDs: (a as any).RequiredRouteIDs || [],
         Positional: true,

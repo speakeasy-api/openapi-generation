@@ -5,6 +5,6 @@ targets:
     - cli
 type: feat
 bump: patch
-description: declared command inputs accept a suggestions list and show the preset as the flag default
+description: declared command inputs accept a suggestions list, carried into --usage for flags and positionals, and show the preset as the flag default
 author: AshGodfrey
 date: "2026-09-23"

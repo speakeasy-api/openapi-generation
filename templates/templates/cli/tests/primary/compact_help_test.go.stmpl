@@ -58,6 +58,10 @@ func TestCompactIntentHelpFitsBudget(t *testing.T) {
 	usage := runBareHelp(t, "render", "--usage")
 	assert.Contains(t, usage, `flag "-m --model <model>" help="Model to run (e.g. render-2, default: render-1)" default="render-1" {`)
 	assert.Contains(t, usage, `suggestions "render-1" "render-2"`)
+	// A declared positional suggestion list renders in help and in --usage.
+	assert.Contains(t, render, "Prompt text (e.g. A small cabin beneath the stars, A lighthouse at dawn)")
+	assert.Contains(t, usage, `arg "prompt" help="Prompt text" required=#true var=#true {`)
+	assert.Contains(t, usage, `suggestions "A small cabin beneath the stars" "A lighthouse at dawn"`)
 	assert.Contains(t, render, "Learn: cli docs render · escalate: full request control via cli cli-intents cli-intent-run")
 	assert.Contains(t, render, `cli render "A small cabin beneath the stars"`)
 }
