@@ -118,12 +118,14 @@ actions:
               to: $.input
               variadic: true
               summary: Prompt text
+              suggestions: ["A small cabin beneath the stars", "A lighthouse at dawn"]
           flags:
             model:
               to: $.model
               shorthand: m
               summary: Model to run
               defaultFrom: schema
+              suggestions: [render-1, render-2]
           preset:
             $.model: render-1
             $.output_modalities: image

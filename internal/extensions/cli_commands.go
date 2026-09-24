@@ -47,12 +47,16 @@ type CLICommandInput struct {
 	Variadic    bool            `json:"variadic" yaml:"variadic"`
 	Shorthand   string          `json:"shorthand" yaml:"shorthand"`
 	Default     any             `json:"default" yaml:"default"`
-	DefaultFrom string          `json:"defaultFrom" yaml:"defaultFrom"` // "schema"
+	DefaultFrom string          `json:"defaultFrom" yaml:"defaultFrom"` // "schema" | "preset"
 	Bind        *CLICommandBind `json:"bind" yaml:"bind"`
-	// Enum carries schema enum values as agent/user suggestions only. They are
-	// never enforced locally: upstream registries evolve faster than specs, so
-	// enum drift must not brick otherwise-valid invocations.
+	// Enum carries value suggestions only: the manifest's suggestions: list
+	// when declared, else the schema enum. They are never enforced locally:
+	// upstream registries evolve faster than specs, so enum drift must not
+	// brick otherwise-valid invocations.
 	Enum []any `json:"enum,omitempty" yaml:"enum,omitempty"`
+	// SuggestionsDeclared records that Enum came from the manifest, so help
+	// shows the whole authored list instead of the capped schema sample.
+	SuggestionsDeclared bool `json:"suggestionsDeclared,omitempty" yaml:"suggestionsDeclared,omitempty"`
 	// RouteIDs lists the dispatch routes whose request variant declares this
 	// input's bound property. RequiredRouteIDs is the subset on which the
 	// property remains required after schema defaults and effective presets.
@@ -504,7 +508,7 @@ var cliOperationReservedFlagNames = map[string]string{
 }
 
 var cliInputKeys = []string{
-	"to", "type", "required", "variadic", "shorthand", "summary", "default", "defaultFrom",
+	"to", "type", "required", "variadic", "shorthand", "summary", "default", "defaultFrom", "suggestions",
 }
 
 var (
@@ -2048,6 +2052,13 @@ func (d *cliManifestDecoder) decodeInput(cmdKey, name string, node *yaml.Node, i
 				return nil, fmt.Errorf("line %d: command %q flag %q: defaultFrom only supports \"schema\"", entry.Value.Line, cmdKey, name)
 			}
 			input.DefaultFrom = v
+		case "suggestions":
+			values, err := cliDecodeInputSuggestions(cmdKey, name, entry.Value)
+			if err != nil {
+				return nil, err
+			}
+			input.Enum = values
+			input.SuggestionsDeclared = true
 		case "mode":
 			return nil, fmt.Errorf("line %d: command %q input %q: mode lives inside the to: object and only \"set\" is part of v1 (append/merge are reserved capabilities)", entry.Key.Line, cmdKey, name)
 		default:
@@ -2068,6 +2079,33 @@ func (d *cliManifestDecoder) decodeInput(cmdKey, name string, node *yaml.Node, i
 	}
 	input.Bind = bind
 	return input, nil
+}
+
+// cliDecodeInputSuggestions parses an authored suggestions: list. The values
+// replace the schema-derived suggestions in help (an empty list shows none);
+// the linker checks them against the bound property's type.
+func cliDecodeInputSuggestions(cmdKey, name string, node *yaml.Node) ([]any, error) {
+	if node.Kind != yaml.SequenceNode {
+		return nil, fmt.Errorf("line %d: command %q input %q: suggestions must be a list of scalar values", node.Line, cmdKey, name)
+	}
+	values := make([]any, 0, len(node.Content))
+	for _, child := range node.Content {
+		if child.Kind != yaml.ScalarNode {
+			return nil, fmt.Errorf("line %d: command %q input %q: suggestions entries must be scalar values", child.Line, cmdKey, name)
+		}
+		value, err := cliDecodeValue(child)
+		if err != nil {
+			return nil, err
+		}
+		if value == nil {
+			return nil, fmt.Errorf("line %d: command %q input %q: suggestions entries cannot be null", child.Line, cmdKey, name)
+		}
+		if cliContainsValue(values, value) {
+			return nil, fmt.Errorf("line %d: command %q input %q: suggestions lists %v more than once", child.Line, cmdKey, name, value)
+		}
+		values = append(values, value)
+	}
+	return values, nil
 }
 
 // decodeBind parses a to: value. The scalar form is a singular JSONPath body

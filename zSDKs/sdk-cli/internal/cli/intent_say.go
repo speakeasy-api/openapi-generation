@@ -33,7 +33,7 @@ func InitIntentSay(parent *cobra.Command) error {
 	_ = flagutil.AnnotatePromptFlag(cmd, "request", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
-	cmd.Flags().BoolP("stream", "", false, "Stream events as they arrive")
+	cmd.Flags().BoolP("stream", "", false, "Stream events as they arrive (default: true)")
 	_ = flagutil.AnnotatePromptFlag(cmd, "stream", flagutil.PromptFlagSpec{
 		Required: false,
 		Kind:     "bool",

@@ -8,6 +8,7 @@ interface UsageFlagDef {
   longHelp?: string;
   global?: boolean;
   defaultValue?: string | number | boolean;
+  suggestions?: string[];
   env?: string;
   config?: string;
   count?: boolean;
@@ -20,6 +21,7 @@ interface UsageArgDef {
   help?: string;
   required?: boolean;
   variadic?: boolean;
+  suggestions?: string[];
 }
 
 interface UsageCommandDef {
@@ -561,6 +563,9 @@ function getOperationUsageFlags(op: Operation): UsageFlagDef[] {
       help: f.Summary,
     };
     if (f.HasDefault) usage.defaultValue = f.DefaultValue;
+    if (f.Suggestions && f.Suggestions.length > 0) {
+      usage.suggestions = f.Suggestions;
+    }
     flags.push(usage);
   }
 
@@ -999,10 +1004,15 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   for (const f of intent.Flags) {
     const argName =
       f.Type === "bool" ? undefined : (f.Name || "value").replace(/-/g, "_");
-    flags.push({
+    const usage: UsageFlagDef = {
       spec: usageFlagSpec(f.Name || "", f.Shorthand || undefined, argName),
       help: f.Summary,
-    });
+    };
+    if (f.HasDefault) usage.defaultValue = f.DefaultValue;
+    if (f.Suggestions && f.Suggestions.length > 0) {
+      usage.suggestions = f.Suggestions;
+    }
+    flags.push(usage);
   }
   if (intent.ArtifactJSON) {
     flags.push({
@@ -1032,12 +1042,18 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   return {
     name: firstUseWord(intent.Use),
     help: intent.Summary,
-    args: intent.Args.map((arg) => ({
-      name: arg.Name || "input",
-      help: arg.Summary,
-      required: Boolean(arg.Required && !arg.PresetCovered),
-      variadic: Boolean(arg.Variadic),
-    })),
+    args: intent.Args.map((arg) => {
+      const usage: UsageArgDef = {
+        name: arg.Name || "input",
+        help: arg.Summary,
+        required: Boolean(arg.Required && !arg.PresetCovered),
+        variadic: Boolean(arg.Variadic),
+      };
+      if (arg.Suggestions && arg.Suggestions.length > 0) {
+        usage.suggestions = arg.Suggestions;
+      }
+      return usage;
+    }),
     flags,
     commands: [],
   };
@@ -1320,10 +1336,14 @@ function renderUsageFlag(flag: UsageFlagDef, indent: number): string[] {
   pushIf(props, flag.count ? kdlProp("count", true) : "");
   pushIf(props, flag.variadic ? kdlProp("var", true) : "");
   pushIf(props, flag.hidden ? kdlProp("hide", true) : "");
+  const line = `${"  ".repeat(indent)}flag ${kdlQuoted(flag.spec)}${
+    props.length ? ` ${props.join(" ")}` : ""
+  }`;
+  if (!flag.suggestions || flag.suggestions.length === 0) return [line];
   return [
-    `${"  ".repeat(indent)}flag ${kdlQuoted(flag.spec)}${
-      props.length ? ` ${props.join(" ")}` : ""
-    }`,
+    `${line} {`,
+    `${prefix}suggestions ${flag.suggestions.map(kdlQuoted).join(" ")}`,
+    `${"  ".repeat(indent)}}`,
   ];
 }
 
@@ -1341,10 +1361,19 @@ function renderUsageCommand(cmd: UsageCommandDef, indent: number): string[] {
     );
     pushIf(props, arg.required ? kdlProp("required", true) : "");
     pushIf(props, arg.variadic ? kdlProp("var", true) : "");
+    const line = `${"  ".repeat(indent + 1)}arg ${kdlQuoted(arg.name)}${
+      props.length ? ` ${props.join(" ")}` : ""
+    }`;
+    if (!arg.suggestions || arg.suggestions.length === 0) {
+      childLines.push(line);
+      continue;
+    }
     childLines.push(
-      `${"  ".repeat(indent + 1)}arg ${kdlQuoted(arg.name)}${
-        props.length ? ` ${props.join(" ")}` : ""
-      }`,
+      `${line} {`,
+      `${"  ".repeat(indent + 2)}suggestions ${arg.suggestions
+        .map(kdlQuoted)
+        .join(" ")}`,
+      `${"  ".repeat(indent + 1)}}`,
     );
   }
   for (const flag of cmd.flags || []) {
