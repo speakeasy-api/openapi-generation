@@ -2606,6 +2606,135 @@ TestSchema:
 				WithConst(&ast.AnyValue{Value: 1}).
 				Build(),
 		},
+		{
+			name: "AnyOfFormattedAndUnformattedStringFlattensToString",
+			schemasYAML: `TestSchema:
+  anyOf:
+    - type: string
+      format: uuid
+    - type: string`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("string",
+				testutils.NewTypeDef(ast.DataTypeString).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "AnyOfUnformattedAndFormattedStringFlattensToString",
+			schemasYAML: `TestSchema:
+  anyOf:
+    - type: string
+    - type: string
+      format: uuid`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("string",
+				testutils.NewTypeDef(ast.DataTypeString).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "OneOfDifferentStringFormatsFlattensToString",
+			schemasYAML: `TestSchema:
+  oneOf:
+    - type: string
+      format: date
+    - type: string
+      format: date-time`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("string",
+				testutils.NewTypeDef(ast.DataTypeString).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "AnyOfReferencedFormattedAndUnformattedStringFlattensToString",
+			schemasYAML: `UUIDString:
+  type: string
+  format: uuid
+TestSchema:
+  anyOf:
+    - $ref: "#/components/schemas/UUIDString"
+    - type: string`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("string",
+				testutils.NewTypeDef(ast.DataTypeString).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "AnyOfSameStringFormatKeepsFormat",
+			schemasYAML: `TestSchema:
+  anyOf:
+    - type: string
+      format: uuid
+    - type: string
+      format: uuid`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("uuid",
+				testutils.NewTypeDef(ast.DataTypeUUID).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "AnyOfIntegerAndBigintFlattensToBigint",
+			schemasYAML: `TestSchema:
+  anyOf:
+    - type: integer
+    - type: integer
+      format: bigint`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("bigint",
+				testutils.NewTypeDef(ast.DataTypeBigInt).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "OneOfNumberAndDecimalFlattensToDecimal",
+			schemasYAML: `TestSchema:
+  oneOf:
+    - type: number
+      format: double
+    - type: number
+      format: decimal`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("decimal",
+				testutils.NewTypeDef(ast.DataTypeDecimal).
+					WithLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "OneOfFormattedAndUntypedConstKeepsFormat",
+			schemasYAML: `TestSchema:
+  oneOf:
+    - type: integer
+      format: int32
+      const: 1
+    - const: 2`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("enum",
+				testutils.NewEnumTypeDef(ast.DataTypeInt32, []string{"1", "2"}, "enum").
+					WithEnumUnderlyingLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithScope(ast.ScopeShared).
+					WithRegistered().
+					WithOriginalNameFrozen().
+					WithContextStack(ast.ContextStack{}).
+					Build()).
+				Build(),
+		},
 		// TODO: Add more test cases here
 	}
 

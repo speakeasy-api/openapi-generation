@@ -1837,6 +1837,7 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 	// closed set of values (an enum or a const), and the values they allowed
 	numCollapsedClosedSetMembers := 0
 	collapsedClosedSetValues := []values.Value{}
+	memberFormats := []string{}
 
 	for i, o := range schema.GetOneOf() {
 		ss, err := resolution.Resolve(ctx, o, params.DocInfo)
@@ -1888,6 +1889,9 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			schema: o,
 			node:   node,
 		})
+		if len(ss.GetSchema().GetType()) > 0 {
+			memberFormats = append(memberFormats, ss.GetSchema().GetFormat())
+		}
 
 		if firstTypedSchema == nil && len(ss.GetSchema().GetType()) > 0 {
 			firstTypedSchema = ss.GetSchema()
@@ -2075,6 +2079,15 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			} else {
 				mergedSchema.Enum = nil
 			}
+		}
+
+		// The flattened schema inherits the first member's format, which only
+		// describes the collapsed union if every typed member shares it.
+		if slices.ContainsFunc(memberFormats, func(f string) bool { return f != memberFormats[0] }) {
+			if mergedSchema.IsReference() {
+				mergedSchema = firstResolvedSchema.ShallowCopy()
+			}
+			mergedSchema.Format = widestFormat(lastType, memberFormats)
 		}
 
 		// Preserve the parent schema's type and format when sub-schemas don't
