@@ -26,7 +26,7 @@ const supportedFeatures = {
   typeOverrides: "0.0.0",
   errors: "0.2.1",
   errorUnions: "0.0.0",
-  unions: "0.1.0",
+  unions: "0.1.1",
   sliceUnions: "0.0.0",
   multiLevelTagging: "0.0.0",
   bigint: "0.0.0",

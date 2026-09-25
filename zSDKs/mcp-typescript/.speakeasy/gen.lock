@@ -42,7 +42,7 @@ features:
     serverIDs: 0.1.0
     stringNumberFormats: 0.1.0
     tests: 1.1.3
-    unions: 0.2.1
+    unions: 0.2.2
     webhooks: 0.0.0
 trackedFiles:
   .dxtignore:

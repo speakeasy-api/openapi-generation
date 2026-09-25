@@ -46,7 +46,7 @@ features:
     serverEventsSentinels: 0.2.0
     serverIDs: 2.81.1
     tests: 0.9.6
-    unions: 0.3.8
+    unions: 0.3.9
     uploadStreams: 0.1.0
     webhooks: 1.0.0
 trackedFiles:

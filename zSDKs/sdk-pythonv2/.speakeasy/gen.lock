@@ -17,7 +17,7 @@ features:
     bigint: 1.0.0
     configurableModuleName: 0.2.0
     constsAndDefaults: 1.0.8
-    core: 6.1.2
+    core: 6.1.3
     customCodeRegions: 0.1.2
     customSecuritySchemes: 0.1.0
     decimal: 1.0.0
@@ -59,7 +59,7 @@ features:
     serverIDs: 3.0.0
     stringNumberFormats: 1.0.0
     tests: 1.19.10
-    unions: 3.1.10
+    unions: 3.1.11
     uploadStreams: 1.0.3
     webhooks: 2.0.0
 trackedFiles:

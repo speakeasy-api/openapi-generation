@@ -40,7 +40,7 @@ features:
     serverEvents: 0.1.0
     serverIDs: 0.0.0
     tests: 0.0.0
-    unions: 0.1.0
+    unions: 0.1.1
     webhooks: 0.0.0
 trackedFiles:
   .gitattributes:

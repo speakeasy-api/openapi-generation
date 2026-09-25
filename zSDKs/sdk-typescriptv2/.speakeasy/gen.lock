@@ -57,7 +57,7 @@ features:
     serverIDs: 2.81.2
     stringNumberFormats: 0.2.0
     tests: 0.17.7
-    unions: 2.86.5
+    unions: 2.86.6
     uploadStreams: 0.1.1
     webhookHandlers: 0.1.0
     webhooks: 1.5.1

@@ -20,7 +20,7 @@ const supportedFeatures = {
   typeOverrides: "2.81.1",
   multiLevelTagging: "2.86.3",
   docs: "0.4.3",
-  unions: "0.3.8",
+  unions: "0.3.9",
   sliceUnions: "0.0.2",
   pagination: "1.0.4",
   urlBasedPagination: "0.1.1",

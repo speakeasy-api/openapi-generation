@@ -35,7 +35,7 @@ features:
     sets: 0.1.3
     transformJq: 0.0.1
     typeOverrides: 2.81.2
-    unions: 2.82.18
+    unions: 2.82.19
 trackedFiles:
   .gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f

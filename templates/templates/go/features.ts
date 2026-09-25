@@ -22,7 +22,7 @@ const supportedFeatures = {
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
   errors: "2.83.3",
-  unions: "2.87.10",
+  unions: "2.87.11",
   multiLevelTagging: "2.87.3",
   bigint: "0.0.2",
   decimal: "0.1.1",

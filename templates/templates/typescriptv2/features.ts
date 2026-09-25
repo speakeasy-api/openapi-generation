@@ -30,7 +30,7 @@ const supportedFeatures = {
   devContainers: "2.90.1",
   bigint: "0.0.3",
   decimal: "0.1.2",
-  unions: "2.86.5",
+  unions: "2.86.6",
   sliceUnions: "0.0.1",
   downloadStreams: "0.1.1",
   additionalProperties: "0.1.4",

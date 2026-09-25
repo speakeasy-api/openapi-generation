@@ -24,7 +24,7 @@ const supportedFeatures = {
   sdkHooks: "0.3.0",
   globalSecurityFlattening: "0.1.2",
   globalSecurityCallbacks: "0.1.0",
-  unions: "0.1.9",
+  unions: "0.1.10",
   errors: "0.3.1",
   errorUnions: "0.1.0",
   responseFormat: "0.1.0",

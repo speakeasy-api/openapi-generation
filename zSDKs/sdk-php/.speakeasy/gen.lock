@@ -37,7 +37,7 @@ features:
     responseFormat: 0.1.0
     retries: 0.1.4
     serverIDs: 2.81.1
-    unions: 0.1.9
+    unions: 0.1.10
     webhooks: 1.0.0
 trackedFiles:
   .gitattributes:

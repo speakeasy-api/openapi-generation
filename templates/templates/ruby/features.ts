@@ -27,7 +27,7 @@ const supportedFeatures = {
   operationTimeout: "0.1.0",
   sdkHooks: "0.3.1",
   additionalDependencies: "0.1.1",
-  unions: "0.1.5",
+  unions: "0.1.6",
   responseFormat: "0.1.0",
   errors: "0.1.2",
   methodArguments: "0.1.1",

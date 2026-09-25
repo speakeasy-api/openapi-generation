@@ -33,7 +33,7 @@ const supportedFeatures = {
   stringNumberFormats: "0.1.0",
   tests: "0.2.3", // enables example value precalculation
   typeOverrides: "0.1.0",
-  unions: "0.1.5",
+  unions: "0.1.6",
   uploadStreams: "0.1.0",
   urlBasedPagination: "0.1.0",
   webhooks: "0.1.0",

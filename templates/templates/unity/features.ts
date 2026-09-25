@@ -26,7 +26,7 @@ const supportedFeatures = {
   docs: "0.4.3",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
-  unions: "0.0.7",
+  unions: "0.0.8",
   errors: "0.2.0",
   additionalProperties: "0.0.2",
   modelNamespaces: "0.1.1",

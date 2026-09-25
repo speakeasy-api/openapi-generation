@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "6.1.2",
+  core: "6.1.3",
   getRequestBodies: "3.0.0",
   flattening: "3.1.1",
   flatRequests: "1.0.1",
@@ -23,7 +23,7 @@ const supportedFeatures = {
   ignores: "3.0.1",
   typeOverrides: "3.0.0",
   errors: "3.4.5",
-  unions: "3.1.10",
+  unions: "3.1.11",
   sliceUnions: "0.0.1",
   multiLevelTagging: "3.0.0",
   bigint: "1.0.0",

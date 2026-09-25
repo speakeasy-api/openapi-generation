@@ -30,7 +30,7 @@ features:
     nameOverrides: 0.0.4
     pagination: 0.2.2
     serverIDs: 0.1.1
-    unions: 0.0.7
+    unions: 0.0.8
     webhooks: 1.0.0
 trackedFiles:
   .gitattributes:

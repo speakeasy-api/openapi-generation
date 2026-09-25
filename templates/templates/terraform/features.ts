@@ -22,7 +22,7 @@ const supportedFeatures = {
   pagination: "2.83.7",
   typeOverrides: "2.81.2",
   multiLevelTagging: "2.87.3",
-  unions: "2.82.18",
+  unions: "2.82.19",
   constsAndDefaults: "0.3.2",
   defaultArrays: "0.2.0",
   defaultObjects: "0.1.2",

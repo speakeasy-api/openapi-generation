@@ -41,7 +41,7 @@ features:
     serverEventsSentinels: 0.1.1
     serverIDs: 2.81.1
     tests: 0.1.5
-    unions: 0.1.5
+    unions: 0.1.6
     webhooks: 1.0.0
 trackedFiles:
   .gitattributes:
