@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import json
 from uuid import UUID
@@ -139,19 +139,59 @@ def test_parameters_path_parameter_json():
     }
 
 
-def test_parameters_formatted_scalar_path_params():
-    record_test("parameters-formatted-scalar-path-params")
+def test_parameters_formatted_scalar_params():
+    record_test("parameters-formatted-scalar-params")
 
     sdk = SDK(server_url=HTTPBIN_URL)
 
-    res = sdk.parameters.formatted_scalar_path_params(
-        uuid_param=UUID("2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f"),
-        date_time_param=parse_datetime("2020-01-01T00:00:00Z"),
-        date_param=date(2020, 1, 1),
+    uuid_value = UUID("2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f")
+    date_time_value = parse_datetime("2020-01-01T12:30:45Z")
+    date_value = date(2020, 1, 1)
+    duration_value = timedelta(days=1, minutes=1, seconds=30)
+    decimal_value = Decimal("1234.5678")
+    bigint_value = 9007199254740993
+
+    res = sdk.parameters.formatted_scalar_params(
+        uuid_path_param=uuid_value,
+        date_time_path_param=date_time_value,
+        date_path_param=date_value,
+        duration_path_param=duration_value,
+        decimal_path_param=decimal_value,
+        bigint_path_param=bigint_value,
+        uuid_query_param=uuid_value,
+        date_time_query_param=date_time_value,
+        date_query_param=date_value,
+        duration_query_param=duration_value,
+        decimal_query_param=decimal_value,
+        bigint_query_param=bigint_value,
+        x_uuid_header=uuid_value,
+        x_date_time_header=date_time_value,
+        x_date_header=date_value,
+        x_duration_header=duration_value,
+        x_decimal_header=decimal_value,
+        x_bigint_header=bigint_value,
     )
 
     assert res.http_meta.response.status_code == 200
-    assert res.res.url == (
-        f"{HTTPBIN_URL}/anything/formattedScalarPathParams/"
-        "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f/2020-01-01T00:00:00Z/2020-01-01"
+
+    request = res.http_meta.request
+    assert request is not None
+    assert request.url.path == (
+        "/anything/formattedScalarParams/"
+        "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f/2020-01-01T12:30:45Z/2020-01-01/"
+        "P1DT1M30S/1234.5678/9007199254740993"
     )
+    assert dict(request.url.params) == {
+        "uuidQueryParam": "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f",
+        "dateTimeQueryParam": "2020-01-01T12:30:45Z",
+        "dateQueryParam": "2020-01-01",
+        "durationQueryParam": "P1DT1M30S",
+        "decimalQueryParam": "1234.5678",
+        "bigintQueryParam": "9007199254740993",
+    }
+    assert request.headers["x-uuid-header"] == "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f"
+    assert request.headers["x-datetime-header"] == "2020-01-01T12:30:45Z"
+    assert request.headers["x-date-header"] == "2020-01-01"
+    assert request.headers["x-duration-header"] == "P1DT1M30S"
+    assert request.headers["x-decimal-header"] == "1234.5678"
+    assert request.headers["x-bigint-header"] == "9007199254740993"

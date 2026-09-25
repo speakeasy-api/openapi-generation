@@ -1,0 +1,133 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/formattedScalarParams/{uuidPathParam}/{dateTimePathParam}/{datePathParam}/{durationPathParam}/{decimalPathParam}/{bigintPathParam}:
+    get:
+      operationId: formattedScalarParams
+      tags:
+        - parameters
+      description: >-
+        Tests path, query and header parameters whose formats map to a native
+        scalar type rather than a plain string or number (uuid, date-time,
+        date, duration, decimal, int64). Targets that decide whether a
+        parameter is an object by excluding a fixed list of primitive types
+        will misclassify these values as objects and fail before sending the
+        request. Each value must serialize to its canonical string form in
+        every parameter location, including the ISO 8601 form for durations.
+      parameters:
+        - name: uuidPathParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateTimePathParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: datePathParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: durationPathParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: duration
+        - name: decimalPathParam
+          in: path
+          required: true
+          schema:
+            type: number
+            format: decimal
+        - name: bigintPathParam
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: uuidQueryParam
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: dateTimeQueryParam
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: dateQueryParam
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: durationQueryParam
+          in: query
+          schema:
+            type: string
+            format: duration
+        - name: decimalQueryParam
+          in: query
+          schema:
+            type: number
+            format: decimal
+        - name: bigintQueryParam
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: x-uuid-header
+          in: header
+          schema:
+            type: string
+            format: uuid
+        - name: x-dateTime-header
+          in: header
+          schema:
+            type: string
+            format: date-time
+        - name: x-date-header
+          in: header
+          schema:
+            type: string
+            format: date
+        - name: x-duration-header
+          in: header
+          schema:
+            type: string
+            format: duration
+        - name: x-decimal-header
+          in: header
+          schema:
+            type: number
+            format: decimal
+        - name: x-bigint-header
+          in: header
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url

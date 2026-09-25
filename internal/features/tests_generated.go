@@ -696,8 +696,8 @@ func (t Test) String() string {
         return "parameters-form-query-params-ref-param-object"
     case TestParametersFormQueryParamsUnions:
         return "parameters-form-query-params-unions"
-    case TestParametersFormattedScalarPathParams:
-        return "parameters-formatted-scalar-path-params"
+    case TestParametersFormattedScalarParams:
+        return "parameters-formatted-scalar-params"
     case TestParametersHeaderParamsArray:
         return "parameters-header-params-array"
     case TestParametersHeaderParamsMap:
@@ -2192,8 +2192,8 @@ func TestFromString(s string) Test {
         return TestParametersFormQueryParamsRefParamObject
     case "parameters-form-query-params-unions":
         return TestParametersFormQueryParamsUnions
-    case "parameters-formatted-scalar-path-params":
-        return TestParametersFormattedScalarPathParams
+    case "parameters-formatted-scalar-params":
+        return TestParametersFormattedScalarParams
     case "parameters-header-params-array":
         return TestParametersHeaderParamsArray
     case "parameters-header-params-map":
@@ -3341,7 +3341,7 @@ var testList = []Test{
     TestParametersFormQueryParamsPrimitive,
     TestParametersFormQueryParamsRefParamObject,
     TestParametersFormQueryParamsUnions,
-    TestParametersFormattedScalarPathParams,
+    TestParametersFormattedScalarParams,
     TestParametersHeaderParamsArray,
     TestParametersHeaderParamsMap,
     TestParametersHeaderParamsNil,

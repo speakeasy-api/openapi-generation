@@ -563,7 +563,7 @@ const (
 	TestXNdjsonStreamDataAsyncChunksEnvelopeHttpResponses
 	TestJsonlDeserializationCamelCaseProperties
 	TestParametersAllowEmptyValue
-	TestParametersFormattedScalarPathParams
+	TestParametersFormattedScalarParams
 	TestParametersOrderingWithLegacyFlatteningOrder
 	TestParametersOrderingParametersFirst
 	TestParametersOrderingBodyFirst

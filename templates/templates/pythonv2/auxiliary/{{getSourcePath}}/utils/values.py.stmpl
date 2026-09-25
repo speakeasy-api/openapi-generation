@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from email.message import Message
 from functools import partial
@@ -11,6 +11,7 @@ from pydantic.fields import FieldInfo
 
 from ..types.basemodel import Unset
 
+from .datetimes import _DURATION_ADAPTER
 from .serializers import marshal_json
 
 from .metadata import ParamMetadata, find_field_metadata
@@ -113,6 +114,8 @@ def _val_to_string(val) -> str:
         return str(val).lower()
     if isinstance(val, datetime):
         return str(val.isoformat().replace("+00:00", "Z"))
+    if isinstance(val, timedelta):
+        return str(_DURATION_ADAPTER.dump_python(val, mode="json"))
     if isinstance(val, Enum):
         return str(val.value)
 
