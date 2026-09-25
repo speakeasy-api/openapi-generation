@@ -1,12 +1,22 @@
 package schemas
 
 import (
+	"math/big"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
 	"github.com/speakeasy-api/openapi/values"
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	iso8601DurationPattern = regexp.MustCompile(`^P(?:\d+(?:\.\d+)?Y)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?W)?(?:\d+(?:\.\d+)?D)?(?:T(?:\d+(?:\.\d+)?H)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?S)?)?$`)
+	decimalNumberPattern   = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
 )
 
 // number is a constraint that matches any numeric type.
@@ -56,6 +66,47 @@ func widestFormat(typ string, formats []string) *string {
 		return &widening
 	}
 	return nil
+}
+
+func valuesFitFormat(typ, format string, vals []values.Value) bool {
+	return !slices.ContainsFunc(vals, func(v values.Value) bool {
+		return v != nil && !valueFitsFormat(typ, format, v.Value)
+	})
+}
+
+// valueFitsFormat reports whether a literal value is representable by the
+// type a format maps to. Formats that keep the plain type always fit.
+func valueFitsFormat(typ, format, value string) bool {
+	switch typ {
+	case "integer":
+		if format == "int32" {
+			_, err := strconv.ParseInt(value, 10, 32)
+			return err == nil
+		}
+	case "string":
+		switch format {
+		case "uuid":
+			_, err := uuid.Parse(value)
+			return err == nil
+		case "date":
+			_, err := time.Parse(time.DateOnly, value)
+			return err == nil
+		case "date-time":
+			_, err := time.Parse(time.RFC3339Nano, value)
+			return err == nil
+		case "duration":
+			return value != "P" && !strings.HasSuffix(value, "T") && iso8601DurationPattern.MatchString(value)
+		case "int64":
+			_, err := strconv.ParseInt(value, 10, 64)
+			return err == nil
+		case "bigint":
+			_, ok := new(big.Int).SetString(value, 10)
+			return ok
+		case "float64", "decimal":
+			return decimalNumberPattern.MatchString(value)
+		}
+	}
+	return true
 }
 
 // mergeDescriptions returns the parent description if non-nil, otherwise
