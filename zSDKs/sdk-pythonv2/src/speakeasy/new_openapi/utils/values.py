@@ -13,7 +13,7 @@ from pydantic.fields import FieldInfo
 
 from ..types.basemodel import Unset
 
-from .datetimes import _DURATION_ADAPTER
+from .datetimes import serialize_duration
 from .serializers import marshal_json
 
 from .metadata import ParamMetadata, find_field_metadata
@@ -119,7 +119,7 @@ def _val_to_string(val) -> str:
     if isinstance(val, datetime):
         return str(val.isoformat().replace("+00:00", "Z"))
     if isinstance(val, timedelta):
-        return str(_DURATION_ADAPTER.dump_python(val, mode="json"))
+        return serialize_duration(val)
     if isinstance(val, Enum):
         return str(val.value)
 

@@ -35,3 +35,11 @@ def parse_duration(duration_string: str) -> timedelta:
     pydantic, which is already a runtime dependency of the SDK.
     """
     return _DURATION_ADAPTER.validate_python(duration_string)
+
+
+def serialize_duration(duration: timedelta) -> str:
+    """
+    Convert a timedelta into an ISO 8601 duration string (e.g. "PT1H30M"),
+    the same form pydantic uses when serializing durations in request bodies.
+    """
+    return _DURATION_ADAPTER.dump_python(duration, mode="json")

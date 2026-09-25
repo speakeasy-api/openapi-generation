@@ -16,11 +16,9 @@ paths:
       description: >-
         Tests path, query and header parameters whose formats map to a native
         scalar type rather than a plain string or number (uuid, date-time,
-        date, duration, decimal, int64). Targets that decide whether a
-        parameter is an object by excluding a fixed list of primitive types
-        will misclassify these values as objects and fail before sending the
-        request. Each value must serialize to its canonical string form in
-        every parameter location, including the ISO 8601 form for durations.
+        date, duration, decimal, int64). Each value must serialize to its
+        canonical string form in every parameter location, including the
+        ISO 8601 form for durations.
       parameters:
         - name: uuidPathParam
           in: path
