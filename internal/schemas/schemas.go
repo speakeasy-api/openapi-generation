@@ -1837,6 +1837,7 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 	// closed set of values (an enum or a const), and the values they allowed
 	numCollapsedClosedSetMembers := 0
 	collapsedClosedSetValues := []values.Value{}
+	memberFormats := []string{}
 
 	for i, o := range schema.GetOneOf() {
 		ss, err := resolution.Resolve(ctx, o, params.DocInfo)
@@ -1888,6 +1889,9 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			schema: o,
 			node:   node,
 		})
+		if len(ss.GetSchema().GetType()) > 0 {
+			memberFormats = append(memberFormats, ss.GetSchema().GetFormat())
+		}
 
 		if firstTypedSchema == nil && len(ss.GetSchema().GetType()) > 0 {
 			firstTypedSchema = ss.GetSchema()
@@ -2059,22 +2063,30 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 				mergedSchema = firstResolvedSchema.ShallowCopy()
 			}
 
-			// The merged set is carried by the enum, so a const inherited from
-			// the first member would otherwise narrow the parameter back down
-			// to that member's single value. A bare const implies its type, so
-			// take the type from a member that states one before dropping it.
-			if mergedSchema.Const != nil {
-				if mergedSchema.Type == nil && firstTypedSchema != nil {
-					mergedSchema.Type = firstTypedSchema.Type
-				}
-				mergedSchema.Const = nil
-			}
+			mergedSchema.Const = nil
 
 			if numCollapsedClosedSetMembers == len(schemas) {
 				mergedSchema.Enum = mergeEnumValues(collapsedClosedSetValues)
 			} else {
 				mergedSchema.Enum = nil
 			}
+		}
+
+		if len(memberFormats) > 0 {
+			sharedFormat := memberFormats[0]
+			switch {
+			case slices.ContainsFunc(memberFormats, func(f string) bool { return f != sharedFormat }):
+				if mergedSchema.IsReference() {
+					mergedSchema = firstResolvedSchema.ShallowCopy()
+				}
+				mergedSchema.Format = widestFormat(lastType, memberFormats)
+			case sharedFormat != "" && mergedSchema.Format == nil && !mergedSchema.IsReference():
+				mergedSchema.Format = &sharedFormat
+			}
+		}
+
+		if mergedSchema.Type == nil && firstTypedSchema != nil && !mergedSchema.IsReference() {
+			mergedSchema.Type = firstTypedSchema.Type
 		}
 
 		// Preserve the parent schema's type and format when sub-schemas don't

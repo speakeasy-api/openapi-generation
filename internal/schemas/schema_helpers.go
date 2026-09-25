@@ -1,6 +1,7 @@
 package schemas
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
@@ -47,6 +48,14 @@ func leastRestrictiveMin[T number](values []*T) *T {
 	}
 
 	return result
+}
+
+func widestFormat(typ string, formats []string) *string {
+	widening := map[string]string{"integer": "bigint", "number": "decimal"}[typ]
+	if widening != "" && slices.Contains(formats, widening) {
+		return &widening
+	}
+	return nil
 }
 
 // mergeDescriptions returns the parent description if non-nil, otherwise

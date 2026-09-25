@@ -754,7 +754,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/annotations.py:
     last_write_checksum: sha1:a4824ad65f730303e4e1e3ec1febf87b4eb46dbc
   src/speakeasy/new_openapi/utils/datetimes.py:
-    last_write_checksum: sha1:fa47d54c549ff9b95496ce91930fadfb04a36be9
+    last_write_checksum: sha1:dcbdac8f63789f5d41b64d4d0515db77961e1d0c
   src/speakeasy/new_openapi/utils/dynamic_imports.py:
     last_write_checksum: sha1:5da52e20f3215bfc0f858eaa67983792aadee6c7
   src/speakeasy/new_openapi/utils/enums.py:
@@ -784,9 +784,9 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/unmarshal_json_response.py:
     last_write_checksum: sha1:83cd95f038788d5273770fa4465edeac1202355a
   src/speakeasy/new_openapi/utils/url.py:
-    last_write_checksum: sha1:6479961baa90432ca25626f8e40a7bbc32e73b41
+    last_write_checksum: sha1:0269c7e27f701e0c72d44bc2a36ac4d44ef2108c
   src/speakeasy/new_openapi/utils/values.py:
-    last_write_checksum: sha1:65e1ee8607767a4fc1ae7a55c74d77a23ab3cef1
+    last_write_checksum: sha1:c0eaaf8779a4ba3ae068579a57182667efef0cb7
   tests/__init__.py:
     last_write_checksum: sha1:cffdfca8e87b9acc39f414eddf64d233ba5fe450
   tests/conftest.py:

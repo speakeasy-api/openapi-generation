@@ -111,6 +111,8 @@ const (
 	TestParametersPathEncoding
 	TestParametersQueryEncoding
 	TestParametersPathParameterJSON
+	TestParametersPathParameterFormats
+	TestParametersPathParameterFormatUnion
 	TestParametersOpenEnum
 	TestParametersFormQueryParamsPrimitive
 	TestParametersFormQueryParamsObject

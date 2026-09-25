@@ -416,6 +416,8 @@ function isTestSkipped(test: string): boolean {
     "security-ranking-pick-matrix",
     "security-ranking-source-rank",
     "open-union-strict-request-validation",
+    "parameters-path-parameter-format-union",
+    "parameters-path-parameter-formats",
   ].includes(test);
 }
 

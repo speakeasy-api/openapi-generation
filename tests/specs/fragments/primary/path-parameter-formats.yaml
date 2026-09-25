@@ -1,0 +1,130 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/pathParams/formats/uuid/{uuidParam}/date/{dateParam}/dateTime/{dateTimeParam}/duration/{durationParam}:
+    get:
+      operationId: pathParameterFormats
+      tags:
+        - parameters
+      description: >-
+        Exercises path, query and header parameters whose string schemas
+        declare the uuid, date, date-time and duration formats. Targets that
+        map these formats to native types must serialize each value into every
+        parameter location using its canonical string form.
+      parameters:
+        - name: uuidParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: dateTimeParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: durationParam
+          in: path
+          required: true
+          schema:
+            type: string
+            format: duration
+        - name: uuidQuery
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: dateQuery
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTimeQuery
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: durationQuery
+          in: query
+          schema:
+            type: string
+            format: duration
+        - name: x-uuid-header
+          in: header
+          schema:
+            type: string
+            format: uuid
+        - name: x-date-header
+          in: header
+          schema:
+            type: string
+            format: date
+        - name: x-date-time-header
+          in: header
+          schema:
+            type: string
+            format: date-time
+        - name: x-duration-header
+          in: header
+          schema:
+            type: string
+            format: duration
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url
+  /anything/pathParams/formatUnion/{idOrName}:
+    get:
+      operationId: pathParameterFormatUnion
+      tags:
+        - parameters
+      description: >-
+        Exercises a path parameter whose anyOf pairs a uuid-formatted string
+        with an unformatted string. The unformatted member accepts any string,
+        so the parameter must accept values that are not UUIDs regardless of
+        member order.
+      parameters:
+        - name: idOrName
+          in: path
+          required: true
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url
