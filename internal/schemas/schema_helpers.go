@@ -14,7 +14,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var iso8601DurationPattern = regexp.MustCompile(`^P(?:\d+(?:\.\d+)?[YMWD])*(?:T(?:\d+(?:\.\d+)?[HMS])+)?$`)
+var (
+	iso8601DurationPattern = regexp.MustCompile(`^P(?:\d+(?:\.\d+)?Y)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?W)?(?:\d+(?:\.\d+)?D)?(?:T(?:\d+(?:\.\d+)?H)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?S)?)?$`)
+	decimalNumberPattern   = regexp.MustCompile(`^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$`)
+)
 
 // number is a constraint that matches any numeric type.
 type number interface {
@@ -92,13 +95,15 @@ func valueFitsFormat(typ, format, value string) bool {
 			_, err := time.Parse(time.RFC3339Nano, value)
 			return err == nil
 		case "duration":
-			return value != "P" && iso8601DurationPattern.MatchString(value)
-		case "int64", "bigint":
+			return value != "P" && !strings.HasSuffix(value, "T") && iso8601DurationPattern.MatchString(value)
+		case "int64":
+			_, err := strconv.ParseInt(value, 10, 64)
+			return err == nil
+		case "bigint":
 			_, ok := new(big.Int).SetString(value, 10)
 			return ok
 		case "float64", "decimal":
-			_, ok := new(big.Rat).SetString(value)
-			return ok
+			return decimalNumberPattern.MatchString(value)
 		}
 	}
 	return true

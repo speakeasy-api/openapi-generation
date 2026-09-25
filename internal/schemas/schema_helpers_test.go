@@ -814,3 +814,37 @@ func TestFilterExamplesBySchemaType(t *testing.T) {
 		})
 	}
 }
+
+func TestValueFitsFormat(t *testing.T) {
+	for _, tc := range []struct {
+		typ, format, value string
+		fits               bool
+	}{
+		{"integer", "int32", "2147483647", true},
+		{"integer", "int32", "2147483648", false},
+		{"integer", "int64", "1", true},
+		{"string", "int64", "9223372036854775807", true},
+		{"string", "int64", "9223372036854775808", false},
+		{"string", "bigint", "9223372036854775808", true},
+		{"string", "bigint", "1.5", false},
+		{"string", "decimal", "-1.5e3", true},
+		{"string", "decimal", "1/2", false},
+		{"string", "float64", "latest", false},
+		{"string", "duration", "P1Y2M3DT4H5M6.5S", true},
+		{"string", "duration", "PT0S", true},
+		{"string", "duration", "P1Y1Y", false},
+		{"string", "duration", "P1DT", false},
+		{"string", "duration", "P", false},
+		{"string", "duration", "latest", false},
+		{"string", "uuid", "123e4567-e89b-12d3-a456-426614174000", true},
+		{"string", "uuid", "latest", false},
+		{"string", "date", "2024-01-01", true},
+		{"string", "date", "today", false},
+		{"string", "date-time", "2024-01-01T00:00:00Z", true},
+		{"string", "date-time", "2024-01-01", false},
+		{"string", "email", "latest", true},
+		{"number", "float", "latest", true},
+	} {
+		assert.Equal(t, tc.fits, valueFitsFormat(tc.typ, tc.format, tc.value), "%s %s %q", tc.typ, tc.format, tc.value)
+	}
+}
