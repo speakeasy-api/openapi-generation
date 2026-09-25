@@ -201,6 +201,13 @@ function getModelJobs(
     ),
   );
 
+  const entrypointPath = gemEntrypointPath();
+  if (entrypointPath) {
+    jobs.push(
+      createTemplateFileJob(`gem_entrypoint.rb.stmpl`, entrypointPath, {}),
+    );
+  }
+
   jobs.push(
     ...scopeConfigs
       .filter(
