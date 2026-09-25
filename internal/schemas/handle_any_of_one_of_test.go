@@ -2970,6 +2970,46 @@ TestSchema:
     - type: string
       pattern: "^pfl_.+$"`
 
+	const constOutsideUUIDYAML = `TestSchema:
+  oneOf:
+    - const: latest
+    - type: string
+      format: uuid`
+
+	const constInsideUUIDYAML = `TestSchema:
+  oneOf:
+    - const: 123e4567-e89b-12d3-a456-426614174000
+    - type: string
+      format: uuid`
+
+	const refUUIDAndConstOutsideYAML = `UUIDString:
+  type: string
+  format: uuid
+TestSchema:
+  oneOf:
+    - "$ref": "#/components/schemas/UUIDString"
+    - const: latest`
+
+	const enumOutsideDateYAML = `TestSchema:
+  oneOf:
+    - enum:
+        - today
+        - 2024-01-01
+    - type: string
+      format: date`
+
+	const constOutsideInt32YAML = `TestSchema:
+  oneOf:
+    - const: 3000000000
+    - type: integer
+      format: int32`
+
+	const constInsideInt32YAML = `TestSchema:
+  oneOf:
+    - const: 7
+    - type: integer
+      format: int32`
+
 	handle := func(t *testing.T, schemasYAML string, paramType ParamType) *ast.FieldDef {
 		t.Helper()
 
@@ -3118,6 +3158,31 @@ TestSchema:
 		assert.Equal(t, ast.DataTypeString, result.Type.Type)
 		assert.Nil(t, result.Const)
 		assert.Nil(t, result.Type.Enum)
+	})
+
+	// An untyped const or enum infers its type from its values and collapses
+	// into the primitive, but a sibling's format can only describe the whole
+	// union when every one of those values fits it.
+	t.Run("PathParamDropsFormatForValuesOutsideIt", func(t *testing.T) {
+		for name, yamlDoc := range map[string]string{
+			"const":           constOutsideUUIDYAML,
+			"referencedFirst": refUUIDAndConstOutsideYAML,
+			"enum":            enumOutsideDateYAML,
+		} {
+			result := handle(t, yamlDoc, ParamTypePath)
+			assert.Equal(t, ast.DataTypeString, result.Type.Type, name)
+		}
+
+		result := handle(t, constOutsideInt32YAML, ParamTypePath)
+		assert.Equal(t, ast.DataTypeInteger, result.Type.Type)
+	})
+
+	t.Run("PathParamKeepsFormatForValuesInsideIt", func(t *testing.T) {
+		result := handle(t, constInsideUUIDYAML, ParamTypePath)
+		assert.Equal(t, ast.DataTypeUUID, result.Type.Type)
+
+		result = handle(t, constInsideInt32YAML, ParamTypePath)
+		assert.Equal(t, ast.DataTypeInt32, result.Type.Type)
 	})
 
 	t.Run("NonPathParamRemainsUnion", func(t *testing.T) {

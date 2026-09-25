@@ -1838,6 +1838,9 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 	numCollapsedClosedSetMembers := 0
 	collapsedClosedSetValues := []values.Value{}
 	memberFormats := []string{}
+	// Values allowed by untyped const or enum members that collapsed into the
+	// flattened primitive; a sibling's format only holds if they all fit it
+	untypedMemberValues := []values.Value{}
 
 	for i, o := range schema.GetOneOf() {
 		ss, err := resolution.Resolve(ctx, o, params.DocInfo)
@@ -1914,6 +1917,12 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			allSamePrimitiveType = false
 		case lastType == "" || lastType == typ:
 			lastType = typ
+			if len(ss.GetSchema().GetType()) == 0 {
+				untypedMemberValues = append(untypedMemberValues, ss.GetSchema().GetEnum()...)
+				if constValue != nil {
+					untypedMemberValues = append(untypedMemberValues, constValue)
+				}
+			}
 			// Enums and consts each describe a closed set of values, so track
 			// what they allowed: the collapsed parameter can only stay
 			// constrained if every member was one of them.
@@ -2080,6 +2089,11 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 					mergedSchema = firstResolvedSchema.ShallowCopy()
 				}
 				mergedSchema.Format = widestFormat(lastType, memberFormats)
+			case sharedFormat != "" && !valuesFitFormat(lastType, sharedFormat, untypedMemberValues):
+				if mergedSchema.IsReference() {
+					mergedSchema = firstResolvedSchema.ShallowCopy()
+				}
+				mergedSchema.Format = nil
 			case sharedFormat != "" && mergedSchema.Format == nil && !mergedSchema.IsReference():
 				mergedSchema.Format = &sharedFormat
 			}

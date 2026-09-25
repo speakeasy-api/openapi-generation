@@ -1,0 +1,22 @@
+id: 1790368945-2f190cfa
+features:
+    - unions
+targets:
+    - cli
+    - csharp
+    - go
+    - javav2
+    - mcp-typescript
+    - mockserver
+    - php
+    - postman
+    - pythonv2
+    - ruby
+    - terraform
+    - typescriptv2
+    - unity
+type: fix
+bump: patch
+description: drop a flattened union's format when an untyped const or enum member allows a value outside it
+author: AshGodfrey
+date: "2026-09-25"
