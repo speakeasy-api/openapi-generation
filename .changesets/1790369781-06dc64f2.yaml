@@ -1,0 +1,10 @@
+id: 1790369781-06dc64f2
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: include auto-assigned short flags in usage schemas
+author: TristanSpeakEasy
+date: "2026-09-25"

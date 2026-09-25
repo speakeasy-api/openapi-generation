@@ -154,6 +154,14 @@ func TestUsageSchema_Subtree(t *testing.T) {
     assert.Empty(t, stderr)
 }
 
+{{- with templateUsageAutoShorthandTestCase }}
+func TestUsageSchema_AutoShorthand(t *testing.T) {
+    h := NewCLITestHarness(t)
+    require.NoError(t, h.RunBare([]string{ {{.PathArgs}}, "--usage" }))
+    assert.Contains(t, h.GetStdout(), `flag "-{{.Shorthand}} --{{.FlagName}}`)
+}
+{{- end }}
+
 {{- if templateUsageSubgroupPathTestEnabled }}
 func TestUsageSchema_GroupSubtree(t *testing.T) {
     h := NewCLITestHarness(t)

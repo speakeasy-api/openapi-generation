@@ -296,6 +296,25 @@ function usageFlagFromField(
 // registered flag metadata (parameters and expanded body fields) — exactly
 // what flagutil.RegisterFlags registers, without the body/schema extras.
 // Intent commands reuse it: they register the same metadata.
+function withAutoShorthands(
+  op: Operation,
+  flags: UsageFlagDef[],
+  nonBodyOnly: boolean,
+): UsageFlagDef[] {
+  const byName = new Map(
+    Array.from(
+      operationAutoShorthandOwners(op, nonBodyOnly),
+      ([letter, name]) => [name, letter],
+    ),
+  );
+  for (const flag of flags) {
+    const name = flag.spec.match(/^--([^ <]+)/)?.[1];
+    const shorthand = name && byName.get(name);
+    if (shorthand) flag.spec = `-${shorthand} ${flag.spec}`;
+  }
+  return flags;
+}
+
 function getOperationBodyFieldUsageFlags(op: Operation): UsageFlagDef[] {
   if (!op.Request) return [];
   const flags: UsageFlagDef[] = [];
@@ -476,7 +495,7 @@ function getOperationBodyFieldUsageFlags(op: Operation): UsageFlagDef[] {
     walkFields(op.Request.Field.Type.Fields || [], "");
   }
 
-  return flags;
+  return withAutoShorthands(op, flags, false);
 }
 
 // Metadata retained by a route-dispatch intent: path/query/header parameters
@@ -498,7 +517,7 @@ function getOperationNonBodyUsageFlags(op: Operation): UsageFlagDef[] {
     if (globalFlags.has(name)) continue;
     flags.push(usageFlagFromField(field, name));
   }
-  return flags;
+  return withAutoShorthands(op, flags, true);
 }
 
 function getOperationFieldUsageFlags(op: Operation): UsageFlagDef[] {
@@ -1461,6 +1480,51 @@ function goTemplateSafeStringExpr(s: string): string {
     })
     .join(" + ");
 }
+
+interface UsageAutoShorthandTestCase {
+  path: string[];
+  flagName: string;
+  shorthand: string;
+}
+
+function getUsageAutoShorthandTestCase(): UsageAutoShorthandTestCase | null {
+  for (const { op, path } of readmeAllOperations()) {
+    const flags = getOperationBodyFieldUsageFlags(op);
+    for (const [shorthand, flagName] of operationAutoShorthandOwners(
+      op,
+      false,
+    )) {
+      if (
+        flags.some(
+          (flag) =>
+            flag.spec.includes(`--${flagName} `) ||
+            flag.spec.endsWith(`--${flagName}`),
+        )
+      ) {
+        return { path, flagName, shorthand };
+      }
+    }
+  }
+  return null;
+}
+
+function templateUsageAutoShorthandTestCase(): {
+  PathArgs: string;
+  FlagName: string;
+  Shorthand: string;
+} | null {
+  const testCase = getUsageAutoShorthandTestCase();
+  if (!testCase) return null;
+  return {
+    PathArgs: testCase.path.map((part) => goStringLiteral(part)).join(", "),
+    FlagName: testCase.flagName,
+    Shorthand: testCase.shorthand,
+  };
+}
+registerTemplateFunc(
+  "templateUsageAutoShorthandTestCase",
+  templateUsageAutoShorthandTestCase,
+);
 
 interface UsageAliasPathTestCase {
   path: string[];
