@@ -103,8 +103,9 @@ Layout/FirstArgumentIndentation:
   Enabled: false
 Layout/FirstArrayElementIndentation:
   EnforcedStyle: consistent
-{{- if gemEntrypointPath }}
+{{- $gemEntrypointPath := gemEntrypointPath}}
+{{- if $gemEntrypointPath }}
 Naming/FileName:
   Exclude:
-    - {{ gemEntrypointPath }}
+    - {{ $gemEntrypointPath }}
 {{- end }}
