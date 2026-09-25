@@ -132,7 +132,7 @@ function generateSDKInvoker(
     subRes += `${templateIndent(1)}if err != nil {\n`;
     subRes += `${templateIndent(
       2,
-    )}resp.Diagnostics.AddError("failure to invoke API", err.Error())\n`;
+    )}resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))\n`;
     subRes += `${templateIndent(
       2,
     )}if ${resIdentifier} != nil && ${resIdentifier}.RawResponse != nil {\n`;
@@ -301,7 +301,7 @@ function generateSDKInvoker(
       res += `  ${resIdentifier}, err = ${resIdentifier}.Next()\n`;
       res += `\n`;
       res += `  if err != nil {\n`;
-      res += `    resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())\n`;
+      res += `    resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))\n`;
       res += `    if ${resIdentifier} != nil && ${resIdentifier}.RawResponse != nil {\n`;
       res += `      resp.Diagnostics.AddError("unexpected http request/response", debugResponse(${resIdentifier}.RawResponse))\n`;
       res += `    }\n`;
@@ -324,6 +324,34 @@ function generateSDKInvoker(
   }
 
   return res;
+}
+
+/**
+ * Returns the request values whose sensitive attributes are known to the
+ * resource method being generated. Configuration is included alongside the
+ * plan because write-only attributes are null in plan and state.
+ */
+function sensitiveValueSources(
+  entity: TerraformEntity,
+  resourceOperationType: TerraformResourceOperationType,
+): string[] {
+  switch (resourceOperationType) {
+    case "create":
+      return ["req.Config", "req.Plan"];
+    case "update":
+      return ["req.Config", "req.Plan", "req.State"];
+    case "delete":
+      return ["req.State"];
+    case "read":
+      // Only managed resource operations have a Create entry; data source
+      // reads receive configuration rather than state.
+      return "Create" in entity.Operations ? ["req.State"] : ["req.Config"];
+    case "open":
+    case "invoke":
+      return ["req.Config"];
+    default:
+      return [];
+  }
 }
 
 function generateSDKCall(
@@ -356,7 +384,11 @@ function generateSDKCall(
     symbolManager["stateModel"] = true;
     symbolManager["options"] = true;
   }
-  let resCode = "";
+  // SDK requests carry ctx, so debugResponse can redact these values.
+  const sensitiveSources = sensitiveValueSources(entity, resourceOperationType);
+  let resCode = sensitiveSources.length
+    ? `ctx = withSensitiveValues(ctx, ${sensitiveSources.join(", ")})\n\n`
+    : "";
 
   function invokeOp(op: TerraformOperation) {
     const requestVar = getPluralizedVarSymbolName(symbolManager, "request");
