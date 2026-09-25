@@ -1,6 +1,7 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import json
+from uuid import UUID
 from openapi import SDK
 from openapi.models import shared
 from openapi.utils import parse_datetime
@@ -136,3 +137,38 @@ def test_parameters_path_parameter_json():
         "str": "test",
         "strOpt": "testOptional",
     }
+
+
+def test_parameters_path_parameter_formats():
+    record_test("parameters-path-parameter-formats")
+
+    s = SDK(server_url=HTTPBIN_URL)
+
+    res = s.parameters.path_parameter_formats(
+        uuid_param=UUID("12345678-1234-5678-1234-567812345678"),
+        date_param=date.fromisoformat("2020-01-01"),
+        date_time_param=parse_datetime("2020-01-01T00:00:00.001Z"),
+        duration_param=timedelta(hours=1, minutes=30),
+    )
+
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.url == (
+        f"{HTTPBIN_URL}/anything/pathParams/formats"
+        "/uuid/12345678-1234-5678-1234-567812345678"
+        "/date/2020-01-01"
+        "/dateTime/2020-01-01T00:00:00.001000Z"
+        "/duration/PT1H30M"
+    )
+
+
+def test_parameters_path_parameter_format_union():
+    record_test("parameters-path-parameter-format-union")
+
+    s = SDK(server_url=HTTPBIN_URL)
+
+    res = s.parameters.path_parameter_format_union(id_or_name="widget")
+
+    assert res.http_meta.response.status_code == 200
+    assert res.res is not None
+    assert res.res.url == f"{HTTPBIN_URL}/anything/pathParams/formatUnion/widget"

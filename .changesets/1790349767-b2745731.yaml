@@ -1,0 +1,10 @@
+id: 1790349767-b2745731
+features:
+    - core
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: serialize uuid, date, date-time and duration path parameters and encode duration parameters as ISO 8601
+author: 2ynn
+date: "2026-09-25"

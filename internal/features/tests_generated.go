@@ -728,6 +728,10 @@ func (t Test) String() string {
         return "parameters-ordering-with-legacy-flattening-order"
     case TestParametersPathEncoding:
         return "parameters-path-encoding"
+    case TestParametersPathParameterFormatUnion:
+        return "parameters-path-parameter-format-union"
+    case TestParametersPathParameterFormats:
+        return "parameters-path-parameter-formats"
     case TestParametersPathParameterJSON:
         return "parameters-path-parameter-json"
     case TestParametersPipeQueryParamsArray:
@@ -2222,6 +2226,10 @@ func TestFromString(s string) Test {
         return TestParametersOrderingWithLegacyFlatteningOrder
     case "parameters-path-encoding":
         return TestParametersPathEncoding
+    case "parameters-path-parameter-format-union":
+        return TestParametersPathParameterFormatUnion
+    case "parameters-path-parameter-formats":
+        return TestParametersPathParameterFormats
     case "parameters-path-parameter-json":
         return TestParametersPathParameterJSON
     case "parameters-pipe-query-params-array":
@@ -3353,6 +3361,8 @@ var testList = []Test{
     TestParametersOrderingUsingOptionalRequestBodyWithLegacyFlatteningOrder,
     TestParametersOrderingWithLegacyFlatteningOrder,
     TestParametersPathEncoding,
+    TestParametersPathParameterFormatUnion,
+    TestParametersPathParameterFormats,
     TestParametersPathParameterJSON,
     TestParametersPipeQueryParamsArray,
     TestParametersQueryEncoding,
