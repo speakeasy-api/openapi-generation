@@ -2082,12 +2082,23 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 		}
 
 		// The flattened schema inherits the first member's format, which only
-		// describes the collapsed union if every typed member shares it.
-		if slices.ContainsFunc(memberFormats, func(f string) bool { return f != memberFormats[0] }) {
-			if mergedSchema.IsReference() {
-				mergedSchema = firstResolvedSchema.ShallowCopy()
+		// describes the collapsed union if every typed member shares it. An
+		// untyped first member takes the type and shared format of the typed
+		// members.
+		if len(memberFormats) > 0 {
+			sharedFormat := memberFormats[0]
+			switch {
+			case slices.ContainsFunc(memberFormats, func(f string) bool { return f != sharedFormat }):
+				if mergedSchema.IsReference() {
+					mergedSchema = firstResolvedSchema.ShallowCopy()
+				}
+				mergedSchema.Format = widestFormat(lastType, memberFormats)
+			case sharedFormat != "" && mergedSchema.Format == nil && !mergedSchema.IsReference():
+				if mergedSchema.Type == nil && firstTypedSchema != nil {
+					mergedSchema.Type = firstTypedSchema.Type
+				}
+				mergedSchema.Format = &sharedFormat
 			}
-			mergedSchema.Format = widestFormat(lastType, memberFormats)
 		}
 
 		// Preserve the parent schema's type and format when sub-schemas don't

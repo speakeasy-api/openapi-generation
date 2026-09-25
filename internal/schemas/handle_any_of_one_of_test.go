@@ -2717,6 +2717,25 @@ TestSchema:
 				Build(),
 		},
 		{
+			name: "OneOfUntypedConstAndFormattedKeepsFormat",
+			schemasYAML: `TestSchema:
+  oneOf:
+    - const: 1
+    - type: integer
+      format: int32
+      const: 2`,
+			schemaName: "TestSchema",
+			expected: testutils.NewFieldDef("enum",
+				testutils.NewEnumTypeDef(ast.DataTypeInt32, []string{"1", "2"}, "enum").
+					WithEnumUnderlyingLocation(&yaml.Node{Line: 10, Column: 11}).
+					WithScope(ast.ScopeShared).
+					WithRegistered().
+					WithOriginalNameFrozen().
+					WithContextStack(ast.ContextStack{}).
+					Build()).
+				Build(),
+		},
+		{
 			name: "OneOfFormattedAndUntypedConstKeepsFormat",
 			schemasYAML: `TestSchema:
   oneOf:
