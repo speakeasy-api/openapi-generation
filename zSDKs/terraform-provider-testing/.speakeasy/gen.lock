@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 0cc5566564e38d98df9fd68ef8704acb
+  docChecksum: fccaa1943b7d99936e3cf386d6aef8ac
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal

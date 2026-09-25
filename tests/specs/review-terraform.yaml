@@ -14707,6 +14707,7 @@ components:
               format: float
               maximum: 1.1
             - type: number
+              format: float
               maximum: 2.2
         float32_oneof_request:
           description: float32 oneOf request only maximums (union of 1.1 and 2.2)
@@ -14751,6 +14752,7 @@ components:
               format: double
               maximum: 1.1
             - type: number
+              format: double
               maximum: 2.2
         float64_oneof_request:
           description: float64 oneOf request only maximums (union of 1.1 and 2.2)
@@ -14830,6 +14832,7 @@ components:
               format: int32
               maximum: 1
             - type: integer
+              format: int32
               maximum: 2
         int32_oneof_request:
           description: int32 oneOf request only maximums (union of 1 and 2)
@@ -14874,6 +14877,7 @@ components:
               format: int64
               maximum: 1
             - type: integer
+              format: int64
               maximum: 2
         int64_oneof_request:
           description: int64 oneOf request only maximums (union of 1 and 2)
@@ -15533,6 +15537,7 @@ components:
               format: float
               minimum: 1.1
             - type: number
+              format: float
               minimum: 2.2
         float32_oneof_request:
           description: float32 oneOf request only minimums (union of 1.1 and 2.2)
@@ -15577,6 +15582,7 @@ components:
               format: double
               minimum: 1.1
             - type: number
+              format: double
               minimum: 2.2
         float64_oneof_request:
           description: float64 oneOf request only minimums (union of 1.1 and 2.2)
@@ -15656,6 +15662,7 @@ components:
               format: int32
               minimum: 1
             - type: integer
+              format: int32
               minimum: 2
         int32_oneof_request:
           description: int32 oneOf request only minimums (union of 1 and 2)
@@ -15700,6 +15707,7 @@ components:
               format: int64
               minimum: 1
             - type: integer
+              format: int64
               minimum: 2
         int64_oneof_request:
           description: int64 oneOf request only minimums (union of 1 and 2)
