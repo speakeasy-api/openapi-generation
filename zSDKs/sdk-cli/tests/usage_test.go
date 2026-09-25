@@ -146,6 +146,11 @@ func TestUsageSchema_Subtree(t *testing.T) {
 	assert.NotContains(t, stdout, "name \"")
 	assert.Empty(t, stderr)
 }
+func TestUsageSchema_AutoShorthand(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"post-file", "--usage"}))
+	assert.Contains(t, h.GetStdout(), `flag "-u --upload`)
+}
 func TestUsageSchema_GroupSubtree(t *testing.T) {
 	h := NewCLITestHarness(t)
 	err := h.RunBare([]string{"test-group", "tag2", "--usage"})
