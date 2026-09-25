@@ -144,22 +144,48 @@ def test_parameters_path_parameter_formats():
 
     s = SDK(server_url=HTTPBIN_URL)
 
+    uuid_value = UUID("12345678-1234-5678-1234-567812345678")
+    date_value = date.fromisoformat("2020-01-01")
+    date_time_value = parse_datetime("2020-01-01T00:00:00.001Z")
+    duration_value = timedelta(hours=1, minutes=30)
+
     res = s.parameters.path_parameter_formats(
-        uuid_param=UUID("12345678-1234-5678-1234-567812345678"),
-        date_param=date.fromisoformat("2020-01-01"),
-        date_time_param=parse_datetime("2020-01-01T00:00:00.001Z"),
-        duration_param=timedelta(hours=1, minutes=30),
+        uuid_param=uuid_value,
+        date_param=date_value,
+        date_time_param=date_time_value,
+        duration_param=duration_value,
+        uuid_query=uuid_value,
+        date_query=date_value,
+        date_time_query=date_time_value,
+        duration_query=duration_value,
+        x_uuid_header=uuid_value,
+        x_date_header=date_value,
+        x_date_time_header=date_time_value,
+        x_duration_header=duration_value,
     )
 
     assert res.http_meta.response.status_code == 200
     assert res.res is not None
-    assert res.res.url == (
+    assert res.res.url.split("?")[0] == (
         f"{HTTPBIN_URL}/anything/pathParams/formats"
         "/uuid/12345678-1234-5678-1234-567812345678"
         "/date/2020-01-01"
         "/dateTime/2020-01-01T00:00:00.001000Z"
         "/duration/PT1H30M"
     )
+
+    request = res.http_meta.request
+    assert request is not None
+    assert dict(request.url.params) == {
+        "uuidQuery": "12345678-1234-5678-1234-567812345678",
+        "dateQuery": "2020-01-01",
+        "dateTimeQuery": "2020-01-01T00:00:00.001000Z",
+        "durationQuery": "PT1H30M",
+    }
+    assert request.headers["x-uuid-header"] == "12345678-1234-5678-1234-567812345678"
+    assert request.headers["x-date-header"] == "2020-01-01"
+    assert request.headers["x-date-time-header"] == "2020-01-01T00:00:00.001000Z"
+    assert request.headers["x-duration-header"] == "PT1H30M"
 
 
 def test_parameters_path_parameter_format_union():

@@ -131,7 +131,7 @@ def _populate_path_params(
                                 f"{param_name},{_val_to_string(param_field_val)}"
                             )
                     path_param_values[f_name] = ",".join(pp_vals)
-                elif _is_set(param):
+                else:
                     path_param_values[f_name] = _val_to_string(param)
 
     return globals_already_populated

@@ -14,10 +14,10 @@ paths:
       tags:
         - parameters
       description: >-
-        Exercises simple-style path parameters whose string schemas declare the
-        uuid, date, date-time and duration formats. Targets that map these
-        formats to native types must serialize each value into the path using
-        its canonical string form.
+        Exercises path, query and header parameters whose string schemas
+        declare the uuid, date, date-time and duration formats. Targets that
+        map these formats to native types must serialize each value into every
+        parameter location using its canonical string form.
       parameters:
         - name: uuidParam
           in: path
@@ -40,6 +40,46 @@ paths:
         - name: durationParam
           in: path
           required: true
+          schema:
+            type: string
+            format: duration
+        - name: uuidQuery
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: dateQuery
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTimeQuery
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: durationQuery
+          in: query
+          schema:
+            type: string
+            format: duration
+        - name: x-uuid-header
+          in: header
+          schema:
+            type: string
+            format: uuid
+        - name: x-date-header
+          in: header
+          schema:
+            type: string
+            format: date
+        - name: x-date-time-header
+          in: header
+          schema:
+            type: string
+            format: date-time
+        - name: x-duration-header
+          in: header
           schema:
             type: string
             format: duration
