@@ -104,6 +104,8 @@ func (r *XPollingResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -112,7 +114,7 @@ func (r *XPollingResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	res, err := r.client.CreateXPolling(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -157,7 +159,7 @@ func (r *XPollingResource) Create(ctx context.Context, req resource.CreateReques
 	))
 	res1, err := r.client.GetXPolling(ctx, *request1, getXPollingOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -212,6 +214,8 @@ func (r *XPollingResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -220,7 +224,7 @@ func (r *XPollingResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	res, err := r.client.GetXPolling(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -269,6 +273,8 @@ func (r *XPollingResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -277,7 +283,7 @@ func (r *XPollingResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 	res, err := r.client.UpdateXPolling(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -319,7 +325,7 @@ func (r *XPollingResource) Update(ctx context.Context, req resource.UpdateReques
 	))
 	res1, err := r.client.GetXPolling(ctx, *request1, getXPollingOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -377,6 +383,8 @@ func (r *XPollingResource) Delete(ctx context.Context, req resource.DeleteReques
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -385,7 +393,7 @@ func (r *XPollingResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	res, err := r.client.DeleteXPolling(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -415,7 +423,7 @@ func (r *XPollingResource) Delete(ctx context.Context, req resource.DeleteReques
 	))
 	res1, err := r.client.GetXPolling(ctx, *request1, getXPollingOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}

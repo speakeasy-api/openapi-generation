@@ -153,6 +153,8 @@ func (r *OASWriteOnlyNestedResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASWriteOnlyNestedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -161,7 +163,7 @@ func (r *OASWriteOnlyNestedResource) Create(ctx context.Context, req resource.Cr
 	}
 	res, err := r.client.CreateOasWriteonlyNested(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -213,9 +215,11 @@ func (r *OASWriteOnlyNestedResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	res, err := r.client.GetOasWriteonlyNested(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -285,9 +289,11 @@ func (r *OASWriteOnlyNestedResource) Delete(ctx context.Context, req resource.De
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	res, err := r.client.DeleteOasWriteonlyNested(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

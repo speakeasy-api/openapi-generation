@@ -117,6 +117,8 @@ func (r *XWrappedAttributeResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -125,7 +127,7 @@ func (r *XWrappedAttributeResource) Create(ctx context.Context, req resource.Cre
 	}
 	res, err := r.client.CreateXSpeakeasyWrappedAttribute(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -162,7 +164,7 @@ func (r *XWrappedAttributeResource) Create(ctx context.Context, req resource.Cre
 	}
 	res1, err := r.client.CreateUpdateXSpeakeasyWrappedAttributeWrapped(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -217,6 +219,8 @@ func (r *XWrappedAttributeResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -225,7 +229,7 @@ func (r *XWrappedAttributeResource) Read(ctx context.Context, req resource.ReadR
 	}
 	res, err := r.client.GetXSpeakeasyWrappedAttribute(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -260,7 +264,7 @@ func (r *XWrappedAttributeResource) Read(ctx context.Context, req resource.ReadR
 	}
 	res1, err := r.client.GetXSpeakeasyWrappedAttributeWrapped(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -309,6 +313,8 @@ func (r *XWrappedAttributeResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -317,7 +323,7 @@ func (r *XWrappedAttributeResource) Update(ctx context.Context, req resource.Upd
 	}
 	res, err := r.client.UpdateXSpeakeasyWrappedAttribute(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -354,7 +360,7 @@ func (r *XWrappedAttributeResource) Update(ctx context.Context, req resource.Upd
 	}
 	res1, err := r.client.CreateUpdateXSpeakeasyWrappedAttributeWrapped(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -412,6 +418,8 @@ func (r *XWrappedAttributeResource) Delete(ctx context.Context, req resource.Del
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -420,7 +428,7 @@ func (r *XWrappedAttributeResource) Delete(ctx context.Context, req resource.Del
 	}
 	res, err := r.client.DeleteXSpeakeasyWrappedAttribute(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

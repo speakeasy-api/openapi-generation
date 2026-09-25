@@ -292,6 +292,8 @@ func (r *XTerraformCustomDefaultResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -300,7 +302,7 @@ func (r *XTerraformCustomDefaultResource) Create(ctx context.Context, req resour
 	}
 	res, err := r.client.CreateXSpeakeasyTerraformCustomDefault(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -355,6 +357,8 @@ func (r *XTerraformCustomDefaultResource) Read(ctx context.Context, req resource
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -363,7 +367,7 @@ func (r *XTerraformCustomDefaultResource) Read(ctx context.Context, req resource
 	}
 	res, err := r.client.GetXSpeakeasyTerraformCustomDefault(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -412,6 +416,8 @@ func (r *XTerraformCustomDefaultResource) Update(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -420,7 +426,7 @@ func (r *XTerraformCustomDefaultResource) Update(ctx context.Context, req resour
 	}
 	res, err := r.client.UpdateXSpeakeasyTerraformCustomDefault(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -478,6 +484,8 @@ func (r *XTerraformCustomDefaultResource) Delete(ctx context.Context, req resour
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -486,7 +494,7 @@ func (r *XTerraformCustomDefaultResource) Delete(ctx context.Context, req resour
 	}
 	res, err := r.client.DeleteXSpeakeasyTerraformCustomDefault(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

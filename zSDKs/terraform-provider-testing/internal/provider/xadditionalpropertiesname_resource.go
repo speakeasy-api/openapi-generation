@@ -110,6 +110,8 @@ func (r *XAdditionalPropertiesNameResource) Create(ctx context.Context, req reso
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToOperationsCreateXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -118,7 +120,7 @@ func (r *XAdditionalPropertiesNameResource) Create(ctx context.Context, req reso
 	}
 	res, err := r.client.CreateXSpeakeasyAdditionalPropertiesName(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -173,6 +175,8 @@ func (r *XAdditionalPropertiesNameResource) Read(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -181,7 +185,7 @@ func (r *XAdditionalPropertiesNameResource) Read(ctx context.Context, req resour
 	}
 	res, err := r.client.GetXSpeakeasyAdditionalPropertiesName(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -230,6 +234,8 @@ func (r *XAdditionalPropertiesNameResource) Update(ctx context.Context, req reso
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -238,7 +244,7 @@ func (r *XAdditionalPropertiesNameResource) Update(ctx context.Context, req reso
 	}
 	res, err := r.client.UpdateXSpeakeasyAdditionalPropertiesName(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -296,6 +302,8 @@ func (r *XAdditionalPropertiesNameResource) Delete(ctx context.Context, req reso
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -304,7 +312,7 @@ func (r *XAdditionalPropertiesNameResource) Delete(ctx context.Context, req reso
 	}
 	res, err := r.client.DeleteXSpeakeasyAdditionalPropertiesName(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -115,6 +115,8 @@ func (r *OASFormatBinaryJSONResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASFormatBinaryJSONRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -123,7 +125,7 @@ func (r *OASFormatBinaryJSONResource) Create(ctx context.Context, req resource.C
 	}
 	res, err := r.client.CreateOasFormatBinaryJSON(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -175,6 +177,8 @@ func (r *OASFormatBinaryJSONResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasFormatBinaryJSONRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -183,7 +187,7 @@ func (r *OASFormatBinaryJSONResource) Read(ctx context.Context, req resource.Rea
 	}
 	res, err := r.client.GetOasFormatBinaryJSON(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -229,6 +233,8 @@ func (r *OASFormatBinaryJSONResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasFormatBinaryJSONRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -237,7 +243,7 @@ func (r *OASFormatBinaryJSONResource) Update(ctx context.Context, req resource.U
 	}
 	res, err := r.client.UpdateOasFormatBinaryJSON(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -289,6 +295,8 @@ func (r *OASFormatBinaryJSONResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasFormatBinaryJSONRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -297,7 +305,7 @@ func (r *OASFormatBinaryJSONResource) Delete(ctx context.Context, req resource.D
 	}
 	res, err := r.client.DeleteOasFormatBinaryJSON(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

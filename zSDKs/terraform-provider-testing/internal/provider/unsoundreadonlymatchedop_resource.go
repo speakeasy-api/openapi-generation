@@ -98,6 +98,8 @@ func (r *UnsoundReadonlyMatchedOpResource) Create(ctx context.Context, req resou
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedUnsoundReadonlyMatchedOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -106,7 +108,7 @@ func (r *UnsoundReadonlyMatchedOpResource) Create(ctx context.Context, req resou
 	}
 	res, err := r.client.CreateUnsoundReadonlyMatchedOp(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -158,6 +160,8 @@ func (r *UnsoundReadonlyMatchedOpResource) Read(ctx context.Context, req resourc
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetUnsoundReadonlyMatchedOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -166,7 +170,7 @@ func (r *UnsoundReadonlyMatchedOpResource) Read(ctx context.Context, req resourc
 	}
 	res, err := r.client.GetUnsoundReadonlyMatchedOp(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -236,6 +240,8 @@ func (r *UnsoundReadonlyMatchedOpResource) Delete(ctx context.Context, req resou
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteUnsoundReadonlyMatchedOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -244,7 +250,7 @@ func (r *UnsoundReadonlyMatchedOpResource) Delete(ctx context.Context, req resou
 	}
 	res, err := r.client.DeleteUnsoundReadonlyMatchedOp(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

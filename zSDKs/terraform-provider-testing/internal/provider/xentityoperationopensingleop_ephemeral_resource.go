@@ -98,6 +98,8 @@ func (r *XEntityOperationOpenSingleOpEphemeralResource) Open(ctx context.Context
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToSharedXEntityOperationOpenSingleOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -106,7 +108,7 @@ func (r *XEntityOperationOpenSingleOpEphemeralResource) Open(ctx context.Context
 	}
 	res, err := r.client.OpenXEntityOperationOpenSingleOp(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

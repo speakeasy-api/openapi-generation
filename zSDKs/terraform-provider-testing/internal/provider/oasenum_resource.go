@@ -1223,6 +1223,8 @@ func (r *OASEnumResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1231,7 +1233,7 @@ func (r *OASEnumResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 	res, err := r.client.CreateOasEnum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1286,6 +1288,8 @@ func (r *OASEnumResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1294,7 +1298,7 @@ func (r *OASEnumResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	res, err := r.client.GetOasEnum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1343,6 +1347,8 @@ func (r *OASEnumResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1351,7 +1357,7 @@ func (r *OASEnumResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 	res, err := r.client.UpdateOasEnum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1409,6 +1415,8 @@ func (r *OASEnumResource) Delete(ctx context.Context, req resource.DeleteRequest
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1417,7 +1425,7 @@ func (r *OASEnumResource) Delete(ctx context.Context, req resource.DeleteRequest
 	}
 	res, err := r.client.DeleteOasEnum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

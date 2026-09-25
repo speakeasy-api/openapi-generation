@@ -242,6 +242,8 @@ func (r *DiscriminatedUnionArrayResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedDiscriminatedUnionArrayCreateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -250,7 +252,7 @@ func (r *DiscriminatedUnionArrayResource) Create(ctx context.Context, req resour
 	}
 	res, err := r.client.CreateDiscriminatedUnionArray(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -322,6 +324,8 @@ func (r *DiscriminatedUnionArrayResource) Update(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToSharedDiscriminatedUnionArrayUpdateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -330,7 +334,7 @@ func (r *DiscriminatedUnionArrayResource) Update(ctx context.Context, req resour
 	}
 	res, err := r.client.UpdateDiscriminatedUnionArray(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

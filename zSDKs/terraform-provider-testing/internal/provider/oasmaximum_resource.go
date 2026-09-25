@@ -471,6 +471,8 @@ func (r *OASMaximumResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASMaximumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -479,7 +481,7 @@ func (r *OASMaximumResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 	res, err := r.client.CreateOasMaximum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -534,6 +536,8 @@ func (r *OASMaximumResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasMaximumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -542,7 +546,7 @@ func (r *OASMaximumResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	res, err := r.client.GetOasMaximum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -591,6 +595,8 @@ func (r *OASMaximumResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasMaximumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -599,7 +605,7 @@ func (r *OASMaximumResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	res, err := r.client.UpdateOasMaximum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -657,6 +663,8 @@ func (r *OASMaximumResource) Delete(ctx context.Context, req resource.DeleteRequ
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasMaximumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -665,7 +673,7 @@ func (r *OASMaximumResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 	res, err := r.client.DeleteOasMaximum(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

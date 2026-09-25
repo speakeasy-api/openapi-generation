@@ -631,6 +631,7 @@ func (p *TestingProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	security.Custom = custom
+	registerSensitiveValues(security.APIKey, basic.Password, security.Bearer, clientCredentials.ClientSecret, custom.CustomKey, custom.CustomSecret)
 
 	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
 		SetHeaders: make(map[string]string),

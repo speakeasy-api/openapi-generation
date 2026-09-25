@@ -107,6 +107,8 @@ func (r *XSoftDeletePropertyDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToOperationsGetXSoftDeletePropertyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -115,7 +117,7 @@ func (r *XSoftDeletePropertyDataSource) Read(ctx context.Context, req datasource
 	}
 	res, err := r.client.GetXSoftDeleteProperty(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

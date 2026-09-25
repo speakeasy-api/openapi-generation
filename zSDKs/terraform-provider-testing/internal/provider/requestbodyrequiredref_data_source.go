@@ -94,6 +94,8 @@ func (r *RequestBodyRequiredRefDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToSharedRequestBodyRefRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -102,7 +104,7 @@ func (r *RequestBodyRequiredRefDataSource) Read(ctx context.Context, req datasou
 	}
 	res, err := r.client.GetRequestbodyRequiredRef(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

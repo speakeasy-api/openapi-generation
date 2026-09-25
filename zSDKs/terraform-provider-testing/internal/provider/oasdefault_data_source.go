@@ -1240,6 +1240,8 @@ func (r *OASDefaultDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToOperationsGetOasDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1248,7 +1250,7 @@ func (r *OASDefaultDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 	res, err := r.client.GetOasDefault(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

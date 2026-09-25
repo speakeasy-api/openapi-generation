@@ -466,6 +466,8 @@ func (r *OASDeprecatedResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASDeprecatedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -474,7 +476,7 @@ func (r *OASDeprecatedResource) Create(ctx context.Context, req resource.CreateR
 	}
 	res, err := r.client.CreateOasDeprecated(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -529,6 +531,8 @@ func (r *OASDeprecatedResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasDeprecatedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -537,7 +541,7 @@ func (r *OASDeprecatedResource) Read(ctx context.Context, req resource.ReadReque
 	}
 	res, err := r.client.GetOasDeprecated(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -586,6 +590,8 @@ func (r *OASDeprecatedResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasDeprecatedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -594,7 +600,7 @@ func (r *OASDeprecatedResource) Update(ctx context.Context, req resource.UpdateR
 	}
 	res, err := r.client.UpdateOasDeprecated(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -652,6 +658,8 @@ func (r *OASDeprecatedResource) Delete(ctx context.Context, req resource.DeleteR
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasDeprecatedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -660,7 +668,7 @@ func (r *OASDeprecatedResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 	res, err := r.client.DeleteOasDeprecated(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

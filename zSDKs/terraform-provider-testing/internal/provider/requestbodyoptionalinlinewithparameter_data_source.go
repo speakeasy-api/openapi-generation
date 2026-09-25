@@ -99,6 +99,8 @@ func (r *RequestBodyOptionalInlineWithParameterDataSource) Read(ctx context.Cont
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToOperationsGetRequestbodyOptionalInlineWithparameterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -107,7 +109,7 @@ func (r *RequestBodyOptionalInlineWithParameterDataSource) Read(ctx context.Cont
 	}
 	res, err := r.client.GetRequestbodyOptionalInlineWithparameter(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

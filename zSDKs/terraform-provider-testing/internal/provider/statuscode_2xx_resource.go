@@ -89,6 +89,8 @@ func (r *StatusCode2xxResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedStatusCode2XXRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -97,7 +99,7 @@ func (r *StatusCode2xxResource) Create(ctx context.Context, req resource.CreateR
 	}
 	res, err := r.client.CreateStatusCode2xx(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -149,6 +151,8 @@ func (r *StatusCode2xxResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -157,7 +161,7 @@ func (r *StatusCode2xxResource) Read(ctx context.Context, req resource.ReadReque
 	}
 	res, err := r.client.GetStatusCode2xx(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -203,6 +207,8 @@ func (r *StatusCode2xxResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -211,7 +217,7 @@ func (r *StatusCode2xxResource) Update(ctx context.Context, req resource.UpdateR
 	}
 	res, err := r.client.UpdateStatusCode2xx(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -263,6 +269,8 @@ func (r *StatusCode2xxResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -271,7 +279,7 @@ func (r *StatusCode2xxResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 	res, err := r.client.DeleteStatusCode2xx(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

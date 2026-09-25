@@ -466,6 +466,8 @@ func (r *XDeprecationMessageResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -474,7 +476,7 @@ func (r *XDeprecationMessageResource) Create(ctx context.Context, req resource.C
 	}
 	res, err := r.client.CreateXDeprecationMessage(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -529,6 +531,8 @@ func (r *XDeprecationMessageResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -537,7 +541,7 @@ func (r *XDeprecationMessageResource) Read(ctx context.Context, req resource.Rea
 	}
 	res, err := r.client.GetXDeprecationMessage(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -586,6 +590,8 @@ func (r *XDeprecationMessageResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -594,7 +600,7 @@ func (r *XDeprecationMessageResource) Update(ctx context.Context, req resource.U
 	}
 	res, err := r.client.UpdateXDeprecationMessage(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -652,6 +658,8 @@ func (r *XDeprecationMessageResource) Delete(ctx context.Context, req resource.D
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -660,7 +668,7 @@ func (r *XDeprecationMessageResource) Delete(ctx context.Context, req resource.D
 	}
 	res, err := r.client.DeleteXDeprecationMessage(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
