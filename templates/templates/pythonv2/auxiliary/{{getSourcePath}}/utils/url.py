@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import (
     Any,
     Dict,
@@ -103,7 +102,7 @@ def _populate_path_params(
                         else:
                             pp_vals.append(f"{pp_key},{_val_to_string(param[pp_key])}")
                     path_param_values[f_name] = ",".join(pp_vals)
-                elif not isinstance(param, (str, int, float, complex, bool, Decimal)):
+                elif isinstance(param, BaseModel):
                     param_fields: Dict[str, FieldInfo] = param.__class__.model_fields
                     for name in param_fields:
                         param_field = param_fields[name]

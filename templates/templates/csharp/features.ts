@@ -417,6 +417,7 @@ function isTestSkipped(test: string): boolean {
     "jsonl-stream-with-timeout-streams-to-completion",
     "open-union-strict-request-validation",
     "optional-nullable-object-property-params",
+    "parameters-formatted-scalar-path-params",
   ].includes(test);
 }
 

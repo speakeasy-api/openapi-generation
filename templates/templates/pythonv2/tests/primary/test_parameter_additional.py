@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 import json
+from uuid import UUID
 from openapi import SDK
 from openapi.models import shared
 from openapi.utils import parse_datetime
@@ -136,3 +137,21 @@ def test_parameters_path_parameter_json():
         "str": "test",
         "strOpt": "testOptional",
     }
+
+
+def test_parameters_formatted_scalar_path_params():
+    record_test("parameters-formatted-scalar-path-params")
+
+    sdk = SDK(server_url=HTTPBIN_URL)
+
+    res = sdk.parameters.formatted_scalar_path_params(
+        uuid_param=UUID("2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f"),
+        date_time_param=parse_datetime("2020-01-01T00:00:00Z"),
+        date_param=date(2020, 1, 1),
+    )
+
+    assert res.http_meta.response.status_code == 200
+    assert res.res.url == (
+        f"{HTTPBIN_URL}/anything/formattedScalarPathParams/"
+        "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f/2020-01-01T00:00:00Z/2020-01-01"
+    )

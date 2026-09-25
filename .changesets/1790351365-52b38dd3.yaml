@@ -1,0 +1,10 @@
+id: 1790351365-52b38dd3
+features:
+    - core
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: serialize uuid, date-time and date path parameters instead of treating them as objects
+author: AshGodfrey
+date: "2026-09-25"
