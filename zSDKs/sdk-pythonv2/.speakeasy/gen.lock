@@ -754,7 +754,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/annotations.py:
     last_write_checksum: sha1:a4824ad65f730303e4e1e3ec1febf87b4eb46dbc
   src/speakeasy/new_openapi/utils/datetimes.py:
-    last_write_checksum: sha1:5af10fbf4c6f38bd3460eaf8b82d6caa34c1c3e6
+    last_write_checksum: sha1:dcbdac8f63789f5d41b64d4d0515db77961e1d0c
   src/speakeasy/new_openapi/utils/dynamic_imports.py:
     last_write_checksum: sha1:5da52e20f3215bfc0f858eaa67983792aadee6c7
   src/speakeasy/new_openapi/utils/enums.py:

@@ -2063,16 +2063,7 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 				mergedSchema = firstResolvedSchema.ShallowCopy()
 			}
 
-			// The merged set is carried by the enum, so a const inherited from
-			// the first member would otherwise narrow the parameter back down
-			// to that member's single value. A bare const implies its type, so
-			// take the type from a member that states one before dropping it.
-			if mergedSchema.Const != nil {
-				if mergedSchema.Type == nil && firstTypedSchema != nil {
-					mergedSchema.Type = firstTypedSchema.Type
-				}
-				mergedSchema.Const = nil
-			}
+			mergedSchema.Const = nil
 
 			if numCollapsedClosedSetMembers == len(schemas) {
 				mergedSchema.Enum = mergeEnumValues(collapsedClosedSetValues)
@@ -2081,10 +2072,6 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 			}
 		}
 
-		// The flattened schema inherits the first member's format, which only
-		// describes the collapsed union if every typed member shares it. An
-		// untyped first member takes the type and shared format of the typed
-		// members.
 		if len(memberFormats) > 0 {
 			sharedFormat := memberFormats[0]
 			switch {
@@ -2094,11 +2081,12 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 				}
 				mergedSchema.Format = widestFormat(lastType, memberFormats)
 			case sharedFormat != "" && mergedSchema.Format == nil && !mergedSchema.IsReference():
-				if mergedSchema.Type == nil && firstTypedSchema != nil {
-					mergedSchema.Type = firstTypedSchema.Type
-				}
 				mergedSchema.Format = &sharedFormat
 			}
+		}
+
+		if mergedSchema.Type == nil && firstTypedSchema != nil && !mergedSchema.IsReference() {
+			mergedSchema.Type = firstTypedSchema.Type
 		}
 
 		// Preserve the parent schema's type and format when sub-schemas don't

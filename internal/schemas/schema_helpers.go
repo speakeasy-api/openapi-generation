@@ -50,9 +50,6 @@ func leastRestrictiveMin[T number](values []*T) *T {
 	return result
 }
 
-// widestFormat returns the format of a flattened union whose members disagree
-// on format. A numeric format that widens the value range subsumes the others;
-// any other mismatch falls back to the unformatted primitive.
 func widestFormat(typ string, formats []string) *string {
 	widening := map[string]string{"integer": "bigint", "number": "decimal"}[typ]
 	if widening != "" && slices.Contains(formats, widening) {

@@ -2939,6 +2939,13 @@ TestSchema:
         - two
         - three`
 
+	const untypedEnumAndOpenStringYAML = `TestSchema:
+  oneOf:
+    - enum:
+        - one
+        - two
+    - type: string`
+
 	const constAndOpenStringYAML = `TestSchema:
   oneOf:
     - const: one
@@ -3088,6 +3095,12 @@ TestSchema:
 		result := handle(t, constAndOpenStringYAML, ParamTypePath)
 		assert.Equal(t, ast.DataTypeString, result.Type.Type)
 		assert.Nil(t, result.Const)
+		assert.Nil(t, result.Type.Enum)
+	})
+
+	t.Run("PathParamTakesTypeFromTypedMemberForUntypedEnum", func(t *testing.T) {
+		result := handle(t, untypedEnumAndOpenStringYAML, ParamTypePath)
+		assert.Equal(t, ast.DataTypeString, result.Type.Type)
 		assert.Nil(t, result.Type.Enum)
 	})
 
