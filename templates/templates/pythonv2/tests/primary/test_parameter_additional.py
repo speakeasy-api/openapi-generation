@@ -190,7 +190,7 @@ def test_parameters_formatted_scalar_params():
         "bigintQueryParam": "9007199254740993",
     }
     assert request.headers["x-uuid-header"] == "2f8f4d5e-6b7a-4c3d-9e1f-0a1b2c3d4e5f"
-    assert request.headers["x-datetime-header"] == "2020-01-01T12:30:45Z"
+    assert request.headers["x-date-time-header"] == "2020-01-01T12:30:45Z"
     assert request.headers["x-date-header"] == "2020-01-01"
     assert request.headers["x-duration-header"] == "P1DT1M30S"
     assert request.headers["x-decimal-header"] == "1234.5678"

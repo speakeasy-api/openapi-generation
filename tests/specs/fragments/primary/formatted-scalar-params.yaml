@@ -91,7 +91,7 @@ paths:
           schema:
             type: string
             format: uuid
-        - name: x-dateTime-header
+        - name: x-date-time-header
           in: header
           schema:
             type: string
