@@ -263,7 +263,7 @@ func TestIntentRouteDispatchHelpAndUsageSurfaces(t *testing.T) {
 	assert.Contains(t, usageSchema, `flag "--agent-profile <agent_profile>"`)
 	assert.Contains(t, usageSchema, `flag "--body <body>"`)
 	assert.Contains(t, usageSchema, `flag "--schema"`)
-	assert.Contains(t, usageSchema, `flag "--trace <trace>"`)
+	assert.Contains(t, usageSchema, `flag "-t --trace <trace>"`)
 	assert.NotContains(t, usageSchema, "cli-intent-run-body")
 }
 
