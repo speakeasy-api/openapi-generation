@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.941.2] - 2026-09-25
+### :bug: Bug Fixes
+- [`d5db5f5`](https://github.com/speakeasy-api/openapi-generation/commit/d5db5f5e25b0b111dd47399279a88ce2929b7756) - **all**: derive flattened union format from all members and serialize formatted Python path parameters ([#39](https://github.com/speakeasy-api/openapi-generation/pull/39)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.941.1] - 2026-09-24
 ### :wrench: Chores
 - [`efb4ea0`](https://github.com/speakeasy-api/openapi-generation/commit/efb4ea0894d8527374ba24f12ca9b0c5a6b334cb) - **cli**: pin release workflow actions to commit SHAs ([#37](https://github.com/speakeasy-api/openapi-generation/pull/37)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20222,3 +20227,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.940.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.940.0...v2.940.1
 [v2.941.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.940.1...v2.941.0
 [v2.941.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.0...v2.941.1
+[v2.941.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.1...v2.941.2
