@@ -1,0 +1,14 @@
+templates/templates/cli/tests/primary/intents_test.go.stmpl
+  h_9630b74bdac540 266
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a22182390d63219d42958d45058698bc4f0d33ee",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
