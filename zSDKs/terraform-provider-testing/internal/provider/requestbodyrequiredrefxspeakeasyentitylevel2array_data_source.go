@@ -94,6 +94,8 @@ func (r *RequestBodyRequiredRefXSpeakeasyEntityLevel2ArrayDataSource) Read(ctx c
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToSharedRequestBodyRefXSpeakeasyEntityLevel2ArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -102,7 +104,7 @@ func (r *RequestBodyRequiredRefXSpeakeasyEntityLevel2ArrayDataSource) Read(ctx c
 	}
 	res, err := r.client.GetRequestbodyRequiredRefXspeakeasyentityLevel2Array(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

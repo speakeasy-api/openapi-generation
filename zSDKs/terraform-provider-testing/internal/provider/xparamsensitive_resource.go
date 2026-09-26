@@ -109,6 +109,8 @@ func (r *XParamSensitiveResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXParamSensitiveRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -117,7 +119,7 @@ func (r *XParamSensitiveResource) Create(ctx context.Context, req resource.Creat
 	}
 	res, err := r.client.CreateXParamSensitive(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -172,6 +174,8 @@ func (r *XParamSensitiveResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXParamSensitiveRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -180,7 +184,7 @@ func (r *XParamSensitiveResource) Read(ctx context.Context, req resource.ReadReq
 	}
 	res, err := r.client.GetXParamSensitive(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -229,6 +233,8 @@ func (r *XParamSensitiveResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXParamSensitiveRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -237,7 +243,7 @@ func (r *XParamSensitiveResource) Update(ctx context.Context, req resource.Updat
 	}
 	res, err := r.client.UpdateXParamSensitive(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -295,6 +301,8 @@ func (r *XParamSensitiveResource) Delete(ctx context.Context, req resource.Delet
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXParamSensitiveRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -303,7 +311,7 @@ func (r *XParamSensitiveResource) Delete(ctx context.Context, req resource.Delet
 	}
 	res, err := r.client.DeleteXParamSensitive(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -110,6 +110,26 @@ function templateProviderConfigureSecurity(security: FieldDef) {
 
   addGenImport(`${getSDKPackage()}/models/${security.Type.Scope}`);
   const result: string[] = [`security := ${templateSecurityType}{}`];
+  const credentials: string[] = [];
+  const configureAttribute = (
+    fieldDef: FieldDef,
+    sdkAccessor: string,
+    attributeIsOptional: boolean,
+  ): string => {
+    const fieldName = sanitizeFieldName(fieldDef.Name);
+    if (
+      fieldDef.Type.Type.toString() === "string" &&
+      !securityIdentifierFields.includes(fieldName)
+    ) {
+      credentials.push(`${sdkAccessor}.${fieldName}`);
+    }
+    return templateProviderConfigureSecurityAttribute(
+      symbolManager,
+      fieldDef,
+      sdkAccessor,
+      attributeIsOptional,
+    );
+  };
 
   for (const originalFieldDef of security.Type.Fields) {
     const fieldDef = {
@@ -138,14 +158,7 @@ function templateProviderConfigureSecurity(security: FieldDef) {
     //  - bearer security type
     //  - hoisted single security (e.g. username and password if only basic auth)
     if (fieldDef.Type.Type.toString() === "string") {
-      result.push(
-        templateProviderConfigureSecurityAttribute(
-          symbolManager,
-          fieldDef,
-          `security`,
-          fieldDef.Optional,
-        ),
-      );
+      result.push(configureAttribute(fieldDef, `security`, fieldDef.Optional));
 
       continue;
     }
@@ -171,8 +184,7 @@ function templateProviderConfigureSecurity(security: FieldDef) {
 
             for (const basicFieldDef of fieldDef.Type.Fields) {
               result.push(
-                templateProviderConfigureSecurityAttribute(
-                  symbolManager,
+                configureAttribute(
                   basicFieldDef,
                   basicAccessor,
                   true, // Do not require both username and password to be set.
@@ -203,8 +215,7 @@ function templateProviderConfigureSecurity(security: FieldDef) {
 
             for (const customFieldDef of fieldDef.Type.Fields) {
               result.push(
-                templateProviderConfigureSecurityAttribute(
-                  symbolManager,
+                configureAttribute(
                   customFieldDef,
                   customAccessor,
                   // Safest to introduce as optional for now (where errors are
@@ -246,8 +257,7 @@ function templateProviderConfigureSecurity(security: FieldDef) {
 
             for (const oauthFieldDef of fieldDef.Type.Fields) {
               result.push(
-                templateProviderConfigureSecurityAttribute(
-                  symbolManager,
+                configureAttribute(
                   oauthFieldDef,
                   clientCredentialsAccessor,
                   fieldDef.Optional || oauthFieldDef.Optional,
@@ -277,8 +287,26 @@ function templateProviderConfigureSecurity(security: FieldDef) {
     }
   }
 
+  // No blank line before the call, so customer edits inserted after the
+  // security block still share the following blank line as merge context.
+  if (credentials.length) {
+    result.push(`registerSensitiveValues(${credentials.join(", ")})`);
+  }
+
   return result.join("\n");
 }
+
+/**
+ * Security fields that identify rather than authenticate. They routinely
+ * appear in request paths and bodies, so redacting them from debug output
+ * would hide the context the output exists to show.
+ */
+const securityIdentifierFields = [
+  "Audience",
+  "ClientID",
+  "TokenURL",
+  "Username",
+];
 
 registerTemplateFunc(
   "templateProviderConfigureSecurity",

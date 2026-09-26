@@ -100,6 +100,8 @@ func (r *XPaginationOffsetLimitsResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -108,7 +110,7 @@ func (r *XPaginationOffsetLimitsResource) Create(ctx context.Context, req resour
 	}
 	res, err := r.client.CreateXPaginationOffsetLimits(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -145,7 +147,7 @@ func (r *XPaginationOffsetLimitsResource) Create(ctx context.Context, req resour
 	}
 	res1, err := r.client.ListXPaginationOffsetLimits(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -175,7 +177,7 @@ func (r *XPaginationOffsetLimitsResource) Create(ctx context.Context, req resour
 		res1, err = res1.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res1 != nil && res1.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 			}
@@ -224,6 +226,8 @@ func (r *XPaginationOffsetLimitsResource) Read(ctx context.Context, req resource
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsListXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -232,7 +236,7 @@ func (r *XPaginationOffsetLimitsResource) Read(ctx context.Context, req resource
 	}
 	res, err := r.client.ListXPaginationOffsetLimits(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -266,7 +270,7 @@ func (r *XPaginationOffsetLimitsResource) Read(ctx context.Context, req resource
 		res, err = res.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res != nil && res.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 			}
@@ -305,6 +309,8 @@ func (r *XPaginationOffsetLimitsResource) Update(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToSharedXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -313,7 +319,7 @@ func (r *XPaginationOffsetLimitsResource) Update(ctx context.Context, req resour
 	}
 	res, err := r.client.UpdateXPaginationOffsetLimits(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -350,7 +356,7 @@ func (r *XPaginationOffsetLimitsResource) Update(ctx context.Context, req resour
 	}
 	res1, err := r.client.ListXPaginationOffsetLimits(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -380,7 +386,7 @@ func (r *XPaginationOffsetLimitsResource) Update(ctx context.Context, req resour
 		res1, err = res1.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res1 != nil && res1.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 			}
@@ -432,9 +438,11 @@ func (r *XPaginationOffsetLimitsResource) Delete(ctx context.Context, req resour
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	res, err := r.client.DeleteXPaginationOffsetLimits(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

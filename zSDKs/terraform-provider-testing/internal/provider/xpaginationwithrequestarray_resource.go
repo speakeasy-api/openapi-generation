@@ -101,6 +101,8 @@ func (r *XPaginationWithRequestArrayResource) Create(ctx context.Context, req re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -109,7 +111,7 @@ func (r *XPaginationWithRequestArrayResource) Create(ctx context.Context, req re
 	}
 	res, err := r.client.CreateXPaginationWithRequestArray(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -146,7 +148,7 @@ func (r *XPaginationWithRequestArrayResource) Create(ctx context.Context, req re
 	}
 	res1, err := r.client.ListXPaginationWithRequestArray(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -176,7 +178,7 @@ func (r *XPaginationWithRequestArrayResource) Create(ctx context.Context, req re
 		res1, err = res1.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res1 != nil && res1.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 			}
@@ -225,6 +227,8 @@ func (r *XPaginationWithRequestArrayResource) Read(ctx context.Context, req reso
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsListXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -233,7 +237,7 @@ func (r *XPaginationWithRequestArrayResource) Read(ctx context.Context, req reso
 	}
 	res, err := r.client.ListXPaginationWithRequestArray(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -267,7 +271,7 @@ func (r *XPaginationWithRequestArrayResource) Read(ctx context.Context, req reso
 		res, err = res.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res != nil && res.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 			}
@@ -306,6 +310,8 @@ func (r *XPaginationWithRequestArrayResource) Update(ctx context.Context, req re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToSharedXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -314,7 +320,7 @@ func (r *XPaginationWithRequestArrayResource) Update(ctx context.Context, req re
 	}
 	res, err := r.client.UpdateXPaginationWithRequestArray(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -351,7 +357,7 @@ func (r *XPaginationWithRequestArrayResource) Update(ctx context.Context, req re
 	}
 	res1, err := r.client.ListXPaginationWithRequestArray(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -381,7 +387,7 @@ func (r *XPaginationWithRequestArrayResource) Update(ctx context.Context, req re
 		res1, err = res1.Next()
 
 		if err != nil {
-			resp.Diagnostics.AddError("failed to retrieve next page of results", err.Error())
+			resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))
 			if res1 != nil && res1.RawResponse != nil {
 				resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 			}
@@ -433,9 +439,11 @@ func (r *XPaginationWithRequestArrayResource) Delete(ctx context.Context, req re
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	res, err := r.client.DeleteXPaginationWithRequestArray(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

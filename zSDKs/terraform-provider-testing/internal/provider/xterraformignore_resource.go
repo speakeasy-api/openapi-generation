@@ -109,6 +109,8 @@ func (r *XTerraformIgnoreResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -117,7 +119,7 @@ func (r *XTerraformIgnoreResource) Create(ctx context.Context, req resource.Crea
 	}
 	res, err := r.client.CreateXSpeakeasyTerraformIgnore(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -154,7 +156,7 @@ func (r *XTerraformIgnoreResource) Create(ctx context.Context, req resource.Crea
 	}
 	res1, err := r.client.CreateXSpeakeasyTerraformIgnoreTask(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -191,7 +193,7 @@ func (r *XTerraformIgnoreResource) Create(ctx context.Context, req resource.Crea
 	}
 	res2, err := r.client.GetXSpeakeasyTerraformIgnoreTask(ctx, *request2)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res2 != nil && res2.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res2.RawResponse))
 		}
@@ -243,6 +245,8 @@ func (r *XTerraformIgnoreResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -251,7 +255,7 @@ func (r *XTerraformIgnoreResource) Read(ctx context.Context, req resource.ReadRe
 	}
 	res, err := r.client.GetXSpeakeasyTerraformIgnore(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -297,6 +301,8 @@ func (r *XTerraformIgnoreResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -305,7 +311,7 @@ func (r *XTerraformIgnoreResource) Update(ctx context.Context, req resource.Upda
 	}
 	res, err := r.client.UpdateXSpeakeasyTerraformIgnore(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -342,7 +348,7 @@ func (r *XTerraformIgnoreResource) Update(ctx context.Context, req resource.Upda
 	}
 	res1, err := r.client.CreateXSpeakeasyTerraformIgnoreTask(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -379,7 +385,7 @@ func (r *XTerraformIgnoreResource) Update(ctx context.Context, req resource.Upda
 	}
 	res2, err := r.client.GetXSpeakeasyTerraformIgnoreTask(ctx, *request2)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res2 != nil && res2.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res2.RawResponse))
 		}
@@ -431,6 +437,8 @@ func (r *XTerraformIgnoreResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -439,7 +447,7 @@ func (r *XTerraformIgnoreResource) Delete(ctx context.Context, req resource.Dele
 	}
 	res, err := r.client.DeleteXSpeakeasyTerraformIgnore(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -464,7 +472,7 @@ func (r *XTerraformIgnoreResource) Delete(ctx context.Context, req resource.Dele
 	}
 	res1, err := r.client.CreateXSpeakeasyTerraformIgnoreTask(ctx, *request1)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res1 != nil && res1.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res1.RawResponse))
 		}
@@ -498,7 +506,7 @@ func (r *XTerraformIgnoreResource) Delete(ctx context.Context, req resource.Dele
 	}
 	res2, err := r.client.GetXSpeakeasyTerraformIgnoreTask(ctx, *request2)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res2 != nil && res2.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res2.RawResponse))
 		}

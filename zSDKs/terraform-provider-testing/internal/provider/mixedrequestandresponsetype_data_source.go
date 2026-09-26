@@ -98,6 +98,8 @@ func (r *MixedRequestAndResponseTypeDataSource) Read(ctx context.Context, req da
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToOperationsGetMixedRequestAndResponseTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -106,7 +108,7 @@ func (r *MixedRequestAndResponseTypeDataSource) Read(ctx context.Context, req da
 	}
 	res, err := r.client.GetMixedRequestAndResponseType(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

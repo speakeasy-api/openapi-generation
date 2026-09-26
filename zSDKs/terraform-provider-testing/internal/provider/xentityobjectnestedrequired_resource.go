@@ -102,6 +102,8 @@ func (r *XEntityObjectNestedRequiredResource) Create(ctx context.Context, req re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXEntityObjectNestedRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -110,7 +112,7 @@ func (r *XEntityObjectNestedRequiredResource) Create(ctx context.Context, req re
 	}
 	res, err := r.client.CreateXEntityObjectNestedRequired(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -162,6 +164,8 @@ func (r *XEntityObjectNestedRequiredResource) Read(ctx context.Context, req reso
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXEntityObjectNestedRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -170,7 +174,7 @@ func (r *XEntityObjectNestedRequiredResource) Read(ctx context.Context, req reso
 	}
 	res, err := r.client.GetXEntityObjectNestedRequired(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -216,6 +220,8 @@ func (r *XEntityObjectNestedRequiredResource) Update(ctx context.Context, req re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXEntityObjectNestedRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -224,7 +230,7 @@ func (r *XEntityObjectNestedRequiredResource) Update(ctx context.Context, req re
 	}
 	res, err := r.client.UpdateXEntityObjectNestedRequired(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -276,6 +282,8 @@ func (r *XEntityObjectNestedRequiredResource) Delete(ctx context.Context, req re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXEntityObjectNestedRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -284,7 +292,7 @@ func (r *XEntityObjectNestedRequiredResource) Delete(ctx context.Context, req re
 	}
 	res, err := r.client.DeleteXEntityObjectNestedRequired(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

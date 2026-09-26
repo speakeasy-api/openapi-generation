@@ -237,6 +237,8 @@ func (r *XPlanValidatorsResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXPlanValidatorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -245,7 +247,7 @@ func (r *XPlanValidatorsResource) Create(ctx context.Context, req resource.Creat
 	}
 	res, err := r.client.CreateXPlanValidators(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -300,6 +302,8 @@ func (r *XPlanValidatorsResource) Read(ctx context.Context, req resource.ReadReq
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXPlanValidatorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -308,7 +312,7 @@ func (r *XPlanValidatorsResource) Read(ctx context.Context, req resource.ReadReq
 	}
 	res, err := r.client.GetXPlanValidators(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -357,6 +361,8 @@ func (r *XPlanValidatorsResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXPlanValidatorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -365,7 +371,7 @@ func (r *XPlanValidatorsResource) Update(ctx context.Context, req resource.Updat
 	}
 	res, err := r.client.UpdateXPlanValidators(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -423,6 +429,8 @@ func (r *XPlanValidatorsResource) Delete(ctx context.Context, req resource.Delet
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyPlanValidatorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -431,7 +439,7 @@ func (r *XPlanValidatorsResource) Delete(ctx context.Context, req resource.Delet
 	}
 	res, err := r.client.DeleteXSpeakeasyPlanValidators(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

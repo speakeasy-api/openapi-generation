@@ -1534,6 +1534,8 @@ func (r *OASOneOfResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASOneOfRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1542,7 +1544,7 @@ func (r *OASOneOfResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	res, err := r.client.CreateOasOneof(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1597,6 +1599,8 @@ func (r *OASOneOfResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasOneofRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1605,7 +1609,7 @@ func (r *OASOneOfResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	res, err := r.client.GetOasOneof(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1654,6 +1658,8 @@ func (r *OASOneOfResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasOneofRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1662,7 +1668,7 @@ func (r *OASOneOfResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 	res, err := r.client.UpdateOasOneof(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -1720,6 +1726,8 @@ func (r *OASOneOfResource) Delete(ctx context.Context, req resource.DeleteReques
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasOneofRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1728,7 +1736,7 @@ func (r *OASOneOfResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	res, err := r.client.DeleteOasOneof(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -99,6 +99,8 @@ func (r *OASServersOperationResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASServersOperationRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -118,7 +120,7 @@ func (r *OASServersOperationResource) Create(ctx context.Context, req resource.C
 
 	res, err := r.client.CreateOasServersOperation(ctx, *request, createOasServersOperationOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -173,6 +175,8 @@ func (r *OASServersOperationResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasServersOperationRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -192,7 +196,7 @@ func (r *OASServersOperationResource) Read(ctx context.Context, req resource.Rea
 
 	res, err := r.client.GetOasServersOperation(ctx, *request, getOasServersOperationOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -241,6 +245,8 @@ func (r *OASServersOperationResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasServersOperationRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -260,7 +266,7 @@ func (r *OASServersOperationResource) Update(ctx context.Context, req resource.U
 
 	res, err := r.client.UpdateOasServersOperation(ctx, *request, updateOasServersOperationOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -318,6 +324,8 @@ func (r *OASServersOperationResource) Delete(ctx context.Context, req resource.D
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasServersOperationRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -337,7 +345,7 @@ func (r *OASServersOperationResource) Delete(ctx context.Context, req resource.D
 
 	res, err := r.client.DeleteOasServersOperation(ctx, *request, deleteOasServersOperationOptions...)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

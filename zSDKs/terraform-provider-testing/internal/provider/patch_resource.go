@@ -1917,6 +1917,8 @@ func (r *PatchResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedFrameworkTypeRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1925,7 +1927,7 @@ func (r *PatchResource) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 	res, err := r.client.PatchCreateUpdate(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -2018,6 +2020,8 @@ func (r *PatchResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToSharedFrameworkTypeRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -2026,7 +2030,7 @@ func (r *PatchResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 	res, err := r.client.PatchCreateUpdate(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -104,6 +104,8 @@ func (r *XTerraformIgnoreDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config)
+
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -112,7 +114,7 @@ func (r *XTerraformIgnoreDataSource) Read(ctx context.Context, req datasource.Re
 	}
 	res, err := r.client.GetXSpeakeasyTerraformIgnore(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

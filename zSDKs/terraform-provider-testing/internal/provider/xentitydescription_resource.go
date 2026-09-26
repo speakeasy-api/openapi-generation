@@ -88,6 +88,8 @@ func (r *XEntityDescriptionResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXEntityDescriptionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -96,7 +98,7 @@ func (r *XEntityDescriptionResource) Create(ctx context.Context, req resource.Cr
 	}
 	res, err := r.client.CreateXEntityDescription(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -151,6 +153,8 @@ func (r *XEntityDescriptionResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXEntityDescriptionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -159,7 +163,7 @@ func (r *XEntityDescriptionResource) Read(ctx context.Context, req resource.Read
 	}
 	res, err := r.client.GetXEntityDescription(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -237,6 +241,8 @@ func (r *XEntityDescriptionResource) Delete(ctx context.Context, req resource.De
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXEntityDescriptionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -245,7 +251,7 @@ func (r *XEntityDescriptionResource) Delete(ctx context.Context, req resource.De
 	}
 	res, err := r.client.DeleteXEntityDescription(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

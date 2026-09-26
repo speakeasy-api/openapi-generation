@@ -438,6 +438,8 @@ func (r *XGlobalsResource) Create(ctx context.Context, req resource.CreateReques
 		data.GlobalStringWithDefault = r.GlobalStringWithDefault
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToOperationsCreateXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -446,7 +448,7 @@ func (r *XGlobalsResource) Create(ctx context.Context, req resource.CreateReques
 	}
 	res, err := r.client.CreateXGlobals(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -501,6 +503,8 @@ func (r *XGlobalsResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -509,7 +513,7 @@ func (r *XGlobalsResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	res, err := r.client.GetXGlobals(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -650,6 +654,8 @@ func (r *XGlobalsResource) Update(ctx context.Context, req resource.UpdateReques
 		data.GlobalStringWithDefault = r.GlobalStringWithDefault
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -658,7 +664,7 @@ func (r *XGlobalsResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 	res, err := r.client.UpdateXGlobals(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -808,6 +814,8 @@ func (r *XGlobalsResource) Delete(ctx context.Context, req resource.DeleteReques
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -816,7 +824,7 @@ func (r *XGlobalsResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	res, err := r.client.DeleteXGlobals(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -116,6 +116,8 @@ func (r *XTerraformWriteOnlyResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXTerraformWriteOnlyRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -124,7 +126,7 @@ func (r *XTerraformWriteOnlyResource) Create(ctx context.Context, req resource.C
 	}
 	res, err := r.client.CreateXTerraformWriteOnly(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -176,6 +178,8 @@ func (r *XTerraformWriteOnlyResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXTerraformWriteOnlyRequest(ctx, nil)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -184,7 +188,7 @@ func (r *XTerraformWriteOnlyResource) Read(ctx context.Context, req resource.Rea
 	}
 	res, err := r.client.GetXTerraformWriteOnly(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -251,6 +255,8 @@ func (r *XTerraformWriteOnlyResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXTerraformWriteOnlyRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -259,7 +265,7 @@ func (r *XTerraformWriteOnlyResource) Update(ctx context.Context, req resource.U
 	}
 	res, err := r.client.UpdateXTerraformWriteOnly(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -311,6 +317,8 @@ func (r *XTerraformWriteOnlyResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXTerraformWriteOnlyRequest(ctx, nil)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -319,7 +327,7 @@ func (r *XTerraformWriteOnlyResource) Delete(ctx context.Context, req resource.D
 	}
 	res, err := r.client.DeleteXTerraformWriteOnly(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

@@ -166,6 +166,8 @@ func (r *OASPatternResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -174,7 +176,7 @@ func (r *OASPatternResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 	res, err := r.client.CreateOasPattern(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -229,6 +231,8 @@ func (r *OASPatternResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -237,7 +241,7 @@ func (r *OASPatternResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	res, err := r.client.GetOasPattern(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -286,6 +290,8 @@ func (r *OASPatternResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -294,7 +300,7 @@ func (r *OASPatternResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 	res, err := r.client.UpdateOasPattern(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -352,6 +358,8 @@ func (r *OASPatternResource) Delete(ctx context.Context, req resource.DeleteRequ
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -360,7 +368,7 @@ func (r *OASPatternResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 	res, err := r.client.DeleteOasPattern(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

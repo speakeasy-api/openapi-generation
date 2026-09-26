@@ -187,6 +187,8 @@ func (r *OASUniqueitemsResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASUniqueitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -195,7 +197,7 @@ func (r *OASUniqueitemsResource) Create(ctx context.Context, req resource.Create
 	}
 	res, err := r.client.CreateOasUniqueitems(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -250,6 +252,8 @@ func (r *OASUniqueitemsResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasUniqueitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -258,7 +262,7 @@ func (r *OASUniqueitemsResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 	res, err := r.client.GetOasUniqueitems(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -307,6 +311,8 @@ func (r *OASUniqueitemsResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasUniqueitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -315,7 +321,7 @@ func (r *OASUniqueitemsResource) Update(ctx context.Context, req resource.Update
 	}
 	res, err := r.client.UpdateOasUniqueitems(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -373,6 +379,8 @@ func (r *OASUniqueitemsResource) Delete(ctx context.Context, req resource.Delete
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasUniqueitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -381,7 +389,7 @@ func (r *OASUniqueitemsResource) Delete(ctx context.Context, req resource.Delete
 	}
 	res, err := r.client.DeleteOasUniqueitems(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

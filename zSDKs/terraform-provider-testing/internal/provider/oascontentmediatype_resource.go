@@ -97,6 +97,8 @@ func (r *OASContentMediaTypeResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedOASContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -105,7 +107,7 @@ func (r *OASContentMediaTypeResource) Create(ctx context.Context, req resource.C
 	}
 	res, err := r.client.CreateOasContentMediaType(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -157,6 +159,8 @@ func (r *OASContentMediaTypeResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -165,7 +169,7 @@ func (r *OASContentMediaTypeResource) Read(ctx context.Context, req resource.Rea
 	}
 	res, err := r.client.GetOasContentMediaType(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -211,6 +215,8 @@ func (r *OASContentMediaTypeResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -219,7 +225,7 @@ func (r *OASContentMediaTypeResource) Update(ctx context.Context, req resource.U
 	}
 	res, err := r.client.UpdateOasContentMediaType(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -271,6 +277,8 @@ func (r *OASContentMediaTypeResource) Delete(ctx context.Context, req resource.D
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -279,7 +287,7 @@ func (r *OASContentMediaTypeResource) Delete(ctx context.Context, req resource.D
 	}
 	res, err := r.client.DeleteOasContentMediaType(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

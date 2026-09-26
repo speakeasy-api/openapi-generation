@@ -95,6 +95,8 @@ func (r *XClientFilterResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToSharedXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -103,7 +105,7 @@ func (r *XClientFilterResource) Create(ctx context.Context, req resource.CreateR
 	}
 	res, err := r.client.CreateXClientFilter(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -155,6 +157,8 @@ func (r *XClientFilterResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -163,7 +167,7 @@ func (r *XClientFilterResource) Read(ctx context.Context, req resource.ReadReque
 	}
 	res, err := r.client.GetXClientFilter(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -209,6 +213,8 @@ func (r *XClientFilterResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -217,7 +223,7 @@ func (r *XClientFilterResource) Update(ctx context.Context, req resource.UpdateR
 	}
 	res, err := r.client.UpdateXClientFilter(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -269,6 +275,8 @@ func (r *XClientFilterResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -277,7 +285,7 @@ func (r *XClientFilterResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 	res, err := r.client.DeleteXClientFilter(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}

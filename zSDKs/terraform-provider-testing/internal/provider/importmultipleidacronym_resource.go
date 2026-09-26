@@ -99,6 +99,8 @@ func (r *ImportMultipleIDAcronymResource) Create(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
+
 	request, requestDiags := data.ToOperationsCreateImportMultipleIDAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -107,7 +109,7 @@ func (r *ImportMultipleIDAcronymResource) Create(ctx context.Context, req resour
 	}
 	res, err := r.client.CreateImportMultipleIDAcronym(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -162,6 +164,8 @@ func (r *ImportMultipleIDAcronymResource) Read(ctx context.Context, req resource
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsGetImportMultipleIDAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -170,7 +174,7 @@ func (r *ImportMultipleIDAcronymResource) Read(ctx context.Context, req resource
 	}
 	res, err := r.client.GetImportMultipleIDAcronym(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -219,6 +223,8 @@ func (r *ImportMultipleIDAcronymResource) Update(ctx context.Context, req resour
 		return
 	}
 
+	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
+
 	request, requestDiags := data.ToOperationsUpdateImportMultipleIDAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -227,7 +233,7 @@ func (r *ImportMultipleIDAcronymResource) Update(ctx context.Context, req resour
 	}
 	res, err := r.client.UpdateImportMultipleIDAcronym(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
@@ -285,6 +291,8 @@ func (r *ImportMultipleIDAcronymResource) Delete(ctx context.Context, req resour
 	// #region pre-delete
 	// #endregion pre-delete
 
+	ctx = withSensitiveValues(ctx, req.State)
+
 	request, requestDiags := data.ToOperationsDeleteImportMultipleIDAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -293,7 +301,7 @@ func (r *ImportMultipleIDAcronymResource) Delete(ctx context.Context, req resour
 	}
 	res, err := r.client.DeleteImportMultipleIDAcronym(ctx, *request)
 	if err != nil {
-		resp.Diagnostics.AddError("failure to invoke API", err.Error())
+		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
 		if res != nil && res.RawResponse != nil {
 			resp.Diagnostics.AddError("unexpected http request/response", debugResponse(res.RawResponse))
 		}
