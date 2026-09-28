@@ -135,9 +135,6 @@ func TestUsageSchema_Root(t *testing.T) {
 	assert.Empty(t, stderr)
 }
 
-// Every indented Example line is an invocation of the command that owns it,
-// so a command under a nested or de-stuttered group cannot advertise a
-// sibling command's path.
 func TestUsageExamplesStartWithCommandPath(t *testing.T) {
 	root, err := cli.NewRootCommand()
 	require.NoError(t, err)
