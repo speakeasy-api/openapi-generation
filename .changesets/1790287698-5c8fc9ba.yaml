@@ -5,6 +5,6 @@ targets:
     - ruby
 type: fix
 bump: patch
-description: emit a gem-name entry file when packageName differs from the snake_case module file so Bundler.require and tapioca load the SDK
+description: emit a gem-name entry file when packageName differs from the snake_case module file so Bundler.require and tapioca load the SDK; a name that differs only by case gets no entry file, so keep packageName lowercase for Bundler autoloading on case-sensitive filesystems
 author: AshGodfrey
 date: "2026-09-24"
