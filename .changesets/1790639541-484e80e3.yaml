@@ -1,0 +1,10 @@
+id: 1790639541-484e80e3
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: report install.ps1 failures with throw instead of exit so a failed install piped into Invoke-Expression no longer closes the calling PowerShell session
+author: 2ynn
+date: "2026-09-28"
