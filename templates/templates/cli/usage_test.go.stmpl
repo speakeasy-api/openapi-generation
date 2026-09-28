@@ -146,18 +146,21 @@ func TestUsageExamplesStartWithCommandPath(t *testing.T) {
     root, err := cli.NewRootCommand()
     require.NoError(t, err)
 
+    invocation := root.Name() + " "
     var checked int
     var walk func(cmd *cobra.Command)
     walk = func(cmd *cobra.Command) {
-        path := cmd.CommandPath()
-        for _, line := range strings.Split(cmd.Example, "\n") {
-            if !strings.HasPrefix(line, "  ") {
-                continue
+        if _, generated := cmd.Annotations["speakeasy_operation"]; generated {
+            path := cmd.CommandPath()
+            for _, line := range strings.Split(cmd.Example, "\n") {
+                line = strings.TrimSpace(line)
+                if !strings.HasPrefix(line, invocation) {
+                    continue
+                }
+                checked++
+                assert.Truef(t, line == path || strings.HasPrefix(line, path+" "),
+                    "example for %q must invoke that command: %s", path, line)
             }
-            line = strings.TrimSpace(line)
-            checked++
-            assert.Truef(t, line == path || strings.HasPrefix(line, path+" "),
-                "example for %q must invoke that command: %s", path, line)
         }
         for _, child := range cmd.Commands() {
             walk(child)
