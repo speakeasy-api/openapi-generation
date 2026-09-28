@@ -103,6 +103,8 @@ jobs:
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 
+project_name: petstore
+
 before:
   hooks:
     - go mod tidy
@@ -1108,6 +1110,8 @@ jobs:
 --- .goreleaser.yaml ---
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
+
+project_name: petstore
 
 before:
   hooks:
@@ -2157,6 +2161,8 @@ jobs:
 --- .goreleaser.yaml ---
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
+
+project_name: petstore
 
 before:
   hooks:
@@ -3296,6 +3302,39 @@ func TestSnapCLIReleaseWithoutGitHubRepoOmitsReleaseGitHub(t *testing.T) {
 	require.NotContains(t, workflow, "GPG_FINGERPRINT")
 	require.Contains(t, install, "${PETSTORE_INSTALL_DIR}")
 	require.Contains(t, install, "${PETSTORE_VERSION:-latest}")
+}
+
+func TestSnapCLIReleaseArchiveNameMatchesInstallScripts(t *testing.T) {
+	t.Parallel()
+
+	for _, packageName := range []string{
+		"github.com/example/petstore-cli",
+		"gitlab.com/example/petstore-cli",
+	} {
+		t.Run(packageName, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := generateCLIReleaseTestProject(t, `cli:
+  packageName: `+packageName+`
+  cliName: petstore
+  envVarPrefix: PETSTORE
+  generateRelease: true
+`)
+
+			goreleaserBytes, err := os.ReadFile(filepath.Join(tempDir, ".goreleaser.yaml"))
+			require.NoError(t, err)
+			installShBytes, err := os.ReadFile(filepath.Join(tempDir, "scripts", "install.sh"))
+			require.NoError(t, err)
+			installPs1Bytes, err := os.ReadFile(filepath.Join(tempDir, "scripts", "install.ps1"))
+			require.NoError(t, err)
+
+			require.Contains(t, string(goreleaserBytes), "\nproject_name: petstore\n")
+			require.Contains(t, string(goreleaserBytes), "{{ .ProjectName }}_")
+			require.Contains(t, string(installShBytes), `BINARY_NAME="petstore"`)
+			require.Contains(t, string(installShBytes), `archive_name="${BINARY_NAME}_${os}_${arch}.tar.gz"`)
+			require.Contains(t, string(installPs1Bytes), `$archiveName = "petstore_Windows_$arch.zip"`)
+		})
+	}
 }
 
 func TestSnapCLIReleaseDisabled(t *testing.T) {

@@ -1,0 +1,10 @@
+id: 1790614352-0853812a
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: set goreleaser project_name to cliName so release archive names match the install scripts
+author: 2ynn
+date: "2026-09-28"

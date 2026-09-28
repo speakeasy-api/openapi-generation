@@ -329,6 +329,8 @@ function writeGoreleaserConfig() {
   const config = `# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 version: 2
 
+project_name: ${cliName}
+
 before:
   hooks:
     - go mod tidy

@@ -1518,7 +1518,7 @@ cli:
 
 Release helpers in `includes/release.ts` drive channel-specific output:
 
-- `.goreleaser.yaml`: optional `brews:`, `winget:`, `nfpms:` sections
+- `.goreleaser.yaml`: `project_name` set to `cliName` so archive names (`<cliName>_<Os>_<Arch>`) match what `scripts/install.sh` / `install.ps1` download, regardless of the GitHub repo name; optional `brews:`, `winget:`, `nfpms:` sections
 - release workflow env: conditional channel tokens
   - `HOMEBREW_TAP_GITHUB_TOKEN`
   - `WINGET_GITHUB_TOKEN`
