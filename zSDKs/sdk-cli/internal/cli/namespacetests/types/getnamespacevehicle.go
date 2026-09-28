@@ -17,7 +17,7 @@ func initGetNamespaceVehicleCmd(parent *cobra.Command) error {
 		Use:     "get-namespace-vehicle",
 		Short:   "Get Namespace Vehicle (Non-Discriminated Union)",
 		Long:    "This endpoint tests a non-discriminated union type in a custom namespace.\nThe response can be either a bar.Car or bar.Bike.",
-		Example: "  cli types get-namespace-vehicle",
+		Example: "  cli namespace-tests types get-namespace-vehicle",
 		Args:    cobra.NoArgs,
 		RunE:    runGetNamespaceVehicleCmd,
 		Aliases: []string{"gnv"},

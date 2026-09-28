@@ -17,7 +17,7 @@ func initGetSingleNamespaceFooPetCmd(parent *cobra.Command) error {
 		Use:     "get-single-namespace-foo-pet",
 		Short:   "Get Single Namespace Foo Pet",
 		Long:    "This endpoint tests using a single component from the foo namespace.\nNo import aliasing should be needed since there's no conflict within this group.",
-		Example: "  cli single-foo get-single-namespace-foo-pet",
+		Example: "  cli namespace-tests single-foo get-single-namespace-foo-pet",
 		Args:    cobra.NoArgs,
 		RunE:    runGetSingleNamespaceFooPetCmd,
 		Aliases: []string{"gsnfp"},

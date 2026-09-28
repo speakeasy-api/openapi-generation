@@ -17,7 +17,7 @@ func initGetNamespaceConflictCmd(parent *cobra.Command) error {
 		Use:     "get-namespace",
 		Short:   "Get Namespace Conflict Test",
 		Long:    "This endpoint tests the x-speakeasy-model-namespace extension by returning\na model that references two different Pet types from different namespaces.\nThe SDK should properly import and alias both Pet types.",
-		Example: "  cli conflicts get-namespace",
+		Example: "  cli namespace-tests conflicts get-namespace",
 		Args:    cobra.NoArgs,
 		RunE:    runGetNamespaceConflictCmd,
 		Aliases: []string{"gn"},

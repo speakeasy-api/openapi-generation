@@ -14,7 +14,7 @@ cli namespace-tests types get-namespace-animal [flags]
 ### Examples
 
 ```
-  cli types get-namespace-animal
+  cli namespace-tests types get-namespace-animal
 ```
 
 ### Options

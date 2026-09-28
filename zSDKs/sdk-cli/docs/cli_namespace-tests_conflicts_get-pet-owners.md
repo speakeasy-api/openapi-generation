@@ -14,7 +14,7 @@ cli namespace-tests conflicts get-pet-owners [flags]
 ### Examples
 
 ```
-  cli conflicts get-pet-owners
+  cli namespace-tests conflicts get-pet-owners
 ```
 
 ### Options

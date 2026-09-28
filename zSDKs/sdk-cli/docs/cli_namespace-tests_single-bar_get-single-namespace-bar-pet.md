@@ -14,7 +14,7 @@ cli namespace-tests single-bar get-single-namespace-bar-pet [flags]
 ### Examples
 
 ```
-  cli single-bar get-single-namespace-bar-pet
+  cli namespace-tests single-bar get-single-namespace-bar-pet
 ```
 
 ### Options

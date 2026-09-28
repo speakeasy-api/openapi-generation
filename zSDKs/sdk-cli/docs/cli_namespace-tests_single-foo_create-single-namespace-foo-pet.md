@@ -14,7 +14,7 @@ cli namespace-tests single-foo create-single-namespace-foo-pet [flags]
 ### Examples
 
 ```
-  cli single-foo create-single-namespace-foo-pet --id pet-foo-123 --name Fluffy --species cat
+  cli namespace-tests single-foo create-single-namespace-foo-pet --id pet-foo-123 --name Fluffy --species cat
 ```
 
 ### Options

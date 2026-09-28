@@ -17,7 +17,7 @@ func initNestedGroupOpCmd(parent *cobra.Command) error {
 		Use:     "nested-group-op",
 		Short:   "An operation at the group's deepest level",
 		Long:    "Notice that 'group.flattened' has no operations.",
-		Example: "  cli tail nested-group-op",
+		Example: "  cli group sub empty tail nested-group-op",
 		Args:    cobra.NoArgs,
 		RunE:    runNestedGroupOpCmd,
 		Aliases: []string{"ngo"},

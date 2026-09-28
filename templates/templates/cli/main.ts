@@ -383,7 +383,14 @@ function getCommandJobs(sdk: SDK): Job[] {
   const rootAliases = computeCommandAliases(rootSiblingNames);
 
   jobs.push(
-    ...getOperationCommandJobs(sdk, "cli", "internal/cli/", "", rootAliases),
+    ...getOperationCommandJobs(
+      sdk,
+      "cli",
+      "internal/cli/",
+      "",
+      "",
+      rootAliases,
+    ),
   );
 
   for (const subSDK of sdk.SubSDKs) {
@@ -393,6 +400,7 @@ function getCommandJobs(sdk: SDK): Job[] {
         `internal/cli/${sanitizeCLIPkgName(subSDK.Type.Name)}`,
         "",
         "", // no parent group for top-level sub-groups
+        [],
         rootAliases,
       ),
     );
@@ -406,6 +414,7 @@ function getSubCommandJobs(
   loc: string,
   parentAccessor: string,
   parentGroupName: string,
+  parentCommandPath: string[],
   parentAliases: Map<string, string[]>,
 ): Job[] {
   const jobs: Job[] = [];
@@ -423,6 +432,7 @@ function getSubCommandJobs(
   // Look up aliases for this group command from the parent level
   const groupCmdName = getDeStutteredCommandName(parentGroupName, sdkGroupName);
   const groupAliases = parentAliases.get(groupCmdName) || [];
+  const commandPath = [...parentCommandPath, groupCmdName];
 
   // Compute aliases for children of this group (operations + nested sub-groups)
   const childNames: string[] = [];
@@ -462,6 +472,7 @@ function getSubCommandJobs(
       `${sanitizeCLIPkgName(subSDK.Type.Name)}`,
       loc,
       currentAccessor,
+      commandPath.join(" "),
       childAliases,
     ),
   );
@@ -474,6 +485,7 @@ function getSubCommandJobs(
         `${loc}/${sanitizeCLIPkgName(sdk.Type.Name)}`,
         currentAccessor,
         sdkGroupName, // pass current group as parent for children
+        commandPath,
         childAliases,
       ),
     );
@@ -487,6 +499,7 @@ function getOperationCommandJobs(
   pkgName: string,
   loc: string,
   subSDKAccessor: string,
+  groupCommandPath: string,
   aliases: Map<string, string[]>,
 ): Job[] {
   const jobs: Job[] = [];
@@ -520,7 +533,7 @@ function getOperationCommandJobs(
           Op: operation,
           Package: pkgName,
           SubSDKAccessor: subSDKAccessor,
-          GroupCommandName: groupCommandName,
+          GroupCommandPath: groupCommandPath,
           OpCommandName: opCommandName,
           PromotedToParent: promotedToParent,
           Aliases: opAliases,

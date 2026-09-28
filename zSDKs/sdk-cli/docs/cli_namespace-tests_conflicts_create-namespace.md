@@ -14,7 +14,7 @@ cli namespace-tests conflicts create-namespace [flags]
 ### Examples
 
 ```
-  cli conflicts create-namespace --id pet-foo-123 --name Fluffy --species cat
+  cli namespace-tests conflicts create-namespace --id pet-foo-123 --name Fluffy --species cat
 ```
 
 ### Options

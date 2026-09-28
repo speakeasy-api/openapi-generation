@@ -13,7 +13,7 @@ cli group sub empty tail nested-group-op [flags]
 ### Examples
 
 ```
-  cli tail nested-group-op
+  cli group sub empty tail nested-group-op
 ```
 
 ### Options

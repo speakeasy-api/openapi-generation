@@ -15,7 +15,7 @@ cli namespace-tests types get-namespace-organization [flags]
 ### Examples
 
 ```
-  cli types get-namespace-organization
+  cli namespace-tests types get-namespace-organization
 ```
 
 ### Options

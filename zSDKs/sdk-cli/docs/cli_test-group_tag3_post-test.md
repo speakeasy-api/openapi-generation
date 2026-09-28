@@ -16,7 +16,7 @@ cli test-group tag3 post-test [flags]
 ### Examples
 
 ```
-  cli tag3 post-test --obj '{"str":"example","bool":true,"int":999999,"int32":1,"num":1.1,"float32":2940.96,"enumProp":"First","date":"2020-01-01","dateTime":"2020-01-01T00:00:00Z","anything":"<value>","boolOpt":true,"intOptNull":999999,"numOptNull":1.1,"intEnum":3,"int32Enum":69,"bigint":702830,"bigintStr":"12345678901234567890","decimal":3.141592653589,"decimalStr":"3858.6","obj":{"str":"example"},"map":{"key":{"str":"example"}},"arr":[{"str":"example"}],"any":"<value>","type":"0","nullableIntEnum":3,"nullableStringEnum":"Second","color":"green","icon":"tick","heroWidth":480}'
+  cli test-group tag3 post-test --obj '{"str":"example","bool":true,"int":999999,"int32":1,"num":1.1,"float32":2940.96,"enumProp":"First","date":"2020-01-01","dateTime":"2020-01-01T00:00:00Z","anything":"<value>","boolOpt":true,"intOptNull":999999,"numOptNull":1.1,"intEnum":3,"int32Enum":69,"bigint":702830,"bigintStr":"12345678901234567890","decimal":3.141592653589,"decimalStr":"3858.6","obj":{"str":"example"},"map":{"key":{"str":"example"}},"arr":[{"str":"example"}],"any":"<value>","type":"0","nullableIntEnum":3,"nullableStringEnum":"Second","color":"green","icon":"tick","heroWidth":480}'
 ```
 
 ### Options

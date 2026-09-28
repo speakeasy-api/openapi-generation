@@ -14,7 +14,7 @@ cli namespace-tests conflicts put-namespace [flags]
 ### Examples
 
 ```
-  cli conflicts put-namespace
+  cli namespace-tests conflicts put-namespace
 ```
 
 ### Options

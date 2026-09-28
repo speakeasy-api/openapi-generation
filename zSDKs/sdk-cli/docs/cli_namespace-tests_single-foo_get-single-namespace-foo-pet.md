@@ -14,7 +14,7 @@ cli namespace-tests single-foo get-single-namespace-foo-pet [flags]
 ### Examples
 
 ```
-  cli single-foo get-single-namespace-foo-pet
+  cli namespace-tests single-foo get-single-namespace-foo-pet
 ```
 
 ### Options

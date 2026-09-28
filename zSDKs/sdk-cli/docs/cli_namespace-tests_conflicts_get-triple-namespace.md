@@ -15,7 +15,7 @@ cli namespace-tests conflicts get-triple-namespace [flags]
 ### Examples
 
 ```
-  cli conflicts get-triple-namespace
+  cli namespace-tests conflicts get-triple-namespace
 ```
 
 ### Options

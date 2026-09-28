@@ -31,7 +31,7 @@ func initCreateNamespaceConflictCmd(parent *cobra.Command) error {
 		Use:     "create-namespace",
 		Short:   "Create Namespace Conflict Test",
 		Long:    "This endpoint tests creating with models from different namespaces.\nUses foo.Pet in the request and bar.Pet in the response.",
-		Example: "  cli conflicts create-namespace --id pet-foo-123 --name Fluffy --species cat",
+		Example: "  cli namespace-tests conflicts create-namespace --id pet-foo-123 --name Fluffy --species cat",
 		Args:    cobra.NoArgs,
 		RunE:    runCreateNamespaceConflictCmd,
 		Aliases: []string{"cn"},

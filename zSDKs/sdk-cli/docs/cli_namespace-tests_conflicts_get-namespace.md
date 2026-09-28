@@ -15,7 +15,7 @@ cli namespace-tests conflicts get-namespace [flags]
 ### Examples
 
 ```
-  cli conflicts get-namespace
+  cli namespace-tests conflicts get-namespace
 ```
 
 ### Options

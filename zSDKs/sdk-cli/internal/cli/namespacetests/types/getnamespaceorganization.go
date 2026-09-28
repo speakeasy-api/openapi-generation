@@ -17,7 +17,7 @@ func initGetNamespaceOrganizationCmd(parent *cobra.Command) error {
 		Use:     "get-namespace-organization",
 		Short:   "Get Namespace Organization (Nested Inline Schemas)",
 		Long:    "This endpoint tests nested inline object schemas in a custom namespace.\nThe organization model contains nested address and department types that\nshould inherit the foo namespace.",
-		Example: "  cli types get-namespace-organization",
+		Example: "  cli namespace-tests types get-namespace-organization",
 		Args:    cobra.NoArgs,
 		RunE:    runGetNamespaceOrganizationCmd,
 		Aliases: []string{"gno"},

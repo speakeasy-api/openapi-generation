@@ -14,7 +14,7 @@ cli namespace-tests types get-namespace-vehicle [flags]
 ### Examples
 
 ```
-  cli types get-namespace-vehicle
+  cli namespace-tests types get-namespace-vehicle
 ```
 
 ### Options

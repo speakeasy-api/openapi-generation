@@ -1,0 +1,10 @@
+id: 1790618423-43b535fe
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: build command examples from the full rendered command path so nested and de-stuttered groups show the command that actually runs
+author: AshGodfrey
+date: "2026-09-28"

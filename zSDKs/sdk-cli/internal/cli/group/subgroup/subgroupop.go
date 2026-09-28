@@ -17,7 +17,7 @@ func initSubGroupOpCmd(parent *cobra.Command) error {
 		Use:     "op",
 		Short:   "An operation at the group's top level",
 		Long:    "An operation at the group's top level",
-		Example: "  cli sub-group op",
+		Example: "  cli group sub op",
 		Args:    cobra.NoArgs,
 		RunE:    runSubGroupOpCmd,
 		Annotations: map[string]string{

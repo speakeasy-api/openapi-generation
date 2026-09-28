@@ -27,7 +27,7 @@ func initPutNamespaceConflictCmd(parent *cobra.Command) error {
 		Use:     "put-namespace",
 		Short:   "Put Property Name Conflicts Behind",
 		Long:    "This endpoint tests property name conflict resolution through\nx-speakeasy-name-override and x-speakeasy-model-namespace extensions.",
-		Example: "  cli conflicts put-namespace",
+		Example: "  cli namespace-tests conflicts put-namespace",
 		Args:    cobra.NoArgs,
 		RunE:    runPutNamespaceConflictCmd,
 		Aliases: []string{"pn"},

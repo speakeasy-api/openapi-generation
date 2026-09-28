@@ -17,7 +17,7 @@ func initGetNamespaceTypesCmd(parent *cobra.Command) error {
 		Use:     "get-namespace",
 		Short:   "Get Namespace Types Test",
 		Long:    "This endpoint tests x-speakeasy-model-namespace with enums, discriminated unions,\nnon-discriminated unions, and models with nested inline schemas.",
-		Example: "  cli types get-namespace",
+		Example: "  cli namespace-tests types get-namespace",
 		Args:    cobra.NoArgs,
 		RunE:    runGetNamespaceTypesCmd,
 		Aliases: []string{"gn"},

@@ -31,7 +31,7 @@ func initCreateSingleNamespaceFooPetCmd(parent *cobra.Command) error {
 		Use:     "create-single-namespace-foo-pet",
 		Short:   "Create Single Namespace Foo Pet",
 		Long:    "This endpoint tests creating a component in the foo namespace.\nNo import aliasing should be needed since there's no conflict within this group.",
-		Example: "  cli single-foo create-single-namespace-foo-pet --id pet-foo-123 --name Fluffy --species cat",
+		Example: "  cli namespace-tests single-foo create-single-namespace-foo-pet --id pet-foo-123 --name Fluffy --species cat",
 		Args:    cobra.NoArgs,
 		RunE:    runCreateSingleNamespaceFooPetCmd,
 		Aliases: []string{"csnfp"},

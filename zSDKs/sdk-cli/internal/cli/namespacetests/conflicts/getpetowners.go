@@ -17,7 +17,7 @@ func initGetPetOwnersCmd(parent *cobra.Command) error {
 		Use:     "get-pet-owners",
 		Short:   "Get Pet Owners",
 		Long:    "This endpoint tests using PetOwner models from different namespaces.\nReturns both foo.PetOwner and bar.PetOwner in the response.",
-		Example: "  cli conflicts get-pet-owners",
+		Example: "  cli namespace-tests conflicts get-pet-owners",
 		Args:    cobra.NoArgs,
 		RunE:    runGetPetOwnersCmd,
 		Aliases: []string{"gpo"},

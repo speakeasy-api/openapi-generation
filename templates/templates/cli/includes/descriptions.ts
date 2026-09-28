@@ -254,7 +254,7 @@ function exampleFlagPart(flagName: string, val: string | string[]): string {
  */
 function templateCmdExample(op: Operation): string {
   const cliName = sanitizeCliName();
-  const groupName = context.Local?.GroupCommandName || "";
+  const groupPath = context.Local?.GroupCommandPath || "";
   const promoted = context.Local?.PromotedToParent === true;
   // Use OpCommandName if available (may be de-stuttered), else compute from operation ID
   const cmdName =
@@ -275,10 +275,10 @@ function templateCmdExample(op: Operation): string {
   let fullCmd: string;
   if (promoted) {
     // Promoted operation: invoked as just "<cli> <group>"
-    fullCmd = groupName ? `${cliName} ${groupName}` : `${cliName} ${cmdName}`;
+    fullCmd = groupPath ? `${cliName} ${groupPath}` : `${cliName} ${cmdName}`;
   } else {
-    fullCmd = groupName
-      ? `${cliName} ${groupName} ${cmdName}`
+    fullCmd = groupPath
+      ? `${cliName} ${groupPath} ${cmdName}`
       : `${cliName} ${cmdName}`;
   }
 

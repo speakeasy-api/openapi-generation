@@ -17,7 +17,7 @@ func initGetNamespaceAnimalCmd(parent *cobra.Command) error {
 		Use:     "get-namespace-animal",
 		Short:   "Get Namespace Animal (Discriminated Union)",
 		Long:    "This endpoint tests a discriminated union type in a custom namespace.\nThe response can be either a foo.Dog or foo.Cat.",
-		Example: "  cli types get-namespace-animal",
+		Example: "  cli namespace-tests types get-namespace-animal",
 		Args:    cobra.NoArgs,
 		RunE:    runGetNamespaceAnimalCmd,
 		Aliases: []string{"gna"},

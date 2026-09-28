@@ -13,7 +13,7 @@ cli group sub op [flags]
 ### Examples
 
 ```
-  cli sub-group op
+  cli group sub op
 ```
 
 ### Options
