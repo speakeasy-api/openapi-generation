@@ -483,11 +483,11 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
   * [`~~deprecated1~~`](docs/cli_obsolete_deprecated1.md) - Deprecated Operation :warning: **Deprecated**
 * [`group`](docs/cli_group.md) - Operations for group
   * [`root-group-op`](docs/cli_group_root-group-op.md) - An operation at the group's root level
-  * [`sub-group`](docs/cli_group_sub-group.md) - Operations for sub-group
-    * [`op`](docs/cli_group_sub-group_op.md) - An operation at the group's top level
-    * [`empty`](docs/cli_group_sub-group_empty.md) - Operations for empty
-      * [`tail`](docs/cli_group_sub-group_empty_tail.md) - Operations for tail
-        * [`nested-group-op`](docs/cli_group_sub-group_empty_tail_nested-group-op.md) - An operation at the group's deepest level
+  * [`sub`](docs/cli_group_sub.md) - Operations for sub-group
+    * [`op`](docs/cli_group_sub_op.md) - An operation at the group's top level
+    * [`empty`](docs/cli_group_sub_empty.md) - Operations for empty
+      * [`tail`](docs/cli_group_sub_empty_tail.md) - Operations for tail
+        * [`nested-group-op`](docs/cli_group_sub_empty_tail_nested-group-op.md) - An operation at the group's deepest level
 * [`namespace-tests`](docs/cli_namespace-tests.md) - Operations for namespace-tests
   * [`conflicts`](docs/cli_namespace-tests_conflicts.md) - Operations for conflicts
     * [`get-namespace`](docs/cli_namespace-tests_conflicts_get-namespace.md) - Get Namespace Conflict Test

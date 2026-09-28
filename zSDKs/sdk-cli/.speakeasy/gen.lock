@@ -1096,7 +1096,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:84c1fc0cb5ed0e92ba80dec8e4a585c2e21a75b0
+    last_write_checksum: sha1:fb9965490a3bb10327b1b5362f2aecfcc54fe67b
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

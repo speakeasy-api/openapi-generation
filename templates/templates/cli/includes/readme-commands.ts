@@ -200,10 +200,11 @@ function readmeGroupEntry(
   group: SDK,
   parentPath: string[],
   depth: number,
+  parentGroupName = "",
 ): string {
   const indent = "  ".repeat(depth);
   const sdkGroupName = getSDKGroupName(group);
-  const groupName = sanitizeCLICommand(sdkGroupName);
+  const groupName = getDeStutteredCommandName(parentGroupName, sdkGroupName);
   const path = [...parentPath, groupName];
 
   let promotedOp: Operation | null = null;
@@ -260,7 +261,7 @@ function readmeGroupEntry(
     out += readmeOpEntry(cat, op, path, depth + 1, sdkGroupName);
   }
   for (const sub of group.SubSDKs || []) {
-    out += readmeGroupEntry(cat, sub, path, depth + 1);
+    out += readmeGroupEntry(cat, sub, path, depth + 1, sdkGroupName);
   }
   return out;
 }

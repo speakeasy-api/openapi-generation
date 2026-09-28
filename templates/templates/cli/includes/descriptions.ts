@@ -253,12 +253,7 @@ function exampleFlagPart(flagName: string, val: string | string[]): string {
  * Uses the operation's required fields to build a realistic example.
  */
 function templateCmdExample(op: Operation): string {
-  const cliName = sanitizeCliName();
-  const groupPath = context.Local?.GroupCommandPath || "";
-  const promoted = context.Local?.PromotedToParent === true;
-  // Use OpCommandName if available (may be de-stuttered), else compute from operation ID
-  const cmdName =
-    context.Local?.OpCommandName || sanitizeCLICommand(op.GetID());
+  const fullCmd = [sanitizeCliName(), ...getCLICommandPath(op)].join(" ");
 
   const parts: {
     Value: string;
@@ -270,17 +265,6 @@ function templateCmdExample(op: Operation): string {
       SynthesizedPlaceholder: synthesizedPlaceholder,
     });
   };
-
-  // Build the base command string
-  let fullCmd: string;
-  if (promoted) {
-    // Promoted operation: invoked as just "<cli> <group>"
-    fullCmd = groupPath ? `${cliName} ${groupPath}` : `${cliName} ${cmdName}`;
-  } else {
-    fullCmd = groupPath
-      ? `${cliName} ${groupPath} ${cmdName}`
-      : `${cliName} ${cmdName}`;
-  }
 
   if (!op.Request) {
     return `"  ${escapeGoString(fullCmd)}"`;

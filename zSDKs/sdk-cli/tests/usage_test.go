@@ -3,6 +3,7 @@
 package tests
 
 import (
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -132,6 +133,34 @@ func TestUsageSchema_Root(t *testing.T) {
 	assert.Contains(t, stdout, "cmd \"version\"")
 	assertWellFormedKDLStrings(t, stdout)
 	assert.Empty(t, stderr)
+}
+
+// Every indented Example line is an invocation of the command that owns it,
+// so a command under a nested or de-stuttered group cannot advertise a
+// sibling command's path.
+func TestUsageExamplesStartWithCommandPath(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+
+	var checked int
+	var walk func(cmd *cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		path := cmd.CommandPath()
+		for _, line := range strings.Split(cmd.Example, "\n") {
+			if !strings.HasPrefix(line, "  ") {
+				continue
+			}
+			line = strings.TrimSpace(line)
+			checked++
+			assert.Truef(t, line == path || strings.HasPrefix(line, path+" "),
+				"example for %q must invoke that command: %s", path, line)
+		}
+		for _, child := range cmd.Commands() {
+			walk(child)
+		}
+	}
+	walk(root)
+	require.Greater(t, checked, 0)
 }
 
 func TestUsageSchema_Subtree(t *testing.T) {

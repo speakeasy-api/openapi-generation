@@ -2,14 +2,10 @@ package tests
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"{{getGolangPackage}}/internal/cli"
 )
 
 // CLI-owned enum flags (--output-format, --color) are validated before any
@@ -303,33 +299,6 @@ func TestGroupCommandNamesUseSourceSegments(t *testing.T) {
 	err := h.RunBare([]string{"nested", "SDK-first"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `unknown command "SDK-first" for "cli nested"`)
-}
-
-func TestExamplesStartWithFullCommandPath(t *testing.T) {
-	root, err := cli.NewRootCommand()
-	require.NoError(t, err)
-
-	var checked int
-	var walk func(cmd *cobra.Command)
-	walk = func(cmd *cobra.Command) {
-		for _, line := range strings.Split(cmd.Example, "\n") {
-			if !strings.HasPrefix(line, "  ") {
-				continue
-			}
-			line = strings.TrimSpace(line)
-			checked++
-			assert.Truef(t, strings.HasPrefix(line, cmd.CommandPath()),
-				"example for %q must start with its command path: %s", cmd.CommandPath(), line)
-		}
-		for _, child := range cmd.Commands() {
-			walk(child)
-		}
-	}
-	walk(root)
-	require.Greater(t, checked, 0)
-
-	assert.Equal(t, "  cli nested second get", renderedExample(t, "nested", "second", "get"))
-	assert.Equal(t, "  cli nest first get", renderedExample(t, "nest", "first", "get"))
 }
 
 func TestRootOperationExampleOmitsSDKClassName(t *testing.T) {
