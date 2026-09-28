@@ -87,7 +87,7 @@ func valueFitsFormat(typ, format, value string) bool {
 		switch format {
 		case "uuid":
 			_, err := uuid.Parse(value)
-			return err == nil
+			return err == nil && len(value) == 36
 		case "date":
 			_, err := time.Parse(time.DateOnly, value)
 			return err == nil
