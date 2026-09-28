@@ -42,7 +42,7 @@ jobs:
 
           approval_ids=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/reviews" --paginate \
             | jq -r --arg bot_login "$bot_login" \
-              '.[] | select(.user.login == $bot_login and .state == "APPROVED") | .id')
+              '.[] | select(.user.login == $bot_login and .state == "APPROVED" and (.body // "" | startswith("Auto-approved: review:bypass"))) | .id')
 
           if [[ "$has_label" == "true" && -z "$approval_ids" ]]; then
             labeled_by=$(gh api "repos/${REPO}/issues/${PR_NUMBER}/events" --paginate \
