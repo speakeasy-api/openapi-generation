@@ -1,0 +1,10 @@
+id: 1790603276-308f8fdb
+features:
+    - core
+targets:
+    - ruby
+type: fix
+bump: patch
+description: keep the packageName prompt description to one line so the quickstart input stays visible
+author: AshGodfrey
+date: "2026-09-28"

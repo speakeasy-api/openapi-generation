@@ -210,7 +210,7 @@ function getConfigFields(
       Required: true,
       DefaultValue: "openapi",
       Description:
-        "The distribution name of the Ruby Package. https://guides.rubygems.org/name-your-gem/ Use a lowercase name: a name that differs from its snake_case form only by case gets no gem-name entry file, so Bundler will not autoload it on case-sensitive filesystems.",
+        "The distribution name of the Ruby Package. https://guides.rubygems.org/name-your-gem/",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
     },
