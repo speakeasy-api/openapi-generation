@@ -1,0 +1,32 @@
+templates/templates/cli/auxiliary/cmd/gendocs/main_test.go.stmpl
+  h_9630b74bdac540 9,175,191-192
+  h_9630b74bdac540 193
+templates/templates/cli/includes/readme-commands.ts
+  h_9630b74bdac540 46-71,74-75,84,91-99,109-112
+  h_9630b74bdac540 85,108
+templates/templates/cli/readme_examples_test.go.stmpl
+  h_9630b74bdac540 67
+templates/templates/cli/auxiliary/cmd/gendocs/main.go.stmpl
+  h_9630b74bdac540 10,111-113
+.changesets/1790652587-cbe291bf.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 57,59,1083
+zSDKs/sdk-cli/cmd/gendocs/main.go
+  h_9630b74bdac540 12,113-115
+zSDKs/sdk-cli/cmd/gendocs/main_test.go
+  h_9630b74bdac540 11,177,193-195
+zSDKs/sdk-cli/tests/readme_examples_test.go
+  h_9630b74bdac540 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83f0e16e80c569f36cd409a3cfbc42a1931d5704",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
