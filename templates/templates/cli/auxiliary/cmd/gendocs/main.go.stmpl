@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -107,6 +108,9 @@ func truncateCLIDocFilename(filename string) string {
 	stem := strings.TrimSuffix(filename, cliDocMarkdownExtension)
 	suffix := fmt.Sprintf("_%08x", cliDocNameHash(filename))
 	prefixLen := cliDocMaxFilenameLen - len(cliDocMarkdownExtension) - len(suffix)
+	for prefixLen > 0 && !utf8.RuneStart(stem[prefixLen]) {
+		prefixLen--
+	}
 	return stem[:prefixLen] + suffix + cliDocMarkdownExtension
 }
 

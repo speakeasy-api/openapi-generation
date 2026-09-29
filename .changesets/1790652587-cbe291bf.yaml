@@ -1,0 +1,10 @@
+id: 1790652587-cbe291bf
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: keep long command documentation links aligned with generated filenames
+author: TristanSpeakEasy
+date: "2026-09-29"

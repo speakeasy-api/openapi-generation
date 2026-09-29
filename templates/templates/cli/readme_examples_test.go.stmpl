@@ -64,6 +64,7 @@ func TestReadmeDocLinksResolve(t *testing.T) {
 	docLink := regexp.MustCompile(`\]\((docs/[^)]+\.md)\)`)
 	var checked int
 	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 	lineNo := 0
 	for scanner.Scan() {
 		lineNo++

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -171,6 +172,7 @@ func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
 	}{
 		{"long command", "group", longName, "{{templateReadmeDocPathTruncationFixture "command"}}"},
 		{"long group and command", longName, longName, "{{templateReadmeDocPathTruncationFixture "group,command"}}"},
+		{"unicode command", "group", strings.Repeat("😀é", 65) + "end", "{{templateReadmeDocPathTruncationFixture "unicode-command"}}"},
 	}
 
 	for _, tt := range tests {
@@ -185,6 +187,9 @@ func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
 			want := strings.TrimPrefix(tt.want, "docs/")
 			if got != want {
 				t.Fatalf("truncated documentation filename = %q, want %q", got, want)
+			}
+			if !utf8.ValidString(got) {
+				t.Fatalf("truncated documentation filename is not valid UTF-8: %q", got)
 			}
 			if len(got) > cliDocMaxFilenameLen {
 				t.Fatalf("truncated documentation filename length = %d, want at most %d", len(got), cliDocMaxFilenameLen)

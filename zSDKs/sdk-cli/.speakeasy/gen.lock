@@ -54,9 +54,9 @@ trackedFiles:
   cmd/cli/main.go:
     last_write_checksum: sha1:d6899a14abd11391a2c144413365cc60b6b351ea
   cmd/gendocs/main.go:
-    last_write_checksum: sha1:c9be83a3c347679b26006cfa3d3f0552745f2391
+    last_write_checksum: sha1:8eb317af5bda80b8e9d15640e5bf0d3737fbe39f
   cmd/gendocs/main_test.go:
-    last_write_checksum: sha1:53e01a4a17e5186e1acd67a8ea7f788ef8c74f74
+    last_write_checksum: sha1:a41ab1ac5b1e13c16e7af2493b198fb366571058
   go.mod:
     last_write_checksum: sha1:0865aafc1a68bea8d40c4688abc6befff5ef6cec
   internal/cli/auth.go:
@@ -1080,7 +1080,7 @@ trackedFiles:
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:
-    last_write_checksum: sha1:c240a6ecb531bccb97447ea4390f51e20948e2dc
+    last_write_checksum: sha1:441c213c8049299e7b3efd8cb7033e5885610a20
   tests/sdk_test.go:
     last_write_checksum: sha1:0ac872f31dea293b708409ea99d662eafa9725b5
   tests/singlebar_test.go:

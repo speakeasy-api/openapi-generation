@@ -43,10 +43,36 @@ function readmeBuiltinShort(name: string): string {
   return "";
 }
 
+function cliDocUtf8Bytes(value: string): number[] {
+  const bytes: number[] = [];
+  for (const char of value) {
+    const codePoint = char.codePointAt(0)!;
+    if (codePoint <= 0x7f) {
+      bytes.push(codePoint);
+    } else if (codePoint <= 0x7ff) {
+      bytes.push(0xc0 | (codePoint >> 6), 0x80 | (codePoint & 0x3f));
+    } else if (codePoint <= 0xffff) {
+      bytes.push(
+        0xe0 | (codePoint >> 12),
+        0x80 | ((codePoint >> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f),
+      );
+    } else {
+      bytes.push(
+        0xf0 | (codePoint >> 18),
+        0x80 | ((codePoint >> 12) & 0x3f),
+        0x80 | ((codePoint >> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f),
+      );
+    }
+  }
+  return bytes;
+}
+
 function cliDocNameHash(value: string): string {
   let hash = 5381;
-  for (let i = 0; i < value.length; i++) {
-    hash = (Math.imul(hash, 33) + value.charCodeAt(i)) | 0;
+  for (const byte of cliDocUtf8Bytes(value)) {
+    hash = (Math.imul(hash, 33) + byte) | 0;
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
@@ -55,13 +81,22 @@ const cliDocMaxFilenameLength = 240;
 const cliDocExtension = ".md";
 
 function truncateCliDocFilename(filename: string): string {
-  if (filename.length <= cliDocMaxFilenameLength) return filename;
+  if (cliDocUtf8Bytes(filename).length <= cliDocMaxFilenameLength)
+    return filename;
 
   const suffix = `_${cliDocNameHash(filename)}`;
   const stem = filename.slice(0, -cliDocExtension.length);
   const prefixLength =
     cliDocMaxFilenameLength - cliDocExtension.length - suffix.length;
-  return `${stem.slice(0, prefixLength)}${suffix}${cliDocExtension}`;
+  let prefix = "";
+  let byteLength = 0;
+  for (const char of stem) {
+    const charLength = cliDocUtf8Bytes(char).length;
+    if (byteLength + charLength > prefixLength) break;
+    prefix += char;
+    byteLength += charLength;
+  }
+  return `${prefix}${suffix}${cliDocExtension}`;
 }
 
 function readmeDocPath(cliName: string, path: string[]): string {
@@ -70,8 +105,11 @@ function readmeDocPath(cliName: string, path: string[]): string {
 }
 
 function templateReadmeDocPathTruncationFixture(longSegments: string): string {
-  const longName = "long-command-".repeat(24) + "end";
-  const long = longSegments.split(",");
+  const longName =
+    longSegments === "unicode-command"
+      ? "😀é".repeat(65) + "end"
+      : "long-command-".repeat(24) + "end";
+  const long = longSegments.replace("unicode-", "").split(",");
   const segment = (name: string) => (long.includes(name) ? longName : name);
   return readmeDocPath("cli", [segment("group"), segment("command")]);
 }

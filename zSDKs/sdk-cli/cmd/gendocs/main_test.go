@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -173,6 +174,7 @@ func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
 	}{
 		{"long command", "group", longName, "docs/cli_group_long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-comma_6df2be76.md"},
 		{"long group and command", longName, longName, "docs/cli_long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-long-command-lon_272558f8.md"},
+		{"unicode command", "group", strings.Repeat("😀é", 65) + "end", "docs/cli_group_😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é😀é_815e7d11.md"},
 	}
 
 	for _, tt := range tests {
@@ -187,6 +189,9 @@ func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
 			want := strings.TrimPrefix(tt.want, "docs/")
 			if got != want {
 				t.Fatalf("truncated documentation filename = %q, want %q", got, want)
+			}
+			if !utf8.ValidString(got) {
+				t.Fatalf("truncated documentation filename is not valid UTF-8: %q", got)
 			}
 			if len(got) > cliDocMaxFilenameLen {
 				t.Fatalf("truncated documentation filename length = %d, want at most %d", len(got), cliDocMaxFilenameLen)
