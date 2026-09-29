@@ -446,4 +446,9 @@ func TestMultipartNullableArrayTakesJSONArray(t *testing.T) {
 		"request-bodies", "request-body-post-multipart-nullable-array-with-encoding",
 		"--tags", `["a","b"]`,
 	}))
+	data := jsonGetString(h.GetStdout(), "data")
+	assert.Equal(t, 2, strings.Count(data, `name="tags"`), "each element must be its own part: %s", data)
+	assert.Contains(t, data, "name=\"tags\"\r\n\r\na\r\n")
+	assert.Contains(t, data, "name=\"tags\"\r\n\r\nb\r\n")
+	assert.NotContains(t, data, `["a","b"]`)
 }
