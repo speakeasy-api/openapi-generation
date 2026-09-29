@@ -328,11 +328,6 @@ function pushFlagArg(
   args.push(`"--${flagName}"`, formatted);
 }
 
-/**
- * Push a non-JSON field example as CLI args. A repeatable (FlagKindStringArray)
- * flag takes one occurrence per element; a single JSON token would reach the
- * request as one literal element.
- */
 function pushFieldFlagArgs(
   args: string[],
   field: FieldDef,
@@ -352,11 +347,7 @@ function pushFieldFlagArgs(
   pushFlagArg(args, flagName, formatCLIArgValue(elements));
 }
 
-/**
- * An empty example leaves a required repeatable flag unset and fails a
- * required JSON path parameter. Use the elements the command example falls
- * back to: the first enum value, or the synthesized placeholder.
- */
+// An empty example would leave a required array flag unset or '[]'.
 function emptyArrayExampleFallback(field: FieldDef): any[] {
   const { Value } = getCLIExampleValue(field);
   if (Array.isArray(Value)) return Value;

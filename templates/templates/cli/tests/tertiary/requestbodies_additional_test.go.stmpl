@@ -9,10 +9,6 @@ import (
 	"{{getGolangPackage}}/internal/clierrors"
 )
 
-// The tertiary variant generates with cli.arrayFlagFormat: json. String-item
-// and enum-item arrays are single flags taking a JSON array rather than
-// repeatable flags.
-
 func TestJSONArrayFlagExampleRendersSingleToken(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--help"}))

@@ -185,8 +185,6 @@ func TestRepeatableQueryParamExampleSendsArrayElements(t *testing.T) {
 	assert.Equal(t, []interface{}{"1", "2"}, ids)
 }
 
-// Optional+nullable array parameters are OptionalNullable-wrapped, so they
-// register as a single JSON flag even under the default repeatable format.
 func TestOptionalNullableArrayParamTakesJSONArray(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()

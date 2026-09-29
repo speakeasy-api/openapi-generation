@@ -437,8 +437,6 @@ func TestRepeatableEnumArrayFlagHelpListsOptions(t *testing.T) {
 	assert.Contains(t, h.GetStdout(), "(options: item.created, item.deleted)")
 }
 
-// A nullable multipart array is OptionalNullable-wrapped: it registers as a
-// single JSON flag, like the same field in a JSON body.
 func TestMultipartNullableArrayTakesJSONArray(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()

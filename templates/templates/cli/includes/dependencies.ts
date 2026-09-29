@@ -203,9 +203,8 @@ function serverSelectionFlag(): "visible" | "hidden" | "none" {
 }
 registerTemplateFunc("serverSelectionFlag", serverSelectionFlag);
 
-// arrayFlagFormat controls how string and enum array fields are entered:
-//   repeatable — one element per flag occurrence (default)
-//   json       — a single JSON array token, like every other array flag
+// arrayFlagFormat is the gen.yaml input format for string and enum array
+// flags (repeatable|json; repeatable when unset or invalid).
 // @ts-ignore
 function arrayFlagFormat(): "repeatable" | "json" {
   return context.Global.Config.ArrayFlagFormat === "json"

@@ -1522,11 +1522,11 @@ func validateRequiredPresence(m FlagMeta, changed bool) error {
 	return nil
 }
 
-// A blank path segment would address the parent collection instead of the item.
 func isChangedRequiredPathParam(v reflect.Value, m FlagMeta, changed bool) bool {
 	return m.Required && changed && requestParamTag(v.Type(), m.FieldPath) == "pathParam"
 }
 
+// A blank path segment would address the parent collection instead of the item.
 func validateRequiredPathParam(v reflect.Value, m FlagMeta, changed bool, values ...string) error {
 	if !isChangedRequiredPathParam(v, m, changed) {
 		return nil
@@ -1539,9 +1539,6 @@ func validateRequiredPathParam(v reflect.Value, m FlagMeta, changed bool, values
 	return nil
 }
 
-// validateRequiredJSONPathParam applies validateRequiredPathParam to the
-// elements of a JSON string array, so '[]' and '["  "]' are rejected like a
-// blank repeatable value. Non-array JSON values are left to the unmarshaler.
 func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, val string) error {
 	if !isChangedRequiredPathParam(v, m, changed) {
 		return nil
@@ -1559,9 +1556,6 @@ func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, va
 	return validateRequiredPathParam(v, m, changed, elems...)
 }
 
-// validateJSONArrayInput gives JSON flags on slice fields the guarantees of a
-// repeatable flag: the value must be a JSON array, a required field rejects
-// null and [], and a string array rejects null elements instead of sending "".
 func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) error {
 	// OptionalNullable[T] is a map[bool]*T
 	if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.Bool && fieldType.Elem().Kind() == reflect.Ptr {

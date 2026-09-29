@@ -12,10 +12,6 @@ import (
 	"{{getGolangPackage}}/internal/clierrors"
 )
 
-// The tertiary variant generates with cli.arrayFlagFormat: json. String-item
-// array parameters are single flags taking a JSON array rather than
-// repeatable flags.
-
 func TestJSONArrayQueryParamExampleRendersSingleToken(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"parameters", "cli-json-array-flags-get", "--help"}))

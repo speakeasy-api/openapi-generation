@@ -496,7 +496,6 @@ function collectMultipartMetadata(
       continue;
     }
 
-    // OptionalNullable-wrapped fields → FlagKindJSON (same as collectMetadataFromFields)
     if (isNullableOptionalWrapped(field)) {
       entries.push(
         buildMetaEntryForField(field, flagName, fieldPath, "FlagKindJSON"),
