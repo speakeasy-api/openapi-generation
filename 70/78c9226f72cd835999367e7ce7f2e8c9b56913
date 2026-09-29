@@ -1,0 +1,25 @@
+templates/templates/cli/auxiliary/cmd/gendocs/main.go.stmpl
+  h_9630b74bdac540 121-128,133,152-157,159-186
+  h_9630b74bdac540 158
+templates/templates/cli/auxiliary/cmd/gendocs/main_test.go.stmpl
+  h_9630b74bdac540 218-279
+.changesets/1790654342-9ee1295d.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 57,59
+zSDKs/sdk-cli/cmd/gendocs/main.go
+  h_9630b74bdac540 123-130,135,154-188
+zSDKs/sdk-cli/cmd/gendocs/main_test.go
+  h_9630b74bdac540 220-281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7078c9226f72cd835999367e7ce7f2e8c9b56913",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
