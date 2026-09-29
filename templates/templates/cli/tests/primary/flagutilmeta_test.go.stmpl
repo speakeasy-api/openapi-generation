@@ -449,6 +449,28 @@ func TestBuildRequestRejectsEmptyRequiredJSONQueryParamArray(t *testing.T) {
 	assertCLIValidation(t, err, "ids")
 }
 
+type int64ArrayQueryRequest struct {
+	Codes []int64 `queryParam:"style=form,explode=true,name=codes"`
+}
+
+func TestBuildRequestValidatesInt64EnumArrayElementsExactly(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "codes", FieldPath: "Codes", Kind: flagutil.FlagKindJSON, Required: true, EnumValues: []string{"9007199254740993", "1"}},
+	}
+
+	cmd := newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("codes", `[9007199254740993]`))
+	req, err := flagutil.BuildRequest[int64ArrayQueryRequest](cmd, meta, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{9007199254740993}, req.Codes)
+
+	cmd = newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("codes", `[9007199254740992]`))
+	_, err = flagutil.BuildRequest[int64ArrayQueryRequest](cmd, meta, "", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --codes: "9007199254740992"; valid options: 9007199254740993, 1`)
+}
+
 func TestBuildRequestChecksArrayMinItems(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
