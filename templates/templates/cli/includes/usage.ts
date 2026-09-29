@@ -242,6 +242,7 @@ function isStringOrEnumItemArrayField(field: FieldDef): boolean {
 function inferKindNameForField(field: FieldDef, kindOverride?: string): string {
   const typeDef = field.Type;
   if (kindOverride) return kindOverride;
+  if (isNullableOptionalWrapped(field)) return "FlagKindJSON";
   if (isEnumType(typeDef)) {
     return isIntBackedEnum(typeDef) ? "FlagKindIntEnum" : "FlagKindEnum";
   }
@@ -390,7 +391,7 @@ function getOperationBodyFieldUsageFlags(op: Operation): UsageFlagDef[] {
       }
 
       if (isNullableOptionalWrapped(field)) {
-        flags.push(usageFlagFromField(field, flagName, "FlagKindJSON"));
+        flags.push(usageFlagFromField(field, flagName));
         continue;
       }
 
@@ -461,7 +462,7 @@ function getOperationBodyFieldUsageFlags(op: Operation): UsageFlagDef[] {
         continue;
       }
 
-      if (isMultipartJSONField(field) || isNullableOptionalWrapped(field)) {
+      if (isMultipartJSONField(field)) {
         acc.push(usageFlagFromField(field, flagName, "FlagKindJSON"));
         continue;
       }

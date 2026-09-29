@@ -468,10 +468,7 @@ function getFlagDescription(
   }
 
   // The pflag type column only shows "string"
-  if (
-    isArrayType(field.Type) &&
-    (kind === "FlagKindJSON" || isNullableOptionalWrapped(field))
-  ) {
+  if (isArrayType(field.Type) && kind === "FlagKindJSON") {
     addHint("(JSON array)", "JSON array");
   }
 

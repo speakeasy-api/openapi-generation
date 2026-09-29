@@ -404,7 +404,7 @@ function formatCLIArgValueAsJSON(value: any): string {
  */
 function fieldNeedsJSONFormat(field: FieldDef): boolean {
   // Nullable+optional fields use OptionalNullable wrapper → FlagKindJSON
-  if (field.Nullable && field.Optional) return true;
+  if (inferKindNameForField(field) === "FlagKindJSON") return true;
   const ft = field.Type?.Type?.toString() || "";
   if (
     ft === "any" ||
@@ -415,13 +415,7 @@ function fieldNeedsJSONFormat(field: FieldDef): boolean {
   ) {
     return true;
   }
-  if (ft === "class" && !shouldExpandNestedField(field)) {
-    return true;
-  }
-  if (ft === "array") {
-    return inferKindNameForField(field) === "FlagKindJSON";
-  }
-  return false;
+  return ft === "class" && !shouldExpandNestedField(field);
 }
 
 // Helper to find an example, falling back to first available if named one not found
@@ -1236,6 +1230,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
         // Convert field name to flag name (kebab-case, matching metadata generation)
         const flagName = sanitizeFlagNameWithReserved(field.Name);
 
+        // Format the value for CLI
         pushFieldFlagArgs(args, field, flagName, exampleValue);
       }
     }

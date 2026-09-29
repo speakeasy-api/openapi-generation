@@ -126,10 +126,7 @@ function cliExampleHasAnglePlaceholder(value: any, depth = 0): boolean {
 }
 
 function isRepeatableFlagField(field: FieldDef): boolean {
-  return (
-    !isNullableOptionalWrapped(field) &&
-    inferKindNameForField(field) === "FlagKindStringArray"
-  );
+  return inferKindNameForField(field) === "FlagKindStringArray";
 }
 
 function hasExampleValue(field: FieldDef, val: any): boolean {
@@ -266,6 +263,7 @@ function placeholderExampleValue(field: FieldDef): CLIExampleValue {
     };
   }
 
+  // Type-appropriate placeholders
   const placeholder = scalarPlaceholder(typeDef);
   return placeholder
     ? { Value: placeholder, SynthesizedAnglePlaceholder: false }

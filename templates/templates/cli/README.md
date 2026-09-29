@@ -460,7 +460,7 @@ Key functions:
 | `getBodyFieldPath(op)`              | `metadata.ts`   | Finds which struct field holds the body (via `request` annotation)       |
 | `shouldExpandNestedField(field)`    | `templating.ts` | Decides if a nested class becomes dot-notation flags or a JSON flag      |
 
-`inferKindNameForField(field, kindOverride)` (`usage.ts`) is the single source of the `FlagKind` for a leaf field. It is shared by `buildMetaEntryForField` (runtime metadata), the usage walker, command examples (`descriptions.ts`), and generated test args (`tests.ts` `fieldNeedsJSONFormat` / `pushFieldFlagArgs`, which emits one `--flag value` pair per element for a `FlagKindStringArray` example), so all four surfaces agree.
+`inferKindNameForField(field, kindOverride)` (`usage.ts`) is the single source of the `FlagKind` for a leaf field, including `FlagKindJSON` for an `OptionalNullable`-wrapped field (`isNullableOptionalWrapped`); walkers keep that check only to stop such a field from expanding into nested flags. It is shared by `buildMetaEntryForField` (runtime metadata), the usage walker, command examples (`descriptions.ts`), generated test args (`tests.ts` `fieldNeedsJSONFormat` / `pushFieldFlagArgs`, which emits one `--flag value` pair per element for a `FlagKindStringArray` example), and flag help (`getFlagDescription`, whose `(JSON array)` hint follows the kind), so all five surfaces agree.
 
 ### Array Flag Format
 

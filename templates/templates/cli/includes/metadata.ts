@@ -306,13 +306,7 @@ function collectMetadataFromFields(
     // expanded — reflection sees a map, not a struct. Treat as JSON flag.
     if (isNullableOptionalWrapped(field)) {
       entries.push(
-        buildMetaEntryForField(
-          field,
-          flagName,
-          fieldPath,
-          "FlagKindJSON",
-          group,
-        ),
+        buildMetaEntryForField(field, flagName, fieldPath, undefined, group),
       );
       continue;
     }
@@ -493,13 +487,6 @@ function collectMultipartMetadata(
         }"`,
       );
       entries.push(`{${parts.join(", ")}}`);
-      continue;
-    }
-
-    if (isNullableOptionalWrapped(field)) {
-      entries.push(
-        buildMetaEntryForField(field, flagName, fieldPath, "FlagKindJSON"),
-      );
       continue;
     }
 
