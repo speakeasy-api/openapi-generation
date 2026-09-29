@@ -536,12 +536,7 @@ function sdkMethodTakesPointerRequest(op: Operation): boolean {
       return false;
     // When both nullable+optional and wrapper is enabled, the Go SDK uses
     // OptionalNullable[T] (value type) instead of *T
-    if (
-      bodyField.Nullable &&
-      bodyField.Optional &&
-      context.Global.Config.NullableOptionalWrapper
-    )
-      return false;
+    if (isNullableOptionalWrapped(bodyField)) return false;
     return bodyField.Optional === true || bodyField.Nullable === true;
   }
   // When the request field is Optional, the SDK method takes a pointer

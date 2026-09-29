@@ -1521,14 +1521,65 @@ func validateRequiredPresence(m FlagMeta, changed bool) error {
 }
 
 // A blank path segment would address the parent collection instead of the item.
+func isChangedRequiredPathParam(v reflect.Value, m FlagMeta, changed bool) bool {
+	return m.Required && changed && requestParamTag(v.Type(), m.FieldPath) == "pathParam"
+}
+
 func validateRequiredPathParam(v reflect.Value, m FlagMeta, changed bool, values ...string) error {
-	if !m.Required || !changed || requestParamTag(v.Type(), m.FieldPath) != "pathParam" {
+	if !isChangedRequiredPathParam(v, m, changed) {
 		return nil
 	}
 	for _, value := range values {
 		if strings.TrimSpace(value) == "" {
 			return WithCLIValidation(fmt.Errorf("invalid value for --%s: blank; path parameters require a non-empty value", m.FlagName))
 		}
+	}
+	return nil
+}
+
+// validateRequiredJSONPathParam applies validateRequiredPathParam to the
+// elements of a JSON string array, so '[]' and '["  "]' are rejected like a
+// blank repeatable value. Non-array JSON values are left to the unmarshaler.
+func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, val string) error {
+	if !isChangedRequiredPathParam(v, m, changed) {
+		return nil
+	}
+	if strings.TrimSpace(val) == "null" {
+		return WithCLIValidation(fmt.Errorf("invalid value for --%s: null; path parameters require a non-empty value", m.FlagName))
+	}
+	var elems []string
+	if json.Unmarshal([]byte(val), &elems) != nil {
+		return nil
+	}
+	if len(elems) == 0 {
+		elems = []string{""}
+	}
+	return validateRequiredPathParam(v, m, changed, elems...)
+}
+
+// validateJSONArrayInput gives JSON flags on slice fields the guarantees of a
+// repeatable flag: the value must be a JSON array, a required field rejects
+// null, and a string array rejects null elements instead of sending "".
+func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) error {
+	if fieldType.Kind() != reflect.Slice || fieldType.Elem().Kind() == reflect.Uint8 {
+		return nil
+	}
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "null" {
+		if m.Required {
+			return WithCLIValidation(fmt.Errorf("invalid value for --%s: null; the field is required", m.FlagName))
+		}
+		return nil
+	}
+	if !strings.HasPrefix(trimmed, "[") {
+		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
+	}
+	if fieldType.Elem().Kind() != reflect.String {
+		return nil
+	}
+	var elems []*string
+	if json.Unmarshal([]byte(trimmed), &elems) == nil && slices.Contains(elems, nil) {
+		return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements must be strings", m.FlagName))
 	}
 	return nil
 }
@@ -1806,6 +1857,10 @@ func buildJSONField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		return nil
 	}
 
+	if err := validateRequiredJSONPathParam(v, m, changed, val); err != nil {
+		return err
+	}
+
 	// Navigate to the target field to get its type
 	field, err := navigateToField(v, m.FieldPath)
 	if err != nil {
@@ -1850,6 +1905,10 @@ func buildJSONField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		}
 		field.Set(reflect.ValueOf(parsed))
 		return nil
+	}
+
+	if err := validateJSONArrayInput(m, fieldType, val); err != nil {
+		return err
 	}
 
 	// If the annotation specifies bigint:"string" or decimal:"string", the SDK's

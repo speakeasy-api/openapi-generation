@@ -460,6 +460,21 @@ Key functions:
 | `getBodyFieldPath(op)`              | `metadata.ts`   | Finds which struct field holds the body (via `request` annotation)       |
 | `shouldExpandNestedField(field)`    | `templating.ts` | Decides if a nested class becomes dot-notation flags or a JSON flag      |
 
+`inferKindNameForField(field, kindOverride)` (`usage.ts`) is the single source of the `FlagKind` for a leaf field. It is shared by `buildMetaEntryForField` (runtime metadata), the usage walker, command examples (`descriptions.ts`), and generated test args (`tests.ts` `fieldNeedsJSONFormat` / `pushFieldFlagArgs`, which emits one `--flag value` pair per element for a `FlagKindStringArray` example), so all four surfaces agree.
+
+### Array Flag Format
+
+**Files**: `config.ts`, `includes/dependencies.ts` (`arrayFlagFormat`), `includes/usage.ts` (`inferKindNameForField`), `includes/descriptions.ts`
+
+Array fields with non-string items (int, float, bool, object) are always `FlagKindJSON`: a single flag taking a JSON array. So are nullable+optional fields when `nullableOptionalWrapper` is enabled (`isNullableOptionalWrapped` in `utils.ts`), in both modes; command examples and generated test args treat them as one JSON token too. For string and enum items, the `cli.arrayFlagFormat` gen.yaml key (default `repeatable`) picks the input format:
+
+| Value        | Kind                  | Registration  | Invocation           | Usage (`--usage`) | Example                        |
+| ------------ | --------------------- | ------------- | -------------------- | ----------------- | ------------------------------ |
+| `repeatable` | `FlagKindStringArray` | `StringArray` | `--tags a --tags b`  | variadic          | one `--flag value` per element |
+| `json`       | `FlagKindJSON`        | `String`      | `--tags '["a","b"]'` | not variadic      | single quoted JSON array token |
+
+Under `json` the value is unmarshalled by `buildJSONField` into the field's `[]string` / `[]Enum` type. `validateJSONArrayInput` gives every JSON flag on a slice field the guarantees of a repeatable flag: a non-array value fails with `expected a JSON array`, `null` fails on a required field, and a `null` element fails on a string array (it would otherwise be sent as `""`). A required path parameter rejects `'[]'`, `null`, and blank elements (`validateRequiredJSONPathParam`), matching the repeatable form. A string array without an example renders the placeholder inside a JSON array token (`'["<value>"]'`). The flag description gains a `(JSON array)` hint (`getFlagDescription`), since the pflag type column only shows `string`. In both modes an empty array example (`example: []`) on a string/enum array falls through to the enum or type placeholder instead of rendering an empty value; generated test args use the same fallback elements (`emptyArrayExampleFallback`: first enum value or placeholder) so a required flag is never left unset or sent as `'[]'`. The format applies to every string/enum array leaf flag: body fields, query/path/header parameters, and intent command flags; global parameters are registered as plain string flags and security array fields (e.g. OAuth scopes) stay repeatable `StringSlice` flags; neither is affected. Switching an existing CLI to `json` is a breaking change for callers of the repeatable form.
+
 ### Union Type Handling
 
 **Files**: `includes/unions.ts` (inspection), `includes/metadata.ts` (metadata generation), `auxiliary/internal/flagutil/metadata.go.stmpl` (runtime)

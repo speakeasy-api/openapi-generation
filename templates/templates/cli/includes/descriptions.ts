@@ -126,7 +126,10 @@ function cliExampleHasAnglePlaceholder(value: any, depth = 0): boolean {
 }
 
 function isRepeatableFlagField(field: FieldDef): boolean {
-  return inferKindNameForField(field) === "FlagKindStringArray";
+  return (
+    !isNullableOptionalWrapped(field) &&
+    inferKindNameForField(field) === "FlagKindStringArray"
+  );
 }
 
 function hasExampleValue(field: FieldDef, val: any): boolean {
@@ -134,7 +137,7 @@ function hasExampleValue(field: FieldDef, val: any): boolean {
   return !(
     Array.isArray(val) &&
     val.length === 0 &&
-    isRepeatableFlagField(field)
+    isStringItemArrayField(field)
   );
 }
 
@@ -217,6 +220,24 @@ function getCLIExampleValue(
       Value: String(valueTypeDef.Enum.Values[0]),
       SynthesizedAnglePlaceholder: false,
     };
+  }
+
+  // A JSON array flag takes the whole array as one token.
+  const itemTypeDef = isArrayType(typeDef) ? typeDef.ItemType : undefined;
+  if (
+    itemTypeDef?.Type?.toString() === "enum" &&
+    itemTypeDef.Enum?.Values?.length > 0
+  ) {
+    const first = itemTypeDef.Enum.Values[0];
+    return {
+      Value: JSON.stringify([
+        isIntBackedEnum(itemTypeDef) ? Number(first) : String(first),
+      ]),
+      SynthesizedAnglePlaceholder: false,
+    };
+  }
+  if (isStringItemArrayField(field) && !isRepeatableFlagField(field)) {
+    return { Value: '["<value>"]', SynthesizedAnglePlaceholder: true };
   }
 
   // Type-appropriate placeholders

@@ -537,6 +537,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    arrayFlagFormat: {
+      Name: "arrayFlagFormat",
+      Required: false,
+      DefaultValue: "repeatable",
+      Description:
+        'Input format of flags for string and enum array fields: repeatable (the default) registers a repeatable flag taking one element per occurrence (--tags a --tags b); json registers a single flag taking a JSON array (--tags \'["a","b"]\'), matching the other array, object, and union flags.',
+      ValidationRegex: /^(repeatable|json)$/.source,
+      ValidationMessage: "repeatable or json only",
+    },
     interactiveTheme: {
       Name: "interactiveTheme",
       Required: false,

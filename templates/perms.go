@@ -216,6 +216,8 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/tests/security-options/auth_additional_test.go.stmpl":                                 0o644,
 	"templates/cli/tests/tertiary":                                                                       0o20000000755,
 	"templates/cli/tests/tertiary/parameter_encoding_legacy_additional_test.go.stmpl":                    0o644,
+	"templates/cli/tests/tertiary/parameters_additional_test.go.stmpl":                                   0o644,
+	"templates/cli/tests/tertiary/requestbodies_additional_test.go.stmpl":                                0o644,
 	"templates/cli/tests/tertiary/retry_method_policy_additional_test.go.stmpl":                          0o644,
 	"templates/cli/tests/tertiary/retryflags_visibility_additional_test.go.stmpl":                        0o644,
 	"templates/cli/tests/tertiary/servers_test.go.stmpl":                                                 0o644,

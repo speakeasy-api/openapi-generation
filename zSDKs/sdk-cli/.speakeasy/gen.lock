@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 2b84669037964d5e32050c3a90a91f46
+  configChecksum: e97622e0e4299fcd4c6d621aae8a8e4b
 features:
   cli:
     additionalProperties: 0.0.1
@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:1d35d22e4beacf398104fd6883510f4c72323f91
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:351340eb19eb2203d477a622bfad29c3d8d4ec2f
+    last_write_checksum: sha1:4fd529e8ba5be6aa45bfc603c91fc102d6c780ff
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:

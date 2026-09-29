@@ -404,3 +404,16 @@ func TestRepeatableFlagExampleSendsArrayElements(t *testing.T) {
 	require.True(t, ok, "channels must be an array: %s", h.GetStdout())
 	assert.Equal(t, []interface{}{"email"}, channels)
 }
+
+// A nullable multipart array is OptionalNullable-wrapped: it registers as a
+// single JSON flag, like the same field in a JSON body.
+func TestMultipartNullableArrayTakesJSONArray(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"request-bodies", "request-body-post-multipart-nullable-array-with-encoding",
+		"--tags", `["a","b"]`,
+	}))
+}

@@ -240,9 +240,13 @@ function intentRequiredParamFallbacks(op: Operation): string[] {
         // generic angle-bracket placeholder; name that placeholder after the
         // flag so the fallback stays visibly synthetic but specific.
         const example = getCLIExampleValue(param.Field);
-        value = example.SynthesizedAnglePlaceholder
-          ? `<${flagName}>`
-          : example.Value;
+        const placeholder = `<${flagName}>`;
+        value = !example.SynthesizedAnglePlaceholder
+          ? example.Value
+          : isStringItemArrayField(param.Field) &&
+            !isRepeatableFlagField(param.Field)
+          ? JSON.stringify([placeholder])
+          : placeholder;
       }
       if (typeof value === "boolean") return `--${flagName}=${value}`;
       const repeatable = exampleRepeatableFlagValue(param.Field, value, false);
@@ -345,9 +349,7 @@ function intentBackingBodyFlag(
       if (globalFlags.has(flagName)) return null;
       const registersBeforeExpansion =
         field.Type.Type.toString() === "union" ||
-        (field.Nullable &&
-          field.Optional &&
-          context.Global.Config.NullableOptionalWrapper);
+        isNullableOptionalWrapped(field);
       if (!registersBeforeExpansion) {
         if (getInputClassType(field) === "MultipartRequestBody") return null;
         if (shouldExpandNestedField(field)) return null;

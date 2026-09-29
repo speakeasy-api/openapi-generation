@@ -57,6 +57,16 @@ function getInputClassType(field: FieldDef): InputClassType {
 }
 registerTemplateFunc("getInputClassType", getInputClassType);
 
+// Nullable+optional fields wrapped in OptionalNullable can't be expanded:
+// reflection sees a map, not a struct, so they register as FlagKindJSON.
+function isNullableOptionalWrapped(field: FieldDef): boolean {
+  return Boolean(
+    field.Nullable &&
+      field.Optional &&
+      context.Global.Config.NullableOptionalWrapper,
+  );
+}
+
 // @ts-ignore
 function isPointerType(typeDef: TypeDef): boolean {
   return getPointerTypes().includes(typeDef.Type.toString());

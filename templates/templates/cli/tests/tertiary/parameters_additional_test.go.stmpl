@@ -1,0 +1,32 @@
+package tests
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// The tertiary variant generates with cli.arrayFlagFormat: json. String-item
+// array parameters are single flags taking a JSON array rather than
+// repeatable flags.
+
+func TestJSONArrayQueryParamExampleRendersSingleToken(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"parameters", "cli-json-array-flags-get", "--help"}))
+	assert.Contains(t, h.GetStdout(), `--tags '["urgent","needs review"]'`)
+}
+
+func TestJSONArrayQueryParamSendsArrayElements(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"parameters", "cli-json-array-flags-get",
+		"--tags", `["urgent","needs review"]`,
+	}))
+	tags, ok := jsonGet(h.GetStdout(), "args.tags").([]interface{})
+	require.True(t, ok, "tags must be repeated in the query: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"urgent", "needs review"}, tags)
+}

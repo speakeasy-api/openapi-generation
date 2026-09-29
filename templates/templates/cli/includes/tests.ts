@@ -328,6 +328,46 @@ function pushFlagArg(
   args.push(`"--${flagName}"`, formatted);
 }
 
+/**
+ * Push a non-JSON field example as CLI args. A repeatable (FlagKindStringArray)
+ * flag takes one occurrence per element; a single JSON token would reach the
+ * request as one literal element.
+ */
+function pushFieldFlagArgs(
+  args: string[],
+  field: FieldDef,
+  flagName: string,
+  value: any,
+): void {
+  const elements =
+    Array.isArray(value) && value.length === 0 && isStringItemArrayField(field)
+      ? emptyArrayExampleFallback(field)
+      : value;
+  if (Array.isArray(elements) && isRepeatableFlagField(field)) {
+    for (const element of elements) {
+      pushFlagArg(args, flagName, formatCLIArgValue(element));
+    }
+    return;
+  }
+  pushFlagArg(args, flagName, formatCLIArgValue(elements));
+}
+
+/**
+ * An empty example leaves a required repeatable flag unset and fails a
+ * required JSON path parameter. Use the elements the command example falls
+ * back to: the first enum value, or the synthesized placeholder.
+ */
+function emptyArrayExampleFallback(field: FieldDef): any[] {
+  const { Value } = getCLIExampleValue(field);
+  if (Array.isArray(Value)) return Value;
+  if (isRepeatableFlagField(field)) return [Value];
+  try {
+    return JSON.parse(Value);
+  } catch (_err) {
+    return [Value];
+  }
+}
+
 // Format a value as a Go string literal for CLI args
 // @ts-ignore
 function formatCLIArgValue(value: any): string {
@@ -377,11 +417,7 @@ function fieldNeedsJSONFormat(field: FieldDef): boolean {
     return true;
   }
   if (ft === "array") {
-    const itemType = field.Type?.ItemType?.Type?.toString() || "";
-    // Only string/enum arrays use FlagKindStringArray — everything else is FlagKindJSON
-    if (itemType !== "string" && itemType !== "enum") {
-      return true;
-    }
+    return inferKindNameForField(field) === "FlagKindJSON";
   }
   return false;
 }
@@ -950,7 +986,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
           } else if (fieldNeedsJSONFormat(formField)) {
             pushFlagArg(args, flagName, formatCLIArgValueAsJSON(value));
           } else {
-            pushFlagArg(args, flagName, formatCLIArgValue(value));
+            pushFieldFlagArgs(args, formField, flagName, value);
           }
         }
       }
@@ -1019,14 +1055,14 @@ function templateCLIArgs(usageContext: UsageContext): string {
                     formatCLIArgValueAsJSON(subValue),
                   );
                 } else {
-                  pushFlagArg(args, subFlagName, formatCLIArgValue(subValue));
+                  pushFieldFlagArgs(args, subField, subFlagName, subValue);
                 }
               }
             }
           } else if (fieldNeedsJSONFormat(field)) {
             pushFlagArg(args, flagName, formatCLIArgValueAsJSON(value));
           } else {
-            pushFlagArg(args, flagName, formatCLIArgValue(value));
+            pushFieldFlagArgs(args, field, flagName, value);
           }
         }
       }
@@ -1134,7 +1170,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
                 formatCLIArgValueAsJSON(subValue),
               );
             } else {
-              pushFlagArg(args, subFlagName, formatCLIArgValue(subValue));
+              pushFieldFlagArgs(args, subField, subFlagName, subValue);
             }
           }
           continue;
@@ -1186,10 +1222,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
         // Convert field name to flag name (kebab-case, matching metadata generation)
         const flagName = sanitizeFlagNameWithReserved(field.Name);
 
-        // Format the value for CLI
-        const formattedValue = formatCLIArgValue(exampleValue);
-
-        pushFlagArg(args, flagName, formattedValue);
+        pushFieldFlagArgs(args, field, flagName, exampleValue);
       }
     }
   }
@@ -1381,7 +1414,7 @@ function templateCLIArgsStdin(usageContext: UsageContext): string {
       if (exampleValue === undefined) continue;
 
       const flagName = sanitizeFlagNameWithReserved(field.Name);
-      pushFlagArg(args, flagName, formatCLIArgValue(exampleValue));
+      pushFieldFlagArgs(args, field, flagName, exampleValue);
     }
   }
 

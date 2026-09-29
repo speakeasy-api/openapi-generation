@@ -409,6 +409,31 @@ func TestBuildRequestRejectsBlankRequiredPathParamArrayElements(t *testing.T) {
 	}
 }
 
+func TestBuildRequestRejectsBlankRequiredJSONPathParamArrayElements(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "ids", FieldPath: "IDs", Kind: flagutil.FlagKindJSON, Required: true},
+	}
+	for _, value := range []string{`[]`, `null`, `["   "]`, `["item","\t"]`} {
+		t.Run(value, func(t *testing.T) {
+			cmd := newRequiredParamsCommand(meta)
+			require.NoError(t, cmd.Flags().Set("ids", value))
+			_, err := flagutil.BuildRequest[requiredPathArrayRequest](cmd, meta, "", "")
+			assertCLIValidation(t, err, "ids")
+		})
+	}
+}
+
+func TestBuildRequestAcceptsRequiredJSONPathParamArray(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "ids", FieldPath: "IDs", Kind: flagutil.FlagKindJSON, Required: true},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("ids", `["a","b"]`))
+	req, err := flagutil.BuildRequest[requiredPathArrayRequest](cmd, meta, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, req.IDs)
+}
+
 func TestBuildRequestRejectsBlankRequiredFormattedPathParams(t *testing.T) {
 	for _, tc := range []struct {
 		name       string

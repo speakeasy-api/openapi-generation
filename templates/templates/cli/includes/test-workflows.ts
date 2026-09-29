@@ -421,7 +421,7 @@ function templateCLIStepCode(usageContext: UsageContext): string {
                 formatCLIArgValueAsJSON(subValue),
               );
             } else {
-              pushFlagArg(args, subFlagName, formatCLIArgValue(subValue));
+              pushFieldFlagArgs(args, subField, subFlagName, subValue);
             }
           }
           continue;
@@ -446,7 +446,7 @@ function templateCLIStepCode(usageContext: UsageContext): string {
         if (exampleValue === undefined) continue;
 
         const flagName = sanitizeFlagNameWithReserved(field.Name);
-        pushFlagArg(args, flagName, formatCLIArgValue(exampleValue));
+        pushFieldFlagArgs(args, field, flagName, exampleValue);
       }
     }
   }

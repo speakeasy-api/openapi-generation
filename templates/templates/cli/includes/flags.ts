@@ -447,6 +447,12 @@ function getFlagDescription(field: FieldDef): string {
     }
   }
 
+  // Under arrayFlagFormat json, a string/enum array flag takes one JSON array
+  // token; say so, since the pflag type column only shows "string".
+  if (isStringItemArrayField(field) && arrayFlagFormat() === "json") {
+    desc = desc ? `${desc} (JSON array)` : "JSON array";
+  }
+
   // Add required indicator
   if (!field.Optional) {
     desc = desc ? `${desc} [required]` : "[required]";

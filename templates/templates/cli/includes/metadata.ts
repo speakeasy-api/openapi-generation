@@ -304,11 +304,7 @@ function collectMetadataFromFields(
 
     // Fields wrapped in OptionalNullable (nullable+optional with wrapper) can't be
     // expanded — reflection sees a map, not a struct. Treat as JSON flag.
-    if (
-      field.Nullable &&
-      field.Optional &&
-      context.Global.Config.NullableOptionalWrapper
-    ) {
+    if (isNullableOptionalWrapped(field)) {
       entries.push(
         buildMetaEntryForField(
           field,
@@ -500,6 +496,14 @@ function collectMultipartMetadata(
       continue;
     }
 
+    // OptionalNullable-wrapped fields → FlagKindJSON (same as collectMetadataFromFields)
+    if (isNullableOptionalWrapped(field)) {
+      entries.push(
+        buildMetaEntryForField(field, flagName, fieldPath, "FlagKindJSON"),
+      );
+      continue;
+    }
+
     // Complex non-class types in multipart → FlagKindJSON
     const ft = field.Type?.Type?.toString() || "";
     if (
@@ -540,50 +544,7 @@ function buildMetaEntryForField(
   group?: string,
 ): string {
   const typeDef = field.Type;
-  let kind: string;
-
-  if (kindOverride) {
-    kind = kindOverride;
-  } else if (isEnumType(typeDef)) {
-    kind = isIntBackedEnum(typeDef) ? "FlagKindIntEnum" : "FlagKindEnum";
-  } else if (isArrayType(typeDef)) {
-    // Only string/enum arrays use FlagKindStringArray (cobra StringArray gives []string).
-    // Typed arrays (int, float, bool) use FlagKindJSON since the runtime can't convert
-    // string array elements to typed values via reflection.
-    const itemTypeStr = typeDef.ItemType?.Type?.toString() || "string";
-    if (itemTypeStr === "string" || itemTypeStr === "enum") {
-      kind = "FlagKindStringArray";
-    } else {
-      kind = "FlagKindJSON";
-    }
-  } else if (typeDef.Type.toString() === "date-time") {
-    kind = "FlagKindDateTime";
-  } else if (typeDef.Type.toString() === "bytes") {
-    kind = "FlagKindBytes";
-  } else {
-    switch (typeDef.Type.toString()) {
-      case "string":
-        kind = "FlagKindString";
-        break;
-      case "date":
-        kind = "FlagKindDate";
-        break;
-      case "boolean":
-        kind = "FlagKindBool";
-        break;
-      case "integer":
-      case "int32":
-        kind = "FlagKindInt64";
-        break;
-      case "number":
-      case "float32":
-        kind = "FlagKindFloat64";
-        break;
-      default:
-        kind = "FlagKindString";
-        break;
-    }
-  }
+  const kind = inferKindNameForField(field, kindOverride);
 
   const parts: string[] = [
     `FlagName: "${flagName}"`,
@@ -610,8 +571,16 @@ function buildMetaEntryForField(
       case "FlagKindIntEnum":
       case "FlagKindDateTime":
       case "FlagKindDate":
-      case "FlagKindJSON":
         parts.push(`DefaultStr: "${escapeGoString(String(defaultValue))}"`);
+        break;
+      case "FlagKindJSON":
+        parts.push(
+          `DefaultStr: "${escapeGoString(
+            typeof defaultValue === "object"
+              ? JSON.stringify(defaultValue)
+              : String(defaultValue),
+          )}"`,
+        );
         break;
       case "FlagKindBool":
         if (defaultValue === true || defaultValue === "true") {
@@ -982,11 +951,7 @@ function templateBuildRequestBodyCall(op: Operation): string {
     let typeName: string;
     // When both nullable+optional and wrapper is enabled, the Go SDK uses
     // OptionalNullable[T] as the parameter type instead of *T
-    if (
-      bodyField.Nullable &&
-      bodyField.Optional &&
-      context.Global.Config.NullableOptionalWrapper
-    ) {
+    if (isNullableOptionalWrapped(bodyField)) {
       const baseType = sanitizeType(bodyField.Type, false, "");
       addImport("internal/sdk/optionalnullable", true);
       typeName = `optionalnullable.OptionalNullable[${baseType}]`;

@@ -1,0 +1,10 @@
+id: 1790653426-629a75aa
+features:
+    - core
+targets:
+    - cli
+type: feat
+bump: patch
+description: add cli.arrayFlagFormat, repeatable or json, for string and enum array flags. JSON array flags now reject non-array and null input, and nullable multipart arrays take a JSON array
+author: 2ynn
+date: "2026-09-28"

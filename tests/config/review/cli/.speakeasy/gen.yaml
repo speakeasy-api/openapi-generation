@@ -32,6 +32,7 @@ cli:
   version: 0.0.1
   additionalDependencies: {}
   agentEnvironmentDetection: false
+  arrayFlagFormat: repeatable
   baseErrorName: SDKError
   classifiedErrors: true
   cliName: cli

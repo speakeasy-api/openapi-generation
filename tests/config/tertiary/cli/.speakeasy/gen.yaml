@@ -20,5 +20,6 @@ cli:
   defaultErrorName: SDKDefaultError
   envVarPrefix: CLI
   packageName: openapi
+  arrayFlagFormat: json
   retryFlagsVisibility: hidden
   retryMethodPolicy: safe-methods
