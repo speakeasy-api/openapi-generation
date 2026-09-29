@@ -5,6 +5,6 @@ targets:
     - cli
 type: feat
 bump: patch
-description: add cli.arrayFlagFormat, repeatable or json, for string and enum array flags. JSON array flags now reject non-array input, null on a required field, and an empty array on a required query or header parameter; nullable multipart arrays take a JSON array
+description: 'add cli.arrayFlagFormat, repeatable or json, for string and enum array flags. JSON array flags reject non-array input, null on a required field, null elements in a non-nullable array, and an empty array on a required query or header parameter; array flags check the schema minItems; nullable multipart arrays take a JSON array. Also fixes: integer enum array flags take a JSON array instead of a repeatable flag that could not convert its values; enum-item array flags reject values outside the item enum and list their options in help; flag help no longer shows a backticked word from the description as the value placeholder, and puts its hints on their own line after a multi-line description'
 author: 2ynn
 date: "2026-09-28"
