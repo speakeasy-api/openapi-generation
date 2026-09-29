@@ -180,7 +180,7 @@ trackedFiles:
   internal/cli/postfile.go:
     last_write_checksum: sha1:f67d5ddcaa3ea921513ee6f97fe5eb8db9580aae
   internal/cli/renderasset.go:
-    last_write_checksum: sha1:9180bf33bd8735d8efb77b778a7e93092858738a
+    last_write_checksum: sha1:66703b4e61cf22941907d9a373dd4e75587f7e0e
   internal/cli/root.go:
     last_write_checksum: sha1:1d441678f8915123a6a0e276474fc39169a36e9c
   internal/cli/tag1/auth.go:
@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:1d35d22e4beacf398104fd6883510f4c72323f91
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:5f13b358f7724118c05e69a9449b2a9dc918a1ed
+    last_write_checksum: sha1:0c2b83f7f32fa1fd01aeb87e9aa431be29d1c889
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
@@ -640,7 +640,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:eebf02d637a2075c3cbe731e3aae77630f1dffc1
+    last_write_checksum: sha1:24bea0753441241dd4e600bbbdcc33b2363d46ad
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:

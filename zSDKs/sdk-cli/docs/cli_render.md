@@ -26,7 +26,7 @@ cli render [prompt] [flags]
       --body string                     Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
   -h, --help                            help for render
       --out string                      Write the image to this file (or into this directory). Default: ./render-{timestamp}-{rand}.{ext}
-      --output-modalities stringArray   list of values
+      --output-modalities stringArray   options: text, image
   -p, --prompt string                   [required]
       --raw-response                    Print the raw API response instead of writing the image to a file
       --schema                          Print the exact JSON Schema of the request body and exit

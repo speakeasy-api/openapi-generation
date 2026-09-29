@@ -1561,6 +1561,10 @@ func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, va
 // repeatable flag: the value must be a JSON array, a required field rejects
 // null and [], and a string array rejects null elements instead of sending "".
 func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) error {
+	// OptionalNullable[T] is a map[bool]*T
+	if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.Bool && fieldType.Elem().Kind() == reflect.Ptr {
+		fieldType = fieldType.Elem().Elem()
+	}
 	if fieldType.Kind() != reflect.Slice || fieldType.Elem().Kind() == reflect.Uint8 {
 		return nil
 	}
@@ -1582,8 +1586,16 @@ func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) erro
 		return nil
 	}
 	var elems []*string
-	if json.Unmarshal([]byte(trimmed), &elems) == nil && slices.Contains(elems, nil) {
+	if json.Unmarshal([]byte(trimmed), &elems) != nil {
+		return nil
+	}
+	if slices.Contains(elems, nil) {
 		return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements must be strings", m.FlagName))
+	}
+	for _, elem := range elems {
+		if err := validateEnumValue(m, *elem, true); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1690,6 +1702,11 @@ func buildStringArrayField(cmd *cobra.Command, v reflect.Value, m FlagMeta) erro
 	}
 	if err := validateRequiredPathParam(v, m, changed, val...); err != nil {
 		return err
+	}
+	for _, elem := range val {
+		if err := validateEnumValue(m, elem, true); err != nil {
+			return err
+		}
 	}
 
 	if !changed {

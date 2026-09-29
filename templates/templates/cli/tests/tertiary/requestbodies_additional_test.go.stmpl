@@ -114,6 +114,51 @@ func TestJSONArrayFlagSendsEmptyOptionalArray(t *testing.T) {
 	assert.Empty(t, aliases)
 }
 
+func TestJSONArrayEnumFlagRejectsUnknownValue(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-json-array-flags-post",
+		"--labels", `["nightly"]`,
+		"--events", `["item.created","bogus"]`,
+		"--channels", `["email"]`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --events: "bogus"; valid options: item.created, item.deleted`)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+}
+
+func TestJSONArrayNullableEnumFlagValidatesElements(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	args := []string{
+		"request-bodies", "cli-json-array-flags-post",
+		"--labels", `["nightly"]`,
+		"--events", `["item.created"]`,
+		"--channels", `["email"]`,
+	}
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, append(args, "--priorities", `["bogus"]`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --priorities: "bogus"; valid options: low, high`)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, append(args, "--priorities", `["high"]`)))
+	priorities, ok := jsonGet(h.GetStdout(), "json.priorities").([]interface{})
+	require.True(t, ok, "priorities must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{"high"}, priorities)
+}
+
+func TestJSONArrayEnumFlagHelpListsOptions(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--help"}))
+	assert.Contains(t, h.GetStdout(), "(options: item.created, item.deleted)")
+}
+
 func TestJSONArrayFlagNotVariadicInUsageSchema(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--usage"}))

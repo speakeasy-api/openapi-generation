@@ -631,11 +631,15 @@ function buildMetaEntryForField(
   }
 
   // Enum values for validation
-  if (
-    (kind === "FlagKindEnum" || kind === "FlagKindIntEnum") &&
-    typeDef.Enum?.Values
-  ) {
-    const enumValuesStr = typeDef.Enum.Values.map(
+  const enumType = flagEnumType(typeDef);
+  const isEnumKind = kind === "FlagKindEnum" || kind === "FlagKindIntEnum";
+  const isEnumItemArray =
+    (kind === "FlagKindStringArray" || kind === "FlagKindJSON") &&
+    isArrayType(typeDef) &&
+    enumType !== undefined &&
+    !isIntBackedEnum(enumType);
+  if ((isEnumKind || isEnumItemArray) && enumType?.Enum?.Values) {
+    const enumValuesStr = enumType.Enum.Values.map(
       (v: string) => `"${escapeGoString(v)}"`,
     ).join(", ");
     parts.push(`EnumValues: []string{${enumValuesStr}}`);

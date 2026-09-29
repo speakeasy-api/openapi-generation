@@ -15,7 +15,8 @@ paths:
         Required string-item and enum-item array properties on a JSON request
         body: one with a multi-element example, one without an example, and
         one whose example is an empty array; plus an optional string-item
-        array, for which an empty array is a valid value.
+        array, for which an empty array is a valid value, and an optional
+        nullable enum-item array.
       tags:
         - requestBodies
       requestBody:
@@ -114,6 +115,14 @@ components:
               - email
               - sms
           example: []
+        priorities:
+          type: [array, "null"]
+          description: Optional nullable enum-item array
+          items:
+            type: string
+            enum:
+              - low
+              - high
         aliases:
           type: array
           description: Optional string-item array

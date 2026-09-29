@@ -23,7 +23,7 @@ cli observe [prompt] [flags]
       --async                           Return the operation handle without waiting for a terminal response
       --body string                     Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
   -h, --help                            help for observe
-      --output-modalities stringArray   list of values
+      --output-modalities stringArray   options: text, image
       --poll-interval string            Override the initial polling interval (positive Go duration, for example 500ms or 2s)
       --poll-timeout string             Override the overall polling deadline (positive Go duration, at least the effective poll interval)
   -p, --prompt string                   [required]

@@ -1,15 +1,19 @@
 package tests
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/clierrors"
 )
 
 // --- JSON Map of Any ---
@@ -403,6 +407,34 @@ func TestRepeatableFlagExampleSendsArrayElements(t *testing.T) {
 	channels, ok := jsonGet(h.GetStdout(), "json.channels").([]interface{})
 	require.True(t, ok, "channels must be an array: %s", h.GetStdout())
 	assert.Equal(t, []interface{}{"email"}, channels)
+}
+
+func TestRepeatableEnumArrayFlagRejectsUnknownValue(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-repeatable-flag-examples-post",
+		"--labels", "nightly",
+		"--events", "item.created",
+		"--events", "bogus",
+		"--weights", "[1]",
+		"--channels", "email",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --events: "bogus"; valid options: item.created, item.deleted`)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Zero(t, requests.Load(), "no request must be sent with an unknown enum value")
+}
+
+func TestRepeatableEnumArrayFlagHelpListsOptions(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-repeatable-flag-examples-post", "--help"}))
+	assert.Contains(t, h.GetStdout(), "(options: item.created, item.deleted)")
 }
 
 // A nullable multipart array is OptionalNullable-wrapped: it registers as a

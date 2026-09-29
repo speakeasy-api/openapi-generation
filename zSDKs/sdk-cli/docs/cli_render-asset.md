@@ -21,7 +21,7 @@ cli render-asset [flags]
 ```
       --body string                     Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
   -h, --help                            help for render-asset
-      --output-modalities stringArray   list of values
+      --output-modalities stringArray   options: text, image
   -p, --prompt string                   [required]
       --schema                          Print the exact JSON Schema of the request body and exit
 ```

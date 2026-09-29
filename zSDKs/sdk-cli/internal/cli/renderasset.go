@@ -15,7 +15,7 @@ import (
 
 var renderAssetCmdMeta = []flagutil.FlagMeta{
 	{FlagName: "prompt", Shorthand: "p", FieldPath: "Prompt", Kind: flagutil.FlagKindString, Required: true, Description: "[required]"},
-	{FlagName: "output-modalities", FieldPath: "OutputModalities", Kind: flagutil.FlagKindStringArray, Optional: true, Description: "list of values"},
+	{FlagName: "output-modalities", FieldPath: "OutputModalities", Kind: flagutil.FlagKindStringArray, Optional: true, EnumValues: []string{"text", "image"}, Description: "options: text, image"},
 }
 
 // initRenderAssetCmd initializes the render-asset command.

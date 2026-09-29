@@ -183,6 +183,16 @@ function isEnumType(typeDef: TypeDef): boolean {
 registerTemplateFunc("isEnumType", isEnumType);
 
 /**
+ * Enum type of a scalar enum field, or item type of an enum-item array.
+ */
+function flagEnumType(typeDef: TypeDef): TypeDef | undefined {
+  if (isEnumType(typeDef)) return typeDef;
+  if (isArrayType(typeDef) && typeDef.ItemType && isEnumType(typeDef.ItemType))
+    return typeDef.ItemType;
+  return undefined;
+}
+
+/**
  * Check if an enum has an integer backing type (int64, int32, etc).
  * This is important for proper type conversion in generated code.
  */
@@ -440,8 +450,9 @@ function getFlagDescription(field: FieldDef): string {
   }
 
   // Add enum options
-  if (isEnumType(field.Type)) {
-    const enumHelp = getEnumHelpText(field.Type);
+  const enumType = flagEnumType(field.Type);
+  if (enumType) {
+    const enumHelp = getEnumHelpText(enumType);
     if (enumHelp) {
       desc = desc ? `${desc} (${enumHelp})` : enumHelp;
     }
