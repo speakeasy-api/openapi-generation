@@ -431,7 +431,7 @@ func TestRepeatableEnumArrayFlagRejectsUnknownValue(t *testing.T) {
 	assert.Zero(t, requests.Load(), "no request must be sent with an unknown enum value")
 }
 
-func TestIntEnumArrayFlagTakesJSONArray(t *testing.T) {
+func TestIntEnumArrayFlagIsRepeatable(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()
 
@@ -443,13 +443,13 @@ func TestIntEnumArrayFlagTakesJSONArray(t *testing.T) {
 		"--channels", "email",
 	}
 	h := NewCLITestHarness(t)
-	require.NoError(t, h.RunWithServer(s.URL, append(args, "--levels", `[2,3]`)))
+	require.NoError(t, h.RunWithServer(s.URL, append(args, "--levels", "2", "--levels", "3")))
 	levels, ok := jsonGet(h.GetStdout(), "json.levels").([]interface{})
 	require.True(t, ok, "levels must be an array: %s", h.GetStdout())
 	assert.Equal(t, []interface{}{2.0, 3.0}, levels)
 
 	h = NewCLITestHarness(t)
-	err := h.RunWithServer(s.URL, append(args, "--levels", `[2,9]`))
+	err := h.RunWithServer(s.URL, append(args, "--levels", "2", "--levels", "9"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `invalid value for --levels: "9"; valid options: 1, 2, 3`)
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))

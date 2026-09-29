@@ -13,10 +13,10 @@ paths:
       operationId: cliRepeatableFlagExamplesPost
       description: >-
         Array-valued examples on required body properties. String-item and
-        enum-item arrays are repeatable inputs, so their examples must render
-        one value per element rather than a single JSON-encoded token. A
-        number-item array and an optional integer enum-item array are single
-        JSON-encoded inputs.
+        enum-item arrays, including an optional integer enum-item array, are
+        repeatable inputs, so their examples must render one value per element
+        rather than a single JSON-encoded token. A number-item array is a
+        single JSON-encoded input.
       tags:
         - requestBodies
       requestBody:

@@ -528,6 +528,28 @@ func TestBuildRequestValidatesNullableEnumItemArrayElements(t *testing.T) {
 	}
 }
 
+type int64ArrayRepeatableQueryRequest struct {
+	Codes         []int64  `queryParam:"style=form,explode=true,name=codes"`
+	NullableCodes []*int64 `queryParam:"style=form,explode=true,name=nullableCodes"`
+}
+
+func TestBuildRequestConvertsRepeatableIntEnumArrayElements(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "codes", FieldPath: "Codes", Kind: flagutil.FlagKindStringArray, EnumValues: []string{"9007199254740993", "1"}},
+		{FlagName: "nullable-codes", FieldPath: "NullableCodes", Kind: flagutil.FlagKindStringArray, EnumValues: []string{"1", "2"}},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	for _, v := range []string{"9007199254740993", "1"} {
+		require.NoError(t, cmd.Flags().Set("codes", v))
+	}
+	require.NoError(t, cmd.Flags().Set("nullable-codes", "2"))
+	req, err := flagutil.BuildRequest[int64ArrayRepeatableQueryRequest](cmd, meta, "", "")
+	require.NoError(t, err)
+	assert.Equal(t, []int64{9007199254740993, 1}, req.Codes)
+	require.Len(t, req.NullableCodes, 1)
+	assert.Equal(t, int64(2), *req.NullableCodes[0])
+}
+
 func TestBuildRequestChecksArrayMinItems(t *testing.T) {
 	for _, tc := range []struct {
 		name   string

@@ -137,7 +137,7 @@ function hasExampleValue(field: FieldDef, val: any): boolean {
   return !(
     Array.isArray(val) &&
     val.length === 0 &&
-    isStringItemArrayField(field)
+    isStringOrEnumItemArrayField(field)
   );
 }
 
@@ -255,7 +255,7 @@ function placeholderExampleValue(field: FieldDef): CLIExampleValue {
       SynthesizedAnglePlaceholder: false,
     };
   }
-  if (isStringItemArrayField(field) && !isRepeatableFlagField(field)) {
+  if (isStringOrEnumItemArrayField(field) && !isRepeatableFlagField(field)) {
     return { Value: '["<value>"]', SynthesizedAnglePlaceholder: true };
   }
   const itemPlaceholder = scalarPlaceholder(itemTypeDef);

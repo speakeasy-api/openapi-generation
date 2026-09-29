@@ -243,7 +243,7 @@ function intentRequiredParamFallbacks(op: Operation): string[] {
         const placeholder = `<${flagName}>`;
         value = !example.SynthesizedAnglePlaceholder
           ? example.Value
-          : isStringItemArrayField(param.Field) &&
+          : isStringOrEnumItemArrayField(param.Field) &&
             !isRepeatableFlagField(param.Field)
           ? JSON.stringify([placeholder])
           : placeholder;

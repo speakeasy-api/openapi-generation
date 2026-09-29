@@ -233,14 +233,10 @@ function usageFlagSpec(
 // Only string/enum arrays can use FlagKindStringArray (cobra StringArray gives []string).
 // Typed arrays (int, float, bool) use FlagKindJSON since the runtime can't convert
 // string array elements to typed values via reflection.
-function isStringItemArrayField(field: FieldDef): boolean {
+function isStringOrEnumItemArrayField(field: FieldDef): boolean {
   if (!isArrayType(field.Type)) return false;
-  const itemType = field.Type.ItemType;
-  const itemTypeStr = itemType?.Type?.toString() || "string";
-  return (
-    itemTypeStr === "string" ||
-    (itemTypeStr === "enum" && !isIntBackedEnum(itemType))
-  );
+  const itemTypeStr = field.Type.ItemType?.Type?.toString() || "string";
+  return itemTypeStr === "string" || itemTypeStr === "enum";
 }
 
 function inferKindNameForField(field: FieldDef, kindOverride?: string): string {
@@ -250,7 +246,8 @@ function inferKindNameForField(field: FieldDef, kindOverride?: string): string {
     return isIntBackedEnum(typeDef) ? "FlagKindIntEnum" : "FlagKindEnum";
   }
   if (isArrayType(typeDef)) {
-    return isStringItemArrayField(field) && arrayFlagFormat() === "repeatable"
+    return isStringOrEnumItemArrayField(field) &&
+      arrayFlagFormat() === "repeatable"
       ? "FlagKindStringArray"
       : "FlagKindJSON";
   }
