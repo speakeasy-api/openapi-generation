@@ -54,7 +54,6 @@ paths:
           description: String-item array with a multi-element example
           schema:
             type: array
-            minItems: 1
             items:
               type: string
             example:
@@ -91,7 +90,6 @@ components:
         labels:
           type: array
           description: String-item array with a multi-element example
-          minItems: 1
           items:
             type: string
           example:
@@ -104,7 +102,6 @@ components:
             several lines and ends in a list:
             - item.created
             - item.deleted
-          minItems: 1
           items:
             type: string
             enum:
