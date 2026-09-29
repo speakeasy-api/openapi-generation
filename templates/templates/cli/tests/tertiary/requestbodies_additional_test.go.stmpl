@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
 )
 
 // The tertiary variant generates with cli.arrayFlagFormat: json. String-item
@@ -77,6 +79,39 @@ func TestJSONArrayFlagRejectsNull(t *testing.T) {
 			assert.Contains(t, err.Error(), "invalid value for --labels: null")
 		})
 	}
+}
+
+func TestJSONArrayFlagRejectsEmptyRequiredArray(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-json-array-flags-post",
+		"--labels", `[]`,
+		"--events", `["item.created"]`,
+		"--channels", `["email"]`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --labels: empty array")
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+}
+
+func TestJSONArrayFlagSendsEmptyOptionalArray(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-json-array-flags-post",
+		"--labels", `["nightly"]`,
+		"--events", `["item.created"]`,
+		"--channels", `["email"]`,
+		"--aliases", `[]`,
+	}))
+	aliases, ok := jsonGet(h.GetStdout(), "json.aliases").([]interface{})
+	require.True(t, ok, "aliases must be an array: %s", h.GetStdout())
+	assert.Empty(t, aliases)
 }
 
 func TestJSONArrayFlagNotVariadicInUsageSchema(t *testing.T) {

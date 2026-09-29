@@ -1559,7 +1559,7 @@ func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, va
 
 // validateJSONArrayInput gives JSON flags on slice fields the guarantees of a
 // repeatable flag: the value must be a JSON array, a required field rejects
-// null, and a string array rejects null elements instead of sending "".
+// null and [], and a string array rejects null elements instead of sending "".
 func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) error {
 	if fieldType.Kind() != reflect.Slice || fieldType.Elem().Kind() == reflect.Uint8 {
 		return nil
@@ -1573,6 +1573,10 @@ func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) erro
 	}
 	if !strings.HasPrefix(trimmed, "[") {
 		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
+	}
+	var raw []json.RawMessage
+	if m.Required && json.Unmarshal([]byte(trimmed), &raw) == nil && len(raw) == 0 {
+		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: empty array; the field is required, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
 	}
 	if fieldType.Elem().Kind() != reflect.String {
 		return nil

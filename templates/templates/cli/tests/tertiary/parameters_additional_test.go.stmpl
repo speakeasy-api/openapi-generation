@@ -1,10 +1,15 @@
 package tests
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
 )
 
 // The tertiary variant generates with cli.arrayFlagFormat: json. String-item
@@ -29,4 +34,22 @@ func TestJSONArrayQueryParamSendsArrayElements(t *testing.T) {
 	tags, ok := jsonGet(h.GetStdout(), "args.tags").([]interface{})
 	require.True(t, ok, "tags must be repeated in the query: %s", h.GetStdout())
 	assert.Equal(t, []interface{}{"urgent", "needs review"}, tags)
+}
+
+func TestJSONArrayQueryParamRejectsEmptyRequiredArray(t *testing.T) {
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"parameters", "cli-json-array-flags-get",
+		"--tags", `[]`,
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value for --tags: empty array")
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Zero(t, requests.Load(), "no request must be sent without the required tags")
 }
