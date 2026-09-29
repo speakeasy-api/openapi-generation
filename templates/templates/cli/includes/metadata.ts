@@ -635,8 +635,7 @@ function buildMetaEntryForField(
   const isEnumItemArray =
     (kind === "FlagKindStringArray" || kind === "FlagKindJSON") &&
     isArrayType(typeDef) &&
-    enumType !== undefined &&
-    !isIntBackedEnum(enumType);
+    enumType !== undefined;
   if ((isEnumKind || isEnumItemArray) && enumType?.Enum?.Values) {
     const enumValuesStr = enumType.Enum.Values.map(
       (v: string) => `"${escapeGoString(v)}"`,

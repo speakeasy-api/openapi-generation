@@ -1575,8 +1575,16 @@ func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) erro
 		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
 	}
 	var raw []json.RawMessage
-	if m.Required && json.Unmarshal([]byte(trimmed), &raw) == nil && len(raw) == 0 {
+	rawErr := json.Unmarshal([]byte(trimmed), &raw)
+	if m.Required && rawErr == nil && len(raw) == 0 {
 		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: empty array; the field is required, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
+	}
+	if kind := fieldType.Elem().Kind(); kind >= reflect.Int && kind <= reflect.Int64 && rawErr == nil {
+		for _, elem := range raw {
+			if err := validateEnumValue(m, string(elem), true); err != nil {
+				return err
+			}
+		}
 	}
 	if fieldType.Elem().Kind() != reflect.String {
 		return nil
