@@ -339,6 +339,7 @@ func TestVersionAndWhoamiMachineOutput(t *testing.T) {
 	assert.False(t, json.Valid([]byte(strings.TrimSpace(h.GetStdout()))),
 		"pretty version output turned into JSON")
 }
+{{- if hasRootVersionFlag}}
 
 func TestRootVersionFlagMatchesVersionCommand(t *testing.T) {
 	for _, format := range []string{"pretty", "json"} {
@@ -354,3 +355,4 @@ func TestRootVersionFlagMatchesVersionCommand(t *testing.T) {
 		}
 	}
 }
+{{- end}}
