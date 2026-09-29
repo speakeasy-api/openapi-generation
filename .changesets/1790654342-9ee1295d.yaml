@@ -1,0 +1,10 @@
+id: 1790654342-9ee1295d
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: remove orphaned command docs after regeneration
+author: TristanSpeakEasy
+date: "2026-09-29"

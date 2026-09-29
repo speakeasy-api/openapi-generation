@@ -217,6 +217,68 @@ func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
 	}
 }
 
+func TestGenMarkdownTreeRemovesOrphanedDocs(t *testing.T) {
+	dir := t.TempDir()
+	root := &cobra.Command{Use: "cli"}
+	oldGroup := &cobra.Command{Use: "old-group"}
+	oldCommand := &cobra.Command{Use: "old-command", Run: func(*cobra.Command, []string) {}}
+	oldGroup.AddCommand(oldCommand)
+	root.AddCommand(oldGroup)
+	if err := genMarkdownTreeNoDate(root, dir); err != nil {
+		t.Fatal(err)
+	}
+
+	for name, content := range map[string]string{
+		"cli_notes.md":     "# Custom notes\n",
+		"other_old.md":     "## other old\n\n" + clierrors.HelpFooter + "\n",
+		"cli_unrelated.md": "## cli unrelated\n\nHand-written content\n",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Mkdir(filepath.Join(dir, "cli_directory.md"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	root.RemoveCommand(oldGroup)
+	newGroup := &cobra.Command{Use: "new-group", Run: func(*cobra.Command, []string) {}}
+	root.AddCommand(newGroup)
+	if err := genMarkdownTreeNoDate(root, dir); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range []string{"cli_old-group.md", "cli_old-group_old-command.md"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Errorf("orphaned documentation %q still exists: %v", name, err)
+		}
+	}
+	for _, name := range []string{"cli.md", "cli_new-group.md", "cli_notes.md", "other_old.md", "cli_unrelated.md", "cli_directory.md"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
+			t.Errorf("documentation %q was removed: %v", name, err)
+		}
+	}
+}
+
+func TestGenMarkdownTreeKeepsDocsOnWriteFailure(t *testing.T) {
+	dir := t.TempDir()
+	root := &cobra.Command{Use: "cli"}
+	oldCommand := &cobra.Command{Use: "old", Run: func(*cobra.Command, []string) {}}
+	root.AddCommand(oldCommand)
+	if err := genMarkdownTreeNoDate(root, dir); err != nil {
+		t.Fatal(err)
+	}
+
+	root.RemoveCommand(oldCommand)
+	root.AddCommand(&cobra.Command{Use: "missing/parent", Run: func(*cobra.Command, []string) {}})
+	if err := genMarkdownTreeNoDate(root, dir); err == nil {
+		t.Fatal("expected documentation write to fail")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "cli_old.md")); err != nil {
+		t.Fatalf("removed existing documentation after a failed write: %v", err)
+	}
+}
+
 func TestMachineInterfaceFooter(t *testing.T) {
 	root := &cobra.Command{Use: "petstore"}
 	jsonCmd := &cobra.Command{Use: "list", Annotations: map[string]string{"speakeasy_operation": "listPets"}}
