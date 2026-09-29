@@ -52,6 +52,13 @@ function classifiedErrors(): boolean {
 registerTemplateFunc("classifiedErrors", classifiedErrors);
 
 // @ts-ignore
+function hasRootVersionFlag(): boolean {
+  const val = context.Global.Config.RootVersionFlag;
+  return val === true || val === "true";
+}
+registerTemplateFunc("hasRootVersionFlag", hasRootVersionFlag);
+
+// @ts-ignore
 function isAnyInteractiveEnabled(): boolean {
   return isInteractiveAuthEnabled() || isInteractiveModeEnabled();
 }

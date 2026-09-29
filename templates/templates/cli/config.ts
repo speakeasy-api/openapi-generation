@@ -528,6 +528,15 @@ function getConfigFields(
       ValidationRegex: /^(auto|visible|hidden|none)$/.source,
       ValidationMessage: "auto, visible, hidden, or none only",
     },
+    rootVersionFlag: {
+      Name: "rootVersionFlag",
+      Required: false,
+      DefaultValue: newSDK,
+      Description:
+        "Whether to register the root --version/-v flag as an alias for the version command. Conflicting flags are renamed with a -param suffix.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     interactiveTheme: {
       Name: "interactiveTheme",
       Required: false,

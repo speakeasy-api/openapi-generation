@@ -614,7 +614,7 @@ function getOperationUsageFlags(op: Operation): UsageFlagDef[] {
   return flags;
 }
 
-function getRootUsageFlags(): UsageFlagDef[] {
+function getBuiltinRootUsageFlags(): UsageFlagDef[] {
   const flags: UsageFlagDef[] = [
     {
       spec: usageFlagSpec("usage"),
@@ -629,6 +629,13 @@ function getRootUsageFlags(): UsageFlagDef[] {
     flags.push({
       spec: usageFlagSpec("help-global"),
       help: "Print global flags shared by every command",
+    });
+  }
+
+  if (hasRootVersionFlag()) {
+    flags.push({
+      spec: usageFlagSpec("version", "v"),
+      help: "Print the CLI version",
     });
   }
 
@@ -779,14 +786,20 @@ function getRootUsageFlags(): UsageFlagDef[] {
     );
   }
 
+  return flags;
+}
+
+function getRootUsageFlags(): UsageFlagDef[] {
+  const flags = getBuiltinRootUsageFlags();
+
   const servers = context.Global.AST.MainSDK.Servers;
   if (servers) {
     for (const v of servers.GetVariables()) {
       flags.push({
         spec: usageFlagSpec(
-          sanitizeFlagName(v.Name),
+          serverVariableFlagName(v.Name),
           undefined,
-          sanitizeFlagName(v.Name).replace(/-/g, "_"),
+          serverVariableFlagName(v.Name).replace(/-/g, "_"),
         ),
         help: `Server template variable: ${v.Name}`,
         global: true,

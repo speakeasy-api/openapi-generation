@@ -24,3 +24,4 @@ cli:
   packageName: openapi
   enableCustomCodeRegions: true
   removeStutter: false
+  rootVersionFlag: true

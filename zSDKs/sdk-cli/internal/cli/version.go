@@ -35,24 +35,28 @@ overridden at build time using Go linker flags:
 			if usage.UsageRequested(cmd) {
 				return usage.EmitSchema(cmd, cmd.OutOrStdout())
 			}
-			if output.IsMachineMode(cmd) {
-				info := map[string]any{"name": "cli", "version": Version}
-				if BuildTime != "" {
-					info["build_time"] = BuildTime
-				}
-				return output.LocalResult(cmd, info)
-			}
-			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "cli %s\n", Version); err != nil {
-				return err
-			}
-			if BuildTime != "" {
-				if _, err := fmt.Fprintf(cmd.OutOrStdout(), "Built: %s\n", BuildTime); err != nil {
-					return err
-				}
-			}
-			return nil
+			return printVersion(cmd)
 		},
 	}
 	parent.AddCommand(cmd)
+	return nil
+}
+
+func printVersion(cmd *cobra.Command) error {
+	if output.IsMachineMode(cmd) {
+		info := map[string]any{"name": "cli", "version": Version}
+		if BuildTime != "" {
+			info["build_time"] = BuildTime
+		}
+		return output.LocalResult(cmd, info)
+	}
+	if _, err := fmt.Fprintf(cmd.OutOrStdout(), "cli %s\n", Version); err != nil {
+		return err
+	}
+	if BuildTime != "" {
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "Built: %s\n", BuildTime); err != nil {
+			return err
+		}
+	}
 	return nil
 }

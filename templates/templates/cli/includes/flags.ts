@@ -77,6 +77,35 @@ registerTemplateFunc(
 );
 
 /**
+ * Collect the flag names registered on the root command besides server
+ * template variables, including Cobra's default --help flag.
+ */
+function rootFlagNames(): Set<string> {
+  const names = new Set<string>(["help"]);
+  for (const flag of getBuiltinRootUsageFlags()) {
+    names.add(flag.spec.match(/--(\S+)/)![1]);
+  }
+  for (const field of getCLISecurityFields()) {
+    names.add(field.flagName);
+  }
+  if (hasGlobals()) {
+    for (const field of context.Global.AST.MainSDK.Globals.Fields) {
+      names.add(sanitizeFlagNameWithReserved(field.Name));
+    }
+  }
+  return names;
+}
+
+/**
+ * Resolve the flag name for a server template variable, adding a "-param"
+ * suffix when it collides with another root flag.
+ */
+function serverVariableFlagName(name: string): string {
+  const flagName = sanitizeFlagName(name);
+  return rootFlagNames().has(flagName) ? `${flagName}-param` : flagName;
+}
+
+/**
  * Build a nested flag name with dot notation.
  * Example: buildNestedFlagName("user", "name") => "user.name"
  */

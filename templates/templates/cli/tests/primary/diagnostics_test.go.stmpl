@@ -339,3 +339,18 @@ func TestVersionAndWhoamiMachineOutput(t *testing.T) {
 	assert.False(t, json.Valid([]byte(strings.TrimSpace(h.GetStdout()))),
 		"pretty version output turned into JSON")
 }
+
+func TestRootVersionFlagMatchesVersionCommand(t *testing.T) {
+	for _, format := range []string{"pretty", "json"} {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunBare([]string{"--output-format", format, "version"}))
+		want := h.GetStdout()
+		require.NotEmpty(t, want)
+
+		for _, flag := range []string{"--version", "-v"} {
+			h = NewCLITestHarness(t)
+			require.NoError(t, h.RunBare([]string{"--output-format", format, flag}))
+			assert.Equal(t, want, h.GetStdout(), "%s under %s", flag, format)
+		}
+	}
+}

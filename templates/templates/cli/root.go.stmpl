@@ -46,6 +46,11 @@ func NewRootCommand() (*cobra.Command, error) {
             if usage.UsageRequested(cmd) {
                 return usage.EmitSchema(cmd, cmd.OutOrStdout())
             }
+            {{- if hasRootVersionFlag}}
+            if versionFlagRequested(cmd) {
+                return printVersion(cmd)
+            }
+            {{- end}}
             {{- if eq (helpStyle) "compact"}}
             if compactHelpGlobalRequested(cmd) {
                 out := cmd.OutOrStdout()
@@ -797,6 +802,11 @@ func NewRootCommand() (*cobra.Command, error) {
             if usage.UsageRequested(cmd) {
                 return usage.EmitSchema(cmd, cmd.OutOrStdout())
             }
+            {{- if hasRootVersionFlag}}
+            if versionFlagRequested(cmd) {
+                return printVersion(cmd)
+            }
+            {{- end}}
             {{- if eq (helpStyle) "compact"}}
             if compactHelpGlobalRequested(cmd) {
                 out := cmd.OutOrStdout()

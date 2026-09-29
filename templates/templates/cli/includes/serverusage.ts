@@ -10,7 +10,7 @@ function getServerReadmeContext(): ServerReadmeContext {
 
 // @ts-ignore
 function templateServerVariableSetter(v: ServerVariable): string {
-  return `--${caser().ToKebab(sanitizeName(v.Name))} <value>`;
+  return `--${serverVariableFlagName(v.Name)} <value>`;
 }
 
 registerTemplateFunc(

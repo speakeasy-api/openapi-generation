@@ -1,0 +1,10 @@
+id: 1790646399-b2a90b69
+features:
+    - core
+targets:
+    - cli
+type: feat
+bump: minor
+description: add rootVersionFlag option registering a root --version/-v flag as an alias for the version command; server variable flags colliding with root flags get a -param suffix
+author: 2ynn
+date: "2026-09-28"

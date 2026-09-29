@@ -1007,7 +1007,7 @@ function templateServerVariableFlags(): string {
   lines.push("// Server template variable flags");
 
   for (const v of variables) {
-    const flagName = sanitizeFlagName(v.Name);
+    const flagName = serverVariableFlagName(v.Name);
     const desc = `Server template variable: ${v.Name}`;
     lines.push(
       `rootCmd.PersistentFlags().String("${flagName}", "", "${escapeGoString(
@@ -1039,7 +1039,7 @@ function templateServerVariableFlagExample(): string {
 
   return variables
     .map((v: any) => {
-      const flagName = sanitizeFlagName(v.Name);
+      const flagName = serverVariableFlagName(v.Name);
       const defaultVal = String(v.Default?.Value || "value");
       // The README example contract test executes these lines: a default
       // containing whitespace or shell metacharacters must stay one argument.
@@ -1069,7 +1069,7 @@ function templateServerVariableOptions(): string {
   const lines: string[] = [];
 
   for (const v of variables) {
-    const flagName = sanitizeFlagName(v.Name);
+    const flagName = serverVariableFlagName(v.Name);
     const optionName = cliSDKOptionName(v.Name);
     const typeStr = v.Type?.Type?.toString() || "string";
 
@@ -1153,7 +1153,7 @@ function templateOperationServerResolution(
   if (variables.length > 0) {
     lines.push(`params := map[string]string{}`);
     for (const v of variables) {
-      const flagName = sanitizeFlagName(v.Name);
+      const flagName = serverVariableFlagName(v.Name);
       lines.push(
         `if v, _ := flagutil.GetStringFlag(cmd, "${flagName}"); v != "" { params["${v.Name}"] = v }`,
       );

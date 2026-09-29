@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 56dc71dd8e4607dbbdd341d7136634a5
+  configChecksum: f48e92e0f3d0ad6cf180b35c82ab9ee1
 features:
   cli:
     additionalProperties: 0.0.1
@@ -216,7 +216,7 @@ trackedFiles:
   internal/cli/validate.go:
     last_write_checksum: sha1:4a2b67a52f6bf5090792a3e3a9e52bf5ac55bfd2
   internal/cli/version.go:
-    last_write_checksum: sha1:dd2bc75c04cc138cc5fed3cc8046599dd250cdc3
+    last_write_checksum: sha1:142d965150c031fa2041717c39f2b2561dc90401
   internal/cli/whoami.go:
     last_write_checksum: sha1:9b243266c806ac4e720aa333304186b8bb7d2f18
   internal/client/client.go:
