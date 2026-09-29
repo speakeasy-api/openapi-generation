@@ -1591,6 +1591,9 @@ func validateJSONArrayInput(cmd *cobra.Command, m FlagMeta, fieldType reflect.Ty
 		if err := enforceStrictOrWarn(cmd, validateArrayLength(m, len(raw))); err != nil {
 			return err
 		}
+		if !keepsJSONNull(fieldType.Elem().Kind()) && slices.ContainsFunc(raw, isJSONNull) {
+			return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements cannot be null", m.FlagName))
+		}
 	}
 	if kind := fieldType.Elem().Kind(); kind >= reflect.Int && kind <= reflect.Int64 && rawErr == nil {
 		for _, elem := range raw {
@@ -1602,19 +1605,24 @@ func validateJSONArrayInput(cmd *cobra.Command, m FlagMeta, fieldType reflect.Ty
 	if fieldType.Elem().Kind() != reflect.String {
 		return nil
 	}
-	var elems []*string
+	var elems []string
 	if err := json.Unmarshal([]byte(trimmed), &elems); err != nil {
 		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array of strings, e.g. --%s '["value"]': %v`, m.FlagName, m.FlagName, err))
 	}
-	if slices.Contains(elems, nil) {
-		return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements must be strings", m.FlagName))
-	}
 	for _, elem := range elems {
-		if err := validateEnumValue(m, *elem, true); err != nil {
+		if err := validateEnumValue(m, elem, true); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func keepsJSONNull(k reflect.Kind) bool {
+	return k == reflect.Ptr || k == reflect.Interface || k == reflect.Map || k == reflect.Slice
+}
+
+func isJSONNull(raw json.RawMessage) bool {
+	return bytes.Equal(bytes.TrimSpace(raw), []byte("null"))
 }
 
 func validateEnumValue(m FlagMeta, val string, changed bool) error {

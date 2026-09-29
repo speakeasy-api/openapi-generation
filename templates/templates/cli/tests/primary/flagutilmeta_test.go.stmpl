@@ -471,6 +471,28 @@ func TestBuildRequestValidatesInt64EnumArrayElementsExactly(t *testing.T) {
 	assert.Contains(t, err.Error(), `invalid value for --codes: "9007199254740992"; valid options: 9007199254740993, 1`)
 }
 
+type nullableElementArrayQueryRequest struct {
+	Codes []*int64 `queryParam:"style=form,explode=true,name=codes"`
+}
+
+func TestBuildRequestRejectsNullElementsInNonNullableJSONArray(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "codes", FieldPath: "Codes", Kind: flagutil.FlagKindJSON},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("codes", `[1, null]`))
+	_, err := flagutil.BuildRequest[int64ArrayQueryRequest](cmd, meta, "", "")
+	assertCLIValidation(t, err, "codes")
+	assert.Contains(t, err.Error(), "null element")
+
+	cmd = newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("codes", `[1, null]`))
+	req, err := flagutil.BuildRequest[nullableElementArrayQueryRequest](cmd, meta, "", "")
+	require.NoError(t, err)
+	require.Len(t, req.Codes, 2)
+	assert.Nil(t, req.Codes[1])
+}
+
 func TestBuildRequestChecksArrayMinItems(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
