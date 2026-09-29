@@ -38,6 +38,7 @@ var TargetMaturity = map[string]Maturity{
 }
 
 var MethodologyPaths = map[string]string{
+	"cli":        "/docs/cli-generation/create-cli",
 	"typescript": "/docs/languages/typescript/methodology-ts",
 	"go":         "/docs/languages/golang/methodology-go",
 	"java":       "/docs/languages/java/methodology-java",
