@@ -1,0 +1,14 @@
+templates/templates/cli/tests/primary/diagnostics_test.go.stmpl
+  h_9630b74bdac540 342,358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5ca8ba2ac94da4992b2cb8b2d2ccd003d22ac9d",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
