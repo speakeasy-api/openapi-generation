@@ -54,9 +54,9 @@ trackedFiles:
   cmd/cli/main.go:
     last_write_checksum: sha1:d6899a14abd11391a2c144413365cc60b6b351ea
   cmd/gendocs/main.go:
-    last_write_checksum: sha1:ab16da7120764d181eaaed5b147c06ed92598c77
+    last_write_checksum: sha1:c9be83a3c347679b26006cfa3d3f0552745f2391
   cmd/gendocs/main_test.go:
-    last_write_checksum: sha1:996dd2ec8028ecf964d97f5215dee028c743dc17
+    last_write_checksum: sha1:53e01a4a17e5186e1acd67a8ea7f788ef8c74f74
   go.mod:
     last_write_checksum: sha1:0865aafc1a68bea8d40c4688abc6befff5ef6cec
   internal/cli/auth.go:
@@ -1080,7 +1080,7 @@ trackedFiles:
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:
-    last_write_checksum: sha1:485923b96e8c509578b7638ab51131d349fb2376
+    last_write_checksum: sha1:c240a6ecb531bccb97447ea4390f51e20948e2dc
   tests/sdk_test.go:
     last_write_checksum: sha1:0ac872f31dea293b708409ea99d662eafa9725b5
   tests/singlebar_test.go:
@@ -1096,7 +1096,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:122ace9050cbe5eb0ddbd1fb1454c835ed0d784c
+    last_write_checksum: sha1:8506f598be93602750459319daba51c49b2b6570
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

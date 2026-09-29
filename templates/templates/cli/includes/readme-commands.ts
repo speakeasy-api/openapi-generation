@@ -43,9 +43,42 @@ function readmeBuiltinShort(name: string): string {
   return "";
 }
 
-function readmeDocPath(cliName: string, path: string[]): string {
-  return `docs/${[cliName, ...path].join("_")}.md`;
+function cliDocNameHash(value: string): string {
+  let hash = 5381;
+  for (let i = 0; i < value.length; i++) {
+    hash = (Math.imul(hash, 33) + value.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
+
+const cliDocMaxFilenameLength = 240;
+const cliDocExtension = ".md";
+
+function truncateCliDocFilename(filename: string): string {
+  if (filename.length <= cliDocMaxFilenameLength) return filename;
+
+  const suffix = `_${cliDocNameHash(filename)}`;
+  const stem = filename.slice(0, -cliDocExtension.length);
+  const prefixLength =
+    cliDocMaxFilenameLength - cliDocExtension.length - suffix.length;
+  return `${stem.slice(0, prefixLength)}${suffix}${cliDocExtension}`;
+}
+
+function readmeDocPath(cliName: string, path: string[]): string {
+  const filename = `${[cliName, ...path].join("_")}${cliDocExtension}`;
+  return `docs/${truncateCliDocFilename(filename)}`;
+}
+
+function templateReadmeDocPathTruncationFixture(longSegments: string): string {
+  const longName = "long-command-".repeat(24) + "end";
+  const long = longSegments.split(",");
+  const segment = (name: string) => (long.includes(name) ? longName : name);
+  return readmeDocPath("cli", [segment("group"), segment("command")]);
+}
+registerTemplateFunc(
+  "templateReadmeDocPathTruncationFixture",
+  templateReadmeDocPathTruncationFixture,
+);
 
 function readmeCommandCatalog(sdk: SDK): ReadmeCommandCatalog {
   const cliName = sanitizeCliName();

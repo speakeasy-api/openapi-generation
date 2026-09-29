@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: build command examples and README command-tree links from the full rendered command path so nested and de-stuttered groups show the command that actually runs
+description: build command examples and README command-tree links from the full rendered command path, and align long documentation filenames with bounded hashed links; existing truncated pages are renamed on regeneration
 author: AshGodfrey
 date: "2026-09-28"

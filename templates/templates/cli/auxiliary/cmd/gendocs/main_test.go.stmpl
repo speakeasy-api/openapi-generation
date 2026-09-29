@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -154,6 +156,55 @@ func TestParseArgs(t *testing.T) {
 				}
 			} else if !reflect.DeepEqual(messages, tt.wantMessages) {
 				t.Errorf("parseArgs() messages = %q, want %q", messages, tt.wantMessages)
+			}
+		})
+	}
+}
+
+func TestTruncatedDocFilenameMatchesReadmePath(t *testing.T) {
+	longName := strings.Repeat("long-command-", 24) + "end"
+	tests := []struct {
+		name        string
+		groupName   string
+		commandName string
+		want        string
+	}{
+		{"long command", "group", longName, "{{templateReadmeDocPathTruncationFixture "command"}}"},
+		{"long group and command", longName, longName, "{{templateReadmeDocPathTruncationFixture "group,command"}}"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := &cobra.Command{Use: "cli"}
+			group := &cobra.Command{Use: tt.groupName}
+			command := &cobra.Command{Use: tt.commandName, Run: func(*cobra.Command, []string) {}}
+			root.AddCommand(group)
+			group.AddCommand(command)
+
+			got := truncateCLIDocFilename(strings.ReplaceAll(command.CommandPath(), " ", "_") + cliDocMarkdownExtension)
+			want := strings.TrimPrefix(tt.want, "docs/")
+			if got != want {
+				t.Fatalf("truncated documentation filename = %q, want %q", got, want)
+			}
+			if len(got) > cliDocMaxFilenameLen {
+				t.Fatalf("truncated documentation filename length = %d, want at most %d", len(got), cliDocMaxFilenameLen)
+			}
+
+			dir := t.TempDir()
+			if err := genMarkdownTreeNoDate(root, dir); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(dir, got)); err != nil {
+				t.Fatal(err)
+			}
+
+			groupFilename := truncateCLIDocFilename(strings.ReplaceAll(group.CommandPath(), " ", "_") + cliDocMarkdownExtension)
+			groupDoc, err := os.ReadFile(filepath.Join(dir, groupFilename))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(groupDoc), "]("+got+")") {
+				t.Fatalf("group documentation does not link to %q:\n%s", got, groupDoc)
 			}
 		})
 	}

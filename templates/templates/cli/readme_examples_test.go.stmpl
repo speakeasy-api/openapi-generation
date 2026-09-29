@@ -3,6 +3,7 @@
 {{- addImport "fmt" -}}
 {{- addImport "os" -}}
 {{- addImport "path/filepath" -}}
+{{- addImport "regexp" -}}
 {{- addImport "strings" -}}
 {{- addImport "testing" -}}
 {{- addImport "github.com/stretchr/testify/require" -}}
@@ -52,6 +53,30 @@ func TestReadmeExamples(t *testing.T) {
 			require.NoError(t, err, "README.md:%d: %s\nstderr:\n%s", ex.line, ex.raw, h.GetStderr())
 		})
 	}
+}
+
+func TestReadmeDocLinksResolve(t *testing.T) {
+	readmePath := findReadme(t)
+	f, err := os.Open(readmePath)
+	require.NoError(t, err)
+	defer f.Close()
+
+	docLink := regexp.MustCompile(`\]\((docs/[^)]+\.md)\)`)
+	var checked int
+	scanner := bufio.NewScanner(f)
+	lineNo := 0
+	for scanner.Scan() {
+		lineNo++
+		line := scanner.Text()
+		for _, match := range docLink.FindAllStringSubmatch(line, -1) {
+			checked++
+			target := filepath.Join(filepath.Dir(readmePath), filepath.FromSlash(match[1]))
+			_, err := os.Stat(target)
+			require.NoErrorf(t, err, "README.md:%d links to missing file %s", lineNo, match[1])
+		}
+	}
+	require.NoError(t, scanner.Err())
+	require.Greater(t, checked, 0)
 }
 
 type readmeExample struct {

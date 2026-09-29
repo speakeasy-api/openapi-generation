@@ -140,19 +140,25 @@ func TestUsageExamplesStartWithCommandPath(t *testing.T) {
 	require.NoError(t, err)
 
 	invocation := root.Name() + " "
-	var checked int
+	var generatedCommands int
 	var walk func(cmd *cobra.Command)
 	walk = func(cmd *cobra.Command) {
 		if _, generated := cmd.Annotations["speakeasy_operation"]; generated {
-			path := cmd.CommandPath()
-			for _, line := range strings.Split(cmd.Example, "\n") {
-				line = strings.TrimSpace(line)
-				if !strings.HasPrefix(line, invocation) {
-					continue
+			generatedCommands++
+			if cmd.Example != "" {
+				path := cmd.CommandPath()
+				var checked int
+				for _, line := range strings.Split(cmd.Example, "\n") {
+					line = strings.TrimSpace(line)
+					if !strings.HasPrefix(line, invocation) {
+						continue
+					}
+					checked++
+					assert.Truef(t, line == path || strings.HasPrefix(line, path+" "),
+						"example for %q must invoke that command: %s", path, line)
 				}
-				checked++
-				assert.Truef(t, line == path || strings.HasPrefix(line, path+" "),
-					"example for %q must invoke that command: %s", path, line)
+				assert.Greaterf(t, checked, 0,
+					"example for %q must include an invocation beginning with %q", path, invocation)
 			}
 		}
 		for _, child := range cmd.Commands() {
@@ -160,7 +166,7 @@ func TestUsageExamplesStartWithCommandPath(t *testing.T) {
 		}
 	}
 	walk(root)
-	require.Greater(t, checked, 0)
+	require.Greater(t, generatedCommands, 0)
 }
 
 func TestUsageSchema_Subtree(t *testing.T) {

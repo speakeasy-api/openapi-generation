@@ -4,7 +4,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"fmt"
 	"log"
 	"os"
@@ -18,8 +17,10 @@ import (
 )
 
 const (
-	usage            = "usage: gendocs [output-dir]"
-	usageDescription = "Writes the CLI's Cobra markdown command docs into output-dir (default ./docs)."
+	usage                   = "usage: gendocs [output-dir]"
+	usageDescription        = "Writes the CLI's Cobra markdown command docs into output-dir (default ./docs)."
+	cliDocMaxFilenameLen    = 240
+	cliDocMarkdownExtension = ".md"
 )
 
 var usageLines = []string{usage, usageDescription}
@@ -58,10 +59,6 @@ func main() {
 		}
 	}
 
-	// Truncate any command names that would cause filenames to exceed OS limits.
-	// Cobra doc generates filenames from the full command path joined with "_".
-	truncateLongCommandNames(rootCmd, 0)
-
 	if err := genMarkdownTreeNoDate(rootCmd, dir); err != nil {
 		log.Fatal(err)
 	}
@@ -96,49 +93,23 @@ func parseArgs(args []string) (dir string, showHelp bool, exitCode int, messages
 	return "", false, 2, append([]string{reason}, usageLines...)
 }
 
-// truncateLongCommandNames walks the command tree and truncates any Use fields
-// that would cause the generated doc filename to exceed filesystem limits.
-// Cobra constructs filenames as: parent_path + "_" + use + ".md"
-func truncateLongCommandNames(cmd *cobra.Command, parentPathLen int) {
-	const maxFilenameLen = 240 // well under the 255 limit
-	use := strings.SplitN(cmd.Use, " ", 2)[0]
+func cliDocNameHash(value string) uint32 {
+	hash := uint32(5381)
+	for _, b := range []byte(value) {
+		hash = hash*33 + uint32(b)
+	}
+	return hash
+}
 
-	// Calculate what the filename length would be: parentPath_use.md
-	nameLen := parentPathLen + len(use) + len(".md")
-	if parentPathLen > 0 {
-		nameLen++ // for the "_" separator
+func truncateCLIDocFilename(filename string) string {
+	if len(filename) <= cliDocMaxFilenameLen {
+		return filename
 	}
 
-	if nameLen > maxFilenameLen && len(use) > 16 {
-		available := maxFilenameLen - parentPathLen - len(".md") - 10 // 10 for _hash
-		if parentPathLen > 0 {
-			available-- // for separator
-		}
-		if available < 8 {
-			available = 8
-		}
-		hash := sha256.Sum256([]byte(use))
-		truncated := use[:available] + fmt.Sprintf("_%x", hash[:4])
-		if cmd.Annotations == nil {
-			cmd.Annotations = map[string]string{}
-		}
-		cmd.Annotations["speakeasy_original_name"] = use
-		if parts := strings.SplitN(cmd.Use, " ", 2); len(parts) > 1 {
-			cmd.Use = truncated + " " + parts[1]
-		} else {
-			cmd.Use = truncated
-		}
-		use = truncated
-	}
-
-	childPathLen := parentPathLen + len(use)
-	if parentPathLen > 0 {
-		childPathLen++
-	}
-
-	for _, child := range cmd.Commands() {
-		truncateLongCommandNames(child, childPathLen)
-	}
+	stem := strings.TrimSuffix(filename, cliDocMarkdownExtension)
+	suffix := fmt.Sprintf("_%08x", cliDocNameHash(filename))
+	prefixLen := cliDocMaxFilenameLen - len(cliDocMarkdownExtension) - len(suffix)
+	return stem[:prefixLen] + suffix + cliDocMarkdownExtension
 }
 
 // genMarkdownTreeNoDate generates markdown docs for all commands without the
@@ -154,11 +125,11 @@ func genMarkdownTreeNoDate(cmd *cobra.Command, dir string) error {
 		}
 	}
 
-	basename := strings.ReplaceAll(cmd.CommandPath(), " ", "_") + ".md"
+	basename := truncateCLIDocFilename(strings.ReplaceAll(cmd.CommandPath(), " ", "_") + cliDocMarkdownExtension)
 	filename := filepath.Join(dir, basename)
 
 	var buf bytes.Buffer
-	if err := doc.GenMarkdownCustom(cmd, &buf, func(s string) string { return s }); err != nil {
+	if err := doc.GenMarkdownCustom(cmd, &buf, truncateCLIDocFilename); err != nil {
 		return err
 	}
 
@@ -174,11 +145,7 @@ func genMarkdownTreeNoDate(cmd *cobra.Command, dir string) error {
 func commandRuntimePath(cmd *cobra.Command) string {
 	var parts []string
 	for cur := cmd; cur != nil; cur = cur.Parent() {
-		name := cur.Name()
-		if orig, ok := cur.Annotations["speakeasy_original_name"]; ok && orig != "" {
-			name = orig
-		}
-		parts = append([]string{name}, parts...)
+		parts = append([]string{cur.Name()}, parts...)
 	}
 	return strings.Join(parts, " ")
 }
