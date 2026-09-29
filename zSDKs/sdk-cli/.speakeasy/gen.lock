@@ -176,7 +176,7 @@ trackedFiles:
   internal/cli/operationwithleadingandtrailingunderscores.go:
     last_write_checksum: sha1:f343717240957ac39a3d47dd61feb492815c972d
   internal/cli/parenthesesinpathallowed.go:
-    last_write_checksum: sha1:c8efa2049e280976b115f5121c7862db66893db3
+    last_write_checksum: sha1:d10a165c5869a56d54d0bba45b80821407deb2f4
   internal/cli/postfile.go:
     last_write_checksum: sha1:f67d5ddcaa3ea921513ee6f97fe5eb8db9580aae
   internal/cli/renderasset.go:
@@ -190,7 +190,7 @@ trackedFiles:
   internal/cli/tag1/intent_tag1-recent.go:
     last_write_checksum: sha1:c63e43dfb33fdab87ceb5ed41d7b32531ab36354
   internal/cli/tag1/listtest1.go:
-    last_write_checksum: sha1:e237f8e3608011e5cc8351ad7012fd202cf7776c
+    last_write_checksum: sha1:fba0d0404efd3b49bc18ffbbcbecf822e89fe56d
   internal/cli/tag1/postfilewithencoding.go:
     last_write_checksum: sha1:103c8a943d3f3b759fcdd752bf5fa4e2dcd0d1c3
   internal/cli/tag1/root.go:
@@ -640,7 +640,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:6c325207a4bf833f2f2d03391b6056a7bcb9d770
+    last_write_checksum: sha1:9acbc11795232aa9f1ab1debc47b32783201eb4a
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:

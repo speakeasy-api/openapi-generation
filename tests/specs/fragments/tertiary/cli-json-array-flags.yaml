@@ -99,7 +99,11 @@ components:
             - nightly
         events:
           type: array
-          description: Enum-item array without an example
+          description: |-
+            Enum-item array without an example, whose description spans
+            several lines and ends in a list:
+            - item.created
+            - item.deleted
           minItems: 1
           items:
             type: string

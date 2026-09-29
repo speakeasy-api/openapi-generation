@@ -189,6 +189,14 @@ func TestJSONArrayFlagHelpIgnoresBacktickedDescription(t *testing.T) {
 	assert.Contains(t, stdout, "e.g. 'alpha'")
 }
 
+func TestJSONArrayFlagHintsFollowMultiLineDescription(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--help"}))
+	stdout := h.GetStdout()
+	assert.Regexp(t, `(?m)^\s+- item\.deleted\s*$`, stdout)
+	assert.Regexp(t, `(?m)^\s+\(options: item\.created, item\.deleted\) \(JSON array\) \[required\]\s*$`, stdout)
+}
+
 func TestJSONArrayFlagNotVariadicInUsageSchema(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--usage"}))

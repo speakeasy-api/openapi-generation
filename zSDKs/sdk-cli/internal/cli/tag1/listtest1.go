@@ -15,7 +15,7 @@ import (
 
 var listTest1CmdMeta = []flagutil.FlagMeta{
 	{FlagName: "page", Shorthand: "p", FieldPath: "Page", Kind: flagutil.FlagKindInt64, Required: true, Description: "[required]"},
-	{FlagName: "query-param2", FieldPath: "QueryParam2", Kind: flagutil.FlagKindIntEnum, Required: true, EnumValues: []string{"0", "1", "2"}, Description: "An [enum](https://enum.com) \"query parameter\"\nthat is not easily described in a single line.\n\n**Available Values:**\n| Value | Description |\n|-------|-------------|\n| 0     | No data     |\n| 1     | Partial     |\n| 2     | Complete    | (options: 0, 1, 2) [required]"},
+	{FlagName: "query-param2", FieldPath: "QueryParam2", Kind: flagutil.FlagKindIntEnum, Required: true, EnumValues: []string{"0", "1", "2"}, Description: "An [enum](https://enum.com) \"query parameter\"\nthat is not easily described in a single line.\n\n**Available Values:**\n| Value | Description |\n|-------|-------------|\n| 0     | No data     |\n| 1     | Partial     |\n| 2     | Complete    |\n(options: 0, 1, 2) [required]"},
 	{FlagName: "header-param1", FieldPath: "HeaderParam1", Kind: flagutil.FlagKindString, Required: true, Description: "[required]"},
 }
 

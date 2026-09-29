@@ -34,7 +34,6 @@ cli parentheses-in-path-allowed [id] [flags]
                                                   and \'escaped backticks\' and double slashes\\
                                                   and 'single quotes' and "double quotes".
                                                   and  \'escaped single quotes\' and \"escaped double quotes\".
-                                                  
       --field-with-braces-in-example string       string value
       --field-with-braces-in-title string         string value
   -h, --help                                      help for parentheses-in-path-allowed

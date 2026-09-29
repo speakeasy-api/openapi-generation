@@ -26,7 +26,8 @@ cli tag1 recent [flags]
                                |-------|-------------|
                                | 0     | No data     |
                                | 1     | Partial     |
-                               | 2     | Complete    | (options: 0, 1, 2) [required]
+                               | 2     | Complete    |
+                               (options: 0, 1, 2) [required]
 ```
 
 ### Options inherited from parent commands

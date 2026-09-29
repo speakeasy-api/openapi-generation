@@ -447,30 +447,38 @@ function getFlagDescription(field: FieldDef): string {
   // Start with field description or comments
   // (backticks would make pflag show the quoted word as the value placeholder)
   if (field.Comments?.Description) {
-    desc = field.Comments.Description.replace(/`/g, "'");
+    desc = field.Comments.Description.replace(/`/g, "'").trimEnd();
   }
+
+  let hints = "";
+  const addHint = (hint: string, bare = hint) => {
+    hints = hints ? `${hints} ${hint}` : desc ? hint : bare;
+  };
 
   // Add enum options
   const enumType = flagEnumType(field.Type);
   if (enumType) {
     const enumHelp = getEnumHelpText(enumType);
     if (enumHelp) {
-      desc = desc ? `${desc} (${enumHelp})` : enumHelp;
+      addHint(`(${enumHelp})`, enumHelp);
     }
   }
 
-  // Under arrayFlagFormat json, a string/enum array flag takes one JSON array
-  // token; say so, since the pflag type column only shows "string".
+  // The pflag type column only shows "string"
   if (isStringItemArrayField(field) && arrayFlagFormat() === "json") {
-    desc = desc ? `${desc} (JSON array)` : "JSON array";
+    addHint("(JSON array)", "JSON array");
   }
 
   // Add required indicator
   if (!field.Optional) {
-    desc = desc ? `${desc} [required]` : "[required]";
+    addHint("[required]");
+  }
+
+  if (desc && hints) {
+    return `${desc}${desc.includes("\n") ? "\n" : " "}${hints}`;
   }
 
   // Fallback: show type hint instead of "No description available"
-  return desc || getTypeHint(field);
+  return desc || hints || getTypeHint(field);
 }
 registerTemplateFunc("getFlagDescription", getFlagDescription);
