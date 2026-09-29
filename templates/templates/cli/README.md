@@ -466,7 +466,7 @@ Key functions:
 
 **Files**: `config.ts`, `includes/dependencies.ts` (`arrayFlagFormat`), `includes/usage.ts` (`inferKindNameForField`), `includes/descriptions.ts`
 
-Array fields with non-string items (int, float, bool, object) are always `FlagKindJSON`: a single flag taking a JSON array. So are nullable+optional fields when `nullableOptionalWrapper` is enabled (`isNullableOptionalWrapped` in `utils.ts`), in both modes; command examples and generated test args treat them as one JSON token too. For string and enum items, the `cli.arrayFlagFormat` gen.yaml key (default `repeatable`) picks the input format:
+Array fields with non-string items (int, float, bool, object, integer-backed enum) are always `FlagKindJSON`: a single flag taking a JSON array. So are nullable+optional fields when `nullableOptionalWrapper` is enabled (`isNullableOptionalWrapped` in `utils.ts`), in both modes; command examples and generated test args treat them as one JSON token too. For string and enum items, the `cli.arrayFlagFormat` gen.yaml key (default `repeatable`) picks the input format:
 
 | Value        | Kind                  | Registration  | Invocation           | Usage (`--usage`) | Example                        |
 | ------------ | --------------------- | ------------- | -------------------- | ----------------- | ------------------------------ |

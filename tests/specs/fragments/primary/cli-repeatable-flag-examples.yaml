@@ -15,7 +15,8 @@ paths:
         Array-valued examples on required body properties. String-item and
         enum-item arrays are repeatable inputs, so their examples must render
         one value per element rather than a single JSON-encoded token. A
-        number-item array is a single JSON-encoded input.
+        number-item array and an optional integer enum-item array are single
+        JSON-encoded inputs.
       tags:
         - requestBodies
       requestBody:
@@ -143,3 +144,12 @@ components:
               - email
               - sms
           example: []
+        levels:
+          type: array
+          description: Optional integer enum-item array
+          items:
+            type: integer
+            enum:
+              - 1
+              - 2
+              - 3

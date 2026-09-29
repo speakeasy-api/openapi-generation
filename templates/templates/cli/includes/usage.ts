@@ -235,8 +235,12 @@ function usageFlagSpec(
 // string array elements to typed values via reflection.
 function isStringItemArrayField(field: FieldDef): boolean {
   if (!isArrayType(field.Type)) return false;
-  const itemTypeStr = field.Type.ItemType?.Type?.toString() || "string";
-  return itemTypeStr === "string" || itemTypeStr === "enum";
+  const itemType = field.Type.ItemType;
+  const itemTypeStr = itemType?.Type?.toString() || "string";
+  return (
+    itemTypeStr === "string" ||
+    (itemTypeStr === "enum" && !isIntBackedEnum(itemType))
+  );
 }
 
 function inferKindNameForField(field: FieldDef, kindOverride?: string): string {

@@ -431,6 +431,30 @@ func TestRepeatableEnumArrayFlagRejectsUnknownValue(t *testing.T) {
 	assert.Zero(t, requests.Load(), "no request must be sent with an unknown enum value")
 }
 
+func TestIntEnumArrayFlagTakesJSONArray(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	args := []string{
+		"request-bodies", "cli-repeatable-flag-examples-post",
+		"--labels", "nightly",
+		"--events", "item.created",
+		"--weights", "[1]",
+		"--channels", "email",
+	}
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, append(args, "--levels", `[2,3]`)))
+	levels, ok := jsonGet(h.GetStdout(), "json.levels").([]interface{})
+	require.True(t, ok, "levels must be an array: %s", h.GetStdout())
+	assert.Equal(t, []interface{}{2.0, 3.0}, levels)
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, append(args, "--levels", `[2,9]`))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --levels: "9"; valid options: 1, 2, 3`)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+}
+
 func TestRepeatableEnumArrayFlagHelpListsOptions(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-repeatable-flag-examples-post", "--help"}))
