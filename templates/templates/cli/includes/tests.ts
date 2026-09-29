@@ -334,7 +334,7 @@ function pushFieldFlagArgs(
   flagName: string,
   value: any,
 ): void {
-  const elements = requiredArrayExample(field, value);
+  const elements = sendableArrayExample(field, value);
   if (Array.isArray(elements) && isRepeatableFlagField(field)) {
     for (const element of elements) {
       pushFlagArg(args, flagName, formatCLIArgValue(element));
@@ -344,14 +344,21 @@ function pushFieldFlagArgs(
   pushFlagArg(args, flagName, formatCLIArgValue(elements));
 }
 
-// An empty example would leave a required array flag unset or '[]'.
-function requiredArrayExample(field: FieldDef, value: any): any {
-  return Array.isArray(value) &&
-    value.length === 0 &&
-    !field.Optional &&
-    isStringItemArrayField(field)
-    ? emptyArrayExampleFallback(field)
-    : value;
+// An empty example is kept unless the flag cannot send it.
+function sendableArrayExample(field: FieldDef, value: any): any {
+  if (
+    !Array.isArray(value) ||
+    value.length > 0 ||
+    !isStringItemArrayField(field)
+  ) {
+    return value;
+  }
+  const minItems = Number(field.Type.Validations?.MinItems ?? 0);
+  const unsendable =
+    minItems > 0 ||
+    (!field.Optional &&
+      (isRepeatableFlagField(field) || field.Annotations?.Has("param")));
+  return unsendable ? emptyArrayExampleFallback(field) : value;
 }
 
 function emptyArrayExampleFallback(field: FieldDef): any[] {
@@ -984,7 +991,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
             pushFlagArg(
               args,
               flagName,
-              formatCLIArgValueAsJSON(requiredArrayExample(formField, value)),
+              formatCLIArgValueAsJSON(sendableArrayExample(formField, value)),
             );
           } else {
             pushFieldFlagArgs(args, formField, flagName, value);
@@ -1054,7 +1061,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
                   args.push(
                     `"--${subFlagName}"`,
                     formatCLIArgValueAsJSON(
-                      requiredArrayExample(subField, subValue),
+                      sendableArrayExample(subField, subValue),
                     ),
                   );
                 } else {
@@ -1066,7 +1073,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
             pushFlagArg(
               args,
               flagName,
-              formatCLIArgValueAsJSON(requiredArrayExample(field, value)),
+              formatCLIArgValueAsJSON(sendableArrayExample(field, value)),
             );
           } else {
             pushFieldFlagArgs(args, field, flagName, value);
@@ -1175,7 +1182,7 @@ function templateCLIArgs(usageContext: UsageContext): string {
               args.push(
                 `"--${subFlagName}"`,
                 formatCLIArgValueAsJSON(
-                  requiredArrayExample(subField, subValue),
+                  sendableArrayExample(subField, subValue),
                 ),
               );
             } else {
