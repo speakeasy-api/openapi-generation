@@ -242,6 +242,7 @@ cli:
   removeStutter: true
   retryFlagsVisibility: visible
   retryMethodPolicy: spec
+  rootVersionFlag: true
   serverSelectionFlag: visible
 
 
@@ -1270,6 +1271,7 @@ cli:
   removeStutter: true
   retryFlagsVisibility: visible
   retryMethodPolicy: spec
+  rootVersionFlag: true
   serverSelectionFlag: visible
 
 
@@ -2350,6 +2352,7 @@ cli:
   removeStutter: true
   retryFlagsVisibility: visible
   retryMethodPolicy: spec
+  rootVersionFlag: true
   serverSelectionFlag: visible
 
 
