@@ -193,6 +193,7 @@ cli:
   version: 0.0.1
   additionalDependencies: {}
   agentEnvironmentDetection: true
+  arrayFlagFormat: repeatable
   classifiedErrors: false
   cliName: petstore
   defaultColor: auto
@@ -1222,6 +1223,7 @@ cli:
   version: 0.0.1
   additionalDependencies: {}
   agentEnvironmentDetection: true
+  arrayFlagFormat: repeatable
   classifiedErrors: false
   cliName: petstore
   defaultColor: auto
@@ -2303,6 +2305,7 @@ cli:
   version: 0.0.1
   additionalDependencies: {}
   agentEnvironmentDetection: true
+  arrayFlagFormat: repeatable
   classifiedErrors: false
   cliName: petstore
   defaultColor: auto
