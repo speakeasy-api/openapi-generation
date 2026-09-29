@@ -1,0 +1,10 @@
+id: 1790710451-42e4f6c7
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: 'flag help: a backticked word in the description is no longer shown as the value placeholder; the options, JSON array, and required hints go on their own line after a multi-line description; every array flag that takes a JSON array shows the (JSON array) hint'
+author: 2ynn
+date: "2026-09-29"
