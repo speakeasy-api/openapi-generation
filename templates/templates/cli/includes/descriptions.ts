@@ -230,9 +230,9 @@ function getCLIExampleValue(
   ) {
     const first = itemTypeDef.Enum.Values[0];
     return {
-      Value: JSON.stringify([
-        isIntBackedEnum(itemTypeDef) ? Number(first) : String(first),
-      ]),
+      Value: isIntBackedEnum(itemTypeDef)
+        ? `[${first}]`
+        : JSON.stringify([String(first)]),
       SynthesizedAnglePlaceholder: false,
     };
   }
