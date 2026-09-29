@@ -1,0 +1,15 @@
+templates/templates/cli/includes/flags.ts
+  h_9630b74bdac540 100-103,105-131,134
+  h_9630b74bdac540 104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3d153829fdcd1394c5081c3eb12119f94192dee",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
