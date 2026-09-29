@@ -346,20 +346,17 @@ function pushFieldFlagArgs(
 
 // An empty example is kept unless the flag cannot send it.
 function sendableArrayExample(field: FieldDef, value: any): any {
-  if (!Array.isArray(value) || value.length > 0 || !isArrayType(field.Type)) {
+  if (
+    !Array.isArray(value) ||
+    value.length > 0 ||
+    !isArrayType(field.Type) ||
+    field.Optional ||
+    !(isRepeatableFlagField(field) || field.Annotations?.Has("param"))
+  ) {
     return value;
   }
-  const minItems = Number(field.Type.Validations?.MinItems ?? 0);
-  const unsendable =
-    minItems > 0 ||
-    (!field.Optional &&
-      (isRepeatableFlagField(field) || field.Annotations?.Has("param")));
-  const fallback = unsendable ? emptyArrayExampleFallback(field) : [];
-  if (fallback.length === 0) return value;
-  return Array.from(
-    { length: Math.max(minItems, 1) },
-    (_, i) => fallback[i % fallback.length],
-  );
+  const fallback = emptyArrayExampleFallback(field);
+  return fallback.length > 0 ? fallback : value;
 }
 
 function emptyArrayExampleFallback(field: FieldDef): any[] {

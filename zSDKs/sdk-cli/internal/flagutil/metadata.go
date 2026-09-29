@@ -189,7 +189,6 @@ type FlagMeta struct {
 	// Validation
 	EnumValues []string // valid values for enum validation; nil if not enum
 	MinLength  int64    // schema minLength for string flags (0 = unconstrained)
-	MinItems   int64    // schema minItems for array flags (0 = unconstrained)
 	HasMinimum bool     // schema minimum declared for numeric flags
 	Minimum    float64  // schema minimum (valid when HasMinimum)
 	HasMaximum bool     // schema maximum declared for numeric flags
@@ -1585,14 +1584,7 @@ func validateRequiredJSONPathParam(v reflect.Value, m FlagMeta, changed bool, va
 	return validateRequiredPathParam(v, m, changed, elems...)
 }
 
-func validateArrayLength(m FlagMeta, n int) error {
-	if int64(n) >= m.MinItems {
-		return nil
-	}
-	return fmt.Errorf("invalid value for --%s: %d item(s), fewer than the minimum %d", m.FlagName, n, m.MinItems)
-}
-
-func validateJSONArrayInput(cmd *cobra.Command, m FlagMeta, fieldType reflect.Type, paramTag, val string) error {
+func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, paramTag, val string) error {
 	// OptionalNullable[T] is a map[bool]*T
 	if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.Bool && fieldType.Elem().Kind() == reflect.Ptr {
 		fieldType = fieldType.Elem().Elem()
@@ -1615,9 +1607,6 @@ func validateJSONArrayInput(cmd *cobra.Command, m FlagMeta, fieldType reflect.Ty
 	if rawErr == nil {
 		if m.Required && len(raw) == 0 && (paramTag == "queryParam" || paramTag == "header") {
 			return WithCLIValidation(fmt.Errorf(`invalid value for --%s: empty array; a required parameter cannot be sent empty, e.g. --%s '["value"]'`, m.FlagName, m.FlagName))
-		}
-		if err := enforceStrictOrWarn(cmd, validateArrayLength(m, len(raw))); err != nil {
-			return err
 		}
 		if !keepsJSONNull(fieldType.Elem().Kind()) && slices.ContainsFunc(raw, isJSONNull) {
 			return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements cannot be null", m.FlagName))
@@ -1765,11 +1754,6 @@ func buildStringArrayField(cmd *cobra.Command, v reflect.Value, m FlagMeta) erro
 	}
 	if err := validateRequiredPathParam(v, m, changed, val...); err != nil {
 		return err
-	}
-	if changed {
-		if err := enforceStrictOrWarn(cmd, validateArrayLength(m, len(val))); err != nil {
-			return err
-		}
 	}
 	for _, elem := range val {
 		if err := validateEnumValue(m, elem, true); err != nil {
@@ -1996,7 +1980,7 @@ func buildJSONField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		return nil
 	}
 
-	if err := validateJSONArrayInput(cmd, m, fieldType, requestParamTag(v.Type(), m.FieldPath), val); err != nil {
+	if err := validateJSONArrayInput(m, fieldType, requestParamTag(v.Type(), m.FieldPath), val); err != nil {
 		return err
 	}
 

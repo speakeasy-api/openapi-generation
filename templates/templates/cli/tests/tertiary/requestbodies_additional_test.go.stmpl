@@ -1,16 +1,12 @@
 package tests
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"{{getGolangPackage}}/internal/clierrors"
-	"{{getGolangPackage}}/internal/output"
 )
 
 func TestJSONArrayFlagExampleRendersSingleToken(t *testing.T) {
@@ -102,49 +98,7 @@ func TestJSONArrayFlagRejectsNonStringArray(t *testing.T) {
 	}
 }
 
-func TestJSONArrayFlagBelowMinItemsWarnsAndSends(t *testing.T) {
-	output.ResetAgentMode()
-	t.Cleanup(output.ResetAgentMode)
-	s := newEchoServer()
-	defer s.Close()
-
-	h := NewCLITestHarness(t)
-	require.NoError(t, h.RunWithServer(s.URL, []string{
-		"request-bodies", "cli-json-array-flags-post",
-		"--labels", `[]`,
-		"--events", `["item.created"]`,
-		"--channels", `["email"]`,
-	}))
-	assert.Contains(t, h.GetStderr(), "Warning: invalid value for --labels: 0 item(s), fewer than the minimum 1")
-	labels, ok := jsonGet(h.GetStdout(), "json.labels").([]interface{})
-	require.True(t, ok, "labels must be an array: %s", h.GetStdout())
-	assert.Empty(t, labels)
-}
-
-func TestJSONArrayFlagBelowMinItemsRejectedInAgentMode(t *testing.T) {
-	output.ResetAgentMode()
-	t.Cleanup(output.ResetAgentMode)
-	var requests atomic.Int32
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requests.Add(1)
-	}))
-	defer s.Close()
-
-	h := NewCLITestHarness(t)
-	err := h.RunWithServer(s.URL, []string{
-		"--agent-mode",
-		"request-bodies", "cli-json-array-flags-post",
-		"--labels", `[]`,
-		"--events", `["item.created"]`,
-		"--channels", `["email"]`,
-	})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid value for --labels: 0 item(s), fewer than the minimum 1")
-	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
-	assert.Zero(t, requests.Load())
-}
-
-func TestJSONArrayFlagSendsEmptyRequiredArrayWithoutMinItems(t *testing.T) {
+func TestJSONArrayFlagSendsEmptyRequiredBodyArray(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()
 

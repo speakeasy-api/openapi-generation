@@ -601,7 +601,7 @@ function buildMetaEntryForField(
 
   // Schema-declared bounds the CLI can check trivially before sending: a
   // string minLength (so an explicitly empty value is rejected when the
-  // schema forbids it), an array minItems, and numeric minimum/maximum. Anything richer stays
+  // schema forbids it) and numeric minimum/maximum. Anything richer stays
   // with the server, which is authoritative. Enforcement is strict only on
   // manifest-declared commands and under explicit agent mode; ordinary
   // operations surface violations as warnings and let the server decide.
@@ -616,15 +616,6 @@ function buildMetaEntryForField(
     const minLength = numeric(validations.MinLength);
     if (kind === "FlagKindString" && minLength !== undefined && minLength > 0) {
       parts.push(`MinLength: ${minLength}`);
-    }
-    const minItems = numeric(validations.MinItems);
-    if (
-      (kind === "FlagKindStringArray" || kind === "FlagKindJSON") &&
-      isArrayType(typeDef) &&
-      minItems !== undefined &&
-      minItems > 0
-    ) {
-      parts.push(`MinItems: ${minItems}`);
     }
     if (kind === "FlagKindInt64" || kind === "FlagKindFloat64") {
       const minimum = numeric(validations.Minimum);
