@@ -27,19 +27,19 @@ cli parentheses-in-path-allowed [id] [flags]
 ### Options
 
 ```
-      --body string                                  Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
-      --field-with-braces-in-default string          string value (default "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n")
-      --field-with-braces-in-description backticks   A string with {{ double braces }} and { single braces }
-                                                     and \{\{ escaped curlies \}\} and backticks.
-                                                     and \`escaped backticks\` and double slashes\\
-                                                     and 'single quotes' and "double quotes".
-                                                     and  \'escaped single quotes\' and \"escaped double quotes\".
-                                                     
-      --field-with-braces-in-example string          string value
-      --field-with-braces-in-title string            string value
-  -h, --help                                         help for parentheses-in-path-allowed
-  -i, --id string                                    string value (or pass it as the [id] argument)
-      --schema                                       Print the exact JSON Schema of the request body and exit
+      --body string                               Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
+      --field-with-braces-in-default string       string value (default "A string with {{ double braces }} and { single braces }\nand \\{\\{ escaped curlies \\}\\} and `backticks`.\nand \\`escaped backticks\\` and double slashes\\\\\nand 'single quotes' and \"double quotes\".\nand  \\'escaped single quotes\\' and \\\"escaped double quotes\\\".\n")
+      --field-with-braces-in-description string   A string with {{ double braces }} and { single braces }
+                                                  and \{\{ escaped curlies \}\} and 'backticks'.
+                                                  and \'escaped backticks\' and double slashes\\
+                                                  and 'single quotes' and "double quotes".
+                                                  and  \'escaped single quotes\' and \"escaped double quotes\".
+                                                  
+      --field-with-braces-in-example string       string value
+      --field-with-braces-in-title string         string value
+  -h, --help                                      help for parentheses-in-path-allowed
+  -i, --id string                                 string value (or pass it as the [id] argument)
+      --schema                                    Print the exact JSON Schema of the request body and exit
 ```
 
 ### Options inherited from parent commands

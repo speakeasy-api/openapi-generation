@@ -445,8 +445,9 @@ function getFlagDescription(field: FieldDef): string {
   let desc = "";
 
   // Start with field description or comments
+  // (backticks would make pflag show the quoted word as the value placeholder)
   if (field.Comments?.Description) {
-    desc = field.Comments.Description;
+    desc = field.Comments.Description.replace(/`/g, "'");
   }
 
   // Add enum options

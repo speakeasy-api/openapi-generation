@@ -180,6 +180,15 @@ func TestJSONArrayEnumFlagHelpListsOptions(t *testing.T) {
 	assert.Contains(t, h.GetStdout(), "(options: item.created, item.deleted)")
 }
 
+func TestJSONArrayFlagHelpIgnoresBacktickedDescription(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--help"}))
+	stdout := h.GetStdout()
+	assert.Regexp(t, `--aliases string\s`, stdout)
+	assert.NotContains(t, stdout, "--aliases alpha")
+	assert.Contains(t, stdout, "e.g. 'alpha'")
+}
+
 func TestJSONArrayFlagNotVariadicInUsageSchema(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--usage"}))

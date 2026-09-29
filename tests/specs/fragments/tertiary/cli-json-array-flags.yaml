@@ -125,6 +125,6 @@ components:
               - high
         aliases:
           type: array
-          description: Optional string-item array
+          description: Optional string-item array whose description quotes an example, e.g. `alpha`
           items:
             type: string
