@@ -97,12 +97,41 @@ function rootFlagNames(): Set<string> {
 }
 
 /**
- * Resolve the flag name for a server template variable, adding a "-param"
- * suffix when it collides with another root flag.
+ * Map each server template variable to a unique root flag name. Variables
+ * whose flag name collides with another root flag get "-param" suffixes until
+ * the name is unused. Non-colliding variables are assigned first so a suffixed
+ * name never takes another variable's own name (e.g. "help" vs "help_param").
+ */
+function serverVariableFlagNames(): Map<string, string> {
+  const variables = context.Global.AST.MainSDK.Servers?.GetVariables() || [];
+  const taken = rootFlagNames();
+  const names = new Map<string, string>();
+  const colliding: string[] = [];
+  for (const v of variables) {
+    const flagName = sanitizeFlagName(v.Name);
+    if (taken.has(flagName)) {
+      colliding.push(v.Name);
+      continue;
+    }
+    taken.add(flagName);
+    names.set(v.Name, flagName);
+  }
+  for (const name of colliding) {
+    let candidate = `${sanitizeFlagName(name)}-param`;
+    while (taken.has(candidate)) {
+      candidate = `${candidate}-param`;
+    }
+    taken.add(candidate);
+    names.set(name, candidate);
+  }
+  return names;
+}
+
+/**
+ * Resolve the root flag name registered for a server template variable.
  */
 function serverVariableFlagName(name: string): string {
-  const flagName = sanitizeFlagName(name);
-  return rootFlagNames().has(flagName) ? `${flagName}-param` : flagName;
+  return serverVariableFlagNames().get(name) ?? sanitizeFlagName(name);
 }
 
 /**
