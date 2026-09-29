@@ -81,6 +81,27 @@ func TestJSONArrayFlagRejectsNull(t *testing.T) {
 	}
 }
 
+func TestJSONArrayFlagRejectsNonStringArray(t *testing.T) {
+	for _, value := range []string{`[1]`, `["a"`} {
+		t.Run(value, func(t *testing.T) {
+			s := newEchoServer()
+			defer s.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, []string{
+				"request-bodies", "cli-json-array-flags-post",
+				"--labels", value,
+				"--events", `["item.created"]`,
+				"--channels", `["email"]`,
+			})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid value for --labels: expected a JSON array of strings")
+			assert.NotContains(t, err.Error(), "response body")
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		})
+	}
+}
+
 func TestJSONArrayFlagRejectsEmptyRequiredArray(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()

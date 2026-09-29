@@ -1586,8 +1586,8 @@ func validateJSONArrayInput(m FlagMeta, fieldType reflect.Type, val string) erro
 		return nil
 	}
 	var elems []*string
-	if json.Unmarshal([]byte(trimmed), &elems) != nil {
-		return nil
+	if err := json.Unmarshal([]byte(trimmed), &elems); err != nil {
+		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array of strings, e.g. --%s '["value"]': %v`, m.FlagName, m.FlagName, err))
 	}
 	if slices.Contains(elems, nil) {
 		return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements must be strings", m.FlagName))
