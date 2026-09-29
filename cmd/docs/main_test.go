@@ -73,7 +73,7 @@ func TestRender_SupportLevels(t *testing.T) {
   ]}
   data={[
     {
-      target: "[TypeScript](/docs/languages/typescript/methodology-ts)",
+      target: "[TypeScript](/docs/sdks/languages/typescript/methodology-ts)",
       maturity: "GA",
       support: "GA",
     },
