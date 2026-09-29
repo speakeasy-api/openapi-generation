@@ -658,7 +658,7 @@ function buildMetaEntryForField(
   }
 
   // Description for registration
-  const description = getFlagDescription(field);
+  const description = getFlagDescription(field, kind);
   parts.push(`Description: "${escapeGoString(description)}"`);
 
   // Display group for --help organization
@@ -778,7 +778,7 @@ function getOperationPositional(
   if (!kind || !positionalFlagKinds.has(kind)) return null;
 
   const summary =
-    getFlagDescription(field).replace(/\s*\[required\]$/, "") ||
+    getFlagDescription(field, kind).replace(/\s*\[required\]$/, "") ||
     getTypeHint(field);
   return {
     FlagName: flagName,

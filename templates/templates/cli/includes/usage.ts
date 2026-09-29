@@ -292,7 +292,7 @@ function usageFlagFromField(
       argName,
       kind === "FlagKindStringArray",
     ),
-    help: getFlagDescription(field),
+    help: getFlagDescription(field, kind),
   };
 
   if (field.Default?.Value !== undefined && field.Default?.Value !== null) {

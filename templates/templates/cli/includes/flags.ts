@@ -441,7 +441,10 @@ function computeFlagShorthands(
  * Get the flag description/help text.
  * Uses field description, enum options, and required status.
  */
-function getFlagDescription(field: FieldDef): string {
+function getFlagDescription(
+  field: FieldDef,
+  kind = inferKindNameForField(field),
+): string {
   let desc = "";
 
   // Start with field description or comments
@@ -466,8 +469,8 @@ function getFlagDescription(field: FieldDef): string {
 
   // The pflag type column only shows "string"
   if (
-    isStringItemArrayField(field) &&
-    (arrayFlagFormat() === "json" || isNullableOptionalWrapped(field))
+    isArrayType(field.Type) &&
+    (kind === "FlagKindJSON" || isNullableOptionalWrapped(field))
   ) {
     addHint("(JSON array)", "JSON array");
   }
