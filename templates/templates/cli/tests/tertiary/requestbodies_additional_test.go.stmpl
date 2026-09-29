@@ -240,6 +240,26 @@ func TestJSONArrayIntEnumFlagValidatesElements(t *testing.T) {
 	assert.Equal(t, []interface{}{2.0, 3.0}, levels)
 }
 
+func TestJSONArrayInt64EnumFlagValidatesExactValue(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-json-array-flags-int64-enum-post",
+		"--codes", "[9007199254740993]",
+	}))
+	assert.Contains(t, jsonGetString(h.GetStdout(), "data"), `[9007199254740993]`)
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"request-bodies", "cli-json-array-flags-int64-enum-post",
+		"--codes", "[9007199254740992]",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --codes: "9007199254740992"; valid options: 9007199254740993, 1`)
+}
+
 func TestJSONArrayEnumFlagHelpListsOptions(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"request-bodies", "cli-json-array-flags-post", "--help"}))

@@ -39,6 +39,45 @@ paths:
                     type: string
                 required:
                   - url
+  /anything/cli/jsonArrayFlags/int64Enum:
+    post:
+      operationId: cliJsonArrayFlagsInt64EnumPost
+      description: >-
+        Required int64 enum-item array property whose first enum value is
+        beyond the range a double represents exactly, so element validation
+        must compare exact integer values; its neighbour 2^53 is not a member.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - codes
+              properties:
+                codes:
+                  type: array
+                  description: Int64 enum-item array without an example
+                  items:
+                    type: integer
+                    format: int64
+                    enum:
+                      - 9007199254740993
+                      - 1
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                required:
+                  - data
   /anything/cli/jsonArrayFlags/query:
     get:
       operationId: cliJsonArrayFlagsGet
