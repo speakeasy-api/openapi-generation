@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -432,6 +433,57 @@ func TestBuildRequestAcceptsRequiredJSONPathParamArray(t *testing.T) {
 	req, err := flagutil.BuildRequest[requiredPathArrayRequest](cmd, meta, "", "")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"a", "b"}, req.IDs)
+}
+
+type arrayQueryRequest struct {
+	IDs []string `queryParam:"style=form,explode=true,name=ids"`
+}
+
+func TestBuildRequestRejectsEmptyRequiredJSONQueryParamArray(t *testing.T) {
+	meta := []flagutil.FlagMeta{
+		{FlagName: "ids", FieldPath: "IDs", Kind: flagutil.FlagKindJSON, Required: true},
+	}
+	cmd := newRequiredParamsCommand(meta)
+	require.NoError(t, cmd.Flags().Set("ids", `[]`))
+	_, err := flagutil.BuildRequest[arrayQueryRequest](cmd, meta, "", "")
+	assertCLIValidation(t, err, "ids")
+}
+
+func TestBuildRequestChecksArrayMinItems(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		kind   flagutil.FlagKind
+		values []string
+	}{
+		{"repeatable", flagutil.FlagKindStringArray, []string{"a"}},
+		{"json", flagutil.FlagKindJSON, []string{`["a"]`}},
+	} {
+		meta := []flagutil.FlagMeta{
+			{FlagName: "ids", FieldPath: "IDs", Kind: tc.kind, Optional: true, MinItems: 2},
+		}
+		t.Run(tc.name+"/strict", func(t *testing.T) {
+			cmd := newRequiredParamsCommand(meta)
+			cmd.Annotations = map[string]string{"speakeasy_strict_body_keys": "true"}
+			for _, value := range tc.values {
+				require.NoError(t, cmd.Flags().Set("ids", value))
+			}
+			_, err := flagutil.BuildRequest[arrayQueryRequest](cmd, meta, "", "")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "invalid value for --ids: 1 item(s), fewer than the minimum 2")
+		})
+		t.Run(tc.name+"/warn", func(t *testing.T) {
+			cmd := newRequiredParamsCommand(meta)
+			var stderr bytes.Buffer
+			cmd.SetErr(&stderr)
+			for _, value := range tc.values {
+				require.NoError(t, cmd.Flags().Set("ids", value))
+			}
+			req, err := flagutil.BuildRequest[arrayQueryRequest](cmd, meta, "", "")
+			require.NoError(t, err)
+			assert.Equal(t, []string{"a"}, req.IDs)
+			assert.Contains(t, stderr.String(), "Warning: invalid value for --ids: 1 item(s), fewer than the minimum 2")
+		})
+	}
 }
 
 func TestBuildRequestRejectsBlankRequiredFormattedPathParams(t *testing.T) {

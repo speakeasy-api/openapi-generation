@@ -45,7 +45,7 @@ func TestJSONArrayQueryParamRejectsEmptyRequiredArray(t *testing.T) {
 		"--tags", `[]`,
 	})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid value for --tags: empty array")
+	assert.Contains(t, err.Error(), "invalid value for --tags: empty array; a required parameter cannot be sent empty")
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 	assert.Zero(t, requests.Load(), "no request must be sent without the required tags")
 }

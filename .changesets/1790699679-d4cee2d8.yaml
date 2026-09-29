@@ -1,0 +1,10 @@
+id: 1790699679-d4cee2d8
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: 'array flags check the schema minItems like other schema bounds: an error on strict surfaces, a warning otherwise'
+author: 2ynn
+date: "2026-09-29"
