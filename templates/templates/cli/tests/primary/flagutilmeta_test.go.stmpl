@@ -493,6 +493,41 @@ func TestBuildRequestRejectsNullElementsInNonNullableJSONArray(t *testing.T) {
 	assert.Nil(t, req.Codes[1])
 }
 
+type nullableEnumItemArrayQueryRequest struct {
+	Levels []*string `queryParam:"style=form,explode=true,name=levels"`
+	Codes  []*int64  `queryParam:"style=form,explode=true,name=codes"`
+}
+
+func TestBuildRequestValidatesNullableEnumItemArrayElements(t *testing.T) {
+	for _, tc := range []struct {
+		flagName  string
+		fieldPath string
+		enum      []string
+		valid     string
+		invalid   string
+	}{
+		{flagName: "levels", fieldPath: "Levels", enum: []string{"low", "high"}, valid: `["low", null, "high"]`, invalid: `[null, "medium"]`},
+		{flagName: "codes", fieldPath: "Codes", enum: []string{"1", "2"}, valid: `[1, null, 2]`, invalid: `[null, 3]`},
+	} {
+		t.Run(tc.flagName, func(t *testing.T) {
+			meta := []flagutil.FlagMeta{
+				{FlagName: tc.flagName, FieldPath: tc.fieldPath, Kind: flagutil.FlagKindJSON, EnumValues: tc.enum},
+			}
+
+			cmd := newRequiredParamsCommand(meta)
+			require.NoError(t, cmd.Flags().Set(tc.flagName, tc.valid))
+			_, err := flagutil.BuildRequest[nullableEnumItemArrayQueryRequest](cmd, meta, "", "")
+			require.NoError(t, err)
+
+			cmd = newRequiredParamsCommand(meta)
+			require.NoError(t, cmd.Flags().Set(tc.flagName, tc.invalid))
+			_, err = flagutil.BuildRequest[nullableEnumItemArrayQueryRequest](cmd, meta, "", "")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "valid options")
+		})
+	}
+}
+
 func TestBuildRequestChecksArrayMinItems(t *testing.T) {
 	for _, tc := range []struct {
 		name   string

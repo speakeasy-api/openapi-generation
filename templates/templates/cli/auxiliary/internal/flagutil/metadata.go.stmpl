@@ -1593,22 +1593,32 @@ func validateJSONArrayInput(cmd *cobra.Command, m FlagMeta, fieldType reflect.Ty
 			return WithCLIValidation(fmt.Errorf("invalid value for --%s: null element; array elements cannot be null", m.FlagName))
 		}
 	}
-	if kind := fieldType.Elem().Kind(); kind >= reflect.Int && kind <= reflect.Int64 && rawErr == nil {
+	elemType := fieldType.Elem()
+	if elemType.Kind() == reflect.Ptr {
+		elemType = elemType.Elem()
+	}
+	if kind := elemType.Kind(); kind >= reflect.Int && kind <= reflect.Int64 && rawErr == nil {
 		for _, elem := range raw {
+			if isJSONNull(elem) {
+				continue
+			}
 			if err := validateEnumValue(m, string(elem), true); err != nil {
 				return err
 			}
 		}
 	}
-	if fieldType.Elem().Kind() != reflect.String {
+	if elemType.Kind() != reflect.String {
 		return nil
 	}
-	var elems []string
+	var elems []*string
 	if err := json.Unmarshal([]byte(trimmed), &elems); err != nil {
 		return WithCLIValidation(fmt.Errorf(`invalid value for --%s: expected a JSON array of strings, e.g. --%s '["value"]': %v`, m.FlagName, m.FlagName, err))
 	}
 	for _, elem := range elems {
-		if err := validateEnumValue(m, elem, true); err != nil {
+		if elem == nil {
+			continue
+		}
+		if err := validateEnumValue(m, *elem, true); err != nil {
 			return err
 		}
 	}
