@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
@@ -196,7 +197,8 @@ func main() {
 // render turns the implemented features report into the maturity page, with
 // one table per feature category.
 func render(records [][]string) string {
-	headers, rows := records[0][1:], records[1:]
+	// Normalizing in place would write through to the caller's records.
+	headers, rows := slices.Clone(records[0][1:]), records[1:]
 
 	// Column headings carry the template name, which for some targets is
 	// suffixed with a generation version (for example "pythonv2").

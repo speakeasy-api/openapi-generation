@@ -104,6 +104,25 @@ func TestRender_StaysWithinPrettierPrintWidth(t *testing.T) {
 	}
 }
 
+// reportFixture is shared by parallel tests, so rendering must leave the
+// records it is handed untouched.
+func TestRender_DoesNotMutateRecords(t *testing.T) {
+	t.Parallel()
+
+	records := [][]string{
+		{"Template", "typescriptv2", "mcp-typescript"},
+		{"core (Core)", ":white_check_mark:", ":warning:"},
+	}
+	untouched := [][]string{
+		{"Template", "typescriptv2", "mcp-typescript"},
+		{"core (Core)", ":white_check_mark:", ":warning:"},
+	}
+
+	render(records)
+
+	assert.Equal(t, untouched, records)
+}
+
 func TestRender_EndsWithSingleNewline(t *testing.T) {
 	t.Parallel()
 
