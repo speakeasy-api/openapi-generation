@@ -465,7 +465,10 @@ function getFlagDescription(field: FieldDef): string {
   }
 
   // The pflag type column only shows "string"
-  if (isStringItemArrayField(field) && arrayFlagFormat() === "json") {
+  if (
+    isStringItemArrayField(field) &&
+    (arrayFlagFormat() === "json" || isNullableOptionalWrapped(field))
+  ) {
     addHint("(JSON array)", "JSON array");
   }
 

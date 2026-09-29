@@ -197,6 +197,12 @@ func TestOptionalNullableArrayParamTakesJSONArray(t *testing.T) {
 	assert.Equal(t, "a,b", jsonGetString(h.GetStdout(), "headers.Array-Header-Param"))
 }
 
+func TestOptionalNullableArrayParamHelpShowsJSONArrayHint(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"parameters", "optional-nullable-array-params", "--help"}))
+	assert.Contains(t, h.GetStdout(), "comma-delimited header value. (JSON array)")
+}
+
 func TestOptionalNullableArrayParamNotVariadicInUsageSchema(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunBare([]string{"parameters", "optional-nullable-array-params", "--usage"}))
