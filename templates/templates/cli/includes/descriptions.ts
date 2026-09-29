@@ -205,6 +205,25 @@ function getCLIExampleValue(
     return exampleValueFor(field, field.Default.Value, false);
   }
 
+  return placeholderExampleValue(field);
+}
+
+function scalarPlaceholder(typeDef: TypeDef | undefined): string | undefined {
+  switch (typeDef?.Type?.toString()) {
+    case "boolean":
+      return "true";
+    case "integer":
+    case "int32":
+      return "123";
+    case "number":
+    case "float32":
+      return "3.14";
+    default:
+      return undefined;
+  }
+}
+
+function placeholderExampleValue(field: FieldDef): CLIExampleValue {
   const typeDef = field.Type;
 
   // Enum: use first value. A repeatable flag takes one value per occurrence,
@@ -239,20 +258,18 @@ function getCLIExampleValue(
   if (isStringItemArrayField(field) && !isRepeatableFlagField(field)) {
     return { Value: '["<value>"]', SynthesizedAnglePlaceholder: true };
   }
-
-  // Type-appropriate placeholders
-  switch (typeDef.Type?.toString()) {
-    case "boolean":
-      return { Value: "true", SynthesizedAnglePlaceholder: false };
-    case "integer":
-    case "int32":
-      return { Value: "123", SynthesizedAnglePlaceholder: false };
-    case "number":
-    case "float32":
-      return { Value: "3.14", SynthesizedAnglePlaceholder: false };
-    default:
-      return { Value: "<value>", SynthesizedAnglePlaceholder: true };
+  const itemPlaceholder = scalarPlaceholder(itemTypeDef);
+  if (itemPlaceholder) {
+    return {
+      Value: `[${itemPlaceholder}]`,
+      SynthesizedAnglePlaceholder: false,
+    };
   }
+
+  const placeholder = scalarPlaceholder(typeDef);
+  return placeholder
+    ? { Value: placeholder, SynthesizedAnglePlaceholder: false }
+    : { Value: "<value>", SynthesizedAnglePlaceholder: true };
 }
 
 /**
