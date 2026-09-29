@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: f48e92e0f3d0ad6cf180b35c82ab9ee1
+  configChecksum: 2b84669037964d5e32050c3a90a91f46
 features:
   cli:
     additionalProperties: 0.0.1
@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:9180bf33bd8735d8efb77b778a7e93092858738a
   internal/cli/root.go:
-    last_write_checksum: sha1:3eac550d7fdaf87309095c22cbc42af36eabb83e
+    last_write_checksum: sha1:1d441678f8915123a6a0e276474fc39169a36e9c
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:3273e90d36a4b96a5ceeab1011fd39476589de13
   internal/cli/tag1/deprecated1.go:
@@ -216,11 +216,11 @@ trackedFiles:
   internal/cli/validate.go:
     last_write_checksum: sha1:4a2b67a52f6bf5090792a3e3a9e52bf5ac55bfd2
   internal/cli/version.go:
-    last_write_checksum: sha1:142d965150c031fa2041717c39f2b2561dc90401
+    last_write_checksum: sha1:ef4d924ad83b7b2e9e4698a9f0ac229bac4060d4
   internal/cli/whoami.go:
     last_write_checksum: sha1:9b243266c806ac4e720aa333304186b8bb7d2f18
   internal/client/client.go:
-    last_write_checksum: sha1:f4fdd60c862d482ee7f3d74a2e13c7da2ffb734e
+    last_write_checksum: sha1:972bb2e7dd3b2e5d2f9ff10e31e7f54e40550c9d
   internal/client/diagnostics.go:
     last_write_checksum: sha1:36245f95381109b1b8e1b0a041acd7b89737cd2e
   internal/clierrors/clierrors.go:
@@ -640,7 +640,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:5cc44130e12ef09e27aa580d3575412322fb710c
+    last_write_checksum: sha1:eebf02d637a2075c3cbe731e3aae77630f1dffc1
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:

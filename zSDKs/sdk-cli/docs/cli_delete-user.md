@@ -64,7 +64,7 @@ cli delete-user [id] [flags]
       --token-url string                 Client Credentials flow. token URL
       --usage                            Print the CLI Usage schema in KDL format
       --username string                  HTTP Basic username
-      --version string                   Server template variable: version
+      --version-param string             Server template variable: version
 ```
 
 ### SEE ALSO

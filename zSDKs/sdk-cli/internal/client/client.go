@@ -42,7 +42,7 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, e
 	if v, _ := flagutil.GetStringFlag(cmd, "subdomain"); v != "" {
 		sdkOpts = append(sdkOpts, sdk.WithSubdomain(v))
 	}
-	if v, _ := flagutil.GetStringFlag(cmd, "version"); v != "" {
+	if v, _ := flagutil.GetStringFlag(cmd, "version-param"); v != "" {
 		sdkOpts = append(sdkOpts, sdk.WithVersion(v))
 	}
 	if v, _ := flagutil.GetStringFlag(cmd, "host-name"); v != "" {

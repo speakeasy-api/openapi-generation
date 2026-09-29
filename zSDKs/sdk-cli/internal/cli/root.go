@@ -41,6 +41,9 @@ func NewRootCommand() (*cobra.Command, error) {
 			if usage.UsageRequested(cmd) {
 				return usage.EmitSchema(cmd, cmd.OutOrStdout())
 			}
+			if versionFlagRequested(cmd) {
+				return printVersion(cmd)
+			}
 			return cmd.Help()
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -222,8 +225,8 @@ func NewRootCommand() (*cobra.Command, error) {
 	// Server template variable flags
 	rootCmd.PersistentFlags().String("subdomain", "", "Server template variable: subdomain")
 	_ = rootCmd.PersistentFlags().SetAnnotation("subdomain", "speakeasy:group", []string{"Server"})
-	rootCmd.PersistentFlags().String("version", "", "Server template variable: version")
-	_ = rootCmd.PersistentFlags().SetAnnotation("version", "speakeasy:group", []string{"Server"})
+	rootCmd.PersistentFlags().String("version-param", "", "Server template variable: version")
+	_ = rootCmd.PersistentFlags().SetAnnotation("version-param", "speakeasy:group", []string{"Server"})
 	rootCmd.PersistentFlags().String("host-name", "", "Server template variable: HostName")
 	_ = rootCmd.PersistentFlags().SetAnnotation("host-name", "speakeasy:group", []string{"Server"})
 	rootCmd.PersistentFlags().String("port", "", "Server template variable: PORT")

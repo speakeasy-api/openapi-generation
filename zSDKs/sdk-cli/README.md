@@ -592,15 +592,15 @@ cli --server 0 get-duplicate-export-collision
 
 Some server URLs contain template variables (e.g., `https://{hostname}:{port}/v1`). Set these via dedicated flags:
 
-| Variable    | Flag                  | Supported Values                      | Default       | Description                              |
-| ----------- | --------------------- | ------------------------------------- | ------------- | ---------------------------------------- |
-| `subdomain` | `--subdomain <value>` | string                                | `"api"`       |                                          |
-| `version`   | `--version <value>`   | string                                | `"1"`         |                                          |
-| `HostName`  | `--host-name <value>` | string                                | `"localhost"` | The hostname of the server.              |
-| `PORT`      | `--port <value>`      | - `"80"`<br/>- `"8080"`<br/>- `"443"` | `"8080"`      | The port on which the server is running. |
+| Variable    | Flag                      | Supported Values                      | Default       | Description                              |
+| ----------- | ------------------------- | ------------------------------------- | ------------- | ---------------------------------------- |
+| `subdomain` | `--subdomain <value>`     | string                                | `"api"`       |                                          |
+| `version`   | `--version-param <value>` | string                                | `"1"`         |                                          |
+| `HostName`  | `--host-name <value>`     | string                                | `"localhost"` | The hostname of the server.              |
+| `PORT`      | `--port <value>`          | - `"80"`<br/>- `"8080"`<br/>- `"443"` | `"8080"`      | The port on which the server is running. |
 
 ```bash
-cli --subdomain value --version value --host-name value --port value get-duplicate-export-collision
+cli --subdomain value --version-param value --host-name value --port value get-duplicate-export-collision
 ```
 
 Server variable flags are combined with the selected server URL to produce the final endpoint.

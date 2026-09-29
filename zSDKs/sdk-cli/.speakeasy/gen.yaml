@@ -81,5 +81,5 @@ cli:
   removeStutter: true
   retryFlagsVisibility: visible
   retryMethodPolicy: spec
-  rootVersionFlag: false
+  rootVersionFlag: true
   serverSelectionFlag: auto
