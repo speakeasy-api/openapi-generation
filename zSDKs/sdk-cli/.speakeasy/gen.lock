@@ -1088,7 +1088,7 @@ trackedFiles:
   tests/singlefoo_test.go:
     last_write_checksum: sha1:22c79a82dc056151850066575e76da6d5a8c0e30
   tests/startup_tty_test.go:
-    last_write_checksum: sha1:6cc57cad295184c53a2894ff7a23f5b67f925c1d
+    last_write_checksum: sha1:8996833b31c8001e87c21bf70979b4aebaed12fe
   tests/tag1_test.go:
     last_write_checksum: sha1:c63029ec23e61919abfa23c4adecd828c9c87802
   tests/tag2_test.go:

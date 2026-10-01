@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -20,13 +21,15 @@ import (
 	"openapi/internal/cli"
 )
 
-const startupProbeEnv = "SPEAKEASY_CLI_STARTUP_PROBE"
+const startupProbeArg = "startup-probe"
 
 // TestMain lets the test binary double as the CLI when re-executed with the
-// probe environment variable set, so the pseudo-terminal test below can observe
-// a real process start without building a separate binary.
+// probe argument, so the pseudo-terminal test below can observe a real process
+// start without building a separate binary. The marker is an argument rather
+// than an environment variable so nothing inherited from the caller can divert
+// a normal test run.
 func TestMain(m *testing.M) {
-	if os.Getenv(startupProbeEnv) != "1" {
+	if len(os.Args) < 2 || os.Args[1] != startupProbeArg {
 		os.Exit(m.Run())
 	}
 	root, err := cli.NewRootCommand()
@@ -49,8 +52,8 @@ func TestStartupDoesNotQueryTerminal(t *testing.T) {
 	exe, err := os.Executable()
 	require.NoError(t, err)
 
-	cmd := exec.Command(exe)
-	cmd.Env = append(environWithout("CI"), startupProbeEnv+"=1", "TERM=xterm-256color")
+	cmd := exec.Command(exe, startupProbeArg)
+	cmd.Env = append(environWithout("CI", "TERM"), "TERM=xterm-256color")
 	ptmx, err := pty.Start(cmd)
 	require.NoError(t, err)
 	defer ptmx.Close()
@@ -86,10 +89,10 @@ func TestStartupDoesNotQueryTerminal(t *testing.T) {
 	require.Less(t, elapsed, 4*time.Second, "startup stalled waiting on the terminal")
 }
 
-func environWithout(name string) []string {
+func environWithout(names ...string) []string {
 	env := make([]string, 0, len(os.Environ()))
 	for _, entry := range os.Environ() {
-		if strings.HasPrefix(entry, name+"=") {
+		if slices.ContainsFunc(names, func(name string) bool { return strings.HasPrefix(entry, name+"=") }) {
 			continue
 		}
 		env = append(env, entry)
