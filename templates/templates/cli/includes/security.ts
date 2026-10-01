@@ -369,6 +369,106 @@ registerTemplateFunc(
   templateSensitiveSecurityHeaders,
 );
 
+function isSensitiveBodyType(type: TypeDef): boolean {
+  const marker = type.Extensions?.All?.["x-speakeasy-param-sensitive"];
+  return marker === true || marker === "true" || type.Format === "password";
+}
+
+function requestBodyType(op: Operation): TypeDef | undefined {
+  if (!op.Request) return undefined;
+  if (op.Request.IsRequestBody) return op.Request.RequestBody?.Type;
+  return op.Request.Field?.Type?.Fields?.find(
+    (f: FieldDef) => f.Annotations?.Has("request"),
+  )?.Type;
+}
+
+/**
+ * Request-body values each operation marks sensitive
+ * (x-speakeasy-param-sensitive or format: password), as Go literals of JSON
+ * paths keyed by operation id. A "*" segment stands for any array index or map
+ * key and "**" for any run of segments inside a recursive schema; union
+ * variants share their parent's path. Diagnostics redacts these in dry-run and
+ * debug request previews on top of its name-based list, so a secret under a
+ * generic name is hidden while same-named fields of other schemas stay
+ * readable.
+ */
+function templateSensitiveBodyFields(): {
+  OperationID: string;
+  Paths: string;
+}[] {
+  const entries: { OperationID: string; Paths: string }[] = [];
+  for (const op of allOperations()) {
+    const paths = new Map<string, string[]>();
+    const add = (path: string[]): void => {
+      paths.set(JSON.stringify(path), path);
+    };
+    // Components on the current walk, flagged once they recur below themselves.
+    const stack = new Map<string, boolean>();
+    const walk = (type: TypeDef | undefined, path: string[]): void => {
+      if (!type) return;
+      if (path.length > 0 && isSensitiveBodyType(type)) {
+        add(path);
+        return;
+      }
+      const component = type.IsComponent && type.Name ? type.Name : "";
+      if (component) {
+        if (stack.has(component)) {
+          stack.set(component, true);
+          return;
+        }
+        stack.set(component, false);
+      }
+      const before = new Set(paths.keys());
+      switch (type.Type.toString()) {
+        case "class":
+          for (const field of type.Fields || []) {
+            if (field.Const) continue;
+            walk(
+              field.Type,
+              field.IsAdditionalProperties
+                ? path
+                : [...path, originalFieldName(field)],
+            );
+          }
+          break;
+        case "array":
+        case "set":
+        case "map":
+          walk(type.ItemType, [...path, "*"]);
+          break;
+        case "union":
+          for (const variant of type.AssociatedTypes || []) {
+            walk(variant, path);
+          }
+          break;
+      }
+      if (!component) return;
+      if (stack.get(component)) {
+        const found = [...paths].filter(([key]) => !before.has(key));
+        for (const [, foundPath] of found) {
+          const rel = foundPath.slice(path.length);
+          add([...path, "**", ...(rel[0] === "**" ? rel.slice(1) : rel)]);
+        }
+      }
+      stack.delete(component);
+    };
+    walk(requestBodyType(op), []);
+    if (paths.size === 0) continue;
+    entries.push({
+      OperationID: op.OriginalID,
+      // Spaced braces: this file renders twice (recurse), so "{{" must not appear.
+      Paths: `{ ${[...paths.values()]
+        .map((p) => `{ ${p.map((s) => `"${escapeGoString(s)}"`).join(", ")} }`)
+        .join(", ")} }`,
+    });
+  }
+  return entries.sort((a, b) => a.OperationID.localeCompare(b.OperationID));
+}
+registerTemplateFunc(
+  "templateSensitiveBodyFields",
+  templateSensitiveBodyFields,
+);
+
 function primaryCLISecurityField(
   fields: CLISecurityFieldInfo[],
 ): CLISecurityFieldInfo | undefined {

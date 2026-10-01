@@ -339,6 +339,113 @@ func TestVersionAndWhoamiMachineOutput(t *testing.T) {
 	assert.False(t, json.Valid([]byte(strings.TrimSpace(h.GetStdout()))),
 		"pretty version output turned into JSON")
 }
+
+// diagnosticsOutputModes runs a command under each diagnostics mode that
+// previews the request body and returns the stream holding that preview.
+var diagnosticsOutputModes = []struct {
+	name string
+	run  func(t *testing.T, args []string) string
+}{
+	{"dry-run", func(t *testing.T, args []string) string {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer("http://127.0.0.1:1", append([]string{"--dry-run", "--output-format", "pretty"}, args...)))
+		return h.GetStderr()
+	}},
+	{"dry-run json", func(t *testing.T, args []string) string {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer("http://127.0.0.1:1", append([]string{"--dry-run"}, args...)))
+		return h.GetStdout()
+	}},
+	{"debug", func(t *testing.T, args []string) string {
+		s := newDiagnosticsServer()
+		defer s.Close()
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, append([]string{"--debug"}, args...)))
+		return h.GetStderr()
+	}},
+}
+
+func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		secrets []string
+		visible []string
+	}{
+		{
+			name: "marked fields at every depth",
+			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
+				`{"name":"visible-name","value":"canary-top","passphrase":"canary-password",` +
+					`"nested":{"label":"visible-nested","value":"canary-nested"},` +
+					`"entries":[{"label":"visible-entry","value":"canary-entry"}],` +
+					`"byName":{"first":{"label":"visible-map","value":"canary-map"}},` +
+					`"codes":["canary-item"],"codesByName":{"visible-code":"canary-map-value"},` +
+					`"tree":{"label":"visible-root","value":"canary-root","child":{"label":"visible-child","value":"canary-child",` +
+					`"child":{"value":"canary-grandchild"},"branch":{"label":"visible-branch","value":"canary-branch",` +
+					`"next":{"value":"canary-next"}}}}}`},
+			secrets: []string{"canary-top", "canary-password", "canary-nested", "canary-entry", "canary-map",
+				"canary-item", "canary-map-value", "canary-root", "canary-child", "canary-grandchild",
+				"canary-branch", "canary-next"},
+			visible: []string{"visible-name", "visible-nested", "visible-entry", "visible-map", "visible-code",
+				"visible-root", "visible-child", "visible-branch"},
+		},
+		{
+			name: "union variant field",
+			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
+				"--cli-sensitive-secret", `{"kind":"static","id":"visible-id","value":"canary-static"}`},
+			secrets: []string{"canary-static"},
+			visible: []string{"visible-id"},
+		},
+		{
+			name: "expanded union variant flags",
+			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
+				"--cli-sensitive-secret.basic.id", "visible-id", "--cli-sensitive-secret.basic.username", "visible-user",
+				"--cli-sensitive-secret.basic.passphrase", "canary-basic"},
+			secrets: []string{"canary-basic"},
+			visible: []string{"visible-id", "visible-user"},
+		},
+		{
+			name: "multipart parts",
+			args: []string{"request-bodies", "cli-sensitive-multipart-post", "--name", "visible-name", "--value", "canary-top",
+				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
+				"--codes", "canary-code-1", "--codes", "canary-code-2"},
+			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2"},
+			visible: []string{"visible-name", "visible-label"},
+		},
+		{
+			name: "form fields",
+			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top",
+				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
+				"--codes", "canary-code-1", "--codes", "canary-code-2"},
+			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2"},
+			visible: []string{"visible-name", "visible-label"},
+		},
+	}
+	for _, mode := range diagnosticsOutputModes {
+		for _, tc := range cases {
+			t.Run(mode.name+"/"+tc.name, func(t *testing.T) {
+				output := mode.run(t, tc.args)
+				for _, secret := range tc.secrets {
+					assert.NotContains(t, output, secret)
+				}
+				for _, value := range tc.visible {
+					assert.Contains(t, output, value)
+				}
+			})
+		}
+	}
+}
+
+func TestDiagnosticsKeepUnmarkedFieldSharingSensitiveName(t *testing.T) {
+	for _, mode := range diagnosticsOutputModes {
+		t.Run(mode.name, func(t *testing.T) {
+			output := mode.run(t, []string{"request-bodies", "cli-plain-body-fields-post",
+				"--name", "visible-name", "--value", "visible-value"})
+			assert.Contains(t, output, "visible-value")
+			assert.NotRegexp(t, `"value":\s*"\[REDACTED\]"`, output)
+		})
+	}
+}
 {{- if hasRootVersionFlag}}
 
 func TestRootVersionFlagMatchesVersionCommand(t *testing.T) {

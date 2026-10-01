@@ -1,0 +1,10 @@
+id: 1790872792-577bf8cd
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: '--dry-run and --debug request previews redact request-body values whose schema is marked x-speakeasy-param-sensitive or format: password, in JSON bodies, form fields and multipart parts (including JSON-encoded ones), so secrets under generic names are no longer printed; same-named unmarked fields of other schemas stay readable'
+author: 2ynn
+date: "2026-10-01"

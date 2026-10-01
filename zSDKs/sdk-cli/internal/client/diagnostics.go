@@ -83,6 +83,12 @@ var sensitiveJSONKeys = map[string]bool{
 	"clientsecret": true,
 }
 
+// sensitiveBodyFields lists, per operation id, the request-body fields the API
+// marks sensitive (x-speakeasy-param-sensitive or format: password) as JSON
+// paths, where "*" stands for any array index or map key and "**" for any run
+// of segments inside a recursive schema.
+var sensitiveBodyFields = map[string][][]string{}
+
 var sensitiveQueryKeys = map[string]bool{
 	"apikey":       true,
 	"accesstoken":  true,
@@ -160,8 +166,73 @@ func isSensitiveName(key string) bool {
 	return false
 }
 
-// redactJSON recursively redacts sensitive keys in a JSON structure.
-func redactJSON(v interface{}, depth int) interface{} {
+// sensitiveBodyFieldsFor returns the sensitive request-body paths of the
+// operation that cmd (an operation or intent command) invokes.
+func sensitiveBodyFieldsFor(cmd *cobra.Command) [][]string {
+	if cmd == nil {
+		return nil
+	}
+	return sensitiveBodyFields[cmd.Annotations["speakeasy_operation"]]
+}
+
+func isSensitiveBodyPath(sensitive [][]string, path []string) bool {
+	for _, candidate := range sensitive {
+		if matchesBodyPath(candidate, path) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesBodyPath(pattern, path []string) bool {
+	if len(pattern) == 0 {
+		return len(path) == 0
+	}
+	if pattern[0] == "**" {
+		for i := 0; i <= len(path); i++ {
+			if matchesBodyPath(pattern[1:], path[i:]) {
+				return true
+			}
+		}
+		return false
+	}
+	if len(path) == 0 || (pattern[0] != "*" && pattern[0] != path[0]) {
+		return false
+	}
+	return matchesBodyPath(pattern[1:], path[1:])
+}
+
+// isSensitiveEncodedField reports whether a form field or multipart part is
+// sensitive; repeated fields carry the items of an array.
+func isSensitiveEncodedField(sensitive [][]string, name string) bool {
+	return isSensitiveBodyPath(sensitive, []string{name}) || isSensitiveBodyPath(sensitive, []string{name, "*"})
+}
+
+// sensitiveBodySubpaths returns the sensitive paths below the top-level field
+// name, relative to it, for fields sent as an encoded JSON value (a multipart
+// part or a form field).
+func sensitiveBodySubpaths(sensitive [][]string, name string) [][]string {
+	var out [][]string
+	var collect func(pattern []string)
+	collect = func(pattern []string) {
+		switch {
+		case len(pattern) == 0:
+		case pattern[0] == "**":
+			out = append(out, pattern)
+			collect(pattern[1:])
+		case (pattern[0] == "*" || pattern[0] == name) && len(pattern) > 1:
+			out = append(out, pattern[1:])
+		}
+	}
+	for _, pattern := range sensitive {
+		collect(pattern)
+	}
+	return out
+}
+
+// redactJSON recursively redacts sensitive keys in a JSON structure, plus the
+// values at the sensitive request-body paths.
+func redactJSON(v interface{}, depth int, path []string, sensitive [][]string) interface{} {
 	if depth > maxRedactDepth {
 		return redactionDepthMarker
 	}
@@ -169,17 +240,24 @@ func redactJSON(v interface{}, depth int) interface{} {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(val))
 		for k, child := range val {
-			if sensitiveJSONKeys[normalizeSensitiveKey(k)] {
+			childPath := append(path[:len(path):len(path)], k)
+			if sensitiveJSONKeys[normalizeSensitiveKey(k)] || isSensitiveBodyPath(sensitive, childPath) {
 				out[k] = "[REDACTED]"
 			} else {
-				out[k] = redactJSON(child, depth+1)
+				out[k] = redactJSON(child, depth+1, childPath, sensitive)
 			}
 		}
 		return out
 	case []interface{}:
 		out := make([]interface{}, len(val))
+		childPath := append(path[:len(path):len(path)], "*")
+		redactItems := isSensitiveBodyPath(sensitive, childPath)
 		for i, child := range val {
-			out[i] = redactJSON(child, depth+1)
+			if redactItems {
+				out[i] = "[REDACTED]"
+			} else {
+				out[i] = redactJSON(child, depth+1, childPath, sensitive)
+			}
 		}
 		return out
 	case string:
@@ -255,7 +333,7 @@ func isAllHex(value string) bool {
 	return true
 }
 
-func decodeJSON(body []byte) (interface{}, bool) {
+func decodeJSON(body []byte, sensitive [][]string) (interface{}, bool) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var parsed interface{}
@@ -265,7 +343,7 @@ func decodeJSON(body []byte) (interface{}, bool) {
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
 		return nil, false
 	}
-	return redactJSON(parsed, 0), true
+	return redactJSON(parsed, 0, nil, sensitive), true
 }
 
 func isTextMediaType(mediaType string) bool {
@@ -276,7 +354,9 @@ func isTextMediaType(mediaType string) bool {
 		mediaType == "application/x-www-form-urlencoded"
 }
 
-func previewBody(body []byte, contentType string) interface{} {
+// previewBody renders a body for diagnostics; sensitive holds the request-body
+// paths to redact (nil for response bodies).
+func previewBody(body []byte, contentType string, sensitive [][]string) interface{} {
 	if len(body) == 0 {
 		return nil
 	}
@@ -285,16 +365,16 @@ func previewBody(body []byte, contentType string) interface{} {
 		mediaType = strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0]))
 	}
 	if isJSONMediaType(mediaType) || mediaType == "" {
-		if parsed, ok := decodeJSON(body); ok {
+		if parsed, ok := decodeJSON(body, sensitive); ok {
 			return parsed
 		}
 	}
 	if mediaType == "application/x-www-form-urlencoded" {
-		return previewForm(body)
+		return previewForm(body, sensitive)
 	}
 	if strings.HasPrefix(mediaType, "multipart/") {
 		if boundary := params["boundary"]; boundary != "" {
-			if summary, ok := previewMultipart(body, boundary); ok {
+			if summary, ok := previewMultipart(body, boundary, sensitive); ok {
 				return summary
 			}
 		}
@@ -306,7 +386,7 @@ func previewBody(body []byte, contentType string) interface{} {
 	return redactBase64String(string(body))
 }
 
-func previewForm(body []byte) string {
+func previewForm(body []byte, sensitive [][]string) string {
 	raw := string(body)
 	if _, err := url.ParseQuery(raw); err != nil {
 		return fmt.Sprintf("<bytes:%d>", len(body))
@@ -320,9 +400,17 @@ func previewForm(body []byte) string {
 			parts[i] = key + "=[REDACTED]"
 			continue
 		}
-		if isSensitiveName(decodedKey) {
+		if isSensitiveName(decodedKey) || isSensitiveEncodedField(sensitive, decodedKey) {
 			parts[i] = key + "=[REDACTED]"
 			continue
+		}
+		if nested := sensitiveBodySubpaths(sensitive, decodedKey); len(nested) > 0 {
+			if parsed, ok := decodeJSON([]byte(decodedValue), nested); ok {
+				if encoded, err := encodeJSON(parsed, ""); err == nil {
+					parts[i] = key + "=" + url.QueryEscape(encoded)
+					continue
+				}
+			}
 		}
 		redacted := redactBase64String(decodedValue)
 		if redacted != decodedValue {
@@ -334,7 +422,7 @@ func previewForm(body []byte) string {
 	return strings.Join(parts, "&")
 }
 
-func previewMultipart(body []byte, boundary string) (string, bool) {
+func previewMultipart(body []byte, boundary string, sensitive [][]string) (string, bool) {
 	r := multipart.NewReader(bytes.NewReader(body), boundary)
 	var lines []string
 	for {
@@ -357,8 +445,8 @@ func previewMultipart(body []byte, boundary string) (string, bool) {
 			lines = append(lines, fmt.Sprintf("%s: <bytes:%d>", name, len(data)))
 			continue
 		}
-		value := previewBody(data, part.Header.Get("Content-Type"))
-		if isSensitiveName(name) {
+		value := previewBody(data, part.Header.Get("Content-Type"), sensitiveBodySubpaths(sensitive, name))
+		if isSensitiveName(name) || isSensitiveEncodedField(sensitive, name) {
 			value = "[REDACTED]"
 		}
 		lines = append(lines, fmt.Sprintf("%s: %s", name, formatBodyPreview(value, 0)))
@@ -453,6 +541,8 @@ func redactURL(u string) string {
 type DebugClient struct {
 	Inner  HTTPClient
 	Stderr io.Writer
+	// SensitiveBodyFields lists request-body paths to redact; see sensitiveBodyFields.
+	SensitiveBodyFields [][]string
 }
 
 // HTTPClient is the interface that SDK clients implement.
@@ -471,7 +561,7 @@ func (c *DebugClient) Do(req *http.Request) (*http.Response, error) {
 		if readErr != nil {
 			fmt.Fprintf(c.Stderr, "[DEBUG] Request Body Read Error: %v\n", readErr)
 		} else {
-			body := previewBody(bodyData, req.Header.Get("Content-Type"))
+			body := previewBody(bodyData, req.Header.Get("Content-Type"), c.SensitiveBodyFields)
 			fmt.Fprintf(c.Stderr, "[DEBUG] Request Body:\n  %s\n", formatBodyPreview(body, maxBodyPreview))
 		}
 	}
@@ -496,7 +586,7 @@ func (c *DebugClient) Do(req *http.Request) (*http.Response, error) {
 			if readErr != nil {
 				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body Read Error: %v\n", readErr)
 			} else if len(bodyData) > 0 {
-				body := previewBody(bodyData, resp.Header.Get("Content-Type"))
+				body := previewBody(bodyData, resp.Header.Get("Content-Type"), nil)
 				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body:\n  %s\n", formatBodyPreview(body, maxBodyPreview))
 			}
 		}
@@ -525,6 +615,8 @@ type DryRunClient struct {
 	Stdout io.Writer
 	JSON   bool
 	Cmd    *cobra.Command
+	// SensitiveBodyFields lists request-body paths to redact; see sensitiveBodyFields.
+	SensitiveBodyFields [][]string
 }
 
 type dryRunBody struct{ length int64 }
@@ -561,7 +653,7 @@ func (c *DryRunClient) Do(req *http.Request) (*http.Response, error) {
 		if err != nil {
 			return nil, fmt.Errorf("read request body for dry-run preview: %w", err)
 		}
-		body = previewBody(bodyData, req.Header.Get("Content-Type"))
+		body = previewBody(bodyData, req.Header.Get("Content-Type"), c.SensitiveBodyFields)
 	}
 	requestURL := redactURL(req.URL.String())
 	headers := redactHeaders(req.Header)
@@ -700,10 +792,10 @@ func dryRunResponseShape(accept string) (string, []byte) {
 func WrapClientForDiagnostics(cmd *cobra.Command, inner HTTPClient) HTTPClient {
 	stderr := cmd.ErrOrStderr()
 	if IsDryRun(cmd) {
-		return &DryRunClient{Stderr: stderr, Stdout: cmd.OutOrStdout(), JSON: IsJSONDryRun(cmd), Cmd: cmd}
+		return &DryRunClient{Stderr: stderr, Stdout: cmd.OutOrStdout(), JSON: IsJSONDryRun(cmd), Cmd: cmd, SensitiveBodyFields: sensitiveBodyFieldsFor(cmd)}
 	}
 	if IsDebug(cmd) {
-		return &DebugClient{Inner: inner, Stderr: stderr}
+		return &DebugClient{Inner: inner, Stderr: stderr, SensitiveBodyFields: sensitiveBodyFieldsFor(cmd)}
 	}
 	return inner
 }
