@@ -1,0 +1,26 @@
+templates/templates/cli/auxiliary/internal/interactive/policy.go.stmpl
+  h_9630b74bdac540 12,80
+templates/templates/cli/cli_harness_test.go.stmpl
+  h_9630b74bdac540 451-456,458-470,477
+templates/templates/cli/README.md
+  h_9630b74bdac540 677
+.changesets/1790895978-121569c8.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255,655
+zSDKs/sdk-cli/internal/interactive/policy.go
+  h_9630b74bdac540 13,81
+zSDKs/sdk-cli/tests/cli_harness_test.go
+  h_9630b74bdac540 422-436,444
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c76661a74edcc8e25e56dfd2b48aa551c22bc734",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
