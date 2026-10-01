@@ -1,0 +1,10 @@
+id: 1790868696-188161e3
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: table output renders the items of list responses and other slice-of-struct fields as indented sub-tables instead of only the next page token, and shows time.Time fields
+author: ThomasRooney
+date: "2026-10-01"
