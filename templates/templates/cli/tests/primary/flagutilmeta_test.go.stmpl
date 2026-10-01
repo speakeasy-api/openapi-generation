@@ -706,3 +706,24 @@ func TestStringFlagConstraintsAreStrictWhereMinLengthWarns(t *testing.T) {
 	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^[a-z]+$"}, &upper)
 	require.Error(t, err)
 }
+
+// A value that fails both minLength (warn-only here) and pattern reports the
+// pattern error alone, without a preceding minLength warning.
+func TestStringFlagConstraintsRejectBeforeMinLengthWarning(t *testing.T) {
+	empty := ""
+	_, stderr, err := buildStringConstraintRequest(t, flagutil.FlagMeta{MinLength: 1, Pattern: "^a+$"}, &empty)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --code: "" does not match the pattern ^a+$`)
+	assert.Empty(t, stderr)
+}
+
+// The generator only emits patterns Go compiles, so one that does not is a
+// generator defect: it fails the request instead of silently skipping
+// validation.
+func TestStringFlagConstraintsRejectInvalidPattern(t *testing.T) {
+	value := "a"
+	_, _, err := buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "("}, &value)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `flag --code declares an invalid pattern "("`)
+}
+

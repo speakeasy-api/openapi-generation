@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -1521,8 +1520,6 @@ func validateStringLength(m FlagMeta, val string, changed bool) error {
 	return nil
 }
 
-var flagPatterns sync.Map // pattern string -> *regexp.Regexp
-
 // validateStringConstraints rejects a supplied value outside the schema's
 // maxLength or pattern. These are never downgraded to warnings: a value that
 // fails them cannot be a valid input for the field.
@@ -1536,15 +1533,11 @@ func validateStringConstraints(m FlagMeta, val string, changed bool) error {
 	if m.Pattern == "" {
 		return nil
 	}
-	re, ok := flagPatterns.Load(m.Pattern)
-	if !ok {
-		compiled, err := regexp.Compile(m.Pattern)
-		if err != nil {
-			return nil
-		}
-		re, _ = flagPatterns.LoadOrStore(m.Pattern, compiled)
+	re, err := regexp.Compile(m.Pattern)
+	if err != nil {
+		return fmt.Errorf("flag --%s declares an invalid pattern %q: %w", m.FlagName, m.Pattern, err)
 	}
-	if !re.(*regexp.Regexp).MatchString(val) {
+	if !re.MatchString(val) {
 		return WithCLIValidation(fmt.Errorf("invalid value for --%s: %q does not match the pattern %s", m.FlagName, val, m.Pattern))
 	}
 	return nil
@@ -1706,10 +1699,10 @@ func validateEnumValue(m FlagMeta, val string, changed bool) error {
 
 func buildStringField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 	val, changed := GetStringFlag(cmd, m.FlagName)
-	if err := enforceStrictOrWarn(cmd, validateStringLength(m, val, changed)); err != nil {
+	if err := validateStringConstraints(m, val, changed); err != nil {
 		return err
 	}
-	if err := validateStringConstraints(m, val, changed); err != nil {
+	if err := enforceStrictOrWarn(cmd, validateStringLength(m, val, changed)); err != nil {
 		return err
 	}
 	if err := validateRequiredPresence(m, changed); err != nil {
