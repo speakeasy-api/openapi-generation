@@ -418,6 +418,7 @@ function isTestSkipped(test: string): boolean {
     "open-union-strict-request-validation",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "pagination-object-results-page-params",
   ].includes(test);
 }
 

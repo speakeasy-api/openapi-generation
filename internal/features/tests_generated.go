@@ -658,6 +658,8 @@ func (t Test) String() string {
         return "pagination-limit-offset-union-output-page-params-flat"
     case TestPaginationLimitOffsetZeroPageParams:
         return "pagination-limit-offset-zero-page-params"
+    case TestPaginationObjectResultsPageParams:
+        return "pagination-object-results-page-params"
     case TestPaginationParamsWrappedRequest:
         return "pagination-params-wrapped-request"
     case TestPaginationSimpleObjectSnake:
@@ -2156,6 +2158,8 @@ func TestFromString(s string) Test {
         return TestPaginationLimitOffsetUnionOutputPageParamsFlat
     case "pagination-limit-offset-zero-page-params":
         return TestPaginationLimitOffsetZeroPageParams
+    case "pagination-object-results-page-params":
+        return TestPaginationObjectResultsPageParams
     case "pagination-params-wrapped-request":
         return TestPaginationParamsWrappedRequest
     case "pagination-simple-object-snake":
@@ -3326,6 +3330,7 @@ var testList = []Test{
     TestPaginationLimitOffsetUnionOutputPageParams,
     TestPaginationLimitOffsetUnionOutputPageParamsFlat,
     TestPaginationLimitOffsetZeroPageParams,
+    TestPaginationObjectResultsPageParams,
     TestPaginationParamsWrappedRequest,
     TestPaginationSimpleObjectSnake,
     TestPaginationURL,

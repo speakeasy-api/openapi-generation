@@ -422,6 +422,7 @@ function isTestSkipped(test: string): boolean {
     "jsonl-stream-timeout-still-bounds-slow-stream",
     "jsonl-stream-with-timeout-streams-to-completion",
     "optional-nullable-object-property-params",
+    "pagination-object-results-page-params",
   ].includes(test);
 }
 

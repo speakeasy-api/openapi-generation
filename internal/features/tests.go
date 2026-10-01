@@ -415,6 +415,7 @@ const (
 	TestPaginationCursorBody
 	TestPaginationCursorResponseEnvelope
 	TestPaginationCursorParams
+	TestPaginationObjectResultsPageParams
 	TestPaginationWithRetries
 	TestPaginationURL
 	TestPaginationCursorNonNumeric

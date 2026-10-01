@@ -464,6 +464,7 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-object-property-params",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "pagination-object-results-page-params",
   ].includes(test);
 }
 
