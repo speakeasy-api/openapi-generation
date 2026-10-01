@@ -3,11 +3,11 @@
 package cli
 
 import (
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"openapi/internal/client"
@@ -412,8 +412,12 @@ func dryRunLocalNoop(cmd *cobra.Command, message string) bool {
 }
 
 // configureFormTheme builds the form theme for the configure command.
-func configureFormTheme() *huh.Theme {
-	t := *huh.ThemeBase()
+func configureFormTheme() huh.Theme {
+	return huh.ThemeFunc(configureFormStyles)
+}
+
+func configureFormStyles(isDark bool) *huh.Styles {
+	t := *huh.ThemeBase(isDark)
 
 	accent := lipgloss.Color("#38BDF8")
 	dimmed := lipgloss.Color("#64748B")

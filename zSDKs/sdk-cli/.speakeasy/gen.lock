@@ -13,7 +13,7 @@ features:
     bigint: 0.0.0
     cliCommands: 0.1.7
     constsAndDefaults: 0.0.0
-    core: 0.6.2
+    core: 0.6.3
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -58,15 +58,15 @@ trackedFiles:
   cmd/gendocs/main_test.go:
     last_write_checksum: sha1:80e37af8940a8575a635b643431bb16f204209bb
   go.mod:
-    last_write_checksum: sha1:0865aafc1a68bea8d40c4688abc6befff5ef6cec
+    last_write_checksum: sha1:872be2b9e087d4dc3511651c8a92450a7cf5aa54
   internal/cli/auth.go:
-    last_write_checksum: sha1:71132e7d37aa65bfbe4d7efeb84d94209006a72a
+    last_write_checksum: sha1:6eb9d73f31d4922ceeea044a1d92e46821cc04eb
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:cb903ffcbed829b74e7fca3df9c8265e14c227f4
   internal/cli/chat.go:
     last_write_checksum: sha1:ebe5f262a8c4d55bebd8640be5a104553b067c4e
   internal/cli/configure.go:
-    last_write_checksum: sha1:70ef361ecd6801561070e83687f993b392d4a152
+    last_write_checksum: sha1:ad89cfd7fd30f6395fc006ee54d3f2e640160c21
   internal/cli/createuser.go:
     last_write_checksum: sha1:a7a16a4213223deeff1952400323aba9f038ce15
   internal/cli/createwithunion.go:
@@ -230,13 +230,15 @@ trackedFiles:
   internal/config/keyring.go:
     last_write_checksum: sha1:f72a8a7e8804523766bac15ca99e97af94c8ff30
   internal/explorer/explorer.go:
-    last_write_checksum: sha1:fce74125eb90e8db82b77cc0f0c96d10bc30bfb9
+    last_write_checksum: sha1:c149087aa4be52cdf0b3f9a41d8f0c6dbe47c53f
   internal/explorer/styles.go:
-    last_write_checksum: sha1:2828c2efe410bee01a8563e1cf7cc985d4d29ee8
+    last_write_checksum: sha1:d059b8ebea070177440a71a76a2b4f399909c1c4
   internal/explorer/tree.go:
     last_write_checksum: sha1:16dea1c4b16d808202bf0c6f819fb5fba285ade7
   internal/explorer/tui.go:
-    last_write_checksum: sha1:6323b44c3089bf6cab45c7c7df1d862fea349b7c
+    last_write_checksum: sha1:58584a9630f41cdafe095a994dc5ff9757d54f44
+  internal/explorer/tui_test.go:
+    last_write_checksum: sha1:c1cf96840f879681e8578b42c6a775f208a61a3d
   internal/flagutil/async.go:
     last_write_checksum: sha1:525661b017176efba84d594a151050721c17a585
   internal/flagutil/dispatch.go:
@@ -248,7 +250,7 @@ trackedFiles:
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
-    last_write_checksum: sha1:efe8b56633108992ca865e965681a27fef96953d
+    last_write_checksum: sha1:ba6979695c50a3c2385bc74a4676dfe88814a984
   internal/interactive/policy.go:
     last_write_checksum: sha1:a41dcd183c9d08a4b14040f339082b6623cfa080
   internal/interactive/policy_test.go:
@@ -1087,6 +1089,8 @@ trackedFiles:
     last_write_checksum: sha1:cf1b1b56fd961b54de3f9a3c4623e5f3908e6ba1
   tests/singlefoo_test.go:
     last_write_checksum: sha1:22c79a82dc056151850066575e76da6d5a8c0e30
+  tests/startup_tty_test.go:
+    last_write_checksum: sha1:8996833b31c8001e87c21bf70979b4aebaed12fe
   tests/tag1_test.go:
     last_write_checksum: sha1:c63029ec23e61919abfa23c4adecd828c9c87802
   tests/tag2_test.go:

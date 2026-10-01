@@ -362,16 +362,23 @@ function getDefaultDependencies(): Record<string, string> {
 
   // Interactive mode dependencies (Charm ecosystem)
   if (isInteractiveAuthEnabled() || isInteractiveModeEnabled()) {
-    defaultDependencies["github.com/charmbracelet/huh"] =
-      deps["github.com/charmbracelet/huh"].version;
-    defaultDependencies["github.com/charmbracelet/lipgloss"] =
-      deps["github.com/charmbracelet/lipgloss"].version;
+    defaultDependencies["charm.land/huh/v2"] =
+      deps["charm.land/huh/v2"].version;
+    defaultDependencies["charm.land/lipgloss/v2"] =
+      deps["charm.land/lipgloss/v2"].version;
+    if (
+      context.Global.AST.MainSDK.OutputTests ||
+      sdkHasTests(context.Global.AST)
+    ) {
+      defaultDependencies["github.com/creack/pty"] =
+        deps["github.com/creack/pty"].version;
+    }
   }
   if (isInteractiveModeEnabled()) {
-    defaultDependencies["github.com/charmbracelet/bubbletea"] =
-      deps["github.com/charmbracelet/bubbletea"].version;
-    defaultDependencies["github.com/charmbracelet/bubbles"] =
-      deps["github.com/charmbracelet/bubbles"].version;
+    defaultDependencies["charm.land/bubbletea/v2"] =
+      deps["charm.land/bubbletea/v2"].version;
+    defaultDependencies["charm.land/bubbles/v2"] =
+      deps["charm.land/bubbles/v2"].version;
   }
 
   return defaultDependencies;

@@ -1,0 +1,3 @@
+## core: 0.6.3 - 2026-10-01
+### :bug: Bug Fixes
+- stop generated CLIs from querying the terminal at startup by moving the interactive explorer and prompts to Bubble Tea, Lip Gloss, huh and bubbles v2, which removes the five-second stall on pseudo-terminals that never answer *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*

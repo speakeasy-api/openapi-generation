@@ -80,37 +80,45 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
       ecosystem: "Go",
       category: "runtime",
     },
-    "github.com/charmbracelet/huh": {
-      name: "github.com/charmbracelet/huh",
-      version: "v0.6.0",
+    "charm.land/huh/v2": {
+      name: "charm.land/huh/v2",
+      version: "v2.0.3",
       cpe: "cpe:2.3:a:charmbracelet:huh:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
       condition: "interactive",
     },
-    "github.com/charmbracelet/lipgloss": {
-      name: "github.com/charmbracelet/lipgloss",
-      version: "v1.1.0",
+    "charm.land/lipgloss/v2": {
+      name: "charm.land/lipgloss/v2",
+      version: "v2.0.6",
       cpe: "cpe:2.3:a:charmbracelet:lipgloss:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
       condition: "interactive",
     },
-    "github.com/charmbracelet/bubbletea": {
-      name: "github.com/charmbracelet/bubbletea",
-      version: "v1.3.4",
+    "charm.land/bubbletea/v2": {
+      name: "charm.land/bubbletea/v2",
+      version: "v2.0.10",
       cpe: "cpe:2.3:a:charmbracelet:bubbletea:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
       condition: "interactiveMode",
     },
-    "github.com/charmbracelet/bubbles": {
-      name: "github.com/charmbracelet/bubbles",
-      version: "v0.20.0",
+    "charm.land/bubbles/v2": {
+      name: "charm.land/bubbles/v2",
+      version: "v2.2.1",
       cpe: "cpe:2.3:a:charmbracelet:bubbles:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
       condition: "interactiveMode",
+    },
+    "github.com/creack/pty": {
+      name: "github.com/creack/pty",
+      version: "v1.1.24",
+      cpe: "cpe:2.3:a:creack:pty:*:*:*:*:*:go:*:*",
+      ecosystem: "Go",
+      category: "dev",
+      condition: "interactive",
     },
   };
 }
