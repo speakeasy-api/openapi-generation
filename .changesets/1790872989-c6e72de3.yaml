@@ -1,0 +1,10 @@
+id: 1790872989-c6e72de3
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: render --all pagination results as a single aligned table under --output-format table instead of falling back to pretty output, and give streamed items a table form
+author: AshGodfrey
+date: "2026-10-01"

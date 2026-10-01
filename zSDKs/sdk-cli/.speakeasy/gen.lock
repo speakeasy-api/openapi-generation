@@ -274,9 +274,9 @@ trackedFiles:
   internal/output/output.go:
     last_write_checksum: sha1:86c34aa32f726586f7f9feba51796509e08c64ab
   internal/output/outputitems.go:
-    last_write_checksum: sha1:91a713e6cc9041935e55bf757df6d4df87ece488
+    last_write_checksum: sha1:a37152a8fbc0efdda18864b25b35e5ea366d496c
   internal/output/paginated.go:
-    last_write_checksum: sha1:9a9afd5cc4344995b3ee1519d3400ebe57f2ae51
+    last_write_checksum: sha1:1b54aad1beff17348bd62116d00eb176569a3ad6
   internal/output/pretty.go:
     last_write_checksum: sha1:b7c74bd93d4e8a464956f098724dc653e9f8e594
   internal/output/streaming.go:

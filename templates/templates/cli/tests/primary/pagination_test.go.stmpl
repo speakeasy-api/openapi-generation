@@ -864,3 +864,45 @@ func TestPaginationWithRetries(t *testing.T) {
 	require.NotEmpty(t, stdout)
 	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
 }
+
+// TestPaginationTableOutputCollectsRowsAcrossPages verifies that --all with
+// --output-format table renders every declared result from every page as one
+// aligned table with a single header, rather than printing each page's
+// envelope in the pretty format.
+func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
+	type objectResult struct {
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+	}
+	pages := map[string][]objectResult{
+		"0": {objectResult{ID: 1, Name: "alpha"}, objectResult{ID: 2, Name: "beta"}},
+		"1": {objectResult{ID: 3, Name: "gamma"}},
+	}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"numPages":    2,
+			"resultArray": pages[r.URL.Query().Get("page")],
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-object-results-page-params",
+		"--page", "0",
+		"--all",
+		"--output-format", "table",
+	})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	lines := strings.Split(stdout, "\n")
+	require.Len(t, lines, 4, "expected one header plus three rows, got:\n%s", stdout)
+	assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(lines[0]))
+	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
+	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
+	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[3]))
+	assert.NotContains(t, stdout, "numPages", "page envelope leaked into table output")
+	assert.NotContains(t, stdout, "resultArray", "page envelope leaked into table output")
+}

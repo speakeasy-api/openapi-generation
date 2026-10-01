@@ -67,6 +67,13 @@ func outputOneItem(out io.Writer, item interface{}, format, jqExpr string, color
 			fmt.Fprintln(out)
 		}
 		fmt.Fprint(out, toonStr)
+	case "table":
+		if !first {
+			fmt.Fprintln(out)
+		}
+		if err := printTable(out, item); err != nil {
+			return err
+		}
 	default: // "pretty"
 		if !first {
 			fmt.Fprintln(out) // blank line between items

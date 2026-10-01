@@ -54,6 +54,8 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 	first := true
 	pageCount := 0
 	seenContinuations := make(map[string]struct{})
+	collectRows := format == "table" && jqExpr == "" && resultsFieldName != ""
+	var rows []interface{}
 	for page := res; page != nil; {
 		// Check for context cancellation (ctrl+C)
 		select {
@@ -80,6 +82,10 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 					if itemsVal.IsValid() && itemsVal.Kind() == reflect.Slice {
 						for i := 0; i < itemsVal.Len(); i++ {
 							item := itemsVal.Index(i).Interface()
+							if collectRows {
+								rows = append(rows, item)
+								continue
+							}
 							if err := outputOneItem(out, item, format, jqExpr, colorize, jqRaw, first); err != nil {
 								return err
 							}
@@ -119,6 +125,9 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 		if err != nil {
 			return Error(cmd, err)
 		}
+	}
+	if collectRows {
+		return printTable(out, rows)
 	}
 	return nil
 }

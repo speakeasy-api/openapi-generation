@@ -820,6 +820,8 @@ cli list-items --all --max-pages 5
 | Yes (e.g., offset/limit with `resultArray`)                      | Extracts items from the results array, streams one item per line |
 | No (e.g., cursor pagination without explicit results output)     | Outputs the entire content object per page                       |
 
+Under `--output-format table`, items extracted from the results array are collected across every page and rendered once as a single aligned table with one header; every other format streams items as they arrive. Without a results path, each page's content object renders as its own key/value table.
+
 **Design choices**:
 
 - `--all` branch is placed **before** `WithSkipDeserialization()` — the SDK needs full deserialization to set up `Next()`
