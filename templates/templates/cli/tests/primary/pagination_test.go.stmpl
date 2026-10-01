@@ -904,7 +904,7 @@ func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
 	assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(lines[0]))
 	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
 	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
-	assert.Empty(t, strings.Fields(lines[3]), "a null result keeps its row so the count matches the API")
+	assert.Equal(t, []string{"0"}, strings.Fields(lines[3]), "a null result keeps its row, decoded as the zero value, so the count matches the API")
 	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[4]))
 	assert.NotContains(t, stdout, "numPages", "page envelope leaked into table output")
 	assert.NotContains(t, stdout, "resultArray", "page envelope leaked into table output")
