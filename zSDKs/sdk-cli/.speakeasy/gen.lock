@@ -237,6 +237,8 @@ trackedFiles:
     last_write_checksum: sha1:16dea1c4b16d808202bf0c6f819fb5fba285ade7
   internal/explorer/tui.go:
     last_write_checksum: sha1:58584a9630f41cdafe095a994dc5ff9757d54f44
+  internal/explorer/tui_test.go:
+    last_write_checksum: sha1:c1cf96840f879681e8578b42c6a775f208a61a3d
   internal/flagutil/async.go:
     last_write_checksum: sha1:525661b017176efba84d594a151050721c17a585
   internal/flagutil/dispatch.go:

@@ -117,7 +117,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
       version: "v1.1.24",
       cpe: "cpe:2.3:a:creack:pty:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
-      category: "test",
+      category: "dev",
       condition: "interactive",
     },
   };

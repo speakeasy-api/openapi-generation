@@ -113,6 +113,15 @@ function getJobs(): Job[] {
             {},
           ),
         );
+        if (isInteractiveModeEnabled()) {
+          jobs.push(
+            createTemplateFileJob(
+              "explorer_tui_test.go.stmpl",
+              "internal/explorer/tui_test.go",
+              {},
+            ),
+          );
+        }
       }
       jobs.push(
         createTemplateFileJob(

@@ -73,6 +73,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/dryrun_response_test.go.stmpl":                                                        0o644,
 	"templates/cli/examples.ts":                                                                          0o644,
 	"templates/cli/exclusions.ts":                                                                        0o644,
+	"templates/cli/explorer_tui_test.go.stmpl":                                                           0o644,
 	"templates/cli/features.ts":                                                                          0o644,
 	"templates/cli/includes":                                                                             0o20000000755,
 	"templates/cli/includes/dependencies.ts":                                                             0o644,

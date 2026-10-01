@@ -1,0 +1,251 @@
+package explorer
+
+import (
+	"testing"
+
+	tea "charm.land/bubbletea/v2"
+)
+
+func explorerTestTree() CommandNode {
+	return CommandNode{
+		Name:    "cli",
+		IsGroup: true,
+		Children: []CommandNode{
+			{
+				Name:     "pets",
+				FullPath: "pets",
+				IsGroup:  true,
+				Children: []CommandNode{
+					{Name: "create", FullPath: "pets create", Description: "Create a pet"},
+					{Name: "list", FullPath: "pets list", Description: "List pets"},
+				},
+			},
+			{Name: "ping", FullPath: "ping", Description: "Check connectivity"},
+			{Name: "status", FullPath: "status", Description: "Show status"},
+		},
+	}
+}
+
+func newExplorerTestModel(t *testing.T) model {
+	t.Helper()
+	m := newModel(explorerTestTree(), "1.2.3")
+	return applyMsgs(t, m, tea.WindowSizeMsg{Width: 100, Height: 30})
+}
+
+func applyMsgs(t *testing.T, m model, msgs ...tea.Msg) model {
+	t.Helper()
+	for _, msg := range msgs {
+		next, _ := m.Update(msg)
+		var ok bool
+		m, ok = next.(model)
+		if !ok {
+			t.Fatalf("Update returned %T, want model", next)
+		}
+	}
+	return m
+}
+
+func applyMsgExpectQuit(t *testing.T, m model, msg tea.Msg) model {
+	t.Helper()
+	next, cmd := m.Update(msg)
+	if cmd == nil {
+		t.Fatalf("Update(%v) returned nil cmd, want tea.Quit", msg)
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Fatalf("Update(%v) cmd produced %T, want tea.QuitMsg", msg, cmd())
+	}
+	return next.(model)
+}
+
+func textKey(s string) tea.KeyPressMsg {
+	r := []rune(s)
+	return tea.KeyPressMsg{Code: r[0], Text: s}
+}
+
+func leftClick(x, y int) tea.MouseReleaseMsg {
+	return tea.MouseReleaseMsg{X: x, Y: y, Button: tea.MouseLeft}
+}
+
+func TestViewDeclaresAltScreenAndCellMotionMouse(t *testing.T) {
+	v := newExplorerTestModel(t).View()
+	if !v.AltScreen {
+		t.Error("View().AltScreen = false, want true")
+	}
+	if v.MouseMode != tea.MouseModeCellMotion {
+		t.Errorf("View().MouseMode = %v, want MouseModeCellMotion", v.MouseMode)
+	}
+}
+
+func TestWindowSizeUpdatesDimensions(t *testing.T) {
+	m := applyMsgs(t, newModel(explorerTestTree(), "1.2.3"), tea.WindowSizeMsg{Width: 80, Height: 24})
+	if m.width != 80 || m.height != 24 {
+		t.Errorf("dimensions = %dx%d, want 80x24", m.width, m.height)
+	}
+}
+
+func TestArrowAndVimKeysMoveCursorWithWrap(t *testing.T) {
+	m := newExplorerTestModel(t)
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	if m.cursor != 1 {
+		t.Fatalf("cursor after down = %d, want 1", m.cursor)
+	}
+	m = applyMsgs(t, m, textKey("j"))
+	if m.cursor != 2 {
+		t.Fatalf("cursor after j = %d, want 2", m.cursor)
+	}
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	if m.cursor != 0 {
+		t.Fatalf("cursor after wrapping down = %d, want 0", m.cursor)
+	}
+	m = applyMsgs(t, m, textKey("k"))
+	if m.cursor != 2 {
+		t.Fatalf("cursor after wrapping up with k = %d, want 2", m.cursor)
+	}
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.cursor != 1 {
+		t.Fatalf("cursor after up = %d, want 1", m.cursor)
+	}
+}
+
+func TestEnterOpensGroupAndEscapeReturnsToParent(t *testing.T) {
+	m := newExplorerTestModel(t)
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.current.Name != "pets" {
+		t.Fatalf("current after enter = %q, want pets", m.current.Name)
+	}
+	if len(m.stack) != 1 || m.cursor != 0 {
+		t.Fatalf("stack len = %d, cursor = %d, want 1 and 0", len(m.stack), m.cursor)
+	}
+	if got := m.totalItems(); got != 3 {
+		t.Fatalf("totalItems inside group = %d, want 2 children plus back", got)
+	}
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.current.Name != "cli" || len(m.stack) != 0 {
+		t.Fatalf("after esc current = %q, stack len = %d, want cli and 0", m.current.Name, len(m.stack))
+	}
+}
+
+func TestEnterOnBackEntryReturnsToParent(t *testing.T) {
+	m := newExplorerTestModel(t)
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyDown}, tea.KeyPressMsg{Code: tea.KeyUp}, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.current.Name != "pets" {
+		t.Fatalf("current = %q, want pets", m.current.Name)
+	}
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	if !m.isOnBack() {
+		t.Fatalf("cursor = %d, want the back entry", m.cursor)
+	}
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.current.Name != "cli" {
+		t.Fatalf("current after entering back = %q, want cli", m.current.Name)
+	}
+}
+
+func TestEnterOnLeafSelectsAndQuits(t *testing.T) {
+	m := newExplorerTestModel(t)
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	m = applyMsgExpectQuit(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.selected != "ping" {
+		t.Errorf("selected = %q, want ping", m.selected)
+	}
+	if m.quit {
+		t.Error("quit = true after selecting a command, want false")
+	}
+}
+
+func TestQuitKeysExitWithoutSelection(t *testing.T) {
+	for name, msg := range map[string]tea.KeyPressMsg{
+		"q":      textKey("q"),
+		"ctrl+c": {Code: 'c', Mod: tea.ModCtrl},
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := applyMsgExpectQuit(t, newExplorerTestModel(t), msg)
+			if !m.quit {
+				t.Error("quit = false, want true")
+			}
+			if m.selected != "" {
+				t.Errorf("selected = %q, want empty", m.selected)
+			}
+		})
+	}
+}
+
+func TestSearchTypingFiltersAcrossTree(t *testing.T) {
+	m := newExplorerTestModel(t)
+
+	m = applyMsgs(t, m, textKey("/"))
+	if !m.searching {
+		t.Fatal("searching = false after /, want true")
+	}
+
+	m = applyMsgs(t, m, textKey("c"), textKey("r"), textKey("e"))
+	if m.filter != "cre" {
+		t.Fatalf("filter = %q, want cre", m.filter)
+	}
+	if len(m.searchResults) == 0 {
+		t.Fatal("searchResults empty, want a match for create")
+	}
+	if got := m.searchResults[0]; got.Node.FullPath != "pets create" || got.Breadcrumb != "pets > create" {
+		t.Fatalf("top result = %q (%q), want pets create (pets > create)", got.Node.FullPath, got.Breadcrumb)
+	}
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if m.filter != "cr" {
+		t.Fatalf("filter after backspace = %q, want cr", m.filter)
+	}
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: 'x', Text: "x", Mod: tea.ModAlt})
+	if m.filter != "cr" {
+		t.Fatalf("filter after alt+x = %q, want unchanged cr", m.filter)
+	}
+
+	m = applyMsgs(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.searching || m.filter != "" || m.searchResults != nil {
+		t.Fatalf("after esc searching = %v, filter = %q, results = %v, want cleared", m.searching, m.filter, m.searchResults)
+	}
+}
+
+func TestSearchEnterSelectsResultAndQuits(t *testing.T) {
+	m := newExplorerTestModel(t)
+	m = applyMsgs(t, m, textKey("/"), textKey("l"), textKey("i"), textKey("s"), textKey("t"))
+	m = applyMsgExpectQuit(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.selected != "pets list" {
+		t.Errorf("selected = %q, want pets list", m.selected)
+	}
+}
+
+func TestLeftClickMovesCursorThenActivates(t *testing.T) {
+	m := newExplorerTestModel(t)
+
+	m = applyMsgs(t, m, leftClick(2, 4))
+	if m.cursor != 1 {
+		t.Fatalf("cursor after first click = %d, want 1", m.cursor)
+	}
+
+	m = applyMsgs(t, m, leftClick(60, 4))
+	if m.cursor != 1 || m.selected != "" {
+		t.Fatalf("click in detail pane changed state: cursor = %d, selected = %q", m.cursor, m.selected)
+	}
+
+	m = applyMsgs(t, m, tea.MouseReleaseMsg{X: 2, Y: 4, Button: tea.MouseRight})
+	if m.selected != "" {
+		t.Fatalf("right click selected %q, want no selection", m.selected)
+	}
+
+	m = applyMsgExpectQuit(t, m, leftClick(2, 4))
+	if m.selected != "ping" {
+		t.Errorf("selected after second click = %q, want ping", m.selected)
+	}
+}
+
+func TestLeftClickOnGroupEntersIt(t *testing.T) {
+	m := newExplorerTestModel(t)
+	m = applyMsgs(t, m, leftClick(2, 3))
+	if m.current.Name != "pets" {
+		t.Errorf("current after clicking highlighted group = %q, want pets", m.current.Name)
+	}
+}
