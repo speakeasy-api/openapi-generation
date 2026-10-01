@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.943.2] - 2026-10-01
+### :bug: Bug Fixes
+- [`a851480`](https://github.com/speakeasy-api/openapi-generation/commit/a851480307cbe69720e9587c5bfbba02e2c73547) - **cli**: terminate TOON output with a trailing newline ([#54](https://github.com/speakeasy-api/openapi-generation/pull/54)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.943.1] - 2026-10-01
+### :bug: Bug Fixes
+- [`0292c98`](https://github.com/speakeasy-api/openapi-generation/commit/0292c9835f49a348e60a37e1d8f0f0ce48ed2e82) - **cli**: stop querying the terminal at startup by moving the TUI to Charm v2 ([#56](https://github.com/speakeasy-api/openapi-generation/pull/56)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.943.0] - 2026-09-29
 ### :bee: New Features
 - [`6843466`](https://github.com/speakeasy-api/openapi-generation/commit/6843466f2ae5dfadd75223c6720bc20c7b4225ce) - **cli**: add arrayFlagFormat for JSON string-array flags ([#51](https://github.com/speakeasy-api/openapi-generation/pull/51)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20289,3 +20299,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.941.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.9...v2.941.10
 [v2.942.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.10...v2.942.0
 [v2.943.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.942.0...v2.943.0
+[v2.943.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.0...v2.943.1
+[v2.943.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.1...v2.943.2
