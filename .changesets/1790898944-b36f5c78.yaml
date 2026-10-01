@@ -1,0 +1,10 @@
+id: 1790898944-b36f5c78
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: reject release tags that differ from the generated CLI version
+author: TristanSpeakEasy
+date: "2026-10-02"

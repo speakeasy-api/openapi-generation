@@ -1534,6 +1534,7 @@ cli:
 Release helpers in `includes/release.ts` drive channel-specific output:
 
 - `.goreleaser.yaml`: `project_name` set to `cliName` so archive names (`<cliName>_<Os>_<Arch>`) match what `scripts/install.sh` / `install.ps1` download, regardless of the GitHub repo name; optional `brews:`, `winget:`, `nfpms:` sections
+- release workflow: every generated tag-triggered release checks that the tag (without its leading `v`) exactly matches `Version` in `internal/cli/version.go` before setting up Go or publishing artifacts. A mismatch or missing version fails the release with instructions to update `cli.version` in `.speakeasy/gen.yaml` and regenerate before tagging. This check is unconditional whenever release files are generated; GoReleaser's build-time version override remains unchanged.
 - release workflow env: conditional channel tokens
   - `HOMEBREW_TAP_GITHUB_TOKEN`
   - `WINGET_GITHUB_TOKEN`
