@@ -727,3 +727,21 @@ func TestStringFlagConstraintsRejectInvalidPattern(t *testing.T) {
 	assert.Contains(t, err.Error(), `flag --code declares an invalid pattern "("`)
 }
 
+// A long rejected value is truncated in the message rather than echoed whole.
+func TestStringFlagConstraintsTruncateEchoedValue(t *testing.T) {
+	long := strings.Repeat("é", 100)
+	echoed := `"` + strings.Repeat("é", 64) + `"…`
+
+	_, _, err := buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^a+$"}, &long)
+	require.Error(t, err)
+	assert.Equal(t, "invalid value for --code: "+echoed+" does not match the pattern ^a+$", err.Error())
+
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{HasMaxLength: true, MaxLength: 10}, &long)
+	require.Error(t, err)
+	assert.Equal(t, "invalid value for --code: "+echoed+" is longer than the maximum length 10", err.Error())
+
+	exact := strings.Repeat("b", 64)
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^a+$"}, &exact)
+	require.Error(t, err)
+	assert.Equal(t, `invalid value for --code: "`+exact+`" does not match the pattern ^a+$`, err.Error())
+}

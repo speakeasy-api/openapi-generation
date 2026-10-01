@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:1d35d22e4beacf398104fd6883510f4c72323f91
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:2cfb64f2564eaed8d1d0895fc9150ea1ab7fa0ca
+    last_write_checksum: sha1:2aafb4886867464e71b13a6047eaa28fd7cd444e
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
