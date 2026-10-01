@@ -1,0 +1,22 @@
+templates/templates/cli/release/release-workflow.yaml.stmpl
+  h_9630b74bdac540 20-28
+templates/templates/cli/README.md
+  h_9630b74bdac540 1537
+.changesets/1790898944-b36f5c78.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.github/workflows/release.yaml
+  h_9630b74bdac540 20-28
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e57ecb9f000ca56d069eef93061ccf5bc13c721",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
