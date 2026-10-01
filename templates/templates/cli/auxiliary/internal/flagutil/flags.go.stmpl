@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -271,6 +272,42 @@ func looksLikePath(val string) bool {
 	}
 	ext := filepath.Ext(val)
 	return len(ext) > 1 && len(ext) < len(val)
+}
+
+// UnknownFlagSuggestionHint names the flags closest to the one a parse
+// error reports as unknown, matching cobra's command suggestions: an edit
+// distance of at most two, or a prefix relationship in either direction.
+func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
+	const prefix = "unknown flag: --"
+	if !strings.HasPrefix(errMsg, prefix) {
+		return ""
+	}
+	typed := strings.ToLower(strings.TrimPrefix(errMsg, prefix))
+	if typed == "" {
+		return ""
+	}
+	seen := map[string]bool{}
+	var matches []string
+	visit := func(f *pflag.Flag) {
+		name := strings.ToLower(f.Name)
+		if f.Hidden || seen[name] || name == typed {
+			return
+		}
+		seen[name] = true
+		if editDistance(typed, name) <= 2 || strings.HasPrefix(name, typed) || (len(name) >= 3 && strings.HasPrefix(typed, name)) {
+			matches = append(matches, "--"+f.Name)
+		}
+	}
+	cmd.Flags().VisitAll(visit)
+	cmd.InheritedFlags().VisitAll(visit)
+	switch len(matches) {
+	case 0:
+		return ""
+	case 1:
+		return "Did you mean " + matches[0] + "?"
+	}
+	sort.Strings(matches)
+	return "Did you mean one of " + strings.Join(matches, ", ") + "?"
 }
 
 func ShorthandConfusionHint(cmd *cobra.Command, args []string, errMsg string) string {

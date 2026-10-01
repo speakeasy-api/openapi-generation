@@ -1,0 +1,10 @@
+id: 1790875702-74646389
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: suggest the closest flag name on unknown-flag errors and stop recommending --dry-run for flag typos
+author: AshGodfrey
+date: "2026-10-01"

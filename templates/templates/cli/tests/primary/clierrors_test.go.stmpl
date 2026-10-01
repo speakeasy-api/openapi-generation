@@ -181,6 +181,23 @@ func TestCLIErrorPlainModeClassified(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(stderr, "unknown flag"), "plain errors render exactly once")
 }
 
+// TestCLIErrorUnknownFlagSuggestsNearestFlag: a mistyped flag names the
+// closest accepted flag and points at --help instead of the dry-run hint,
+// which cannot fix a parse error.
+func TestCLIErrorUnknownFlagSuggestsNearestFlag(t *testing.T) {
+	recordTest("clierrors-unknown-flag-suggestion")
+	resetAgentMode(t)
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"errors", "status-get-error", "--output-formt", "json"})
+	require.Error(t, err)
+	stderr := strings.TrimSpace(h.GetStderr())
+	assert.Contains(t, stderr, "Error (validation_error): unknown flag: --output-formt")
+	assert.Contains(t, stderr, "Reason: CLI_VALIDATION")
+	assert.Contains(t, stderr, "Did you mean --output-format?")
+	assert.Contains(t, stderr, "--help' for usage and examples")
+	assert.NotContains(t, stderr, "--dry-run")
+}
+
 // TestCLIErrorJSONOutputEnvelope: --output-format json (no agent mode) gets
 // the classified JSON envelope, consistent with agent and API errors. Both
 // flag positions must work, including for an unknown
