@@ -1195,6 +1195,9 @@ func (h *CLITestHarness) resetAndSetupEnv() {
 		h.t.Setenv("SPEAKEASY_TEST_INSTANCE_ID", h.instanceID)
 	}
 
+	if home, ok := h.envOverrides["HOME"]; ok {
+		h.t.Setenv("USERPROFILE", home)
+	}
 	for k, v := range h.envOverrides {
 		h.t.Setenv(k, v)
 	}

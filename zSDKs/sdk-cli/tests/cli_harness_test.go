@@ -1001,17 +1001,21 @@ func (h *CLITestHarness) resetAndSetupEnv() {
 		h.t.Setenv(envVar, "")
 	}
 
-	// Isolate from user config: point HOME at a temp directory so
-	// config.Init does not read ~/.config/<cli>/config.yaml.
+	// Isolate from user config: point HOME (USERPROFILE on Windows) at a temp
+	// directory so config.Init does not read ~/.config/<cli>/config.yaml.
 	tmpHome, _ := os.MkdirTemp("", "cli-test-home-*")
 	h.t.Cleanup(func() { os.RemoveAll(tmpHome) })
 	h.t.Setenv("HOME", tmpHome)
+	h.t.Setenv("USERPROFILE", tmpHome)
 
 	if h.testName != "" {
 		h.t.Setenv("SPEAKEASY_TEST_NAME", h.testName)
 		h.t.Setenv("SPEAKEASY_TEST_INSTANCE_ID", h.instanceID)
 	}
 
+	if home, ok := h.envOverrides["HOME"]; ok {
+		h.t.Setenv("USERPROFILE", home)
+	}
 	for k, v := range h.envOverrides {
 		h.t.Setenv(k, v)
 	}

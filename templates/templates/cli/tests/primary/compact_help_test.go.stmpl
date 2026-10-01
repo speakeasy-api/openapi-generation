@@ -107,9 +107,9 @@ func TestCompactRootHelp(t *testing.T) {
 
 func TestCompactHelpGlobalBypassesBrokenConfig(t *testing.T) {
 	home := t.TempDir()
-	configDir := filepath.Join(home, ".config", "cli")
-	require.NoError(t, os.MkdirAll(configDir, 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte("security: ["), 0o600))
+	configPath := cliConfigPath(home)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o755))
+	require.NoError(t, os.WriteFile(configPath, []byte("security: ["), 0o600))
 
 	h := NewCLITestHarness(t).WithEnv("HOME", home)
 	err := h.RunBare([]string{"version"})

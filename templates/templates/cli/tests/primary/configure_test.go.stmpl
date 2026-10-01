@@ -81,20 +81,25 @@ func TestConfigureSkipsOptionalCredentials(t *testing.T) {
 	assert.Contains(t, output, "Configuration saved to")
 
 	// Verify config file was created
-	configPath := filepath.Join(tmpDir, ".config", "cli", "config.yaml")
+	configPath := cliConfigPath(tmpDir)
 	_, err = os.Stat(configPath)
 	assert.NoError(t, err, "config file should be created at %s", configPath)
+}
+
+// cliConfigPath returns the config file path config.Init reads under home.
+func cliConfigPath(home string) string {
+	return filepath.Join(home, ".config", "{{sanitizeCliName}}", "config.yaml")
 }
 
 // writeConfigFile writes a YAML config to the standard config path under tmpDir.
 // This ensures config.Init() picks up existing values when the command runs.
 func writeConfigFile(t *testing.T, tmpDir string, values map[string]interface{}) {
 	t.Helper()
-	configDir := filepath.Join(tmpDir, ".config", "cli")
-	require.NoError(t, os.MkdirAll(configDir, 0755))
+	configPath := cliConfigPath(tmpDir)
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0755))
 	data, err := yaml.Marshal(values)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config.yaml"), data, 0644))
+	require.NoError(t, os.WriteFile(configPath, data, 0644))
 }
 
 // TestConfigurePreservesExistingValues verifies that when a user has
@@ -123,7 +128,7 @@ func TestConfigurePreservesExistingValues(t *testing.T) {
 	assert.Contains(t, h.GetStdout(), "Configuration saved")
 
 	// Read saved config and verify existing values were preserved
-	configPath := filepath.Join(tmpDir, ".config", "cli", "config.yaml")
+	configPath := cliConfigPath(tmpDir)
 	savedData, err := os.ReadFile(configPath)
 	require.NoError(t, err)
 
@@ -176,7 +181,8 @@ func TestConfigureCreatesConfigDir(t *testing.T) {
 	h, tmpDir := setupConfigureTest(t)
 
 	// Ensure config dir does NOT exist yet
-	configDir := filepath.Join(tmpDir, ".config", "cli")
+	configPath := cliConfigPath(tmpDir)
+	configDir := filepath.Dir(configPath)
 	_, err := os.Stat(configDir)
 	assert.True(t, os.IsNotExist(err), "config dir should not exist before configure")
 
@@ -192,7 +198,6 @@ func TestConfigureCreatesConfigDir(t *testing.T) {
 	_, err = os.Stat(configDir)
 	assert.NoError(t, err, "config dir should be created by configure")
 
-	configPath := filepath.Join(configDir, "config.yaml")
 	_, err = os.Stat(configPath)
 	assert.NoError(t, err, "config.yaml should exist")
 }

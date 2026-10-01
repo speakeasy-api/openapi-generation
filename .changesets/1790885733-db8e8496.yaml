@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: clear the plaintext config.yaml copy of a credential when auth login stores it in the OS keychain, so a previously saved secret no longer lingers on disk
+description: clear the plaintext config.yaml copy of a credential when auth login or configure stores it in the OS keychain, so a previously saved secret no longer lingers on disk; if the keychain later becomes unavailable, the credential must be entered again
 author: 2ynn
 date: "2026-10-01"
