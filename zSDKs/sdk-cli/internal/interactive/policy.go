@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
+	"openapi/internal/flagutil"
 	"openapi/internal/output"
 )
 
@@ -77,7 +78,7 @@ func (d Decision) AutoExplore() bool {
 
 func (d Decision) ValidateDirectExplore() error {
 	if d.explicitNoInteractive || d.explicitInteractiveFalse {
-		return fmt.Errorf("explore conflicts with --no-interactive/--interactive=false")
+		return flagutil.WithCLIValidation(fmt.Errorf("explore conflicts with --no-interactive/--interactive=false"))
 	}
 	if !d.terminalPair {
 		return fmt.Errorf("explore requires an interactive terminal (stdin and stdout must be a TTY)")
