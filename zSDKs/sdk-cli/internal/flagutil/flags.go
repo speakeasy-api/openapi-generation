@@ -279,6 +279,8 @@ func looksLikePath(val string) bool {
 // UnknownFlagSuggestionHint names the flags closest to the one a parse
 // error reports as unknown, matching cobra's command suggestions: an edit
 // distance of at most two, or a prefix relationship in either direction.
+// When several flags qualify, only those at the smallest edit distance are
+// named, so --output points at --out rather than every --output-* flag.
 func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
 	const prefix = "unknown flag: --"
 	if !strings.HasPrefix(errMsg, prefix) {
@@ -289,6 +291,7 @@ func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
 		return ""
 	}
 	seen := map[string]bool{}
+	best := -1
 	var matches []string
 	visit := func(f *pflag.Flag) {
 		name := strings.ToLower(f.Name)
@@ -296,7 +299,15 @@ func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
 			return
 		}
 		seen[name] = true
-		if editDistance(typed, name) <= 2 || strings.HasPrefix(name, typed) || (len(name) >= 3 && strings.HasPrefix(typed, name)) {
+		d := editDistance(typed, name)
+		if d > 2 && !strings.HasPrefix(name, typed) && !strings.HasPrefix(typed, name) {
+			return
+		}
+		switch {
+		case best < 0 || d < best:
+			best = d
+			matches = []string{"--" + f.Name}
+		case d == best:
 			matches = append(matches, "--"+f.Name)
 		}
 	}
