@@ -26,30 +26,19 @@ var loginCredentials = []struct {
 	{flag: "api-key-auth", configKey: "api_key_auth", wireFormat: "%s"},
 }
 
-// newHomeHarness shares one home directory across runs.
-func newHomeHarness(t *testing.T, home string) *CLITestHarness {
-	t.Helper()
-	return NewCLITestHarness(t).WithEnv("HOME", home).WithEnv("USERPROFILE", home)
-}
-
-func installKeyring(t *testing.T, available bool, seed map[string]string) map[string]string {
+func installKeyring(t *testing.T, available bool, store map[string]string) {
 	t.Helper()
 	t.Cleanup(config.ResetKeyring)
 	if !available {
 		config.SetKeyringBackend(unavailableKeyring{})
-		return nil
+		return
 	}
-	config.SetKeyringBackend(stubKeyring{store: seed})
-	return seed
-}
-
-func authConfigPath(home string) string {
-	return filepath.Join(home, ".config", "{{sanitizeCliName}}", "config.yaml")
+	config.SetKeyringBackend(stubKeyring{store: store})
 }
 
 func readAuthConfig(t *testing.T, home string) string {
 	t.Helper()
-	data, err := os.ReadFile(authConfigPath(home))
+	data, err := os.ReadFile(cliConfigPath(home))
 	if os.IsNotExist(err) {
 		return ""
 	}
@@ -59,8 +48,8 @@ func readAuthConfig(t *testing.T, home string) string {
 
 func writeAuthConfig(t *testing.T, home, content string) {
 	t.Helper()
-	require.NoError(t, os.MkdirAll(filepath.Dir(authConfigPath(home)), 0o700))
-	require.NoError(t, os.WriteFile(authConfigPath(home), []byte(content), 0o600))
+	require.NoError(t, os.MkdirAll(filepath.Dir(cliConfigPath(home)), 0o700))
+	require.NoError(t, os.WriteFile(cliConfigPath(home), []byte(content), 0o600))
 }
 
 type whoamiEntry struct {
@@ -70,7 +59,7 @@ type whoamiEntry struct {
 
 func whoamiSources(t *testing.T, home string) (credentials, parameters map[string]whoamiEntry) {
 	t.Helper()
-	h := newHomeHarness(t, home)
+	h := NewCLITestHarness(t).WithEnv("HOME", home)
 	require.NoError(t, h.RunBare([]string{"whoami"}))
 	var info struct {
 		Credentials      map[string]whoamiEntry `json:"credentials"`
@@ -85,7 +74,7 @@ func sentAuthorization(t *testing.T, home string) string {
 	t.Helper()
 	s := newEchoServer()
 	defer s.Close()
-	h := newHomeHarness(t, home)
+	h := NewCLITestHarness(t).WithEnv("HOME", home)
 	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth"}), "stderr: %s", h.GetStderr())
 	return echoedAuthorization(t, h.GetStdout())
 }
@@ -96,7 +85,7 @@ func TestAuthLoginWithoutCredentialFlagsWritesNothing(t *testing.T) {
 	t.Cleanup(config.ResetKeyring)
 	home := t.TempDir()
 
-	h := newHomeHarness(t, home)
+	h := NewCLITestHarness(t).WithEnv("HOME", home)
 	err := h.RunRaw([]string{"auth", "login"})
 	require.Error(t, err)
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
@@ -111,14 +100,15 @@ func TestAuthLoginStoresCredential(t *testing.T) {
 	for _, keychainAvailable := range []bool{true, false} {
 		for _, c := range loginCredentials {
 			t.Run(fmt.Sprintf("%s/keychain=%t", c.flag, keychainAvailable), func(t *testing.T) {
-				store := installKeyring(t, keychainAvailable, map[string]string{})
+				store := map[string]string{}
+				installKeyring(t, keychainAvailable, store)
 				home := t.TempDir()
 
-				h := newHomeHarness(t, home)
+				h := NewCLITestHarness(t).WithEnv("HOME", home)
 				require.NoError(t, h.RunRaw([]string{"auth", "login", "--" + c.flag, secret}), "stderr: %s", h.GetStderr())
 				assert.NotContains(t, h.GetStdout()+h.GetStderr(), secret)
 				assert.Equal(t, keychainAvailable, strings.Contains(h.GetStdout(), "Secret credentials stored in OS keychain"))
-				assert.Contains(t, h.GetStdout(), "Configuration saved to "+authConfigPath(home))
+				assert.Contains(t, h.GetStdout(), "Configuration saved to "+cliConfigPath(home))
 
 				cfg := readAuthConfig(t, home)
 				wantSource := "config"
@@ -128,7 +118,7 @@ func TestAuthLoginStoresCredential(t *testing.T) {
 					assert.NotContains(t, cfg, secret)
 				} else {
 					assert.Contains(t, cfg, c.configKey+": "+secret)
-					info, err := os.Stat(authConfigPath(home))
+					info, err := os.Stat(cliConfigPath(home))
 					require.NoError(t, err)
 					if runtime.GOOS != "windows" {
 						assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
@@ -150,11 +140,12 @@ func TestAuthLoginStoresCredential(t *testing.T) {
 func TestAuthLoginReplacesConfigFallback(t *testing.T) {
 	for _, c := range loginCredentials {
 		t.Run(c.flag, func(t *testing.T) {
-			store := installKeyring(t, true, map[string]string{})
+			store := map[string]string{}
+			installKeyring(t, true, store)
 			home := t.TempDir()
 			writeAuthConfig(t, home, "version: 1\nsecurity:\n  "+c.configKey+": stale-secret\n")
 
-			h := newHomeHarness(t, home)
+			h := NewCLITestHarness(t).WithEnv("HOME", home)
 			require.NoError(t, h.RunRaw([]string{"auth", "login", "--" + c.flag, "fresh-secret"}), "stderr: %s", h.GetStderr())
 
 			assert.Equal(t, "fresh-secret", store[c.flag])
@@ -166,11 +157,12 @@ func TestAuthLoginReplacesConfigFallback(t *testing.T) {
 func TestAuthLogoutClearsCredentials(t *testing.T) {
 	for _, keychainAvailable := range []bool{true, false} {
 		t.Run(fmt.Sprintf("keychain=%t", keychainAvailable), func(t *testing.T) {
-			store := installKeyring(t, keychainAvailable, map[string]string{"access-token": "kc-token", "api-key-auth": "kc-key", "unrelated": "keep"})
+			store := map[string]string{"access-token": "kc-token", "api-key-auth": "kc-key", "unrelated": "keep"}
+			installKeyring(t, keychainAvailable, store)
 			home := t.TempDir()
 			writeAuthConfig(t, home, "version: 1\nsecurity:\n  access_token: cfg-token\n  api_key_auth: cfg-key\nglobals:\n  global_query_param: kept\n")
 
-			h := newHomeHarness(t, home)
+			h := NewCLITestHarness(t).WithEnv("HOME", home)
 			require.NoError(t, h.RunRaw([]string{"auth", "logout"}), "stderr: %s", h.GetStderr())
 			assert.Contains(t, h.GetStdout(), "All authentication credentials have been cleared.")
 

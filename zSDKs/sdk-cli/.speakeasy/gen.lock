@@ -228,7 +228,7 @@ trackedFiles:
   internal/config/config.go:
     last_write_checksum: sha1:28c3d5fbeafb9b44cfb4501198135088d30d7145
   internal/config/keyring.go:
-    last_write_checksum: sha1:f72a8a7e8804523766bac15ca99e97af94c8ff30
+    last_write_checksum: sha1:27081c892b5ba2bd85fdd5486ed73cfcc9e79a30
   internal/explorer/explorer.go:
     last_write_checksum: sha1:c149087aa4be52cdf0b3f9a41d8f0c6dbe47c53f
   internal/explorer/styles.go:
@@ -652,7 +652,7 @@ trackedFiles:
   tests/async_test.go:
     last_write_checksum: sha1:824dea6c0e301b26cd2ce25f4f9cf0fe3a633157
   tests/cli_harness_test.go:
-    last_write_checksum: sha1:f326153d72804e7270ef3e91c6c195650a045e4b
+    last_write_checksum: sha1:b0d50a494f9abbdfc093aa48b18cdf4292afc95d
   tests/common_helpers_test.go:
     last_write_checksum: sha1:02f189ac10117b746a3691b30c87fecf518292fa
   tests/conflicts_test.go:
