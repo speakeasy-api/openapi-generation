@@ -723,7 +723,7 @@ _ = interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec
 
 Tests should use `interactive.WithPrompter(ctx, p)` (or the generated harness's `RunInteractive(args, p)`). The injected prompter substitutes only for the TTY check; it does not bypass a false `--interactive` value, `--no-interactive`, agent mode, usage, or documentation surfaces. The seam exposes stable field IDs (`arg:<name>`, `flag:<name>`), field order, applied values, and exported `PromptField.Direct` without driving Bubble Tea through a pipe.
 
-**Known startup cost**: huh imports Bubble Tea, whose current package initialization performs a terminal background-color query that can wait about five seconds on PTYs which never answer. The non-interactive policy prevents prompt/TUI execution but cannot avoid that initialization while the Charm packages are linked; eliminating the stall requires a dependency-level or process-boundary change.
+**Startup cost**: the interactive packages (Bubble Tea, Lip Gloss, huh, bubbles) are the `charm.land/*/v2` modules. Unlike v1, they never query the terminal at package initialization, so every command starts without emitting background-color or cursor-position requests, including on PTYs that never answer. `tests/startup_tty_test.go` runs `version` on an unanswered pseudo-terminal and fails if a query or a stall reappears.
 
 **Generator config knobs**:
 

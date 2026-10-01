@@ -133,6 +133,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/release/release-workflow.yaml.stmpl":                                                  0o644,
 	"templates/cli/root.go.stmpl":                                                                        0o644,
 	"templates/cli/standalone.ts":                                                                        0o644,
+	"templates/cli/startup_tty_test.go.stmpl":                                                            0o644,
 	"templates/cli/subroot.go.stmpl":                                                                     0o644,
 	"templates/cli/test.go.stmpl":                                                                        0o644,
 	"templates/cli/testfile.go.stmpl":                                                                    0o644,

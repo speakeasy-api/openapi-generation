@@ -106,6 +106,13 @@ function getJobs(): Job[] {
             {},
           ),
         );
+        jobs.push(
+          createTemplateFileJob(
+            "startup_tty_test.go.stmpl",
+            `${testDirectory}/startup_tty_test.go`,
+            {},
+          ),
+        );
       }
       jobs.push(
         createTemplateFileJob(
