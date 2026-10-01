@@ -1,0 +1,10 @@
+id: 1790865319-5fd6d682
+features:
+    - responseFormat
+targets:
+    - cli
+type: fix
+bump: patch
+description: terminate TOON output with a trailing newline so streamed and paginated TOON items are separated by a blank line
+author: ThomasRooney
+date: "2026-10-01"
