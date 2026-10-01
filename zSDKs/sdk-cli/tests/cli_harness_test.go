@@ -796,6 +796,16 @@ func TestTableOutputRendersListItems(t *testing.T) {
 		"NEXTPAGETOKEN  page-2",
 	), renderTable(t, list))
 
+	t.Run("empty page token is kept", func(t *testing.T) {
+		empty := ""
+		assert.Equal(t, tableLines(
+			"ITEMS",
+			"  (empty)",
+			"",
+			"NEXTPAGETOKEN  ",
+		), renderTable(t, &tableFixtureList{NextPageToken: &empty}))
+	})
+
 	t.Run("last page omits unset scalar fields", func(t *testing.T) {
 		list.NextPageToken = nil
 		assert.Equal(t, tableLines(

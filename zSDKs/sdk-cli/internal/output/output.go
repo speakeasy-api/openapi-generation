@@ -1402,7 +1402,7 @@ func hasTableSections(t reflect.Type) bool {
 	return false
 }
 
-// printTableSections renders a struct in field order: runs of set scalar
+// printTableSections renders a struct in field order: runs of non-nil scalar
 // fields as key-value blocks and each slice-of-struct field as a titled,
 // indented sub-table.
 func printTableSections(out io.Writer, v reflect.Value) error {
@@ -1422,15 +1422,14 @@ func printTableSections(out io.Writer, v reflect.Value) error {
 			continue
 		}
 		if isTableScalar(f.Type) {
-			cell := formatTableCell(v.Field(i))
-			if cell == "" {
+			if isNilTableValue(v.Field(i)) {
 				continue
 			}
 			if tw == nil {
 				startBlock()
 				tw = newTabWriter(&buf)
 			}
-			fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(tableFieldName(f)), cell)
+			fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(tableFieldName(f)), formatTableCell(v.Field(i)))
 			continue
 		}
 		if !isTableSection(f.Type) {
@@ -1467,6 +1466,16 @@ func printTableSections(out io.Writer, v reflect.Value) error {
 	}
 	_, err := out.Write(buf.Bytes())
 	return err
+}
+
+func isNilTableValue(v reflect.Value) bool {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return true
+		}
+		v = v.Elem()
+	}
+	return v.Kind() == reflect.Slice && v.IsNil()
 }
 
 // printTableMap renders a map as a two-column key-value table.
