@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 
 	"openapi/internal/flagutil"
 )
@@ -137,16 +136,4 @@ func IsBinaryTTYBlocked(cmd *cobra.Command, res interface{}) bool {
 		return false
 	}
 	return isInteractiveTTY(cmd.OutOrStdout())
-}
-
-// isInteractiveTTY checks if a writer is connected to an interactive terminal.
-// Returns false for buffers, pipes, and redirected file descriptors.
-func isInteractiveTTY(w io.Writer) bool {
-	type fder interface {
-		Fd() uintptr
-	}
-	if f, ok := w.(fder); ok {
-		return term.IsTerminal(int(f.Fd()))
-	}
-	return false
 }

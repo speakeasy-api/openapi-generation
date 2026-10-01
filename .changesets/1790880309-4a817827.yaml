@@ -1,0 +1,10 @@
+id: 1790880309-4a817827
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: rewrite the async poll progress line in place on an interactive terminal and erase it before the final output, instead of printing a new line on every poll
+author: AshGodfrey
+date: "2026-10-01"

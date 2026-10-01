@@ -4,6 +4,7 @@ package output
 
 import (
 	"bytes"
+	"io"
 	"os"
 
 	"golang.org/x/term"
@@ -124,4 +125,16 @@ func ColorizeJSON(data []byte) []byte {
 	}
 
 	return buf.Bytes()
+}
+
+// isInteractiveTTY checks if a writer is connected to an interactive terminal.
+// Returns false for buffers, pipes, and redirected file descriptors.
+func isInteractiveTTY(w io.Writer) bool {
+	type fder interface {
+		Fd() uintptr
+	}
+	if f, ok := w.(fder); ok {
+		return term.IsTerminal(int(f.Fd()))
+	}
+	return false
 }
