@@ -509,13 +509,14 @@ func SetStdinReadDeadline(enabled bool) {
 
 const AnnotationWholeBodyFlag = "speakeasy_whole_body_flag"
 
-// AnnotationCommandControl marks a flag that steers the command (pagination,
-// output, polling, credentials) rather than describing the request.
-const AnnotationCommandControl = "speakeasy_command_control"
+// AnnotationRequestInput marks a flag that supplies part of the request
+// (a field, parameter, union variant or declared input), as opposed to one
+// that steers the command (pagination, output, polling, credentials).
+const AnnotationRequestInput = "speakeasy_request_input"
 
-func MarkCommandControl(cmd *cobra.Command, names ...string) {
+func MarkRequestInput(cmd *cobra.Command, names ...string) {
 	for _, name := range names {
-		_ = cmd.Flags().SetAnnotation(name, AnnotationCommandControl, []string{"true"})
+		_ = cmd.Flags().SetAnnotation(name, AnnotationRequestInput, []string{"true"})
 	}
 }
 
@@ -586,37 +587,46 @@ func ResetStdinSkip() {
 	stdinSkipped.Store(nil)
 }
 
-// commandLineSuppliesInput reports positional arguments or a command-local
-// flag set on the command line. Global flags such as --dry-run and command
-// controls such as --all do not count.
+// commandLineSuppliesInput reports positional arguments or a request-input
+// flag set on the command line.
 func commandLineSuppliesInput(cmd *cobra.Command) bool {
 	if len(cmd.Flags().Args()) > 0 {
 		return true
 	}
 	supplied := false
 	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
-		supplied = supplied || (f.Changed && len(f.Annotations[AnnotationCommandControl]) == 0)
+		supplied = supplied || (f.Changed && len(f.Annotations[AnnotationRequestInput]) > 0)
 	})
 	return supplied
 }
 
+const (
+	stdinIdle int32 = iota
+	stdinData
+	stdinAbandoned
+)
+
+// firstReadSignal settles, exactly once, whether the pipe delivered input
+// before the reader was abandoned.
 type firstReadSignal struct {
-	r         io.Reader
-	started   atomic.Bool
-	abandoned atomic.Bool
+	r     io.Reader
+	state atomic.Int32
 }
 
 func (f *firstReadSignal) Read(p []byte) (int, error) {
-	if f.abandoned.Load() {
+	if f.state.Load() == stdinAbandoned {
 		return 0, io.EOF
 	}
 	n, err := f.r.Read(p)
-	f.started.Store(true)
+	if !f.state.CompareAndSwap(stdinIdle, stdinData) && f.state.Load() == stdinAbandoned {
+		return 0, io.EOF
+	}
 	return n, err
 }
 
-// ReadStdinBody returns nil, nil when stdin is a TTY, or when the command line
-// already supplies input and a pipe delivers nothing within stdinReadDeadline.
+// ReadStdinBody returns nil, nil when stdin is a TTY, or in agent mode when
+// the command line already supplies input and a pipe delivers nothing within
+// stdinReadDeadline.
 func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	in := cmd.InOrStdin()
 	stdin := os.Stdin // captured once for the reader goroutine
@@ -633,9 +643,7 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	if stdinSkipped.Load() == stdin {
 		return nil, nil
 	}
-	deadline := stdinDeadlineEnabled.Load()
-	optional := commandLineSuppliesInput(cmd)
-	if !deadline && !optional {
+	if !stdinDeadlineEnabled.Load() {
 		data, err := io.ReadAll(stdin)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read stdin: %w", err)
@@ -662,15 +670,11 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 		select {
 		case r = <-ch:
 		default:
-			switch {
-			case optional && !reader.started.Load():
-				reader.abandoned.Store(true)
+			if commandLineSuppliesInput(cmd) && reader.state.CompareAndSwap(stdinIdle, stdinAbandoned) {
 				stdinSkipped.Store(stdin)
 				return nil, nil
-			case deadline:
-				return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
 			}
-			r = <-ch
+			return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
 		}
 	}
 	if r.err != nil {

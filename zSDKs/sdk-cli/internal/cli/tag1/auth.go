@@ -26,7 +26,6 @@ func initAuthCmd(parent *cobra.Command) error {
 		},
 	}
 	cmd.Flags().String("access-token", "", "Security credential")
-	flagutil.MarkCommandControl(cmd, "access-token")
 	parent.AddCommand(cmd)
 	return nil
 }

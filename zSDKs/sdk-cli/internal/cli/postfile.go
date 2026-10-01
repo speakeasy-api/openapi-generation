@@ -37,7 +37,6 @@ func initPostFileCmd(parent *cobra.Command) error {
 	}
 	cmd.Flags().String("output-file", "", "Save the response body to a file path (recommended for binary/file responses)")
 	cmd.Flags().Bool("output-b64", false, "Encode binary response as base64 and print to stdout")
-	flagutil.MarkCommandControl(cmd, "output-file", "output-b64")
 	cmd.MarkFlagFilename("output-file")
 	parent.AddCommand(cmd)
 	return nil

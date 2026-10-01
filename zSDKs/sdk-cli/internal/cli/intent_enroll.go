@@ -35,6 +35,7 @@ func InitIntentEnroll(parent *cobra.Command) error {
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
 	cmd.Flags().StringP("enrollment-email", "", "", "Email address to enroll")
+	flagutil.MarkRequestInput(cmd, "enrollment-email")
 	_ = flagutil.AnnotatePromptFlag(cmd, "enrollment-email", flagutil.PromptFlagSpec{
 		Required: true,
 		Kind:     "string",

@@ -62,14 +62,12 @@ func InitIntentProduce(parent *cobra.Command) error {
 		Kind:         "string",
 	})
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the image to a file")
-	flagutil.MarkCommandControl(cmd, "out", "raw-response")
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
 	cmd.Flags().String("poll-interval", "", "Override the initial polling interval (positive Go duration, for example 500ms or 2s)")
 	cmd.Flags().String("poll-timeout", "", "Override the overall polling deadline (positive Go duration, at least the effective poll interval)")
 	_ = flagutil.AnnotatePromptFlag(cmd, "async", flagutil.PromptFlagSpec{Kind: "bool"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-interval", flagutil.PromptFlagSpec{Kind: "string"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-timeout", flagutil.PromptFlagSpec{Kind: "string"})
-	flagutil.MarkCommandControl(cmd, "async", "poll-interval", "poll-timeout")
 	for _, sibling := range parent.Commands() {
 		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {
 			return fmt.Errorf("intent command %q collides with the name or alias of an existing %q command; rename the declared command", "produce", sibling.Name())

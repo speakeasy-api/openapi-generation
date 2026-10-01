@@ -574,6 +574,7 @@ func RegisterFlags(cmd *cobra.Command, meta []FlagMeta) {
 		}
 
 		if cmd.Flags().Lookup(m.FlagName) != nil {
+			MarkRequestInput(cmd, m.FlagName)
 			_ = AnnotatePromptFlag(cmd, m.FlagName, PromptFlagSpec{
 				Required:        promptMetaRequired(m),
 				PromptOptional:  true,
@@ -2232,6 +2233,7 @@ func registerUnionFlags(cmd *cobra.Command, m FlagMeta) {
 		// Variant-level JSON flag (skip if inherited persistent flag exists)
 		if cmd.InheritedFlags().Lookup(v.FlagName) == nil {
 			cmd.Flags().String(v.FlagName, "", v.Description)
+			MarkRequestInput(cmd, v.FlagName)
 		}
 		annotateUnionMember(cmd, v.FlagName, m.FlagName)
 

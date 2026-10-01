@@ -126,6 +126,7 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 	{{- else}}
 	cmd.Flags().StringP("{{.Name}}", "{{.Shorthand}}", "", "{{escapeGoString .Summary}}")
 	{{- end}}
+	flagutil.MarkRequestInput(cmd, "{{.Name}}")
 	_ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
 		Required: {{if and .Required (not .PresetCovered)}}true{{else}}false{{end}},
 		Kind: "{{if eq .Type "bool"}}bool{{else if eq .Type "int"}}int64{{else if eq .Type "float"}}float64{{else}}string{{end}}",
@@ -166,7 +167,6 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 		Kind: "string",
 	})
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the {{$c.ArtifactKind}} to a file")
-	flagutil.MarkCommandControl(cmd, "out", "raw-response")
 	{{- end}}
 	{{- if $c.AsyncJSON}}
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
@@ -175,7 +175,6 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 	_ = flagutil.AnnotatePromptFlag(cmd, "async", flagutil.PromptFlagSpec{Kind: "bool"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-interval", flagutil.PromptFlagSpec{Kind: "string"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-timeout", flagutil.PromptFlagSpec{Kind: "string"})
-	flagutil.MarkCommandControl(cmd, "async", "poll-interval", "poll-timeout")
 	{{- end}}
 	for _, sibling := range parent.Commands() {
 		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {

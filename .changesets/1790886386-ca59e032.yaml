@@ -1,0 +1,10 @@
+id: 1790886386-ca59e032
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: in agent mode, body commands whose positional arguments or field flags already supply the input no longer fail on an open, unwritten stdin pipe
+author: ThomasRooney
+date: "2026-10-01"
