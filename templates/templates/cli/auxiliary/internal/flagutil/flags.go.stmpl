@@ -581,6 +581,11 @@ func ResolveBodyFlag(cmd *cobra.Command, flagName string) error {
 // still blocked on it.
 var stdinSkipped atomic.Pointer[os.File]
 
+// ResetStdinSkip clears the silent-stdin marker at the start of an invocation.
+func ResetStdinSkip() {
+	stdinSkipped.Store(nil)
+}
+
 // commandLineSuppliesInput reports positional arguments or a command-local
 // flag set on the command line. Global flags such as --dry-run and command
 // controls such as --all do not count.

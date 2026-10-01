@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:66703b4e61cf22941907d9a373dd4e75587f7e0e
   internal/cli/root.go:
-    last_write_checksum: sha1:1d441678f8915123a6a0e276474fc39169a36e9c
+    last_write_checksum: sha1:4eeec0bb1505bb5b1d1cbe55b59b121d6aeaed9d
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:6973daee3999b30d78e882e1ecd9b4888b71a515
   internal/cli/tag1/deprecated1.go:
@@ -242,7 +242,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:847c3f36a9c2a6fd8d9cfd900c2411c47660504e
+    last_write_checksum: sha1:dc178957c282040929c1192c9acb980139b17fbe
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:f047a1358a4412123c86e6714cb696fd9ab6fd9a
   internal/flagutil/preset.go:

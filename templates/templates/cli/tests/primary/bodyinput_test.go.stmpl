@@ -104,6 +104,24 @@ func TestSilentStdinPipeWithFlagInputProceeds(t *testing.T) {
 	}
 }
 
+// A silent pipe skipped by one invocation is not skipped by the next one on
+// the same stdin: without other input it is the body again.
+func TestStdinSkipDoesNotCarryAcrossInvocations(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "from-flags", "--label", "x", "--agent-mode"}))
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+}
+
 // A pipe that writes its body promptly is still the body when flags are also
 // given; the flags then merge over it as usual.
 func TestPromptStdinBodyWithFlagInputIsRead(t *testing.T) {
