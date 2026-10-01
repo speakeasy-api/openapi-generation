@@ -32,6 +32,17 @@ func newHomeHarness(t *testing.T, home string) *CLITestHarness {
 	return NewCLITestHarness(t).WithEnv("HOME", home).WithEnv("USERPROFILE", home)
 }
 
+func installKeyring(t *testing.T, available bool, seed map[string]string) map[string]string {
+	t.Helper()
+	t.Cleanup(config.ResetKeyring)
+	if !available {
+		config.SetKeyringBackend(unavailableKeyring{})
+		return nil
+	}
+	config.SetKeyringBackend(stubKeyring{store: seed})
+	return seed
+}
+
 func authConfigPath(home string) string {
 	return filepath.Join(home, ".config", "{{sanitizeCliName}}", "config.yaml")
 }
@@ -100,13 +111,7 @@ func TestAuthLoginStoresCredential(t *testing.T) {
 	for _, keychainAvailable := range []bool{true, false} {
 		for _, c := range loginCredentials {
 			t.Run(fmt.Sprintf("%s/keychain=%t", c.flag, keychainAvailable), func(t *testing.T) {
-				store := map[string]string{}
-				if keychainAvailable {
-					config.SetKeyringBackend(stubKeyring{store: store})
-				} else {
-					config.SetKeyringBackend(unavailableKeyring{})
-				}
-				t.Cleanup(config.ResetKeyring)
+				store := installKeyring(t, keychainAvailable, map[string]string{})
 				home := t.TempDir()
 
 				h := newHomeHarness(t, home)
@@ -145,9 +150,7 @@ func TestAuthLoginStoresCredential(t *testing.T) {
 func TestAuthLoginReplacesConfigFallback(t *testing.T) {
 	for _, c := range loginCredentials {
 		t.Run(c.flag, func(t *testing.T) {
-			store := map[string]string{}
-			config.SetKeyringBackend(stubKeyring{store: store})
-			t.Cleanup(config.ResetKeyring)
+			store := installKeyring(t, true, map[string]string{})
 			home := t.TempDir()
 			writeAuthConfig(t, home, "version: 1\nsecurity:\n  "+c.configKey+": stale-secret\n")
 
@@ -163,13 +166,7 @@ func TestAuthLoginReplacesConfigFallback(t *testing.T) {
 func TestAuthLogoutClearsCredentials(t *testing.T) {
 	for _, keychainAvailable := range []bool{true, false} {
 		t.Run(fmt.Sprintf("keychain=%t", keychainAvailable), func(t *testing.T) {
-			store := map[string]string{"access-token": "kc-token", "api-key-auth": "kc-key", "unrelated": "keep"}
-			if keychainAvailable {
-				config.SetKeyringBackend(stubKeyring{store: store})
-			} else {
-				config.SetKeyringBackend(unavailableKeyring{})
-			}
-			t.Cleanup(config.ResetKeyring)
+			store := installKeyring(t, keychainAvailable, map[string]string{"access-token": "kc-token", "api-key-auth": "kc-key", "unrelated": "keep"})
 			home := t.TempDir()
 			writeAuthConfig(t, home, "version: 1\nsecurity:\n  access_token: cfg-token\n  api_key_auth: cfg-key\nglobals:\n  global_query_param: kept\n")
 

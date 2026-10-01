@@ -166,7 +166,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/tests/primary/agentmode_test.go.stmpl":                                                0o644,
 	"templates/cli/tests/primary/arghygiene_test.go.stmpl":                                               0o644,
 	"templates/cli/tests/primary/auth_additional_test.go.stmpl":                                          0o644,
-	"templates/cli/tests/primary/auth_login_test.go.stmpl":                                               0o644,
+	"templates/cli/tests/primary/auth_login_additional_test.go.stmpl":                                    0o644,
 	"templates/cli/tests/primary/bodyinput_test.go.stmpl":                                                0o644,
 	"templates/cli/tests/primary/catalog_test.go.stmpl":                                                  0o644,
 	"templates/cli/tests/primary/clierrors_test.go.stmpl":                                                0o644,
