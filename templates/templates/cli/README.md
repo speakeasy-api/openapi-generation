@@ -820,7 +820,7 @@ cli list-items --all --max-pages 5
 | Yes (e.g., offset/limit with `resultArray`)                      | Extracts items from the results array, streams one item per line |
 | No (e.g., cursor pagination without explicit results output)     | Outputs the entire content object per page                       |
 
-Under `--output-format table`, items extracted from the results array are collected across every page and rendered once as a single aligned table with one header; every other format streams items as they arrive. Without a results path, each page's content object renders as its own key/value table. An item the table renderer cannot display (a null item, or a value with no scalar fields) falls back to the pretty form instead of aborting the output.
+Under `--output-format table`, items extracted from the results array are collected across every page and rendered once as a single aligned table with one header; every other format streams items as they arrive. Without a results path, each page's content object renders as its own key/value table. A null entry in the results array keeps its place as an empty row, so the row count matches what the API returned; an item the table renderer cannot display at all (no scalar fields) falls back to the pretty form instead of aborting the output.
 
 **Design choices**:
 

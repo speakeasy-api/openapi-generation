@@ -876,9 +876,9 @@ func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
 		ID   int64  `json:"id"`
 		Name string `json:"name"`
 	}
-	pages := map[string][]objectResult{
-		"0": {objectResult{ID: 1, Name: "alpha"}, objectResult{ID: 2, Name: "beta"}},
-		"1": {objectResult{ID: 3, Name: "gamma"}},
+	pages := map[string][]*objectResult{
+		"0": {&objectResult{ID: 1, Name: "alpha"}, &objectResult{ID: 2, Name: "beta"}},
+		"1": {nil, &objectResult{ID: 3, Name: "gamma"}},
 	}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -900,11 +900,12 @@ func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
 
 	stdout := strings.TrimSpace(h.GetStdout())
 	lines := strings.Split(stdout, "\n")
-	require.Len(t, lines, 4, "expected one header plus three rows, got:\n%s", stdout)
+	require.Len(t, lines, 5, "expected one header plus four rows, got:\n%s", stdout)
 	assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(lines[0]))
 	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
 	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
-	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[3]))
+	assert.Empty(t, strings.Fields(lines[3]), "a null result keeps its row so the count matches the API")
+	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[4]))
 	assert.NotContains(t, stdout, "numPages", "page envelope leaked into table output")
 	assert.NotContains(t, stdout, "resultArray", "page envelope leaked into table output")
 }

@@ -1308,16 +1308,21 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 		return nil
 	}
 
-	// Collect column info from the first element
-	first := v.Index(0)
-	for first.Kind() == reflect.Ptr || first.Kind() == reflect.Interface {
-		if first.IsNil() {
-			first = v.Index(0) // use zero value
-			break
+	// Collect column info from the first non-nil element
+	var first reflect.Value
+	for i := 0; i < v.Len() && !first.IsValid(); i++ {
+		elem := v.Index(i)
+		for elem.Kind() == reflect.Ptr || elem.Kind() == reflect.Interface {
+			if elem.IsNil() {
+				break
+			}
+			elem = elem.Elem()
 		}
-		first = first.Elem()
+		if elem.Kind() == reflect.Struct {
+			first = elem
+		}
 	}
-	if first.Kind() != reflect.Struct {
+	if !first.IsValid() {
 		// Non-struct slice: one item per line
 		for i := 0; i < v.Len(); i++ {
 			fmt.Fprintln(out, v.Index(i).Interface())
@@ -1347,12 +1352,11 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 			}
 			row = row.Elem()
 		}
-		if row.Kind() != reflect.Struct {
-			continue
-		}
 		vals := make([]string, len(cols))
-		for j, c := range cols {
-			vals[j] = formatTableCell(row.Field(c.index))
+		if row.Kind() == reflect.Struct {
+			for j, c := range cols {
+				vals[j] = formatTableCell(row.Field(c.index))
+			}
 		}
 		fmt.Fprintln(tw, strings.Join(vals, "\t"))
 	}
