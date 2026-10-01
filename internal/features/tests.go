@@ -674,6 +674,7 @@ const (
 	TestClierrorsJsonOutputEnvelope
 	TestClierrorsPlainModeClassified
 	TestClierrorsTypedReasons
+	TestClierrorsUnknownFlagSuggestion
 	TestErrorTaxonomyDeclaredRulesAndOrdering
 	TestErrorTaxonomyEveryClosedTypeHasAHint
 	TestErrorTaxonomyFallbackMessageOmitsRawBody
