@@ -511,6 +511,16 @@ func SetStdinReadDeadline(enabled bool) {
 
 const AnnotationWholeBodyFlag = "speakeasy_whole_body_flag"
 
+// AnnotationCommandControl marks a flag that steers the command (pagination,
+// output, polling, credentials) rather than describing the request.
+const AnnotationCommandControl = "speakeasy_command_control"
+
+func MarkCommandControl(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		_ = cmd.Flags().SetAnnotation(name, AnnotationCommandControl, []string{"true"})
+	}
+}
+
 type MissingRequiredFlagError struct {
 	FlagName string
 	Detail   string // optional suffix, e.g. "(or provide via stdin)"
@@ -568,7 +578,42 @@ func ResolveBodyFlag(cmd *cobra.Command, flagName string) error {
 	return cmd.Flags().Set(flagName, resolved)
 }
 
-// ReadStdinBody returns nil, nil when stdin is a TTY.
+// stdinSkipped is the stdin an earlier ReadStdinBody gave up on as silent, so
+// later reads in the same invocation neither wait again nor race the reader
+// still blocked on it.
+var stdinSkipped atomic.Pointer[os.File]
+
+// commandLineSuppliesInput reports positional arguments or a command-local
+// flag set on the command line. Global flags such as --dry-run and command
+// controls such as --all do not count.
+func commandLineSuppliesInput(cmd *cobra.Command) bool {
+	if len(cmd.Flags().Args()) > 0 {
+		return true
+	}
+	supplied := false
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		supplied = supplied || (f.Changed && len(f.Annotations[AnnotationCommandControl]) == 0)
+	})
+	return supplied
+}
+
+type firstReadSignal struct {
+	r         io.Reader
+	started   atomic.Bool
+	abandoned atomic.Bool
+}
+
+func (f *firstReadSignal) Read(p []byte) (int, error) {
+	if f.abandoned.Load() {
+		return 0, io.EOF
+	}
+	n, err := f.r.Read(p)
+	f.started.Store(true)
+	return n, err
+}
+
+// ReadStdinBody returns nil, nil when stdin is a TTY, or when the command line
+// already supplies input and a pipe delivers nothing within stdinReadDeadline.
 func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	in := cmd.InOrStdin()
 	stdin := os.Stdin // captured once for the reader goroutine
@@ -582,7 +627,12 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	if stat.Mode().IsRegular() {
 		return io.ReadAll(stdin)
 	}
-	if !stdinDeadlineEnabled.Load() {
+	if stdinSkipped.Load() == stdin {
+		return nil, nil
+	}
+	deadline := stdinDeadlineEnabled.Load()
+	optional := commandLineSuppliesInput(cmd)
+	if !deadline && !optional {
 		data, err := io.ReadAll(stdin)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read stdin: %w", err)
@@ -594,20 +644,36 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 		data []byte
 		err  error
 	}
+	reader := &firstReadSignal{r: stdin}
 	ch := make(chan readResult, 1)
 	go func() {
-		data, err := io.ReadAll(stdin)
+		data, err := io.ReadAll(reader)
 		ch <- readResult{data: data, err: err}
 	}()
+	timer := time.NewTimer(stdinReadDeadline)
+	defer timer.Stop()
+	var r readResult
 	select {
-	case r := <-ch:
-		if r.err != nil {
-			return nil, fmt.Errorf("failed to read stdin: %w", r.err)
+	case r = <-ch:
+	case <-timer.C:
+		select {
+		case r = <-ch:
+		default:
+			switch {
+			case optional && !reader.started.Load():
+				reader.abandoned.Store(true)
+				stdinSkipped.Store(stdin)
+				return nil, nil
+			case deadline:
+				return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
+			}
+			r = <-ch
 		}
-		return r.data, nil
-	case <-time.After(stdinReadDeadline):
-		return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
 	}
+	if r.err != nil {
+		return nil, fmt.Errorf("failed to read stdin: %w", r.err)
+	}
+	return r.data, nil
 }
 
 func AttachStdinBody(cmd *cobra.Command, bodyFlag string) (bool, error) {

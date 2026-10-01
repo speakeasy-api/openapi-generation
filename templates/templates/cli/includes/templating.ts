@@ -297,6 +297,12 @@ function templateSecurityFlagRegistration(op: Operation): string {
       );
     }
   });
+  if (seen.size > 0) {
+    addImport("internal/flagutil", true);
+    lines.push(
+      `flagutil.MarkCommandControl(cmd, ${[...seen].map((name) => `"${name}"`).join(", ")})`,
+    );
+  }
   return lines.join("\n    ");
 }
 registerTemplateFunc(

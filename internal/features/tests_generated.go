@@ -800,8 +800,8 @@ func (t Test) String() string {
         return "pre-request-generated-required-union-positive-echoes"
     case TestPreRequestRealConnectionFailures:
         return "pre-request-real-connection-failures"
-    case TestPreRequestSilentStdinTimesOutOnRootUnion:
-        return "pre-request-silent-stdin-times-out-on-root-union"
+    case TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody:
+        return "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body"
     case TestPreRequestValidationEnvelopeMatrix:
         return "pre-request-validation-envelope-matrix"
     case TestRawResponseHelpersStripInternalHeader:
@@ -2298,8 +2298,8 @@ func TestFromString(s string) Test {
         return TestPreRequestGeneratedRequiredUnionPositiveEchoes
     case "pre-request-real-connection-failures":
         return TestPreRequestRealConnectionFailures
-    case "pre-request-silent-stdin-times-out-on-root-union":
-        return TestPreRequestSilentStdinTimesOutOnRootUnion
+    case "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body":
+        return TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
     case "pre-request-validation-envelope-matrix":
         return TestPreRequestValidationEnvelopeMatrix
     case "raw-response-helpers-strip-internal-header":
@@ -3397,7 +3397,7 @@ var testList = []Test{
     TestPreRequestGeneratedRequiredUnionPathsAndOptionality,
     TestPreRequestGeneratedRequiredUnionPositiveEchoes,
     TestPreRequestRealConnectionFailures,
-    TestPreRequestSilentStdinTimesOutOnRootUnion,
+    TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody,
     TestPreRequestValidationEnvelopeMatrix,
     TestRawResponseHelpersStripInternalHeader,
     TestReactQueryBuildersKeyDistinctBodies,

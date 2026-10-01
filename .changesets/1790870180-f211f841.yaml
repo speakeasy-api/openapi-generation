@@ -1,0 +1,10 @@
+id: 1790870180-f211f841
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: body commands no longer hang or fail on an open, unwritten stdin pipe when positional arguments or command flags already supply the input
+author: ThomasRooney
+date: "2026-10-01"

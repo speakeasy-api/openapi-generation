@@ -59,6 +59,7 @@ func InitIntentObserve(parent *cobra.Command) error {
 	_ = flagutil.AnnotatePromptFlag(cmd, "async", flagutil.PromptFlagSpec{Kind: "bool"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-interval", flagutil.PromptFlagSpec{Kind: "string"})
 	_ = flagutil.AnnotatePromptFlag(cmd, "poll-timeout", flagutil.PromptFlagSpec{Kind: "string"})
+	flagutil.MarkCommandControl(cmd, "async", "poll-interval", "poll-timeout")
 	for _, sibling := range parent.Commands() {
 		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {
 			return fmt.Errorf("intent command %q collides with the name or alias of an existing %q command; rename the declared command", "observe", sibling.Name())

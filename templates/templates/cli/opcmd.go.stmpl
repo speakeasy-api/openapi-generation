@@ -118,10 +118,14 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     {{- if hasPagination $op}}
     cmd.Flags().BoolP("all", "a", false, "Automatically paginate and fetch all results (streams NDJSON for JSON output)")
     cmd.Flags().Int("max-pages", 0, "Maximum number of pages to fetch when using --all (0 = no limit)")
+    {{- addImport "internal/flagutil" true}}
+    flagutil.MarkCommandControl(cmd, "all", "max-pages")
     {{- end}}
     {{- if hasBinaryResponse $op}}
     cmd.Flags().String("output-file", "", "Save the response body to a file path (recommended for binary/file responses)")
     cmd.Flags().Bool("output-b64", false, "Encode binary response as base64 and print to stdout")
+    {{- addImport "internal/flagutil" true}}
+    flagutil.MarkCommandControl(cmd, "output-file", "output-b64")
     {{- if isOnlyBinaryResponse $op}}
     cmd.MarkFlagFilename("output-file")
     {{- end}}
