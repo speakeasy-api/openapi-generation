@@ -81,8 +81,12 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 					itemsVal := extractFieldByPath(contentVal, resultsFieldName)
 					if itemsVal.IsValid() && itemsVal.Kind() == reflect.Slice {
 						for i := 0; i < itemsVal.Len(); i++ {
-							item := itemsVal.Index(i).Interface()
+							itemVal := itemsVal.Index(i)
+							item := itemVal.Interface()
 							if collectRows {
+								if (itemVal.Kind() == reflect.Ptr || itemVal.Kind() == reflect.Interface) && itemVal.IsNil() {
+									continue
+								}
 								rows = append(rows, item)
 								continue
 							}
@@ -127,7 +131,9 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 		}
 	}
 	if collectRows {
-		return printTable(out, rows)
+		if err := printTable(out, rows); err != nil {
+			return prettyPrint(out, rows, colorize)
+		}
 	}
 	return nil
 }

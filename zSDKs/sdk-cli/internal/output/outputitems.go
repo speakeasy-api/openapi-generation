@@ -72,7 +72,7 @@ func outputOneItem(out io.Writer, item interface{}, format, jqExpr string, color
 			fmt.Fprintln(out)
 		}
 		if err := printTable(out, item); err != nil {
-			return err
+			return prettyPrint(out, item, colorize)
 		}
 	default: // "pretty"
 		if !first {

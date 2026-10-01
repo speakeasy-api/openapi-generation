@@ -870,6 +870,8 @@ func TestPaginationWithRetries(t *testing.T) {
 // aligned table with a single header, rather than printing each page's
 // envelope in the pretty format.
 func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
+	recordTest("pagination-object-results-page-params")
+
 	type objectResult struct {
 		ID   int64  `json:"id"`
 		Name string `json:"name"`
