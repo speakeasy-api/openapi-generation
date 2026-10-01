@@ -1,0 +1,197 @@
+{{- if and (isInteractiveAuthEnabled) (hasGlobalSecurity) -}}
+package tests
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+	"{{getGolangPackage}}/internal/config"
+)
+
+var loginCredentials = []struct {
+	flag       string
+	configKey  string
+	wireFormat string
+}{
+	{flag: "access-token", configKey: "access_token", wireFormat: "Bearer %s"},
+	{flag: "api-key-auth", configKey: "api_key_auth", wireFormat: "%s"},
+}
+
+// newHomeHarness shares one home directory across runs.
+func newHomeHarness(t *testing.T, home string) *CLITestHarness {
+	t.Helper()
+	return NewCLITestHarness(t).WithEnv("HOME", home).WithEnv("USERPROFILE", home)
+}
+
+func authConfigPath(home string) string {
+	return filepath.Join(home, ".config", "{{sanitizeCliName}}", "config.yaml")
+}
+
+func readAuthConfig(t *testing.T, home string) string {
+	t.Helper()
+	data, err := os.ReadFile(authConfigPath(home))
+	if os.IsNotExist(err) {
+		return ""
+	}
+	require.NoError(t, err)
+	return string(data)
+}
+
+func writeAuthConfig(t *testing.T, home, content string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(authConfigPath(home)), 0o700))
+	require.NoError(t, os.WriteFile(authConfigPath(home), []byte(content), 0o600))
+}
+
+type whoamiEntry struct {
+	Source string `json:"source"`
+	Value  string `json:"value"`
+}
+
+func whoamiSources(t *testing.T, home string) (credentials, parameters map[string]whoamiEntry) {
+	t.Helper()
+	h := newHomeHarness(t, home)
+	require.NoError(t, h.RunBare([]string{"whoami"}))
+	var info struct {
+		Credentials      map[string]whoamiEntry `json:"credentials"`
+		GlobalParameters map[string]whoamiEntry `json:"global_parameters"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &info), "stdout: %s", h.GetStdout())
+	return info.Credentials, info.GlobalParameters
+}
+
+// sentAuthorization sends a request without credential flags.
+func sentAuthorization(t *testing.T, home string) string {
+	t.Helper()
+	s := newEchoServer()
+	defer s.Close()
+	h := newHomeHarness(t, home)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"auth", "global-bearer-auth"}), "stderr: %s", h.GetStderr())
+	return echoedAuthorization(t, h.GetStdout())
+}
+
+func TestAuthLoginWithoutCredentialFlagsWritesNothing(t *testing.T) {
+	recorder := &recordingKeyring{}
+	config.SetKeyringBackend(recorder)
+	t.Cleanup(config.ResetKeyring)
+	home := t.TempDir()
+
+	h := newHomeHarness(t, home)
+	err := h.RunRaw([]string{"auth", "login"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Contains(t, err.Error(), "no flags provided")
+	assert.Zero(t, recorder.sets)
+	_, statErr := os.Stat(filepath.Join(home, ".config"))
+	assert.True(t, os.IsNotExist(statErr), "auth login without flags must not create the config directory")
+}
+
+func TestAuthLoginStoresCredential(t *testing.T) {
+	const secret = "sekr1t-l0gin"
+	for _, keychainAvailable := range []bool{true, false} {
+		for _, c := range loginCredentials {
+			t.Run(fmt.Sprintf("%s/keychain=%t", c.flag, keychainAvailable), func(t *testing.T) {
+				store := map[string]string{}
+				if keychainAvailable {
+					config.SetKeyringBackend(stubKeyring{store: store})
+				} else {
+					config.SetKeyringBackend(unavailableKeyring{})
+				}
+				t.Cleanup(config.ResetKeyring)
+				home := t.TempDir()
+
+				h := newHomeHarness(t, home)
+				require.NoError(t, h.RunRaw([]string{"auth", "login", "--" + c.flag, secret}), "stderr: %s", h.GetStderr())
+				assert.NotContains(t, h.GetStdout()+h.GetStderr(), secret)
+				assert.Equal(t, keychainAvailable, strings.Contains(h.GetStdout(), "Secret credentials stored in OS keychain"))
+				assert.Contains(t, h.GetStdout(), "Configuration saved to "+authConfigPath(home))
+
+				cfg := readAuthConfig(t, home)
+				wantSource := "config"
+				if keychainAvailable {
+					wantSource = "keyring"
+					assert.Equal(t, secret, store[c.flag])
+					assert.NotContains(t, cfg, secret)
+				} else {
+					assert.Contains(t, cfg, c.configKey+": "+secret)
+					info, err := os.Stat(authConfigPath(home))
+					require.NoError(t, err)
+					if runtime.GOOS != "windows" {
+						assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+					}
+				}
+
+				credentials, _ := whoamiSources(t, home)
+				got := credentials[c.flag]
+				assert.Equal(t, wantSource, got.Source)
+				assert.NotEmpty(t, got.Value)
+				assert.NotContains(t, got.Value, secret)
+
+				assert.Equal(t, fmt.Sprintf(c.wireFormat, secret), sentAuthorization(t, home))
+			})
+		}
+	}
+}
+
+func TestAuthLoginReplacesConfigFallback(t *testing.T) {
+	for _, c := range loginCredentials {
+		t.Run(c.flag, func(t *testing.T) {
+			store := map[string]string{}
+			config.SetKeyringBackend(stubKeyring{store: store})
+			t.Cleanup(config.ResetKeyring)
+			home := t.TempDir()
+			writeAuthConfig(t, home, "version: 1\nsecurity:\n  "+c.configKey+": stale-secret\n")
+
+			h := newHomeHarness(t, home)
+			require.NoError(t, h.RunRaw([]string{"auth", "login", "--" + c.flag, "fresh-secret"}), "stderr: %s", h.GetStderr())
+
+			assert.Equal(t, "fresh-secret", store[c.flag])
+			assert.NotContains(t, readAuthConfig(t, home), "stale-secret")
+		})
+	}
+}
+
+func TestAuthLogoutClearsCredentials(t *testing.T) {
+	for _, keychainAvailable := range []bool{true, false} {
+		t.Run(fmt.Sprintf("keychain=%t", keychainAvailable), func(t *testing.T) {
+			store := map[string]string{"access-token": "kc-token", "api-key-auth": "kc-key", "unrelated": "keep"}
+			if keychainAvailable {
+				config.SetKeyringBackend(stubKeyring{store: store})
+			} else {
+				config.SetKeyringBackend(unavailableKeyring{})
+			}
+			t.Cleanup(config.ResetKeyring)
+			home := t.TempDir()
+			writeAuthConfig(t, home, "version: 1\nsecurity:\n  access_token: cfg-token\n  api_key_auth: cfg-key\nglobals:\n  global_query_param: kept\n")
+
+			h := newHomeHarness(t, home)
+			require.NoError(t, h.RunRaw([]string{"auth", "logout"}), "stderr: %s", h.GetStderr())
+			assert.Contains(t, h.GetStdout(), "All authentication credentials have been cleared.")
+
+			if keychainAvailable {
+				assert.Equal(t, map[string]string{"unrelated": "keep"}, store)
+			}
+			cfg := readAuthConfig(t, home)
+			assert.NotContains(t, cfg, "cfg-token")
+			assert.NotContains(t, cfg, "cfg-key")
+
+			credentials, parameters := whoamiSources(t, home)
+			for _, c := range loginCredentials {
+				assert.Equal(t, "unset", credentials[c.flag].Source, c.flag)
+			}
+			assert.Equal(t, whoamiEntry{Source: "config", Value: "kept"}, parameters["global-query-param"])
+
+			assert.Empty(t, sentAuthorization(t, home))
+		})
+	}
+}
+{{- end}}
