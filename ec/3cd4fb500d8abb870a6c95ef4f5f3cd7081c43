@@ -1,0 +1,39 @@
+templates/templates/cli/includes/descriptions.ts
+  h_9630b74bdac540 441,485
+templates/templates/cli/includes/test-workflows.ts
+  h_9630b74bdac540 268-270
+  h_9630b74bdac540 267
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 660-664,667-669,729-730
+  h_9630b74bdac540 731-732
+templates/templates/cli/includes/tests.ts
+  h_9630b74bdac540 1135-1156
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 88,90,697,885-894,900-904
+  h_9630b74bdac540 56,895
+templates/templates/cli/opcmd.go.stmpl
+  h_9630b74bdac540 95
+templates/templates/cli/README.md
+  h_9630b74bdac540 1245
+pkg/generate/snapshots/cli_empty_body_go_test.go
+  h_9630b74bdac540 106,109-132,207,212,219,221,231-232,235,237-240
+  h_9630b74bdac540 107-108,233
+templates/templates/cli/includes/utils.ts
+  h_9630b74bdac540 61-68,70-71
+templates/templates/cli/tests/primary/bodyinput_test.go.stmpl
+  h_9630b74bdac540 6,10,18-55
+  h_9630b74bdac540 56
+.changesets/1790922409-830b3652.yaml
+  h_9630b74bdac540 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec3cd4fb500d8abb870a6c95ef4f5f3cd7081c43",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
