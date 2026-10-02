@@ -29,7 +29,7 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 		if err == nil {
 			return nil
 		}
-		hints := make([]string, 0, 2)
+		hints := append([]string(nil), errorCLIHints(err)...)
 		if hint := flagutil.UnknownFlagSuggestionHint(current, err.Error()); hint != "" {
 			hints = append(hints, hint)
 		}
