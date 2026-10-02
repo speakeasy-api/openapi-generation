@@ -690,15 +690,18 @@ function collectCliCatalogs(): CliCatalog[] {
               const declared = Object.prototype.hasOwnProperty.call(defaults, v)
                 ? defaults[v]
                 : undefined;
-              const defaultFor =
+              const commands =
                 typeof declared === "string"
-                  ? [declared].filter((name) => name.trim().length > 0)
+                  ? [declared]
                   : Array.isArray(declared)
-                  ? declared.filter(
-                      (name: any) =>
-                        typeof name === "string" && name.trim().length > 0,
-                    )
+                  ? declared
                   : [];
+              const defaultFor = commands
+                .filter(
+                  (name: unknown): name is string => typeof name === "string",
+                )
+                .map((name: string) => name.trim())
+                .filter((name: string) => name.length > 0);
               const isDefault = defaultValue !== "" && v === defaultValue;
               return {
                 Value: v,
@@ -717,8 +720,7 @@ function collectCliCatalogs(): CliCatalog[] {
           );
           if (values.length === 0) continue;
           const groups: CliCatalog["Groups"] = [];
-          const hasGroups = Array.isArray(ext.groups) && ext.groups.length > 0;
-          if (hasGroups) {
+          if (Array.isArray(ext.groups)) {
             const byValue = new Map(
               values.map((value) => [value.Value, value]),
             );
@@ -727,29 +729,35 @@ function collectCliCatalogs(): CliCatalog[] {
               if (
                 !group ||
                 typeof group.title !== "string" ||
-                !group.title.trim() ||
                 !Array.isArray(group.values)
               )
                 continue;
+              const title = group.title.trim();
+              if (!title) continue;
               const groupValues: CliCatalogValue[] = [];
               for (const name of group.values) {
                 const value = byValue.get(name);
                 if (!value || grouped.has(name)) continue;
                 grouped.add(name);
-                value.Group = group.title;
+                value.Group = title;
                 groupValues.push(value);
               }
-              groups.push({ Title: group.title, Values: groupValues });
+              if (groupValues.length > 0) {
+                groups.push({ Title: title, Values: groupValues });
+              }
             }
             const remaining = values.filter(
               (value) => !grouped.has(value.Value),
             );
-            if (remaining.length > 0) {
+            if (groups.length > 0 && remaining.length > 0) {
               for (const value of remaining) value.Group = "Other";
               groups.push({ Title: "Other", Values: remaining });
             }
           }
-          const hasDefaults = Object.keys(defaults).length > 0;
+          const hasDefaults = values.some(
+            (value) => value.DefaultFor.length > 0,
+          );
+          const hasGroups = groups.length > 0;
           catalogs.push({
             Command: sanitizeCLICommand(`${ext.command}`),
             FuncName: sanitizeClassName(`${ext.command}`),

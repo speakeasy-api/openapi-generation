@@ -22,6 +22,13 @@ var catalogOutputCases = []struct {
 		json: `[{"default":true,"description":"Long option.","value":"catalog-value-with-a-name-longer-than-forty-two-characters"},{"default":false,"description":"Second option.","value":"beta"}]`,
 	},
 	{
+		command: "catalog-noop",
+		human: fmt.Sprintf("%-42s %s\n%-42s %s\n",
+			"catalog-value-with-a-name-longer-than-forty-two-characters (default)", "Long option.",
+			"beta", "Second option."),
+		json: `[{"default":true,"description":"Long option.","value":"catalog-value-with-a-name-longer-than-forty-two-characters"},{"default":false,"description":"Second option.","value":"beta"}]`,
+	},
+	{
 		command: "catalog-empty",
 		human: fmt.Sprintf("%-42s %s\n%-42s %s\n",
 			"alpha (default)", "First option.", "beta", "Second option."),
@@ -76,12 +83,12 @@ var catalogOutputCases = []struct {
 	},
 	{
 		command: "catalog-malformed",
-		human: "Valid:\n" + fmt.Sprintf("  %-42s %s\n", "alpha (default: render)", "First option.") +
-			"\nOther:\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n", "beta", "Second option.", "gamma", "Third option."),
+		human: fmt.Sprintf("%-42s %s\n%-42s %s\n%-42s %s\n",
+			"alpha (default: render)", "First option.", "beta", "Second option.", "gamma", "Third option."),
 		json: `[
-			{"default":false,"default_for":["render"],"description":"First option.","group":"Valid","value":"alpha"},
-			{"default":false,"description":"Second option.","group":"Other","value":"beta"},
-			{"default":false,"description":"Third option.","group":"Other","value":"gamma"}
+			{"default":false,"default_for":["render"],"description":"First option.","value":"alpha"},
+			{"default":false,"description":"Second option.","value":"beta"},
+			{"default":false,"description":"Third option.","value":"gamma"}
 		]`,
 	},
 }
@@ -114,7 +121,7 @@ func TestCatalogStructuredOutput(t *testing.T) {
 			h := NewCLITestHarness(t)
 			require.NoError(t, h.RunRaw([]string{tc.command, "-o", "json"}))
 			assert.JSONEq(t, tc.json, h.GetStdout())
-			if tc.command == "catalog-legacy" {
+			if tc.command == "catalog-legacy" || tc.command == "catalog-noop" {
 				assert.Equal(t, tc.json+"\n", h.GetStdout())
 			}
 			assert.Empty(t, h.GetStderr())

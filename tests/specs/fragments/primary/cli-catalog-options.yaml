@@ -34,6 +34,8 @@ paths:
                   $ref: "#/components/schemas/CliCatalogCombined"
                 malformed:
                   $ref: "#/components/schemas/CliCatalogMalformed"
+                noop:
+                  $ref: "#/components/schemas/CliCatalogNoop"
       responses:
         "200":
           description: OK
@@ -72,8 +74,8 @@ components:
       x-speakeasy-cli-catalog:
         command: catalog-defaults
         defaults:
-          alpha: [create-widget, inspect-widget]
-          gamma: render
+          alpha: [" create-widget ", " inspect-widget "]
+          gamma: " render "
           delta: []
           unknown: ignored
     CliCatalogGroups:
@@ -85,9 +87,15 @@ components:
         command: catalog-groups
         default: delta
         groups:
-          - title: 'Primary "Widgets"'
+          - title: ' Primary "Widgets" '
             values: [beta, alpha, alpha, unknown]
-          - title: Secondary
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+          - title: DuplicateGroup
+            values: [alpha, beta]
+          - title: " Secondary "
             values: [beta, gamma]
     CliCatalogCombined:
       type: string
@@ -98,12 +106,18 @@ components:
         command: catalog-combined
         default: alpha
         defaults:
-          alpha: [create-widget, inspect-widget]
-          gamma: render
+          alpha: [" create-widget ", " inspect-widget "]
+          gamma: " render "
         groups:
-          - title: 'Primary "Widgets"'
+          - title: ' Primary "Widgets" '
             values: [beta, alpha, alpha, unknown]
-          - title: Secondary
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+          - title: DuplicateGroup
+            values: [alpha, beta]
+          - title: " Secondary "
             values: [beta, gamma]
     CliCatalogMalformed:
       type: string
@@ -113,12 +127,35 @@ components:
       x-speakeasy-cli-catalog:
         command: catalog-malformed
         defaults:
-          alpha: [render, null, 123, ""]
+          alpha: [" render ", null, 123, "", " "]
           beta: 123
         groups:
           - title: ""
             values: [alpha]
           - title: Invalid
             values: alpha
-          - title: Valid
-            values: [alpha]
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+    CliCatalogNoop:
+      type: string
+      description: Ineffective optional catalog metadata preserves fixed-width output for long enum values.
+      enum: [catalog-value-with-a-name-longer-than-forty-two-characters, beta]
+      x-speakeasy-enum-descriptions: [Long option., Second option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-noop
+        default: catalog-value-with-a-name-longer-than-forty-two-characters
+        defaults:
+          catalog-value-with-a-name-longer-than-forty-two-characters: [" ", "", null, 123]
+          beta: []
+          unknown: ignored
+        groups:
+          - title: ""
+            values: [beta]
+          - title: Invalid
+            values: beta
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
