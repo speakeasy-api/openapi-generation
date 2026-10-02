@@ -1,0 +1,10 @@
+id: 1790903048-d99c727b
+features:
+    - globals
+targets:
+    - cli
+type: fix
+bump: patch
+description: report defaulted global parameters in whoami
+author: TristanSpeakEasy
+date: "2026-10-02"

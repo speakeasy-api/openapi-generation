@@ -51,6 +51,94 @@ func setupConfigureTest(t *testing.T) (h *CLITestHarness, tmpDir string) {
 	return h, tmpDir
 }
 
+func TestWhoamiGlobalDefaults(t *testing.T) {
+	for _, format := range []string{"pretty", "json"} {
+		t.Run(format, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+
+			flag := root.PersistentFlags().Lookup("global-query-param")
+			require.NotNil(t, flag)
+			flag.DefValue = "default-query"
+			require.NoError(t, flag.Value.Set(flag.DefValue))
+			require.False(t, flag.Changed)
+
+			require.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{
+				"whoami", "--no-interactive", "--output-format", format,
+			}))
+			if format == "json" {
+				var info struct {
+					Parameters map[string]struct {
+						Source string `json:"source"`
+						Value string `json:"value"`
+					} `json:"global_parameters"`
+				}
+				require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &info))
+				for name, value := range map[string]string{
+					"global-query-param": "default-query",
+					"global-header-param": "false",
+					"global-path-param": "0",
+				} {
+					assert.Equal(t, "default", info.Parameters[name].Source)
+					assert.Equal(t, value, info.Parameters[name].Value)
+				}
+				assert.Equal(t, "unset", info.Parameters["global-optional-path-param"].Source)
+			} else {
+				assert.Regexp(t, `--global-query-param\s+\[default\]\s+default-query`, h.GetStdout())
+				assert.Regexp(t, `--global-header-param\s+\[default\]\s+false`, h.GetStdout())
+				assert.Regexp(t, `--global-path-param\s+\[default\]\s+0`, h.GetStdout())
+			}
+		})
+	}
+}
+
+func TestResolveCredentialDefaultPrecedence(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		flag string
+		env string
+		stored string
+		want string
+		source string
+	}{
+		{name: "default", want: "default-query", source: "default"},
+		{name: "config", stored: "config-query", want: "config-query", source: "config"},
+		{name: "environment", env: "env-query", stored: "config-query", want: "env-query", source: "env"},
+		{name: "flag", flag: "flag-query", env: "env-query", stored: "config-query", want: "flag-query", source: "flag"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{
+				"globals": map[string]interface{}{"global_query_param": tt.stored},
+			})
+			t.Setenv("CLI_GLOBAL_QUERY_PARAM", tt.env)
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			flag := root.PersistentFlags().Lookup("global-query-param")
+			require.NotNil(t, flag)
+			flag.DefValue = "default-query"
+			require.NoError(t, flag.Value.Set(flag.DefValue))
+			if tt.flag != "" {
+				require.NoError(t, root.PersistentFlags().Set(flag.Name, tt.flag))
+			}
+			child, _, err := root.Find([]string{"whoami"})
+			require.NoError(t, err)
+			require.NoError(t, config.Init("cli", "CLI"))
+			value, source := config.ResolveCredential(child, flag.Name)
+			assert.Equal(t, tt.want, value)
+			assert.Equal(t, tt.source, source)
+			value, source = config.ResolveCredential(child, "missing-flag")
+			assert.Empty(t, value)
+			assert.Equal(t, "unset", source)
+		})
+	}
+}
+
 // TestConfigureSkipsOptionalCredentials verifies that when all security
 // schemes are OR alternatives (multiple options), the configure command
 // allows skipping credentials by pressing Enter (empty input) and does
