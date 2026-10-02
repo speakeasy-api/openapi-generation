@@ -11,6 +11,6 @@ targets:
     - unity
 type: fix
 bump: patch
-description: derive valid enum member names for values that start with an underscore followed by digits; in TypeScript and MCP TypeScript union enums, members for digits-only values such as `_1` are renamed from `1` to `One`, and values that share a derived name now receive unique suffixes
+description: derive valid enum member names for values that start with an underscore followed by digits; in TypeScript and MCP TypeScript union enums, members for digits-only values such as `_1` are renamed from `1` to `One`, and the enum validator now reports values that collide once re-sanitized
 author: AshGodfrey
 date: "2026-10-02"
