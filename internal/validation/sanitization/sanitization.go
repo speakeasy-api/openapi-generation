@@ -219,7 +219,7 @@ func getEnumSanitizationMethods() *sequencedmap.Map[string, func(string) string]
 			s = "Unknown"
 		}
 
-		return casing.New().ToPascal(sanitization.SanitizeName(s))
+		return resanitizeLeadingDigit(sanitization.SanitizeName(s), casing.New().ToPascal)
 	})
 	sanitizationMethods.Set("go", func(s string) string {
 		s = strings.TrimSpace(s)
@@ -235,7 +235,7 @@ func getEnumSanitizationMethods() *sequencedmap.Map[string, func(string) string]
 			s = "Unknown"
 		}
 
-		return casing.New().ToPascal(sanitization.SanitizeName(s))
+		return resanitizeLeadingDigit(sanitization.SanitizeName(s), casing.New().ToPascal)
 	})
 	sanitizationMethods.Set("python", func(s string) string {
 		s = strings.TrimSpace(s)
@@ -243,10 +243,19 @@ func getEnumSanitizationMethods() *sequencedmap.Map[string, func(string) string]
 			s = "unknown"
 		}
 
-		return casing.New().ToSNAKE(sanitization.SanitizeName(s))
+		return resanitizeLeadingDigit(sanitization.SanitizeName(s), casing.New().ToSNAKE)
 	})
 
 	return sanitizationMethods
+}
+
+func resanitizeLeadingDigit(name string, caseName func(string) string) string {
+	cased := caseName(name)
+	if cased == "" || cased[0] < '0' || cased[0] > '9' {
+		return cased
+	}
+
+	return caseName(sanitization.SanitizeName(cased))
 }
 
 func getEnumNameSanitizationMethods() *sequencedmap.Map[string, func(string, int) string] {

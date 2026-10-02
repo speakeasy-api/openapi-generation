@@ -361,6 +361,38 @@ components:
 			},
 		},
 		{
+			name: "underscore-digit enum values collide once re-sanitized",
+			args: args{
+				schema: `openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /test:
+    get:
+      operationId: test
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/enum'
+components:
+  schemas:
+    enum:
+      type: string
+      enum:
+        - _1
+        - "1"`,
+			},
+			wantErrs: []string{
+				"validation error: [line 24:11] generator-validate-enums - enum value `1` (`OneUpper`) will collide with `_1` (`OneUpper`) [line `23`] when normalized, try using `x-speakeasy-enums`",
+			},
+		},
+		{
 			name: "duplicate enum values",
 			args: args{
 				schema: `openapi: 3.1.0

@@ -117,12 +117,13 @@ function sanitizeEnumValue(value: any, type: GojaEnum<DataType>): string {
 
 // @ts-ignore
 function getEnumNames(t: TypeDef): string[] {
+  const format = t.Enum ? getEnumFormat(t) : "union";
   if (t.Enum?.Names.length > 0) {
     if (context.Global.Config.FixEnumNameSanitization === true) {
       return t.Enum.Names.map((n) => sanitizeName(n.trim() || "Unknown"));
     }
-    return t.Enum.Names.map((n) => getEnumName(n));
+    return t.Enum.Names.map((n) => getEnumName(n, format));
   } else {
-    return getEnumNamesFromValues(t.Enum?.Values);
+    return getEnumNamesFromValues(t.Enum?.Values, format);
   }
 }

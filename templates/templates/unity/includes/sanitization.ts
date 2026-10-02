@@ -372,7 +372,11 @@ function getEnumName(value: string): string {
   }
 
   name = sanitizeName(name);
-  return caser().ToPascal(name);
+  name = caser().ToPascal(name);
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToPascal(sanitizeName(name));
+  }
+  return name;
 }
 
 registerTemplateFunc("getEnumName", getEnumName);
@@ -392,10 +396,19 @@ function getEnumNamesFromValues(values: string[]): string[] {
     names[name] += 1;
   });
 
+  const seen = {};
   values.forEach((value) => {
     let name = getEnumName(value);
     if (names[name] > 1) {
-      name = `${name}${caser().ToPascal(getCasing(value))}`;
+      let candidate = `${name}${caser().ToPascal(getCasing(value))}`;
+      if (seen[candidate]) {
+        const suffix = seen[candidate];
+        seen[candidate] += 1;
+        candidate = `${candidate}${suffix}`;
+      } else {
+        seen[candidate] = 1;
+      }
+      name = candidate;
     }
 
     enumNames.push(sanitizeFieldName(name));

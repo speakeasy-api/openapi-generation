@@ -664,6 +664,9 @@ function getEnumName(value: string): string {
   }
 
   name = caser().ToPascal(sanitizeName(name));
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToPascal(sanitizeName(name));
+  }
   if (name === "Class") {
     name = "Class_";
   }

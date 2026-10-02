@@ -1096,12 +1096,12 @@ function sanitizeMap(typeDef: TypeDef, usageLocation: string): string {
 }
 
 // @ts-ignore
-function getEnumNamesFromValues(values) {
+function getEnumNamesFromValues(values, format: "enum" | "union" = "union") {
   let enumNames = [];
 
   let names = {};
   for (const value of values) {
-    let name = getEnumName(value);
+    let name = getEnumName(value, format);
     if (!names[name]) {
       names[name] = 0;
     }
@@ -1109,10 +1109,19 @@ function getEnumNamesFromValues(values) {
     names[name] += 1;
   }
 
+  let seen = {};
   for (const value of values) {
-    let name = getEnumName(value);
+    let name = getEnumName(value, format);
     if (names[name] > 1) {
-      name = `${name}${caser().ToPascal(getCasing(value))}`;
+      let candidate = `${name}${caser().ToPascal(getCasing(value))}`;
+      if (seen[candidate]) {
+        let suffix = seen[candidate];
+        seen[candidate] += 1;
+        candidate = `${candidate}${suffix}`;
+      } else {
+        seen[candidate] = 1;
+      }
+      name = candidate;
     }
 
     enumNames.push(name);
@@ -1122,7 +1131,7 @@ function getEnumNamesFromValues(values) {
 }
 
 // @ts-ignore
-function getEnumName(value) {
+function getEnumName(value, format: "enum" | "union" = "union") {
   let name = value.trim();
 
   if (name === "") {
@@ -1131,10 +1140,25 @@ function getEnumName(value) {
 
   name = sanitizeName(name);
 
-  return caser().ToPascal(name);
+  name = caser().ToPascal(name);
+  if (/^[0-9]/.test(name) && !keepsNumericEnumMemberName(name, format)) {
+    name = caser().ToPascal(sanitizeName(name));
+  }
+  return name;
 }
 
 registerTemplateFunc("getEnumName", getEnumName);
+
+function keepsNumericEnumMemberName(
+  name: string,
+  format: "enum" | "union",
+): boolean {
+  return (
+    format === "union" &&
+    context.Global.Config.NumericEnumMemberNames === "legacy" &&
+    /^[0-9]+(E[0-9]+)?$/.test(name)
+  );
+}
 
 function sanitizeZodName(name: string) {
   return sanitizeClassName(name) + "$";

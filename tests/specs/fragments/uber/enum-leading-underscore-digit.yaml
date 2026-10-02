@@ -1,0 +1,45 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /enums/leading-underscore-digit:
+    get:
+      operationId: getEnumLeadingUnderscoreDigit
+      description: >-
+        Returns an object whose enum property has values that start with an
+        underscore followed by digits (`_1ST`, `_2FA`, `_3D`, `_10`), the shape
+        protobuf-derived documents use for numeric-looking identifiers. Checks
+        that every target derives a valid member name for such values instead
+        of emitting a digit-leading identifier that fails to compile or format.
+        `_10` is digits-only, which TypeScript may keep as a numeric key in a
+        union enum but must spell out in a native enum.
+      tags:
+        - generation
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accountType
+                properties:
+                  accountType:
+                    $ref: "#/components/schemas/LeadingUnderscoreDigitEnum"
+components:
+  schemas:
+    LeadingUnderscoreDigitEnum:
+      type: string
+      enum:
+        - UNSPECIFIED
+        - _1ST
+        - _2FA
+        - _3D
+        - _10

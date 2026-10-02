@@ -1,0 +1,16 @@
+id: 1790962042-cf634029
+features:
+    - enums
+targets:
+    - csharp
+    - mcp-typescript
+    - php
+    - pythonv2
+    - ruby
+    - typescriptv2
+    - unity
+type: fix
+bump: patch
+description: derive valid enum member names for values that start with an underscore followed by digits; TypeScript and MCP TypeScript add a `numericEnumMemberNames` option that spells out digits-only values such as `_1` as `One` for new SDKs and keeps the numeric key for existing SDKs with union enums (native enums always spell digits out), and the enum validator now reports values that collide once re-sanitized
+author: AshGodfrey
+date: "2026-10-02"
