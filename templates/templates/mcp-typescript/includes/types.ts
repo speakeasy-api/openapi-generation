@@ -128,10 +128,19 @@ function getEnumNamesFromValues(values: string[]): string[] {
     names[name] += 1;
   }
 
+  let seen = {};
   for (const value of values) {
     let name = sanitizeEnumName(value);
     if (names[name] > 1) {
-      name = `${name}${caser().ToPascal(getCasing(value))}`;
+      let candidate = `${name}${caser().ToPascal(getCasing(value))}`;
+      if (seen[candidate]) {
+        let suffix = seen[candidate];
+        seen[candidate] += 1;
+        candidate = `${candidate}${suffix}`;
+      } else {
+        seen[candidate] = 1;
+      }
+      name = candidate;
     }
 
     enumNames.push(name);
