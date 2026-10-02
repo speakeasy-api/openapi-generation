@@ -27,6 +27,92 @@ import (
 	"openapi/internal/output"
 )
 
+func TestJSONKeyColour(t *testing.T) {
+	data := []byte(`{"name":"widget","count":2,"enabled":true,"optional":null}`)
+	colored := string(output.ColorizeJSON(data))
+	assert.Contains(t, colored, "\033[1;38;2;56;189;248m\"name\"\033[0m")
+	assert.NotContains(t, colored, "\033[1;34m")
+	assert.Contains(t, colored, "\033[32m\"widget\"\033[0m")
+}
+
+func TestHelpColourControls(t *testing.T) {
+	for _, command := range [][]string{nil, {"version"}, {"help", "version"}} {
+		t.Run(strings.Join(command, " "), func(t *testing.T) {
+			args := append([]string{}, command...)
+			if len(command) == 0 || command[0] != "help" {
+				args = append(args, "--help")
+			}
+			plain := NewCLITestHarness(t)
+			assert.NoError(t, plain.RunPolicyDefault(append(append([]string{}, args...), "--color=never")))
+			for _, test := range []struct {
+				name       string
+				args       []string
+				noColor    bool
+				forceColor bool
+				colored    bool
+			}{
+				{name: "forced", args: []string{"--color=always"}, colored: true},
+				{name: "disabled", args: []string{"--color=never"}, forceColor: true},
+				{name: "redirected"},
+				{name: "no color", noColor: true, forceColor: true},
+				{name: "force color", forceColor: true, colored: true},
+				{name: "explicit override", args: []string{"--color=always"}, noColor: true, colored: true},
+				{name: "agent", args: []string{"--color=always", "--agent-mode"}},
+			} {
+				t.Run(test.name, func(t *testing.T) {
+					t.Setenv("NO_COLOR", "")
+					t.Setenv("FORCE_COLOR", "")
+					assert.NoError(t, os.Unsetenv("NO_COLOR"))
+					assert.NoError(t, os.Unsetenv("FORCE_COLOR"))
+					if test.noColor {
+						t.Setenv("NO_COLOR", "")
+					}
+					if test.forceColor {
+						t.Setenv("FORCE_COLOR", "1")
+					}
+					h := NewCLITestHarness(t)
+					assert.NoError(t, h.RunPolicyDefault(append(append([]string{}, args...), test.args...)))
+					got := h.GetStdout()
+					if test.colored {
+						assert.Contains(t, got, "\033[1;38;2;56;189;248mUsage:\033[0m")
+					} else {
+						assert.NotContains(t, got, "\033[")
+					}
+					got = strings.ReplaceAll(got, "\033[1;38;2;56;189;248m", "")
+					got = strings.ReplaceAll(got, "\033[0m", "")
+					assert.Equal(t, plain.GetStdout(), got)
+				})
+			}
+		})
+	}
+}
+
+func TestUsageRemainsUncoloured(t *testing.T) {
+	h := NewCLITestHarness(t).WithEnv("FORCE_COLOR", "1")
+	assert.NoError(t, h.RunPolicyDefault([]string{"version", "--usage", "--color=always"}))
+	assert.Contains(t, h.GetStdout(), `cmd "version"`)
+	assert.NotContains(t, h.GetStdout(), "\033[")
+}
+
+func TestColouredHelpRestoresWriterInheritance(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	assert.NoError(t, err)
+	child, _, err := root.Find([]string{"version"})
+	assert.NoError(t, err)
+	assert.NoError(t, root.PersistentFlags().Set("color", "always"))
+	root.SetOut(h.stdout)
+	assert.NoError(t, child.Help())
+	assert.Contains(t, h.GetStdout(), "\033[")
+	h.stdout.Reset()
+	redirected := new(bytes.Buffer)
+	root.SetOut(redirected)
+	assert.NoError(t, child.Help())
+	assert.Contains(t, redirected.String(), "\033[")
+	assert.Empty(t, h.GetStdout())
+}
+
 // CLITestHarness executes CLI commands in-process for testing.
 type CLITestHarness struct {
 	t            *testing.T

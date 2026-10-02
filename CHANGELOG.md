@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.944.2] - 2026-10-02
+### :bug: Bug Fixes
+- [`a003a38`](https://github.com/speakeasy-api/openapi-generation/commit/a003a38d224e7e84384f27ceeaf9d24beb41391f) - **cli**: suggest the closest flag on unknown-flag errors and drop the dry-run hint ([#59](https://github.com/speakeasy-api/openapi-generation/pull/59)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.944.1] - 2026-10-02
+### :bug: Bug Fixes
+- [`861ac49`](https://github.com/speakeasy-api/openapi-generation/commit/861ac49f0ae5fc15e285bc01eafd78d640dc2924) - **cli**: improve output key contrast and style help headings ([#67](https://github.com/speakeasy-api/openapi-generation/pull/67)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.944.0] - 2026-10-02
+### :bee: New Features
+- [`509504c`](https://github.com/speakeasy-api/openapi-generation/commit/509504c4ccb00fd9ad38c63295f7d8edf4acd159) - **cli**: show delayed progress for synchronous requests ([#68](https://github.com/speakeasy-api/openapi-generation/pull/68)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.943.8] - 2026-10-02
+### :bug: Bug Fixes
+- [`d2cf100`](https://github.com/speakeasy-api/openapi-generation/commit/d2cf100c201b1b775a3a788f11cb7204eb8e4929) - **cli**: enforce schema pattern and maxLength on string flags ([#53](https://github.com/speakeasy-api/openapi-generation/pull/53)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.943.7] - 2026-10-02
 ### :bug: Bug Fixes
 - [`0cdc850`](https://github.com/speakeasy-api/openapi-generation/commit/0cdc85030c72016646de289938909036821b9f04) - **cli**: omit inherited body flags from intent commands ([#64](https://github.com/speakeasy-api/openapi-generation/pull/64)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20331,3 +20351,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.943.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.4...v2.943.5
 [v2.943.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.5...v2.943.6
 [v2.943.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.6...v2.943.7
+[v2.943.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.7...v2.943.8
+[v2.944.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.8...v2.944.0
+[v2.944.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.0...v2.944.1
+[v2.944.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.1...v2.944.2

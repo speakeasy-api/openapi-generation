@@ -587,3 +587,161 @@ func TestBuildRequestAllowsBlankRequiredNonPathParams(t *testing.T) {
 	assert.Equal(t, "item", req.ID)
 	assert.Empty(t, req.Filter)
 }
+
+type stringConstraintRequest struct {
+	Code *string `queryParam:"style=form,explode=true,name=code"`
+}
+
+// buildStringConstraintRequest runs BuildRequest on a plain command (not a
+// manifest command, no agent mode) with one constrained string flag. value
+// nil leaves the flag unset.
+func buildStringConstraintRequest(t *testing.T, m flagutil.FlagMeta, value *string) (*stringConstraintRequest, string, error) {
+	t.Helper()
+	m.FlagName = "code"
+	m.FieldPath = "Code"
+	m.Kind = flagutil.FlagKindString
+	m.Optional = true
+	meta := []flagutil.FlagMeta{m}
+	cmd := &cobra.Command{}
+	var stderr strings.Builder
+	cmd.SetErr(&stderr)
+	cmd.SetIn(strings.NewReader(""))
+	flagutil.RegisterFlags(cmd, meta)
+	if value != nil {
+		require.NoError(t, cmd.Flags().Set("code", *value))
+	}
+	req, err := flagutil.BuildRequest[stringConstraintRequest](cmd, meta, "", "")
+	return req, stderr.String(), err
+}
+
+func TestStringFlagConstraints(t *testing.T) {
+	pattern := func(p string) flagutil.FlagMeta { return flagutil.FlagMeta{Pattern: p} }
+	maxLength := func(n int64) flagutil.FlagMeta { return flagutil.FlagMeta{HasMaxLength: true, MaxLength: n} }
+
+	cases := []struct {
+		name    string
+		meta    flagutil.FlagMeta
+		value   string
+		wantErr string
+	}{
+		{name: "pattern is unanchored", meta: pattern("cat"), value: "bobcatfish"},
+		{name: "unanchored pattern still rejects", meta: pattern("cat"), value: "dog", wantErr: `invalid value for --code: "dog" does not match the pattern cat`},
+		{name: "anchored pattern accepts exact", meta: pattern("^cat$"), value: "cat"},
+		{name: "anchored pattern rejects extra", meta: pattern("^cat$"), value: "cats", wantErr: `"cats" does not match the pattern ^cat$`},
+		{name: "dot segment rejected by id pattern", meta: pattern("^[a-z0-9-]+$"), value: "..", wantErr: `".." does not match the pattern ^[a-z0-9-]+$`},
+		{name: "explicit empty rejected by non-empty pattern", meta: pattern("^a+$"), value: "", wantErr: `"" does not match the pattern ^a+$`},
+		{name: "explicit empty accepted by optional pattern", meta: pattern("^a*$"), value: ""},
+		{name: "below max length", meta: maxLength(3), value: "ab"},
+		{name: "empty within max length", meta: maxLength(3), value: ""},
+		{name: "at max length", meta: maxLength(3), value: "abc"},
+		{name: "over max length", meta: maxLength(3), value: "abcd", wantErr: `invalid value for --code: "abcd" is longer than the maximum length 3`},
+		{name: "max length zero accepts empty", meta: maxLength(0), value: ""},
+		{name: "max length zero rejects any value", meta: maxLength(0), value: "a", wantErr: "is longer than the maximum length 0"},
+		{name: "max length counts code points not bytes (2 bytes)", meta: maxLength(1), value: "é"},
+		{name: "max length counts code points not bytes (3 bytes)", meta: maxLength(1), value: "界"},
+		{name: "max length counts code points not bytes (4 bytes)", meta: maxLength(1), value: "😀"},
+		{name: "combining sequence is two code points", meta: maxLength(1), value: "é", wantErr: "is longer than the maximum length 1"},
+		{name: "flag emoji is two code points", meta: maxLength(1), value: "🇬🇧", wantErr: "is longer than the maximum length 1"},
+		{
+			name:    "max length is checked before pattern",
+			meta:    flagutil.FlagMeta{Pattern: "^[a-z]+$", HasMaxLength: true, MaxLength: 2},
+			value:   "ABCD",
+			wantErr: `"ABCD" is longer than the maximum length 2`,
+		},
+		{
+			name:    "within max length but pattern mismatch",
+			meta:    flagutil.FlagMeta{Pattern: "^[a-z]+$", HasMaxLength: true, MaxLength: 4},
+			value:   "AB",
+			wantErr: `"AB" does not match the pattern ^[a-z]+$`,
+		},
+		{name: "no constraints accept anything", meta: flagutil.FlagMeta{}, value: "../ANY value"},
+		// Go's dot also matches CR where ECMA-262's does not; the CLI may accept
+		// such a value, leaving it to the server, but never rejects one ECMA-262
+		// accepts.
+		{name: "dot matches carriage return", meta: pattern("^.$"), value: "\r"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			value := tc.value
+			req, stderr, err := buildStringConstraintRequest(t, tc.meta, &value)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				require.NotNil(t, req.Code)
+				assert.Equal(t, tc.value, *req.Code, "value must be sent unchanged")
+				assert.Empty(t, stderr)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+			var typed interface{ CLIReason() string }
+			require.ErrorAs(t, err, &typed)
+			assert.Equal(t, "CLI_VALIDATION", typed.CLIReason())
+		})
+	}
+}
+
+// An unset flag is not validated: its (possibly non-conforming) default never
+// reaches the request.
+func TestStringFlagConstraintsIgnoreUnsetFlag(t *testing.T) {
+	req, stderr, err := buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^a+$", HasMaxLength: true, MaxLength: 1}, nil)
+	require.NoError(t, err)
+	assert.Nil(t, req.Code)
+	assert.Empty(t, stderr)
+}
+
+// pattern and maxLength are enforced even where minLength only warns: a plain
+// command outside agent mode is the permissive surface.
+func TestStringFlagConstraintsAreStrictWhereMinLengthWarns(t *testing.T) {
+	short := "a"
+	req, stderr, err := buildStringConstraintRequest(t, flagutil.FlagMeta{MinLength: 2}, &short)
+	require.NoError(t, err)
+	require.NotNil(t, req.Code)
+	assert.Contains(t, stderr, "Warning: invalid value for --code")
+
+	long := "abc"
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{HasMaxLength: true, MaxLength: 2}, &long)
+	require.Error(t, err)
+
+	upper := "A"
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^[a-z]+$"}, &upper)
+	require.Error(t, err)
+}
+
+// A value that fails both minLength (warn-only here) and pattern reports the
+// pattern error alone, without a preceding minLength warning.
+func TestStringFlagConstraintsRejectBeforeMinLengthWarning(t *testing.T) {
+	empty := ""
+	_, stderr, err := buildStringConstraintRequest(t, flagutil.FlagMeta{MinLength: 1, Pattern: "^a+$"}, &empty)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid value for --code: "" does not match the pattern ^a+$`)
+	assert.Empty(t, stderr)
+}
+
+// The generator only emits patterns Go compiles, so one that does not is a
+// generator defect: it fails the request instead of silently skipping
+// validation.
+func TestStringFlagConstraintsRejectInvalidPattern(t *testing.T) {
+	value := "a"
+	_, _, err := buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "("}, &value)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `flag --code declares an invalid pattern "("`)
+}
+
+// A long rejected value is truncated in the message rather than echoed whole.
+func TestStringFlagConstraintsTruncateEchoedValue(t *testing.T) {
+	long := strings.Repeat("é", 100)
+	echoed := `"` + strings.Repeat("é", 64) + `"…`
+
+	_, _, err := buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^a+$"}, &long)
+	require.Error(t, err)
+	assert.Equal(t, "invalid value for --code: "+echoed+" does not match the pattern ^a+$", err.Error())
+
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{HasMaxLength: true, MaxLength: 10}, &long)
+	require.Error(t, err)
+	assert.Equal(t, "invalid value for --code: "+echoed+" is longer than the maximum length 10", err.Error())
+
+	exact := strings.Repeat("b", 64)
+	_, _, err = buildStringConstraintRequest(t, flagutil.FlagMeta{Pattern: "^a+$"}, &exact)
+	require.Error(t, err)
+	assert.Equal(t, `invalid value for --code: "`+exact+`" does not match the pattern ^a+$`, err.Error())
+}

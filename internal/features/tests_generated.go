@@ -150,6 +150,8 @@ func (t Test) String() string {
         return "clierrors-plain-mode-classified"
     case TestClierrorsTypedReasons:
         return "clierrors-typed-reasons"
+    case TestClierrorsUnknownFlagSuggestion:
+        return "clierrors-unknown-flag-suggestion"
     case TestCollectionsContainingNull:
         return "collections-containing-null"
     case TestCollectionsMapInputAcceptsNonDictMapping:
@@ -1646,6 +1648,8 @@ func TestFromString(s string) Test {
         return TestClierrorsPlainModeClassified
     case "clierrors-typed-reasons":
         return TestClierrorsTypedReasons
+    case "clierrors-unknown-flag-suggestion":
+        return TestClierrorsUnknownFlagSuggestion
     case "collections-containing-null":
         return TestCollectionsContainingNull
     case "collections-map-input-accepts-non-dict-mapping":
@@ -3068,6 +3072,7 @@ var testList = []Test{
     TestClierrorsJsonOutputEnvelope,
     TestClierrorsPlainModeClassified,
     TestClierrorsTypedReasons,
+    TestClierrorsUnknownFlagSuggestion,
     TestCollectionsContainingNull,
     TestCollectionsMapInputAcceptsNonDictMapping,
     TestCollectionsParameterAnnotationsAdvertiseIterables,
