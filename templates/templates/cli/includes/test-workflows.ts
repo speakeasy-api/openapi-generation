@@ -264,7 +264,10 @@ function templateCLIStepCode(usageContext: UsageContext): string {
     if (operation.Request.RequestBody) {
       bodyHandled = true;
       const reqBodyField = operation.Request.RequestBody;
-      const flagName = getRequestBodyFlagName(reqBodyField);
+      const flagName =
+        !operation.Request.IsRequestBody && templateHasBodyFlag(operation)
+          ? "body"
+          : getRequestBodyFlagName(reqBodyField);
       const bodyIsExpandable = shouldExpandNestedField(reqBodyField);
       const example = findExampleWithFallback(
         operation.Request.Examples ?? [],

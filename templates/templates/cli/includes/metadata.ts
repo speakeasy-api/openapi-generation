@@ -48,6 +48,15 @@ function operationHasFlagMetadata(op: Operation): boolean {
 }
 registerTemplateFunc("operationHasFlagMetadata", operationHasFlagMetadata);
 
+function getMixedRequestMetadataFields(op: Operation): FieldDef[] {
+  const fields = op.Request.Field.Type.Fields || [];
+  if (!templateHasBodyFlag(op)) return fields;
+  return fields.filter(
+    (field: FieldDef) =>
+      !isEmptyRequestBodyClass(field) || isNullableOptionalWrapped(field),
+  );
+}
+
 // buildOperationMetadataEntries constructs the FlagMeta entry strings for an
 // operation — the single source for both the emitted metadata var and any
 // validation that must mirror it (e.g. auto-shorthand collision checks).
@@ -76,7 +85,7 @@ function buildOperationMetadataEntries(
       return null; // Complex JSON IsRequestBody uses BuildRequestBody, no metadata var
     }
   } else {
-    const fields = op.Request.Field.Type.Fields;
+    const fields = getMixedRequestMetadataFields(op);
     hadCandidateFields = fields.some((f: FieldDef) => !f.Const);
     collectMetadataFromFields(fields, "", "", entries);
   }
@@ -685,12 +694,7 @@ function wholeBodyFlagName(op: Operation): string {
   const bodyFieldPath = getBodyFieldPath(op);
   if (!bodyFieldPath) return "";
   const entries: string[] = [];
-  collectMetadataFromFields(
-    op.Request.Field.Type.Fields || [],
-    "",
-    "",
-    entries,
-  );
+  collectMetadataFromFields(getMixedRequestMetadataFields(op), "", "", entries);
   // Entries are Go literals that always open with the top-level FlagName and
   // FieldPath (buildMetaEntryForField / the union entry); match that prefix so
   // nested variant fields cannot be mistaken for the body field.
@@ -878,12 +882,28 @@ function templateHasBodyFlag(op: Operation): boolean {
 }
 registerTemplateFunc("templateHasBodyFlag", templateHasBodyFlag);
 
+function templateEmptyBodyRequired(op: Operation): boolean {
+  if (!op.Request || op.Request.IsRequestBody || !templateHasBodyFlag(op)) {
+    return false;
+  }
+  return (op.Request.Field.Type.Fields || []).some(
+    (field: FieldDef) =>
+      isEmptyRequestBodyClass(field) && !field.Optional && !field.Nullable,
+  );
+}
+registerTemplateFunc("templateEmptyBodyRequired", templateEmptyBodyRequired);
+
 /**
  * Generate the description for the --body flag.
  */
 function templateBodyFlagDescription(op: Operation): string {
-  let description =
-    "Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.";
+  const hasEmptyBody =
+    op.Request?.RequestBody &&
+    isEmptyRequestBodyClass(op.Request.RequestBody) &&
+    !isNullableOptionalWrapped(op.Request.RequestBody);
+  let description = hasEmptyBody
+    ? "Request body as JSON. Can also be provided via stdin; @path reads a file, @- reads stdin to EOF."
+    : "Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.";
   if (hasBodySchemaForOp(op)) {
     description += " Use --schema to print the exact JSON Schema.";
   }

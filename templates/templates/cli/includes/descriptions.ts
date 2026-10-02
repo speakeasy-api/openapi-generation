@@ -438,8 +438,12 @@ function templateCmdExample(op: Operation): string {
           Value: `--${flagName} '${JSON.stringify(ex.Value)}'`,
           SynthesizedPlaceholder: ex.Synthesized,
         }));
-      } else {
-        pushPart(`--${flagName} '{"key": "value"}'`, true);
+      } else if (!bodyField.Optional && !bodyField.Nullable) {
+        if (isEmptyRequestBodyClass(bodyField)) {
+          pushPart(`--${flagName} '{}'`);
+        } else {
+          pushPart(`--${flagName} '{"key": "value"}'`, true);
+        }
       }
     }
   } else if (op.Request.RequestBody) {
@@ -478,8 +482,12 @@ function templateCmdExample(op: Operation): string {
           Value: `--${flagName} '${JSON.stringify(ex.Value)}'`,
           SynthesizedPlaceholder: ex.Synthesized,
         }));
-      } else {
-        pushPart(`--${flagName} '{"key": "value"}'`, true);
+      } else if (!bodyField.Optional && !bodyField.Nullable) {
+        if (isEmptyRequestBodyClass(bodyField)) {
+          pushPart(`--${flagName} '{}'`);
+        } else {
+          pushPart(`--${flagName} '{"key": "value"}'`, true);
+        }
       }
     } else if (bodyField && isMultipartMixedOp(op)) {
       // Multipart bodies have no whole-body JSON flag. Keep examples runnable

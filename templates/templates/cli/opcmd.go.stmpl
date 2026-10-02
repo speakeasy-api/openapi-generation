@@ -92,7 +92,7 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     {{- if templateHasBodyFlag $op}}
     cmd.Flags().String("body", "", "{{templateBodyFlagDescription $op}}")
     {{- addImport "fmt"}}
-    _ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
+    _ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Required: {{templateEmptyBodyRequired $op}}, Kind: "json", BodyFlag: true})
     cmd.Annotations[flagutil.AnnotationWholeBodyFlag] = "body"
     if err := flagutil.AnnotateBodyFields(cmd, {{templateMetaVarName $op}}, "{{templateBodyFieldPath $op}}", "body"); err != nil {
         return fmt.Errorf("annotate body fields for {{sanitizeCLICommand $op.GetID}}: %w", err)
