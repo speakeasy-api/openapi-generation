@@ -1,0 +1,19 @@
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 902-903
+  h_9630b74bdac540 901
+templates/templates/cli/README.md
+  h_9630b74bdac540 1245
+pkg/generate/snapshots/cli_empty_body_go_test.go
+  h_9630b74bdac540 119-130,242,251-253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f679fb233eeb43df10faeb38fbfe35716046ae0a",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
