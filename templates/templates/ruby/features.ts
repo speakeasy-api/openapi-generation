@@ -463,6 +463,7 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-object-property-params",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "clierrors-unknown-flag-suggestion",
   ].includes(test);
 }
 

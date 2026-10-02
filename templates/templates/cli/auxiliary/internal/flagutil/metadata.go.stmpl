@@ -1249,13 +1249,43 @@ func closestKey(lost string, known []string) string {
 	if len([]rune(target)) >= 4 {
 		limit = 2
 	}
-	best, bestDist := "", limit+1
+	folded := make([]string, len(known))
+	for i, k := range known {
+		folded[i] = fold(k)
+	}
+	matches := nearest(target, folded, limit)
+	if len(matches) == 0 {
+		return ""
+	}
 	for _, k := range known {
-		if d := editDistance(target, fold(k)); d < bestDist {
-			best, bestDist = k, d
+		if fold(k) == matches[0] {
+			return k
 		}
 	}
-	return best
+	return ""
+}
+
+// nearest returns the candidates at the smallest edit distance from target,
+// comparing case-insensitively and keeping candidate order. A negative limit
+// accepts any distance.
+func nearest(target string, candidates []string, limit int) []string {
+	target = strings.ToLower(target)
+	best := -1
+	var matches []string
+	for _, c := range candidates {
+		d := editDistance(target, strings.ToLower(c))
+		if limit >= 0 && d > limit {
+			continue
+		}
+		switch {
+		case best < 0 || d < best:
+			best = d
+			matches = []string{c}
+		case d == best:
+			matches = append(matches, c)
+		}
+	}
+	return matches
 }
 
 func editDistance(a, b string) int {

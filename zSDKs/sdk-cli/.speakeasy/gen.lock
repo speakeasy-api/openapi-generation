@@ -13,7 +13,7 @@ features:
     bigint: 0.0.0
     cliCommands: 0.1.10
     constsAndDefaults: 0.0.0
-    core: 0.7.2
+    core: 0.7.3
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -244,9 +244,9 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:15f8894d427a3857e789b33c4e8567df3ae1c355
+    last_write_checksum: sha1:7a255e684a2ea0367f68a8683b9167c56a0f4235
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:84ec38b794f1003afda01127beafc64464234aeb
+    last_write_checksum: sha1:f2dae1449af37ccf1929900338cffde1f07b1220
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a580b7d4b00cf469415bc53d40f4981d60091423
   internal/interactive/interactive.go:
@@ -264,13 +264,13 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:2b8dd97066dcb3a74cf570023c5eb451a96dca86
   internal/output/classify.go:
-    last_write_checksum: sha1:2916ef06371017a1092310c53d80bd529345324c
+    last_write_checksum: sha1:4f7e580827615d5f3ac6f037a853c7c064fbcfbf
   internal/output/color.go:
     last_write_checksum: sha1:cdf90fa51a6d37854b488f3a2dd9c20e48776274
   internal/output/errortable.go:
     last_write_checksum: sha1:ccc29887b4f88d007edf4c5606a7b97e5adafe2a
   internal/output/exitcodes.go:
-    last_write_checksum: sha1:12c1110a911de4f9b15dc9607cac0b4b9cfd6204
+    last_write_checksum: sha1:bfd6708c5f95c881cf4028051febf6397da69eaf
   internal/output/jq.go:
     last_write_checksum: sha1:4ec4f6429c1d7eaa780a9e33147ba8087b678169
   internal/output/output.go:
