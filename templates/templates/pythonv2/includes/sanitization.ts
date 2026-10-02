@@ -2340,7 +2340,11 @@ function getEnumName(value: string): string {
 
   name = sanitizeName(name);
 
-  return caser().ToSNAKE(name);
+  name = caser().ToSNAKE(name);
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToSNAKE(sanitizeName(name));
+  }
+  return name;
 }
 
 registerTemplateFunc("getEnumName", getEnumName);

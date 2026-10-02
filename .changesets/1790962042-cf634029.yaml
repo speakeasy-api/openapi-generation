@@ -1,0 +1,16 @@
+id: 1790962042-cf634029
+features:
+    - enums
+targets:
+    - csharp
+    - mcp-typescript
+    - php
+    - pythonv2
+    - ruby
+    - typescriptv2
+    - unity
+type: fix
+bump: patch
+description: derive valid enum member names for values that start with an underscore followed by digits
+author: AshGodfrey
+date: "2026-10-02"

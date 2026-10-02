@@ -1131,7 +1131,11 @@ function getEnumName(value) {
 
   name = sanitizeName(name);
 
-  return caser().ToPascal(name);
+  name = caser().ToPascal(name);
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToPascal(sanitizeName(name));
+  }
+  return name;
 }
 
 registerTemplateFunc("getEnumName", getEnumName);

@@ -829,6 +829,9 @@ function getEnumName(value: string): string {
 
   name = sanitizeName(name);
   name = caser().ToSNAKE(name);
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToSNAKE(sanitizeName(name));
+  }
 
   if (rubyReservedKeywords.includes(name)) {
     name += "_VALUE";
