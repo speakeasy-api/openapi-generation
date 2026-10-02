@@ -20,8 +20,7 @@
 interface IntentBodyEntry {
   Key: string; // top-level body key (from a single-segment JSON Pointer)
   Name?: string; // flag name
-  BackingFlag?: string; // generated operation flag for the same body key ("" when it is the declared flag itself)
-  SatisfiedBy?: string[]; // flags that replace a positional (backing flag + whole-body surfaces)
+  SatisfiedBy?: string[];
   Shorthand?: string;
   Summary?: string;
   Type?: string; // string | int | float | bool (string when absent)
@@ -78,7 +77,7 @@ interface IntentCmdCtx {
   SecurityFlags: string; // per-operation security flag registration snippet
   HasMeta: boolean; // whether the operation registers flag metadata
   BodyFlag: string; // flag the run function reads the JSON body from ("" = no body)
-  BodyParamFlag: string; // the operation's whole-body-field flag when its metadata registers one (e.g. "body-param" for a union body), "" otherwise
+
   BodyFieldPath: string; // metadata field path identifying request-body fields
   HasBody: boolean; // the backing operation carries a request body
   RunFunc: string;
@@ -328,51 +327,6 @@ function foldIntentArtifactPath(segments: any[], terminal: any): any {
   return node;
 }
 
-// Returns the operation flag that writes the same top-level JSON body key as
-// a declared positional argument. This mirrors collectMetadataFromFields for
-// direct expandable-body fields; suppressed, nested-expanded, or ambiguous
-// fields intentionally have no fallback surface.
-function intentBackingBodyFlag(
-  op: Operation,
-  key: string,
-  hasMeta: boolean,
-): string {
-  if (!hasMeta || !op.Request?.IsRequestBody || !isRequestBodyExpandable(op)) {
-    return "";
-  }
-
-  const globalFlags = getGlobalFlagNames();
-  const registered = (op.Request.RequestBody.Type.Fields || [])
-    .filter((field: FieldDef) => !field.Const)
-    .map((field: FieldDef) => {
-      const flagName = sanitizeFlagNameWithReserved(field.Name);
-      if (globalFlags.has(flagName)) return null;
-      const registersBeforeExpansion =
-        field.Type.Type.toString() === "union" ||
-        isNullableOptionalWrapped(field);
-      if (!registersBeforeExpansion) {
-        if (getInputClassType(field) === "MultipartRequestBody") return null;
-        if (shouldExpandNestedField(field)) return null;
-      }
-      return {
-        wireName: field.OriginalName || field.Name,
-        flagName,
-      };
-    })
-    .filter(
-      (entry): entry is { wireName: string; flagName: string } =>
-        entry !== null,
-    );
-
-  const matches = registered.filter((entry) => entry.wireName === key);
-  if (matches.length !== 1) return "";
-  const candidate = matches[0].flagName;
-  if (registered.filter((entry) => entry.flagName === candidate).length !== 1) {
-    return "";
-  }
-  return candidate;
-}
-
 interface IntentOpLocation {
   op: Operation;
   pkgPath: string; // slash-joined package path under internal/cli ("" = root)
@@ -485,19 +439,17 @@ function validateIntentParents(manifest: any): void {
 }
 
 // Validates that declared flag names do not collide with the generated flags
-// of the backing operation (params + body-derived flags), which would panic
+// of the backing operation (non-body parameters), which would panic
 // at cobra registration time.
 function validateIntentFlagNames(
   cmdKey: string,
   cmd: any,
   op: Operation,
   bodyFlag: string,
-  bodyParamFlag: string,
-  dispatch: boolean,
 ) {
   const generatedFlags = new Set<string>();
   try {
-    const metadata = dispatch
+    const metadata = bodyFlag
       ? collectOperationNonBodyFlagMeta(op)
       : collectOperationFlagMeta(op);
     for (const flagMeta of metadata) {
@@ -508,7 +460,7 @@ function validateIntentFlagNames(
     // surfaces computed by the same operation renderer below.
   }
   if (bodyFlag) generatedFlags.add(bodyFlag);
-  if (bodyParamFlag) generatedFlags.add(bodyParamFlag);
+
   for (const flag of cmd.Flags || []) {
     if (generatedFlags.has(flag.Name)) {
       throw new Error(
@@ -522,9 +474,12 @@ function validateIntentFlagNames(
   // exactly (operationAutoShorthandOwners shares its entry traversal). A
   // declared shorthand matching one on a registered flag panics pflag at
   // startup, so it must be a generation error (the README promises flag
-  // collisions fail generation). Dispatch commands register only the
-  // NonBodyMeta subset, so owners are restricted to it there.
-  const autoShorthandOwners = operationAutoShorthandOwners(op, dispatch);
+  // collisions fail generation). Intent commands register only the
+  // NonBodyMeta subset, so owners are restricted to it.
+  const autoShorthandOwners = operationAutoShorthandOwners(
+    op,
+    Boolean(bodyFlag),
+  );
   for (const flag of cmd.Flags || []) {
     if (!flag.Shorthand) continue;
     const owner = autoShorthandOwners.get(flag.Shorthand);
@@ -857,9 +812,7 @@ function collectIntentManifest(): IntentManifestCtx {
       args.push({
         Key: key,
         Name: a.Name || "input",
-        BackingFlag: dispatch
-          ? ""
-          : intentBackingBodyFlag(found.op, key, hasMeta),
+
         Summary: a.Summary || "",
         Variadic: Boolean(a.Variadic),
         Required: Boolean(a.Required),
@@ -878,15 +831,10 @@ function collectIntentManifest(): IntentManifestCtx {
       const key = intentPointerKey(f.Bind?.Pointer || "");
       if (!key || !f.Name) continue;
       const declaredFlagName = sanitizeFlagNameWithReserved(f.Name);
-      // The backing operation's own field flag satisfies the same body key;
-      // "" when it is the declared flag itself so checks are not duplicated.
-      const backingFlag = dispatch
-        ? ""
-        : intentBackingBodyFlag(found.op, key, hasMeta);
+
       flags.push({
         Key: key,
         Name: declaredFlagName,
-        BackingFlag: backingFlag === declaredFlagName ? "" : backingFlag,
         Shorthand: f.Shorthand || "",
         Summary: intentFlagHelp(f),
         Type: f.Type || "string",
@@ -973,38 +921,22 @@ function collectIntentManifest(): IntentManifestCtx {
       );
     }
 
-    const bodyParamFlag = dispatch
-      ? ""
-      : hasMeta
-      ? wholeBodyFlagName(found.op)
-      : "";
     validateIntentFlagNames(
       (cmd.Path || []).join(" "),
       cmd,
       found.op,
       bodyFlag,
-      bodyParamFlag,
-      dispatch,
     );
     for (const arg of args) {
       arg.SatisfiedBy = Array.from(
-        new Set(
-          [arg.BackingFlag || "", bodyFlag, bodyParamFlag].filter(
-            (name) => name !== "",
-          ),
-        ),
+        new Set([bodyFlag].filter((name) => name !== "")),
       );
     }
-    // A declared flag's requirement is also satisfied by a supplied whole
-    // body (which carries its bound key) or by the backing operation flag;
-    // interactive prompting reads these as body sources.
+    // A supplied whole body satisfies declared input requirements;
+    // interactive prompting reads it as a body source.
     for (const flag of flags) {
       flag.SatisfiedBy = Array.from(
-        new Set(
-          [flag.BackingFlag || "", bodyFlag, bodyParamFlag].filter(
-            (name) => name !== "",
-          ),
-        ),
+        new Set([bodyFlag].filter((name) => name !== "")),
       );
     }
 
@@ -1286,7 +1218,7 @@ function collectIntentManifest(): IntentManifestCtx {
         : "",
       HasMeta: hasMeta,
       BodyFlag: bodyFlag,
-      BodyParamFlag: bodyParamFlag,
+
       BodyFieldPath: hasMeta ? templateBodyFieldPath(found.op) : "",
       HasBody: Boolean(
         found.op.Request &&
