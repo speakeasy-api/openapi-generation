@@ -500,7 +500,7 @@ function getOperationBodyFieldUsageFlags(op: Operation): UsageFlagDef[] {
       walkFields(op.Request.RequestBody.Type.Fields || [], "");
     }
   } else {
-    walkFields(op.Request.Field.Type.Fields || [], "");
+    walkFields(getMixedRequestMetadataFields(op), "");
   }
 
   return withAutoShorthands(op, flags, false);

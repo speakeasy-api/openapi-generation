@@ -57,6 +57,14 @@ function getInputClassType(field: FieldDef): InputClassType {
 }
 registerTemplateFunc("getInputClassType", getInputClassType);
 
+function isEmptyRequestBodyClass(field: FieldDef): boolean {
+  const inputType = getInputClassType(field);
+  return (
+    (inputType === "JSONRequestBody" || inputType === "FormRequestBody") &&
+    (field.Type.Fields || []).length === 0
+  );
+}
+
 function isNullableOptionalWrapped(field: FieldDef): boolean {
   return Boolean(
     field.Nullable &&

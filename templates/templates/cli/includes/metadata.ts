@@ -48,6 +48,17 @@ function operationHasFlagMetadata(op: Operation): boolean {
 }
 registerTemplateFunc("operationHasFlagMetadata", operationHasFlagMetadata);
 
+function getMixedRequestMetadataFields(op: Operation): FieldDef[] {
+  const fields = op.Request.Field.Type.Fields || [];
+  if (!templateHasBodyFlag(op)) return fields;
+  return fields.filter(
+    (field: FieldDef) =>
+      getInputClassType(field) !== "JSONRequestBody" ||
+      !isEmptyRequestBodyClass(field) ||
+      isNullableOptionalWrapped(field),
+  );
+}
+
 // buildOperationMetadataEntries constructs the FlagMeta entry strings for an
 // operation — the single source for both the emitted metadata var and any
 // validation that must mirror it (e.g. auto-shorthand collision checks).
@@ -78,7 +89,12 @@ function buildOperationMetadataEntries(
   } else {
     const fields = op.Request.Field.Type.Fields;
     hadCandidateFields = fields.some((f: FieldDef) => !f.Const);
-    collectMetadataFromFields(fields, "", "", entries);
+    collectMetadataFromFields(
+      getMixedRequestMetadataFields(op),
+      "",
+      "",
+      entries,
+    );
   }
   return { entries, hadCandidateFields };
 }

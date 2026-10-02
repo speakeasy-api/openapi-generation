@@ -1,0 +1,10 @@
+id: 1790922409-830b3652
+features:
+    - examples
+targets:
+    - cli
+type: fix
+bump: patch
+description: preserve CLI examples for empty and optional request bodies and omit redundant empty JSON body flags
+author: TristanSpeakEasy
+date: "2026-10-02"
