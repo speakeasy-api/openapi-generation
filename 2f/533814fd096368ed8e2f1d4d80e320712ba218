@@ -1,0 +1,14 @@
+templates/templates/cli/README.md
+  h_9630b74bdac540 684
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f533814fd096368ed8e2f1d4d80e320712ba218",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
