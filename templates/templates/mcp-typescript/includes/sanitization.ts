@@ -165,7 +165,7 @@ function sanitizeEnumName(value: string): string {
   name = sanitizeName(name);
 
   name = caser().ToPascal(name);
-  if (/^[0-9]/.test(name)) {
+  if (/^[0-9]/.test(name) && !keepsNumericEnumMemberName(name)) {
     name = caser().ToPascal(sanitizeName(name));
   }
   return name;
@@ -406,13 +406,20 @@ function getEnumName(value) {
   name = sanitizeName(name);
 
   name = caser().ToPascal(name);
-  if (/^[0-9]/.test(name)) {
+  if (/^[0-9]/.test(name) && !keepsNumericEnumMemberName(name)) {
     name = caser().ToPascal(sanitizeName(name));
   }
   return name;
 }
 
 registerTemplateFunc("getEnumName", getEnumName);
+
+function keepsNumericEnumMemberName(name: string): boolean {
+  return (
+    context.Global.Config.NumericEnumMemberNames === "legacy" &&
+    /^[0-9]+(E[0-9]+)?$/.test(name)
+  );
+}
 
 // @ts-ignore
 function getEnumNames(t: TypeDef): string[] {

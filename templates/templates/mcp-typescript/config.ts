@@ -422,6 +422,15 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    numericEnumMemberNames: {
+      Name: "numericEnumMemberNames",
+      Required: false,
+      DefaultValue: newSDK ? "words" : "legacy",
+      Description:
+        'Member names for enum values that are only digits once a leading underscore is removed, such as `_1` or `_2024`. "words" spells the number out (`One`, `TwoThousandAndTwentyFour`); "legacy" (deprecated) keeps the numeric key (`1`, `2024`). Values with letters after the digits (`_1ST`) always become words.',
+      ValidationRegex: /^(words|legacy)$/.source,
+      ValidationMessage: "words or legacy only",
+    },
     validateResponse: {
       Name: "validateResponse",
       Required: false,

@@ -65,6 +65,7 @@ mcp-typescript:
         title: overlayParam1
         type: string
   multipartArrayFormat: standard
+  numericEnumMemberNames: legacy
   outputModelSuffix: output
   packageName: openapi
   responseFormat: envelope
