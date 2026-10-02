@@ -248,7 +248,8 @@ const asyncClearLine = "\r\033[2K"
 func newAsyncProgress(cmd *cobra.Command) *asyncProgress {
 	out := cmd.ErrOrStderr()
 	debug, _ := flagutil.GetBoolFlag(cmd, "debug")
-	return &asyncProgress{out: out, live: isInteractiveTTY(out) && !debug}
+	dryRun, _ := flagutil.GetBoolFlag(cmd, "dry-run")
+	return &asyncProgress{out: out, live: isInteractiveTTY(out) && !debug && !dryRun}
 }
 
 func (p *asyncProgress) update(message string) {

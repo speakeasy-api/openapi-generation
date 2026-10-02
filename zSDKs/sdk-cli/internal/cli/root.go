@@ -21,6 +21,7 @@ import (
 	"openapi/internal/output"
 	"openapi/internal/usage"
 	"os"
+	"os/signal"
 	"strings"
 )
 
@@ -315,8 +316,22 @@ func Execute() error {
 	if err != nil {
 		return err
 	}
+	ctx, stop := InterruptContext(context.Background())
+	defer stop()
 
-	return ExecuteRoot(context.Background(), rootCmd, os.Args[1:])
+	return ExecuteRoot(ctx, rootCmd, os.Args[1:])
+}
+
+// InterruptContext cancels on the first interrupt. The default signal
+// behavior is restored once the context is done, so a second interrupt still
+// terminates a command that does not observe its context.
+func InterruptContext(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, stop := signal.NotifyContext(parent, os.Interrupt)
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
+	return ctx, stop
 }
 
 func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string) error {
@@ -351,7 +366,7 @@ func initExploreCmd(parent *cobra.Command) {
 			if err := interactive.Resolve(cmd).ValidateDirectExplore(); err != nil {
 				return err
 			}
-			return runExplorer(cmd.Root())
+			return runExplorer(cmd.Context(), cmd.Root())
 		},
 	})
 }
@@ -381,7 +396,7 @@ func ExplorerHandoffArgs(root *cobra.Command, selectedArgs []string) []string {
 }
 
 // runExplorer launches the explorer TUI and handles command execution handoff.
-func runExplorer(root *cobra.Command) error {
+func runExplorer(ctx context.Context, root *cobra.Command) error {
 	selectedArgs, err := explorer.Run(root, Version)
 	if err != nil {
 		return err
@@ -394,7 +409,7 @@ func runExplorer(root *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	return ExecuteRoot(context.Background(), freshRoot, ExplorerHandoffArgs(root, selectedArgs))
+	return ExecuteRoot(ctx, freshRoot, ExplorerHandoffArgs(root, selectedArgs))
 }
 
 // globalFlagGroupOrder defines the display order for flag groups in help output.

@@ -127,27 +127,27 @@ func ColorizeJSON(data []byte) []byte {
 	return buf.Bytes()
 }
 
+func terminalFd(w io.Writer) (int, bool) {
+	f, ok := w.(interface{ Fd() uintptr })
+	if !ok {
+		return 0, false
+	}
+	return int(f.Fd()), true
+}
+
 // isInteractiveTTY checks if a writer is connected to an interactive terminal.
 // Returns false for buffers, pipes, and redirected file descriptors.
 func isInteractiveTTY(w io.Writer) bool {
-	type fder interface {
-		Fd() uintptr
-	}
-	if f, ok := w.(fder); ok {
-		return term.IsTerminal(int(f.Fd()))
-	}
-	return false
+	fd, ok := terminalFd(w)
+	return ok && term.IsTerminal(fd)
 }
 
 func terminalWidth(w io.Writer) int {
-	type fder interface {
-		Fd() uintptr
-	}
-	f, ok := w.(fder)
+	fd, ok := terminalFd(w)
 	if !ok {
 		return 0
 	}
-	width, _, err := term.GetSize(int(f.Fd()))
+	width, _, err := term.GetSize(fd)
 	if err != nil {
 		return 0
 	}

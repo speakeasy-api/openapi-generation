@@ -269,6 +269,7 @@ func TestAsyncIntent_TimeoutAndCancelStopPendingPolls(t *testing.T) {
 	err = cli.ExecuteRoot(ctx, root, args)
 	require.Error(t, err)
 	assert.NotContains(t, h.GetStderr(), "CLI_ASYNC_TIMEOUT")
+	assert.Contains(t, h.GetStderr(), "canceled")
 }
 
 func TestAsyncIntent_DryRunDoesNotCallOrRender(t *testing.T) {

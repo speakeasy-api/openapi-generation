@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: rewrite the async poll progress line in place on an interactive terminal and erase it before the final output, instead of printing a new line on every poll
+description: rewrite the async poll progress line in place on an interactive terminal and erase it before the final output, instead of printing a new line on every poll; the root command context is now canceled on interrupt so an interrupted command clears its progress line and exits through the normal error path
 author: AshGodfrey
 date: "2026-10-01"
