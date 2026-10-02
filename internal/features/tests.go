@@ -675,6 +675,7 @@ const (
 	TestClierrorsJsonOutputEnvelope
 	TestClierrorsPlainModeClassified
 	TestClierrorsTypedReasons
+	TestClierrorsUnknownFlagSuggestion
 	TestErrorTaxonomyDeclaredRulesAndOrdering
 	TestErrorTaxonomyEveryClosedTypeHasAHint
 	TestErrorTaxonomyFallbackMessageOmitsRawBody
@@ -712,7 +713,6 @@ const (
 	TestIntentRouteDispatchHelpUsage
 	TestIntentRouteDispatchInteractivePlan
 	TestIntentRouteDispatchOverrideOnce
-	TestIntentsBothBodySurfacesMerged
 	TestIntentsDiscriminatedPartialBody
 	TestIntentsForeignSelectorAgentEnvelope
 	TestIntentsForeignSelectorUsageError
@@ -728,7 +728,7 @@ const (
 	TestPreRequestGeneratedRequiredUnionPathsAndOptionality
 	TestPreRequestGeneratedRequiredUnionPositiveEchoes
 	TestPreRequestRealConnectionFailures
-	TestPreRequestSilentStdinTimesOutOnRootUnion
+	TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
 	TestPreRequestValidationEnvelopeMatrix
 	TestRequestShapeBodyAgentVariant
 	TestRequestShapeBodyAndWholeBodyFlagRejected

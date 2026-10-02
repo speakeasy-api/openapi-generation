@@ -106,6 +106,29 @@ function getJobs(): Job[] {
             {},
           ),
         );
+        jobs.push(
+          createTemplateFileJob(
+            "startup_tty_test.go.stmpl",
+            `${testDirectory}/startup_tty_test.go`,
+            {},
+          ),
+        );
+        jobs.push(
+          createTemplateFileJob(
+            "request_progress_test.go.stmpl",
+            `${testDirectory}/request_progress_test.go`,
+            {},
+          ),
+        );
+        if (isInteractiveModeEnabled()) {
+          jobs.push(
+            createTemplateFileJob(
+              "explorer_tui_test.go.stmpl",
+              "internal/explorer/tui_test.go",
+              {},
+            ),
+          );
+        }
       }
       jobs.push(
         createTemplateFileJob(

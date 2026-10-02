@@ -150,6 +150,8 @@ func (t Test) String() string {
         return "clierrors-plain-mode-classified"
     case TestClierrorsTypedReasons:
         return "clierrors-typed-reasons"
+    case TestClierrorsUnknownFlagSuggestion:
+        return "clierrors-unknown-flag-suggestion"
     case TestCollectionsContainingNull:
         return "collections-containing-null"
     case TestCollectionsMapInputAcceptsNonDictMapping:
@@ -466,8 +468,6 @@ func (t Test) String() string {
         return "intent-route-dispatch-interactive-plan"
     case TestIntentRouteDispatchOverrideOnce:
         return "intent-route-dispatch-override-once"
-    case TestIntentsBothBodySurfacesMerged:
-        return "intents-both-body-surfaces-merged"
     case TestIntentsDiscriminatedPartialBody:
         return "intents-discriminated-partial-body"
     case TestIntentsForeignSelectorAgentEnvelope:
@@ -802,8 +802,8 @@ func (t Test) String() string {
         return "pre-request-generated-required-union-positive-echoes"
     case TestPreRequestRealConnectionFailures:
         return "pre-request-real-connection-failures"
-    case TestPreRequestSilentStdinTimesOutOnRootUnion:
-        return "pre-request-silent-stdin-times-out-on-root-union"
+    case TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody:
+        return "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body"
     case TestPreRequestValidationEnvelopeMatrix:
         return "pre-request-validation-envelope-matrix"
     case TestRawResponseHelpersStripInternalHeader:
@@ -1650,6 +1650,8 @@ func TestFromString(s string) Test {
         return TestClierrorsPlainModeClassified
     case "clierrors-typed-reasons":
         return TestClierrorsTypedReasons
+    case "clierrors-unknown-flag-suggestion":
+        return TestClierrorsUnknownFlagSuggestion
     case "collections-containing-null":
         return TestCollectionsContainingNull
     case "collections-map-input-accepts-non-dict-mapping":
@@ -1966,8 +1968,6 @@ func TestFromString(s string) Test {
         return TestIntentRouteDispatchInteractivePlan
     case "intent-route-dispatch-override-once":
         return TestIntentRouteDispatchOverrideOnce
-    case "intents-both-body-surfaces-merged":
-        return TestIntentsBothBodySurfacesMerged
     case "intents-discriminated-partial-body":
         return TestIntentsDiscriminatedPartialBody
     case "intents-foreign-selector-agent-envelope":
@@ -2302,8 +2302,8 @@ func TestFromString(s string) Test {
         return TestPreRequestGeneratedRequiredUnionPositiveEchoes
     case "pre-request-real-connection-failures":
         return TestPreRequestRealConnectionFailures
-    case "pre-request-silent-stdin-times-out-on-root-union":
-        return TestPreRequestSilentStdinTimesOutOnRootUnion
+    case "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body":
+        return TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
     case "pre-request-validation-envelope-matrix":
         return TestPreRequestValidationEnvelopeMatrix
     case "raw-response-helpers-strip-internal-header":
@@ -3076,6 +3076,7 @@ var testList = []Test{
     TestClierrorsJsonOutputEnvelope,
     TestClierrorsPlainModeClassified,
     TestClierrorsTypedReasons,
+    TestClierrorsUnknownFlagSuggestion,
     TestCollectionsContainingNull,
     TestCollectionsMapInputAcceptsNonDictMapping,
     TestCollectionsParameterAnnotationsAdvertiseIterables,
@@ -3234,7 +3235,6 @@ var testList = []Test{
     TestIntentRouteDispatchHelpUsage,
     TestIntentRouteDispatchInteractivePlan,
     TestIntentRouteDispatchOverrideOnce,
-    TestIntentsBothBodySurfacesMerged,
     TestIntentsDiscriminatedPartialBody,
     TestIntentsForeignSelectorAgentEnvelope,
     TestIntentsForeignSelectorUsageError,
@@ -3402,7 +3402,7 @@ var testList = []Test{
     TestPreRequestGeneratedRequiredUnionPathsAndOptionality,
     TestPreRequestGeneratedRequiredUnionPositiveEchoes,
     TestPreRequestRealConnectionFailures,
-    TestPreRequestSilentStdinTimesOutOnRootUnion,
+    TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody,
     TestPreRequestValidationEnvelopeMatrix,
     TestRawResponseHelpersStripInternalHeader,
     TestReactQueryBuildersKeyDistinctBodies,

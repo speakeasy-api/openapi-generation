@@ -24,7 +24,7 @@ cli say [prompt] [flags]
 
 ```
   -h, --help             help for say
-      --request string   Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
+      --request string   Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
       --schema           Print the exact JSON Schema of the request body and exit
       --stream           Stream events as they arrive (default: true)
 ```

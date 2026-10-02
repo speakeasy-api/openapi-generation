@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/alpkeskin/gotoon"
 	"github.com/spf13/cobra"
@@ -231,6 +232,9 @@ func encodeTOON(content interface{}) (string, error) {
 	toonStr, err := gotoon.Encode(convertNumbers(normalized, toonNumber))
 	if err != nil {
 		return "", fmt.Errorf("failed to encode response as TOON: %w", err)
+	}
+	if toonStr != "" && !strings.HasSuffix(toonStr, "\n") {
+		toonStr += "\n"
 	}
 	return toonStr, nil
 }
@@ -1276,8 +1280,9 @@ func applyJqToTyped(out io.Writer, content interface{}, jqExpr string, colorize,
 
 // printTable renders content as an aligned table.
 // For slices/arrays of structs, each struct becomes a row with struct fields as columns.
-// For single structs, outputs a vertical key-value table.
-// Complex nested fields are skipped.
+// For single structs, outputs a vertical key-value table. Slice-of-struct fields
+// (such as the items of a list response) render as titled sub-tables.
+// Other complex nested fields are skipped.
 func printTable(out io.Writer, content any) error {
 	v := reflect.ValueOf(content)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -1308,21 +1313,20 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 		return nil
 	}
 
-	// Collect column info from the first non-nil element
-	var first reflect.Value
-	for i := 0; i < v.Len() && !first.IsValid(); i++ {
-		elem := v.Index(i)
-		for elem.Kind() == reflect.Ptr || elem.Kind() == reflect.Interface {
-			if elem.IsNil() {
+	// Collect column info from the element type, or the first element when
+	// the slice holds interfaces
+	elemType := derefType(v.Type().Elem())
+	if elemType.Kind() == reflect.Interface {
+		first := v.Index(0)
+		for first.Kind() == reflect.Ptr || first.Kind() == reflect.Interface {
+			if first.IsNil() {
 				break
 			}
-			elem = elem.Elem()
+			first = first.Elem()
 		}
-		if elem.Kind() == reflect.Struct {
-			first = elem
-		}
+		elemType = first.Type()
 	}
-	if !first.IsValid() {
+	if elemType.Kind() != reflect.Struct {
 		// Non-struct slice: one item per line
 		for i := 0; i < v.Len(); i++ {
 			fmt.Fprintln(out, v.Index(i).Interface())
@@ -1330,7 +1334,7 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 		return nil
 	}
 
-	cols := collectTableColumns(first.Type())
+	cols := collectTableColumns(elemType)
 	if len(cols) == 0 {
 		return fmt.Errorf("no displayable columns found")
 	}
@@ -1365,6 +1369,9 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 
 // printTableSingle renders a single struct as a vertical key-value table.
 func printTableSingle(out io.Writer, v reflect.Value) error {
+	if hasTableSections(v.Type()) {
+		return printTableSections(out, v)
+	}
 	cols := collectTableColumns(v.Type())
 	if len(cols) == 0 {
 		return fmt.Errorf("no displayable fields found")
@@ -1375,6 +1382,102 @@ func printTableSingle(out io.Writer, v reflect.Value) error {
 		fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(c.name), formatTableCell(v.Field(c.index)))
 	}
 	return tw.Flush()
+}
+
+// isTableSection reports whether a field of type t is a slice or array of
+// structs with displayable columns, rendered as its own sub-table.
+func isTableSection(t reflect.Type) bool {
+	t = derefType(t)
+	if t.Kind() != reflect.Slice && t.Kind() != reflect.Array {
+		return false
+	}
+	elem := derefType(t.Elem())
+	return elem.Kind() == reflect.Struct && len(collectTableColumns(elem)) > 0
+}
+
+func hasTableSections(t reflect.Type) bool {
+	for i := 0; i < t.NumField(); i++ {
+		if t.Field(i).IsExported() && isTableSection(t.Field(i).Type) {
+			return true
+		}
+	}
+	return false
+}
+
+// printTableSections renders a struct in field order: runs of non-nil scalar
+// fields as key-value blocks and each slice-of-struct field as a titled,
+// indented sub-table.
+func printTableSections(out io.Writer, v reflect.Value) error {
+	t := v.Type()
+	var buf bytes.Buffer
+	var tw *tabwriter.Writer
+	blocks := 0
+	startBlock := func() {
+		if blocks > 0 {
+			fmt.Fprintln(&buf)
+		}
+		blocks++
+	}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if !f.IsExported() {
+			continue
+		}
+		if isTableScalar(f.Type) {
+			if isNilTableValue(v.Field(i)) {
+				continue
+			}
+			if tw == nil {
+				startBlock()
+				tw = newTabWriter(&buf)
+			}
+			fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(tableFieldName(f)), formatTableCell(v.Field(i)))
+			continue
+		}
+		if !isTableSection(f.Type) {
+			continue
+		}
+		if tw != nil {
+			if err := tw.Flush(); err != nil {
+				return err
+			}
+			tw = nil
+		}
+		startBlock()
+		fmt.Fprintln(&buf, strings.ToUpper(tableFieldName(f)))
+		rows := v.Field(i)
+		for rows.Kind() == reflect.Ptr && !rows.IsNil() {
+			rows = rows.Elem()
+		}
+		var section bytes.Buffer
+		if rows.Kind() == reflect.Ptr {
+			fmt.Fprintln(&section, "(empty)")
+		} else if err := printTableRows(&section, rows); err != nil {
+			return err
+		}
+		for _, line := range strings.SplitAfter(section.String(), "\n") {
+			if line != "" {
+				buf.WriteString("  " + line)
+			}
+		}
+	}
+	if tw != nil {
+		if err := tw.Flush(); err != nil {
+			return err
+		}
+	}
+	_, err := out.Write(buf.Bytes())
+	return err
+}
+
+func isNilTableValue(v reflect.Value) bool {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return true
+		}
+		v = v.Elem()
+	}
+	return v.Kind() == reflect.Slice && v.IsNil()
 }
 
 // printTableMap renders a map as a two-column key-value table.
@@ -1404,36 +1507,50 @@ func collectTableColumns(t reflect.Type) []tableColumn {
 		if !f.IsExported() {
 			continue
 		}
-		// Skip complex types: structs, slices-of-structs, maps, funcs, chans
-		ft := f.Type
-		for ft.Kind() == reflect.Ptr {
-			ft = ft.Elem()
-		}
-		switch ft.Kind() {
-		case reflect.Struct, reflect.Map, reflect.Func, reflect.Chan:
+		if !isTableScalar(f.Type) {
 			continue
-		case reflect.Slice, reflect.Array:
-			// Allow slices of primitives (e.g., []string), skip slices of structs
-			elem := ft.Elem()
-			for elem.Kind() == reflect.Ptr {
-				elem = elem.Elem()
-			}
-			if elem.Kind() == reflect.Struct || elem.Kind() == reflect.Map {
-				continue
-			}
 		}
-
-		// Use JSON tag name if available, else field name
-		name := f.Name
-		if tag := f.Tag.Get("json"); tag != "" {
-			parts := strings.Split(tag, ",")
-			if parts[0] != "" && parts[0] != "-" {
-				name = parts[0]
-			}
-		}
-		cols = append(cols, tableColumn{name: name, index: i})
+		cols = append(cols, tableColumn{name: tableFieldName(f), index: i})
 	}
 	return cols
+}
+
+// tableFieldName returns the field's JSON tag name if available, else its Go name.
+func tableFieldName(f reflect.StructField) string {
+	if tag := f.Tag.Get("json"); tag != "" {
+		parts := strings.Split(tag, ",")
+		if parts[0] != "" && parts[0] != "-" {
+			return parts[0]
+		}
+	}
+	return f.Name
+}
+
+var timeType = reflect.TypeOf(time.Time{})
+
+func derefType(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
+}
+
+// isTableScalar reports whether a field of type t fits in a single table cell.
+// Structs other than time.Time, maps, funcs, chans, and slices of structs or
+// maps are skipped.
+func isTableScalar(t reflect.Type) bool {
+	t = derefType(t)
+	switch t.Kind() {
+	case reflect.Struct:
+		return t == timeType
+	case reflect.Map, reflect.Func, reflect.Chan:
+		return false
+	case reflect.Slice, reflect.Array:
+		// Allow slices of primitives (e.g., []string), skip slices of structs
+		elem := derefType(t.Elem())
+		return elem.Kind() != reflect.Struct && elem.Kind() != reflect.Map
+	}
+	return true
 }
 
 // formatTableCell converts a reflect.Value to a string for table display.
@@ -1443,6 +1560,9 @@ func formatTableCell(v reflect.Value) string {
 			return ""
 		}
 		v = v.Elem()
+	}
+	if v.Type() == timeType {
+		return v.Interface().(time.Time).Format(time.RFC3339Nano)
 	}
 
 	switch v.Kind() {

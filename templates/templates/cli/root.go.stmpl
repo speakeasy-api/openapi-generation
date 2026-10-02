@@ -53,11 +53,7 @@ func NewRootCommand() (*cobra.Command, error) {
             {{- end}}
             {{- if eq (helpStyle) "compact"}}
             if compactHelpGlobalRequested(cmd) {
-                out := cmd.OutOrStdout()
-                fmt.Fprintln(out, "Global flags (apply to every command):")
-                fmt.Fprintln(out)
-                _, err := fmt.Fprintln(out, renderGroupedFlags(cmd.Root().PersistentFlags(), "Global Flags"))
-                return err
+                return output.WriteHelp(cmd, "Global flags (apply to every command):\n\n" + renderGroupedFlags(cmd.Root().PersistentFlags(), "Global Flags") + "\n")
             }
             {{- end}}
             return cmd.Help()
@@ -82,6 +78,7 @@ func NewRootCommand() (*cobra.Command, error) {
             }
             output.InitAgentMode(cmd)
             flagutil.SetStdinReadDeadline(output.IsAgentMode())
+            flagutil.ResetStdinSkip()
             return nil
         },
     }
@@ -275,6 +272,7 @@ func NewRootCommand() (*cobra.Command, error) {
     usage.Intercept(rootCmd)
     // Cobra validates Args before any PersistentPreRunE runs.
     output.InstallErrorHandling(rootCmd)
+    output.InstallHelpStyling(rootCmd)
 
     return rootCmd, nil
 }
@@ -809,11 +807,7 @@ func NewRootCommand() (*cobra.Command, error) {
             {{- end}}
             {{- if eq (helpStyle) "compact"}}
             if compactHelpGlobalRequested(cmd) {
-                out := cmd.OutOrStdout()
-                fmt.Fprintln(out, "Global flags (apply to every command):")
-                fmt.Fprintln(out)
-                _, err := fmt.Fprintln(out, renderGroupedFlags(cmd.Root().PersistentFlags(), "Global Flags"))
-                return err
+                return output.WriteHelp(cmd, "Global flags (apply to every command):\n\n" + renderGroupedFlags(cmd.Root().PersistentFlags(), "Global Flags") + "\n")
             }
             {{- end}}
             return cmd.Help()
@@ -838,6 +832,7 @@ func NewRootCommand() (*cobra.Command, error) {
             }
             output.InitAgentMode(cmd)
             flagutil.SetStdinReadDeadline(output.IsAgentMode())
+            flagutil.ResetStdinSkip()
             return nil
         },
     }
@@ -1031,6 +1026,7 @@ func NewRootCommand() (*cobra.Command, error) {
     usage.Intercept(rootCmd)
     // Cobra validates Args before any PersistentPreRunE runs.
     output.InstallErrorHandling(rootCmd)
+    output.InstallHelpStyling(rootCmd)
 
     return rootCmd, nil
 }

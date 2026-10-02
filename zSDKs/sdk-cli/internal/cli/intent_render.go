@@ -29,15 +29,11 @@ func InitIntentRender(parent *cobra.Command) error {
 			"speakeasy_artifact":             "{\"pointer\":[{\"field\":\"steps\"},{\"wild\":true},{\"field\":\"content\"},{\"wild\":true}],\"kind\":\"image\",\"defaultPath\":\"render-{timestamp}-{rand}.{ext}\"}",
 		},
 	}
-	flagutil.RegisterFlags(cmd, renderAssetCmdMeta)
-	flagutil.SetMetaPromptOptional(cmd, renderAssetCmdMeta, false)
-	flagutil.ClearBodyRequirements(cmd, renderAssetCmdMeta, "")
-	_ = flagutil.OverridePromptRequirement(cmd, "prompt", false, false)
-	cmd.Flags().String("body", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
+	intentMeta := flagutil.NonBodyMeta(renderAssetCmdMeta, "")
+	flagutil.RegisterFlags(cmd, intentMeta)
+	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
+	cmd.Flags().String("body", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
 	_ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
-	if err := flagutil.AnnotateBodyFields(cmd, renderAssetCmdMeta, "", "body"); err != nil {
-		return fmt.Errorf("annotate body fields for intent render: %w", err)
-	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
@@ -45,7 +41,7 @@ func InitIntentRender(parent *cobra.Command) error {
 			Name: "prompt", Summary: "Text prompt to render",
 			Required: true, Variadic: true,
 			BodyKey:     "prompt",
-			SatisfiedBy: []string{"prompt", "body"},
+			SatisfiedBy: []string{"body"},
 		},
 	}}); err != nil {
 		return fmt.Errorf("declare interactive arguments for intent render: %w", err)
@@ -91,6 +87,7 @@ func runIntentRenderCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	suppliedBodyFlag := ""
+
 	if flagutil.FlagChanged(cmd, "body") {
 		suppliedBodyFlag = "body"
 	}
@@ -106,18 +103,13 @@ func runIntentRenderCmd(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(cmd.ErrOrStderr(), hint)
 	}
 	if bodySupplied {
-		if flagutil.FlagChanged(cmd, "prompt") {
-			if v, _ := flagutil.GetStringFlag(cmd, "prompt"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--prompt must not be empty"))
-			}
-		}
 		if len(args) > 0 {
 			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "prompt", "the <prompt> argument", strings.Join(args, " ")); err != nil {
 				return flagutil.WithCLIValidation(err)
 			}
 		}
 	}
-	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "prompt") && !flagutil.FlagChanged(cmd, "body") {
+	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "body") {
 		return output.UsageHelpError(cmd, fmt.Errorf("%s", "missing required argument <prompt> (or pass a full request with --body)"))
 	}
 	if !bodySupplied {
@@ -125,16 +117,8 @@ func runIntentRenderCmd(cmd *cobra.Command, args []string) error {
 		if err := json.Unmarshal([]byte(intentRenderPreset.Preset), &body); err != nil {
 			return err
 		}
-		if len(args) == 0 && !flagutil.FlagChanged(cmd, "prompt") {
+		if len(args) == 0 {
 			return flagutil.WithCLIValidation(fmt.Errorf("missing required argument (or pass a full request with --body)"))
-		}
-		// An explicitly empty backing-flag value must not stand in for the
-		// required positional — nor override a supplied one at the request
-		// layer — and bypass required-string validation.
-		if flagutil.FlagChanged(cmd, "prompt") {
-			if v, _ := flagutil.GetStringFlag(cmd, "prompt"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--prompt must not be empty"))
-			}
 		}
 		if len(args) > 0 {
 			body["prompt"] = strings.Join(args, " ")

@@ -502,7 +502,6 @@ function isTestSkipped(test: string): boolean {
     "intent-route-dispatch-help-usage",
     "intent-route-dispatch-interactive-plan",
     "intent-route-dispatch-override-once",
-    "intents-both-body-surfaces-merged",
     "intents-discriminated-partial-body",
     "intents-foreign-selector-agent-envelope",
     "intents-foreign-selector-usage-error",
@@ -518,7 +517,7 @@ function isTestSkipped(test: string): boolean {
     "pre-request-generated-required-union-paths-and-optionality",
     "pre-request-generated-required-union-positive-echoes",
     "pre-request-real-connection-failures",
-    "pre-request-silent-stdin-times-out-on-root-union",
+    "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body",
     "pre-request-validation-envelope-matrix",
     "request-shape-body-agent-variant",
     "request-shape-body-and-whole-body-flag-rejected",
@@ -563,6 +562,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
     "pagination-object-results-page-params",
+    "clierrors-unknown-flag-suggestion",
   ].includes(test);
 }
 

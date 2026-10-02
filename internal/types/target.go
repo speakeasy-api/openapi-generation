@@ -38,15 +38,15 @@ var TargetMaturity = map[string]Maturity{
 }
 
 var MethodologyPaths = map[string]string{
-	"typescript": "/docs/languages/typescript/methodology-ts",
-	"go":         "/docs/languages/golang/methodology-go",
-	"java":       "/docs/languages/java/methodology-java",
-	"python":     "/docs/languages/python/methodology-python",
-	"csharp":     "/docs/languages/csharp/methodology-csharp",
-	"terraform":  "/docs/create-terraform",
-	"php":        "/docs/languages/php/methodology-php",
-	"unity":      "/docs/languages/unity/methodology-unity",
-	"ruby":       "/docs/languages/ruby/methodology-ruby",
+	"cli":        "/docs/cli-generation/create-cli",
+	"typescript": "/docs/sdks/languages/typescript/methodology-ts",
+	"go":         "/docs/sdks/languages/golang/methodology-go",
+	"java":       "/docs/sdks/languages/java/methodology-java",
+	"python":     "/docs/sdks/languages/python/methodology-python",
+	"csharp":     "/docs/sdks/languages/csharp/methodology-csharp",
+	"terraform":  "/docs/terraform/create-terraform",
+	"php":        "/docs/sdks/languages/php/methodology-php",
+	"ruby":       "/docs/sdks/languages/ruby/methodology-ruby",
 }
 
 var SupportLevels = map[string]SupportLevel{
