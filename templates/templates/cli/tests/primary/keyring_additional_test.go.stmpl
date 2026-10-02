@@ -89,10 +89,10 @@ func TestStoreSecretFallback(t *testing.T) {
 	t.Cleanup(config.Reset)
 	t.Cleanup(config.ResetKeyring)
 
-	// Keychain available and writable: stored in keychain, config untouched.
+	// Keychain available and writable: stored in keychain, config fallback cleared.
 	store := map[string]string{}
 	config.SetKeyringBackend(stubKeyring{store: store})
-	var fallback string
+	fallback := "stale"
 	assert.NoError(t, config.StoreSecret("api-key", "secret", &fallback))
 	assert.Equal(t, "", fallback)
 	assert.Equal(t, "secret", store["api-key"])
