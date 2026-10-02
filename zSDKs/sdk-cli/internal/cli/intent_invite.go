@@ -29,15 +29,11 @@ func InitIntentInvite(parent *cobra.Command) error {
 			"speakeasy_command_hints":        "{\"CLI_VALIDATION\":[\"Print the exact request schema with --schema\"]}",
 		},
 	}
-	flagutil.RegisterFlags(cmd, createUserCmdMeta)
-	flagutil.SetMetaPromptOptional(cmd, createUserCmdMeta, false)
-	flagutil.ClearBodyRequirements(cmd, createUserCmdMeta, "")
-	_ = flagutil.OverridePromptRequirement(cmd, "email", false, false)
-	cmd.Flags().String("body", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
+	intentMeta := flagutil.NonBodyMeta(createUserCmdMeta, "")
+	flagutil.RegisterFlags(cmd, intentMeta)
+	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
+	cmd.Flags().String("body", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
 	_ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
-	if err := flagutil.AnnotateBodyFields(cmd, createUserCmdMeta, "", "body"); err != nil {
-		return fmt.Errorf("annotate body fields for intent invite: %w", err)
-	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
 	cmd.Flags().StringP("given-name", "", "", "First name to record")
@@ -45,25 +41,23 @@ func InitIntentInvite(parent *cobra.Command) error {
 		Required: false,
 		Kind:     "string",
 		Order:    0,
-		// A supplied whole body carries this flag's bound key (and the
-		// backing operation flag supplies it directly): no prompt then.
-		BodySources: []string{"first-name", "body"},
+
+		BodySources: []string{"body"},
 	})
 	cmd.Flags().StringP("user-gender", "", "", "Gender to record (e.g. male, female, other)")
 	_ = flagutil.AnnotatePromptFlag(cmd, "user-gender", flagutil.PromptFlagSpec{
 		Required: false,
 		Kind:     "string",
 		Order:    1,
-		// A supplied whole body carries this flag's bound key (and the
-		// backing operation flag supplies it directly): no prompt then.
-		BodySources: []string{"gender", "body"},
+
+		BodySources: []string{"body"},
 	})
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
 		{
 			Name: "email", Summary: "Email address to invite",
 			Required: true, Variadic: true,
 			BodyKey:     "email",
-			SatisfiedBy: []string{"email", "body"},
+			SatisfiedBy: []string{"body"},
 		},
 	}}); err != nil {
 		return fmt.Errorf("declare interactive arguments for intent invite: %w", err)
@@ -99,6 +93,7 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	suppliedBodyFlag := ""
+
 	if flagutil.FlagChanged(cmd, "body") {
 		suppliedBodyFlag = "body"
 	}
@@ -114,11 +109,6 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(cmd.ErrOrStderr(), hint)
 	}
 	if bodySupplied {
-		if flagutil.FlagChanged(cmd, "email") {
-			if v, _ := flagutil.GetStringFlag(cmd, "email"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--email must not be empty"))
-			}
-		}
 		if len(args) > 0 {
 			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "email", "the <email> argument", strings.Join(args, " ")); err != nil {
 				return flagutil.WithCLIValidation(err)
@@ -137,7 +127,7 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "email") && !flagutil.FlagChanged(cmd, "body") && !flagutil.FlagChanged(cmd, "given-name") && !flagutil.FlagChanged(cmd, "first-name") && !flagutil.FlagChanged(cmd, "user-gender") && !flagutil.FlagChanged(cmd, "gender") {
+	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "body") && !flagutil.FlagChanged(cmd, "given-name") && !flagutil.FlagChanged(cmd, "user-gender") {
 		return output.UsageHelpError(cmd, fmt.Errorf("%s", "missing required argument <email> (or pass a full request with --body)"))
 	}
 	if !bodySupplied {
@@ -145,16 +135,8 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 		if err := json.Unmarshal([]byte(intentInvitePreset.Preset), &body); err != nil {
 			return err
 		}
-		if len(args) == 0 && !flagutil.FlagChanged(cmd, "email") {
+		if len(args) == 0 {
 			return flagutil.WithCLIValidation(fmt.Errorf("missing required argument (or pass a full request with --body)"))
-		}
-		// An explicitly empty backing-flag value must not stand in for the
-		// required positional — nor override a supplied one at the request
-		// layer — and bypass required-string validation.
-		if flagutil.FlagChanged(cmd, "email") {
-			if v, _ := flagutil.GetStringFlag(cmd, "email"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--email must not be empty"))
-			}
 		}
 		if len(args) > 0 {
 			body["email"] = strings.Join(args, " ")

@@ -1,0 +1,10 @@
+id: 1790900058-eee5daf2
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: omit inherited body flags from intent commands
+author: TristanSpeakEasy
+date: "2026-10-02"
