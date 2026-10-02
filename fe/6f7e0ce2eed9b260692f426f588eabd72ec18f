@@ -1,0 +1,32 @@
+templates/templates/cli/auxiliary/internal/config/config.go.stmpl
+  h_9630b74bdac540 155-156,160-162,170-171
+  h_9630b74bdac540 172
+templates/templates/cli/whoami.go.stmpl
+  h_9630b74bdac540 23
+templates/templates/cli/README.md
+  h_9630b74bdac540 1188,1193,1195
+  h_9630b74bdac540 1194
+templates/templates/cli/tests/primary/configure_test.go.stmpl
+  h_9630b74bdac540 54-141
+.changesets/1790903048-d99c727b.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 221,229
+zSDKs/sdk-cli/docs/cli_whoami.md
+  h_9630b74bdac540 14
+zSDKs/sdk-cli/internal/cli/whoami.go
+  h_9630b74bdac540 25
+zSDKs/sdk-cli/internal/config/config.go
+  h_9630b74bdac540 210-211,215-217,225-227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe6f7e0ce2eed9b260692f426f588eabd72ec18f",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
