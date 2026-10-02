@@ -1,0 +1,18 @@
+templates/templates/cli/request_progress_test.go.stmpl
+  h_9630b74bdac540 90,112,123
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 1089
+zSDKs/sdk-cli/tests/request_progress_test.go
+  h_9630b74bdac540 92,114,125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3cdb3bdc1930751b0b9ccb48b2b2ddbea04f3bec",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
