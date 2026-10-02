@@ -113,6 +113,13 @@ function getJobs(): Job[] {
             {},
           ),
         );
+        jobs.push(
+          createTemplateFileJob(
+            "request_progress_test.go.stmpl",
+            `${testDirectory}/request_progress_test.go`,
+            {},
+          ),
+        );
         if (isInteractiveModeEnabled()) {
           jobs.push(
             createTemplateFileJob(

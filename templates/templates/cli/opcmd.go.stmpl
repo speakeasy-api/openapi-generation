@@ -328,7 +328,14 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
         sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
     }
     {{- end}}
+    {{- if not (operationHasDeferredBody $op)}}
+    stopProgress := output.StartRequestProgress(cmd)
+    defer stopProgress()
+    {{- end}}
     res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+    {{- if not (operationHasDeferredBody $op)}}
+    stopProgress()
+    {{- end}}
     if err != nil {
         return output.Error(cmd, err)
     }
@@ -471,7 +478,17 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
         sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
     }
     {{- end}}
+    {{- if not (operationHasDeferredBody $op)}}
+    stopProgress := func() {}
+    if !asyncIntent {
+        stopProgress = output.StartRequestProgress(cmd)
+    }
+    defer stopProgress()
+    {{- end}}
     res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
+    {{- if not (operationHasDeferredBody $op)}}
+    stopProgress()
+    {{- end}}
     if err != nil {
         return nil, output.Error(cmd, err)
     }
