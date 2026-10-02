@@ -898,7 +898,9 @@ registerTemplateFunc("templateEmptyBodyRequired", templateEmptyBodyRequired);
  */
 function templateBodyFlagDescription(op: Operation): string {
   const hasEmptyBody =
-    op.Request?.RequestBody && isEmptyRequestBodyClass(op.Request.RequestBody);
+    op.Request?.RequestBody &&
+    isEmptyRequestBodyClass(op.Request.RequestBody) &&
+    !isNullableOptionalWrapped(op.Request.RequestBody);
   let description = hasEmptyBody
     ? "Request body as JSON. Can also be provided via stdin; @path reads a file, @- reads stdin to EOF."
     : "Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.";

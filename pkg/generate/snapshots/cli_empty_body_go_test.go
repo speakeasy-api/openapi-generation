@@ -116,6 +116,18 @@ paths:
               type: object
               nullable: true
               properties: {}
+  /widgets/{id}/nullableoptional:
+    post:
+      <<: *mixedOperation
+      operationId: nullableoptional
+      description: An optional nullable empty object body preserves the distinction between omission and null.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              properties: {}
   /widgets/standalonenullable:
     post:
       <<: *mixedOperation
@@ -227,9 +239,7 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 						command := readCommand(name)
 						require.Regexp(t, examplePattern, command)
 						require.Equal(t, "  widget-cli widgets "+name+" --id widget_123 --body '{}'", examplePattern.FindStringSubmatch(command)[1])
-					}
-					for _, name := range []string{"required", "formrequired"} {
-						require.Contains(t, readCommand(name), `PromptFlagSpec{Required: true, Kind: "json", BodyFlag: true}`)
+						require.Contains(t, command, `PromptFlagSpec{Required: true, Kind: "json", BodyFlag: true}`)
 					}
 					standaloneOptional := readCommand("standaloneoptional")
 					require.Regexp(t, examplePattern, standaloneOptional)
@@ -238,6 +248,9 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 					require.Regexp(t, examplePattern, standaloneNullable)
 					require.Equal(t, "  widget-cli widgets standalonenullable", examplePattern.FindStringSubmatch(standaloneNullable)[1])
 					require.NotContains(t, readCommand("optional"), "alternative to individual flags")
+					nullableOptional := readCommand("nullableoptional")
+					require.Contains(t, nullableOptional, "Kind: flagutil.FlagKindJSON")
+					require.Contains(t, nullableOptional, "alternative to individual flags")
 					standaloneRequired := readCommand("standalonerequired")
 					require.Contains(t, standaloneRequired, "--empty-body '{}'")
 					for _, command := range []string{standaloneOptional, standaloneRequired} {
