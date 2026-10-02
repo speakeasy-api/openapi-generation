@@ -1361,11 +1361,12 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 			}
 			row = row.Elem()
 		}
+		if row.Kind() != reflect.Struct || row.Type() != elemType {
+			continue
+		}
 		vals := make([]string, len(cols))
-		if row.Kind() == reflect.Struct && row.Type() == elemType {
-			for j, c := range cols {
-				vals[j] = formatTableCell(row.Field(c.index))
-			}
+		for j, c := range cols {
+			vals[j] = formatTableCell(row.Field(c.index))
 		}
 		fmt.Fprintln(tw, strings.Join(vals, "\t"))
 	}
