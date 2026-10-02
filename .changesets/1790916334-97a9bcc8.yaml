@@ -1,0 +1,10 @@
+id: 1790916334-97a9bcc8
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: improve output key contrast and style help headings
+author: TristanSpeakEasy
+date: "2026-10-02"

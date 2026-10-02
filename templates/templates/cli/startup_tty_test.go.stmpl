@@ -34,7 +34,11 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		os.Exit(1)
 	}
-	if err := cli.ExecuteRoot(context.Background(), root, []string{"version"}); err != nil {
+	args := os.Args[2:]
+	if len(args) == 0 {
+		args = []string{"version"}
+	}
+	if err := cli.ExecuteRoot(context.Background(), root, args); err != nil {
 		os.Exit(1)
 	}
 	os.Exit(0)
@@ -47,44 +51,52 @@ func TestMain(m *testing.M) {
 // the reply, so the test asserts neither sequence is written and that the
 // command exits promptly.
 func TestStartupDoesNotQueryTerminal(t *testing.T) {
-	exe, err := os.Executable()
-	require.NoError(t, err)
+	for _, command := range []string{"version", "--help"} {
+		t.Run(command, func(t *testing.T) {
+			exe, err := os.Executable()
+			require.NoError(t, err)
 
-	cmd := exec.Command(exe, startupProbeArg)
-	cmd.Env = append(environWithout("CI", "TERM"), "TERM=xterm-256color")
-	ptmx, err := pty.Start(cmd)
-	require.NoError(t, err)
-	defer ptmx.Close()
+			cmd := exec.Command(exe, startupProbeArg, command, "--agent-mode=false")
+			cmd.Env = append(environWithout("CI", "TERM", "NO_COLOR", "FORCE_COLOR"), "TERM=xterm-256color")
+			ptmx, err := pty.Start(cmd)
+			require.NoError(t, err)
+			defer ptmx.Close()
 
-	var out bytes.Buffer
-	copied := make(chan struct{})
-	go func() {
-		_, _ = io.Copy(&out, ptmx)
-		close(copied)
-	}()
+			var out bytes.Buffer
+			copied := make(chan struct{})
+			go func() {
+				_, _ = io.Copy(&out, ptmx)
+				close(copied)
+			}()
 
-	start := time.Now()
-	waited := make(chan error, 1)
-	go func() { waited <- cmd.Wait() }()
-	select {
-	case err := <-waited:
-		require.NoError(t, err)
-	case <-time.After(15 * time.Second):
-		_ = cmd.Process.Kill()
-		t.Fatal("version did not exit within 15s on an unanswered pseudo-terminal")
+			start := time.Now()
+			waited := make(chan error, 1)
+			go func() { waited <- cmd.Wait() }()
+			select {
+			case err := <-waited:
+				require.NoError(t, err)
+			case <-time.After(15 * time.Second):
+				_ = cmd.Process.Kill()
+				t.Fatal("version did not exit within 15s on an unanswered pseudo-terminal")
+			}
+			elapsed := time.Since(start)
+			select {
+			case <-copied:
+			case <-time.After(5 * time.Second):
+				t.Fatal("pseudo-terminal output did not drain")
+			}
+
+			output := out.String()
+			require.NotContains(t, output, "\x1b]11;?", "startup emitted a background-color query")
+			require.NotContains(t, output, "\x1b[6n", "startup emitted a cursor-position query")
+			if command == "version" {
+				require.Contains(t, output, cli.Version)
+			} else {
+				require.Contains(t, output, "\033[1;38;2;56;189;248mUsage:\033[0m")
+			}
+			require.Less(t, elapsed, 4*time.Second, "startup stalled waiting on the terminal")
+		})
 	}
-	elapsed := time.Since(start)
-	select {
-	case <-copied:
-	case <-time.After(5 * time.Second):
-		t.Fatal("pseudo-terminal output did not drain")
-	}
-
-	output := out.String()
-	require.NotContains(t, output, "\x1b]11;?", "startup emitted a background-color query")
-	require.NotContains(t, output, "\x1b[6n", "startup emitted a cursor-position query")
-	require.Contains(t, output, cli.Version)
-	require.Less(t, elapsed, 4*time.Second, "startup stalled waiting on the terminal")
 }
 
 func environWithout(names ...string) []string {

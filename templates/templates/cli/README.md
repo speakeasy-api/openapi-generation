@@ -595,7 +595,7 @@ Three output paths:
 
 3. **jq filtering** (`--jq`): Applies a [gojq](https://github.com/itchyny/gojq) expression to the JSON output. Overrides `--output-format` since the result is always JSON — except under `--raw-output` (jq `-r` semantics: string results are written as raw text plus a newline, unquoted, unescaped, never colorized; non-string results stay JSON), so `--jq '.data' --raw-output | base64 -d > image.png` works. The flag's default is the `cli.jqRawOutput` gen.yaml key (default `false`); it threads through `outputJqResults` (single results, `--include-headers`, artifacts) and `outputOneItem` (streams, `--all` pagination).
 
-**Color default** (`cli.defaultColor` gen.yaml key: `auto` | `always` | `never`, default `auto`): the default value of `--color`. `never` makes uncolored ("raw") output the default so redirected/piped bytes are always clean; `--color`, `NO_COLOR`/`FORCE_COLOR`, and agent mode (never colorized) still apply.
+**Color default** (`cli.defaultColor` gen.yaml key: `auto` | `always` | `never`, default `auto`): the default value of `--color`. `never` makes uncolored ("raw") output the default so redirected/piped bytes are always clean; `--color`, `NO_COLOR`/`FORCE_COLOR`, and agent mode (never colorized) still apply. JSON and pretty-output keys use bold sky blue (`#38BDF8`), matching the default interactive accent rather than terminal dark blue.
 
 Error output is written to stderr so it never mixes with result data on stdout. `Classify(cmd, err)` runs once for every error in every configuration; renderers and exit-code policy consume the returned `Classification`, and `ClassificationFrom(err)` retrieves the retained decision. A compatibility-mode CLI error that main must still print uses a non-rendered classification carrier; every error printed by the output layer uses a `Rendered()` sentinel carrying the same value, preventing double printing.
 
@@ -1217,7 +1217,9 @@ When a secret is stored in the keychain it is **not** written to the config file
 
 ### Usage Schema & Grouped Help
 
-**Files**: `usage.go.stmpl`, `includes/usage.ts`, `root.go.stmpl`
+**Files**: `usage.go.stmpl`, `includes/usage.ts`, `root.go.stmpl`, `auxiliary/internal/output/color.go.stmpl`
+
+Runtime help section headings use the same bold sky-blue accent as output keys. This applies to full and compact `--help`, the `help` command, and compact `--help-global`; descriptions, flag alignment and examples are unchanged. In `auto` mode, help checks its actual output writer, including stderr when help accompanies a usage error. Redirected help stays plain unless `--color=always` or `FORCE_COLOR` forces colour. `--color=never` suppresses it; `NO_COLOR` wins over `FORCE_COLOR` in auto mode, while an explicit `always` overrides both environment settings. Agent mode always suppresses colour, including help that bypasses Cobra's pre-run hooks. `--usage` and generated Markdown docs remain unstyled.
 
 The generated CLI exposes two documentation-oriented interfaces beyond normal Cobra help:
 
