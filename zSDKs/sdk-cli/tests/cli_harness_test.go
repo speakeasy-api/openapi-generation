@@ -419,6 +419,21 @@ func TestExploreGuardsBeforeBubbleTea(t *testing.T) {
 			h := NewCLITestHarness(t)
 			err := h.RunPolicyDefault(args)
 			require.EqualError(t, err, "explore conflicts with --no-interactive/--interactive=false")
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			assert.Contains(t, h.GetStderr(), "Error (validation_error):")
+			assert.Contains(t, h.GetStderr(), "CLI_VALIDATION")
+			assert.NotContains(t, h.GetStderr(), "Re-run with --debug")
+		})
+		t.Run(name+"-json", func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunPolicyDefault(append(args, "--output-format", "json"))
+			require.EqualError(t, err, "explore conflicts with --no-interactive/--interactive=false")
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			var envelope map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope))
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+			assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
 		})
 	}
 
@@ -426,6 +441,7 @@ func TestExploreGuardsBeforeBubbleTea(t *testing.T) {
 		h := NewCLITestHarness(t)
 		err := h.RunPolicyDefault([]string{"explore"})
 		require.EqualError(t, err, "explore requires an interactive terminal (stdin and stdout must be a TTY)")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
 	})
 
 	t.Run("usage", func(t *testing.T) {

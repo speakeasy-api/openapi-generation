@@ -11,7 +11,7 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.1.7
+    cliCommands: 0.1.9
     constsAndDefaults: 0.0.0
     core: 0.6.4
     customSecuritySchemes: 0.0.0
@@ -46,7 +46,7 @@ trackedFiles:
   .gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f
   .github/workflows/release.yaml:
-    last_write_checksum: sha1:e2f065141111bf701e1d37427ef7538c648da4d5
+    last_write_checksum: sha1:3dc7603599c589ce5f9f84fad1e7026eb1197583
   .goreleaser.yaml:
     last_write_checksum: sha1:69914b6cd4d24ebd63200ecc2dd9747010268adb
   USAGE.md:
@@ -252,7 +252,7 @@ trackedFiles:
   internal/interactive/interactive.go:
     last_write_checksum: sha1:ba6979695c50a3c2385bc74a4676dfe88814a984
   internal/interactive/policy.go:
-    last_write_checksum: sha1:a41dcd183c9d08a4b14040f339082b6623cfa080
+    last_write_checksum: sha1:c4c7786ab58cfc1daffb0aa0fec4284e8a2ef9dc
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:07c5ea0f60122e87e393168ad2f84b1ee7f2c7a7
   internal/output/agentmode.go:
@@ -652,7 +652,7 @@ trackedFiles:
   tests/async_test.go:
     last_write_checksum: sha1:824dea6c0e301b26cd2ce25f4f9cf0fe3a633157
   tests/cli_harness_test.go:
-    last_write_checksum: sha1:3c0676c46169e7011233806154d2db1e0bd22af1
+    last_write_checksum: sha1:f326153d72804e7270ef3e91c6c195650a045e4b
   tests/common_helpers_test.go:
     last_write_checksum: sha1:02f189ac10117b746a3691b30c87fecf518292fa
   tests/conflicts_test.go:
