@@ -103,6 +103,33 @@ paths:
           application/json:
             schema:
               type: string
+  /widgets/{id}/nullablerequired:
+    post:
+      <<: *mixedOperation
+      operationId: nullablerequired
+      description: A nullable empty object body does not need an invented payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              properties: {}
+  /widgets/standalonenullable:
+    post:
+      <<: *mixedOperation
+      operationId: standalonenullable
+      description: A nullable empty object body is the only operation input.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              nullable: true
+              properties: {}
   /widgets/{id}/maprequired:
     post:
       <<: *mixedOperation
@@ -177,21 +204,21 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 						return string(content)
 					}
 					examplePattern := regexp.MustCompile(`Example:\s*"([^"\n]*)"`)
-					for _, name := range []string{"optional", "optionalexample", "scalaroptional", "formoptional"} {
+					for _, name := range []string{"optional", "optionalexample", "scalaroptional", "formoptional", "nullablerequired"} {
 						command := readCommand(name)
 						require.Regexp(t, examplePattern, command)
 						require.Equal(t, "  widget-cli widgets "+name+" --id widget_123", examplePattern.FindStringSubmatch(command)[1])
 					}
-					for _, name := range []string{"optional", "optionalexample", "required"} {
+					for _, name := range []string{"optional", "optionalexample", "required", "formoptional", "formrequired"} {
 						command := readCommand(name)
 						require.Contains(t, command, `cmd.Flags().String("body",`)
 						require.NotContains(t, command, `FlagName: "body-param"`)
 					}
 					usageSource, err := os.ReadFile(filepath.Join(outputDir, "internal", "usage", "schema.go"))
 					require.NoError(t, err)
-					usagePattern := regexp.MustCompile(`"widgets (optional|optionalexample|required)":\s*"(.*)"`)
+					usagePattern := regexp.MustCompile(`"widgets (optional|optionalexample|required|formoptional|formrequired)":\s*"(.*)"`)
 					usageSchemas := usagePattern.FindAllStringSubmatch(string(usageSource), -1)
-					require.Len(t, usageSchemas, 3)
+					require.Len(t, usageSchemas, 5)
 					for _, schema := range usageSchemas {
 						require.Contains(t, schema[2], "--body <body>")
 						require.NotContains(t, schema[2], "--body-param")
@@ -201,8 +228,16 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 						require.Regexp(t, examplePattern, command)
 						require.Equal(t, "  widget-cli widgets "+name+" --id widget_123 --body '{}'", examplePattern.FindStringSubmatch(command)[1])
 					}
+					for _, name := range []string{"required", "formrequired"} {
+						require.Contains(t, readCommand(name), `PromptFlagSpec{Required: true, Kind: "json", BodyFlag: true}`)
+					}
 					standaloneOptional := readCommand("standaloneoptional")
+					require.Regexp(t, examplePattern, standaloneOptional)
 					require.Equal(t, "  widget-cli widgets standaloneoptional", examplePattern.FindStringSubmatch(standaloneOptional)[1])
+					standaloneNullable := readCommand("standalonenullable")
+					require.Regexp(t, examplePattern, standaloneNullable)
+					require.Equal(t, "  widget-cli widgets standalonenullable", examplePattern.FindStringSubmatch(standaloneNullable)[1])
+					require.NotContains(t, readCommand("optional"), "alternative to individual flags")
 					standaloneRequired := readCommand("standalonerequired")
 					require.Contains(t, standaloneRequired, "--empty-body '{}'")
 					for _, command := range []string{standaloneOptional, standaloneRequired} {

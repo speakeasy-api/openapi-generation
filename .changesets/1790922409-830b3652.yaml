@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: preserve CLI examples for empty and optional request bodies and omit redundant empty JSON body flags
+description: preserve CLI examples for empty and optional request bodies, omit redundant empty JSON/form body flags, and retain required body validation
 author: TristanSpeakEasy
 date: "2026-10-02"

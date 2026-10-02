@@ -657,8 +657,16 @@ func BuildRequest[T any](cmd *cobra.Command, meta []FlagMeta, bodyFieldPath stri
 	v := reflect.ValueOf(&req).Elem()
 	bodyPrePopulated := false
 	hasRequestBody := bodyFieldPath != "" || bodyFlagName != "" || !isJSONSerialized(v.Type())
+	bodyRequired := false
+	if flag := cmd.Flags().Lookup(bodyFlagName); flag != nil {
+		values := flag.Annotations[AnnotationRequired]
+		bodyRequired = len(values) > 0 && values[0] == "true"
+	}
 
 	decodeBody := func(data []byte, source string) error {
+		if bodyRequired && bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+			return WithCLIValidation(fmt.Errorf("invalid value for --%s: null; the body is required", bodyFlagName))
+		}
 		u := bodyUnionMeta(meta, bodyFieldPath)
 		if bodyFieldPath != "" {
 			bodyField, err := navigateToField(v, bodyFieldPath)
@@ -716,6 +724,10 @@ func BuildRequest[T any](cmd *cobra.Command, meta []FlagMeta, bodyFieldPath stri
 			}
 			bodyPrePopulated = true
 		}
+	}
+
+	if bodyRequired && !bodyPrePopulated {
+		return nil, &MissingRequiredFlagError{FlagName: bodyFlagName, Detail: "(or provide via stdin)"}
 	}
 
 	// When body provided via --body flag or stdin, relax Required checks for body fields

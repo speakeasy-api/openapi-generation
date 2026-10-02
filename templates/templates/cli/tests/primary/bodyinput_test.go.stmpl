@@ -3,15 +3,56 @@ package tests
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"{{getGolangPackage}}/internal/flagutil"
 	"{{getGolangPackage}}/internal/output"
 )
+
+func TestRequiredEmptyMixedBody(t *testing.T) {
+	type request struct {
+		Body struct{} `json:"body"`
+	}
+	for _, tc := range []struct {
+		name      string
+		body      string
+		setBody   bool
+		stdin     string
+		required  bool
+		wantError bool
+	}{
+		{name: "required omitted", required: true, wantError: true},
+		{name: "required flag", body: "{}", setBody: true, required: true},
+		{name: "required stdin", stdin: "{}", required: true},
+		{name: "required empty flag", setBody: true, required: true, wantError: true},
+		{name: "required null flag", body: "null", setBody: true, required: true, wantError: true},
+		{name: "required null stdin", stdin: "null", required: true, wantError: true},
+		{name: "optional omitted"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.SetIn(strings.NewReader(tc.stdin))
+			cmd.Flags().String("body", "", "Request body as JSON")
+			require.NoError(t, flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Required: tc.required, Kind: "json", BodyFlag: true}))
+			if tc.setBody {
+				require.NoError(t, cmd.Flags().Set("body", tc.body))
+			}
+			_, err := flagutil.BuildRequest[request](cmd, nil, "Body", "body")
+			if tc.wantError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "--body")
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 // withSilentStdinPipe swaps os.Stdin for the read end of a pipe whose write
 // end stays open and never produces data — the shape agent runtimes and exec

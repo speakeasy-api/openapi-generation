@@ -438,7 +438,7 @@ function templateCmdExample(op: Operation): string {
           Value: `--${flagName} '${JSON.stringify(ex.Value)}'`,
           SynthesizedPlaceholder: ex.Synthesized,
         }));
-      } else if (!bodyField.Optional) {
+      } else if (!bodyField.Optional && !bodyField.Nullable) {
         if (isEmptyRequestBodyClass(bodyField)) {
           pushPart(`--${flagName} '{}'`);
         } else {
@@ -482,7 +482,7 @@ function templateCmdExample(op: Operation): string {
           Value: `--${flagName} '${JSON.stringify(ex.Value)}'`,
           SynthesizedPlaceholder: ex.Synthesized,
         }));
-      } else if (!bodyField.Optional) {
+      } else if (!bodyField.Optional && !bodyField.Nullable) {
         if (isEmptyRequestBodyClass(bodyField)) {
           pushPart(`--${flagName} '{}'`);
         } else {

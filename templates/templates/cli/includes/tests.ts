@@ -1132,6 +1132,28 @@ function templateCLIArgs(usageContext: UsageContext): string {
           continue;
         }
 
+        if (
+          isEmptyRequestBodyClass(field) &&
+          templateHasBodyFlag(operation) &&
+          !isNullableOptionalWrapped(field)
+        ) {
+          if (
+            bodyExamplePayload !== undefined ||
+            (!field.Optional && !field.Nullable)
+          ) {
+            pushFlagArg(
+              args,
+              "body",
+              goStringLiteral(
+                JSON.stringify(
+                  bodyExamplePayload === undefined ? {} : bodyExamplePayload,
+                ),
+              ),
+            );
+          }
+          continue;
+        }
+
         // Check if this is a body struct field that gets expanded into nested flags
         // (no param annotation + class type + expanded by CLI command via shouldExpandNestedField)
         // Also handle multipart body fields which are expanded via collectMultipartMetadata

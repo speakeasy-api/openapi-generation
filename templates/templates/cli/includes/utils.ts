@@ -58,10 +58,17 @@ function getInputClassType(field: FieldDef): InputClassType {
 registerTemplateFunc("getInputClassType", getInputClassType);
 
 function isEmptyRequestBodyClass(field: FieldDef): boolean {
-  const inputType = getInputClassType(field);
+  if (
+    field.Type.Type.toString() !== "class" ||
+    (field.Type.Fields || []).length !== 0 ||
+    !field.Annotations?.Has("request")
+  ) {
+    return false;
+  }
+  const requestAnno = field.Annotations.Get("request") as RequestAnnotation;
   return (
-    (inputType === "JSONRequestBody" || inputType === "FormRequestBody") &&
-    (field.Type.Fields || []).length === 0
+    matchContentType(requestAnno.MediaType, "application/json") ||
+    matchContentType(requestAnno.MediaType, "application/x-www-form-urlencoded")
   );
 }
 
