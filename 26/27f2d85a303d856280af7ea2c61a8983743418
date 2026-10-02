@@ -1,0 +1,24 @@
+templates/templates/cli/tests/primary/catalog_test.go.stmpl
+  h_9630b74bdac540 5,12-88,92-102,108-109,111-131
+templates/templates/cli/includes/templating.ts
+  h_9630b74bdac540 625-627,636-637,681-686,690-702,706-714,719-752,758-770
+tests/specs/fragments/primary/cli-catalog-options.yaml
+  h_9630b74bdac540 1-124
+templates/templates/cli/catalog.go.stmpl
+  h_9630b74bdac540 49,56-62,64-70
+templates/templates/cli/README.md
+  h_9630b74bdac540 23,580-605
+.changesets/1790909966-deaee7f1.yaml
+  h_9630b74bdac540 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2627f2d85a303d856280af7ea2c61a8983743418",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
