@@ -1,0 +1,37 @@
+templates/templates/cli/root.go.stmpl
+  h_9630b74bdac540 56,274,809,1027
+templates/templates/cli/README.md
+  h_9630b74bdac540 598,1220,1222
+  h_9630b74bdac540 1221
+templates/templates/cli/startup_tty_test.go.stmpl
+  h_9630b74bdac540 37-41,54-55,98-99
+  h_9630b74bdac540 56-57,59-63,65-70,72-87,89-97
+templates/templates/cli/auxiliary/internal/output/color.go.stmpl
+  h_9630b74bdac540 5-6,8,10,12-13,19,29-32,50-57,59-91,93-94
+  h_9630b74bdac540 58
+templates/templates/cli/cli_harness_test.go.stmpl
+  h_9630b74bdac540 38-123
+.changesets/1790916334-97a9bcc8.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 185,269,655,1093
+zSDKs/sdk-cli/internal/cli/root.go
+  h_9630b74bdac540 308
+zSDKs/sdk-cli/internal/output/color.go
+  h_9630b74bdac540 7-8,10,12,14-15,21-25,31-34,52-93,95-96
+zSDKs/sdk-cli/tests/cli_harness_test.go
+  h_9630b74bdac540 30-115
+zSDKs/sdk-cli/tests/startup_tty_test.go
+  h_9630b74bdac540 39-43,56-59,61-65,67-72,74-89,91-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c3a3d8d5c61265153e9d85ec45551097b4a607a",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
