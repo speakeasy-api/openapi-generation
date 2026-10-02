@@ -1,0 +1,10 @@
+id: 1790909966-deaee7f1
+features:
+    - core
+targets:
+    - cli
+type: feat
+bump: patch
+description: support per-command defaults and groups in offline catalogs
+author: TristanSpeakEasy
+date: "2026-10-02"

@@ -1,0 +1,161 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/catalogOptions:
+    post:
+      operationId: cliCatalogOptionsPost
+      description: >-
+        Enum catalogs with per-command defaults and ordered groups, including
+        duplicate references, unknown references, and ungrouped enum values.
+      tags: [cliCatalogOptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                legacy:
+                  $ref: "#/components/schemas/CliCatalogLegacy"
+                empty:
+                  $ref: "#/components/schemas/CliCatalogEmpty"
+                defaults:
+                  $ref: "#/components/schemas/CliCatalogDefaults"
+                groups:
+                  $ref: "#/components/schemas/CliCatalogGroups"
+                combined:
+                  $ref: "#/components/schemas/CliCatalogCombined"
+                malformed:
+                  $ref: "#/components/schemas/CliCatalogMalformed"
+                noop:
+                  $ref: "#/components/schemas/CliCatalogNoop"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    CliCatalogLegacy:
+      type: string
+      description: A scalar catalog default preserves fixed-width output even for long labels.
+      enum: [catalog-value-with-a-name-longer-than-forty-two-characters, beta]
+      x-speakeasy-enum-descriptions: [Long option., Second option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-legacy
+        summary: List legacy options
+        description: Prints options with the original catalog format.
+        default: catalog-value-with-a-name-longer-than-forty-two-characters
+    CliCatalogEmpty:
+      type: string
+      description: Empty optional catalog metadata preserves the ungrouped format.
+      enum: [alpha, beta]
+      x-speakeasy-enum-descriptions: [First option., Second option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-empty
+        default: alpha
+        defaults: {}
+        groups: []
+    CliCatalogDefaults:
+      type: string
+      description: Command defaults do not imply a global catalog default, even with a schema default.
+      default: alpha
+      enum: [alpha, beta, gamma, delta, epsilon]
+      x-speakeasy-enum-descriptions: [First option., Second option., Third option., Fourth option., Fifth option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-defaults
+        defaults:
+          alpha: [" create-widget ", " inspect-widget "]
+          gamma: " render "
+          delta: []
+          unknown: ignored
+    CliCatalogGroups:
+      type: string
+      description: Ordered groups deduplicate enum references and retain unmatched values in schema order.
+      enum: [alpha, beta, gamma, delta, epsilon]
+      x-speakeasy-enum-descriptions: [First option., Second option., Third option., Fourth option., Fifth option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-groups
+        default: delta
+        groups:
+          - title: ' Primary "Widgets" '
+            values: [beta, alpha, alpha, unknown]
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+          - title: DuplicateGroup
+            values: [alpha, beta]
+          - title: " Secondary "
+            values: [beta, gamma]
+    CliCatalogCombined:
+      type: string
+      description: Grouped catalogs retain global default metadata while displaying command-specific defaults.
+      enum: [alpha, beta, gamma, delta, epsilon]
+      x-speakeasy-enum-descriptions: [First option., Second option., Third option., Fourth option., Fifth option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-combined
+        default: alpha
+        defaults:
+          alpha: [" create-widget ", " inspect-widget "]
+          gamma: " render "
+        groups:
+          - title: ' Primary "Widgets" '
+            values: [beta, alpha, alpha, unknown]
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+          - title: DuplicateGroup
+            values: [alpha, beta]
+          - title: " Secondary "
+            values: [beta, gamma]
+    CliCatalogMalformed:
+      type: string
+      description: Malformed optional catalog entries do not discard valid enum values or metadata.
+      enum: [alpha, beta, gamma]
+      x-speakeasy-enum-descriptions: [First option., Second option., Third option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-malformed
+        defaults:
+          alpha: [" render ", null, 123, "", " "]
+          beta: 123
+        groups:
+          - title: ""
+            values: [alpha]
+          - title: Invalid
+            values: alpha
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []
+    CliCatalogNoop:
+      type: string
+      description: Ineffective optional catalog metadata preserves fixed-width output for long enum values.
+      enum: [catalog-value-with-a-name-longer-than-forty-two-characters, beta]
+      x-speakeasy-enum-descriptions: [Long option., Second option.]
+      x-speakeasy-cli-catalog:
+        command: catalog-noop
+        default: catalog-value-with-a-name-longer-than-forty-two-characters
+        defaults:
+          catalog-value-with-a-name-longer-than-forty-two-characters: [" ", "", null, 123]
+          beta: []
+          unknown: ignored
+        groups:
+          - title: ""
+            values: [beta]
+          - title: Invalid
+            values: beta
+          - title: EmptyGroup
+            values: [unknown]
+          - title: NoValues
+            values: []

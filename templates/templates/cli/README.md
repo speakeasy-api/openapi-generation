@@ -20,6 +20,7 @@ Generates a fully functional Go CLI from an OpenAPI specification. The generated
   - [Flag Metadata Generation](#flag-metadata-generation)
   - [Union Type Handling](#union-type-handling)
   - [Declarative Intent Commands and Route Dispatch](#declarative-intent-commands-and-route-dispatch)
+  - [Offline Enum Catalogs](#offline-enum-catalogs)
   - [Output Formatting](#output-formatting)
   - [Interactive Mode](#interactive-mode)
   - [Agent Mode](#agent-mode)
@@ -575,6 +576,32 @@ Selection happens before route-local presets or schema defaults are applied. Aft
 Dispatch commands never register backing request-body metadata: no whole-union JSON flag and no expanded body fields. They retain non-body path/query/header metadata, operation security, `--body`, `--schema`, and declared flags. Help puts route-specific flags under `<Label> variant Flags:` (or `A / B variants` for a strict multi-route subset), leaves shared flags ungrouped, and appends the anchor/default summary. The static `--usage` KDL contains exactly the same surface.
 
 `override: true` replaces only the generated registration at the operation's exact canonical command path. The command must target that same operation, cover every component member, and replace a non-promoted leaf. The operation file is still generated so the intent reuses its metadata and run function. Runtime registration, KDL usage, generated README command trees and examples all omit the generated operation entry and insert the intent in manifest order; generated Arazzo tests that still encode the removed flag surface are skipped, while dedicated intent tests cover the replacement. Without `override`, the generated operation remains available as the full-control escape.
+
+### Offline Enum Catalogs
+
+**Files**: `includes/templating.ts` (`collectCliCatalogs`), `catalog.go.stmpl`, and `main.ts`
+
+An enum schema annotated with `x-speakeasy-cli-catalog` generates an offline listing command. The extension accepts `command`, `summary`, `description`, and a scalar `default`, plus optional per-command defaults and ordered groups:
+
+```yaml
+x-speakeasy-cli-catalog:
+  command: widget-options
+  summary: List available widget options
+  default: alpha
+  defaults:
+    alpha: [create-widget, inspect-widget]
+    gamma: render-widget
+  groups:
+    - title: Primary
+      values: [beta, alpha]
+    - title: Secondary
+      values: [gamma]
+```
+
+- `defaults` maps enum values to a command name or an array of command names. Command names are trimmed and blank or non-string entries are ignored. These are catalog annotations, not changes to command presets. Non-empty command defaults produce the label `<value> (default: <command>, ...)`; otherwise the scalar catalog default produces `<value> (default)`. Only the scalar extension `default` sets the machine-output `default` boolean, with no fallback to the schema's `default`.
+- Groups with matching enum values produce titled sections in declaration order, with values in each group's declared order. Titles are trimmed, unknown enum references are ignored, and repeated references retain only their first occurrence. Each group requires a non-blank string title and a values array; malformed definitions and groups containing no unclaimed enum values are skipped. If at least one declared group matches, remaining enum values appear in a trailing `Other` section in their original schema order. If none matches, output remains flat in schema order with no `Other` section or machine-output `group` fields.
+- Grouped human output uses `<title>:` headings, two-space item indentation, and one blank line between groups. Catalogs with resolved command defaults or non-empty resolved groups use a label width of `max(42, longest label length + 2)`, followed by a separator space. When neither option resolves to effective data, omitted, empty, malformed or otherwise ineffective options retain the original fixed width of 42 and flat output, including legacy long-label spacing.
+- Machine output remains a flat array in the same order as human output. Every object retains `value`, `description`, and the boolean `default`. `default_for` is emitted only for non-empty command defaults; `group` is emitted only for grouped catalogs, including the `Other` remainder. Malformed command-default entries are ignored; arrays retain only non-blank strings.
 
 ### Output Formatting
 
