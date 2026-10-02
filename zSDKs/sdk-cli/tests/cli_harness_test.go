@@ -1416,3 +1416,21 @@ func assertContains(t *testing.T, path string, expected, actual interface{}) {
 		assert.Equal(t, expected, actual, "at path %s", path)
 	}
 }
+
+func TestInterruptContextCancelsOnInterrupt(t *testing.T) {
+	ctx, stop := cli.InterruptContext(context.Background())
+	defer stop()
+	self, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := self.Signal(os.Interrupt); err != nil {
+		t.Skipf("cannot deliver an interrupt to the test process: %v", err)
+	}
+	select {
+	case <-ctx.Done():
+		assert.ErrorIs(t, ctx.Err(), context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("interrupt did not cancel the root context")
+	}
+}
