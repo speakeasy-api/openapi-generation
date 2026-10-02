@@ -29,7 +29,7 @@ func InitIntentSay(parent *cobra.Command) error {
 			"speakeasy_stream_select":        "/data/content",
 		},
 	}
-	cmd.Flags().String("request", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
+	cmd.Flags().String("request", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
 	_ = flagutil.AnnotatePromptFlag(cmd, "request", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
@@ -38,8 +38,7 @@ func InitIntentSay(parent *cobra.Command) error {
 		Required: false,
 		Kind:     "bool",
 		Order:    0,
-		// A supplied whole body carries this flag's bound key (and the
-		// backing operation flag supplies it directly): no prompt then.
+
 		BodySources: []string{"request"},
 	})
 	if err := interactive.Declare(cmd, interactive.CommandSpec{Args: []interactive.ArgSpec{
@@ -85,6 +84,7 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	suppliedBodyFlag := ""
+
 	if flagutil.FlagChanged(cmd, "request") {
 		suppliedBodyFlag = "request"
 	}

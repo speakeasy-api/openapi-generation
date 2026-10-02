@@ -6,8 +6,8 @@
 {{- addImport "fmt" -}}
 {{- addImport "os" -}}
 {{- addImport "golang.org/x/term" -}}
-{{- addImport "github.com/charmbracelet/huh" -}}
-{{- addImport "github.com/charmbracelet/lipgloss" -}}
+{{- addImport "charm.land/huh/v2" -}}
+{{- addImport "charm.land/lipgloss/v2" -}}
 package cli
 
 {{genImports}}
@@ -146,8 +146,12 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 }
 
 // authFormTheme builds the form theme for auth login.
-func authFormTheme() *huh.Theme {
-    t := *huh.ThemeBase()
+func authFormTheme() huh.Theme {
+    return huh.ThemeFunc(authFormStyles)
+}
+
+func authFormStyles(isDark bool) *huh.Styles {
+    t := *huh.ThemeBase(isDark)
 
     accent := {{themeAccent}}
     dimmed := {{themeDimmed}}

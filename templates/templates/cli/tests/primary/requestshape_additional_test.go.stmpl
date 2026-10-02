@@ -234,28 +234,12 @@ func TestIntentPositionalMergedIntoBodyLackingKey(t *testing.T) {
 	assert.Equal(t, "m2", jsonGetString(output, "json.model"))
 }
 
-func TestIntentPositionalMergedIntoWholeBodyFlag(t *testing.T) {
+func TestIntentInheritedWholeBodyFlagIsRejected(t *testing.T) {
 	recordTest("request-shape-intent-positional-merged-into-whole-body-flag")
-	s := newEchoServer()
-	defer s.Close()
 	h := NewCLITestHarness(t)
-	// "generate" is pinned to the model variant, so a body naming the
-	// agent selector is rejected as a foreign variant; with a same-variant
-	// body the positional fills the missing input key.
-	err := h.RunWithServer(s.URL, []string{"generate", "hello",
-		"--request-body", `{"agent":"research-bot"}`,
-	})
+	err := h.RunBare([]string{"generate", "hello", "--request-body", `{"model":"m-explicit"}`})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `"agent"`)
-
-	h = NewCLITestHarness(t)
-	err = h.RunWithServer(s.URL, []string{"generate", "hello",
-		"--request-body", `{"model":"m-explicit"}`,
-	})
-	require.NoError(t, err)
-	output := strings.TrimSpace(h.GetStdout())
-	assert.Equal(t, "hello", jsonGetString(output, "json.input"))
-	assert.Equal(t, "m-explicit", jsonGetString(output, "json.model"))
+	assert.Contains(t, err.Error(), "unknown flag: --request-body")
 }
 
 func TestIntentDeclaredFlagAndBodyBothSettingKeyRejected(t *testing.T) {

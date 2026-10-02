@@ -73,6 +73,10 @@ actions:
               defaultFrom: schema
               summary: Stream events as they arrive
       commands:
+        upload:
+          category: Create
+          summary: Upload a multipart file using the operation flags
+          op: requestBodyPutMultipartFile
         generate:
           category: Create
           summary: Generate a reply from a prompt

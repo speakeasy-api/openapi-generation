@@ -1,0 +1,99 @@
+//go:build !windows
+
+package tests
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"os"
+	"os/exec"
+	"slices"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/creack/pty"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/cli"
+)
+
+const startupProbeArg = "startup-probe"
+
+// TestMain lets the test binary double as the CLI when re-executed with the
+// probe argument, so the pseudo-terminal test below can observe a real process
+// start without building a separate binary. The marker is an argument rather
+// than an environment variable so nothing inherited from the caller can divert
+// a normal test run.
+func TestMain(m *testing.M) {
+	if len(os.Args) < 2 || os.Args[1] != startupProbeArg {
+		os.Exit(m.Run())
+	}
+	root, err := cli.NewRootCommand()
+	if err != nil {
+		os.Exit(1)
+	}
+	if err := cli.ExecuteRoot(context.Background(), root, []string{"version"}); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+// TestStartupDoesNotQueryTerminal runs `version` on a pseudo-terminal that
+// never answers terminal queries. Linking a TUI dependency whose package
+// initialization probes the terminal would make the process emit a
+// background-color (OSC 11) or cursor-position (CSI 6n) request and wait on
+// the reply, so the test asserts neither sequence is written and that the
+// command exits promptly.
+func TestStartupDoesNotQueryTerminal(t *testing.T) {
+	exe, err := os.Executable()
+	require.NoError(t, err)
+
+	cmd := exec.Command(exe, startupProbeArg)
+	cmd.Env = append(environWithout("CI", "TERM"), "TERM=xterm-256color")
+	ptmx, err := pty.Start(cmd)
+	require.NoError(t, err)
+	defer ptmx.Close()
+
+	var out bytes.Buffer
+	copied := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&out, ptmx)
+		close(copied)
+	}()
+
+	start := time.Now()
+	waited := make(chan error, 1)
+	go func() { waited <- cmd.Wait() }()
+	select {
+	case err := <-waited:
+		require.NoError(t, err)
+	case <-time.After(15 * time.Second):
+		_ = cmd.Process.Kill()
+		t.Fatal("version did not exit within 15s on an unanswered pseudo-terminal")
+	}
+	elapsed := time.Since(start)
+	select {
+	case <-copied:
+	case <-time.After(5 * time.Second):
+		t.Fatal("pseudo-terminal output did not drain")
+	}
+
+	output := out.String()
+	require.NotContains(t, output, "\x1b]11;?", "startup emitted a background-color query")
+	require.NotContains(t, output, "\x1b[6n", "startup emitted a cursor-position query")
+	require.Contains(t, output, cli.Version)
+	require.Less(t, elapsed, 4*time.Second, "startup stalled waiting on the terminal")
+}
+
+func environWithout(names ...string) []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		if slices.ContainsFunc(names, func(name string) bool { return strings.HasPrefix(entry, name+"=") }) {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return env
+}

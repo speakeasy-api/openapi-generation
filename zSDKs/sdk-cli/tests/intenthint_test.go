@@ -45,26 +45,3 @@ func TestIntentSpacedBoolFlagValueHintIsSilentInMachineMode(t *testing.T) {
 		})
 	}
 }
-
-// A whole --body plus the backing operation flag explicitly empty must be a
-// validation error, not an empty override of the body's required key.
-func TestIntentBodyWithEmptyBackingFlagIsRejected(t *testing.T) {
-	for _, tc := range []struct {
-		name        string
-		args        []string
-		backingFlag string
-	}{
-		{name: "invite", args: []string{"invite", "--body", "{\"email\":\"example-value\"}", "--email", ""}, backingFlag: "email"},
-		{name: "enroll", args: []string{"enroll", "--body", "{\"email\":\"example-value\"}", "--email", ""}, backingFlag: "email"},
-		{name: "render", args: []string{"render", "--body", "{\"prompt\":\"example-value\"}", "--prompt", ""}, backingFlag: "prompt"},
-		{name: "produce", args: []string{"produce", "--body", "{\"prompt\":\"example-value\"}", "--prompt", ""}, backingFlag: "prompt"},
-		{name: "observe", args: []string{"observe", "--body", "{\"prompt\":\"example-value\"}", "--prompt", ""}, backingFlag: "prompt"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			h := NewCLITestHarness(t)
-			err := h.Run(tc.args)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "--"+tc.backingFlag+" must not be empty")
-		})
-	}
-}

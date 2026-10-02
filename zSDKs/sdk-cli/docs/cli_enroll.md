@@ -15,20 +15,10 @@ cli enroll [flags]
 ### Options
 
 ```
-      --age float                    number value
-      --associated-ids stringArray   list of values
-      --body string                  Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
-  -e, --email string                 [required]
-      --enrollment-email string      Email address to enroll
-  -f, --first-name string            string value
-  -g, --gender string                options: male, female, other
-  -h, --help                         help for enroll
-  -i, --id string                    string value
-  -l, --last-name string             string value
-      --metadata string              JSON object
-      --metadata-any string          A metadata object with additionalProperties true (any type) - should be flattened
-  -p, --postal-code string           string value
-      --schema                       Print the exact JSON Schema of the request body and exit
+      --body string               Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
+      --enrollment-email string   Email address to enroll
+  -h, --help                      help for enroll
+      --schema                    Print the exact JSON Schema of the request body and exit
 ```
 
 ### Options inherited from parent commands

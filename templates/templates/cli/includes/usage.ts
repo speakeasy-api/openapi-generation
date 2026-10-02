@@ -1019,7 +1019,7 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
 
   if (intent.HasMeta && found) {
     flags.push(
-      ...(intent.Dispatch
+      ...(intent.HasBody && intent.BodyFlag
         ? getOperationNonBodyUsageFlags(found.op)
         : getOperationBodyFieldUsageFlags(found.op)),
     );
@@ -1030,7 +1030,7 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   if (intent.BodyFlag) {
     flags.push({
       spec: usageFlagSpec(intent.BodyFlag, undefined, "body"),
-      help: `Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.${
+      help: `Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.${
         intent.HasSchema ? " Use --schema to print the exact JSON Schema." : ""
       }`,
     });
@@ -1850,72 +1850,6 @@ function templateIntentUsageSchemaPrecedenceTestEnabled(): boolean {
 registerTemplateFunc(
   "templateIntentUsageSchemaPrecedenceTestEnabled",
   templateIntentUsageSchemaPrecedenceTestEnabled,
-);
-
-// Bound intents whose required input has a backing operation flag: --body
-// combined with that flag explicitly empty must be rejected.
-interface IntentEmptyBackingFlagTestCase {
-  name: string;
-  path: string[];
-  bodyFlag: string;
-  backingFlag: string;
-  bodyJSON: string;
-}
-
-function getIntentEmptyBackingFlagTestCases(): IntentEmptyBackingFlagTestCase[] {
-  const cases: IntentEmptyBackingFlagTestCase[] = [];
-  for (const cmd of collectIntentManifest().Bound) {
-    if (!cmd.BodyFlag) continue;
-    const input = [...cmd.Args, ...cmd.Flags].find(
-      (i) =>
-        i.Required &&
-        !i.PresetCovered &&
-        i.BackingFlag &&
-        (!i.Type || i.Type === "string"),
-    );
-    if (!input) continue;
-    cases.push({
-      name: firstUseWord(cmd.Use),
-      path: [...cmd.ParentPath, firstUseWord(cmd.Use)],
-      bodyFlag: cmd.BodyFlag,
-      backingFlag: input.BackingFlag || "",
-      bodyJSON: JSON.stringify({ [input.Key]: "example-value" }),
-    });
-  }
-  return cases;
-}
-
-function templateIntentEmptyBackingFlagTestEnabled(): boolean {
-  return getIntentEmptyBackingFlagTestCases().length > 0;
-}
-registerTemplateFunc(
-  "templateIntentEmptyBackingFlagTestEnabled",
-  templateIntentEmptyBackingFlagTestEnabled,
-);
-
-function templateIntentEmptyBackingFlagTestCases(): string {
-  return getIntentEmptyBackingFlagTestCases()
-    .map((c) => {
-      const args = [
-        ...c.path,
-        `--${c.bodyFlag}`,
-        c.bodyJSON,
-        `--${c.backingFlag}`,
-        "",
-      ]
-        .map(goStringLiteral)
-        .join(", ");
-      return `{name: ${goStringLiteral(
-        c.name,
-      )}, args: []string{${args}}, backingFlag: ${goStringLiteral(
-        c.backingFlag,
-      )}},`;
-    })
-    .join("\n\t\t");
-}
-registerTemplateFunc(
-  "templateIntentEmptyBackingFlagTestCases",
-  templateIntentEmptyBackingFlagTestCases,
 );
 
 function templateArtifactIntentUsageTestEnabled(): boolean {

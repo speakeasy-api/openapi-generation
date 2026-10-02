@@ -21,8 +21,9 @@ func InitIntentTag1Recent(parent *cobra.Command) error {
 			"speakeasy_strict_body_keys": "true",
 		},
 	}
-	flagutil.RegisterFlags(cmd, listTest1CmdMeta)
-	flagutil.SetMetaPromptOptional(cmd, listTest1CmdMeta, false)
+	intentMeta := listTest1CmdMeta
+	flagutil.RegisterFlags(cmd, intentMeta)
+	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
 	for _, sibling := range parent.Commands() {
 		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {
 			return fmt.Errorf("intent command %q collides with the name or alias of an existing %q command; rename the declared command", "tag1-recent", sibling.Name())
