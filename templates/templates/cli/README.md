@@ -595,7 +595,7 @@ Three output paths:
 
 3. **jq filtering** (`--jq`): Applies a [gojq](https://github.com/itchyny/gojq) expression to the JSON output. Overrides `--output-format` since the result is always JSON — except under `--raw-output` (jq `-r` semantics: string results are written as raw text plus a newline, unquoted, unescaped, never colorized; non-string results stay JSON), so `--jq '.data' --raw-output | base64 -d > image.png` works. The flag's default is the `cli.jqRawOutput` gen.yaml key (default `false`); it threads through `outputJqResults` (single results, `--include-headers`, artifacts) and `outputOneItem` (streams, `--all` pagination).
 
-**Color default** (`cli.defaultColor` gen.yaml key: `auto` | `always` | `never`, default `auto`): the default value of `--color`. `never` makes uncolored ("raw") output the default so redirected/piped bytes are always clean; `--color`, `NO_COLOR`/`FORCE_COLOR`, and agent mode (never colorized) still apply.
+**Color default** (`cli.defaultColor` gen.yaml key: `auto` | `always` | `never`, default `auto`): the default value of `--color`. `never` makes uncolored ("raw") output the default so redirected/piped bytes are always clean; `--color`, `NO_COLOR`/`FORCE_COLOR`, and agent mode (never colorized) still apply. JSON and pretty-output keys use bold sky blue (`#38BDF8`), matching the default interactive accent rather than terminal dark blue.
 
 **Synchronous request progress** (`auxiliary/internal/output/progress.go.stmpl`, `opcmd.go.stmpl`): single-response generated operation calls, including intents that delegate to them, display an animated command name on stderr after 250 ms. Fast calls stay silent. The line is erased and its writer stopped before a result or error is rendered, and cancellation also clears it. Progress requires both the command's stdout and stderr writers to be terminals and uses the existing human-output policy (`pretty` or `table` only). JSON, jq, agent, debug, dry-run, `--no-interactive`, explicit `--interactive=false`, and `TERM=dumb` suppress it. A non-interactive-by-default build can still show progress without enabling prompts. Streaming or deferred-body responses, `--all` pagination, async intent polling, and custom command lifecycles do not start this indicator. Terminal width is read without querying the terminal; the label is bounded to one line.
 
@@ -1219,7 +1219,9 @@ When a secret is stored in the keychain it is **not** written to the config file
 
 ### Usage Schema & Grouped Help
 
-**Files**: `usage.go.stmpl`, `includes/usage.ts`, `root.go.stmpl`
+**Files**: `usage.go.stmpl`, `includes/usage.ts`, `root.go.stmpl`, `auxiliary/internal/output/color.go.stmpl`
+
+Runtime help section headings use the same bold sky-blue accent as output keys. This applies to full and compact `--help`, the `help` command, and compact `--help-global`; descriptions, flag alignment and examples are unchanged. In `auto` mode, help checks its actual output writer, including stderr when help accompanies a usage error. Redirected help stays plain unless `--color=always` or `FORCE_COLOR` forces colour. `--color=never` suppresses it; `NO_COLOR` wins over `FORCE_COLOR` in auto mode, while an explicit `always` overrides both environment settings. Agent mode always suppresses colour, including help that bypasses Cobra's pre-run hooks. `--usage` and generated Markdown docs remain unstyled.
 
 The generated CLI exposes two documentation-oriented interfaces beyond normal Cobra help:
 

@@ -306,6 +306,7 @@ func NewRootCommand() (*cobra.Command, error) {
 	usage.Intercept(rootCmd)
 	// Cobra validates Args before any PersistentPreRunE runs.
 	output.InstallErrorHandling(rootCmd)
+	output.InstallHelpStyling(rootCmd)
 
 	return rootCmd, nil
 }
