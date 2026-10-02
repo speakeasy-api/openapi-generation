@@ -14,8 +14,8 @@
 {{- if isInteractiveAuthEnabled -}}
 {{- addImport "os" -}}
 {{- addImport "golang.org/x/term" -}}
-{{- addImport "github.com/charmbracelet/huh" -}}
-{{- addImport "github.com/charmbracelet/lipgloss" -}}
+{{- addImport "charm.land/huh/v2" -}}
+{{- addImport "charm.land/lipgloss/v2" -}}
 {{- else -}}
 {{- addImport "bufio" -}}
 {{- addImport "strings" -}}
@@ -197,8 +197,12 @@ func dryRunLocalNoop(cmd *cobra.Command, message string) bool {
 
 {{- if isInteractiveAuthEnabled}}
 // configureFormTheme builds the form theme for the configure command.
-func configureFormTheme() *huh.Theme {
-    t := *huh.ThemeBase()
+func configureFormTheme() huh.Theme {
+    return huh.ThemeFunc(configureFormStyles)
+}
+
+func configureFormStyles(isDark bool) *huh.Styles {
+    t := *huh.ThemeBase(isDark)
 
     accent := {{themeAccent}}
     dimmed := {{themeDimmed}}

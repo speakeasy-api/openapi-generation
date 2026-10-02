@@ -23,16 +23,14 @@ cli produce [prompt] [flags]
 ### Options
 
 ```
-      --async                           Return the operation handle without waiting for a terminal response
-      --body string                     Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
-  -h, --help                            help for produce
-      --out string                      Write the image to this file (or into this directory). Default: ./produce-{timestamp}-{rand}.{ext}
-      --output-modalities stringArray   options: text, image
-      --poll-interval string            Override the initial polling interval (positive Go duration, for example 500ms or 2s)
-      --poll-timeout string             Override the overall polling deadline (positive Go duration, at least the effective poll interval)
-  -p, --prompt string                   [required]
-      --raw-response                    Print the raw API response instead of writing the image to a file
-      --schema                          Print the exact JSON Schema of the request body and exit
+      --async                  Return the operation handle without waiting for a terminal response
+      --body string            Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.
+  -h, --help                   help for produce
+      --out string             Write the image to this file (or into this directory). Default: ./produce-{timestamp}-{rand}.{ext}
+      --poll-interval string   Override the initial polling interval (positive Go duration, for example 500ms or 2s)
+      --poll-timeout string    Override the overall polling deadline (positive Go duration, at least the effective poll interval)
+      --raw-response           Print the raw API response instead of writing the image to a file
+      --schema                 Print the exact JSON Schema of the request body and exit
 ```
 
 ### Options inherited from parent commands

@@ -403,7 +403,6 @@ function isTestSkipped(test: string): boolean {
     "intent-route-dispatch-help-usage",
     "intent-route-dispatch-interactive-plan",
     "intent-route-dispatch-override-once",
-    "intents-both-body-surfaces-merged",
     "intents-discriminated-partial-body",
     "intents-foreign-selector-agent-envelope",
     "intents-foreign-selector-usage-error",

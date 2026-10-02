@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.6.2",
+  core: "0.7.1",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -40,7 +40,7 @@ const supportedFeatures = {
   oauth2ClientCredentials: "0.0.1",
   webhooks: "0.0.0",
   callbacks: "0.0.0",
-  responseFormat: "0.1.1",
+  responseFormat: "0.1.2",
   sdkHooks: "0.0.1",
   customSecuritySchemes: "0.0.0",
   oauth2Password: "0.0.1",
@@ -49,7 +49,7 @@ const supportedFeatures = {
   transformJq: "0.0.0",
   jsonlResponses: "0.0.1",
   customCodeRegions: "0.0.1",
-  cliCommands: "0.1.7",
+  cliCommands: "0.1.10",
 };
 
 // @ts-ignore

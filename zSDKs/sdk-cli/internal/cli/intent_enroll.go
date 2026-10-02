@@ -24,14 +24,11 @@ func InitIntentEnroll(parent *cobra.Command) error {
 			"speakeasy_strict_body_keys":     "true",
 		},
 	}
-	flagutil.RegisterFlags(cmd, createUserCmdMeta)
-	flagutil.SetMetaPromptOptional(cmd, createUserCmdMeta, false)
-	flagutil.ClearBodyRequirements(cmd, createUserCmdMeta, "")
-	cmd.Flags().String("body", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
+	intentMeta := flagutil.NonBodyMeta(createUserCmdMeta, "")
+	flagutil.RegisterFlags(cmd, intentMeta)
+	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
+	cmd.Flags().String("body", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")
 	_ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
-	if err := flagutil.AnnotateBodyFields(cmd, createUserCmdMeta, "", "body"); err != nil {
-		return fmt.Errorf("annotate body fields for intent enroll: %w", err)
-	}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
 	cmd.Flags().StringP("enrollment-email", "", "", "Email address to enroll")
@@ -40,9 +37,8 @@ func InitIntentEnroll(parent *cobra.Command) error {
 		Required: true,
 		Kind:     "string",
 		Order:    0,
-		// A supplied whole body carries this flag's bound key (and the
-		// backing operation flag supplies it directly): no prompt then.
-		BodySources: []string{"email", "body"},
+
+		BodySources: []string{"body"},
 	})
 	for _, sibling := range parent.Commands() {
 		if sibling.Name() == cmd.Name() || sibling.HasAlias(cmd.Name()) {
@@ -69,6 +65,7 @@ func runIntentEnrollCmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	suppliedBodyFlag := ""
+
 	if flagutil.FlagChanged(cmd, "body") {
 		suppliedBodyFlag = "body"
 	}
@@ -81,11 +78,6 @@ func runIntentEnrollCmd(cmd *cobra.Command, args []string) error {
 		bodySupplied = attached
 	}
 	if bodySupplied {
-		if flagutil.FlagChanged(cmd, "email") {
-			if v, _ := flagutil.GetStringFlag(cmd, "email"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--email must not be empty"))
-			}
-		}
 		if flagutil.FlagChanged(cmd, "enrollment-email") {
 			v, _ := flagutil.GetStringFlag(cmd, "enrollment-email")
 			if v == "" {
@@ -96,12 +88,12 @@ func runIntentEnrollCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
-	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "enrollment-email") && !flagutil.FlagChanged(cmd, "email") {
+	if len(args) == 0 && !bodySupplied && !flagutil.FlagChanged(cmd, "enrollment-email") {
 		return output.UsageHelpError(cmd, fmt.Errorf("%s", "required flag --enrollment-email not set (or pass a full request with --body)"))
 	}
 	if !bodySupplied {
 		body := map[string]any{}
-		if !flagutil.FlagChanged(cmd, "enrollment-email") && !flagutil.FlagChanged(cmd, "email") {
+		if !flagutil.FlagChanged(cmd, "enrollment-email") {
 			return flagutil.WithCLIValidation(fmt.Errorf("required flag --enrollment-email not set (or pass a full request with --body)"))
 		}
 		// An explicitly empty required input must not synthesize a body that
@@ -109,11 +101,6 @@ func runIntentEnrollCmd(cmd *cobra.Command, args []string) error {
 		if flagutil.FlagChanged(cmd, "enrollment-email") {
 			if v, _ := flagutil.GetStringFlag(cmd, "enrollment-email"); v == "" {
 				return flagutil.WithCLIValidation(fmt.Errorf("--enrollment-email must not be empty"))
-			}
-		}
-		if flagutil.FlagChanged(cmd, "email") {
-			if v, _ := flagutil.GetStringFlag(cmd, "email"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--email must not be empty"))
 			}
 		}
 		if flagutil.FlagChanged(cmd, "enrollment-email") {

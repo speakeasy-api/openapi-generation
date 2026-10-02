@@ -3,10 +3,10 @@
 package cli
 
 import (
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
 	"cmp"
 	"fmt"
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 	"openapi/internal/config"
@@ -538,8 +538,12 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 }
 
 // authFormTheme builds the form theme for auth login.
-func authFormTheme() *huh.Theme {
-	t := *huh.ThemeBase()
+func authFormTheme() huh.Theme {
+	return huh.ThemeFunc(authFormStyles)
+}
+
+func authFormStyles(isDark bool) *huh.Styles {
+	t := *huh.ThemeBase(isDark)
 
 	accent := lipgloss.Color("#38BDF8")
 	dimmed := lipgloss.Color("#64748B")

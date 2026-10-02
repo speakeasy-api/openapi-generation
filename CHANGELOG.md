@@ -4,6 +4,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.944.0] - 2026-10-02
+### :bee: New Features
+- [`509504c`](https://github.com/speakeasy-api/openapi-generation/commit/509504c4ccb00fd9ad38c63295f7d8edf4acd159) - **cli**: show delayed progress for synchronous requests ([#68](https://github.com/speakeasy-api/openapi-generation/pull/68)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.943.8] - 2026-10-02
+### :bug: Bug Fixes
+- [`d2cf100`](https://github.com/speakeasy-api/openapi-generation/commit/d2cf100c201b1b775a3a788f11cb7204eb8e4929) - **cli**: enforce schema pattern and maxLength on string flags ([#53](https://github.com/speakeasy-api/openapi-generation/pull/53)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.943.7] - 2026-10-02
+### :bug: Bug Fixes
+- [`0cdc850`](https://github.com/speakeasy-api/openapi-generation/commit/0cdc85030c72016646de289938909036821b9f04) - **cli**: omit inherited body flags from intent commands ([#64](https://github.com/speakeasy-api/openapi-generation/pull/64)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.943.6] - 2026-10-02
+### :bug: Bug Fixes
+- [`084fe46`](https://github.com/speakeasy-api/openapi-generation/commit/084fe46da2f9ab748c71b2c5a984b56355bbd6f7) - **cli**: classify explore flag conflicts as validation errors ([#62](https://github.com/speakeasy-api/openapi-generation/pull/62)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.943.5] - 2026-10-02
+### :bug: Bug Fixes
+- [`083b812`](https://github.com/speakeasy-api/openapi-generation/commit/083b812b05dd98af2da5f7f5513a4636c7b74a5d) - **cli**: check release tags against generated versions ([#63](https://github.com/speakeasy-api/openapi-generation/pull/63)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.943.4] - 2026-10-01
+### :wrench: Chores
+- [`5b8332c`](https://github.com/speakeasy-api/openapi-generation/commit/5b8332c479565e6dc1a48b54b3bfa2126d808da7) - match SDK Feature Matrix generator to the published docs page ([#52](https://github.com/speakeasy-api/openapi-generation/pull/52)) *(commit by [@alx-xo](https://github.com/alx-xo))*
+
+
+## [v2.943.3] - 2026-10-01
+### :bug: Bug Fixes
+- [`225f05e`](https://github.com/speakeasy-api/openapi-generation/commit/225f05effef6dbbb3205323182c11bcf5bc42374) - **cli**: render list response items in table output ([#55](https://github.com/speakeasy-api/openapi-generation/pull/55)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.943.2] - 2026-10-01
+### :bug: Bug Fixes
+- [`a851480`](https://github.com/speakeasy-api/openapi-generation/commit/a851480307cbe69720e9587c5bfbba02e2c73547) - **cli**: terminate TOON output with a trailing newline ([#54](https://github.com/speakeasy-api/openapi-generation/pull/54)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.943.1] - 2026-10-01
+### :bug: Bug Fixes
+- [`0292c98`](https://github.com/speakeasy-api/openapi-generation/commit/0292c9835f49a348e60a37e1d8f0f0ce48ed2e82) - **cli**: stop querying the terminal at startup by moving the TUI to Charm v2 ([#56](https://github.com/speakeasy-api/openapi-generation/pull/56)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.943.0] - 2026-09-29
 ### :bee: New Features
 - [`6843466`](https://github.com/speakeasy-api/openapi-generation/commit/6843466f2ae5dfadd75223c6720bc20c7b4225ce) - **cli**: add arrayFlagFormat for JSON string-array flags ([#51](https://github.com/speakeasy-api/openapi-generation/pull/51)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20289,3 +20334,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.941.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.9...v2.941.10
 [v2.942.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.941.10...v2.942.0
 [v2.943.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.942.0...v2.943.0
+[v2.943.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.0...v2.943.1
+[v2.943.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.1...v2.943.2
+[v2.943.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.2...v2.943.3
+[v2.943.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.3...v2.943.4
+[v2.943.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.4...v2.943.5
+[v2.943.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.5...v2.943.6
+[v2.943.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.6...v2.943.7
+[v2.943.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.7...v2.943.8
+[v2.944.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.8...v2.944.0

@@ -55,12 +55,38 @@ jobs:
         run: |
           go run cmd/docs/main.go -out ../marketing-site/src/content/docs/sdks/languages/maturity.mdx
 
+      - name: Report generated changes
+        working-directory: marketing-site
+        run: |
+          {
+            echo '### SDK Feature Matrix changes'
+            echo
+            if git diff --quiet; then
+              echo 'The published matrix already matches the feature report.'
+            else
+              echo '```diff'
+              git diff -- src/content/docs/sdks/languages/maturity.mdx
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Create PR against marketing-site
         if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           path: marketing-site
           token: ${{ secrets.BOT_REPO_TOKEN }}
+          add-paths: src/content/docs/sdks/languages/maturity.mdx
           commit-message: "docs: update SDK Feature Matrix"
           title: "docs: update SDK Feature Matrix"
           branch: sdk-feature-matrix/update
+          delete-branch: true
+          body: |
+            The SDK Feature Matrix is generated from the implemented features
+            report, so every cell in this diff is a support level that changed
+            in the generator.
+
+            **Legend**: ✅ Implemented, ⚠️ Partially implemented (missing Readme
+            sections or tests), ⛔ Not implemented, ➖ Ignored for that target.
+
+            Edit the page by hand and the next run will revert it.

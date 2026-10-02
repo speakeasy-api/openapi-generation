@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -447,13 +448,33 @@ func TestExploreGuardsBeforeBubbleTea(t *testing.T) {
 			h := NewCLITestHarness(t)
 			err := h.RunPolicyDefault(args)
 			require.EqualError(t, err, "explore conflicts with --no-interactive/--interactive=false")
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			{{- if classifiedErrors}}
+			assert.Contains(t, h.GetStderr(), "Error (validation_error):")
+			assert.Contains(t, h.GetStderr(), "CLI_VALIDATION")
+			assert.NotContains(t, h.GetStderr(), "Re-run with --debug")
+			{{- end}}
 		})
+		{{- if classifiedErrors}}
+		t.Run(name+"-json", func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunPolicyDefault(append(args, "--output-format", "json"))
+			require.EqualError(t, err, "explore conflicts with --no-interactive/--interactive=false")
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+			var envelope map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(h.GetStderr()), &envelope))
+			assert.Equal(t, "validation_error", envelope["error_type"])
+			assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+			assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+		})
+		{{- end}}
 	}
 
 	t.Run("non-terminal", func(t *testing.T) {
 		h := NewCLITestHarness(t)
 		err := h.RunPolicyDefault([]string{"explore"})
 		require.EqualError(t, err, "explore requires an interactive terminal (stdin and stdout must be a TTY)")
+		assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(err))
 	})
 
 	t.Run("usage", func(t *testing.T) {
@@ -890,6 +911,141 @@ func TestMachineOutputKeepsUnclassifiedErrors(t *testing.T) {
 	})
 }
 {{- end}}
+
+type tableFixtureItem struct {
+	Name    *string   `json:"name,omitzero"`
+	Created time.Time `json:"created"`
+	Tags    []string  `json:"tags,omitzero"`
+}
+
+type tableFixtureList struct {
+	Items         []*tableFixtureItem `json:"items,omitzero"`
+	NextPageToken *string             `json:"nextPageToken,omitzero"`
+}
+
+type tableFixtureResource struct {
+	ID      string             `json:"id"`
+	Name    *string            `json:"name,omitzero"`
+	Parent  *tableFixtureItem  `json:"parent,omitzero"`
+	Members []tableFixtureItem `json:"members,omitzero"`
+}
+
+// renderTable runs a command that passes an SDK-style response envelope to
+// output.Result with --output-format table.
+func renderTable(t *testing.T, object interface{}) string {
+	t.Helper()
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	if !assert.NoError(t, err) {
+		return ""
+	}
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(h.stderr)
+	root.AddCommand(&cobra.Command{
+		Use: "table-fixture",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return output.Result(cmd, struct{ Object interface{} }{Object: object})
+		},
+	})
+	assert.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{"table-fixture", "--output-format", "table", "--color", "never"}))
+	return stdout.String()
+}
+
+func tableLines(lines ...string) string {
+	return strings.Join(lines, "\n") + "\n"
+}
+
+var tableFixtureCreated = time.Date(2024, 5, 1, 12, 30, 0, 0, time.UTC)
+
+// TestTableOutputRendersListItems verifies that a list response renders its
+// items as an indented sub-table followed by its set scalar fields.
+func TestTableOutputRendersListItems(t *testing.T) {
+	alpha, beta, token := "alpha", "beta", "page-2"
+	list := &tableFixtureList{
+		Items: []*tableFixtureItem{
+			{Name: &alpha, Created: tableFixtureCreated, Tags: []string{"a", "b"}},
+			{Name: &beta, Created: tableFixtureCreated},
+		},
+		NextPageToken: &token,
+	}
+
+	assert.Equal(t, tableLines(
+		"ITEMS",
+		"  NAME   CREATED               TAGS",
+		"  alpha  2024-05-01T12:30:00Z  a, b",
+		"  beta   2024-05-01T12:30:00Z  ",
+		"",
+		"NEXTPAGETOKEN  page-2",
+	), renderTable(t, list))
+
+	t.Run("empty page token is kept", func(t *testing.T) {
+		empty := ""
+		assert.Equal(t, tableLines(
+			"ITEMS",
+			"  (empty)",
+			"",
+			"NEXTPAGETOKEN  ",
+		), renderTable(t, &tableFixtureList{NextPageToken: &empty}))
+	})
+
+	t.Run("last page omits unset scalar fields", func(t *testing.T) {
+		list.NextPageToken = nil
+		assert.Equal(t, tableLines(
+			"ITEMS",
+			"  NAME   CREATED               TAGS",
+			"  alpha  2024-05-01T12:30:00Z  a, b",
+			"  beta   2024-05-01T12:30:00Z  ",
+		), renderTable(t, list))
+	})
+
+	t.Run("nil items are skipped", func(t *testing.T) {
+		item := tableFixtureItem{Name: &beta, Created: tableFixtureCreated}
+		assert.Equal(t, tableLines(
+			"ITEMS",
+			"  NAME  CREATED               TAGS",
+			"  beta  2024-05-01T12:30:00Z  ",
+		), renderTable(t, &tableFixtureList{Items: []*tableFixtureItem{nil, &item}}))
+	})
+
+	t.Run("empty page", func(t *testing.T) {
+		assert.Equal(t, tableLines("ITEMS", "  (empty)"), renderTable(t, &tableFixtureList{}))
+	})
+}
+
+// TestTableOutputRendersResourceSections verifies that a resource holding a
+// list keeps its own fields and renders the list as a section in field order.
+func TestTableOutputRendersResourceSections(t *testing.T) {
+	name, member := "sam", "rex"
+	resource := &tableFixtureResource{
+		ID:      "o1",
+		Name:    &name,
+		Parent:  &tableFixtureItem{},
+		Members: []tableFixtureItem{
+			{Name: &member, Created: tableFixtureCreated},
+		},
+	}
+	assert.Equal(t, tableLines(
+		"ID    o1",
+		"NAME  sam",
+		"",
+		"MEMBERS",
+		"  NAME  CREATED               TAGS",
+		"  rex   2024-05-01T12:30:00Z  ",
+	), renderTable(t, resource))
+}
+
+// TestTableOutputRendersSingleStruct verifies that a struct without list
+// fields keeps the vertical layout, including unset fields and timestamps.
+func TestTableOutputRendersSingleStruct(t *testing.T) {
+	name := "alpha"
+	assert.Equal(t, tableLines(
+		"NAME     alpha",
+		"CREATED  2024-05-01T12:30:00Z",
+		"TAGS     ",
+	), renderTable(t, &tableFixtureItem{Name: &name, Created: tableFixtureCreated}))
+}
 
 // WithTestName sets the test name for mock server routing.
 func (h *CLITestHarness) WithTestName(name string) *CLITestHarness {

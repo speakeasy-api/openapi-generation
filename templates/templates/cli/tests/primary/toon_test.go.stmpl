@@ -33,7 +33,9 @@ func TestOutputFormatToonSingleObject(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	stdout := strings.TrimSpace(h.GetStdout())
+	raw := h.GetStdout()
+	assert.True(t, strings.HasSuffix(raw, "\n"), "TOON output must end with a newline, got %q", raw)
+	stdout := strings.TrimSpace(raw)
 	require.NotEmpty(t, stdout)
 
 	// TOON encodes objects as indented key-value pairs — not JSON braces.
@@ -55,7 +57,10 @@ func TestOutputFormatToonStreamingItems(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	stdout := strings.TrimSpace(h.GetStdout())
+	raw := h.GetStdout()
+	assert.True(t, strings.HasSuffix(raw, "\n"), "TOON output must end with a newline, got %q", raw)
+	assert.Contains(t, raw, "\n\n", "expected a blank line between streamed TOON items, got %q", raw)
+	stdout := strings.TrimSpace(raw)
 	require.NotEmpty(t, stdout)
 
 	// Both streamed events must appear in the output.
@@ -81,7 +86,9 @@ func TestOutputFormatToonPaginatedItems(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	stdout := strings.TrimSpace(h.GetStdout())
+	raw := h.GetStdout()
+	assert.True(t, strings.HasSuffix(raw, "\n"), "TOON output must end with a newline, got %q", raw)
+	stdout := strings.TrimSpace(raw)
 	require.NotEmpty(t, stdout, "expected paginated TOON output")
 
 	// TOON output should not contain raw JSON object literals.

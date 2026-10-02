@@ -711,7 +711,6 @@ const (
 	TestIntentRouteDispatchHelpUsage
 	TestIntentRouteDispatchInteractivePlan
 	TestIntentRouteDispatchOverrideOnce
-	TestIntentsBothBodySurfacesMerged
 	TestIntentsDiscriminatedPartialBody
 	TestIntentsForeignSelectorAgentEnvelope
 	TestIntentsForeignSelectorUsageError
