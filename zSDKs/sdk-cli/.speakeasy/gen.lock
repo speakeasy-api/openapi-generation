@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:66703b4e61cf22941907d9a373dd4e75587f7e0e
   internal/cli/root.go:
-    last_write_checksum: sha1:1d441678f8915123a6a0e276474fc39169a36e9c
+    last_write_checksum: sha1:4fc50d5cb43cb615c806399b3e4d5160ee600469
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:3273e90d36a4b96a5ceeab1011fd39476589de13
   internal/cli/tag1/deprecated1.go:
@@ -260,13 +260,13 @@ trackedFiles:
   internal/output/artifact.go:
     last_write_checksum: sha1:e1dfc09cbda1012a953fe33fece7efaddaf3f03b
   internal/output/async.go:
-    last_write_checksum: sha1:df7afaf5e548dca0cb66fef20b0f2259524994ed
+    last_write_checksum: sha1:31ff57b5ae2d15ea3e421df64a28c2516e9771e9
   internal/output/binary.go:
-    last_write_checksum: sha1:2b8dd97066dcb3a74cf570023c5eb451a96dca86
+    last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
     last_write_checksum: sha1:2916ef06371017a1092310c53d80bd529345324c
   internal/output/color.go:
-    last_write_checksum: sha1:c618ec769569213c248114c0e42b07582fffefcc
+    last_write_checksum: sha1:84a2ab9b16ead6fb133f3d9af303676a71103139
   internal/output/errortable.go:
     last_write_checksum: sha1:ccc29887b4f88d007edf4c5606a7b97e5adafe2a
   internal/output/exitcodes.go:
@@ -650,9 +650,9 @@ trackedFiles:
   tests/artifact_test.go:
     last_write_checksum: sha1:0f30f25b5dc69938e9ef91371d4b3497bb87f62e
   tests/async_test.go:
-    last_write_checksum: sha1:824dea6c0e301b26cd2ce25f4f9cf0fe3a633157
+    last_write_checksum: sha1:fb5dafb085f988d482359c61cdb2b800528ceed0
   tests/cli_harness_test.go:
-    last_write_checksum: sha1:f326153d72804e7270ef3e91c6c195650a045e4b
+    last_write_checksum: sha1:a216e7099b6498bc548d20be152c793af84ce1c8
   tests/common_helpers_test.go:
     last_write_checksum: sha1:02f189ac10117b746a3691b30c87fecf518292fa
   tests/conflicts_test.go:
