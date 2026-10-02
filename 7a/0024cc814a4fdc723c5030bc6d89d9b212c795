@@ -1,0 +1,44 @@
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 65,71,73,89,139,147,157,179,183,199,201,205,209,213,249
+zSDKs/sdk-cli/internal/cli/binaryandstringupload.go
+  h_9630b74bdac540 40
+zSDKs/sdk-cli/internal/cli/createuser.go
+  h_9630b74bdac540 49
+zSDKs/sdk-cli/internal/cli/createwithunion.go
+  h_9630b74bdac540 52
+zSDKs/sdk-cli/internal/cli/getfullyflattenedrequest.go
+  h_9630b74bdac540 45
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/createnamespaceconflict.go
+  h_9630b74bdac540 47
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/putnamespaceconflict.go
+  h_9630b74bdac540 43
+zSDKs/sdk-cli/internal/cli/namespacetests/singlefoo/createsinglenamespacefoopet.go
+  h_9630b74bdac540 47
+zSDKs/sdk-cli/internal/cli/parenthesesinpathallowed.go
+  h_9630b74bdac540 44
+zSDKs/sdk-cli/internal/cli/renderasset.go
+  h_9630b74bdac540 40
+zSDKs/sdk-cli/internal/cli/testendpoint.go
+  h_9630b74bdac540 41
+zSDKs/sdk-cli/internal/cli/testenumformats.go
+  h_9630b74bdac540 43
+zSDKs/sdk-cli/internal/cli/testgroup/tag2/posttest.go
+  h_9630b74bdac540 39
+zSDKs/sdk-cli/internal/cli/testgroup/tag3/posttest.go
+  h_9630b74bdac540 39
+zSDKs/sdk-cli/internal/cli/updateuser.go
+  h_9630b74bdac540 50
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 662-666,669-671,731-734
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a0024cc814a4fdc723c5030bc6d89d9b212c795",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
