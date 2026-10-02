@@ -622,6 +622,9 @@ interface CliCatalogValue {
   Value: string;
   Description: string;
   IsDefault: boolean;
+  DefaultFor: string[];
+  Group: string;
+  Label: string;
 }
 
 interface CliCatalog {
@@ -630,6 +633,8 @@ interface CliCatalog {
   Summary: string;
   Description: string;
   Values: CliCatalogValue[];
+  Groups: { Title: string; Values: CliCatalogValue[] }[];
+  ColWidth: number;
 }
 
 /**
@@ -673,23 +678,96 @@ function collectCliCatalogs(): CliCatalog[] {
           byFuncName.set(funcName, `${ext.command}`);
           const defaultValue =
             ext.default !== undefined ? `${ext.default}` : "";
+          const defaults =
+            ext.defaults &&
+            typeof ext.defaults === "object" &&
+            !Array.isArray(ext.defaults)
+              ? ext.defaults
+              : {};
           const values: CliCatalogValue[] = (t.Enum.Values || []).map(
             (v: string) => {
               const description = t.Enum.Descriptions?.[v];
+              const declared = Object.prototype.hasOwnProperty.call(defaults, v)
+                ? defaults[v]
+                : undefined;
+              const defaultFor =
+                typeof declared === "string"
+                  ? [declared].filter((name) => name.trim().length > 0)
+                  : Array.isArray(declared)
+                  ? declared.filter(
+                      (name: any) =>
+                        typeof name === "string" && name.trim().length > 0,
+                    )
+                  : [];
+              const isDefault = defaultValue !== "" && v === defaultValue;
               return {
                 Value: v,
                 Description: typeof description === "string" ? description : "",
-                IsDefault: defaultValue !== "" && v === defaultValue,
+                IsDefault: isDefault,
+                DefaultFor: defaultFor,
+                Group: "",
+                Label:
+                  defaultFor.length > 0
+                    ? `${v} (default: ${defaultFor.join(", ")})`
+                    : isDefault
+                    ? `${v} (default)`
+                    : v,
               };
             },
           );
           if (values.length === 0) continue;
+          const groups: CliCatalog["Groups"] = [];
+          const hasGroups = Array.isArray(ext.groups) && ext.groups.length > 0;
+          if (hasGroups) {
+            const byValue = new Map(
+              values.map((value) => [value.Value, value]),
+            );
+            const grouped = new Set<string>();
+            for (const group of ext.groups) {
+              if (
+                !group ||
+                typeof group.title !== "string" ||
+                !group.title.trim() ||
+                !Array.isArray(group.values)
+              )
+                continue;
+              const groupValues: CliCatalogValue[] = [];
+              for (const name of group.values) {
+                const value = byValue.get(name);
+                if (!value || grouped.has(name)) continue;
+                grouped.add(name);
+                value.Group = group.title;
+                groupValues.push(value);
+              }
+              groups.push({ Title: group.title, Values: groupValues });
+            }
+            const remaining = values.filter(
+              (value) => !grouped.has(value.Value),
+            );
+            if (remaining.length > 0) {
+              for (const value of remaining) value.Group = "Other";
+              groups.push({ Title: "Other", Values: remaining });
+            }
+          }
+          const hasDefaults = Object.keys(defaults).length > 0;
           catalogs.push({
             Command: sanitizeCLICommand(`${ext.command}`),
             FuncName: sanitizeClassName(`${ext.command}`),
             Summary: `${ext.summary || `List available ${ext.command}`}`,
             Description: `${ext.description || ""}`,
-            Values: values,
+            Values: hasGroups
+              ? groups.flatMap((group) => group.Values)
+              : values,
+            Groups: groups,
+            ColWidth:
+              hasDefaults || hasGroups
+                ? Math.max(
+                    42,
+                    ...values.map(
+                      (value) => Array.from(value.Label).length + 2,
+                    ),
+                  )
+                : 42,
           });
         }
       }

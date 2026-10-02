@@ -2,41 +2,133 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+var catalogOutputCases = []struct {
+	command string
+	human   string
+	json    string
+}{
+	{
+		command: "catalog-legacy",
+		human: fmt.Sprintf("%-42s %s\n%-42s %s\n",
+			"catalog-value-with-a-name-longer-than-forty-two-characters (default)", "Long option.",
+			"beta", "Second option."),
+		json: `[{"default":true,"description":"Long option.","value":"catalog-value-with-a-name-longer-than-forty-two-characters"},{"default":false,"description":"Second option.","value":"beta"}]`,
+	},
+	{
+		command: "catalog-empty",
+		human: fmt.Sprintf("%-42s %s\n%-42s %s\n",
+			"alpha (default)", "First option.", "beta", "Second option."),
+		json: `[
+			{"default":true,"description":"First option.","value":"alpha"},
+			{"default":false,"description":"Second option.","value":"beta"}
+		]`,
+	},
+	{
+		command: "catalog-defaults",
+		human: fmt.Sprintf("%-48s %s\n%-48s %s\n%-48s %s\n%-48s %s\n%-48s %s\n",
+			"alpha (default: create-widget, inspect-widget)", "First option.",
+			"beta", "Second option.", "gamma (default: render)", "Third option.",
+			"delta", "Fourth option.", "epsilon", "Fifth option."),
+		json: `[
+			{"default":false,"default_for":["create-widget","inspect-widget"],"description":"First option.","value":"alpha"},
+			{"default":false,"description":"Second option.","value":"beta"},
+			{"default":false,"default_for":["render"],"description":"Third option.","value":"gamma"},
+			{"default":false,"description":"Fourth option.","value":"delta"},
+			{"default":false,"description":"Fifth option.","value":"epsilon"}
+		]`,
+	},
+	{
+		command: "catalog-groups",
+		human: "Primary \"Widgets\":\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n",
+			"beta", "Second option.", "alpha", "First option.") +
+			"\nSecondary:\n" + fmt.Sprintf("  %-42s %s\n", "gamma", "Third option.") +
+			"\nOther:\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n",
+				"delta (default)", "Fourth option.", "epsilon", "Fifth option."),
+		json: `[
+			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
+			{"default":false,"description":"First option.","group":"Primary \"Widgets\"","value":"alpha"},
+			{"default":false,"description":"Third option.","group":"Secondary","value":"gamma"},
+			{"default":true,"description":"Fourth option.","group":"Other","value":"delta"},
+			{"default":false,"description":"Fifth option.","group":"Other","value":"epsilon"}
+		]`,
+	},
+	{
+		command: "catalog-combined",
+		human: "Primary \"Widgets\":\n" + fmt.Sprintf("  %-48s %s\n  %-48s %s\n",
+			"beta", "Second option.", "alpha (default: create-widget, inspect-widget)", "First option.") +
+			"\nSecondary:\n" + fmt.Sprintf("  %-48s %s\n", "gamma (default: render)", "Third option.") +
+			"\nOther:\n" + fmt.Sprintf("  %-48s %s\n  %-48s %s\n",
+				"delta", "Fourth option.", "epsilon", "Fifth option."),
+		json: `[
+			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
+			{"default":true,"default_for":["create-widget","inspect-widget"],"description":"First option.","group":"Primary \"Widgets\"","value":"alpha"},
+			{"default":false,"default_for":["render"],"description":"Third option.","group":"Secondary","value":"gamma"},
+			{"default":false,"description":"Fourth option.","group":"Other","value":"delta"},
+			{"default":false,"description":"Fifth option.","group":"Other","value":"epsilon"}
+		]`,
+	},
+	{
+		command: "catalog-malformed",
+		human: "Valid:\n" + fmt.Sprintf("  %-42s %s\n", "alpha (default: render)", "First option.") +
+			"\nOther:\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n", "beta", "Second option.", "gamma", "Third option."),
+		json: `[
+			{"default":false,"default_for":["render"],"description":"First option.","group":"Valid","value":"alpha"},
+			{"default":false,"description":"Second option.","group":"Other","value":"beta"},
+			{"default":false,"description":"Third option.","group":"Other","value":"gamma"}
+		]`,
+	},
+}
+
 func TestCatalogListsValues(t *testing.T) {
 	recordTest("catalog-lists-values")
 	h := NewCLITestHarness(t)
-	err := h.RunRaw([]string{"hygiene-models"})
-	require.NoError(t, err)
-	stdout := h.GetStdout()
-	assert.Contains(t, stdout, "standard")
-	assert.Contains(t, stdout, "(default)")
-	assert.Contains(t, stdout, "fast")
+	require.NoError(t, h.RunRaw([]string{"hygiene-models"}))
+	assert.Equal(t, fmt.Sprintf("%-42s %s\n%-42s %s\n", "standard (default)", "", "fast", ""), h.GetStdout())
+
+	for _, tc := range catalogOutputCases {
+		t.Run(tc.command, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunRaw([]string{tc.command}))
+			assert.Equal(t, tc.human, h.GetStdout())
+			assert.Empty(t, h.GetStderr())
+		})
+	}
 }
 
 func TestCatalogStructuredOutput(t *testing.T) {
 	recordTest("catalog-structured-output")
-	s := newEchoServer()
-	defer s.Close()
-
 	h := NewCLITestHarness(t)
-	err := h.RunWithServer(s.URL, []string{"hygiene-models"})
-	require.NoError(t, err)
-	var values []struct {
-		Value       string `json:"value"`
-		Description string `json:"description"`
-		Default     bool   `json:"default"`
-	}
-	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &values))
-	require.NotEmpty(t, values)
-	assert.Equal(t, "standard", values[0].Value)
-	assert.True(t, values[0].Default)
+	require.NoError(t, h.RunRaw([]string{"hygiene-models", "-o", "json"}))
+	assert.Equal(t, `[{"default":true,"description":"","value":"standard"},{"default":false,"description":"","value":"fast"}]`+"\n", h.GetStdout())
 	assert.Empty(t, h.GetStderr())
+
+	for _, tc := range catalogOutputCases {
+		t.Run(tc.command, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunRaw([]string{tc.command, "-o", "json"}))
+			assert.JSONEq(t, tc.json, h.GetStdout())
+			if tc.command == "catalog-legacy" {
+				assert.Equal(t, tc.json+"\n", h.GetStdout())
+			}
+			assert.Empty(t, h.GetStderr())
+
+			var values []map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &values))
+			seen := make(map[string]bool)
+			for _, value := range values {
+				name := value["value"].(string)
+				assert.False(t, seen[name], "enum values must appear only once")
+				seen[name] = true
+			}
+		})
+	}
 }
 
 func TestCatalogRejectsPositionalArgument(t *testing.T) {

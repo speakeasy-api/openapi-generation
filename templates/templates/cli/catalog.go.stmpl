@@ -46,15 +46,28 @@ func new{{.FuncName}}CatalogCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			values := []map[string]interface{}{
 				{{- range .Values}}
-				{"value": "{{escapeGoString .Value}}", "description": "{{escapeGoString .Description}}", "default": {{if .IsDefault}}true{{else}}false{{end}}},
+				{"value": "{{escapeGoString .Value}}", "description": "{{escapeGoString .Description}}", "default": {{if .IsDefault}}true{{else}}false{{end}}{{if .DefaultFor}}, "default_for": []string{ {{range .DefaultFor}}"{{escapeGoString .}}", {{end}}}{{end}}{{if .Group}}, "group": "{{escapeGoString .Group}}"{{end}}},
 				{{- end}}
 			}
 			if output.IsMachineMode(cmd) {
 				return output.LocalResult(cmd, values)
 			}
 			out := cmd.OutOrStdout()
+			{{- $width := .ColWidth}}
+			{{- if .Groups}}
+			{{- range $index, $group := .Groups}}
+			{{- if $index}}
+			fmt.Fprintln(out)
+			{{- end}}
+			fmt.Fprintln(out, "{{escapeGoString .Title}}:")
 			{{- range .Values}}
-			fmt.Fprintf(out, "%-42s %s\n", "{{escapeGoString .Value}}{{if .IsDefault}} (default){{end}}", "{{escapeGoString .Description}}")
+			fmt.Fprintf(out, "  %-{{$width}}s %s\n", "{{escapeGoString .Label}}", "{{escapeGoString .Description}}")
+			{{- end}}
+			{{- end}}
+			{{- else}}
+			{{- range .Values}}
+			fmt.Fprintf(out, "%-{{$width}}s %s\n", "{{escapeGoString .Label}}", "{{escapeGoString .Description}}")
+			{{- end}}
 			{{- end}}
 			return nil
 		},
