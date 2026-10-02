@@ -404,12 +404,12 @@ func TestIntentPartialBodyUserKeysWin(t *testing.T) {
 }
 
 func TestIntentBodyFlagSurface(t *testing.T) {
-	recordTest("intents-both-body-surfaces-merged")
 	for _, surface := range []string{"--help", "--usage"} {
 		h := NewCLITestHarness(t)
 		require.NoError(t, h.RunBare([]string{"render", surface}))
 		assert.Contains(t, h.GetStdout(), "--body")
 		assert.Contains(t, h.GetStdout(), "--model")
+		assert.NotContains(t, h.GetStdout(), "--output-modalities")
 		assert.NotContains(t, h.GetStdout(), "cli-intent-run-body")
 		assert.NotContains(t, h.GetStdout(), "replaces intent arguments")
 
@@ -424,7 +424,7 @@ func TestIntentBodyFlagSurface(t *testing.T) {
 		assert.NotContains(t, h.GetStdout(), "--discriminated-variant-body")
 	}
 
-	for _, flag := range []string{"--cli-intent-run-body", "-b"} {
+	for _, flag := range []string{"--cli-intent-run-body", "-b", "--output-modalities"} {
 		h := NewCLITestHarness(t)
 		err := h.RunBare([]string{"render", flag, `{}`})
 		require.Error(t, err)
