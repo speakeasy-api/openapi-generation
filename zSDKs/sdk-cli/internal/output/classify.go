@@ -706,11 +706,13 @@ func cliReasonErrorType(reason string) ErrorType {
 
 type cliHintsError struct {
 	error
-	hints []string
+	hints         []string
+	omitTypeHints bool
 }
 
-func (e cliHintsError) CLIHints() []string { return e.hints }
-func (e cliHintsError) Unwrap() error      { return e.error }
+func (e cliHintsError) CLIHints() []string     { return e.hints }
+func (e cliHintsError) CLIOmitTypeHints() bool { return e.omitTypeHints }
+func (e cliHintsError) Unwrap() error          { return e.error }
 
 func withCLIHints(err error, hints []string) error {
 	if err == nil || len(hints) == 0 {

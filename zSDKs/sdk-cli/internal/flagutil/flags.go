@@ -276,11 +276,13 @@ func looksLikePath(val string) bool {
 	return len(ext) > 1 && len(ext) < len(val)
 }
 
-// UnknownFlagSuggestionHint names the flags closest to the one a parse
-// error reports as unknown, matching cobra's command suggestions: an edit
-// distance of at most two, or a prefix relationship in either direction.
-// When several flags qualify, only those at the smallest edit distance are
-// named, so --output points at --out rather than every --output-* flag.
+// UnknownFlagSuggestionHint names the visible flags closest to the one a
+// parse error reports as unknown. Like cobra's command suggestions, a flag
+// qualifies at an edit distance of at most two or when it starts with the
+// typed name; a flag that is itself a prefix of the typed name also
+// qualifies when the typed name is at most twice as long (--output → --out,
+// but not --identity-file → --id). When several flags qualify, only those at
+// the smallest edit distance are named.
 func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
 	const prefix = "unknown flag: --"
 	if !strings.HasPrefix(errMsg, prefix) {
@@ -291,28 +293,27 @@ func UnknownFlagSuggestionHint(cmd *cobra.Command, errMsg string) string {
 		return ""
 	}
 	seen := map[string]bool{}
-	best := -1
-	var matches []string
+	var names, prefixes []string
 	visit := func(f *pflag.Flag) {
 		name := strings.ToLower(f.Name)
-		if f.Hidden || seen[name] || name == typed {
+		if f.Hidden || seen[name] {
 			return
 		}
 		seen[name] = true
-		d := editDistance(typed, name)
-		if d > 2 && !strings.HasPrefix(name, typed) && !strings.HasPrefix(typed, name) {
-			return
-		}
-		switch {
-		case best < 0 || d < best:
-			best = d
-			matches = []string{"--" + f.Name}
-		case d == best:
-			matches = append(matches, "--"+f.Name)
+		names = append(names, f.Name)
+		if strings.HasPrefix(name, typed) || (strings.HasPrefix(typed, name) && len(typed) <= 2*len(name)) {
+			prefixes = append(prefixes, f.Name)
 		}
 	}
 	cmd.Flags().VisitAll(visit)
 	cmd.InheritedFlags().VisitAll(visit)
+	matches := nearest(typed, names, 2)
+	if len(matches) == 0 {
+		matches = nearest(typed, prefixes, -1)
+	}
+	for i, name := range matches {
+		matches[i] = "--" + name
+	}
 	switch len(matches) {
 	case 0:
 		return ""
@@ -434,19 +435,10 @@ func closestMatch(val string, candidates []string) string {
 			return prefix
 		}
 	}
-	best, bestDist, ties := "", 3, 0
-	for _, c := range candidates {
-		switch d := editDistance(val, strings.ToLower(c)); {
-		case d < bestDist:
-			best, bestDist, ties = c, d, 1
-		case d == bestDist:
-			ties++
-		}
+	if matches := nearest(val, candidates, 2); len(matches) == 1 {
+		return matches[0]
 	}
-	if ties != 1 {
-		return ""
-	}
-	return best
+	return ""
 }
 
 func SpacedBoolValueHint(cmd *cobra.Command, args []string) string {
