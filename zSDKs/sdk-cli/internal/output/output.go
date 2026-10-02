@@ -1313,18 +1313,23 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 		return nil
 	}
 
-	// Collect column info from the element type, or the first element when
-	// the slice holds interfaces
+	// Collect column info from the element type, or the first struct element
+	// when the slice holds interfaces
 	elemType := derefType(v.Type().Elem())
 	if elemType.Kind() == reflect.Interface {
-		first := v.Index(0)
-		for first.Kind() == reflect.Ptr || first.Kind() == reflect.Interface {
-			if first.IsNil() {
+		for i := 0; i < v.Len(); i++ {
+			elem := v.Index(i)
+			for elem.Kind() == reflect.Ptr || elem.Kind() == reflect.Interface {
+				if elem.IsNil() {
+					break
+				}
+				elem = elem.Elem()
+			}
+			if elem.Kind() == reflect.Struct {
+				elemType = elem.Type()
 				break
 			}
-			first = first.Elem()
 		}
-		elemType = first.Type()
 	}
 	if elemType.Kind() != reflect.Struct {
 		// Non-struct slice: one item per line
@@ -1357,7 +1362,7 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 			row = row.Elem()
 		}
 		vals := make([]string, len(cols))
-		if row.Kind() == reflect.Struct {
+		if row.Kind() == reflect.Struct && row.Type() == elemType {
 			for j, c := range cols {
 				vals[j] = formatTableCell(row.Field(c.index))
 			}

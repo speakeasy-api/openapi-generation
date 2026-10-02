@@ -56,6 +56,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/auxiliary/internal/output/exitcodes.go.stmpl":                                         0o644,
 	"templates/cli/auxiliary/internal/output/jq.go.stmpl":                                                0o644,
 	"templates/cli/auxiliary/internal/output/output.go.stmpl":                                            0o644,
+	"templates/cli/auxiliary/internal/output/output_test.go.stmpl":                                       0o644,
 	"templates/cli/auxiliary/internal/output/outputitems.go.stmpl":                                       0o644,
 	"templates/cli/auxiliary/internal/output/paginated.go.stmpl":                                         0o644,
 	"templates/cli/auxiliary/internal/output/pretty.go.stmpl":                                            0o644,

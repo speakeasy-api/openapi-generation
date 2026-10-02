@@ -55,11 +55,21 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 	pageCount := 0
 	seenContinuations := make(map[string]struct{})
 	collectRows := format == "table" && jqExpr == "" && resultsFieldName != ""
-	var rows []interface{}
+	var rows reflect.Value
+	flushRows := func(partial bool) error {
+		if !rows.IsValid() || (partial && rows.Len() == 0) {
+			return nil
+		}
+		if err := printTable(out, rows.Interface()); err != nil {
+			return prettyPrint(out, rows.Interface(), colorize)
+		}
+		return nil
+	}
 	for page := res; page != nil; {
 		// Check for context cancellation (ctrl+C)
 		select {
 		case <-ctx.Done():
+			_ = flushRows(true)
 			return ctx.Err()
 		default:
 		}
@@ -80,16 +90,21 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 				if contentVal.IsValid() && !((contentVal.Kind() == reflect.Ptr || contentVal.Kind() == reflect.Interface) && contentVal.IsNil()) {
 					itemsVal := extractFieldByPath(contentVal, resultsFieldName)
 					if itemsVal.IsValid() && itemsVal.Kind() == reflect.Slice {
-						for i := 0; i < itemsVal.Len(); i++ {
-							item := itemsVal.Index(i).Interface()
-							if collectRows {
-								rows = append(rows, item)
-								continue
+						if collectRows && derefType(itemsVal.Type().Elem()).Kind() != reflect.Struct {
+							collectRows = false
+						}
+						if collectRows {
+							if !rows.IsValid() {
+								rows = reflect.MakeSlice(itemsVal.Type(), 0, itemsVal.Len())
 							}
-							if err := outputOneItem(out, item, format, jqExpr, colorize, jqRaw, first); err != nil {
-								return err
+							rows = reflect.AppendSlice(rows, itemsVal)
+						} else {
+							for i := 0; i < itemsVal.Len(); i++ {
+								if err := outputOneItem(out, itemsVal.Index(i).Interface(), format, jqExpr, colorize, jqRaw, first); err != nil {
+									return err
+								}
+								first = false
 							}
-							first = false
 						}
 					}
 				}
@@ -114,6 +129,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 		if continuation, ok := extractPaginationContinuation(page, probe); ok {
 			if _, seen := seenContinuations[continuation.key]; seen {
 				err := fmt.Errorf("pagination did not advance: the server repeated continuation %s %s", continuation.kind, continuation.display)
+				_ = flushRows(true)
 				return CLIError(cmd, WithCLIReason(err, ReasonCLIProtocol))
 			}
 			seenContinuations[continuation.key] = struct{}{}
@@ -123,15 +139,11 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 		var err error
 		page, err = callNext(page)
 		if err != nil {
+			_ = flushRows(true)
 			return Error(cmd, err)
 		}
 	}
-	if collectRows {
-		if err := printTable(out, rows); err != nil {
-			return prettyPrint(out, rows, colorize)
-		}
-	}
-	return nil
+	return flushRows(false)
 }
 
 func extractPaginationContinuation(res interface{}, probe PaginationProbe) (paginationContinuation, bool) {
