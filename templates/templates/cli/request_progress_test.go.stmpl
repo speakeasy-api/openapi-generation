@@ -87,7 +87,7 @@ func TestRequestProgressWaitsBeforeRenderingAndClearsOnStop(t *testing.T) {
 
 	stop()
 	cleared := readProgressOutput(master, 50*time.Millisecond)
-	require.Contains(t, cleared, "\r\x1b[2K")
+	require.True(t, strings.HasSuffix(cleared, "\r\x1b[2K"), "progress must leave the line cleared")
 
 	stop()
 	require.Empty(t, readProgressOutput(master, 20*time.Millisecond))
@@ -109,11 +109,7 @@ func TestRequestProgressClearsBeforeRequestError(t *testing.T) {
 	require.NoError(t, err)
 
 	got := readProgressOutput(master, 100*time.Millisecond)
-	clearAt := bytes.LastIndex([]byte(got), []byte("\r\x1b[2K"))
-	errorAt := bytes.Index([]byte(got), []byte("request failed"))
-	require.NotEqual(t, -1, clearAt)
-	require.NotEqual(t, -1, errorAt)
-	require.Less(t, clearAt, errorAt)
+	require.Contains(t, got, "\r\x1b[2Krequest failed")
 }
 
 func TestRequestProgressContextCancellationClears(t *testing.T) {
@@ -124,7 +120,7 @@ func TestRequestProgressContextCancellationClears(t *testing.T) {
 	cancel()
 
 	got := readProgressOutput(master, time.Second)
-	require.Contains(t, got, "\r\x1b[2K")
+	require.True(t, strings.HasSuffix(got, "\r\x1b[2K"), "cancellation must leave the line cleared")
 	stop()
 }
 

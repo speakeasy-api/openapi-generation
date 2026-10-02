@@ -1086,7 +1086,7 @@ trackedFiles:
   tests/readme_examples_test.go:
     last_write_checksum: sha1:441c213c8049299e7b3efd8cb7033e5885610a20
   tests/request_progress_test.go:
-    last_write_checksum: sha1:47fe3c1a7dd90b1c6447783f06ec31324c093ac5
+    last_write_checksum: sha1:06772a2e9900b76d04fc16f62e6c86b52a29407e
   tests/sdk_test.go:
     last_write_checksum: sha1:0ac872f31dea293b708409ea99d662eafa9725b5
   tests/singlebar_test.go:
