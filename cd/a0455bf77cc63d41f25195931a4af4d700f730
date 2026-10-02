@@ -1,0 +1,61 @@
+templates/templates/cli/includes/intents.ts
+  h_9630b74bdac540 80,442,452,463,477,481,815,834,935-936,1221
+  h_9630b74bdac540 23,478-480,482,932,939
+templates/templates/cli/README.md
+  h_9630b74bdac540 575,684,1249,1613,1716
+tests/overlays/primary/cli/overlay.yaml
+  h_9630b74bdac540 76-79
+templates/templates/cli/intentcmd.go.stmpl
+  h_9630b74bdac540 80,83,92,95,98,118,290,309,341,377,380,388,400
+  h_9630b74bdac540 85-86,281
+templates/templates/cli/tests/primary/requestshape_additional_test.go.stmpl
+  h_9630b74bdac540 237,240,242
+templates/templates/cli/tests/primary/intents_test.go.stmpl
+  h_9630b74bdac540 406,408-433,437-438,440-442,496
+  h_9630b74bdac540 373,488
+templates/templates/cli/includes/usage.ts
+  h_9630b74bdac540 1022,1033
+.changesets/1790900058-eee5daf2.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 119,121,123,125,127,129,191,645,667
+zSDKs/sdk-cli/docs/cli_enroll.md
+  h_9630b74bdac540 18-21
+zSDKs/sdk-cli/docs/cli_invite.md
+  h_9630b74bdac540 27-31
+zSDKs/sdk-cli/docs/cli_observe.md
+  h_9630b74bdac540 23-28
+zSDKs/sdk-cli/docs/cli_produce.md
+  h_9630b74bdac540 26-33
+zSDKs/sdk-cli/docs/cli_render.md
+  h_9630b74bdac540 26-30
+zSDKs/sdk-cli/docs/cli_say.md
+  h_9630b74bdac540 27
+zSDKs/sdk-cli/internal/cli/intent_enroll.go
+  h_9630b74bdac540 27-30,39-40,67,90,95
+zSDKs/sdk-cli/internal/cli/intent_invite.go
+  h_9630b74bdac540 32-35,44-45,52-53,60,96,130,138
+zSDKs/sdk-cli/internal/cli/intent_observe.go
+  h_9630b74bdac540 35-38,47,89,111,119
+zSDKs/sdk-cli/internal/cli/intent_produce.go
+  h_9630b74bdac540 37-40,49,101,123,131
+zSDKs/sdk-cli/internal/cli/intent_render.go
+  h_9630b74bdac540 32-35,44,90,112,120
+zSDKs/sdk-cli/internal/cli/intent_say.go
+  h_9630b74bdac540 32,41,87
+zSDKs/sdk-cli/internal/cli/tag1/intent_tag1-recent.go
+  h_9630b74bdac540 24-26
+zSDKs/sdk-cli/internal/usage/schema.go
+  h_9630b74bdac540 16-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cda0455bf77cc63d41f25195931a4af4d700f730",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
