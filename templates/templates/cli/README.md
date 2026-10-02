@@ -1192,7 +1192,7 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 - `configure` - Interactive prompt for credentials and global parameters. When the OS keychain is available (via `go-keyring`), security credentials are stored in the keychain instead of the config file. Falls back to config file on headless/CI environments
 - `whoami` - Displays current credential values and global parameter settings with their sources (flag/env/keyring/config/default/unset)
 
-`whoami` uses `ResolveCredential()` in `auxiliary/internal/config/config.go.stmpl` to report unchanged, non-empty global parameter flag values as `[default]`, or `"source": "default"` in machine output. String defaults, boolean `false`, and numeric `0` are retained. Explicit flags, environment variables, and config values override defaults. Empty strings and missing flags remain `[unset]`; security credential resolution and masking are unchanged.
+`whoami` uses `ResolveCredential()` in `auxiliary/internal/config/config.go.stmpl` to report unchanged, non-empty global parameter flag values as `[default]`, or `"source": "default"` in machine output. String defaults, boolean `false`, and numeric `0` are retained. Explicit flags, environment variables, and config values override defaults. Empty flag values and missing flags fall through to environment and config; values are `[unset]` only when those sources are also empty. Security credential resolution and masking are unchanged.
 
 The `configure` and `whoami` commands are generated whenever the API has global security schemes and/or global parameters (controlled by `hasConfigurableSettings()` in `security.ts`). When both are present, the configure command shows separate "Authentication" and "Global Parameters" sections.
 

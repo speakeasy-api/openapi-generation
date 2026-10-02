@@ -54,6 +54,7 @@ func setupConfigureTest(t *testing.T) (h *CLITestHarness, tmpDir string) {
 func TestWhoamiGlobalDefaults(t *testing.T) {
 	for _, format := range []string{"pretty", "json"} {
 		t.Run(format, func(t *testing.T) {
+			resetConfig(t)
 			h := NewCLITestHarness(t)
 			h.resetAndSetupEnv()
 			root, err := cli.NewRootCommand()
@@ -111,6 +112,7 @@ func TestResolveCredentialDefaultPrecedence(t *testing.T) {
 		{name: "flag", flag: "flag-query", env: "env-query", stored: "config-query", want: "flag-query", source: "flag"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			resetConfig(t)
 			h := NewCLITestHarness(t)
 			h.resetAndSetupEnv()
 			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{
