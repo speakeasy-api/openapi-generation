@@ -563,7 +563,6 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-formats",
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
-    "shared-enum-constructor-default",
   ].includes(test);
 }
 
