@@ -1,0 +1,40 @@
+tests/specs/fragments/primary/shared-enum-constructor-default.yaml
+  h_9630b74bdac540 1-38
+internal/features/tests.go
+  h_9630b74bdac540 774
+templates/templates/php/Tests/primary/RequestBodiesAdditionalTest.php
+  h_9630b74bdac540 15,17,19,21-23
+internal/features/tests_generated.go
+  h_9630b74bdac540 1305-1306,2807-2808,3659
+templates/templates/cli/features.ts
+  h_9630b74bdac540 360
+templates/templates/csharp/features.ts
+  h_9630b74bdac540 423
+templates/templates/go/features.ts
+  h_9630b74bdac540 422
+templates/templates/javav2/features.ts
+  h_9630b74bdac540 471
+templates/templates/mcp-typescript/features.ts
+  h_9630b74bdac540 680
+templates/templates/php/features.ts
+  h_9630b74bdac540 566
+templates/templates/pythonv2/features.ts
+  h_9630b74bdac540 426
+templates/templates/ruby/features.ts
+  h_9630b74bdac540 468
+templates/templates/typescriptv2/features.ts
+  h_9630b74bdac540 416
+templates/templates/unity/features.ts
+  h_9630b74bdac540 589
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "94cf1546adfe86a018f0769466a8190c3b11c6aa",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
