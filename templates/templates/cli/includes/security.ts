@@ -2166,7 +2166,9 @@ function templateWhoamiGlobals(): string {
     lines.push(`// ${singleLineDescription}`);
     lines.push(`{`);
     lines.push(
-      `    value, source := config.ResolveCredential(cmd, "${flagName}")`,
+      `    value, source := config.ResolveCredential(cmd, "${flagName}", ${
+        field.Default?.Value != null
+      })`,
     );
     lines.push(
       `    fmt.Fprintf(out, "  --%-25s [%-7s] %s\\n", "${flagName}", source, value)`,
@@ -2191,7 +2193,9 @@ function templateWhoamiGlobalsStructured(): string {
     const flagName = sanitizeFlagNameWithReserved(field.Name);
     lines.push(`{`);
     lines.push(
-      `    value, source := config.ResolveCredential(cmd, "${flagName}")`,
+      `    value, source := config.ResolveCredential(cmd, "${flagName}", ${
+        field.Default?.Value != null
+      })`,
     );
     lines.push(
       `    parameters["${flagName}"] = map[string]any{"source": source, "value": value}`,

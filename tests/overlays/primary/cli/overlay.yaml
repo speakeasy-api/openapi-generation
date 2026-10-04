@@ -12,6 +12,32 @@ info:
   version: 0.0.0
   x-base-spec: ./tests/specs/uber.yaml
 actions:
+- target: $['x-speakeasy-globals'].parameters
+  update:
+    - name: globalDefaultString
+      description: A global string parameter with an explicit schema default.
+      in: query
+      schema:
+        type: string
+        default: default-query
+    - name: globalDefaultBoolean
+      description: A global boolean parameter with an explicit false schema default.
+      in: header
+      schema:
+        type: boolean
+        default: false
+    - name: globalDefaultInteger
+      description: A global integer parameter with an explicit zero schema default.
+      in: query
+      schema:
+        type: integer
+        default: 0
+    - name: globalDefaultEmptyString
+      description: A global string parameter with an empty schema default.
+      in: query
+      schema:
+        type: string
+        default: ""
 - target: $
   update:
     x-speakeasy-cli-errors:

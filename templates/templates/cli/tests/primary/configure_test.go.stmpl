@@ -62,10 +62,9 @@ func TestWhoamiGlobalDefaults(t *testing.T) {
 			root.SetOut(h.stdout)
 			root.SetErr(h.stderr)
 
-			flag := root.PersistentFlags().Lookup("global-query-param")
+			flag := root.PersistentFlags().Lookup("global-default-string")
 			require.NotNil(t, flag)
-			flag.DefValue = "default-query"
-			require.NoError(t, flag.Value.Set(flag.DefValue))
+			assert.Equal(t, "default-query", flag.DefValue)
 			require.False(t, flag.Changed)
 
 			require.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{
@@ -80,18 +79,24 @@ func TestWhoamiGlobalDefaults(t *testing.T) {
 				}
 				require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &info))
 				for name, value := range map[string]string{
-					"global-query-param": "default-query",
-					"global-header-param": "false",
-					"global-path-param": "0",
+					"global-default-string": "default-query",
+					"global-default-boolean": "false",
+					"global-default-integer": "0",
 				} {
 					assert.Equal(t, "default", info.Parameters[name].Source)
 					assert.Equal(t, value, info.Parameters[name].Value)
 				}
-				assert.Equal(t, "unset", info.Parameters["global-optional-path-param"].Source)
+				for _, name := range []string{"global-query-param", "global-header-param", "global-path-param", "global-optional-path-param", "global-default-empty-string"} {
+					assert.Equal(t, "unset", info.Parameters[name].Source, name)
+					assert.Empty(t, info.Parameters[name].Value, name)
+				}
 			} else {
-				assert.Regexp(t, `--global-query-param\s+\[default\]\s+default-query`, h.GetStdout())
-				assert.Regexp(t, `--global-header-param\s+\[default\]\s+false`, h.GetStdout())
-				assert.Regexp(t, `--global-path-param\s+\[default\]\s+0`, h.GetStdout())
+				assert.Regexp(t, `--global-default-string\s+\[default\]\s+default-query`, h.GetStdout())
+				assert.Regexp(t, `--global-default-boolean\s+\[default\]\s+false`, h.GetStdout())
+				assert.Regexp(t, `--global-default-integer\s+\[default\]\s+0`, h.GetStdout())
+				for _, name := range []string{"global-query-param", "global-header-param", "global-path-param", "global-optional-path-param", "global-default-empty-string"} {
+					assert.Regexp(t, `--`+name+`\s+\[unset\s*\]`, h.GetStdout())
+				}
 			}
 		})
 	}
@@ -116,25 +121,24 @@ func TestResolveCredentialDefaultPrecedence(t *testing.T) {
 			h := NewCLITestHarness(t)
 			h.resetAndSetupEnv()
 			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{
-				"globals": map[string]interface{}{"global_query_param": tt.stored},
+				"globals": map[string]interface{}{"global_default_string": tt.stored},
 			})
-			t.Setenv("CLI_GLOBAL_QUERY_PARAM", tt.env)
+			t.Setenv("CLI_GLOBAL_DEFAULT_STRING", tt.env)
 			root, err := cli.NewRootCommand()
 			require.NoError(t, err)
-			flag := root.PersistentFlags().Lookup("global-query-param")
+			flag := root.PersistentFlags().Lookup("global-default-string")
 			require.NotNil(t, flag)
-			flag.DefValue = "default-query"
-			require.NoError(t, flag.Value.Set(flag.DefValue))
+			assert.Equal(t, "default-query", flag.DefValue)
 			if tt.flag != "" {
 				require.NoError(t, root.PersistentFlags().Set(flag.Name, tt.flag))
 			}
 			child, _, err := root.Find([]string{"whoami"})
 			require.NoError(t, err)
 			require.NoError(t, config.Init("cli", "CLI"))
-			value, source := config.ResolveCredential(child, flag.Name)
+			value, source := config.ResolveCredential(child, flag.Name, true)
 			assert.Equal(t, tt.want, value)
 			assert.Equal(t, tt.source, source)
-			value, source = config.ResolveCredential(child, "missing-flag")
+			value, source = config.ResolveCredential(child, "missing-flag", true)
 			assert.Empty(t, value)
 			assert.Equal(t, "unset", source)
 		})

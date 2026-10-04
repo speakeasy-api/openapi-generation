@@ -211,7 +211,7 @@ func GetConfigValue(key string) string {
 // ("flag", "env", "config", "default", or "unset").
 // Used for global parameters. For security credentials, use ResolveSecurityCredential
 // which includes the OS keychain tier.
-func ResolveCredential(cmd *cobra.Command, flagName string) (value, source string) {
+func ResolveCredential(cmd *cobra.Command, flagName string, hasSchemaDefault bool) (value, source string) {
 	flagValue, changed := flagutil.GetStringFlag(cmd, flagName)
 	if changed && flagValue != "" {
 		return flagValue, "flag"
@@ -222,7 +222,7 @@ func ResolveCredential(cmd *cobra.Command, flagName string) (value, source strin
 	if val := GetConfigValue(flagName); val != "" {
 		return val, "config"
 	}
-	if !changed && flagValue != "" {
+	if hasSchemaDefault && !changed && flagValue != "" {
 		return flagValue, "default"
 	}
 	return "", "unset"
