@@ -771,6 +771,7 @@ const (
 	TestEventStreamWithOperationTimeoutStreamsToCompletion
 	TestJsonlStreamTimeoutStillBoundsSlowStream
 	TestJsonlStreamWithTimeoutStreamsToCompletion
+	TestSharedEnumConstructorDefault
 )
 
 func GetAllTests() []Test {

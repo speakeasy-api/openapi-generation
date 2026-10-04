@@ -1302,6 +1302,8 @@ func (t Test) String() string {
         return "servers-server-with-templates-global-defaults"
     case TestServersServerWithTemplatesGlobalEnum:
         return "servers-server-with-templates-global-enum"
+    case TestSharedEnumConstructorDefault:
+        return "shared-enum-constructor-default"
     case TestSmartUnionAllConsts:
         return "smart-union-all-consts"
     case TestSmartUnionAnyFieldType:
@@ -2802,6 +2804,8 @@ func TestFromString(s string) Test {
         return TestServersServerWithTemplatesGlobalDefaults
     case "servers-server-with-templates-global-enum":
         return TestServersServerWithTemplatesGlobalEnum
+    case "shared-enum-constructor-default":
+        return TestSharedEnumConstructorDefault
     case "smart-union-all-consts":
         return TestSmartUnionAllConsts
     case "smart-union-any-field-type":
@@ -3652,6 +3656,7 @@ var testList = []Test{
     TestServersServerWithTemplatesGlobal,
     TestServersServerWithTemplatesGlobalDefaults,
     TestServersServerWithTemplatesGlobalEnum,
+    TestSharedEnumConstructorDefault,
     TestSmartUnionAllConsts,
     TestSmartUnionAnyFieldType,
     TestSmartUnionArrayFields,

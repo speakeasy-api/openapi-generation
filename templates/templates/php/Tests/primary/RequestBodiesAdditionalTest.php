@@ -12,13 +12,15 @@ final class RequestBodiesAdditionalTest extends TestCase
 {
     public function testSharedEnumConstructorDefault(): void
     {
-        $request = new Operations\CliCatalogOptionsPostRequestBody();
+        CommonHelpers::recordTest('shared-enum-constructor-default');
 
-        $this->assertSame(Shared\CliCatalogDefaults::Alpha, $request->defaults);
+        $request = new Operations\SharedEnumConstructorDefaultRequestBody();
 
-        $request = new Operations\CliCatalogOptionsPostRequestBody(defaults: Shared\CliCatalogDefaults::Beta);
+        $this->assertSame(Shared\SharedEnumConstructorChoice::Alpha, $request->choice);
 
-        $this->assertSame(Shared\CliCatalogDefaults::Beta, $request->defaults);
+        $request = new Operations\SharedEnumConstructorDefaultRequestBody(choice: Shared\SharedEnumConstructorChoice::Beta);
+
+        $this->assertSame(Shared\SharedEnumConstructorChoice::Beta, $request->choice);
     }
 
     public function testRequestBodiesBase64FileInputIdempotent(): void

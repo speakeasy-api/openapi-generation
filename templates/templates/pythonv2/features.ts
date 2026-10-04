@@ -423,6 +423,7 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-object-property-params",
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
+    "shared-enum-constructor-default",
   ].includes(test);
 }
 
