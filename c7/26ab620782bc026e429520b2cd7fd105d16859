@@ -1,0 +1,20 @@
+templates/templates/php/includes/sanitization.ts
+  h_9630b74bdac540 553
+templates/templates/php/Tests/primary/RequestBodiesAdditionalTest.php
+  h_9630b74bdac540 7,13-23
+templates/templates/php/includes/templating.ts
+  h_9630b74bdac540 846
+.changesets/1790914252-bbb55bb2.yaml
+  h_9630b74bdac540 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c726ab620782bc026e429520b2cd7fd105d16859",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
