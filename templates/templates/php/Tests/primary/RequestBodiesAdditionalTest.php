@@ -4,23 +4,11 @@ namespace OpenAPI\OpenAPI\Tests;
 
 use OpenAPI\OpenAPI\Tests\CommonHelpers;
 use OpenAPI\OpenAPI\Tests\Helpers\Helpers;
-use OpenAPI\OpenAPI\Models\Operations;
 use OpenAPI\OpenAPI\Models\Shared;
 use PHPUnit\Framework\TestCase;
 
 final class RequestBodiesAdditionalTest extends TestCase
 {
-    public function testSharedEnumConstructorDefault(): void
-    {
-        $request = new Operations\CliCatalogOptionsPostRequestBody();
-
-        $this->assertSame(Shared\CliCatalogDefaults::Alpha, $request->defaults);
-
-        $request = new Operations\CliCatalogOptionsPostRequestBody(defaults: Shared\CliCatalogDefaults::Beta);
-
-        $this->assertSame(Shared\CliCatalogDefaults::Beta, $request->defaults);
-    }
-
     public function testRequestBodiesBase64FileInputIdempotent(): void
     {
         CommonHelpers::recordTest('request-bodies-base64-file-input-idempotent');

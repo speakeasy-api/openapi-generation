@@ -550,7 +550,7 @@ function templateEnumValue(
   }
   return `${sanitizeClass(
     fieldDef.Type,
-    additionalContext?.usageLocation ?? fieldDef.Type.OutputLocation,
+    fieldDef.Type.OutputLocation,
     false,
     qualification,
   )}::${enumNames[idx]}`;
