@@ -309,24 +309,31 @@ type CLICommandHelp struct {
 	Escalate string `json:"escalate,omitempty" yaml:"escalate,omitempty"`
 }
 
+type CLICatalogDefault struct {
+	CatalogCommand string `json:"catalogCommand" yaml:"catalogCommand"`
+	Value          string `json:"value" yaml:"value"`
+	Label          string `json:"label" yaml:"label"`
+}
+
 // CLICommand is one declared intent command.
 type CLICommand struct {
-	ID           string                  `json:"id" yaml:"id"`
-	Path         []string                `json:"path" yaml:"path"`
-	Category     string                  `json:"category" yaml:"category"`
-	Summary      string                  `json:"summary" yaml:"summary"`
-	Tagline      string                  `json:"tagline" yaml:"tagline"`
-	Description  string                  `json:"description" yaml:"description"`
-	Source       CLICommandSource        `json:"source" yaml:"source"`
-	Args         []CLICommandInput       `json:"args" yaml:"args"`
-	Flags        []CLICommandInput       `json:"flags" yaml:"flags"`
-	Presets      []CLICommandPreset      `json:"presets" yaml:"presets"`
-	Async        *CLICommandAsync        `json:"async,omitempty" yaml:"async,omitempty"`
-	Output       *CLICommandOutput       `json:"output" yaml:"output"`
-	Examples     []CLICommandExample     `json:"examples" yaml:"examples"`
-	Help         *CLICommandHelp         `json:"help,omitempty" yaml:"help,omitempty"`
-	Override     bool                    `json:"override,omitempty" yaml:"override,omitempty"`
-	DispatchKeys []CLICommandDispatchKey `json:"dispatchKeys,omitempty" yaml:"dispatchKeys,omitempty"`
+	ID              string                  `json:"id" yaml:"id"`
+	Path            []string                `json:"path" yaml:"path"`
+	Category        string                  `json:"category" yaml:"category"`
+	Summary         string                  `json:"summary" yaml:"summary"`
+	Tagline         string                  `json:"tagline" yaml:"tagline"`
+	Description     string                  `json:"description" yaml:"description"`
+	Source          CLICommandSource        `json:"source" yaml:"source"`
+	Args            []CLICommandInput       `json:"args" yaml:"args"`
+	Flags           []CLICommandInput       `json:"flags" yaml:"flags"`
+	Presets         []CLICommandPreset      `json:"presets" yaml:"presets"`
+	CatalogDefaults []CLICatalogDefault     `json:"catalogDefaults,omitempty" yaml:"catalogDefaults,omitempty"`
+	Async           *CLICommandAsync        `json:"async,omitempty" yaml:"async,omitempty"`
+	Output          *CLICommandOutput       `json:"output" yaml:"output"`
+	Examples        []CLICommandExample     `json:"examples" yaml:"examples"`
+	Help            *CLICommandHelp         `json:"help,omitempty" yaml:"help,omitempty"`
+	Override        bool                    `json:"override,omitempty" yaml:"override,omitempty"`
+	DispatchKeys    []CLICommandDispatchKey `json:"dispatchKeys,omitempty" yaml:"dispatchKeys,omitempty"`
 	// Hints maps an error reason to agent-mode hint lines that are merged
 	// into the reason-first error envelope. CLI_* reasons are the closed
 	// namespace the generated runtime itself produces; external (server)

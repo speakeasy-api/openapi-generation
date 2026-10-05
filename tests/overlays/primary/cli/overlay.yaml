@@ -73,6 +73,22 @@ actions:
               defaultFrom: schema
               summary: Stream events as they arrive
       commands:
+        create-widget:
+          op: cliCatalogOptionsPost
+          preset:
+            $.defaults: alpha
+            $.combined: alpha
+        inspect-widget:
+          op: cliCatalogOptionsPost
+          preset:
+            $.defaults: alpha
+            $.combined: alpha
+        choose-gamma:
+          op: cliCatalogOptionsPost
+          preset:
+            $.defaults: gamma
+            $.combined: gamma
+            $.ungrouped: alpha
         generate:
           category: Create
           summary: Generate a reply from a prompt

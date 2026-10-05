@@ -41,12 +41,12 @@ var catalogOutputCases = []struct {
 		command: "catalog-defaults",
 		human: fmt.Sprintf("%-48s %s\n%-48s %s\n%-48s %s\n%-48s %s\n%-48s %s\n",
 			"alpha (default: create-widget, inspect-widget)", "First option.",
-			"beta", "Second option.", "gamma (default: render)", "Third option.",
+			"beta", "Second option.", "gamma (default: choose-gamma)", "Third option.",
 			"delta", "Fourth option.", "epsilon", "Fifth option."),
 		json: `[
 			{"default":false,"default_for":["create-widget","inspect-widget"],"description":"First option.","value":"alpha"},
 			{"default":false,"description":"Second option.","value":"beta"},
-			{"default":false,"default_for":["render"],"description":"Third option.","value":"gamma"},
+			{"default":false,"default_for":["choose-gamma"],"description":"Third option.","value":"gamma"},
 			{"default":false,"description":"Fourth option.","value":"delta"},
 			{"default":false,"description":"Fifth option.","value":"epsilon"}
 		]`,
@@ -54,13 +54,13 @@ var catalogOutputCases = []struct {
 	{
 		command: "catalog-groups",
 		human: "Primary \"Widgets\":\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n",
-			"beta", "Second option.", "alpha", "First option.") +
+			"alpha", "First option.", "beta", "Second option.") +
 			"\nSecondary:\n" + fmt.Sprintf("  %-42s %s\n", "gamma", "Third option.") +
 			"\nOther:\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n",
 				"delta (default)", "Fourth option.", "epsilon", "Fifth option."),
 		json: `[
-			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
 			{"default":false,"description":"First option.","group":"Primary \"Widgets\"","value":"alpha"},
+			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
 			{"default":false,"description":"Third option.","group":"Secondary","value":"gamma"},
 			{"default":true,"description":"Fourth option.","group":"Other","value":"delta"},
 			{"default":false,"description":"Fifth option.","group":"Other","value":"epsilon"}
@@ -69,24 +69,24 @@ var catalogOutputCases = []struct {
 	{
 		command: "catalog-combined",
 		human: "Primary \"Widgets\":\n" + fmt.Sprintf("  %-48s %s\n  %-48s %s\n",
-			"beta", "Second option.", "alpha (default: create-widget, inspect-widget)", "First option.") +
-			"\nSecondary:\n" + fmt.Sprintf("  %-48s %s\n", "gamma (default: render)", "Third option.") +
+			"alpha (default: create-widget, inspect-widget)", "First option.", "beta", "Second option.") +
+			"\nSecondary:\n" + fmt.Sprintf("  %-48s %s\n", "gamma (default: choose-gamma)", "Third option.") +
 			"\nOther:\n" + fmt.Sprintf("  %-48s %s\n  %-48s %s\n",
 				"delta", "Fourth option.", "epsilon", "Fifth option."),
 		json: `[
-			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
 			{"default":true,"default_for":["create-widget","inspect-widget"],"description":"First option.","group":"Primary \"Widgets\"","value":"alpha"},
-			{"default":false,"default_for":["render"],"description":"Third option.","group":"Secondary","value":"gamma"},
+			{"default":false,"description":"Second option.","group":"Primary \"Widgets\"","value":"beta"},
+			{"default":false,"default_for":["choose-gamma"],"description":"Third option.","group":"Secondary","value":"gamma"},
 			{"default":false,"description":"Fourth option.","group":"Other","value":"delta"},
 			{"default":false,"description":"Fifth option.","group":"Other","value":"epsilon"}
 		]`,
 	},
 	{
-		command: "catalog-malformed",
+		command: "catalog-ungrouped",
 		human: fmt.Sprintf("%-42s %s\n%-42s %s\n%-42s %s\n",
-			"alpha (default: render)", "First option.", "beta", "Second option.", "gamma", "Third option."),
+			"alpha (default: choose-gamma)", "First option.", "beta", "Second option.", "gamma", "Third option."),
 		json: `[
-			{"default":false,"default_for":["render"],"description":"First option.","value":"alpha"},
+			{"default":false,"default_for":["choose-gamma"],"description":"First option.","value":"alpha"},
 			{"default":false,"description":"Second option.","value":"beta"},
 			{"default":false,"description":"Third option.","value":"gamma"}
 		]`,

@@ -1422,6 +1422,22 @@ func (s *Schemas) handleEnum(ctx context.Context, params Params, nullable bool) 
 		return nil, err
 	}
 
+	groupList, groupMap, err := s.Subsystem.Extensions.GetEnumGroups(schema)
+	if err != nil {
+		return nil, err
+	}
+	enumGroups := groupMap
+	if len(groupList) > 0 {
+		enumGroups = make(map[string]string)
+		for i, group := range groupList {
+			if i < len(schema.Enum) && schema.Enum[i] != nil && schema.Enum[i].Tag != "!!null" && group != "" {
+				if _, exists := enumGroups[schema.Enum[i].Value]; !exists {
+					enumGroups[schema.Enum[i].Value] = group
+				}
+			}
+		}
+	}
+
 	if len(schema.GetEnum()) == 1 && schema.GetEnum()[0].Tag == "!!null" {
 		schema.Nullable = pointer.From(true)
 		schema.Const = schema.GetEnum()[0]
@@ -1551,6 +1567,7 @@ func (s *Schemas) handleEnum(ctx context.Context, params Params, nullable bool) 
 			Values:       enumValues,
 			Names:        names,
 			Descriptions: enumDescriptions,
+			Groups:       enumGroups,
 			Open:         isOpen,
 			Format:       enumFormat,
 		},

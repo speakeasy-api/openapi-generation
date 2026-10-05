@@ -141,6 +141,7 @@ type Enum struct {
 	Open         bool              `yaml:",omitempty"`
 	Format       string            `yaml:",omitempty"` // Whether the enum is templated as a native enum or union of literals. If empty use language default
 	Descriptions map[string]string `yaml:",omitempty"`
+	Groups       map[string]string `yaml:",omitempty"`
 }
 
 // Clone creates a deep copy of the Enum
@@ -151,6 +152,7 @@ func (e *Enum) Clone() *Enum {
 
 	return &Enum{
 		Descriptions: maps.Clone(e.Descriptions),
+		Groups:       maps.Clone(e.Groups),
 		Format:       e.Format,
 		Names:        slices.Clone(e.Names),
 		Open:         e.Open,
@@ -1341,6 +1343,9 @@ func (t *TypeDef) IsEqual(other *TypeDef, opts ...IsEqualOpt) error {
 			if !maps.Equal(t.Enum.Descriptions, other.Enum.Descriptions) {
 				return ErrEnumMismatch.Wrap(fmt.Errorf("expected descriptions %v in %s, got %v in %s", t.Enum.Descriptions, t.getNameOrType(), other.Enum.Descriptions, other.getNameOrType()))
 			}
+			if !maps.Equal(t.Enum.Groups, other.Enum.Groups) {
+				return ErrEnumMismatch.Wrap(fmt.Errorf("expected groups %v in %s, got %v in %s", t.Enum.Groups, t.getNameOrType(), other.Enum.Groups, other.getNameOrType()))
+			}
 		}
 	case DataTypeUnion:
 		if t.Discriminator == nil && other.Discriminator != nil || t.Discriminator != nil && other.Discriminator == nil {
@@ -1857,6 +1862,9 @@ func (t *TypeDef) JSON() map[string]any {
 		}
 		if len(t.Enum.Descriptions) > 0 {
 			enumRet["descriptions"] = t.Enum.Descriptions
+		}
+		if len(t.Enum.Groups) > 0 {
+			enumRet["groups"] = t.Enum.Groups
 		}
 		ret["enum"] = enumRet
 	}

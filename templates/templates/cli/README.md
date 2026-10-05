@@ -18,16 +18,19 @@ Generates a fully functional Go CLI from an OpenAPI specification. The generated
     - [Positional path parameter](#positional-path-parameter)
   - [Metadata-Driven Request Building](#metadata-driven-request-building)
   - [Flag Metadata Generation](#flag-metadata-generation)
+
   - [Union Type Handling](#union-type-handling)
   - [Declarative Intent Commands and Route Dispatch](#declarative-intent-commands-and-route-dispatch)
   - [Offline Enum Catalogs](#offline-enum-catalogs)
   - [Output Formatting](#output-formatting)
+
   - [Interactive Mode](#interactive-mode)
   - [Agent Mode](#agent-mode)
   - [Exit Codes and Error Boundaries](#exit-codes-and-error-boundaries)
   - [Pagination](#pagination)
   - [Streaming (SSE \& JSONL)](#streaming-sse--jsonl)
     - [Streamed-event projection (`x-speakeasy-cli-commands` `output.stream.select`)](#streamed-event-projection-x-speakeasy-cli-commands-outputstreamselect)
+
   - [Binary Downloads](#binary-downloads)
   - [Bytes / Base64 Request Input](#bytes--base64-request-input)
   - [Retries \& Timeout](#retries--timeout)
@@ -581,27 +584,81 @@ Dispatch commands never register backing request-body metadata: no whole-union J
 
 **Files**: `includes/templating.ts` (`collectCliCatalogs`), `catalog.go.stmpl`, and `main.ts`
 
-An enum schema annotated with `x-speakeasy-cli-catalog` generates an offline listing command. The extension accepts `command`, `summary`, `description`, and a scalar `default`, plus optional per-command defaults and ordered groups:
+An enum schema annotated with `x-speakeasy-cli-catalog` generates an offline listing command. The catalog extension accepts `command`, `summary`, `description`, and the existing scalar `default`. Command-specific defaults come from actual command presets, not a second catalog configuration. Groups are schema metadata declared with `x-speakeasy-enum-groups`, alongside enum descriptions.
+
+For example, these commands share one enum, but select different options by default:
 
 ```yaml
-x-speakeasy-cli-catalog:
-  command: widget-options
-  summary: List available widget options
-  default: alpha
-  defaults:
-    alpha: [create-widget, inspect-widget]
-    gamma: render-widget
-  groups:
-    - title: Primary
-      values: [beta, alpha]
-    - title: Secondary
-      values: [gamma]
+openapi: 3.1.0
+info: {title: Widget API, version: 1.0.0}
+x-speakeasy-cli-commands:
+  version: 1
+  commands:
+    create-widget:
+      op: createWidget
+      preset: {$.mode: alpha}
+    inspect-widget:
+      op: createWidget
+      preset: {$.mode: alpha}
+    render-widget:
+      op: createWidget
+      preset: {$.mode: gamma}
+paths:
+  /widgets:
+    post:
+      operationId: createWidget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode: {$ref: "#/components/schemas/WidgetMode"}
+      responses:
+        "200": {description: OK}
+components:
+  schemas:
+    WidgetMode:
+      type: string
+      enum: [alpha, beta, gamma, delta]
+      x-speakeasy-enum-descriptions:
+        alpha: First option.
+        beta: Second option.
+        gamma: Third option.
+        delta: Fourth option.
+      x-speakeasy-enum-groups:
+        alpha: Primary
+        beta: Primary
+        gamma: Secondary
+      x-speakeasy-cli-catalog:
+        command: widget-options
+        summary: List available widget options
 ```
 
-- `defaults` maps enum values to a command name or an array of command names. Command names are trimmed and blank or non-string entries are ignored. These are catalog annotations, not changes to command presets. Non-empty command defaults produce the label `<value> (default: <command>, ...)`; otherwise the scalar catalog default produces `<value> (default)`. Only the scalar extension `default` sets the machine-output `default` boolean, with no fallback to the schema's `default`.
-- Groups with matching enum values produce titled sections in declaration order, with values in each group's declared order. Titles are trimmed, unknown enum references are ignored, and repeated references retain only their first occurrence. Each group requires a non-blank string title and a values array; malformed definitions and groups containing no unclaimed enum values are skipped. If at least one declared group matches, remaining enum values appear in a trailing `Other` section in their original schema order. If none matches, output remains flat in schema order with no `Other` section or machine-output `group` fields.
-- Grouped human output uses `<title>:` headings, two-space item indentation, and one blank line between groups. Catalogs with resolved command defaults or non-empty resolved groups use a label width of `max(42, longest label length + 2)`, followed by a separator space. When neither option resolves to effective data, omitted, empty, malformed or otherwise ineffective options retain the original fixed width of 42 and flat output, including legacy long-label spacing.
-- Machine output remains a flat array in the same order as human output. Every object retains `value`, `description`, and the boolean `default`. `default_for` is emitted only for non-empty command defaults; `group` is emitted only for grouped catalogs, including the `Other` remainder. Malformed command-default entries are ignored; arrays retain only non-blank strings.
+`cli widget-options` displays:
+
+```text
+Primary:
+  alpha (default: create-widget, inspect-widget)     First option.
+  beta                                              Second option.
+
+Secondary:
+  gamma (default: render-widget)                    Third option.
+
+Other:
+  delta                                             Fourth option.
+```
+
+Each enum value becomes one `CliCatalogValue` row. `CliCatalog.Groups` organises those same rows into human-output sections; `CliCatalog.Values` flattens them in the same order for machine output. Grouping does not create additional enum values or change request values.
+
+- Go links each effective preset to its resolved enum schema, including references and array-item enums. Route-local presets override command presets. When a command's routes select different defaults, labels include the actual route selector, such as `create --image`; defaults shared by every route use the plain command name. Unknown values accepted by an open enum are not catalog entries, and ambiguous property unions do not assign a preset to unrelated catalogs.
+- Only the scalar catalog `default` sets the existing machine-output `default` boolean. It remains independent of schema defaults and command presets. Command defaults produce `<value> (default: <command>, ...)`; otherwise the scalar catalog default produces `<value> (default)`.
+- `x-speakeasy-enum-groups` accepts a value-to-title map, or a positional string list matching the original enum length, for example `[Primary, Primary, Secondary, ""]`. The list includes slots for null and duplicate enum members; null slots do not create rows and duplicate values use their first non-empty title. Go validates the extension before rendering. Unknown values, duplicate map keys, non-string titles, malformed shapes and wrong-length lists are errors. Titles are trimmed; missing map entries and empty titles are ungrouped.
+- Groups appear in first-seen enum order, and values within each group retain enum order. If at least one group exists, remaining values appear in a trailing `Other` section. If all titles are empty or no groups are declared, output stays flat without `group` fields.
+- Grouped human output uses `<title>:` headings, two-space indentation and a blank line between groups. Effective command defaults or groups use a label width of `max(42, longest label length + 2)`. Catalogs without either retain the original fixed width of 42, including legacy long-label spacing.
+- Machine output remains a flat array with `value`, `description` and `default`. Non-empty command defaults add `default_for`; grouped catalogs add `group`, including the `Other` remainder.
+
+The nested catalog `defaults` and `groups` keys are not supported. Use command presets and the schema-level enum group extension instead.
 
 ### Output Formatting
 

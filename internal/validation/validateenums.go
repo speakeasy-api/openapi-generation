@@ -7,6 +7,8 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/validation/sanitization"
 	"github.com/speakeasy-api/openapi/linter"
 	"github.com/speakeasy-api/openapi/openapi"
@@ -81,6 +83,16 @@ func (r *ValidateEnums) Run(ctx context.Context, docInfo *linter.DocumentInfo[*o
 		enumValues := schema.GetEnum()
 		if len(enumValues) == 0 {
 			continue // Not an enum
+		}
+
+		if _, _, err := extensions.New(types.NewTargetFromTemplate("")).GetEnumGroups(schema); err != nil {
+			extensionNode, _ := schema.GetExtensions().Get(extensions.ExtEnumGroups.Name())
+			validationErrors = append(validationErrors, &validation.Error{
+				Rule:            r.ID(),
+				Severity:        r.DefaultSeverity(),
+				Node:            extensionNode,
+				UnderlyingError: err,
+			})
 		}
 
 		schemaNode := schemaRef.GetRootNode()

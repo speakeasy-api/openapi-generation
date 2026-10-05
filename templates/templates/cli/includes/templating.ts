@@ -652,140 +652,104 @@ function collectCliCatalogs(): CliCatalog[] {
   const byCommand = new Map<string, string>();
   const byFuncName = new Map<string, string>();
   let collisionError = "";
-  try {
-    const buckets = context.Global.AST.BucketedTypes;
-    for (const [, models] of sequencedMapEntries(buckets)) {
-      for (const [, types] of sequencedMapEntries(models)) {
-        for (const t of types as TypeDef[]) {
-          const ext: any = t.Extensions?.All?.["x-speakeasy-cli-catalog"];
-          if (!ext || typeof ext !== "object" || !ext.command) continue;
-          if (t.Type?.toString() !== "enum" || !t.Enum) continue;
-          if (seen.has(ext.command)) continue;
-          seen.add(ext.command);
-          const commandName = sanitizeCLICommand(`${ext.command}`);
-          const funcName = sanitizeClassName(`${ext.command}`);
-          const priorCommand = byCommand.get(commandName);
-          const priorFunc = byFuncName.get(funcName);
-          if (priorCommand !== undefined && priorCommand !== `${ext.command}`) {
-            collisionError = `x-speakeasy-cli-catalog: commands "${priorCommand}" and "${ext.command}" normalize to the same CLI command "${commandName}"; rename one`;
-            break;
-          }
-          if (priorFunc !== undefined && priorFunc !== `${ext.command}`) {
-            collisionError = `x-speakeasy-cli-catalog: commands "${priorFunc}" and "${ext.command}" normalize to the same generated identifier "${funcName}"; rename one`;
-            break;
-          }
-          byCommand.set(commandName, `${ext.command}`);
-          byFuncName.set(funcName, `${ext.command}`);
-          const defaultValue =
-            ext.default !== undefined ? `${ext.default}` : "";
-          const defaults =
-            ext.defaults &&
-            typeof ext.defaults === "object" &&
-            !Array.isArray(ext.defaults)
-              ? ext.defaults
-              : {};
-          const values: CliCatalogValue[] = (t.Enum.Values || []).map(
-            (v: string) => {
-              const description = t.Enum.Descriptions?.[v];
-              const declared = Object.prototype.hasOwnProperty.call(defaults, v)
-                ? defaults[v]
-                : undefined;
-              const commands =
-                typeof declared === "string"
-                  ? [declared]
-                  : Array.isArray(declared)
-                  ? declared
-                  : [];
-              const defaultFor = commands
-                .filter(
-                  (name: unknown): name is string => typeof name === "string",
-                )
-                .map((name: string) => name.trim())
-                .filter((name: string) => name.length > 0);
-              const isDefault = defaultValue !== "" && v === defaultValue;
-              return {
-                Value: v,
-                Description: typeof description === "string" ? description : "",
-                IsDefault: isDefault,
-                DefaultFor: defaultFor,
-                Group: "",
-                Label:
-                  defaultFor.length > 0
-                    ? `${v} (default: ${defaultFor.join(", ")})`
-                    : isDefault
-                    ? `${v} (default)`
-                    : v,
-              };
-            },
-          );
-          if (values.length === 0) continue;
-          const groups: CliCatalog["Groups"] = [];
-          if (Array.isArray(ext.groups)) {
-            const byValue = new Map(
-              values.map((value) => [value.Value, value]),
-            );
-            const grouped = new Set<string>();
-            for (const group of ext.groups) {
-              if (
-                !group ||
-                typeof group.title !== "string" ||
-                !Array.isArray(group.values)
-              )
-                continue;
-              const title = group.title.trim();
-              if (!title) continue;
-              const groupValues: CliCatalogValue[] = [];
-              for (const name of group.values) {
-                const value = byValue.get(name);
-                if (!value || grouped.has(name)) continue;
-                grouped.add(name);
-                value.Group = title;
-                groupValues.push(value);
-              }
-              if (groupValues.length > 0) {
-                groups.push({ Title: title, Values: groupValues });
-              }
-            }
-            const remaining = values.filter(
-              (value) => !grouped.has(value.Value),
-            );
-            if (groups.length > 0 && remaining.length > 0) {
-              for (const value of remaining) value.Group = "Other";
-              groups.push({ Title: "Other", Values: remaining });
-            }
-          }
-          const hasDefaults = values.some(
-            (value) => value.DefaultFor.length > 0,
-          );
-          const hasGroups = groups.length > 0;
-          catalogs.push({
-            Command: sanitizeCLICommand(`${ext.command}`),
-            FuncName: sanitizeClassName(`${ext.command}`),
-            Summary: `${ext.summary || `List available ${ext.command}`}`,
-            Description: `${ext.description || ""}`,
-            Values: hasGroups
-              ? groups.flatMap((group) => group.Values)
-              : values,
-            Groups: groups,
-            ColWidth:
-              hasDefaults || hasGroups
-                ? Math.max(
-                    42,
-                    ...values.map(
-                      (value) => Array.from(value.Label).length + 2,
-                    ),
-                  )
-                : 42,
-          });
+  const buckets = context.Global.AST.BucketedTypes;
+  for (const [, models] of sequencedMapEntries(buckets)) {
+    for (const [, types] of sequencedMapEntries(models)) {
+      for (const t of types as TypeDef[]) {
+        const ext: any = t.Extensions?.All?.["x-speakeasy-cli-catalog"];
+        if (!ext || typeof ext !== "object" || !ext.command) continue;
+        if (t.Type?.toString() !== "enum" || !t.Enum) continue;
+        if (seen.has(ext.command)) continue;
+        seen.add(ext.command);
+        const commandName = sanitizeCLICommand(`${ext.command}`);
+        const funcName = sanitizeClassName(`${ext.command}`);
+        const priorCommand = byCommand.get(commandName);
+        const priorFunc = byFuncName.get(funcName);
+        if (priorCommand !== undefined && priorCommand !== `${ext.command}`) {
+          collisionError = `x-speakeasy-cli-catalog: commands "${priorCommand}" and "${ext.command}" normalize to the same CLI command "${commandName}"; rename one`;
+          break;
         }
+        if (priorFunc !== undefined && priorFunc !== `${ext.command}`) {
+          collisionError = `x-speakeasy-cli-catalog: commands "${priorFunc}" and "${ext.command}" normalize to the same generated identifier "${funcName}"; rename one`;
+          break;
+        }
+        byCommand.set(commandName, `${ext.command}`);
+        byFuncName.set(funcName, `${ext.command}`);
+        const defaultValue = ext.default !== undefined ? `${ext.default}` : "";
+        if (ext.defaults !== undefined || ext.groups !== undefined) {
+          throw new Error(
+            "x-speakeasy-cli-catalog: derive command defaults from command presets and declare groups with x-speakeasy-enum-groups",
+          );
+        }
+        const defaults = new Map<string, string[]>();
+        for (const cmd of context.Global.AST.CLICommands?.Commands || []) {
+          for (const entry of cmd.CatalogDefaults || []) {
+            if (entry.CatalogCommand !== ext.command) continue;
+            const labels = defaults.get(entry.Value) || [];
+            if (!labels.includes(entry.Label)) labels.push(entry.Label);
+            defaults.set(entry.Value, labels);
+          }
+        }
+        const values: CliCatalogValue[] = (t.Enum.Values || []).map(
+          (v: string) => {
+            const description = t.Enum.Descriptions?.[v];
+            const defaultFor = defaults.get(v) || [];
+            const isDefault = defaultValue !== "" && v === defaultValue;
+            return {
+              Value: v,
+              Description: typeof description === "string" ? description : "",
+              IsDefault: isDefault,
+              DefaultFor: defaultFor,
+              Group: t.Enum.Groups?.[v] || "",
+              Label:
+                defaultFor.length > 0
+                  ? `${v} (default: ${defaultFor.join(", ")})`
+                  : isDefault
+                  ? `${v} (default)`
+                  : v,
+            };
+          },
+        );
+        if (values.length === 0) continue;
+        const groups: CliCatalog["Groups"] = [];
+        const byTitle = new Map<string, CliCatalog["Groups"][number]>();
+        for (const value of values) {
+          if (!value.Group) continue;
+          let group = byTitle.get(value.Group);
+          if (!group) {
+            group = { Title: value.Group, Values: [] };
+            byTitle.set(value.Group, group);
+            groups.push(group);
+          }
+          group.Values.push(value);
+        }
+        const remaining = values.filter((value) => !value.Group);
+        if (groups.length > 0 && remaining.length > 0) {
+          for (const value of remaining) value.Group = "Other";
+          groups.push({ Title: "Other", Values: remaining });
+        }
+        const hasDefaults = values.some((value) => value.DefaultFor.length > 0);
+        const hasGroups = groups.length > 0;
+        catalogs.push({
+          Command: sanitizeCLICommand(`${ext.command}`),
+          FuncName: sanitizeClassName(`${ext.command}`),
+          Summary: `${ext.summary || `List available ${ext.command}`}`,
+          Description: `${ext.description || ""}`,
+          Values: hasGroups ? groups.flatMap((group) => group.Values) : values,
+          Groups: groups,
+          ColWidth:
+            hasDefaults || hasGroups
+              ? Math.max(
+                  42,
+                  ...values.map((value) => Array.from(value.Label).length + 2),
+                )
+              : 42,
+        });
       }
     }
-  } catch (e) {
-    // Catalog rendering is best-effort; a malformed extension never breaks generation.
   }
   if (collisionError) {
-    // Identifier collisions would emit uncompilable Go; unlike malformed
-    // extensions they must fail generation with the collision named.
+    // Identifier collisions would emit uncompilable Go.
     throw new Error(collisionError);
   }
   return catalogs;

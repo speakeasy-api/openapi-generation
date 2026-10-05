@@ -9,6 +9,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func TestTypeDef_IsEqualEnumGroups(t *testing.T) {
+	original := &TypeDef{Type: DataTypeEnum, Enum: &Enum{Values: []string{"alpha"}, Groups: map[string]string{"alpha": "Primary"}}}
+	cloned := original.Clone()
+	require.NoError(t, original.IsEqual(cloned))
+	cloned.Enum.Groups["alpha"] = "Secondary"
+	require.Equal(t, "Primary", original.Enum.Groups["alpha"])
+	require.Error(t, original.IsEqual(cloned))
+}
+
 func TestDiscriminatorMappings_Clone(t *testing.T) {
 	t.Parallel()
 

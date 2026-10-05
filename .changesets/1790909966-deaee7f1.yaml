@@ -5,6 +5,6 @@ targets:
     - cli
 type: feat
 bump: patch
-description: support per-command defaults and groups in offline catalogs
+description: derive offline catalog defaults from command presets and support validated enum groups
 author: TristanSpeakEasy
 date: "2026-10-02"

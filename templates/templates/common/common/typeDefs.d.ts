@@ -281,6 +281,7 @@ declare global {
     Type: TypeDef;
     Values: string[];
     Descriptions?: Record<string, string>;
+    Groups?: Record<string, string>;
     Names: string[];
     Open: boolean;
     Format: "enum" | "union" | "";
@@ -2349,6 +2350,11 @@ declare global {
     Examples: CLICommandExample[] | null;
     Help?: CLICommandHelp | null;
     Hints?: Record<string, string[]>;
+    CatalogDefaults?: {
+      CatalogCommand: string;
+      Value: string;
+      Label: string;
+    }[];
   };
 
   type CLICommandManifest = {

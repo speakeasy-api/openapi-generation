@@ -93,19 +93,20 @@ type cliResolvedSchema struct {
 // cliPropertyFacts is the classification of a single property schema used for
 // inference and preset validation.
 type cliPropertyFacts struct {
-	kinds       []string // resolved scalar kind(s): string,int,float,bool — or array,object
-	enum        []any
-	openEnum    bool
-	defaultVal  any
-	hasDefault  bool
-	constVal    any
-	hasConst    bool
-	description string
-	readOnly    bool
-	arrayOfStr  bool // exactly array<string> (for bounded promotion)
-	items       *cliPropertyFacts
-	itemsErr    error
-	unionArms   []any // raw member schemas when the property is a union
+	kinds           []string // resolved scalar kind(s): string,int,float,bool — or array,object
+	enum            []any
+	catalogCommands []string
+	openEnum        bool
+	defaultVal      any
+	hasDefault      bool
+	constVal        any
+	hasConst        bool
+	description     string
+	readOnly        bool
+	arrayOfStr      bool // exactly array<string> (for bounded promotion)
+	items           *cliPropertyFacts
+	itemsErr        error
+	unionArms       []any // raw member schemas when the property is a union
 }
 
 func (d *cliManifestDecoder) linkManifest(manifest *CLICommandManifest) error {
@@ -484,6 +485,11 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 	}
 
 	d.checkSatisfiability(key, cmd, variant, presetPointers)
+	defaults, err := d.catalogDefaultsForPresets(cmd.Presets, variant)
+	if err != nil {
+		return err
+	}
+	cmd.CatalogDefaults = cliLabelCatalogDefaults(cmd, [][]CLICatalogDefault{defaults})
 	return nil
 }
 
@@ -687,9 +693,16 @@ func (d *cliManifestDecoder) linkDispatchCommand(cmd *CLICommand) error {
 		return err
 	}
 	cmd.DispatchKeys = cliBuildDispatchKeys(cmd.Source.Routes, members)
-	for _, link := range links {
+	catalogDefaults := make([][]CLICatalogDefault, len(links))
+	for i, link := range links {
 		d.checkDispatchSatisfiability(key, cmd, link)
+		defaults, err := d.catalogDefaultsForPresets(link.route.Presets, link.variant)
+		if err != nil {
+			return err
+		}
+		catalogDefaults[i] = defaults
 	}
+	cmd.CatalogDefaults = cliLabelCatalogDefaults(cmd, catalogDefaults)
 	return nil
 }
 
@@ -2733,6 +2746,12 @@ func cliUnionMembers(schema map[string]any) []any {
 // when either layer declares it.
 func mergePropertyFacts(ref, sibling *cliPropertyFacts) (*cliPropertyFacts, error) {
 	out := *ref
+	out.catalogCommands = slices.Clone(ref.catalogCommands)
+	for _, command := range sibling.catalogCommands {
+		if !slices.Contains(out.catalogCommands, command) {
+			out.catalogCommands = append(out.catalogCommands, command)
+		}
+	}
 	if sibling.kinds != nil {
 		switch {
 		case out.kinds == nil:
@@ -2894,6 +2913,11 @@ func (d *cliManifestDecoder) propertyFacts(schema any, seen []string) (*cliPrope
 	}
 
 	facts := &cliPropertyFacts{}
+	if catalog, ok := schemaMap["x-speakeasy-cli-catalog"].(map[string]any); ok {
+		if command, ok := catalog["command"].(string); ok && command != "" {
+			facts.catalogCommands = []string{command}
+		}
+	}
 	if desc, ok := schemaMap["description"].(string); ok {
 		facts.description = desc
 	}

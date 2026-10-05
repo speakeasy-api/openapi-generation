@@ -2,6 +2,7 @@ package validation_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
@@ -784,6 +785,45 @@ paths:
 			}
 
 			assert.ElementsMatch(t, tt.wantErrs, errStrs)
+		})
+	}
+}
+
+func Test_ValidateEnums_EnumGroups(t *testing.T) {
+	cases := []struct {
+		name     string
+		groups   string
+		wantText string
+	}{
+		{name: "unknown enum key", groups: "        green: Other", wantText: "map contains key `green` that does not exist"},
+		{name: "wrong positional length", groups: "        - First", wantText: "array must be the same length as enum values array"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			v, err := validation.NewValidator(&config.Configuration{}, validation.RulesetSpeakeasyRecommended, validation.WithFilteredRules([]string{(&validation.ValidateEnums{}).ID()}))
+			require.NoError(t, err)
+			spec := `openapi: 3.1.0
+info:
+  title: Test API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Status:
+      type: string
+      enum: [red, null, blue]
+      x-speakeasy-enum-groups:
+` + tc.groups
+			result := validateSpec(v, context.Background(), []byte(spec), "", types.NewTargetFromTemplate("go"))
+			errs := result.GetValidationErrors()
+			require.NotEmpty(t, errs)
+			var found bool
+			for _, validationErr := range errs {
+				if strings.Contains(validationErr.Error(), tc.wantText) {
+					found = true
+				}
+			}
+			assert.True(t, found)
 		})
 	}
 }
