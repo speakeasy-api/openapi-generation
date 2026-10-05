@@ -192,7 +192,7 @@ func retryWithBackoff(ctx context.Context, s *retry.BackoffStrategy, operation f
 		}
 
 		if ctxErr := ctx.Err(); ctxErr != nil {
-			return ctxErr
+			return lastResponseOnDeadline(ctxErr, err)
 		}
 
 		if time.Since(start) >= maxElapsedTime {
@@ -218,12 +218,20 @@ func retryWithBackoff(ctx context.Context, s *retry.BackoffStrategy, operation f
 
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return lastResponseOnDeadline(ctx.Err(), err)
 		case <-timer.C():
 		}
 
 		attempt += 1
 	}
+}
+
+func lastResponseOnDeadline(ctxErr error, err error) error {
+	var temporary *retry.TemporaryError
+	if errors.Is(ctxErr, context.DeadlineExceeded) && errors.As(err, &temporary) {
+		return err
+	}
+	return ctxErr
 }
 
 type Timer interface {

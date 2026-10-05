@@ -1,0 +1,11 @@
+id: 1791236825-12a49784
+features:
+    - retries
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: return the last retryable response when the context deadline expires during a retry wait
+author: AshGodfrey
+date: "2026-10-05"

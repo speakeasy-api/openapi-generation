@@ -219,6 +219,37 @@ func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
 		assert.EqualValues(t, 1, requests.Load())
 	})
 
+	t.Run("context deadline during the wait returns the last response", func(t *testing.T) {
+		var requests atomic.Int32
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			requests.Add(1)
+			w.Header().Set("Retry-After", "2")
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  10000,
+			},
+			RetryConnectionErrors: false,
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+		defer cancel()
+		res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+
+		assert.Error(t, err)
+		assert.Nil(t, res)
+		require.IsType(t, &apierrors.APIError{}, err)
+		assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+		assert.EqualValues(t, 1, requests.Load())
+	})
+
 	t.Run("wait within remaining budget is honored", func(t *testing.T) {
 		var requests atomic.Int32
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

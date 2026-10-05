@@ -191,7 +191,7 @@ func awaitAsync(cmd *cobra.Command, pollCtx context.Context, cfg *asyncConfig, t
 
 		response, err := poll(pollCtx)
 		if err != nil {
-			if errors.Is(pollCtx.Err(), context.DeadlineExceeded) && cmd.Context().Err() == nil {
+			if errors.Is(err, context.DeadlineExceeded) && errors.Is(pollCtx.Err(), context.DeadlineExceeded) && cmd.Context().Err() == nil {
 				return timedOut()
 			}
 			return asyncOutcome{err: err}
