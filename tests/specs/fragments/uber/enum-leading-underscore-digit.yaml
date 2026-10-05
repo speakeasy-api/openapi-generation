@@ -18,7 +18,9 @@ paths:
         that every target derives a valid member name for such values instead
         of emitting a digit-leading identifier that fails to compile or format.
         `_10` is digits-only, which TypeScript may keep as a numeric key in a
-        union enum but must spell out in a native enum.
+        union enum but must spell out in a native enum. A second property
+        supplies the same shape of name through `x-speakeasy-enums`, which
+        must also yield a valid member name.
       tags:
         - generation
       responses:
@@ -33,6 +35,8 @@ paths:
                 properties:
                   accountType:
                     $ref: "#/components/schemas/LeadingUnderscoreDigitEnum"
+                  overriddenAccountType:
+                    $ref: "#/components/schemas/LeadingUnderscoreDigitOverrideEnum"
 components:
   schemas:
     LeadingUnderscoreDigitEnum:
@@ -43,3 +47,11 @@ components:
         - _2FA
         - _3D
         - _10
+    LeadingUnderscoreDigitOverrideEnum:
+      type: string
+      enum:
+        - UNSPECIFIED
+        - _1ST
+      x-speakeasy-enums:
+        - UNSPECIFIED
+        - _1ST
