@@ -1,5 +1,6 @@
 {{- recurse 1 }}
 {{- if hasAttemptCountRetries -}}
+{{- addImport "bytes" }}
 {{- addImport "context" }}
 {{- addImport "errors" }}
 {{- addImport "fmt" }}
@@ -148,6 +149,7 @@ func retryOperation(ctx context.Context, r Retries, operation func(attempt int) 
 	}
 
 	if shouldRetryResponse(res, r.StatusCodes) {
+		bufferResponseBody(res)
 		return retry.TemporaryFromResponse("request failed", res)
 	}
 
@@ -305,6 +307,25 @@ func lastResponseOnDeadline(ctxErr error, err error) error {
 	return ctxErr
 }
 
+func bufferResponseBody(res *http.Response) {
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+
+	var reader io.Reader = bytes.NewReader(body)
+	if err != nil {
+		reader = io.MultiReader(reader, failedBodyReader{err: err})
+	}
+	res.Body = io.NopCloser(reader)
+}
+
+type failedBodyReader struct {
+	err error
+}
+
+func (r failedBodyReader) Read([]byte) (int, error) {
+	return 0, r.err
+}
+
 type Timer interface {
 	Start(duration time.Duration)
 	Stop()
@@ -390,6 +411,7 @@ func nextAttemptCountInterval(s *retry.BackoffStrategy, attempt int) time.Durati
 	return time.Duration(interval)
 }
 {{- else -}}
+{{- addImport "bytes" }}
 {{- addImport "context" }}
 {{- addImport "errors" }}
 {{- addImport "fmt" }}
@@ -514,6 +536,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					s := res.StatusCode / 100
 
 					if s >= codeRange && s < codeRange+1 {
+						bufferResponseBody(res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				} else {
@@ -523,6 +546,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					}
 
 					if res.StatusCode == parsedCode {
+						bufferResponseBody(res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				}
@@ -621,6 +645,25 @@ func lastResponseOnDeadline(ctxErr error, err error) error {
 		return err
 	}
 	return ctxErr
+}
+
+func bufferResponseBody(res *http.Response) {
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+
+	var reader io.Reader = bytes.NewReader(body)
+	if err != nil {
+		reader = io.MultiReader(reader, failedBodyReader{err: err})
+	}
+	res.Body = io.NopCloser(reader)
+}
+
+type failedBodyReader struct {
+	err error
+}
+
+func (r failedBodyReader) Read([]byte) (int, error) {
+	return 0, r.err
 }
 
 type Timer interface {

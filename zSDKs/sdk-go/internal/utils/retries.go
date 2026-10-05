@@ -3,6 +3,7 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"example.com/openapi-go-sdk/retry"
@@ -125,6 +126,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					s := res.StatusCode / 100
 
 					if s >= codeRange && s < codeRange+1 {
+						bufferResponseBody(res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				} else {
@@ -134,6 +136,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					}
 
 					if res.StatusCode == parsedCode {
+						bufferResponseBody(res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				}
@@ -232,6 +235,25 @@ func lastResponseOnDeadline(ctxErr error, err error) error {
 		return err
 	}
 	return ctxErr
+}
+
+func bufferResponseBody(res *http.Response) {
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+
+	var reader io.Reader = bytes.NewReader(body)
+	if err != nil {
+		reader = io.MultiReader(reader, failedBodyReader{err: err})
+	}
+	res.Body = io.NopCloser(reader)
+}
+
+type failedBodyReader struct {
+	err error
+}
+
+func (r failedBodyReader) Read([]byte) (int, error) {
+	return 0, r.err
 }
 
 type Timer interface {

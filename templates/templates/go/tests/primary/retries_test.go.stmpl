@@ -219,16 +219,8 @@ func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
 		assert.EqualValues(t, 1, requests.Load())
 	})
 
-	t.Run("context deadline during the wait returns the last response", func(t *testing.T) {
-		var requests atomic.Int32
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			requests.Add(1)
-			w.Header().Set("Retry-After", "2")
-			w.WriteHeader(http.StatusServiceUnavailable)
-		}))
-		defer server.Close()
-
-		s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(retry.Config{
+	for name, config := range map[string]retry.Config{
+		"backoff": {
 			Strategy: "backoff",
 			Backoff: &retry.BackoffStrategy{
 				InitialInterval: 10,
@@ -236,19 +228,43 @@ func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
 				Exponent:        1.1,
 				MaxElapsedTime:  10000,
 			},
-			RetryConnectionErrors: false,
-		}))
+		},
+		"attempt-count-backoff": {
+			Strategy: "attempt-count-backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+			},
+			MaxRetries: sdk.Int(3),
+		},
+	} {
+		t.Run("context deadline during the wait returns the last response with "+name, func(t *testing.T) {
+			var requests atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests.Add(1)
+				w.Header().Set("Retry-After", "2")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.(http.Flusher).Flush()
+				time.Sleep(20 * time.Millisecond)
+				_, _ = io.WriteString(w, "service unavailable")
+			}))
+			defer server.Close()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
-		res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+			s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(config))
 
-		assert.Error(t, err)
-		assert.Nil(t, res)
-		require.IsType(t, &apierrors.APIError{}, err)
-		assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
-		assert.EqualValues(t, 1, requests.Load())
-	})
+			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			defer cancel()
+			res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+
+			assert.Error(t, err)
+			assert.Nil(t, res)
+			require.IsType(t, &apierrors.APIError{}, err)
+			assert.Equal(t, http.StatusServiceUnavailable, err.(*apierrors.APIError).StatusCode)
+			assert.Equal(t, "service unavailable", err.(*apierrors.APIError).Body)
+			assert.EqualValues(t, 1, requests.Load())
+		})
+	}
 
 	t.Run("wait within remaining budget is honored", func(t *testing.T) {
 		var requests atomic.Int32
