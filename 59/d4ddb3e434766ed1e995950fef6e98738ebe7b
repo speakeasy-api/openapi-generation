@@ -1,0 +1,254 @@
+CHANGELOG.md
+  h_9630b74bdac540 7-41,20368-20375
+changelogs/cli/core-0.7.0.md
+  h_9630b74bdac540 1-3
+changelogs/cli/core-0.7.1.md
+  h_9630b74bdac540 1-3
+changelogs/cli/core-0.7.2.md
+  h_9630b74bdac540 1-3
+changelogs/cli/core-0.7.3.md
+  h_9630b74bdac540 1-3
+changelogs/cli/core-0.7.4.md
+  h_9630b74bdac540 1-3
+changelogs/cli/core-0.7.5.md
+  h_9630b74bdac540 1-3
+changelogs/php/enums-2.82.2.md
+  h_9630b74bdac540 1-3
+internal/features/tests.go
+  h_9630b74bdac540 418,678,731,774
+internal/features/tests_generated.go
+  h_9630b74bdac540 153-154,661-662,805-806,1305-1306,1655-1656,2163-2164,2307-2308,2807-2808,3083,3337,3409,3659
+pkg/generate/snapshots/cli_string_constraints_go_test.go
+  h_9630b74bdac540 1-249
+reports/features-report.md
+  h_9630b74bdac540 538,794,847,886-887
+reports/tests.csv
+  h_9630b74bdac540 400,656,709,749
+templates/perms.go
+  h_9630b74bdac540 59,63,137,208
+templates/templates/cli/README.md
+  h_9630b74bdac540 598-600,640,825-826,831,1224-1226,1626,1656
+templates/templates/cli/auxiliary/internal/flagutil/flags.go.stmpl
+  h_9630b74bdac540 13,277-324,436-437,439,552-562,620-669,683-685,698,701,704-706,708-717,720-723
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 13,189-197,581,1264-1271,1273-1274,1277-1300,1566-1599,1756-1758,2319
+templates/templates/cli/auxiliary/internal/output/classify.go.stmpl
+  h_9630b74bdac540 511,578-582,723-724,727-729
+templates/templates/cli/auxiliary/internal/output/color.go.stmpl
+  h_9630b74bdac540 5-6,8,10,12-13,19,29-32,50-91,93-94
+templates/templates/cli/auxiliary/internal/output/exitcodes.go.stmpl
+  h_9630b74bdac540 28-30,32-37
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  h_9630b74bdac540 1334-1335,1338-1347,1382
+templates/templates/cli/auxiliary/internal/output/output_test.go.stmpl
+  h_9630b74bdac540 1-30
+templates/templates/cli/auxiliary/internal/output/outputitems.go.stmpl
+  h_9630b74bdac540 69-75
+templates/templates/cli/auxiliary/internal/output/paginated.go.stmpl
+  h_9630b74bdac540 56-66,71,92-105,131,141,145
+templates/templates/cli/auxiliary/internal/output/progress.go.stmpl
+  h_9630b74bdac540 1-119
+templates/templates/cli/cli_harness_test.go.stmpl
+  h_9630b74bdac540 38-123
+templates/templates/cli/features.ts
+  h_9630b74bdac540 4,360
+templates/templates/cli/includes/metadata.ts
+  h_9630b74bdac540 531-604,674-678,691-704
+templates/templates/cli/intentcmd.go.stmpl
+  h_9630b74bdac540 113
+templates/templates/cli/main.ts
+  h_9630b74bdac540 116-122
+templates/templates/cli/opcmd.go.stmpl
+  h_9630b74bdac540 144,332-335,337-339,482-488,490-492
+templates/templates/cli/request_progress_test.go.stmpl
+  h_9630b74bdac540 1-204
+templates/templates/cli/root.go.stmpl
+  h_9630b74bdac540 56,81,275,810,835,1029
+templates/templates/cli/startup_tty_test.go.stmpl
+  h_9630b74bdac540 37-41,54-57,59-63,65-70,72-87,89-99
+templates/templates/cli/tests/primary/agentmode_test.go.stmpl
+  h_9630b74bdac540 589-590,597-598
+templates/templates/cli/tests/primary/bodyinput_test.go.stmpl
+  h_9630b74bdac540 105-108,124-228
+templates/templates/cli/tests/primary/clierrors_test.go.stmpl
+  h_9630b74bdac540 184-219
+templates/templates/cli/tests/primary/flagutilmeta_test.go.stmpl
+  h_9630b74bdac540 590-747
+templates/templates/cli/tests/primary/pagination_test.go.stmpl
+  h_9630b74bdac540 867-950
+templates/templates/cli/tests/primary/stringconstraints_test.go.stmpl
+  h_9630b74bdac540 1-200
+templates/templates/csharp/features.ts
+  h_9630b74bdac540 376,421-423
+templates/templates/go/features.ts
+  h_9630b74bdac540 379,420-422
+templates/templates/javav2/features.ts
+  h_9630b74bdac540 424,469-471
+templates/templates/mcp-typescript/features.ts
+  h_9630b74bdac540 633,678-680
+templates/templates/php/Tests/primary/RequestBodiesAdditionalTest.php
+  h_9630b74bdac540 7,13-25
+templates/templates/php/features.ts
+  h_9630b74bdac540 11,520,564-565
+templates/templates/php/includes/sanitization.ts
+  h_9630b74bdac540 553
+templates/templates/php/includes/templating.ts
+  h_9630b74bdac540 846
+templates/templates/pythonv2/features.ts
+  h_9630b74bdac540 382,424-426
+templates/templates/ruby/features.ts
+  h_9630b74bdac540 421,466-468
+templates/templates/typescriptv2/features.ts
+  h_9630b74bdac540 369,414-416
+templates/templates/unity/features.ts
+  h_9630b74bdac540 542,587-589
+tests/specs/fragments/primary/cli-pagination-object-results.yaml
+  h_9630b74bdac540 1-74
+tests/specs/fragments/primary/cli-string-constraints.yaml
+  h_9630b74bdac540 1-93
+tests/specs/fragments/primary/shared-enum-constructor-default.yaml
+  h_9630b74bdac540 1-38
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 16,65,67,71,73,75,81,83,85,87,89,91,93,95,97,99,101,103,107,111,117,119,121,129,135,139,141,143,145,147,153,157,159,163,165,167,169,173,177,179,185,187,189,193,195,199,201,205,209,213,215,217,247,249,267,269,273,277-279,281,283,286-287,659,1090-1091,1099
+zSDKs/sdk-cli/internal/cli/binaryandstringupload.go
+  h_9630b74bdac540 82-83,85
+zSDKs/sdk-cli/internal/cli/chat.go
+  h_9630b74bdac540 38,48,58
+zSDKs/sdk-cli/internal/cli/createuser.go
+  h_9630b74bdac540 91-92,94
+zSDKs/sdk-cli/internal/cli/createwithunion.go
+  h_9630b74bdac540 94-95,97
+zSDKs/sdk-cli/internal/cli/deleteuser.go
+  h_9630b74bdac540 82-83,85
+zSDKs/sdk-cli/internal/cli/getduplicateexportcollision.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/getemptyobjecterror.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/geterrorinunion.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/geterroronlyexample.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/getfullyflattenedrequest.go
+  h_9630b74bdac540 87-88,90
+zSDKs/sdk-cli/internal/cli/getnamedprimitiveunion.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/getnestedintegerstring.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/getpolymorphism.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/getpositionaldefault.go
+  h_9630b74bdac540 82-83,85
+zSDKs/sdk-cli/internal/cli/getrequestbodyflattenedaway.go
+  h_9630b74bdac540 68-69,71
+zSDKs/sdk-cli/internal/cli/getunionerrors.go
+  h_9630b74bdac540 94-95,97
+zSDKs/sdk-cli/internal/cli/getuser.go
+  h_9630b74bdac540 82-83,85
+zSDKs/sdk-cli/internal/cli/group/rootgroupop.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/group/subgroup/empty/tail/nestedgroupop.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/group/subgroup/subgroupop.go
+  h_9630b74bdac540 55-56,58
+zSDKs/sdk-cli/internal/cli/intent_enroll.go
+  h_9630b74bdac540 35
+zSDKs/sdk-cli/internal/cli/intent_invite.go
+  h_9630b74bdac540 40,49
+zSDKs/sdk-cli/internal/cli/intent_say.go
+  h_9630b74bdac540 37
+zSDKs/sdk-cli/internal/cli/login.go
+  h_9630b74bdac540 55-56,58
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/createnamespaceconflict.go
+  h_9630b74bdac540 89-90,92
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/getnamespaceconflict.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/getpetowners.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/gettriplenamespaceconflict.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/conflicts/putnamespaceconflict.go
+  h_9630b74bdac540 85-86,88
+zSDKs/sdk-cli/internal/cli/namespacetests/singlebar/getsinglenamespacebarpet.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/singlefoo/createsinglenamespacefoopet.go
+  h_9630b74bdac540 89-90,92
+zSDKs/sdk-cli/internal/cli/namespacetests/singlefoo/getsinglenamespacefoopet.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/types/getnamespaceanimal.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/types/getnamespaceorganization.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/types/getnamespacetypes.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/namespacetests/types/getnamespacevehicle.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/obsolete/deprecated1.go
+  h_9630b74bdac540 67-68,70
+zSDKs/sdk-cli/internal/cli/operationwithleadingandtrailingunderscores.go
+  h_9630b74bdac540 70-71,73
+zSDKs/sdk-cli/internal/cli/parenthesesinpathallowed.go
+  h_9630b74bdac540 97-98,100
+zSDKs/sdk-cli/internal/cli/root.go
+  h_9630b74bdac540 64,309
+zSDKs/sdk-cli/internal/cli/tag1/auth.go
+  h_9630b74bdac540 62-63,65
+zSDKs/sdk-cli/internal/cli/tag1/deprecated1.go
+  h_9630b74bdac540 67-68,70
+zSDKs/sdk-cli/internal/cli/tag1/listtest1.go
+  h_9630b74bdac540 113-114,116
+zSDKs/sdk-cli/internal/cli/tag1/postfilewithencoding.go
+  h_9630b74bdac540 74-75,77
+zSDKs/sdk-cli/internal/cli/testendpoint.go
+  h_9630b74bdac540 94-95,97
+zSDKs/sdk-cli/internal/cli/testenumformats.go
+  h_9630b74bdac540 85-86,88
+zSDKs/sdk-cli/internal/cli/testgroup/tag2/posttest.go
+  h_9630b74bdac540 94-95,97
+zSDKs/sdk-cli/internal/cli/testgroup/tag3/posttest.go
+  h_9630b74bdac540 94-95,97
+zSDKs/sdk-cli/internal/cli/updateuser.go
+  h_9630b74bdac540 103-104,106
+zSDKs/sdk-cli/internal/cli/urlvalidationstresstest.go
+  h_9630b74bdac540 56-57,59
+zSDKs/sdk-cli/internal/cli/validate.go
+  h_9630b74bdac540 55-56,58
+zSDKs/sdk-cli/internal/flagutil/flags.go
+  h_9630b74bdac540 15,279-326,438-439,441,554-564,622-671,685-687,700,703,706-708,710-719,722-725
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 15,191-199,583,1266-1273,1275-1276,1279-1302,1568-1601,1758-1760,2321
+zSDKs/sdk-cli/internal/output/classify.go
+  h_9630b74bdac540 497,564-568,709-710,713-715
+zSDKs/sdk-cli/internal/output/color.go
+  h_9630b74bdac540 7-8,10,12,14-15,21-25,31-34,52-93,95-96
+zSDKs/sdk-cli/internal/output/exitcodes.go
+  h_9630b74bdac540 30-32,34-39
+zSDKs/sdk-cli/internal/output/output.go
+  h_9630b74bdac540 1316-1317,1320-1329,1364
+zSDKs/sdk-cli/internal/output/output_test.go
+  h_9630b74bdac540 1-32
+zSDKs/sdk-cli/internal/output/outputitems.go
+  h_9630b74bdac540 70-76
+zSDKs/sdk-cli/internal/output/paginated.go
+  h_9630b74bdac540 57-67,72,93-106,132,142,146
+zSDKs/sdk-cli/internal/output/progress.go
+  h_9630b74bdac540 1-121
+zSDKs/sdk-cli/tests/cli_harness_test.go
+  h_9630b74bdac540 30-115
+zSDKs/sdk-cli/tests/request_progress_test.go
+  h_9630b74bdac540 1-203
+zSDKs/sdk-cli/tests/startup_tty_test.go
+  h_9630b74bdac540 39-43,56-59,61-65,67-72,74-89,91-101
+zSDKs/sdk-php/.speakeasy/gen.lock
+  h_9630b74bdac540 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59d4ddb3e434766ed1e995950fef6e98738ebe7b",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
