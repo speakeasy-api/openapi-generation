@@ -775,21 +775,27 @@ function findFieldExample(example: any, field: FieldDef): any {
 function getEnumNamesFromValues(values: string[]): string[] {
   let enumNames = [];
 
+  // Count collisions on the emitted upper-snake member, not the intermediate
+  // Pascal name: `_1ST` and `1ST` derive `OneSt` and `OneST`, which differ,
+  // but both become `ONE_ST` once snake-cased.
   let names = {};
   for (const value of values) {
-    let name = getEnumName(value);
-    if (!names[name]) {
-      names[name] = 0;
+    let member = sanitizeEnumMember(getEnumName(value));
+    if (!names[member]) {
+      names[member] = 0;
     }
 
-    names[name] += 1;
+    names[member] += 1;
   }
 
   let seen = {};
   for (const value of values) {
     let name = getEnumName(value);
-    if (names[name] > 1) {
-      let candidate = `${name}${caser().ToPascal(getCasing(value))}`;
+    let member = sanitizeEnumMember(name);
+    if (names[member] > 1) {
+      let candidate = sanitizeEnumMember(
+        `${name}${caser().ToPascal(getCasing(value))}`,
+      );
       if (seen[candidate]) {
         let suffix = seen[candidate];
         seen[candidate] += 1;
@@ -797,10 +803,10 @@ function getEnumNamesFromValues(values: string[]): string[] {
       } else {
         seen[candidate] = 1;
       }
-      name = candidate;
+      member = candidate;
     }
 
-    enumNames.push(sanitizeEnumMember(name));
+    enumNames.push(member);
   }
 
   return enumNames;
