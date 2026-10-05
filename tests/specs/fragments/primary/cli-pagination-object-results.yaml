@@ -1,0 +1,74 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /pagination/objectresults/page:
+    get:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: paginationObjectResultsPageParams
+      summary: Page-based pagination whose results array holds objects
+      description: >-
+        Offset/limit pagination driven by a page parameter where each entry in
+        the declared results array is an object rather than a scalar. Exercises
+        output formats that render a collection of structured items, such as a
+        table, when every page is fetched in one invocation.
+      tags:
+        - pagination
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  numPages:
+                    type: integer
+                  resultArray:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PaginationObjectResult"
+                required:
+                  - numPages
+                  - resultArray
+      x-speakeasy-pagination:
+        type: offsetLimit
+        inputs:
+          - name: page
+            in: parameters
+            type: page
+          - name: limit
+            in: parameters
+            type: limit
+        outputs:
+          results: $.resultArray
+          numPages: $.numPages
+components:
+  schemas:
+    PaginationObjectResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      required:
+        - id
+        - name

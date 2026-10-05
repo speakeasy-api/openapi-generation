@@ -46,24 +46,3 @@ func TestIntentSpacedBoolFlagValueHintIsSilentInMachineMode(t *testing.T) {
 	}
 }
 {{- end }}
-{{- if templateIntentEmptyBackingFlagTestEnabled }}
-
-// A whole --body plus the backing operation flag explicitly empty must be a
-// validation error, not an empty override of the body's required key.
-func TestIntentBodyWithEmptyBackingFlagIsRejected(t *testing.T) {
-	for _, tc := range []struct {
-		name        string
-		args        []string
-		backingFlag string
-	}{
-		{{templateIntentEmptyBackingFlagTestCases}}
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			h := NewCLITestHarness(t)
-			err := h.Run(tc.args)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), "--"+tc.backingFlag+" must not be empty")
-		})
-	}
-}
-{{- end }}

@@ -361,7 +361,6 @@ function isTestSkipped(test: string): boolean {
     "intent-route-dispatch-help-usage",
     "intent-route-dispatch-interactive-plan",
     "intent-route-dispatch-override-once",
-    "intents-both-body-surfaces-merged",
     "intents-discriminated-partial-body",
     "intents-foreign-selector-agent-envelope",
     "intents-foreign-selector-usage-error",
@@ -377,7 +376,7 @@ function isTestSkipped(test: string): boolean {
     "pre-request-generated-required-union-paths-and-optionality",
     "pre-request-generated-required-union-positive-echoes",
     "pre-request-real-connection-failures",
-    "pre-request-silent-stdin-times-out-on-root-union",
+    "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body",
     "pre-request-validation-envelope-matrix",
     "request-bodies-complex-number-types-bigint-overflow",
     "request-shape-body-agent-variant",
@@ -418,6 +417,9 @@ function isTestSkipped(test: string): boolean {
     "open-union-strict-request-validation",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "pagination-object-results-page-params",
+    "clierrors-unknown-flag-suggestion",
+    "shared-enum-constructor-default",
   ].includes(test);
 }
 

@@ -1,0 +1,200 @@
+package tests
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+type stringConstraintCapture struct {
+	Path   string
+	Query  map[string][]string
+	Header http.Header
+	Body   string
+}
+
+// newStringConstraintServer records every request it receives.
+func newStringConstraintServer(t *testing.T) (*httptest.Server, func() []stringConstraintCapture) {
+	t.Helper()
+	var mu sync.Mutex
+	var captured []stringConstraintCapture
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		captured = append(captured, stringConstraintCapture{Path: r.URL.EscapedPath(), Query: r.URL.Query(), Header: r.Header.Clone(), Body: string(body)})
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"url": r.URL.Path})
+	}))
+	t.Cleanup(s.Close)
+	return s, func() []stringConstraintCapture {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]stringConstraintCapture(nil), captured...)
+	}
+}
+
+// A value that violates a declared pattern or maxLength is rejected while the
+// flag is read: before request construction, on every surface, as a
+// CLI_VALIDATION usage error (exit 2) that names the flag.
+func TestStringConstraintsRejectBeforeRequest(t *testing.T) {
+	get := []string{"cli-hygiene", "cli-string-constraints-get"}
+	post := []string{"cli-hygiene", "cli-string-constraints-post"}
+	cases := []struct {
+		name    string
+		args    []string
+		wantMsg string
+	}{
+		{name: "path parent segment", args: append(get, "--resource-id", ".."), wantMsg: `invalid value for --resource-id: ".." does not match the pattern ^[a-z0-9-]+$`},
+		{name: "path current segment", args: append(get, "--resource-id", "."), wantMsg: `invalid value for --resource-id: "." does not match the pattern ^[a-z0-9-]+$`},
+		{name: "path pattern mismatch", args: append(get, "--resource-id", "ABC"), wantMsg: `invalid value for --resource-id: "ABC" does not match the pattern ^[a-z0-9-]+$`},
+		{name: "path over max length", args: append(get, "--resource-id", "abcdefghi"), wantMsg: `invalid value for --resource-id: "abcdefghi" is longer than the maximum length 8`},
+		{name: "path via positional", args: append(get, ".."), wantMsg: `invalid value for --resource-id: ".." does not match the pattern ^[a-z0-9-]+$`},
+		{name: "query pattern mismatch", args: append(get, "abc", "--tag", "ABC"), wantMsg: `invalid value for --tag: "ABC" does not match the pattern ^[a-z]+$`},
+		{name: "header over max length", args: append(get, "abc", "--x-label", "abcde"), wantMsg: `invalid value for --x-label: "abcde" is longer than the maximum length 4`},
+		{name: "body flag pattern mismatch", args: append(post, "--name", "ABC"), wantMsg: `invalid value for --name: "ABC" does not match the pattern ^[a-z]+$`},
+		{name: "body flag over max length", args: append(post, "--name", "abcdef"), wantMsg: `invalid value for --name: "abcdef" is longer than the maximum length 5`},
+	}
+	surfaces := []struct {
+		name  string
+		extra []string
+	}{
+		{name: "json", extra: []string{"-o", "json"}},
+		{name: "json dry run", extra: []string{"-o", "json", "--dry-run"}},
+		{name: "agent mode", extra: []string{"--agent-mode"}},
+	}
+	for _, tc := range cases {
+		for _, surface := range surfaces {
+			t.Run(tc.name+"/"+surface.name, func(t *testing.T) {
+				resetAgentMode(t)
+				s, requests := newStringConstraintServer(t)
+
+				h := NewCLITestHarness(t)
+				args := append(append([]string{}, surface.extra...), tc.args...)
+				err := h.RunWithServer(s.URL, args)
+				require.Error(t, err)
+				assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+
+				envelope := agentEnvelope(t, h.GetStderr())
+				assert.Equal(t, "validation_error", envelope["error_type"])
+				assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+				assert.EqualValues(t, 2, envelope["exit_code"])
+				assert.Equal(t, tc.wantMsg, envelope["message"])
+				assert.NotContains(t, h.GetStdout(), "dry_run")
+				assert.Empty(t, requests(), "no request may be sent")
+			})
+		}
+	}
+}
+
+func TestStringConstraintsRejectInPrettyOutput(t *testing.T) {
+	resetAgentMode(t)
+	s, requests := newStringConstraintServer(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"--output-format", "pretty", "cli-hygiene", "cli-string-constraints-get", ".."})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	stderr := h.GetStderr()
+	assert.Contains(t, stderr, `Error (validation_error): invalid value for --resource-id: ".." does not match the pattern ^[a-z0-9-]+$`)
+	assert.Contains(t, stderr, "Reason: CLI_VALIDATION")
+	assert.NotContains(t, stderr, "--debug")
+	assert.Empty(t, requests())
+}
+
+// Conforming values are sent unchanged. Patterns the CLI cannot enforce
+// faithfully are not enforced: slug's lookahead would reject "xyz" and note's
+// \s accepts U+00A0 in ECMA-262 but not in Go, so both values must reach the
+// server, which stays authoritative.
+func TestStringConstraintsAcceptConformingValues(t *testing.T) {
+	resetAgentMode(t)
+	s, requests := newStringConstraintServer(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"cli-hygiene", "cli-string-constraints-get", "abc-1234",
+		"--tag", "abc", "--x-label", "abcd", "--slug", "xyz", "--note", "a b",
+	})
+	require.NoError(t, err, h.GetStderr())
+
+	got := requests()
+	require.Len(t, got, 1)
+	assert.Equal(t, "/anything/cli/stringConstraints/abc-1234", got[0].Path)
+	assert.Equal(t, []string{"abc"}, got[0].Query["tag"])
+	assert.Equal(t, "abcd", got[0].Header.Get("X-Label"))
+	assert.Equal(t, []string{"xyz"}, got[0].Query["slug"])
+	assert.Equal(t, []string{"a b"}, got[0].Query["note"])
+	assert.NotContains(t, h.GetStderr(), "Warning")
+}
+
+func TestStringConstraintsAcceptConformingBodyFlag(t *testing.T) {
+	resetAgentMode(t)
+	s, requests := newStringConstraintServer(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-string-constraints-post", "--name", "abcde"})
+	require.NoError(t, err, h.GetStderr())
+
+	got := requests()
+	require.Len(t, got, 1)
+	assert.JSONEq(t, `{"name":"abcde"}`, got[0].Body)
+}
+
+// Constraints apply to flags (and positionals) as they are read. Values
+// supplied through a whole JSON body are not validated by the CLI and are left
+// to the server.
+func TestStringConstraintsDoNotValidateJSONBody(t *testing.T) {
+	resetAgentMode(t)
+	s, requests := newStringConstraintServer(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-string-constraints-post", "--body", `{"name":"ABC"}`})
+	require.NoError(t, err, h.GetStderr())
+
+	got := requests()
+	require.Len(t, got, 1)
+	assert.JSONEq(t, `{"name":"ABC"}`, got[0].Body)
+}
+
+// An explicit flag still wins over --body and is validated.
+func TestStringConstraintsValidateFlagOverridingJSONBody(t *testing.T) {
+	resetAgentMode(t)
+	s, requests := newStringConstraintServer(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"-o", "json", "cli-hygiene", "cli-string-constraints-post", "--body", `{"name":"abc"}`, "--name", "ABC"})
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Equal(t, `invalid value for --name: "ABC" does not match the pattern ^[a-z]+$`, agentEnvelope(t, h.GetStderr())["message"])
+	assert.Empty(t, requests())
+}
+
+// Positional and named forms are equivalent.
+func TestStringConstraintsPositionalMatchesFlag(t *testing.T) {
+	for _, value := range []string{"abc", "abc-1234"} {
+		positional := []string{value}
+		named := []string{"--resource-id", value}
+		for _, form := range [][]string{positional, named} {
+			t.Run(strings.Join(form, " "), func(t *testing.T) {
+				resetAgentMode(t)
+				s, requests := newStringConstraintServer(t)
+
+				h := NewCLITestHarness(t)
+				err := h.RunWithServer(s.URL, append([]string{"cli-hygiene", "cli-string-constraints-get"}, form...))
+				require.NoError(t, err, h.GetStderr())
+				got := requests()
+				require.Len(t, got, 1)
+				assert.Equal(t, "/anything/cli/stringConstraints/"+value, got[0].Path)
+			})
+		}
+	}
+}

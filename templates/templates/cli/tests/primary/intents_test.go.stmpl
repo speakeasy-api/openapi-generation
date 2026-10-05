@@ -370,7 +370,7 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 	s := newEchoServer()
 	defer s.Close()
 
-	for _, surface := range []string{"--body", "--cli-intent-run-body"} {
+	for _, surface := range []string{"--body"} {
 		t.Run(surface, func(t *testing.T) {
 			h := NewCLITestHarness(t)
 			require.NoError(t, h.RunWithServer(s.URL, []string{"render", surface, `{"input":"cat"}`}))
@@ -403,27 +403,43 @@ func TestIntentPartialBodyUserKeysWin(t *testing.T) {
 	assert.Equal(t, "cat", body["input"])
 }
 
-func TestIntentBothBodySurfacesMerged(t *testing.T) {
-	recordTest("intents-both-body-surfaces-merged")
+func TestIntentBodyFlagSurface(t *testing.T) {
+	for _, surface := range []string{"--help", "--usage"} {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunBare([]string{"render", surface}))
+		assert.Contains(t, h.GetStdout(), "--body")
+		assert.Contains(t, h.GetStdout(), "--model")
+		assert.NotContains(t, h.GetStdout(), "--output-modalities")
+		assert.NotContains(t, h.GetStdout(), "cli-intent-run-body")
+		assert.NotContains(t, h.GetStdout(), "replaces intent arguments")
+
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunBare([]string{"upload", surface}))
+		assert.Contains(t, h.GetStdout(), "--file")
+		assert.NotContains(t, h.GetStdout(), "--body")
+
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunBare([]string{"model-job", surface}))
+		assert.Contains(t, h.GetStdout(), "--variant-id")
+		assert.NotContains(t, h.GetStdout(), "--discriminated-variant-body")
+	}
+
+	for _, flag := range []string{"--cli-intent-run-body", "-b", "--output-modalities"} {
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{"render", flag, `{}`})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown")
+	}
+
 	s := newEchoServer()
 	defer s.Close()
 	h := NewCLITestHarness(t)
-	// Supplying the request through both --body and the whole-body field
-	// flag is ambiguous and rejected; each surface on its own is merged with
-	// the presets.
-	err := h.RunWithServer(s.URL, []string{"render",
-		"--body", `{"input":"from-body"}`,
-		"--cli-intent-run-body", `{"input":"from-field"}`})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--body")
-	assert.Contains(t, err.Error(), "--cli-intent-run-body")
-
-	h = NewCLITestHarness(t)
-	require.NoError(t, h.RunWithServer(s.URL, []string{"render",
-		"--cli-intent-run-body", `{"input":"from-field"}`}))
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "from-argument",
+		"--body", `{"output_modalities":["text"]}`, "-m", "render-2"}))
 	body := echoedJSON(t, h.GetStdout())
-	assert.Equal(t, "from-field", body["input"])
-	assert.Equal(t, "render-1", body["model"])
+	assert.Equal(t, "from-argument", body["input"])
+	assert.Equal(t, "render-2", body["model"])
+	assert.Equal(t, []interface{}{"text"}, body["output_modalities"])
 }
 
 func TestIntentForeignSelectorIsUsageError(t *testing.T) {
@@ -469,9 +485,7 @@ func TestIntentNonObjectBodyFallsThrough(t *testing.T) {
 	assert.NotContains(t, err.Error(), "presets the")
 }
 
-// TestIntentDiscriminatedPartialBody exercises the second body surface being
-// the union field flag of a mixed operation, the discriminator conflict, and
-// the discriminator fill.
+
 func TestIntentDiscriminatedPartialBody(t *testing.T) {
 	recordTest("intents-discriminated-partial-body")
 	s := newEchoServer()
@@ -479,7 +493,7 @@ func TestIntentDiscriminatedPartialBody(t *testing.T) {
 
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunWithServer(s.URL, []string{"model-job", "--variant-id", "v1",
-		"--discriminated-variant-body", `{"input":"cat"}`}))
+		"--body", `{"input":"cat"}`}))
 	body := echoedJSON(t, h.GetStdout())
 	assert.Equal(t, "model", body["kind"])
 	assert.Equal(t, "fixed-model", body["model"])

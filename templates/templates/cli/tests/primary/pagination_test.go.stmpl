@@ -864,3 +864,87 @@ func TestPaginationWithRetries(t *testing.T) {
 	require.NotEmpty(t, stdout)
 	assert.True(t, json.Valid([]byte(stdout)), "expected valid JSON output")
 }
+
+// TestPaginationTableOutputCollectsRowsAcrossPages verifies that --all with
+// --output-format table renders every declared result from every page as one
+// aligned table with a single header, rather than printing each page's
+// envelope in the pretty format.
+func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
+	recordTest("pagination-object-results-page-params")
+
+	type objectResult struct {
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+	}
+	pages := map[string][]*objectResult{
+		"0": {&objectResult{ID: 1, Name: "alpha"}, &objectResult{ID: 2, Name: "beta"}},
+		"1": {nil, &objectResult{ID: 3, Name: "gamma"}},
+	}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"numPages":    2,
+			"resultArray": pages[r.URL.Query().Get("page")],
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-object-results-page-params",
+		"--page", "0",
+		"--all",
+		"--output-format", "table",
+	})
+	require.NoError(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	lines := strings.Split(stdout, "\n")
+	require.Len(t, lines, 5, "expected one header plus four rows, got:\n%s", stdout)
+	assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(lines[0]))
+	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
+	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
+	assert.Equal(t, []string{"0"}, strings.Fields(lines[3]), "a null result keeps its row, decoded as the zero value, so the count matches the API")
+	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[4]))
+	assert.NotContains(t, stdout, "numPages", "page envelope leaked into table output")
+	assert.NotContains(t, stdout, "resultArray", "page envelope leaked into table output")
+}
+
+// TestPaginationTableOutputFlushesRowsBeforeError verifies that rows collected
+// under --output-format table are still rendered when a later page fails, so
+// stdout holds the partial table and stderr holds the error, as it does for
+// the streaming formats.
+func TestPaginationTableOutputFlushesRowsBeforeError(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") != "0" {
+			http.Error(w, "page unavailable", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"numPages": 3,
+			"resultArray": []map[string]any{
+				{"id": 1, "name": "alpha"},
+				{"id": 2, "name": "beta"},
+			},
+		})
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{
+		"pagination", "pagination-object-results-page-params",
+		"--page", "0",
+		"--all",
+		"--output-format", "table",
+	})
+	require.Error(t, err)
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	lines := strings.Split(stdout, "\n")
+	require.Len(t, lines, 3, "expected one header plus the two rows fetched before the failure, got:\n%s", stdout)
+	assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(lines[0]))
+	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
+	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
+	assert.NotEmpty(t, h.GetStderr(), "the page failure should be reported on stderr")
+}

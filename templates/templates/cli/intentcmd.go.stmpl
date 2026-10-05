@@ -77,41 +77,25 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 		},
 	}
 	{{- if $c.HasMeta}}
-	{{- if $c.Dispatch}}
+	{{- if and $c.HasBody $c.BodyFlag}}
 	intentMeta := flagutil.NonBodyMeta({{$c.MetaVar}}, "{{$c.BodyFieldPath}}")
+	{{- else}}
+	intentMeta := {{$c.MetaVar}}
+	{{- end}}
 	flagutil.RegisterFlags(cmd, intentMeta)
 	flagutil.SetMetaPromptOptional(cmd, intentMeta, false)
-	{{- else}}
-	flagutil.RegisterFlags(cmd, {{$c.MetaVar}})
-	flagutil.SetMetaPromptOptional(cmd, {{$c.MetaVar}}, false)
-	{{- if $c.HasBody}}
-	flagutil.ClearBodyRequirements(cmd, {{$c.MetaVar}}, "{{$c.BodyFieldPath}}")
-	{{- end}}
-	{{- range $c.Args}}
-	{{- if .BackingFlag}}
-	_ = flagutil.OverridePromptRequirement(cmd, "{{.BackingFlag}}", false, false)
-	{{- end}}
-	{{- end}}
-	{{- end}}
 	{{- end}}
 	{{- if $c.SecurityFlags}}
 	{{$c.SecurityFlags}}
 	{{- end}}
 	{{- if eq $c.BodyFlag "body"}}
-	cmd.Flags().String("body", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
+	cmd.Flags().String("body", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
 	_ = flagutil.AnnotatePromptFlag(cmd, "body", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
 	{{- else if $c.BodyFlag}}
-	cmd.Flags().String("{{$c.BodyFlag}}", "", "Request body as JSON (advanced; replaces intent arguments). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
+	cmd.Flags().String("{{$c.BodyFlag}}", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.{{if $c.HasSchema}} Use --schema to print the exact JSON Schema.{{end}}")
 	_ = flagutil.AnnotatePromptFlag(cmd, "{{$c.BodyFlag}}", flagutil.PromptFlagSpec{Kind: "json", BodyFlag: true})
 	{{- end}}
-	{{- if and $c.HasMeta $c.BodyFlag (not $c.Dispatch)}}
-	if err := flagutil.AnnotateBodyFields(cmd, {{$c.MetaVar}}, "{{$c.BodyFieldPath}}", "{{$c.BodyFlag}}"{{if $c.BodyParamFlag}}, "{{$c.BodyParamFlag}}"{{end}}); err != nil {
-		return fmt.Errorf("annotate body fields for intent {{$c.ID}}: %w", err)
-	}
-	{{- end}}
-	{{- if $c.BodyParamFlag}}
-	_ = flagutil.MarkBodyFlag(cmd, "{{$c.BodyParamFlag}}")
-	{{- end}}
+
 	{{- if $c.HasSchema}}
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
@@ -126,13 +110,13 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 	{{- else}}
 	cmd.Flags().StringP("{{.Name}}", "{{.Shorthand}}", "", "{{escapeGoString .Summary}}")
 	{{- end}}
+	flagutil.MarkRequestInput(cmd, "{{.Name}}")
 	_ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
 		Required: {{if and .Required (not .PresetCovered)}}true{{else}}false{{end}},
 		Kind: "{{if eq .Type "bool"}}bool{{else if eq .Type "int"}}int64{{else if eq .Type "float"}}float64{{else}}string{{end}}",
 		Order: {{$index}},
 		{{- if .SatisfiedBy}}
-		// A supplied whole body carries this flag's bound key (and the
-		// backing operation flag supplies it directly): no prompt then.
+
 		BodySources: []string{ {{- range $i, $name := .SatisfiedBy}}{{if $i}}, {{end}}"{{escapeGoString $name}}"{{end -}} },
 		{{- end}}
 	})
@@ -295,7 +279,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}
 	{{- else}}
 	{{- if $c.BodyFlag}}
-	bodySurfaces := []string{"{{$c.BodyFlag}}"{{if $c.BodyParamFlag}}, "{{$c.BodyParamFlag}}"{{end}}}
+	bodySurfaces := []string{"{{$c.BodyFlag}}"}
 	for _, surface := range bodySurfaces {
 		if flagutil.FlagChanged(cmd, surface) {
 			if err := flagutil.ResolveBodyFlag(cmd, surface); err != nil {
@@ -304,11 +288,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	suppliedBodyFlag := ""
-	{{- if $c.BodyParamFlag}}
-	if flagutil.FlagChanged(cmd, "{{$c.BodyParamFlag}}") {
-		suppliedBodyFlag = "{{$c.BodyParamFlag}}"
-	}
-	{{- end}}
+
 	if flagutil.FlagChanged(cmd, "{{$c.BodyFlag}}") {
 		suppliedBodyFlag = "{{$c.BodyFlag}}"
 	}
@@ -327,24 +307,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	{{- end}}
 	{{- if or $c.Args $c.Flags}}
 	if bodySupplied {
-		{{- range $c.Args}}
-		{{- if and .Required (not .PresetCovered) .BackingFlag}}
-		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
-			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
-			}
-		}
-		{{- end}}
-		{{- end}}
-		{{- range $c.Flags}}
-		{{- if and .Required (not .PresetCovered) .BackingFlag (or (not .Type) (eq .Type "string") (eq .Type ""))}}
-		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
-			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
-			}
-		}
-		{{- end}}
-		{{- end}}
+
 		{{- range $c.Args}}
 		if len(args) > 0 {
 			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "{{escapeGoString .Key}}", "the <{{escapeGoString .Name}}> argument", strings.Join(args, " ")); err != nil {
@@ -376,7 +339,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}
 	{{- end}}
 {{- if or (gt $c.MinArgs 0) $c.PromptFlags}}
-	if len(args) == 0 && !bodySupplied{{range $c.Args}}{{range .SatisfiedBy}} && !flagutil.FlagChanged(cmd, "{{.}}"){{end}}{{end}}{{range $c.Flags}} && !flagutil.FlagChanged(cmd, "{{.Name}}"){{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}}{{end}} {
+	if len(args) == 0 && !bodySupplied{{range $c.Args}}{{range .SatisfiedBy}} && !flagutil.FlagChanged(cmd, "{{.}}"){{end}}{{end}}{{range $c.Flags}} && !flagutil.FlagChanged(cmd, "{{.Name}}"){{end}} {
 		{{- addImport "internal/output" true}}
 		{{- $missingMessage := "missing required input"}}
 		{{- $foundMissing := false}}
@@ -412,19 +375,10 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		{{- end}}
 		{{- range $c.Args}}
 		{{- if and .Required (not .PresetCovered)}}
-		if len(args) == 0{{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}} {
+		if len(args) == 0 {
 			return flagutil.WithCLIValidation(fmt.Errorf("missing required argument (or pass a full request with --{{$c.BodyFlag}})"))
 		}
-		{{- if .BackingFlag}}
-		// An explicitly empty backing-flag value must not stand in for the
-		// required positional — nor override a supplied one at the request
-		// layer — and bypass required-string validation.
-		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
-			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
-			}
-		}
-		{{- end}}
+
 		{{- end}}
 		if len(args) > 0 {
 			body["{{escapeGoString .Key}}"] = strings.Join(args, " ")
@@ -432,7 +386,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		{{- end}}
 		{{- range $c.Flags}}
 		{{- if and .Required (not .PresetCovered)}}
-		if !flagutil.FlagChanged(cmd, "{{.Name}}"){{if .BackingFlag}} && !flagutil.FlagChanged(cmd, "{{.BackingFlag}}"){{end}} {
+		if !flagutil.FlagChanged(cmd, "{{.Name}}") {
 			return flagutil.WithCLIValidation(fmt.Errorf("required flag --{{.Name}} not set (or pass a full request with --{{$c.BodyFlag}})"))
 		}
 		{{- end}}
@@ -444,13 +398,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 				return flagutil.WithCLIValidation(fmt.Errorf("--{{.Name}} must not be empty"))
 			}
 		}
-		{{- if .BackingFlag}}
-		if flagutil.FlagChanged(cmd, "{{.BackingFlag}}") {
-			if v, _ := flagutil.GetStringFlag(cmd, "{{.BackingFlag}}"); v == "" {
-				return flagutil.WithCLIValidation(fmt.Errorf("--{{.BackingFlag}} must not be empty"))
-			}
-		}
-		{{- end}}
+
 		{{- end}}
 		if flagutil.FlagChanged(cmd, "{{.Name}}") {
 			{{- if eq .Type "bool"}}
