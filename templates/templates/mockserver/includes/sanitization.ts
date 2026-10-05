@@ -752,23 +752,38 @@ function templateFloatValue(
 function getEnumNamesFromValues(values: string[]): string[] {
   let enumNames = [];
 
+  // Count collisions on the emitted field name, not the cased name:
+  // `_1ST` and `1ST` case to `1St` and `OneSt`, which differ, but both
+  // become `OneSt` once sanitizeFieldName rewrites the leading digit.
   let names = {};
   for (const value of values) {
-    let name = getEnumName(value);
-    if (!names[name]) {
-      names[name] = 0;
+    let member = sanitizeFieldName(getEnumName(value));
+    if (!names[member]) {
+      names[member] = 0;
     }
 
-    names[name] += 1;
+    names[member] += 1;
   }
 
+  let seen = {};
   for (const value of values) {
     let name = getEnumName(value);
-    if (names[name] > 1) {
-      name = `${name}${caser().ToGoPascal(getCasing(value))}`;
+    let member = sanitizeFieldName(name);
+    if (names[member] > 1) {
+      let candidate = sanitizeFieldName(
+        `${name}${caser().ToGoPascal(getCasing(value))}`,
+      );
+      if (seen[candidate]) {
+        let suffix = seen[candidate];
+        seen[candidate] += 1;
+        candidate = `${candidate}${suffix}`;
+      } else {
+        seen[candidate] = 1;
+      }
+      member = candidate;
     }
 
-    enumNames.push(sanitizeFieldName(name));
+    enumNames.push(member);
   }
 
   return enumNames;

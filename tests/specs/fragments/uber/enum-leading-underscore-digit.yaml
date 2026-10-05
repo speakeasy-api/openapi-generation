@@ -20,7 +20,11 @@ paths:
         `_10` is digits-only, which TypeScript may keep as a numeric key in a
         union enum but must spell out in a native enum. A second property
         supplies the same shape of name through `x-speakeasy-enums`, which
-        must also yield a valid member name.
+        must also yield a valid member name. A third property pairs `_1ST`
+        with `1ST`: both derive `OneSt`-shaped names that differ only by
+        case, so targets that upper-snake their members (Java, Python,
+        Ruby) must detect the collision on the emitted member and suffix
+        it instead of declaring `ONE_ST` twice.
       tags:
         - generation
       responses:
@@ -37,6 +41,8 @@ paths:
                     $ref: "#/components/schemas/LeadingUnderscoreDigitEnum"
                   overriddenAccountType:
                     $ref: "#/components/schemas/LeadingUnderscoreDigitOverrideEnum"
+                  collidingAccountType:
+                    $ref: "#/components/schemas/LeadingUnderscoreDigitCollisionEnum"
 components:
   schemas:
     LeadingUnderscoreDigitEnum:
@@ -55,3 +61,9 @@ components:
       x-speakeasy-enums:
         - UNSPECIFIED
         - _1ST
+    LeadingUnderscoreDigitCollisionEnum:
+      type: string
+      enum:
+        - UNSPECIFIED
+        - _1ST
+        - 1ST
