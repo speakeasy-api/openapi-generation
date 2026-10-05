@@ -854,9 +854,12 @@ function getEnumName(value: string): string {
     name = "Unknown";
   }
 
-  name = sanitizeName(name);
+  name = caser().ToPascal(sanitizeName(name));
+  if (/^[0-9]/.test(name)) {
+    name = caser().ToPascal(sanitizeName(name));
+  }
 
-  return caser().ToPascal(name);
+  return name;
 }
 
 // @ts-ignore
