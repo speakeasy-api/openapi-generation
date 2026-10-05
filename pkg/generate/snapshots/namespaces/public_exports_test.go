@@ -1088,3 +1088,481 @@ export * from "./exports.js";
 		Expected:     expectedSnapshot,
 	})
 }
+
+const sseBodyVariantPublicExportsSpec = `openapi: 3.1.0
+info:
+  title: SSE Body Variant Public Exports
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /widgets:
+    post:
+      operationId: createWidget
+      x-speakeasy-group: widgets
+      x-speakeasy-sse-overload: true
+      x-speakeasy-exports:
+        - group: widgets
+          name: WidgetCreateParams
+          representation: input
+      description: >-
+        SSE overload with a union-of-objects body: the export's namespace
+        carries the union-level and per-variant params, including region.
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWidgetBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Widget"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WidgetEvent"
+  /{region}/widgets/{id}:
+    get:
+      operationId: getWidget
+      x-speakeasy-group: widgets
+      x-speakeasy-sse-overload: true
+      x-speakeasy-exports:
+        - group: widgets
+          name: WidgetGetParams
+          representation: input
+      description: >-
+        SSE overload without a body: no per-variant params are exported.
+      parameters:
+        - name: region
+          in: path
+          required: true
+          schema:
+            type: string
+            default: us
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stream
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Widget"
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/WidgetEvent"
+components:
+  schemas:
+    CreateWidgetBody:
+      oneOf:
+        - $ref: "#/components/schemas/CreateBasicWidget"
+        - $ref: "#/components/schemas/CreateCustomWidget"
+    CreateBasicWidget:
+      type: object
+      description: >-
+        Explicit exports named like per-variant params types keep targeting
+        this body model.
+      x-speakeasy-exports:
+        - group: widgets
+          name: CreateBasicWidgetParamsStreaming
+          representation: input
+        - group: widgets
+          name: CreateBasicWidgetParamsNonStreaming
+          representation: input
+      required: [color, label]
+      properties:
+        color:
+          type: string
+        label:
+          type: string
+        stream:
+          type: boolean
+    CreateCustomWidget:
+      type: object
+      required: [template, label]
+      properties:
+        template:
+          type: string
+        label:
+          type: string
+        stream:
+          type: boolean
+    Widget:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+    WidgetEvent:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [type]
+          properties:
+            type:
+              type: string`
+
+const sseBodyVariantParamsCheck = `import type { Widgets } from "./resources.js";
+import type * as MP from "./models/operations/method-params.js";
+import type { CreateBasicWidget } from "./models/create-basic-widget.js";
+import type { Widgets as WidgetsSDK } from "./sdk/widgets.js";
+
+type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Idx<A> = [A] extends [Record<string, unknown>] ? 1 : 0;
+type Same<A, B> =
+  Mutual<A, B> extends true
+    ? Mutual<keyof A, keyof B> extends true
+      ? Mutual<Required<A>, Required<B>> extends true
+        ? Mutual<Idx<A>, Idx<B>>
+        : false
+      : false
+    : false;
+type IsStream<T> = [Awaited<T>] extends [AsyncIterable<unknown>] ? true : false;
+
+export const unionStreaming: Same<
+  Widgets.WidgetCreateParamsStreaming,
+  MP.CreateWidgetParamsStreaming
+> = true;
+export const unionNonStreaming: Same<
+  Widgets.WidgetCreateParams.WidgetCreateParamsNonStreaming,
+  MP.CreateWidgetParamsNonStreaming
+> = true;
+export const variantStreaming: Same<
+  Widgets.WidgetCreateParams.CreateBasicWidgetParamsStreaming,
+  MP.CreateBasicWidgetParamsStreaming
+> = true;
+export const variantBase: Same<
+  Widgets.WidgetCreateParams.CreateCustomWidgetParams,
+  MP.CreateCustomWidgetParams
+> = true;
+export const bodyOnly: Same<
+  Widgets.CreateBasicWidgetParamsStreaming,
+  CreateBasicWidget
+> = true;
+
+declare const sdk: WidgetsSDK;
+declare const unionStreamingParams: Widgets.WidgetCreateParamsStreaming;
+declare const unionNonStreamingParams: Widgets.WidgetCreateParamsNonStreaming;
+declare const variantStreamingParams: Widgets.WidgetCreateParams.CreateCustomWidgetParamsStreaming;
+
+export function overloadChecks() {
+  const unionStream = sdk.createWidget(unionStreamingParams);
+  const unionJSON = sdk.createWidget(unionNonStreamingParams);
+  const variantStream = sdk.createWidget(variantStreamingParams);
+  const streams: IsStream<typeof unionStream> = true;
+  const json: IsStream<typeof unionJSON> = false;
+  const variantStreams: IsStream<typeof variantStream> = true;
+  return [streams, json, variantStreams];
+}
+`
+
+func TestSnapTsPublicExportsSSEBodyVariants(t *testing.T) {
+	t.Parallel()
+
+	genYaml := `typescript:
+  packageName: public-exports
+  methodSignature: params-object
+  flattenRequests: true
+  maxMethodParams: 999
+`
+
+	expectedSnapshot := `--- src/models/operations/method-params.ts ---
+/*
+ * Code generated by Speakeasy (https://speakeasy.com). DO NOT EDIT.
+ * Generated under the AGPL-3.0-only license.
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import type { CreateBasicWidget } from "../create-basic-widget.js";
+import type { CreateCustomWidget } from "../create-custom-widget.js";
+import type { CreateWidgetRequest } from "./create-widget.js";
+import type { GetWidgetRequest } from "./get-widget.js";
+
+export type CreateWidgetParams =
+  & Omit<
+    CreateWidgetRequest,
+    "body"
+  >
+  & CreateWidgetRequest["body"];
+
+export type CreateWidgetParamsNonStreaming = CreateWidgetParams & {
+  stream?: false | undefined;
+};
+
+export type CreateWidgetParamsStreaming = CreateWidgetParams & { stream: true };
+
+export type CreateBasicWidgetParams =
+  & Omit<
+    CreateWidgetRequest,
+    "body"
+  >
+  & CreateBasicWidget;
+
+export type CreateBasicWidgetParamsNonStreaming = CreateBasicWidgetParams & {
+  stream?: false | undefined;
+};
+
+export type CreateBasicWidgetParamsStreaming = CreateBasicWidgetParams & {
+  stream: true;
+};
+
+export type CreateCustomWidgetParams =
+  & Omit<
+    CreateWidgetRequest,
+    "body"
+  >
+  & CreateCustomWidget;
+
+export type CreateCustomWidgetParamsNonStreaming = CreateCustomWidgetParams & {
+  stream?: false | undefined;
+};
+
+export type CreateCustomWidgetParamsStreaming = CreateCustomWidgetParams & {
+  stream: true;
+};
+
+export type GetWidgetParams = Omit<
+  GetWidgetRequest,
+  "id" | "region"
+>;
+
+export type GetWidgetParamsNonStreaming = GetWidgetParams & {
+  stream?: false | undefined;
+};
+
+export type GetWidgetParamsStreaming = GetWidgetParams & { stream: true };
+
+
+--- src/resources.ts ---
+/*
+ * Code generated by Speakeasy (https://speakeasy.com). DO NOT EDIT.
+ * Generated under the AGPL-3.0-only license.
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import type { CreateBasicWidget as CreateBasicWidget$Import } from "./models/create-basic-widget.js";
+import type {
+  CreateBasicWidgetParams as CreateBasicWidgetParams$Import,
+  CreateBasicWidgetParamsNonStreaming
+    as CreateBasicWidgetParamsNonStreaming$Import,
+  CreateBasicWidgetParamsStreaming as CreateBasicWidgetParamsStreaming$Import,
+  CreateCustomWidgetParams as CreateCustomWidgetParams$Import,
+  CreateCustomWidgetParamsNonStreaming
+    as CreateCustomWidgetParamsNonStreaming$Import,
+  CreateCustomWidgetParamsStreaming as CreateCustomWidgetParamsStreaming$Import,
+  CreateWidgetParams as CreateWidgetParams$Import,
+  CreateWidgetParamsNonStreaming as CreateWidgetParamsNonStreaming$Import,
+  CreateWidgetParamsStreaming as CreateWidgetParamsStreaming$Import,
+  GetWidgetParams as GetWidgetParams$Import,
+  GetWidgetParamsNonStreaming as GetWidgetParamsNonStreaming$Import,
+  GetWidgetParamsStreaming as GetWidgetParamsStreaming$Import,
+} from "./models/operations/method-params.js";
+type CreateBasicWidgetParamsNonStreaming$ = CreateBasicWidget$Import;
+type CreateBasicWidgetParamsStreaming$ = CreateBasicWidget$Import;
+type WidgetCreateParams$ = CreateWidgetParams$Import;
+type WidgetGetParams$ = GetWidgetParams$Import;
+type WidgetCreateParamsNonStreaming$ = CreateWidgetParamsNonStreaming$Import;
+type WidgetCreateParamsStreaming$ = CreateWidgetParamsStreaming$Import;
+type CreateBasicWidgetParams$ = CreateBasicWidgetParams$Import;
+type CreateBasicWidgetParamsNonStreaming$2 =
+  CreateBasicWidgetParamsNonStreaming$Import;
+type CreateBasicWidgetParamsStreaming$2 =
+  CreateBasicWidgetParamsStreaming$Import;
+type CreateCustomWidgetParams$ = CreateCustomWidgetParams$Import;
+type CreateCustomWidgetParamsNonStreaming$ =
+  CreateCustomWidgetParamsNonStreaming$Import;
+type CreateCustomWidgetParamsStreaming$ =
+  CreateCustomWidgetParamsStreaming$Import;
+type WidgetGetParamsNonStreaming$ = GetWidgetParamsNonStreaming$Import;
+type WidgetGetParamsStreaming$ = GetWidgetParamsStreaming$Import;
+export type CreateBasicWidgetParamsNonStreaming =
+  CreateBasicWidgetParamsNonStreaming$;
+export type CreateBasicWidgetParamsStreaming =
+  CreateBasicWidgetParamsStreaming$;
+export type WidgetCreateParams = WidgetCreateParams$;
+export type WidgetCreateParamsNonStreaming = WidgetCreateParamsNonStreaming$;
+export type WidgetCreateParamsStreaming = WidgetCreateParamsStreaming$;
+export type WidgetGetParams = WidgetGetParams$;
+export type WidgetGetParamsNonStreaming = WidgetGetParamsNonStreaming$;
+export type WidgetGetParamsStreaming = WidgetGetParamsStreaming$;
+export declare namespace Widgets {
+  export type CreateBasicWidgetParamsNonStreaming =
+    CreateBasicWidgetParamsNonStreaming$;
+  export type CreateBasicWidgetParamsStreaming =
+    CreateBasicWidgetParamsStreaming$;
+  export type WidgetCreateParams = WidgetCreateParams$;
+  export type WidgetCreateParamsNonStreaming = WidgetCreateParamsNonStreaming$;
+  export type WidgetCreateParamsStreaming = WidgetCreateParamsStreaming$;
+  export type WidgetGetParams = WidgetGetParams$;
+  export type WidgetGetParamsNonStreaming = WidgetGetParamsNonStreaming$;
+  export type WidgetGetParamsStreaming = WidgetGetParamsStreaming$;
+  export namespace WidgetCreateParams {
+    export type CreateBasicWidgetParams = CreateBasicWidgetParams$;
+    export type CreateBasicWidgetParamsNonStreaming =
+      CreateBasicWidgetParamsNonStreaming$2;
+    export type CreateBasicWidgetParamsStreaming =
+      CreateBasicWidgetParamsStreaming$2;
+    export type CreateCustomWidgetParams = CreateCustomWidgetParams$;
+    export type CreateCustomWidgetParamsNonStreaming =
+      CreateCustomWidgetParamsNonStreaming$;
+    export type CreateCustomWidgetParamsStreaming =
+      CreateCustomWidgetParamsStreaming$;
+    export type WidgetCreateParamsNonStreaming =
+      WidgetCreateParamsNonStreaming$;
+    export type WidgetCreateParamsStreaming = WidgetCreateParamsStreaming$;
+  }
+  export namespace WidgetGetParams {
+    export type WidgetGetParamsNonStreaming = WidgetGetParamsNonStreaming$;
+    export type WidgetGetParamsStreaming = WidgetGetParamsStreaming$;
+  }
+}
+
+
+--- src/sdk/widgets.ts ---
+/*
+ * Code generated by Speakeasy (https://speakeasy.com). DO NOT EDIT.
+ * Generated under the AGPL-3.0-only license.
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import { widgetsCreateWidget } from "../funcs/widgets-create-widget.js";
+import { widgetsGetWidget } from "../funcs/widgets-get-widget.js";
+import { EventStream } from "../lib/event-streams.js";
+import { ClientSDK, RequestOptions } from "../lib/sdks.js";
+import * as models from "../models/index.js";
+import * as operations from "../models/operations/index.js";
+import {
+  CreateBasicWidgetParamsNonStreaming,
+  CreateBasicWidgetParamsStreaming,
+  CreateCustomWidgetParamsNonStreaming,
+  CreateCustomWidgetParamsStreaming,
+  CreateWidgetParams,
+  CreateWidgetParamsNonStreaming,
+  CreateWidgetParamsStreaming,
+  GetWidgetParams,
+  GetWidgetParamsNonStreaming,
+  GetWidgetParamsStreaming,
+} from "../models/operations/method-params.js";
+import { unwrapAsync } from "../types/fp.js";
+
+export class Widgets extends ClientSDK {
+  /**
+   * SSE overload with a union-of-objects body: the export's namespace carries the union-level and per-variant params, including region.
+   */
+  async createWidget(
+    params: CreateBasicWidgetParamsNonStreaming,
+    options?: RequestOptions,
+  ): Promise<models.Widget>;
+  async createWidget(
+    params: CreateCustomWidgetParamsNonStreaming,
+    options?: RequestOptions,
+  ): Promise<models.Widget>;
+  async createWidget(
+    params: CreateBasicWidgetParamsStreaming,
+    options?: RequestOptions,
+  ): Promise<EventStream<models.WidgetEvent>>;
+  async createWidget(
+    params: CreateCustomWidgetParamsStreaming,
+    options?: RequestOptions,
+  ): Promise<EventStream<models.WidgetEvent>>;
+  async createWidget(
+    params: CreateWidgetParamsNonStreaming,
+    options?: RequestOptions,
+  ): Promise<models.Widget>;
+  async createWidget(
+    params: CreateWidgetParamsStreaming,
+    options?: RequestOptions,
+  ): Promise<EventStream<models.WidgetEvent>>;
+  async createWidget(
+    params: CreateWidgetParams,
+    options?: RequestOptions,
+  ): Promise<operations.CreateWidgetResponse>;
+  async createWidget(
+    params: CreateWidgetParams,
+    options?: RequestOptions,
+  ): Promise<operations.CreateWidgetResponse> {
+    const { region, ...body } = params;
+    return unwrapAsync(widgetsCreateWidget(
+      this,
+      body,
+      region,
+      options,
+    ));
+  }
+
+  /**
+   * SSE overload without a body: no per-variant params are exported.
+   */
+  async getWidget(
+    region: string | undefined,
+    id: string,
+    params?: GetWidgetParamsNonStreaming,
+    options?: RequestOptions,
+  ): Promise<models.Widget>;
+  async getWidget(
+    region: string | undefined,
+    id: string,
+    params: GetWidgetParamsStreaming,
+    options?: RequestOptions,
+  ): Promise<EventStream<models.WidgetEvent>>;
+  async getWidget(
+    region: string | undefined,
+    id: string,
+    params?: GetWidgetParams,
+    options?: RequestOptions,
+  ): Promise<operations.GetWidgetResponse>;
+  async getWidget(
+    region: string | undefined,
+    id: string,
+    params?: GetWidgetParams,
+    options?: RequestOptions,
+  ): Promise<operations.GetWidgetResponse> {
+    return unwrapAsync(widgetsGetWidget(
+      this,
+      region,
+      id,
+      params?.stream,
+      options,
+    ));
+  }
+}
+
+
+` // end of snapshot
+
+	snaptest.DoTestSnapshot(t, snaptest.Options{
+		Spec:    sseBodyVariantPublicExportsSpec,
+		GenYaml: genYaml,
+		IncludeGlobs: []string{
+			"src/resources.ts",
+			"src/models/operations/method-params.ts",
+			"src/sdk/widgets.ts",
+		},
+		Expected: expectedSnapshot,
+		AfterGenerate: func(t *testing.T, tempDir string) {
+			t.Helper()
+			require.NoError(t, os.WriteFile(
+				filepath.Join(tempDir, "src", "__params_check.ts"),
+				[]byte(sseBodyVariantParamsCheck),
+				0o644,
+			))
+		},
+	})
+}

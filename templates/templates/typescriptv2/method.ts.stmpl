@@ -20,7 +20,6 @@
 {{- $paramsOpt := "" }}{{- if not $paramsState.ParamsRequired }}{{- $paramsOpt = "?" }}{{- end }}
 {{- if $sseTypes }}
 {{ $tsdoc }}
-{{- if $paramsState.BodyVariants }}
 {{- range $variant := $paramsState.BodyVariants }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
     {{- range $field := tsMethodPositionalFields $op }}
@@ -61,7 +60,6 @@
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
 {{- end }}
-{{- else }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
     {{- range $field := tsMethodPositionalFields $op }}
       {{- $fieldType := resolveOutbound (
@@ -98,7 +96,6 @@
     params: {{$paramsState.ParamsName}}Streaming,
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
-{{- end }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
     {{- range $field := tsMethodPositionalFields $op }}
     {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (

@@ -1,0 +1,10 @@
+id: 1791215442-c54f190b
+features:
+    - publicExports
+targets:
+    - typescriptv2
+type: fix
+bump: patch
+description: export streaming and per-variant params types for SSE operations with union request bodies, accept the union-level streaming params in method overloads, and deduplicate SSE params aliases (explicit exports now take precedence over generated SSE params aliases on name collisions)
+author: 2ynn
+date: "2026-10-05"
