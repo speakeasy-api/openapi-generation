@@ -639,14 +639,14 @@ components:
 
 ```text
 Primary:
-  alpha (default: create-widget, inspect-widget)     First option.
-  beta                                              Second option.
+  alpha (default: create-widget, inspect-widget)   First option.
+  beta                                             Second option.
 
 Secondary:
-  gamma (default: render-widget)                    Third option.
+  gamma (default: render-widget)                   Third option.
 
 Other:
-  delta                                             Fourth option.
+  delta                                            Fourth option.
 ```
 
 Each enum value becomes one `CliCatalogValue` row. `CliCatalog.Groups` organises those same rows into human-output sections; `CliCatalog.Values` flattens them in the same order for machine output. Grouping does not create additional enum values or change request values.
@@ -654,7 +654,7 @@ Each enum value becomes one `CliCatalogValue` row. `CliCatalog.Groups` organises
 - Go links each effective preset to its resolved enum schema, including references and array-item enums. Route-local presets override command presets. When a command's routes select different defaults, labels include the actual route selector, such as `create --image`; defaults shared by every route use the plain command name. Unknown values accepted by an open enum are not catalog entries, and ambiguous property unions do not assign a preset to unrelated catalogs.
 - Only the scalar catalog `default` sets the existing machine-output `default` boolean. It remains independent of schema defaults and command presets. Command defaults produce `<value> (default: <command>, ...)`; otherwise the scalar catalog default produces `<value> (default)`.
 - `x-speakeasy-enum-groups` accepts a value-to-title map, or a positional string list matching the original enum length, for example `[Primary, Primary, Secondary, ""]`. The list includes slots for null and duplicate enum members; null slots do not create rows and duplicate values use their first non-empty title. Go validates the extension before rendering. Unknown values, duplicate map keys, non-string titles, malformed shapes and wrong-length lists are errors. Titles are trimmed; missing map entries and empty titles are ungrouped.
-- Groups appear in first-seen enum order, and values within each group retain enum order. If at least one group exists, remaining values appear in a trailing `Other` section. If all titles are empty or no groups are declared, output stays flat without `group` fields.
+- Groups appear in first-seen enum order, and values within each group retain enum order. If at least one group exists, remaining values appear in a trailing `Other` section, unless a group is already titled `Other`. In that case, the remaining values join that group in enum order without changing its section position. If all titles are empty or no groups are declared, output stays flat without `group` fields.
 - Grouped human output uses `<title>:` headings, two-space indentation and a blank line between groups. Effective command defaults or groups use a label width of `max(42, longest label length + 2)`. Catalogs without either retain the original fixed width of 42, including legacy long-label spacing.
 - Machine output remains a flat array with `value`, `description` and `default`. Non-empty command defaults add `default_for`; grouped catalogs add `group`, including the `Other` remainder.
 

@@ -82,6 +82,19 @@ var catalogOutputCases = []struct {
 		]`,
 	},
 	{
+		command: "catalog-other",
+		human: "Other:\n" + fmt.Sprintf("  %-42s %s\n  %-42s %s\n  %-42s %s\n  %-42s %s\n",
+			"alpha", "First option.", "beta", "Second option.", "gamma", "Third option.", "epsilon", "Fifth option.") +
+			"\nPrimary:\n" + fmt.Sprintf("  %-42s %s\n", "delta", "Fourth option."),
+		json: `[
+			{"default":false,"description":"First option.","group":"Other","value":"alpha"},
+			{"default":false,"description":"Second option.","group":"Other","value":"beta"},
+			{"default":false,"description":"Third option.","group":"Other","value":"gamma"},
+			{"default":false,"description":"Fifth option.","group":"Other","value":"epsilon"},
+			{"default":false,"description":"Fourth option.","group":"Primary","value":"delta"}
+		]`,
+	},
+	{
 		command: "catalog-ungrouped",
 		human: fmt.Sprintf("%-42s %s\n%-42s %s\n%-42s %s\n",
 			"alpha (default: choose-gamma)", "First option.", "beta", "Second option.", "gamma", "Third option."),

@@ -34,6 +34,8 @@ paths:
                   $ref: "#/components/schemas/CliCatalogUngrouped"
                 noop:
                   $ref: "#/components/schemas/CliCatalogNoop"
+                other:
+                  $ref: "#/components/schemas/CliCatalogOther"
       responses:
         "200":
           description: OK
@@ -101,6 +103,16 @@ components:
         beta: ""
       x-speakeasy-cli-catalog:
         command: catalog-ungrouped
+    CliCatalogOther:
+      type: string
+      description: An explicit Other group retains its first-seen position and merges ungrouped values in enum declaration order.
+      enum: [alpha, beta, gamma, delta, epsilon]
+      x-speakeasy-enum-descriptions: [First option., Second option., Third option., Fourth option., Fifth option.]
+      x-speakeasy-enum-groups:
+        beta: Other
+        delta: Primary
+      x-speakeasy-cli-catalog:
+        command: catalog-other
     CliCatalogNoop:
       type: string
       description: Empty group titles preserve fixed-width output for long enum values.

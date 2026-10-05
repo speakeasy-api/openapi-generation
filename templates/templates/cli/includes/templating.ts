@@ -726,7 +726,12 @@ function collectCliCatalogs(): CliCatalog[] {
         const remaining = values.filter((value) => !value.Group);
         if (groups.length > 0 && remaining.length > 0) {
           for (const value of remaining) value.Group = "Other";
-          groups.push({ Title: "Other", Values: remaining });
+          const other = byTitle.get("Other");
+          if (other) {
+            other.Values = values.filter((value) => value.Group === "Other");
+          } else {
+            groups.push({ Title: "Other", Values: remaining });
+          }
         }
         const hasDefaults = values.some((value) => value.DefaultFor.length > 0);
         const hasGroups = groups.length > 0;
