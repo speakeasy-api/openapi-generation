@@ -260,7 +260,7 @@ trackedFiles:
   internal/output/artifact.go:
     last_write_checksum: sha1:e1dfc09cbda1012a953fe33fece7efaddaf3f03b
   internal/output/async.go:
-    last_write_checksum: sha1:2898b7c3f86abc4ec325e6f89d0f8571f3ca067e
+    last_write_checksum: sha1:dd97e2b19a859b376462dd1beacb31d7d3668a79
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:

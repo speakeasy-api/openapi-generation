@@ -128,7 +128,7 @@ func (e *asyncPollError) MachineErrorFields() map[string]interface{} {
 }
 
 func (e *asyncPollError) CLIHints() []string {
-	return append(errorCLIHints(e.err), "Resume polling with: "+e.resume)
+	return append(append([]string(nil), errorCLIHints(e.err)...), "Resume polling with: "+e.resume)
 }
 
 type asyncTimings struct {
