@@ -1,0 +1,56 @@
+internal/ast/typedef.go
+  h_9630b74bdac540 144,155,1346-1348,1866-1868
+internal/validation/validateenums.go
+  h_9630b74bdac540 10-11,88-95
+  h_9630b74bdac540 96-97
+internal/extensions/extensions.go
+  h_9630b74bdac540 97,166
+internal/extensions/cli_commands.go
+  h_9630b74bdac540 312-317,330
+  h_9630b74bdac540 320-329,331-336
+internal/extensions/enum_groups_test.go
+  h_9630b74bdac540 1-75
+templates/templates/cli/tests/primary/catalog_test.go.stmpl
+  h_9630b74bdac540 44,49,57,63,72-73,78-79,85,87,89
+internal/ast/typedef_test.go
+  h_9630b74bdac540 12-20
+internal/extensions/enums.go
+  h_9630b74bdac540 5,9,60-115
+  h_9630b74bdac540 116-117
+internal/schemas/schemas.go
+  h_9630b74bdac540 1425-1440,1570
+templates/templates/common/common/typeDefs.d.ts
+  h_9630b74bdac540 284,2353-2357
+internal/extensions/cli_catalog_defaults_test.go
+  h_9630b74bdac540 1-120
+.changesets/1790909966-deaee7f1.yaml
+  h_9630b74bdac540 8
+templates/templates/cli/includes/templating.ts
+  h_9630b74bdac540 679-681,683-690,693-697,705,712-722,724-729,731-732,736-738,744-747,752
+  h_9630b74bdac540 655-678,698-704,706-711,723,730,733-735,739-743
+internal/extensions/cli_commands_link.go
+  h_9630b74bdac540 98,488-492,696-697,699-703,705,2749-2754,2916-2920
+  h_9630b74bdac540 96-97,99-109
+tests/specs/fragments/primary/cli-catalog-options.yaml
+  h_9630b74bdac540 14,33-34,58,61,67,75,78-81,87,90,94,96,99-101,103,106,109-110
+tests/overlays/primary/cli/overlay.yaml
+  h_9630b74bdac540 76-91
+templates/templates/cli/README.md
+  h_9630b74bdac540 21,26,33,587,589,592-632,638-649,651-659,661
+  h_9630b74bdac540 588,633-635,650,660
+internal/extensions/cli_catalog_defaults.go
+  h_9630b74bdac540 1-113
+internal/validation/validateenums_test.go
+  h_9630b74bdac540 5,792-830
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09dfd393de0d532b1ad6bb146af6cb7b4c9b1535",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
