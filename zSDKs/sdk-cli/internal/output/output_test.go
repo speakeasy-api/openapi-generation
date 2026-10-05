@@ -77,6 +77,13 @@ func TestAwaitAsyncDeadlineKeepsPollError(t *testing.T) {
 			if !errors.Is(outcome.err, tc.wantErr) || outcome.runtimeErr != nil {
 				t.Fatalf("expected the poll error, got %+v", outcome)
 			}
+			var fields interface{ MachineErrorFields() map[string]interface{} }
+			if !errors.As(outcome.err, &fields) {
+				t.Fatalf("expected the poll error to carry the operation handle, got %+v", outcome.err)
+			}
+			if got := fields.MachineErrorFields(); got["id"] != "handle" || got["resume"] != "resume handle" {
+				t.Fatalf("unexpected handle fields: %+v", got)
+			}
 		})
 	}
 }

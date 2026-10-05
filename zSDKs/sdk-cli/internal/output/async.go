@@ -104,6 +104,33 @@ func (e *asyncRuntimeError) MachineErrorFields() map[string]interface{} {
 	return fields
 }
 
+type asyncPollError struct {
+	err    error
+	id     string
+	resume string
+}
+
+func (e *asyncPollError) Error() string { return e.err.Error() }
+
+func (e *asyncPollError) Unwrap() error { return e.err }
+
+func (e *asyncPollError) MachineErrorFields() map[string]interface{} {
+	fields := map[string]interface{}{}
+	var inner interface{ MachineErrorFields() map[string]interface{} }
+	if errors.As(e.err, &inner) {
+		for key, value := range inner.MachineErrorFields() {
+			fields[key] = value
+		}
+	}
+	fields["id"] = e.id
+	fields["resume"] = e.resume
+	return fields
+}
+
+func (e *asyncPollError) CLIHints() []string {
+	return append(errorCLIHints(e.err), "Resume polling with: "+e.resume)
+}
+
 type asyncTimings struct {
 	interval    time.Duration
 	maxInterval time.Duration
@@ -195,7 +222,7 @@ func awaitAsync(cmd *cobra.Command, pollCtx context.Context, cfg *asyncConfig, t
 			if errors.Is(err, context.DeadlineExceeded) && errors.Is(pollCtx.Err(), context.DeadlineExceeded) && cmd.Context().Err() == nil {
 				return timedOut()
 			}
-			return asyncOutcome{err: err}
+			return asyncOutcome{err: &asyncPollError{err: err, id: id, resume: resume}}
 		}
 		snapshot, err := snapshotAsyncResponse(response)
 		if err != nil {

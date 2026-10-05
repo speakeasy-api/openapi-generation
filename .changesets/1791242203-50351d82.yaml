@@ -1,0 +1,10 @@
+id: 1791242203-50351d82
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: keep the operation handle and resume command on errors returned while polling an async command
+author: AshGodfrey
+date: "2026-10-05"
