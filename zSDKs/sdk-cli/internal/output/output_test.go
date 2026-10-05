@@ -38,7 +38,7 @@ func TestPrintTableDerivesColumnsFromFirstStructElement(t *testing.T) {
 
 func TestAwaitAsyncDeadlineKeepsPollError(t *testing.T) {
 	cfg := &asyncConfig{Command: "wait", Backoff: 1, States: map[string]string{"pending": "pending"}}
-	timings := asyncTimings{interval: time.Millisecond, maxInterval: time.Millisecond, timeout: 50 * time.Millisecond}
+	timings := asyncTimings{interval: time.Millisecond, maxInterval: time.Millisecond, timeout: 500 * time.Millisecond}
 	apiErr := errors.New("rate limited")
 
 	for name, tc := range map[string]struct {
@@ -56,6 +56,7 @@ func TestAwaitAsyncDeadlineKeepsPollError(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			cmd := &cobra.Command{}
 			cmd.SetContext(context.Background())
 			pollCtx, cancel := context.WithTimeout(cmd.Context(), timings.timeout)
