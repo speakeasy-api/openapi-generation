@@ -126,7 +126,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					s := res.StatusCode / 100
 
 					if s >= codeRange && s < codeRange+1 {
-						bufferResponseBody(res)
+						bufferResponseBody(ctx, res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				} else {
@@ -136,7 +136,7 @@ func Retry(ctx context.Context, r Retries, operation func() (*http.Response, err
 					}
 
 					if res.StatusCode == parsedCode {
-						bufferResponseBody(res)
+						bufferResponseBody(ctx, res)
 						return retry.TemporaryFromResponse("request failed", res)
 					}
 				}
@@ -237,7 +237,11 @@ func lastResponseOnDeadline(ctxErr error, err error) error {
 	return ctxErr
 }
 
-func bufferResponseBody(res *http.Response) {
+func bufferResponseBody(ctx context.Context, res *http.Response) {
+	if _, ok := ctx.Deadline(); !ok {
+		return
+	}
+
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
 

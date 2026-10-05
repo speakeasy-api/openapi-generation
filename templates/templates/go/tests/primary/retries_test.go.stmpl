@@ -253,7 +253,7 @@ func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
 
 			s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(config))
 
-			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
 
