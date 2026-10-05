@@ -1149,6 +1149,13 @@ function getEnumName(value, format: "enum" | "union" = "union") {
 
 registerTemplateFunc("getEnumName", getEnumName);
 
+// Matches a cased name that is a valid numeric literal property key in strict
+// mode: a decimal integer with an optional exponent, or a hex, binary or octal
+// literal. Leading zeros (`007`, `08`) are excluded because strict mode rejects
+// them, so those values are spelled out even under `legacy`.
+const numericLiteralKey =
+  /^(?:(?:0|[1-9][0-9]*)(?:[eE][0-9]+)?|0[xX][0-9a-fA-F]+|0[bB][01]+|0[oO][0-7]+)$/;
+
 function keepsNumericEnumMemberName(
   name: string,
   format: "enum" | "union",
@@ -1156,7 +1163,7 @@ function keepsNumericEnumMemberName(
   return (
     format === "union" &&
     context.Global.Config.NumericEnumMemberNames === "legacy" &&
-    /^[0-9]+(E[0-9]+)?$/.test(name)
+    numericLiteralKey.test(name)
   );
 }
 
