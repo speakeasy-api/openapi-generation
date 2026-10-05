@@ -61,6 +61,7 @@ func NewRootCommand() (*cobra.Command, error) {
 			}
 			output.InitAgentMode(cmd)
 			flagutil.SetStdinReadDeadline(output.IsAgentMode())
+			flagutil.ResetStdinSkip()
 			return nil
 		},
 	}
@@ -305,6 +306,7 @@ func NewRootCommand() (*cobra.Command, error) {
 	usage.Intercept(rootCmd)
 	// Cobra validates Args before any PersistentPreRunE runs.
 	output.InstallErrorHandling(rootCmd)
+	output.InstallHelpStyling(rootCmd)
 
 	return rootCmd, nil
 }

@@ -539,7 +539,7 @@ function isTestSkipped(test: string): boolean {
     "pre-request-generated-required-union-paths-and-optionality",
     "pre-request-generated-required-union-positive-echoes",
     "pre-request-real-connection-failures",
-    "pre-request-silent-stdin-times-out-on-root-union",
+    "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body",
     "pre-request-validation-envelope-matrix",
     "request-bodies-complex-number-types-bigint-overflow",
     "request-shape-body-agent-variant",
@@ -584,6 +584,9 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-object-property-params",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "pagination-object-results-page-params",
+    "clierrors-unknown-flag-suggestion",
+    "shared-enum-constructor-default",
   ].includes(test);
 }
 

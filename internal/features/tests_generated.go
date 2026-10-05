@@ -150,6 +150,8 @@ func (t Test) String() string {
         return "clierrors-plain-mode-classified"
     case TestClierrorsTypedReasons:
         return "clierrors-typed-reasons"
+    case TestClierrorsUnknownFlagSuggestion:
+        return "clierrors-unknown-flag-suggestion"
     case TestCollectionsContainingNull:
         return "collections-containing-null"
     case TestCollectionsMapInputAcceptsNonDictMapping:
@@ -656,6 +658,8 @@ func (t Test) String() string {
         return "pagination-limit-offset-union-output-page-params-flat"
     case TestPaginationLimitOffsetZeroPageParams:
         return "pagination-limit-offset-zero-page-params"
+    case TestPaginationObjectResultsPageParams:
+        return "pagination-object-results-page-params"
     case TestPaginationParamsWrappedRequest:
         return "pagination-params-wrapped-request"
     case TestPaginationSimpleObjectSnake:
@@ -798,8 +802,8 @@ func (t Test) String() string {
         return "pre-request-generated-required-union-positive-echoes"
     case TestPreRequestRealConnectionFailures:
         return "pre-request-real-connection-failures"
-    case TestPreRequestSilentStdinTimesOutOnRootUnion:
-        return "pre-request-silent-stdin-times-out-on-root-union"
+    case TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody:
+        return "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body"
     case TestPreRequestValidationEnvelopeMatrix:
         return "pre-request-validation-envelope-matrix"
     case TestRawResponseHelpersStripInternalHeader:
@@ -1298,6 +1302,8 @@ func (t Test) String() string {
         return "servers-server-with-templates-global-defaults"
     case TestServersServerWithTemplatesGlobalEnum:
         return "servers-server-with-templates-global-enum"
+    case TestSharedEnumConstructorDefault:
+        return "shared-enum-constructor-default"
     case TestSmartUnionAllConsts:
         return "smart-union-all-consts"
     case TestSmartUnionAnyFieldType:
@@ -1646,6 +1652,8 @@ func TestFromString(s string) Test {
         return TestClierrorsPlainModeClassified
     case "clierrors-typed-reasons":
         return TestClierrorsTypedReasons
+    case "clierrors-unknown-flag-suggestion":
+        return TestClierrorsUnknownFlagSuggestion
     case "collections-containing-null":
         return TestCollectionsContainingNull
     case "collections-map-input-accepts-non-dict-mapping":
@@ -2152,6 +2160,8 @@ func TestFromString(s string) Test {
         return TestPaginationLimitOffsetUnionOutputPageParamsFlat
     case "pagination-limit-offset-zero-page-params":
         return TestPaginationLimitOffsetZeroPageParams
+    case "pagination-object-results-page-params":
+        return TestPaginationObjectResultsPageParams
     case "pagination-params-wrapped-request":
         return TestPaginationParamsWrappedRequest
     case "pagination-simple-object-snake":
@@ -2294,8 +2304,8 @@ func TestFromString(s string) Test {
         return TestPreRequestGeneratedRequiredUnionPositiveEchoes
     case "pre-request-real-connection-failures":
         return TestPreRequestRealConnectionFailures
-    case "pre-request-silent-stdin-times-out-on-root-union":
-        return TestPreRequestSilentStdinTimesOutOnRootUnion
+    case "pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body":
+        return TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
     case "pre-request-validation-envelope-matrix":
         return TestPreRequestValidationEnvelopeMatrix
     case "raw-response-helpers-strip-internal-header":
@@ -2794,6 +2804,8 @@ func TestFromString(s string) Test {
         return TestServersServerWithTemplatesGlobalDefaults
     case "servers-server-with-templates-global-enum":
         return TestServersServerWithTemplatesGlobalEnum
+    case "shared-enum-constructor-default":
+        return TestSharedEnumConstructorDefault
     case "smart-union-all-consts":
         return TestSmartUnionAllConsts
     case "smart-union-any-field-type":
@@ -3068,6 +3080,7 @@ var testList = []Test{
     TestClierrorsJsonOutputEnvelope,
     TestClierrorsPlainModeClassified,
     TestClierrorsTypedReasons,
+    TestClierrorsUnknownFlagSuggestion,
     TestCollectionsContainingNull,
     TestCollectionsMapInputAcceptsNonDictMapping,
     TestCollectionsParameterAnnotationsAdvertiseIterables,
@@ -3321,6 +3334,7 @@ var testList = []Test{
     TestPaginationLimitOffsetUnionOutputPageParams,
     TestPaginationLimitOffsetUnionOutputPageParamsFlat,
     TestPaginationLimitOffsetZeroPageParams,
+    TestPaginationObjectResultsPageParams,
     TestPaginationParamsWrappedRequest,
     TestPaginationSimpleObjectSnake,
     TestPaginationURL,
@@ -3392,7 +3406,7 @@ var testList = []Test{
     TestPreRequestGeneratedRequiredUnionPathsAndOptionality,
     TestPreRequestGeneratedRequiredUnionPositiveEchoes,
     TestPreRequestRealConnectionFailures,
-    TestPreRequestSilentStdinTimesOutOnRootUnion,
+    TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody,
     TestPreRequestValidationEnvelopeMatrix,
     TestRawResponseHelpersStripInternalHeader,
     TestReactQueryBuildersKeyDistinctBodies,
@@ -3642,6 +3656,7 @@ var testList = []Test{
     TestServersServerWithTemplatesGlobal,
     TestServersServerWithTemplatesGlobalDefaults,
     TestServersServerWithTemplatesGlobalEnum,
+    TestSharedEnumConstructorDefault,
     TestSmartUnionAllConsts,
     TestSmartUnionAnyFieldType,
     TestSmartUnionArrayFields,

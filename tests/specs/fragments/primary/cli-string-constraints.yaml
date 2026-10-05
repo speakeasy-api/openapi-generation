@@ -1,0 +1,93 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/stringConstraints/{resourceId}:
+    get:
+      operationId: cliStringConstraintsGet
+      description: >-
+        CLI string-constraint fixture: path, query, and header parameters whose
+        schemas declare pattern and maxLength, plus query parameters whose
+        patterns the CLI cannot enforce faithfully (a lookahead Go's regexp
+        cannot compile, and \s, which Go matches more narrowly than ECMA-262).
+      tags:
+        - cliHygiene
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+            maxLength: 8
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^[a-z]+$"
+        - name: X-Label
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 4
+        - name: slug
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^(?!x)[a-z]+$"
+        - name: note
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^[a-z\\s]+$"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+  /anything/cli/stringConstraints:
+    post:
+      operationId: cliStringConstraintsPost
+      description: >-
+        CLI string-constraint fixture: a request body property whose schema
+        declares pattern and maxLength, exposed as a flattened flag.
+      tags:
+        - cliHygiene
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-z]+$"
+                  maxLength: 5
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string

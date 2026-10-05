@@ -1,0 +1,3 @@
+## core: 0.7.0 - 2026-10-01
+### :bug: Bug Fixes
+- string operation flags now enforce the schema's `pattern` and `maxLength`: a non-conforming value (including a positional argument) is rejected before any request is built as `validation_error` / `CLI_VALIDATION` (exit 2), naming the flag. A pattern is enforced only when it stays within the interoperable subset JSON Schema recommends and Go compiles it, so the CLI never rejects a value the schema pattern accepts; others (for example `\s`, `\p{...}`, lookarounds, backreferences, POSIX classes) are left to the server *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*

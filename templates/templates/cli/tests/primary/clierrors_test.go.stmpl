@@ -181,6 +181,42 @@ func TestCLIErrorPlainModeClassified(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(stderr, "unknown flag"), "plain errors render exactly once")
 }
 
+// TestCLIErrorUnknownFlagSuggestsNearestFlag: a mistyped flag names the
+// closest accepted flag and points at --help and --usage instead of the
+// dry-run hint, which cannot fix a parse error. Other flag parse errors keep
+// the same pointer without a suggestion.
+func TestCLIErrorUnknownFlagSuggestsNearestFlag(t *testing.T) {
+	recordTest("clierrors-unknown-flag-suggestion")
+	cases := []struct {
+		name       string
+		args       []string
+		wantErr    string
+		suggestion string
+	}{
+		{name: "typo", args: []string{"--output-formt", "json"}, wantErr: "unknown flag: --output-formt", suggestion: "Did you mean --output-format?"},
+		{name: "case only", args: []string{"--Output-Format", "json"}, wantErr: "unknown flag: --Output-Format", suggestion: "Did you mean --output-format?"},
+		{name: "missing value", args: []string{"--output-format"}, wantErr: "flag needs an argument: --output-format"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetAgentMode(t)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(append([]string{"errors", "status-get-error"}, tc.args...))
+			require.Error(t, err)
+			stderr := strings.TrimSpace(h.GetStderr())
+			assert.Contains(t, stderr, "Error (validation_error): "+tc.wantErr)
+			assert.Contains(t, stderr, "Reason: CLI_VALIDATION")
+			if tc.suggestion != "" {
+				assert.Contains(t, stderr, tc.suggestion)
+			} else {
+				assert.NotContains(t, stderr, "Did you mean")
+			}
+			assert.Contains(t, stderr, "--help' for usage and examples, or --usage for the machine-readable surface")
+			assert.NotContains(t, stderr, "--dry-run")
+		})
+	}
+}
+
 // TestCLIErrorJSONOutputEnvelope: --output-format json (no agent mode) gets
 // the classified JSON envelope, consistent with agent and API errors. Both
 // flag positions must work, including for an unknown

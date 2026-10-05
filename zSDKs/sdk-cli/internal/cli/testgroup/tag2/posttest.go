@@ -91,7 +91,10 @@ func runPostTestCmd(cmd *cobra.Command, args []string) error {
 		}
 		sdkOpts = append(sdkOpts, operations.WithTemplatedServerURL(serverURL, params))
 	}
+	stopProgress := output.StartRequestProgress(cmd)
+	defer stopProgress()
 	res, err := s.TestGroup.Tag2.PostTest(cmd.Context(), *req, sdkOpts...)
+	stopProgress()
 	if err != nil {
 		return output.Error(cmd, err)
 	}

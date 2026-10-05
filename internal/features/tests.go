@@ -415,6 +415,7 @@ const (
 	TestPaginationCursorBody
 	TestPaginationCursorResponseEnvelope
 	TestPaginationCursorParams
+	TestPaginationObjectResultsPageParams
 	TestPaginationWithRetries
 	TestPaginationURL
 	TestPaginationCursorNonNumeric
@@ -674,6 +675,7 @@ const (
 	TestClierrorsJsonOutputEnvelope
 	TestClierrorsPlainModeClassified
 	TestClierrorsTypedReasons
+	TestClierrorsUnknownFlagSuggestion
 	TestErrorTaxonomyDeclaredRulesAndOrdering
 	TestErrorTaxonomyEveryClosedTypeHasAHint
 	TestErrorTaxonomyFallbackMessageOmitsRawBody
@@ -726,7 +728,7 @@ const (
 	TestPreRequestGeneratedRequiredUnionPathsAndOptionality
 	TestPreRequestGeneratedRequiredUnionPositiveEchoes
 	TestPreRequestRealConnectionFailures
-	TestPreRequestSilentStdinTimesOutOnRootUnion
+	TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
 	TestPreRequestValidationEnvelopeMatrix
 	TestRequestShapeBodyAgentVariant
 	TestRequestShapeBodyAndWholeBodyFlagRejected
@@ -769,6 +771,7 @@ const (
 	TestEventStreamWithOperationTimeoutStreamsToCompletion
 	TestJsonlStreamTimeoutStillBoundsSlowStream
 	TestJsonlStreamWithTimeoutStreamsToCompletion
+	TestSharedEnumConstructorDefault
 )
 
 func GetAllTests() []Test {

@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.6.4",
+  core: "0.7.5",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -357,6 +357,7 @@ function isTestSkipped(test: string): boolean {
     "optional-nullable-object-property-params",
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
+    "shared-enum-constructor-default",
   ].includes(test);
 }
 

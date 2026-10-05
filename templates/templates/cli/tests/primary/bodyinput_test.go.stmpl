@@ -102,10 +102,10 @@ func resetStdinDeadline(t *testing.T) {
 }
 
 // In agent mode an open-but-silent stdin pipe on a body-accepting command
-// is a hard, fast usage error: proceeding would send a body the producer
-// never wrote, and blocking would hang agent runtimes that hold stdin open.
-// No request is sent. The deadline is armed by the root command's wiring
-// when --agent-mode is parsed.
+// with no other input is a hard, fast usage error: proceeding would send a
+// body the producer never wrote, and blocking would hang agent runtimes that
+// hold stdin open. No request is sent. The deadline is armed by the root
+// command's wiring when --agent-mode is parsed.
 func TestSilentStdinPipeFailsLoudWithoutRequest(t *testing.T) {
 	withSilentStdinPipe(t)
 	resetStdinDeadline(t)
@@ -119,6 +119,111 @@ func TestSilentStdinPipeFailsLoudWithoutRequest(t *testing.T) {
 	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
 	assert.Contains(t, err.Error(), "--body @-")
 	assert.Equal(t, 0, *count)
+}
+
+// In agent mode, when flags already supply the input, an open-but-silent
+// stdin pipe is not the body: after stdinReadDeadline without a byte the
+// command proceeds from its flags.
+func TestAgentModeSilentStdinPipeWithFlagInputProceeds(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "from-flags", "--label", "x", "--agent-mode"})
+	require.NoError(t, err)
+	assert.Equal(t, "from-flags", jsonGetString(h.GetStdout(), "json.code"))
+}
+
+// A body whose first byte arrives after stdinReadDeadline, with a field flag
+// set: outside agent mode it is still the body (the read blocks to EOF); in
+// agent mode it is not, and the request is built from the flags.
+func TestLateStdinBodyWithFlagInput(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		withDelayedStdinPipe(t, 1300*time.Millisecond, `{"code":"late-body","label":"x","model":"standard"}`, true)
+
+		s := newEchoServer()
+		defer s.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--label", "y"})
+		require.NoError(t, err)
+		assert.Equal(t, "late-body", jsonGetString(h.GetStdout(), "json.code"))
+		assert.Equal(t, "y", jsonGetString(h.GetStdout(), "json.label"))
+		assert.Equal(t, "standard", jsonGetString(h.GetStdout(), "json.model"))
+	})
+	t.Run("agent-mode", func(t *testing.T) {
+		withDelayedStdinPipe(t, 1300*time.Millisecond, `{"code":"late-body","label":"x","model":"standard"}`, true)
+		resetStdinDeadline(t)
+
+		s := newEchoServer()
+		defer s.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "from-flags", "--label", "y", "--agent-mode"})
+		require.NoError(t, err)
+		assert.Equal(t, "from-flags", jsonGetString(h.GetStdout(), "json.code"))
+		assert.Empty(t, jsonGetString(h.GetStdout(), "json.model"))
+	})
+}
+
+// A silent pipe skipped by one invocation is not skipped by the next one on
+// the same stdin: without other input it is the body again.
+func TestStdinSkipDoesNotCarryAcrossInvocations(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--code", "from-flags", "--label", "x", "--agent-mode"}))
+
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--agent-mode"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+}
+
+// A pipe that writes its body promptly is still the body when flags are also
+// given; the flags then merge over it as usual.
+func TestPromptStdinBodyWithFlagInputIsRead(t *testing.T) {
+	withDelayedStdinPipe(t, 100*time.Millisecond, `{"code":"from-stdin","label":"x"}`, true)
+	resetStdinDeadline(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"cli-hygiene", "cli-arg-hygiene-post", "--label", "y", "--agent-mode"})
+	require.NoError(t, err)
+	assert.Equal(t, "from-stdin", jsonGetString(h.GetStdout(), "json.code"))
+	assert.Equal(t, "y", jsonGetString(h.GetStdout(), "json.label"))
+}
+
+// Command controls such as --all are not request input, so they do not make
+// a silent pipe optional in agent mode.
+func TestControlFlagDoesNotMakeSilentStdinOptional(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"pagination", "pagination-cursor-body", "--all", "--agent-mode", "--dry-run"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "stdin body did not reach EOF")
+}
+
+// A union variant flag is request input like any other field flag.
+func TestSilentStdinPipeWithUnionVariantFlagProceeds(t *testing.T) {
+	withSilentStdinPipe(t)
+	resetStdinDeadline(t)
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer("http://127.0.0.1:1", []string{"unions", "conflicting-discriminator-mapping-key", "--prefix.tag1", `{"tag":"tag1","imageURL":"x"}`, "--agent-mode", "--dry-run", "--output-format", "json"})
+	require.NoError(t, err)
+	assert.NotContains(t, h.GetStderr(), "stdin body did not reach EOF")
 }
 
 // Outside agent mode an implicit pipe read has no deadline: a producer
