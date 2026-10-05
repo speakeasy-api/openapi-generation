@@ -141,6 +141,7 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     if err := cmd.Flags().SetAnnotation("{{.Name}}", flagutil.AnnotationOpDeclaredInput, []string{"{{escapeGoString .Key}}"}); err != nil {
         return err
     }
+    flagutil.MarkRequestInput(cmd, "{{.Name}}")
     _ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
         PromptOptional: true,
         Kind: "{{.Kind}}",

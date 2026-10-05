@@ -843,6 +843,7 @@ function templateModelConstructorArgs(modelType: TypeDef) {
             Qualification.TYPE,
           )} $${sanitizeFieldName(field.Name)} = ${templateConstOrDefaultValue(
             field,
+            { usageLocation: modelType.OutputLocation },
           )}`,
         );
       } else if (field.Optional || field.Nullable) {

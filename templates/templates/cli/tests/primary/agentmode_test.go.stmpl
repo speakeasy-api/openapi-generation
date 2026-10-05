@@ -586,17 +586,16 @@ func TestPreRequestDiscriminatedRootUnionMessages(t *testing.T) {
 	})
 }
 
-func TestPreRequestSilentStdinTimesOutOnRootUnion(t *testing.T) {
-	recordTest("pre-request-silent-stdin-times-out-on-root-union")
+func TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody(t *testing.T) {
+	recordTest("pre-request-silent-stdin-with-flag-input-reports-missing-root-union-body")
 	resetAgentMode(t)
 	withSilentStdinPipe(t)
 	h := NewCLITestHarness(t)
 	err := h.RunRaw([]string{
 		"--agent-mode", "request-bodies", "body-variant-overloads-discriminated", "-v", "1",
 	})
-	assertPreRequestValidationEnvelope(t, h, err, "stdin body did not reach EOF", "")
-	envelope := agentEnvelope(t, h.GetStderr())
-	assert.Contains(t, envelope["message"], "--body @-")
+	assertPreRequestValidationEnvelope(t, h, err, "the request body is missing or selects no variant", "")
+	assert.NotContains(t, h.GetStderr(), "stdin body did not reach EOF")
 }
 
 // Agent mode is per-invocation in detection-off builds: an invocation

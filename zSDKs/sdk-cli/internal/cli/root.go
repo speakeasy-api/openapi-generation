@@ -62,6 +62,7 @@ func NewRootCommand() (*cobra.Command, error) {
 			}
 			output.InitAgentMode(cmd)
 			flagutil.SetStdinReadDeadline(output.IsAgentMode())
+			flagutil.ResetStdinSkip()
 			return nil
 		},
 	}

@@ -35,6 +35,7 @@ func initChatCmd(parent *cobra.Command) error {
 	if err := cmd.Flags().SetAnnotation("stream", flagutil.AnnotationOpDeclaredInput, []string{"stream"}); err != nil {
 		return err
 	}
+	flagutil.MarkRequestInput(cmd, "stream")
 	_ = flagutil.AnnotatePromptFlag(cmd, "stream", flagutil.PromptFlagSpec{
 		PromptOptional:  true,
 		Kind:            "bool",
@@ -44,6 +45,7 @@ func initChatCmd(parent *cobra.Command) error {
 	if err := cmd.Flags().SetAnnotation("max-tokens", flagutil.AnnotationOpDeclaredInput, []string{"max_tokens"}); err != nil {
 		return err
 	}
+	flagutil.MarkRequestInput(cmd, "max-tokens")
 	_ = flagutil.AnnotatePromptFlag(cmd, "max-tokens", flagutil.PromptFlagSpec{
 		PromptOptional:  true,
 		Kind:            "int64",
@@ -53,6 +55,7 @@ func initChatCmd(parent *cobra.Command) error {
 	if err := cmd.Flags().SetAnnotation("temperature", flagutil.AnnotationOpDeclaredInput, []string{"temperature"}); err != nil {
 		return err
 	}
+	flagutil.MarkRequestInput(cmd, "temperature")
 	_ = flagutil.AnnotatePromptFlag(cmd, "temperature", flagutil.PromptFlagSpec{
 		PromptOptional:  true,
 		Kind:            "float64",

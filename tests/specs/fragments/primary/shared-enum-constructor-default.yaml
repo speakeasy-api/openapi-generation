@@ -1,0 +1,38 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/sharedEnumConstructorDefault:
+    post:
+      operationId: sharedEnumConstructorDefault
+      description: Tests an inline request object whose property references a shared enum with a schema default, including construction with an explicit alternate value.
+      tags:
+        - requestBodies
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                choice:
+                  $ref: '#/components/schemas/SharedEnumConstructorChoice'
+      responses:
+        '200':
+          description: Successful response.
+components:
+  schemas:
+    SharedEnumConstructorChoice:
+      description: A shared enum with an explicit default used by an inline request object.
+      type: string
+      enum:
+        - alpha
+        - beta
+      default: alpha

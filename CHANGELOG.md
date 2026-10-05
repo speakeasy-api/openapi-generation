@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.944.5] - 2026-10-05
+### :bug: Bug Fixes
+- [`2f1dd44`](https://github.com/speakeasy-api/openapi-generation/commit/2f1dd44192dfbe7198a7498480b77e2400976362) - **php**: qualify enum defaults in model constructors ([#71](https://github.com/speakeasy-api/openapi-generation/pull/71)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.944.4] - 2026-10-02
+### :bug: Bug Fixes
+- [`8ceec68`](https://github.com/speakeasy-api/openapi-generation/commit/8ceec68e594f12383abfd6b3665bba91b4780aca) - **cli**: render --all pagination results as one table under --output-format table ([#58](https://github.com/speakeasy-api/openapi-generation/pull/58)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.944.3] - 2026-10-02
+### :bug: Bug Fixes
+- [`7badb84`](https://github.com/speakeasy-api/openapi-generation/commit/7badb84c0f281480930ea9dc31bb2153b395281e) - **cli**: proceed from command-line input on a silent stdin pipe in agent mode ([#57](https://github.com/speakeasy-api/openapi-generation/pull/57)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.944.2] - 2026-10-02
 ### :bug: Bug Fixes
 - [`a003a38`](https://github.com/speakeasy-api/openapi-generation/commit/a003a38d224e7e84384f27ceeaf9d24beb41391f) - **cli**: suggest the closest flag on unknown-flag errors and drop the dry-run hint ([#59](https://github.com/speakeasy-api/openapi-generation/pull/59)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20355,3 +20370,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.944.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.943.8...v2.944.0
 [v2.944.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.0...v2.944.1
 [v2.944.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.1...v2.944.2
+[v2.944.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.2...v2.944.3
+[v2.944.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.3...v2.944.4
+[v2.944.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.944.4...v2.944.5

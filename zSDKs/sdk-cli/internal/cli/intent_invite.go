@@ -37,6 +37,7 @@ func InitIntentInvite(parent *cobra.Command) error {
 	cmd.Flags().Bool("schema", false, "Print the exact JSON Schema of the request body and exit")
 	_ = flagutil.AnnotatePromptFlag(cmd, "schema", flagutil.PromptFlagSpec{Kind: "bool", DocSurface: true})
 	cmd.Flags().StringP("given-name", "", "", "First name to record")
+	flagutil.MarkRequestInput(cmd, "given-name")
 	_ = flagutil.AnnotatePromptFlag(cmd, "given-name", flagutil.PromptFlagSpec{
 		Required: false,
 		Kind:     "string",
@@ -45,6 +46,7 @@ func InitIntentInvite(parent *cobra.Command) error {
 		BodySources: []string{"body"},
 	})
 	cmd.Flags().StringP("user-gender", "", "", "Gender to record (e.g. male, female, other)")
+	flagutil.MarkRequestInput(cmd, "user-gender")
 	_ = flagutil.AnnotatePromptFlag(cmd, "user-gender", flagutil.PromptFlagSpec{
 		Required: false,
 		Kind:     "string",

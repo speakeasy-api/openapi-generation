@@ -110,6 +110,7 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 	{{- else}}
 	cmd.Flags().StringP("{{.Name}}", "{{.Shorthand}}", "", "{{escapeGoString .Summary}}")
 	{{- end}}
+	flagutil.MarkRequestInput(cmd, "{{.Name}}")
 	_ = flagutil.AnnotatePromptFlag(cmd, "{{.Name}}", flagutil.PromptFlagSpec{
 		Required: {{if and .Required (not .PresetCovered)}}true{{else}}false{{end}},
 		Kind: "{{if eq .Type "bool"}}bool{{else if eq .Type "int"}}int64{{else if eq .Type "float"}}float64{{else}}string{{end}}",

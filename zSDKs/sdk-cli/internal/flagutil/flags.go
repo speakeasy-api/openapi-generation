@@ -551,6 +551,17 @@ func SetStdinReadDeadline(enabled bool) {
 
 const AnnotationWholeBodyFlag = "speakeasy_whole_body_flag"
 
+// AnnotationRequestInput marks a flag that supplies part of the request
+// (a field, parameter, union variant or declared input), as opposed to one
+// that steers the command (pagination, output, polling, credentials).
+const AnnotationRequestInput = "speakeasy_request_input"
+
+func MarkRequestInput(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		_ = cmd.Flags().SetAnnotation(name, AnnotationRequestInput, []string{"true"})
+	}
+}
+
 type MissingRequiredFlagError struct {
 	FlagName string
 	Detail   string // optional suffix, e.g. "(or provide via stdin)"
@@ -608,7 +619,56 @@ func ResolveBodyFlag(cmd *cobra.Command, flagName string) error {
 	return cmd.Flags().Set(flagName, resolved)
 }
 
-// ReadStdinBody returns nil, nil when stdin is a TTY.
+// stdinSkipped is the stdin an earlier ReadStdinBody gave up on as silent, so
+// later reads in the same invocation neither wait again nor race the reader
+// still blocked on it.
+var stdinSkipped atomic.Pointer[os.File]
+
+// ResetStdinSkip clears the silent-stdin marker at the start of an invocation.
+func ResetStdinSkip() {
+	stdinSkipped.Store(nil)
+}
+
+// commandLineSuppliesInput reports positional arguments or a request-input
+// flag set on the command line.
+func commandLineSuppliesInput(cmd *cobra.Command) bool {
+	if len(cmd.Flags().Args()) > 0 {
+		return true
+	}
+	supplied := false
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		supplied = supplied || (f.Changed && len(f.Annotations[AnnotationRequestInput]) > 0)
+	})
+	return supplied
+}
+
+const (
+	stdinIdle int32 = iota
+	stdinData
+	stdinAbandoned
+)
+
+// firstReadSignal settles, exactly once, whether the pipe delivered input
+// before the reader was abandoned.
+type firstReadSignal struct {
+	r     io.Reader
+	state atomic.Int32
+}
+
+func (f *firstReadSignal) Read(p []byte) (int, error) {
+	if f.state.Load() == stdinAbandoned {
+		return 0, io.EOF
+	}
+	n, err := f.r.Read(p)
+	if !f.state.CompareAndSwap(stdinIdle, stdinData) && f.state.Load() == stdinAbandoned {
+		return 0, io.EOF
+	}
+	return n, err
+}
+
+// ReadStdinBody returns nil, nil when stdin is a TTY, or in agent mode when
+// the command line already supplies input and a pipe delivers nothing within
+// stdinReadDeadline.
 func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	in := cmd.InOrStdin()
 	stdin := os.Stdin // captured once for the reader goroutine
@@ -622,6 +682,9 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 	if stat.Mode().IsRegular() {
 		return io.ReadAll(stdin)
 	}
+	if stdinSkipped.Load() == stdin {
+		return nil, nil
+	}
 	if !stdinDeadlineEnabled.Load() {
 		data, err := io.ReadAll(stdin)
 		if err != nil {
@@ -634,20 +697,32 @@ func ReadStdinBody(cmd *cobra.Command, bodyFlag string) ([]byte, error) {
 		data []byte
 		err  error
 	}
+	reader := &firstReadSignal{r: stdin}
 	ch := make(chan readResult, 1)
 	go func() {
-		data, err := io.ReadAll(stdin)
+		data, err := io.ReadAll(reader)
 		ch <- readResult{data: data, err: err}
 	}()
+	timer := time.NewTimer(stdinReadDeadline)
+	defer timer.Stop()
+	var r readResult
 	select {
-	case r := <-ch:
-		if r.err != nil {
-			return nil, fmt.Errorf("failed to read stdin: %w", r.err)
+	case r = <-ch:
+	case <-timer.C:
+		select {
+		case r = <-ch:
+		default:
+			if commandLineSuppliesInput(cmd) && reader.state.CompareAndSwap(stdinIdle, stdinAbandoned) {
+				stdinSkipped.Store(stdin)
+				return nil, nil
+			}
+			return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
 		}
-		return r.data, nil
-	case <-time.After(stdinReadDeadline):
-		return nil, &StdinTimeoutError{BodyFlag: bodyFlag}
 	}
+	if r.err != nil {
+		return nil, fmt.Errorf("failed to read stdin: %w", r.err)
+	}
+	return r.data, nil
 }
 
 func AttachStdinBody(cmd *cobra.Command, bodyFlag string) (bool, error) {
