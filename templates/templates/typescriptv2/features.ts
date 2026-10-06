@@ -14,7 +14,7 @@ const supportedFeatures = {
   serverIDs: "2.81.2",
   nameOverrides: "2.81.4",
   includes: "2.81.1",
-  docs: "0.13.3",
+  docs: "0.13.4",
   examples: "2.82.6",
   groups: "2.81.3",
   deprecations: "2.81.1",

@@ -10,7 +10,7 @@ const supportedFeatures = {
   serverIDs: "0.1.0",
   nameOverrides: "0.1.2",
   includes: "0.1.0",
-  docs: "0.3.3",
+  docs: "0.3.4",
   examples: "0.1.3",
   groups: "0.1.1",
   ignores: "0.1.0",

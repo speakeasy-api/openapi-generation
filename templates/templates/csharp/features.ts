@@ -23,7 +23,7 @@ const supportedFeatures = {
   decimal: "0.1.0",
   multiLevelTagging: "2.86.1",
   //downloadStreams: "0.0.1",
-  docs: "0.5.3",
+  docs: "0.5.4",
   pagination: "0.2.12",
   urlBasedPagination: "0.0.1",
   unions: "1.2.3",

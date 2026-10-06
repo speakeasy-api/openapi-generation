@@ -18,7 +18,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  docs: "0.4.3",
+  docs: "0.4.4",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   sdkHooks: "0.3.0",

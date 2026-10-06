@@ -16,7 +16,7 @@ features:
     core: 3.11.36
     customSecuritySchemes: 0.1.0
     deprecations: 2.81.2
-    docs: 0.5.3
+    docs: 0.5.4
     enums: 2.82.4
     errors: 0.1.2
     examples: 2.81.8

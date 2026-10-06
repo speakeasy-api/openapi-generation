@@ -36,7 +36,7 @@ const supportedFeatures = {
   sdkHooks: "0.1.1",
   hiddenGlobals: "0.1.0",
   globalSecurityFlattening: "0.1.0",
-  docs: "0.5.3",
+  docs: "0.5.4",
   intellisenseMarkdownSupport: "0.1.0",
   methodArguments: "0.0.0",
   deepObjectParams: "0.1.0",

@@ -17,7 +17,7 @@ features:
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
-    docs: 0.3.0
+    docs: 0.3.1
     downloadStreams: 0.0.2
     enums: 0.0.2
     errorUnions: 0.0.0

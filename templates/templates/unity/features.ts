@@ -23,7 +23,7 @@ const supportedFeatures = {
   multiLevelTagging: "0.1.0",
   downloadStreams: "0.0.2",
   pagination: "0.2.2",
-  docs: "0.4.3",
+  docs: "0.4.4",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   unions: "0.0.9",

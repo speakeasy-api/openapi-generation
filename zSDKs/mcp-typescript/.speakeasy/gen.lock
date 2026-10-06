@@ -21,7 +21,7 @@ features:
     decimal: 0.1.0
     defaultEnabledRetries: 0.1.0
     deprecations: 0.1.0
-    docs: 0.3.3
+    docs: 0.3.4
     enumUnions: 0.1.0
     enums: 0.1.1
     globalSecurity: 0.1.3

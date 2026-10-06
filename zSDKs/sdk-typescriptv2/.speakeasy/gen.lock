@@ -22,7 +22,7 @@ features:
     decimal: 0.1.2
     defaultEnabledRetries: 0.1.0
     deprecations: 2.81.1
-    docs: 0.13.3
+    docs: 0.13.4
     downloadStreams: 0.1.1
     enumUnions: 0.1.0
     enums: 2.83.2

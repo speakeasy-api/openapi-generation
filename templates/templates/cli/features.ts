@@ -15,7 +15,7 @@ const supportedFeatures = {
   serverIDs: "0.0.0",
   nameOverrides: "0.0.0",
   includes: "0.0.0",
-  docs: "0.3.0",
+  docs: "0.3.1",
   examples: "0.1.1",
   groups: "0.1.0",
   deprecations: "0.0.0",
