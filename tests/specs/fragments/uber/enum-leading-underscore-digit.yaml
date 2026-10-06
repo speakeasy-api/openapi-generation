@@ -24,7 +24,15 @@ paths:
         with `1ST`: both derive `OneSt`-shaped names that differ only by
         case, so targets that upper-snake their members (Java, Python,
         Ruby) must detect the collision on the emitted member and suffix
-        it instead of declaring `ONE_ST` twice.
+        it instead of declaring `ONE_ST` twice. A fourth property lists
+        `_1`, `1` and `OneUpper`: the first two derive the same name and
+        receive a casing suffix, which lands on `OneUpper`, the untouched
+        third member. Targets must reserve every emitted member name and
+        keep advancing the numeric suffix until the candidate is unused. A
+        fifth property supplies `_1` and `One` through `x-speakeasy-enums`,
+        which derive the same name once the digit is spelled out, so
+        override names must be disambiguated as a group the same way values
+        are.
       tags:
         - generation
       responses:
@@ -43,6 +51,10 @@ paths:
                     $ref: "#/components/schemas/LeadingUnderscoreDigitOverrideEnum"
                   collidingAccountType:
                     $ref: "#/components/schemas/LeadingUnderscoreDigitCollisionEnum"
+                  suffixCollidingAccountType:
+                    $ref: "#/components/schemas/LeadingUnderscoreDigitSuffixCollisionEnum"
+                  overrideCollidingAccountType:
+                    $ref: "#/components/schemas/LeadingUnderscoreDigitOverrideCollisionEnum"
 components:
   schemas:
     LeadingUnderscoreDigitEnum:
@@ -67,3 +79,17 @@ components:
         - UNSPECIFIED
         - _1ST
         - 1ST
+    LeadingUnderscoreDigitSuffixCollisionEnum:
+      type: string
+      enum:
+        - _1
+        - "1"
+        - OneUpper
+    LeadingUnderscoreDigitOverrideCollisionEnum:
+      type: string
+      enum:
+        - first
+        - second
+      x-speakeasy-enums:
+        - _1
+        - One

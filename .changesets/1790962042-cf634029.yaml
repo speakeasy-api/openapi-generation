@@ -13,6 +13,6 @@ targets:
     - unity
 type: fix
 bump: patch
-description: derive valid enum member names for values that start with an underscore followed by digits; TypeScript and MCP TypeScript add a `numericEnumMemberNames` option that spells out digits-only values such as `_1` as `One` for new SDKs and keeps the numeric key for existing SDKs with union enums (native enums always spell digits out), Java applies the same derivation to `x-speakeasy-enums` overrides and OAuth2 scope names and detects member collisions on the emitted upper-snake name, the mockserver detects them on the emitted field name, and values that share a derived name receive unique suffixes
+description: derive valid enum member names for values that start with an underscore followed by digits; TypeScript and MCP TypeScript add a `numericEnumMemberNames` option that spells out digits-only values such as `_1` as `One` for new SDKs and keeps the numeric key for existing SDKs with union enums (native enums always spell digits out), Java applies the same derivation to `x-speakeasy-enums` overrides and OAuth2 scope names and detects member collisions on the emitted upper-snake name, the mockserver detects them on the emitted field name, values that share a derived name receive suffixes that are checked against every other member name in the enum, and `x-speakeasy-enums` override names are disambiguated as a group the same way
 author: AshGodfrey
 date: "2026-10-02"

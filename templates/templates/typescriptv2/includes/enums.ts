@@ -122,7 +122,7 @@ function getEnumNames(t: TypeDef): string[] {
     if (context.Global.Config.FixEnumNameSanitization === true) {
       return t.Enum.Names.map((n) => sanitizeName(n.trim() || "Unknown"));
     }
-    return t.Enum.Names.map((n) => getEnumName(n, format));
+    return getEnumNamesFromValues(t.Enum.Names, format);
   } else {
     return getEnumNamesFromValues(t.Enum?.Values, format);
   }

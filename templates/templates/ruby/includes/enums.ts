@@ -48,7 +48,7 @@ function sanitizeEnumValue(value: any, type: GojaEnum<DataType>): string {
 // @ts-ignore
 function getEnumNames(t: TypeDef): string[] {
   if (t.Enum?.Names.length > 0) {
-    return t.Enum.Names.map((n) => getEnumName(n));
+    return getEnumNamesFromValues(t.Enum.Names);
   } else {
     return getEnumNamesFromValues(t.Enum?.Values);
   }

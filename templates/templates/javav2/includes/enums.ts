@@ -70,7 +70,7 @@ function sanitizeEnumValue(value: any, type: GojaEnum<DataType>): string {
 
 function getEnumNames(t: TypeDef): string[] {
   if (t.Enum?.Names.length > 0) {
-    return t.Enum.Names.map((n) => getEnumName(n));
+    return disambiguateEnumNames(t.Enum.Names, getEnumName);
   } else {
     return getEnumNamesFromValues(t.Enum?.Values);
   }

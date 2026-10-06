@@ -786,37 +786,32 @@ function templateOptionalSymbol(): string {
 
 // @ts-ignore
 function getEnumNamesFromValues(values: string[]): string[] {
-  let enumNames = [];
+  return disambiguateEnumNames(values, getEnumName);
+}
 
-  let names = {};
-  for (const value of values) {
-    let name = getEnumName(value);
-    if (!names[name]) {
-      names[name] = 0;
-    }
-
-    names[name] += 1;
+function disambiguateEnumNames(
+  values: string[],
+  deriveName: (value: string) => string,
+): string[] {
+  const baseNames = values.map(deriveName);
+  const counts = new Map<string, number>();
+  for (const name of baseNames) {
+    counts.set(name, (counts.get(name) || 0) + 1);
   }
 
-  let seen = {};
-  for (const value of values) {
-    let name = getEnumName(value);
-    if (names[name] > 1) {
-      let candidate = `${name}_${getCasing(value).toUpperCase()}`;
-      if (seen[candidate]) {
-        let suffix = seen[candidate];
-        seen[candidate] += 1;
-        candidate = `${candidate}_${suffix}`;
-      } else {
-        seen[candidate] = 1;
-      }
+  const used = new Set(baseNames.filter((name) => counts.get(name) === 1));
+  return values.map((value, i) => {
+    let name = baseNames[i];
+    if (counts.get(name) > 1) {
+      const candidate = `${name}_${getCasing(value).toUpperCase()}`;
       name = candidate;
+      for (let suffix = 1; used.has(name); suffix++) {
+        name = `${candidate}_${suffix}`;
+      }
+      used.add(name);
     }
-
-    enumNames.push(name);
-  }
-
-  return enumNames;
+    return name;
+  });
 }
 
 // @ts-ignore

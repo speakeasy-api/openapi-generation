@@ -859,7 +859,7 @@ function templateFloatValue(
 function getEnumNames(t: TypeDef): string[] {
   let names;
   if (t.Enum?.Names.length > 0) {
-    names = t.Enum.Names.map((n) => getEnumName(n));
+    names = disambiguateEnumNames(t.Enum.Names, getEnumName);
   } else {
     names = getEnumNamesFromValues(t.Enum?.Values);
   }

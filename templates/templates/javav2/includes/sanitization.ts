@@ -773,43 +773,44 @@ function findFieldExample(example: any, field: FieldDef): any {
 
 // @ts-ignore
 function getEnumNamesFromValues(values: string[]): string[] {
-  let enumNames = [];
-
   // Count collisions on the emitted upper-snake member, not the intermediate
   // Pascal name: `_1ST` and `1ST` derive `OneSt` and `OneST`, which differ,
   // but both become `ONE_ST` once snake-cased.
-  let names = {};
-  for (const value of values) {
-    let member = sanitizeEnumMember(getEnumName(value));
-    if (!names[member]) {
-      names[member] = 0;
-    }
+  return disambiguateEnumNames(
+    values,
+    (value) => sanitizeEnumMember(getEnumName(value)),
+    (value) =>
+      sanitizeEnumMember(
+        `${getEnumName(value)}${caser().ToPascal(getCasing(value))}`,
+      ),
+  );
+}
 
-    names[member] += 1;
+function disambiguateEnumNames(
+  values: string[],
+  deriveName: (value: string) => string,
+  deriveCandidate: (value: string, name: string) => string = (value, name) =>
+    `${name}${caser().ToPascal(getCasing(value))}`,
+): string[] {
+  const baseNames = values.map(deriveName);
+  const counts = new Map<string, number>();
+  for (const name of baseNames) {
+    counts.set(name, (counts.get(name) || 0) + 1);
   }
 
-  let seen = {};
-  for (const value of values) {
-    let name = getEnumName(value);
-    let member = sanitizeEnumMember(name);
-    if (names[member] > 1) {
-      let candidate = sanitizeEnumMember(
-        `${name}${caser().ToPascal(getCasing(value))}`,
-      );
-      if (seen[candidate]) {
-        let suffix = seen[candidate];
-        seen[candidate] += 1;
-        candidate = `${candidate}${suffix}`;
-      } else {
-        seen[candidate] = 1;
+  const used = new Set(baseNames.filter((name) => counts.get(name) === 1));
+  return values.map((value, i) => {
+    let name = baseNames[i];
+    if (counts.get(name) > 1) {
+      const candidate = deriveCandidate(value, name);
+      name = candidate;
+      for (let suffix = 1; used.has(name); suffix++) {
+        name = `${candidate}${suffix}`;
       }
-      member = candidate;
+      used.add(name);
     }
-
-    enumNames.push(member);
-  }
-
-  return enumNames;
+    return name;
+  });
 }
 
 // Java-specific scope dedup that produces PascalCase names
