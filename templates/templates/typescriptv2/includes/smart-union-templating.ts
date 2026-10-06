@@ -15,7 +15,12 @@ export function smartUnion<
     z.unknown(),
     `(input, ctx) => {
     const candidates: Candidate[] = [];
-    const errors: ${z.zodIssue()}[][] = options.map(() => []);
+    ${
+      isZodV4()
+        ? `const rawIssues: z.core.$ZodRawIssue[][] = options.map(() => []);
+    const parseCtx = { async: false } as const;`
+        : `const errors: ${z.zodIssue()}[][] = options.map(() => []);`
+    }
 
     const parentUnrecognizedCtr = startCountingUnrecognized();
     ${
@@ -32,25 +37,44 @@ export function smartUnion<
           ? `const zeroDefaultCtr = startCountingDefaultToZeroValue();`
           : ""
       }
-      const result = option.safeParse(input);
+      ${
+        isZodV4()
+          ? `const result = option._zod.run({ value: input, issues: [] }, parseCtx);
+      if (result instanceof Promise) {
+        throw new z.core.$ZodAsyncError();
+      }`
+          : `const result = option.safeParse(input);`
+      }
       const inexactCount = unrecognizedCtr.end();
       const zeroDefaultCount = ${isLaxMode() ? `zeroDefaultCtr.end();` : "0"};
-      if (result.success) {
+      if (${isZodV4() ? "result.issues.length === 0" : "result.success"}) {
         candidates.push({
-          data: result.data,
+          data: ${isZodV4() ? "result.value" : "result.data"},
           inexactCount,
           zeroDefaultCount,
           fieldCount: -1, // We'll count this later if needed
         });
         continue;
       }
-      errors[i]!.push(...result.error.issues);
+      ${
+        isZodV4()
+          ? `rawIssues[i] = result.issues;`
+          : `errors[i]!.push(...result.error.issues);`
+      }
     }
 
     // No valid options
     if (candidates.length === 0) {
       parentUnrecognizedCtr.end(0); ${
         isLaxMode() ? `parentZeroDefaultCtr.end(0);` : ""
+      }
+      ${
+        isZodV4()
+          ? `const config = z.core.config();
+      const errors = rawIssues.map((issues) =>
+        issues.map((iss) => z.core.util.finalizeIssue(iss, parseCtx, config)),
+      );`
+          : ""
       }
       ${z.addIssue({
         code: "invalid_union",

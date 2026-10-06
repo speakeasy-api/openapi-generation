@@ -33,7 +33,8 @@ export function smartUnion<
     z.unknown(),
     z.transform((input, ctx) => {
       const candidates: Candidate[] = [];
-      const errors: z.core.$ZodIssue[][] = options.map(() => []);
+      const rawIssues: z.core.$ZodRawIssue[][] = options.map(() => []);
+      const parseCtx = { async: false } as const;
 
       const parentUnrecognizedCtr = startCountingUnrecognized();
       const parentZeroDefaultCtr = startCountingDefaultToZeroValue();
@@ -42,25 +43,32 @@ export function smartUnion<
       for (const [i, option] of options.entries()) {
         const unrecognizedCtr = startCountingUnrecognized();
         const zeroDefaultCtr = startCountingDefaultToZeroValue();
-        const result = option.safeParse(input);
+        const result = option._zod.run({ value: input, issues: [] }, parseCtx);
+        if (result instanceof Promise) {
+          throw new z.core.$ZodAsyncError();
+        }
         const inexactCount = unrecognizedCtr.end();
         const zeroDefaultCount = zeroDefaultCtr.end();
-        if (result.success) {
+        if (result.issues.length === 0) {
           candidates.push({
-            data: result.data,
+            data: result.value,
             inexactCount,
             zeroDefaultCount,
             fieldCount: -1, // We'll count this later if needed
           });
           continue;
         }
-        errors[i]!.push(...result.error.issues);
+        rawIssues[i] = result.issues;
       }
 
       // No valid options
       if (candidates.length === 0) {
         parentUnrecognizedCtr.end(0);
         parentZeroDefaultCtr.end(0);
+        const config = z.core.config();
+        const errors = rawIssues.map((issues) =>
+          issues.map((iss) => z.core.util.finalizeIssue(iss, parseCtx, config))
+        );
         ctx.issues.push({
           input: input,
           code: "invalid_union",
