@@ -306,6 +306,21 @@ func TestOperationStream_JQRequestsCompleteResponse(t *testing.T) {
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.Equal(t, false, srv.lastBody(t)["stream"], "a body read from a file must also request the complete response")
 	assert.Equal(t, "true\n", out.String())
+
+	for _, stream := range []bool{true, false} {
+		var request map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte("{\"prompt\":\"hello from operation\"}"), &request))
+		request["stream"] = stream
+		body, err := json.Marshal(request)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(bodyPath, body, 0o600))
+		for _, input := range []string{string(body), "@" + bodyPath} {
+			out.Reset()
+			stderr, err = runOperationStreamBody(t, &out, srv.URL, input, "--jq", ".complete")
+			require.NoError(t, err, "stderr: %s", stderr)
+			assert.Equal(t, stream, srv.lastBody(t)["stream"], "a body that sets the toggle keeps its value: %s", input)
+		}
+	}
 }
 
 func TestOperationStream_BodyFalseFallsBackToNormalJSONResult(t *testing.T) {

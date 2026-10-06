@@ -1575,8 +1575,7 @@ function operationQueryParamDefaultTrue(op: Operation, key: string): boolean {
     if (param.Field?.OriginalName !== key && param.Field?.Name !== key) {
       return false;
     }
-    const value = param.Field?.Default?.Value;
-    return value === true || (value != null && String(value) === "true");
+    return booleanFieldDefaultTrue(param.Field);
   });
 }
 

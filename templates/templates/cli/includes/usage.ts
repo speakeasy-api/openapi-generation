@@ -2096,13 +2096,16 @@ function operationBodySchemaDefaultTrue(op: Operation, key: string): boolean {
   for (const candidate of candidates) {
     for (const field of candidate.Fields || []) {
       if (field.OriginalName !== key && field.Name !== key) continue;
-      const value = field.Default?.Value;
-      if (value === true || (value != null && String(value) === "true")) {
-        return true;
-      }
+      if (booleanFieldDefaultTrue(field)) return true;
     }
   }
   return false;
+}
+
+function booleanFieldDefaultTrue(field: any): boolean {
+  if (field?.Type?.Type?.toString() !== "boolean") return false;
+  const value = field.Default?.Value;
+  return value === true || (value != null && String(value) === "true");
 }
 
 function getOperationStreamTestCase(): OperationStreamTestCase | null {

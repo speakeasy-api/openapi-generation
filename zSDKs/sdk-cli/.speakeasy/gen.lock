@@ -1082,7 +1082,7 @@ trackedFiles:
   tests/mockserver/main.go:
     last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
   tests/opstream_test.go:
-    last_write_checksum: sha1:14476e90794253a0220ec9ff7e85f7b1680fa904
+    last_write_checksum: sha1:d4c2dbb4adffd2eb60a81fecd4748e2703b3eb7b
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:
