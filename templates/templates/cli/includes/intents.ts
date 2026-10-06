@@ -126,6 +126,7 @@ interface IntentCmdCtx {
   AsyncMissingHandleTestJSON: string;
   AsyncFailureHint: string;
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
+  StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
   StreamSentinel: string; // SSE end-of-stream sentinel declared on the response ("" = none)
   OpHasRequiredParams: boolean; // backing operation has required path/query/header parameters
@@ -1284,6 +1285,10 @@ function collectIntentManifest(): IntentManifestCtx {
       AsyncMissingHandleTestJSON: asyncMissingHandleTestJSON,
       AsyncFailureHint: cmd.Hints?.CLI_ASYNC_FAILED?.[0] || "",
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
+      StreamToggle:
+        !dispatch && intentStreamKind(found.op).kind
+          ? intentDefaultOnStreamToggle(flags, presetJSON)
+          : null,
       StreamKind: intentStreamKind(found.op).kind,
       StreamSentinel: intentStreamKind(found.op).sentinel,
       OpHasRequiredParams: intentOperationHasRequiredParams(found.op),
@@ -1519,9 +1524,21 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
 }
 registerTemplateFunc("getCLIOperationCtx", getCLIOperationCtx);
 
-function cliOperationStreamHelp(op: Operation): string {
-  const declared = cliOperationDeclaration(op);
-  if (!declared?.Output?.Stream) return "";
+function intentDefaultOnStreamToggle(
+  flags: IntentBodyEntry[],
+  presetJSON: string,
+): { Name: string; Key: string } | null {
+  const toggle = intentStreamToggle(
+    flags,
+    presetJSON ? JSON.parse(presetJSON) : {},
+  );
+  return toggle ? { Name: toggle.Name || toggle.Key, Key: toggle.Key } : null;
+}
+
+function cliOperationStreamToggle(
+  op: Operation,
+  declared: any,
+): { Name: string; Key: string; DefaultOn: boolean; InBody: boolean } | null {
   // Name the toggle after the declared stream toggle (see
   // operationStreamToggle in usage.ts), falling back to a schema-derived
   // operation flag named "stream" on the generated surface. The decoder
@@ -1530,15 +1547,61 @@ function cliOperationStreamHelp(op: Operation): string {
   // (--<flag>=false), a default-off toggle documents the opt-in (--<flag>),
   // because one complete JSON response is already its default.
   const toggle = operationStreamToggle(declared);
-  const toggleName = toggle
-    ? toggle.Name || intentPointerKey(toggle.Bind?.Pointer || "")
-    : collectOperationFlagMeta(op).some((f) => f.flagName === "stream")
-    ? "stream"
-    : "";
-  const select = declared.Output.Stream.Select;
+  if (toggle) {
+    const key = intentPointerKey(toggle.Bind?.Pointer || "");
+    return {
+      Name: toggle.Name || key,
+      Key: key,
+      DefaultOn: toggle.Default === true || String(toggle.Default) === "true",
+      InBody: true,
+    };
+  }
+  if (!collectOperationFlagMeta(op).some((f) => f.flagName === "stream")) {
+    return null;
+  }
+  if (operationBodySchemaDefaultTrue(op, "stream")) {
+    return { Name: "stream", Key: "stream", DefaultOn: true, InBody: true };
+  }
+  return {
+    Name: "stream",
+    Key: "stream",
+    DefaultOn: operationQueryParamDefaultTrue(op, "stream"),
+    InBody: false,
+  };
+}
+
+function operationQueryParamDefaultTrue(op: Operation, key: string): boolean {
+  return (op.Request?.Params?.QueryParams || []).some((param: any) => {
+    if (param.Field?.OriginalName !== key && param.Field?.Name !== key) {
+      return false;
+    }
+    const value = param.Field?.Default?.Value;
+    return value === true || (value != null && String(value) === "true");
+  });
+}
+
+function cliOperationDefaultOnStreamToggle(
+  op: Operation,
+): { Name: string; Key: string; InBody: boolean } | null {
+  const declared = cliOperationDeclaration(op);
+  if (!declared?.Output?.Stream) return null;
+  const toggle = cliOperationStreamToggle(op, declared);
+  return toggle?.DefaultOn && toggle.Key ? toggle : null;
+}
+registerTemplateFunc(
+  "cliOperationDefaultOnStreamToggle",
+  cliOperationDefaultOnStreamToggle,
+);
+
+function cliOperationStreamHelp(op: Operation): string {
+  const declared = cliOperationDeclaration(op);
+  if (!declared?.Output?.Stream) return "";
+  const toggle = cliOperationStreamToggle(op, declared);
+  const toggleName = toggle?.Name || "";
   const defaultOn = toggle
-    ? toggle.Default === true || String(toggle.Default) === "true"
+    ? toggle.DefaultOn
     : operationBodySchemaDefaultTrue(op, "stream");
+  const select = declared.Output.Stream.Select;
   if (toggleName && !defaultOn) {
     return (
       `Streamed responses write the string selected by ${select} raw as it arrives. ` +

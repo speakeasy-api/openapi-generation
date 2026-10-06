@@ -73,6 +73,13 @@ func runChatCmd(cmd *cobra.Command, args []string) error {
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
 		return usage.EmitBodySchema(cmd.OutOrStdout(), "chat")
 	}
+	if output.JQSelectsCompleteResponse(cmd, "stream") {
+		if err := flagutil.DefaultBodyInput(cmd, []string{
+			"request",
+		}, "stream", "stream", false); err != nil {
+			return err
+		}
+	}
 	if err := flagutil.MergeOperationDeclaredInputs(cmd, []string{
 		"request",
 	}, "request", true); err != nil {

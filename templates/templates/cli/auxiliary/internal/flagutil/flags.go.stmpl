@@ -735,6 +735,39 @@ func AttachStdinBody(cmd *cobra.Command, bodyFlag string) (bool, error) {
 	return true, nil
 }
 
+func DefaultBodyInput(cmd *cobra.Command, bodyFlags []string, key, flagName string, value any) error {
+	for _, name := range bodyFlags {
+		if name != "" && FlagChanged(cmd, name) {
+			s, _ := GetStringFlag(cmd, name)
+			if bodyDecidesKey([]byte(s), key) {
+				return nil
+			}
+			return MergeInputIntoBody(cmd, name, key, "--"+flagName, value)
+		}
+	}
+	data, err := ReadStdinBody(cmd, "")
+	if err != nil {
+		return err
+	}
+	if len(bytes.TrimSpace(data)) > 0 {
+		cmd.SetIn(bytes.NewReader(data))
+		if bodyDecidesKey(data, key) {
+			return nil
+		}
+		return MergeInputIntoBody(cmd, "", key, "--"+flagName, value)
+	}
+	return cmd.Flags().Set(flagName, fmt.Sprint(value))
+}
+
+func bodyDecidesKey(raw []byte, key string) bool {
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &obj); err != nil || obj == nil {
+		return true
+	}
+	_, present := obj[key]
+	return present
+}
+
 // bodyFlagName is "" when the body was attached from stdin by AttachStdinBody.
 func MergeInputIntoBody(cmd *cobra.Command, bodyFlagName, key, input string, value any) error {
 	source, raw := "stdin", []byte(nil)

@@ -286,6 +286,20 @@ func TestOperationStream_FalseFallsBackToNormalJSONResult(t *testing.T) {
 	assert.NotContains(t, out.String(), "must not stream")
 }
 
+func TestOperationStream_JQRequestsCompleteResponse(t *testing.T) {
+	srv := newOperationStreamServer(t, []string{"must not stream"}, nil)
+	var out bytes.Buffer
+	stderr, err := runOperationStream(t, &out, srv.URL, "--jq", ".complete")
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, false, srv.lastBody(t)["stream"])
+	assert.Equal(t, "true\n", out.String())
+
+	out.Reset()
+	stderr, err = runOperationStream(t, &out, srv.URL, "--jq", ".complete", "--output-format", "json")
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, true, srv.lastBody(t)["stream"], "-o json keeps the streamed events")
+}
+
 func TestOperationStream_BodyFalseFallsBackToNormalJSONResult(t *testing.T) {
 	var request map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte("{\"prompt\":\"hello from operation\"}"), &request))

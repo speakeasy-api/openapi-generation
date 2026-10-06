@@ -64,7 +64,7 @@ trackedFiles:
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
-    last_write_checksum: sha1:3d1fa09fa2658d3c8800cecafa30f677180a327f
+    last_write_checksum: sha1:d5ccc0970afac880e050719fe49c883432062904
   internal/cli/configure.go:
     last_write_checksum: sha1:ad89cfd7fd30f6395fc006ee54d3f2e640160c21
   internal/cli/createuser.go:
@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_render.go:
     last_write_checksum: sha1:e2a15348c10c96dffd27cb4a91805386b8cb2b0c
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:b4c91935ebb426fb5566d846a83e353b48402f2b
+    last_write_checksum: sha1:8d0ae5e57f3f635d46c26e92c75016472ccd9888
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:7a255e684a2ea0367f68a8683b9167c56a0f4235
+    last_write_checksum: sha1:dd2bcdf01727570110ca857e86fb3215dac1b3cf
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
@@ -274,7 +274,7 @@ trackedFiles:
   internal/output/jq.go:
     last_write_checksum: sha1:4ec4f6429c1d7eaa780a9e33147ba8087b678169
   internal/output/output.go:
-    last_write_checksum: sha1:cd4b680247b5064d98a373f4a4b841797a0c6e4e
+    last_write_checksum: sha1:83b7169a0320aaf7f3462504dca6799f856b55d5
   internal/output/output_test.go:
     last_write_checksum: sha1:a3d8e11b6ad5fa2b199decf5dc69771632db3417
   internal/output/outputitems.go:
@@ -670,7 +670,7 @@ trackedFiles:
   tests/intenthint_test.go:
     last_write_checksum: sha1:a4157f549c7c601ec6c7e486e1f520402b9c758e
   tests/intentstream_test.go:
-    last_write_checksum: sha1:e8d67c6234585b91260b8e4a8485e2da74f87d0e
+    last_write_checksum: sha1:eb5721ca913413f52be8b5d3f03245e3112d9c3b
   tests/mockserver/.gitignore:
     last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
   tests/mockserver/Dockerfile:
@@ -1082,7 +1082,7 @@ trackedFiles:
   tests/mockserver/main.go:
     last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
   tests/opstream_test.go:
-    last_write_checksum: sha1:a481f51cefd78e5c384b2e2e0a11598e9b01ee90
+    last_write_checksum: sha1:151d9e542513f542b644c6dbcaf3e33c8a3bd046
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:

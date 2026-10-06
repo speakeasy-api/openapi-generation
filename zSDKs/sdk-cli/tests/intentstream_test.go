@@ -133,6 +133,14 @@ func newIntentStreamServer(t *testing.T, chunks []string, waitFor <-chan struct{
 		s.mu.Lock()
 		s.receivedBodies = append(s.receivedBodies, body)
 		s.mu.Unlock()
+		var request map[string]interface{}
+		if json.Unmarshal(body, &request) == nil {
+			if stream, ok := request["stream"].(bool); ok && !stream {
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, `{"complete":true}`)
+				return
+			}
+		}
 		flusher, ok := w.(http.Flusher)
 		require.True(t, ok, "httptest ResponseWriter must support Flush")
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -483,7 +491,7 @@ func TestIntentStream_ExplicitJQWins(t *testing.T) {
 	var out bytes.Buffer
 	ctx, cancel := context.WithTimeout(context.Background(), intentStreamTestTimeout)
 	defer cancel()
-	stderr, err := runIntentStream(t, ctx, &out, srv.URL, "--jq", ".data")
+	stderr, err := runIntentStream(t, ctx, &out, srv.URL, "--jq", ".data", "--stream")
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.NotEqual(t, "xy\n", out.String())
 	assert.Contains(t, out.String(), intentStreamWireTokens[0])
@@ -500,15 +508,31 @@ func TestIntentStream_JQRawOutput(t *testing.T) {
 	var out bytes.Buffer
 	ctx, cancel := context.WithTimeout(context.Background(), intentStreamTestTimeout)
 	defer cancel()
-	stderr, err := runIntentStream(t, ctx, &out, srv.URL, "--jq", selector, "--raw-output")
+	stderr, err := runIntentStream(t, ctx, &out, srv.URL, "--jq", selector, "--raw-output", "--stream")
 	require.NoError(t, err, "stderr: %s", stderr)
 	// The event without the selected field yields null, which stays JSON.
 	assert.Equal(t, "x\ny z\nwörld\nnull\n", out.String())
 
 	out.Reset()
-	stderr, err = runIntentStream(t, ctx, &out, srv.URL, "--jq", selector, "--raw-output=false")
+	stderr, err = runIntentStream(t, ctx, &out, srv.URL, "--jq", selector, "--raw-output=false", "--stream")
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.Equal(t, "\"x\"\n\"y z\"\n\"wörld\"\nnull\n", out.String())
+}
+
+func TestIntentStream_JQRequestsCompleteResponse(t *testing.T) {
+	srv := newIntentStreamServer(t, []string{"must not stream"}, nil)
+	var out bytes.Buffer
+	ctx, cancel := context.WithTimeout(context.Background(), intentStreamTestTimeout)
+	defer cancel()
+	stderr, err := runIntentStream(t, ctx, &out, srv.URL, "--jq", ".complete")
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, false, srv.lastBody(t)["stream"])
+	assert.Equal(t, "true\n", out.String())
+
+	out.Reset()
+	stderr, err = runIntentStream(t, ctx, &out, srv.URL, "--jq", ".complete", "--output-format", "json")
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, true, srv.lastBody(t)["stream"], "-o json keeps the streamed events")
 }
 
 // TestIntentStream_ExplicitPrettyDisables: even the default format, when
