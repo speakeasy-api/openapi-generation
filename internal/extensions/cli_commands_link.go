@@ -473,6 +473,7 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 		return err
 	}
 	cmd.Source.Routes[0].Selectors = selectors
+	cmd.Source.Routes[0].PresetMergePoints = d.presetMergePoints(variant, cmd.Presets)
 	for i := range cmd.Args {
 		if err := d.linkInput(key, &cmd.Args[i], variant, presetPointers, presetValues, true); err != nil {
 			return err
@@ -674,6 +675,7 @@ func (d *cliManifestDecoder) linkDispatchCommand(cmd *CLICommand) error {
 			return err
 		}
 		links[i].route.Selectors = selectors
+		links[i].route.PresetMergePoints = d.presetMergePoints(links[i].variant, links[i].route.Presets)
 	}
 
 	for i := range cmd.Args {
@@ -2413,6 +2415,274 @@ func (d *cliManifestDecoder) pinnedDiscriminatorValues(disc map[string]any, key,
 		add(strings.TrimPrefix(pinnedRef, cliComponentRefPrefix))
 	}
 	return accepted
+}
+
+// cliFlatUnion is a union property flattened through nested oneOf/anyOf
+// layers: its object members (each carrying the properties declared beside
+// the unions above it), the discriminator keys the layers declare, and their
+// explicit mappings (value -> member reference).
+type cliFlatUnion struct {
+	members  []*cliResolvedSchema
+	keys     []string
+	mappings map[string]string
+}
+
+func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliResolvedSchema, out *cliFlatUnion) {
+	if depth > 8 {
+		return
+	}
+	resolved, err := d.resolveObjectSchema(schema, nil)
+	if err != nil {
+		return
+	}
+	if resolved.unionMembers == nil {
+		if len(resolved.propOrder) > 0 || resolved.explicitOpen || resolved.raw["type"] == "object" {
+			cliInheritProperties(resolved, inherited)
+			out.members = append(out.members, resolved)
+		}
+		return
+	}
+	d.collectDiscriminators(schema, depth, out)
+	cliInheritProperties(resolved, inherited)
+	for _, member := range resolved.unionMembers {
+		d.flattenUnion(member, depth+1, resolved, out)
+	}
+}
+
+func cliInheritProperties(target, parent *cliResolvedSchema) {
+	if parent == nil {
+		return
+	}
+	for _, name := range parent.propOrder {
+		if _, ok := target.properties[name]; !ok {
+			target.properties[name] = parent.properties[name]
+			target.propOrder = append(target.propOrder, name)
+		}
+	}
+}
+
+func cliAdditionalPropertiesSchema(object *cliResolvedSchema) (map[string]any, bool) {
+	schema, ok := object.raw["additionalProperties"].(map[string]any)
+	return schema, ok && len(schema) > 0
+}
+
+// excludesValue reports whether a property schema's enum rules out value.
+func (d *cliManifestDecoder) excludesValue(schema, value any) bool {
+	facts, err := d.propertyFacts(schema, nil)
+	if err != nil {
+		return false
+	}
+	return len(facts.enum) > 0 && !cliContainsValue(facts.enum, value)
+}
+
+// collectDiscriminators records the discriminator objects declared on a union
+// node, including those reached through its $ref and allOf layers.
+func (d *cliManifestDecoder) collectDiscriminators(schema any, depth int, out *cliFlatUnion) {
+	schemaMap, ok := schema.(map[string]any)
+	if !ok || depth > 8 {
+		return
+	}
+	if disc, ok := schemaMap["discriminator"].(map[string]any); ok {
+		if key, ok := disc["propertyName"].(string); ok && key != "" && !cliContains(out.keys, key) {
+			out.keys = append(out.keys, key)
+		}
+		if mapping, ok := disc["mapping"].(map[string]any); ok {
+			for value, ref := range mapping {
+				if ref, ok := ref.(string); ok {
+					out.mappings[value] = ref
+				}
+			}
+		}
+	}
+	if ref, ok := schemaMap["$ref"].(string); ok {
+		d.collectDiscriminators(d.schemaIndex.components[strings.TrimPrefix(ref, cliComponentRefPrefix)], depth+1, out)
+	}
+	if allOf, ok := schemaMap["allOf"].([]any); ok {
+		for _, branch := range allOf {
+			d.collectDiscriminators(branch, depth+1, out)
+		}
+	}
+}
+
+func (d *cliManifestDecoder) constPropertyValue(schema any) (any, bool) {
+	facts, err := d.propertyFacts(schema, nil)
+	if err != nil {
+		return nil, false
+	}
+	if facts.hasConst {
+		return facts.constVal, true
+	}
+	if len(facts.enum) == 1 {
+		return facts.enum[0], true
+	}
+	return nil, false
+}
+
+// presetMergePoints walks each object-valued preset alongside its schema
+// and records, keyed by JSON pointer, every object of the preset value that
+// may fill a caller's object at the same pointer: plain objects and map
+// entries unconditionally, union members only when the preset identifies one
+// member, guarded by the discriminator it sets. Elsewhere the caller's
+// object is kept whole.
+func (d *cliManifestDecoder) presetMergePoints(variant *cliResolvedSchema, presets []CLICommandPreset) []CLIPresetMergePoint {
+	var out []CLIPresetMergePoint
+	for _, preset := range presets {
+		value, ok := preset.Value.(map[string]any)
+		if !ok {
+			continue
+		}
+		propSchema, ok := variant.properties[cliPointerPropertyName(preset.Bind.Pointer)]
+		if !ok {
+			continue
+		}
+		d.collectPresetMergePoints(preset.Bind.Pointer, propSchema, value, 0, &out)
+	}
+	return out
+}
+
+func (d *cliManifestDecoder) collectPresetMergePoints(pointer string, schema any, value map[string]any, depth int, out *[]CLIPresetMergePoint) {
+	if depth > 8 {
+		return
+	}
+	flat := &cliFlatUnion{mappings: map[string]string{}}
+	d.flattenUnion(schema, 0, nil, flat)
+	point := CLIPresetMergePoint{Pointer: pointer}
+	var object *cliResolvedSchema
+	switch {
+	case len(flat.members) == 1:
+		object = flat.members[0]
+	case len(flat.members) > 1:
+		point, object = d.presetUnionMergePoint(pointer, flat, value)
+	}
+	if object == nil {
+		return
+	}
+	*out = append(*out, point)
+	names := make([]string, 0, len(value))
+	for name := range value {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		child, ok := value[name].(map[string]any)
+		if !ok {
+			continue
+		}
+		childSchema, ok := object.properties[name]
+		if !ok {
+			childSchema, ok = cliAdditionalPropertiesSchema(object)
+		}
+		if !ok {
+			continue
+		}
+		token := strings.ReplaceAll(strings.ReplaceAll(name, "~", "~0"), "/", "~1")
+		d.collectPresetMergePoints(pointer+"/"+token, childSchema, child, depth+1, out)
+	}
+}
+
+// presetUnionMergePoint finds the discriminator a preset object sets on a
+// union: a key the union declares as its discriminator, else a key whose
+// const/single-enum values differ across members, whose preset value is the
+// const of exactly one member, and which no other member declaring it can
+// also accept. The accepted values are the preset's value plus every value
+// mapped (explicitly, or implicitly by component name) to the member it
+// selects. member is nil when the preset does not select exactly one member.
+func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlatUnion, value map[string]any) (guard CLIPresetMergePoint, member *cliResolvedSchema) {
+	guard.Pointer = pointer
+	key := ""
+	for _, candidate := range flat.keys {
+		if _, ok := value[candidate]; ok {
+			key = candidate
+			break
+		}
+	}
+	declared := key != ""
+	if !declared {
+		names := make([]string, 0, len(value))
+		for name := range value {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			var distinct []any
+			matching := 0
+			overlapping := false
+			for _, m := range flat.members {
+				prop, declares := m.properties[name]
+				if !declares {
+					continue
+				}
+				v, ok := d.constPropertyValue(prop)
+				if !ok {
+					overlapping = overlapping || !d.excludesValue(prop, value[name])
+					continue
+				}
+				if !cliContainsValue(distinct, v) {
+					distinct = append(distinct, v)
+				}
+				if cliValuesEqual(v, value[name]) {
+					matching++
+				}
+			}
+			if len(distinct) >= 2 && matching == 1 && !overlapping {
+				key = name
+				break
+			}
+		}
+	}
+	if key == "" {
+		return guard, nil
+	}
+
+	pinned := value[key]
+	mappedRef, hasMapped := flat.mappings[fmt.Sprint(pinned)]
+	selectedRefs := map[string]bool{}
+	if hasMapped {
+		selectedRefs[mappedRef] = true
+	}
+	var selected []*cliResolvedSchema
+	for _, m := range flat.members {
+		ref := ""
+		if m.refName != "" {
+			ref = cliComponentRefPrefix + m.refName
+		}
+		v, ok := d.constPropertyValue(m.properties[key])
+		if (ok && cliValuesEqual(v, pinned)) || (declared && ref != "" && (ref == mappedRef || m.refName == pinned)) {
+			selected = append(selected, m)
+			if ref != "" {
+				selectedRefs[ref] = true
+			}
+		}
+	}
+
+	values := []any{pinned}
+	aliases := make([]string, 0, len(flat.mappings))
+	mapped := map[string]bool{}
+	for alias, ref := range flat.mappings {
+		mapped[ref] = true
+		if selectedRefs[ref] {
+			aliases = append(aliases, alias)
+		}
+	}
+	if declared {
+		for ref := range selectedRefs {
+			if !mapped[ref] {
+				aliases = append(aliases, strings.TrimPrefix(ref, cliComponentRefPrefix))
+			}
+		}
+	}
+	sort.Strings(aliases)
+	for _, alias := range aliases {
+		if !cliContainsValue(values, alias) {
+			values = append(values, alias)
+		}
+	}
+	guard.Key = key
+	guard.Values = values
+	if len(selected) == 1 {
+		member = selected[0]
+	}
+	return guard, member
 }
 
 func cliContainsValue(list []any, want any) bool {

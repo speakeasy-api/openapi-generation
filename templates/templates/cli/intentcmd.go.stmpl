@@ -188,6 +188,7 @@ var intent{{$c.FuncName}}Preset = flagutil.PresetMerge{
 	DiscriminatorAliases: []string{ {{- range $i, $v := $c.DiscriminatorAliasesJSON}}{{if $i}}, {{end}}"{{escapeGoString $v}}"{{end -}} },
 	{{- end}}
 	{{- end}}
+	{{- template "presetMergePoints" $c.PresetMergePoints}}
 	Escape: "{{escapeGoString $c.EscapeCommand}}",
 }
 {{- end}}
@@ -207,6 +208,7 @@ var intent{{$c.FuncName}}Dispatch = flagutil.DispatchTable{
 				Command: "{{escapeGoString $c.CommandDisplay}}", Variant: "{{escapeGoString $route.VariantLabel}}",
 				Preset: "{{escapeGoString $route.PresetJSON}}",
 				Foreign: []string{ {{- range $i, $key := $route.ForeignSelectors}}{{if $i}}, {{end}}"{{escapeGoString $key}}"{{end -}} },
+				{{- template "presetMergePoints" $route.PresetMergePoints}}
 				Escape: "{{escapeGoString $c.EscapeCommand}}",
 			},
 		},
@@ -523,4 +525,14 @@ func newPollIntent{{$c.FuncName}}(cmd *cobra.Command, id string, params []output
 		return res, nil
 	}, nil
 }
+{{- end}}
+
+{{- define "presetMergePoints"}}
+{{- if .}}
+	Nested: map[string]flagutil.PresetMergePoint{
+		{{- range $d := .}}
+		"{{escapeGoString $d.Pointer}}": {Key: "{{escapeGoString $d.Key}}", Values: []string{ {{- range $i, $v := $d.ValuesJSON}}{{if $i}}, {{end}}"{{escapeGoString $v}}"{{end -}} }},
+		{{- end}}
+	},
+{{- end}}
 {{- end}}

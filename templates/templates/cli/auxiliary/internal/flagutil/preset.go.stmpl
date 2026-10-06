@@ -117,7 +117,13 @@ type PresetMerge struct {
 	DiscriminatorKey     string
 	DiscriminatorValue   string
 	DiscriminatorAliases []string // every discriminator value (JSON text) selecting the pinned variant
+	Nested               map[string]PresetMergePoint // JSON pointer -> where a preset object fills the user's object
 	Escape               string
+}
+
+type PresetMergePoint struct {
+	Key    string   // discriminator the user's object must leave absent or set to one of Values ("" = none)
+	Values []string // JSON text of every value selecting the preset's union member
 }
 
 type PresetConflictError struct {
@@ -189,8 +195,13 @@ func MergePresetObject(user map[string]json.RawMessage, m PresetMerge) error {
 			return fmt.Errorf("invalid preset for %q: %w", m.Command, err)
 		}
 		for key, value := range preset {
-			if _, present := user[key]; !present {
+			existing, present := user[key]
+			if !present {
 				user[key] = value
+				continue
+			}
+			if merged, ok := m.fillPresetObject(existing, value, "/"+presetPointerToken(key)); ok {
+				user[key] = merged
 			}
 		}
 	}
@@ -202,6 +213,64 @@ func MergePresetObject(user map[string]json.RawMessage, m PresetMerge) error {
 	}
 
 	return nil
+}
+
+// fillPresetObject adds the preset's keys missing from the user's object at
+// pointer, at every depth; user keys always win. ok is false unless both are
+// objects, pointer is a merge point, and the user's object stays on the
+// preset's union member.
+func (m PresetMerge) fillPresetObject(user, preset json.RawMessage, pointer string) (json.RawMessage, bool) {
+	if point, ok := m.Nested[pointer]; !ok || !point.admits(user) {
+		return nil, false
+	}
+	var userObj, presetObj map[string]json.RawMessage
+	if json.Unmarshal(user, &userObj) != nil || userObj == nil {
+		return nil, false
+	}
+	if json.Unmarshal(preset, &presetObj) != nil || presetObj == nil {
+		return nil, false
+	}
+	for key, value := range presetObj {
+		existing, present := userObj[key]
+		if !present {
+			userObj[key] = value
+			continue
+		}
+		if merged, ok := m.fillPresetObject(existing, value, pointer+"/"+presetPointerToken(key)); ok {
+			userObj[key] = merged
+		}
+	}
+	merged, err := json.Marshal(userObj)
+	if err != nil {
+		return nil, false
+	}
+	return merged, true
+}
+
+func presetPointerToken(key string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
+}
+
+// admits reports whether the user's object stays on the preset's member:
+// its discriminator is absent or names one of the preset's values.
+func (d PresetMergePoint) admits(user json.RawMessage) bool {
+	if d.Key == "" {
+		return true
+	}
+	var obj map[string]json.RawMessage
+	if json.Unmarshal(user, &obj) != nil {
+		return true
+	}
+	raw, present := obj[d.Key]
+	if !present {
+		return true
+	}
+	for _, value := range d.Values {
+		if jsonEqual(raw, json.RawMessage(value)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m PresetMerge) selectsPinnedVariant(raw json.RawMessage) bool {

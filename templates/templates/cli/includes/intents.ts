@@ -45,6 +45,14 @@ interface IntentDispatchRoute {
   PresetJSON: string;
   VariantLabel: string;
   ForeignSelectors: string[];
+  PresetMergePoints: IntentPresetMergePoint[];
+}
+
+// Pointer at which a preset object fills a caller object (flagutil.PresetMergePoint).
+interface IntentPresetMergePoint {
+  Pointer: string;
+  Key: string;
+  ValuesJSON: string[];
 }
 
 interface IntentDispatchKey {
@@ -99,6 +107,7 @@ interface IntentCmdCtx {
   DiscriminatorKey: string;
   DiscriminatorValueJSON: string; // JSON text of the pinned discriminator value ("" when unknown)
   DiscriminatorAliasesJSON: string[]; // JSON text of every value that selects the pinned variant
+  PresetMergePoints: IntentPresetMergePoint[];
   EscapeCommand: string; // "<cli> agent run": full-control invocation for conflict errors
   HasPresetMerge: boolean; // a caller-supplied body needs merging/checking (presets or variant selectors exist)
   HintsJSON: string; // JSON object of reason → hint lines (agent envelope)
@@ -608,6 +617,18 @@ function intentPresetJSON(presets: any[]): string {
     obj[key] = preset.Value;
   }
   return Object.keys(obj).length > 0 ? JSON.stringify(obj) : "";
+}
+
+function intentPresetMergePoints(
+  discriminators: any[],
+): IntentPresetMergePoint[] {
+  return (discriminators || [])
+    .map((d: any) => ({
+      Pointer: d.Pointer || "",
+      Key: d.Key || "",
+      ValuesJSON: (d.Values || []).map((v: any) => JSON.stringify(v)),
+    }))
+    .filter((d) => d.Pointer !== "");
 }
 
 function intentRouteGroup(routeIDs: string[], routes: any[]): string {
@@ -1173,6 +1194,9 @@ function collectIntentManifest(): IntentManifestCtx {
             "",
           ),
           ForeignSelectors: dispatchRoute.Selectors?.Foreign || [],
+          PresetMergePoints: intentPresetMergePoints(
+            dispatchRoute.PresetMergePoints,
+          ),
         }))
       : [];
     const dispatchKeys: IntentDispatchKey[] = dispatch
@@ -1253,6 +1277,7 @@ function collectIntentManifest(): IntentManifestCtx {
       DiscriminatorAliasesJSON: (selectors?.DiscriminatorAliases || []).map(
         (v: any) => JSON.stringify(v),
       ),
+      PresetMergePoints: intentPresetMergePoints(route?.PresetMergePoints),
       EscapeCommand: escapeCommand,
       HasPresetMerge:
         !dispatch &&
