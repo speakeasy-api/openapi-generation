@@ -1,0 +1,10 @@
+id: 1791297800-55186590
+features:
+    - core
+targets:
+    - typescriptv2
+type: fix
+bump: patch
+description: smart union parsing on Zod v4 no longer builds a ZodError for every non-matching member, cutting CPU and garbage collection overhead when parsing large or streamed union payloads
+author: AshGodfrey
+date: "2026-10-06"
