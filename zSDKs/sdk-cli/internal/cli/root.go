@@ -60,6 +60,14 @@ func NewRootCommand() (*cobra.Command, error) {
 			if err := config.Init("cli", "CLI"); err != nil {
 				return err
 			}
+			config.SetKeyringWarningOutput(cmd.ErrOrStderr())
+			if noKeyring, changed := flagutil.GetBoolFlag(cmd, "no-keyring"); changed {
+				if noKeyring {
+					config.DisableKeyring()
+				}
+			} else if config.GetString("no-keyring") == "true" {
+				config.DisableKeyring()
+			}
 			output.InitAgentMode(cmd)
 			flagutil.SetStdinReadDeadline(output.IsAgentMode())
 			flagutil.ResetStdinSkip()
@@ -257,6 +265,8 @@ func NewRootCommand() (*cobra.Command, error) {
 	_ = rootCmd.PersistentFlags().SetAnnotation("client-secret", "speakeasy:group", []string{"Authentication"})
 	rootCmd.PersistentFlags().String("token-url", "", "Client Credentials flow. token URL")
 	_ = rootCmd.PersistentFlags().SetAnnotation("token-url", "speakeasy:group", []string{"Authentication"})
+	rootCmd.PersistentFlags().Bool("no-keyring", false, "Never read or write the OS keychain; store secrets in the config file instead (env: CLI_NO_KEYRING)")
+	_ = rootCmd.PersistentFlags().SetAnnotation("no-keyring", "speakeasy:group", []string{"Authentication"})
 	// Global parameter flags
 	rootCmd.PersistentFlags().String("query-param1", "", "A long winded, multi-line description (env: CLI_QUERY_PARAM1)")
 	_ = rootCmd.PersistentFlags().SetAnnotation("query-param1", "speakeasy:group", []string{"API Parameters"})

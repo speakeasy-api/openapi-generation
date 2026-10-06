@@ -51,6 +51,7 @@ cli post-file [flags]
                                          long to describe in a single line.
       --my-api-key string                API Key
       --no-interactive                   Disable all interactive features (auto-prompting, explorer auto-launch, TUI forms)
+      --no-keyring                       Never read or write the OS keychain; store secrets in the config file instead (env: CLI_NO_KEYRING)
       --no-retries                       Disable automatic retries (default: retries enabled with exponential backoff)
       --oauth2 string                    OAuth2 Authorization
   -o, --output-format string             Specify the output format. Options: pretty, json, yaml, table, toon. (default "pretty")

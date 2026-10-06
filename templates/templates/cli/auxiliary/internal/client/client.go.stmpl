@@ -22,7 +22,7 @@ package client
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{templateMainSDKTypeName}}, error) {
     var sdkOpts []sdk.SDKOption
     {{- if hasGlobalSecurity}}
-    sdkOpts = append(sdkOpts, sdk.WithSecurity(buildGlobalSecurity(cmd, allowedSecurityFields)))
+    sdkOpts = append(sdkOpts, sdk.WithSecurity(BuildGlobalSecurity(cmd, allowedSecurityFields)))
     {{- else}}
     _ = allowedSecurityFields
     {{- end}}
@@ -146,8 +146,8 @@ func resolveStringFlag(cmd *cobra.Command, name string) string {
 
 {{- if hasGlobalSecurity}}
 
-// buildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
-func buildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecurityFields"}} []string) {{templateGlobalSecurityTypeName}} {
+// BuildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
+func BuildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecurityFields"}} []string) {{templateGlobalSecurityTypeName}} {
     {{- if not hasMultipleSecuritySchemes}}
     _ = {{securityIdentifier "allowedSecurityFields"}}
     {{- end}}

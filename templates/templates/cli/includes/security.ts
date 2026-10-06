@@ -385,6 +385,14 @@ function primaryCLISecurityField(
   return fields.find((f) => f.isSecret) || fields[0];
 }
 
+function noKeyringEnvVar(): string {
+  const prefix = context.Global.Config.EnvVarPrefix
+    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
+    : "";
+  return prefix ? `${prefix}_NO_KEYRING` : "NO_KEYRING";
+}
+registerTemplateFunc("noKeyringEnvVar", noKeyringEnvVar);
+
 // Concrete credential variable for compact root setup guidance. Empty means
 // the document has no credential field and the Setup line must be omitted.
 function templatePrimaryAuthEnvVar(): string {
@@ -470,6 +478,11 @@ function templateGlobalSecurityFlagRegistration(): string {
     );
   }
 
+  lines.push(
+    `rootCmd.PersistentFlags().Bool("no-keyring", false, "Never read or write the OS keychain; store secrets in the config file instead (env: ${noKeyringEnvVar()})")`,
+    `_ = rootCmd.PersistentFlags().SetAnnotation("no-keyring", "speakeasy:group", []string{"Authentication"})`,
+  );
+
   return lines.join("\n    ");
 }
 registerTemplateFunc(
@@ -542,6 +555,10 @@ function templateConfigStructFields(): string {
   // Operational fields stay at top level
   lines.push(`Timeout string \`yaml:"timeout,omitempty"\``);
 
+  if (hasGlobalSecurity()) {
+    lines.push(`NoKeyring string \`yaml:"no_keyring,omitempty"\``);
+  }
+
   // Retry config (when retries feature is used)
   if (isFeatureUsed("retries")) {
     lines.push(`NoRetries string \`yaml:"no_retries,omitempty"\``);
@@ -579,6 +596,11 @@ function templateConfigGetStringCases(): string {
   // Timeout (always available)
   lines.push(`case "timeout":`);
   lines.push(`\t\treturn cfg.Timeout`);
+
+  if (hasGlobalSecurity()) {
+    lines.push(`case "no-keyring":`);
+    lines.push(`\t\treturn cfg.NoKeyring`);
+  }
 
   // Retry keys (when retries feature is used)
   if (isFeatureUsed("retries")) {
@@ -651,6 +673,22 @@ function globalsConfigAccessor(): string {
   return "cfg.Globals.";
 }
 
+// securityFieldResolver returns the call resolving a security field. Only
+// secret fields are ever stored in the OS keychain, so only they go through
+// secretResolver; the others resolve flag > env > config.
+function securityFieldResolver(
+  field: CLISecurityFieldInfo,
+  secretResolver: string,
+): string {
+  if (field.isArray) {
+    return `config.ResolveStringSliceCredential(cmd, "${field.flagName}")`;
+  }
+  if (!field.isSecret) {
+    return `config.ResolveCredential(cmd, "${field.flagName}", false)`;
+  }
+  return `${secretResolver}(cmd, "${field.flagName}")`;
+}
+
 /**
  * Generate security field variable declarations.
  * Reads from flags, env vars, and config (priority: flag > env > config).
@@ -671,7 +709,8 @@ function templateSecurityFieldParsing(): string {
   if (hasMultipleSecuritySchemes()) {
     // Several alternatives compete: keep each credential's source so the
     // scheme selection below can rank alternatives by how explicitly the
-    // caller supplied them (see config.PickCredential).
+    // caller supplied them (see config.PickCredential). The values are
+    // resolved by templateRankedSecurityConstruction, flag/env first.
     lines.push("var (");
     for (const field of fields) {
       const varName = sanitizePrivateFieldName(field.field.Name);
@@ -679,31 +718,17 @@ function templateSecurityFieldParsing(): string {
     }
     lines.push(")");
     lines.push(`${securitySourcesVar()} := map[string]string{}`);
-    for (const field of fields) {
-      const varName = sanitizePrivateFieldName(field.field.Name);
-      const resolver = field.isArray
-        ? "ResolveRequestSecurityStringSliceCredential"
-        : "ResolveRequestSecurityCredential";
-      lines.push(
-        `${varName}, ${securitySourcesVar()}["${
-          field.flagName
-        }"] = config.${resolver}(cmd, "${field.flagName}")`,
-      );
-    }
     return lines.join("\n    ");
   }
 
   for (const field of fields) {
     const varName = sanitizePrivateFieldName(field.field.Name);
-    if (field.isArray) {
-      lines.push(
-        `${varName}, _ := config.ResolveRequestSecurityStringSliceCredential(cmd, "${field.flagName}")`,
-      );
-    } else {
-      lines.push(
-        `${varName}, _ := config.ResolveRequestSecurityCredential(cmd, "${field.flagName}")`,
-      );
-    }
+    lines.push(
+      `${varName}, _ := ${securityFieldResolver(
+        field,
+        "config.ResolveRequestSecurityCredential",
+      )}`,
+    );
   }
 
   return lines.join("\n    ");
@@ -1147,17 +1172,48 @@ function templateRankedSecurityConstruction(
   );
   const candidatesVar = securityIdentifier("credentialCandidates");
   const allowedVar = securityIdentifier("allowedSecurityFields");
-  lines.push(`${candidatesVar} := []config.CredentialCandidate{`);
+  const resolveCandidatesVar = securityIdentifier("resolveCandidates");
+  const resolveVar = securityIdentifier("resolve");
+  const pickedVar = securityIdentifier("picked");
+  lines.push(
+    `${resolveCandidatesVar} := func(${resolveVar} func(*cobra.Command, string) (string, string)) []config.CredentialCandidate {`,
+  );
+  for (const field of getCLISecurityFields()) {
+    const varName = sanitizePrivateFieldName(field.field.Name);
+    lines.push(
+      `    ${varName}, ${securitySourcesVar()}["${
+        field.flagName
+      }"] = ${securityFieldResolver(field, resolveVar)}`,
+    );
+  }
+  lines.push(`    return []config.CredentialCandidate{`);
   for (const c of candidates) {
     const sources = c.sources
       .map((flagName) => `${securitySourcesVar()}["${flagName}"]`)
       .join(", ");
     lines.push(
-      `    {Field: "${c.field}", Complete: ${c.complete}, Sources: []string{${sources}}},`,
+      `        {Field: "${c.field}", Complete: ${c.complete}, Sources: []string{${sources}}},`,
     );
   }
+  lines.push("    }");
   lines.push("}");
-  lines.push(`switch config.PickCredential(${candidatesVar}, ${allowedVar}) {`);
+  lines.push(
+    "// A complete flag or env credential outranks anything in the keychain,",
+    "// so only fall back to it (and risk a slow or locked keychain) when no",
+    "// allowed alternative was supplied explicitly.",
+  );
+  lines.push(
+    `${candidatesVar} := ${resolveCandidatesVar}(config.ResolveExplicitSecurityCredential)`,
+  );
+  lines.push(
+    `${pickedVar} := config.PickExplicitCredential(${candidatesVar}, ${allowedVar})`,
+  );
+  lines.push(`if ${pickedVar} == -1 {`);
+  lines.push(
+    `    ${pickedVar} = config.PickCredential(${resolveCandidatesVar}(config.ResolveRequestSecurityCredential), ${allowedVar})`,
+  );
+  lines.push("}");
+  lines.push(`switch ${pickedVar} {`);
   candidates.forEach((c, i) => {
     lines.push(`case ${i}:`);
     for (const line of c.assignment) {
@@ -1725,14 +1781,20 @@ function templateWhoamiCredentials(): string {
     lines.push(`{`);
     if (field.isArray) {
       lines.push(
-        `    value, source := config.ResolveSecurityStringSliceCredential(cmd, "${field.flagName}")`,
+        `    value, source := ${securityFieldResolver(
+          field,
+          "config.ResolveRequestSecurityCredential",
+        )}`,
       );
       lines.push(
         `    fmt.Fprintf(out, "  --%-25s [%-7s] %s\\n", "${field.flagName}", source, strings.Join(value, ","))`,
       );
     } else {
       lines.push(
-        `    value, source := config.ResolveSecurityCredential(cmd, "${field.flagName}")`,
+        `    value, source := ${securityFieldResolver(
+          field,
+          "config.ResolveRequestSecurityCredential",
+        )}`,
       );
       lines.push(
         `    fmt.Fprintf(out, "  --%-25s [%-7s] %s\\n", "${field.flagName}", source, maskSecret(value))`,
@@ -1761,14 +1823,20 @@ function templateWhoamiCredentialsStructured(): string {
     lines.push(`{`);
     if (field.isArray) {
       lines.push(
-        `    value, source := config.ResolveSecurityStringSliceCredential(cmd, "${field.flagName}")`,
+        `    value, source := ${securityFieldResolver(
+          field,
+          "config.ResolveRequestSecurityCredential",
+        )}`,
       );
       lines.push(
         `    credentials["${field.flagName}"] = map[string]any{"source": source, "value": strings.Join(value, ",")}`,
       );
     } else {
       lines.push(
-        `    value, source := config.ResolveSecurityCredential(cmd, "${field.flagName}")`,
+        `    value, source := ${securityFieldResolver(
+          field,
+          "config.ResolveRequestSecurityCredential",
+        )}`,
       );
       lines.push(
         `    credentials["${field.flagName}"] = map[string]any{"source": source, "value": maskSecret(value)}`,

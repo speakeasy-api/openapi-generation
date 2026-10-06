@@ -532,7 +532,11 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	out := cmd.OutOrStdout()
-	fmt.Fprintln(out, "All authentication credentials have been cleared.")
+	if !config.KeyringAvailable() {
+		fmt.Fprintln(out, "Authentication credentials have been cleared from the config file; the OS keychain was skipped, so credentials stored there (if any) were kept.")
+	} else {
+		fmt.Fprintln(out, "All authentication credentials have been cleared.")
+	}
 	fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
 	return nil
 }

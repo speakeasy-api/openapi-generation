@@ -321,6 +321,8 @@ Secret credentials (tokens, API keys, passwords) are automatically stored in:
 
 If no keychain is available (e.g., in CI environments), credentials fall back to the config file.
 
+Where the keychain cannot be unlocked (e.g., headless Linux or SSH sessions with a locked GNOME Keyring), skip it entirely with `--no-keyring`, `CLI_NO_KEYRING=true`, or `no_keyring: true` in the config file. The keychain is then never read or written, and secrets are stored in the config file instead; flags and environment variables still take precedence.
+
 ### 4. Configuration file
 
 Run the interactive `configure` command to store non-secret settings:

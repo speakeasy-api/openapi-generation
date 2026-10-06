@@ -77,6 +77,16 @@ func NewRootCommand() (*cobra.Command, error) {
             if err := config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"); err != nil {
                 return err
             }
+            {{- if hasGlobalSecurity}}
+            config.SetKeyringWarningOutput(cmd.ErrOrStderr())
+            if noKeyring, changed := flagutil.GetBoolFlag(cmd, "no-keyring"); changed {
+                if noKeyring {
+                    config.DisableKeyring()
+                }
+            } else if config.GetString("no-keyring") == "true" {
+                config.DisableKeyring()
+            }
+            {{- end}}
             output.InitAgentMode(cmd)
             flagutil.SetStdinReadDeadline(output.IsAgentMode())
             flagutil.ResetStdinSkip()
@@ -846,6 +856,16 @@ func NewRootCommand() (*cobra.Command, error) {
             if err := config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"); err != nil {
                 return err
             }
+            {{- if hasGlobalSecurity}}
+            config.SetKeyringWarningOutput(cmd.ErrOrStderr())
+            if noKeyring, changed := flagutil.GetBoolFlag(cmd, "no-keyring"); changed {
+                if noKeyring {
+                    config.DisableKeyring()
+                }
+            } else if config.GetString("no-keyring") == "true" {
+                config.DisableKeyring()
+            }
+            {{- end}}
             output.InitAgentMode(cmd)
             flagutil.SetStdinReadDeadline(output.IsAgentMode())
             flagutil.ResetStdinSkip()

@@ -46,47 +46,47 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
 		}
 		credentials := map[string]any{}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "username")
+			value, source := config.ResolveCredential(cmd, "username", false)
 			credentials["username"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "password")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "password")
 			credentials["password"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "bearer-auth")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "bearer-auth")
 			credentials["bearer-auth"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "my-api-key")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "my-api-key")
 			credentials["my-api-key"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "oauth2")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "oauth2")
 			credentials["oauth2"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "app-id")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "app-id")
 			credentials["app-id"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "secret")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "secret")
 			credentials["secret"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "mobile-auth")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "mobile-auth")
 			credentials["mobile-auth"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "client-id")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "client-id")
 			credentials["client-id"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "client-secret")
+			value, source := config.ResolveRequestSecurityCredential(cmd, "client-secret")
 			credentials["client-secret"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		{
-			value, source := config.ResolveSecurityCredential(cmd, "token-url")
+			value, source := config.ResolveCredential(cmd, "token-url", false)
 			credentials["token-url"] = map[string]any{"source": source, "value": maskSecret(value)}
 		}
 		info["credentials"] = credentials
@@ -122,67 +122,67 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
 
 	// HTTP Basic username
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "username")
+		value, source := config.ResolveCredential(cmd, "username", false)
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "username", source, maskSecret(value))
 	}
 
 	// HTTP Basic password
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "password")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "password")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "password", source, maskSecret(value))
 	}
 
 	// HTTP Bearer
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "bearer-auth")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "bearer-auth")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "bearer-auth", source, maskSecret(value))
 	}
 
 	// API Key
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "my-api-key")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "my-api-key")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "my-api-key", source, maskSecret(value))
 	}
 
 	// OAuth2 Authorization
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "oauth2")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "oauth2")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "oauth2", source, maskSecret(value))
 	}
 
 	// Custom authentication credential
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "app-id")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "app-id")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "app-id", source, maskSecret(value))
 	}
 
 	// Custom authentication credential
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "secret")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "secret")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "secret", source, maskSecret(value))
 	}
 
 	// OAuth2 Password flow, a flow that is too long to describe in a single line.
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "mobile-auth")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "mobile-auth")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "mobile-auth", source, maskSecret(value))
 	}
 
 	// Client Credentials flow. client identifier
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "client-id")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "client-id")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "client-id", source, maskSecret(value))
 	}
 
 	// Client Credentials flow. client secret
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "client-secret")
+		value, source := config.ResolveRequestSecurityCredential(cmd, "client-secret")
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "client-secret", source, maskSecret(value))
 	}
 
 	// Client Credentials flow. token URL
 	{
-		value, source := config.ResolveSecurityCredential(cmd, "token-url")
+		value, source := config.ResolveCredential(cmd, "token-url", false)
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "token-url", source, maskSecret(value))
 	}
 

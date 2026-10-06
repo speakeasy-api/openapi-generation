@@ -374,7 +374,7 @@ func initCreateUserCmd(parentCmd *cobra.Command) {
 // Run: builds request from flags, calls SDK, outputs result
 func runCreateUserCmd(cmd *cobra.Command, args []string) error {
     ctx := cmd.Context()
-    security := buildGlobalSecurity(cmd)
+    security := BuildGlobalSecurity(cmd, nil)
     s := client.NewClient(cmd, sdk.WithSecurity(security))
 
     req, err := flagutil.BuildRequest[operations.CreateUserRequest](cmd, createUserMeta, "User", "body")
@@ -1286,6 +1286,8 @@ The `configure` and `whoami` commands are generated whenever the API has global 
 
 **OS keychain integration** (`keyring.go.stmpl`): Uses [`go-keyring`](https://github.com/zalando/go-keyring) to store security credentials in the OS keychain (macOS Keychain, Linux Secret Service/kwallet, Windows Credential Manager). The keychain is probed at startup via a read-only `Get()` call — `ErrNotFound` means the backend is working. The result is cached for the process lifetime. A `KeyringBackend` interface allows test injection via `SetKeyringBackend()`.
 
+**Keychain timeout and opt-out** (`keyring.go.stmpl`, `root.go.stmpl`): every backend call (probe, `Get`, `Set`, `Delete`) runs through `withKeyringTimeout`, bounded by the `keyringTimeout` constant (2s). A locked keychain otherwise blocks forever: on Linux, go-keyring unlocks the login collection and waits on the Secret Service prompt with no timeout, which nobody can answer on headless/SSH sessions. On the first timeout the keychain is disabled for the rest of the process (`KeyringDisabled()`; every later call, including direct `SetKeyringValue` / `DeleteKeyringValue`, returns `ErrKeyringUnavailable` without touching the backend), the call returns an error wrapping `ErrKeyringUnavailable` (so `StoreSecret` falls back to the config file), and one warning naming `--no-keyring` is written to the command's stderr (`SetKeyringWarningOutput`). `--no-keyring` / `<PREFIX>_NO_KEYRING=true` / `no_keyring: true` (resolved like `--no-retries`: flag > env > config, an explicit `--no-keyring=false` wins) calls `config.DisableKeyring()` in the root `PersistentPreRunE`, so the keychain is never read or written and secrets are stored in the config file instead; flags and env vars still take precedence. `auth logout` reports when the keychain was skipped or unavailable instead of claiming every credential was cleared. Generated only with global security.
+
 When a secret is stored in the keychain it is **not** written to the config file, so the YAML `security` block stays empty for that field — `whoami` (which resolves keyring-first) is the way to confirm it is set. Two behaviors keep this from looking like the credential was lost:
 
 - **Form placeholders are keychain-aware.** Secret fields in the `configure` and `auth login` forms render their placeholder from `config.GetStoredSecret(flag, configFallback)`, which prefers the keychain value over the config file. Re-running `configure` shows the existing (masked) credential instead of a blank field. The plain-text prompt fallback (`interactiveAuth: false`) uses the same read for its `[masked]` hint and for the required-field "keep existing value on empty Enter" check, so a keychain-stored secret is not re-prompted as if unset.
@@ -1293,7 +1295,7 @@ When a secret is stored in the keychain it is **not** written to the config file
 
 **Global security** is generated as a shared function in the root command package. It reads all security schemes from the OpenAPI spec and maps them to flags/env vars/keychain/config keys.
 
-**Cross-scheme ranking** (`templateRankedSecurityConstruction` in `security.ts`, `config.PickCredential` in `config.go.stmpl`): when the spec declares several OR alternatives, `buildGlobalSecurity` resolves every credential with its source, builds one candidate per alternative (per variant for union-typed alternatives), and populates exactly the one `config.PickCredential` picks: only alternatives the operation accepts (`client.NewClient(cmd, allowedFields...)`, mirroring the SDK's hoisted `PopulateSecurity(..., fields...)` restriction) in the operation's order; the most explicit source wins (flag > env > keyring > config), so `--api-key K` is not shadowed by an access token in the environment whatever the declared order; among equally explicit candidates a complete alternative beats a partial one; remaining ties keep declared order. Single-alternative CLIs keep the original construction.
+**Cross-scheme ranking** (`templateRankedSecurityConstruction` in `security.ts`, `config.PickCredential` in `config.go.stmpl`): when the spec declares several OR alternatives, `BuildGlobalSecurity` (exported for custom code that needs the same credential choice) resolves every credential with its source, builds one candidate per alternative (per variant for union-typed alternatives), and populates exactly the one `config.PickCredential` picks: only alternatives the operation accepts (`client.NewClient(cmd, allowedFields...)`, mirroring the SDK's hoisted `PopulateSecurity(..., fields...)` restriction) in the operation's order; the most explicit source wins (flag > env > keyring > config), so `--api-key K` is not shadowed by an access token in the environment whatever the declared order; among equally explicit candidates a complete alternative beats a partial one; remaining ties keep declared order. Only secret fields (`isSecret`, the ones `StoreSecret` writes to the keychain) consult the keychain; non-secret fields such as a username, token URL or scopes always resolve flag > env > config (`securityFieldResolver`). Resolution is two-phase: secret fields are first resolved from flags and env only (`ResolveExplicitSecurityCredential`), and `config.PickExplicitCredential` ranks only the allowed alternatives that are complete there with a flag or env source, so a complete env alternative wins over a partial flag one. Only when there is none does it fall back to the full request chain, so a request whose credential is fully supplied by flags or env never touches a slow or locked keychain. Single-alternative CLIs keep the original construction.
 
 **Global parameters** are also stored in the config file (with `global_` prefix on YAML keys to avoid collisions with security fields). The `buildGlobalOptions()` function in `client.go.stmpl` reads globals with priority: flag > env var > config file. Non-string types (integer, float, boolean) are stored as strings in the config and parsed when read.
 
@@ -1301,7 +1303,7 @@ When a secret is stored in the keychain it is **not** written to the config file
 
 - `auth login` — interactive credential setup focused on auth only
 - `auth whoami` — auth-scoped view of current credential status
-- `auth logout` — clears stored credentials from keyring and config
+- `auth logout` — clears stored credentials from keyring and config (reports when the keychain was skipped by `--no-keyring` or a timeout)
 
 `configure` remains the broader entrypoint for auth + globals + preferences.
 
@@ -1461,7 +1463,7 @@ cli users list --debug
 - **URL query**: Credential parameters (`api_key`, `token`, `client_secret`, `signature`, etc.) are redacted without reordering the query
 - **JSON body**: Separator/case-normalized sensitive keys and canonical base64 strings (encoded length ≥128, excluding all-hex IDs) are redacted; numbers retain their exact lexemes and depth overflow becomes an explicit marker
 - **Other bodies**: Binary media becomes `<bytes:N>` and multipart payloads become a deterministic inventory; human dry-run is not truncated. Debug applies the same redactor, then caps the rendered preview at 4 KiB
-- **Credentials**: Generated request construction uses request-scoped resolvers. Dry-run reads flags, environment and config, but never probes the OS keychain; whoami/configuration use the introspection resolvers and retain keychain access
+- **Credentials**: Generated request construction uses request-scoped resolvers. Dry-run reads flags, environment and config, but never probes the OS keychain; whoami also uses the request-scoped resolvers (so `whoami --dry-run` skips the keychain), while configuration retains keychain access
 
 **Dry-run branch handling**: Pagination (`--all`) and streaming branches are skipped in dry-run mode since the synthetic response has no real paginated/streaming data. Control falls through to the normal SDK call path with skip-deser.
 

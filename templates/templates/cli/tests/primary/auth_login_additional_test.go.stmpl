@@ -164,7 +164,11 @@ func TestAuthLogoutClearsCredentials(t *testing.T) {
 
 			h := NewCLITestHarness(t).WithEnv("HOME", home)
 			require.NoError(t, h.RunRaw([]string{"auth", "logout"}), "stderr: %s", h.GetStderr())
-			assert.Contains(t, h.GetStdout(), "All authentication credentials have been cleared.")
+			if keychainAvailable {
+				assert.Contains(t, h.GetStdout(), "All authentication credentials have been cleared.")
+			} else {
+				assert.Contains(t, h.GetStdout(), "the OS keychain was skipped")
+			}
 
 			if keychainAvailable {
 				assert.Equal(t, map[string]string{"unrelated": "keep"}, store)
