@@ -317,6 +317,14 @@ func escapeHazardsOutsideCode(line string) string {
 }
 
 func linkDestinationEnd(s string, from int) int {
+	if from < len(s) && s[from] == '<' {
+		for j := from + 1; j < len(s) && s[j] != '\n'; j++ {
+			if s[j] == '>' && !isCharEscaped(s, j) {
+				from = j + 1
+				break
+			}
+		}
+	}
 	depth := 0
 	for j := from; j < len(s); j++ {
 		if isCharEscaped(s, j) {
