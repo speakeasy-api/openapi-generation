@@ -266,6 +266,45 @@ func TestRetryAfterRespectsBackoffBudget(t *testing.T) {
 		})
 	}
 
+	t.Run("slow retryable body does not delay the next attempt", func(t *testing.T) {
+		var requests atomic.Int32
+		release := make(chan struct{})
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if requests.Add(1) == 1 {
+				w.Header().Set("Retry-After-Ms", "50")
+				w.WriteHeader(http.StatusServiceUnavailable)
+				w.(http.Flusher).Flush()
+				<-release
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"retries":1}`))
+		}))
+		defer server.Close()
+		defer close(release)
+
+		s := sdk.New(sdk.WithServerURL(server.URL), sdk.WithRetryConfig(retry.Config{
+			Strategy: "backoff",
+			Backoff: &retry.BackoffStrategy{
+				InitialInterval: 10,
+				MaxInterval:     50,
+				Exponent:        1.1,
+				MaxElapsedTime:  5000,
+			},
+		}))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		start := time.Now()
+		res, err := s.Retries.RetriesGet(ctx, pseudo_uuid(), nil, operations.WithServerURL(server.URL))
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		assert.EqualValues(t, 2, requests.Load())
+		assert.Less(t, time.Since(start), 2*time.Second)
+	})
+
 	t.Run("wait within remaining budget is honored", func(t *testing.T) {
 		var requests atomic.Int32
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

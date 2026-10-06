@@ -312,14 +312,35 @@ func bufferResponseBody(ctx context.Context, res *http.Response) {
 		return
 	}
 
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
+	buffered := &bufferedBody{body: res.Body, done: make(chan struct{})}
+	go func() {
+		buffered.data, buffered.err = io.ReadAll(buffered.body)
+		close(buffered.done)
+	}()
+	res.Body = buffered
+}
 
-	var reader io.Reader = bytes.NewReader(body)
-	if err != nil {
-		reader = io.MultiReader(reader, failedBodyReader{err: err})
+type bufferedBody struct {
+	body   io.ReadCloser
+	done   chan struct{}
+	data   []byte
+	err    error
+	reader io.Reader
+}
+
+func (b *bufferedBody) Read(p []byte) (int, error) {
+	<-b.done
+	if b.reader == nil {
+		b.reader = bytes.NewReader(b.data)
+		if b.err != nil {
+			b.reader = io.MultiReader(b.reader, failedBodyReader{err: b.err})
+		}
 	}
-	res.Body = io.NopCloser(reader)
+	return b.reader.Read(p)
+}
+
+func (b *bufferedBody) Close() error {
+	return b.body.Close()
 }
 
 type failedBodyReader struct {
@@ -656,14 +677,35 @@ func bufferResponseBody(ctx context.Context, res *http.Response) {
 		return
 	}
 
-	body, err := io.ReadAll(res.Body)
-	res.Body.Close()
+	buffered := &bufferedBody{body: res.Body, done: make(chan struct{})}
+	go func() {
+		buffered.data, buffered.err = io.ReadAll(buffered.body)
+		close(buffered.done)
+	}()
+	res.Body = buffered
+}
 
-	var reader io.Reader = bytes.NewReader(body)
-	if err != nil {
-		reader = io.MultiReader(reader, failedBodyReader{err: err})
+type bufferedBody struct {
+	body   io.ReadCloser
+	done   chan struct{}
+	data   []byte
+	err    error
+	reader io.Reader
+}
+
+func (b *bufferedBody) Read(p []byte) (int, error) {
+	<-b.done
+	if b.reader == nil {
+		b.reader = bytes.NewReader(b.data)
+		if b.err != nil {
+			b.reader = io.MultiReader(b.reader, failedBodyReader{err: b.err})
+		}
 	}
-	res.Body = io.NopCloser(reader)
+	return b.reader.Read(p)
+}
+
+func (b *bufferedBody) Close() error {
+	return b.body.Close()
 }
 
 type failedBodyReader struct {
