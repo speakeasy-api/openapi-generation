@@ -100,14 +100,14 @@ type pollAPIError struct {
 func (e *pollAPIError) Error() string { return e.Body }
 
 func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
-	err := &asyncPollError{err: &pollAPIError{StatusCode: 429, Body: `{"message":"slow down"}`}, id: "handle", resume: "wait handle"}
+	err := &asyncPollError{err: &pollAPIError{StatusCode: 429, Body: `{"message":"slow down","hints":["server hint"]}`}, id: "handle", resume: "wait\nhandle"}
 
 	for name, tc := range map[string]struct {
 		structured bool
 		want       []string
 	}{
-		"pretty": {want: []string{"API Error (HTTP 429)", "Hint: Resume polling with: wait handle"}},
-		"structured": {structured: true, want: []string{`"id": "handle"`, `"resume": "wait handle"`, `"Resume polling with: wait handle"`, `"status_code": 429`}},
+		"pretty": {want: []string{"API Error (HTTP 429)", "Hint: Resume polling with: wait\n      handle"}},
+		"structured": {structured: true, want: []string{`"id": "handle"`, `"resume": "wait\nhandle"`, `"server hint",`, `"Resume polling with: wait\nhandle"`, `"status_code": 429`}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			cmd := &cobra.Command{}
