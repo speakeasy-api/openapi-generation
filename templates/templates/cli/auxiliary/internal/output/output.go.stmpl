@@ -127,6 +127,13 @@ func outputFormatExplicit(cmd *cobra.Command) bool {
 	return config.GetString("output-format") != ""
 }
 
+func JQSelectsCompleteResponse(cmd *cobra.Command, streamFlag string) bool {
+	if cmd.Flags().Lookup(streamFlag) == nil || flagutil.FlagChanged(cmd, streamFlag) {
+		return false
+	}
+	return flagutil.FlagChanged(cmd, "jq") && !outputFormatExplicit(cmd)
+}
+
 func jqRawOutput(cmd *cobra.Command) bool {
 	raw, _ := flagutil.GetBoolFlag(cmd, "raw-output")
 	return raw

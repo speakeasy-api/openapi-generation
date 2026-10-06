@@ -184,6 +184,25 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
         return err
     }
     {{- end}}
+    {{- with cliOperationDefaultOnStreamToggle $op}}
+    {{- addImport "internal/flagutil" true}}
+    {{- addImport "internal/output" true}}
+    if output.JQSelectsCompleteResponse(cmd, "{{escapeGoString .Name}}") {
+        {{- if .InBody}}
+        if err := flagutil.DefaultBodyInput(cmd, []string{
+            {{- range $cliOp.BodyFlags}}
+            "{{escapeGoString .}}",
+            {{- end}}
+        }, "{{escapeGoString .Key}}", "{{escapeGoString .Name}}", false); err != nil {
+            return err
+        }
+        {{- else}}
+        if err := cmd.Flags().Set("{{escapeGoString .Name}}", "false"); err != nil {
+            return err
+        }
+        {{- end}}
+    }
+    {{- end}}
     {{- if and $cliOp $cliOp.Flags}}
     {{- addImport "internal/flagutil" true}}
     if err := flagutil.MergeOperationDeclaredInputs(cmd, []string{

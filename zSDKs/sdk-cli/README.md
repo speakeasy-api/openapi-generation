@@ -695,7 +695,7 @@ cli say "hello there" --output-format json --jq '.'
 
 Events are output as they arrive. Use `Ctrl+C` to stop streaming.
 
-For operation commands with a declared streamed projection, the selected string is written raw as it arrives. When the command exposes a stream toggle flag, its default decides the response shape — the command's help says whether to pass `--stream=false` for one complete JSON response (streaming on by default) or `--stream` to request a streamed response (off by default). Use `-o json` to keep each full streamed event.
+For operation commands with a declared streamed projection, the selected string is written raw as it arrives. When the command exposes a stream toggle flag, its default decides the response shape — the command's help says whether to pass `--stream=false` for one complete JSON response (streaming on by default) or `--stream` to request a streamed response (off by default). Use `-o json` to keep each full streamed event. On a command that streams by default, `--jq` without an explicit output format or stream setting requests one complete JSON response and filters that.
 <!-- End Server-Sent Event Streaming [eventstreaming] -->
 
 <!-- Start Pagination [pagination] -->

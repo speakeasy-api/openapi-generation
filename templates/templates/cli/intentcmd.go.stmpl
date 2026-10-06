@@ -8,7 +8,7 @@
 {{- if and $c.Args $c.BodyFlag (not $c.Dispatch)}}
 {{- addImport "strings" -}}
 {{- end}}
-{{- if or $c.Args $c.AsyncJSON}}
+{{- if or $c.Args $c.AsyncJSON $c.StreamToggle}}
 {{- addImport "internal/output" true -}}
 {{- end}}
 {{- if or $c.HasMeta $c.BodyFlag $c.Flags $c.ArtifactJSON $c.AsyncJSON}}
@@ -300,6 +300,13 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		}
 		bodySupplied = attached
 	}
+	{{- with $c.StreamToggle}}
+	if bodySupplied && output.JQSelectsCompleteResponse(cmd, "{{escapeGoString .Name}}") {
+		if err := flagutil.DefaultBodyInput(cmd, []string{suppliedBodyFlag}, "{{escapeGoString .Key}}", "{{escapeGoString .Name}}", false); err != nil {
+			return err
+		}
+	}
+	{{- end}}
 	{{- if $c.Args}}
 	if hint := flagutil.SpacedBoolValueHint(cmd, args); hint != "" && !client.IsJSONDryRun(cmd) && !output.IsMachineMode(cmd) {
 		fmt.Fprintln(cmd.ErrOrStderr(), hint)
@@ -411,6 +418,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 			v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}")
 			{{- end}}
 			body["{{escapeGoString .Key}}"] = v
+		}
+		{{- end}}
+		{{- with $c.StreamToggle}}
+		if output.JQSelectsCompleteResponse(cmd, "{{escapeGoString .Name}}") {
+			body["{{escapeGoString .Key}}"] = false
 		}
 		{{- end}}
 		encoded, err := json.Marshal(body)

@@ -97,6 +97,11 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 		}
 		bodySupplied = attached
 	}
+	if bodySupplied && output.JQSelectsCompleteResponse(cmd, "stream") {
+		if err := flagutil.DefaultBodyInput(cmd, []string{suppliedBodyFlag}, "stream", "stream", false); err != nil {
+			return err
+		}
+	}
 	if hint := flagutil.SpacedBoolValueHint(cmd, args); hint != "" && !client.IsJSONDryRun(cmd) && !output.IsMachineMode(cmd) {
 		fmt.Fprintln(cmd.ErrOrStderr(), hint)
 	}
@@ -130,6 +135,9 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 		if flagutil.FlagChanged(cmd, "stream") {
 			v, _ := cmd.Flags().GetBool("stream")
 			body["stream"] = v
+		}
+		if output.JQSelectsCompleteResponse(cmd, "stream") {
+			body["stream"] = false
 		}
 		encoded, err := json.Marshal(body)
 		if err != nil {
