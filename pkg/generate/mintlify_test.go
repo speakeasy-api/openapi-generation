@@ -613,7 +613,7 @@ func TestApplyMintlifyTransform_ReplacesExistingFrontmatter(t *testing.T) {
 }
 
 func TestApplyMintlifyTransform_ReplacesEmojiShortcodes(t *testing.T) {
-	in := []byte("# Foo\n\n| Field | Required |\n| --- | --- |\n| `a` | :heavy_check_mark: |\n| `b` | :heavy_minus_sign: |\n\n> :warning: **DEPRECATED**: use `:warning:` instead.\n\n| `c` | : warning: ** DEPRECATED **: old. |\n\n```\n:heavy_check_mark:\n```\n\n~~~~\n:warning: {x}\n~~~\n:warning:\n~~~~\n")
+	in := []byte("# Foo\n\n| Field | Required |\n| --- | --- |\n| `a` | :heavy_check_mark: |\n| `b` | :heavy_minus_sign: |\n\n> :warning: **DEPRECATED**: use `:warning:` instead.\n\n```\n:heavy_check_mark:\n```\n\n~~~~\n:warning: {x}\n~~~\n:warning:\n~~~~\n")
 	_, data := applyMintlifyTransform("docs/models/foo.md", in)
 	got := string(data)
 
@@ -621,7 +621,6 @@ func TestApplyMintlifyTransform_ReplacesEmojiShortcodes(t *testing.T) {
 		"| `a` | \u2714\ufe0f |",
 		"| `b` | \u2796 |",
 		"> \u26a0\ufe0f **DEPRECATED**: use `:warning:` instead.",
-		"| `c` | \u26a0\ufe0f ** DEPRECATED **: old. |",
 		"```\n:heavy_check_mark:\n```",
 		"~~~~\n:warning: {x}\n~~~\n:warning:\n~~~~",
 	}

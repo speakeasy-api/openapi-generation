@@ -38,7 +38,6 @@ var emojiShortcodes = []struct{ code, emoji string }{
 	{":heavy_check_mark:", "\u2714\ufe0f"},
 	{":heavy_minus_sign:", "\u2796"},
 	{":warning:", "\u26a0\ufe0f"},
-	{": warning:", "\u26a0\ufe0f"},
 }
 
 // applyMintlifyTransform converts a generated `docs/**/*.md` file into a

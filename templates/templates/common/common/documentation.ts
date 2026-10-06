@@ -103,7 +103,7 @@ function templateDocumentationComments(comments: CommentDef): string {
   let lines: string[] = [];
 
   if (comments.Deprecated) {
-    let deprecated = `: warning: ** DEPRECATED **: ${comments.DeprecationMessage}.`;
+    let deprecated = `:warning: **DEPRECATED**: ${comments.DeprecationMessage}.`;
 
     if (comments.DeprecationReplacement) {
       const replacement = sanitizeDeprecationReplacement(
