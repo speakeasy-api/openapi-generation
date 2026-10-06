@@ -611,3 +611,25 @@ func TestApplyMintlifyTransform_ReplacesExistingFrontmatter(t *testing.T) {
 		t.Errorf("expected exactly one frontmatter block:\n%s", got)
 	}
 }
+
+func TestApplyMintlifyTransform_ReplacesEmojiShortcodes(t *testing.T) {
+	in := []byte("# Foo\n\n| Field | Required |\n| --- | --- |\n| `a` | :heavy_check_mark: |\n| `b` | :heavy_minus_sign: |\n\n> :warning: **DEPRECATED**: use `:warning:` instead.\n\n```\n:heavy_check_mark:\n```\n\n~~~~\n:warning: {x}\n~~~\n:warning:\n~~~~\n\nSee [ref :warning:](https://example.com/docs/:warning:) [b](<https://example.com/a)b/:warning:>) and `literal example\n:warning: Map<K, V>` then :warning:.\n\n- `a :warning:\n- b` :warning:\n\n[ref]: https://example.com/:warning: \"Title\"\n")
+	_, data := applyMintlifyTransform("docs/models/foo.md", in)
+	got := string(data)
+
+	wantSubs := []string{
+		"| `a` | \u2714\ufe0f |",
+		"| `b` | \u2796 |",
+		"> \u26a0\ufe0f **DEPRECATED**: use `:warning:` instead.",
+		"```\n:heavy_check_mark:\n```",
+		"~~~~\n:warning: {x}\n~~~\n:warning:\n~~~~",
+		"See [ref \u26a0\ufe0f](https://example.com/docs/:warning:) [b](\\<https://example.com/a)b/:warning:>) and `literal example\n:warning: Map<K, V>` then \u26a0\ufe0f.",
+		"- `a \u26a0\ufe0f\n- b` \u26a0\ufe0f",
+		"[ref]: https://example.com/:warning: \"Title\"",
+	}
+	for _, sub := range wantSubs {
+		if !strings.Contains(got, sub) {
+			t.Errorf("missing %q in:\n%s", sub, got)
+		}
+	}
+}
