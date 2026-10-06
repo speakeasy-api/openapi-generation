@@ -245,12 +245,18 @@ func bufferResponseBody(ctx context.Context, res *http.Response) {
 
 	buffered := &bufferedBody{body: res.Body, done: make(chan struct{})}
 	go func() {
-		buffered.data, buffered.err = io.ReadAll(buffered.body)
+		buffered.data, buffered.err = io.ReadAll(io.LimitReader(buffered.body, maxBufferedResponseBody+1))
+		if buffered.err == nil && len(buffered.data) > maxBufferedResponseBody {
+			buffered.data = buffered.data[:maxBufferedResponseBody]
+			buffered.err = fmt.Errorf("retryable response body exceeded %d bytes and was not retained", maxBufferedResponseBody)
+		}
 		buffered.closeBody()
 		close(buffered.done)
 	}()
 	res.Body = buffered
 }
+
+const maxBufferedResponseBody = 1 << 20
 
 type bufferedBody struct {
 	body      io.ReadCloser
