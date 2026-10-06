@@ -38,6 +38,7 @@ var emojiShortcodes = []struct{ code, emoji string }{
 	{":heavy_check_mark:", "\u2714\ufe0f"},
 	{":heavy_minus_sign:", "\u2796"},
 	{":warning:", "\u26a0\ufe0f"},
+	{": warning:", "\u26a0\ufe0f"},
 }
 
 // applyMintlifyTransform converts a generated `docs/**/*.md` file into a
@@ -174,19 +175,35 @@ func findOverviewDescription(lines []string) string {
 // untouched. Already-escaped sequences (`\<`, `\{`) are not double-escaped.
 func escapeMDXHazards(body string) string {
 	lines := splitLines(body)
-	inFence := false
+	fence := ""
 	for i, line := range lines {
 		trimmed := strings.TrimLeft(line, " \t")
-		if strings.HasPrefix(trimmed, "```") {
-			inFence = !inFence
+		if fence != "" {
+			if strings.HasPrefix(trimmed, fence) && strings.TrimSpace(strings.TrimLeft(trimmed, fence[:1])) == "" {
+				fence = ""
+			}
 			continue
 		}
-		if inFence {
+		if marker := codeFenceMarker(trimmed); marker != "" {
+			fence = marker
 			continue
 		}
 		lines[i] = escapeHazardsOutsideCode(line)
 	}
 	return joinLines(lines)
+}
+
+func codeFenceMarker(trimmed string) string {
+	for _, c := range []byte{'`', '~'} {
+		n := 0
+		for n < len(trimmed) && trimmed[n] == c {
+			n++
+		}
+		if n >= 3 {
+			return trimmed[:n]
+		}
+	}
+	return ""
 }
 
 func escapeHazardsOutsideCode(line string) string {
