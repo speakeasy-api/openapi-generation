@@ -19,6 +19,7 @@ const reservedFlagNames = [
   "output",
   "format",
   "output-format",
+  "default-output-format",
   "color",
   "jq",
   "raw-output",

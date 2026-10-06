@@ -61,6 +61,9 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
     {{- if isAnyInteractiveEnabled}}
 
     formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, {{templateConfigureFlagNames}}))
+    if cmd.Flags().Changed("{{defaultOutputFormatFlag}}") {
+        formMode = interactive.FormOff
+    }
     {{- end}}
 
 {{- if isInteractiveAuthEnabled}}

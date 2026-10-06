@@ -57,6 +57,9 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 	keychainStored := false
 
 	formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url", "query-param1", "deprecated-query-param1", "deprecated-query-param2", "lone-query-param", "default-output-format"))
+	if cmd.Flags().Changed("default-output-format") {
+		formMode = interactive.FormOff
+	}
 	if formMode == interactive.FormOff {
 		changed := false
 		if f := cmd.Flags().Lookup("default-output-format"); f != nil && f.Changed {
