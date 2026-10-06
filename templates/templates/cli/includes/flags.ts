@@ -35,6 +35,7 @@ const reservedFlagNames = [
   "include-headers",
   "timeout",
   "no-retries",
+  "no-keyring",
   "retry-config",
   "retry-connection-errors",
   "retry-max-elapsed-time",
@@ -87,6 +88,9 @@ function rootFlagNames(): Set<string> {
   }
   for (const field of getCLISecurityFields()) {
     names.add(field.flagName);
+  }
+  if (getCLISecurityFields().length > 0) {
+    names.add("no-keyring");
   }
   if (hasGlobals()) {
     for (const field of context.Global.AST.MainSDK.Globals.Fields) {

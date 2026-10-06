@@ -835,6 +835,16 @@ function getRootUsageFlags(): UsageFlagDef[] {
       variadic: field.isArray,
     });
   }
+  if (getCLISecurityFields().length > 0) {
+    flags.push({
+      spec: usageFlagSpec("no-keyring"),
+      help: "Never read or write the OS keychain; store secrets in the config file instead",
+      global: true,
+      env: noKeyringEnvVar(),
+      config: "no_keyring",
+      defaultValue: false,
+    });
+  }
 
   if (hasGlobals()) {
     for (const field of context.Global.AST.MainSDK.Globals.Fields) {

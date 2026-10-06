@@ -114,7 +114,7 @@ func TestStoreSecretFallback(t *testing.T) {
 	assert.Equal(t, "secret", fallback)
 }
 
-func TestRequestDryRunSkipsKeyringButWhoamiInspectsIt(t *testing.T) {
+func TestDryRunSkipsKeyringIncludingWhoami(t *testing.T) {
 	recorder := &recordingKeyring{}
 	config.SetKeyringBackend(recorder)
 	t.Cleanup(config.ResetKeyring)
@@ -130,6 +130,6 @@ func TestRequestDryRunSkipsKeyringButWhoamiInspectsIt(t *testing.T) {
 
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunRaw([]string{"whoami", "--dry-run"}))
-	assert.Positive(t, recorder.gets, "whoami remains an introspection command under dry-run")
+	assert.Zero(t, recorder.gets, "whoami --dry-run reports what a dry-run request resolves, without the keyring")
 }
 {{- end}}

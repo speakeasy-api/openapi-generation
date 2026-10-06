@@ -1,0 +1,10 @@
+id: 1791304027-55b61e3f
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: stop a locked OS keychain from hanging commands; keychain calls now time out after 2s and fall back to the config file, flag and env credentials skip the keychain, and --no-keyring turns it off. whoami --dry-run no longer reads the keychain, like every other command under --dry-run
+author: 2ynn
+date: "2026-10-06"

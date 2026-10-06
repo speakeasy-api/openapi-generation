@@ -25,7 +25,7 @@ import (
 // Empty allowedSecurityFields accepts every global security alternative.
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, error) {
 	var sdkOpts []sdk.SDKOption
-	sdkOpts = append(sdkOpts, sdk.WithSecurity(buildGlobalSecurity(cmd, allowedSecurityFields)))
+	sdkOpts = append(sdkOpts, sdk.WithSecurity(BuildGlobalSecurity(cmd, allowedSecurityFields)))
 	if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
 		if err := flagutil.ValidateServerURL(serverURL); err != nil {
 			return nil, err
@@ -122,8 +122,8 @@ func resolveStringFlag(cmd *cobra.Command, name string) string {
 	return config.GetString(name)
 }
 
-// buildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
-func buildGlobalSecurity(cmd *cobra.Command, allowedSecurityFields []string) components.Security {
+// BuildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
+func BuildGlobalSecurity(cmd *cobra.Command, allowedSecurityFields []string) components.Security {
 	// Resolve request credentials: flag > env var > keyring > config file (keyring skipped for dry-run)
 	var (
 		username     string
@@ -139,32 +139,42 @@ func buildGlobalSecurity(cmd *cobra.Command, allowedSecurityFields []string) com
 		tokenURL     string
 	)
 	credentialSources := map[string]string{}
-	username, credentialSources["username"] = config.ResolveRequestSecurityCredential(cmd, "username")
-	password, credentialSources["password"] = config.ResolveRequestSecurityCredential(cmd, "password")
-	bearerAuth, credentialSources["bearer-auth"] = config.ResolveRequestSecurityCredential(cmd, "bearer-auth")
-	myAPIKey, credentialSources["my-api-key"] = config.ResolveRequestSecurityCredential(cmd, "my-api-key")
-	oauth2, credentialSources["oauth2"] = config.ResolveRequestSecurityCredential(cmd, "oauth2")
-	appID, credentialSources["app-id"] = config.ResolveRequestSecurityCredential(cmd, "app-id")
-	secret, credentialSources["secret"] = config.ResolveRequestSecurityCredential(cmd, "secret")
-	mobileAuth, credentialSources["mobile-auth"] = config.ResolveRequestSecurityCredential(cmd, "mobile-auth")
-	clientID, credentialSources["client-id"] = config.ResolveRequestSecurityCredential(cmd, "client-id")
-	clientSecret, credentialSources["client-secret"] = config.ResolveRequestSecurityCredential(cmd, "client-secret")
-	tokenURL, credentialSources["token-url"] = config.ResolveRequestSecurityCredential(cmd, "token-url")
 	globalSecurity := components.Security{}
 	// Rank the alternatives by how explicitly the caller supplied them
 	// (flag > env > keyring > config; complete before partial at the same
 	// tier) and send exactly one: an explicit credential picks its scheme
 	// regardless of the declared order.
-	credentialCandidates := []config.CredentialCandidate{
-		{Field: "UserPassAuth", Complete: username != "" && password != "", Sources: []string{credentialSources["username"], credentialSources["password"]}},
-		{Field: "Option2", Complete: bearerAuth != "" && myAPIKey != "", Sources: []string{credentialSources["bearer-auth"], credentialSources["my-api-key"]}},
-		{Field: "Option3", Complete: oauth2 != "", Sources: []string{credentialSources["oauth2"]}},
-		{Field: "Option4", Complete: appID != "" && secret != "", Sources: []string{credentialSources["app-id"], credentialSources["secret"]}},
-		{Field: "Option5", Complete: mobileAuth != "", Sources: []string{credentialSources["mobile-auth"]}},
-		{Field: "Option6", Complete: clientID != "" && clientSecret != "", Sources: []string{credentialSources["client-id"], credentialSources["client-secret"], credentialSources["token-url"]}},
-		{Field: "MyAPIKey", Complete: myAPIKey != "", Sources: []string{credentialSources["my-api-key"]}},
+	resolveCandidates := func(resolve func(*cobra.Command, string) (string, string)) []config.CredentialCandidate {
+		username, credentialSources["username"] = config.ResolveCredential(cmd, "username", false)
+		password, credentialSources["password"] = resolve(cmd, "password")
+		bearerAuth, credentialSources["bearer-auth"] = resolve(cmd, "bearer-auth")
+		myAPIKey, credentialSources["my-api-key"] = resolve(cmd, "my-api-key")
+		oauth2, credentialSources["oauth2"] = resolve(cmd, "oauth2")
+		appID, credentialSources["app-id"] = resolve(cmd, "app-id")
+		secret, credentialSources["secret"] = resolve(cmd, "secret")
+		mobileAuth, credentialSources["mobile-auth"] = resolve(cmd, "mobile-auth")
+		clientID, credentialSources["client-id"] = resolve(cmd, "client-id")
+		clientSecret, credentialSources["client-secret"] = resolve(cmd, "client-secret")
+		tokenURL, credentialSources["token-url"] = config.ResolveCredential(cmd, "token-url", false)
+		return []config.CredentialCandidate{
+			{Field: "UserPassAuth", Complete: username != "" && password != "", Sources: []string{credentialSources["username"], credentialSources["password"]}},
+			{Field: "Option2", Complete: bearerAuth != "" && myAPIKey != "", Sources: []string{credentialSources["bearer-auth"], credentialSources["my-api-key"]}},
+			{Field: "Option3", Complete: oauth2 != "", Sources: []string{credentialSources["oauth2"]}},
+			{Field: "Option4", Complete: appID != "" && secret != "", Sources: []string{credentialSources["app-id"], credentialSources["secret"]}},
+			{Field: "Option5", Complete: mobileAuth != "", Sources: []string{credentialSources["mobile-auth"]}},
+			{Field: "Option6", Complete: clientID != "" && clientSecret != "", Sources: []string{credentialSources["client-id"], credentialSources["client-secret"], credentialSources["token-url"]}},
+			{Field: "MyAPIKey", Complete: myAPIKey != "", Sources: []string{credentialSources["my-api-key"]}},
+		}
 	}
-	switch config.PickCredential(credentialCandidates, allowedSecurityFields) {
+	// A complete flag or env credential outranks anything in the keychain,
+	// so only fall back to it (and risk a slow or locked keychain) when no
+	// allowed alternative was supplied explicitly.
+	credentialCandidates := resolveCandidates(config.ResolveExplicitSecurityCredential)
+	picked := config.PickExplicitCredential(credentialCandidates, allowedSecurityFields)
+	if picked == -1 {
+		picked = config.PickCredential(resolveCandidates(config.ResolveRequestSecurityCredential), allowedSecurityFields)
+	}
+	switch picked {
 	case 0:
 		globalSecurity.UserPassAuth = &components.UserPassAuth{
 			Username: username,

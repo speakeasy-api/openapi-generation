@@ -1,0 +1,277 @@
+{{- if and (isInteractiveAuthEnabled) (hasGlobalSecurity) -}}
+package tests
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/zalando/go-keyring"
+
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/client"
+	"{{getGolangPackage}}/internal/config"
+)
+
+// lockedKeyring is an OS keychain that never answers: every call blocks until
+// release is closed, like a backend waiting on an unlock prompt nobody can
+// answer (a locked GNOME Keyring over D-Bus on a headless session). With
+// answerProbe, the availability probe answers and only real calls block.
+type lockedKeyring struct {
+	answerProbe bool
+	release     chan struct{}
+	mu          sync.Mutex
+	calls       []string
+}
+
+func (k *lockedKeyring) record(op, service, key string) {
+	k.mu.Lock()
+	k.calls = append(k.calls, op+" "+service+"/"+key)
+	k.mu.Unlock()
+	<-k.release
+}
+
+func (k *lockedKeyring) Calls() []string {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	return append([]string(nil), k.calls...)
+}
+
+func (k *lockedKeyring) Get(service, key string) (string, error) {
+	if k.answerProbe && strings.HasSuffix(service, "-probe") {
+		return "", keyring.ErrNotFound
+	}
+	k.record("Get", service, key)
+	return "", config.ErrKeyringUnavailable
+}
+
+func (k *lockedKeyring) Set(service, key, _ string) error {
+	k.record("Set", service, key)
+	return config.ErrKeyringUnavailable
+}
+
+func (k *lockedKeyring) Delete(service, key string) error {
+	k.record("Delete", service, key)
+	return config.ErrKeyringUnavailable
+}
+
+const (
+	keyringTimeoutWarning = "OS keychain did not respond"
+	cliEnvPrefix          = "{{.Global.Config.EnvVarPrefix}}_"
+)
+
+// prefixedEnvNames lists the inherited environment variables that the CLI
+// reads, so a test can clear them before setting its own.
+func prefixedEnvNames() []string {
+	var names []string
+	for _, kv := range os.Environ() {
+		if name, _, _ := strings.Cut(kv, "="); strings.HasPrefix(name, cliEnvPrefix) {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// TestLockedKeyringDoesNotHang pins that a keychain that never answers cannot
+// hang the CLI: explicit credentials and --no-keyring never touch it, and
+// anything else gives up after the keychain timeout with one warning and
+// carries on with the config file.
+func TestLockedKeyringDoesNotHang(t *testing.T) {
+	var (
+		authMu      sync.Mutex
+		authHeaders []string
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authMu.Lock()
+		authHeaders = append(authHeaders, r.Header.Get("Authorization"))
+		authMu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+
+	const (
+		noKeyring = "{{noKeyringEnvVar}}"
+		storedKey = "version: 1\nsecurity:\n  api_key_auth: stored-key\n"
+	)
+	request := []string{"methods", "method-get"}
+	apiKeyEnv := map[string]string{cliEnvPrefix + "API_KEY_AUTH": "env-key"}
+	// keyringCalls is 0 when the keychain is skipped, 1 when the first call
+	// times out and every later lookup short-circuits. wantAuth is the
+	// Authorization header of the request, when the command sends one.
+	tests := []struct {
+		name          string
+		env           map[string]string
+		config        string
+		args          []string
+		answerProbe   bool
+		keyringCalls  int
+		wantAuth      string
+		wantStdout    string
+		wantConfig    string
+		notWantConfig string
+	}{
+		{name: "request, api key from env", env: apiKeyEnv, args: request, wantAuth: "env-key"},
+		{name: "request, api key from flag", args: append([]string{"--api-key-auth", "flag-key"}, request...), wantAuth: "flag-key"},
+		{name: "request, complete env alternative beats a partial flag one", env: apiKeyEnv, args: append([]string{"--username", "flag-user"}, request...), wantAuth: "env-key"},
+		{name: "request, probe times out", config: storedKey, args: request, keyringCalls: 1, wantAuth: "stored-key"},
+		{name: "request, credential read times out", config: storedKey, args: request, answerProbe: true, keyringCalls: 1, wantAuth: "stored-key"},
+		{name: "request --no-keyring", config: storedKey, args: append([]string{"--no-keyring"}, request...), wantAuth: "stored-key"},
+		{name: "request, no-keyring env", env: map[string]string{noKeyring: "true"}, config: storedKey, args: request, wantAuth: "stored-key"},
+		{name: "request, no_keyring in config", config: storedKey + "no_keyring: true\n", args: request, wantAuth: "stored-key"},
+		{name: "request --no-keyring=false overrides env", env: map[string]string{noKeyring: "true"}, config: storedKey, args: append([]string{"--no-keyring=false"}, request...), keyringCalls: 1, wantAuth: "stored-key"},
+		{name: "request, env false overrides config", env: map[string]string{noKeyring: "false"}, config: storedKey + "no_keyring: true\n", args: request, keyringCalls: 1, wantAuth: "stored-key"},
+		{name: "request --no-keyring=false overrides config", config: storedKey + "no_keyring: true\n", args: append([]string{"--no-keyring=false"}, request...), keyringCalls: 1, wantAuth: "stored-key"},
+		{name: "whoami --dry-run", env: apiKeyEnv, args: []string{"--dry-run", "whoami"}},
+		{name: "whoami --dry-run, structured", env: apiKeyEnv, args: []string{"--dry-run", "--output-format", "json", "whoami"}},
+		{name: "auth whoami --dry-run", env: apiKeyEnv, args: []string{"--dry-run", "auth", "whoami"}},
+		{name: "whoami", env: apiKeyEnv, args: []string{"whoami"}, keyringCalls: 1},
+		{name: "auth login falls back to the config file", args: []string{"auth", "login", "--api-key-auth", "login-key"}, keyringCalls: 1, wantConfig: "api_key_auth: login-key"},
+		{name: "auth login, only Set blocks", args: []string{"auth", "login", "--api-key-auth", "login-key"}, answerProbe: true, keyringCalls: 1, wantConfig: "api_key_auth: login-key"},
+		{name: "auth login --no-keyring", args: []string{"--no-keyring", "auth", "login", "--api-key-auth", "login-key"}, wantConfig: "api_key_auth: login-key"},
+		{name: "auth logout reports the skipped keychain", config: storedKey, args: []string{"auth", "logout"}, keyringCalls: 1, wantStdout: "the OS keychain was skipped", notWantConfig: "stored-key"},
+		{name: "auth logout, only Delete blocks", config: storedKey, args: []string{"auth", "logout"}, answerProbe: true, keyringCalls: 1, wantStdout: "the OS keychain was skipped", notWantConfig: "stored-key"},
+		{name: "auth logout --no-keyring", config: storedKey, args: []string{"--no-keyring", "auth", "logout"}, wantStdout: "the OS keychain was skipped", notWantConfig: "stored-key"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			lockedBackend := &lockedKeyring{answerProbe: tt.answerProbe, release: make(chan struct{})}
+			config.SetKeyringBackend(lockedBackend)
+			t.Cleanup(config.ResetKeyring)
+			authMu.Lock()
+			authHeaders = nil
+			authMu.Unlock()
+
+			home := t.TempDir()
+			if tt.config != "" {
+				writeAuthConfig(t, home, tt.config)
+			}
+			h := NewCLITestHarness(t).WithEnv("HOME", home)
+			for _, name := range prefixedEnvNames() {
+				h.WithEnv(name, "")
+			}
+			for k, v := range tt.env {
+				h.WithEnv(k, v)
+			}
+
+			done := make(chan error, 1)
+			go func() { done <- h.RunWithStdinServerRaw(server.URL, tt.args, "") }()
+			select {
+			case err := <-done:
+				require.NoError(t, err, "stderr: %s", h.GetStderr())
+			case <-time.After(5 * time.Second):
+				t.Errorf("command did not finish within the keychain timeout; keyring calls: %v", lockedBackend.Calls())
+				close(lockedBackend.release)
+				<-done
+				return
+			}
+			close(lockedBackend.release)
+
+			calls := lockedBackend.Calls()
+			assert.Len(t, calls, tt.keyringCalls, "keyring calls: %v", calls)
+			assert.Equal(t, min(tt.keyringCalls, 1), strings.Count(h.GetStderr(), keyringTimeoutWarning), "stderr: %s", h.GetStderr())
+			if tt.wantAuth != "" {
+				authMu.Lock()
+				assert.Equal(t, []string{tt.wantAuth}, authHeaders)
+				authMu.Unlock()
+			}
+			if tt.wantStdout != "" {
+				assert.Contains(t, h.GetStdout(), tt.wantStdout)
+			}
+			if tt.wantConfig != "" {
+				assert.Contains(t, readAuthConfig(t, home), tt.wantConfig)
+			}
+			if tt.notWantConfig != "" {
+				assert.NotContains(t, readAuthConfig(t, home), tt.notWantConfig)
+			}
+		})
+	}
+}
+
+// TestDisabledKeyringRejectsDirectWrites pins that once the keychain is
+// disabled, by --no-keyring or a timeout, the exported write helpers no
+// longer reach the backend.
+func TestDisabledKeyringRejectsDirectWrites(t *testing.T) {
+	for _, disable := range []struct {
+		name string
+		run  func(*lockedKeyring)
+	}{
+		{name: "disabled", run: func(*lockedKeyring) { config.DisableKeyring() }},
+		{name: "timed out", run: func(k *lockedKeyring) {
+			assert.ErrorIs(t, config.SetKeyringValue("api-key-auth", "first"), config.ErrKeyringUnavailable)
+		}},
+	} {
+		t.Run(disable.name, func(t *testing.T) {
+			lockedBackend := &lockedKeyring{answerProbe: true, release: make(chan struct{})}
+			config.SetKeyringBackend(lockedBackend)
+			t.Cleanup(config.ResetKeyring)
+			defer close(lockedBackend.release)
+
+			disable.run(lockedBackend)
+			before := len(lockedBackend.Calls())
+			assert.True(t, config.KeyringDisabled())
+			assert.ErrorIs(t, config.SetKeyringValue("api-key-auth", "value"), config.ErrKeyringUnavailable)
+			assert.ErrorIs(t, config.DeleteKeyringValue("api-key-auth"), config.ErrKeyringUnavailable)
+			assert.Len(t, lockedBackend.Calls(), before)
+		})
+	}
+}
+
+// TestExplicitClientCredentialsSkipKeyring pins that a client-credentials
+// alternative supplied by env never reaches the keychain, and that its
+// optional members still come from the config file.
+func TestExplicitClientCredentialsSkipKeyring(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		config       string
+		wantTokenURL string
+		wantScopes   []string
+	}{
+		{name: "optional members unset"},
+		{
+			name:         "optional members in config",
+			config:       "version: 1\nsecurity:\n  token_url: https://auth.example.com/token\n  scopes:\n    - read\n    - write\n",
+			wantTokenURL: "https://auth.example.com/token",
+			wantScopes:   []string{"read", "write"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, name := range prefixedEnvNames() {
+				t.Setenv(name, "")
+			}
+			home := t.TempDir()
+			if tt.config != "" {
+				writeAuthConfig(t, home, tt.config)
+			}
+			t.Setenv("HOME", home)
+			t.Setenv(cliEnvPrefix+"CLIENT_ID", "env-id")
+			t.Setenv(cliEnvPrefix+"CLIENT_SECRET", "env-secret")
+			config.Reset()
+			t.Cleanup(config.Reset)
+			require.NoError(t, config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"))
+			lockedBackend := &lockedKeyring{release: make(chan struct{})}
+			config.SetKeyringBackend(lockedBackend)
+			t.Cleanup(config.ResetKeyring)
+			defer close(lockedBackend.release)
+
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			require.NoError(t, root.ParseFlags(nil))
+			security := client.BuildGlobalSecurity(root, []string{"ClientCredentials"})
+			assert.Empty(t, lockedBackend.Calls())
+			require.NotNil(t, security.ClientCredentials)
+			assert.Equal(t, "env-id", security.ClientCredentials.ClientID)
+			assert.Equal(t, "env-secret", security.ClientCredentials.ClientSecret)
+			assert.Equal(t, tt.wantTokenURL, security.ClientCredentials.TokenURL)
+			assert.Equal(t, tt.wantScopes, security.ClientCredentials.Scopes)
+		})
+	}
+}
+{{- end}}
