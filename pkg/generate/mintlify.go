@@ -32,6 +32,10 @@ var markdownLinkRegex = regexp.MustCompile(`\]\(([^)\s]+?\.md)(#[^)\s]*)?\)`)
 // schemeRegex matches absolute URLs / external schemes we should NOT rewrite.
 var schemeRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 
+var listItemRegex = regexp.MustCompile(`^([-*+]|\d{1,9}[.)])([ \t]|$)`)
+
+var linkReferenceDefinitionRegex = regexp.MustCompile(`^ {0,3}\[[^\]\n]+\]:[ \t]*\S+`)
+
 // emojiShortcodes maps the GitHub emoji shortcodes the documentation templates
 // emit to their Unicode equivalents, since Mintlify renders shortcodes as text.
 var emojiShortcodes = []struct{ code, emoji string }{
@@ -175,6 +179,14 @@ func findOverviewDescription(lines []string) string {
 func escapeMDXHazards(body string) string {
 	lines := splitLines(body)
 	fence := ""
+	start := -1
+	flush := func(end int) {
+		if start == -1 {
+			return
+		}
+		copy(lines[start:end], strings.Split(escapeHazardsOutsideCode(joinLines(lines[start:end])), "\n"))
+		start = -1
+	}
 	for i, line := range lines {
 		trimmed := strings.TrimLeft(line, " \t")
 		if fence != "" {
@@ -184,11 +196,22 @@ func escapeMDXHazards(body string) string {
 			continue
 		}
 		if marker := codeFenceMarker(trimmed); marker != "" {
+			flush(i)
 			fence = marker
 			continue
 		}
-		lines[i] = escapeHazardsOutsideCode(line)
+		switch {
+		case trimmed == "" || trimmed[0] == '|' || trimmed[0] == '#':
+			flush(i)
+			lines[i] = escapeHazardsOutsideCode(line)
+		case listItemRegex.MatchString(trimmed):
+			flush(i)
+			start = i
+		case start == -1:
+			start = i
+		}
 	}
+	flush(len(lines))
 	return joinLines(lines)
 }
 
@@ -208,12 +231,19 @@ func codeFenceMarker(trimmed string) string {
 func escapeHazardsOutsideCode(line string) string {
 	var out strings.Builder
 	out.Grow(len(line))
+	destEnd := -1
 	i := 0
 	for i < len(line) {
 		c := line[i]
-		// Inline code spans open and close with backtick runs of EQUAL length.
-		// A run with no matching closer on the line is a literal backtick, not
-		// a delimiter, so it must not suppress escaping of the rest of the line
+		if i == 0 || line[i-1] == '\n' {
+			if m := linkReferenceDefinitionRegex.FindStringIndex(line[i:]); m != nil {
+				destEnd = i + m[1]
+			}
+		}
+		// Inline code spans open and close with backtick runs of EQUAL length
+		// and may continue across lines within the same paragraph. A run with
+		// no matching closer in the paragraph is a literal backtick, not a
+		// delimiter, so it must not suppress escaping of the rest of the text
 		// (matches CommonMark and MDX). Toggling on every backtick — as this
 		// once did — let a stray backtick shield an unescaped `<Foo, ...>` and
 		// crash the MDX parser. A backslash-escaped backtick (`\``) is likewise
@@ -242,6 +272,9 @@ func escapeHazardsOutsideCode(line string) string {
 		// backslashes — `\<` is escaped, but `\\<` is a literal backslash
 		// followed by an unescaped `<` (which still needs escaping).
 		alreadyEscaped := isCharEscaped(line, i)
+		if c == ']' && !alreadyEscaped && i+1 < len(line) && line[i+1] == '(' {
+			destEnd = linkDestinationEnd(line, i+2)
+		}
 		if c == '<' && i+1 < len(line) && !alreadyEscaped {
 			next := line[i+1]
 			isUpper := next >= 'A' && next <= 'Z'
@@ -265,7 +298,7 @@ func escapeHazardsOutsideCode(line string) string {
 				continue
 			}
 		}
-		if c == ':' {
+		if c == ':' && i >= destEnd {
 			if code, emoji, ok := matchEmojiShortcode(line[i:]); ok {
 				out.WriteString(emoji)
 				i += len(code)
@@ -281,6 +314,25 @@ func escapeHazardsOutsideCode(line string) string {
 		i++
 	}
 	return out.String()
+}
+
+func linkDestinationEnd(s string, from int) int {
+	depth := 0
+	for j := from; j < len(s); j++ {
+		if isCharEscaped(s, j) {
+			continue
+		}
+		switch s[j] {
+		case '(':
+			depth++
+		case ')':
+			if depth == 0 {
+				return j
+			}
+			depth--
+		}
+	}
+	return -1
 }
 
 func matchEmojiShortcode(s string) (string, string, bool) {
