@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: report on stderr when a stream.select projection prints nothing because no streamed event carried the selected field
+description: report on stderr when streamed events produce no text for a stream.select projection, with a suggestion to use --output-format json
 author: AshGodfrey
 date: "2026-10-06"

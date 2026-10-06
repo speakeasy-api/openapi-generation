@@ -411,7 +411,13 @@ func TestIntentStream_NoSelectedTextReportsOnStderr(t *testing.T) {
 	stderr, err := runIntentStream(t, ctx, &out, srv.URL)
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.Empty(t, out.String())
+	pointerTokens := append([]string{"data"}, intentStreamWireTokens...)
+	escape := strings.NewReplacer("~", "~0", "/", "~1")
+	for i, token := range pointerTokens {
+		pointerTokens[i] = escape.Replace(token)
+	}
 	assert.Contains(t, stderr, "No output:")
+	assert.Contains(t, stderr, "had no text at /"+strings.Join(pointerTokens, "/")+";")
 	assert.Contains(t, stderr, "--output-format json")
 }
 
