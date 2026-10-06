@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.945.6] - 2026-10-06
+### :bug: Bug Fixes
+- [`aa01cf7`](https://github.com/speakeasy-api/openapi-generation/commit/aa01cf7e113aaa9e2c2126920ad264e18b311af6) - **all**: render emoji instead of GitHub shortcodes in Mintlify docs ([#78](https://github.com/speakeasy-api/openapi-generation/pull/78)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.945.5] - 2026-10-06
 ### :bug: Bug Fixes
 - [`62f759b`](https://github.com/speakeasy-api/openapi-generation/commit/62f759b5e6b414169f17c3127c69b540aad38e3f) - **terraform**: isolate provider HTTP clients and transports ([#21](https://github.com/speakeasy-api/openapi-generation/pull/21)) *(commit by [@byron-lambda](https://github.com/byron-lambda))*
@@ -20421,3 +20426,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.2...v2.945.3
 [v2.945.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.3...v2.945.4
 [v2.945.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.4...v2.945.5
+[v2.945.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.5...v2.945.6
