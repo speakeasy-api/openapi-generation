@@ -95,6 +95,41 @@ func TestDecisionSurfaceRequirements(t *testing.T) {
 	}
 }
 
+func TestSetupFormMode(t *testing.T) {
+	for name, tc := range map[string]struct {
+		decision           Decision
+		flagValuesProvided bool
+		want               FormMode
+	}{
+		"bare terminal opens form":          {Decision{terminalPair: true}, false, FormTUI},
+		"flag values store directly":        {Decision{terminalPair: true}, true, FormOff},
+		"off-TTY stays off":                 {Decision{}, false, FormOff},
+		"suppressed terminal stays off":     {Decision{terminalPair: true, suppressed: true}, false, FormOff},
+		"requested off-TTY is accessible":   {Decision{requested: true}, true, FormAccessible},
+		"requested terminal ignores values": {Decision{requested: true, terminalPair: true}, true, FormTUI},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := tc.decision.SetupFormMode(tc.flagValuesProvided); got != tc.want {
+				t.Fatalf("SetupFormMode(%v) = %v, want %v", tc.flagValuesProvided, got, tc.want)
+			}
+		})
+	}
+
+	for name, flags := range map[string]map[string]string{
+		"no-interactive":    {"no-interactive": "true"},
+		"interactive-false": {"interactive": "false"},
+		"agent-mode":        {"agent-mode": "true"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			decision := Resolve(newPolicyTestCommand(t, flags))
+			decision.terminalPair = true
+			if got := decision.SetupFormMode(false); got != FormOff {
+				t.Fatalf("kill switch did not suppress the setup form: %v", got)
+			}
+		})
+	}
+}
+
 func TestDirectExploreValidation(t *testing.T) {
 	if got := (Decision{terminalPair: true, explicitNoInteractive: true}).ValidateDirectExplore(); got == nil || got.Error() != "explore conflicts with --no-interactive/--interactive=false" {
 		t.Fatalf("unexpected conflict error: %v", got)

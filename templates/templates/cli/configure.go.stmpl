@@ -8,6 +8,8 @@
 {{- addImport "internal/usage" true -}}
 {{- if isAnyInteractiveEnabled -}}
 {{- addImport "internal/interactive" true -}}
+{{- addImport "internal/output" true -}}
+{{- addImport "strings" -}}
 {{- end -}}
 {{- addImport "fmt" -}}
 {{- addImport "encoding/json" -}}
@@ -33,6 +35,9 @@ func initConfigureCmd(parent *cobra.Command) error {
         Args:  cobra.NoArgs,
         RunE:  runConfigureCmd,
     }
+    {{- if isAnyInteractiveEnabled}}
+    cmd.Flags().String("{{defaultOutputFormatFlag}}", "", "Store the default output format without opening the form. Options: "+strings.Join(output.Formats, ", ")+". Pass an empty value to clear it.")
+    {{- end}}
     parent.AddCommand(cmd)
     return nil
 }
@@ -55,7 +60,7 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
     {{- end}}
     {{- if isAnyInteractiveEnabled}}
 
-    formMode := interactive.Resolve(cmd).FormMode()
+    formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, {{templateConfigureFlagNames}}))
     {{- end}}
 
 {{- if isInteractiveAuthEnabled}}

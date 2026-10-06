@@ -2679,6 +2679,8 @@ function templateAuthLoginBody(): string {
   return lines.join("\n    ");
 }
 
+const DEFAULT_OUTPUT_FORMAT_FLAG = "default-output-format";
+
 /**
  * Generate the non-interactive flag-only store logic for the configure command.
  * Handles both security fields AND global parameters.
@@ -2689,12 +2691,23 @@ function templateConfigureNonInteractiveStore(): string {
   const secFields = getCLISecurityFields();
   const hasGlob = hasGlobals();
 
-  if (secFields.length === 0 && !hasGlob) {
-    return nonInteractiveEmptyStoreError();
-  }
-
   const lines: string[] = [];
   lines.push(`changed := false`);
+  lines.push(
+    `if f := cmd.Flags().Lookup("${DEFAULT_OUTPUT_FORMAT_FLAG}"); f != nil && f.Changed {`,
+  );
+  lines.push(`    switch v := f.Value.String(); v {`);
+  lines.push(`    case "":`);
+  lines.push(`        cfg.OutputFormat = ""`);
+  lines.push(`    case "pretty", "json", "yaml", "table", "toon":`);
+  lines.push(`        cfg.OutputFormat = v`);
+  lines.push(`    default:`);
+  lines.push(
+    `        return flagutil.WithCLIValidation(fmt.Errorf("invalid --${DEFAULT_OUTPUT_FORMAT_FLAG} %q; options: pretty, json, yaml, table, toon", v))`,
+  );
+  lines.push(`    }`);
+  lines.push(`    changed = true`);
+  lines.push(`}`);
 
   // Security fields
   if (secFields.length > 0) {
@@ -2768,6 +2781,32 @@ registerTemplateFunc(
   "templateConfigureNonInteractiveStore",
   templateConfigureNonInteractiveStore,
 );
+
+registerTemplateFunc(
+  "defaultOutputFormatFlag",
+  () => DEFAULT_OUTPUT_FORMAT_FLAG,
+);
+
+function goFlagNameArgs(names: string[]): string {
+  return names.map((n) => `"${n}"`).join(", ");
+}
+
+function templateAuthLoginFlagNames(): string {
+  return goFlagNameArgs(getCLISecurityFields().map((f) => f.flagName));
+}
+registerTemplateFunc("templateAuthLoginFlagNames", templateAuthLoginFlagNames);
+
+function templateConfigureFlagNames(): string {
+  const names = getCLISecurityFields().map((f) => f.flagName);
+  if (hasGlobals()) {
+    for (const field of context.Global.AST.MainSDK.Globals.Fields) {
+      names.push(sanitizeFlagNameWithReserved(field.Name));
+    }
+  }
+  names.push(DEFAULT_OUTPUT_FORMAT_FLAG);
+  return goFlagNameArgs(names);
+}
+registerTemplateFunc("templateConfigureFlagNames", templateConfigureFlagNames);
 
 /** Generate var declarations for a set of scheme fields */
 function genSchemeVarDecls(fields: CLISecurityFieldInfo[]): string[] {
