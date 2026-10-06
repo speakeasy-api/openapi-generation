@@ -37,7 +37,7 @@ features:
     pagination: 0.2.0
     responseFormat: 0.1.2
     retries: 0.1.1
-    serverEvents: 0.1.0
+    serverEvents: 0.1.1
     serverIDs: 0.0.0
     tests: 0.0.0
     unions: 0.1.2

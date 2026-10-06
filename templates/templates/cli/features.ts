@@ -36,7 +36,7 @@ const supportedFeatures = {
   additionalProperties: "0.0.1",
   deepObjectParams: "0.0.0",
   downloadStreams: "0.0.2",
-  serverEvents: "0.1.0",
+  serverEvents: "0.1.1",
   oauth2ClientCredentials: "0.0.1",
   webhooks: "0.0.0",
   callbacks: "0.0.0",
