@@ -1491,7 +1491,7 @@ trackedFiles:
   src/types/rfcdate.ts:
     last_write_checksum: sha1:8e5f382e02fe21c2f2e24deb1b7bbf8cddd3dd16
   src/types/smartUnion.ts:
-    last_write_checksum: sha1:dce8ed225914a04051278dcdabf50c002f06a315
+    last_write_checksum: sha1:08a5a337cdf97dcf42267283fefb3002f8234ced
   src/types/streams.ts:
     last_write_checksum: sha1:cc9ced2dd34a76c3a1bd7784ccda1cc3b37ab9a9
   src/types/unrecognized.ts:

@@ -2359,6 +2359,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/typescriptv2/tests/client-credentials/client_credentials_hook.test.ts.stmpl":                        0o644,
 	"templates/typescriptv2/tests/common":                                                                          0o20000000755,
 	"templates/typescriptv2/tests/common/common_helpers.ts":                                                        0o644,
+	"templates/typescriptv2/tests/common/smart_union_additional.test.ts.stmpl":                                     0o644,
 	"templates/typescriptv2/tests/custom-http":                                                                     0o20000000755,
 	"templates/typescriptv2/tests/custom-http/auth_additional.test.ts":                                             0o644,
 	"templates/typescriptv2/tests/lib":                                                                             0o20000000755,
