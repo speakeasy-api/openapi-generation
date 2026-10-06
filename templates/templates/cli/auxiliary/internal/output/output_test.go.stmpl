@@ -91,4 +91,37 @@ func TestAwaitAsyncDeadlineKeepsPollError(t *testing.T) {
 		})
 	}
 }
+
+type pollAPIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *pollAPIError) Error() string { return e.Body }
+
+func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
+	err := &asyncPollError{err: &pollAPIError{StatusCode: 429, Body: `{"message":"slow down"}`}, id: "handle", resume: "wait handle"}
+
+	for name, tc := range map[string]struct {
+		structured bool
+		want       []string
+	}{
+		"pretty": {want: []string{"API Error (HTTP 429)", "Hint: Resume polling with: wait handle"}},
+		"structured": {structured: true, want: []string{`"id": "handle"`, `"resume": "wait handle"`, `"Resume polling with: wait handle"`, `"status_code": 429`}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			var stderr bytes.Buffer
+			cmd.SetErr(&stderr)
+
+			renderUnclassifiedAPIError(cmd, err, Classify(cmd, withErrorOrigin(err, ErrorOriginAPI)), tc.structured)
+
+			for _, want := range tc.want {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected %q in rendered error, got:\n%s", want, stderr.String())
+				}
+			}
+		})
+	}
+}
 {{- end}}
