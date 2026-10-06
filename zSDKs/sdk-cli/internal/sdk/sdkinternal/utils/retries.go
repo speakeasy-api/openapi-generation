@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -245,17 +246,27 @@ func bufferResponseBody(ctx context.Context, res *http.Response) {
 	buffered := &bufferedBody{body: res.Body, done: make(chan struct{})}
 	go func() {
 		buffered.data, buffered.err = io.ReadAll(buffered.body)
+		buffered.closeBody()
 		close(buffered.done)
 	}()
 	res.Body = buffered
 }
 
 type bufferedBody struct {
-	body   io.ReadCloser
-	done   chan struct{}
-	data   []byte
-	err    error
-	reader io.Reader
+	body      io.ReadCloser
+	done      chan struct{}
+	data      []byte
+	err       error
+	reader    io.Reader
+	closeOnce sync.Once
+	closeErr  error
+}
+
+func (b *bufferedBody) closeBody() error {
+	b.closeOnce.Do(func() {
+		b.closeErr = b.body.Close()
+	})
+	return b.closeErr
 }
 
 func (b *bufferedBody) Read(p []byte) (int, error) {
@@ -270,7 +281,7 @@ func (b *bufferedBody) Read(p []byte) (int, error) {
 }
 
 func (b *bufferedBody) Close() error {
-	return b.body.Close()
+	return b.closeBody()
 }
 
 type failedBodyReader struct {
