@@ -1,0 +1,22 @@
+id: 1791303879-6a84f296
+features:
+    - docs
+targets:
+    - cli
+    - csharp
+    - go
+    - javav2
+    - mcp-typescript
+    - mockserver
+    - php
+    - postman
+    - pythonv2
+    - ruby
+    - terraform
+    - typescriptv2
+    - unity
+type: fix
+bump: patch
+description: render emoji instead of GitHub shortcodes in Mintlify documentation
+author: AshGodfrey
+date: "2026-10-06"

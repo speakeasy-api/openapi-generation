@@ -32,6 +32,14 @@ var markdownLinkRegex = regexp.MustCompile(`\]\(([^)\s]+?\.md)(#[^)\s]*)?\)`)
 // schemeRegex matches absolute URLs / external schemes we should NOT rewrite.
 var schemeRegex = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 
+// emojiShortcodes maps the GitHub emoji shortcodes the documentation templates
+// emit to their Unicode equivalents, since Mintlify renders shortcodes as text.
+var emojiShortcodes = []struct{ code, emoji string }{
+	{":heavy_check_mark:", "\u2714\ufe0f"},
+	{":heavy_minus_sign:", "\u2796"},
+	{":warning:", "\u26a0\ufe0f"},
+}
+
 // applyMintlifyTransform converts a generated `docs/**/*.md` file into a
 // Mintlify-flavored MDX file. Files outside `docs/` and non-`.md` files pass
 // through unchanged. The returned filename has `.mdx` extension when
@@ -154,7 +162,8 @@ func findOverviewDescription(lines []string) string {
 }
 
 // escapeMDXHazards escapes characters in body prose that would otherwise
-// crash the MDX parser:
+// crash the MDX parser, and replaces GitHub emoji shortcodes with Unicode
+// emoji:
 //   - `<` followed by an uppercase letter or digit (would be parsed as a JSX
 //     component opening or invalid tag).
 //   - `{` (would open a JSX expression). Body prose like `Types: { kind: ... }`
@@ -240,6 +249,13 @@ func escapeHazardsOutsideCode(line string) string {
 				continue
 			}
 		}
+		if c == ':' {
+			if code, emoji, ok := matchEmojiShortcode(line[i:]); ok {
+				out.WriteString(emoji)
+				i += len(code)
+				continue
+			}
+		}
 		if c == '{' && !alreadyEscaped {
 			out.WriteString(`\{`)
 			i++
@@ -249,6 +265,15 @@ func escapeHazardsOutsideCode(line string) string {
 		i++
 	}
 	return out.String()
+}
+
+func matchEmojiShortcode(s string) (string, string, bool) {
+	for _, e := range emojiShortcodes {
+		if strings.HasPrefix(s, e.code) {
+			return e.code, e.emoji, true
+		}
+	}
+	return "", "", false
 }
 
 // findClosingBacktickRun returns the start index of the first backtick run of

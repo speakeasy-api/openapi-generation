@@ -611,3 +611,21 @@ func TestApplyMintlifyTransform_ReplacesExistingFrontmatter(t *testing.T) {
 		t.Errorf("expected exactly one frontmatter block:\n%s", got)
 	}
 }
+
+func TestApplyMintlifyTransform_ReplacesEmojiShortcodes(t *testing.T) {
+	in := []byte("# Foo\n\n| Field | Required |\n| --- | --- |\n| `a` | :heavy_check_mark: |\n| `b` | :heavy_minus_sign: |\n\n> :warning: **DEPRECATED**: use `:warning:` instead.\n\n```\n:heavy_check_mark:\n```\n")
+	_, data := applyMintlifyTransform("docs/models/foo.md", in)
+	got := string(data)
+
+	wantSubs := []string{
+		"| `a` | \u2714\ufe0f |",
+		"| `b` | \u2796 |",
+		"> \u26a0\ufe0f **DEPRECATED**: use `:warning:` instead.",
+		"```\n:heavy_check_mark:\n```",
+	}
+	for _, sub := range wantSubs {
+		if !strings.Contains(got, sub) {
+			t.Errorf("missing %q in:\n%s", sub, got)
+		}
+	}
+}
