@@ -75,7 +75,7 @@ export function smartUnion<
             )
           ),
         });
-        return z.NEVER;
+        return undefined;
       }
 
       let best = candidates[0]!;

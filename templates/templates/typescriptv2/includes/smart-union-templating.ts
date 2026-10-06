@@ -66,7 +66,7 @@ export function smartUnion<
           ? "errors.map(issues => issues.map(issue => z.core.util.finalizeIssue(issue, {}, z.core.config())))"
           : "errors",
       })};
-      return ${z.NEVER()};
+      return ${isZodV4() ? "undefined" : z.NEVER()};
     }
 
     let best = candidates[0]!;

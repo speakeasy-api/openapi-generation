@@ -44,6 +44,9 @@ jobs:
         env:
           SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
         run: TARGET=${{ inputs.test-group }} NODE_OPTIONS="--experimental-global-webcrypto" make test-typescriptv2
+      - name: Test Zod compatibility
+        if: contains(fromJSON('["primary", "tertiary", "quaternary"]'), inputs.test-group)
+        run: node scripts/test-typescript-zod-compatibility.mjs testSDKs/sdk-typescriptv2-${{ inputs.test-group }}
       - name: git diff
         run: ./scripts/check-generated-diff.sh
       - name: Upload test report
