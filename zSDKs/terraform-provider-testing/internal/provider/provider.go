@@ -5,6 +5,7 @@ package provider
 import (
 	"context"
 	"crypto/tls"
+	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -635,7 +636,7 @@ func (p *TestingProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
 		SetHeaders: make(map[string]string),
-		Transport:  http.DefaultTransport,
+		Transport:  cleanhttp.DefaultPooledTransport(),
 	}
 
 	resp.Diagnostics.Append(data.HTTPHeaders.ElementsAs(ctx, &providerHTTPTransportOpts.SetHeaders, false)...)
@@ -649,8 +650,7 @@ func (p *TestingProvider) Configure(ctx context.Context, req provider.ConfigureR
 		transport.TLSClientConfig.InsecureSkipVerify = data.TLSSkipVerify.ValueBool()
 	}
 
-	httpClient := http.DefaultClient
-	httpClient.Transport = NewProviderHTTPTransport(providerHTTPTransportOpts)
+	httpClient := &http.Client{Transport: NewProviderHTTPTransport(providerHTTPTransportOpts)}
 
 	opts := []sdk.SDKOption{
 		sdk.WithTemplatedServerURL(serverUrl, serverUrlParams),

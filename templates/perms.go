@@ -2144,6 +2144,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/terraform/tests/review":                                                                             0o20000000755,
 	"templates/terraform/tests/review/internal":                                                                    0o20000000755,
 	"templates/terraform/tests/review/internal/provider":                                                           0o20000000755,
+	"templates/terraform/tests/review/internal/provider/http_client_test.go.stmpl":                                 0o644,
 	"templates/terraform/tests/review/internal/provider/sensitive_values_test.go.stmpl":                            0o644,
 	"templates/terraform/tests/review/internal/provider/utils_test.go.stmpl":                                       0o644,
 	"templates/terraform/tsconfig.json":                                                                            0o644,

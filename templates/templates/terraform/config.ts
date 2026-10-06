@@ -5,6 +5,13 @@
 function getTemplateDependencies() {
   return {
     // Runtime dependencies (Terraform framework)
+    "github.com/hashicorp/go-cleanhttp": {
+      name: "github.com/hashicorp/go-cleanhttp",
+      version: "v0.5.2",
+      cpe: "cpe:2.3:a:hashicorp:go-cleanhttp:*:*:*:*:*:go:*:*",
+      ecosystem: "Go",
+      category: "runtime",
+    },
     "github.com/hashicorp/go-uuid": {
       name: "github.com/hashicorp/go-uuid",
       version: "v1.0.3",

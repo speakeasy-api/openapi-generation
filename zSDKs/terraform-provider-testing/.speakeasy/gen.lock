@@ -676,7 +676,7 @@ trackedFiles:
   examples/resources/testing_x_wrapped_attribute/resource.tf:
     last_write_checksum: sha1:40d7f3658495fad3dc9e3e2ac5856266268b58b6
   go.mod:
-    last_write_checksum: sha1:0b1c9d40bb7b7322187653b8c596e359877e3d07
+    last_write_checksum: sha1:989c12fbdefa187653ba646421fc3d1fc8866e9f
   internal/planmodifiers/boolplanmodifier/suppress_diff.go:
     last_write_checksum: sha1:3454bf0a277768b5d23ed4f7752666f9752effbb
   internal/planmodifiers/boolplanmodifier/use_config_value.go:
@@ -783,6 +783,8 @@ trackedFiles:
     last_write_checksum: sha1:380b9bf2e09a4a817d2e7229d29928c5b96fba82
   internal/provider/frameworktype_resource_sdk.go:
     last_write_checksum: sha1:73f3268858f1bd5ae2d73fa868e569470b6088c3
+  internal/provider/http_client_test.go:
+    last_write_checksum: sha1:c6e4fe1970b22351bc43c022501eb5ac56d8896c
   internal/provider/importdefaultedid_data_source.go:
     last_write_checksum: sha1:31af35eb8c26a324bf6f1f0eb5894c0f246eae3a
   internal/provider/importdefaultedid_data_source_sdk.go:
@@ -1064,7 +1066,7 @@ trackedFiles:
   internal/provider/patch_resource_sdk.go:
     last_write_checksum: sha1:9b583e2ac47191350373ce5a86408c118bd606b1
   internal/provider/provider.go:
-    last_write_checksum: sha1:576cb3a312624ea091784c9c1d4afa0f00670425
+    last_write_checksum: sha1:a333255d3d9585c5700d3059b03e9b0dbf388774
   internal/provider/reflect/diags.go:
     last_write_checksum: sha1:ace8bc53054bb1d8ee8689acf3e4323de75a6297
   internal/provider/reflect/doc.go:

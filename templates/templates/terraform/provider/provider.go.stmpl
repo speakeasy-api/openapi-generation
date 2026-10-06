@@ -2,6 +2,7 @@
 {{- $hasServers := (and .Global.AST.MainSDK.Servers .Global.AST.MainSDK.Servers.HasAbsoluteURL) -}}
 {{- addGenImport "context" -}}
 {{- addGenImport "net/http" -}}
+{{- addGenImport "github.com/hashicorp/go-cleanhttp" -}}
 {{- addGenImport "github.com/hashicorp/terraform-plugin-framework/datasource" -}}
 {{- addGenImport "github.com/hashicorp/terraform-plugin-framework/ephemeral" -}}
 {{- addGenImport "github.com/hashicorp/terraform-plugin-framework/action" -}}
@@ -69,14 +70,13 @@ func (p *{{sanitizeClassName .Global.Config.PackageName}}Provider) Configure(ctx
 
 	providerHTTPTransportOpts := ProviderHTTPTransportOpts{
 		SetHeaders: make(map[string]string),
-		Transport:  http.DefaultTransport,
+		Transport:  cleanhttp.DefaultPooledTransport(),
 	}
 
 	{{ templateProviderHTTPTransportOptsSetHeaders .Local "data" "providerHTTPTransportOpts" }}
 	{{ templateProviderHTTPTransportTlsSkipVerify .Local "data" "providerHTTPTransportOpts" }}
 
-	httpClient := http.DefaultClient
-	httpClient.Transport = NewProviderHTTPTransport(providerHTTPTransportOpts)
+	httpClient := &http.Client{Transport: NewProviderHTTPTransport(providerHTTPTransportOpts)}
 
 	{{ templateProviderConfigureSDKOptions .Global.AST.MainSDK }}
 

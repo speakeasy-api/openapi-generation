@@ -1,0 +1,114 @@
+package provider
+
+import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
+)
+
+type rejectedHTTPTransport struct{}
+
+func (*rejectedHTTPTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected request through the global transport")
+}
+
+func TestProviderConfigureHTTPIsolation(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Provider-ID", r.Header.Get("X-Provider-ID"))
+		_, _ = io.WriteString(w, `{}`)
+	}))
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.StartTLS()
+	defer server.Close()
+
+	for _, customTransport := range []bool{false, true} {
+		t.Run(fmt.Sprintf("custom_transport=%t", customTransport), func(t *testing.T) {
+			originalClient, originalTransport := http.DefaultClient, http.DefaultTransport
+			t.Cleanup(func() {
+				http.DefaultClient, http.DefaultTransport = originalClient, originalTransport
+			})
+			rejected := &rejectedHTTPTransport{}
+			globalClient := &http.Client{Transport: rejected}
+			globalTLS := &tls.Config{ServerName: "global.invalid"}
+			globalTransport := &http.Transport{TLSClientConfig: globalTLS}
+			http.DefaultClient = globalClient
+			http.DefaultTransport = globalTransport
+			if customTransport {
+				http.DefaultTransport = rejected
+			}
+			expectedTransport := http.DefaultTransport
+
+			var wg sync.WaitGroup
+			start := make(chan struct{})
+			for i := 0; i < 16; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					<-start
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+					p := New("test")()
+					var schemaResp provider.SchemaResponse
+					p.Schema(ctx, provider.SchemaRequest{}, &schemaResp)
+					objectType := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+					attributes := make(map[string]tftypes.Value, len(objectType.AttributeTypes))
+					for name, attributeType := range objectType.AttributeTypes {
+						attributes[name] = tftypes.NewValue(attributeType, nil)
+					}
+					skipVerify := i%2 == 0
+					id := fmt.Sprint(i)
+					attributes["server_url"] = tftypes.NewValue(tftypes.String, server.URL)
+					attributes["tls_skip_verify"] = tftypes.NewValue(tftypes.Bool, skipVerify)
+					attributes["http_headers"] = tftypes.NewValue(objectType.AttributeTypes["http_headers"], map[string]tftypes.Value{
+						"X-Provider-ID": tftypes.NewValue(tftypes.String, id),
+					})
+					var resp provider.ConfigureResponse
+					p.Configure(ctx, provider.ConfigureRequest{Config: tfsdk.Config{Raw: tftypes.NewValue(objectType, attributes), Schema: schemaResp.Schema}}, &resp)
+					if resp.Diagnostics.HasError() {
+						t.Errorf("Configure failed: %v", resp.Diagnostics)
+						return
+					}
+					client := resp.ResourceData.(*TestingProviderConfigureData).SDKClient
+					result, err := client.GetApicreateandupdate(ctx)
+					if !skipVerify {
+						var certificateError x509.UnknownAuthorityError
+						if !errors.As(err, &certificateError) {
+							t.Errorf("verified client error = %v, want untrusted certificate", err)
+						}
+						return
+					}
+					if err != nil {
+						t.Errorf("unverified client request failed: %v", err)
+						return
+					}
+					if got := result.RawResponse.Header.Get("X-Provider-ID"); got != id {
+						t.Errorf("provider header = %q, want %q", got, id)
+					}
+				}()
+			}
+			close(start)
+			wg.Wait()
+
+			if http.DefaultClient != globalClient || globalClient.Transport != rejected {
+				t.Error("Configure modified the global HTTP client")
+			}
+			if http.DefaultTransport != expectedTransport || globalTransport.TLSClientConfig != globalTLS || globalTLS.InsecureSkipVerify || globalTLS.ServerName != "global.invalid" {
+				t.Error("Configure modified the global HTTP transport")
+			}
+		})
+	}
+}
