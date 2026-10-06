@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:dd2bcdf01727570110ca857e86fb3215dac1b3cf
+    last_write_checksum: sha1:5352e479aec7f40b717d21d33888061194c04fcf
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
@@ -1082,7 +1082,7 @@ trackedFiles:
   tests/mockserver/main.go:
     last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
   tests/opstream_test.go:
-    last_write_checksum: sha1:151d9e542513f542b644c6dbcaf3e33c8a3bd046
+    last_write_checksum: sha1:14476e90794253a0220ec9ff7e85f7b1680fa904
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:

@@ -8,7 +8,7 @@
 {{- if and $c.Args $c.BodyFlag (not $c.Dispatch)}}
 {{- addImport "strings" -}}
 {{- end}}
-{{- if or $c.Args $c.AsyncJSON}}
+{{- if or $c.Args $c.AsyncJSON $c.StreamToggle}}
 {{- addImport "internal/output" true -}}
 {{- end}}
 {{- if or $c.HasMeta $c.BodyFlag $c.Flags $c.ArtifactJSON $c.AsyncJSON}}

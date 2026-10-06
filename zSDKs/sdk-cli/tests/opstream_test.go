@@ -298,6 +298,14 @@ func TestOperationStream_JQRequestsCompleteResponse(t *testing.T) {
 	stderr, err = runOperationStream(t, &out, srv.URL, "--jq", ".complete", "--output-format", "json")
 	require.NoError(t, err, "stderr: %s", stderr)
 	assert.Equal(t, true, srv.lastBody(t)["stream"], "-o json keeps the streamed events")
+
+	bodyPath := filepath.Join(t.TempDir(), "request.json")
+	require.NoError(t, os.WriteFile(bodyPath, []byte("{\"prompt\":\"hello from operation\"}"), 0o600))
+	out.Reset()
+	stderr, err = runOperationStreamBody(t, &out, srv.URL, "@"+bodyPath, "--jq", ".complete")
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Equal(t, false, srv.lastBody(t)["stream"], "a body read from a file must also request the complete response")
+	assert.Equal(t, "true\n", out.String())
 }
 
 func TestOperationStream_BodyFalseFallsBackToNormalJSONResult(t *testing.T) {

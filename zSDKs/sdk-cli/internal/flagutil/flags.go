@@ -740,6 +740,9 @@ func AttachStdinBody(cmd *cobra.Command, bodyFlag string) (bool, error) {
 func DefaultBodyInput(cmd *cobra.Command, bodyFlags []string, key, flagName string, value any) error {
 	for _, name := range bodyFlags {
 		if name != "" && FlagChanged(cmd, name) {
+			if err := ResolveBodyFlag(cmd, name); err != nil {
+				return err
+			}
 			s, _ := GetStringFlag(cmd, name)
 			if bodyDecidesKey([]byte(s), key) {
 				return nil
