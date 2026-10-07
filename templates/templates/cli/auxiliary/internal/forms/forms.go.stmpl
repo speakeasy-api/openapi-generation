@@ -63,8 +63,9 @@ type Field struct {
 	yes    *bool   // confirm answer
 	secret bool
 
-	options []Option
-	cursor  int
+	options  []Option
+	cursor   int
+	halfPage int // rows moved by ctrl+d and ctrl+u, set from the visible window
 
 	input textinput.Model
 	area  textarea.Model
@@ -197,6 +198,10 @@ func (f *Field) update(msg tea.Msg) (cmd tea.Cmd, advance bool) {
 			f.cursor = 0
 		case "end", "G":
 			f.cursor = n - 1
+		case "ctrl+d":
+			f.cursor = min(f.cursor+f.halfPage, n-1)
+		case "ctrl+u":
+			f.cursor = max(f.cursor-f.halfPage, 0)
 		}
 		*f.text = f.options[f.cursor].Value
 	case kindConfirm:
@@ -235,6 +240,8 @@ type Form struct {
 	page       int
 	field      int
 	accessible bool
+	in         io.Reader
+	out        io.Writer
 	width      int
 	height     int
 	finished   bool
@@ -243,7 +250,7 @@ type Form struct {
 
 // New returns a form over pages. Dumb terminals default to line prompts.
 func New(pages ...*Page) *Form {
-	f := &Form{pages: pages, accessible: os.Getenv("TERM") == "dumb"}
+	f := &Form{pages: pages, accessible: os.Getenv("TERM") == "dumb", in: os.Stdin, out: os.Stdout}
 	f.resize(terminalWidth(), 0)
 	return f
 }
@@ -251,6 +258,13 @@ func New(pages ...*Page) *Form {
 // Accessible switches between the interactive form and line prompts.
 func (f *Form) Accessible(on bool) *Form {
 	f.accessible = on
+	return f
+}
+
+// IO sets where line prompts read answers and write questions; the
+// interactive form always uses the terminal.
+func (f *Form) IO(in io.Reader, out io.Writer) *Form {
+	f.in, f.out = in, out
 	return f
 }
 
@@ -268,8 +282,7 @@ func (f *Form) Run() error {
 		return nil
 	}
 	if f.accessible {
-		f.prompt(os.Stdout, os.Stdin)
-		return nil
+		return f.prompt(f.out, f.in)
 	}
 	if _, err := tea.NewProgram(f, tea.WithOutput(os.Stderr)).Run(); err != nil {
 		if errors.Is(err, tea.ErrInterrupted) {
@@ -306,37 +319,37 @@ func (f *Form) current() *Field {
 }
 
 func (f *Form) onLastField() bool {
-	return f.page == len(f.pages)-1 && f.field == len(f.pages[f.page].fields)-1
+	_, _, ok := f.neighbour(1)
+	return !ok
 }
 
-// step moves the focus by one field across page boundaries, skipping empty
-// pages. It reports false when there is no field in that direction.
-func (f *Form) step(delta int) bool {
-	page, field := f.page, f.field+delta
+// neighbour finds the field one step away across page boundaries, skipping
+// empty pages. ok is false when there is no field in that direction.
+func (f *Form) neighbour(delta int) (page, field int, ok bool) {
+	page, field = f.page, f.field+delta
 	for {
 		switch {
 		case field < 0:
-			page--
-			if page < 0 {
-				return false
+			if page--; page < 0 {
+				return 0, 0, false
 			}
 			field = len(f.pages[page].fields) - 1
-			continue
 		case field >= len(f.pages[page].fields):
-			page++
-			if page >= len(f.pages) {
-				return false
+			if page++; page >= len(f.pages) {
+				return 0, 0, false
 			}
 			field = 0
-			continue
+		default:
+			return page, field, true
 		}
-		f.page, f.field = page, field
-		return true
 	}
 }
 
 // Init implements [tea.Model].
 func (f *Form) Init() tea.Cmd {
+	if f.empty() {
+		return nil
+	}
 	for f.field >= len(f.pages[f.page].fields) {
 		f.page++
 	}
@@ -386,11 +399,12 @@ func (f *Form) forward() tea.Cmd {
 }
 
 func (f *Form) move(delta int) tea.Cmd {
-	prev := f.current()
-	if !f.step(delta) {
+	page, field, ok := f.neighbour(delta)
+	if !ok {
 		return nil
 	}
-	prev.blur()
+	f.current().blur()
+	f.page, f.field = page, field
 	return f.current().focus()
 }
 
@@ -406,7 +420,8 @@ func (f *Form) render() string {
 	page := f.pages[f.page]
 	var b strings.Builder
 	if page.title != "" {
-		b.WriteString(lipgloss.NewStyle().Foreground(accent).Bold(true).Render(page.title) + "\n\n")
+		title := wrap(page.title, max(f.width, 10))
+		b.WriteString(lipgloss.NewStyle().Foreground(accent).Bold(true).Render(title) + "\n\n")
 	}
 	for i, field := range page.fields {
 		if i > 0 {
@@ -425,10 +440,10 @@ func (f *Form) renderField(field *Field, focused bool) string {
 	}
 	lines := []string{}
 	if field.title != "" {
-		lines = append(lines, title.Render(lipgloss.Wrap(field.title, inner, " ")))
+		lines = append(lines, title.Render(wrap(field.title, inner)))
 	}
 	if field.description != "" {
-		lines = append(lines, lipgloss.NewStyle().Foreground(subtle).Italic(true).Render(lipgloss.Wrap(field.description, inner, " ")))
+		lines = append(lines, lipgloss.NewStyle().Foreground(subtle).Italic(true).Render(wrap(field.description, inner)))
 	}
 	switch field.kind {
 	case kindInput:
@@ -449,30 +464,53 @@ func (f *Form) renderField(field *Field, focused bool) string {
 		Render(strings.Join(lines, "\n"))
 }
 
-// renderOptions shows a window of options around the cursor that fits the
-// terminal height.
+// renderOptions shows the options around the cursor that fit the terminal
+// height. Multi-line labels stay aligned under their first line.
 func (f *Form) renderOptions(field *Field, focused bool) string {
-	rows := len(field.options)
-	if f.height > 0 {
-		rows = min(rows, max(3, f.height-8))
-	}
-	start := min(max(field.cursor-rows/2, 0), len(field.options)-rows)
 	picked := lipgloss.NewStyle().Foreground(dimmed)
 	if focused {
 		picked = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	}
-	var lines []string
-	for i := start; i < start+rows; i++ {
+	labelWidth := max(f.width-6, 4)
+	blocks := make([]string, len(field.options))
+	for i, o := range field.options {
+		label := strings.ReplaceAll(wrap(o.Label, labelWidth), "\n", "\n  ")
 		if i == field.cursor {
-			lines = append(lines, picked.Render("> "+field.options[i].Label))
+			blocks[i] = picked.Render("> " + label)
 		} else {
-			lines = append(lines, "  "+field.options[i].Label)
+			blocks[i] = "  " + label
 		}
 	}
-	if rows < len(field.options) {
-		lines = append(lines, lipgloss.NewStyle().Foreground(subtle).Render(fmt.Sprintf("  %d/%d", field.cursor+1, len(field.options))))
+
+	budget := 0
+	if f.height > 0 {
+		budget = max(3, f.height-8)
 	}
-	return strings.Join(lines, "\n")
+	start, end := 0, len(blocks)
+	if budget > 0 && len(blocks) > 0 {
+		start, end = field.cursor, field.cursor+1
+		used := lipgloss.Height(blocks[field.cursor])
+		for grew := true; grew; {
+			grew = false
+			if end < len(blocks) && used+lipgloss.Height(blocks[end]) <= budget {
+				used += lipgloss.Height(blocks[end])
+				end++
+				grew = true
+			}
+			if start > 0 && used+lipgloss.Height(blocks[start-1]) <= budget {
+				start--
+				used += lipgloss.Height(blocks[start])
+				grew = true
+			}
+		}
+	}
+	field.halfPage = max((end-start)/2, 1)
+
+	out := strings.Join(blocks[start:end], "\n")
+	if start > 0 || end < len(blocks) {
+		out += "\n" + lipgloss.NewStyle().Foreground(subtle).Render(fmt.Sprintf("  %d/%d", field.cursor+1, len(blocks)))
+	}
+	return out
 }
 
 func renderButtons(yes, focused bool) string {
@@ -489,22 +527,26 @@ func renderButtons(yes, focused bool) string {
 
 // prompt asks every question as a plain line prompt. Blank answers keep the
 // current value; end of input leaves the remaining answers unchanged.
-func (f *Form) prompt(w io.Writer, r io.Reader) {
+func (f *Form) prompt(w io.Writer, r io.Reader) error {
 	in := bufio.NewReader(r)
 	for _, page := range f.pages {
 		for _, field := range page.fields {
-			if !field.ask(w, r, in) {
-				fmt.Fprintln(w)
-				return
-			}
+			err := field.ask(w, r, in)
 			fmt.Fprintln(w)
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-// ask prompts for one field until the answer is valid. It reports false at
+// ask prompts for one field until the answer is valid. It returns io.EOF at
 // end of input.
-func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) bool {
+func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) error {
 	if f.title != "" {
 		fmt.Fprintln(w, f.title)
 	}
@@ -530,26 +572,27 @@ func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) bool {
 		default:
 			fmt.Fprint(w, "> ")
 		}
-		line, ok := readAnswer(w, raw, in, f.secret)
-		if !ok {
-			return false
+		line, err := readAnswer(w, raw, in, f.secret)
+		if err != nil {
+			return err
 		}
 		if msg := f.answer(line); msg != "" {
 			fmt.Fprintln(w, msg)
 			continue
 		}
-		return true
+		return nil
 	}
 }
 
 // answer applies a typed line, returning a message when it must be re-asked.
 func (f *Field) answer(line string) string {
-	line = strings.TrimSpace(line)
+	blank := strings.TrimSpace(line) == ""
 	switch f.kind {
 	case kindSelect:
-		if line == "" {
+		if blank {
 			return ""
 		}
+		line = strings.TrimSpace(line)
 		n, err := strconv.Atoi(line)
 		if err != nil || n < 1 || n > len(f.options) {
 			return fmt.Sprintf("Enter a number from 1 to %d.", len(f.options))
@@ -557,7 +600,7 @@ func (f *Field) answer(line string) string {
 		f.cursor = n - 1
 		*f.text = f.options[f.cursor].Value
 	case kindConfirm:
-		switch strings.ToLower(line) {
+		switch strings.ToLower(strings.TrimSpace(line)) {
 		case "":
 		case "y", "yes":
 			*f.yes = true
@@ -568,7 +611,7 @@ func (f *Field) answer(line string) string {
 		}
 	default:
 		value := *f.text
-		if line != "" {
+		if !blank {
 			value = line
 		}
 		if f.validate != nil {
@@ -582,16 +625,27 @@ func (f *Field) answer(line string) string {
 }
 
 // readAnswer reads one line, without echo for secrets typed at a terminal.
-func readAnswer(w io.Writer, raw io.Reader, in *bufio.Reader, secret bool) (string, bool) {
+// It returns io.EOF only when no answer was read.
+func readAnswer(w io.Writer, raw io.Reader, in *bufio.Reader, secret bool) (string, error) {
 	if file, ok := raw.(*os.File); ok && secret && term.IsTerminal(int(file.Fd())) {
 		b, err := term.ReadPassword(int(file.Fd()))
 		fmt.Fprintln(w)
-		return string(b), err == nil
+		return string(b), err
 	}
 	line, err := in.ReadString('\n')
-	if err != nil && line == "" {
-		return "", false
+	if err != nil && (line == "" || !errors.Is(err, io.EOF)) {
+		return "", err
 	}
-	return strings.TrimRight(line, "\r\n"), true
+	return strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r"), nil
+}
+
+// wrap breaks s at spaces to fit width, without trailing spaces that some
+// terminals scroll on in the last column.
+func wrap(s string, width int) string {
+	lines := strings.Split(lipgloss.Wrap(s, width, " "), "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimRight(line, " ")
+	}
+	return strings.Join(lines, "\n")
 }
 {{- end}}
