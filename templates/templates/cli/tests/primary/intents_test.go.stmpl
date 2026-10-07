@@ -382,6 +382,41 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 	}
 }
 
+// A JSON body piped on stdin is a partial body like --body: the intent's
+// presets fill its gaps, its own keys win, and a body naming another variant
+// is refused.
+func TestIntentPipedBodyKeepsPresets(t *testing.T) {
+	recordTest("intents-piped-body-keeps-presets")
+	s := newEchoServer()
+	defer s.Close()
+
+	for _, bodyArgs := range [][]string{nil, {"--body", "@-"}} {
+		withDelayedStdinPipe(t, 0, `{"input":"cat"}`, true)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, append([]string{"render"}, bodyArgs...)))
+		body := echoedJSON(t, h.GetStdout())
+		assert.Equal(t, "render-1", body["model"], "preset selector must survive a piped body")
+		assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+		assert.Equal(t, "cat", body["input"])
+	}
+
+	withDelayedStdinPipe(t, 0, `{"model":"other-2"}`, true)
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "from-argument"}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "other-2", body["model"])
+	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+	assert.Equal(t, "from-argument", body["input"])
+
+	withDelayedStdinPipe(t, 0, `{"agent":"helper","input":"cat"}`, true)
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"render"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"render" presets the CliIntentModelRequest request variant`)
+	assert.Contains(t, err.Error(), `names "agent"`)
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "nothing must be sent")
+}
+
 func TestIntentPartialBodyUserKeysWin(t *testing.T) {
 	recordTest("intents-partial-body-user-keys-win")
 	s := newEchoServer()
