@@ -340,7 +340,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 			}
 			{{- end}}
 			{{- end}}
+			{{- if gt (len .Path) 1}}
+			if err := intent{{$c.FuncName}}Preset.MergeNestedInput(cmd, suppliedBodyFlag, {{template "bodyPath" .Path}}, "--{{.Name}}", v); err != nil {
+			{{- else}}
 			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "{{escapeGoString .Key}}", "--{{.Name}}", v); err != nil {
+			{{- end}}
 				return flagutil.WithCLIValidation(err)
 			}
 		}
@@ -419,7 +423,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 			{{- else}}
 			v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}")
 			{{- end}}
+			{{- if gt (len .Path) 1}}
+			flagutil.SetBodyPath(body, {{template "bodyPath" .Path}}, v)
+			{{- else}}
 			body["{{escapeGoString .Key}}"] = v
+			{{- end}}
 		}
 		{{- end}}
 		{{- with $c.StreamToggle}}
@@ -541,3 +549,5 @@ func newPollIntent{{$c.FuncName}}(cmd *cobra.Command, id string, params []output
 	},
 {{- end}}
 {{- end}}
+
+{{- define "bodyPath"}}[]string{ {{- range $i, $segment := .}}{{if $i}}, {{end}}"{{escapeGoString $segment}}"{{end -}} }{{- end}}

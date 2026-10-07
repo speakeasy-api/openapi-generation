@@ -172,6 +172,9 @@ actions:
               summary: Model to run
               defaultFrom: schema
               suggestions: [render-1, render-2]
+            width:
+              to: $.image_format.width
+              summary: Image width in pixels
           preset:
             $.model: render-1
             $.output_modalities: image
