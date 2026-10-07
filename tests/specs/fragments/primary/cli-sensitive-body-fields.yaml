@@ -61,8 +61,9 @@ paths:
       operationId: cliSensitiveMultipartPost
       description: >-
         Multipart request body with a sensitive top-level part, a sensitive
-        array sent as repeated parts, and a JSON part that nests a sensitive
-        field. Diagnostics output must redact all of them.
+        array sent as repeated parts, a JSON part that nests a sensitive
+        field, and an array of objects with a sensitive field. Diagnostics
+        output must redact all of them.
       tags:
         - requestBodies
       requestBody:
@@ -79,8 +80,9 @@ paths:
       operationId: cliSensitiveFormPut
       description: >-
         Form-encoded request body with a sensitive top-level field, a sensitive
-        array sent as repeated fields, and a JSON-encoded field that nests a
-        sensitive field. Diagnostics output must redact all of them.
+        array sent as repeated fields, a JSON-encoded field that nests a
+        sensitive field, and an array of objects with a sensitive field.
+        Diagnostics output must redact all of them.
       tags:
         - requestBodies
       requestBody:
@@ -380,6 +382,16 @@ components:
           items:
             type: string
             format: password
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+                x-speakeasy-param-sensitive: true
         tree:
           $ref: "#/components/schemas/CliSensitiveNode"
     CliSensitiveSecret:
