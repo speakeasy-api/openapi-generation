@@ -375,11 +375,9 @@ function isSensitiveBodyType(type: TypeDef): boolean {
 }
 
 function requestBodyType(op: Operation): TypeDef | undefined {
-  if (!op.Request) return undefined;
-  if (op.Request.IsRequestBody) return op.Request.RequestBody?.Type;
-  return op.Request.Field?.Type?.Fields?.find(
-    (f: FieldDef) => f.Annotations?.Has("request"),
-  )?.Type;
+  const body = getRequestBody(op);
+  if (body?.Type === "request") return body.Value.RequestBody?.Type;
+  return body?.Value.Type;
 }
 
 interface CLISensitiveBodyNode {

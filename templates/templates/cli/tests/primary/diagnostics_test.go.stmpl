@@ -510,6 +510,13 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2", "canary-tree", "canary-tree-child"},
 			visible: []string{"visible-name", "visible-label", "visible-tree-plain"},
 		},
+		{
+			name: "form json field without redactions kept as sent",
+			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top",
+				"--tree", `{"label":"visible<tree & label"}`},
+			secrets: []string{"canary-top"},
+			visible: []string{"tree=%7B%22label%22%3A%22visible%5Cu003ctree+%5Cu0026+label%22%7D"},
+		},
 	}
 	for _, mode := range diagnosticsOutputModes {
 		for _, tc := range cases {

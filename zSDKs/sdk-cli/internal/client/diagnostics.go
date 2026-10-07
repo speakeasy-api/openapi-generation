@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -340,7 +341,7 @@ func isAllHex(value string) bool {
 	return true
 }
 
-func decodeJSON(body []byte, sensitive sensitiveBodySchema) (interface{}, bool) {
+func parseJSON(body []byte) (interface{}, bool) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var parsed interface{}
@@ -348,6 +349,14 @@ func decodeJSON(body []byte, sensitive sensitiveBodySchema) (interface{}, bool) 
 		return nil, false
 	}
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
+		return nil, false
+	}
+	return parsed, true
+}
+
+func decodeJSON(body []byte, sensitive sensitiveBodySchema) (interface{}, bool) {
+	parsed, ok := parseJSON(body)
+	if !ok {
 		return nil, false
 	}
 	return redactJSON(parsed, 0, sensitive), true
@@ -413,8 +422,12 @@ func previewForm(body []byte, sensitive sensitiveBodySchema) string {
 			continue
 		}
 		if nested := sensitive.child(decodedKey); len(nested.Roots) > 0 {
-			if parsed, ok := decodeJSON([]byte(decodedValue), nested); ok {
-				if encoded, err := encodeJSON(parsed, ""); err == nil {
+			if parsed, ok := parseJSON([]byte(decodedValue)); ok {
+				redacted := redactJSON(parsed, 0, nested)
+				if reflect.DeepEqual(parsed, redacted) {
+					continue
+				}
+				if encoded, err := encodeJSON(redacted, ""); err == nil {
 					parts[i] = key + "=" + url.QueryEscape(encoded)
 					continue
 				}
