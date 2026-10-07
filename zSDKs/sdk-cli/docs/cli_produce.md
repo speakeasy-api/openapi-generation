@@ -10,8 +10,6 @@ to a file. Use --async to return only the operation handle.
 Arguments:
   <prompt>  Text prompt to render
 
-Use --resume <id> to resume polling without creating another operation. Omit create inputs and --async when resuming. Pass --out again to choose the artifact destination.
-
 ```
 cli produce [prompt] [flags]
 ```
@@ -32,7 +30,7 @@ cli produce [prompt] [flags]
       --poll-interval string   Override the initial polling interval (positive Go duration, for example 500ms or 2s)
       --poll-timeout string    Override the overall polling deadline (positive Go duration, at least the effective poll interval)
       --raw-response           Print the raw API response instead of writing the image to a file
-      --resume string          Resume polling an existing operation without creating one
+      --resume string          Resume polling an existing operation by ID instead of creating one
       --schema                 Print the exact JSON Schema of the request body and exit
 ```
 

@@ -1096,7 +1096,7 @@ again when resuming to select the destination.
 Artifact output supports inline base64 content. URI-only content retains the
 explicit unsupported-download error and does not create an artifact file.
 `--raw-response` prints the terminal payload instead of writing an artifact.
-Help and static/live `--usage` describe resume as an alternative to create input. They explicitly identify `--async` as incompatible with resume.
+The `--resume` flag description in help and static/live `--usage` describes polling an existing operation by ID instead of creating one. Conflict errors explain incompatible inputs.
 
 ### Binary Downloads
 

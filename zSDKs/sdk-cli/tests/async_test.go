@@ -486,9 +486,7 @@ func TestAsyncResume_HelpAndUsageDescribeAlternateInput(t *testing.T) {
 	for _, flag := range []string{"--help", "--usage"} {
 		h := NewCLITestHarness(t)
 		require.NoError(t, h.RunWithStdinServerRaw("http://localhost:1", []string{"produce", flag}, ""))
-		assert.Contains(t, h.GetStdout(), "resume")
-		assert.Contains(t, strings.ToLower(h.GetStdout()), "creat")
-		assert.Contains(t, h.GetStdout(), "and --async")
+		assert.Contains(t, h.GetStdout(), "Resume polling an existing operation by ID instead of creating one")
 	}
 }
 func TestAsyncResume_OutputModes(t *testing.T) {
