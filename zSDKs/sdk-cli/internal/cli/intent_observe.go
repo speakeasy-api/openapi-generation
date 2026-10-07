@@ -49,7 +49,7 @@ func InitIntentObserve(parent *cobra.Command) error {
 	}}); err != nil {
 		return fmt.Errorf("declare interactive arguments for intent observe: %w", err)
 	}
-	cmd.Long += "\n\nUse --resume <id> to resume polling without creating another operation. Create arguments and request flags must be omitted when resuming."
+	cmd.Long += "\n\nUse --resume <id> to resume polling without creating another operation. Omit create inputs and --async when resuming."
 	cmd.Flags().String("resume", "", "Resume polling an existing operation without creating one")
 	_ = flagutil.AnnotatePromptFlag(cmd, "resume", flagutil.PromptFlagSpec{Kind: "string"})
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -487,6 +488,7 @@ func TestAsyncResume_HelpAndUsageDescribeAlternateInput(t *testing.T) {
 		require.NoError(t, h.RunWithStdinServerRaw("http://localhost:1", []string{"produce", flag}, ""))
 		assert.Contains(t, h.GetStdout(), "resume")
 		assert.Contains(t, strings.ToLower(h.GetStdout()), "creat")
+		assert.Contains(t, h.GetStdout(), "and --async")
 	}
 }
 func TestAsyncResume_OutputModes(t *testing.T) {
@@ -708,7 +710,14 @@ func TestAsyncResume_PrintedHintQuotesHandleAndExecutes(t *testing.T) {
 	withAsyncWorkingDir(t)
 	h := NewCLITestHarness(t)
 	require.NoError(t, runAsyncIntent(t, h, server.URL, "--async"))
+	assert.Contains(t, h.GetStderr(), "To resume polling: ")
+	assert.Contains(t, h.GetStderr(), " --resume ")
+	assert.Equal(t, 1, creates)
+	assert.Zero(t, polls)
 	hint := strings.TrimSpace(strings.TrimPrefix(h.GetStderr(), "To resume polling: "))
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX shell quoting requires sh")
+	}
 	parsed, err := exec.Command("sh", "-c", "set -- "+hint+"; printf '%s\\0' \"$@\"").Output()
 	require.NoError(t, err)
 	argv := strings.Split(strings.TrimSuffix(string(parsed), string(rune(0))), string(rune(0)))

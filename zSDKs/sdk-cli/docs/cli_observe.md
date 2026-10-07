@@ -7,7 +7,7 @@ Produce an asset and print its terminal status
 Arguments:
   <prompt>  Text prompt to render
 
-Use --resume <id> to resume polling without creating another operation. Create arguments and request flags must be omitted when resuming.
+Use --resume <id> to resume polling without creating another operation. Omit create inputs and --async when resuming.
 
 ```
 cli observe [prompt] [flags]

@@ -10,7 +10,7 @@ to a file. Use --async to return only the operation handle.
 Arguments:
   <prompt>  Text prompt to render
 
-Use --resume <id> to resume polling without creating another operation. Create arguments and request flags must be omitted when resuming. Pass --out again to choose the artifact destination.
+Use --resume <id> to resume polling without creating another operation. Omit create inputs and --async when resuming. Pass --out again to choose the artifact destination.
 
 ```
 cli produce [prompt] [flags]

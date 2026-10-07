@@ -1077,7 +1077,7 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   if (intent.AsyncJSON) {
     flags.push({
       spec: usageFlagSpec("resume", undefined, "id"),
-      help: `Resume polling an existing operation without creating one. Omit create arguments and request flags.${
+      help: `Resume polling an existing operation without creating one. Omit create inputs and --async.${
         intent.ArtifactJSON
           ? " Pass --out again to choose the artifact destination."
           : ""

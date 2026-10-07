@@ -58,7 +58,7 @@ func InitIntentProduce(parent *cobra.Command) error {
 		Kind:         "string",
 	})
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the image to a file")
-	cmd.Long += "\n\nUse --resume <id> to resume polling without creating another operation. Create arguments and request flags must be omitted when resuming. Pass --out again to choose the artifact destination."
+	cmd.Long += "\n\nUse --resume <id> to resume polling without creating another operation. Omit create inputs and --async when resuming. Pass --out again to choose the artifact destination."
 	cmd.Flags().String("resume", "", "Resume polling an existing operation without creating one")
 	_ = flagutil.AnnotatePromptFlag(cmd, "resume", flagutil.PromptFlagSpec{Kind: "string"})
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
