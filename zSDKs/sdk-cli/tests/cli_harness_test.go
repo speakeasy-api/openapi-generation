@@ -877,8 +877,6 @@ func tableLines(lines ...string) string {
 
 var tableFixtureCreated = time.Date(2024, 5, 1, 12, 30, 0, 0, time.UTC)
 
-// TestTableOutputRendersListItems verifies that a list response renders its
-// items as an indented sub-table followed by its set scalar fields.
 func TestTableOutputRendersListItems(t *testing.T) {
 	alpha, beta, token := "alpha", "beta", "page-2"
 	list := &tableFixtureList{
@@ -891,20 +889,22 @@ func TestTableOutputRendersListItems(t *testing.T) {
 
 	assert.Equal(t, tableLines(
 		"ITEMS",
-		"  NAME   CREATED               TAGS",
-		"  alpha  2024-05-01T12:30:00Z  a, b",
-		"  beta   2024-05-01T12:30:00Z  ",
+		"NAME   CREATED               TAGS",
+		`alpha  2024-05-01T12:30:00Z  ["a","b"]`,
+		"beta   2024-05-01T12:30:00Z  ",
 		"",
-		"NEXTPAGETOKEN  page-2",
+		"FIELD          VALUE",
+		"nextPageToken  page-2",
 	), renderTable(t, list))
 
 	t.Run("empty page token is kept", func(t *testing.T) {
 		empty := ""
 		assert.Equal(t, tableLines(
 			"ITEMS",
-			"  (empty)",
+			"(empty)",
 			"",
-			"NEXTPAGETOKEN  ",
+			"FIELD          VALUE",
+			"nextPageToken  ",
 		), renderTable(t, &tableFixtureList{NextPageToken: &empty}))
 	})
 
@@ -912,9 +912,9 @@ func TestTableOutputRendersListItems(t *testing.T) {
 		list.NextPageToken = nil
 		assert.Equal(t, tableLines(
 			"ITEMS",
-			"  NAME   CREATED               TAGS",
-			"  alpha  2024-05-01T12:30:00Z  a, b",
-			"  beta   2024-05-01T12:30:00Z  ",
+			"NAME   CREATED               TAGS",
+			`alpha  2024-05-01T12:30:00Z  ["a","b"]`,
+			"beta   2024-05-01T12:30:00Z  ",
 		), renderTable(t, list))
 	})
 
@@ -922,13 +922,13 @@ func TestTableOutputRendersListItems(t *testing.T) {
 		item := tableFixtureItem{Name: &beta, Created: tableFixtureCreated}
 		assert.Equal(t, tableLines(
 			"ITEMS",
-			"  NAME  CREATED               TAGS",
-			"  beta  2024-05-01T12:30:00Z  ",
+			"NAME  CREATED",
+			"beta  2024-05-01T12:30:00Z",
 		), renderTable(t, &tableFixtureList{Items: []*tableFixtureItem{nil, &item}}))
 	})
 
 	t.Run("empty page", func(t *testing.T) {
-		assert.Equal(t, tableLines("ITEMS", "  (empty)"), renderTable(t, &tableFixtureList{}))
+		assert.Equal(t, tableLines("ITEMS", "(empty)"), renderTable(t, &tableFixtureList{}))
 	})
 }
 
@@ -945,13 +945,14 @@ func TestTableOutputRendersResourceSections(t *testing.T) {
 		},
 	}
 	assert.Equal(t, tableLines(
-		"ID      o1",
-		"NAME    sam",
-		`PARENT  {"created":"0001-01-01T00:00:00Z"}`,
+		"FIELD   VALUE",
+		"id      o1",
+		"name    sam",
+		`parent  {"created":"0001-01-01T00:00:00Z"}`,
 		"",
 		"MEMBERS",
-		"  NAME  CREATED               TAGS",
-		"  rex   2024-05-01T12:30:00Z  ",
+		"NAME  CREATED",
+		"rex   2024-05-01T12:30:00Z",
 	), renderTable(t, resource))
 }
 
@@ -960,9 +961,10 @@ func TestTableOutputRendersResourceSections(t *testing.T) {
 func TestTableOutputRendersSingleStruct(t *testing.T) {
 	name := "alpha"
 	assert.Equal(t, tableLines(
-		"NAME     alpha",
-		"CREATED  2024-05-01T12:30:00Z",
-		"TAGS     ",
+		"FIELD    VALUE",
+		"name     alpha",
+		"created  2024-05-01T12:30:00Z",
+		"tags     ",
 	), renderTable(t, &tableFixtureItem{Name: &name, Created: tableFixtureCreated}))
 }
 

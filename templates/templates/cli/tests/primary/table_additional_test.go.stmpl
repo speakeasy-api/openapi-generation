@@ -7,27 +7,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/sdk/models/components"
+	"{{getGolangPackage}}/internal/sdk/types"
 )
 
 func TestTableNestedResourceOutput(t *testing.T) {
 	type entry struct {
-		Kind string `json:"kind"`
+		Kind    string            `json:"kind"`
 		Payload map[string]string `json:"payload"`
 	}
 	object := struct {
-		ID string `json:"id"`
+		ID       string         `json:"id"`
 		Metadata map[string]int `json:"metadata"`
-		Entries []entry `json:"entries"`
+		Entries  []entry        `json:"entries"`
 	}{"record-1", map[string]int{"count": 2}, []entry{ {"note", map[string]string{"text": "hello\nworld\tvalue"}}}}
 	got := renderTable(t, object)
 	assert.Equal(t, tableLines(
-		"ID        record-1",
-		`METADATA  {"count":2}`,
+		"FIELD     VALUE",
+		"id        record-1",
+		`metadata  {"count":2}`,
 		"",
 		"ENTRIES",
-		"  KIND",
-		"  note",
-		`  [1] {"kind":"note","payload":{"text":"hello\nworld\tvalue"}}`,
+		"KIND  PAYLOAD",
+		`note  {"text":"hello\nworld\tvalue"}`,
 	), got)
 	assert.Equal(t, tableLines("KIND", "note"), renderTable(t, object.Entries))
 }
@@ -73,12 +76,13 @@ func TestTableStreamingUnionDataCells(t *testing.T) {
 	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", "table"})
 	require.NoError(t, err)
 	lines := strings.Split(strings.TrimSuffix(h.GetStdout(), "\n"), "\n")
-	require.Len(t, lines, 3)
-	assert.Empty(t, lines[1])
+	require.Len(t, lines, 5)
+	assert.Empty(t, lines[2])
 	for i, text := range []string{"Hello\n\t\x7f", "world"} {
-		line := lines[i*2]
-		require.True(t, strings.HasPrefix(line, "DATA  "), "expected a table cell, got %q", line)
-		data := strings.TrimPrefix(line, "DATA  ")
+		assert.Equal(t, "FIELD  VALUE", lines[i*3])
+		line := lines[i*3+1]
+		require.True(t, strings.HasPrefix(line, "data   "), "expected a table cell, got %q", line)
+		data := strings.TrimPrefix(line, "data   ")
 		require.True(t, json.Valid([]byte(data)), "invalid JSON table cell: %s", data)
 		var event map[string]any
 		require.NoError(t, json.Unmarshal([]byte(data), &event))
@@ -86,4 +90,72 @@ func TestTableStreamingUnionDataCells(t *testing.T) {
 	}
 	assert.NotContains(t, h.GetStdout(), "DiscriminatedDeltaEvent")
 	assert.NotContains(t, h.GetStdout(), "UnknownRaw")
+}
+
+func TestTableGeneratedUnionSectionColumns(t *testing.T) {
+	var entry components.StronglyTypedOneOfObject
+	require.NoError(t, json.Unmarshal([]byte(deepObjectWithTypeJSON), &entry))
+	unknown := components.CreateStronglyTypedOneOfObjectUnknown(json.RawMessage(`{"type":"future","payload":{"text":"hello"},"count":9007199254740993}`))
+	got := renderTable(t, struct {
+		Entries []components.StronglyTypedOneOfObject `json:"entries"`
+	}{[]components.StronglyTypedOneOfObject{entry, unknown}})
+	lines := strings.Split(strings.TrimSuffix(got, "\n"), "\n")
+	require.Len(t, lines, 4)
+	assert.Equal(t, "ENTRIES", lines[0])
+	columns := strings.Fields(lines[1])
+	for _, column := range []string{"TYPE", "OBJ", "PAYLOAD", "COUNT"} {
+		assert.Contains(t, columns, column)
+	}
+	assert.Contains(t, lines[2], "deepObjectWithType")
+	assert.Contains(t, lines[2], `"str":"test"`)
+	assert.Contains(t, lines[3], "future")
+	assert.Contains(t, lines[3], `{"text":"hello"}`)
+	assert.Contains(t, lines[3], "9007199254740993")
+	assert.NotContains(t, got, "DeepObjectWithType")
+	assert.NotContains(t, got, "UnknownRaw")
+	assert.NotContains(t, got, "[1]")
+}
+
+func TestTableGeneratedAdditionalProperties(t *testing.T) {
+	object := components.ObjWithStringAdditionalProperties{
+		NormalField:          "known",
+		AdditionalProperties: map[string]string{"owner": "demo", "note": "line\nvalue"},
+	}
+	got := renderTable(t, object)
+	assert.Contains(t, got, "normalField")
+	assert.Contains(t, got, "owner")
+	assert.Contains(t, got, "demo")
+	assert.Contains(t, got, `line\nvalue`)
+	assert.NotContains(t, got, "AdditionalProperties")
+	require.Len(t, strings.Split(strings.TrimSuffix(got, "\n"), "\n"), 4)
+}
+
+func TestTableGeneratedVehicleWireColumns(t *testing.T) {
+	vehicles := []components.Vehicle{
+		components.CreateVehicleCar(components.Car{}),
+		components.CreateVehicleUnknown(json.RawMessage(`{"vehicleType":"future","payload":{"text":"hello"}}`)),
+	}
+	got := renderTable(t, struct {
+		Vehicles []components.Vehicle `json:"vehicles"`
+	}{vehicles})
+	lines := strings.Split(strings.TrimSuffix(got, "\n"), "\n")
+	require.Len(t, lines, 4)
+	columns := strings.Fields(lines[1])
+	assert.Contains(t, columns, "VEHICLETYPE")
+	assert.Contains(t, columns, "WHEELSTYPE")
+	assert.Contains(t, columns, "PAYLOAD")
+	assert.NotContains(t, columns, "TYPE")
+	assert.NotContains(t, got, "UNKNOWN")
+	assert.Contains(t, lines[2], "car")
+	assert.Contains(t, lines[2], "four")
+	assert.Contains(t, lines[3], `{"text":"hello"}`)
+}
+
+func TestTableGeneratedDateCell(t *testing.T) {
+	value, err := types.NewDateFromString("2024-05-01")
+	require.NoError(t, err)
+	got := renderTable(t, struct {
+		Published *types.Date `json:"published"`
+	}{value})
+	assert.Equal(t, "FIELD      VALUE\npublished  2024-05-01\n", got)
 }
