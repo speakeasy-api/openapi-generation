@@ -239,6 +239,7 @@ func isSensitiveEncodedField(sensitive sensitiveBodySchema, name string) bool {
 	return nested.isSensitive() || nested.items().isSensitive()
 }
 
+// redactJSON recursively redacts sensitive keys in a JSON structure.
 func redactJSON(v interface{}, depth int, sensitive sensitiveBodySchema) interface{} {
 	if depth > maxRedactDepth {
 		return redactionDepthMarker
