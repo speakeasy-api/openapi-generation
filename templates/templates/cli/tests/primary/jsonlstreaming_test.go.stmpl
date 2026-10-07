@@ -176,3 +176,20 @@ func TestJsonlStreamWithJq(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(lines[1])), &name1))
 	assert.Equal(t, "John", name1)
 }
+
+func TestJsonlStreamExplicitJSON(t *testing.T) {
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/jsonl")
+		_, _ = w.Write([]byte("{\"name\":\"Peter\",\"skills\":[\"Go\"]}\n{\"name\":\"John\",\"skills\":[\"Rust\"]}\n"))
+	}))
+	defer server.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithStdinServerRaw(server.URL, []string{"jsonl", "jsonl-stream", "--output-format", "json"}, ""))
+	assert.Equal(t, 1, calls)
+	events := parseNDJSON(t, h.GetStdout())
+	require.Len(t, events, 2)
+	assert.Equal(t, "Peter", events[0]["name"])
+	assert.Equal(t, "John", events[1]["name"])
+}

@@ -29,7 +29,7 @@ func InitIntentObserve(parent *cobra.Command) error {
 			"speakeasy_operation":            "renderAsset",
 			flagutil.AnnotationWholeBodyFlag: "body",
 			"speakeasy_strict_body_keys":     "true",
-			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"observe\",\"resume\":\"cli get-asset --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
+			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"observe\",\"resume\":\"cli observe --resume\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
 		},
 	}
 	intentMeta := flagutil.NonBodyMeta(renderAssetCmdMeta, "")
@@ -49,6 +49,9 @@ func InitIntentObserve(parent *cobra.Command) error {
 	}}); err != nil {
 		return fmt.Errorf("declare interactive arguments for intent observe: %w", err)
 	}
+	cmd.Long += "\n\nUse --resume <id> to resume polling without creating another operation. Create arguments and request flags must be omitted when resuming."
+	cmd.Flags().String("resume", "", "Resume polling an existing operation without creating one")
+	_ = flagutil.AnnotatePromptFlag(cmd, "resume", flagutil.PromptFlagSpec{Kind: "string"})
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
 	cmd.Flags().String("poll-interval", "", "Override the initial polling interval (positive Go duration, for example 500ms or 2s)")
 	cmd.Flags().String("poll-timeout", "", "Override the overall polling deadline (positive Go duration, at least the effective poll interval)")
@@ -76,6 +79,16 @@ func runIntentObserveCmd(cmd *cobra.Command, args []string) error {
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
 		return usage.EmitBodySchema(cmd.OutOrStdout(), "renderAsset")
+	}
+	if flagutil.IsAsyncResume(cmd) {
+		if err := output.ValidateAsyncResume(cmd, args); err != nil {
+			return err
+		}
+		if f := cmd.Flag("jq"); f != nil && !f.Changed {
+			_ = f.Value.Set(".status")
+		}
+		id, _ := flagutil.GetStringFlag(cmd, "resume")
+		return output.ResumeAsync(cmd, id, newPollIntentObserve)
 	}
 	bodySurfaces := []string{"body"}
 	for _, surface := range bodySurfaces {

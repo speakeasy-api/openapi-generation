@@ -5,9 +5,11 @@ package tests
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,8 +18,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/spf13/cobra"
 	"openapi/internal/cli"
 	"openapi/internal/flagutil"
+	"openapi/internal/interactive"
 	"openapi/internal/sdk/types"
 )
 
@@ -151,7 +156,7 @@ func TestAsyncIntent_EscapeReturnsCreateResponseWithoutPolling(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, runAsyncIntent(t, h, stub.server.URL, "--async"))
 	assert.Equal(t, asyncTestHandle, strings.TrimSpace(h.GetStdout()))
-	assert.Empty(t, h.GetStderr())
+	assert.Contains(t, h.GetStderr(), "To resume polling: "+"cli produce --resume"+" "+asyncTestHandle)
 	_, polls, _ := stub.counts()
 	assert.Zero(t, polls)
 
@@ -194,7 +199,7 @@ func TestAsyncIntent_FailureUsesSharedMachineErrorEnvelope(t *testing.T) {
 		require.Error(t, err)
 		assert.Empty(t, h.GetStdout())
 		assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
-		assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --id"+" "+asyncTestHandle)
+		assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli produce --resume"+" "+asyncTestHandle)
 		if args[0] == "--agent-mode" {
 			assert.Equal(t, "CLI_ASYNC_FAILED", jsonGetString(h.GetStderr(), "error_reason"))
 			assert.Contains(t, h.GetStderr(), "Inspect the terminal response and resume command")
@@ -207,7 +212,7 @@ func TestAsyncIntent_FailureUsesSharedMachineErrorEnvelope(t *testing.T) {
 	require.Error(t, err)
 	diagnostic := strings.TrimSpace(h.GetStderr())
 	assert.Contains(t, diagnostic, asyncTestHandle)
-	assert.Contains(t, diagnostic, "cli get-asset --id"+" "+asyncTestHandle)
+	assert.Contains(t, diagnostic, "cli produce --resume"+" "+asyncTestHandle)
 	assert.Zero(t, strings.Count(diagnostic, string(rune(10))))
 }
 
@@ -224,7 +229,7 @@ func TestAsyncIntent_UnknownAndMissingStatesAreErrors(t *testing.T) {
 			assert.Empty(t, h.GetStdout())
 			assert.Equal(t, test.reason, jsonGetString(h.GetStderr(), "error_reason"))
 			assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
-			assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --id"+" "+asyncTestHandle)
+			assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli produce --resume"+" "+asyncTestHandle)
 		})
 	}
 }
@@ -375,4 +380,388 @@ func TestAsyncIntent_DeclaredJQAppliesOnlyToTerminalResponse(t *testing.T) {
 	commandArgs = append(commandArgs, "--jq", ".")
 	require.NoError(t, h.RunWithStdinServerRaw(stub.server.URL, commandArgs, ""))
 	assert.JSONEq(t, "{\"status\":\"completed\"}", h.GetStdout())
+}
+
+func runAsyncResume(t *testing.T, h *CLITestHarness, serverURL string, extra ...string) error {
+	t.Helper()
+	args := []string{"produce", "--resume", asyncTestHandle, "--poll-interval", "20ms", "--poll-timeout", "5s"}
+	return h.RunWithStdinServerRaw(serverURL, append(args, extra...), "")
+}
+
+func TestAsyncResume_SavesTerminalResultWithoutCreate(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, "{\"status\":\"in_progress\"}", asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+	target := filepath.Join(t.TempDir(), "resumed.png")
+	require.NoError(t, runAsyncResume(t, h, stub.server.URL, "--out", target))
+	data, err := os.ReadFile(strings.TrimSpace(h.GetStdout()))
+	require.NoError(t, err)
+	assert.Equal(t, "async-artifact", string(data))
+	creates, polls, _ := stub.counts()
+	assert.Zero(t, creates)
+	assert.GreaterOrEqual(t, polls, 1)
+}
+
+func TestAsyncResume_RejectsConflictsBeforeRequests(t *testing.T) {
+	cases := [][]string{
+		{"--resume="}, {"--resume", "  "}, {"unexpected prompt"}, {"--async"},
+		{"--poll-interval", "0s"}, {"--poll-timeout", "1ms"},
+		{"--body", "@/nonexistent-resume-input.json"}, {"--body", "@-"},
+		{"--out", "unused", "--raw-response"},
+	}
+	for _, extra := range cases {
+		t.Run(strings.Join(extra, " "), func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+			h := NewCLITestHarness(t)
+			err := runAsyncResume(t, h, stub.server.URL, extra...)
+			require.Error(t, err)
+			assert.NotContains(t, err.Error(), "no such file")
+			creates, polls, _ := stub.counts()
+			assert.Zero(t, creates)
+			assert.Zero(t, polls)
+		})
+	}
+}
+
+func TestAsyncResume_DryRunPreviewsOnlyPoll(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+	dir := withAsyncWorkingDir(t)
+	require.NoError(t, runAsyncResume(t, h, stub.server.URL, "--dry-run", "--output-format", "json"))
+	var preview struct {
+		DryRun  bool `json:"dry_run"`
+		Request struct {
+			Method string `json:"method"`
+			URL    string `json:"url"`
+		} `json:"request"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &preview))
+	assert.True(t, preview.DryRun)
+	assert.Equal(t, "GET", preview.Request.Method)
+	assert.Contains(t, preview.Request.URL, asyncTestHandle)
+	assert.Contains(t, preview.Request.URL, "stream"+"="+"false")
+	creates, polls, _ := stub.counts()
+	assert.Zero(t, creates)
+	assert.Zero(t, polls)
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, files)
+}
+
+func TestAsyncResume_DoesNotReadOpenStdin(t *testing.T) {
+	stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	read, write, err := os.Pipe()
+	require.NoError(t, err)
+	defer read.Close()
+	defer write.Close()
+	original := os.Stdin
+	os.Stdin = read
+	defer func() { os.Stdin = original }()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	stopWatchdog := make(chan struct{})
+	defer close(stopWatchdog)
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = write.Close()
+		case <-stopWatchdog:
+		}
+	}()
+	err = cli.ExecuteRoot(ctx, root, []string{"produce", "--resume", asyncTestHandle, "--dry-run", "--output-format", "json", "--server-url", stub.server.URL})
+	require.NoError(t, err)
+	require.NoError(t, ctx.Err())
+	creates, polls, _ := stub.counts()
+	assert.Zero(t, creates)
+	assert.Zero(t, polls)
+}
+
+func TestAsyncResume_HelpAndUsageDescribeAlternateInput(t *testing.T) {
+	for _, flag := range []string{"--help", "--usage"} {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithStdinServerRaw("http://localhost:1", []string{"produce", flag}, ""))
+		assert.Contains(t, h.GetStdout(), "resume")
+		assert.Contains(t, strings.ToLower(h.GetStdout()), "creat")
+	}
+}
+func TestAsyncResume_OutputModes(t *testing.T) {
+	for _, extra := range [][]string{{"--output-format", "json"}, {"--agent-mode", "--output-format", "json"}, {"--jq", "."}, {"--raw-response"}} {
+		t.Run(strings.Join(extra, " "), func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+			dir := withAsyncWorkingDir(t)
+			h := NewCLITestHarness(t)
+			require.NoError(t, runAsyncResume(t, h, stub.server.URL, extra...))
+			files, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			if extra[0] == "--raw-response" {
+				assert.Empty(t, files)
+				assert.JSONEq(t, asyncSuccessTestBody, h.GetStdout())
+			} else {
+				require.Len(t, files, 1)
+				data, err := os.ReadFile(filepath.Join(dir, files[0].Name()))
+				require.NoError(t, err)
+				assert.Equal(t, "async-artifact", string(data))
+				{
+					var envelope map[string]interface{}
+					require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &envelope))
+					resolved, err := filepath.EvalSymlinks(filepath.Join(dir, files[0].Name()))
+					require.NoError(t, err)
+					assert.Equal(t, resolved, envelope["path"])
+					assert.Equal(t, float64(len(data)), envelope["size_bytes"])
+				}
+				assert.Empty(t, h.GetStderr())
+			}
+			creates, polls, _ := stub.counts()
+			assert.Zero(t, creates)
+			assert.Equal(t, 1, polls)
+		})
+	}
+}
+
+type asyncResumePrompter struct{ calls int }
+
+func (p *asyncResumePrompter) Prompt(_ *cobra.Command, _ []interactive.PromptField) ([]interactive.PromptAnswer, error) {
+	p.calls++
+	return nil, context.Canceled
+}
+
+func TestAsyncResume_BypassesInjectedCreatePrompter(t *testing.T) {
+	for _, extra := range [][]string{nil, {"--resume="}, {"--body", "@/nonexistent-resume-input.json"}} {
+		stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+		h := NewCLITestHarness(t)
+		h.resetAndSetupEnv()
+		root, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+		p := &asyncResumePrompter{}
+		args := []string{"produce", "--resume", asyncTestHandle, "--dry-run", "--interactive", "--server-url", stub.server.URL}
+		err = cli.ExecuteRoot(interactive.WithPrompter(context.Background(), p), root, append(args, extra...))
+		if len(extra) == 0 {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
+			assert.NotContains(t, err.Error(), "no such file")
+		}
+		assert.Zero(t, p.calls)
+		creates, polls, _ := stub.counts()
+		assert.Zero(t, creates)
+		assert.Zero(t, polls)
+	}
+}
+func TestAsyncResume_NonArtifactDeclaredJQ(t *testing.T) {
+	stub := newAsyncStubWithStatus(t, 200, 200, "{\"id\":\"async-test-handle\"}", "{\"status\":\"completed\"}")
+	h := NewCLITestHarness(t)
+	args := []string{"observe", "--resume", asyncTestHandle, "--poll-interval", "20ms"}
+	require.NoError(t, h.RunWithStdinServerRaw(stub.server.URL, args, ""))
+	assert.NotContains(t, h.GetStdout(), "{")
+	assert.NotEmpty(t, h.GetStdout())
+	expected, err := json.Marshal(jsonGetString("{\"status\":\"completed\"}", "status"))
+	require.NoError(t, err)
+	assert.Equal(t, string(expected), strings.TrimSpace(h.GetStdout()))
+	creates, polls, _ := stub.counts()
+	assert.Zero(t, creates)
+	assert.Equal(t, 1, polls)
+	for _, flag := range []string{"--help", "--usage"} {
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunWithStdinServerRaw(stub.server.URL, []string{"observe", flag}, ""))
+		assert.NotContains(t, h.GetStdout(), "--out again")
+	}
+}
+
+func TestAsyncResume_TerminalErrorsAndHandoff(t *testing.T) {
+	for name, test := range map[string]struct {
+		body, reason string
+		timeout      bool
+	}{
+		"unknown": {asyncUnknownTestBody, "CLI_ASYNC_UNKNOWN_STATE", false},
+		"missing": {asyncMissingStateBody, "CLI_PROTOCOL", false},
+		"failure": {"{\"status\":\"failed\",\"error\":{\"message\":\"async operation failed\"\x7d\x7d", "CLI_ASYNC_FAILED", false},
+		"handoff": {"{\"status\":\"requires_action\",\"action\":{\"type\":\"continue\"\x7d\x7d", "", false},
+		"timeout": {"{\"status\":\"in_progress\"}", "CLI_ASYNC_TIMEOUT", true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stub := newAsyncStub(t, asyncCreateTestBody, test.body)
+			dir := withAsyncWorkingDir(t)
+			h := NewCLITestHarness(t)
+			extra := []string{"--output-format", "json", "--agent-mode"}
+			if test.timeout {
+				extra = append(extra, "--poll-timeout", "50ms")
+			}
+			err := runAsyncResume(t, h, stub.server.URL, extra...)
+			if test.reason == "" {
+				require.NoError(t, err)
+				assert.JSONEq(t, test.body, h.GetStdout())
+			} else {
+				require.Error(t, err)
+				assert.Equal(t, test.reason, jsonGetString(h.GetStderr(), "error_reason"))
+				assert.Equal(t, "cli produce --resume"+" "+asyncTestHandle, jsonGetString(h.GetStderr(), "resume"))
+			}
+			creates, _, _ := stub.counts()
+			assert.Zero(t, creates)
+			files, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			assert.Empty(t, files)
+		})
+	}
+}
+func TestAsyncResume_URIIsExplicitlyUnsupported(t *testing.T) {
+	var payload interface{}
+	require.NoError(t, json.Unmarshal([]byte(asyncSuccessTestBody), &payload))
+	var cfg map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte("{\"pointer\":[{\"field\":\"steps\"},{\"wild\":true},{\"field\":\"content\"},{\"wild\":true}],\"kind\":\"image\",\"defaultPath\":\"produce-{timestamp}-{rand}.{ext}\"}"), &cfg))
+	field := func(name, fallback string) string {
+		if value, ok := cfg[name].(string); ok {
+			return value
+		}
+		return fallback
+	}
+	var visit func(interface{})
+	visit = func(v interface{}) {
+		switch value := v.(type) {
+		case map[string]interface{}:
+			if value[field("typeField", "type")] == cfg["kind"] {
+				delete(value, field("dataField", "data"))
+				value[field("uriField", "uri")] = "https://example.invalid/artifact"
+			}
+			for _, child := range value {
+				visit(child)
+			}
+		case []interface{}:
+			for _, child := range value {
+				visit(child)
+			}
+		}
+	}
+	visit(payload)
+	body, err := json.Marshal(payload)
+	require.NoError(t, err)
+	stub := newAsyncStub(t, asyncCreateTestBody, string(body))
+	dir := withAsyncWorkingDir(t)
+	h := NewCLITestHarness(t)
+	err = runAsyncResume(t, h, stub.server.URL)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "delivered by URI")
+	files, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, files)
+}
+func TestAsyncPoll_RawSchemaMismatchAndSSE(t *testing.T) {
+	for _, mode := range []string{"json", "jq", "sse"} {
+		t.Run(mode, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if mode == "sse" {
+					w.Header().Set("Content-Type", "text/event-stream")
+					fmt.Fprintf(w, "data: %s\n\n", asyncSuccessTestBody)
+				} else {
+					w.Header().Set("Content-Type", "application/json")
+					fmt.Fprint(w, `{ "id": 123, "status": "completed" }`)
+				}
+			}))
+			defer server.Close()
+			h := NewCLITestHarness(t)
+			args := []string{"get-asset", "--id", asyncTestHandle}
+			args = append(args, "--stream=false")
+			if mode == "jq" {
+				args = append(args, "--jq", ".id")
+			} else {
+				args = append(args, "--output-format", "json")
+			}
+			require.NoError(t, h.RunWithStdinServerRaw(server.URL, args, ""))
+			assert.Equal(t, 1, calls)
+			if mode == "json" {
+				assert.JSONEq(t, `{ "id":123, "status":"completed" }`, h.GetStdout())
+			}
+			if mode == "jq" {
+				assert.Equal(t, "123", strings.TrimSpace(h.GetStdout()))
+			}
+			if mode == "sse" {
+				assert.True(t, json.Valid([]byte(h.GetStdout())), h.GetStdout())
+				assert.NotEqual(t, "{}", strings.TrimSpace(h.GetStdout()))
+			}
+		})
+	}
+}
+
+func TestAsyncResume_PrintedHintQuotesHandleAndExecutes(t *testing.T) {
+	handle := asyncTestHandle + " '$(echo unexpected); spaced"
+	creates, polls := 0, 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			polls++
+			assert.Contains(t, r.URL.Path, handle)
+			fmt.Fprint(w, strings.ReplaceAll(asyncSuccessTestBody, asyncTestHandle, handle))
+		} else {
+			creates++
+			fmt.Fprint(w, strings.ReplaceAll(asyncCreateTestBody, asyncTestHandle, handle))
+		}
+	}))
+	defer server.Close()
+	withAsyncWorkingDir(t)
+	h := NewCLITestHarness(t)
+	require.NoError(t, runAsyncIntent(t, h, server.URL, "--async"))
+	hint := strings.TrimSpace(strings.TrimPrefix(h.GetStderr(), "To resume polling: "))
+	parsed, err := exec.Command("sh", "-c", "set -- "+hint+"; printf '%s\\0' \"$@\"").Output()
+	require.NoError(t, err)
+	argv := strings.Split(strings.TrimSuffix(string(parsed), string(rune(0))), string(rune(0)))
+	require.Greater(t, len(argv), 2)
+	assert.Equal(t, handle, argv[len(argv)-1])
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithStdinServerRaw(server.URL, append(argv[1:], "--poll-interval", "20ms"), ""))
+	assert.Equal(t, 1, creates)
+	assert.Equal(t, 1, polls)
+	data, err := os.ReadFile(strings.TrimSpace(h.GetStdout()))
+	require.NoError(t, err)
+	assert.Equal(t, "async-artifact", string(data))
+}
+func TestAsyncResume_DoesNotSuppressOrdinaryCreatePrompt(t *testing.T) {
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	p := &asyncResumePrompter{}
+	err = cli.ExecuteRoot(interactive.WithPrompter(context.Background(), p), root, []string{"produce", "--interactive", "--dry-run"})
+	require.Error(t, err)
+	assert.Equal(t, 1, p.calls)
+}
+
+func TestAsyncResume_RequestFlagDefaultsAndExplicitConflicts(t *testing.T) {
+	for _, explicit := range []bool{false, true} {
+		stub := newAsyncStub(t, asyncCreateTestBody, asyncSuccessTestBody)
+		h := NewCLITestHarness(t).WithEnv("TEST_CREATE_PRIORITY", "from-environment")
+		h.resetAndSetupEnv()
+		root, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+		cmd, _, err := root.Find([]string{"produce"})
+		require.NoError(t, err)
+		cmd.Flags().String("create-priority", os.Getenv("TEST_CREATE_PRIORITY"), "Create priority")
+		flagutil.MarkRequestInput(cmd, "create-priority")
+		args := []string{"produce", "--resume", asyncTestHandle, "--dry-run", "--output-format", "json", "--server-url", stub.server.URL}
+		if explicit {
+			args = append(args, "--create-priority=from-argv")
+		}
+		err = cli.ExecuteRoot(context.Background(), root, args)
+		if explicit {
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "--create-priority")
+		} else {
+			require.NoError(t, err)
+			assert.Contains(t, h.GetStdout(), stub.server.URL)
+		}
+		creates, polls, _ := stub.counts()
+		assert.Zero(t, creates)
+		assert.Zero(t, polls)
+	}
 }

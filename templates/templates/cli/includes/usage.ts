@@ -1076,6 +1076,14 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
   }
   if (intent.AsyncJSON) {
     flags.push({
+      spec: usageFlagSpec("resume", undefined, "id"),
+      help: `Resume polling an existing operation without creating one. Omit create arguments and request flags.${
+        intent.ArtifactJSON
+          ? " Pass --out again to choose the artifact destination."
+          : ""
+      }`,
+    });
+    flags.push({
       spec: usageFlagSpec("async"),
       help: "Return the operation handle without waiting for a terminal response",
     });
@@ -1095,8 +1103,12 @@ function buildIntentUsageCommand(intent: IntentCmdCtx): UsageCommandDef {
     args: intent.Args.map((arg) => {
       const usage: UsageArgDef = {
         name: arg.Name || "input",
-        help: arg.Summary,
-        required: Boolean(arg.Required && !arg.PresetCovered),
+        help: intent.AsyncJSON
+          ? `${arg.Summary} (create input; omit with --resume)`
+          : arg.Summary,
+        required: Boolean(
+          arg.Required && !arg.PresetCovered && !intent.AsyncJSON,
+        ),
         variadic: Boolean(arg.Variadic),
       };
       if (arg.Suggestions && arg.Suggestions.length > 0) {
