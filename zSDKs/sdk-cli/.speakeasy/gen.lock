@@ -286,9 +286,9 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:f16fecc02be44d035ffe42e8607e1079ebe4ac43
+    last_write_checksum: sha1:daa755592100f096b8056f1018e8b48fae40612d
   internal/output/streamproject.go:
-    last_write_checksum: sha1:13c34ad2587640e6193a1f4bf8ba7c117bda39f8
+    last_write_checksum: sha1:774db357deee4aefc20c5a46b99193a53d20799e
   internal/sdk/.gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f
   internal/sdk/conflicts.go:
@@ -670,7 +670,7 @@ trackedFiles:
   tests/intenthint_test.go:
     last_write_checksum: sha1:a4157f549c7c601ec6c7e486e1f520402b9c758e
   tests/intentstream_test.go:
-    last_write_checksum: sha1:eb5721ca913413f52be8b5d3f03245e3112d9c3b
+    last_write_checksum: sha1:d17dafba2b2dcc8dfbd0dc8e17f4cf29c4e76664
   tests/mockserver/.gitignore:
     last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
   tests/mockserver/Dockerfile:
