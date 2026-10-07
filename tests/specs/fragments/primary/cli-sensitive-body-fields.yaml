@@ -246,6 +246,26 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/cli/sensitiveOpenObject:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveOpenObjectPost
+      description: >-
+        Request body whose additional properties are marked sensitive next to
+        declared fields, one of them a union of a sensitive array and a plain
+        object. Diagnostics output must redact the additional properties and
+        the array items while keeping the declared fields, the constant and
+        the plain object readable.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveOpenObject"
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     CliSensitiveBodyFields:
@@ -475,3 +495,30 @@ components:
         mapping:
           leaf: "#/components/schemas/CliSensitiveRecursiveLeaf"
           branch: "#/components/schemas/CliSensitiveRecursiveBranch"
+    CliSensitiveOpenObject:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+          const: visible-const
+        name:
+          type: string
+        value:
+          type: string
+        entries:
+          $ref: "#/components/schemas/CliSensitiveListOrLabel"
+      additionalProperties:
+        type: string
+        x-speakeasy-param-sensitive: true
+    CliSensitiveListOrLabel:
+      oneOf:
+        - type: array
+          items:
+            type: string
+            format: password
+        - type: object
+          required: [label]
+          properties:
+            label:
+              type: string

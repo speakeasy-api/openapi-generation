@@ -386,6 +386,7 @@ interface CLISensitiveBodyNode {
   Sensitive?: boolean;
   Fields?: Map<string, number>;
   Item?: number;
+  Values?: number;
   Variants?: number[];
 }
 
@@ -410,6 +411,7 @@ function renderSensitiveBodySchema(
         ...(node.Fields?.values() || []),
         ...(node.Variants || []),
         node.Item || 0,
+        node.Values || 0,
       ];
       if (children.some((child) => reachable.has(child))) {
         reachable.add(i);
@@ -425,13 +427,18 @@ function renderSensitiveBodySchema(
     const node = schema.Nodes[id];
     const fields: string[] = [];
     if (node.Sensitive) fields.push("Sensitive: true");
+    const values = node.Values && reachable.has(node.Values) ? node.Values : 0;
     const children = [...(node.Fields || [])]
-      .filter(([, child]) => reachable.has(child))
-      .map(([name, child]) => `"${escapeGoString(name)}": ${remap.get(child)}`);
+      .filter(([, child]) => values || reachable.has(child))
+      .map(
+        ([name, child]) =>
+          `"${escapeGoString(name)}": ${remap.get(child) || 0}`,
+      );
     if (children.length)
       fields.push(`Fields: map[string]int{ ${children.join(", ")} }`);
     if (node.Item && reachable.has(node.Item))
       fields.push(`Item: ${remap.get(node.Item)}`);
+    if (values) fields.push(`Values: ${remap.get(values)}`);
     const variants = (node.Variants || []).filter((child) =>
       reachable.has(child),
     );
@@ -457,17 +464,15 @@ function templateSensitiveBodyFields(): {
   for (const op of allOperations()) {
     const schema = operations.get(op.OriginalID) || { Nodes: [{}], Roots: [] };
     operations.set(op.OriginalID, schema);
-    const components = new Map<string, number>();
+    const walked = new Map<string, number>();
     const walk = (type: TypeDef | undefined): number => {
       if (!type) return 0;
-      const component =
-        type.IsComponent && type.Name ? type.GetRegistrationID() : "";
-      if (component && components.has(component))
-        return components.get(component)!;
+      const typeID = type.IsCustomType() ? getUniqueID(type) : "";
+      if (typeID && walked.has(typeID)) return walked.get(typeID)!;
       const id = schema.Nodes.length;
       const node: CLISensitiveBodyNode = {};
       schema.Nodes.push(node);
-      if (component) components.set(component, id);
+      if (typeID) walked.set(typeID, id);
       if (isSensitiveBodyType(type)) {
         node.Sensitive = true;
         return id;
@@ -475,18 +480,22 @@ function templateSensitiveBodyFields(): {
       switch (type.Type.toString()) {
         case "class":
           node.Fields = new Map();
-          node.Variants = [];
           for (const field of type.Fields || []) {
-            if (field.Const) continue;
-            const child = walk(field.Type);
-            if (field.IsAdditionalProperties) node.Variants.push(child);
-            else node.Fields.set(originalFieldName(field), child);
+            if (field.IsAdditionalProperties)
+              node.Values = walk(field.Type.ItemType);
+            else
+              node.Fields.set(
+                originalFieldName(field),
+                field.Const ? 0 : walk(field.Type),
+              );
           }
           break;
         case "array":
         case "set":
-        case "map":
           node.Item = walk(type.ItemType);
+          break;
+        case "map":
+          node.Values = walk(type.ItemType);
           break;
         case "union":
           node.Variants = (type.AssociatedTypes || []).map(walk);

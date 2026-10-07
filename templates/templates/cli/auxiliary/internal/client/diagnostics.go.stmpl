@@ -86,9 +86,10 @@ var sensitiveJSONKeys = map[string]bool{
 
 type sensitiveBodyNode struct {
 	Sensitive bool
-	Fields map[string]int
-	Item int
-	Variants []int
+	Fields    map[string]int
+	Item      int
+	Values    int
+	Variants  []int
 }
 
 type sensitiveBodySchema struct {
@@ -219,11 +220,12 @@ func (s sensitiveBodySchema) child(name string) sensitiveBodySchema {
 	var roots []int
 	for _, id := range s.expandedRoots() {
 		node := s.Nodes[id]
-		if child := node.Fields[name]; child != 0 {
-			roots = append(roots, child)
+		child, declared := node.Fields[name]
+		if !declared {
+			child = node.Values
 		}
-		if node.Item != 0 {
-			roots = append(roots, node.Item)
+		if child != 0 {
+			roots = append(roots, child)
 		}
 	}
 	return sensitiveBodySchema{Nodes: s.Nodes, Roots: roots}
@@ -550,8 +552,8 @@ func redactURL(u string) string {
 
 // DebugClient wraps an HTTP client and logs request/response diagnostics to stderr.
 type DebugClient struct {
-	Inner  HTTPClient
-	Stderr io.Writer
+	Inner               HTTPClient
+	Stderr              io.Writer
 	SensitiveBodyFields sensitiveBodySchema
 }
 
@@ -621,10 +623,10 @@ func isStreamingResponse(resp *http.Response) bool {
 // DryRunClient intercepts HTTP requests and returns a synthetic response
 // without making any network calls.
 type DryRunClient struct {
-	Stderr io.Writer
-	Stdout io.Writer
-	JSON   bool
-	Cmd    *cobra.Command
+	Stderr              io.Writer
+	Stdout              io.Writer
+	JSON                bool
+	Cmd                 *cobra.Command
 	SensitiveBodyFields sensitiveBodySchema
 }
 

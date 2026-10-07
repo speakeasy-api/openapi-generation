@@ -87,6 +87,7 @@ type sensitiveBodyNode struct {
 	Sensitive bool
 	Fields    map[string]int
 	Item      int
+	Values    int
 	Variants  []int
 }
 
@@ -214,11 +215,12 @@ func (s sensitiveBodySchema) child(name string) sensitiveBodySchema {
 	var roots []int
 	for _, id := range s.expandedRoots() {
 		node := s.Nodes[id]
-		if child := node.Fields[name]; child != 0 {
-			roots = append(roots, child)
+		child, declared := node.Fields[name]
+		if !declared {
+			child = node.Values
 		}
-		if node.Item != 0 {
-			roots = append(roots, node.Item)
+		if child != 0 {
+			roots = append(roots, child)
 		}
 	}
 	return sensitiveBodySchema{Nodes: s.Nodes, Roots: roots}

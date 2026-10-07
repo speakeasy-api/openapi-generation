@@ -464,6 +464,20 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 				"visible-root", "visible-child", "visible-branch"},
 		},
 		{
+			name: "additional properties beside declared fields",
+			args: []string{"request-bodies", "cli-sensitive-open-object-post", "--body",
+				`{"name":"visible-name","value":"visible-value","extra":"canary-extra","entries":{"label":"visible-label"}}`},
+			secrets: []string{"canary-extra"},
+			visible: []string{"visible-name", "visible-value", "visible-label", "visible-const"},
+		},
+		{
+			name: "array variant beside object variant",
+			args: []string{"request-bodies", "cli-sensitive-open-object-post", "--body",
+				`{"name":"visible-name","entries":["canary-list"]}`},
+			secrets: []string{"canary-list"},
+			visible: []string{"visible-name", "visible-const"},
+		},
+		{
 			name: "union variant field",
 			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
 				"--cli-sensitive-secret", `{"kind":"static","id":"visible-id","value":"canary-static"}`},
