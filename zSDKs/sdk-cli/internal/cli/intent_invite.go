@@ -172,6 +172,11 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intentInvitePreset); err != nil {
+				return err
+			}
+		}
 	}
 	if f := cmd.Flag("jq"); f != nil && !f.Changed {
 		_ = f.Value.Set(".id")
