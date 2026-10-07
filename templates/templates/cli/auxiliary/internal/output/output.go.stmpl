@@ -1528,12 +1528,16 @@ func complexTableValue(v reflect.Value) bool {
 		}
 		v = v.Elem()
 	}
-	if v.Type() == reflect.TypeOf(json.RawMessage{}) {
+	if v.Type() == timeType {
+		return false
+	}
+	marshaler := reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+	if v.Type().Implements(marshaler) || reflect.PointerTo(v.Type()).Implements(marshaler) {
 		return true
 	}
 	switch v.Kind() {
 	case reflect.Struct:
-		return v.Type() != timeType
+		return true
 	case reflect.Map:
 		return true
 	case reflect.Array, reflect.Slice:
@@ -1578,7 +1582,8 @@ func tableJSON(v reflect.Value) (string, error) {
 			for item.Kind() == reflect.Interface && !item.IsNil() {
 				item = item.Elem()
 			}
-			if item.Kind() == reflect.Struct {
+			marshaler := reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+			if item.Kind() == reflect.Struct || (item.Kind() != reflect.Ptr && reflect.PointerTo(item.Type()).Implements(marshaler)) {
 				copy := reflect.New(item.Type())
 				copy.Elem().Set(item)
 				items[i] = copy.Interface()
