@@ -61,3 +61,29 @@ func TestTableGeneratedUnionWireShape(t *testing.T) {
 	}
 	assert.True(t, found, "expected a compact JSON cell")
 }
+
+func TestTableStreamingUnionDataCells(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"Hello\n\t\u007f"}`,
+		`{"event_type":"delta","text":"world"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", "table"})
+	require.NoError(t, err)
+	lines := strings.Split(strings.TrimSuffix(h.GetStdout(), "\n"), "\n")
+	require.Len(t, lines, 3)
+	assert.Empty(t, lines[1])
+	for i, text := range []string{"Hello\n\t\x7f", "world"} {
+		line := lines[i*2]
+		require.True(t, strings.HasPrefix(line, "DATA  "), "expected a table cell, got %q", line)
+		data := strings.TrimPrefix(line, "DATA  ")
+		require.True(t, json.Valid([]byte(data)), "invalid JSON table cell: %s", data)
+		var event map[string]any
+		require.NoError(t, json.Unmarshal([]byte(data), &event))
+		assert.Equal(t, map[string]any{"event_type": "delta", "text": text}, event)
+	}
+	assert.NotContains(t, h.GetStdout(), "DiscriminatedDeltaEvent")
+	assert.NotContains(t, h.GetStdout(), "UnknownRaw")
+}
