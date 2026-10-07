@@ -2152,21 +2152,21 @@ registerTemplateFunc(
 
 function templateConfigurePreferenceFormFields(): string {
   const lines: string[] = [];
-  lines.push(`huh.NewSelect[string]().`);
+  lines.push(`forms.NewSelect[string]().`);
   lines.push(`    Title("Default output format").`);
   lines.push(
     `    Description("Choose the default response rendering format for this CLI").`,
   );
   lines.push(`    Options(`);
-  lines.push(`        huh.NewOption("Keep current", ""),`);
+  lines.push(`        forms.NewOption("Keep current", ""),`);
   lines.push(
-    `        huh.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),`,
+    `        forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),`,
   );
-  lines.push(`        huh.NewOption("pretty", "pretty"),`);
-  lines.push(`        huh.NewOption("json", "json"),`);
-  lines.push(`        huh.NewOption("yaml", "yaml"),`);
-  lines.push(`        huh.NewOption("table", "table"),`);
-  lines.push(`        huh.NewOption("toon", "toon"),`);
+  lines.push(`        forms.NewOption("pretty", "pretty"),`);
+  lines.push(`        forms.NewOption("json", "json"),`);
+  lines.push(`        forms.NewOption("yaml", "yaml"),`);
+  lines.push(`        forms.NewOption("table", "table"),`);
+  lines.push(`        forms.NewOption("toon", "toon"),`);
   lines.push(`    ).`);
   lines.push(`    Value(&cfgOutputFormat),`);
   return lines.join("\n        ");
@@ -2284,7 +2284,7 @@ registerTemplateFunc(
 
 /**
  * Generate Go variable declarations for the auth login form.
- * Each security field gets a string variable that huh binds to.
+ * Each security field gets a string variable that the form binds to.
  */
 function templateAuthLoginVarDeclarations(): string {
   const fields = getCLISecurityFields();
@@ -2303,11 +2303,11 @@ registerTemplateFunc(
 );
 
 /**
- * Generate huh form field construction for the auth login form.
- * Each security field is mapped to the appropriate huh component:
- * - Secrets → huh.NewInput().EchoMode(huh.EchoModePassword)
- * - Non-secrets → huh.NewInput()
- * - Arrays → huh.NewInput() with comma-separated hint
+ * Generate form field construction for the auth login form.
+ * Each security field is mapped to the appropriate form component:
+ * - Secrets → forms.NewInput().EchoMode(forms.EchoModePassword)
+ * - Non-secrets → forms.NewInput()
+ * - Arrays → forms.NewInput() with comma-separated hint
  */
 function templateAuthLoginFormFields(): string {
   const fields = getCLISecurityFields();
@@ -2323,7 +2323,7 @@ function templateAuthLoginFormFields(): string {
     const cfgExpr = `${acc}${fieldName}`;
 
     if (field.isArray) {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2334,7 +2334,7 @@ function templateAuthLoginFormFields(): string {
       );
       lines.push(`    Value(&${varName}),`);
     } else if (field.isSecret) {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2342,7 +2342,7 @@ function templateAuthLoginFormFields(): string {
           field.field,
         )}").`,
       );
-      lines.push(`    EchoMode(huh.EchoModePassword).`);
+      lines.push(`    EchoMode(forms.EchoModePassword).`);
       lines.push(
         `    Placeholder(maskSecret(${buildFormPlaceholder(
           `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,
@@ -2351,7 +2351,7 @@ function templateAuthLoginFormFields(): string {
       );
       lines.push(`    Value(&${varName}),`);
     } else {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2596,14 +2596,14 @@ function templateAuthLoginBody(): string {
     lines.push(`// #region custom-auth-vars`);
     lines.push(`// #endregion custom-auth-vars`);
     lines.push(``);
-    lines.push(`fields := []huh.Field{`);
+    lines.push(`fields := []forms.Field{`);
     lines.push(...genSchemeFormFields(group.fields));
     lines.push(`}`);
     lines.push(``);
     lines.push(`// #region custom-auth-groups`);
     lines.push(`// #endregion custom-auth-groups`);
     lines.push(``);
-    lines.push(`form := huh.NewForm(huh.NewGroup(fields...)).`);
+    lines.push(`form := forms.NewForm(forms.NewGroup(fields...)).`);
     lines.push(`    WithAccessible(accessible).`);
     lines.push(`    WithTheme(authFormTheme()).`);
     lines.push(`    WithWidth(authFormWidth()).`);
@@ -2619,13 +2619,13 @@ function templateAuthLoginBody(): string {
     lines.push(`accessible := formMode == interactive.FormAccessible`);
     lines.push(``);
     lines.push(`var selectedScheme string`);
-    lines.push(`schemeSelect := huh.NewSelect[string]().`);
+    lines.push(`schemeSelect := forms.NewSelect[string]().`);
     lines.push(`    Title("Authentication Method").`);
     lines.push(`    Description("Choose which credentials to configure").`);
     lines.push(`    Options(`);
     for (const group of groups) {
       lines.push(
-        `        huh.NewOption("${escapeGoString(group.label)}", "${
+        `        forms.NewOption("${escapeGoString(group.label)}", "${
           group.key
         }"),`,
       );
@@ -2634,7 +2634,7 @@ function templateAuthLoginBody(): string {
     lines.push(`    Value(&selectedScheme)`);
     lines.push(``);
     lines.push(
-      `if err := huh.NewForm(huh.NewGroup(schemeSelect)).WithAccessible(accessible).WithTheme(authFormTheme()).WithWidth(authFormWidth()).WithShowHelp(false).Run(); err != nil {`,
+      `if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).WithTheme(authFormTheme()).WithWidth(authFormWidth()).WithShowHelp(false).Run(); err != nil {`,
     );
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
     lines.push(`}`);
@@ -2648,13 +2648,13 @@ function templateAuthLoginBody(): string {
       lines.push(`case "${group.key}":`);
       lines.push(...genSchemeVarDecls(group.fields).map((l) => `    ${l}`));
       lines.push(``);
-      lines.push(`    fields := []huh.Field{`);
+      lines.push(`    fields := []forms.Field{`);
       lines.push(
         ...genSchemeFormFields(group.fields).map((l) => `        ${l}`),
       );
       lines.push(`    }`);
       lines.push(``);
-      lines.push(`    form := huh.NewForm(huh.NewGroup(fields...)).`);
+      lines.push(`    form := forms.NewForm(forms.NewGroup(fields...)).`);
       lines.push(`        WithAccessible(accessible).`);
       lines.push(`        WithTheme(authFormTheme()).`);
       lines.push(`        WithWidth(authFormWidth()).`);
@@ -2814,7 +2814,7 @@ function genSchemeVarDecls(fields: CLISecurityFieldInfo[]): string[] {
 }
 
 /**
- * Build the Description() string for a huh form field.
+ * Build the Description() string for a form field.
  * Includes the flag name and appends example from the spec if available.
  */
 function buildFormDescription(
@@ -2835,7 +2835,7 @@ function buildFormDescription(
 }
 
 /**
- * Build the Placeholder() Go expression for a huh form field.
+ * Build the Placeholder() Go expression for a form field.
  * Falls back to the field's default value when the stored config value is empty.
  */
 function buildFormPlaceholder(configExpr: string, field: FieldDef): string {
@@ -2851,7 +2851,7 @@ function buildFormPlaceholder(configExpr: string, field: FieldDef): string {
   return configExpr;
 }
 
-/** Generate huh form field construction for a set of scheme fields */
+/** Generate form field construction for a set of scheme fields */
 function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
   const acc = securityConfigAccessor();
   const lines: string[] = [];
@@ -2863,7 +2863,7 @@ function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
     const cfgExpr = `${acc}${fieldName}`;
 
     if (field.isArray) {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2874,7 +2874,7 @@ function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
       );
       lines.push(`    Value(&${varName}),`);
     } else if (field.isSecret) {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2882,7 +2882,7 @@ function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
           field.field,
         )}").`,
       );
-      lines.push(`    EchoMode(huh.EchoModePassword).`);
+      lines.push(`    EchoMode(forms.EchoModePassword).`);
       lines.push(
         `    Placeholder(maskSecret(${buildFormPlaceholder(
           `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,
@@ -2891,7 +2891,7 @@ function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
       );
       lines.push(`    Value(&${varName}),`);
     } else {
-      lines.push(`huh.NewInput().`);
+      lines.push(`forms.NewInput().`);
       lines.push(`    Title("${title}").`);
       lines.push(
         `    Description("${buildFormDescription(
@@ -2951,8 +2951,8 @@ function genSchemeStore(fields: CLISecurityFieldInfo[]): string[] {
 
 registerTemplateFunc("templateAuthLoginBody", templateAuthLoginBody);
 
-// ─── Configure Huh Form Helpers ──────────────────────────────────────────────
-// These generate huh-based form fields for the configure command when
+// ─── Configure Form Helpers ──────────────────────────────────────────────────
+// These generate form fields for the configure command when
 // interactiveAuth is enabled. They cover both security AND global parameters.
 
 /**
@@ -2977,7 +2977,7 @@ registerTemplateFunc(
 );
 
 /**
- * Generate huh form fields for global parameters.
+ * Generate form fields for global parameters.
  */
 function templateConfigureGlobalFormFields(): string {
   if (!hasGlobals()) return "";
@@ -2996,7 +2996,7 @@ function templateConfigureGlobalFormFields(): string {
       `Global ${sanitizeFlagName(field.Name)} parameter`;
     const flagName = sanitizeFlagName(field.Name);
 
-    lines.push(`huh.NewInput().`);
+    lines.push(`forms.NewInput().`);
     lines.push(`    Title("${escapeGoString(desc)}").`);
     lines.push(`    Description("${buildFormDescription(flagName, field)}").`);
     lines.push(`    Placeholder(${buildFormPlaceholder(cfgExpr, field)}).`);
@@ -3011,7 +3011,7 @@ registerTemplateFunc(
 );
 
 /**
- * Generate store code for global parameters after huh form submission.
+ * Generate store code for global parameters after form submission.
  */
 function templateConfigureGlobalStore(): string {
   if (!hasGlobals()) return "";

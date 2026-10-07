@@ -80,14 +80,6 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
       ecosystem: "Go",
       category: "runtime",
     },
-    "charm.land/huh/v2": {
-      name: "charm.land/huh/v2",
-      version: "v2.0.3",
-      cpe: "cpe:2.3:a:charmbracelet:huh:*:*:*:*:*:go:*:*",
-      ecosystem: "Go",
-      category: "runtime",
-      condition: "interactive",
-    },
     "charm.land/lipgloss/v2": {
       name: "charm.land/lipgloss/v2",
       version: "v2.0.6",
@@ -102,7 +94,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
       cpe: "cpe:2.3:a:charmbracelet:bubbletea:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
-      condition: "interactiveMode",
+      condition: "interactive",
     },
     "charm.land/bubbles/v2": {
       name: "charm.land/bubbles/v2",
@@ -110,7 +102,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
       cpe: "cpe:2.3:a:charmbracelet:bubbles:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
-      condition: "interactiveMode",
+      condition: "interactive",
     },
     "github.com/creack/pty": {
       name: "github.com/creack/pty",
@@ -433,7 +425,7 @@ function getConfigFields(
       Required: false,
       DefaultValue: true,
       Description:
-        "Generate interactive auth login flows using bubbletea/huh forms.",
+        "Generate interactive auth login flows using bubbletea forms.",
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },

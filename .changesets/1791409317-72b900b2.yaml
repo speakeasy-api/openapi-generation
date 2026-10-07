@@ -1,0 +1,10 @@
+id: 1791409317-72b900b2
+features:
+    - core
+targets:
+    - cli
+type: chore
+bump: patch
+description: replace the huh form library with an in-repo forms package
+author: ThomasRooney
+date: "2026-10-07"
