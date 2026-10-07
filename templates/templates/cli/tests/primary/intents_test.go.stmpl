@@ -3,7 +3,10 @@ package tests
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -382,11 +385,7 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 	}
 }
 
-// A JSON body piped on stdin is a partial body like --body: the intent's
-// presets fill its gaps, its own keys win, and a body naming another variant
-// is refused.
 func TestIntentPipedBodyKeepsPresets(t *testing.T) {
-	recordTest("intents-piped-body-keeps-presets")
 	s := newEchoServer()
 	defer s.Close()
 
@@ -408,13 +407,23 @@ func TestIntentPipedBodyKeepsPresets(t *testing.T) {
 	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
 	assert.Equal(t, "from-argument", body["input"])
 
+	var requests atomic.Int32
+	counting := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	defer counting.Close()
 	withDelayedStdinPipe(t, 0, `{"agent":"helper","input":"cat"}`, true)
 	h = NewCLITestHarness(t)
-	err := h.RunWithServer(s.URL, []string{"render"})
+	err := h.RunWithServer(counting.URL, []string{"render"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `"render" presets the CliIntentModelRequest request variant`)
 	assert.Contains(t, err.Error(), `names "agent"`)
-	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "nothing must be sent")
+	assert.Contains(t, err.Error(), `use "cli cli-intents cli-intent-run"`)
+	var conflict *flagutil.PresetConflictError
+	require.True(t, errors.As(err, &conflict))
+	assert.Equal(t, "CLI_VALIDATION", conflict.CLIReason())
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Zero(t, requests.Load())
 }
 
 func TestIntentPartialBodyUserKeysWin(t *testing.T) {
