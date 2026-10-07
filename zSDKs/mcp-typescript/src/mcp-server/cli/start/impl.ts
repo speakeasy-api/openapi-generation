@@ -48,42 +48,38 @@ export async function main(this: LocalContext, flags: StartCommandFlags) {
 
 async function startStdio(flags: StartCommandFlags) {
   const logger = createConsoleLogger(flags["log-level"]);
-  const handle = serveStdio(() => {
-    const { server } = createMCPServer({
-      logger,
-      allowedTools: flags.tool,
-      dynamic: flags.mode === "dynamic",
-      annotationFilter: buildAnnotationFilter(flags["tool-annotations"]),
-      security: {
-        UserPassAuth: allRequired({
-          username: flags.username,
-          password: flags.password,
-        }),
-        Option2: allRequired({
-          bearerAuth: flags["bearer-auth"],
-          MyApiKey: flags["my-api-key"],
-        }),
-        Option3: allRequired({ oauth2: flags.oauth2 }),
-        Option4: allRequired({ appId: flags["app-id"], secret: flags.secret }),
-        Option5: allRequired({ mobileAuth: flags["mobile-auth"] }),
-        Option6: allRequired({
-          clientCredentials: flags["client-credentials"],
-        }),
-        MyApiKey: allRequired({ MyApiKey: flags["my-api-key"] }),
-      },
-      queryParam1: flags["query-param1"],
-      deprecatedQueryParam1: flags["deprecated-query-param1"],
-      deprecatedQueryParam2: flags["deprecated-query-param2"],
-      loneQueryParam: flags["lone-query-param"],
-      serverURL: flags["server-url"],
-      serverIdx: flags["server-index"],
-      subdomain: flags.subdomain,
-      version: flags["api-version"],
-      HostName: flags["api-host-name"],
-      PORT: flags["api-port"],
-    });
-    return server;
+  const createServer = createMCPServerFactory({
+    logger,
+    allowedTools: flags.tool,
+    dynamic: flags.mode === "dynamic",
+    annotationFilter: buildAnnotationFilter(flags["tool-annotations"]),
+    security: {
+      UserPassAuth: allRequired({
+        username: flags.username,
+        password: flags.password,
+      }),
+      Option2: allRequired({
+        bearerAuth: flags["bearer-auth"],
+        MyApiKey: flags["my-api-key"],
+      }),
+      Option3: allRequired({ oauth2: flags.oauth2 }),
+      Option4: allRequired({ appId: flags["app-id"], secret: flags.secret }),
+      Option5: allRequired({ mobileAuth: flags["mobile-auth"] }),
+      Option6: allRequired({ clientCredentials: flags["client-credentials"] }),
+      MyApiKey: allRequired({ MyApiKey: flags["my-api-key"] }),
+    },
+    queryParam1: flags["query-param1"],
+    deprecatedQueryParam1: flags["deprecated-query-param1"],
+    deprecatedQueryParam2: flags["deprecated-query-param2"],
+    loneQueryParam: flags["lone-query-param"],
+    serverURL: flags["server-url"],
+    serverIdx: flags["server-index"],
+    subdomain: flags.subdomain,
+    version: flags["api-version"],
+    HostName: flags["api-host-name"],
+    PORT: flags["api-port"],
   });
+  const handle = serveStdio(createServer);
 
   const abort = async () => {
     await handle.close();
@@ -91,6 +87,12 @@ async function startStdio(flags: StartCommandFlags) {
   };
   process.on("SIGTERM", abort);
   process.on("SIGINT", abort);
+}
+
+function createMCPServerFactory(
+  options: Parameters<typeof createMCPServer>[0],
+) {
+  return () => createMCPServer(options).server;
 }
 
 async function startSSE(cliFlags: StartCommandFlags) {

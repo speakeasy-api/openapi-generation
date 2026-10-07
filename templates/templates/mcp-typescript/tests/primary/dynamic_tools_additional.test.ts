@@ -854,6 +854,79 @@ test.each([false, true])(
   },
 );
 
+test("generated stdio accepts legacy initialization after modern discovery", async () => {
+  const toolName = "parameters-duplicate-path-param";
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [
+      fileURLToPath(new URL("../../bin/mcp-server.js", import.meta.url)),
+      "start",
+      "--transport",
+      "stdio",
+      "--tool",
+      toolName,
+    ],
+    stderr: "pipe",
+  });
+  const messages: unknown[] = [];
+  transport.onmessage = (message) => messages.push(message);
+  const expectResult = (id: number, result: unknown) =>
+    vi.waitFor(
+      () => {
+        expect(messages).toContainEqual(
+          expect.objectContaining({ id, result }),
+        );
+      },
+      { timeout: 10000 },
+    );
+  try {
+    await transport.start();
+    await transport.send({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "server/discover",
+      params: {
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientInfo": {
+            name: "fallback-test",
+            version: "1.0.0",
+          },
+          "io.modelcontextprotocol/clientCapabilities": {},
+        },
+      },
+    });
+    await expectResult(1, expect.any(Object));
+    await transport.send({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-06-18",
+        capabilities: {},
+        clientInfo: { name: "fallback-test", version: "1.0.0" },
+      },
+    });
+    await expectResult(
+      2,
+      expect.objectContaining({ protocolVersion: "2025-06-18" }),
+    );
+    await transport.send({
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    });
+    await transport.send({ jsonrpc: "2.0", id: 3, method: "tools/list" });
+    await expectResult(
+      3,
+      expect.objectContaining({
+        tools: [expect.objectContaining({ name: toolName })],
+      }),
+    );
+  } finally {
+    await transport.close();
+  }
+}, 30000);
+
 test.each([
   ["legacy", "static"],
   ["legacy", "dynamic"],

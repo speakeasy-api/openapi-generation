@@ -11,7 +11,7 @@ import {
   mcpServerContext,
   type MCPServerContext,
 } from "../mcp-server/shared.js";
-import { expect, test } from "vitest";
+import { expect, expectTypeOf, test } from "vitest";
 import { SDKCore } from "../core.js";
 import { createConsoleLogger } from "../mcp-server/console-logger.js";
 import {
@@ -20,6 +20,7 @@ import {
 } from "../mcp-server/resources.js";
 import { createRegisterTool } from "../mcp-server/tools.js";
 import { createRegisterPrompt } from "../mcp-server/prompts.js";
+import { z as rootZod } from "zod";
 import { z } from "zod/v3";
 
 async function withClient(
@@ -41,6 +42,51 @@ async function withClient(
     await server.close();
   }
 }
+
+test("extension tools accept schemas from the root Zod import", async () => {
+  const server = new McpServer({ name: "root-zod", version: "1.0.0" });
+  createRegisterTool(
+    createConsoleLogger("error"),
+    server,
+    new SDKCore(),
+    new Set(),
+  )({
+    name: "length",
+    description: "Return input length",
+    args: {
+      value: rootZod
+        .string()
+        .default("example")
+        .transform((value) => value.length),
+      enabled: rootZod.boolean().default(true),
+    },
+    tool: (_sdk, args) => {
+      expectTypeOf(args.value).toEqualTypeOf<number>();
+      expectTypeOf(args.enabled).toEqualTypeOf<boolean>();
+      return {
+        content: [
+          { type: "text", text: String(args.enabled ? args.value : 0) },
+        ],
+      };
+    },
+  });
+  await withClient(server, async (client) => {
+    expect(await client.listTools()).toMatchObject({
+      tools: [{ inputSchema: { properties: { value: { type: "string" } } } }],
+    });
+    expect(
+      await client.callTool({ name: "length", arguments: {} }),
+    ).toMatchObject({
+      content: [{ text: "7" }],
+    });
+    expect(
+      await client.callTool({ name: "length", arguments: { value: "four" } }),
+    ).toMatchObject({ content: [{ text: "4" }] });
+    expect(
+      await client.callTool({ name: "length", arguments: { value: 4 } }),
+    ).toMatchObject({ isError: true });
+  });
+});
 
 test("v1 resource templates retain discovery, completion, and reads", async () => {
   const server = new McpServer({

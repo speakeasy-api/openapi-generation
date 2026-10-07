@@ -598,7 +598,7 @@ trackedFiles:
   src/mcp-server/cli/start/command.ts:
     last_write_checksum: sha1:0b1d5a70b4fbce726352d22a584ed4a531cb0a52
   src/mcp-server/cli/start/impl.ts:
-    last_write_checksum: sha1:fa434824ca40372f0aa641d676bc15c1d907b3d7
+    last_write_checksum: sha1:4dc914eb22abec4dc5da655e7547d9e2b7a48063
   src/mcp-server/console-logger.ts:
     last_write_checksum: sha1:0c4b9b7c79ad0a81359210cb31b9ee4d887d5de1
   src/mcp-server/extensions.ts:

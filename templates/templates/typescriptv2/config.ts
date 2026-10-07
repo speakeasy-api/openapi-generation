@@ -145,7 +145,7 @@ function getTemplateDependencies() {
     },
     zodMCP: {
       name: "zod",
-      version: "^3.25.28 || ^4.0.0",
+      version: "^3.25.28",
       cpe: "cpe:2.3:a:colinhacks:zod:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
