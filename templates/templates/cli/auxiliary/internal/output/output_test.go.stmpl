@@ -431,6 +431,28 @@ func TestPrintTableRowAndMapControls(t *testing.T) {
 	}
 }
 
+func TestPrintTableSingleRootScalarArrays(t *testing.T) {
+	t.Run("nullable primitive array", func(t *testing.T) {
+		var buf bytes.Buffer
+		value := nestedTableUnion{UnknownRaw: json.RawMessage(`{"nullable":[null]}`)}
+		if err := printTable(&buf, value); err != nil {
+			t.Fatal(err)
+		}
+		if want := "FIELD     VALUE\nnullable  null\n"; buf.String() != want {
+			t.Fatalf("got %q; want %q", buf.String(), want)
+		}
+	})
+	value := nestedTableUnion{UnknownRaw: json.RawMessage(`{"names":["one","two"],"counts":[1,9007199254740993],"flags":[true,false],"empty":[],"nested":[["one"]],"escaped":["line\nvalue","tab\tvalue"]}`)}
+	var buf bytes.Buffer
+	if err := printTable(&buf, value); err != nil {
+		t.Fatal(err)
+	}
+	want := "FIELD    VALUE\nnames    one, two\ncounts   1, 9007199254740993\nflags    true, false\nempty    \nnested   [[\"one\"]]\nescaped  line\\nvalue, tab\\tvalue\n"
+	if buf.String() != want {
+		t.Fatalf("got %q; want %q", buf.String(), want)
+	}
+}
+
 {{- if hasCliAsyncIntents}}
 
 func TestAwaitAsyncDeadlineKeepsPollError(t *testing.T) {

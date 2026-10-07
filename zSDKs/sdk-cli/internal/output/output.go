@@ -1791,7 +1791,7 @@ func printSingleJSONTable(out io.Writer, data string) error {
 			}
 			continue
 		}
-		cell, err := tableJSONCell(string(field.data))
+		cell, err := singleJSONTableCell(field.data)
 		if err != nil {
 			return fmt.Errorf("table field %s: %w", field.name, err)
 		}
@@ -1817,6 +1817,28 @@ func printSingleJSONTable(out io.Writer, data string) error {
 	return err
 }
 
+func singleJSONTableCell(data json.RawMessage) (string, error) {
+	if len(data) == 0 || data[0] != '[' {
+		return tableJSONCell(string(data))
+	}
+	var values []json.RawMessage
+	if err := json.Unmarshal(data, &values); err != nil {
+		return "", err
+	}
+	cells := make([]string, len(values))
+	for i, value := range values {
+		if value[0] == '{' || value[0] == '[' {
+			return tableJSONCell(string(data))
+		}
+		cell, err := tableJSONCell(string(value))
+		if err != nil {
+			return "", err
+		}
+		cells[i] = cell
+	}
+	return strings.Join(cells, ", "), nil
+}
+
 func tableJSONSection(data json.RawMessage) ([]string, bool) {
 	if len(data) == 0 || data[0] != '[' {
 		return nil, false
@@ -1826,13 +1848,15 @@ func tableJSONSection(data json.RawMessage) ([]string, bool) {
 		return nil, false
 	}
 	rows := make([]string, len(values))
+	hasObject := false
 	for i, value := range values {
 		if len(value) == 0 || (value[0] != '{' && string(value) != "null") {
 			return nil, false
 		}
+		hasObject = hasObject || value[0] == '{'
 		rows[i] = string(value)
 	}
-	return rows, true
+	return rows, hasObject
 }
 
 // printTableMap renders a map as a two-column key-value table.

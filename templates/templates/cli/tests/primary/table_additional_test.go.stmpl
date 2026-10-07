@@ -159,3 +159,8 @@ func TestTableGeneratedDateCell(t *testing.T) {
 	}{value})
 	assert.Equal(t, "FIELD      VALUE\npublished  2024-05-01\n", got)
 }
+
+func TestTableGeneratedScalarArrayCells(t *testing.T) {
+	object := components.ObjWithAnyAdditionalProperties{AdditionalProperties: map[string]any{"names": []string{"one", "two"}}}
+	assert.Equal(t, "FIELD  VALUE\nnames  one, two\n", renderTable(t, object))
+}
