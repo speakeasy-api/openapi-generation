@@ -2823,17 +2823,31 @@ function templateSettingsHelpFlags(command: string): string {
 }
 registerTemplateFunc("templateSettingsHelpFlags", templateSettingsHelpFlags);
 
+function primarySchemeFields(): CLISecurityFieldInfo[] {
+  const security = context.Global.AST.MainSDK.Security;
+  const fields = getCLISecurityFields();
+  const primary = primaryCLISecurityField(fields);
+  if (!security || !primary) return [];
+  const scalars: FieldDef[] = [];
+  for (const top of security.Type.Fields || []) {
+    if (top.Const) continue;
+    const kind = top.Type.Type.toString();
+    if (kind === "class" || kind === "union") {
+      const scheme = flattenCLISecurityObject({ Fields: [top] } as TypeDef);
+      if (scheme.some((f) => f.flagName === primary.flagName)) return scheme;
+    } else {
+      scalars.push(top);
+    }
+  }
+  return flattenCLISecurityObject({ Fields: scalars } as TypeDef).filter(
+    (f) => f.secType === primary.secType && f.secSubType === primary.secSubType,
+  );
+}
+
 function templateSettingsHelpExample(commandPath: string): string {
   const cliName = sanitizeCliName();
   const lines = [`  ${cliName} ${commandPath}`];
-  const fields = getCLISecurityFields();
-  const primary = primaryCLISecurityField(fields);
-  const scheme = primary
-    ? fields.filter(
-        (f) =>
-          f.secType === primary.secType && f.secSubType === primary.secSubType,
-      )
-    : [];
+  const scheme = primarySchemeFields();
   const prefix = context.Global.Config.EnvVarPrefix
     ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
     : "";
