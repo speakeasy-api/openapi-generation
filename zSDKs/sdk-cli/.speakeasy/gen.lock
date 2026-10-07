@@ -646,7 +646,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:e010e10d24f913bd1c3b5429cb85b74e9fefae1d
+    last_write_checksum: sha1:e2faae6b25fd4e512db4bacb72f438a4f7241625
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:

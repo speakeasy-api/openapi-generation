@@ -1223,6 +1223,20 @@ function applyDeclaredUsageOrder(
   reorder(root);
 }
 
+function settingsUsageFlags(command: string): UsageFlagDef[] {
+  const rootFlags = new Map<string, UsageFlagDef>();
+  for (const flag of getRootUsageFlags()) {
+    const name = /--([A-Za-z0-9_-]+)/.exec(flag.spec)?.[1];
+    if (name) rootFlags.set(name, flag);
+  }
+  const flags: UsageFlagDef[] = [];
+  for (const name of settingsFlagNames(command)) {
+    const flag = rootFlags.get(name);
+    if (flag) flags.push({ ...flag, global: false });
+  }
+  return flags;
+}
+
 function buildRootUsageCommand(): UsageCommandDef {
   const intentManifest = collectIntentManifest();
   const root: UsageCommandDef = {
@@ -1251,6 +1265,7 @@ function buildRootUsageCommand(): UsageCommandDef {
         help: "Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.",
         suggestions: ["pretty", "json", "yaml", "table", "toon"],
       },
+      ...settingsUsageFlags("configure"),
     ],
     commands: [],
   });
@@ -1277,6 +1292,7 @@ function buildRootUsageCommand(): UsageCommandDef {
       {
         name: "login",
         help: templateAuthLoginShort(),
+        flags: settingsUsageFlags("login"),
         commands: [],
       },
       {

@@ -111,6 +111,14 @@ func TestCompactSettingsCommandHelp(t *testing.T) {
 	assert.NotContains(t, login, "--global-query-param")
 	assert.Contains(t, login, "See also: cli configure · cli whoami · cli auth logout")
 
+	configureUsage := runBareHelp(t, "configure", "--usage")
+	assert.Contains(t, configureUsage, `flag "--api-key-auth <api_key_auth>"`)
+	assert.Contains(t, configureUsage, `flag "--global-query-param <global_query_param>"`)
+	assert.NotContains(t, configureUsage, "global=#true")
+	loginUsage := runBareHelp(t, "auth", "login", "--usage")
+	assert.Contains(t, loginUsage, `flag "--api-key-auth <api_key_auth>"`)
+	assert.NotContains(t, loginUsage, "--global-query-param")
+
 	h := NewCLITestHarness(t).WithEnv("HOME", t.TempDir()).WithEnv("CLI_NO_KEYRING", "true")
 	require.NoError(t, h.RunBare([]string{"configure", "--api-key-auth", "settings-example-key"}))
 	require.NoError(t, h.RunBare([]string{"whoami"}))
