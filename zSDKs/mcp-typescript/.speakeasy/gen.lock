@@ -58,7 +58,7 @@ trackedFiles:
   manifest.json:
     last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
-    last_write_checksum: sha1:4656382e8095f3ea4cc61ac36f9a78cdbf312e56
+    last_write_checksum: sha1:b72f1651cacf0ee9b490b9640c0ce6ecec7de1be
   server.json:
     last_write_checksum: sha1:cdd68ed3cc00a507a2bc71e85823fe10482e2527
   src/__tests__/assertions.ts:
@@ -448,7 +448,7 @@ trackedFiles:
   src/__tests__/testhelpers.ts:
     last_write_checksum: sha1:6ad9dca651df4525ccd2ac06d7d436cc22b22632
   src/cloudflare-worker/cloudflare-worker.ts:
-    last_write_checksum: sha1:7bd187eec20b94929fce5739b4de2291bf1ece97
+    last_write_checksum: sha1:735cd364a0f464eb9a4b45c753e2363b36febd9e
   src/core.ts:
     last_write_checksum: sha1:ce840032c45608f5f4022b32bcce32cb69c5ed26
   src/funcs/binaryAndStringUpload.ts:
@@ -554,7 +554,7 @@ trackedFiles:
   src/hooks/types.ts:
     last_write_checksum: sha1:29372122898cc523fa47576f3f6608a28ec6080e
   src/landing-page.ts:
-    last_write_checksum: sha1:223a8a48ebafe1deb3b9a59969ac88c5bb2ca75d
+    last_write_checksum: sha1:e0f0b4576efe5e3e782888935e662ec45382d8f0
   src/lib/base64.ts:
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
   src/lib/config.ts:
@@ -590,127 +590,127 @@ trackedFiles:
   src/mcp-server/cli/eval/command.ts:
     last_write_checksum: sha1:7cdb90760c01ebddf9a45332c2a4ad7aa007e81e
   src/mcp-server/cli/eval/impl.ts:
-    last_write_checksum: sha1:03b798d772bef9f8410462cbf9febe0ddb38a1bc
+    last_write_checksum: sha1:920db7e0c362d612bd13af1e9c8b8524db7fb14b
   src/mcp-server/cli/serve/command.ts:
     last_write_checksum: sha1:6700155fe9c6850f35d9ff03834ab3be59d4d273
   src/mcp-server/cli/serve/impl.ts:
-    last_write_checksum: sha1:26170c74302e8cce33722205881ba042714cb25c
+    last_write_checksum: sha1:d3918933a56c3a19df10097662efa73376544e95
   src/mcp-server/cli/start/command.ts:
     last_write_checksum: sha1:0b1d5a70b4fbce726352d22a584ed4a531cb0a52
   src/mcp-server/cli/start/impl.ts:
-    last_write_checksum: sha1:0d20774a12c409d4772473d2dbad3f8c2bfcd53b
+    last_write_checksum: sha1:efd248f6c2b17539c6c84fa7c1692515e6ca6dc2
   src/mcp-server/console-logger.ts:
     last_write_checksum: sha1:0c4b9b7c79ad0a81359210cb31b9ee4d887d5de1
   src/mcp-server/extensions.ts:
-    last_write_checksum: sha1:27de1e2b8aaedc8965d1d4c4d4c500df1f28b483
+    last_write_checksum: sha1:2198b49e3178b217db6d044a2884d71eaf92521f
   src/mcp-server/flags.ts:
     last_write_checksum: sha1:1fa1d39e1e57206a5b21ba9870d88d7a0484ba07
   src/mcp-server/gram.ts:
-    last_write_checksum: sha1:2186a9602c6c628f791f26aafbeba1e457980870
+    last_write_checksum: sha1:31ed2676816ede1f8c2bc2a34916316b5a709d1b
   src/mcp-server/mcp-server.ts:
     last_write_checksum: sha1:e7f95d828d67b60820bf240e141577d19c406900
   src/mcp-server/prompts.ts:
-    last_write_checksum: sha1:d5928503611775dde2dcc5272e35f8065b35b920
+    last_write_checksum: sha1:2725797c8942b4be6e242cdfd035c1f95d023f7e
   src/mcp-server/resources.ts:
-    last_write_checksum: sha1:13dc124e896d588f80a3711f4e32fc170416552e
+    last_write_checksum: sha1:2503e1a4d6e63c1a7db29e371d8f38d778a17357
   src/mcp-server/scopes.ts:
     last_write_checksum: sha1:77d0eb95785e84f9fd0b27c4612f8c6470489fe4
   src/mcp-server/server.ts:
-    last_write_checksum: sha1:5ad3a65ce75dd80625e93c814bc09e00e91b1234
+    last_write_checksum: sha1:0534f866ec7aca03b33990729d84b65997c47a92
   src/mcp-server/shared.ts:
-    last_write_checksum: sha1:19c9034032819a14f15c430de4350c8aba99d725
+    last_write_checksum: sha1:e285fbba7798f2cd4239bb90618969c7755dd032
   src/mcp-server/tools.ts:
-    last_write_checksum: sha1:a29c85128ae9ee0aa1e04a03799df9c23734cf2a
+    last_write_checksum: sha1:5d51cd60639d02b2045fdf96e5742d820857cb2a
   src/mcp-server/tools/binaryAndStringUpload.ts:
-    last_write_checksum: sha1:d33738c81094e8c30b6bc79f53e08a22da4274f9
+    last_write_checksum: sha1:fbf82c10210eec4825988311ef4326b79e33f93b
   src/mcp-server/tools/createUser.ts:
-    last_write_checksum: sha1:cb1dca4414eed423da807a1242ab4bef9bd1f86c
+    last_write_checksum: sha1:85feb27c38b9b6bf910544b035946f5f4484653d
   src/mcp-server/tools/createWithUnion.ts:
-    last_write_checksum: sha1:2cd2ed8a825887a57287031f38d7baf42d56e999
+    last_write_checksum: sha1:aa8b82c22f17c2d1330bc4ab614ac1a1997e306b
   src/mcp-server/tools/deleteUser.ts:
-    last_write_checksum: sha1:29c8129452373ae48235e5d563eb46a8aa6081f7
+    last_write_checksum: sha1:5374136ffc16dfd60048544eada5f68d42299e80
   src/mcp-server/tools/getBinaryDefaultResponse.ts:
-    last_write_checksum: sha1:c17cf969d45ceb35168df991e265144e1ea627d2
+    last_write_checksum: sha1:0a6a9da29179bff6ae00b27c3f6cc0cb720f3dfd
   src/mcp-server/tools/getDuplicateExportCollision.ts:
-    last_write_checksum: sha1:4ceb6bb222e0d003b28690d7d27ddf3be27d175d
+    last_write_checksum: sha1:105243b016cbb335343b79d49935cc20662f9f06
   src/mcp-server/tools/getEmptyObjectError.ts:
-    last_write_checksum: sha1:fe668187a47ec0838b7eeb6f5fd95ec03f05c9e8
+    last_write_checksum: sha1:9358635623baaf5285347d577f0803659d3e18ed
   src/mcp-server/tools/getErrorInUnion.ts:
-    last_write_checksum: sha1:bd4a80036ed9c638f021541637c73d2c0964179c
+    last_write_checksum: sha1:4d201d0c238622ff88b50105645573ef06e65057
   src/mcp-server/tools/getErrorOnlyExample.ts:
-    last_write_checksum: sha1:8c4d4e7b9b77a20abc7a2a5fdb2ecfab93f6e925
+    last_write_checksum: sha1:915d2071c5054dda36da48469a5faac18fb98f0c
   src/mcp-server/tools/getFullyFlattenedRequest.ts:
-    last_write_checksum: sha1:9f6a46cec360a345d5dcc11a2d04a1ae2d8ae718
+    last_write_checksum: sha1:5b62d927ba72c208d0afb0fdfeb779da7c538d3a
   src/mcp-server/tools/getNamedPrimitiveUnion.ts:
-    last_write_checksum: sha1:c4037e16c3e520efff3be4a40bdd25fb74b32459
+    last_write_checksum: sha1:76c1ba80f847b93587ad9a86125fd310444efa5f
   src/mcp-server/tools/getNestedIntegerString.ts:
-    last_write_checksum: sha1:550dca2ae377a827310a94259dd9e5bda5d066db
+    last_write_checksum: sha1:4ee1320f06a7e9768cb91d9adc8c48b4bfc30627
   src/mcp-server/tools/getPolymorphism.ts:
-    last_write_checksum: sha1:ae2c6a58e0411fe4fe2013194755cee0d1960c7e
+    last_write_checksum: sha1:ca93f1b65c37fa68d40842e91dbdbf01709b8056
   src/mcp-server/tools/getPositionalDefault.ts:
-    last_write_checksum: sha1:6c863eb9ade026faf530c94b20636e2c6203c16f
+    last_write_checksum: sha1:79663530428fe7bb485f81ca2832be802363b70d
   src/mcp-server/tools/getRequestBodyFlattenedAway.ts:
-    last_write_checksum: sha1:1286331c7c92594da9abfb11b2e37341eee4e505
+    last_write_checksum: sha1:ae96e983dcd28b57d00a5fb4a181e769b888ab3e
   src/mcp-server/tools/getUnionErrors.ts:
-    last_write_checksum: sha1:dc159520c1c7d338a7468ea530738a713373207f
+    last_write_checksum: sha1:cc6561ccaab13610733eda33f3b6609636df1518
   src/mcp-server/tools/getUser.ts:
-    last_write_checksum: sha1:20681fc2bd9ee5a8f681a43d18ef3c6efc4daf24
+    last_write_checksum: sha1:f18e2e6937d69e880438d573b6a2a7e9f2cf8431
   src/mcp-server/tools/groupRootGroupOp.ts:
-    last_write_checksum: sha1:4add899726975deb6473cdbc8efe9e8c52875b41
+    last_write_checksum: sha1:470ab2ddf7bb9186d8580d360a931721791dcaa1
   src/mcp-server/tools/groupSubGroupEmptyTailNestedGroupOp.ts:
-    last_write_checksum: sha1:b1e7c5ba454c0328d85e7dcee301269eb0507cad
+    last_write_checksum: sha1:207560eb33b868982dcfef45a690fc15167181ed
   src/mcp-server/tools/groupSubGroupSubGroupOp.ts:
-    last_write_checksum: sha1:5cd6bc8830d7f37946d4ae50ddeae853f33b7908
+    last_write_checksum: sha1:a1c69308dfc4fd48087686145f54f0b179674a54
   src/mcp-server/tools/login.ts:
-    last_write_checksum: sha1:94f679839719f31c4f1f6efab1367a0060de839e
+    last_write_checksum: sha1:f8d5cd31c7eff27af43c4754d0d9f48515ef5132
   src/mcp-server/tools/namespaceTestsConflictsCreateNamespaceConflict.ts:
-    last_write_checksum: sha1:616b537a6f264ef490bd00e6a918ce2b756298f1
+    last_write_checksum: sha1:bbcd945e53bf74fd6491e8141a9be1be5be044de
   src/mcp-server/tools/namespaceTestsConflictsGetNamespaceConflict.ts:
-    last_write_checksum: sha1:f3a0bbebc6e495f4a54e30eae7aba38647c2ffc3
+    last_write_checksum: sha1:c5c312d66f9236ba5dc724f46789448c02840bd5
   src/mcp-server/tools/namespaceTestsConflictsGetPetOwners.ts:
-    last_write_checksum: sha1:0dd8589d988a7ab7cb8064ac99d08f18161f9bd1
+    last_write_checksum: sha1:b70696e5846ed96a4a5c94781ddbbef84430e51a
   src/mcp-server/tools/namespaceTestsConflictsGetTripleNamespaceConflict.ts:
-    last_write_checksum: sha1:5dbe28e871b893a73681b49f1a130f09765f141c
+    last_write_checksum: sha1:4f46d0e16ec321e497b02f0ab9dcfb5e54d90ee2
   src/mcp-server/tools/namespaceTestsConflictsPutNamespaceConflict.ts:
-    last_write_checksum: sha1:9c3c689f6a62ca998334eb3adb0ecd591afcd7a7
+    last_write_checksum: sha1:d2bf49e758f20d9af9bd8b31f2651cecf3ab856f
   src/mcp-server/tools/namespaceTestsSingleBarGetSingleNamespaceBarPet.ts:
-    last_write_checksum: sha1:1a717ea56e9b149190f6d3fc07525288cdb0b2e0
+    last_write_checksum: sha1:60fc48597e25314715ff7dac2852efef2040630c
   src/mcp-server/tools/namespaceTestsSingleFooCreateSingleNamespaceFooPet.ts:
-    last_write_checksum: sha1:7593d41717c8d8fe5781d2c12b32c0c98cd52476
+    last_write_checksum: sha1:9b95a098dc0c9d9f5b4ece0f78da8abb10d0f222
   src/mcp-server/tools/namespaceTestsSingleFooGetSingleNamespaceFooPet.ts:
-    last_write_checksum: sha1:2ccd9ab27117f6f5479b91d36b08930c79476a30
+    last_write_checksum: sha1:61868b75f4b9409a09e9ac79a6f291b40c0610ed
   src/mcp-server/tools/namespaceTestsTypesGetNamespaceAnimal.ts:
-    last_write_checksum: sha1:7941c7f400047fa313a28c2f97874e463716465e
+    last_write_checksum: sha1:9308ce20805fdb8ce958319c1a4cc74f8afb3860
   src/mcp-server/tools/namespaceTestsTypesGetNamespaceOrganization.ts:
-    last_write_checksum: sha1:fbdb90d9968d99976f2ce3400a8ae466e3ef61d0
+    last_write_checksum: sha1:47aca656dbf67d50a75c37e5f79fd43a64720d81
   src/mcp-server/tools/namespaceTestsTypesGetNamespaceTypes.ts:
-    last_write_checksum: sha1:dce3adf869b4333afa7da1136303b620fb6cbc35
+    last_write_checksum: sha1:db4c5be151f71819d5c6faf66a2a0356a653a714
   src/mcp-server/tools/namespaceTestsTypesGetNamespaceVehicle.ts:
-    last_write_checksum: sha1:045c22d2b67d01e19fad3ba2bfaf4bb611a56e22
+    last_write_checksum: sha1:71b6a1f463c30b324d11b59e28588df3270c3ad5
   src/mcp-server/tools/operationWithLeadingAndTrailingUnderscores.ts:
-    last_write_checksum: sha1:92ab371a553590d7a19fdbc90eeae1101132c058
+    last_write_checksum: sha1:16cd0325a29b330a36e33c9816699542f4a5abda
   src/mcp-server/tools/parenthesesInPathAllowed.ts:
-    last_write_checksum: sha1:f2a8b08bfc5e51f0c21ae8d1f163ad15e779aa5b
+    last_write_checksum: sha1:6a43f0c9bf073e2b9521be36694a398000a995c2
   src/mcp-server/tools/postFile.ts:
-    last_write_checksum: sha1:3a1abc3355adae8c302df3b82bf92d171e35cb49
+    last_write_checksum: sha1:763f7c461be2b98f6f85e5e231c72b15895cfac9
   src/mcp-server/tools/tag1Deprecated1.ts:
-    last_write_checksum: sha1:486ae72628dd0e9ee787117ffd5c265e25688fbb
+    last_write_checksum: sha1:33713cde8d799d7f50c6260eff03658fcfaa625b
   src/mcp-server/tools/tag1ListTest1.ts:
-    last_write_checksum: sha1:e327c139953f93229383da7b9bee14da01159fbe
+    last_write_checksum: sha1:86edf15c47b6c518736ffc497b0ecbde89c7c099
   src/mcp-server/tools/tag1PostFileWithEncoding.ts:
-    last_write_checksum: sha1:b1ac58efcf95b286f0feab137a6f73e2bad87f77
+    last_write_checksum: sha1:f392b273ec320d7884f4598272ce3c4c0e93c815
   src/mcp-server/tools/testEndpoint.ts:
-    last_write_checksum: sha1:95e959dabaa9c5227b40ebafa123bba41bfd24b5
+    last_write_checksum: sha1:072cfa653366f9d0743c8a990198847113eb2adb
   src/mcp-server/tools/testEnumFormats.ts:
-    last_write_checksum: sha1:f1784b88c0df69828e1c87c2ef51ef338eea550c
+    last_write_checksum: sha1:9bc8721c02f553ce33a643b0e06f1a453c2154b8
   src/mcp-server/tools/testGroupTag2PostTest.ts:
-    last_write_checksum: sha1:b2e58a78f8edfb4ec8741b96a1b8b68694bb38a7
+    last_write_checksum: sha1:6b701bda178e4a93e0dbb5f4d43407d84dcad937
   src/mcp-server/tools/updateUser.ts:
-    last_write_checksum: sha1:042c667c8df47b6b88c5f422ab52379d3f1ae414
+    last_write_checksum: sha1:2b762d4d2dcbc4c935fb41a481442d78c8b42592
   src/mcp-server/tools/urlValidationStressTest.ts:
-    last_write_checksum: sha1:dc7746ef18469648070b3843457c5838d529c05a
+    last_write_checksum: sha1:652a7dd06339f2bf4bc7807739a3882b7dd34103
   src/mcp-server/tools/validate.ts:
-    last_write_checksum: sha1:81c79e86eb08cd1e9541e4b0ab8a665ed22fda65
+    last_write_checksum: sha1:83c5fae09be700880bf6fd98ef171fbcdf05b88b
   src/models/aloof.ts:
     last_write_checksum: sha1:1fe23bbccb1cdd6590012f582148848c387fd3d8
   src/models/approvalconfig.ts:
@@ -952,11 +952,11 @@ trackedFiles:
   tsconfig.json:
     last_write_checksum: sha1:8a87ada8f75aac886f4923082db03a051e54489d
   worker-configuration.d.ts:
-    last_write_checksum: sha1:b81ef22bbf147612f086758e5ee28665c4d14c9c
+    last_write_checksum: sha1:f8d48c4a57bd2c2d46a4e7afa7a1b6bd90c7fba4
   worker-configuration.ts:
     last_write_checksum: sha1:94268ed98a74734682ee4a0466bb2fa6877a17a2
   wrangler.toml:
-    last_write_checksum: sha1:0ff13e4a580ef5de74e0de52aae1bbc3972538ea
+    last_write_checksum: sha1:92b19ea633dc9ee4524a3d266411df305459eebf
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

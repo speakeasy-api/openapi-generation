@@ -1,0 +1,10 @@
+id: 1791371503-a3eff565
+features:
+    - core
+targets:
+    - mcp-typescript
+type: feat
+bump: major
+description: migrate MCP servers to the v2 SDK, require Node.js 20, and serve Cloudflare over stateless HTTP
+author: ThomasRooney
+date: "2026-10-07"

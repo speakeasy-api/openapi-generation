@@ -19,7 +19,7 @@ export const tool$getNamedPrimitiveUnion: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await getNamedPrimitiveUnion(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

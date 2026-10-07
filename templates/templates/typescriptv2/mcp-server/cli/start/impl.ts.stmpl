@@ -5,8 +5,8 @@
 {{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
 {{- $serverVariables := and $globalSDK.Servers (gt (len $globalSDK.Servers.GetVariables) 0) -}}
 {{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/server-legacy/sse";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import express from "express";
 import { LocalContext } from "../../cli.js";
 import {
@@ -86,9 +86,7 @@ export async function main(this: LocalContext, flags: StartCommandFlags) {
 
 async function startStdio(flags: StartCommandFlags) {
   const logger = createConsoleLogger(flags["log-level"]);
-  const transport = new StdioServerTransport();
-  const server = {{templateString "mcp-server/create-mcp-server.ts.stmpl" .Local}};
-  await server.connect(transport);
+  const server = serveStdio(() => {{templateString "mcp-server/create-mcp-server.ts.stmpl" .Local}});
 
   const abort = async () => {
     await server.close();

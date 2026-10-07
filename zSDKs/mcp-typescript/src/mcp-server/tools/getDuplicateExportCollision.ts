@@ -19,7 +19,7 @@ export const tool$getDuplicateExportCollision: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await getDuplicateExportCollision(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

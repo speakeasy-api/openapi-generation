@@ -37,7 +37,7 @@ and  \\'escaped single quotes\\' and \\"escaped double quotes\\".
     const [result] = await parenthesesInPathAllowed(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

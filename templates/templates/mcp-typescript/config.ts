@@ -1,6 +1,6 @@
 // @ts-ignore
 function getCompileDependencies(
-  _config: GeneratorInitialConfiguration,
+  config: GeneratorInitialConfiguration,
 ): RunnerCommandDependencies {
   return [
     {
@@ -8,7 +8,7 @@ function getCompileDependencies(
       version: {
         args: ["--version"],
         regex: `(?m).*?(\\d+\\.\\d+\\.\\d+).*?`,
-        minVersion: "18.0.0",
+        minVersion: config.LangCfg.gramEnabled ? "22.18.0" : "20.0.0",
       },
       installDocumentation: `Install Node.js by following the instructions at https://nodejs.org/en/download/.`,
     },
@@ -70,9 +70,31 @@ function getTemplateDependencies() {
       ecosystem: "npm",
       category: "runtime",
     },
-    "@modelcontextprotocol/sdk": {
-      name: "@modelcontextprotocol/sdk",
-      version: "1.26.0",
+    "@modelcontextprotocol/client": {
+      name: "@modelcontextprotocol/client",
+      version: "2.3.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+      condition: "gram",
+    },
+    "@modelcontextprotocol/server": {
+      name: "@modelcontextprotocol/server",
+      version: "2.3.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+    },
+    "@modelcontextprotocol/server-legacy": {
+      name: "@modelcontextprotocol/server-legacy",
+      version: "2.3.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+    },
+    "@modelcontextprotocol/node": {
+      name: "@modelcontextprotocol/node",
+      version: "2.1.1",
       cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
@@ -86,7 +108,7 @@ function getTemplateDependencies() {
     },
     zod: {
       name: "zod",
-      version: "^4.0.0",
+      version: "^4.2.0",
       cpe: "cpe:2.3:a:colinhacks:zod:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
@@ -118,14 +140,6 @@ function getTemplateDependencies() {
       cpe: "cpe:2.3:a:openai:ai-sdk-openai:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
-    },
-    agents: {
-      name: "agents",
-      version: "0.3.10",
-      cpe: "cpe:2.3:a:cloudflare:agents:*:*:*:*:*:node.js:*:*",
-      ecosystem: "npm",
-      category: "runtime",
-      condition: "cloudflare",
     },
     "@gram-ai/functions": {
       name: "@gram-ai/functions",

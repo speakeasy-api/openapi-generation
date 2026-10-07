@@ -4,8 +4,8 @@
 {{- $usageLocation := "mcp-server/cli/serve" -}}
 {{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
 {{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { toNodeHandler } from "@modelcontextprotocol/node";
+import { createMcpHandler } from "@modelcontextprotocol/server";
 import express from "express";
 import { LocalContext } from "../../cli.js";
 import {
@@ -54,19 +54,10 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
 
   app.use(express.json());
 
-  app.post("/mcp", async (req, res) => {
+  const handler = createMcpHandler(({{ if $globalSecurity }}{ requestInfo }{{ end }}) => {
 {{- if $globalSecurity }}
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (Array.isArray(value)) {
-        for (const v of value) headers.append(key, v);
-      } else if (value !== undefined) {
-        headers.set(key, value);
-      }
-    }
+    const headers = requestInfo?.headers ?? new Headers();
 {{- end }}
-
-    const transport = new StreamableHTTPServerTransport({});
 
     const { server: mcpServer } = createMCPServer({
       logger,
@@ -106,9 +97,10 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
       });
     };
 
-    await mcpServer.connect(transport as Transport);
-    await transport.handleRequest(req, res, req.body);
+    return mcpServer;
   });
+  const nodeHandler = toNodeHandler(handler);
+  app.all("/mcp", (req, res) => nodeHandler(req, res, req.body));
 
   app.get("/", landingPageExpress);
 
@@ -118,7 +110,7 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
     logger.info("MCP Streamable HTTP server started", { host });
   });
 
-  const shutdown = () => {
+  const shutdown = async () => {
     logger.info("Shutting down HTTP server");
 
     const timer = setTimeout(() => {
@@ -126,6 +118,7 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
       process.exit(1);
     }, 5000);
 
+    await handler.close();
     httpServer.close(() => {
       clearTimeout(timer);
       logger.info("Graceful shutdown complete");

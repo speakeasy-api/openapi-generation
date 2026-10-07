@@ -1,6 +1,6 @@
 // @ts-ignore
 function getCompileDependencies(
-  _config: GeneratorInitialConfiguration,
+  config: GeneratorInitialConfiguration,
 ): RunnerCommandDependencies {
   return [
     {
@@ -8,7 +8,7 @@ function getCompileDependencies(
       version: {
         args: ["--version"],
         regex: `(?m).*?(\\d+\\.\\d+\\.\\d+).*?`,
-        minVersion: "18.0.0",
+        minVersion: config.LangCfg.enableMCPServer ? "20.0.0" : "18.0.0",
       },
       installDocumentation: `Install Node.js by following the instructions at https://nodejs.org/en/download/.`,
     },
@@ -111,10 +111,41 @@ function getTemplateDependencies() {
       category: "runtime",
       condition: "zodV4Mini",
     },
-    "@modelcontextprotocol/sdk": {
-      name: "@modelcontextprotocol/sdk",
-      version: "^1.26.0",
+    "@modelcontextprotocol/client": {
+      name: "@modelcontextprotocol/client",
+      version: "2.3.1",
       cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "dev",
+      condition: "mcpServer",
+    },
+    "@modelcontextprotocol/server": {
+      name: "@modelcontextprotocol/server",
+      version: "^2.3.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+      condition: "mcpServer",
+    },
+    "@modelcontextprotocol/server-legacy": {
+      name: "@modelcontextprotocol/server-legacy",
+      version: "^2.3.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+      condition: "mcpServer",
+    },
+    zodMCP: {
+      name: "zod",
+      version: "^3.25.28 || ^4.0.0",
+      cpe: "cpe:2.3:a:colinhacks:zod:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+      condition: "mcpServer",
+    },
+    "zod-to-json-schema": {
+      name: "zod-to-json-schema",
+      version: "^3.25.2",
       ecosystem: "npm",
       category: "runtime",
       condition: "mcpServer",

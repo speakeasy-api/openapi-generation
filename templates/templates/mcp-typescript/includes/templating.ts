@@ -723,7 +723,7 @@ function addHeadersToConfigVSCode(config: any, headerEntries: any[]) {
 }
 
 function mcpRemoteConfigCommand(
-  endpointType: string = "sse",
+  endpointType: string = "mcp",
   clientType: string = "default",
   url?: string,
 ) {
@@ -772,7 +772,7 @@ function mcpIDEConfigObject(
     executor?: Executor;
   } = {},
 ) {
-  const { location = "readme", endpoint = "sse", executor = "npx" } = options;
+  const { location = "readme", endpoint = "mcp", executor = "npx" } = options;
 
   if (context.Global.Config.CloudflareEnabled && location === "landingpage") {
     const command = mcpRemoteConfigCommand(endpoint);
@@ -787,7 +787,7 @@ function templateMcpIDEConfig(options: MCPIDEConfigOptions = {}) {
   const {
     location = "readme",
     format = "json",
-    endpoint = "sse",
+    endpoint = "mcp",
     executor = "npx",
   } = options;
 
@@ -910,8 +910,8 @@ function mcpRemoteConfigJS() {
   let js = `{
     "mcpServers": {
       "${mcpName()}": {
-        "type": "sse",
-        "url": \`\${o}/sse\``;
+        "type": "http",
+        "url": \`\${o}/mcp\``;
 
   if (headerEntries.length > 0) {
     js += `,
@@ -1030,9 +1030,9 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
       "mcp",
       "add",
       "--transport",
-      "sse",
+      "http",
       mcpName(),
-      `\${o}/sse`,
+      `\${o}/mcp`,
       ...headerArgs,
     ].join(" ");
   }
@@ -1046,9 +1046,9 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
       "mcp",
       "add",
       "--transport",
-      "sse",
+      "http",
       mcpName(),
-      `${cloudflareURL}/sse`,
+      `${cloudflareURL}/mcp`,
     ];
   } else {
     // Local configuration

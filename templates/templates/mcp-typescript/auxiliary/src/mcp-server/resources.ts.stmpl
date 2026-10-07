@@ -5,19 +5,17 @@
 {{- addImport "./scopes.js" "MCPScope" }}
 {{- addImport "./console-logger.js" "ConsoleLogger" }}
 {{- addImport "../core.js" $coreName }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "ResourceMetadata" }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "ResourceTemplate" }}
-{{- addImport "@modelcontextprotocol/sdk/shared/uriTemplate.js" "Variables" }}
-{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ReadResourceResult" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
+{{- addImport "@modelcontextprotocol/server" "McpServer" }}
+{{- addImport "@modelcontextprotocol/server" "ResourceMetadata" }}
+{{- addImport "@modelcontextprotocol/server" "ResourceTemplate" }}
+{{- addImport "@modelcontextprotocol/server" "Variables" }}
+{{- addImport "@modelcontextprotocol/server" "ServerContext" }}
+{{- addImport "@modelcontextprotocol/server" "ReadResourceResult" }}
 
 export type ReadResourceCallback = (
   client: {{ $coreName }},
   uri: URL,
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+  extra: ServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceDefinition = {
@@ -33,7 +31,7 @@ export type ReadResourceTemplateCallback = (
   client: {{ $coreName }},
   uri: URL,
   vars: Variables,
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+  extra: ServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceTemplateDefinition = {
@@ -141,7 +139,7 @@ export function createRegisterResource(
       description: resource.description,
     };
 
-    server.resource(
+    server.registerResource(
       resource.name,
       resource.resource,
       metadata,
@@ -173,7 +171,7 @@ export function createRegisterResourceTemplate(
       description: resource.description,
     };
 
-    server.resource(
+    server.registerResource(
       resource.name,
       resource.resource,
       metadata,

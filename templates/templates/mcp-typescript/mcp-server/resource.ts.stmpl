@@ -24,7 +24,7 @@ export const {{ sanitizeMCPPrimitiveExport $op }}: ResourceDefinition = {
     {{- addFuncImport $op $usageLocation }}
     const [result, apiCall] = await {{ $funcName }}(
       client,
-      { fetchOptions: { signal: extra.signal } },
+      { fetchOptions: { signal: extra.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

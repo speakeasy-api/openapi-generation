@@ -7,6 +7,43 @@ import { authHoistedSecurityAccessTokenOnly } from "../funcs/authHoistedSecurity
 import { authHoistedSecurityAccessTokenFirst } from "../funcs/authHoistedSecurityAccessTokenFirst.js";
 import { authHoistedSecurityApiKeyFirst } from "../funcs/authHoistedSecurityApiKeyFirst.js";
 import { authHoistedSecurityBasicHttpOnly } from "../funcs/authHoistedSecurityBasicHttpOnly.js";
+import type { MCPServerFlags } from "../mcp-server/flags.js";
+import { buildSDK } from "../mcp-server/tools.js";
+
+const quietLogger = { level: "error" };
+
+function resolvedOptions(headers: Record<string, string>, flags: Partial<MCPServerFlags>, disableStaticAuth = false) {
+  const sdk = buildSDK(new Headers(headers), flags as MCPServerFlags, disableStaticAuth, quietLogger);
+  return sdk._options as { security?: Record<string, unknown>; globalHeaderParam?: boolean };
+}
+
+test("MCP server leaves unset optional settings undefined", () => {
+  const options = resolvedOptions({}, {});
+  expect(options.security?.["accessToken"]).toBe("");
+  expect(options.security?.["basicHttp"]).toBeUndefined();
+  expect(options.globalHeaderParam).toBeUndefined();
+});
+
+test("MCP server uses static credentials from flags", () => {
+  const options = resolvedOptions({}, { "access-token": "static-token", username: "user", password: "pass" });
+  expect(options.security?.["accessToken"]).toBe("static-token");
+  expect(options.security?.["basicHttp"]).toEqual({ username: "user", password: "pass" });
+});
+
+test("MCP server request headers override static credentials", () => {
+  const options = resolvedOptions({ "access-token": "header-token" }, { "access-token": "static-token" });
+  expect(options.security?.["accessToken"]).toBe("header-token");
+});
+
+test("MCP server ignores static credentials when static auth is disabled", () => {
+  const options = resolvedOptions({}, { "access-token": "static-token" }, true);
+  expect(options.security?.["accessToken"]).toBe("");
+});
+
+test("MCP server validates enum request headers", () => {
+  expect(resolvedOptions({ "global-header-param": "true" }, {}).globalHeaderParam).toBe(true);
+  expect(() => resolvedOptions({ "global-header-param": "maybe" }, {})).toThrow();
+});
 
 test("Global Security Fields Ordering", async () => {
   recordTest("auth-global-security-fields-ordering");

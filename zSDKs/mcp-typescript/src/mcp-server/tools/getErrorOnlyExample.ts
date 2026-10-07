@@ -22,7 +22,7 @@ a default example for the success response.`,
   tool: async (client, ctx) => {
     const [result] = await getErrorOnlyExample(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

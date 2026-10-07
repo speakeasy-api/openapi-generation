@@ -8,7 +8,11 @@ const deps = getTemplateDependencies();
 function templateDependencies(): string {
   const defaultDependencies = {
     express: deps.express.version,
-    "@modelcontextprotocol/sdk": deps["@modelcontextprotocol/sdk"].version,
+    "@modelcontextprotocol/server":
+      deps["@modelcontextprotocol/server"].version,
+    "@modelcontextprotocol/server-legacy":
+      deps["@modelcontextprotocol/server-legacy"].version,
+    "@modelcontextprotocol/node": deps["@modelcontextprotocol/node"].version,
     "@stricli/core": deps["@stricli/core"].version,
     zod: deps.zod.version,
     ...(context.Global.Config.EvalProvider
@@ -22,11 +26,9 @@ function templateDependencies(): string {
       : {}),
   };
 
-  if (context.Global.Config.CloudflareEnabled) {
-    defaultDependencies["agents"] = deps.agents.version;
-  }
-
   if (context.Global.Config.GramEnabled) {
+    defaultDependencies["@modelcontextprotocol/client"] =
+      deps["@modelcontextprotocol/client"].version;
     defaultDependencies["@gram-ai/functions"] =
       deps["@gram-ai/functions"].version;
   }
@@ -67,6 +69,10 @@ function templateDevDependencies(): string {
     sdkHasTests(context.Global.AST)
   ) {
     defaultDependencies["vitest"] = deps.vitest.version;
+    if (!context.Global.Config.GramEnabled) {
+      defaultDependencies["@modelcontextprotocol/client"] =
+        deps["@modelcontextprotocol/client"].version;
+    }
   }
 
   return renderDependencies(

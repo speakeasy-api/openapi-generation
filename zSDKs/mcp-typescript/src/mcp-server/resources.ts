@@ -4,16 +4,12 @@
 
 import {
   McpServer,
+  ReadResourceResult,
   ResourceMetadata,
   ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
-import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
-import { Variables } from "@modelcontextprotocol/sdk/shared/uriTemplate.js";
-import {
-  ReadResourceResult,
-  ServerNotification,
-  ServerRequest,
-} from "@modelcontextprotocol/sdk/types.js";
+  ServerContext,
+  Variables,
+} from "@modelcontextprotocol/server";
 import { SDKCore } from "../core.js";
 import { ConsoleLogger } from "./console-logger.js";
 import { MCPScope } from "./scopes.js";
@@ -22,7 +18,7 @@ import { valueToBase64 } from "./shared.js";
 export type ReadResourceCallback = (
   client: SDKCore,
   uri: URL,
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+  extra: ServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceDefinition = {
@@ -38,7 +34,7 @@ export type ReadResourceTemplateCallback = (
   client: SDKCore,
   uri: URL,
   vars: Variables,
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+  extra: ServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceTemplateDefinition = {
@@ -94,7 +90,7 @@ export function createRegisterResource(
       description: resource.description,
     };
 
-    server.resource(
+    server.registerResource(
       resource.name,
       resource.resource,
       metadata,
@@ -129,7 +125,7 @@ export function createRegisterResourceTemplate(
       description: resource.description,
     };
 
-    server.resource(
+    server.registerResource(
       resource.name,
       resource.resource,
       metadata,

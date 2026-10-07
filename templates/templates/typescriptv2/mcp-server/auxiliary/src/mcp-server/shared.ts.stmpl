@@ -2,6 +2,32 @@
 {{- genImports -}}
 {{- addZodPackageImport -}}
 {{- addImport "../lib/base64.js" "bytesToBase64" -}}
+{{- addImport "zod-to-json-schema" "zodToJsonSchema" -}}
+{{- addImport "@modelcontextprotocol/server" "StandardSchemaWithJSON" -}}
+
+export function mcpSchema<A extends z.ZodRawShape>(
+  shape: A,
+): StandardSchemaWithJSON<z.input<z.ZodObject<A>>, z.output<z.ZodObject<A>>> {
+  const schema = z.object(shape);
+  const jsonSchema = (): Record<string, unknown> => JSON.parse(JSON.stringify(
+    zodToJsonSchema(schema, { pipeStrategy: "input", strictUnions: true }),
+    (_key, value) => typeof value === "bigint" ? value.toString() : value,
+  ));
+
+  return {
+    "~standard": {
+      version: 1,
+      vendor: "zod",
+      jsonSchema: { input: jsonSchema, output: jsonSchema },
+      validate: async (value) => {
+        const result = await schema.safeParseAsync(value);
+        return result.success
+          ? { value: result.data }
+          : { issues: result.error.issues };
+      },
+    },
+  };
+}
 
 type BinaryData =
   | Uint8Array

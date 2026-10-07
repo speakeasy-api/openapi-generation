@@ -7,14 +7,13 @@
 {{- addImport "./scopes.js" "MCPScope" }}
 {{- addImport "./console-logger.js" "ConsoleLogger" }}
 {{- addImport "../core.js" $coreName }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "CallToolResult" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
-{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
+{{- addImport "@modelcontextprotocol/server" "CallToolResult" }}
+{{- addImport "@modelcontextprotocol/server" "ServerContext" }}
+{{- addImport "@modelcontextprotocol/server" "McpServer" }}
 {{- addZodPackageImport "objectOutputType" }}
 {{- addZodPackageImport "ZodTypeAny" }}
 {{- addZodPackageImport "ZodRawShape" }}
+{{- addImport "./shared.js" "mcpSchema" }}
 
 export type ToolDefinition<Args extends undefined | ZodRawShape = undefined> =
   Args extends ZodRawShape
@@ -26,7 +25,7 @@ export type ToolDefinition<Args extends undefined | ZodRawShape = undefined> =
         tool: (
           client: {{$coreName}},
           args: objectOutputType<Args, ZodTypeAny>,
-          extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+          extra: ServerContext
         ) => CallToolResult | Promise<CallToolResult>;
       }
     : {
@@ -36,7 +35,7 @@ export type ToolDefinition<Args extends undefined | ZodRawShape = undefined> =
         args?: undefined;
         tool: (
           client: {{$coreName}},
-          extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+          extra: ServerContext
         ) => CallToolResult | Promise<CallToolResult>;
       };
 
@@ -118,13 +117,14 @@ export function createRegisterTool(
     }
 
     if (tool.args) {
-      server.tool(tool.name, tool.description, tool.args, async (args, ctx) => {
-        return tool.tool(sdk, args, ctx);
-      });
+      server.registerTool(tool.name, {
+        description: tool.description,
+        inputSchema: mcpSchema(tool.args),
+      }, async (args, ctx) => tool.tool(sdk, args, ctx));
     } else {
-      server.tool(tool.name, tool.description, async (ctx) => {
-        return tool.tool(sdk, ctx);
-      });
+      server.registerTool(tool.name, {
+        description: tool.description,
+      }, async (ctx) => tool.tool(sdk, ctx));
     }
 
     logger.debug("Registered tool", { name: tool.name });

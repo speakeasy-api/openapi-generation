@@ -25,7 +25,7 @@ export const tool$deleteUser: ToolDefinition<typeof args> = {
     const [result] = await deleteUser(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

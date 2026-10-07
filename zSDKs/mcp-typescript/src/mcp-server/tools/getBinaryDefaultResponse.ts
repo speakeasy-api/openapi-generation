@@ -18,7 +18,7 @@ export const tool$getBinaryDefaultResponse: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await getBinaryDefaultResponse(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

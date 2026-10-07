@@ -35,7 +35,7 @@ export function landingPageHTML(origin: string): string {
     "args": [
       "-y",
       "mcp-remote@0.1.25",
-      `${o}/sse`,
+      `${o}/mcp`,
       "--header",
       "server-index:${SERVER_INDEX}",
       "--header",
@@ -92,7 +92,7 @@ export function landingPageHTML(origin: string): string {
     },
   };
   const codexConfig = `[mcp_servers.SDK]
-url = "${o}/sse"
+url = "${o}/mcp"
 http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDOMAIN", "api-version" = "YOUR_API_VERSION", "api-host-name" = "YOUR_API_HOST_NAME", "api-port" = "YOUR_API_PORT", "username" = "YOUR_USERNAME", "password" = "YOUR_PASSWORD", "bearer-auth" = "YOUR_BEARER_AUTH", "my-api-key" = "YOUR_MY_API_KEY", "oauth2" = "YOUR_OAUTH2", "app-id" = "YOUR_APP_ID", "secret" = "YOUR_SECRET", "mobile-auth" = "YOUR_MOBILE_AUTH", "client-credentials" = "YOUR_CLIENT_CREDENTIALS", "query-param1" = "YOUR_QUERY_PARAM1", "deprecated-query-param1" = "YOUR_DEPRECATED_QUERY_PARAM1", "deprecated-query-param2" = "YOUR_DEPRECATED_QUERY_PARAM2" }`;
 
   return `
@@ -731,7 +731,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                   </svg>
                 </button>
                 <div class="popover-menu hidden" id="popover-menu">
-                  <a class="popover-button install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+                  <a class="popover-button install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
                     Cursor
                   </a>
                   <button class="popover-button" onclick="showModal('claude-code')">
@@ -740,7 +740,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                   <button class="popover-button" onclick="showModal('claude-desktop')">
                     Claude Desktop
                   </button>
-                  <a class="popover-button install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+                  <a class="popover-button install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
                     VS Code
                   </a>
                   <button class="popover-button" onclick="showModal('gemini')">
@@ -763,7 +763,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
             </div>
           </header>
           <div class="install-targets">
-            <a tabindex="0" class="card install-target install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+            <a tabindex="0" class="card install-target install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
               <div class="target">
                 <img src="https://cursor.com/assets/images/logo.svg" alt="Cursor">
                 <span>Cursor</span>
@@ -785,7 +785,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                 <span>Claude Desktop</span>
               </div>
             </div>
-            <a tabindex="0" class="card install-target install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+            <a tabindex="0" class="card install-target install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
               <div class="target">
                 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
@@ -964,7 +964,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport sse SDK https://openapi-mcp-server.example.workers.dev/sse</code>
+          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport http SDK https://openapi-mcp-server.example.workers.dev/mcp</code>
         </div>
       </div>
     </div>
@@ -1015,7 +1015,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport sse SDK https://openapi-mcp-server.example.workers.dev/sse</code>
+          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport http SDK https://openapi-mcp-server.example.workers.dev/mcp</code>
         </div>
       </div>
     </div>

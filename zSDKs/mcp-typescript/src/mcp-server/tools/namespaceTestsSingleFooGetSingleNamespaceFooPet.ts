@@ -22,7 +22,7 @@ No import aliasing should be needed since there's no conflict within this group.
     tool: async (client, ctx) => {
       const [result] = await namespaceTestsSingleFooGetSingleNamespaceFooPet(
         client,
-        { fetchOptions: { signal: ctx.signal } },
+        { fetchOptions: { signal: ctx.mcpReq.signal } },
       ).$inspect();
 
       if (!result.ok) {

@@ -21,7 +21,7 @@ Notice that 'group.flattened' has no operations.
   tool: async (client, ctx) => {
     const [result] = await groupSubGroupEmptyTailNestedGroupOp(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

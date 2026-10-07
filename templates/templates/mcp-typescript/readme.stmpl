@@ -56,6 +56,9 @@ Then install with Claude Code CLI:
 {{ templateMcpCLICommand (dict "client" "claude" "cloudflareURL" "http://localhost:8787") }}
 ```
 
+The worker serves MCP over Streamable HTTP at `/mcp`. Each request is handled statelessly, so no session state is stored between requests. The legacy HTTP+SSE endpoint at `/sse` has been retired: requests to it receive HTTP `410 Gone` with a JSON body naming the `/mcp` endpoint. Point existing clients at `/mcp`.
+
+The Durable Object binding and its `v1` migration remain in `wrangler.toml` so that workers deployed with them keep deploying and keep their stored state. The worker no longer uses the namespace. Deleting it permanently destroys its data, so do it only deliberately: remove the binding, remove the exported class, and add a migration with `deleted_classes`.
 
 
 {{end}}

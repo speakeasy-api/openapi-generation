@@ -29,7 +29,7 @@ No import aliasing should be needed since there's no conflict within this group.
       const [result] = await namespaceTestsSingleFooCreateSingleNamespaceFooPet(
         client,
         args.request,
-        { fetchOptions: { signal: ctx.signal } },
+        { fetchOptions: { signal: ctx.mcpReq.signal } },
       ).$inspect();
 
       if (!result.ok) {
