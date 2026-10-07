@@ -278,9 +278,6 @@ x-speakeasy-cli-commands:
       output:
         stream:
           select: $.data.content
-          metadata:
-            select: $.data.resource_id
-            label: Resource ID
       examples:
         basic: cli say "hello there"
     archive:
@@ -295,20 +292,10 @@ x-speakeasy-cli-commands:
       summary: Hand-written command that survives regeneration
       custom: true
   operations:
-    streamMetadata:
-      output:
-        stream:
-          select: $.data.content
-          metadata:
-            select: $.data.resource_id
-            label: Resource ID
     chat:
       output:
         stream:
           select: $.data.content
-          metadata:
-            select: $.data.resource_id
-            label: Resource ID
       flags:
         stream:
           to: $.stream
@@ -1093,28 +1080,6 @@ paths:
                   lastLogin:
                     type: string
                     format: date-time
-  /stream-metadata:
-    get:
-      operationId: streamMetadata
-      tags: [streamMetadata]
-      description: Streamed events can contain text and an optional resource identifier in separate events.
-      responses:
-        "200":
-          description: Streamed resource events.
-          content:
-            text/event-stream:
-              x-speakeasy-sse-sentinel: "[DONE]"
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      content:
-                        type: string
-                      resource_id:
-                        type: string
   /chat:
     post:
       operationId: chat
@@ -1148,8 +1113,6 @@ paths:
                     required: [token]
                     properties:
                       content:
-                        type: string
-                      resource_id:
                         type: string
   /binaryDefaultResponse:
     get:

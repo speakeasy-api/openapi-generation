@@ -84,14 +84,14 @@ func NewRootCommand() (*cobra.Command, error) {
 	if err := testgroup.InitTestGroupRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init test-group: %w", err)
 	}
-	if err := streammetadata.InitStreamMetadataRoot(rootCmd); err != nil {
-		return nil, fmt.Errorf("init stream-metadata: %w", err)
-	}
 	if err := group.InitGroupRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init group: %w", err)
 	}
 	if err := namespacetests.InitNamespaceTestsRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init namespace-tests: %w", err)
+	}
+	if err := streammetadata.InitStreamMetadataRoot(rootCmd); err != nil {
+		return nil, fmt.Errorf("init stream-metadata: %w", err)
 	}
 	if err := initOperationWithLeadingAndTrailingUnderscoresCmd(rootCmd); err != nil {
 		return nil, fmt.Errorf("init operation-with-leading-and-trailing-underscores: %w", err)

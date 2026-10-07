@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 01e27dec55a0b7724b7743886185face
+  docChecksum: b76f0639e425901fecb124d1ffa0f638
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
   internal/cli/root.go:
-    last_write_checksum: sha1:f178d4cc1fe2d5e48bfda8e1b2ae5a00b8e500f2
+    last_write_checksum: sha1:a261d5b828df41f0eef38a293233b9804787fc43
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:
@@ -576,7 +576,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:2a1f8ccd5e57eb1ae3aa6d962e48f67022478805
+    last_write_checksum: sha1:9b251ccf79168121a2aff8442bb775a3467bcd74
   internal/sdk/sdkinternal/config/sdkconfiguration.go:
     last_write_checksum: sha1:1e813226ebfcdfdb00c61fa53bb00d34edce6431
   internal/sdk/sdkinternal/globals/globals.go:

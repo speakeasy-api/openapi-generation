@@ -71,9 +71,9 @@ type SDK struct {
 	// A subSDK in which all operations are deprecated.
 	Obsolete       *Obsolete
 	TestGroup      *TestGroup
-	StreamMetadata *StreamMetadata
 	Group          *Group
 	NamespaceTests *NamespaceTests
+	StreamMetadata *StreamMetadata
 
 	sdkConfiguration config.SDKConfiguration
 	hooks            *hooks.Hooks
@@ -295,9 +295,9 @@ func New(opts ...SDKOption) *SDK {
 	sdk.Tag1 = newTag1(sdk, sdk.sdkConfiguration, sdk.hooks)
 	sdk.Obsolete = newObsolete(sdk, sdk.sdkConfiguration, sdk.hooks)
 	sdk.TestGroup = newTestGroup(sdk, sdk.sdkConfiguration, sdk.hooks)
-	sdk.StreamMetadata = newStreamMetadata(sdk, sdk.sdkConfiguration, sdk.hooks)
 	sdk.Group = newGroup(sdk, sdk.sdkConfiguration, sdk.hooks)
 	sdk.NamespaceTests = newNamespaceTests(sdk, sdk.sdkConfiguration, sdk.hooks)
+	sdk.StreamMetadata = newStreamMetadata(sdk, sdk.sdkConfiguration, sdk.hooks)
 
 	return sdk
 }

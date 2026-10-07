@@ -30,8 +30,13 @@ mkdir -p ./zSDKs/sdk-$TARGET/.speakeasy/testfiles
 cp ./tests/tests/review/testfiles/postfiletest.txt ./zSDKs/sdk-$TARGET/.speakeasy/testfiles/postfiletest.txt
 
 tmp_tests="$(mktemp "./zSDKs/sdk-$TARGET/.speakeasy/tests.arazzo.yaml.XXXXXX.tmp")"
+tmp_spec_base=""
+tmp_spec=""
 cleanup() {
     rm -f "$tmp_tests"
+    if [[ -n "$tmp_spec_base" ]]; then
+        rm -f "$tmp_spec_base" "${tmp_spec_base}.yaml"
+    fi
 }
 trap cleanup EXIT
 
@@ -75,7 +80,16 @@ rm -rf "./testprojects/$TARGET" || true
 EXTRA_ARGS="${EXTRA_ARGS:-} ${*:2}"
 
 print_msg_with_ctx "${BUILD_ICON} {green}{bold}Building SDK{reset}" "target=${TARGET}|variant=review|args=${EXTRA_ARGS}"
-run_cmd go run cmd/generate/main.go -s ./tests/specs/review.yaml -o ./zSDKs/sdk-$TARGET -l $TARGET --validate-integrity ${EXTRA_ARGS}
+review_spec="./tests/specs/review.yaml"
+review_overlay="./tests/overlays/review/$TARGET/overlay.yaml"
+if [[ -f "$review_overlay" ]]; then
+    # Keep the resolved spec beside its source so relative references still resolve.
+    tmp_spec_base="$(mktemp "./tests/specs/review.${TARGET}.XXXXXXXX")"
+    tmp_spec="${tmp_spec_base}.yaml"
+    go run ./cmd/overlay -s "$review_spec" -overlay "$review_overlay" -out "$tmp_spec"
+    review_spec="$tmp_spec"
+fi
+run_cmd go run cmd/generate/main.go -s "$review_spec" -o ./zSDKs/sdk-$TARGET -l $TARGET --validate-integrity ${EXTRA_ARGS}
 
 # Copy gen.yaml back to source folder after successful build
 cp ./zSDKs/sdk-$TARGET/.speakeasy/gen.yaml ./tests/config/review/$TARGET/.speakeasy/gen.yaml
