@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -34,8 +35,18 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 				fmt.Fprint(w, "data: {\"resource_id\":\"first\"}\n\ndata: {\"content\":\"Hello\"}\n\ndata: {\"resource_id\":\"last\"}\n\ndata: [DONE]\n\n")
 			}))
 			defer srv.Close()
-			for _, extra := range [][]string{nil, {"--output-format", "json"}, {"--output-format", "pretty"}, {"--jq", ".", "--stream=true"}, {"--agent-mode"}} {
-				t.Run(strings.Join(extra, " "), func(t *testing.T) {
+			for _, mode := range []struct {
+				name string
+				args []string
+			}{
+				{"default", nil},
+				{"json", []string{"--output-format", "json"}},
+				{"pretty", []string{"--output-format", "pretty"}},
+				{"jq", []string{"--jq", ".", "--stream=true"}},
+				{"agent", []string{"--agent-mode"}},
+			} {
+				t.Run(mode.name, func(t *testing.T) {
+					t.Cleanup(config.ResetKeyring)
 					h := NewCLITestHarness(t)
 					h.resetAndSetupEnv()
 					root, err := cli.NewRootCommand()
@@ -43,19 +54,76 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 					root.SetOut(h.stdout)
 					root.SetErr(h.stderr)
 					root.SetIn(strings.NewReader(""))
-					args := append([]string{"--server-url", srv.URL, "--color", "never", "--no-interactive"}, command...)
-					args = append(args, extra...)
+					args := append([]string{"--server-url", srv.URL, "--color", "never", "--no-interactive", "--no-keyring"}, command...)
+					args = append(args, mode.args...)
 					require.NoError(t, cli.ExecuteRoot(context.Background(), root, args), h.GetStderr())
-					if len(extra) == 0 {
+					switch mode.name {
+					case "default", "agent":
 						assert.Equal(t, "Hello\n", h.GetStdout())
+					case "json", "jq":
+						assertMetadataJSONEvents(t, h.GetStdout(),
+							`{"data":{"resource_id":"first"}}`,
+							`{"data":{"content":"Hello"}}`,
+							`{"data":{"resource_id":"last"}}`,
+						)
+					case "pretty":
+						assert.Equal(t, 3, strings.Count(h.GetStdout(), "data:"))
+						assert.Regexp(t, `resource_id:\s+first\b`, h.GetStdout())
+						assert.Regexp(t, `content:\s+Hello\b`, h.GetStdout())
+						assert.Regexp(t, `resource_id:\s+last\b`, h.GetStdout())
+					}
+					if mode.name == "default" {
 						assert.Equal(t, "Resource ID: \"last\"\n", h.GetStderr())
 					} else {
-						assert.NotContains(t, h.GetStderr(), "Resource ID:")
+						assert.Empty(t, h.GetStderr())
 					}
 				})
 			}
 		})
 	}
+}
+
+func assertMetadataJSONEvents(t *testing.T, stdout string, want ...string) {
+	t.Helper()
+	decoder := json.NewDecoder(strings.NewReader(stdout))
+	for _, event := range want {
+		var got json.RawMessage
+		require.NoError(t, decoder.Decode(&got))
+		assert.JSONEq(t, event, string(got))
+	}
+	var extra json.RawMessage
+	require.ErrorIs(t, decoder.Decode(&extra), io.EOF)
+}
+
+func TestStreamMetadataGeneratedCommandDecodeFailure(t *testing.T) {
+	t.Cleanup(config.ResetKeyring)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"resource_id\":\"valid\",\"content\":\"Hello\"}\n\ndata: {\"resource_id\":12}\n\ndata: [DONE]\n\n")
+	}))
+	defer srv.Close()
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	root.SetOut(h.stdout)
+	root.SetErr(h.stderr)
+	root.SetIn(strings.NewReader(""))
+	err = cli.ExecuteRoot(context.Background(), root, []string{
+		"--server-url", srv.URL, "--color", "never", "--no-interactive", "--no-keyring", "--agent-mode=false",
+		"stream-metadata", "stream-metadata",
+	})
+	var decodeErr *json.UnmarshalTypeError
+	require.ErrorAs(t, err, &decodeErr)
+	assert.Equal(t, "number", decodeErr.Value)
+	assert.Equal(t, "string", decodeErr.Type.String())
+	classification, ok := output.ClassificationFrom(err)
+	require.True(t, ok)
+	assert.Equal(t, output.ErrorTypeProtocol, classification.Type)
+	assert.Equal(t, output.ReasonCLIProtocol, classification.Reason)
+	assert.Equal(t, "Hello\n", h.GetStdout())
+	assert.Contains(t, h.GetStderr(), "CLI_PROTOCOL")
+	assert.NotContains(t, h.GetStderr(), "Resource ID:")
 }
 
 type metadataTestStream struct {
@@ -107,6 +175,7 @@ func metadataTestCommand(t *testing.T, out io.Writer, stderr io.Writer) *cobra.C
 	cmd.Flags().String("output-format", "pretty", "")
 	cmd.Flags().String("jq", "", "")
 	cmd.Flags().Bool("raw-response", false, "")
+	cmd.Flags().String("color", "never", "")
 	return cmd
 }
 
@@ -187,7 +256,12 @@ func TestStreamMetadataProjectionBypass(t *testing.T) {
 			require.NoError(t, cmd.Flags().Set(flag, value))
 			stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
 			require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
-			assert.NotContains(t, stderr.String(), "Resource ID:")
+			if flag == "raw-response" {
+				assert.Equal(t, "id:    valid\ntext:  hello\n", stdout.String())
+			} else {
+				assertMetadataJSONEvents(t, stdout.String(), `{"id":"valid","text":"hello"}`)
+			}
+			assert.Empty(t, stderr.String())
 		})
 	}
 }
@@ -199,8 +273,8 @@ func TestStreamMetadataConfiguredMachineOutput(t *testing.T) {
 	require.NoError(t, config.Init("metadata-test", "METADATA_TEST"))
 	stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
 	require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
-	assert.NotContains(t, stderr.String(), "Resource ID:")
-	assert.Contains(t, stdout.String(), "valid")
+	assertMetadataJSONEvents(t, stdout.String(), `{"id":"valid","text":"hello"}`)
+	assert.Empty(t, stderr.String())
 }
 
 func TestStreamMetadataLateCancellationPreservesReturn(t *testing.T) {
@@ -225,8 +299,10 @@ func TestStreamMetadataLateCancellationPreservesReturn(t *testing.T) {
 			assert.NotContains(t, stderr.String(), "Resource ID:")
 			if mode == "metadata" || mode == "plain projection" {
 				assert.Equal(t, "hello\n", stdout.String())
+			} else if mode == "raw" {
+				assert.Equal(t, "id:    valid\ntext:  hello\n", stdout.String())
 			} else {
-				assert.Contains(t, stdout.String(), "valid")
+				assertMetadataJSONEvents(t, stdout.String(), `{"id":"valid","text":"hello"}`)
 			}
 		})
 	}
