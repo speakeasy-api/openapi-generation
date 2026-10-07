@@ -75,33 +75,33 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
         {{- end}}
         accessible := formMode == interactive.FormAccessible
 
-        var groups []*forms.Group
+        var pages []*forms.Page
 
         {{- if hasGlobalSecurity}}
-        securityFields := []forms.Field{
+        securityFields := []*forms.Field{
             {{templateAuthLoginFormFields | indent 12 | trim}}
         }
-        groups = append(groups, forms.NewGroup(securityFields...).Title("Authentication"))
+        pages = append(pages, forms.NewPage("Authentication", securityFields...))
         {{- end}}
 
         {{- if hasGlobals}}
-        globalFields := []forms.Field{
+        globalFields := []*forms.Field{
             {{templateConfigureGlobalFormFields | indent 12 | trim}}
         }
-        groups = append(groups, forms.NewGroup(globalFields...).Title("Global Parameters"))
+        pages = append(pages, forms.NewPage("Global Parameters", globalFields...))
         {{- end}}
 
-        // Preference fields use forms.Select which loops forever on EOF in
-        // accessible mode (non-TTY). Only show them when truly interactive.
+        // Preferences are only offered in the interactive form; line prompts
+        // cover credentials and global parameters.
         {{templateConfigurePreferenceVarDeclarations | indent 8 | trim}}
         if !accessible {
-            preferenceFields := []forms.Field{
+            preferenceFields := []*forms.Field{
                 {{templateConfigurePreferenceFormFields | indent 16 | trim}}
             }
-            groups = append(groups, forms.NewGroup(preferenceFields...).Title("Preferences"))
+            pages = append(pages, forms.NewPage("Preferences", preferenceFields...))
         }
 
-        form := forms.NewForm(groups...).WithAccessible(accessible)
+        form := forms.New(pages...).Accessible(accessible)
 
         if err := form.Run(); err != nil {
             return fmt.Errorf("configure: %w", err)

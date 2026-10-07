@@ -688,9 +688,9 @@ func (formPrompter) Prompt(cmd *cobra.Command, fields []PromptField) ([]PromptAn
 	for _, index := range optionalFlags {
 		names = append(names, fields[index].Name)
 	}
-	form := forms.NewForm(forms.NewGroup(forms.NewConfirm().
+	form := forms.New(forms.NewPage("", forms.NewConfirm(&fillOptional).
 		Title(fmt.Sprintf("Fill in %d optional field(s)?", len(optionalFlags))).
-		Description(strings.Join(names, ", ")).Value(&fillOptional)))
+		Description(strings.Join(names, ", "))))
 	if err := form.Run(); err != nil {
 		return nil, err
 	}
@@ -718,28 +718,23 @@ func runPromptField(field PromptField) (PromptAnswer, error) {
 		return runRepeatableFlagPrompt(field)
 	}
 
-	var answer PromptAnswer
-	var formField forms.Field
+	ask := func(f *forms.Field) error {
+		return forms.New(forms.NewPage("", f.Title(field.Name).Description(field.Summary))).Run()
+	}
+
 	switch field.Kind {
 	case "bool":
 		if field.Required {
 			value := false
-			formField = forms.NewConfirm().Title(field.Name).Description(field.Summary).Value(&value)
-			answer.Set = true
-			answer.Values = []string{strconv.FormatBool(value)}
-			form := forms.NewForm(forms.NewGroup(formField))
-			if err := form.Run(); err != nil {
+			if err := ask(forms.NewConfirm(&value)); err != nil {
 				return PromptAnswer{}, err
 			}
-			answer.Values[0] = strconv.FormatBool(value)
-			return answer, nil
+			return PromptAnswer{Set: true, Values: []string{strconv.FormatBool(value)}}, nil
 		}
 		value := ""
-		formField = forms.NewSelect().Title(field.Name).Description(field.Summary).Options(
+		if err := ask(forms.NewSelect(&value,
 			forms.NewOption("Yes", "true"), forms.NewOption("No", "false"), forms.NewOption("Skip (use default)", ""),
-		).Value(&value)
-		form := forms.NewForm(forms.NewGroup(formField))
-		if err := form.Run(); err != nil {
+		)); err != nil {
 			return PromptAnswer{}, err
 		}
 		return PromptAnswer{Set: value != "", Values: []string{value}}, nil
@@ -753,85 +748,55 @@ func runPromptField(field PromptField) (PromptAnswer, error) {
 		for _, option := range field.Options {
 			options = append(options, forms.NewOption(option, option))
 		}
-		formField = forms.NewSelect().Title(field.Name).Description(field.Summary).Options(options...).Value(&value)
-		form := forms.NewForm(forms.NewGroup(formField))
-		if err := form.Run(); err != nil {
+		if err := ask(forms.NewSelect(&value, options...)); err != nil {
 			return PromptAnswer{}, err
 		}
 		return PromptAnswer{Set: value != "", Values: []string{value}}, nil
 	}
 
 	value := ""
-	description := field.Summary
-	var validate func(string) error
-	if field.Required {
-		validate = func(value string) error {
-			if strings.TrimSpace(value) == "" {
+	var formField *forms.Field
+	if field.Kind == "json" {
+		formField = forms.NewText(&value)
+		field.Summary += " (JSON)"
+	} else {
+		formField = forms.NewInput(&value)
+	}
+	formField.Validate(func(value string) error {
+		if strings.TrimSpace(value) == "" {
+			if field.Required {
 				return fmt.Errorf("required")
 			}
 			return nil
 		}
-	}
-	switch field.Kind {
-	case "json":
-		formField = forms.NewText().Title(field.Name).Description(description + " (JSON)").Value(&value)
-		if validate != nil {
-			formField = formField.(*forms.Text).Validate(validate)
-		}
-	case "int64":
-		formField = forms.NewInput().Title(field.Name).Description(description).Value(&value).Validate(func(value string) error {
-			if strings.TrimSpace(value) == "" {
-				if validate != nil {
-					return validate(value)
-				}
-				return nil
-			}
-			if _, err := strconv.ParseInt(value, 10, 64); err != nil {
-				return fmt.Errorf("must be an integer")
-			}
-			return nil
-		})
-	case "float64":
-		formField = forms.NewInput().Title(field.Name).Description(description).Value(&value).Validate(func(value string) error {
-			if strings.TrimSpace(value) == "" {
-				if validate != nil {
-					return validate(value)
-				}
-				return nil
-			}
-			if _, err := strconv.ParseFloat(value, 64); err != nil {
-				return fmt.Errorf("must be a number")
-			}
-			return nil
-		})
-	case "duration":
-		formField = forms.NewInput().Title(field.Name).Description(description).Value(&value).Validate(func(value string) error {
-			if strings.TrimSpace(value) == "" {
-				if validate != nil {
-					return validate(value)
-				}
-				return nil
-			}
-			if _, err := time.ParseDuration(value); err != nil {
-				return fmt.Errorf("must be a duration")
-			}
-			return nil
-		})
-	default:
-		input := forms.NewInput().Title(field.Name).Description(description).Value(&value)
-		if validate != nil {
-			input = input.Validate(validate)
-		}
-		formField = input
-	}
-	form := forms.NewForm(forms.NewGroup(formField))
-	if err := form.Run(); err != nil {
+		return checkPromptValue(field.Kind, value)
+	})
+	if err := ask(formField); err != nil {
 		return PromptAnswer{}, err
 	}
 	if strings.TrimSpace(value) == "" {
 		return PromptAnswer{}, nil
 	}
 	return PromptAnswer{Set: true, Values: []string{value}}, nil
+}
+
+// checkPromptValue rejects a non-empty answer that does not parse as kind.
+func checkPromptValue(kind, value string) error {
+	switch kind {
+	case "int64":
+		if _, err := strconv.ParseInt(value, 10, 64); err != nil {
+			return fmt.Errorf("must be an integer")
+		}
+	case "float64":
+		if _, err := strconv.ParseFloat(value, 64); err != nil {
+			return fmt.Errorf("must be a number")
+		}
+	case "duration":
+		if _, err := time.ParseDuration(value); err != nil {
+			return fmt.Errorf("must be a duration")
+		}
+	}
+	return nil
 }
 
 func runRepeatableFlagPrompt(field PromptField) (PromptAnswer, error) {
@@ -844,7 +809,7 @@ func runRepeatableFlagPrompt(field PromptField) (PromptAnswer, error) {
 			title = "Add another " + displayName(strings.TrimSuffix(field.Name, " (required)"), "", false) + "?"
 			description = "Leave empty to finish."
 		}
-		input := forms.NewInput().Title(title).Description(description).Value(&value)
+		input := forms.NewInput(&value).Title(title).Description(description)
 		if field.Required && len(values) == 0 {
 			input = input.Validate(func(value string) error {
 				if strings.TrimSpace(value) == "" {
@@ -853,8 +818,7 @@ func runRepeatableFlagPrompt(field PromptField) (PromptAnswer, error) {
 				return nil
 			})
 		}
-		form := forms.NewForm(forms.NewGroup(input))
-		if err := form.Run(); err != nil {
+		if err := forms.New(forms.NewPage("", input)).Run(); err != nil {
 			return PromptAnswer{}, err
 		}
 		if strings.TrimSpace(value) == "" {

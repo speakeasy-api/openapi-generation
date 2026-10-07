@@ -181,121 +181,104 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 		var cfgGlobalLoneQueryParam string
 		accessible := formMode == interactive.FormAccessible
 
-		var groups []*forms.Group
-		securityFields := []forms.Field{
-			forms.NewInput().
+		var pages []*forms.Page
+		securityFields := []*forms.Field{
+			forms.NewInput(&authUsername).
 				Title("HTTP Basic username").
 				Description("--username").
-				Placeholder(cfg.Security.Username).
-				Value(&authUsername),
-			forms.NewInput().
+				Placeholder(cfg.Security.Username),
+			forms.NewInput(&authPassword).
 				Title("HTTP Basic password").
 				Description("--password").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))).
-				Value(&authPassword),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))),
+			forms.NewInput(&authBearerAuth).
 				Title("HTTP Bearer").
 				Description("--bearer-auth").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))).
-				Value(&authBearerAuth),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))),
+			forms.NewInput(&authMyApiKey).
 				Title("API Key").
 				Description("--my-api-key").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
-				Value(&authMyApiKey),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
+			forms.NewInput(&authOauth2).
 				Title("OAuth2 Authorization").
 				Description("--oauth2").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))).
-				Value(&authOauth2),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))),
+			forms.NewInput(&authAppId).
 				Title("Custom authentication credential").
 				Description("--app-id").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))).
-				Value(&authAppId),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))),
+			forms.NewInput(&authSecret).
 				Title("Custom authentication credential").
 				Description("--secret").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))).
-				Value(&authSecret),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))),
+			forms.NewInput(&authMobileAuth).
 				Title("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.").
 				Description("--mobile-auth").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))).
-				Value(&authMobileAuth),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))),
+			forms.NewInput(&authClientID).
 				Title("Client Credentials flow. client identifier").
 				Description("--client-id").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))).
-				Value(&authClientID),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))),
+			forms.NewInput(&authClientSecret).
 				Title("Client Credentials flow. client secret").
 				Description("--client-secret").
 				Password().
-				Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))).
-				Value(&authClientSecret),
-			forms.NewInput().
+				Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))),
+			forms.NewInput(&authTokenURL).
 				Title("Client Credentials flow. token URL").
 				Description("--token-url").
-				Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")).
-				Value(&authTokenURL),
+				Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")),
 		}
-		groups = append(groups, forms.NewGroup(securityFields...).Title("Authentication"))
-		globalFields := []forms.Field{
-			forms.NewInput().
+		pages = append(pages, forms.NewPage("Authentication", securityFields...))
+		globalFields := []*forms.Field{
+			forms.NewInput(&cfgGlobalQueryParam1).
 				Title("A long winded, multi-line description").
 				Description("--query-param1").
-				Placeholder(cfg.Globals.QueryParam1).
-				Value(&cfgGlobalQueryParam1),
-			forms.NewInput().
+				Placeholder(cfg.Globals.QueryParam1),
+			forms.NewInput(&cfgGlobalDeprecatedQueryParam1).
 				Title("A deprecated description").
 				Description("--deprecated-query-param1").
-				Placeholder(cfg.Globals.DeprecatedQueryParam1).
-				Value(&cfgGlobalDeprecatedQueryParam1),
-			forms.NewInput().
+				Placeholder(cfg.Globals.DeprecatedQueryParam1),
+			forms.NewInput(&cfgGlobalDeprecatedQueryParam2).
 				Title("Global deprecated-query-param2 parameter").
 				Description("--deprecated-query-param2").
-				Placeholder(cfg.Globals.DeprecatedQueryParam2).
-				Value(&cfgGlobalDeprecatedQueryParam2),
-			forms.NewInput().
+				Placeholder(cfg.Globals.DeprecatedQueryParam2),
+			forms.NewInput(&cfgGlobalLoneQueryParam).
 				Title("Global lone-query-param parameter").
 				Description("--lone-query-param").
-				Placeholder(cfg.Globals.LoneQueryParam).
-				Value(&cfgGlobalLoneQueryParam),
+				Placeholder(cfg.Globals.LoneQueryParam),
 		}
-		groups = append(groups, forms.NewGroup(globalFields...).Title("Global Parameters"))
+		pages = append(pages, forms.NewPage("Global Parameters", globalFields...))
 
-		// Preference fields use forms.Select which loops forever on EOF in
-		// accessible mode (non-TTY). Only show them when truly interactive.
+		// Preferences are only offered in the interactive form; line prompts
+		// cover credentials and global parameters.
 		var cfgOutputFormat string
 		if !accessible {
-			preferenceFields := []forms.Field{
-				forms.NewSelect().
+			preferenceFields := []*forms.Field{
+				forms.NewSelect(&cfgOutputFormat,
+					forms.NewOption("Keep current", ""),
+					forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),
+					forms.NewOption("pretty", "pretty"),
+					forms.NewOption("json", "json"),
+					forms.NewOption("yaml", "yaml"),
+					forms.NewOption("table", "table"),
+					forms.NewOption("toon", "toon"),
+				).
 					Title("Default output format").
-					Description("Choose the default response rendering format for this CLI").
-					Options(
-						forms.NewOption("Keep current", ""),
-						forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),
-						forms.NewOption("pretty", "pretty"),
-						forms.NewOption("json", "json"),
-						forms.NewOption("yaml", "yaml"),
-						forms.NewOption("table", "table"),
-						forms.NewOption("toon", "toon"),
-					).
-					Value(&cfgOutputFormat),
+					Description("Choose the default response rendering format for this CLI"),
 			}
-			groups = append(groups, forms.NewGroup(preferenceFields...).Title("Preferences"))
+			pages = append(pages, forms.NewPage("Preferences", preferenceFields...))
 		}
 
-		form := forms.NewForm(groups...).WithAccessible(accessible)
+		form := forms.New(pages...).Accessible(accessible)
 
 		if err := form.Run(); err != nil {
 			return fmt.Errorf("configure: %w", err)

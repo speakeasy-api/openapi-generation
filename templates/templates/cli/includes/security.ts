@@ -2152,23 +2152,21 @@ registerTemplateFunc(
 
 function templateConfigurePreferenceFormFields(): string {
   const lines: string[] = [];
-  lines.push(`forms.NewSelect().`);
+  lines.push(`forms.NewSelect(&cfgOutputFormat,`);
+  lines.push(`    forms.NewOption("Keep current", ""),`);
+  lines.push(
+    `    forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),`,
+  );
+  lines.push(`    forms.NewOption("pretty", "pretty"),`);
+  lines.push(`    forms.NewOption("json", "json"),`);
+  lines.push(`    forms.NewOption("yaml", "yaml"),`);
+  lines.push(`    forms.NewOption("table", "table"),`);
+  lines.push(`    forms.NewOption("toon", "toon"),`);
+  lines.push(`).`);
   lines.push(`    Title("Default output format").`);
   lines.push(
-    `    Description("Choose the default response rendering format for this CLI").`,
+    `    Description("Choose the default response rendering format for this CLI"),`,
   );
-  lines.push(`    Options(`);
-  lines.push(`        forms.NewOption("Keep current", ""),`);
-  lines.push(
-    `        forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),`,
-  );
-  lines.push(`        forms.NewOption("pretty", "pretty"),`);
-  lines.push(`        forms.NewOption("json", "json"),`);
-  lines.push(`        forms.NewOption("yaml", "yaml"),`);
-  lines.push(`        forms.NewOption("table", "table"),`);
-  lines.push(`        forms.NewOption("toon", "toon"),`);
-  lines.push(`    ).`);
-  lines.push(`    Value(&cfgOutputFormat),`);
   return lines.join("\n        ");
 }
 registerTemplateFunc(
@@ -2303,70 +2301,10 @@ registerTemplateFunc(
 );
 
 /**
- * Generate form field construction for the auth login form.
- * Each security field is mapped to the appropriate form component:
- * - Secrets → forms.NewInput().Password()
- * - Non-secrets → forms.NewInput()
- * - Arrays → forms.NewInput() with comma-separated hint
+ * Generate form fields for every CLI security field (configure command).
  */
 function templateAuthLoginFormFields(): string {
-  const fields = getCLISecurityFields();
-  if (fields.length === 0) return "";
-
-  const acc = securityConfigAccessor();
-  const lines: string[] = [];
-
-  for (const field of fields) {
-    const varName = `auth${caser().ToPascal(field.field.Name)}`;
-    const title = escapeGoString(field.description);
-    const fieldName = caser().ToPascal(field.field.Name);
-    const cfgExpr = `${acc}${fieldName}`;
-
-    if (field.isArray) {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
-          field.flagName,
-          field.field,
-          "(comma-separated)",
-        )}").`,
-      );
-      lines.push(`    Value(&${varName}),`);
-    } else if (field.isSecret) {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
-          field.flagName,
-          field.field,
-        )}").`,
-      );
-      lines.push(`    Password().`);
-      lines.push(
-        `    Placeholder(maskSecret(${buildFormPlaceholder(
-          `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,
-          field.field,
-        )})).`,
-      );
-      lines.push(`    Value(&${varName}),`);
-    } else {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
-          field.flagName,
-          field.field,
-        )}").`,
-      );
-      lines.push(
-        `    Placeholder(${buildFormPlaceholder(cfgExpr, field.field)}).`,
-      );
-      lines.push(`    Value(&${varName}),`);
-    }
-  }
-
-  return lines.join("\n            ");
+  return genSchemeFormFields(getCLISecurityFields()).join("\n            ");
 }
 registerTemplateFunc(
   "templateAuthLoginFormFields",
@@ -2596,7 +2534,7 @@ function templateAuthLoginBody(): string {
     lines.push(`// #region custom-auth-vars`);
     lines.push(`// #endregion custom-auth-vars`);
     lines.push(``);
-    lines.push(`fields := []forms.Field{`);
+    lines.push(`fields := []*forms.Field{`);
     lines.push(...genSchemeFormFields(group.fields));
     lines.push(`}`);
     lines.push(``);
@@ -2604,7 +2542,7 @@ function templateAuthLoginBody(): string {
     lines.push(`// #endregion custom-auth-groups`);
     lines.push(``);
     lines.push(
-      `form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)`,
+      `form := forms.New(forms.NewPage("", fields...)).Accessible(accessible)`,
     );
     lines.push(``);
     lines.push(`if err := form.Run(); err != nil {`);
@@ -2617,22 +2555,20 @@ function templateAuthLoginBody(): string {
     lines.push(`accessible := formMode == interactive.FormAccessible`);
     lines.push(``);
     lines.push(`var selectedScheme string`);
-    lines.push(`schemeSelect := forms.NewSelect().`);
-    lines.push(`    Title("Authentication Method").`);
-    lines.push(`    Description("Choose which credentials to configure").`);
-    lines.push(`    Options(`);
+    lines.push(`schemeSelect := forms.NewSelect(&selectedScheme,`);
     for (const group of groups) {
       lines.push(
-        `        forms.NewOption("${escapeGoString(group.label)}", "${
+        `    forms.NewOption("${escapeGoString(group.label)}", "${
           group.key
         }"),`,
       );
     }
-    lines.push(`    ).`);
-    lines.push(`    Value(&selectedScheme)`);
+    lines.push(`).`);
+    lines.push(`    Title("Authentication Method").`);
+    lines.push(`    Description("Choose which credentials to configure")`);
     lines.push(``);
     lines.push(
-      `if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).Run(); err != nil {`,
+      `if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).Run(); err != nil {`,
     );
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
     lines.push(`}`);
@@ -2646,14 +2582,14 @@ function templateAuthLoginBody(): string {
       lines.push(`case "${group.key}":`);
       lines.push(...genSchemeVarDecls(group.fields).map((l) => `    ${l}`));
       lines.push(``);
-      lines.push(`    fields := []forms.Field{`);
+      lines.push(`    fields := []*forms.Field{`);
       lines.push(
         ...genSchemeFormFields(group.fields).map((l) => `        ${l}`),
       );
       lines.push(`    }`);
       lines.push(``);
       lines.push(
-        `    form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)`,
+        `    form := forms.New(forms.NewPage("", fields...)).Accessible(accessible)`,
       );
       lines.push(``);
       lines.push(`    if err := form.Run(); err != nil {`);
@@ -2847,59 +2783,51 @@ function buildFormPlaceholder(configExpr: string, field: FieldDef): string {
   return configExpr;
 }
 
-/** Generate form field construction for a set of scheme fields */
+/**
+ * Render a Go builder chain as one composite-literal element:
+ * `head.\n    call1.\n    call2,`.
+ */
+function goChain(head: string, calls: string[]): string[] {
+  return [
+    `${head}.`,
+    ...calls.map((c, i) => `    ${c}${i === calls.length - 1 ? "," : "."}`),
+  ];
+}
+
+/** Generate form fields for a set of scheme fields */
 function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
   const acc = securityConfigAccessor();
   const lines: string[] = [];
 
   for (const field of fields) {
     const varName = `auth${caser().ToPascal(field.field.Name)}`;
-    const title = escapeGoString(field.description);
-    const fieldName = caser().ToPascal(field.field.Name);
-    const cfgExpr = `${acc}${fieldName}`;
+    const cfgExpr = `${acc}${caser().ToPascal(field.field.Name)}`;
+    const calls = [`Title("${escapeGoString(field.description)}")`];
 
     if (field.isArray) {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
+      calls.push(
+        `Description("${buildFormDescription(
           field.flagName,
           field.field,
           "(comma-separated)",
-        )}").`,
+        )}")`,
       );
-      lines.push(`    Value(&${varName}),`);
     } else if (field.isSecret) {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
-          field.flagName,
-          field.field,
-        )}").`,
-      );
-      lines.push(`    Password().`);
-      lines.push(
-        `    Placeholder(maskSecret(${buildFormPlaceholder(
+      calls.push(
+        `Description("${buildFormDescription(field.flagName, field.field)}")`,
+        `Password()`,
+        `Placeholder(maskSecret(${buildFormPlaceholder(
           `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,
           field.field,
-        )})).`,
+        )}))`,
       );
-      lines.push(`    Value(&${varName}),`);
     } else {
-      lines.push(`forms.NewInput().`);
-      lines.push(`    Title("${title}").`);
-      lines.push(
-        `    Description("${buildFormDescription(
-          field.flagName,
-          field.field,
-        )}").`,
+      calls.push(
+        `Description("${buildFormDescription(field.flagName, field.field)}")`,
+        `Placeholder(${buildFormPlaceholder(cfgExpr, field.field)})`,
       );
-      lines.push(
-        `    Placeholder(${buildFormPlaceholder(cfgExpr, field.field)}).`,
-      );
-      lines.push(`    Value(&${varName}),`);
     }
+    lines.push(...goChain(`forms.NewInput(&${varName})`, calls));
   }
 
   return lines;
@@ -2992,11 +2920,13 @@ function templateConfigureGlobalFormFields(): string {
       `Global ${sanitizeFlagName(field.Name)} parameter`;
     const flagName = sanitizeFlagName(field.Name);
 
-    lines.push(`forms.NewInput().`);
-    lines.push(`    Title("${escapeGoString(desc)}").`);
-    lines.push(`    Description("${buildFormDescription(flagName, field)}").`);
-    lines.push(`    Placeholder(${buildFormPlaceholder(cfgExpr, field)}).`);
-    lines.push(`    Value(&${varName}),`);
+    lines.push(
+      ...goChain(`forms.NewInput(&${varName})`, [
+        `Title("${escapeGoString(desc)}")`,
+        `Description("${buildFormDescription(flagName, field)}")`,
+        `Placeholder(${buildFormPlaceholder(cfgExpr, field)})`,
+      ]),
+    );
   }
 
   return lines.join("\n        ");

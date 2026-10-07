@@ -43,6 +43,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/auxiliary/internal/flagutil/preset.go.stmpl":                                                        0o644,
 	"templates/cli/auxiliary/internal/forms":                                                                           0o20000000755,
 	"templates/cli/auxiliary/internal/forms/forms.go.stmpl":                                                            0o644,
+	"templates/cli/auxiliary/internal/forms/forms_test.go.stmpl":                                                       0o644,
 	"templates/cli/auxiliary/internal/interactive":                                                                     0o20000000755,
 	"templates/cli/auxiliary/internal/interactive/interactive.go.stmpl":                                                0o644,
 	"templates/cli/auxiliary/internal/interactive/policy.go.stmpl":                                                     0o644,
