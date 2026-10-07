@@ -60,13 +60,13 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:872be2b9e087d4dc3511651c8a92450a7cf5aa54
   internal/cli/auth.go:
-    last_write_checksum: sha1:c7d896acd344d763bc227f6f575fcee19683e40f
+    last_write_checksum: sha1:2f660d9f61e378b1f263fabd87577ca889bef180
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
     last_write_checksum: sha1:d5ccc0970afac880e050719fe49c883432062904
   internal/cli/configure.go:
-    last_write_checksum: sha1:ad89cfd7fd30f6395fc006ee54d3f2e640160c21
+    last_write_checksum: sha1:81f421f92ba05428359b905815e1dd23c64e7539
   internal/cli/createuser.go:
     last_write_checksum: sha1:5b60000059db85dcf4c90f5e67c37b7fff3cf852
   internal/cli/createwithunion.go:
@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:5352e479aec7f40b717d21d33888061194c04fcf
+    last_write_checksum: sha1:a81b13ee97e283dccec6da827fe81159f2ce3ec5
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
@@ -252,9 +252,9 @@ trackedFiles:
   internal/interactive/interactive.go:
     last_write_checksum: sha1:ba6979695c50a3c2385bc74a4676dfe88814a984
   internal/interactive/policy.go:
-    last_write_checksum: sha1:c4c7786ab58cfc1daffb0aa0fec4284e8a2ef9dc
+    last_write_checksum: sha1:3cf3eec72867230610aa5e7c308fddcaf916b81b
   internal/interactive/policy_test.go:
-    last_write_checksum: sha1:07c5ea0f60122e87e393168ad2f84b1ee7f2c7a7
+    last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
     last_write_checksum: sha1:5b8c409dde2bd954b9d96e158d5e651c77d1ef10
   internal/output/artifact.go:
@@ -646,7 +646,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:1ba24bb029b9d92a8024849e7ca36a2dabbf7ab6
+    last_write_checksum: sha1:e010e10d24f913bd1c3b5429cb85b74e9fefae1d
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:
@@ -1106,7 +1106,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:8506f598be93602750459319daba51c49b2b6570
+    last_write_checksum: sha1:36269b37c525a27adf10d5af9a0d28fb36191ecb
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:
