@@ -122,17 +122,23 @@ async function startSSE(cliFlags: StartCommandFlags) {
       // Security fields can be overridden via headers
       "username": (req.headers["username"] as string) ?? cliFlags["username"],
       "password": (req.headers["password"] as string) ?? cliFlags["password"],
-      "bearer-auth": (req.headers["bearerauth"] as string)
-        ?? cliFlags["bearer-auth"],
-      "my-api-key": (req.headers["myapikey"] as string)
-        ?? cliFlags["my-api-key"],
+      "bearer-auth":
+        ((req.headers["bearer-auth"] ?? req.headers["bearerauth"]) as string)
+          ?? cliFlags["bearer-auth"],
+      "my-api-key":
+        ((req.headers["my-api-key"] ?? req.headers["myapikey"]) as string)
+          ?? cliFlags["my-api-key"],
       "oauth2": (req.headers["oauth2"] as string) ?? cliFlags["oauth2"],
-      "app-id": (req.headers["appid"] as string) ?? cliFlags["app-id"],
+      "app-id": ((req.headers["app-id"] ?? req.headers["appid"]) as string)
+        ?? cliFlags["app-id"],
       "secret": (req.headers["secret"] as string) ?? cliFlags["secret"],
-      "mobile-auth": (req.headers["mobileauth"] as string)
-        ?? cliFlags["mobile-auth"],
-      "client-credentials": (req.headers["clientcredentials"] as string)
-        ?? cliFlags["client-credentials"],
+      "mobile-auth":
+        ((req.headers["mobile-auth"] ?? req.headers["mobileauth"]) as string)
+          ?? cliFlags["mobile-auth"],
+      "client-credentials":
+        ((req.headers["client-credentials"]
+          ?? req.headers["clientcredentials"]) as string)
+          ?? cliFlags["client-credentials"],
     };
 
     // Create a new MCP server for this connection with its auth

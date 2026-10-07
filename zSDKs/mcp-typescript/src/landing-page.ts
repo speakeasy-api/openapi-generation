@@ -11,7 +11,7 @@ import { toolNames } from "./tool-names.js";
 // Cloudflare-specific wrapper
 export function landingPage(req: Request): Response {
   const origin = new URL(req.url).origin;
-  return new Response(landingPageHTML(origin, "http"), {
+  return new Response(landingPageHTML(origin, "http", "cloudflare"), {
     headers: { "Content-Type": "text/html" },
   });
 }
@@ -46,70 +46,46 @@ function sendLandingPage(
 export function landingPageHTML(
   origin: string,
   transport: "sse" | "http" = "sse",
+  runtime: "node" | "cloudflare" = "node",
 ): string {
   const o = origin;
   const endpoint = transport === "sse" ? "sse" : "mcp";
+  const headers: Array<{ name: string; env: string }> = runtime === "cloudflare"
+    ? [
+      { "name": "x-username", "env": "USERNAME" },
+      { "name": "x-password", "env": "PASSWORD" },
+      { "name": "authorization", "env": "BEARER_AUTH" },
+      { "name": "api_key", "env": "MY_API_KEY" },
+      { "name": "x-oauth2", "env": "OAUTH2" },
+      { "name": "x-app-id", "env": "APP_ID" },
+      { "name": "x-secret", "env": "SECRET" },
+      { "name": "x-mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "x-client-credentials", "env": "CLIENT_CREDENTIALS" },
+    ]
+    : [
+      { "name": "username", "env": "USERNAME" },
+      { "name": "password", "env": "PASSWORD" },
+      { "name": "bearer-auth", "env": "BEARER_AUTH" },
+      { "name": "my-api-key", "env": "MY_API_KEY" },
+      { "name": "oauth2", "env": "OAUTH2" },
+      { "name": "app-id", "env": "APP_ID" },
+      { "name": "secret", "env": "SECRET" },
+      { "name": "mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "client-credentials", "env": "CLIENT_CREDENTIALS" },
+    ];
   const mcpConfig = {
-    "command": "npx",
-    "args": [
+    command: "npx",
+    args: [
       "-y",
       "mcp-remote@0.1.25",
       `${o}/${endpoint}`,
-      "--header",
-      "server-index:${SERVER_INDEX}",
-      "--header",
-      "subdomain:${SUBDOMAIN}",
-      "--header",
-      "api-version:${API_VERSION}",
-      "--header",
-      "api-host-name:${API_HOST_NAME}",
-      "--header",
-      "api-port:${API_PORT}",
-      "--header",
-      "username:${USERNAME}",
-      "--header",
-      "password:${PASSWORD}",
-      "--header",
-      "bearer-auth:${BEARER_AUTH}",
-      "--header",
-      "my-api-key:${MY_API_KEY}",
-      "--header",
-      "oauth2:${OAUTH2}",
-      "--header",
-      "app-id:${APP_ID}",
-      "--header",
-      "secret:${SECRET}",
-      "--header",
-      "mobile-auth:${MOBILE_AUTH}",
-      "--header",
-      "client-credentials:${CLIENT_CREDENTIALS}",
-      "--header",
-      "query-param1:${QUERY_PARAM1}",
-      "--header",
-      "deprecated-query-param1:${DEPRECATED_QUERY_PARAM1}",
-      "--header",
-      "deprecated-query-param2:${DEPRECATED_QUERY_PARAM2}",
+      ...headers.flatMap(({ name, env }) => ["--header", `${name}:\${${env}}`]),
     ],
-    "env": {
-      "SERVER_INDEX": "YOUR_VALUE_HERE",
-      "SUBDOMAIN": "YOUR_VALUE_HERE",
-      "API_VERSION": "YOUR_VALUE_HERE",
-      "API_HOST_NAME": "YOUR_VALUE_HERE",
-      "API_PORT": "YOUR_VALUE_HERE",
-      "USERNAME": "YOUR_VALUE_HERE",
-      "PASSWORD": "YOUR_VALUE_HERE",
-      "BEARER_AUTH": "YOUR_VALUE_HERE",
-      "MY_API_KEY": "YOUR_VALUE_HERE",
-      "OAUTH2": "YOUR_VALUE_HERE",
-      "APP_ID": "YOUR_VALUE_HERE",
-      "SECRET": "YOUR_VALUE_HERE",
-      "MOBILE_AUTH": "YOUR_VALUE_HERE",
-      "CLIENT_CREDENTIALS": "YOUR_VALUE_HERE",
-      "QUERY_PARAM1": "YOUR_VALUE_HERE",
-      "DEPRECATED_QUERY_PARAM1": "YOUR_VALUE_HERE",
-      "DEPRECATED_QUERY_PARAM2": "YOUR_VALUE_HERE",
-    },
+    env: Object.fromEntries(headers.map(({ env }) => [env, "YOUR_VALUE_HERE"])),
   };
+  const cliHeaders = headers.map(({ name }) => `--header "${name}: ..."`).join(
+    " ",
+  );
   const codexConfig = transport === "sse"
     ? `[mcp_servers.SDK]
 command = ${JSON.stringify(mcpConfig.command)}
@@ -120,8 +96,12 @@ env = { ${
       ).join(", ")
     } }`
     : `[mcp_servers.SDK]
-url = "${o}/${endpoint}"
-http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDOMAIN", "api-version" = "YOUR_API_VERSION", "api-host-name" = "YOUR_API_HOST_NAME", "api-port" = "YOUR_API_PORT", "username" = "YOUR_USERNAME", "password" = "YOUR_PASSWORD", "bearer-auth" = "YOUR_BEARER_AUTH", "my-api-key" = "YOUR_MY_API_KEY", "oauth2" = "YOUR_OAUTH2", "app-id" = "YOUR_APP_ID", "secret" = "YOUR_SECRET", "mobile-auth" = "YOUR_MOBILE_AUTH", "client-credentials" = "YOUR_CLIENT_CREDENTIALS", "query-param1" = "YOUR_QUERY_PARAM1", "deprecated-query-param1" = "YOUR_DEPRECATED_QUERY_PARAM1", "deprecated-query-param2" = "YOUR_DEPRECATED_QUERY_PARAM2" }`;
+url = ${JSON.stringify(`${o}/${endpoint}`)}
+http_headers = { ${
+      headers.map(({ name, env }) =>
+        `${JSON.stringify(name)} = ${JSON.stringify(`YOUR_${env}`)}`
+      ).join(", ")
+    } }`;
   const encodedConfig = encodeURIComponent(
     btoa(
       Array.from(
@@ -943,7 +923,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
               </svg>
             </button>
-            <code class="code-snippet" id="server-url">${o}/mcp</code>
+            <code class="code-snippet" id="server-url">${o}/${endpoint}</code>
           </div>
         </section>
 
@@ -1000,7 +980,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport ${transport} SDK ${o}/${endpoint} --header "x-username: ..." --header "x-password: ..." --header "authorization: ..." --header "api_key: ..." --header "x-oauth2: ..." --header "x-app-id: ..." --header "x-secret: ..." --header "x-mobile-auth: ..." --header "x-client-credentials: ..." --header "api_key: ..."</code>
+          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport ${transport} SDK ${o}/${endpoint} ${cliHeaders}</code>
         </div>
       </div>
     </div>
@@ -1051,7 +1031,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport ${transport} SDK ${o}/${endpoint} --header "x-username: ..." --header "x-password: ..." --header "authorization: ..." --header "api_key: ..." --header "x-oauth2: ..." --header "x-app-id: ..." --header "x-secret: ..." --header "x-mobile-auth: ..." --header "x-client-credentials: ..." --header "api_key: ..."</code>
+          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport ${transport} SDK ${o}/${endpoint} ${cliHeaders}</code>
         </div>
       </div>
     </div>

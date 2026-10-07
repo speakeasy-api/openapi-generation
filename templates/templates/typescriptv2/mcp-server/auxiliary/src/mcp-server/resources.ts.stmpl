@@ -1,5 +1,6 @@
 {{- recurse 1 -}}
 {{- $coreName := sanitizeCoreSDKName }}
+import type { ResourceTemplate as LegacyResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 {{ genImports }}
 {{- addImport "./shared.js" "valueToBase64" }}
 {{- addImport "./shared.js" "isBinaryData" }}
@@ -8,7 +9,8 @@
 {{- addImport "./console-logger.js" "ConsoleLogger" }}
 {{- addImport "../core.js" $coreName }}
 {{- addImport "@modelcontextprotocol/server" "Variables" }}
-{{- addImport "@modelcontextprotocol/server" "ServerContext" }}
+{{- addImport "./shared.js" "MCPServerContext" }}
+{{- addImport "./shared.js" "mcpServerContext" }}
 {{- addImport "@modelcontextprotocol/server" "ReadResourceResult" }}
 {{- addImport "@modelcontextprotocol/server" "ResourceTemplate" }}
 {{- addImport "@modelcontextprotocol/server" "McpServer" }}
@@ -17,7 +19,7 @@
 export type ReadResourceCallback = (
   client: {{$coreName}},
   uri: URL,
-  extra: ServerContext,
+  extra: MCPServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceDefinition = {
@@ -33,7 +35,7 @@ export type ReadResourceTemplateCallback = (
   client: {{$coreName}},
   uri: URL,
   vars: Variables,
-  extra: ServerContext,
+  extra: MCPServerContext,
 ) => ReadResourceResult | Promise<ReadResourceResult>;
 
 export type ResourceTemplateDefinition = {
@@ -41,7 +43,7 @@ export type ResourceTemplateDefinition = {
   description: string;
   metadata?: ResourceMetadata;
   scopes?: MCPScope[];
-  resource: ResourceTemplate;
+  resource: ResourceTemplate | LegacyResourceTemplate;
   read: ReadResourceTemplateCallback;
 };
 
@@ -121,7 +123,7 @@ export function createRegisterResource(
       resource.name,
       resource.resource,
       metadata,
-      async (uri, ctx) => resource.read(sdk, uri, ctx),
+      async (uri, ctx) => resource.read(sdk, uri, mcpServerContext(ctx)),
     );
 
     logger.debug("Registered resource", { name: resource.name });
@@ -151,11 +153,25 @@ export function createRegisterResourceTemplate(
 
     server.registerResource(
       resource.name,
-      resource.resource,
+      normalizeResourceTemplate(resource.resource),
       metadata,
-      async (uri, vars, ctx) => resource.read(sdk, uri, vars, ctx),
+      async (uri, vars, ctx) => resource.read(sdk, uri, vars, mcpServerContext(ctx)),
     );
 
     logger.debug("Registered resource template", { name: resource.name });
   };
+}
+
+function normalizeResourceTemplate(resource: ResourceTemplate | LegacyResourceTemplate): ResourceTemplate {
+  if (resource instanceof ResourceTemplate) return resource;
+  const complete: NonNullable<ConstructorParameters<typeof ResourceTemplate>[1]["complete"]> = {};
+  for (const variable of resource.uriTemplate.variableNames) {
+    const callback = resource.completeCallback(variable);
+    if (callback) complete[variable] = callback;
+  }
+  const list = resource.listCallback;
+  return new ResourceTemplate(resource.uriTemplate.toString(), {
+    list: list ? (ctx) => list(mcpServerContext(ctx)) : undefined,
+    complete,
+  });
 }

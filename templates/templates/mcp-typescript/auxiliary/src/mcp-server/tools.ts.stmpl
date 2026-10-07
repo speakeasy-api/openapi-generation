@@ -48,8 +48,11 @@ export function buildAnnotationFilter(annotations: string[] | undefined): MCPToo
   return filter;
 }
 
-export type ToolDefinition<Args extends undefined | z.ZodRawShape = undefined> =
-  Args extends z.ZodRawShape
+type ZodRawShapeCompat = z.ZodRawShape;
+type ShapeOutput<Shape extends ZodRawShapeCompat> = z.output<z.ZodObject<Shape>>;
+
+export type ToolDefinition<Args extends undefined | ZodRawShapeCompat = undefined> =
+  Args extends ZodRawShapeCompat
     ? {
         name: string;
         description: string;
@@ -64,7 +67,7 @@ export type ToolDefinition<Args extends undefined | z.ZodRawShape = undefined> =
         }
         tool: (
           client: {{ $coreName }},
-          args: z.output<z.ZodObject<Args>>,
+          args: ShapeOutput<Args>,
           extra: MCPServerContext
         ) => CallToolResult | Promise<CallToolResult>;
       }

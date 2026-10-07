@@ -9,8 +9,38 @@ import { authHoistedSecurityApiKeyFirst } from "../funcs/authHoistedSecurityApiK
 import { authHoistedSecurityBasicHttpOnly } from "../funcs/authHoistedSecurityBasicHttpOnly.js";
 import type { MCPServerFlags } from "../mcp-server/flags.js";
 import { buildSDK } from "../mcp-server/tools.js";
+import { landingPage, landingPageHTML } from "../landing-page.js";
 
 const quietLogger = { level: "error" };
+
+test.each(["sse", "http"] as const)("Node %s setup examples use accepted authentication headers", (transport) => {
+  const html = landingPageHTML("https://mcp.example.test", transport);
+  for (const id of ["claude-cli-cmd", "gemini-config"]) {
+    const snippet = html.match(new RegExp(`id="${id}">([^<]+)</code>`))?.[1];
+    expect(snippet).toContain('--header "access-token: ..."');
+    expect(snippet).not.toContain('--header "authorization: ..."');
+    const header = snippet?.match(/--header "(access-token):/i)?.[1];
+    expect(header).toBeDefined();
+    expect(resolvedOptions({ [header!]: "request-token" }, {}, true).security?.["accessToken"]).toBe("request-token");
+  }
+  expect(html).toContain(`id="server-url">https://mcp.example.test/${transport === "sse" ? "sse" : "mcp"}</code>`);
+});
+
+test("Worker setup examples and install links use the Worker authentication headers", async () => {
+  const html = await landingPage(new Request("https://mcp.example.test/")).text();
+  const raw = html.match(/id="raw-config">([\s\S]*?)<\/code>/)?.[1];
+  const config = JSON.parse(raw!);
+  expect(config.args).toContain("authorization:${ACCESS_TOKEN}");
+  expect(config.args.some((arg: string) => arg.startsWith("access-token:"))).toBe(false);
+  expect(html).toContain('--header "authorization: ..."');
+  expect(html).toContain('"authorization" = "YOUR_ACCESS_TOKEN"');
+  const installLinks = [...html.matchAll(/href="((?:cursor|vscode):[^"]+)"/g)];
+  expect(installLinks.length).toBeGreaterThan(0);
+  for (const [, link] of installLinks) {
+    const encoded = new URL(link!).searchParams.get("config");
+    expect(JSON.parse(Buffer.from(encoded!, "base64").toString())).toEqual(config);
+  }
+});
 
 function resolvedOptions(headers: Record<string, string>, flags: Partial<MCPServerFlags>, disableStaticAuth = false) {
   const sdk = buildSDK(new Headers(headers), flags as MCPServerFlags, disableStaticAuth, quietLogger);

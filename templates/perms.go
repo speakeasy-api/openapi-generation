@@ -2460,6 +2460,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/typescriptv2/tests/tertiary":                                                                        0o20000000755,
 	"templates/typescriptv2/tests/tertiary/auth_additional.test.ts":                                                0o644,
 	"templates/typescriptv2/tests/tertiary/mcp_additional.test.ts":                                                 0o644,
+	"templates/typescriptv2/tests/tertiary/mcp_compatibility_additional.test.ts":                                   0o644,
 	"templates/typescriptv2/tests/tertiary/servers.test.ts":                                                        0o644,
 	"templates/typescriptv2/tests/tertiary/smart_union.test.ts":                                                    0o644,
 	"templates/typescriptv2/tests/tertiary/webhooks.test.ts":                                                       0o644,

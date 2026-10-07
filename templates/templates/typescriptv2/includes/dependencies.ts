@@ -121,6 +121,8 @@ function templateDependencies(): string {
   }
 
   if (isMCPServerEnabled()) {
+    defaultDependencies["@modelcontextprotocol/sdk"] =
+      deps["@modelcontextprotocol/sdk"].version;
     defaultDependencies["@modelcontextprotocol/server"] =
       deps["@modelcontextprotocol/server"].version;
     defaultDependencies["@modelcontextprotocol/server-legacy"] =

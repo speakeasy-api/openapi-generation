@@ -5,7 +5,8 @@
 {{- addImport "../core.js" $coreName }}
 {{- addImport "./scopes.js" "MCPScope" }}
 {{- addImport "@modelcontextprotocol/server" "GetPromptResult" }}
-{{- addImport "@modelcontextprotocol/server" "ServerContext" }}
+{{- addImport "./shared.js" "MCPServerContext" }}
+{{- addImport "./shared.js" "mcpServerContext" }}
 {{- addImport "@modelcontextprotocol/server" "McpServer" }}
 {{- addImport "@modelcontextprotocol/server" "isCompletable" }}
 {{- addZodPackageImport "objectOutputType" }}
@@ -28,7 +29,7 @@ export type PromptDefinition<Args extends undefined | PromptArgsRawShape = undef
       prompt: (
         client: {{$coreName}},
         args: objectOutputType<Args, ZodTypeAny>,
-        extra: ServerContext,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     }
     : {
@@ -38,7 +39,7 @@ export type PromptDefinition<Args extends undefined | PromptArgsRawShape = undef
       args?: undefined;
       prompt: (
         client: {{$coreName}},
-        extra: ServerContext,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     };
 
@@ -84,11 +85,11 @@ export function createRegisterPrompt(
       server.registerPrompt(prompt.name, {
         ...(prompt.description === undefined ? {} : { description: prompt.description }),
         argsSchema: { ...mcpSchema(prompt.args), shape },
-      }, async (args, ctx) => prompt.prompt(sdk, args, ctx));
+      }, async (args, ctx) => prompt.prompt(sdk, args, mcpServerContext(ctx)));
     } else {
       server.registerPrompt(prompt.name, {
         ...(prompt.description === undefined ? {} : { description: prompt.description }),
-      }, async (ctx) => prompt.prompt(sdk, ctx));
+      }, async (ctx) => prompt.prompt(sdk, mcpServerContext(ctx)));
     }
 
     logger.debug("Registered prompt", { name: prompt.name });

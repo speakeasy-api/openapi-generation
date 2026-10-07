@@ -58,7 +58,7 @@ Then install with Claude Code CLI:
 
 The worker serves MCP over Streamable HTTP at `/mcp` and legacy HTTP+SSE at `/sse`. Existing clients can keep their endpoints. Legacy Streamable HTTP and SSE clients retain session state in Durable Objects; modern protocol requests are handled statelessly.
 
-The Durable Object binding and its `v1` migration remain in `wrangler.toml` so that workers deployed with them keep deploying and keep their stored state. The worker no longer uses the namespace. Deleting it permanently destroys its data, so do it only deliberately: remove the binding, remove the exported class, and add a migration with `deleted_classes`.
+Keep the Durable Object binding, exported class, and `v1` migration in `wrangler.toml`: legacy Streamable HTTP and SSE sessions require them. Only modern protocol requests are stateless. Removing the binding disables legacy sessions; deleting the namespace also permanently destroys its stored data.
 
 
 {{end}}

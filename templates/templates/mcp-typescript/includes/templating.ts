@@ -722,6 +722,29 @@ function addHeadersToConfigVSCode(config: any, headerEntries: any[]) {
   return config;
 }
 
+function mcpRemoteHeaders(runtime: "node" | "cloudflare") {
+  const security = context.Global.AST.MainSDK.Security?.Type;
+  if (!security) return [];
+  const entries =
+    runtime === "cloudflare"
+      ? getRemoteServerHeaders(security)
+          .flat()
+          .map((header) => ({
+            name: header.headerName,
+            env: caser().ToSNAKE(header.fieldName),
+          }))
+      : unnestSecurityEnvFields(security).map((field) => ({
+          name: sanitizeMCPCLIFlag(field.Name),
+          env: caser().ToSNAKE(field.Name),
+        }));
+  return [...new Map(entries.map((header) => [header.name, header])).values()];
+}
+
+registerTemplateFunc(
+  "templateMcpLandingPageHeaders",
+  (runtime: "node" | "cloudflare") => JSON.stringify(mcpRemoteHeaders(runtime)),
+);
+
 function mcpRemoteConfigCommand(
   endpointType: string = "mcp",
   clientType: string = "default",
@@ -733,10 +756,10 @@ function mcpRemoteConfigCommand(
     "https://example-cloudflare-worker.com";
 
   const headers: string[] = [];
-  const flags = gatherMCPFlags();
-  for (const flag of flags) {
-    let envVar = `${caser().ToSNAKE(flag.Name)}`;
-    headers.push("--header", `${flag.Name}:\${${envVar}}`);
+  for (const header of mcpRemoteHeaders(
+    context.Global.Config.CloudflareEnabled ? "cloudflare" : "node",
+  )) {
+    headers.push("--header", `${header.name}:\${${header.env}}`);
   }
 
   return [
@@ -888,16 +911,17 @@ registerTemplateFunc(
 function mcpHttpHeadersTOML(
   options: { escapeForTemplateLiteral?: boolean } = {},
 ) {
-  const flags = gatherMCPFlags();
-  if (flags.length === 0) {
+  const fields = mcpRemoteHeaders(
+    context.Global.Config.CloudflareEnabled ? "cloudflare" : "node",
+  );
+  if (fields.length === 0) {
     return "http_headers = { }";
   }
 
   const headers: string[] = [];
-  for (const flag of flags) {
-    const envVar = `${caser().ToSNAKE(flag.Name)}`;
-    const placeholder = `YOUR_${envVar}`;
-    headers.push(`"${flag.Name}" = "${placeholder}"`);
+  for (const field of fields) {
+    const placeholder = `YOUR_${field.env}`;
+    headers.push(`"${field.name}" = "${placeholder}"`);
   }
 
   return `http_headers = { ${headers.join(", ")} }`;
@@ -1023,12 +1047,6 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
 
   // HTML format: uses ${o} placeholder for dynamic URL (for landing page)
   if (format === "html") {
-    const headers = getRemoteServerHeaders(
-      context.Global.AST.MainSDK.Security?.Type,
-    );
-    const headerArgs = headers.flatMap((header) =>
-      header.map((h) => `--header "${h.headerName}: ..."`),
-    );
     return [
       client,
       "mcp",
@@ -1037,7 +1055,7 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
       "${transport}",
       mcpName(),
       `\${o}/\${endpoint}`,
-      ...headerArgs,
+      "${cliHeaders}",
     ].join(" ");
   }
 

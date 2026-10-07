@@ -119,6 +119,14 @@ function getTemplateDependencies() {
       category: "dev",
       condition: "mcpServer",
     },
+    "@modelcontextprotocol/sdk": {
+      name: "@modelcontextprotocol/sdk",
+      version: "^1.32.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+      condition: "mcpServer",
+    },
     "@modelcontextprotocol/server": {
       name: "@modelcontextprotocol/server",
       version: "^2.3.1",

@@ -12,9 +12,6 @@
   {{- end }}
   "type": "module",
   "sideEffects": false,
-  "engines": {
-    "node": "{{ if .Global.Config.GramEnabled }}>=22.18.0{{ else }}>=20{{ end }}"
-  },
   {{- if .Global.Config.RepoURL }}
   "repository": {
     "type": "git",
@@ -67,5 +64,8 @@
   },
   "devDependencies": {
     {{ templateDevDependencies | indent 4 | trim }}
+  },
+  "engines": {
+    "node": "{{ if .Global.Config.GramEnabled }}>=22.18.0{{ else }}>=20{{ end }}"
   }
 }

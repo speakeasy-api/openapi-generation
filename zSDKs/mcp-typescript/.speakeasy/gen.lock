@@ -58,7 +58,7 @@ trackedFiles:
   manifest.json:
     last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
-    last_write_checksum: sha1:8fa6c08df7cb938fe2bd18f307a71cf870e4479b
+    last_write_checksum: sha1:4b0ecf94b179c07fabd75eac7a9f7ebf37868fbc
   server.json:
     last_write_checksum: sha1:cdd68ed3cc00a507a2bc71e85823fe10482e2527
   src/__tests__/assertions.ts:
@@ -554,7 +554,7 @@ trackedFiles:
   src/hooks/types.ts:
     last_write_checksum: sha1:29372122898cc523fa47576f3f6608a28ec6080e
   src/landing-page.ts:
-    last_write_checksum: sha1:17687c74533e4a0a9ab43d19a57b205148d46081
+    last_write_checksum: sha1:7a7d2f0f2e4ef76f992da14f7321ce3aa47a3bb3
   src/lib/base64.ts:
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
   src/lib/config.ts:
@@ -598,7 +598,7 @@ trackedFiles:
   src/mcp-server/cli/start/command.ts:
     last_write_checksum: sha1:0b1d5a70b4fbce726352d22a584ed4a531cb0a52
   src/mcp-server/cli/start/impl.ts:
-    last_write_checksum: sha1:efd248f6c2b17539c6c84fa7c1692515e6ca6dc2
+    last_write_checksum: sha1:fa434824ca40372f0aa641d676bc15c1d907b3d7
   src/mcp-server/console-logger.ts:
     last_write_checksum: sha1:0c4b9b7c79ad0a81359210cb31b9ee4d887d5de1
   src/mcp-server/extensions.ts:
@@ -620,7 +620,7 @@ trackedFiles:
   src/mcp-server/shared.ts:
     last_write_checksum: sha1:1832c294677c567750b516748fca219a05da582f
   src/mcp-server/tools.ts:
-    last_write_checksum: sha1:0c4e4d1b3e5d53d5bb1c9accc022d52bf3e80b96
+    last_write_checksum: sha1:38e6a68a329c1179dfce2178c24e2dd81ec0e0a8
   src/mcp-server/tools/binaryAndStringUpload.ts:
     last_write_checksum: sha1:fbf82c10210eec4825988311ef4326b79e33f93b
   src/mcp-server/tools/createUser.ts:

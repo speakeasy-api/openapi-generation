@@ -61,42 +61,48 @@ export function buildAnnotationFilter(
   return filter;
 }
 
-export type ToolDefinition<Args extends undefined | z.ZodRawShape = undefined> =
-  Args extends z.ZodRawShape ? {
-      name: string;
-      description: string;
-      scopes?: MCPScope[];
-      args: Args;
-      annotations: {
-        title: string;
-        destructiveHint: boolean;
-        idempotentHint: boolean;
-        openWorldHint: boolean;
-        readOnlyHint: boolean;
-      };
-      tool: (
-        client: SDKCore,
-        args: z.output<z.ZodObject<Args>>,
-        extra: MCPServerContext,
-      ) => CallToolResult | Promise<CallToolResult>;
-    }
-    : {
-      name: string;
-      description: string;
-      scopes?: MCPScope[];
-      args?: undefined;
-      annotations: {
-        title: string;
-        destructiveHint: boolean;
-        idempotentHint: boolean;
-        openWorldHint: boolean;
-        readOnlyHint: boolean;
-      };
-      tool: (
-        client: SDKCore,
-        extra: MCPServerContext,
-      ) => CallToolResult | Promise<CallToolResult>;
+type ZodRawShapeCompat = z.ZodRawShape;
+type ShapeOutput<Shape extends ZodRawShapeCompat> = z.output<
+  z.ZodObject<Shape>
+>;
+
+export type ToolDefinition<
+  Args extends undefined | ZodRawShapeCompat = undefined,
+> = Args extends ZodRawShapeCompat ? {
+    name: string;
+    description: string;
+    scopes?: MCPScope[];
+    args: Args;
+    annotations: {
+      title: string;
+      destructiveHint: boolean;
+      idempotentHint: boolean;
+      openWorldHint: boolean;
+      readOnlyHint: boolean;
     };
+    tool: (
+      client: SDKCore,
+      args: ShapeOutput<Args>,
+      extra: MCPServerContext,
+    ) => CallToolResult | Promise<CallToolResult>;
+  }
+  : {
+    name: string;
+    description: string;
+    scopes?: MCPScope[];
+    args?: undefined;
+    annotations: {
+      title: string;
+      destructiveHint: boolean;
+      idempotentHint: boolean;
+      openWorldHint: boolean;
+      readOnlyHint: boolean;
+    };
+    tool: (
+      client: SDKCore,
+      extra: MCPServerContext,
+    ) => CallToolResult | Promise<CallToolResult>;
+  };
 
 // Optional function to assist with formatting tool results
 export async function formatResult(

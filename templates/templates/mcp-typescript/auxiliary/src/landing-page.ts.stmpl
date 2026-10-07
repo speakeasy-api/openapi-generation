@@ -6,7 +6,7 @@ import { Request as ExpressRequest, Response as ExpressResponse } from "express"
 // Cloudflare-specific wrapper
 export function landingPage(req: Request): Response {
   const origin = new URL(req.url).origin;
-  return new Response(landingPageHTML(origin, "http"), {
+  return new Response(landingPageHTML(origin, "http", "cloudflare"), {
     headers: { "Content-Type": "text/html" },
   });
 }
@@ -30,16 +30,26 @@ function sendLandingPage(req: ExpressRequest, res: ExpressResponse, transport: "
   res.type("html").send(landingPageHTML(`${proto}://${host}`, transport));
 }
 
-export function landingPageHTML(origin: string, transport: "sse" | "http" = "sse"): string {
+export function landingPageHTML(origin: string, transport: "sse" | "http" = "sse", runtime: "node" | "cloudflare" = "node"): string {
   const o = origin
   const endpoint = transport === "sse" ? "sse" : "mcp";
-  const mcpConfig = {{ templateMcpIDEConfig (dict "location" "landingpage" "format" "js" "endpoint" "${endpoint}") }}
+  const headers: Array<{ name: string; env: string }> = runtime === "cloudflare"
+    ? {{ templateMcpLandingPageHeaders "cloudflare" }}
+    : {{ templateMcpLandingPageHeaders "node" }};
+  const mcpConfig = {
+    command: "npx",
+    args: ["-y", "mcp-remote@0.1.25", `${o}/${endpoint}`, ...headers.flatMap(({ name, env }) => ["--header", `${name}:\${${env}}`])],
+    env: Object.fromEntries(headers.map(({ env }) => [env, "YOUR_VALUE_HERE"])),
+  };
+  const cliHeaders = headers.map(({ name }) => `--header "${name}: ..."`).join(" ");
   const codexConfig = transport === "sse"
     ? `[mcp_servers.{{ sanitizeClassName $globalSDK.Type.Name }}]
 command = ${JSON.stringify(mcpConfig.command)}
 args = ${JSON.stringify(mcpConfig.args)}
 env = { ${Object.entries(mcpConfig.env).map(([name, value]) => `${JSON.stringify(name)} = ${JSON.stringify(value)}`).join(", ")} }`
-    : `{{ templateMcpIDEConfig (dict "location" "landingpage" "format" "toml" "endpoint" "${endpoint}") }}`
+    : `[mcp_servers.{{ sanitizeClassName $globalSDK.Type.Name }}]
+url = ${JSON.stringify(`${o}/${endpoint}`)}
+http_headers = { ${headers.map(({ name, env }) => `${JSON.stringify(name)} = ${JSON.stringify(`YOUR_${env}`)}`).join(", ")} }`
   const encodedConfig = encodeURIComponent(btoa(Array.from(new TextEncoder().encode(JSON.stringify(mcpConfig)), byte => String.fromCharCode(byte)).join("")));
 
     return `
@@ -848,7 +858,7 @@ env = { ${Object.entries(mcpConfig.env).map(([name, value]) => `${JSON.stringify
                 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
               </svg>
             </button>
-            <code class="code-snippet" id="server-url">${o}/mcp</code>
+            <code class="code-snippet" id="server-url">${o}/${endpoint}</code>
           </div>
         </section>
 
