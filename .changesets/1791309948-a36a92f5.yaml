@@ -1,0 +1,10 @@
+id: 1791309948-a36a92f5
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: open the configure and auth login forms when run bare on a terminal, and add configure --default-output-format
+author: AshGodfrey
+date: "2026-10-06"

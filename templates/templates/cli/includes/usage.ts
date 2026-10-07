@@ -1245,6 +1245,13 @@ function buildRootUsageCommand(): UsageCommandDef {
   root.commands!.push({
     name: "configure",
     help: templateConfigureShort(),
+    flags: [
+      {
+        spec: usageFlagSpec(DEFAULT_OUTPUT_FORMAT_FLAG, undefined, "format"),
+        help: "Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.",
+        suggestions: ["pretty", "json", "yaml", "table", "toon"],
+      },
+    ],
     commands: [],
   });
 

@@ -99,7 +99,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
     {{- end}}
 
     {{- if templateHasSecuritySchemeGroups}}
-    formMode := interactive.Resolve(cmd).FormMode()
+    formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, {{templateAuthLoginFlagNames}}))
 
     {{templateAuthLoginBody | indent 4 | trim}}
     {{- else}}

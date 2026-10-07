@@ -178,6 +178,8 @@ func TestUsageSchema_Subtree(t *testing.T) {
 	stderr := h.GetStderr()
 
 	assert.Contains(t, stdout, "cmd \"configure\"")
+	assert.Contains(t, stdout, `flag "--default-output-format <format>"`)
+	assert.Contains(t, stdout, `suggestions "pretty" "json" "yaml" "table" "toon"`)
 	assert.NotContains(t, stdout, "name \"")
 	assert.Empty(t, stderr)
 }

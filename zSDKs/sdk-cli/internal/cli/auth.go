@@ -101,7 +101,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 	}
 
 	keychainStored := false
-	formMode := interactive.Resolve(cmd).FormMode()
+	formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url"))
 
 	if formMode == interactive.FormOff {
 		// Non-interactive: store any explicitly-set flags without prompting

@@ -20,7 +20,8 @@ cli configure [flags]
 ### Options
 
 ```
-  -h, --help   help for configure
+      --default-output-format string   Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.
+  -h, --help                           help for configure
 ```
 
 ### Options inherited from parent commands

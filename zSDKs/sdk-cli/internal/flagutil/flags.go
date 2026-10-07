@@ -36,6 +36,16 @@ func FlagChanged(cmd *cobra.Command, name string) bool {
 	return false
 }
 
+// AnyFlagChanged reports whether any of the named flags was explicitly set.
+func AnyFlagChanged(cmd *cobra.Command, names ...string) bool {
+	for _, name := range names {
+		if FlagChanged(cmd, name) {
+			return true
+		}
+	}
+	return false
+}
+
 // GetStringFlag returns the value of a string flag and whether it was changed.
 // This correctly handles both local flags and inherited persistent flags.
 func GetStringFlag(cmd *cobra.Command, name string) (string, bool) {

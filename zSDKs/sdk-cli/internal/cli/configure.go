@@ -14,8 +14,10 @@ import (
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
 	"openapi/internal/interactive"
+	"openapi/internal/output"
 	"openapi/internal/usage"
 	"os"
+	"strings"
 )
 
 // initConfigureCmd initializes the configure command.
@@ -34,6 +36,7 @@ Priority: CLI flags > environment variables > OS keychain > config file`,
 		Args: cobra.NoArgs,
 		RunE: runConfigureCmd,
 	}
+	cmd.Flags().String("default-output-format", "", "Store the default output format without opening the form. Options: "+strings.Join(output.Formats, ", ")+". Pass an empty value to clear it.")
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -53,9 +56,23 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 
 	keychainStored := false
 
-	formMode := interactive.Resolve(cmd).FormMode()
+	formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url", "query-param1", "deprecated-query-param1", "deprecated-query-param2", "lone-query-param", "default-output-format"))
+	if cmd.Flags().Changed("default-output-format") {
+		formMode = interactive.FormOff
+	}
 	if formMode == interactive.FormOff {
 		changed := false
+		if f := cmd.Flags().Lookup("default-output-format"); f != nil && f.Changed {
+			switch v := f.Value.String(); v {
+			case "":
+				cfg.OutputFormat = ""
+			case "pretty", "json", "yaml", "table", "toon":
+				cfg.OutputFormat = v
+			default:
+				return flagutil.WithCLIValidation(fmt.Errorf("invalid --default-output-format %q; options: pretty, json, yaml, table, toon", v))
+			}
+			changed = true
+		}
 		if f := cmd.Flags().Lookup("username"); f != nil && f.Changed {
 			v, _ := cmd.Flags().GetString("username")
 			cfg.Security.Username = v
