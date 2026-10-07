@@ -31,7 +31,7 @@ func InitIntentProduce(parent *cobra.Command) error {
 			"speakeasy_strict_body_keys":     "true",
 			"speakeasy_command_hints":        "{\"CLI_ASYNC_FAILED\":[\"Inspect the terminal response and resume command\"],\"CLI_ASYNC_TIMEOUT\":[\"Resume polling with the returned handle\"],\"CLI_ASYNC_UNKNOWN_STATE\":[\"Regenerate the CLI against the current API schema\"]}",
 			"speakeasy_artifact":             "{\"pointer\":[{\"field\":\"steps\"},{\"wild\":true},{\"field\":\"content\"},{\"wild\":true}],\"kind\":\"image\",\"defaultPath\":\"produce-{timestamp}-{rand}.{ext}\"}",
-			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"produce\",\"resume\":\"cli get-asset --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
+			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"produce\",\"resume\":\"cli get-asset --stream=false --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
 		},
 	}
 	intentMeta := flagutil.NonBodyMeta(renderAssetCmdMeta, "")

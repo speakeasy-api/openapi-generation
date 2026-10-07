@@ -279,6 +279,24 @@ func TestAsyncIntent_UnknownAndMissingStatesAreErrors(t *testing.T) {
 	}
 }
 
+func TestAsyncIntent_PollHTTPErrorKeepsHandleAndResume(t *testing.T) {
+	pollError := `{"error":{"message":"rate limited"}}`
+	stub := newAsyncStubWithStatus(t, {{$a.AsyncCreateResponseCode}}, http.StatusTooManyRequests, asyncCreateTestBody, pollError)
+	h := NewCLITestHarness(t)
+	err := runAsyncIntent(t, h, stub.server.URL, "--output-format", "json")
+	require.Error(t, err)
+	assert.Empty(t, h.GetStdout())
+	assert.Equal(t, float64(http.StatusTooManyRequests), jsonGetFloat64(h.GetStderr(), "status_code"))
+	assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
+	assert.Equal(t, {{goStringLiteral $a.AsyncResume}}+" "+asyncTestHandle, jsonGetString(h.GetStderr(), "resume"))
+
+	stub = newAsyncStubWithStatus(t, {{$a.AsyncCreateResponseCode}}, http.StatusTooManyRequests, asyncCreateTestBody, pollError)
+	h = NewCLITestHarness(t)
+	require.Error(t, runAsyncIntent(t, h, stub.server.URL))
+	assert.Empty(t, h.GetStdout())
+	assert.Contains(t, h.GetStderr(), {{goStringLiteral $a.AsyncResume}}+" "+asyncTestHandle)
+}
+
 func TestAsyncIntent_MissingHandleAndCreateStreamAreProtocolErrors(t *testing.T) {
 	for name, configure := range map[string]func(*asyncStub){
 		"missing handle": func(stub *asyncStub) { stub.createBody = asyncMissingIDBody },

@@ -194,7 +194,7 @@ func TestAsyncIntent_FailureUsesSharedMachineErrorEnvelope(t *testing.T) {
 		require.Error(t, err)
 		assert.Empty(t, h.GetStdout())
 		assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
-		assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --id"+" "+asyncTestHandle)
+		assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --stream=false --id"+" "+asyncTestHandle)
 		if args[0] == "--agent-mode" {
 			assert.Equal(t, "CLI_ASYNC_FAILED", jsonGetString(h.GetStderr(), "error_reason"))
 			assert.Contains(t, h.GetStderr(), "Inspect the terminal response and resume command")
@@ -207,7 +207,7 @@ func TestAsyncIntent_FailureUsesSharedMachineErrorEnvelope(t *testing.T) {
 	require.Error(t, err)
 	diagnostic := strings.TrimSpace(h.GetStderr())
 	assert.Contains(t, diagnostic, asyncTestHandle)
-	assert.Contains(t, diagnostic, "cli get-asset --id"+" "+asyncTestHandle)
+	assert.Contains(t, diagnostic, "cli get-asset --stream=false --id"+" "+asyncTestHandle)
 	assert.Zero(t, strings.Count(diagnostic, string(rune(10))))
 }
 
@@ -224,9 +224,27 @@ func TestAsyncIntent_UnknownAndMissingStatesAreErrors(t *testing.T) {
 			assert.Empty(t, h.GetStdout())
 			assert.Equal(t, test.reason, jsonGetString(h.GetStderr(), "error_reason"))
 			assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
-			assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --id"+" "+asyncTestHandle)
+			assert.Contains(t, jsonGetString(h.GetStderr(), "resume"), "cli get-asset --stream=false --id"+" "+asyncTestHandle)
 		})
 	}
+}
+
+func TestAsyncIntent_PollHTTPErrorKeepsHandleAndResume(t *testing.T) {
+	pollError := `{"error":{"message":"rate limited"}}`
+	stub := newAsyncStubWithStatus(t, 200, http.StatusTooManyRequests, asyncCreateTestBody, pollError)
+	h := NewCLITestHarness(t)
+	err := runAsyncIntent(t, h, stub.server.URL, "--output-format", "json")
+	require.Error(t, err)
+	assert.Empty(t, h.GetStdout())
+	assert.Equal(t, float64(http.StatusTooManyRequests), jsonGetFloat64(h.GetStderr(), "status_code"))
+	assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
+	assert.Equal(t, "cli get-asset --stream=false --id"+" "+asyncTestHandle, jsonGetString(h.GetStderr(), "resume"))
+
+	stub = newAsyncStubWithStatus(t, 200, http.StatusTooManyRequests, asyncCreateTestBody, pollError)
+	h = NewCLITestHarness(t)
+	require.Error(t, runAsyncIntent(t, h, stub.server.URL))
+	assert.Empty(t, h.GetStdout())
+	assert.Contains(t, h.GetStderr(), "cli get-asset --stream=false --id"+" "+asyncTestHandle)
 }
 
 func TestAsyncIntent_MissingHandleAndCreateStreamAreProtocolErrors(t *testing.T) {

@@ -1041,9 +1041,50 @@ function collectIntentManifest(): IntentManifestCtx {
         );
       }
       const pollFlag = sanitizeFlagNameWithReserved(target.Field.Name);
-      const resumePrefix = `${sanitizeCliName()} ${getCLICommandPath(
-        pollFound.op,
-      ).join(" ")} --${pollFlag}`;
+      const pollParams = [
+        ...(pollFound.op.Request.Params?.PathParams || []).map((p: any) => ({
+          in: "path",
+          field: p.Field,
+        })),
+        ...(pollFound.op.Request.Params?.QueryParams || []).map((p: any) => ({
+          in: "query",
+          field: p.Field,
+        })),
+        ...(pollFound.op.Request.Params?.HeaderParams || []).map((p: any) => ({
+          in: "header",
+          field: p.Field,
+        })),
+      ];
+      const pinnedFlags = (cmd.Async.ResolvedParams || []).map((param: any) => {
+        const match = pollParams.find(
+          (p) =>
+            p.in === param.In &&
+            (p.field?.OriginalName || p.field?.Name) === param.Name,
+        );
+        if (!match) {
+          throw new Error(
+            `x-speakeasy-cli-commands: command "${path.join(
+              " ",
+            )}" cannot map async.params ${param.In} parameter ${
+              param.Name
+            } to the generated poll request`,
+          );
+        }
+        const flag = sanitizeFlagNameWithReserved(match.field.Name);
+        if (
+          typeof param.Value === "boolean" ||
+          typeof param.Value === "number"
+        ) {
+          return `--${flag}=${param.Value}`;
+        }
+        return `--${flag} ${intentExampleQuoted(String(param.Value))}`;
+      });
+      const resumePrefix = [
+        sanitizeCliName(),
+        ...getCLICommandPath(pollFound.op),
+        ...pinnedFlags,
+        `--${pollFlag}`,
+      ].join(" ");
       asyncParams = (cmd.Async.ResolvedParams || []).map((param: any) => ({
         In: param.In,
         Name: param.Name,

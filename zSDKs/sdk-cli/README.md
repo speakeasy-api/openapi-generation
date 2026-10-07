@@ -272,7 +272,7 @@ Commands that produce media write the file and print only its path on stdout (`-
 cli render "a lighthouse at sunset" --out ./output/
 ```
 
-Long-running commands poll to a terminal response; human progress goes to stderr and machine-mode success keeps stderr silent. Add `--async` to `cli produce "a lighthouse at sunrise"` to return its handle immediately, or tune foreground polling with `--poll-interval <duration>` and `--poll-timeout <duration>`. Resume an escaped or timed-out operation with `cli get-asset --id <id>`.
+Long-running commands poll to a terminal response; human progress goes to stderr and machine-mode success keeps stderr silent. Add `--async` to `cli produce "a lighthouse at sunrise"` to return its handle immediately, or tune foreground polling with `--poll-interval <duration>` and `--poll-timeout <duration>`. Resume an escaped or timed-out operation with `cli get-asset --stream=false --id <id>`.
 <!-- End For AI agents [agents] -->
 
 <!-- Start Authentication [security] -->

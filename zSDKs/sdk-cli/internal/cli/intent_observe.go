@@ -29,7 +29,7 @@ func InitIntentObserve(parent *cobra.Command) error {
 			"speakeasy_operation":            "renderAsset",
 			flagutil.AnnotationWholeBodyFlag: "body",
 			"speakeasy_strict_body_keys":     "true",
-			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"observe\",\"resume\":\"cli get-asset --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
+			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"observe\",\"resume\":\"cli get-asset --stream=false --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
 		},
 	}
 	intentMeta := flagutil.NonBodyMeta(renderAssetCmdMeta, "")

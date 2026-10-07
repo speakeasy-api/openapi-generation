@@ -120,9 +120,9 @@ trackedFiles:
   internal/cli/intent_invite.go:
     last_write_checksum: sha1:a90f39ad98e0fe14446aa34ee09f912ec4143e3e
   internal/cli/intent_observe.go:
-    last_write_checksum: sha1:0ba220ea9b1c72b5be13a6eb8cd01b46783359bb
+    last_write_checksum: sha1:1d7e30d175c16db15c98bb5370be4ae9cfdae871
   internal/cli/intent_produce.go:
-    last_write_checksum: sha1:c0b552ae90de890d610a7ba3e9c460053ea5b4e5
+    last_write_checksum: sha1:2bbad4cf2c4df491cbf223b987cd01202b9dfa96
   internal/cli/intent_render.go:
     last_write_checksum: sha1:e2a15348c10c96dffd27cb4a91805386b8cb2b0c
   internal/cli/intent_say.go:
@@ -260,7 +260,7 @@ trackedFiles:
   internal/output/artifact.go:
     last_write_checksum: sha1:e1dfc09cbda1012a953fe33fece7efaddaf3f03b
   internal/output/async.go:
-    last_write_checksum: sha1:dd97e2b19a859b376462dd1beacb31d7d3668a79
+    last_write_checksum: sha1:7a26fa580d2493eb169757833617814b508966fb
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
@@ -654,7 +654,7 @@ trackedFiles:
   tests/artifact_test.go:
     last_write_checksum: sha1:0f30f25b5dc69938e9ef91371d4b3497bb87f62e
   tests/async_test.go:
-    last_write_checksum: sha1:fb5dafb085f988d482359c61cdb2b800528ceed0
+    last_write_checksum: sha1:96d5270e421c03d1258052940ffbd9aab2a9499b
   tests/cli_harness_test.go:
     last_write_checksum: sha1:b347035c99b9f95ac8e82a7e5d30afe78ed92c23
   tests/common_helpers_test.go:
