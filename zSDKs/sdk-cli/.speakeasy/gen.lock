@@ -563,6 +563,8 @@ trackedFiles:
     last_write_checksum: sha1:b828c94c45116e632925027e4e2c211e971e04e2
   internal/sdk/optionalnullable/optionalnullable_test.go:
     last_write_checksum: sha1:d3991667754ed67db803aeab4a6239f6f9a1be37
+  internal/sdk/redact/redact.go:
+    last_write_checksum: sha1:8090b7e04d1365758dde8e2807b14ecb697b5257
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:

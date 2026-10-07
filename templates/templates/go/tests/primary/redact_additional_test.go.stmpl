@@ -1,0 +1,93 @@
+package tests
+
+import (
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/{{getRedactLocation}}"
+	"{{getRootModulePath}}/pkg/models/apierrors"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const sensitiveBodyPayload = `{
+	"name": "visible-name",
+	"password": "secret-password",
+	"token": "secret-token",
+	"nested": {"label": "visible-nested", "secret": "secret-nested"},
+	"items": [{"label": "visible-item", "secret": "secret-item"}],
+	"tokens": ["secret-tokens-0", "secret-tokens-1"],
+	"labels": {"visible": "visible-label", "extra": "secret-label"},
+	"credential": {"kind": "password", "password": "secret-credential"},
+	"tree": {"label": "visible-root", "secret": "secret-root", "children": [{"label": "visible-child", "secret": "secret-child", "children": []}]},
+	"whole": {"value": "secret-whole"},
+	"unrelated": {"secret": "visible-unrelated"}
+}`
+
+type redactCaptureClient struct {
+	status    int
+	operation string
+}
+
+func (c *redactCaptureClient) Do(req *http.Request) (*http.Response, error) {
+	c.operation = redact.Operation(req.Context())
+	return &http.Response{
+		StatusCode: c.status,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(sensitiveBodyPayload)),
+		Request:    req,
+	}, nil
+}
+
+func assertSensitiveBodyMasked(t *testing.T, output string) {
+	t.Helper()
+	for _, secret := range []string{"secret-password", "secret-token", "secret-nested", "secret-item", "secret-tokens-0", "secret-tokens-1", "secret-label", "secret-credential", "secret-root", "secret-child", "secret-whole"} {
+		assert.NotContains(t, output, secret)
+	}
+	for _, visible := range []string{"visible-name", "visible-nested", "visible-item", "visible-label", "visible-root", "visible-child", "visible-unrelated"} {
+		assert.Contains(t, output, visible)
+	}
+}
+
+func TestRedactSensitiveBodies(t *testing.T) {
+	ctx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+
+	assertSensitiveBodyMasked(t, string(redact.RequestBody(ctx, []byte(sensitiveBodyPayload))))
+	assertSensitiveBodyMasked(t, string(redact.ResponseBody(ctx, []byte(sensitiveBodyPayload))))
+
+	plain := []byte(`{"name": "visible-name"}`)
+	assert.Equal(t, plain, redact.ResponseBody(ctx, plain), "bodies without sensitive values are returned unchanged")
+	assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, []byte("secret-text"))), "unparseable bodies are masked as a whole")
+	assert.Equal(t, []byte(sensitiveBodyPayload), redact.ResponseBody(context.Background(), []byte(sensitiveBodyPayload)), "requests without an operation are not masked")
+
+	errorBody := string(redact.ResponseBody(ctx, []byte(`{"message": "visible-message", "secret": "secret-error"}`)))
+	assert.Contains(t, errorBody, "visible-message")
+	assert.NotContains(t, errorBody, "secret-error", "error response schemas are masked")
+
+	streamCtx := redact.WithOperation(context.Background(), "sensitiveStreamRedaction")
+	assert.Equal(t, redact.Mask, string(redact.ResponseBody(streamCtx, []byte(`{"label": "visible", "secret": "secret-stream"}`))), "streams holding sensitive values are masked as a whole")
+}
+
+func TestRedactOperationOnRequestContext(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	res, err := s.SensitiveBodies.Redaction(context.Background(), shared.SensitiveBodyPayload{Name: "visible-name"})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveBodyRedaction", client.operation)
+	require.NotNil(t, res.SensitiveBodyPayload)
+	assert.Equal(t, "secret-password", *res.SensitiveBodyPayload.Password, "decoded values are not masked")
+
+	client.status = http.StatusInternalServerError
+	_, err = s.SensitiveBodies.Redaction(context.Background(), shared.SensitiveBodyPayload{Name: "visible-name"})
+	var apiErr *apierrors.APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.Contains(t, apiErr.Body, "secret-password", "the error body is not masked")
+	assertSensitiveBodyMasked(t, apiErr.Error())
+}

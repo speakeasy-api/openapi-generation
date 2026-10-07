@@ -22,6 +22,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	tfReflect "github.com/hashicorp/terraform-provider-testing/internal/provider/reflect"
+	"github.com/hashicorp/terraform-provider-testing/internal/sdk/redact"
 )
 
 func debugResponse(response *http.Response) string {
@@ -44,14 +45,30 @@ func debugResponse(response *http.Response) string {
 			return err.Error()
 		}
 	}
-	dumpRes, err := httputil.DumpResponse(response, true)
+	// The body is read directly rather than from a full dump, which would
+	// re-encode a chunked body and so prevent it from being parsed.
+	dumpRes, err := httputil.DumpResponse(response, false)
 	if err != nil {
-		dumpRes, err = httputil.DumpResponse(response, false)
-		if err != nil {
-			return err.Error()
+		return err.Error()
+	}
+	ctx := response.Request.Context()
+	if response.Body != nil {
+		if body, err := io.ReadAll(response.Body); err == nil {
+			response.Body = io.NopCloser(bytes.NewReader(body))
+			dumpRes = append(dumpRes, redact.ResponseBody(ctx, body)...)
 		}
 	}
-	return redactSensitiveValues(response.Request.Context(), fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes)))
+	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte { return redact.RequestBody(ctx, body) })
+	return redactSensitiveValues(ctx, fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes)))
+}
+
+// redactDumpBody applies redactBody to the body of an HTTP message dump.
+func redactDumpBody(dump []byte, redactBody func([]byte) []byte) []byte {
+	head, body, found := bytes.Cut(dump, []byte("\r\n\r\n"))
+	if !found {
+		return dump
+	}
+	return bytes.Join([][]byte{head, redactBody(body)}, []byte("\r\n\r\n"))
 }
 
 func merge(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse, target interface{}) {
@@ -220,7 +237,7 @@ func decomposeRequestForLogging(req *http.Request) (map[string]interface{}, erro
 	}
 
 	// Read the rest of the body content
-	fields[FieldHttpRequestBody] = bodyFromRestOfRequestReader(reqReader)
+	fields[FieldHttpRequestBody] = string(redact.RequestBody(req.Context(), []byte(bodyFromRestOfRequestReader(reqReader))))
 	redactSensitiveFields(req, fields)
 	return fields, nil
 }
@@ -306,6 +323,9 @@ func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, er
 	// http.Client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
 
+	if res.Request != nil {
+		resBody = redact.ResponseBody(res.Request.Context(), resBody)
+	}
 	fields[FieldHttpResponseBody] = string(resBody)
 	redactSensitiveFields(res.Request, fields)
 
