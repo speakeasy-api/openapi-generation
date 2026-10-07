@@ -1276,7 +1276,9 @@ function buildRootUsageCommand(): UsageCommandDef {
         help: "Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.",
         suggestions: ["pretty", "json", "yaml", "table", "toon"],
       },
-      ...settingsUsageFlags("configure", rootFlagsByName),
+      ...(isAnyInteractiveEnabled()
+        ? settingsUsageFlags("configure", rootFlagsByName)
+        : []),
     ],
     commands: [],
   });

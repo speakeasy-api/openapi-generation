@@ -48,12 +48,15 @@ Subcommands:
         Use:   "login",
         Short: "{{templateAuthLoginShort}}",
         Long:  `{{templateAuthLoginLong}}`,
-        {{- if eq (helpStyle) "compact"}}
-        Example: "{{templateSettingsHelpExample "auth login"}}",
         Annotations: map[string]string{
+            "speakeasy_settings_command": "true",
+            {{- if eq (helpStyle) "compact"}}
             "speakeasy_help_settings": "{{templateSettingsHelpFlags "login"}}",
             "speakeasy_help_see_also": "{{templateSettingsHelpSeeAlso "login"}}",
+            {{- end}}
         },
+        {{- if eq (helpStyle) "compact"}}
+        Example: "{{templateSettingsHelpExample "auth login"}}",
         {{- end}}
         Args:  cobra.NoArgs,
         RunE:  runAuthLoginCmd,
@@ -74,6 +77,7 @@ Sources are shown as:
 
 Credential values are masked for security.
 {{- end}}`,
+        Annotations: map[string]string{"speakeasy_settings_command": "true"},
         Args: cobra.NoArgs,
         RunE: runWhoamiCmd,
     })
@@ -84,6 +88,7 @@ Credential values are masked for security.
         Long:  `Clear all stored authentication credentials from both the OS keychain and config file.
 
 This removes all credentials previously set via auth login or configure.`,
+        Annotations: map[string]string{"speakeasy_settings_command": "true"},
         Args: cobra.NoArgs,
         RunE: runAuthLogoutCmd,
     })

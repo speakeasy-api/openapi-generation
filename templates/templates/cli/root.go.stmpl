@@ -726,9 +726,14 @@ func compactHelpFooter(cmd *cobra.Command) string {
     if seeAlso := cmd.Annotations["speakeasy_help_see_also"]; seeAlso != "" {
         refs := []string{}
         for _, path := range strings.Split(seeAlso, ",") {
-            refs = append(refs, cmd.Root().Name()+" "+path)
+            full := cmd.Root().Name() + " " + path
+            if target, _, err := cmd.Root().Find(strings.Fields(path)); err == nil && target.CommandPath() == full && target.Annotations["speakeasy_settings_command"] == "true" {
+                refs = append(refs, full)
+            }
         }
-        lines = append(lines, "See also: "+strings.Join(refs, " · "))
+        if len(refs) > 0 {
+            lines = append(lines, "See also: "+strings.Join(refs, " · "))
+        }
     }
     return strings.Join(lines, string(rune(10)))
 }
@@ -1532,9 +1537,14 @@ func compactHelpFooter(cmd *cobra.Command) string {
     if seeAlso := cmd.Annotations["speakeasy_help_see_also"]; seeAlso != "" {
         refs := []string{}
         for _, path := range strings.Split(seeAlso, ",") {
-            refs = append(refs, cmd.Root().Name()+" "+path)
+            full := cmd.Root().Name() + " " + path
+            if target, _, err := cmd.Root().Find(strings.Fields(path)); err == nil && target.CommandPath() == full && target.Annotations["speakeasy_settings_command"] == "true" {
+                refs = append(refs, full)
+            }
         }
-        lines = append(lines, "See also: "+strings.Join(refs, " · "))
+        if len(refs) > 0 {
+            lines = append(lines, "See also: "+strings.Join(refs, " · "))
+        }
     }
     return strings.Join(lines, string(rune(10)))
 }
