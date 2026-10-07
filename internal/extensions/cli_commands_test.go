@@ -4638,6 +4638,12 @@ paths:
                         - kind: png
                         - preset: vector
                     - type: string
+                mixed:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - type: string
+                  discriminator:
+                    propertyName: kind
                 listedFields:
                   type: object
                   properties:
@@ -4923,6 +4929,7 @@ func TestCLICommands_NestedPresetBindErrors(t *testing.T) {
 		{"no preset", "flags:\n      dpi: {to: $.config.dpi}", `flag "dpi" bind /config/dpi nests beneath /config, which no object preset sets`},
 		{"scalar preset", "preset:\n      $.prompt: hello\n    flags:\n      x: {to: $.prompt.x}", `flag "x" bind /prompt/x nests beneath /prompt, which no object preset sets`},
 		{"discriminator", "preset:\n      $.format: {kind: png}\n    flags:\n      kind: {to: $.format.kind}", `targets the discriminator of the union at /format, which the preset pins`},
+		{"discriminator of a single object member", "preset:\n      $.mixed: {kind: png}\n    flags:\n      kind: {to: $.mixed.kind, type: string}", `targets the discriminator of the union at /mixed, which the preset pins`},
 		{"no unique member", "preset:\n      $.source: {url: https://example.com/a}\n    flags:\n      url: {to: $.source.url}", `the preset at /source does not select exactly one member of its union`},
 		{"other member field", "preset:\n      $.format: {kind: png}\n    flags:\n      scale: {to: $.format.scale}", `flag "scale" bind beneath /format: /scale does not resolve in PngFormat`},
 		{"typo", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.widht}", `did you mean "width"`},

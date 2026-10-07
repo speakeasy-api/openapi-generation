@@ -3427,19 +3427,25 @@ func (d *cliManifestDecoder) nestedBindScope(cmdKey, what, parent, leaf string, 
 	}
 	flat := newCLIFlatUnion()
 	d.flattenUnion(variant.properties[cliPointerPropertyName(parent)], 0, nil, flat)
+	field := cliPointerPropertyName(leaf)
 	var scope *cliResolvedSchema
+	pinned := ""
 	switch {
 	case len(flat.members) == 1:
 		scope = flat.members[0]
+		if _, ok := presetObj[field]; ok && cliContains(flat.keys, field) {
+			pinned = field
+		}
 	case len(flat.members) > 1:
 		point, member := d.presetUnionMergePoint(parent, flat, presetObj)
 		if member == nil {
 			return nil, nil, fmt.Errorf("command %q %s %s: the preset at %s does not select exactly one member of its union, so the field cannot be resolved; pin the member's discriminator in the preset", cmdKey, what, pointer, parent)
 		}
-		if point.Key == cliPointerPropertyName(leaf) {
-			return nil, nil, fmt.Errorf("command %q %s %s targets the discriminator of the union at %s, which the preset pins; a flag there would switch members", cmdKey, what, pointer, parent)
-		}
+		pinned = point.Key
 		scope = member
+	}
+	if pinned != "" && pinned == field {
+		return nil, nil, fmt.Errorf("command %q %s %s targets the discriminator of the union at %s, which the preset pins; a flag there would switch members", cmdKey, what, pointer, parent)
 	}
 	if scope == nil {
 		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, which is not an object property", cmdKey, what, pointer, parent)
@@ -3448,7 +3454,7 @@ func (d *cliManifestDecoder) nestedBindScope(cmdKey, what, parent, leaf string, 
 		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, whose schema restricts the object to const/enum values; a field set by a flag would match none of them", cmdKey, what, pointer, parent)
 	}
 	leafPresets := map[string]any{}
-	if value, ok := presetObj[cliPointerPropertyName(leaf)]; ok {
+	if value, ok := presetObj[field]; ok {
 		leafPresets[leaf] = value
 	}
 	return scope, leafPresets, nil
