@@ -96,6 +96,21 @@ type CLICommandRoute struct {
 	// usage error instead of a silently re-targeted request. Nil when the
 	// request body is not a union.
 	Selectors *CLIVariantSelectors `json:"selectors,omitempty" yaml:"selectors,omitempty"`
+
+	// PresetMergePoints lists the JSON pointers at which an object-valued
+	// preset fills the missing keys of a caller's object. A caller's object
+	// at any other pointer is kept whole.
+	PresetMergePoints []CLIPresetMergePoint `json:"presetMergePoints,omitempty" yaml:"presetMergePoints,omitempty"`
+}
+
+// CLIPresetMergePoint is a pointer at which a preset object fills a caller's
+// object. On a union, Key is the discriminator the preset sets and Values
+// every value selecting the preset's member: a caller's object setting Key to
+// any other value is kept whole.
+type CLIPresetMergePoint struct {
+	Pointer string `json:"pointer" yaml:"pointer"`
+	Key     string `json:"key,omitempty" yaml:"key,omitempty"`
+	Values  []any  `json:"values,omitempty" yaml:"values,omitempty"`
 }
 
 // CLICommandDispatchKey records body-key membership across the complete
