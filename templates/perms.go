@@ -1205,6 +1205,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/mcp-typescript/tests/primary/authnew_additional.test.ts.stmpl":                                      0o644,
 	"templates/mcp-typescript/tests/primary/bigint.test.ts":                                                        0o644,
 	"templates/mcp-typescript/tests/primary/collections_additional.test.ts.stmpl":                                  0o644,
+	"templates/mcp-typescript/tests/primary/compatibility_additional.test.ts":                                      0o644,
 	"templates/mcp-typescript/tests/primary/decimal.test.ts":                                                       0o644,
 	"templates/mcp-typescript/tests/primary/dynamic_tools_additional.test.ts":                                      0o644,
 	"templates/mcp-typescript/tests/primary/encodings_additional.test.ts":                                          0o644,

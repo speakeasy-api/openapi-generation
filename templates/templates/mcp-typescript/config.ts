@@ -70,6 +70,13 @@ function getTemplateDependencies() {
       ecosystem: "npm",
       category: "runtime",
     },
+    "@modelcontextprotocol/sdk": {
+      name: "@modelcontextprotocol/sdk",
+      version: "^1.32.1",
+      cpe: "cpe:2.3:a:anthropic:model_context_protocol_sdk:*:*:*:*:*:node.js:*:*",
+      ecosystem: "npm",
+      category: "runtime",
+    },
     "@modelcontextprotocol/client": {
       name: "@modelcontextprotocol/client",
       version: "2.3.1",
@@ -230,7 +237,7 @@ function getTemplateDependencies() {
     },
     "@cloudflare/workers-types": {
       name: "@cloudflare/workers-types",
-      version: "^4.20250712.0",
+      version: "^4.20250712.0 || ^5.20261006.1",
       cpe: "cpe:2.3:a:cloudflare:workers-types:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",

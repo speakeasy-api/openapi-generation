@@ -7,11 +7,12 @@
 {{- addImport "./console-logger.js" "ConsoleLogger" -}}
 {{- addImport "../core.js" $coreName -}}
 {{- addImport "@modelcontextprotocol/server" "McpServer" -}}
-{{- addImport "@modelcontextprotocol/server" "ServerContext" -}}
+{{- addImport "./shared.js" "MCPServerContext" -}}
 {{- addImport "@modelcontextprotocol/server" "CallToolResult" -}}
 {{- addImport "zod" "z" "aliasImport" -}}
 
 {{ genImports }}
+{{- addImport "./shared.js" "mcpServerContext" }}
 {{- addImport "./shared.js" "mcpInputSchema" }}
 
 export type MCPToolAnnotationFilter = {
@@ -64,7 +65,7 @@ export type ToolDefinition<Args extends undefined | z.ZodRawShape = undefined> =
         tool: (
           client: {{ $coreName }},
           args: z.output<z.ZodObject<Args>>,
-          extra: ServerContext
+          extra: MCPServerContext
         ) => CallToolResult | Promise<CallToolResult>;
       }
     : {
@@ -81,7 +82,7 @@ export type ToolDefinition<Args extends undefined | z.ZodRawShape = undefined> =
         }
         tool: (
           client: {{ $coreName }},
-          extra: ServerContext
+          extra: MCPServerContext
         ) => CallToolResult | Promise<CallToolResult>;
       };
 
@@ -233,7 +234,7 @@ export function createRegisterTool(
           annotations: tool.annotations,
         },
         async (args, ctx) => {
-          return tool.tool(getSDK(), args, ctx);
+          return tool.tool(getSDK(), args, mcpServerContext(ctx));
         },
       );
     } else {
@@ -244,7 +245,7 @@ export function createRegisterTool(
           annotations: tool.annotations,
         },
         async (ctx) => {
-          return tool.tool(getSDK(), ctx);
+          return tool.tool(getSDK(), mcpServerContext(ctx));
         },
       );
     }
@@ -418,9 +419,9 @@ export function registerDynamicTools(
 
     try {
       if (def.args) {
-        return await def.tool(getSDK(), validatedInput, ctx);
+        return await def.tool(getSDK(), validatedInput, mcpServerContext(ctx));
       } else {
-        return await def.tool(getSDK(), ctx);
+        return await def.tool(getSDK(), mcpServerContext(ctx));
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -483,7 +484,8 @@ function resolveHeader<T>(
     return schema.parse(val);
   }
   if (disableStaticAuth || cliFlagValue === undefined) {
-    return undefined;
+    const parsed = schema.safeParse(undefined);
+    return parsed.success ? parsed.data : undefined;
   }
   return schema.parse(cliFlagValue);
 }

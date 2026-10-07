@@ -1,13 +1,14 @@
 {{- recurse 1 -}}
 {{- $coreName := sanitizeCoreSDKName }}
 {{ genImports }}
+{{- addImport "./shared.js" "mcpServerContext" }}
 {{- addImport "./shared.js" "mcpInputSchema" }}
 {{- addImport "zod" "z" "aliasImport" }}
 {{- addImport "./console-logger.js" "ConsoleLogger" }}
 {{- addImport "../core.js" $coreName }}
 {{- addImport "./scopes.js" "MCPScope" }}
 {{- addImport "@modelcontextprotocol/server" "McpServer" }}
-{{- addImport "@modelcontextprotocol/server" "ServerContext" }}
+{{- addImport "./shared.js" "MCPServerContext" }}
 {{- addImport "@modelcontextprotocol/server" "GetPromptResult" }}
 
 export type PromptDefinition<Args extends undefined | z.ZodRawShape = undefined> =
@@ -19,7 +20,7 @@ export type PromptDefinition<Args extends undefined | z.ZodRawShape = undefined>
       prompt: (
         client: {{ $coreName }},
         args: z.output<z.ZodObject<Args>>,
-        extra: ServerContext,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     }
     : {
@@ -29,7 +30,7 @@ export type PromptDefinition<Args extends undefined | z.ZodRawShape = undefined>
       args?: undefined;
       prompt: (
         client: {{ $coreName }},
-        extra: ServerContext,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     };
 
@@ -68,11 +69,11 @@ export function createRegisterPrompt(
       server.registerPrompt(prompt.name, {
         ...(prompt.description === undefined ? {} : { description: prompt.description }),
         argsSchema: { ...mcpInputSchema(prompt.args), shape: prompt.args },
-      }, async (args, ctx) => prompt.prompt(getSDK(), args, ctx));
+      }, async (args, ctx) => prompt.prompt(getSDK(), args, mcpServerContext(ctx)));
     } else {
       server.registerPrompt(prompt.name, {
         ...(prompt.description === undefined ? {} : { description: prompt.description }),
-      }, async (ctx) => prompt.prompt(getSDK(), ctx));
+      }, async (ctx) => prompt.prompt(getSDK(), mcpServerContext(ctx)));
     }
 
     logger.debug("Registered prompt", { name: prompt.name });

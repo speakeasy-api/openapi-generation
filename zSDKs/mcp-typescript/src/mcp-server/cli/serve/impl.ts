@@ -15,7 +15,7 @@ import { createMCPServer } from "../../server.js";
 import { buildAnnotationFilter } from "../../tools.js";
 import { buildSDK } from "../../tools.js";
 
-import { landingPageExpress } from "../../../landing-page.js";
+import { landingPageExpressHTTP } from "../../../landing-page.js";
 
 interface ServeCommandFlags extends MCPServerFlags {
   readonly port: number;
@@ -39,7 +39,7 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
   // Enable CORS for cross-origin requests
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "*");
     if (req.method === "OPTIONS") {
       res.sendStatus(204);
@@ -82,9 +82,38 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
     return mcpServer;
   });
   const nodeHandler = toNodeHandler(handler);
-  app.all("/mcp", (req, res) => nodeHandler(req, res, req.body));
+  const activeResponses = new Set<Promise<void>>();
+  let closing = false;
+  app.use((_req, res, next) => {
+    if (closing) {
+      res.set("Connection", "close").status(503).send(
+        "Server is shutting down",
+      );
+      return;
+    }
+    next();
+  });
+  app.all("/mcp", (req, res) => {
+    // Notification streams remain open until handler.close().
+    if (req.method !== "GET" && req.body?.method !== "subscriptions/listen") {
+      let finish!: () => void;
+      const completed = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const done = () => {
+        res.off("finish", done);
+        res.off("close", done);
+        activeResponses.delete(completed);
+        finish();
+      };
+      activeResponses.add(completed);
+      res.once("finish", done);
+      res.once("close", done);
+    }
+    return nodeHandler(req, res, req.body);
+  });
 
-  app.get("/", landingPageExpress);
+  app.get("/", landingPageExpressHTTP);
 
   const httpServer = app.listen(cliFlags.port, "0.0.0.0", () => {
     const ha = httpServer.address();
@@ -93,6 +122,10 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
   });
 
   const shutdown = async () => {
+    if (closing) {
+      process.exit(1);
+    }
+    closing = true;
     logger.info("Shutting down HTTP server");
 
     const timer = setTimeout(() => {
@@ -100,12 +133,16 @@ async function startStreamableHTTP(cliFlags: ServeCommandFlags) {
       process.exit(1);
     }, 5000);
 
+    const stopped = new Promise<void>((resolve) =>
+      httpServer.close(() => resolve())
+    );
+    await Promise.all(activeResponses);
     await handler.close();
-    httpServer.close(() => {
-      clearTimeout(timer);
-      logger.info("Graceful shutdown complete");
-      process.exit(0);
-    });
+    httpServer.closeAllConnections();
+    await stopped;
+    clearTimeout(timer);
+    logger.info("Graceful shutdown complete");
+    process.exit(0);
   };
 
   process.on("SIGTERM", shutdown);

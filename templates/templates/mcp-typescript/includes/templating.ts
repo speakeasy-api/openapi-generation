@@ -946,12 +946,14 @@ function mcpRemoteConfigJS() {
   return js;
 }
 
-function templateMcpCursorInstallationURL() {
-  const configString = base64Encode(
-    JSON.stringify(
-      mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
-    ),
-  );
+function templateMcpCursorInstallationURL(runtimeConfig = false) {
+  const configString = runtimeConfig
+    ? "${encodedConfig}"
+    : base64Encode(
+        JSON.stringify(
+          mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
+        ),
+      );
   const name = mcpName();
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${name}&config=${configString}`;
 }
@@ -969,12 +971,14 @@ registerTemplateFunc(
   templateMcpCursorInstallationButton,
 );
 
-function templateMcpVSCodeInstallationURL() {
-  const configString = base64Encode(
-    JSON.stringify(
-      mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
-    ),
-  );
+function templateMcpVSCodeInstallationURL(runtimeConfig = false) {
+  const configString = runtimeConfig
+    ? "${encodedConfig}"
+    : base64Encode(
+        JSON.stringify(
+          mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
+        ),
+      );
   const name = mcpName();
   return `vscode://ms-vscode.vscode-mcp/install?name=${name}&config=${configString}`;
 }
@@ -1030,9 +1034,9 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
       "mcp",
       "add",
       "--transport",
-      "http",
+      "${transport}",
       mcpName(),
-      `\${o}/mcp`,
+      `\${o}/\${endpoint}`,
       ...headerArgs,
     ].join(" ");
   }

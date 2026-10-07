@@ -8,6 +8,7 @@ const deps = getTemplateDependencies();
 function templateDependencies(): string {
   const defaultDependencies = {
     express: deps.express.version,
+    "@modelcontextprotocol/sdk": deps["@modelcontextprotocol/sdk"].version,
     "@modelcontextprotocol/server":
       deps["@modelcontextprotocol/server"].version,
     "@modelcontextprotocol/server-legacy":

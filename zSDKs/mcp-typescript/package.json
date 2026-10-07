@@ -34,6 +34,7 @@
     "@gram-ai/functions": "^0.12.1",
     "@modelcontextprotocol/client": "2.3.1",
     "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@modelcontextprotocol/server": "2.3.1",
     "@modelcontextprotocol/server-legacy": "2.3.1",
     "@stricli/core": "^1.1.2",
@@ -53,7 +54,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^1.2.0",
-    "@cloudflare/workers-types": "^4.20250712.0",
+    "@cloudflare/workers-types": "^4.20250712.0 || ^5.20261006.1",
     "@eslint/js": "^9.26.0",
     "@types/bun": "^1.2.13",
     "@types/express": "^5.0.1",

@@ -17,11 +17,36 @@ function resolvedOptions(headers: Record<string, string>, flags: Partial<MCPServ
   return sdk._options as { security?: Record<string, unknown>; globalHeaderParam?: boolean };
 }
 
-test("MCP server leaves unset optional settings undefined", () => {
+test("MCP server resolves unset credentials to empty strings and leaves other options undefined", () => {
   const options = resolvedOptions({}, {});
   expect(options.security?.["accessToken"]).toBe("");
   expect(options.security?.["basicHttp"]).toBeUndefined();
   expect(options.globalHeaderParam).toBeUndefined();
+});
+
+test.each([false, true])("MCP server applies schema defaults to absent settings (static auth disabled=%s)", (disableStaticAuth) => {
+  const options = resolvedOptions({ "client-id": "client", "client-secret": "secret" }, {}, disableStaticAuth);
+  expect(options.security?.["clientCredentials"]).toMatchObject({
+    clientID: "client",
+    clientSecret: "secret",
+    tokenURL: "/clientcredentials/token?expires_in=90",
+  });
+  expect(options.security?.["basicHttp"]).toBeUndefined();
+  expect(options.globalHeaderParam).toBeUndefined();
+});
+
+test("MCP server preserves header and flag precedence over schema defaults", () => {
+  const credentials = { "client-id": "client", "client-secret": "secret" };
+  const flags = { "token-url": "https://example.com/static-token" };
+  expect(resolvedOptions(credentials, flags).security?.["clientCredentials"]).toMatchObject({
+    tokenURL: "https://example.com/static-token",
+  });
+  expect(resolvedOptions({ ...credentials, "token-url": "https://example.com/header-token" }, flags).security?.["clientCredentials"]).toMatchObject({
+    tokenURL: "https://example.com/header-token",
+  });
+  expect(resolvedOptions(credentials, flags, true).security?.["clientCredentials"]).toMatchObject({
+    tokenURL: "/clientcredentials/token?expires_in=90",
+  });
 });
 
 test("MCP server uses static credentials from flags", () => {

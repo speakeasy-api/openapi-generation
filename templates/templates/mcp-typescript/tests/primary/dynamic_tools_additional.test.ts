@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
@@ -18,6 +19,7 @@ import { z } from "zod";
 import { bigint } from "../types/bigint.js";
 import { mcpInputSchema } from "../mcp-server/shared.js";
 import { SDKCore } from "../core.js";
+import { landingPage, landingPageHTML } from "../landing-page.js";
 import { createConsoleLogger } from "../mcp-server/console-logger.js";
 import { createRegisterPrompt } from "../mcp-server/prompts.js";
 import {
@@ -38,7 +40,48 @@ const annotations = {
   openWorldHint: false,
 };
 
-function makeHarness(dynamic: boolean) {
+test.each(["sse", "http"] as const)(
+  "landing page configurations use the active transport (%s)",
+  (transport) => {
+    const origin = "https://mcp.example.test";
+    const endpoint = origin + (transport === "sse" ? "/sse" : "/mcp");
+    const html = landingPageHTML(origin, transport);
+    const raw = html.match(/id="raw-config">([\s\S]*?)<\/code>/)?.[1];
+    expect(raw).toBeDefined();
+    const config = JSON.parse(raw!);
+    expect(config.args[2]).toBe(endpoint);
+    if (transport === "http") {
+      expect(html).toContain(`url = "${endpoint}"`);
+    } else {
+      expect(html).toContain(`command = "npx"`);
+      expect(html).toContain(`args = ${JSON.stringify(config.args)}`);
+      expect(html).not.toContain(`url = "${endpoint}"`);
+    }
+    for (const client of ["claude", "gemini"]) {
+      expect(html).toContain(`${client} mcp add --transport ${transport}`);
+    }
+    const links = [...html.matchAll(/href="((?:cursor|vscode):[^"]+)"/g)];
+    expect(links.length).toBeGreaterThan(0);
+    for (const [, link] of links) {
+      const encoded = new URL(link!).searchParams.get("config");
+      expect(encoded).toBeTruthy();
+      expect(JSON.parse(Buffer.from(encoded!, "base64").toString())).toEqual(
+        config,
+      );
+    }
+    expect(landingPageHTML(origin)).toContain(`${origin}/sse`);
+  },
+);
+
+test("Worker landing page advertises Streamable HTTP", async () => {
+  const response = landingPage(new Request("https://mcp.example.test/"));
+  expect(await response.text()).toContain("https://mcp.example.test/mcp");
+});
+
+function makeHarness(
+  dynamic: boolean,
+  register?: (tool: ReturnType<typeof createRegisterTool>[0]) => void,
+) {
   const server = new McpServer({ name: "registration-test", version: "1.0.0" });
   const logger = createConsoleLogger("error");
   const getSDK = () => new SDKCore();
@@ -57,60 +100,64 @@ function makeHarness(dynamic: boolean) {
   const noArgsStub = vi
     .fn()
     .mockResolvedValue({ content: [{ type: "text", text: "no-args-result" }] });
-  tool({
-    name: "stub-tool",
-    description: "Accept a nested request",
-    annotations,
-    args: { request: z.object({ name: z.string() }) },
-    tool: stub,
-  });
-  tool({
-    name: "no-args-tool",
-    description: "Accept no arguments",
-    annotations,
-    tool: noArgsStub,
-  });
-  tool({
-    name: "transform-tool",
-    description: "Transform input values",
-    annotations,
-    args: {
-      amount: z.union([z.string(), z.number()]).transform(Number),
-      price: z.string().transform((v) => v),
-      when: z
-        .union([z.date(), z.string().transform((v) => new Date(v))])
-        .transform((v) => v.toISOString()),
-    },
-    tool: (_sdk, args) => ({
-      content: [{ type: "text", text: JSON.stringify(args) }],
-    }),
-  });
-  tool({
-    name: "bigint-default-tool",
-    description: "Preserve nested bigint defaults",
-    annotations,
-    args: {
-      request: z
-        .object({
-          amount: bigint().default(12345678901234567890n),
-          amounts: z.array(bigint()).default([12345678901234567890n]),
-        })
-        .default({
-          amount: 12345678901234567890n,
-          amounts: [12345678901234567890n],
-        }),
-    },
-    tool: (_sdk, args) => ({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(args, (_key, value: unknown) =>
-            typeof value === "bigint" ? value.toString() : value,
-          ),
-        },
-      ],
-    }),
-  });
+  if (register) {
+    register(tool);
+  } else {
+    tool({
+      name: "stub-tool",
+      description: "Accept a nested request",
+      annotations,
+      args: { request: z.object({ name: z.string() }) },
+      tool: stub,
+    });
+    tool({
+      name: "no-args-tool",
+      description: "Accept no arguments",
+      annotations,
+      tool: noArgsStub,
+    });
+    tool({
+      name: "transform-tool",
+      description: "Transform input values",
+      annotations,
+      args: {
+        amount: z.union([z.string(), z.number()]).transform(Number),
+        price: z.string().transform((v) => v),
+        when: z
+          .union([z.date(), z.string().transform((v) => new Date(v))])
+          .transform((v) => v.toISOString()),
+      },
+      tool: (_sdk, args) => ({
+        content: [{ type: "text", text: JSON.stringify(args) }],
+      }),
+    });
+    tool({
+      name: "bigint-default-tool",
+      description: "Preserve nested bigint defaults",
+      annotations,
+      args: {
+        request: z
+          .object({
+            amount: bigint().default(12345678901234567890n),
+            amounts: z.array(bigint()).default([12345678901234567890n]),
+          })
+          .default({
+            amount: 12345678901234567890n,
+            amounts: [12345678901234567890n],
+          }),
+      },
+      tool: (_sdk, args) => ({
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(args, (_key, value: unknown) =>
+              typeof value === "bigint" ? value.toString() : value,
+            ),
+          },
+        ],
+      }),
+    });
+  }
   if (dynamic) registerDynamicTools(logger, server, getSDK, toolMap, scopes);
   return { server, logger, getSDK, scopes, stub, noArgsStub };
 }
@@ -654,32 +701,21 @@ test("prompt completion preserves input validation, transforms, and defaults", a
 test.each([false, true])(
   "async tool validation preserves static/dynamic parity (dynamic=%s)",
   async (dynamic) => {
-    const server = new McpServer({ name: "async-tool-test", version: "1.0.0" });
-    const logger = createConsoleLogger("error");
-    const getSDK = () => new SDKCore();
-    const scopes = new Set<MCPScope>();
-    const [tool, , toolMap] = createRegisterTool(
-      logger,
-      server,
-      getSDK,
-      scopes,
-      undefined,
-      dynamic,
-    );
     const handler = vi.fn((args: { count: number; name: string }) => ({
       content: [{ type: "text" as const, text: JSON.stringify(args) }],
     }));
-    tool({
-      name: "async-input",
-      description: "Validate and transform input asynchronously",
-      annotations,
-      args: {
-        count: z.number().refine(async (value) => value % 2 === 0),
-        name: z.string().transform(async (value) => value.toUpperCase()),
-      },
-      tool: (_sdk, args) => handler(args),
+    const { server } = makeHarness(dynamic, (tool) => {
+      tool({
+        name: "async-input",
+        description: "Validate and transform input asynchronously",
+        annotations,
+        args: {
+          count: z.number().refine(async (value) => value % 2 === 0),
+          name: z.string().transform(async (value) => value.toUpperCase()),
+        },
+        tool: (_sdk, args) => handler(args),
+      });
     });
-    if (dynamic) registerDynamicTools(logger, server, getSDK, toolMap, scopes);
     await withClient(server, async (client) => {
       const call = (count: number) =>
         client.callTool({
@@ -699,38 +735,27 @@ test.each([false, true])(
 test.each([false, true])(
   "BigInt catch fallbacks remain serializable and preserve runtime values (dynamic=%s)",
   async (dynamic) => {
-    const server = new McpServer({ name: "catch-test", version: "1.0.0" });
-    const logger = createConsoleLogger("error");
-    const getSDK = () => new SDKCore();
-    const scopes = new Set<MCPScope>();
-    const [tool, , toolMap] = createRegisterTool(
-      logger,
-      server,
-      getSDK,
-      scopes,
-      undefined,
-      dynamic,
-    );
     const amount = 12345678901234567890n;
     const fallback = vi.fn(() => ({ amount }));
     const shape = {
       request: z.object({ amount: bigint() }).catch(fallback),
       bigintOnly: z.bigint().catch(amount),
     };
-    tool({
-      name: "catch-input",
-      description: "Recover from invalid input",
-      annotations,
-      args: shape,
-      tool: (_sdk, args) => {
-        expect(args).toEqual({ request: { amount }, bigintOnly: amount });
-        return {
-          content: [{ type: "text", text: String(args.request.amount) }],
-        };
-      },
+    const { server } = makeHarness(dynamic, (tool) => {
+      tool({
+        name: "catch-input",
+        description: "Recover from invalid input",
+        annotations,
+        args: shape,
+        tool: (_sdk, args) => {
+          expect(args).toEqual({ request: { amount }, bigintOnly: amount });
+          return {
+            content: [{ type: "text", text: String(args.request.amount) }],
+          };
+        },
+      });
+      expect(fallback).not.toHaveBeenCalled();
     });
-    expect(fallback).not.toHaveBeenCalled();
-    if (dynamic) registerDynamicTools(logger, server, getSDK, toolMap, scopes);
     await withClient(server, async (client) => {
       const json = mcpInputSchema(shape)["~standard"].jsonSchema.input({
         target: "draft-2020-12",
@@ -771,31 +796,19 @@ test.each([false, true])(
 test.each([false, true])(
   "context-dependent catch factories preserve discovery and runtime fallback (dynamic=%s)",
   async (dynamic) => {
-    const server = new McpServer({
-      name: "context-catch-test",
-      version: "1.0.0",
-    });
-    const logger = createConsoleLogger("error");
-    const getSDK = () => new SDKCore();
-    const scopes = new Set<MCPScope>();
-    const [tool, , toolMap] = createRegisterTool(
-      logger,
-      server,
-      getSDK,
-      scopes,
-      undefined,
-      dynamic,
-    );
     const field = z.string().catch((ctx) => `fallback:${String(ctx.value)}`);
     const shape = { value: field };
-    tool({
-      name: "context-catch",
-      description: "Recover using the invalid input",
-      annotations,
-      args: shape,
-      tool: (_sdk, args) => ({ content: [{ type: "text", text: args.value }] }),
+    const { server } = makeHarness(dynamic, (tool) => {
+      tool({
+        name: "context-catch",
+        description: "Recover using the invalid input",
+        annotations,
+        args: shape,
+        tool: (_sdk, args) => ({
+          content: [{ type: "text", text: args.value }],
+        }),
+      });
     });
-    if (dynamic) registerDynamicTools(logger, server, getSDK, toolMap, scopes);
     await withClient(server, async (client) => {
       const standard = mcpInputSchema(shape)["~standard"];
       for (const direction of ["input", "output"] as const) {
@@ -996,6 +1009,125 @@ test.each([
       await client.close();
       upstream.closeAllConnections();
       await new Promise<void>((resolve) => upstream.close(() => resolve()));
+    }
+  },
+  15000,
+);
+
+test.each(["legacy", "modern"] as const)(
+  "HTTP shutdown stops accepting connections before draining tool calls (%s)",
+  async (era) => {
+    let finishRequest: (() => void) | undefined;
+    const upstream = createServer((_request, response) => {
+      finishRequest = () => {
+        if (response.writableEnded) return;
+        response.setHeader("content-type", "application/json");
+        response.end("{}");
+      };
+    });
+    await new Promise<void>((resolve, reject) => {
+      upstream.once("error", reject);
+      upstream.listen(0, "127.0.0.1", () => {
+        upstream.off("error", reject);
+        resolve();
+      });
+    });
+    const address = upstream.address();
+    if (typeof address !== "object" || address === null)
+      throw new Error("No upstream address");
+    const child = spawn(
+      process.execPath,
+      [
+        fileURLToPath(new URL("../../bin/mcp-server.js", import.meta.url)),
+        "serve",
+        "--port",
+        "0",
+        "--server-url",
+        `http://127.0.0.1:${address.port}`,
+        "--tool",
+        "parameters-duplicate-path-param",
+      ],
+      { stdio: ["ignore", "ignore", "pipe"] },
+    );
+    let output = "";
+    child.stderr.on("data", (chunk: Buffer) => {
+      output += chunk.toString();
+    });
+    let spawnError: Error | undefined;
+    const exited = new Promise<number | null>((resolve) => {
+      child.once("exit", resolve);
+      child.once("error", (error) => {
+        spawnError = error;
+        resolve(null);
+      });
+    });
+    const client = new Client(
+      { name: "shutdown-test", version: "1.0.0" },
+      {
+        versionNegotiation: {
+          mode: era === "modern" ? { pin: "2026-07-28" } : "legacy",
+        },
+      },
+    );
+    try {
+      await vi.waitFor(
+        () => {
+          if (spawnError) throw spawnError;
+          expect(output, output).toMatch(/0\.0\.0\.0:(\d+)/);
+        },
+        { timeout: 5000 },
+      );
+      const origin = "http://127.0.0.1:" + output.match(/0\.0\.0\.0:(\d+)/)![1];
+      const preflight = await fetch(origin + "/mcp", {
+        method: "OPTIONS",
+        headers: {
+          origin: "https://app.example.test",
+          "access-control-request-method": "DELETE",
+        },
+      });
+      expect(preflight.status).toBe(204);
+      expect(preflight.headers.get("access-control-allow-methods")).toContain(
+        "DELETE",
+      );
+      expect(await (await fetch(origin)).text()).toContain(origin + "/mcp");
+      await client.connect(
+        new StreamableHTTPClientTransport(new URL(origin + "/mcp")),
+      );
+      const pending = client
+        .callTool({
+          name: "parameters-duplicate-path-param",
+          arguments: { request: { param1: "held", param2: "tail" } },
+        })
+        .catch((error: unknown) => ({ isError: true, error }));
+      await vi.waitFor(() => expect(finishRequest).toBeDefined(), {
+        timeout: 2000,
+      });
+      child.kill("SIGTERM");
+      await vi.waitFor(
+        async () => {
+          await expect(
+            fetch(origin, { signal: AbortSignal.timeout(500) }),
+          ).rejects.toThrow();
+        },
+        { timeout: 1500 },
+      );
+      finishRequest!();
+      expect((await pending).isError, output).not.toBe(true);
+      await vi.waitFor(() => expect(child.exitCode, output).toBe(0), {
+        timeout: 3000,
+      });
+    } finally {
+      finishRequest?.();
+      await client.close();
+      if (child.exitCode === null) child.kill("SIGTERM");
+      const timer = setTimeout(() => child.kill("SIGKILL"), 5000);
+      try {
+        await exited;
+      } finally {
+        clearTimeout(timer);
+        upstream.closeAllConnections();
+        await new Promise<void>((resolve) => upstream.close(() => resolve()));
+      }
     }
   },
   15000,
