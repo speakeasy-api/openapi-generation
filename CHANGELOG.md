@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.945.13] - 2026-10-07
+### :bug: Bug Fixes
+- [`adbaf1e`](https://github.com/speakeasy-api/openapi-generation/commit/adbaf1eee002ec65b7b7fc6f3274c2927468520c) - **cli**: fill nested keys of a partial object from an intent's object preset ([#82](https://github.com/speakeasy-api/openapi-generation/pull/82)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.945.12] - 2026-10-07
 ### :bug: Bug Fixes
 - [`f984647`](https://github.com/speakeasy-api/openapi-generation/commit/f9846472ac7f141c88b61fa97932b4c83c8d359a) - **cli**: merge an intent's presets into a request body piped on stdin ([#89](https://github.com/speakeasy-api/openapi-generation/pull/89)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20463,3 +20468,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.9...v2.945.10
 [v2.945.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.10...v2.945.11
 [v2.945.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.11...v2.945.12
+[v2.945.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.12...v2.945.13
