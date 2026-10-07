@@ -1,0 +1,233 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"{{getGolangPackage}}/internal/cli"
+	"{{getGolangPackage}}/internal/config"
+	"{{getGolangPackage}}/internal/output"
+)
+
+func TestStreamMetadataGeneratedCommands(t *testing.T) {
+	for _, command := range [][]string{
+		{"generate", "hello"},
+		{"stream-reply", "hello"},
+		{"stream-reply", "hello", "--agent", "worker"},
+		{"stream-metadata", "stream-metadata"},
+		{"request-bodies", "cli-interact", "--body", `{"model":"model-a","input":"hello"}`, "--stream=true"},
+	} {
+		t.Run(strings.Join(command[:1], " "), func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				fmt.Fprint(w, "data: {\"resource_id\":\"first\"}\n\ndata: {\"content\":\"Hello\"}\n\ndata: {\"resource_id\":\"last\"}\n\ndata: [DONE]\n\n")
+			}))
+			defer srv.Close()
+			for _, extra := range [][]string{nil, {"--output-format", "json"}, {"--output-format", "pretty"}, {"--jq", ".", "--stream=true"}, {"--agent-mode"}} {
+				t.Run(strings.Join(extra, " "), func(t *testing.T) {
+					h := NewCLITestHarness(t)
+					h.resetAndSetupEnv()
+					root, err := cli.NewRootCommand()
+					require.NoError(t, err)
+					root.SetOut(h.stdout)
+					root.SetErr(h.stderr)
+					root.SetIn(strings.NewReader(""))
+					args := append([]string{"--server-url", srv.URL, "--color", "never", "--no-interactive"}, command...)
+					args = append(args, extra...)
+					require.NoError(t, cli.ExecuteRoot(context.Background(), root, args), h.GetStderr())
+					if len(extra) == 0 {
+						assert.Equal(t, "Hello\n", h.GetStdout())
+						assert.Equal(t, "Resource ID: \"last\"\n", h.GetStderr())
+					} else {
+						assert.NotContains(t, h.GetStderr(), "Resource ID:")
+					}
+				})
+			}
+		})
+	}
+}
+
+type metadataTestStream struct {
+	items       []map[string]interface{}
+	index       int
+	err         error
+	cancel      context.CancelFunc
+	cancelAtEnd bool
+}
+
+func (s *metadataTestStream) Next() bool {
+	if s.index == len(s.items) {
+		if s.cancelAtEnd && s.cancel != nil {
+			s.cancel()
+		}
+		return false
+	}
+	s.index++
+	if s.cancel != nil && !s.cancelAtEnd {
+		s.cancel()
+	}
+	return true
+}
+func (s *metadataTestStream) Value() map[string]interface{} { return s.items[s.index-1] }
+func (s *metadataTestStream) Err() error                    { return s.err }
+func (s *metadataTestStream) Close() error                  { return nil }
+
+type metadataFailWriter struct{ finishOnly bool }
+
+func (w metadataFailWriter) Write(p []byte) (int, error) {
+	if !w.finishOnly || string(p) == "\n" {
+		return 0, io.ErrShortWrite
+	}
+	return len(p), nil
+}
+
+func metadataTestCommand(t *testing.T, out io.Writer, stderr io.Writer) *cobra.Command {
+	t.Helper()
+	h := NewCLITestHarness(t)
+	h.resetAndSetupEnv()
+	cmd := &cobra.Command{Annotations: map[string]string{
+		"speakeasy_stream_select":          "/text",
+		"speakeasy_stream_metadata_select": "/id",
+		"speakeasy_stream_metadata_label":  "Resource ID",
+	}}
+	cmd.SetContext(context.Background())
+	cmd.SetOut(out)
+	cmd.SetErr(stderr)
+	cmd.Flags().String("output-format", "pretty", "")
+	cmd.Flags().String("jq", "", "")
+	cmd.Flags().Bool("raw-response", false, "")
+	return cmd
+}
+
+func TestStreamMetadataRetention(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		values []interface{}
+		want   string
+	}{
+		{"absent", nil, ""},
+		{"first", []interface{}{"first"}, "first"},
+		{"repeated", []interface{}{"same", "same"}, "same"},
+		{"latest", []interface{}{"first", "last"}, "last"},
+		{"invalid after valid", []interface{}{"keep", nil, "", 12, map[string]interface{}{"id": "nested"}}, "keep"},
+		{"escaping", []interface{}{"line\n\r\x1b[31m\u202e\u2028雪\"\\"}, "line\n\r\x1b[31m\u202e\u2028雪\"\\"},
+	} {
+		for _, text := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/text=%t", tc.name, text), func(t *testing.T) {
+				var stdout, stderr bytes.Buffer
+				cmd := metadataTestCommand(t, &stdout, &stderr)
+				stream := &metadataTestStream{}
+				for _, v := range tc.values {
+					stream.items = append(stream.items, map[string]interface{}{"id": v})
+				}
+				if text {
+					stream.items = append(stream.items, map[string]interface{}{"text": "hello"})
+				}
+				require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
+				if text {
+					assert.Equal(t, "hello\n", stdout.String())
+				} else {
+					assert.Empty(t, stdout.String())
+				}
+				if tc.want == "" {
+					assert.NotContains(t, stderr.String(), "Resource ID:")
+				} else {
+					assert.Equal(t, 1, strings.Count(stderr.String(), "Resource ID:"))
+					assert.Contains(t, stderr.String(), "Resource ID: "+strconv.QuoteToASCII(tc.want)+"\n")
+				}
+			})
+		}
+	}
+}
+
+func TestStreamMetadataSuppressesOnFailure(t *testing.T) {
+	for _, failure := range []string{"stream", "cancel", "text type", "write", "finish"} {
+		t.Run(failure, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cmd := metadataTestCommand(t, &stdout, &stderr)
+			stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
+			switch failure {
+			case "stream":
+				stream.err = errors.New("stream interrupted")
+			case "cancel":
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				cmd.SetContext(ctx)
+				stream.cancel = cancel
+			case "text type":
+				stream.items[0]["text"] = 17
+			case "write":
+				cmd.SetOut(metadataFailWriter{})
+			case "finish":
+				cmd.SetOut(metadataFailWriter{finishOnly: true})
+			}
+			require.Error(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
+			assert.NotContains(t, stderr.String(), "Resource ID:")
+		})
+	}
+}
+
+func TestStreamMetadataProjectionBypass(t *testing.T) {
+	for _, flag := range []string{"output-format", "jq", "raw-response"} {
+		t.Run(flag, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cmd := metadataTestCommand(t, &stdout, &stderr)
+			value := map[string]string{"output-format": "json", "jq": ".", "raw-response": "true"}[flag]
+			require.NoError(t, cmd.Flags().Set(flag, value))
+			stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
+			require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
+			assert.NotContains(t, stderr.String(), "Resource ID:")
+		})
+	}
+}
+
+func TestStreamMetadataConfiguredMachineOutput(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	cmd := metadataTestCommand(t, &stdout, &stderr)
+	t.Setenv("METADATA_TEST_OUTPUT_FORMAT", "json")
+	require.NoError(t, config.Init("metadata-test", "METADATA_TEST"))
+	stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
+	require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
+	assert.NotContains(t, stderr.String(), "Resource ID:")
+	assert.Contains(t, stdout.String(), "valid")
+}
+
+func TestStreamMetadataLateCancellationPreservesReturn(t *testing.T) {
+	for _, mode := range []string{"metadata", "plain projection", "json", "raw"} {
+		t.Run(mode, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cmd := metadataTestCommand(t, &stdout, &stderr)
+			switch mode {
+			case "plain projection":
+				delete(cmd.Annotations, "speakeasy_stream_metadata_select")
+			case "json":
+				require.NoError(t, cmd.Flags().Set("output-format", "json"))
+			case "raw":
+				require.NoError(t, cmd.Flags().Set("raw-response", "true"))
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			cmd.SetContext(ctx)
+			stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}, cancel: cancel, cancelAtEnd: true}
+			require.NoError(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
+			require.ErrorIs(t, ctx.Err(), context.Canceled)
+			assert.NotContains(t, stderr.String(), "Resource ID:")
+			if mode == "metadata" || mode == "plain projection" {
+				assert.Equal(t, "hello\n", stdout.String())
+			} else {
+				assert.Contains(t, stdout.String(), "valid")
+			}
+		})
+	}
+}

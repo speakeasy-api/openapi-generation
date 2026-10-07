@@ -1022,6 +1022,23 @@ Contract (settled in design review):
 - Applies only when the user has not chosen a rendering: an explicit `--output-format` (flag, env, or config — `outputFormatExplicit`) or a user `--jq` keeps the existing per-event rendering (NDJSON under `json`, jq results, YAML/TOON). Implicit defaults — pretty, or agent mode's TOON — yield to the projection; a manifest `output.jq` default is not a user choice and also yields in stream mode.
 - The write path is unbuffered end to end: cobra `OutOrStdout()` → `os.Stdout` (a `write(2)` per event); the SDK `EventStream` scanner returns each event as soon as its boundary is read. `--debug` no longer captures streaming response bodies (`isStreamingResponse` in `diagnostics.go.stmpl`), which previously held every event until the server closed the stream.
 
+An optional `output.stream.metadata` object adds a single advisory stderr line to a projected stream:
+
+```yaml
+output:
+  stream:
+    select: $.data.text
+    metadata:
+      select: $.data.resource.id
+      label: Resource ID
+```
+
+Both metadata fields are required nonempty strings. `select` uses the same singular JSONPath and union-aware string/null schema validation as the text projection. Labels accept printable characters only. The shared projector observes metadata even in events without text and retains only the latest nonempty string; missing, null, empty, or runtime non-string values do not erase it or fail text rendering.
+
+After clean completion and successful stdout newline termination, it writes `Resource ID: "value"` once to stderr. Values use Go ASCII string quoting with quotes retained; labels are escaped defensively. Control characters and Unicode cannot inject terminal sequences or additional lines. A text-empty stream can also emit the existing empty-projection notice. Cancellation, stream errors, text projection errors, and stdout write failures suppress the metadata line. Stderr writes are best-effort advisory output.
+
+The same metadata applies to intent and operation commands, including promoted operations. Explicit output formats, changed `--jq`, and true `--raw-response` bypass projection and metadata. Agent mode and other `IsMachineMode` cases suppress metadata without altering their existing stdout behavior. No metadata configuration preserves existing output.
+
 **Timing proof**: `intentstream_test.go.stmpl` (emitted when the manifest declares an SSE projection whose inputs are satisfiable from one positional) runs a mock SSE server that pauses 300ms between events and, between events, waits until the CLI's stdout writer has observed the previous event (a causal handshake — a batch-at-end implementation deadlocks it and fails, verified by mutation). It asserts one byte-exact `Write` per event, ≥200ms between consecutive event writes, exact concatenation plus one LF, and the explicit `--output-format json` / `--jq` / `--output-format pretty` opt-outs.
 
 **Value suggestions and defaults** (`suggestions:` on a declared arg or flag): a declared input's help ends in one parenthetical, `(e.g. <suggestions>, default: <D>)`. Suggestions come from the bound property's schema enum (first four values, then `, ...`) unless the input declares `suggestions:`, a list of unique scalars matching its type that is shown in full and in authored order; `[]` shows none. A command that narrows the value space (a modality-specific model, a pinned engine family) uses it to replace a general-purpose enum, including values the schema enum lacks: suggestions are display-only and never validated, and in route dispatch a declared list also replaces the cross-route intersection. The default is the effective preset when one sets the bound field (that is what the request carries when the flag is omitted), else the declared or `defaultFrom: schema` value; it is removed from the displayed suggestions, including on operation flags where Cobra prints the registered default itself. `--usage` carries a `suggestions` child node on both `flag` and `arg` nodes, and `default=` on `flag` nodes as a separate field.

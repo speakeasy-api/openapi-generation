@@ -88,10 +88,20 @@ actions:
       categories:
       - Create
       operations:
+        streamMetadata:
+          output:
+            stream:
+              select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
         cliInteract:
           output:
             stream:
               select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
           flags:
             stream:
               to: $.stream
@@ -149,10 +159,36 @@ actions:
           output:
             stream:
               select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
           examples:
             basic:
               summary: Generate with the default model
               command: cli generate "Explain concurrency in one sentence"
+        stream-reply:
+          routes:
+            model:
+              op: cliInteract#CliModelInteraction
+              default: true
+              selector: model
+            agent:
+              op: cliInteract#CliAgentInteraction
+              selector: agent
+          args:
+            input: {to: $.input, variadic: true, summary: Prompt text}
+          flags:
+            model: {to: $.model, defaultFrom: schema}
+            agent: {to: $.agent}
+            stream: {to: $.stream, type: bool, defaultFrom: schema}
+          preset:
+            $.stream: true
+          output:
+            stream:
+              select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
         render:
           category: Create
           summary: Run the render model
@@ -397,4 +433,6 @@ actions:
           type: object
           properties:
             content:
+              type: string
+            resource_id:
               type: string

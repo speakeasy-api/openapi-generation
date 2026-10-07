@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: dd982b4f4b37f4155da107717836388f
+  docChecksum: 01e27dec55a0b7724b7743886185face
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -64,7 +64,7 @@ trackedFiles:
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
-    last_write_checksum: sha1:11730e18c9c6f403253ba394cb00e5b6e8beec59
+    last_write_checksum: sha1:79b4228fea48fee311f437e253ec4bed6903675e
   internal/cli/configure.go:
     last_write_checksum: sha1:72b513337b8bdbb36773683424a76635e6b6a631
   internal/cli/createuser.go:
@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_render.go:
     last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:e11155fa56f0d704c70ee884ad5f5d60a8b8ad1a
+    last_write_checksum: sha1:d011e10388cdc045a10345e805fc85203f7b426d
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -182,7 +182,11 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
   internal/cli/root.go:
-    last_write_checksum: sha1:dad2cd122f67c8465ec46ab90e7e74f9b1f0ce3d
+    last_write_checksum: sha1:f178d4cc1fe2d5e48bfda8e1b2ae5a00b8e500f2
+  internal/cli/streammetadata/root.go:
+    last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
+  internal/cli/streammetadata/streammetadata.go:
+    last_write_checksum: sha1:04543b348e7a6cd0f70265220e797c905dd10644
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:bff8e227f6c34de46d8e5540e23cf616aa5e13a7
   internal/cli/tag1/deprecated1.go:
@@ -288,9 +292,9 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:daa755592100f096b8056f1018e8b48fae40612d
+    last_write_checksum: sha1:838823dddf69133729070cc5990fe12d7d69a17e
   internal/output/streamproject.go:
-    last_write_checksum: sha1:774db357deee4aefc20c5a46b99193a53d20799e
+    last_write_checksum: sha1:95088b4a0809c2f02782c950edfe240b8c3e885a
   internal/sdk/.gitattributes:
     last_write_checksum: sha1:84b0115789fc3ea52e31df701d8a27f76077e29f
   internal/sdk/conflicts.go:
@@ -432,7 +436,7 @@ trackedFiles:
   internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:7fb4d81daaf907f9894a74cbcda0474399461414
   internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:6cb2956ee86eb5a2eed4c4cc621849837a3cd2d2
+    last_write_checksum: sha1:aa4756ca1e28c2fbefbbf10e588652e842e67e0d
   internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:fa39c1f2ddb12ccafded76afcf4cd754aa6b4d21
   internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -515,6 +519,8 @@ trackedFiles:
     last_write_checksum: sha1:5d8733af5efea2dc50866d5d701a8318ef376605
   internal/sdk/models/operations/rootgroupop.go:
     last_write_checksum: sha1:b5dc1bb6e790596c63264f1aee1b3cd3f38c5658
+  internal/sdk/models/operations/streammetadata.go:
+    last_write_checksum: sha1:6dfbf81ec8b1d0789ab895f43ac9c058a3a8392d
   internal/sdk/models/operations/subgroupop.go:
     last_write_checksum: sha1:c1a79613114544955b5452be2dbe8a917e4cfa2e
   internal/sdk/models/operations/testendpoint.go:
@@ -570,7 +576,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:ed44058323819e0897a4013b1c5df7d11d3a1e1e
+    last_write_checksum: sha1:2a1f8ccd5e57eb1ae3aa6d962e48f67022478805
   internal/sdk/sdkinternal/config/sdkconfiguration.go:
     last_write_checksum: sha1:1e813226ebfcdfdb00c61fa53bb00d34edce6431
   internal/sdk/sdkinternal/globals/globals.go:
@@ -615,6 +621,8 @@ trackedFiles:
     last_write_checksum: sha1:d4b8af8f85326ebce36bf0d6039dae458538f822
   internal/sdk/singlefoo.go:
     last_write_checksum: sha1:09e23b19cea18ff983ec83c84ead0f40240bcb88
+  internal/sdk/streammetadata.go:
+    last_write_checksum: sha1:9b1d246eef77f34a0d38be3bd45e156518ae3695
   internal/sdk/subgroup.go:
     last_write_checksum: sha1:f78c5c64805523599cb256fefb3cb3f73b27b2ea
   internal/sdk/tag1.go:
@@ -650,7 +658,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:1320ae9b96590ef597a1423e64da8993a90925fc
+    last_write_checksum: sha1:110540be88fd0b33f29d767b732c1c6f4b115d24
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:
@@ -922,7 +930,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
   tests/mockserver/internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:760b8c08c260359b12687db102ad6d4dafbf9413
+    last_write_checksum: sha1:d51dfc8a83c2049c9573f1336a4c420888065383
   tests/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
   tests/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -1003,6 +1011,8 @@ trackedFiles:
     last_write_checksum: sha1:fdfd8b7d8c8d68be9347be9427d98df24337c129
   tests/mockserver/internal/sdk/models/operations/rootgroupop.go:
     last_write_checksum: sha1:912e9685ab8e556f4b481a0637b5453f41e776d4
+  tests/mockserver/internal/sdk/models/operations/streammetadata.go:
+    last_write_checksum: sha1:e2b5c2b1202222aaf158b675c4bec611aeab8225
   tests/mockserver/internal/sdk/models/operations/subgroupop.go:
     last_write_checksum: sha1:4bf46599b9f0c1cfa33399c873b64069efa5d966
   tests/mockserver/internal/sdk/models/operations/testendpoint.go:
@@ -1452,6 +1462,7 @@ examples:
       parameters:
         path:
           id: "default-id"
+  streamMetadata: {}
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-02-05T03:14:20+10:00"

@@ -22,8 +22,10 @@ func initChatCmd(parent *cobra.Command) error {
 		Args:    cobra.NoArgs,
 		RunE:    runChatCmd,
 		Annotations: map[string]string{
-			"speakeasy_operation":     "chat",
-			"speakeasy_stream_select": "/data/content",
+			"speakeasy_operation":              "chat",
+			"speakeasy_stream_select":          "/data/content",
+			"speakeasy_stream_metadata_select": "/data/resource_id",
+			"speakeasy_stream_metadata_label":  "Resource ID",
 		},
 	}
 	cmd.Flags().String("request", "", "Request body as JSON [required]. Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.")

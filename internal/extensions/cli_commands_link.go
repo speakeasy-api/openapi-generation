@@ -1745,12 +1745,22 @@ func (d *cliManifestDecoder) linkStreamProjection(owner string, stream *CLIComma
 	if !opInfo.streamMediaSeen {
 		return fmt.Errorf("%s declares output.stream, but operation %q has no streaming (text/event-stream or JSONL) success response; the CLI only streams events for operations that declare one", owner, opID)
 	}
-	segments, err := cliParseSingularPath(stream.Select)
+	if err := d.linkStreamSelection(owner, "output.stream.select", stream.Select, opInfo); err != nil {
+		return err
+	}
+	if stream.Metadata != nil {
+		return d.linkStreamSelection(owner, "output.stream.metadata.select", stream.Metadata.Select, opInfo)
+	}
+	return nil
+}
+
+func (d *cliManifestDecoder) linkStreamSelection(owner, field, selectPath string, opInfo *cliOperationInfo) error {
+	segments, err := cliParseSingularPath(selectPath)
 	if err != nil {
-		return fmt.Errorf("%s output.stream.select: %w", owner, err)
+		return fmt.Errorf("%s %s: %w", owner, field, err)
 	}
 
-	walker := &cliStreamPathWalker{d: d, owner: owner, selectPath: stream.Select}
+	walker := &cliStreamPathWalker{d: d, owner: owner, selectPath: selectPath, field: field}
 	for _, schema := range opInfo.streamSchemas {
 		if schema == nil {
 			walker.unverifiable("the streaming response declares no schema")
@@ -1763,16 +1773,16 @@ func (d *cliManifestDecoder) linkStreamProjection(owner string, stream *CLIComma
 	}
 	if walker.resolved == 0 {
 		if walker.unverified == 0 {
-			return fmt.Errorf("%s output.stream.select %s does not resolve in any event shape of the streaming response%s", owner, stream.Select, walker.missSuggestion())
+			return fmt.Errorf("%s %s %s does not resolve in any event shape of the streaming response%s", owner, field, selectPath, walker.missSuggestion())
 		}
-		d.warnf("%s output.stream.select %s could not be verified against the streaming response schema (%s); events without a string at that path are skipped at runtime", owner, stream.Select, walker.firstReason)
+		d.warnf("%s %s %s could not be verified against the streaming response schema (%s); events without a string at that path are skipped at runtime", owner, field, selectPath, walker.firstReason)
 		return nil
 	}
-	if err := d.lintProjection(owner, "output.stream.select", cliSingularPathToJQ(segments), "the streaming response declares no event schema", cliOperationProjectionSchema(opInfo), true); err != nil {
+	if err := d.lintProjection(owner, field, cliSingularPathToJQ(segments), "the streaming response declares no event schema", cliOperationProjectionSchema(opInfo), true); err != nil {
 		return err
 	}
 	if walker.unverified > 0 {
-		d.warnf("%s output.stream.select %s resolves in %d event shape(s) but could not be verified in every arm (%s); unverified events without a string at that path are skipped at runtime", owner, stream.Select, walker.resolved, walker.firstReason)
+		d.warnf("%s %s %s resolves in %d event shape(s) but could not be verified in every arm (%s); unverified events without a string at that path are skipped at runtime", owner, field, selectPath, walker.resolved, walker.firstReason)
 	}
 	return nil
 }
@@ -1804,6 +1814,7 @@ type cliStreamPathWalker struct {
 	d          *cliManifestDecoder
 	owner      string
 	selectPath string
+	field      string
 
 	resolved    int // arms where the full path resolved to a string/null leaf
 	unverified  int // arms the walk could not see through
@@ -1881,7 +1892,7 @@ func (w *cliStreamPathWalker) walk(schema any, segments []cliPathSegment, seen [
 		}
 		component, ok := w.d.schemaIndex.components[name]
 		if !ok {
-			w.err = fmt.Errorf("%s output.stream.select %s: referenced schema %q does not exist in components.schemas%s", w.owner, w.selectPath, name, cliDidYouMean(name, cliComponentNames(w.d.schemaIndex.components)))
+			w.err = fmt.Errorf("%s %s %s: referenced schema %q does not exist in components.schemas%s", w.owner, w.field, w.selectPath, name, cliDidYouMean(name, cliComponentNames(w.d.schemaIndex.components)))
 			return
 		}
 		w.walk(component, segments, append(seen, name))
@@ -2016,7 +2027,11 @@ func (w *cliStreamPathWalker) checkLeaf(schemaMap map[string]any, seen []string)
 	case leafString:
 		w.resolved++
 	case leafOther:
-		w.err = fmt.Errorf("%s output.stream.select %s resolves to %s in one event shape; the streamed projection writes string values raw, so select must address a string field", w.owner, w.selectPath, kind)
+		if w.field == "output.stream.metadata.select" {
+			w.err = fmt.Errorf("%s %s %s resolves to %s in one event shape; metadata must address a string field", w.owner, w.field, w.selectPath, kind)
+		} else {
+			w.err = fmt.Errorf("%s %s %s resolves to %s in one event shape; the streamed projection writes string values raw, so select must address a string field", w.owner, w.field, w.selectPath, kind)
+		}
 	default:
 		w.unverifiable("the selected field is untyped")
 	}

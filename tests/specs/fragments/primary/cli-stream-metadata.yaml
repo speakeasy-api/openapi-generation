@@ -1,0 +1,38 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /stream-metadata:
+    get:
+      operationId: streamMetadata
+      tags: [streamMetadata]
+      description: Streamed events can contain text and an optional resource identifier in separate events.
+      parameters:
+        - name: stream
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Streamed resource events.
+          content:
+            text/event-stream:
+              x-speakeasy-sse-sentinel: "[DONE]"
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: string
+                      resource_id:
+                        type: string

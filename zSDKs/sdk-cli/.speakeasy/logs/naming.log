@@ -55,6 +55,9 @@ DEBUG	prepend_op_id: Renamed to "login_ResponseBody"
 DEBUG	prepend_op_id: Renamed to "validate_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:validate requestResponse:response" 
 	 registrationID: "scope:operations operation:validate requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "streamMetadata_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:streamMetadata requestResponse:response responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream originalName:ResponseBody"
 DEBUG	prepend_op_id: Renamed to "chat_request" 
 	 labels: "original_name:request operation:chat data_type:union" 
 	 registrationID: "scope:operations operation:chat requestResponse:request originalName:RequestBody"
@@ -180,6 +183,15 @@ DEBUG	discriminated: Renamed to "ErrorType2_error"
 	 registrationID: "scope:shared refType:Schemas refName:ErrorType2 originalName:error"
 DEBUG	
 
+--- Renaming 2 types with name "data" ---
+DEBUG	discriminated: Renamed to "streamMetadata_data" 
+	 labels: "original_name:data operation:streamMetadata requestResponse:response responseBody:ResponseBody responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream responseBody:responseBody originalName:data"
+DEBUG	discriminated: Renamed to "chat_data" 
+	 labels: "original_name:data operation:chat requestResponse:response responseBody:ResponseBody responseMediaType:EventStream" 
+	 registrationID: "scope:operations operation:chat requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream responseBody:responseBody originalName:data"
+DEBUG	
+
 --- Renaming 2 types with name "InternalServerError" ---
 DEBUG	discriminated: Renamed to "getUnionErrors_InternalServerError" 
 	 labels: "scope:errors operation:getUnionErrors data_type:union responseStatusCode:InternalServerError" 
@@ -238,6 +250,9 @@ DEBUG	prepend_op_id: N/A rename "login_ResponseBody"
 DEBUG	prepend_op_id: N/A rename "validate_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:validate requestResponse:response" 
 	 registrationID: "scope:operations operation:validate requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "streamMetadata_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:streamMetadata requestResponse:response responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream originalName:ResponseBody"
 DEBUG	prepend_op_id: N/A rename "chat_request" 
 	 labels: "original_name:request operation:chat data_type:union" 
 	 registrationID: "scope:operations operation:chat requestResponse:request originalName:RequestBody"
@@ -320,6 +335,10 @@ PostTest2Response (HttpMeta: HTTPMetadata, Body: bytes)
   Test2Response (test2: string, someConst: string, requiredNullableField: string)
 Test2ResponseError (error)
 Tag3 (SDK empty)
+StreamMetadata (SDK empty)
+StreamMetadataResponse (HttpMeta: HTTPMetadata, object: event-stream)
+  StreamMetadataResponseBody (data: class)
+   StreamMetadataData (content: string, resource_id: string)
 Group (SDK empty)
 SubGroup (SDK empty)
 Empty (SDK empty)
@@ -446,7 +465,7 @@ ChatRequest (union)
 ChatResponse (HttpMeta: HTTPMetadata, object: class, ChatStream: event-stream)
  ChatResponseBody (data: string)
   ChatStream (data: class)
-   Data (content: string)
+   ChatData (content: string, resource_id: string)
 GetBinaryDefaultResponseResponse (HttpMeta: HTTPMetadata, bytes: response-stream)
 TestEnumFormatsRequest (stringArrayFormat: enum, stringMapFormat: enum, stringPartialMapFormat: enum ...)
  StringArrayFormat (enum: pending_review, approved_final, rejected_permanently ...)

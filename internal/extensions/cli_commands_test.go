@@ -5319,3 +5319,68 @@ commands:
 	assert.Empty(t, background.DefaultFrom)
 	assert.Nil(t, background.Default)
 }
+
+func TestCLICommands_StreamMetadata(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, `
+version: 1
+commands:
+  say:
+    op: StreamTask
+    output:
+      stream:
+        select: $.data.delta.text
+        metadata:
+          select: $.data.error.message
+          label: Resource ID
+`)
+	require.NoError(t, err)
+	metadata := manifest.Commands[0].Output.Stream.Metadata
+	require.NotNil(t, metadata)
+	assert.Equal(t, "$.data.error.message", metadata.Select)
+	assert.Equal(t, "/data/error/message", metadata.Pointer)
+	assert.Equal(t, "Resource ID", metadata.Label)
+}
+
+func TestCLICommands_StreamMetadataValidation(t *testing.T) {
+	for _, tc := range []struct{ name, metadata, want string }{
+		{"missing select", "{label: ID}", "requires nonempty select and label"},
+		{"missing label", "{select: $.data.error.message}", "requires nonempty select and label"},
+		{"empty label", "{select: $.data.error.message, label: '  '}", "requires nonempty select and label"},
+		{"label type", "{select: $.data.error.message, label: 12}", "metadata.label"},
+		{"select type", "{select: [], label: ID}", "metadata.select"},
+		{"unknown key", "{select: $.data.error.message, label: ID, labels: ID}", "metadata has unknown key"},
+		{"wildcard", "{select: '$.data[*]', label: ID}", "metadata.select"},
+		{"absent path", "{select: $.data.missing, label: ID}", "output.stream.metadata.select $.data.missing does not resolve"},
+		{"number", "{select: $.data.index, label: ID}", "output.stream.metadata.select $.data.index resolves to an integer"},
+		{"object", "{select: $.data.delta, label: ID}", "output.stream.metadata.select $.data.delta resolves to an object"},
+		{"newline label", `{select: $.data.error.message, label: "ID\nInjected"}`, "metadata.label must contain only printable"},
+		{"escape label", `{select: $.data.error.message, label: "ID\x1b"}`, "metadata.label must contain only printable"},
+		{"bidi label", `{select: $.data.error.message, label: "ID\u202e"}`, "metadata.label must contain only printable"},
+		{"separator label", `{select: $.data.error.message, label: "ID\u2028"}`, "metadata.label must contain only printable"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requireDecodeError(t, "version: 1\ncommands:\n  say:\n    op: StreamTask\n    output:\n      stream:\n        select: $.data.delta.text\n        metadata: "+tc.metadata+"\n", tc.want)
+		})
+	}
+}
+
+func TestCLICommands_StreamMetadataOpenSchema(t *testing.T) {
+	manifest, warnings, err := decodeCLITest(t, `
+version: 1
+operations:
+  StreamTaskLines:
+    output:
+      stream:
+        select: $.text
+        metadata:
+          select: $['resource/id~key']
+          label: Resource ID
+`)
+	require.NoError(t, err)
+	require.Len(t, manifest.Operations, 1)
+	require.NotNil(t, manifest.Operations[0].Output.Stream.Metadata)
+	assert.Equal(t, "/resource~1id~0key", manifest.Operations[0].Output.Stream.Metadata.Pointer)
+	require.Len(t, warnings, 2)
+	assert.Contains(t, warnings[1], "output.stream.metadata.select")
+	assert.Contains(t, warnings[1], "could not be verified")
+}

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/document"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/errors"
@@ -214,14 +215,21 @@ type CLICommandArtifact struct {
 	explicitBindings map[string]bool
 }
 
+type CLICommandStreamMetadata struct {
+	Select  string `json:"select" yaml:"select"`
+	Pointer string `json:"pointer" yaml:"pointer"`
+	Label   string `json:"label" yaml:"label"`
+}
+
 // CLICommandStreamProjection selects the field of each streamed event whose
 // string value is written raw to stdout as the event arrives (stream mode
 // only). Select is the authored singular JSONPath from the event root as the
 // CLI sees each event (the same root a per-event --jq filter sees); Pointer
 // is its RFC 6901 lowering, which the generated runtime evaluates.
 type CLICommandStreamProjection struct {
-	Select  string `json:"select" yaml:"select"`
-	Pointer string `json:"pointer" yaml:"pointer"`
+	Metadata *CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Select   string                    `json:"select" yaml:"select"`
+	Pointer  string                    `json:"pointer" yaml:"pointer"`
 }
 
 // CLICommandOutput groups output behavior for a declared command.
@@ -515,7 +523,7 @@ var cliCommandKeys = []string{
 
 var cliOutputKeys = []string{"artifact", "stream"}
 
-var cliOutputStreamKeys = []string{"select"}
+var cliOutputStreamKeys = []string{"select", "metadata"}
 
 var cliOperationKeys = []string{"output", "flags"}
 
@@ -2225,6 +2233,13 @@ func (d *cliManifestDecoder) decodeStreamProjection(cmdKey string, node *yaml.No
 			}
 			stream.Select = raw
 			stream.Pointer = cliSegmentsToPointer(segments)
+		case "metadata":
+			metadata, err := d.decodeStreamMetadata(entry.Value)
+			if err != nil {
+				return nil, fmt.Errorf("command %q: %w", cmdKey, err)
+			}
+			stream.Metadata = metadata
+
 		default:
 			return nil, fmt.Errorf("line %d: command %q output.stream has unknown key %q%s", entry.Key.Line, cmdKey, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputStreamKeys))
 		}
@@ -2442,4 +2457,44 @@ func cliMapKeys(m map[string]bool) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) (*CLICommandStreamMetadata, error) {
+	entries, err := cliMapEntries(node, "output.stream.metadata")
+	if err != nil {
+		return nil, err
+	}
+	metadata := &CLICommandStreamMetadata{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "select":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.select")
+			if err != nil {
+				return nil, err
+			}
+			segments, err := cliParseSingularPath(value)
+			if err != nil {
+				return nil, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+			}
+			metadata.Select = value
+			metadata.Pointer = cliSegmentsToPointer(segments)
+		case "label":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.label")
+			if err != nil {
+				return nil, err
+			}
+			for _, r := range value {
+				if !unicode.IsPrint(r) {
+					return nil, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
+				}
+			}
+			metadata.Label = value
+		default:
+			return nil, fmt.Errorf("line %d: output.stream.metadata has unknown key %q", entry.Key.Line, entry.Key.Value)
+		}
+	}
+	if metadata.Select == "" || strings.TrimSpace(metadata.Label) == "" {
+		return nil, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
+	}
+	return metadata, nil
 }

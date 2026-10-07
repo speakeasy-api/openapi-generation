@@ -483,6 +483,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
   * [`post-file-with-encoding`](docs/cli_tag1_post-file-with-encoding.md) - Post File With Encoding
 * [`obsolete`](docs/cli_obsolete.md) - A subSDK in which all operations are deprecated
   * [`~~deprecated1~~`](docs/cli_obsolete_deprecated1.md) - Deprecated Operation :warning: **Deprecated**
+* [`stream-metadata`](docs/cli_stream-metadata.md) - Streamed events can contain text and an optional resource identifier in separate events.
 * [`group`](docs/cli_group.md) - Operations for group
   * [`root-group-op`](docs/cli_group_root-group-op.md) - An operation at the group's root level
   * [`sub`](docs/cli_group_sub.md) - Operations for sub-group

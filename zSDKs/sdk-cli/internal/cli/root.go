@@ -11,6 +11,7 @@ import (
 	"openapi/internal/cli/group"
 	"openapi/internal/cli/namespacetests"
 	"openapi/internal/cli/obsolete"
+	"openapi/internal/cli/streammetadata"
 	"openapi/internal/cli/tag1"
 	"openapi/internal/cli/testgroup"
 	"openapi/internal/clierrors"
@@ -82,6 +83,9 @@ func NewRootCommand() (*cobra.Command, error) {
 	}
 	if err := testgroup.InitTestGroupRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init test-group: %w", err)
+	}
+	if err := streammetadata.InitStreamMetadataRoot(rootCmd); err != nil {
+		return nil, fmt.Errorf("init stream-metadata: %w", err)
 	}
 	if err := group.InitGroupRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init group: %w", err)

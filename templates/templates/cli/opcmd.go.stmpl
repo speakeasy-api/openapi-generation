@@ -54,6 +54,10 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     parent.Annotations["speakeasy_cli_promoted"] = "true"
     {{- if and $cliOp $cliOp.StreamSelect}}
     parent.Annotations["speakeasy_stream_select"] = "{{escapeGoString $cliOp.StreamSelect}}"
+    {{- if $cliOp.StreamMetadataPointer}}
+    parent.Annotations["speakeasy_stream_metadata_select"] = "{{escapeGoString $cliOp.StreamMetadataPointer}}"
+    parent.Annotations["speakeasy_stream_metadata_label"] = "{{escapeGoString $cliOp.StreamMetadataLabel}}"
+    {{- end}}
     {{- end}}
     {{- if or $hasSecurity $op.Request (hasPagination $op) (hasBinaryResponse $op) (and $cliOp $cliOp.Flags)}}
     cmd := parent // register flags on the parent
@@ -78,6 +82,10 @@ func {{$initFuncName}}(parent *cobra.Command) error {
             "speakeasy_operation": "{{escapeGoString $op.OriginalID}}",
             {{- if and $cliOp $cliOp.StreamSelect}}
             "speakeasy_stream_select": "{{escapeGoString $cliOp.StreamSelect}}",
+            {{- if $cliOp.StreamMetadataPointer}}
+            "speakeasy_stream_metadata_select": "{{escapeGoString $cliOp.StreamMetadataPointer}}",
+            "speakeasy_stream_metadata_label": "{{escapeGoString $cliOp.StreamMetadataLabel}}",
+            {{- end}}
             {{- end}}
         },
     }

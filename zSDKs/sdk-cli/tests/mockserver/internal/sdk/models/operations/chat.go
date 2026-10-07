@@ -73,25 +73,33 @@ func (u ChatRequest) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("could not marshal union type ChatRequest: all fields are null")
 }
 
-type Data struct {
-	Content *string `json:"content,omitempty"`
+type ChatData struct {
+	Content    *string `json:"content,omitempty"`
+	ResourceID *string `json:"resource_id,omitempty"`
 }
 
-func (o *Data) GetContent() *string {
+func (o *ChatData) GetContent() *string {
 	if o == nil {
 		return nil
 	}
 	return o.Content
 }
 
-// ChatStream - A stream containing chat completion tokens
-type ChatStream struct {
-	Data Data `json:"data"`
+func (o *ChatData) GetResourceID() *string {
+	if o == nil {
+		return nil
+	}
+	return o.ResourceID
 }
 
-func (o *ChatStream) GetData() Data {
+// ChatStream - A stream containing chat completion tokens
+type ChatStream struct {
+	Data ChatData `json:"data"`
+}
+
+func (o *ChatStream) GetData() ChatData {
 	if o == nil {
-		return Data{}
+		return ChatData{}
 	}
 	return o.Data
 }

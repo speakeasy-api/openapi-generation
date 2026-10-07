@@ -135,6 +135,8 @@ interface IntentCmdCtx {
   AsyncMissingStateTestJSON: string;
   AsyncMissingHandleTestJSON: string;
   AsyncFailureHint: string;
+  StreamMetadataPointer: string;
+  StreamMetadataLabel: string;
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
   StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
@@ -199,6 +201,8 @@ interface CLIOperationFlagCtx {
 
 interface CLIOperationCtx {
   OperationID: string;
+  StreamMetadataPointer: string;
+  StreamMetadataLabel: string;
   StreamSelect: string;
   Flags: CLIOperationFlagCtx[];
   BodyFlags: string[];
@@ -1332,6 +1336,8 @@ function collectIntentManifest(): IntentManifestCtx {
       AsyncMissingHandleTestJSON: asyncMissingHandleTestJSON,
       AsyncFailureHint: cmd.Hints?.CLI_ASYNC_FAILED?.[0] || "",
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
+      StreamMetadataPointer: cmd.Output?.Stream?.Metadata?.Pointer || "",
+      StreamMetadataLabel: cmd.Output?.Stream?.Metadata?.Label || "",
       StreamToggle:
         !dispatch && intentStreamKind(found.op).kind
           ? intentDefaultOnStreamToggle(flags, presetJSON)
@@ -1563,6 +1569,8 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
   return {
     OperationID: declared.OperationID,
     StreamSelect: declared.Output?.Stream?.Pointer || "",
+    StreamMetadataPointer: declared.Output?.Stream?.Metadata?.Pointer || "",
+    StreamMetadataLabel: declared.Output?.Stream?.Metadata?.Label || "",
     Flags: flags,
     BodyFlags: bodyFlags,
     CanonicalBodyFlag: bodyFlags[bodyFlags.length - 1] || "",
