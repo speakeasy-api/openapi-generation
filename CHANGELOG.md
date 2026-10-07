@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.945.10] - 2026-10-07
+### :bug: Bug Fixes
+- [`0002776`](https://github.com/speakeasy-api/openapi-generation/commit/0002776a0db337f73f9651fda33a643f9a594901) - **cli**: open configure and auth login forms when run bare on a terminal ([#81](https://github.com/speakeasy-api/openapi-generation/pull/81)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.945.9] - 2026-10-07
 ### :bug: Bug Fixes
 - [`49afd30`](https://github.com/speakeasy-api/openapi-generation/commit/49afd301de6d383e4866bad945e9dec1e3a5f882) - **cli**: report on stderr when a stream.select projection prints nothing ([#77](https://github.com/speakeasy-api/openapi-generation/pull/77)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20445,3 +20450,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.6...v2.945.7
 [v2.945.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.7...v2.945.8
 [v2.945.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.8...v2.945.9
+[v2.945.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.9...v2.945.10
