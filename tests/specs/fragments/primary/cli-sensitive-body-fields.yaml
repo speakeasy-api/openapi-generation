@@ -114,6 +114,48 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/cli/sensitiveSplitBody:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveSplitBodyPost
+      description: Distinct request content types each contain a sensitive value.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jsonValue]
+              properties:
+                jsonValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                name:
+                  type: string
+          multipart/form-data:
+            schema:
+              type: object
+              required: [multipartValue]
+              properties:
+                multipartValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                name:
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [formValue]
+              properties:
+                formValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                name:
+                  type: string
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     CliSensitiveBodyFields:

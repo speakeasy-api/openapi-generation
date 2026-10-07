@@ -396,9 +396,10 @@ function templateSensitiveBodyFields(): {
   OperationID: string;
   Paths: string;
 }[] {
-  const entries: { OperationID: string; Paths: string }[] = [];
+  const operations = new Map<string, Map<string, string[]>>();
   for (const op of allOperations()) {
-    const paths = new Map<string, string[]>();
+    const paths = operations.get(op.OriginalID) || new Map<string, string[]>();
+    operations.set(op.OriginalID, paths);
     const add = (path: string[]): void => {
       paths.set(JSON.stringify(path), path);
     };
@@ -453,9 +454,12 @@ function templateSensitiveBodyFields(): {
       stack.delete(component);
     };
     walk(requestBodyType(op), []);
+  }
+  const entries: { OperationID: string; Paths: string }[] = [];
+  for (const [operationID, paths] of operations) {
     if (paths.size === 0) continue;
     entries.push({
-      OperationID: op.OriginalID,
+      OperationID: operationID,
       // Spaced braces: this file renders twice (recurse), so "{{" must not appear.
       Paths: `{ ${[...paths.values()]
         .map((p) => `{ ${p.map((s) => `"${escapeGoString(s)}"`).join(", ")} }`)

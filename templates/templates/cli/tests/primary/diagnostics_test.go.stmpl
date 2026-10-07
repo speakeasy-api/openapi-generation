@@ -373,6 +373,24 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 		visible []string
 	}{
 		{
+			name: "split json body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-json", "--json-value", "canary-json", "--name", "visible-name"},
+			secrets: []string{"canary-json"},
+			visible: []string{"visible-name"},
+		},
+		{
+			name: "split multipart body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-multipart", "--multipart-value", "canary-multipart", "--name", "visible-name"},
+			secrets: []string{"canary-multipart"},
+			visible: []string{"visible-name"},
+		},
+		{
+			name: "split form body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-form", "--form-value", "canary-form", "--name", "visible-name"},
+			secrets: []string{"canary-form"},
+			visible: []string{"visible-name"},
+		},
+		{
 			name: "marked fields at every depth",
 			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
 				`{"name":"visible-name","value":"canary-top","passphrase":"canary-password",` +
