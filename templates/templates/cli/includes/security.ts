@@ -382,92 +382,128 @@ function requestBodyType(op: Operation): TypeDef | undefined {
   )?.Type;
 }
 
-/**
- * Request-body values each operation marks sensitive
- * (x-speakeasy-param-sensitive or format: password), as Go literals of JSON
- * paths keyed by operation id. A "*" segment stands for any array index or map
- * key and "**" for any run of segments inside a recursive schema; union
- * variants share their parent's path. Diagnostics redacts these in dry-run and
- * debug request previews on top of its name-based list, so a secret under a
- * generic name is hidden while same-named fields of other schemas stay
- * readable.
- */
+interface CLISensitiveBodyNode {
+  Sensitive?: boolean;
+  Fields?: Map<string, number>;
+  Item?: number;
+  Variants?: number[];
+}
+
+interface CLISensitiveBodySchema {
+  Nodes: CLISensitiveBodyNode[];
+  Roots: number[];
+}
+
+function renderSensitiveBodySchema(
+  schema: CLISensitiveBodySchema,
+): string | undefined {
+  const reachable = new Set<number>();
+  schema.Nodes.forEach((node, i) => {
+    if (node.Sensitive) reachable.add(i);
+  });
+  let changed = true;
+  while (changed) {
+    changed = false;
+    schema.Nodes.forEach((node, i) => {
+      if (reachable.has(i)) return;
+      const children = [
+        ...(node.Fields?.values() || []),
+        ...(node.Variants || []),
+        node.Item || 0,
+      ];
+      if (children.some((child) => reachable.has(child))) {
+        reachable.add(i);
+        changed = true;
+      }
+    });
+  }
+  const roots = schema.Roots.filter((root) => reachable.has(root));
+  if (roots.length === 0) return undefined;
+  const indices = [...reachable].sort((a, b) => a - b);
+  const remap = new Map(indices.map((id, i) => [id, i + 1]));
+  const nodes = indices.map((id) => {
+    const node = schema.Nodes[id];
+    const fields: string[] = [];
+    if (node.Sensitive) fields.push("Sensitive: true");
+    const children = [...(node.Fields || [])]
+      .filter(([, child]) => reachable.has(child))
+      .map(([name, child]) => `"${escapeGoString(name)}": ${remap.get(child)}`);
+    if (children.length)
+      fields.push(`Fields: map[string]int{ ${children.join(", ")} }`);
+    if (node.Item && reachable.has(node.Item))
+      fields.push(`Item: ${remap.get(node.Item)}`);
+    const variants = (node.Variants || []).filter((child) =>
+      reachable.has(child),
+    );
+    if (variants.length)
+      fields.push(
+        `Variants: []int{ ${variants
+          .map((child) => remap.get(child))
+          .join(", ")} }`,
+      );
+    return `{ ${fields.join(", ")} }`;
+  });
+  // Spaced braces: this file renders twice (recurse), so "{{" must not appear.
+  return `{ Nodes: []sensitiveBodyNode{ {}, ${nodes.join(
+    ", ",
+  )} }, Roots: []int{ ${roots.map((id) => remap.get(id)).join(", ")} } }`;
+}
+
 function templateSensitiveBodyFields(): {
   OperationID: string;
-  Paths: string;
+  Schema: string;
 }[] {
-  const operations = new Map<string, Map<string, string[]>>();
+  const operations = new Map<string, CLISensitiveBodySchema>();
   for (const op of allOperations()) {
-    const paths = operations.get(op.OriginalID) || new Map<string, string[]>();
-    operations.set(op.OriginalID, paths);
-    const add = (path: string[]): void => {
-      paths.set(JSON.stringify(path), path);
-    };
-    // Components on the current walk, flagged once they recur below themselves.
-    const stack = new Map<string, boolean>();
-    const walk = (type: TypeDef | undefined, path: string[]): void => {
-      if (!type) return;
+    const schema = operations.get(op.OriginalID) || { Nodes: [{}], Roots: [] };
+    operations.set(op.OriginalID, schema);
+    const components = new Map<string, number>();
+    const walk = (type: TypeDef | undefined): number => {
+      if (!type) return 0;
+      const component =
+        type.IsComponent && type.Name ? type.GetRegistrationID() : "";
+      if (component && components.has(component))
+        return components.get(component)!;
+      const id = schema.Nodes.length;
+      const node: CLISensitiveBodyNode = {};
+      schema.Nodes.push(node);
+      if (component) components.set(component, id);
       if (isSensitiveBodyType(type)) {
-        add(path);
-        return;
+        node.Sensitive = true;
+        return id;
       }
-      const component = type.IsComponent && type.Name ? type.Name : "";
-      if (component) {
-        if (stack.has(component)) {
-          stack.set(component, true);
-          return;
-        }
-        stack.set(component, false);
-      }
-      const before = new Set(paths.keys());
       switch (type.Type.toString()) {
         case "class":
+          node.Fields = new Map();
+          node.Variants = [];
           for (const field of type.Fields || []) {
             if (field.Const) continue;
-            walk(
-              field.Type,
-              field.IsAdditionalProperties
-                ? path
-                : [...path, originalFieldName(field)],
-            );
+            const child = walk(field.Type);
+            if (field.IsAdditionalProperties) node.Variants.push(child);
+            else node.Fields.set(originalFieldName(field), child);
           }
           break;
         case "array":
         case "set":
         case "map":
-          walk(type.ItemType, [...path, "*"]);
+          node.Item = walk(type.ItemType);
           break;
         case "union":
-          for (const variant of type.AssociatedTypes || []) {
-            walk(variant, path);
-          }
+          node.Variants = (type.AssociatedTypes || []).map(walk);
           break;
       }
-      if (!component) return;
-      if (stack.get(component)) {
-        const found = [...paths].filter(([key]) => !before.has(key));
-        for (const [, foundPath] of found) {
-          const rel = foundPath.slice(path.length);
-          add([...path, "**", ...(rel[0] === "**" ? rel.slice(1) : rel)]);
-        }
-      }
-      stack.delete(component);
+      return id;
     };
-    walk(requestBodyType(op), []);
+    schema.Roots.push(walk(requestBodyType(op)));
   }
-  const entries: { OperationID: string; Paths: string }[] = [];
-  for (const [operationID, paths] of operations) {
-    if (paths.size === 0) continue;
-    entries.push({
-      OperationID: operationID,
-      // Spaced braces: this file renders twice (recurse), so "{{" must not appear.
-      Paths: `{ ${[...paths.values()]
-        .map((p) => `{ ${p.map((s) => `"${escapeGoString(s)}"`).join(", ")} }`)
-        .join(", ")} }`,
-    });
+  const entries: { OperationID: string; Schema: string }[] = [];
+  for (const [operationID, schema] of operations) {
+    const rendered = renderSensitiveBodySchema(schema);
+    if (rendered) entries.push({ OperationID: operationID, Schema: rendered });
   }
   return entries.sort((a, b) => a.OperationID.localeCompare(b.OperationID));
 }
+
 registerTemplateFunc(
   "templateSensitiveBodyFields",
   templateSensitiveBodyFields,

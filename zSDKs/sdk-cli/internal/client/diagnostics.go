@@ -83,11 +83,19 @@ var sensitiveJSONKeys = map[string]bool{
 	"clientsecret": true,
 }
 
-// sensitiveBodyFields lists, per operation id, the request-body fields the API
-// marks sensitive (x-speakeasy-param-sensitive or format: password) as JSON
-// paths, where "*" stands for any array index or map key and "**" for any run
-// of segments inside a recursive schema.
-var sensitiveBodyFields = map[string][][]string{}
+type sensitiveBodyNode struct {
+	Sensitive bool
+	Fields    map[string]int
+	Item      int
+	Variants  []int
+}
+
+type sensitiveBodySchema struct {
+	Nodes []sensitiveBodyNode
+	Roots []int
+}
+
+var sensitiveBodyFields = map[string]sensitiveBodySchema{}
 
 var sensitiveQueryKeys = map[string]bool{
 	"apikey":       true,
@@ -166,98 +174,94 @@ func isSensitiveName(key string) bool {
 	return false
 }
 
-// sensitiveBodyFieldsFor returns the sensitive request-body paths of the
-// operation that cmd (an operation or intent command) invokes.
-func sensitiveBodyFieldsFor(cmd *cobra.Command) [][]string {
+func sensitiveBodyFieldsFor(cmd *cobra.Command) sensitiveBodySchema {
 	if cmd == nil {
-		return nil
+		return sensitiveBodySchema{}
 	}
 	return sensitiveBodyFields[cmd.Annotations["speakeasy_operation"]]
 }
 
-func isSensitiveBodyPath(sensitive [][]string, path []string) bool {
-	for _, candidate := range sensitive {
-		if matchesBodyPath(candidate, path) {
+func (s sensitiveBodySchema) expandedRoots() []int {
+	var roots []int
+	seen := make(map[int]bool)
+	var visit func(int)
+	visit = func(id int) {
+		if id <= 0 || id >= len(s.Nodes) || seen[id] {
+			return
+		}
+		seen[id] = true
+		roots = append(roots, id)
+		for _, variant := range s.Nodes[id].Variants {
+			visit(variant)
+		}
+	}
+	for _, root := range s.Roots {
+		visit(root)
+	}
+	return roots
+}
+
+func (s sensitiveBodySchema) isSensitive() bool {
+	for _, id := range s.expandedRoots() {
+		if s.Nodes[id].Sensitive {
 			return true
 		}
 	}
 	return false
 }
 
-func matchesBodyPath(pattern, path []string) bool {
-	if len(pattern) == 0 {
-		return len(path) == 0
-	}
-	if pattern[0] == "**" {
-		for i := 0; i <= len(path); i++ {
-			if matchesBodyPath(pattern[1:], path[i:]) {
-				return true
-			}
+func (s sensitiveBodySchema) child(name string) sensitiveBodySchema {
+	var roots []int
+	for _, id := range s.expandedRoots() {
+		node := s.Nodes[id]
+		if child := node.Fields[name]; child != 0 {
+			roots = append(roots, child)
 		}
-		return false
-	}
-	if len(path) == 0 || (pattern[0] != "*" && pattern[0] != path[0]) {
-		return false
-	}
-	return matchesBodyPath(pattern[1:], path[1:])
-}
-
-// isSensitiveEncodedField reports whether a form field or multipart part is
-// sensitive; repeated fields carry the items of an array.
-func isSensitiveEncodedField(sensitive [][]string, name string) bool {
-	return isSensitiveBodyPath(sensitive, []string{name}) || isSensitiveBodyPath(sensitive, []string{name, "*"})
-}
-
-// sensitiveBodySubpaths returns the sensitive paths below the top-level field
-// name, relative to it, for fields sent as an encoded JSON value (a multipart
-// part or a form field).
-func sensitiveBodySubpaths(sensitive [][]string, name string) [][]string {
-	var out [][]string
-	var collect func(pattern []string)
-	collect = func(pattern []string) {
-		switch {
-		case len(pattern) == 0:
-		case pattern[0] == "**":
-			out = append(out, pattern)
-			collect(pattern[1:])
-		case (pattern[0] == "*" || pattern[0] == name) && len(pattern) > 1:
-			out = append(out, pattern[1:])
+		if node.Item != 0 {
+			roots = append(roots, node.Item)
 		}
 	}
-	for _, pattern := range sensitive {
-		collect(pattern)
-	}
-	return out
+	return sensitiveBodySchema{Nodes: s.Nodes, Roots: roots}
 }
 
-// redactJSON recursively redacts sensitive keys in a JSON structure, plus the
-// values at the sensitive request-body paths.
-func redactJSON(v interface{}, depth int, path []string, sensitive [][]string) interface{} {
+func (s sensitiveBodySchema) items() sensitiveBodySchema {
+	var roots []int
+	for _, id := range s.expandedRoots() {
+		if item := s.Nodes[id].Item; item != 0 {
+			roots = append(roots, item)
+		}
+	}
+	return sensitiveBodySchema{Nodes: s.Nodes, Roots: roots}
+}
+
+func isSensitiveEncodedField(sensitive sensitiveBodySchema, name string) bool {
+	nested := sensitive.child(name)
+	return nested.isSensitive() || nested.items().isSensitive()
+}
+
+func redactJSON(v interface{}, depth int, sensitive sensitiveBodySchema) interface{} {
 	if depth > maxRedactDepth {
 		return redactionDepthMarker
+	}
+	if sensitive.isSensitive() {
+		return "[REDACTED]"
 	}
 	switch val := v.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(val))
 		for k, child := range val {
-			childPath := append(path[:len(path):len(path)], k)
-			if sensitiveJSONKeys[normalizeSensitiveKey(k)] || isSensitiveBodyPath(sensitive, childPath) {
+			if sensitiveJSONKeys[normalizeSensitiveKey(k)] {
 				out[k] = "[REDACTED]"
 			} else {
-				out[k] = redactJSON(child, depth+1, childPath, sensitive)
+				out[k] = redactJSON(child, depth+1, sensitive.child(k))
 			}
 		}
 		return out
 	case []interface{}:
 		out := make([]interface{}, len(val))
-		childPath := append(path[:len(path):len(path)], "*")
-		redactItems := isSensitiveBodyPath(sensitive, childPath)
+		items := sensitive.items()
 		for i, child := range val {
-			if redactItems {
-				out[i] = "[REDACTED]"
-			} else {
-				out[i] = redactJSON(child, depth+1, childPath, sensitive)
-			}
+			out[i] = redactJSON(child, depth+1, items)
 		}
 		return out
 	case string:
@@ -333,7 +337,7 @@ func isAllHex(value string) bool {
 	return true
 }
 
-func decodeJSON(body []byte, sensitive [][]string) (interface{}, bool) {
+func decodeJSON(body []byte, sensitive sensitiveBodySchema) (interface{}, bool) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var parsed interface{}
@@ -343,7 +347,7 @@ func decodeJSON(body []byte, sensitive [][]string) (interface{}, bool) {
 	if err := dec.Decode(&struct{}{}); err != io.EOF {
 		return nil, false
 	}
-	return redactJSON(parsed, 0, nil, sensitive), true
+	return redactJSON(parsed, 0, sensitive), true
 }
 
 func isTextMediaType(mediaType string) bool {
@@ -354,13 +358,11 @@ func isTextMediaType(mediaType string) bool {
 		mediaType == "application/x-www-form-urlencoded"
 }
 
-// previewBody renders a body for diagnostics; sensitive holds the request-body
-// paths to redact (nil for response bodies).
-func previewBody(body []byte, contentType string, sensitive [][]string) interface{} {
+func previewBody(body []byte, contentType string, sensitive sensitiveBodySchema) interface{} {
 	if len(body) == 0 {
 		return nil
 	}
-	if isSensitiveBodyPath(sensitive, nil) {
+	if sensitive.isSensitive() {
 		return "[REDACTED]"
 	}
 	mediaType, params, err := mime.ParseMediaType(contentType)
@@ -389,7 +391,7 @@ func previewBody(body []byte, contentType string, sensitive [][]string) interfac
 	return redactBase64String(string(body))
 }
 
-func previewForm(body []byte, sensitive [][]string) string {
+func previewForm(body []byte, sensitive sensitiveBodySchema) string {
 	raw := string(body)
 	if _, err := url.ParseQuery(raw); err != nil {
 		return fmt.Sprintf("<bytes:%d>", len(body))
@@ -407,7 +409,7 @@ func previewForm(body []byte, sensitive [][]string) string {
 			parts[i] = key + "=[REDACTED]"
 			continue
 		}
-		if nested := sensitiveBodySubpaths(sensitive, decodedKey); len(nested) > 0 {
+		if nested := sensitive.child(decodedKey); len(nested.Roots) > 0 {
 			if parsed, ok := decodeJSON([]byte(decodedValue), nested); ok {
 				if encoded, err := encodeJSON(parsed, ""); err == nil {
 					parts[i] = key + "=" + url.QueryEscape(encoded)
@@ -425,7 +427,7 @@ func previewForm(body []byte, sensitive [][]string) string {
 	return strings.Join(parts, "&")
 }
 
-func previewMultipart(body []byte, boundary string, sensitive [][]string) (string, bool) {
+func previewMultipart(body []byte, boundary string, sensitive sensitiveBodySchema) (string, bool) {
 	r := multipart.NewReader(bytes.NewReader(body), boundary)
 	var lines []string
 	for {
@@ -448,7 +450,7 @@ func previewMultipart(body []byte, boundary string, sensitive [][]string) (strin
 			lines = append(lines, fmt.Sprintf("%s: <bytes:%d>", name, len(data)))
 			continue
 		}
-		value := previewBody(data, part.Header.Get("Content-Type"), sensitiveBodySubpaths(sensitive, name))
+		value := previewBody(data, part.Header.Get("Content-Type"), sensitive.child(name))
 		if isSensitiveName(name) || isSensitiveEncodedField(sensitive, name) {
 			value = "[REDACTED]"
 		}
@@ -542,10 +544,9 @@ func redactURL(u string) string {
 
 // DebugClient wraps an HTTP client and logs request/response diagnostics to stderr.
 type DebugClient struct {
-	Inner  HTTPClient
-	Stderr io.Writer
-	// SensitiveBodyFields lists request-body paths to redact; see sensitiveBodyFields.
-	SensitiveBodyFields [][]string
+	Inner               HTTPClient
+	Stderr              io.Writer
+	SensitiveBodyFields sensitiveBodySchema
 }
 
 // HTTPClient is the interface that SDK clients implement.
@@ -589,7 +590,7 @@ func (c *DebugClient) Do(req *http.Request) (*http.Response, error) {
 			if readErr != nil {
 				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body Read Error: %v\n", readErr)
 			} else if len(bodyData) > 0 {
-				body := previewBody(bodyData, resp.Header.Get("Content-Type"), nil)
+				body := previewBody(bodyData, resp.Header.Get("Content-Type"), sensitiveBodySchema{})
 				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body:\n  %s\n", formatBodyPreview(body, maxBodyPreview))
 			}
 		}
@@ -614,12 +615,11 @@ func isStreamingResponse(resp *http.Response) bool {
 // DryRunClient intercepts HTTP requests and returns a synthetic response
 // without making any network calls.
 type DryRunClient struct {
-	Stderr io.Writer
-	Stdout io.Writer
-	JSON   bool
-	Cmd    *cobra.Command
-	// SensitiveBodyFields lists request-body paths to redact; see sensitiveBodyFields.
-	SensitiveBodyFields [][]string
+	Stderr              io.Writer
+	Stdout              io.Writer
+	JSON                bool
+	Cmd                 *cobra.Command
+	SensitiveBodyFields sensitiveBodySchema
 }
 
 type dryRunBody struct{ length int64 }

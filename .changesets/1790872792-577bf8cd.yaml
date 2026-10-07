@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: '--dry-run and --debug request previews redact request-body values whose schema is marked x-speakeasy-param-sensitive or format: password, in JSON bodies, form fields and multipart parts (including JSON-encoded ones), so secrets under generic names are no longer printed; same-named unmarked fields of other schemas stay readable'
+description: '--dry-run and --debug redact sensitive request-body values and whole bodies across JSON, form, multipart and text previews, including recursive schemas and operations with multiple request content types; unrelated unmarked fields remain readable'
 author: 2ynn
 date: "2026-10-01"

@@ -216,6 +216,36 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/cli/sensitiveRecursiveUnion:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveRecursiveUnionPost
+      description: Union variants share a sensitive field and one variant is recursive.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveRecursiveUnion"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveRecursiveUnionReversed:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveRecursiveUnionReversedPost
+      description: Union variants share a sensitive field and one variant is recursive.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveRecursiveUnionReversed"
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     CliSensitiveBodyFields:
@@ -284,6 +314,18 @@ components:
           $ref: "#/components/schemas/CliSensitiveNode"
         branch:
           $ref: "#/components/schemas/CliSensitiveBranch"
+        plain:
+          $ref: "#/components/schemas/CliPlainBodyFields"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/CliSensitiveNode"
+        byName:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CliSensitiveNode"
+        link:
+          $ref: "#/components/schemas/CliSensitiveLink"
     CliSensitiveBranch:
       type: object
       properties:
@@ -318,6 +360,8 @@ components:
           items:
             type: string
             format: password
+        tree:
+          $ref: "#/components/schemas/CliSensitiveNode"
     CliSensitiveSecret:
       oneOf:
         - $ref: "#/components/schemas/CliSensitiveStaticSecret"
@@ -382,3 +426,52 @@ components:
     CliSensitiveWholeValue:
       type: string
       format: password
+    CliSensitiveLink:
+      type: object
+      properties:
+        value:
+          type: string
+        next:
+          $ref: "#/components/schemas/CliSensitiveNode"
+    CliSensitiveRecursiveLeaf:
+      type: object
+      required: [kind, value]
+      properties:
+        kind:
+          type: string
+          const: leaf
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+    CliSensitiveRecursiveBranch:
+      type: object
+      required: [kind, value]
+      properties:
+        kind:
+          type: string
+          const: branch
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+        child:
+          $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+        plain:
+          $ref: "#/components/schemas/CliPlainBodyFields"
+    CliSensitiveRecursiveUnion:
+      oneOf:
+        - $ref: "#/components/schemas/CliSensitiveRecursiveLeaf"
+        - $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+      discriminator:
+        propertyName: kind
+        mapping:
+          leaf: "#/components/schemas/CliSensitiveRecursiveLeaf"
+          branch: "#/components/schemas/CliSensitiveRecursiveBranch"
+    CliSensitiveRecursiveUnionReversed:
+      oneOf:
+        - $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+        - $ref: "#/components/schemas/CliSensitiveRecursiveLeaf"
+      discriminator:
+        propertyName: kind
+        mapping:
+          leaf: "#/components/schemas/CliSensitiveRecursiveLeaf"
+          branch: "#/components/schemas/CliSensitiveRecursiveBranch"

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -415,6 +416,37 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			visible: []string{"[REDACTED]"},
 		},
 		{
+			name: "recursive union",
+			args: []string{"request-bodies", "cli-sensitive-recursive-union-post", "--cli-sensitive-recursive-union",
+				`{"kind":"branch","value":"canary-root","plain":{"name":"visible-name","value":"visible-root"},` +
+					`"child":{"kind":"branch","value":"canary-child","plain":{"name":"visible-name","value":"visible-child"},` +
+					`"child":{"kind":"branch","value":"canary-grandchild"}}}`},
+			secrets: []string{"canary-root", "canary-child", "canary-grandchild"},
+			visible: []string{"visible-root", "visible-child"},
+		},
+		{
+			name: "recursive union-reversed",
+			args: []string{"request-bodies", "cli-sensitive-recursive-union-reversed-post", "--cli-sensitive-recursive-union-reversed",
+				`{"kind":"branch","value":"canary-root","plain":{"name":"visible-name","value":"visible-root"},` +
+					`"child":{"kind":"branch","value":"canary-child","plain":{"name":"visible-name","value":"visible-child"},` +
+					`"child":{"kind":"branch","value":"canary-grandchild"}}}`},
+			secrets: []string{"canary-root", "canary-child", "canary-grandchild"},
+			visible: []string{"visible-root", "visible-child"},
+		},
+		{
+			name: "recursive schema edges",
+			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
+				`{"name":"visible-name","value":"canary-top","tree":{"value":"canary-root",` +
+					`"plain":{"name":"visible-name","value":"visible-root"},` +
+					`"children":[{"value":"canary-array","plain":{"name":"visible-name","value":"visible-array"}}],` +
+					`"byName":{"first":{"value":"canary-map","child":{"value":"canary-map-child"},` +
+					`"plain":{"name":"visible-name","value":"visible-map"}}},` +
+					`"link":{"value":"visible-link","next":{"value":"canary-mutual",` +
+					`"link":{"value":"visible-inner-link","next":{"value":"canary-inner-mutual"}}}}}}`},
+			secrets: []string{"canary-top", "canary-root", "canary-array", "canary-map", "canary-map-child", "canary-mutual", "canary-inner-mutual"},
+			visible: []string{"visible-root", "visible-array", "visible-map", "visible-link", "visible-inner-link"},
+		},
+		{
 			name: "marked fields at every depth",
 			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
 				`{"name":"visible-name","value":"canary-top","passphrase":"canary-password",` +
@@ -450,17 +482,19 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			name: "multipart parts",
 			args: []string{"request-bodies", "cli-sensitive-multipart-post", "--name", "visible-name", "--value", "canary-top",
 				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
-				"--codes", "canary-code-1", "--codes", "canary-code-2"},
-			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2"},
-			visible: []string{"visible-name", "visible-label"},
+				"--codes", "canary-code-1", "--codes", "canary-code-2",
+				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
+			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2", "canary-tree", "canary-tree-child"},
+			visible: []string{"visible-name", "visible-label", "visible-tree-plain"},
 		},
 		{
 			name: "form fields",
 			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top",
 				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
-				"--codes", "canary-code-1", "--codes", "canary-code-2"},
-			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2"},
-			visible: []string{"visible-name", "visible-label"},
+				"--codes", "canary-code-1", "--codes", "canary-code-2",
+				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
+			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2", "canary-tree", "canary-tree-child"},
+			visible: []string{"visible-name", "visible-label", "visible-tree-plain"},
 		},
 	}
 	for _, mode := range diagnosticsOutputModes {
@@ -476,6 +510,24 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestDiagnosticsSensitiveBodyPreservesWireAndResponse(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.Contains(t, string(body), "canary-child")
+		assert.Contains(t, string(body), "canary-root")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"value":"visible-response"}`))
+	}))
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"--debug", "request-bodies", "cli-sensitive-recursive-union-post",
+		"--cli-sensitive-recursive-union", `{"kind":"branch","value":"canary-root","child":{"kind":"branch","value":"canary-child"}}`}))
+	assert.NotContains(t, h.GetStderr(), "canary-root")
+	assert.NotContains(t, h.GetStderr(), "canary-child")
+	assert.Contains(t, h.GetStderr(), "visible-response")
 }
 
 func TestDiagnosticsKeepUnmarkedFieldSharingSensitiveName(t *testing.T) {
