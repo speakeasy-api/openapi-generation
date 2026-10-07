@@ -3440,6 +3440,9 @@ func (d *cliManifestDecoder) nestedBindScope(cmdKey, what, parent, leaf string, 
 	if scope == nil {
 		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, which is not an object property", cmdKey, what, pointer, parent)
 	}
+	if scope.enumerated {
+		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, whose schema restricts the object to const/enum values; a field set by a flag would match none of them", cmdKey, what, pointer, parent)
+	}
 	leafPresets := map[string]any{}
 	if value, ok := presetObj[cliPointerPropertyName(leaf)]; ok {
 		leafPresets[leaf] = value

@@ -4629,6 +4629,17 @@ paths:
                         - kind: png
                         - preset: vector
                     - type: string
+                listedFields:
+                  type: object
+                  properties:
+                    kind:
+                      type: string
+                    width:
+                      type: integer
+                  enum:
+                    - kind: png
+                    - kind: svg
+                      width: 10
                 listedUnion:
                   enum:
                     - kind: png
@@ -4903,6 +4914,7 @@ func TestCLICommands_NestedPresetBindErrors(t *testing.T) {
 		{"no unique member", "preset:\n      $.source: {url: https://example.com/a}\n    flags:\n      url: {to: $.source.url}", `the preset at /source does not select exactly one member of its union`},
 		{"other member field", "preset:\n      $.format: {kind: png}\n    flags:\n      scale: {to: $.format.scale}", `flag "scale" bind beneath /format: /scale does not resolve in PngFormat`},
 		{"typo", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.widht}", `did you mean "width"`},
+		{"const/enum object", "preset:\n      $.listedFields: {kind: png}\n    flags:\n      width: {to: $.listedFields.width}", `flag "width" bind /listedFields/width nests beneath /listedFields, whose schema restricts the object to const/enum values`},
 		{"positional", "preset:\n      $.format: {kind: png}\n    args:\n      w: {to: $.format.width, variadic: true, type: string}", `arg "w" binds /format/width; the positional binds a top-level body field`},
 		{"parent flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      format: {to: $.format, type: string}\n      width: {to: $.format.width}", `input "format" binds /format and input "width" binds /format/width beneath it`},
 		{"nested flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.width}\n      format: {to: $.format, type: string}", `input "format" binds /format and input "width" binds /format/width beneath it`},
