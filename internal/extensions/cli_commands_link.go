@@ -88,7 +88,10 @@ type cliResolvedSchema struct {
 	explicitClosed bool
 	unionMembers   []any          // oneOf/anyOf member schemas (raw), when present
 	additional     map[string]any // additionalProperties schema, across allOf layers
-	raw            map[string]any
+	// const or enum somewhere in the composition: the value must equal a
+	// listed one, so filling keys into it can only break that equality.
+	enumerated bool
+	raw        map[string]any
 }
 
 // cliPropertyFacts is the classification of a single property schema used for
@@ -2523,11 +2526,15 @@ func cliAcceptsEveryObject(member *cliResolvedSchema) bool {
 	return true
 }
 
-// cliInheritProperties adds the properties declared beside a union to one of
-// its members; a property both declare is the conjunction of the two.
+// cliInheritProperties adds the properties and any const/enum restriction
+// declared beside a union to one of its members; a property both declare is
+// the conjunction of the two.
 func cliInheritProperties(target, parent *cliResolvedSchema) {
 	if parent == nil {
 		return
+	}
+	if parent.enumerated {
+		target.enumerated = true
 	}
 	for _, name := range parent.propOrder {
 		existing, ok := target.properties[name]
@@ -2610,8 +2617,8 @@ func (d *cliManifestDecoder) constPropertyValue(schema any) (any, bool) {
 // and records, keyed by JSON pointer, every object of the preset value that
 // may fill a caller's object at the same pointer: plain objects and map
 // entries unconditionally, union members only when the preset identifies one
-// member, guarded by the discriminator it sets. Elsewhere the caller's
-// object is kept whole.
+// member, guarded by the discriminator it sets. Elsewhere, including objects
+// restricted to const/enum values, the caller's object is kept whole.
 func (d *cliManifestDecoder) presetMergePoints(variant *cliResolvedSchema, presets []CLICommandPreset) []CLIPresetMergePoint {
 	var out []CLIPresetMergePoint
 	for _, preset := range presets {
@@ -2642,7 +2649,7 @@ func (d *cliManifestDecoder) collectPresetMergePoints(pointer string, schema any
 	case len(flat.members) > 1:
 		point, object = d.presetUnionMergePoint(pointer, flat, value)
 	}
-	if object == nil {
+	if object == nil || object.enumerated {
 		return
 	}
 	*out = append(*out, point)
@@ -3001,9 +3008,12 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 		return resolved, nil
 	}
 
+	_, hasConst := schemaMap["const"]
+	_, hasEnum := schemaMap["enum"]
 	out := &cliResolvedSchema{
 		properties: map[string]any{},
 		required:   map[string]bool{},
+		enumerated: hasConst || hasEnum,
 		raw:        schemaMap,
 	}
 
@@ -3036,6 +3046,9 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 			}
 			if resolvedBranch.explicitClosed {
 				out.explicitClosed = true
+			}
+			if resolvedBranch.enumerated {
+				out.enumerated = true
 			}
 			out.additional = cliConjoinSchemas(out.additional, resolvedBranch.additional)
 			// A union nested in an allOf branch constrains the composed

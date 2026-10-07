@@ -4590,7 +4590,7 @@ paths:
                 wrapped:
                   allOf:
                     - type: object
-                    - oneOf:
+                    - anyOf:
                         - $ref: '#/components/schemas/PngFormat'
                         - $ref: '#/components/schemas/SvgFormat'
                         - type: object
@@ -4614,6 +4614,28 @@ paths:
                               const: slow
                             format:
                               type: object
+                listed:
+                  enum:
+                    - kind: png
+                    - preset: vector
+                typedListed:
+                  type: object
+                  enum:
+                    - kind: png
+                    - preset: vector
+                listedMember:
+                  oneOf:
+                    - enum:
+                        - kind: png
+                        - preset: vector
+                    - type: string
+                listedUnion:
+                  enum:
+                    - kind: png
+                    - kind: svg
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
                 overlap:
                   oneOf:
                     - $ref: '#/components/schemas/PngFormat'
@@ -4795,6 +4817,14 @@ commands:
         format:
           kind: png
           width: 10
+      $.listed:
+        kind: png
+      $.typedListed:
+        kind: png
+      $.listedMember:
+        kind: png
+      $.listedUnion:
+        kind: png
       $.overlap:
         kind: png
 `)
