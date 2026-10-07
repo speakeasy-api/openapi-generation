@@ -1321,7 +1321,7 @@ func applyJqToTyped(out io.Writer, content interface{}, jqExpr string, colorize,
 // For slices/arrays of structs, each struct becomes a row with struct fields as columns.
 // For single structs, outputs a vertical key-value table. Slice-of-struct fields
 // (such as the items of a list response) render as titled sub-tables.
-// Other complex nested fields are skipped.
+// Single objects include complex fields as JSON cells or indexed section details.
 func printTable(out io.Writer, content any) error {
 	v := reflect.ValueOf(content)
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
@@ -1412,48 +1412,9 @@ func printTableRows(out io.Writer, v reflect.Value) error {
 	return tw.Flush()
 }
 
-// printTableSingle renders a single struct as a vertical key-value table.
 func printTableSingle(out io.Writer, v reflect.Value) error {
-	if hasTableSections(v.Type()) {
-		return printTableSections(out, v)
-	}
-	cols := collectTableColumns(v.Type())
-	if len(cols) == 0 {
-		return fmt.Errorf("no displayable fields found")
-	}
-
-	tw := newTabWriter(out)
-	for _, c := range cols {
-		fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(c.name), formatTableCell(v.Field(c.index)))
-	}
-	return tw.Flush()
-}
-
-// isTableSection reports whether a field of type t is a slice or array of
-// structs with displayable columns, rendered as its own sub-table.
-func isTableSection(t reflect.Type) bool {
-	t = derefType(t)
-	if t.Kind() != reflect.Slice && t.Kind() != reflect.Array {
-		return false
-	}
-	elem := derefType(t.Elem())
-	return elem.Kind() == reflect.Struct && len(collectTableColumns(elem)) > 0
-}
-
-func hasTableSections(t reflect.Type) bool {
-	for i := 0; i < t.NumField(); i++ {
-		if t.Field(i).IsExported() && isTableSection(t.Field(i).Type) {
-			return true
-		}
-	}
-	return false
-}
-
-// printTableSections renders a struct in field order: runs of non-nil scalar
-// fields as key-value blocks and each slice-of-struct field as a titled,
-// indented sub-table.
-func printTableSections(out io.Writer, v reflect.Value) error {
 	t := v.Type()
+	sections := hasTableSections(t)
 	var buf bytes.Buffer
 	var tw *tabwriter.Writer
 	blocks := 0
@@ -1465,64 +1426,281 @@ func printTableSections(out io.Writer, v reflect.Value) error {
 	}
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		if !f.IsExported() {
+		if !singleTableField(f) {
 			continue
 		}
-		if isTableScalar(f.Type) {
-			if isNilTableValue(v.Field(i)) {
-				continue
+		value := v.Field(i)
+		if isTableSection(f.Type) {
+			if tw != nil {
+				if err := tw.Flush(); err != nil {
+					return err
+				}
+				tw = nil
 			}
-			if tw == nil {
-				startBlock()
-				tw = newTabWriter(&buf)
+			startBlock()
+			fmt.Fprintln(&buf, safeTableText(strings.ToUpper(tableFieldName(f))))
+			var section bytes.Buffer
+			if err := printSingleTableRows(&section, value); err != nil {
+				return fmt.Errorf("table field %s: %w", tableFieldName(f), err)
 			}
-			fmt.Fprintf(tw, "%s\t%s\n", strings.ToUpper(tableFieldName(f)), formatTableCell(v.Field(i)))
+			for _, line := range strings.SplitAfter(section.String(), "\n") {
+				if line != "" {
+					buf.WriteString("  " + line)
+				}
+			}
 			continue
 		}
-		if !isTableSection(f.Type) {
+		if nilSingleTableValue(value) && (sections || !isTableScalar(f.Type)) {
 			continue
 		}
-		if tw != nil {
-			if err := tw.Flush(); err != nil {
-				return err
-			}
-			tw = nil
+		cell, err := singleTableCell(value)
+		if err != nil {
+			return fmt.Errorf("table field %s: %w", tableFieldName(f), err)
 		}
-		startBlock()
-		fmt.Fprintln(&buf, strings.ToUpper(tableFieldName(f)))
-		rows := v.Field(i)
-		for rows.Kind() == reflect.Ptr && !rows.IsNil() {
-			rows = rows.Elem()
+		if tw == nil {
+			startBlock()
+			tw = newTabWriter(&buf)
 		}
-		var section bytes.Buffer
-		if rows.Kind() == reflect.Ptr {
-			fmt.Fprintln(&section, "(empty)")
-		} else if err := printTableRows(&section, rows); err != nil {
-			return err
-		}
-		for _, line := range strings.SplitAfter(section.String(), "\n") {
-			if line != "" {
-				buf.WriteString("  " + line)
-			}
-		}
+		fmt.Fprintf(tw, "%s\t%s\n", safeTableText(strings.ToUpper(tableFieldName(f))), cell)
 	}
 	if tw != nil {
 		if err := tw.Flush(); err != nil {
 			return err
 		}
 	}
+	if blocks == 0 {
+		return fmt.Errorf("no displayable fields found")
+	}
 	_, err := out.Write(buf.Bytes())
 	return err
 }
 
-func isNilTableValue(v reflect.Value) bool {
+func singleTableField(f reflect.StructField) bool {
+	return f.IsExported() && strings.Split(f.Tag.Get("json"), ",")[0] != "-" && f.Type.Kind() != reflect.Func && f.Type.Kind() != reflect.Chan
+}
+
+func singleTableColumns(t reflect.Type) []tableColumn {
+	var cols []tableColumn
+	for _, c := range collectTableColumns(t) {
+		if singleTableField(t.Field(c.index)) {
+			cols = append(cols, c)
+		}
+	}
+	return cols
+}
+
+func isTableSection(t reflect.Type) bool {
+	t = derefType(t)
+	marshaler := reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+	if t.Implements(marshaler) || reflect.PointerTo(t).Implements(marshaler) {
+		return false
+	}
+	if t.Kind() != reflect.Slice && t.Kind() != reflect.Array {
+		return false
+	}
+	elem := derefType(t.Elem())
+	return elem.Kind() == reflect.Struct && len(singleTableColumns(elem)) > 0
+}
+
+func hasTableSections(t reflect.Type) bool {
+	for i := 0; i < t.NumField(); i++ {
+		if singleTableField(t.Field(i)) && isTableSection(t.Field(i).Type) {
+			return true
+		}
+	}
+	return false
+}
+
+func nilSingleTableValue(v reflect.Value) bool {
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			return true
 		}
 		v = v.Elem()
 	}
-	return v.Kind() == reflect.Slice && v.IsNil()
+	return (v.Kind() == reflect.Slice || v.Kind() == reflect.Map) && v.IsNil()
+}
+
+func complexTableValue(v reflect.Value) bool {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Type() == reflect.TypeOf(json.RawMessage{}) {
+		return true
+	}
+	switch v.Kind() {
+	case reflect.Struct:
+		return v.Type() != timeType
+	case reflect.Map:
+		return true
+	case reflect.Array, reflect.Slice:
+		if !isTableScalar(v.Type()) || derefType(v.Type().Elem()).Kind() == reflect.Slice || derefType(v.Type().Elem()).Kind() == reflect.Array {
+			return true
+		}
+		for i := 0; i < v.Len(); i++ {
+			if complexTableValue(v.Index(i)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func tableJSON(v reflect.Value) (string, error) {
+	for v.Kind() == reflect.Interface && !v.IsNil() {
+		v = v.Elem()
+	}
+	for v.Kind() == reflect.Ptr && !v.IsNil() {
+		if _, ok := v.Interface().(json.Marshaler); ok {
+			return marshalTableJSON(v.Interface())
+		}
+		v = v.Elem()
+	}
+	address := v
+	if v.Kind() != reflect.Ptr {
+		if v.CanAddr() {
+			address = v.Addr()
+		} else {
+			address = reflect.New(v.Type())
+			address.Elem().Set(v)
+		}
+	}
+	if _, ok := address.Interface().(json.Marshaler); ok {
+		return marshalTableJSON(address.Interface())
+	}
+	if (v.Kind() == reflect.Slice || v.Kind() == reflect.Array) && v.Type().Elem().Kind() == reflect.Interface && !nilSingleTableValue(v) {
+		items := make([]any, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			item := v.Index(i)
+			for item.Kind() == reflect.Interface && !item.IsNil() {
+				item = item.Elem()
+			}
+			if item.Kind() == reflect.Struct {
+				copy := reflect.New(item.Type())
+				copy.Elem().Set(item)
+				items[i] = copy.Interface()
+			} else {
+				items[i] = item.Interface()
+			}
+		}
+		return marshalTableJSON(items)
+	}
+	return marshalTableJSON(address.Interface())
+}
+
+func marshalTableJSON(value any) (string, error) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+	return safeTableJSON(string(data)), nil
+}
+
+func singleTableCell(v reflect.Value) (string, error) {
+	if complexTableValue(v) {
+		return tableJSON(v)
+	}
+	return safeTableText(formatTableCell(v)), nil
+}
+
+func safeTableJSON(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r < 32 || (r >= 127 && r <= 159) {
+			fmt.Fprintf(&b, "\\u%04x", r)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func safeTableText(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 127 && r <= 159 {
+			fmt.Fprintf(&b, "\\u%04x", r)
+		} else if r < 32 {
+			escaped := strconv.QuoteToASCII(string(r))
+			b.WriteString(escaped[1 : len(escaped)-1])
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func singleTableRowNeedsDetail(v reflect.Value) bool {
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Type().Field(i)
+		if singleTableField(f) && !nilSingleTableValue(v.Field(i)) && complexTableValue(v.Field(i)) {
+			return true
+		}
+		if f.IsExported() && strings.Split(f.Tag.Get("json"), ",")[0] == "-" && !v.Field(i).IsZero() {
+			if _, ok := reflect.New(v.Type()).Interface().(json.Marshaler); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func printSingleTableRows(out io.Writer, rows reflect.Value) error {
+	for rows.Kind() == reflect.Ptr {
+		if rows.IsNil() {
+			fmt.Fprintln(out, "(empty)")
+			return nil
+		}
+		rows = rows.Elem()
+	}
+	if rows.Len() == 0 {
+		fmt.Fprintln(out, "(empty)")
+		return nil
+	}
+	cols := singleTableColumns(derefType(rows.Type().Elem()))
+	tw := newTabWriter(out)
+	headers := make([]string, len(cols))
+	for i, c := range cols {
+		headers[i] = safeTableText(strings.ToUpper(c.name))
+	}
+	fmt.Fprintln(tw, strings.Join(headers, "\t"))
+	var details bytes.Buffer
+	for i := 0; i < rows.Len(); i++ {
+		original := rows.Index(i)
+		row := original
+		for row.Kind() == reflect.Ptr && !row.IsNil() {
+			row = row.Elem()
+		}
+		if row.Kind() != reflect.Struct {
+			continue
+		}
+		vals := make([]string, len(cols))
+		for j, c := range cols {
+			cell, err := singleTableCell(row.Field(c.index))
+			if err != nil {
+				return fmt.Errorf("row %d field %s: %w", i+1, c.name, err)
+			}
+			vals[j] = cell
+		}
+		fmt.Fprintln(tw, strings.Join(vals, "\t"))
+		if singleTableRowNeedsDetail(row) {
+			data, err := tableJSON(original)
+			if err != nil {
+				return fmt.Errorf("row %d: %w", i+1, err)
+			}
+			if data != "null" {
+				fmt.Fprintf(&details, "[%d] %s\n", i+1, data)
+			}
+		}
+	}
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+	_, err := out.Write(details.Bytes())
+	return err
 }
 
 // printTableMap renders a map as a two-column key-value table.

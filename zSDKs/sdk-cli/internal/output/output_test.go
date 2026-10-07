@@ -5,6 +5,7 @@ package output
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -33,6 +34,231 @@ func TestPrintTableDerivesColumnsFromFirstStructElement(t *testing.T) {
 	}
 	if got := strings.Fields(lines[1]); !reflect.DeepEqual(got, []string{"1", "alpha"}) {
 		t.Fatalf("unexpected row: %q", lines[1])
+	}
+}
+
+type nestedTableEntry struct {
+	Kind    string         `json:"kind"`
+	Payload map[string]any `json:"payload,omitempty"`
+	Hidden  string         `json:"-"`
+}
+
+type nestedTableUnion struct {
+	Kind       string            `json:"kind"`
+	Variant    *nestedTableEntry `json:"variant,omitempty"`
+	UnknownRaw json.RawMessage   `json:"-"`
+}
+
+func (u *nestedTableUnion) MarshalJSON() ([]byte, error) {
+	if u.UnknownRaw != nil {
+		return u.UnknownRaw, nil
+	}
+	return json.Marshal(u.Variant)
+}
+
+type customTableSlice []any
+
+func (customTableSlice) MarshalJSON() ([]byte, error) {
+	return []byte(`{"text":"hello"}`), nil
+}
+
+type customTableRows []nestedTableEntry
+
+func (customTableRows) MarshalJSON() ([]byte, error) {
+	return []byte(`{"text":"hello"}`), nil
+}
+
+type pointerTableRows []nestedTableEntry
+
+func (*pointerTableRows) MarshalJSON() ([]byte, error) {
+	return []byte(`{"text":"hello"}`), nil
+}
+
+func TestPrintTableSingleContainerMarshaler(t *testing.T) {
+	for name, object := range map[string]any{
+		"value": struct {
+			Entries customTableRows `json:"entries"`
+		}{customTableRows{{Kind: "internal"}}},
+		"pointer receiver": struct {
+			Entries pointerTableRows `json:"entries"`
+		}{pointerTableRows{{Kind: "internal"}}},
+		"pointer field": struct {
+			Entries *pointerTableRows `json:"entries"`
+		}{&pointerTableRows{{Kind: "internal"}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := printTable(&buf, object)
+			if err != nil || buf.String() != "ENTRIES  {\"text\":\"hello\"}\n" {
+				t.Fatalf("container marshaler bypassed: got %q, error %v", buf.String(), err)
+			}
+		})
+	}
+}
+
+func TestPrintTableSingleNestedValues(t *testing.T) {
+	for name, value := range map[string]any{
+		"map": map[string]any{"text": "hello"},
+		"object": struct {
+			Text string `json:"text"`
+		}{"hello"},
+		"array":                   [1]map[string]string{{"text": "hello"}},
+		"map slice":               []map[string]string{{"text": "hello"}},
+		"nested slice":            [][]string{{"hello"}},
+		"interface slice":         []any{map[string]string{"text": "hello"}},
+		"raw JSON":                json.RawMessage(`{"text":"hello"}`),
+		"pointer marshaler":       nestedTableUnion{Variant: &nestedTableEntry{Kind: "hello"}},
+		"interface marshaler":     []any{nestedTableUnion{Variant: &nestedTableEntry{Kind: "hello"}}},
+		"pointer interface slice": &[]any{nestedTableUnion{Variant: &nestedTableEntry{Kind: "hello"}}},
+		"custom container":        customTableSlice{nestedTableUnion{Variant: &nestedTableEntry{Kind: "wrong"}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := printTable(&buf, struct {
+				Value any `json:"wire_value"`
+			}{value})
+			if err != nil || !strings.Contains(buf.String(), "hello") || strings.Contains(buf.String(), "variant") || !strings.HasPrefix(buf.String(), "WIRE_VALUE  ") {
+				t.Fatalf("unexpected table: %q, error: %v", buf.String(), err)
+			}
+		})
+	}
+}
+
+func TestPrintTableSingleSectionDetails(t *testing.T) {
+	rows := []*nestedTableEntry{nil, {Kind: "note", Payload: map[string]any{"text": "hello"}, Hidden: "secret"}}
+	var buf bytes.Buffer
+	err := printTable(&buf, struct {
+		Entries []*nestedTableEntry `json:"entries"`
+	}{rows})
+	want := "ENTRIES\n  KIND\n  note\n  [2] {\"kind\":\"note\",\"payload\":{\"text\":\"hello\"}}\n"
+	if err != nil || buf.String() != want {
+		t.Fatalf("got %q, error %v; want %q", buf.String(), err, want)
+	}
+	buf.Reset()
+	if err := printTable(&buf, rows); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := buf.String(), "KIND  HIDDEN\nnote  secret\n"; got != want {
+		t.Fatalf("direct list changed: got %q want %q", got, want)
+	}
+}
+
+func TestPrintTableSingleUnionDetails(t *testing.T) {
+	for name, row := range map[string]nestedTableUnion{
+		"known":   {Kind: "note", Variant: &nestedTableEntry{Kind: "note", Payload: map[string]any{"text": "hello"}}},
+		"unknown": {Kind: "future", UnknownRaw: json.RawMessage(`{"kind":"future","text":"hello"}`)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := printTable(&buf, struct {
+				Entries []nestedTableUnion `json:"entries"`
+			}{[]nestedTableUnion{row}})
+			if err != nil || !strings.Contains(buf.String(), "[1] {") || !strings.Contains(buf.String(), "hello") || strings.Contains(buf.String(), "variant") || strings.Contains(buf.String(), "UNKNOWNRAW") {
+				t.Fatalf("unexpected union table %q, error %v", buf.String(), err)
+			}
+		})
+	}
+}
+
+func TestPrintTableSingleControls(t *testing.T) {
+	value := "line\ncolumn\ttab\rreturn\vvertical\fform\x00nul\x1bescape\x7fdelete\u0085next"
+	var buf bytes.Buffer
+	err := printTable(&buf, struct {
+		Name     string             `json:"name"`
+		Metadata map[string]string  `json:"metadata"`
+		Entries  []nestedTableEntry `json:"entries"`
+	}{value, map[string]string{"text": value}, []nestedTableEntry{{Kind: value, Payload: map[string]any{"text": value}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range buf.String() {
+		if r != '\n' && (r < 32 || (r >= 127 && r <= 159)) {
+			t.Fatalf("unescaped control %U in %q", r, buf.String())
+		}
+	}
+	for _, line := range strings.Split(buf.String(), "\n") {
+		if start := strings.Index(line, "{"); start >= 0 {
+			if !json.Valid([]byte(line[start:])) {
+				t.Fatalf("invalid JSON cell: %q", line)
+			}
+			var decoded map[string]any
+			if err := json.Unmarshal([]byte(line[start:]), &decoded); err != nil {
+				t.Fatalf("invalid JSON detail %q: %v", line, err)
+			}
+			if text, ok := decoded["text"]; ok && text != value {
+				t.Fatalf("control text changed: %q", text)
+			}
+			if payload, ok := decoded["payload"].(map[string]any); ok && payload["text"] != value {
+				t.Fatalf("detail control text changed: %q", payload["text"])
+			}
+		}
+	}
+	if strings.Count(buf.String(), "\n") != 7 {
+		t.Fatalf("payload broke table lines: %q", buf.String())
+	}
+}
+
+func TestPrintTableSingleEmptyAndHidden(t *testing.T) {
+	var buf bytes.Buffer
+	err := printTable(&buf, struct {
+		Zero       int                 `json:"zero"`
+		False      bool                `json:"false"`
+		Empty      string              `json:"empty"`
+		NilScalar  *string             `json:"nil_scalar"`
+		NilMap     map[string]string   `json:"nil_map"`
+		EmptyMap   map[string]string   `json:"empty_map"`
+		EmptySlice []map[string]string `json:"empty_slice"`
+		Hidden     []nestedTableEntry  `json:"-"`
+	}{EmptyMap: map[string]string{}, EmptySlice: []map[string]string{}, Hidden: []nestedTableEntry{{Kind: "secret"}}})
+	want := "ZERO         0\nFALSE        false\nEMPTY        \nNIL_SCALAR   \nEMPTY_MAP    {}\nEMPTY_SLICE  []\n"
+	if err != nil || buf.String() != want {
+		t.Fatalf("got %q, error %v; want %q", buf.String(), err, want)
+	}
+}
+
+func TestPrintTableSingleHiddenOnlyRows(t *testing.T) {
+	var buf bytes.Buffer
+	err := printTable(&buf, struct {
+		Entries []struct {
+			Hidden string `json:"-"`
+		} `json:"entries"`
+	}{Entries: []struct {
+		Hidden string `json:"-"`
+	}{{"secret"}}})
+	if err != nil || buf.String() != "ENTRIES  [{}]\n" {
+		t.Fatalf("unexpected hidden-only table %q, error %v", buf.String(), err)
+	}
+}
+
+func TestPrintTableSingleNullUnionDetail(t *testing.T) {
+	var buf bytes.Buffer
+	err := printTable(&buf, struct {
+		Entries []nestedTableUnion `json:"entries"`
+	}{[]nestedTableUnion{{Kind: "unknown", UnknownRaw: json.RawMessage(`null`)}}})
+	if err != nil || buf.String() != "ENTRIES\n  KIND\n  unknown\n" {
+		t.Fatalf("unexpected null detail %q, error %v", buf.String(), err)
+	}
+}
+
+func TestPrintTableSingleMarshalError(t *testing.T) {
+	for name, object := range map[string]any{
+		"field": struct {
+			Metadata map[string]any `json:"metadata"`
+		}{map[string]any{"bad": make(chan int)}},
+		"custom marshaler": struct {
+			Entries []nestedTableUnion `json:"entries"`
+		}{[]nestedTableUnion{{Kind: "unknown", UnknownRaw: json.RawMessage(`invalid`)}}},
+		"row": struct {
+			Entries []nestedTableEntry `json:"entries"`
+		}{[]nestedTableEntry{{Kind: "note", Payload: map[string]any{"bad": make(chan int)}}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var buf bytes.Buffer
+			err := printTable(&buf, object)
+			if err == nil || !strings.Contains(err.Error(), "table field") || buf.Len() != 0 {
+				t.Fatalf("expected contextual error without partial output; got %q, error %v", buf.String(), err)
+			}
+		})
 	}
 }
 

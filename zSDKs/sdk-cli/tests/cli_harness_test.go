@@ -945,8 +945,9 @@ func TestTableOutputRendersResourceSections(t *testing.T) {
 		},
 	}
 	assert.Equal(t, tableLines(
-		"ID    o1",
-		"NAME  sam",
+		"ID      o1",
+		"NAME    sam",
+		`PARENT  {"created":"0001-01-01T00:00:00Z"}`,
 		"",
 		"MEMBERS",
 		"  NAME  CREATED               TAGS",

@@ -1,0 +1,63 @@
+package tests
+
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestTableNestedResourceOutput(t *testing.T) {
+	type entry struct {
+		Kind string `json:"kind"`
+		Payload map[string]string `json:"payload"`
+	}
+	object := struct {
+		ID string `json:"id"`
+		Metadata map[string]int `json:"metadata"`
+		Entries []entry `json:"entries"`
+	}{"record-1", map[string]int{"count": 2}, []entry{ {"note", map[string]string{"text": "hello\nworld\tvalue"}}}}
+	got := renderTable(t, object)
+	assert.Equal(t, tableLines(
+		"ID        record-1",
+		`METADATA  {"count":2}`,
+		"",
+		"ENTRIES",
+		"  KIND",
+		"  note",
+		`  [1] {"kind":"note","payload":{"text":"hello\nworld\tvalue"}}`,
+	), got)
+	assert.Equal(t, tableLines("KIND", "note"), renderTable(t, object.Entries))
+}
+
+func TestTableGeneratedUnionWireShape(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"unions", "strongly-typed-one-of-post",
+		"--strongly-typed-one-of-object", deepObjectWithTypeJSON,
+		"--output-format", "table",
+	})
+	require.NoError(t, err)
+	got := h.GetStdout()
+	assert.Contains(t, got, `"str":"test"`)
+	assert.NotContains(t, got, `"DeepObjectWithType"`)
+	assert.NotContains(t, got, `"SimpleObjectWithType"`)
+	assert.NotContains(t, got, "0x")
+	found := false
+	for _, line := range strings.Split(got, "\n") {
+		if start := strings.Index(line, "{"); start >= 0 {
+			assert.True(t, json.Valid([]byte(line[start:])), "invalid JSON table cell: %s", line)
+			var decoded map[string]any
+			require.NoError(t, json.Unmarshal([]byte(line[start:]), &decoded))
+			assert.Equal(t, "deepObjectWithType", decoded["type"])
+			object, ok := decoded["obj"].(map[string]any)
+			require.True(t, ok, "expected nested object in generated union wire shape")
+			assert.Equal(t, "test", object["str"])
+			found = true
+		}
+	}
+	assert.True(t, found, "expected a compact JSON cell")
+}
