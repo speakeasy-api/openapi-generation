@@ -237,6 +237,7 @@ func TestAsyncIntent_PollHTTPErrorKeepsHandleAndResume(t *testing.T) {
 	require.Error(t, err)
 	assert.Empty(t, h.GetStdout())
 	assert.Equal(t, float64(http.StatusTooManyRequests), jsonGetFloat64(h.GetStderr(), "status_code"))
+	assert.Equal(t, "rate_limit_error", jsonGetString(h.GetStderr(), "error_type"))
 	assert.Equal(t, asyncTestHandle, jsonGetString(h.GetStderr(), "id"))
 	assert.Equal(t, "cli get-asset --stream=false --id"+" "+asyncTestHandle, jsonGetString(h.GetStderr(), "resume"))
 
@@ -244,6 +245,8 @@ func TestAsyncIntent_PollHTTPErrorKeepsHandleAndResume(t *testing.T) {
 	h = NewCLITestHarness(t)
 	require.Error(t, runAsyncIntent(t, h, stub.server.URL))
 	assert.Empty(t, h.GetStdout())
+	assert.Contains(t, h.GetStderr(), "Error (rate_limit_error):")
+	assert.Contains(t, h.GetStderr(), "HTTP status: 429")
 	assert.Contains(t, h.GetStderr(), "cli get-asset --stream=false --id"+" "+asyncTestHandle)
 }
 
