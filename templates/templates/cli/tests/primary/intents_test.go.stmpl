@@ -3,7 +3,10 @@ package tests
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -499,6 +502,47 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 			assert.Equal(t, tc.want, body["image_format"])
 		})
 	}
+}
+
+func TestIntentPipedBodyKeepsPresets(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	for _, bodyArgs := range [][]string{nil, {"--body", "@-"}} {
+		withDelayedStdinPipe(t, 0, `{"input":"cat"}`, true)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, append([]string{"render"}, bodyArgs...)))
+		body := echoedJSON(t, h.GetStdout())
+		assert.Equal(t, "render-1", body["model"], "preset selector must survive a piped body")
+		assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+		assert.Equal(t, "cat", body["input"])
+	}
+
+	withDelayedStdinPipe(t, 0, `{"model":"other-2"}`, true)
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "from-argument"}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "other-2", body["model"])
+	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+	assert.Equal(t, "from-argument", body["input"])
+
+	var requests atomic.Int32
+	counting := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+	}))
+	defer counting.Close()
+	withDelayedStdinPipe(t, 0, `{"agent":"helper","input":"cat"}`, true)
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(counting.URL, []string{"render"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `"render" presets the CliIntentModelRequest request variant`)
+	assert.Contains(t, err.Error(), `names "agent"`)
+	assert.Contains(t, err.Error(), `use "cli cli-intents cli-intent-run"`)
+	var conflict *flagutil.PresetConflictError
+	require.True(t, errors.As(err, &conflict))
+	assert.Equal(t, "CLI_VALIDATION", conflict.CLIReason())
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Zero(t, requests.Load())
 }
 
 func TestIntentPartialBodyUserKeysWin(t *testing.T) {

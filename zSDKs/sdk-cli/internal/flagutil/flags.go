@@ -747,6 +747,25 @@ func AttachStdinBody(cmd *cobra.Command, bodyFlag string) (bool, error) {
 	return true, nil
 }
 
+// MergePresetStdinBody merges an intent's preset into the body AttachStdinBody
+// re-attached from stdin, as MergePresetBody does for a body flag.
+func MergePresetStdinBody(cmd *cobra.Command, m PresetMerge) error {
+	in := cmd.InOrStdin()
+	if in == os.Stdin {
+		return nil
+	}
+	data, err := io.ReadAll(in)
+	if err != nil {
+		return fmt.Errorf("failed to read stdin: %w", err)
+	}
+	merged, err := MergePresetBody(string(data), m)
+	if err != nil {
+		return err
+	}
+	cmd.SetIn(strings.NewReader(merged))
+	return nil
+}
+
 func DefaultBodyInput(cmd *cobra.Command, bodyFlags []string, key, flagName string, value any) error {
 	for _, name := range bodyFlags {
 		if name != "" && FlagChanged(cmd, name) {

@@ -160,6 +160,11 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intentSayPreset); err != nil {
+				return err
+			}
+		}
 	}
 	return runChatCmd(cmd, nil)
 }

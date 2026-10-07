@@ -11,7 +11,7 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.1.12
+    cliCommands: 0.1.14
     constsAndDefaults: 0.0.0
     core: 0.7.11
     customSecuritySchemes: 0.0.0
@@ -118,15 +118,15 @@ trackedFiles:
   internal/cli/intent_enroll.go:
     last_write_checksum: sha1:0b9f2ab0e65a37413096390bffc7793ad7bb54cc
   internal/cli/intent_invite.go:
-    last_write_checksum: sha1:a90f39ad98e0fe14446aa34ee09f912ec4143e3e
+    last_write_checksum: sha1:793f73ebb8278cf397e5a6a0fefb0ce1d34ffb08
   internal/cli/intent_observe.go:
-    last_write_checksum: sha1:0ba220ea9b1c72b5be13a6eb8cd01b46783359bb
+    last_write_checksum: sha1:a431c4a089387daea5b9f974ae5b4d1663414026
   internal/cli/intent_produce.go:
-    last_write_checksum: sha1:c0b552ae90de890d610a7ba3e9c460053ea5b4e5
+    last_write_checksum: sha1:41e8095d62f9bab26b77c3be790b4ed1eac7f8f1
   internal/cli/intent_render.go:
-    last_write_checksum: sha1:e2a15348c10c96dffd27cb4a91805386b8cb2b0c
+    last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:8d0ae5e57f3f635d46c26e92c75016472ccd9888
+    last_write_checksum: sha1:e11155fa56f0d704c70ee884ad5f5d60a8b8ad1a
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -244,11 +244,11 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:71808d00fb1889b06be9621e932dde94796c9339
+    last_write_checksum: sha1:7a7eb7d5cde0897d7008370c1ac083d154fbc65e
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
-    last_write_checksum: sha1:a6cf90b7dd09d11ffbd438fc3aba76806de5752a
+    last_write_checksum: sha1:51699bc288541a06bf60e5f6de73a8f48c42d6ff
   internal/interactive/interactive.go:
     last_write_checksum: sha1:ba6979695c50a3c2385bc74a4676dfe88814a984
   internal/interactive/policy.go:
