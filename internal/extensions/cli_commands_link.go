@@ -2422,13 +2422,17 @@ func (d *cliManifestDecoder) pinnedDiscriminatorValues(disc map[string]any, key,
 // layers: its object members (each carrying the properties declared beside
 // the unions above it), the discriminator keys the layers declare, and their
 // explicit mappings (key -> value -> member reference; "" when layers map the
-// same value to different members). inclusive marks an anyOf layer, where an
-// object may match several members at once.
+// same value to different members). fallbacks marks members that accept every
+// object on their own, so filling keys into an object can never invalidate it.
 type cliFlatUnion struct {
 	members   []*cliResolvedSchema
 	keys      []string
 	mappings  map[string]map[string]string
-	inclusive bool
+	fallbacks map[*cliResolvedSchema]bool
+}
+
+func newCLIFlatUnion() *cliFlatUnion {
+	return &cliFlatUnion{mappings: map[string]map[string]string{}, fallbacks: map[*cliResolvedSchema]bool{}}
 }
 
 func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliResolvedSchema, out *cliFlatUnion) {
@@ -2441,15 +2445,15 @@ func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliR
 	}
 	if resolved.unionMembers == nil {
 		if cliMayAcceptObject(resolved) {
+			if cliAcceptsEveryObject(resolved) {
+				out.fallbacks[resolved] = true
+			}
 			cliInheritProperties(resolved, inherited)
 			out.members = append(out.members, resolved)
 		}
 		return
 	}
 	d.collectDiscriminators(schema, depth, out)
-	if _, exclusive := resolved.raw["oneOf"]; !exclusive {
-		out.inclusive = true
-	}
 	cliInheritProperties(resolved, inherited)
 	for _, member := range resolved.unionMembers {
 		d.flattenUnion(member, depth+1, resolved, out)
@@ -2457,7 +2461,8 @@ func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliR
 }
 
 // cliMayAcceptObject reports whether a union member can validate a JSON
-// object: it declares properties, is object-typed, or leaves its type open.
+// object: it declares properties, is object-typed, leaves its type open, or
+// lists an object among its const/enum values.
 func cliMayAcceptObject(member *cliResolvedSchema) bool {
 	if len(member.propOrder) > 0 || member.explicitOpen {
 		return true
@@ -2468,21 +2473,64 @@ func cliMayAcceptObject(member *cliResolvedSchema) bool {
 	case []any:
 		return slices.Contains(kind, any("object"))
 	case nil:
-		_, hasConst := member.raw["const"]
-		_, hasEnum := member.raw["enum"]
-		return !hasConst && !hasEnum
+		if value, ok := member.raw["const"]; ok {
+			_, isObject := value.(map[string]any)
+			return isObject
+		}
+		if values, ok := member.raw["enum"].([]any); ok {
+			return slices.ContainsFunc(values, func(value any) bool {
+				_, isObject := value.(map[string]any)
+				return isObject
+			})
+		}
+		return true
 	}
 	return false
 }
 
+// cliAcceptsEveryObject reports whether a member, on its own, places no
+// constraint on an object: no properties, required keys, value schema or
+// other validation keyword.
+func cliAcceptsEveryObject(member *cliResolvedSchema) bool {
+	if len(member.propOrder) > 0 || len(member.required) > 0 || member.additional != nil || member.explicitClosed || member.unionMembers != nil {
+		return false
+	}
+	for keyword, value := range member.raw {
+		switch keyword {
+		case "type":
+			if value != "object" {
+				return false
+			}
+		case "additionalProperties":
+			if value != true {
+				if schema, ok := value.(map[string]any); !ok || len(schema) > 0 {
+					return false
+				}
+			}
+		case "title", "description", "nullable", "example", "examples", "deprecated":
+		default:
+			if !strings.HasPrefix(keyword, "x-") {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// cliInheritProperties adds the properties declared beside a union to one of
+// its members; a property both declare is the conjunction of the two.
 func cliInheritProperties(target, parent *cliResolvedSchema) {
 	if parent == nil {
 		return
 	}
 	for _, name := range parent.propOrder {
-		if _, ok := target.properties[name]; !ok {
+		existing, ok := target.properties[name]
+		switch {
+		case !ok:
 			target.properties[name] = parent.properties[name]
 			target.propOrder = append(target.propOrder, name)
+		case !reflect.DeepEqual(existing, parent.properties[name]):
+			target.properties[name] = map[string]any{"allOf": []any{parent.properties[name], existing}}
 		}
 	}
 }
@@ -2578,7 +2626,7 @@ func (d *cliManifestDecoder) collectPresetMergePoints(pointer string, schema any
 	if depth > 8 {
 		return
 	}
-	flat := &cliFlatUnion{mappings: map[string]map[string]string{}}
+	flat := newCLIFlatUnion()
 	d.flattenUnion(schema, 0, nil, flat)
 	point := CLIPresetMergePoint{Pointer: pointer}
 	var object *cliResolvedSchema
@@ -2617,8 +2665,9 @@ func (d *cliManifestDecoder) collectPresetMergePoints(pointer string, schema any
 // presetUnionMergePoint finds the discriminator a preset object sets on a
 // union: a key the union declares as its discriminator, else a key whose
 // const/single-enum values differ across members, whose preset value is the
-// const of exactly one member, and which no other member declaring it can
-// also accept. The accepted values are the preset's value plus every value
+// const of exactly one member, and which no other member can also accept: a
+// member declaring it must rule the value out by enum, a member not declaring
+// it must be closed or accept every object. The accepted values are the preset's value plus every value
 // mapped (explicitly, or implicitly by component name) to the member it
 // selects. member is nil when the preset does not select exactly one member.
 func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlatUnion, value map[string]any) (guard CLIPresetMergePoint, member *cliResolvedSchema) {
@@ -2644,7 +2693,7 @@ func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlat
 			for _, m := range flat.members {
 				prop, declares := m.properties[name]
 				if !declares {
-					overlapping = overlapping || (flat.inclusive && !m.explicitClosed)
+					overlapping = overlapping || (!m.explicitClosed && !flat.fallbacks[m])
 					continue
 				}
 				v, ok := d.constPropertyValue(prop)

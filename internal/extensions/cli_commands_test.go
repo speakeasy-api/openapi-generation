@@ -4566,6 +4566,46 @@ paths:
                           properties:
                             mode:
                               const: slow
+                labelled:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: object
+                      required: [label]
+                      additionalProperties:
+                        type: string
+                constant:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - const:
+                        kind: svg
+                wrapped:
+                  allOf:
+                    - type: object
+                    - oneOf:
+                        - $ref: '#/components/schemas/PngFormat'
+                        - $ref: '#/components/schemas/SvgFormat'
+                        - type: object
+                          additionalProperties: true
+                refined:
+                  allOf:
+                    - type: object
+                      properties:
+                        format:
+                          $ref: '#/components/schemas/Format'
+                    - oneOf:
+                        - type: object
+                          properties:
+                            mode:
+                              const: fast
+                            format:
+                              type: object
+                        - type: object
+                          properties:
+                            mode:
+                              const: slow
+                            format:
+                              type: object
                 overlap:
                   oneOf:
                     - $ref: '#/components/schemas/PngFormat'
@@ -4735,6 +4775,18 @@ commands:
         format:
           kind: png
           width: 10
+      $.labelled:
+        kind: png
+        width: 10
+      $.constant:
+        kind: png
+      $.wrapped:
+        kind: png
+      $.refined:
+        mode: fast
+        format:
+          kind: png
+          width: 10
       $.overlap:
         kind: png
 `)
@@ -4761,6 +4813,10 @@ commands:
 		"/remapped":        {Pointer: "/remapped", Key: "kind", Values: []any{"png"}},
 		"/composed":        {Pointer: "/composed", Key: "mode", Values: []any{"fast"}},
 		"/composed/format": {Pointer: "/composed/format", Key: "kind", Values: []any{"png"}},
+		"/inclusive":       {Pointer: "/inclusive", Key: "kind", Values: []any{"png"}},
+		"/wrapped":         {Pointer: "/wrapped", Key: "kind", Values: []any{"png"}},
+		"/refined":         {Pointer: "/refined", Key: "mode", Values: []any{"fast"}},
+		"/refined/format":  {Pointer: "/refined/format", Key: "kind", Values: []any{"png"}},
 	}, got)
 }
 
