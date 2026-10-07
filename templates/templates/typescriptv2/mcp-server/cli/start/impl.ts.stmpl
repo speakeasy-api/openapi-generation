@@ -86,7 +86,8 @@ export async function main(this: LocalContext, flags: StartCommandFlags) {
 
 async function startStdio(flags: StartCommandFlags) {
   const logger = createConsoleLogger(flags["log-level"]);
-  const server = serveStdio(() => {{templateString "mcp-server/create-mcp-server.ts.stmpl" .Local}});
+  const createServer = {{templateString "mcp-server/create-mcp-server.ts.stmpl" (dict "Factory" true "Scopes" .Local.Scopes "UsageLocation" .Local.UsageLocation)}};
+  const server = serveStdio(createServer);
 
   const abort = async () => {
     await server.close();
@@ -94,6 +95,10 @@ async function startStdio(flags: StartCommandFlags) {
   };
   process.on("SIGTERM", abort);
   process.on("SIGINT", abort);
+}
+
+function createMCPServerFactory(options: Parameters<typeof createMCPServer>[0]) {
+  return () => createMCPServer(options);
 }
 
 async function startSSE(flags: StartCommandFlags) {
