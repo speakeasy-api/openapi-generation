@@ -119,10 +119,15 @@ func TestCompactSettingsCommandHelp(t *testing.T) {
 	assert.Contains(t, loginUsage, `flag "--api-key-auth <api_key_auth>"`)
 	assert.NotContains(t, loginUsage, "--global-query-param")
 
-	h := NewCLITestHarness(t).WithEnv("HOME", t.TempDir()).WithEnv("CLI_NO_KEYRING", "true")
+	home := t.TempDir()
+	h := NewCLITestHarness(t).WithEnv("HOME", home).WithEnv("CLI_NO_KEYRING", "true")
 	require.NoError(t, h.RunBare([]string{"configure", "--api-key-auth", "settings-example-key"}))
+	saved, err := os.ReadFile(filepath.Join(home, ".config", "cli", "config.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(saved), "settings-example-key")
 	require.NoError(t, h.RunBare([]string{"whoami"}))
-	assert.Contains(t, h.GetStdout(), "api-key-auth")
+	assert.Contains(t, h.GetStdout(), `"api-key-auth"`)
+	assert.NotContains(t, h.GetStdout(), "settings-example-key")
 }
 
 func TestCompactRootHelp(t *testing.T) {
