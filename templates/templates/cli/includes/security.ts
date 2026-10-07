@@ -407,7 +407,7 @@ function templateSensitiveBodyFields(): {
     const stack = new Map<string, boolean>();
     const walk = (type: TypeDef | undefined, path: string[]): void => {
       if (!type) return;
-      if (path.length > 0 && isSensitiveBodyType(type)) {
+      if (isSensitiveBodyType(type)) {
         add(path);
         return;
       }

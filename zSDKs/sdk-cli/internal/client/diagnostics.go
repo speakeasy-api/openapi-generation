@@ -360,6 +360,9 @@ func previewBody(body []byte, contentType string, sensitive [][]string) interfac
 	if len(body) == 0 {
 		return nil
 	}
+	if isSensitiveBodyPath(sensitive, nil) {
+		return "[REDACTED]"
+	}
 	mediaType, params, err := mime.ParseMediaType(contentType)
 	if err != nil {
 		mediaType = strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0]))

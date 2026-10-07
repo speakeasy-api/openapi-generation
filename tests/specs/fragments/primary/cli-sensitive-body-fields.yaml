@@ -156,6 +156,66 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/cli/sensitiveWholeJson:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeJsonPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeForm:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeFormPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeMultipart:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeMultipartPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeText:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeTextPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeValue"
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     CliSensitiveBodyFields:
@@ -312,3 +372,13 @@ components:
           type: string
         value:
           type: string
+    CliSensitiveWholeBody:
+      type: object
+      x-speakeasy-param-sensitive: true
+      required: [value]
+      properties:
+        value:
+          type: string
+    CliSensitiveWholeValue:
+      type: string
+      format: password

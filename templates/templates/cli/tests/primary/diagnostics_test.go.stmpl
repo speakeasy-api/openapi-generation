@@ -391,6 +391,30 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			visible: []string{"visible-name"},
 		},
 		{
+			name: "whole json body",
+			args: []string{"request-bodies", "cli-sensitive-whole-json-post", "--value", "canary-whole-json"},
+			secrets: []string{"canary-whole-json"},
+			visible: []string{"[REDACTED]"},
+		},
+		{
+			name: "whole form body",
+			args: []string{"request-bodies", "cli-sensitive-whole-form-post", "--value", "canary-whole-form"},
+			secrets: []string{"canary-whole-form"},
+			visible: []string{"[REDACTED]"},
+		},
+		{
+			name: "whole multipart body",
+			args: []string{"request-bodies", "cli-sensitive-whole-multipart-post", "--value", "canary-whole-multipart"},
+			secrets: []string{"canary-whole-multipart"},
+			visible: []string{"[REDACTED]"},
+		},
+		{
+			name: "whole text body",
+			args: []string{"request-bodies", "cli-sensitive-whole-text-post", "--request", `"canary-whole-text"`},
+			secrets: []string{"canary-whole-text"},
+			visible: []string{"[REDACTED]"},
+		},
+		{
 			name: "marked fields at every depth",
 			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
 				`{"name":"visible-name","value":"canary-top","passphrase":"canary-password",` +
