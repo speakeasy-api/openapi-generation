@@ -86,7 +86,8 @@ type cliResolvedSchema struct {
 	// additionalProperties: false somewhere in the composition; a closed
 	// layer constrains the conjunction, so it wins over an open one.
 	explicitClosed bool
-	unionMembers   []any // oneOf/anyOf member schemas (raw), when present
+	unionMembers   []any          // oneOf/anyOf member schemas (raw), when present
+	additional     map[string]any // additionalProperties schema, across allOf layers
 	raw            map[string]any
 }
 
@@ -2420,11 +2421,14 @@ func (d *cliManifestDecoder) pinnedDiscriminatorValues(disc map[string]any, key,
 // cliFlatUnion is a union property flattened through nested oneOf/anyOf
 // layers: its object members (each carrying the properties declared beside
 // the unions above it), the discriminator keys the layers declare, and their
-// explicit mappings (value -> member reference).
+// explicit mappings (key -> value -> member reference; "" when layers map the
+// same value to different members). inclusive marks an anyOf layer, where an
+// object may match several members at once.
 type cliFlatUnion struct {
-	members  []*cliResolvedSchema
-	keys     []string
-	mappings map[string]string
+	members   []*cliResolvedSchema
+	keys      []string
+	mappings  map[string]map[string]string
+	inclusive bool
 }
 
 func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliResolvedSchema, out *cliFlatUnion) {
@@ -2436,17 +2440,39 @@ func (d *cliManifestDecoder) flattenUnion(schema any, depth int, inherited *cliR
 		return
 	}
 	if resolved.unionMembers == nil {
-		if len(resolved.propOrder) > 0 || resolved.explicitOpen || resolved.raw["type"] == "object" {
+		if cliMayAcceptObject(resolved) {
 			cliInheritProperties(resolved, inherited)
 			out.members = append(out.members, resolved)
 		}
 		return
 	}
 	d.collectDiscriminators(schema, depth, out)
+	if _, exclusive := resolved.raw["oneOf"]; !exclusive {
+		out.inclusive = true
+	}
 	cliInheritProperties(resolved, inherited)
 	for _, member := range resolved.unionMembers {
 		d.flattenUnion(member, depth+1, resolved, out)
 	}
+}
+
+// cliMayAcceptObject reports whether a union member can validate a JSON
+// object: it declares properties, is object-typed, or leaves its type open.
+func cliMayAcceptObject(member *cliResolvedSchema) bool {
+	if len(member.propOrder) > 0 || member.explicitOpen {
+		return true
+	}
+	switch kind := member.raw["type"].(type) {
+	case string:
+		return kind == "object"
+	case []any:
+		return slices.Contains(kind, any("object"))
+	case nil:
+		_, hasConst := member.raw["const"]
+		_, hasEnum := member.raw["enum"]
+		return !hasConst && !hasEnum
+	}
+	return false
 }
 
 func cliInheritProperties(target, parent *cliResolvedSchema) {
@@ -2462,8 +2488,7 @@ func cliInheritProperties(target, parent *cliResolvedSchema) {
 }
 
 func cliAdditionalPropertiesSchema(object *cliResolvedSchema) (map[string]any, bool) {
-	schema, ok := object.raw["additionalProperties"].(map[string]any)
-	return schema, ok && len(schema) > 0
+	return object.additional, object.additional != nil
 }
 
 // excludesValue reports whether a property schema's enum rules out value.
@@ -2483,14 +2508,23 @@ func (d *cliManifestDecoder) collectDiscriminators(schema any, depth int, out *c
 		return
 	}
 	if disc, ok := schemaMap["discriminator"].(map[string]any); ok {
-		if key, ok := disc["propertyName"].(string); ok && key != "" && !cliContains(out.keys, key) {
+		key, _ := disc["propertyName"].(string)
+		if key != "" && !cliContains(out.keys, key) {
 			out.keys = append(out.keys, key)
 		}
-		if mapping, ok := disc["mapping"].(map[string]any); ok {
+		if mapping, ok := disc["mapping"].(map[string]any); ok && key != "" {
+			if out.mappings[key] == nil {
+				out.mappings[key] = map[string]string{}
+			}
 			for value, ref := range mapping {
-				if ref, ok := ref.(string); ok {
-					out.mappings[value] = ref
+				ref, ok := ref.(string)
+				if !ok {
+					continue
 				}
+				if existing, seen := out.mappings[key][value]; seen && existing != ref {
+					ref = ""
+				}
+				out.mappings[key][value] = ref
 			}
 		}
 	}
@@ -2544,7 +2578,7 @@ func (d *cliManifestDecoder) collectPresetMergePoints(pointer string, schema any
 	if depth > 8 {
 		return
 	}
-	flat := &cliFlatUnion{mappings: map[string]string{}}
+	flat := &cliFlatUnion{mappings: map[string]map[string]string{}}
 	d.flattenUnion(schema, 0, nil, flat)
 	point := CLIPresetMergePoint{Pointer: pointer}
 	var object *cliResolvedSchema
@@ -2610,6 +2644,7 @@ func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlat
 			for _, m := range flat.members {
 				prop, declares := m.properties[name]
 				if !declares {
+					overlapping = overlapping || (flat.inclusive && !m.explicitClosed)
 					continue
 				}
 				v, ok := d.constPropertyValue(prop)
@@ -2635,7 +2670,10 @@ func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlat
 	}
 
 	pinned := value[key]
-	mappedRef, hasMapped := flat.mappings[fmt.Sprint(pinned)]
+	mappedRef, hasMapped := flat.mappings[key][fmt.Sprint(pinned)]
+	if hasMapped && mappedRef == "" {
+		return guard, nil
+	}
 	selectedRefs := map[string]bool{}
 	if hasMapped {
 		selectedRefs[mappedRef] = true
@@ -2656,9 +2694,12 @@ func (d *cliManifestDecoder) presetUnionMergePoint(pointer string, flat *cliFlat
 	}
 
 	values := []any{pinned}
-	aliases := make([]string, 0, len(flat.mappings))
+	aliases := make([]string, 0, len(flat.mappings[key]))
 	mapped := map[string]bool{}
-	for alias, ref := range flat.mappings {
+	for alias, ref := range flat.mappings[key] {
+		if ref == "" {
+			continue
+		}
 		mapped[ref] = true
 		if selectedRefs[ref] {
 			aliases = append(aliases, alias)
@@ -2941,6 +2982,7 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 			if resolvedBranch.explicitClosed {
 				out.explicitClosed = true
 			}
+			out.additional = cliConjoinSchemas(out.additional, resolvedBranch.additional)
 			// A union nested in an allOf branch constrains the composed
 			// object; the artifact walk expands it against the merged view.
 			if resolvedBranch.unionMembers != nil && out.unionMembers == nil {
@@ -2988,6 +3030,9 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 		}
 	case map[string]any:
 		out.explicitOpen = true
+		if len(additional) > 0 {
+			out.additional = cliConjoinSchemas(out.additional, additional)
+		}
 	}
 	if out.explicitClosed {
 		// The conjunction of an open and a closed layer is closed.
@@ -2998,6 +3043,16 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 		out.unionMembers = members
 	}
 	return out, nil
+}
+
+func cliConjoinSchemas(a, b map[string]any) map[string]any {
+	switch {
+	case a == nil:
+		return b
+	case b == nil || reflect.DeepEqual(a, b):
+		return a
+	}
+	return map[string]any{"allOf": []any{a, b}}
 }
 
 func cliUnionMembers(schema map[string]any) []any {

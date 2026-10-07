@@ -4528,6 +4528,29 @@ paths:
                   type: object
                   additionalProperties:
                     $ref: '#/components/schemas/Format'
+                layered:
+                  allOf:
+                    - type: object
+                      additionalProperties:
+                        $ref: '#/components/schemas/Format'
+                inclusive:
+                  anyOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: object
+                      additionalProperties: true
+                empty:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - {}
+                remapped:
+                  oneOf:
+                    - $ref: '#/components/schemas/SwappedFormat'
+                    - $ref: '#/components/schemas/MappedFormat'
+                scoped:
+                  oneOf:
+                    - $ref: '#/components/schemas/ImplicitFormat'
+                    - $ref: '#/components/schemas/ApiFormat'
                 composed:
                   allOf:
                     - type: object
@@ -4572,6 +4595,20 @@ components:
         - $ref: '#/components/schemas/SvgFormat'
         - type: object
           additionalProperties: true
+    SwappedFormat:
+      oneOf:
+        - $ref: '#/components/schemas/VersionedSvg'
+      discriminator:
+        propertyName: kind
+        mapping:
+          portable: '#/components/schemas/VersionedSvg'
+    ApiFormat:
+      oneOf:
+        - $ref: '#/components/schemas/VersionedSvg'
+      discriminator:
+        propertyName: api
+        mapping:
+          png: '#/components/schemas/VersionedSvg'
     MappedFormat:
       oneOf:
         - $ref: '#/components/schemas/PngFormat'
@@ -4682,6 +4719,17 @@ commands:
         logo:
           kind: png
           width: 10
+      $.layered:
+        logo:
+          kind: png
+      $.inclusive:
+        kind: png
+      $.empty:
+        kind: png
+      $.remapped:
+        kind: png
+      $.scoped:
+        kind: png
       $.composed:
         mode: fast
         format:
@@ -4707,6 +4755,10 @@ commands:
 		"/config":          {Pointer: "/config"},
 		"/palette":         {Pointer: "/palette"},
 		"/palette/logo":    {Pointer: "/palette/logo", Key: "kind", Values: []any{"png"}},
+		"/layered":         {Pointer: "/layered"},
+		"/layered/logo":    {Pointer: "/layered/logo", Key: "kind", Values: []any{"png"}},
+		"/scoped":          {Pointer: "/scoped", Key: "kind", Values: []any{"png", "PngFormat"}},
+		"/remapped":        {Pointer: "/remapped", Key: "kind", Values: []any{"png"}},
 		"/composed":        {Pointer: "/composed", Key: "mode", Values: []any{"fast"}},
 		"/composed/format": {Pointer: "/composed/format", Key: "kind", Values: []any{"png"}},
 	}, got)

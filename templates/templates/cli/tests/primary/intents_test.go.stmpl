@@ -55,6 +55,11 @@ func TestIntentPresetMergeMatrix(t *testing.T) {
 		Preset:  `{"format":{"version":1,"strict":true}}`,
 		Nested:  map[string]flagutil.PresetMergePoint{"/format": {Key: "version", Values: []string{`1`}}},
 	}
+	largeNumericPreset := flagutil.PresetMerge{
+		Command: "draw",
+		Preset:  `{"format":{"version":12345678901234567890,"strict":true}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/format": {Key: "version", Values: []string{`12345678901234567890`}}},
+	}
 	undiscriminatedPreset := flagutil.PresetMerge{
 		Command: "fetch",
 		Preset:  `{"source":{"url":"https://example.com/a"}}`,
@@ -98,6 +103,9 @@ func TestIntentPresetMergeMatrix(t *testing.T) {
 		{name: "nested preset key absent: preset object added", merge: nestedPreset, body: `{"other":1}`, want: `{"other":1,"format":{"kind":"png","quality":"high"}}`},
 		{name: "nested numeric discriminator equal: preset keys fill", merge: numericPreset, body: `{"format":{"version":1}}`, want: `{"format":{"version":1,"strict":true}}`},
 		{name: "nested numeric discriminator differs: user object kept as is", merge: numericPreset, body: `{"format":{"version":2}}`, want: `{"format":{"version":2}}`},
+		{name: "nested numeric discriminator in another notation: preset keys fill", merge: numericPreset, body: `{"format":{"version":1.0}}`, want: `{"format":{"strict":true,"version":1.0}}`},
+		{name: "nested large integer discriminator differs past float64 precision: user object kept as is", merge: largeNumericPreset, body: `{"format":{"version":12345678901234567891}}`, want: `{"format":{"version":12345678901234567891}}`},
+		{name: "nested large integer discriminator equal: preset keys fill", merge: largeNumericPreset, body: `{"format":{"version":12345678901234567890}}`, want: `{"format":{"strict":true,"version":12345678901234567890}}`},
 		{name: "union without a merge point: user object kept as is", merge: undiscriminatedPreset, body: `{"source":{"path":"/x"}}`, want: `{"source":{"path":"/x"}}`},
 		{name: "undiscriminated union absent: preset object added", merge: undiscriminatedPreset, body: `{}`, want: `{"source":{"url":"https://example.com/a"}}`},
 		{name: "union below a plain object: same member filled", merge: deepPreset, body: `{"config":{"format":{"scale":2}}}`, want: `{"config":{"dpi":72,"format":{"kind":"png","scale":2,"width":10}}}`},

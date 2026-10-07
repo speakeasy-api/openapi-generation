@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -288,12 +290,60 @@ func (m PresetMerge) selectsPinnedVariant(raw json.RawMessage) bool {
 }
 
 func jsonEqual(a, b json.RawMessage) bool {
-	var av, bv any
-	if err := json.Unmarshal(a, &av); err != nil {
-		return false
+	av, aok := decodeExactJSON(a)
+	bv, bok := decodeExactJSON(b)
+	return aok && bok && exactJSONEqual(av, bv)
+}
+
+func decodeExactJSON(raw json.RawMessage) (any, bool) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, false
 	}
-	if err := json.Unmarshal(b, &bv); err != nil {
-		return false
+	if _, err := dec.Token(); err != io.EOF {
+		return nil, false
 	}
-	return reflect.DeepEqual(av, bv)
+	return v, true
+}
+
+// exactJSONEqual compares numbers by exact value: float64 decoding would make
+// distinct large integers equal.
+func exactJSONEqual(a, b any) bool {
+	switch av := a.(type) {
+	case json.Number:
+		bv, ok := b.(json.Number)
+		if !ok {
+			return false
+		}
+		ar, aok := new(big.Rat).SetString(av.String())
+		br, bok := new(big.Rat).SetString(bv.String())
+		return aok && bok && ar.Cmp(br) == 0
+	case map[string]any:
+		bv, ok := b.(map[string]any)
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for key, value := range av {
+			other, ok := bv[key]
+			if !ok || !exactJSONEqual(value, other) {
+				return false
+			}
+		}
+		return true
+	case []any:
+		bv, ok := b.([]any)
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for i := range av {
+			if !exactJSONEqual(av[i], bv[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(a, b)
+	}
 }
