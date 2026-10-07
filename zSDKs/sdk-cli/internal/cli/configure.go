@@ -3,12 +3,10 @@
 package cli
 
 import (
-	"charm.land/lipgloss/v2"
 	"cmp"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"openapi/internal/client"
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
@@ -16,7 +14,6 @@ import (
 	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/usage"
-	"os"
 	"strings"
 )
 
@@ -194,55 +191,55 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 			forms.NewInput().
 				Title("HTTP Basic password").
 				Description("--password").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))).
 				Value(&authPassword),
 			forms.NewInput().
 				Title("HTTP Bearer").
 				Description("--bearer-auth").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))).
 				Value(&authBearerAuth),
 			forms.NewInput().
 				Title("API Key").
 				Description("--my-api-key").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
 				Value(&authMyApiKey),
 			forms.NewInput().
 				Title("OAuth2 Authorization").
 				Description("--oauth2").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))).
 				Value(&authOauth2),
 			forms.NewInput().
 				Title("Custom authentication credential").
 				Description("--app-id").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))).
 				Value(&authAppId),
 			forms.NewInput().
 				Title("Custom authentication credential").
 				Description("--secret").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))).
 				Value(&authSecret),
 			forms.NewInput().
 				Title("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.").
 				Description("--mobile-auth").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))).
 				Value(&authMobileAuth),
 			forms.NewInput().
 				Title("Client Credentials flow. client identifier").
 				Description("--client-id").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))).
 				Value(&authClientID),
 			forms.NewInput().
 				Title("Client Credentials flow. client secret").
 				Description("--client-secret").
-				EchoMode(forms.EchoModePassword).
+				Password().
 				Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))).
 				Value(&authClientSecret),
 			forms.NewInput().
@@ -281,7 +278,7 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 		var cfgOutputFormat string
 		if !accessible {
 			preferenceFields := []forms.Field{
-				forms.NewSelect[string]().
+				forms.NewSelect().
 					Title("Default output format").
 					Description("Choose the default response rendering format for this CLI").
 					Options(
@@ -298,11 +295,7 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 			groups = append(groups, forms.NewGroup(preferenceFields...).Title("Preferences"))
 		}
 
-		form := forms.NewForm(groups...).
-			WithAccessible(accessible).
-			WithTheme(configureFormTheme()).
-			WithWidth(configureFormWidth()).
-			WithShowHelp(false)
+		form := forms.NewForm(groups...).WithAccessible(accessible)
 
 		if err := form.Run(); err != nil {
 			return fmt.Errorf("configure: %w", err)
@@ -426,59 +419,4 @@ func dryRunLocalNoop(cmd *cobra.Command, message string) bool {
 		fmt.Fprintln(cmd.ErrOrStderr(), "[DRY-RUN] "+message)
 	}
 	return true
-}
-
-// configureFormTheme builds the form theme for the configure command.
-func configureFormTheme() forms.Theme {
-	return forms.ThemeFunc(configureFormStyles)
-}
-
-func configureFormStyles(isDark bool) *forms.Styles {
-	t := *forms.ThemeBase(isDark)
-
-	accent := lipgloss.Color("#38BDF8")
-	dimmed := lipgloss.Color("#64748B")
-	subtle := lipgloss.Color("#475569")
-	errColor := lipgloss.Color("#F87171")
-
-	t.Focused.Base = t.Focused.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(accent).
-		PaddingLeft(1)
-	t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
-	t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
-	t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
-	t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
-
-	t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
-
-	t.Blurred.Base = t.Blurred.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(subtle).
-		PaddingLeft(1)
-	t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
-	t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
-	t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
-	t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
-	t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
-
-	return &t
-}
-
-// configureFormWidth returns the terminal width for sizing forms.
-func configureFormWidth() int {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 {
-		width = 80
-	}
-	return width
 }

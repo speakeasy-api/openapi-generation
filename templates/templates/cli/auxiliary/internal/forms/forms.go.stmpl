@@ -1,0 +1,1278 @@
+{{- if isAnyInteractiveEnabled}}
+// MIT License
+//
+// Copyright (c) 2023–2026 Charm
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+// Package forms renders the terminal forms used by guided prompts: text
+// inputs, multi-line text, selects, and confirmations, with an accessible
+// line-prompt mode for screen readers and non-TTY input.
+//
+// It is adapted from github.com/charmbracelet/huh v2.0.3 (MIT license above),
+// reduced to the fields and form options this CLI uses.
+package forms
+
+import (
+	"bufio"
+	"cmp"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"strconv"
+	"strings"
+
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"golang.org/x/term"
+)
+
+// ErrUserAborted is returned by Run when the user cancels the form.
+var ErrUserAborted = errors.New("user aborted")
+
+// Field is one input control on a form.
+type Field interface {
+	Init() tea.Cmd
+	Update(msg tea.Msg) (Field, tea.Cmd)
+	View() string
+	Focus() tea.Cmd
+	Blur() tea.Cmd
+	Error() error
+	RunAccessible(w io.Writer, r io.Reader) error
+
+	setWidth(width int)
+	setHeight(height int)
+	setPosition(first, last bool)
+}
+
+type nextFieldMsg struct{}
+
+type prevFieldMsg struct{}
+
+type nextGroupMsg struct{}
+
+type prevGroupMsg struct{}
+
+func nextField() tea.Msg { return nextFieldMsg{} }
+
+func prevField() tea.Msg { return prevFieldMsg{} }
+
+func nextGroup() tea.Msg { return nextGroupMsg{} }
+
+func prevGroup() tea.Msg { return prevGroupMsg{} }
+
+// navKeys moves between fields. The form's first field has no previous
+// field, and only enter submits from its last field.
+type navKeys struct {
+	prev, next key.Binding
+}
+
+func newNavKeys(next ...string) navKeys {
+	return navKeys{
+		prev: key.NewBinding(key.WithKeys("shift+tab")),
+		next: key.NewBinding(key.WithKeys(next...)),
+	}
+}
+
+func (n *navKeys) setPosition(first, last bool) {
+	n.prev.SetEnabled(!first)
+	if last {
+		n.next.SetKeys("enter")
+	}
+}
+
+// Form shows one group of fields at a time and completes after the last group.
+type Form struct {
+	groups []*Group
+	index  int
+
+	accessible bool
+	width      int
+	quit       key.Binding
+
+	done     bool
+	quitting bool
+	aborted  bool
+
+	submitCmd tea.Cmd
+	cancelCmd tea.Cmd
+}
+
+// NewForm returns a form sized to the terminal width.
+func NewForm(groups ...*Group) *Form {
+	f := &Form{
+		groups: groups,
+		quit:   key.NewBinding(key.WithKeys("ctrl+c")),
+		// Dumb terminals cannot redraw, so they get line prompts.
+		accessible: os.Getenv("TERM") == "dumb",
+	}
+	for g, group := range groups {
+		for i, field := range group.fields {
+			field.setPosition(g == 0 && i == 0, g == len(groups)-1 && i == len(group.fields)-1)
+		}
+	}
+	f.width = terminalWidth()
+	for _, group := range groups {
+		group.setWidth(f.width)
+	}
+	return f
+}
+
+func terminalWidth() int {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || width <= 0 {
+		return 80
+	}
+	return width
+}
+
+// WithAccessible replaces the interactive renderer with line prompts that
+// read stdin, for screen readers and non-terminal input.
+func (f *Form) WithAccessible(accessible bool) *Form {
+	f.accessible = accessible
+	return f
+}
+
+// Run runs the form until it is submitted or cancelled.
+func (f *Form) Run() error {
+	f.submitCmd = tea.Quit
+	f.cancelCmd = tea.Interrupt
+	if len(f.groups) == 0 {
+		return nil
+	}
+	if f.accessible {
+		for _, group := range f.groups {
+			for _, field := range group.fields {
+				field.Init()
+				field.Focus()
+				_ = field.RunAccessible(os.Stdout, os.Stdin)
+				fmt.Fprintln(os.Stdout)
+			}
+		}
+		return nil
+	}
+	m, err := tea.NewProgram(f, tea.WithOutput(os.Stderr)).Run()
+	if m.(*Form).aborted || errors.Is(err, tea.ErrInterrupted) {
+		return ErrUserAborted
+	}
+	if err != nil {
+		return fmt.Errorf("form: %w", err)
+	}
+	return nil
+}
+
+// Init implements [tea.Model].
+func (f *Form) Init() tea.Cmd {
+	cmds := make([]tea.Cmd, 0, len(f.groups)+1)
+	for i, group := range f.groups {
+		group.active = i == 0
+		cmds = append(cmds, group.Init())
+	}
+	cmds = append(cmds, tea.RequestWindowSize)
+	return tea.Sequence(cmds...)
+}
+
+// Update implements [tea.Model].
+func (f *Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if f.done {
+		return f, nil
+	}
+	group := f.groups[f.index]
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Size every group to the tallest one so pages don't jump.
+		needed := 0
+		for _, g := range f.groups {
+			needed = max(needed, g.rawHeight())
+		}
+		for _, g := range f.groups {
+			g.setHeight(min(needed, msg.Height))
+		}
+	case tea.KeyPressMsg:
+		if key.Matches(msg, f.quit) {
+			f.aborted = true
+			f.quitting = true
+			f.done = true
+			return f, f.cancelCmd
+		}
+	case nextGroupMsg:
+		if len(group.Errors()) > 0 {
+			return f, nil
+		}
+		if f.index == len(f.groups)-1 {
+			f.quitting = true
+			f.done = true
+			return f, f.submitCmd
+		}
+		f.index++
+		f.groups[f.index].active = true
+		return f, f.groups[f.index].Init()
+	case prevGroupMsg:
+		if len(group.Errors()) > 0 {
+			return f, nil
+		}
+		if f.index > 0 {
+			f.index--
+		}
+		f.groups[f.index].active = true
+		return f, f.groups[f.index].Init()
+	}
+
+	return f, group.Update(msg)
+}
+
+// View implements [tea.Model].
+func (f *Form) View() tea.View {
+	var v tea.View
+	v.ReportFocus = true
+	v.SetContent(f.render())
+	return v
+}
+
+func (f *Form) render() string {
+	if f.quitting {
+		return ""
+	}
+	return lipgloss.NewStyle().Render(f.groups[f.index].View())
+}
+
+// Group is a page of fields shown together.
+type Group struct {
+	fields []Field
+	index  int
+	title  string
+
+	viewport viewport.Model
+	width    int
+	height   int
+	active   bool
+}
+
+// NewGroup returns a group of the given fields.
+func NewGroup(fields ...Field) *Group {
+	g := &Group{fields: fields, width: 80}
+	g.height = g.rawHeight()
+	g.viewport = viewport.New(viewport.WithWidth(g.width), viewport.WithHeight(g.height))
+	return g
+}
+
+// Title sets the heading shown above the group's fields.
+func (g *Group) Title(title string) *Group {
+	g.title = title
+	return g
+}
+
+func (g *Group) setWidth(width int) {
+	g.width = width
+	g.viewport.SetWidth(width)
+	for _, field := range g.fields {
+		field.setWidth(width)
+	}
+}
+
+func (g *Group) setHeight(height int) {
+	g.height = height
+	h := height - g.titleFooterHeight()
+	g.viewport.SetHeight(h)
+	for _, field := range g.fields {
+		// A field height must not exceed the form height.
+		if h < lipgloss.Height(field.View()) {
+			field.setHeight(h)
+		}
+	}
+}
+
+// Errors returns the validation errors of the group's fields.
+func (g *Group) Errors() []error {
+	var errs []error
+	for _, field := range g.fields {
+		if err := field.Error(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+// Init focuses the current field when the group is active.
+func (g *Group) Init() tea.Cmd {
+	var cmd tea.Cmd
+	if g.active {
+		cmd = g.fields[g.index].Focus()
+	}
+	g.buildView()
+	return cmd
+}
+
+func (g *Group) nextField() []tea.Cmd {
+	blur := g.fields[g.index].Blur()
+	if g.index == len(g.fields)-1 {
+		return []tea.Cmd{blur, nextGroup}
+	}
+	g.index++
+	return []tea.Cmd{blur, g.fields[g.index].Focus()}
+}
+
+func (g *Group) prevField() []tea.Cmd {
+	blur := g.fields[g.index].Blur()
+	if g.index == 0 {
+		return []tea.Cmd{blur, prevGroup}
+	}
+	g.index--
+	return []tea.Cmd{blur, g.fields[g.index].Focus()}
+}
+
+// Update routes key presses and pastes to the focused field and every other
+// message to all fields.
+func (g *Group) Update(msg tea.Msg) tea.Cmd {
+	var cmds []tea.Cmd
+	for i, field := range g.fields {
+		switch msg.(type) {
+		case tea.KeyPressMsg, tea.PasteMsg:
+		default:
+			m, cmd := field.Update(msg)
+			g.fields[i] = m
+			cmds = append(cmds, cmd)
+		}
+		if i == g.index {
+			m, cmd := field.Update(msg)
+			g.fields[i] = m
+			cmds = append(cmds, cmd)
+		}
+	}
+
+	switch msg.(type) {
+	case nextFieldMsg:
+		cmds = append(cmds, g.nextField()...)
+	case prevFieldMsg:
+		cmds = append(cmds, g.prevField()...)
+	}
+
+	g.buildView()
+	return tea.Batch(cmds...)
+}
+
+func (g *Group) content() (int, string) {
+	var fields strings.Builder
+	offset := 0
+	for i, field := range g.fields {
+		fields.WriteString(field.View())
+		if i == g.index {
+			offset = lipgloss.Height(fields.String()) - lipgloss.Height(field.View())
+		}
+		if i < len(g.fields)-1 {
+			fields.WriteString("\n\n")
+		}
+	}
+	return offset, fields.String()
+}
+
+func (g *Group) buildView() {
+	offset, content := g.content()
+	g.viewport.SetContent(content)
+	g.viewport.SetYOffset(offset)
+}
+
+func (g *Group) header() string {
+	if g.title == "" {
+		return ""
+	}
+	return lipgloss.NewStyle().Render(wrap(g.title, g.width))
+}
+
+func (g *Group) footer() string {
+	var parts []string
+	for _, err := range g.Errors() {
+		parts = append(parts, wrap(focusedStyles.ErrorMessage.Render(err.Error()), g.width))
+	}
+	return lipgloss.NewStyle().Render(strings.Join(parts, "\n"))
+}
+
+func (g *Group) titleFooterHeight() int {
+	h := 0
+	if s := g.header(); s != "" {
+		h += lipgloss.Height(s)
+	}
+	if s := g.footer(); s != "" {
+		h += lipgloss.Height(s)
+	}
+	return h
+}
+
+// rawHeight is the group's full height without a viewport.
+func (g *Group) rawHeight() int {
+	_, content := g.content()
+	return lipgloss.Height(content) + g.titleFooterHeight()
+}
+
+// View renders the group.
+func (g *Group) View() string {
+	var parts []string
+	if s := g.header(); s != "" {
+		parts = append(parts, s)
+	}
+	parts = append(parts, g.viewport.View())
+	if s := g.footer(); s != "" {
+		parts = append(parts, "", s)
+	}
+	// A trailing space in the bottom-right cell scrolls some terminals.
+	last := len(parts) - 1
+	parts[last] = strings.TrimSuffix(parts[last], " ")
+	return strings.Join(parts, "\n")
+}
+
+func wrap(s string, limit int) string {
+	return lipgloss.Wrap(s, limit, ",.-; ")
+}
+
+func noValidation(string) error { return nil }
+
+// Input is a single-line text field.
+type Input struct {
+	value       *string
+	title       string
+	description string
+	textinput   textinput.Model
+	validate    func(string) error
+	err         error
+	focused     bool
+	width       int
+	height      int
+	nav         navKeys
+}
+
+// NewInput returns a single-line text field.
+func NewInput() *Input {
+	return &Input{value: new(string), textinput: textinput.New(), validate: noValidation, nav: newNavKeys("enter", "tab")}
+}
+
+// Value binds the field to value, which also supplies the initial text.
+func (i *Input) Value(value *string) *Input {
+	i.value = value
+	i.textinput.SetValue(*value)
+	return i
+}
+
+// Title sets the field title.
+func (i *Input) Title(title string) *Input { i.title = title; return i }
+
+// Description sets the text shown under the title.
+func (i *Input) Description(description string) *Input { i.description = description; return i }
+
+// Placeholder sets the text shown while the field is empty.
+func (i *Input) Placeholder(placeholder string) *Input {
+	i.textinput.Placeholder = placeholder
+	return i
+}
+
+// Password masks the typed characters.
+func (i *Input) Password() *Input {
+	i.textinput.EchoMode = textinput.EchoPassword
+	return i
+}
+
+// Validate sets a check that runs on submit and when the field loses focus.
+func (i *Input) Validate(validate func(string) error) *Input {
+	i.validate = validate
+	return i
+}
+
+func (i *Input) Error() error { return i.err }
+
+func (i *Input) Focus() tea.Cmd {
+	i.focused = true
+	return i.textinput.Focus()
+}
+
+func (i *Input) Blur() tea.Cmd {
+	i.focused = false
+	*i.value = i.textinput.Value()
+	i.textinput.Blur()
+	i.err = i.validate(*i.value)
+	return nil
+}
+
+func (i *Input) Init() tea.Cmd {
+	i.textinput.Blur()
+	return nil
+}
+
+func (i *Input) Update(msg tea.Msg) (Field, tea.Cmd) {
+	var cmds []tea.Cmd
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		i.err = nil
+		switch {
+		case key.Matches(msg, i.nav.prev):
+			cmds = append(cmds, prevField)
+		case key.Matches(msg, i.nav.next):
+			if i.err = i.validate(i.textinput.Value()); i.err != nil {
+				return i, nil
+			}
+			cmds = append(cmds, nextField)
+		}
+	}
+	var cmd tea.Cmd
+	i.textinput, cmd = i.textinput.Update(msg)
+	cmds = append(cmds, cmd)
+	*i.value = i.textinput.Value()
+	return i, tea.Batch(cmds...)
+}
+
+func (i *Input) View() string {
+	styles := stylesFor(i.focused)
+	maxWidth := i.width - styles.Base.GetHorizontalFrameSize()
+
+	st := i.textinput.Styles()
+	st.Cursor.Color = styles.TextInput.Cursor.GetForeground()
+	st.Focused.Prompt = styles.TextInput.Prompt
+	st.Focused.Text = styles.TextInput.Text
+	st.Focused.Placeholder = styles.TextInput.Placeholder
+	i.textinput.SetStyles(st)
+
+	var sb strings.Builder
+	if i.title != "" {
+		sb.WriteString(styles.Title.Render(wrap(i.title, maxWidth)) + "\n")
+	}
+	if i.description != "" {
+		sb.WriteString(styles.Description.Render(wrap(i.description, maxWidth)) + "\n")
+	}
+	sb.WriteString(i.textinput.View())
+	return styles.Base.Width(i.width).Height(i.height).Render(sb.String())
+}
+
+func (i *Input) RunAccessible(w io.Writer, r io.Reader) error {
+	title := stylesFor(i.focused).Title.PaddingRight(1)
+	if i.textinput.EchoMode == textinput.EchoNormal {
+		*i.value = promptString(w, r, title.Render(cmp.Or(i.title, "Input:")), *i.value, i.validate)
+		return nil
+	}
+	fd, ok := r.(interface{ Fd() uintptr })
+	if !ok {
+		return errors.New("password asking needs a tty")
+	}
+	value, err := promptPassword(w, fd.Fd(), title.Render(cmp.Or(i.title, "Password:")), i.validate)
+	if err != nil {
+		return err
+	}
+	*i.value = value
+	return nil
+}
+
+func (i *Input) setWidth(width int) {
+	i.width = width
+	frame := stylesFor(i.focused).Base.GetHorizontalFrameSize()
+	prompt := lipgloss.Width(i.textinput.Styles().Focused.Prompt.Render(i.textinput.Prompt))
+	i.textinput.SetWidth(width - frame - prompt - 1)
+}
+
+func (i *Input) setHeight(height int) { i.height = height }
+
+func (i *Input) setPosition(first, last bool) { i.nav.setPosition(first, last) }
+
+// Text is a multi-line text field; alt+enter or ctrl+j inserts a newline.
+type Text struct {
+	value       *string
+	title       string
+	description string
+	textarea    textarea.Model
+	validate    func(string) error
+	err         error
+	focused     bool
+	width       int
+	nav         navKeys
+}
+
+// NewText returns a multi-line text field.
+func NewText() *Text {
+	ta := textarea.New()
+	ta.ShowLineNumbers = false
+	ta.Prompt = ""
+	st := ta.Styles()
+	st.Focused.CursorLine = lipgloss.NewStyle()
+	ta.SetStyles(st)
+	ta.KeyMap.InsertNewline.SetKeys("alt+enter", "ctrl+j")
+	return &Text{value: new(string), textarea: ta, validate: noValidation, nav: newNavKeys("tab", "enter")}
+}
+
+// Value binds the field to value, which also supplies the initial text.
+func (t *Text) Value(value *string) *Text {
+	t.value = value
+	t.textarea.SetValue(*value)
+	return t
+}
+
+// Title sets the field title.
+func (t *Text) Title(title string) *Text { t.title = title; return t }
+
+// Description sets the text shown under the title.
+func (t *Text) Description(description string) *Text { t.description = description; return t }
+
+// Validate sets a check that runs on submit and when the field loses focus.
+func (t *Text) Validate(validate func(string) error) *Text {
+	t.validate = validate
+	return t
+}
+
+func (t *Text) Error() error { return t.err }
+
+func (t *Text) Focus() tea.Cmd {
+	t.focused = true
+	return t.textarea.Focus()
+}
+
+func (t *Text) Blur() tea.Cmd {
+	t.focused = false
+	*t.value = t.textarea.Value()
+	t.textarea.Blur()
+	t.err = t.validate(*t.value)
+	return nil
+}
+
+func (t *Text) Init() tea.Cmd {
+	t.textarea.Blur()
+	return nil
+}
+
+func (t *Text) Update(msg tea.Msg) (Field, tea.Cmd) {
+	var cmds []tea.Cmd
+	if msg, ok := msg.(tea.KeyPressMsg); ok {
+		t.err = nil
+		switch {
+		case key.Matches(msg, t.nav.next):
+			if t.err = t.validate(t.textarea.Value()); t.err != nil {
+				return t, nil
+			}
+			cmds = append(cmds, nextField)
+		case key.Matches(msg, t.nav.prev):
+			if t.err = t.validate(t.textarea.Value()); t.err != nil {
+				return t, nil
+			}
+			cmds = append(cmds, prevField)
+		}
+	}
+	var cmd tea.Cmd
+	t.textarea, cmd = t.textarea.Update(msg)
+	cmds = append(cmds, cmd)
+	*t.value = t.textarea.Value()
+	return t, tea.Batch(cmds...)
+}
+
+func (t *Text) View() string {
+	styles := stylesFor(t.focused)
+	st := t.textarea.Styles()
+	state := &st.Blurred
+	if t.focused {
+		state = &st.Focused
+	}
+	state.Placeholder = styles.TextInput.Placeholder
+	state.Text = styles.TextInput.Text
+	state.Prompt = styles.TextInput.Prompt
+	state.CursorLine = styles.TextInput.Text
+	st.Cursor.Color = styles.TextInput.Cursor.GetBackground()
+	t.textarea.SetStyles(st)
+
+	maxWidth := t.width - styles.Base.GetHorizontalFrameSize()
+	var parts []string
+	if t.title != "" {
+		header := styles.Title.Render(wrap(t.title, maxWidth))
+		if t.err != nil {
+			header += styles.ErrorIndicator.String()
+		}
+		parts = append(parts, header)
+	}
+	if t.description != "" {
+		parts = append(parts, styles.Description.Render(wrap(t.description, maxWidth)))
+	}
+	parts = append(parts, t.textarea.View())
+	return styles.Base.Render(strings.Join(parts, "\n"))
+}
+
+func (t *Text) RunAccessible(w io.Writer, r io.Reader) error {
+	prompt := stylesFor(t.focused).Title.PaddingRight(1).Render(cmp.Or(t.title, "Input:"))
+	*t.value = promptString(w, r, prompt, *t.value, t.validate)
+	return nil
+}
+
+func (t *Text) setWidth(width int) {
+	t.width = width
+	t.textarea.SetWidth(width - stylesFor(t.focused).Base.GetHorizontalFrameSize())
+}
+
+func (t *Text) setHeight(height int) {
+	adjust := 0
+	if t.title != "" {
+		adjust++
+	}
+	if t.description != "" {
+		adjust++
+	}
+	t.textarea.SetHeight(height - stylesFor(t.focused).Base.GetVerticalFrameSize() - adjust)
+}
+
+func (t *Text) setPosition(first, last bool) { t.nav.setPosition(first, last) }
+
+// Option is a choice in a [Select]: Key is shown, Value is stored.
+type Option struct {
+	Key   string
+	Value string
+}
+
+// NewOption returns a select option.
+func NewOption(key, value string) Option {
+	return Option{Key: key, Value: value}
+}
+
+var (
+	selectUp       = key.NewBinding(key.WithKeys("up", "k", "ctrl+k", "ctrl+p"))
+	selectDown     = key.NewBinding(key.WithKeys("down", "j", "ctrl+j", "ctrl+n"))
+	selectTop      = key.NewBinding(key.WithKeys("home", "g"))
+	selectBottom   = key.NewBinding(key.WithKeys("end", "G"))
+	selectHalfUp   = key.NewBinding(key.WithKeys("ctrl+u"))
+	selectHalfDown = key.NewBinding(key.WithKeys("ctrl+d"))
+)
+
+// Select picks one option from a list.
+type Select struct {
+	value       *string
+	title       string
+	description string
+	options     []Option
+	selected    int
+	focused     bool
+	width       int
+	height      int
+	viewport    viewport.Model
+	nav         navKeys
+}
+
+// NewSelect returns a single-choice list.
+func NewSelect() *Select {
+	return &Select{value: new(string), nav: newNavKeys("enter", "tab")}
+}
+
+// Value binds the field to value and moves the cursor to the matching option.
+func (s *Select) Value(value *string) *Select {
+	s.value = value
+	for i, o := range s.options {
+		if o.Value == *value {
+			s.selected = i
+			break
+		}
+	}
+	s.updateValue()
+	return s
+}
+
+// Title sets the field title.
+func (s *Select) Title(title string) *Select { s.title = title; return s }
+
+// Description sets the text shown under the title.
+func (s *Select) Description(description string) *Select { s.description = description; return s }
+
+// Options sets the choices.
+func (s *Select) Options(options ...Option) *Select {
+	if len(options) == 0 {
+		return s
+	}
+	s.options = options
+	s.selectCurrent()
+	s.updateViewportSize()
+	s.updateValue()
+	return s
+}
+
+func (s *Select) selectCurrent() {
+	for i, o := range s.options {
+		if o.Value == *s.value {
+			s.selected = i
+			break
+		}
+	}
+	s.ensureCursorVisible()
+}
+
+func (s *Select) Error() error { return nil }
+
+func (s *Select) Focus() tea.Cmd {
+	s.focused = true
+	return nil
+}
+
+func (s *Select) Blur() tea.Cmd {
+	s.focused = false
+	return nil
+}
+
+func (s *Select) Init() tea.Cmd { return nil }
+
+func (s *Select) Update(msg tea.Msg) (Field, tea.Cmd) {
+	s.updateViewportSize()
+	msgKey, ok := msg.(tea.KeyPressMsg)
+	if !ok {
+		return s, nil
+	}
+	last := len(s.options) - 1
+	switch {
+	case key.Matches(msgKey, selectUp):
+		s.selected--
+		if s.selected < 0 {
+			s.selected = last
+			s.viewport.GotoBottom()
+		} else {
+			s.ensureCursorVisible()
+		}
+		s.updateValue()
+	case key.Matches(msgKey, selectTop):
+		s.selected = 0
+		s.viewport.GotoTop()
+		s.updateValue()
+	case key.Matches(msgKey, selectBottom):
+		s.selected = last
+		s.viewport.GotoBottom()
+	case key.Matches(msgKey, selectHalfUp):
+		s.selected = max(s.selected-s.viewport.Height()/2, 0)
+		s.ensureCursorVisible()
+		s.updateValue()
+	case key.Matches(msgKey, selectHalfDown):
+		s.selected = min(s.selected+s.viewport.Height()/2, last)
+		s.ensureCursorVisible()
+		s.updateValue()
+	case key.Matches(msgKey, selectDown):
+		s.selected++
+		if s.selected > last {
+			s.selected = 0
+			s.viewport.GotoTop()
+		} else {
+			s.ensureCursorVisible()
+		}
+		s.updateValue()
+	case key.Matches(msgKey, s.nav.prev):
+		if s.selected > last {
+			break
+		}
+		s.updateValue()
+		return s, prevField
+	case key.Matches(msgKey, s.nav.next):
+		if s.selected > last {
+			break
+		}
+		s.updateValue()
+		return s, nextField
+	}
+	s.ensureCursorVisible()
+	return s, nil
+}
+
+func (s *Select) updateValue() {
+	if s.selected >= 0 && s.selected < len(s.options) {
+		*s.value = s.options[s.selected].Value
+	}
+}
+
+func (s *Select) updateViewportSize() {
+	if s.height > 0 {
+		yoffset := 0
+		if v := s.titleView(); v != "" {
+			yoffset += lipgloss.Height(v)
+		}
+		if v := s.descriptionView(); v != "" {
+			yoffset += lipgloss.Height(v)
+		}
+		s.viewport.SetHeight(max(1, s.height-yoffset))
+		s.ensureCursorVisible()
+	} else {
+		s.viewport.SetHeight(lipgloss.Height(s.optionsView()))
+	}
+	if s.width > 0 {
+		s.viewport.SetWidth(s.width)
+	} else {
+		s.viewport.SetWidth(lipgloss.Width(s.optionsView()))
+	}
+}
+
+func (s *Select) maxWidth() int {
+	return s.width - stylesFor(s.focused).Base.GetHorizontalFrameSize()
+}
+
+func (s *Select) titleView() string {
+	return stylesFor(s.focused).Title.Render(wrap(s.title, s.maxWidth()))
+}
+
+func (s *Select) descriptionView() string {
+	if s.description == "" {
+		return ""
+	}
+	return stylesFor(s.focused).Description.Render(wrap(s.description, s.maxWidth()))
+}
+
+func (s *Select) optionsView() string {
+	var sb strings.Builder
+	for i, option := range s.options {
+		sb.WriteString(s.renderOption(option, i == s.selected))
+		if i < len(s.options)-1 {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
+}
+
+func (s *Select) renderOption(option Option, selected bool) string {
+	styles := stylesFor(s.focused)
+	cursor := styles.SelectSelector.String()
+	cursorWidth := lipgloss.Width(cursor)
+	label := wrap(option.Key, s.maxWidth()-cursorWidth)
+	if selected {
+		return lipgloss.JoinHorizontal(lipgloss.Left, cursor, styles.SelectedOption.Render(label))
+	}
+	return lipgloss.JoinHorizontal(lipgloss.Left, strings.Repeat(" ", cursorWidth), styles.UnselectedOption.Render(label))
+}
+
+// ensureCursorVisible scrolls the viewport the minimum amount to show the
+// selected option.
+func (s *Select) ensureCursorVisible() {
+	offset, height := 0, 0
+	for i, option := range s.options {
+		h := lipgloss.Height(s.renderOption(option, i == s.selected))
+		if i == s.selected {
+			height = h
+			break
+		}
+		offset += h
+	}
+	if height <= 0 {
+		return
+	}
+	if y := s.viewport.YOffset(); offset < y {
+		s.viewport.ScrollUp(y - offset)
+	} else if end := y + s.viewport.Height(); offset+height > end {
+		s.viewport.ScrollDown(offset + height - end)
+	}
+}
+
+func (s *Select) View() string {
+	s.viewport.SetContent(s.optionsView())
+	var parts []string
+	if s.title != "" {
+		parts = append(parts, s.titleView())
+	}
+	if s.description != "" {
+		parts = append(parts, s.descriptionView())
+	}
+	parts = append(parts, s.viewport.View())
+	return stylesFor(s.focused).Base.Width(s.width).Height(s.height).Render(strings.Join(parts, "\n"))
+}
+
+func (s *Select) RunAccessible(w io.Writer, r io.Reader) error {
+	fmt.Fprintln(w, stylesFor(s.focused).Title.PaddingRight(1).Render(cmp.Or(s.title, "Select:")))
+	for i, option := range s.options {
+		fmt.Fprintf(w, "%d. %s\n", i+1, option.Key)
+	}
+	s.selectCurrent()
+	prompt := fmt.Sprintf("Enter a number between %d and %d: ", 1, len(s.options))
+	if len(s.options) == 1 {
+		prompt = "There is only one option available; enter the number 1:"
+	}
+	choice := promptInt(w, r, prompt, 1, len(s.options), s.selected+1)
+	*s.value = s.options[choice-1].Value
+	return nil
+}
+
+func (s *Select) setWidth(width int) {
+	s.width = width
+	s.updateViewportSize()
+}
+
+func (s *Select) setHeight(height int) {
+	s.height = height
+	s.updateViewportSize()
+}
+
+func (s *Select) setPosition(first, last bool) { s.nav.setPosition(first, last) }
+
+var (
+	confirmToggle = key.NewBinding(key.WithKeys("h", "l", "right", "left"))
+	confirmAccept = key.NewBinding(key.WithKeys("y", "Y"))
+	confirmReject = key.NewBinding(key.WithKeys("n", "N"))
+)
+
+// Confirm is a yes/no choice.
+type Confirm struct {
+	value       *bool
+	title       string
+	description string
+	focused     bool
+	width       int
+	height      int
+	nav         navKeys
+}
+
+// NewConfirm returns a yes/no choice.
+func NewConfirm() *Confirm {
+	return &Confirm{value: new(bool), nav: newNavKeys("enter", "tab")}
+}
+
+// Value binds the field to value, which also supplies the initial choice.
+func (c *Confirm) Value(value *bool) *Confirm { c.value = value; return c }
+
+// Title sets the field title.
+func (c *Confirm) Title(title string) *Confirm { c.title = title; return c }
+
+// Description sets the text shown under the title.
+func (c *Confirm) Description(description string) *Confirm { c.description = description; return c }
+
+func (c *Confirm) Error() error { return nil }
+
+func (c *Confirm) Focus() tea.Cmd {
+	c.focused = true
+	return nil
+}
+
+func (c *Confirm) Blur() tea.Cmd {
+	c.focused = false
+	return nil
+}
+
+func (c *Confirm) Init() tea.Cmd { return nil }
+
+func (c *Confirm) Update(msg tea.Msg) (Field, tea.Cmd) {
+	msgKey, ok := msg.(tea.KeyPressMsg)
+	if !ok {
+		return c, nil
+	}
+	switch {
+	case key.Matches(msgKey, confirmToggle):
+		*c.value = !*c.value
+	case key.Matches(msgKey, c.nav.prev):
+		return c, prevField
+	case key.Matches(msgKey, c.nav.next):
+		return c, nextField
+	case key.Matches(msgKey, confirmAccept):
+		*c.value = true
+		return c, nextField
+	case key.Matches(msgKey, confirmReject):
+		*c.value = false
+		return c, nextField
+	}
+	return c, nil
+}
+
+func (c *Confirm) View() string {
+	styles := stylesFor(c.focused)
+	maxWidth := c.width - styles.Base.GetHorizontalFrameSize()
+
+	var sb strings.Builder
+	if c.title != "" {
+		sb.WriteString(styles.Title.Render(wrap(c.title, maxWidth)))
+	}
+	if c.description != "" {
+		sb.WriteString("\n" + styles.Description.Render(wrap(c.description, maxWidth)))
+	}
+	if c.title != "" || c.description != "" {
+		sb.WriteString("\n\n")
+	}
+
+	yes, no := styles.BlurredButton.Render("Yes"), styles.FocusedButton.Render("No")
+	if *c.value {
+		yes, no = styles.FocusedButton.Render("Yes"), styles.BlurredButton.Render("No")
+	}
+	buttons := lipgloss.JoinHorizontal(lipgloss.Center, yes, no)
+	width := max(lipgloss.Width(buttons), lipgloss.Width(sb.String()))
+	sb.WriteString(lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(buttons))
+	return styles.Base.Width(c.width).Height(c.height).Render(sb.String())
+}
+
+func (c *Confirm) RunAccessible(w io.Writer, r io.Reader) error {
+	opts := "[y/N]"
+	if *c.value {
+		opts = "[Y/n]"
+	}
+	prompt := stylesFor(c.focused).Title.PaddingRight(1).Render(cmp.Or(c.title, "Choose"), opts)
+	*c.value = promptBool(w, r, prompt, *c.value)
+	return nil
+}
+
+func (c *Confirm) setWidth(width int) { c.width = width }
+
+func (c *Confirm) setHeight(height int) { c.height = height }
+
+func (c *Confirm) setPosition(first, last bool) { c.nav.setPosition(first, last) }
+
+type fieldStyles struct {
+	Base           lipgloss.Style
+	Title          lipgloss.Style
+	Description    lipgloss.Style
+	ErrorIndicator lipgloss.Style
+	ErrorMessage   lipgloss.Style
+
+	SelectSelector   lipgloss.Style
+	SelectedOption   lipgloss.Style
+	UnselectedOption lipgloss.Style
+
+	FocusedButton lipgloss.Style
+	BlurredButton lipgloss.Style
+
+	TextInput struct {
+		Cursor      lipgloss.Style
+		Placeholder lipgloss.Style
+		Prompt      lipgloss.Style
+		Text        lipgloss.Style
+	}
+}
+
+var focusedStyles, blurredStyles = newStyles()
+
+func newStyles() (focused, blurred fieldStyles) {
+	accent := {{themeAccent}}
+	dimmed := {{themeDimmed}}
+	subtle := {{themeSubtle}}
+	errColor := {{themeError}}
+
+	button := lipgloss.NewStyle().Padding(0, 2).MarginRight(1)
+
+	focused.Base = lipgloss.NewStyle().PaddingLeft(1).BorderStyle(lipgloss.ThickBorder()).BorderLeft(true)
+	focused.ErrorIndicator = lipgloss.NewStyle().SetString(" *")
+	focused.ErrorMessage = lipgloss.NewStyle().SetString(" *")
+	focused.SelectSelector = lipgloss.NewStyle().SetString("> ")
+	focused.FocusedButton = button.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("7"))
+	focused.BlurredButton = button.Foreground(lipgloss.Color("7")).Background(lipgloss.Color("0"))
+	focused.TextInput.Placeholder = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+
+	blurred = focused
+	blurred.Base = blurred.Base.BorderStyle(lipgloss.HiddenBorder())
+
+	focused.Base = focused.Base.BorderLeft(true).BorderStyle(lipgloss.ThickBorder()).BorderForeground(accent).PaddingLeft(1)
+	focused.Title = focused.Title.Foreground(accent).Bold(true)
+	focused.Description = focused.Description.Foreground(dimmed).Italic(true)
+	focused.ErrorIndicator = focused.ErrorIndicator.Foreground(errColor)
+	focused.ErrorMessage = focused.ErrorMessage.Foreground(errColor)
+	focused.SelectSelector = focused.SelectSelector.Foreground(accent).SetString("> ")
+	focused.SelectedOption = focused.SelectedOption.Foreground(accent).Bold(true)
+	focused.FocusedButton = focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
+	focused.BlurredButton = focused.BlurredButton.Background(subtle)
+	focused.TextInput.Cursor = focused.TextInput.Cursor.Foreground(accent)
+	focused.TextInput.Placeholder = focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
+	focused.TextInput.Prompt = focused.TextInput.Prompt.Foreground(accent)
+
+	blurred.Base = blurred.Base.BorderLeft(true).BorderStyle(lipgloss.ThickBorder()).BorderForeground(subtle).PaddingLeft(1)
+	blurred.Title = blurred.Title.Foreground(dimmed)
+	blurred.Description = blurred.Description.Foreground(subtle).Italic(true)
+	blurred.TextInput.Text = blurred.TextInput.Text.Foreground(dimmed)
+	blurred.TextInput.Placeholder = blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
+	blurred.SelectedOption = blurred.SelectedOption.Foreground(dimmed)
+	blurred.SelectSelector = blurred.SelectSelector.Foreground(dimmed)
+	return focused, blurred
+}
+
+func stylesFor(focused bool) *fieldStyles {
+	if focused {
+		return &focusedStyles
+	}
+	return &blurredStyles
+}
+
+// promptString prints prompt and reads a line until validate accepts it. A
+// blank answer, or end of input, yields defaultValue.
+func promptString(out io.Writer, in io.Reader, prompt, defaultValue string, validate func(string) error) string {
+	scanner := bufio.NewScanner(in)
+	var input string
+	for {
+		fmt.Fprint(out, prompt)
+		if !scanner.Scan() {
+			fmt.Fprintln(out)
+			break
+		}
+		input = scanner.Text()
+		if err := validate(input); err != nil {
+			fmt.Fprintln(out, err)
+			continue
+		}
+		break
+	}
+	return cmp.Or(strings.TrimSpace(input), defaultValue)
+}
+
+// promptInt reads a number in [low, high]; a blank answer picks defaultValue.
+func promptInt(out io.Writer, in io.Reader, prompt string, low, high, defaultValue int) int {
+	input := promptString(out, in, prompt, strconv.Itoa(defaultValue), func(s string) error {
+		if strings.TrimSpace(s) == "" {
+			return nil
+		}
+		if i, err := strconv.Atoi(s); err == nil && i >= low && i <= high {
+			return nil
+		}
+		if low == high {
+			//lint:ignore ST1005 shown to the user as a prompt line
+			return fmt.Errorf("Invalid: must be %d", low)
+		}
+		//lint:ignore ST1005 shown to the user as a prompt line
+		return fmt.Errorf("Invalid: must be a number between %d and %d", low, high)
+	})
+	choice, _ := strconv.Atoi(input)
+	return choice
+}
+
+func parseBool(s string) (bool, error) {
+	switch strings.ToLower(s) {
+	case "y", "yes":
+		return true, nil
+	case "n", "no":
+		return false, nil
+	}
+	return false, errors.New("invalid input. please try again")
+}
+
+// promptBool reads y/yes/n/no; a blank answer keeps defaultValue.
+func promptBool(out io.Writer, in io.Reader, prompt string, defaultValue bool) bool {
+	def := "N"
+	if defaultValue {
+		def = "y"
+	}
+	input := promptString(out, in, prompt, def, func(s string) error {
+		if strings.TrimSpace(s) == "" {
+			return nil
+		}
+		_, err := parseBool(s)
+		return err
+	})
+	b, _ := parseBool(input)
+	return b
+}
+
+// promptPassword reads a line from the terminal fd without echoing it.
+func promptPassword(out io.Writer, fd uintptr, prompt string, validate func(string) error) (string, error) {
+	for {
+		fmt.Fprint(out, prompt)
+		pwd, err := term.ReadPassword(int(fd))
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintln(out)
+		if err := validate(string(pwd)); err != nil {
+			fmt.Fprintln(out, err)
+			continue
+		}
+		return string(pwd), nil
+	}
+}
+{{- end}}

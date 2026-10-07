@@ -60,13 +60,13 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:75fd840a41af9780eddf7431ab9168a0c2c2facd
   internal/cli/auth.go:
-    last_write_checksum: sha1:d34149dac5264dd61b305d979adb072174bda1c4
+    last_write_checksum: sha1:f038ee2d6544c3a19715539ded7e3ff9d6f35af2
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
     last_write_checksum: sha1:d5ccc0970afac880e050719fe49c883432062904
   internal/cli/configure.go:
-    last_write_checksum: sha1:13ece24b90a03f30902ade4176a558afce3ca198
+    last_write_checksum: sha1:8585233e3a49552c702ef1abde8d862e61efac6b
   internal/cli/createuser.go:
     last_write_checksum: sha1:5b60000059db85dcf4c90f5e67c37b7fff3cf852
   internal/cli/createwithunion.go:
@@ -249,36 +249,10 @@ trackedFiles:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a6cf90b7dd09d11ffbd438fc3aba76806de5752a
-  internal/forms/accessible.go:
-    last_write_checksum: sha1:93ae0d80160d1ef815e1451281a4240b9a6e5c1b
-  internal/forms/accessor.go:
-    last_write_checksum: sha1:d2f23cf8fca78124e481a2f945e5e7e7bf924e5d
-  internal/forms/doc.go:
-    last_write_checksum: sha1:163e19b520eb18d3cfa405afc766a16371bb56db
-  internal/forms/field_confirm.go:
-    last_write_checksum: sha1:64e65c0371aca887fefa0c85ea7f1a921f8deabc
-  internal/forms/field_input.go:
-    last_write_checksum: sha1:3b2044da717ae5d9461d560309de742edd5f5554
-  internal/forms/field_select.go:
-    last_write_checksum: sha1:cc9fa18cabced90d0d7bed6f4ebd3a0808aadb80
-  internal/forms/field_text.go:
-    last_write_checksum: sha1:5ba863567bbd29d44b4af8c5ce6c98ca4134c576
-  internal/forms/form.go:
-    last_write_checksum: sha1:7b4cccdc3ecf0f36876211afb539ef2ce7f059b1
-  internal/forms/group.go:
-    last_write_checksum: sha1:c2f1361f63dd88876459f895885d30e6c448f8d8
-  internal/forms/keymap.go:
-    last_write_checksum: sha1:609e9c9c2c7c4f853009642d12b845c17d484362
-  internal/forms/option.go:
-    last_write_checksum: sha1:3669db405886fb0d4d1495089a6d1331ac781b04
-  internal/forms/selector.go:
-    last_write_checksum: sha1:18bc62ce4de6aa3e38a663c60f289b65ae547f58
-  internal/forms/theme.go:
-    last_write_checksum: sha1:fcb1a9bb680603c44dac9e0f272d13b437cb1c7f
-  internal/forms/wrap.go:
-    last_write_checksum: sha1:34c2c387acfbe04a76bb6e81103e5466064c02b8
+  internal/forms/forms.go:
+    last_write_checksum: sha1:6c871926327419a05adb8f1064ff30c030cda018
   internal/interactive/interactive.go:
-    last_write_checksum: sha1:ec3c54636b52c8d0ce2b3a1b605c5309ab91eeba
+    last_write_checksum: sha1:e5574ecb0c290ecb3dae6e94edcf7190b5335070
   internal/interactive/policy.go:
     last_write_checksum: sha1:3cf3eec72867230610aa5e7c308fddcaf916b81b
   internal/interactive/policy_test.go:

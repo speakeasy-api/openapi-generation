@@ -4,10 +4,7 @@
 {{- addImport "internal/flagutil" true -}}
 {{- if templateHasSecuritySchemeGroups}}{{- addImport "internal/interactive" true -}}{{- end}}
 {{- addImport "fmt" -}}
-{{- addImport "os" -}}
-{{- addImport "golang.org/x/term" -}}
 {{- addImport "internal/forms" true -}}
-{{- addImport "charm.land/lipgloss/v2" -}}
 package cli
 
 {{genImports}}
@@ -147,59 +144,4 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
     }
     fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
     return nil
-}
-
-// authFormTheme builds the form theme for auth login.
-func authFormTheme() forms.Theme {
-    return forms.ThemeFunc(authFormStyles)
-}
-
-func authFormStyles(isDark bool) *forms.Styles {
-    t := *forms.ThemeBase(isDark)
-
-    accent := {{themeAccent}}
-    dimmed := {{themeDimmed}}
-    subtle := {{themeSubtle}}
-    errColor := {{themeError}}
-
-    t.Focused.Base = t.Focused.Base.
-        BorderLeft(true).
-        BorderStyle(lipgloss.ThickBorder()).
-        BorderForeground(accent).
-        PaddingLeft(1)
-    t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
-    t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
-    t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
-    t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
-    t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
-    t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
-    t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
-    t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
-
-    t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
-    t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
-    t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
-
-    t.Blurred.Base = t.Blurred.Base.
-        BorderLeft(true).
-        BorderStyle(lipgloss.ThickBorder()).
-        BorderForeground(subtle).
-        PaddingLeft(1)
-    t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
-    t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
-    t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
-    t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
-    t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
-    t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
-
-    return &t
-}
-
-// authFormWidth returns the terminal width for sizing forms.
-func authFormWidth() int {
-    width, _, err := term.GetSize(int(os.Stdout.Fd()))
-    if err != nil || width <= 0 {
-        width = 80
-    }
-    return width
 }

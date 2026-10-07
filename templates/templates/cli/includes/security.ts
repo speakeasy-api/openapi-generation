@@ -2152,7 +2152,7 @@ registerTemplateFunc(
 
 function templateConfigurePreferenceFormFields(): string {
   const lines: string[] = [];
-  lines.push(`forms.NewSelect[string]().`);
+  lines.push(`forms.NewSelect().`);
   lines.push(`    Title("Default output format").`);
   lines.push(
     `    Description("Choose the default response rendering format for this CLI").`,
@@ -2305,7 +2305,7 @@ registerTemplateFunc(
 /**
  * Generate form field construction for the auth login form.
  * Each security field is mapped to the appropriate form component:
- * - Secrets → forms.NewInput().EchoMode(forms.EchoModePassword)
+ * - Secrets → forms.NewInput().Password()
  * - Non-secrets → forms.NewInput()
  * - Arrays → forms.NewInput() with comma-separated hint
  */
@@ -2342,7 +2342,7 @@ function templateAuthLoginFormFields(): string {
           field.field,
         )}").`,
       );
-      lines.push(`    EchoMode(forms.EchoModePassword).`);
+      lines.push(`    Password().`);
       lines.push(
         `    Placeholder(maskSecret(${buildFormPlaceholder(
           `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,
@@ -2603,11 +2603,9 @@ function templateAuthLoginBody(): string {
     lines.push(`// #region custom-auth-groups`);
     lines.push(`// #endregion custom-auth-groups`);
     lines.push(``);
-    lines.push(`form := forms.NewForm(forms.NewGroup(fields...)).`);
-    lines.push(`    WithAccessible(accessible).`);
-    lines.push(`    WithTheme(authFormTheme()).`);
-    lines.push(`    WithWidth(authFormWidth()).`);
-    lines.push(`    WithShowHelp(false)`);
+    lines.push(
+      `form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)`,
+    );
     lines.push(``);
     lines.push(`if err := form.Run(); err != nil {`);
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
@@ -2619,7 +2617,7 @@ function templateAuthLoginBody(): string {
     lines.push(`accessible := formMode == interactive.FormAccessible`);
     lines.push(``);
     lines.push(`var selectedScheme string`);
-    lines.push(`schemeSelect := forms.NewSelect[string]().`);
+    lines.push(`schemeSelect := forms.NewSelect().`);
     lines.push(`    Title("Authentication Method").`);
     lines.push(`    Description("Choose which credentials to configure").`);
     lines.push(`    Options(`);
@@ -2634,7 +2632,7 @@ function templateAuthLoginBody(): string {
     lines.push(`    Value(&selectedScheme)`);
     lines.push(``);
     lines.push(
-      `if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).WithTheme(authFormTheme()).WithWidth(authFormWidth()).WithShowHelp(false).Run(); err != nil {`,
+      `if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).Run(); err != nil {`,
     );
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
     lines.push(`}`);
@@ -2654,11 +2652,9 @@ function templateAuthLoginBody(): string {
       );
       lines.push(`    }`);
       lines.push(``);
-      lines.push(`    form := forms.NewForm(forms.NewGroup(fields...)).`);
-      lines.push(`        WithAccessible(accessible).`);
-      lines.push(`        WithTheme(authFormTheme()).`);
-      lines.push(`        WithWidth(authFormWidth()).`);
-      lines.push(`        WithShowHelp(false)`);
+      lines.push(
+        `    form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)`,
+      );
       lines.push(``);
       lines.push(`    if err := form.Run(); err != nil {`);
       lines.push(`        return fmt.Errorf("auth login: %w", err)`);
@@ -2882,7 +2878,7 @@ function genSchemeFormFields(fields: CLISecurityFieldInfo[]): string[] {
           field.field,
         )}").`,
       );
-      lines.push(`    EchoMode(forms.EchoModePassword).`);
+      lines.push(`    Password().`);
       lines.push(
         `    Placeholder(maskSecret(${buildFormPlaceholder(
           `config.GetStoredSecret("${field.flagName}", ${cfgExpr})`,

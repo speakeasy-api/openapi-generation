@@ -171,7 +171,7 @@ The generator follows a **generated commands + shared runtime** pattern:
 │      policy.go      ─ Shared prompt/form/explorer policy     │
 │      interactive.go ─ Missing-flag prompting via forms       │
 │    forms/                                                    │
-│      *.go           ─ Input/select/confirm terminal forms    │
+│      forms.go       ─ Input/select/confirm terminal forms    │
 │    explorer/                                                 │
 │      *.go           ─ Interactive command explorer TUI       │
 │    testclient/                                               │

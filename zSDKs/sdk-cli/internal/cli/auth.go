@@ -3,16 +3,13 @@
 package cli
 
 import (
-	"charm.land/lipgloss/v2"
 	"cmp"
 	"fmt"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
 	"openapi/internal/forms"
 	"openapi/internal/interactive"
-	"os"
 )
 
 // initAuthCmd registers the auth command group with login, whoami, and logout subcommands.
@@ -188,7 +185,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 		accessible := formMode == interactive.FormAccessible
 
 		var selectedScheme string
-		schemeSelect := forms.NewSelect[string]().
+		schemeSelect := forms.NewSelect().
 			Title("Authentication Method").
 			Description("Choose which credentials to configure").
 			Options(
@@ -202,7 +199,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			).
 			Value(&selectedScheme)
 
-		if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).WithTheme(authFormTheme()).WithWidth(authFormWidth()).WithShowHelp(false).Run(); err != nil {
+		if err := forms.NewForm(forms.NewGroup(schemeSelect)).WithAccessible(accessible).Run(); err != nil {
 			return fmt.Errorf("auth login: %w", err)
 		}
 
@@ -220,16 +217,12 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("HTTP Basic password").
 					Description("--password").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))).
 					Value(&authPassword),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -253,22 +246,18 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("HTTP Bearer").
 					Description("--bearer-auth").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))).
 					Value(&authBearerAuth),
 				forms.NewInput().
 					Title("API Key").
 					Description("--my-api-key").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
 					Value(&authMyApiKey),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -293,16 +282,12 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("OAuth2 Authorization").
 					Description("--oauth2").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))).
 					Value(&authOauth2),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -322,22 +307,18 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("Custom authentication credential").
 					Description("--app-id").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))).
 					Value(&authAppId),
 				forms.NewInput().
 					Title("Custom authentication credential").
 					Description("--secret").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))).
 					Value(&authSecret),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -362,16 +343,12 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.").
 					Description("--mobile-auth").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))).
 					Value(&authMobileAuth),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -392,13 +369,13 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("Client Credentials flow. client identifier").
 					Description("--client-id").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))).
 					Value(&authClientID),
 				forms.NewInput().
 					Title("Client Credentials flow. client secret").
 					Description("--client-secret").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))).
 					Value(&authClientSecret),
 				forms.NewInput().
@@ -408,11 +385,7 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 					Value(&authTokenURL),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -441,16 +414,12 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 				forms.NewInput().
 					Title("API Key").
 					Description("--my-api-key").
-					EchoMode(forms.EchoModePassword).
+					Password().
 					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
 					Value(&authMyApiKey),
 			}
 
-			form := forms.NewForm(forms.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.NewForm(forms.NewGroup(fields...)).WithAccessible(accessible)
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -539,59 +508,4 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
 	return nil
-}
-
-// authFormTheme builds the form theme for auth login.
-func authFormTheme() forms.Theme {
-	return forms.ThemeFunc(authFormStyles)
-}
-
-func authFormStyles(isDark bool) *forms.Styles {
-	t := *forms.ThemeBase(isDark)
-
-	accent := lipgloss.Color("#38BDF8")
-	dimmed := lipgloss.Color("#64748B")
-	subtle := lipgloss.Color("#475569")
-	errColor := lipgloss.Color("#F87171")
-
-	t.Focused.Base = t.Focused.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(accent).
-		PaddingLeft(1)
-	t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
-	t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
-	t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
-	t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
-
-	t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
-
-	t.Blurred.Base = t.Blurred.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(subtle).
-		PaddingLeft(1)
-	t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
-	t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
-	t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
-	t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
-	t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
-
-	return &t
-}
-
-// authFormWidth returns the terminal width for sizing forms.
-func authFormWidth() int {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 {
-		width = 80
-	}
-	return width
 }
