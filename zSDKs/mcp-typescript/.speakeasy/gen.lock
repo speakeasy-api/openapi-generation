@@ -554,7 +554,7 @@ trackedFiles:
   src/hooks/types.ts:
     last_write_checksum: sha1:29372122898cc523fa47576f3f6608a28ec6080e
   src/landing-page.ts:
-    last_write_checksum: sha1:7a7d2f0f2e4ef76f992da14f7321ce3aa47a3bb3
+    last_write_checksum: sha1:2980781114eda92848b5c2ddc22e9b6f46891ca2
   src/lib/base64.ts:
     last_write_checksum: sha1:e9f04a037018040361043104960982f7c22db52d
   src/lib/config.ts:

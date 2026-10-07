@@ -35,7 +35,9 @@ export function landingPageHTML(origin: string, transport: "sse" | "http" = "sse
   const endpoint = transport === "sse" ? "sse" : "mcp";
   const headers: Array<{ name: string; env: string }> = runtime === "cloudflare"
     ? {{ templateMcpLandingPageHeaders "cloudflare" }}
-    : {{ templateMcpLandingPageHeaders "node" }};
+    : transport === "sse"
+      ? {{ templateMcpLandingPageHeaders "node" "sse" }}
+      : {{ templateMcpLandingPageHeaders "node" }};
   const mcpConfig = {
     command: "npx",
     args: ["-y", "mcp-remote@0.1.25", `${o}/${endpoint}`, ...headers.flatMap(({ name, env }) => ["--header", `${name}:\${${env}}`])],

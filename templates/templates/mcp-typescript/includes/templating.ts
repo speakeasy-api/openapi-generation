@@ -722,9 +722,16 @@ function addHeadersToConfigVSCode(config: any, headerEntries: any[]) {
   return config;
 }
 
-function mcpRemoteHeaders(runtime: "node" | "cloudflare") {
-  const security = context.Global.AST.MainSDK.Security?.Type;
-  if (!security) return [];
+function mcpRemoteHeaders(
+  runtime: "node" | "cloudflare",
+  transport: "http" | "sse" = "http",
+) {
+  const sdk = context.Global.AST.MainSDK;
+  const security = sdk.Security?.Type;
+  const nodeHeader = (fieldName: string) => {
+    const name = sanitizeMCPCLIFlag(fieldName);
+    return { name, env: caser().ToSNAKE(name) };
+  };
   const entries =
     runtime === "cloudflare"
       ? getRemoteServerHeaders(security)
@@ -733,16 +740,24 @@ function mcpRemoteHeaders(runtime: "node" | "cloudflare") {
             name: header.headerName,
             env: caser().ToSNAKE(header.fieldName),
           }))
-      : unnestSecurityEnvFields(security).map((field) => ({
-          name: sanitizeMCPCLIFlag(field.Name),
-          env: caser().ToSNAKE(field.Name),
-        }));
+      : (security ? unnestSecurityEnvFields(security) : []).map((field) =>
+          nodeHeader(field.Name),
+        );
+  if (security && runtime === "node" && transport === "http") {
+    for (const field of sdk.Globals?.Fields ?? []) {
+      entries.push(nodeHeader(templateGlobalFieldName(field.Name)));
+    }
+    for (const variable of sdk.Servers?.GetVariables() ?? []) {
+      entries.push(nodeHeader(variable.Name));
+    }
+  }
   return [...new Map(entries.map((header) => [header.name, header])).values()];
 }
 
 registerTemplateFunc(
   "templateMcpLandingPageHeaders",
-  (runtime: "node" | "cloudflare") => JSON.stringify(mcpRemoteHeaders(runtime)),
+  (runtime: "node" | "cloudflare", transport: "http" | "sse" = "http") =>
+    JSON.stringify(mcpRemoteHeaders(runtime, transport)),
 );
 
 function mcpRemoteConfigCommand(
@@ -758,6 +773,7 @@ function mcpRemoteConfigCommand(
   const headers: string[] = [];
   for (const header of mcpRemoteHeaders(
     context.Global.Config.CloudflareEnabled ? "cloudflare" : "node",
+    endpointType === "sse" ? "sse" : "http",
   )) {
     headers.push("--header", `${header.name}:\${${header.env}}`);
   }

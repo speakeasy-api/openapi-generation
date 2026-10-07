@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport, McpServer } from "@modelcontextprotocol/server";
+import { AjvJsonSchemaValidator } from "@modelcontextprotocol/server/validators/ajv";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   ErrorCode,
@@ -267,6 +268,101 @@ test("MCP output schemas do not claim input types for transforms or discard unkn
     value: { length: 4, choice: 3 },
   });
 });
+
+test.each(["input", "output"] as const)(
+  "MCP %s schemas honor JSON Schema dialects for tuples",
+  (direction) => {
+    const converter = mcpSchema({
+      fixed: z.tuple([z.string(), z.number()]),
+      rest: z.tuple([z.string()]).rest(z.number()),
+      empty: z.tuple([]),
+    })["~standard"].jsonSchema[direction];
+    for (const target of ["draft-07", "draft-2020-12"] as const) {
+      const schema = converter({ target });
+      expect(schema["$schema"]).toBe(
+        target === "draft-07"
+          ? "http://json-schema.org/draft-07/schema#"
+          : "https://json-schema.org/draft/2020-12/schema",
+      );
+      const validate = new AjvJsonSchemaValidator().getValidator(schema);
+      const valid = {
+        fixed: ["example", 1],
+        rest: ["example", 2, 3],
+        empty: [],
+      };
+      expect(validate(valid).valid).toBe(true);
+      expect(validate({ ...valid, fixed: ["example", "wrong"] }).valid).toBe(
+        false,
+      );
+      expect(validate({ ...valid, fixed: ["example", 1, 2] }).valid).toBe(
+        false,
+      );
+      expect(validate({ ...valid, rest: ["example", "wrong"] }).valid).toBe(
+        false,
+      );
+      expect(validate({ ...valid, empty: [1] }).valid).toBe(false);
+    }
+  },
+);
+
+test("MCP draft 2020-12 schemas preserve recursive references relocated inside tuples", () => {
+  type Node = { value: string; children?: Node[] | undefined };
+  const node: z.ZodType<Node> = z.lazy(() =>
+    z.object({ value: z.string(), children: z.array(node).optional() }),
+  );
+  const schema = mcpSchema({ pair: z.tuple([node, node]), same: node })[
+    "~standard"
+  ].jsonSchema.input({ target: "draft-2020-12" });
+  const validate = new AjvJsonSchemaValidator().getValidator(schema);
+  const valid = {
+    pair: [{ value: "one", children: [{ value: "nested" }] }, { value: "two" }],
+    same: { value: "three" },
+  };
+  expect(validate(valid).valid).toBe(true);
+  expect(validate({ ...valid, same: { value: 3 } }).valid).toBe(false);
+  expect(
+    validate({
+      ...valid,
+      pair: [{ value: "one", children: [{ value: 1 }] }, { value: "two" }],
+    }).valid,
+  ).toBe(false);
+});
+
+test("MCP dialect conversion leaves default values untouched and rejects unsupported dialects", () => {
+  const value = {
+    items: [{ type: "string" }],
+    additionalItems: false,
+    $ref: "#/properties/example/items/0",
+  };
+  const converter = mcpSchema({ example: z.any().default(value) })["~standard"]
+    .jsonSchema;
+  expect(converter.input({ target: "draft-2020-12" })).toMatchObject({
+    properties: { example: { default: value } },
+  });
+  expect(() => converter.input({ target: "openapi-3.0" })).toThrow(
+    "Unsupported JSON Schema target",
+  );
+  expect(() => converter.output({ target: "openapi-3.0" })).toThrow(
+    "Unsupported JSON Schema target",
+  );
+});
+
+test.each(["a/b", "a~b"])(
+  "MCP draft 2020-12 references escape property name %s",
+  (name) => {
+    const value = z.object({ value: z.string() });
+    const schema = mcpSchema({ [name]: value, same: value })[
+      "~standard"
+    ].jsonSchema.input({ target: "draft-2020-12" });
+    const validate = new AjvJsonSchemaValidator().getValidator(schema);
+    expect(
+      validate({ [name]: { value: "one" }, same: { value: "two" } }).valid,
+    ).toBe(true);
+    expect(
+      validate({ [name]: { value: "one" }, same: { value: 2 } }).valid,
+    ).toBe(false);
+  },
+);
 
 test("tools with arguments and static resources preserve legacy context", async () => {
   const server = new McpServer({ name: "callback-context", version: "1.0.0" });

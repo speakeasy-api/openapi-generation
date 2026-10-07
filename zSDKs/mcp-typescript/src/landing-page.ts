@@ -62,6 +62,18 @@ export function landingPageHTML(
       { "name": "x-mobile-auth", "env": "MOBILE_AUTH" },
       { "name": "x-client-credentials", "env": "CLIENT_CREDENTIALS" },
     ]
+    : transport === "sse"
+    ? [
+      { "name": "username", "env": "USERNAME" },
+      { "name": "password", "env": "PASSWORD" },
+      { "name": "bearer-auth", "env": "BEARER_AUTH" },
+      { "name": "my-api-key", "env": "MY_API_KEY" },
+      { "name": "oauth2", "env": "OAUTH2" },
+      { "name": "app-id", "env": "APP_ID" },
+      { "name": "secret", "env": "SECRET" },
+      { "name": "mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "client-credentials", "env": "CLIENT_CREDENTIALS" },
+    ]
     : [
       { "name": "username", "env": "USERNAME" },
       { "name": "password", "env": "PASSWORD" },
@@ -72,6 +84,14 @@ export function landingPageHTML(
       { "name": "secret", "env": "SECRET" },
       { "name": "mobile-auth", "env": "MOBILE_AUTH" },
       { "name": "client-credentials", "env": "CLIENT_CREDENTIALS" },
+      { "name": "query-param1", "env": "QUERY_PARAM1" },
+      { "name": "deprecated-query-param1", "env": "DEPRECATED_QUERY_PARAM1" },
+      { "name": "deprecated-query-param2", "env": "DEPRECATED_QUERY_PARAM2" },
+      { "name": "lone-query-param", "env": "LONE_QUERY_PARAM" },
+      { "name": "subdomain", "env": "SUBDOMAIN" },
+      { "name": "api-version", "env": "API_VERSION" },
+      { "name": "api-host-name", "env": "API_HOST_NAME" },
+      { "name": "api-port", "env": "API_PORT" },
     ];
   const mcpConfig = {
     command: "npx",

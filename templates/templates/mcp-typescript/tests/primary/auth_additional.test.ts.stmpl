@@ -23,6 +23,17 @@ test.each(["sse", "http"] as const)("Node %s setup examples use accepted authent
     expect(header).toBeDefined();
     expect(resolvedOptions({ [header!]: "request-token" }, {}, true).security?.["accessToken"]).toBe("request-token");
   }
+  const config = JSON.parse(html.match(/id="raw-config">([\s\S]*?)<\/code>/)![1]!);
+  if (transport === "http") {
+    expect(config.args).toContain("global-header-param:${GLOBAL_HEADER_PARAM}");
+    expect(config.args).toContain("api-hostname:${API_HOSTNAME}");
+    expect(html).toContain('"global-header-param" = "YOUR_GLOBAL_HEADER_PARAM"');
+    expect(html).toContain('"api-hostname" = "YOUR_API_HOSTNAME"');
+    expect(resolvedOptions({ "global-header-param": "true", "api-hostname": "api.example.test" }, {}, true)).toMatchObject({ globalHeaderParam: true, hostname: "api.example.test" });
+  } else {
+    expect(config.args.some((arg: string) => arg.startsWith("global-header-param:") || arg.startsWith("api-hostname:"))).toBe(false);
+  }
+  expect(config.args.some((arg: string) => arg.startsWith("server-index:") || arg.startsWith("server-url:"))).toBe(false);
   expect(html).toContain(`id="server-url">https://mcp.example.test/${transport === "sse" ? "sse" : "mcp"}</code>`);
 });
 
