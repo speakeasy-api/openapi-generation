@@ -2507,7 +2507,11 @@ func cliAcceptsEveryObject(member *cliResolvedSchema) bool {
 	for keyword, value := range member.raw {
 		switch keyword {
 		case "type":
-			if value != "object" {
+			if types, ok := value.([]any); ok {
+				if !slices.Contains(types, any("object")) {
+					return false
+				}
+			} else if value != "object" {
 				return false
 			}
 		case "additionalProperties":

@@ -4547,6 +4547,12 @@ paths:
                     - $ref: '#/components/schemas/SvgFormat'
                     - type: object
                       additionalProperties: true
+                nullable:
+                  anyOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: [object, "null"]
+                      additionalProperties: true
                 empty:
                   oneOf:
                     - $ref: '#/components/schemas/PngFormat'
@@ -4803,6 +4809,8 @@ commands:
       $.layered:
         logo:
           kind: png
+      $.nullable:
+        kind: png
       $.inclusive:
         kind: png
       $.empty:
@@ -4863,6 +4871,7 @@ commands:
 		"/composed":        {Pointer: "/composed", Key: "mode", Values: []any{"fast"}},
 		"/composed/format": {Pointer: "/composed/format", Key: "kind", Values: []any{"png"}},
 		"/inclusive":       {Pointer: "/inclusive", Key: "kind", Values: []any{"png"}},
+		"/nullable":        {Pointer: "/nullable", Key: "kind", Values: []any{"png"}},
 		"/wrapped":         {Pointer: "/wrapped", Key: "kind", Values: []any{"png"}},
 		"/refined":         {Pointer: "/refined", Key: "mode", Values: []any{"fast"}},
 		"/refined/format":  {Pointer: "/refined/format", Key: "kind", Values: []any{"png"}},
