@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.945.9] - 2026-10-07
+### :bug: Bug Fixes
+- [`49afd30`](https://github.com/speakeasy-api/openapi-generation/commit/49afd301de6d383e4866bad945e9dec1e3a5f882) - **cli**: report on stderr when a stream.select projection prints nothing ([#77](https://github.com/speakeasy-api/openapi-generation/pull/77)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.945.8] - 2026-10-06
 ### :bug: Bug Fixes
 - [`c8e7631`](https://github.com/speakeasy-api/openapi-generation/commit/c8e7631c653f6518cd5b68098bbcb17ee3da5d00) - **cli**: stop a locked OS keychain from hanging commands ([#80](https://github.com/speakeasy-api/openapi-generation/pull/80)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20439,3 +20444,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.5...v2.945.6
 [v2.945.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.6...v2.945.7
 [v2.945.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.7...v2.945.8
+[v2.945.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.8...v2.945.9
