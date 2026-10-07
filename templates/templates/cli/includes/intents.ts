@@ -287,6 +287,10 @@ function intentPointerKey(pointer: string): string {
   return rest.replace(/~1/g, "/").replace(/~0/g, "~");
 }
 
+function intentHasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
 // RFC 6901 pointer → decoded body path segments.
 function intentPointerPath(pointer: string): string[] {
   if (!pointer || !pointer.startsWith("/")) return [];
@@ -849,13 +853,14 @@ function collectIntentManifest(): IntentManifestCtx {
         Summary: a.Summary || "",
         Variadic: Boolean(a.Variadic),
         Required: Boolean(a.Required),
-        PresetCovered: dispatch ? false : key in presetObj,
+        PresetCovered: dispatch ? false : intentHasOwn(presetObj, key),
         Suggestions: (a.Enum || []).map((v: any) => `${v}`),
         RouteIDs: (a as any).RouteIDs || [],
         RequiredRouteIDs: (a as any).RequiredRouteIDs || [],
         Positional: true,
       });
-      if (a.Required && (dispatch || !(key in presetObj))) minArgs = 1;
+      if (a.Required && (dispatch || !intentHasOwn(presetObj, key)))
+        minArgs = 1;
       break; // v1: one (variadic) positional joined with spaces
     }
 
@@ -870,8 +875,8 @@ function collectIntentManifest(): IntentManifestCtx {
         path.length > 1
           ? typeof presetParent === "object" &&
             presetParent !== null &&
-            path[1] in presetParent
-          : key in presetObj;
+            intentHasOwn(presetParent, path[1])
+          : intentHasOwn(presetObj, key);
 
       flags.push({
         Key: key,

@@ -3481,7 +3481,8 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 	}
 
 	pointer := input.Bind.Pointer
-	if parent, leaf, nested := cliSplitNestedPointer(pointer); nested {
+	parent, leaf, nested := cliSplitNestedPointer(pointer)
+	if nested {
 		if isArg {
 			return fmt.Errorf("command %q arg %q binds %s; the positional binds a top-level body field (declare a flag for a nested field)", cmdKey, input.Name, pointer)
 		}
@@ -3496,6 +3497,9 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 	facts, found, err := d.lookupProperty(cmdKey, what, pointer, variant)
 	if err != nil {
 		return err
+	}
+	if nested && found && facts.readOnly {
+		return fmt.Errorf("command %q %s %s targets a readOnly property; the server would reject or ignore it", cmdKey, what, input.Bind.Pointer)
 	}
 	if !found {
 		if input.Type == "" {
