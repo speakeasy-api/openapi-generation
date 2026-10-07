@@ -654,7 +654,7 @@ trackedFiles:
   tests/artifact_test.go:
     last_write_checksum: sha1:0f30f25b5dc69938e9ef91371d4b3497bb87f62e
   tests/async_test.go:
-    last_write_checksum: sha1:6cd995f6a9a6537cceff18ccd1eeb8d7d9346e9a
+    last_write_checksum: sha1:6ba96fcf11fc74d77e99c81cea4e3a1cd6dfe297
   tests/cli_harness_test.go:
     last_write_checksum: sha1:b347035c99b9f95ac8e82a7e5d30afe78ed92c23
   tests/common_helpers_test.go:

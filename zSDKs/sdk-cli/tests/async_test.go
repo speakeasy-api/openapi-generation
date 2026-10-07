@@ -683,8 +683,11 @@ func TestAsyncPoll_RawSchemaMismatchAndSSE(t *testing.T) {
 				assert.Equal(t, "123", strings.TrimSpace(h.GetStdout()))
 			}
 			if mode == "sse" {
-				assert.True(t, json.Valid([]byte(h.GetStdout())), h.GetStdout())
-				assert.NotEqual(t, "{}", strings.TrimSpace(h.GetStdout()))
+				var event struct {
+					Data json.RawMessage `json:"data"`
+				}
+				require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &event))
+				assert.JSONEq(t, asyncSuccessTestBody, string(event.Data))
 			}
 		})
 	}
