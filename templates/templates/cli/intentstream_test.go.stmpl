@@ -411,6 +411,26 @@ func TestIntentStream_NoDoubleNewline(t *testing.T) {
 	assert.Equal(t, "line one\nline two\n", rec.String())
 }
 
+// TestIntentStream_NoSelectedTextReportsOnStderr: a stream whose events never
+// carry the selected field must not end silently with empty stdout.
+func TestIntentStream_NoSelectedTextReportsOnStderr(t *testing.T) {
+	srv := newIntentStreamServer(t, nil, nil)
+	var out bytes.Buffer
+	ctx, cancel := context.WithTimeout(context.Background(), intentStreamTestTimeout)
+	defer cancel()
+	stderr, err := runIntentStream(t, ctx, &out, srv.URL)
+	require.NoError(t, err, "stderr: %s", stderr)
+	assert.Empty(t, out.String())
+	pointerTokens := append([]string{ {{templateIntentStreamEnvelopeKey}} }, intentStreamWireTokens...)
+	escape := strings.NewReplacer("~", "~0", "/", "~1")
+	for i, token := range pointerTokens {
+		pointerTokens[i] = escape.Replace(token)
+	}
+	assert.Contains(t, stderr, "No output:")
+	assert.Contains(t, stderr, "had no text at /"+strings.Join(pointerTokens, "/")+";")
+	assert.Contains(t, stderr, "--output-format json")
+}
+
 // TestIntentStream_ExplicitJSONKeepsNDJSON: an explicit --output-format json
 // opts out of the projection and keeps one full event per line.
 func TestIntentStream_ExplicitJSONKeepsNDJSON(t *testing.T) {

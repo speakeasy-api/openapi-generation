@@ -20,6 +20,7 @@ const streamSelectAnnotation = "speakeasy_stream_select"
 type streamProjector struct {
 	pointer  []string
 	select_  string
+	events   int
 	wrote    bool
 	lastByte byte
 }
@@ -61,6 +62,7 @@ func splitJSONPointer(pointer string) []string {
 }
 
 func (p *streamProjector) emit(out io.Writer, item interface{}) error {
+	p.events++
 	data, err := marshalJSON(item)
 	if err != nil {
 		return err
@@ -88,6 +90,17 @@ func (p *streamProjector) finish(out io.Writer) error {
 		return nil
 	}
 	return p.write(out, []byte{'\n'})
+}
+
+func (p *streamProjector) reportEmpty(cmd *cobra.Command) {
+	if p == nil || p.wrote || p.events == 0 || IsMachineMode(cmd) {
+		return
+	}
+	noun := "events"
+	if p.events == 1 {
+		noun = "event"
+	}
+	fmt.Fprintf(cmd.ErrOrStderr(), "No output: %d streamed %s had no text at %s; use --output-format json to see the full events.\n", p.events, noun, p.select_)
 }
 
 func (p *streamProjector) write(out io.Writer, chunk []byte) error {
