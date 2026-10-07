@@ -449,6 +449,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intent{{$c.FuncName}}Preset); err != nil {
+				return err
+			}
+		}
 	}
 	{{- end}}
 	{{- end}}
