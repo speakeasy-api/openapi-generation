@@ -2808,6 +2808,55 @@ function templateConfigureFlagNames(): string {
 }
 registerTemplateFunc("templateConfigureFlagNames", templateConfigureFlagNames);
 
+function settingsFlagNames(command: string): string[] {
+  const names = getCLISecurityFields().map((f) => f.flagName);
+  if (command === "configure" && hasGlobals()) {
+    for (const field of context.Global.AST.MainSDK.Globals.Fields) {
+      names.push(sanitizeFlagNameWithReserved(field.Name));
+    }
+  }
+  if (isAnyInteractiveEnabled()) {
+    names.push("interactive", "no-interactive");
+  }
+  return names;
+}
+
+function templateSettingsHelpFlags(command: string): string {
+  return escapeGoString(settingsFlagNames(command).join(","));
+}
+registerTemplateFunc("templateSettingsHelpFlags", templateSettingsHelpFlags);
+
+function templateSettingsHelpExample(commandPath: string): string {
+  const cliName = sanitizeCliName();
+  const lines = [`  ${cliName} ${commandPath}`];
+  const primary = primaryCLISecurityField(getCLISecurityFields());
+  const envVar = templatePrimaryAuthEnvVar();
+  if (primary && envVar) {
+    lines.push(
+      `  ${cliName} ${commandPath} --${primary.flagName} "$${envVar}"`,
+    );
+  }
+  return escapeGoString(lines.join("\n"));
+}
+registerTemplateFunc(
+  "templateSettingsHelpExample",
+  templateSettingsHelpExample,
+);
+
+function templateSettingsHelpSeeAlso(command: string): string {
+  const paths: string[] = [];
+  if (command !== "configure") paths.push("configure");
+  if (hasConfigurableSettings()) paths.push("whoami");
+  if (isInteractiveAuthEnabled() && hasGlobalSecurity()) {
+    paths.push("auth logout");
+  }
+  return escapeGoString(paths.join(","));
+}
+registerTemplateFunc(
+  "templateSettingsHelpSeeAlso",
+  templateSettingsHelpSeeAlso,
+);
+
 /** Generate var declarations for a set of scheme fields */
 function genSchemeVarDecls(fields: CLISecurityFieldInfo[]): string[] {
   return fields.map((f) => `var auth${caser().ToPascal(f.field.Name)} string`);

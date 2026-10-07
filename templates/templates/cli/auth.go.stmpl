@@ -48,6 +48,13 @@ Subcommands:
         Use:   "login",
         Short: "{{templateAuthLoginShort}}",
         Long:  `{{templateAuthLoginLong}}`,
+        {{- if eq (helpStyle) "compact"}}
+        Example: "{{templateSettingsHelpExample "auth login"}}",
+        Annotations: map[string]string{
+            "speakeasy_help_settings": "{{templateSettingsHelpFlags "login"}}",
+            "speakeasy_help_see_also": "{{templateSettingsHelpSeeAlso "login"}}",
+        },
+        {{- end}}
         Args:  cobra.NoArgs,
         RunE:  runAuthLoginCmd,
     })
