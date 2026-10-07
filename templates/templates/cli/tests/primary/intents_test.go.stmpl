@@ -428,6 +428,11 @@ func TestIntentPresetFromArgs(t *testing.T) {
 	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
 	assert.Equal(t, map[string]interface{}{"kind": "png"}, body["image_format"])
 	assert.Equal(t, "a lighthouse at dusk", body["input"])
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "a lighthouse at dusk", "--width", "10"}))
+	body = echoedJSON(t, h.GetStdout())
+	assert.Equal(t, map[string]interface{}{"kind": "png", "width": float64(10)}, body["image_format"])
 }
 
 // TestIntentPartialBodyKeepsPresets is the regression for the preset being
@@ -463,6 +468,33 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			h := NewCLITestHarness(t)
 			require.NoError(t, h.RunWithServer(s.URL, []string{"render", "--body", tc.body}))
+			body := echoedJSON(t, h.GetStdout())
+			assert.Equal(t, tc.want, body["image_format"])
+		})
+	}
+
+	for _, tc := range []struct {
+		name    string
+		body    string
+		want    map[string]interface{}
+		wantErr string
+	}{
+		{name: "flag without the key", body: `{"input":"cat"}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag into a partial object", body: `{"input":"cat","image_format":{}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag into the same kind", body: `{"input":"cat","image_format":{"kind":"png"}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag and body set the field", body: `{"input":"cat","image_format":{"width":5}}`, wantErr: `key "image_format.width" is set both by --width and by --body`},
+		{name: "flag into another kind", body: `{"input":"cat","image_format":{"kind":"svg"}}`, wantErr: `--width applies when image_format.kind is "png", but --body sets "svg"`},
+		{name: "flag into a non-object", body: `{"input":"cat","image_format":"raw"}`, wantErr: `cannot combine --width with --body: image_format must be a JSON object`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, []string{"render", "--body", tc.body, "--width", "10"})
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
 			body := echoedJSON(t, h.GetStdout())
 			assert.Equal(t, tc.want, body["image_format"])
 		})

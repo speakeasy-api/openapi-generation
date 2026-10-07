@@ -1839,7 +1839,8 @@ commands:
 		{`$['a','b']`, "union selector"},
 		{`$[-1]`, "negative index"},
 		{`$['unterminated]`, "unterminated"},
-		{`$.content.parts`, "multi-segment"},
+		{`$.content.parts.text`, "multi-segment"},
+		{`$.content[0]`, "addresses an array index; a nested bind"},
 		{`$[0]`, "array index at the body root"},
 	}
 	for _, testCase := range pathCases {
@@ -3732,6 +3733,13 @@ version: 1
 operations:
   StreamTask:
     flags:
+      nested: {to: $.stream.level}
+`, `operation "StreamTask" flag "nested" binds /stream/level; operation flags bind top-level body fields only`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  StreamTask:
+    flags:
       all: {to: $.stream}
 `, `flag "all" collides with the generated operation flag for pagination`)
 	requireDecodeError(t, `
@@ -4818,6 +4826,84 @@ commands:
 		"/refined":         {Pointer: "/refined", Key: "mode", Values: []any{"fast"}},
 		"/refined/format":  {Pointer: "/refined/format", Key: "kind", Values: []any{"png"}},
 	}, got)
+}
+
+func TestCLICommands_NestedPresetBinds(t *testing.T) {
+	manifest, err := decodeCLITestSpec(t, cliNestedPresetSpec, `
+version: 1
+commands:
+  draw:
+    op: CreateDrawing
+    preset:
+      $.format:
+        kind: png
+      $.mapped:
+        kind: png
+        width: 10
+      $.plain:
+        kind: png
+    flags:
+      width: {to: $.format.width}
+      mapped-width: {to: $.mapped.width}
+      plain-width: {to: $.plain.width}
+`)
+	require.NoError(t, err)
+	flags := map[string]CLICommandInput{}
+	for _, flag := range manifest.Commands[0].Flags {
+		flags[flag.Name] = flag
+	}
+	assert.Equal(t, "/format/width", flags["width"].Bind.Pointer)
+	assert.Equal(t, "int", flags["width"].Type)
+	assert.Nil(t, flags["width"].Default)
+	assert.Equal(t, "int", flags["mapped-width"].Type)
+	assert.Equal(t, "preset", flags["mapped-width"].DefaultFrom)
+	assert.EqualValues(t, 10, flags["mapped-width"].Default)
+	assert.Equal(t, "int", flags["plain-width"].Type)
+}
+
+func TestCLICommands_NestedPresetBindErrors(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"no preset", "flags:\n      dpi: {to: $.config.dpi}", `flag "dpi" bind /config/dpi nests beneath /config, which no object preset sets`},
+		{"scalar preset", "preset:\n      $.prompt: hello\n    flags:\n      x: {to: $.prompt.x}", `flag "x" bind /prompt/x nests beneath /prompt, which no object preset sets`},
+		{"discriminator", "preset:\n      $.format: {kind: png}\n    flags:\n      kind: {to: $.format.kind}", `targets the discriminator of the union at /format, which the preset pins`},
+		{"no unique member", "preset:\n      $.source: {url: https://example.com/a}\n    flags:\n      url: {to: $.source.url}", `the preset at /source does not select exactly one member of its union`},
+		{"other member field", "preset:\n      $.format: {kind: png}\n    flags:\n      scale: {to: $.format.scale}", `flag "scale" bind beneath /format: /scale does not resolve in PngFormat`},
+		{"typo", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.widht}", `did you mean "width"`},
+		{"positional", "preset:\n      $.format: {kind: png}\n    args:\n      w: {to: $.format.width, variadic: true, type: string}", `arg "w" binds /format/width; the positional binds a top-level body field`},
+		{"parent flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      format: {to: $.format, type: string}\n      width: {to: $.format.width}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+		{"nested flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.width}\n      format: {to: $.format, type: string}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+		{"positional parent", "preset:\n      $.format: {kind: png}\n    args:\n      format: {to: $.format, variadic: true, type: string}\n    flags:\n      width: {to: $.format.width}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := decodeCLITestSpec(t, cliNestedPresetSpec, "\nversion: 1\ncommands:\n  draw:\n    op: CreateDrawing\n    "+testCase.input+"\n")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), testCase.want)
+		})
+	}
+}
+
+func TestCLICommands_NestedBindRejectedOnRouteDispatch(t *testing.T) {
+	formatProp := "        format:\n          oneOf:\n            - {$ref: '#/components/schemas/PngFormat'}\n            - {$ref: '#/components/schemas/SvgFormat'}\n"
+	spec := strings.ReplaceAll(cliRouteDispatchSpec, "        background:\n", formatProp+"        background:\n") + `    PngFormat:
+      type: object
+      properties:
+        kind: {const: png}
+        width: {type: integer}
+    SvgFormat:
+      type: object
+      properties:
+        kind: {const: svg}
+        scale: {type: number}
+`
+	manifestYAML := strings.Replace(cliRouteDispatchManifest, "    args:\n", "    preset:\n      $.format: {kind: png}\n    args:\n", 1) + "      width: {to: $.format.width}\n"
+	_, err := decodeCLITestSpec(t, spec, manifestYAML)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `flag "width" binds /format/width; nested binds are not part of route dispatch`)
 }
 
 func TestCLICommands_InputNamePatternHyphens(t *testing.T) {

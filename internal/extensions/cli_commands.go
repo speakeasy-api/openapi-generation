@@ -500,7 +500,7 @@ var CLIRuntimeHintReasons = []string{
 // to the capability an author is asking for, so the error can name it instead
 // of pretending the key is a typo.
 var cliReservedCommandKeys = map[string]string{
-	"payload": "payload templates require the request-plan.payload-holes capability, which is not part of v1; multi-segment binds stay hard errors until it ships",
+	"payload": "payload templates require the request-plan.payload-holes capability, which is not part of v1; binds deeper than one level beneath an object preset stay hard errors until it ships",
 	"via":     "via is reserved for a future routing capability and is not part of v1",
 	"pos":     "pos is reserved for a future positional-layout capability and is not part of v1",
 	"format":  "format is reserved for a future output-format capability and is not part of v1; use jq for projections",
@@ -2144,11 +2144,14 @@ func (d *cliManifestDecoder) decodeBind(cmdKey, name string, node *yaml.Node) (*
 		if err != nil {
 			return nil, fmt.Errorf("line %d: command %q input %q: %w", node.Line, cmdKey, name, err)
 		}
-		if len(segments) > 1 {
-			return nil, fmt.Errorf("line %d: command %q input %q: to: %s is a multi-segment body path; nested construction requires the request-plan.payload-holes capability and multi-segment binds stay hard errors until it ships", node.Line, cmdKey, name, raw)
+		if len(segments) > 2 {
+			return nil, fmt.Errorf("line %d: command %q input %q: to: %s is a multi-segment body path; a flag may bind one level beneath an object preset ($.<preset>.<field>), deeper construction requires the request-plan.payload-holes capability and stays a hard error until it ships", node.Line, cmdKey, name, raw)
 		}
 		if segments[0].IsIndex {
 			return nil, fmt.Errorf("line %d: command %q input %q: to: %s addresses an array index at the body root, which cannot be a JSON object field", node.Line, cmdKey, name, raw)
+		}
+		if len(segments) == 2 && segments[1].IsIndex {
+			return nil, fmt.Errorf("line %d: command %q input %q: to: %s addresses an array index; a nested bind targets a field of an object preset", node.Line, cmdKey, name, raw)
 		}
 		return &CLICommandBind{In: "body", Pointer: cliSegmentsToPointer(segments), Mode: "set"}, nil
 	case yaml.MappingNode:
@@ -2403,6 +2406,20 @@ func (d *cliManifestDecoder) checkCommandInputs(cmd *CLICommand, key string) err
 					return fmt.Errorf("command %q: inputs %q and %q both bind %s", key, prev, input.Name, input.Bind.Pointer)
 				}
 				pointers[input.Bind.Pointer] = input.Name
+			}
+		}
+	}
+	for _, list := range [][]CLICommandInput{cmd.Args, cmd.Flags} {
+		for _, input := range list {
+			if input.Bind == nil || input.Bind.In != "body" {
+				continue
+			}
+			parent, _, nested := cliSplitNestedPointer(input.Bind.Pointer)
+			if !nested {
+				continue
+			}
+			if prev, ok := pointers[parent]; ok {
+				return fmt.Errorf("command %q: input %q binds %s and input %q binds %s beneath it; bind the object or its field, not both", key, prev, parent, input.Name, input.Bind.Pointer)
 			}
 		}
 	}

@@ -796,6 +796,9 @@ func (d *cliManifestDecoder) checkDispatchValueDiscrimination(cmdKey string, mem
 // intent bindings: the property must exist with the same scalar type in every
 // member so the flag cannot silently select or invalidate a variant.
 func (d *cliManifestDecoder) linkOperationFlag(opID string, input *CLICommandInput, bodySchema any) error {
+	if _, _, nested := cliSplitNestedPointer(input.Bind.Pointer); nested {
+		return fmt.Errorf("operation %q flag %q binds %s; operation flags bind top-level body fields only (nested binds are for intent commands with an object preset)", opID, input.Name, input.Bind.Pointer)
+	}
 	bodyMap, _ := bodySchema.(map[string]any)
 	unionMap, _ := d.unionBodySchema(bodyMap)
 	rawVariants := cliUnionMembers(unionMap)
@@ -1307,6 +1310,9 @@ func (d *cliManifestDecoder) linkDispatchInput(cmdKey string, input *CLICommandI
 	what := "flag"
 	if isArg {
 		what = "arg"
+	}
+	if _, _, nested := cliSplitNestedPointer(input.Bind.Pointer); nested {
+		return fmt.Errorf("command %q: %s %q binds %s; nested binds are not part of route dispatch (routes: commands bind top-level body fields only)", cmdKey, what, input.Name, input.Bind.Pointer)
 	}
 	var declaring []cliDispatchInputFacts
 	for i := range links {
@@ -3386,6 +3392,48 @@ func (d *cliManifestDecoder) lookupProperty(cmdKey, what, pointer string, varian
 	return facts, true, nil
 }
 
+func cliSplitNestedPointer(pointer string) (parent, leaf string, ok bool) {
+	head, tail, found := strings.Cut(strings.TrimPrefix(pointer, "/"), "/")
+	if !found {
+		return "", "", false
+	}
+	return "/" + head, "/" + tail, true
+}
+
+// nestedBindScope resolves the object a nested flag bind writes into: the
+// property at parent, or the member of its union the object preset selects.
+func (d *cliManifestDecoder) nestedBindScope(cmdKey, what, parent, leaf string, variant *cliResolvedSchema, presetValues map[string]any) (*cliResolvedSchema, map[string]any, error) {
+	pointer := parent + leaf
+	presetObj, ok := presetValues[parent].(map[string]any)
+	if !ok {
+		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, which no object preset sets; a nested bind targets a field of an object preset (preset: {$.%s: {...}})", cmdKey, what, pointer, parent, cliPointerPropertyName(parent))
+	}
+	flat := newCLIFlatUnion()
+	d.flattenUnion(variant.properties[cliPointerPropertyName(parent)], 0, nil, flat)
+	var scope *cliResolvedSchema
+	switch {
+	case len(flat.members) == 1:
+		scope = flat.members[0]
+	case len(flat.members) > 1:
+		point, member := d.presetUnionMergePoint(parent, flat, presetObj)
+		if member == nil {
+			return nil, nil, fmt.Errorf("command %q %s %s: the preset at %s does not select exactly one member of its union, so the field cannot be resolved; pin the member's discriminator in the preset", cmdKey, what, pointer, parent)
+		}
+		if point.Key == cliPointerPropertyName(leaf) {
+			return nil, nil, fmt.Errorf("command %q %s %s targets the discriminator of the union at %s, which the preset pins; a flag there would switch members", cmdKey, what, pointer, parent)
+		}
+		scope = member
+	}
+	if scope == nil {
+		return nil, nil, fmt.Errorf("command %q %s %s nests beneath %s, which is not an object property", cmdKey, what, pointer, parent)
+	}
+	leafPresets := map[string]any{}
+	if value, ok := presetObj[cliPointerPropertyName(leaf)]; ok {
+		leafPresets[leaf] = value
+	}
+	return scope, leafPresets, nil
+}
+
 func cliPointerPropertyName(pointer string) string {
 	name := strings.TrimPrefix(pointer, "/")
 	name = strings.ReplaceAll(name, "~1", "/")
@@ -3412,7 +3460,20 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 		return fmt.Errorf("command %q arg %q resolves to type %s; the variadic positional joins argv into a single string, so only string bindings are part of v1 (declare a flag instead)", cmdKey, input.Name, input.Type)
 	}
 
-	facts, found, err := d.lookupProperty(cmdKey, what, input.Bind.Pointer, variant)
+	pointer := input.Bind.Pointer
+	if parent, leaf, nested := cliSplitNestedPointer(pointer); nested {
+		if isArg {
+			return fmt.Errorf("command %q arg %q binds %s; the positional binds a top-level body field (declare a flag for a nested field)", cmdKey, input.Name, pointer)
+		}
+		scope, leafPresets, err := d.nestedBindScope(cmdKey, what, parent, leaf, variant, presetValues)
+		if err != nil {
+			return err
+		}
+		variant, presetValues, pointer = scope, leafPresets, leaf
+		what = fmt.Sprintf("flag %q bind beneath %s:", input.Name, parent)
+	}
+
+	facts, found, err := d.lookupProperty(cmdKey, what, pointer, variant)
 	if err != nil {
 		return err
 	}
@@ -3425,7 +3486,7 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 				return fmt.Errorf("command %q %s %s suggestions: %w", cmdKey, what, input.Bind.Pointer, err)
 			}
 		}
-		if value, ok := presetValues[input.Bind.Pointer]; ok && !isArg && cliIsPresetDefault(value, input.Type) {
+		if value, ok := presetValues[pointer]; ok && !isArg && cliIsPresetDefault(value, input.Type) {
 			input.DefaultFrom = "preset"
 			input.Default = value
 		}
@@ -3501,7 +3562,7 @@ func (d *cliManifestDecoder) linkInput(cmdKey string, input *CLICommandInput, va
 
 	// Display-only defaults. A preset at the same pointer is what the request
 	// carries when the flag is omitted, so it is the default help shows.
-	presetValue, presetCovered := presetValues[input.Bind.Pointer]
+	presetValue, presetCovered := presetValues[pointer]
 	switch {
 	case isArg:
 	case presetCovered && cliIsPresetDefault(presetValue, input.Type):

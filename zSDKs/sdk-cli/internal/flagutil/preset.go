@@ -251,6 +251,20 @@ func (m PresetMerge) fillPresetObject(user, preset json.RawMessage, pointer stri
 	return merged, true
 }
 
+// MergeNestedInput refuses a caller object that selects another member of a
+// union the preset pins: the flag's field belongs to the preset's member.
+func (m PresetMerge) MergeNestedInput(cmd *cobra.Command, bodyFlagName string, path []string, input string, value any) error {
+	return MergeInputIntoBodyPath(cmd, bodyFlagName, path, input, value, func(pointer, field, source string, existing json.RawMessage) error {
+		point, ok := m.Nested[pointer]
+		if !ok || point.admits(existing) {
+			return nil
+		}
+		var obj map[string]json.RawMessage
+		_ = json.Unmarshal(existing, &obj)
+		return fmt.Errorf("%s applies when %s.%s is %s, but %s sets %s", input, field, point.Key, point.Values[0], source, bytes.TrimSpace(obj[point.Key]))
+	})
+}
+
 func presetPointerToken(key string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
 }

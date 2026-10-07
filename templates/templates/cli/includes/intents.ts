@@ -19,6 +19,7 @@
 
 interface IntentBodyEntry {
   Key: string; // top-level body key (from a single-segment JSON Pointer)
+  Path?: string[]; // [Key, field] for a flag bound beneath an object preset
   Name?: string; // flag name
   SatisfiedBy?: string[];
   Shorthand?: string;
@@ -276,13 +277,23 @@ function intentFallbackFlag(entry: IntentBodyEntry): string {
   return `--${entry.Name} ${intentExamplePlaceholder(entry.Name || "value")}`;
 }
 
-// Single-segment RFC 6901 pointer → top-level body key. The decoder only
-// admits single-segment body pointers in v1, so a miss here is unreachable.
+// Single-segment RFC 6901 pointer → top-level body key. Args, presets and
+// dispatch keys bind single-segment pointers only, so a miss here is
+// unreachable; flags may nest and use intentPointerPath.
 function intentPointerKey(pointer: string): string {
   if (!pointer || !pointer.startsWith("/")) return "";
   const rest = pointer.slice(1);
   if (rest.includes("/")) return "";
   return rest.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+
+// RFC 6901 pointer → decoded body path segments.
+function intentPointerPath(pointer: string): string[] {
+  if (!pointer || !pointer.startsWith("/")) return [];
+  return pointer
+    .slice(1)
+    .split("/")
+    .map((token) => token.replace(/~1/g, "/").replace(/~0/g, "~"));
 }
 
 function mergeIntentTestValue(left: any, right: any): any {
@@ -850,18 +861,27 @@ function collectIntentManifest(): IntentManifestCtx {
 
     const flags: IntentBodyEntry[] = [];
     for (const f of cmd.Flags || []) {
-      const key = intentPointerKey(f.Bind?.Pointer || "");
+      const path = intentPointerPath(f.Bind?.Pointer || "");
+      const key = path[0] || "";
       if (!key || !f.Name) continue;
       const declaredFlagName = sanitizeFlagNameWithReserved(f.Name);
+      const presetParent = presetObj[key];
+      const presetCovered =
+        path.length > 1
+          ? typeof presetParent === "object" &&
+            presetParent !== null &&
+            path[1] in presetParent
+          : key in presetObj;
 
       flags.push({
         Key: key,
+        Path: path,
         Name: declaredFlagName,
         Shorthand: f.Shorthand || "",
         Summary: intentFlagHelp(f),
         Type: f.Type || "string",
         Required: Boolean(f.Required),
-        PresetCovered: dispatch ? false : key in presetObj,
+        PresetCovered: dispatch ? false : presetCovered,
         DefaultValue: f.Default,
         HasDefault: f.Default !== undefined && f.Default !== null,
         Suggestions: (f.Enum || []).map((v: any) => `${v}`),
