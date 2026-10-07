@@ -1224,14 +1224,23 @@ function applyDeclaredUsageOrder(
   reorder(root);
 }
 
-function settingsUsageFlags(command: string): UsageFlagDef[] {
-  const rootFlags = new Map<string, UsageFlagDef>();
-  for (const flag of getRootUsageFlags()) {
+function rootUsageFlagsByName(
+  rootFlags: UsageFlagDef[],
+): Map<string, UsageFlagDef> {
+  const byName = new Map<string, UsageFlagDef>();
+  for (const flag of rootFlags) {
     const name = /--([A-Za-z0-9_-]+)/.exec(flag.spec)?.[1];
-    if (name) rootFlags.set(name, flag);
+    if (name) byName.set(name, flag);
   }
+  return byName;
+}
+
+function settingsUsageFlags(
+  command: string,
+  rootFlags: Map<string, UsageFlagDef>,
+): UsageFlagDef[] {
   const flags: UsageFlagDef[] = [];
-  for (const name of settingsFlagNames(command)) {
+  for (const name of storedFlagNames(command)) {
     const flag = rootFlags.get(name);
     if (flag) flags.push({ ...flag, global: false, settings: true });
   }
@@ -1246,6 +1255,7 @@ function buildRootUsageCommand(): UsageCommandDef {
     flags: getRootUsageFlags(),
     commands: [],
   };
+  const rootFlagsByName = rootUsageFlagsByName(root.flags!);
 
   for (const op of context.Global.AST.MainSDK.Operations) {
     const child = buildOperationUsageCommand(op);
@@ -1266,7 +1276,7 @@ function buildRootUsageCommand(): UsageCommandDef {
         help: "Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.",
         suggestions: ["pretty", "json", "yaml", "table", "toon"],
       },
-      ...settingsUsageFlags("configure"),
+      ...settingsUsageFlags("configure", rootFlagsByName),
     ],
     commands: [],
   });
@@ -1293,7 +1303,7 @@ function buildRootUsageCommand(): UsageCommandDef {
       {
         name: "login",
         help: templateAuthLoginShort(),
-        flags: settingsUsageFlags("login"),
+        flags: settingsUsageFlags("login", rootFlagsByName),
         commands: [],
       },
       {

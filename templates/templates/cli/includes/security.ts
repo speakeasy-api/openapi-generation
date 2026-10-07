@@ -21,6 +21,8 @@ interface CLISecurityFieldInfo {
   isArray: boolean; // Whether this is a string array field (e.g., Scopes)
   secType: string; // apiKey, http, oauth2, etc.
   secSubType: string; // basic, bearer, custom, etc.
+  composite: boolean; // Part of a requirement that needs several schemes
+  schemeKey: string; // Security scheme name the field belongs to
 }
 
 /**
@@ -103,6 +105,8 @@ function flattenCLISecurityObject(
               isArray: false,
               secType: secAnno?.SecType || "",
               secSubType: secAnno?.SubType || "",
+              composite: !!secAnno?.Composite,
+              schemeKey: secAnno?.SchemeKey || "",
             });
           }
         }
@@ -160,6 +164,8 @@ function flattenCLISecurityObject(
       isArray: isArray,
       secType: secAnno?.SecType || "",
       secSubType: secAnno?.SubType || "",
+      composite: !!secAnno?.Composite,
+      schemeKey: secAnno?.SchemeKey || "",
     });
   }
 
@@ -2791,24 +2797,7 @@ function goFlagNameArgs(names: string[]): string {
   return names.map((n) => `"${n}"`).join(", ");
 }
 
-function templateAuthLoginFlagNames(): string {
-  return goFlagNameArgs(getCLISecurityFields().map((f) => f.flagName));
-}
-registerTemplateFunc("templateAuthLoginFlagNames", templateAuthLoginFlagNames);
-
-function templateConfigureFlagNames(): string {
-  const names = getCLISecurityFields().map((f) => f.flagName);
-  if (hasGlobals()) {
-    for (const field of context.Global.AST.MainSDK.Globals.Fields) {
-      names.push(sanitizeFlagNameWithReserved(field.Name));
-    }
-  }
-  names.push(DEFAULT_OUTPUT_FORMAT_FLAG);
-  return goFlagNameArgs(names);
-}
-registerTemplateFunc("templateConfigureFlagNames", templateConfigureFlagNames);
-
-function settingsFlagNames(command: string): string[] {
+function storedFlagNames(command: string): string[] {
   const names = getCLISecurityFields().map((f) => f.flagName);
   if (command === "configure" && hasGlobals()) {
     for (const field of context.Global.AST.MainSDK.Globals.Fields) {
@@ -2818,8 +2807,21 @@ function settingsFlagNames(command: string): string[] {
   return names;
 }
 
+function templateAuthLoginFlagNames(): string {
+  return goFlagNameArgs(storedFlagNames("login"));
+}
+registerTemplateFunc("templateAuthLoginFlagNames", templateAuthLoginFlagNames);
+
+function templateConfigureFlagNames(): string {
+  return goFlagNameArgs([
+    ...storedFlagNames("configure"),
+    DEFAULT_OUTPUT_FORMAT_FLAG,
+  ]);
+}
+registerTemplateFunc("templateConfigureFlagNames", templateConfigureFlagNames);
+
 function templateSettingsHelpFlags(command: string): string {
-  return escapeGoString(settingsFlagNames(command).join(","));
+  return escapeGoString(storedFlagNames(command).join(","));
 }
 registerTemplateFunc("templateSettingsHelpFlags", templateSettingsHelpFlags);
 
@@ -2839,9 +2841,12 @@ function primarySchemeFields(): CLISecurityFieldInfo[] {
       scalars.push(top);
     }
   }
-  return flattenCLISecurityObject({ Fields: scalars } as TypeDef).filter(
-    (f) => f.secType === primary.secType && f.secSubType === primary.secSubType,
-  );
+  const flat = flattenCLISecurityObject({ Fields: scalars } as TypeDef);
+  const self = flat.find((f) => f.flagName === primary.flagName);
+  if (!self) return [primary];
+  if (self.composite) return flat.filter((f) => f.composite);
+  if (!self.schemeKey) return [primary];
+  return flat.filter((f) => f.schemeKey === self.schemeKey);
 }
 
 function templateSettingsHelpExample(commandPath: string): string {
