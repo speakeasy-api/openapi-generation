@@ -2815,9 +2815,6 @@ function settingsFlagNames(command: string): string[] {
       names.push(sanitizeFlagNameWithReserved(field.Name));
     }
   }
-  if (isAnyInteractiveEnabled()) {
-    names.push("interactive", "no-interactive");
-  }
   return names;
 }
 
@@ -2829,12 +2826,27 @@ registerTemplateFunc("templateSettingsHelpFlags", templateSettingsHelpFlags);
 function templateSettingsHelpExample(commandPath: string): string {
   const cliName = sanitizeCliName();
   const lines = [`  ${cliName} ${commandPath}`];
-  const primary = primaryCLISecurityField(getCLISecurityFields());
-  const envVar = templatePrimaryAuthEnvVar();
-  if (primary && envVar) {
-    lines.push(
-      `  ${cliName} ${commandPath} --${primary.flagName} "$${envVar}"`,
-    );
+  const fields = getCLISecurityFields();
+  const primary = primaryCLISecurityField(fields);
+  const scheme = primary
+    ? fields.filter(
+        (f) =>
+          f.secType === primary.secType && f.secSubType === primary.secSubType,
+      )
+    : [];
+  const prefix = context.Global.Config.EnvVarPrefix
+    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
+    : "";
+  if (scheme.length > 0 && scheme.length <= 2) {
+    const flags = scheme
+      .map(
+        (f) =>
+          `--${f.flagName} "$${
+            prefix ? `${prefix}_${f.envVarSuffix}` : f.envVarSuffix
+          }"`,
+      )
+      .join(" ");
+    lines.push(`  ${cliName} ${commandPath} ${flags}`);
   }
   return escapeGoString(lines.join("\n"));
 }

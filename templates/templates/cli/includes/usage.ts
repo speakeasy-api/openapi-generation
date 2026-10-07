@@ -14,6 +14,7 @@ interface UsageFlagDef {
   count?: boolean;
   variadic?: boolean;
   hidden?: boolean;
+  settings?: boolean;
 }
 
 interface UsageArgDef {
@@ -1232,7 +1233,7 @@ function settingsUsageFlags(command: string): UsageFlagDef[] {
   const flags: UsageFlagDef[] = [];
   for (const name of settingsFlagNames(command)) {
     const flag = rootFlags.get(name);
-    if (flag) flags.push({ ...flag, global: false });
+    if (flag) flags.push({ ...flag, global: false, settings: true });
   }
   return flags;
 }
@@ -1420,7 +1421,11 @@ function renderUsageFlag(flag: UsageFlagDef, indent: number): string[] {
   ];
 }
 
-function renderUsageCommand(cmd: UsageCommandDef, indent: number): string[] {
+function renderUsageCommand(
+  cmd: UsageCommandDef,
+  indent: number,
+  includeSettings = false,
+): string[] {
   const lines: string[] = [];
   const childLines: string[] = [];
   for (const alias of cmd.aliases || []) {
@@ -1450,6 +1455,7 @@ function renderUsageCommand(cmd: UsageCommandDef, indent: number): string[] {
     );
   }
   for (const flag of cmd.flags || []) {
+    if (flag.settings && !includeSettings) continue;
     childLines.push(...renderUsageFlag(flag, indent + 1));
   }
   for (const child of cmd.commands || []) {
@@ -1504,7 +1510,7 @@ function collectCommandPathSchemas(
       lines.push(...renderUsageCommand(child, 0));
     }
   } else {
-    lines.push(...renderUsageCommand(cmd, 0));
+    lines.push(...renderUsageCommand(cmd, 0, true));
   }
   const schema = lines.join("\n") + "\n";
   out.set(path.join(" "), schema);
