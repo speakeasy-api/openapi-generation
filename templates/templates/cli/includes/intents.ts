@@ -1055,7 +1055,8 @@ function collectIntentManifest(): IntentManifestCtx {
           field: p.Field,
         })),
       ];
-      const pinnedFlags = (cmd.Async.ResolvedParams || []).map((param: any) => {
+      const pinnedFlags: string[] = [];
+      for (const param of cmd.Async.ResolvedParams || []) {
         const match = pollParams.find(
           (p) =>
             p.in === param.In &&
@@ -1070,15 +1071,19 @@ function collectIntentManifest(): IntentManifestCtx {
             } to the generated poll request`,
           );
         }
+        if (match.field.Const) continue;
         const flag = sanitizeFlagNameWithReserved(match.field.Name);
         if (
           typeof param.Value === "boolean" ||
           typeof param.Value === "number"
         ) {
-          return `--${flag}=${param.Value}`;
+          pinnedFlags.push(`--${flag}=${param.Value}`);
+          continue;
         }
-        return `--${flag} ${intentExampleQuoted(String(param.Value))}`;
-      });
+        pinnedFlags.push(
+          `--${flag} ${intentExampleQuoted(String(param.Value))}`,
+        );
+      }
       const resumePrefix = [
         sanitizeCliName(),
         ...getCLICommandPath(pollFound.op),
