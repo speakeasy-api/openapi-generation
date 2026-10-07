@@ -1,0 +1,143 @@
+{{- recurse 1 -}}
+{{- if useSmartUnion -}}
+{{- genImports -}}
+{{- addZodPackageImport }}
+{{- addTypeImport (getSmartUnionFileName) "smartUnion" "__tests__" }}
+import { expect, test{{if isZodV4}}, vi{{end}} } from "vitest";
+
+{{if isZodV4}}
+test("smartUnion avoids discarded errors while parsing stream chunks", () => {
+  const formatError = vi.fn(() => "Expected a list");
+  const schema = z.object({
+    parts: z.array(z.object({
+      value: smartUnion([
+        z.string(),
+        z.array(z.object({ value: z.string() }), { error: formatError }),
+      ]),
+    })),
+  });
+  const chunk = { parts: [{ value: "hello" }, { value: " world" }] };
+  const stringify = vi.spyOn(JSON, "stringify");
+  let parsed: unknown;
+  let serializedErrors: number;
+  try {
+    for (let i = 0; i < 100; i++) {
+      parsed = schema.parse(chunk);
+    }
+    serializedErrors = stringify.mock.calls.filter(([value]) =>
+      Array.isArray(value) && value.some(issue => typeof issue?.code === "string")
+    ).length;
+  } finally {
+    stringify.mockRestore();
+  }
+
+  expect(parsed).toEqual(chunk);
+  expect(serializedErrors).toBe(0);
+  expect(formatError).not.toHaveBeenCalled();
+});
+
+test("smartUnion finalizes all failed branches without intermediate errors", () => {
+  const options = [
+    z.object({ value: z.string({ error: "Expected text" }) }),
+    z.object({ value: z.array(z.number()) }),
+  ] as const;
+  const input = { value: [false] };
+  const errors = options.map((option) => option.safeParse(input).error!.issues);
+  const schema = z.object({ items: z.array(smartUnion(options)) });
+  const stringify = vi.spyOn(JSON, "stringify");
+  let result: ReturnType<typeof schema.safeParse>;
+  let serializedErrors: number;
+  try {
+    result = schema.safeParse({ items: [input] });
+    void result.error?.message;
+    serializedErrors = stringify.mock.calls.filter(([value]) =>
+      Array.isArray(value) && value.some(issue => typeof issue?.code === "string")
+    ).length;
+  } finally {
+    stringify.mockRestore();
+  }
+
+  expect(result.success).toBe(false);
+  expect(result.error!.issues).toEqual([{
+    code: "invalid_union",
+    errors,
+    path: ["items", 0],
+    message: "Invalid input",
+  }]);
+  expect(serializedErrors).toBeLessThanOrEqual(1);
+});
+
+test("smartUnion preserves nested union errors and custom messages", () => {
+  const formatError = vi.fn(() => "Expected text");
+  const options = [
+    z.object({ value: z.string({ error: formatError }) }),
+    z.object({ value: z.union([z.number(), z.boolean()]) }),
+    z.object({ value: smartUnion([z.number(), z.boolean()]) }),
+  ] as const;
+  const input = { value: null };
+  const errors = options.map((option) => option.safeParse(input).error!.issues);
+  formatError.mockClear();
+
+  const result = smartUnion(options).safeParse(input);
+
+  expect(result.error!.issues).toEqual([{
+    code: "invalid_union",
+    errors,
+    path: [],
+    message: "Invalid input",
+  }]);
+  expect(formatError).toHaveBeenCalledTimes(1);
+});
+
+{{end}}
+test("smartUnion preserves unsuccessful parse issues", () => {
+  const options = [z.object({ value: z.string() }), z.array(z.number())] as const;
+  const input = { value: false };
+
+  const actual = smartUnion(options).safeParse(input).error!.issues;
+  const expected = z.union(options).safeParse(input).error!.issues;
+
+  expect(JSON.parse(JSON.stringify(actual))).toEqual(JSON.parse(JSON.stringify(expected)));
+});
+
+test("smartUnion returns transformed output from the most populated match", () => {
+  const schema = smartUnion([
+    {{if isZodV4}}z.pipe(z.object({ value: z.string() }), z.transform(() => ({ tag: "first" }))){{else}}z.object({ value: z.string() }).transform(() => ({ tag: "first" })){{end}},
+    z.lazy(() => {{if isZodV4}}z.pipe(
+      z.object({ value: z.string(), count: z.number() }),
+      z.transform((value) => ({ tag: "second", size: value.count })),
+    ){{else}}z.object({ value: z.string(), count: z.number() }).transform(
+      (value) => ({ tag: "second", size: value.count }),
+    ){{end}}),
+  ]);
+
+  expect(schema.parse({ value: "hello", count: 3 })).toEqual({ tag: "second", size: 3 });
+});
+
+test("smartUnion preserves defaults, nullable values and option order on ties", () => {
+  expect(smartUnion([z.string(), {{if isZodV4Mini}}z._default(z.number(), 7){{else}}z.number().default(7){{end}}]).parse(undefined)).toBe(7);
+  expect(smartUnion([z.string(), z.nullable(z.number())]).parse(null)).toBeNull();
+  expect(smartUnion([
+    {{if isZodV4}}z.pipe(z.string(), z.transform(() => "first")){{else}}z.string().transform(() => "first"){{end}},
+    {{if isZodV4}}z.pipe(z.string(), z.transform(() => "second")){{else}}z.string().transform(() => "second"){{end}},
+  ]).parse("hello")).toBe("first");
+});
+
+test("smartUnion rejects a more populated candidate with a failed refinement", () => {
+  const schema = smartUnion([
+    z.object({ value: z.string(), count: z.number() }){{if isZodV4}}.check(z.refine(() => false)){{else}}.refine(() => false){{end}},
+    z.object({ value: z.string() }),
+  ]);
+
+  expect(schema.parse({ value: "hello", count: 3 })).toEqual({ value: "hello" });
+});
+
+test("smartUnion still rejects asynchronous transforms during synchronous parsing", () => {
+  const schema = smartUnion([
+    {{if isZodV4}}z.pipe(z.string(), z.transform(async (value) => value)){{else}}z.string().transform(async (value) => value){{end}},
+    z.number(),
+  ]);
+
+  expect(() => schema.parse("hello")).toThrow({{if isZodV4}}z.core.$ZodAsyncError{{else}}/Asynchronous transform/{{end}});
+});
+{{- end }}

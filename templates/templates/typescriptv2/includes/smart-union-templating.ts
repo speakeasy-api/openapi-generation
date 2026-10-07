@@ -15,7 +15,7 @@ export function smartUnion<
     z.unknown(),
     `(input, ctx) => {
     const candidates: Candidate[] = [];
-    const errors: ${z.zodIssue()}[][] = options.map(() => []);
+    const errors: ${isZodV4() ? "z.core.$ZodRawIssue" : z.zodIssue()}[][] = [];
 
     const parentUnrecognizedCtr = startCountingUnrecognized();
     ${
@@ -25,26 +25,33 @@ export function smartUnion<
     }
 
     // Filter out invalid options
-    for (const [i, option] of options.entries()) {
+    for (const option of options) {
       const unrecognizedCtr = startCountingUnrecognized();
       ${
         isLaxMode()
           ? `const zeroDefaultCtr = startCountingDefaultToZeroValue();`
           : ""
       }
-      const result = option.safeParse(input);
+      ${
+        isZodV4()
+          ? `const result = option._zod.run({ value: input, issues: [] }, { async: false });
+      if (result instanceof Promise) {
+        throw new z.core.$ZodAsyncError();
+      }`
+          : `const result = option.safeParse(input);`
+      }
       const inexactCount = unrecognizedCtr.end();
       const zeroDefaultCount = ${isLaxMode() ? `zeroDefaultCtr.end();` : "0"};
-      if (result.success) {
+      if (${isZodV4() ? "result.issues.length === 0" : "result.success"}) {
         candidates.push({
-          data: result.data,
+          data: result.${isZodV4() ? "value" : "data"},
           inexactCount,
           zeroDefaultCount,
           fieldCount: -1, // We'll count this later if needed
         });
         continue;
       }
-      errors[i]!.push(...result.error.issues);
+      errors.push(result.${isZodV4() ? "issues" : "error.issues"});
     }
 
     // No valid options
@@ -55,9 +62,11 @@ export function smartUnion<
       ${z.addIssue({
         code: "invalid_union",
         input: "input",
-        errors: "errors",
+        errors: isZodV4()
+          ? "errors.map(issues => issues.map(issue => z.core.util.finalizeIssue(issue, {}, z.core.config())))"
+          : "errors",
       })};
-      return ${z.NEVER()};
+      return ${isZodV4() ? "undefined" : z.NEVER()};
     }
 
     let best = candidates[0]!;
