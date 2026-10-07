@@ -144,6 +144,11 @@ func runIntentRenderCmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intentRenderPreset); err != nil {
+				return err
+			}
+		}
 	}
 	return runRenderAssetCmd(cmd, nil)
 }
