@@ -143,6 +143,11 @@ func runIntentObserveCmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intentObservePreset); err != nil {
+				return err
+			}
+		}
 	}
 	if err := output.ValidateAsyncFlags(cmd); err != nil {
 		return err

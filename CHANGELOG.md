@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.945.12] - 2026-10-07
+### :bug: Bug Fixes
+- [`f984647`](https://github.com/speakeasy-api/openapi-generation/commit/f9846472ac7f141c88b61fa97932b4c83c8d359a) - **cli**: merge an intent's presets into a request body piped on stdin ([#89](https://github.com/speakeasy-api/openapi-generation/pull/89)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.945.11] - 2026-10-07
 ### :bug: Bug Fixes
 - [`2b80fc4`](https://github.com/speakeasy-api/openapi-generation/commit/2b80fc46491e9dae43027894734f06c9860c69b7) - **typescript**: defer smart union errors ([#79](https://github.com/speakeasy-api/openapi-generation/pull/79)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -20457,3 +20462,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.8...v2.945.9
 [v2.945.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.9...v2.945.10
 [v2.945.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.10...v2.945.11
+[v2.945.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.11...v2.945.12
