@@ -1,0 +1,147 @@
+package tests
+
+import (
+	"encoding/json"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+	"{{getGolangPackage}}/internal/flagutil"
+)
+
+func TestPatternMessagesRejectBeforeRequest(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		message string
+	}{
+		{name: "referenced path positional", args: []string{"ABC"}, message: `invalid value for --code: "ABC": Use lowercase letters, digits or hyphens.`},
+		{name: "referenced path flag", args: []string{"--code", "ABC"}, message: `invalid value for --code: "ABC": Use lowercase letters, digits or hyphens.`},
+		{name: "quoted input", args: []string{"a\"b"}, message: `invalid value for --code: "a\"b": Use lowercase letters, digits or hyphens.`},
+		{name: "query literals", args: []string{"abc", "--tag", "ABC"}, message: `invalid value for --tag: "ABC": Use "a" through "z" with 100% accuracy; café.`},
+		{name: "header multiline", args: []string{"abc", "--x-label", "ABC"}, message: "invalid value for --x-label: \"ABC\": Use lowercase letters.\nTry \"sample\"."},
+		{name: "composed", args: []string{"abc", "--composed", "ABC"}, message: `invalid value for --composed: "ABC": Use lowercase letters, digits or hyphens.`},
+		{name: "changed pattern fallback", args: []string{"abc", "--changed", "abc"}, message: `invalid value for --changed: "abc" does not match the pattern ^[0-9]+$`},
+		{name: "equal pattern inheritance", args: []string{"abc", "--same", "ABC"}, message: `invalid value for --same: "ABC": Use lowercase letters, digits or hyphens.`},
+		{name: "pattern and message override", args: []string{"abc", "--replaced", "abc"}, message: `invalid value for --replaced: "abc": Use digits.`},
+		{name: "wrapper message override", args: []string{"abc", "--wrapper", "ABC"}, message: `invalid value for --wrapper: "ABC": Use a lowercase code.`},
+		{name: "union pattern fallback", args: []string{"abc", "--union-code", ".."}, message: `invalid value for --union-code: ".." does not match the pattern (^[a-z]+$|^[0-9]+$)`},
+		{name: "union same pattern", args: []string{"abc", "--union-same", "ABC"}, message: `invalid value for --union-same: "ABC": Use letters.`},
+		{name: "body", args: []string{"abc", "--name", "ABC"}, message: `invalid value for --name: "ABC": Use a lowercase name.`},
+		{name: "default", args: []string{"abc", "--fallback", "ABC"}, message: `invalid value for --fallback: "ABC" does not match the pattern ^[a-z]+$`},
+		{name: "max length priority", args: []string{"ABCDEFG"}, message: `invalid value for --code: "ABCDEFG" is longer than the maximum length 6`},
+	}
+	for _, tc := range cases {
+		for _, mode := range []string{"pretty", "json", "agent"} {
+			for _, dryRun := range []bool{false, true} {
+				name := tc.name + "/" + mode
+				if dryRun {
+					name += "/dry-run"
+				}
+				t.Run(name, func(t *testing.T) {
+					resetAgentMode(t)
+					server, requests := newStringConstraintServer(t)
+					args := []string{"cli-hygiene", "cli-pattern-messages"}
+					args = append(args, tc.args...)
+					if mode == "agent" {
+						args = append(args, "--agent-mode")
+					} else {
+						args = append(args, "-o", mode)
+					}
+					if dryRun {
+						args = append(args, "--dry-run")
+					}
+					h := NewCLITestHarness(t)
+					err := h.RunWithServer(server.URL, args)
+					require.EqualError(t, err, tc.message)
+					assert.Equal(t, 2, clierrors.ExitCode(err))
+					if mode == "pretty" {
+						assert.Contains(t, h.GetStderr(), "Error (validation_error): "+tc.message+"\n")
+						assert.Contains(t, h.GetStderr(), "Reason: CLI_VALIDATION")
+					} else {
+						envelope := agentEnvelope(t, h.GetStderr())
+						assert.Equal(t, tc.message, envelope["message"])
+						assert.Equal(t, tc.message, envelope["error"])
+						assert.Equal(t, "validation_error", envelope["error_type"])
+						assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+						assert.EqualValues(t, 2, envelope["exit_code"])
+					}
+					assert.Empty(t, h.GetStdout())
+					assert.Empty(t, requests())
+				})
+			}
+		}
+	}
+}
+
+func TestPatternMessagesPreserveRequests(t *testing.T) {
+	resetAgentMode(t)
+	server, requests := newStringConstraintServer(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"cli-hygiene", "cli-pattern-messages", "abc-12", "--tag", "tag", "--x-label", "label", "--slug", "xyz", "--union-code", "123", "--union-same", "abc", "--changed", "123", "--same", "abc", "--replaced", "123", "--wrapper", "abc", "--name", "name", "--fallback", "value"})
+	require.NoError(t, err, h.GetStderr())
+	got := requests()
+	require.Len(t, got, 1)
+	assert.Equal(t, "/anything/cli/patternMessages/abc-12", got[0].Path)
+	assert.Equal(t, []string{"tag"}, got[0].Query["tag"])
+	assert.Equal(t, []string{"xyz"}, got[0].Query["slug"])
+	assert.Equal(t, []string{"123"}, got[0].Query["unionCode"])
+	assert.Equal(t, []string{"abc"}, got[0].Query["unionSame"])
+	assert.Equal(t, []string{"123"}, got[0].Query["changed"])
+	assert.Equal(t, []string{"abc"}, got[0].Query["same"])
+	assert.Equal(t, []string{"123"}, got[0].Query["replaced"])
+	assert.Equal(t, []string{"abc"}, got[0].Query["wrapper"])
+	assert.Equal(t, "label", got[0].Header.Get("X-Label"))
+	assert.JSONEq(t, `{"name":"name","fallback":"value"}`, got[0].Body)
+	assert.Empty(t, h.GetStderr())
+}
+
+func TestPatternMessagesPreserveJSONBody(t *testing.T) {
+	resetAgentMode(t)
+	server, requests := newStringConstraintServer(t)
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"cli-hygiene", "cli-pattern-messages", "abc", "--body", `{"name":"ABC"}`})
+	require.NoError(t, err, h.GetStderr())
+	got := requests()
+	require.Len(t, got, 1)
+	assert.JSONEq(t, `{"name":"ABC"}`, got[0].Body)
+}
+
+func TestPatternMessagesDocumentationSurfaces(t *testing.T) {
+	for _, surface := range []string{"--help", "--usage", "--schema"} {
+		t.Run(surface, func(t *testing.T) {
+			resetAgentMode(t)
+			server, requests := newStringConstraintServer(t)
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"cli-hygiene", "cli-pattern-messages", "abc", surface})
+			require.NoError(t, err, h.GetStderr())
+			if surface == "--schema" {
+				var schema map[string]any
+				require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &schema))
+				properties := schema["properties"].(map[string]any)
+				name := properties["name"].(map[string]any)
+				assert.Equal(t, "^[a-z]+$", name["pattern"])
+				assert.Equal(t, "Use a lowercase name.", name["x-speakeasy-pattern-error-message"])
+				fallback := properties["fallback"].(map[string]any)
+				assert.Equal(t, "^[a-z]+$", fallback["pattern"])
+				assert.NotContains(t, fallback, "x-speakeasy-pattern-error-message")
+			} else {
+				assert.NotContains(t, h.GetStdout(), "^[a-z]+$")
+				assert.NotContains(t, h.GetStdout(), "Use a lowercase name.")
+			}
+			assert.Empty(t, requests())
+		})
+	}
+}
+
+func TestPatternMessagesPreserveValueTruncation(t *testing.T) {
+	value := strings.Repeat("界", 300)
+	meta := flagutil.FlagMeta{Pattern: "^[a-z]+$", PatternErrorMessage: "Use letters."}
+	_, _, err := buildStringConstraintRequest(t, meta, &value)
+	require.Error(t, err)
+	assert.Equal(t, "invalid value for --code: "+strconv.Quote(strings.Repeat("界", 64))+"…: Use letters.", err.Error())
+}

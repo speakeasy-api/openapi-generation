@@ -10,6 +10,7 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/validation/sanitization"
+	generrors "github.com/speakeasy-api/openapi-generation/v2/pkg/errors"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
 	"github.com/speakeasy-api/openapi/linter"
 	"github.com/speakeasy-api/openapi/openapi"
@@ -49,15 +50,15 @@ func (r *ValidateExtensions) Category() string {
 }
 
 func (r *ValidateExtensions) Summary() string {
-	return "Validate extension usage for " + extensions.ExtGlobals.Name() + " parameters."
+	return "Validate global parameters and schema pattern error messages."
 }
 
 func (r *ValidateExtensions) HowToFix() string {
-	return "Define x-speakeasy-globals parameters with unique names, valid schemas (primitive types or enums), and avoid collisions with server variables."
+	return "Define x-speakeasy-globals parameters with unique names, valid schemas (primitive types or enums), and avoid collisions with server variables. Define x-speakeasy-pattern-error-message as a non-empty string on a schema with pattern."
 }
 
 func (r *ValidateExtensions) Description() string {
-	return "Validate " + extensions.ExtGlobals.Name() + " extension usage by enforcing unique parameter names, avoiding collisions with server variables, and only allowing primitive types. This keeps global parameters stable and generator-safe."
+	return "Validate x-speakeasy-globals parameter names and types, and require x-speakeasy-pattern-error-message to contain a non-empty string alongside pattern."
 }
 
 func (r *ValidateExtensions) Link() string {
@@ -79,8 +80,44 @@ func (r *ValidateExtensions) Run(ctx context.Context, docInfo *linter.DocumentIn
 
 	validationErrors := make([]error, 0, 1)
 	validationErrors = append(validationErrors, r.validateGlobalsExtension(ctx, docInfo, config)...)
+	validationErrors = append(validationErrors, r.validatePatternErrorMessageExtension(docInfo)...)
 
 	return validationErrors
+}
+
+func (r *ValidateExtensions) validatePatternErrorMessageExtension(docInfo *linter.DocumentInfo[*openapi.OpenAPI]) []error {
+	if docInfo.Index == nil {
+		return nil
+	}
+	extensionsAPI := extensions.New(r.getTarget())
+	_ = extensionsAPI.HandleRewriteExtension(extensions.WithDocumentExtensions(docInfo.Document.GetExtensions()))
+	name := extensionsAPI.GetResolvedName(extensions.ExtPatternErrorMessage)
+	var diagnostics []error
+	for _, schemaNode := range docInfo.Index.GetAllSchemas() {
+		if schemaNode.Node == nil || schemaNode.Node.GetSchema() == nil {
+			continue
+		}
+		schema := schemaNode.Node.GetSchema()
+		node, ok := schema.GetExtensions().Get(name)
+		if !ok {
+			continue
+		}
+		_, err := extensionsAPI.HandlePatternErrorMessageExtension(schema.GetExtensions())
+		severity := r.DefaultSeverity()
+		if err == nil && schema.Pattern == nil {
+			err = fmt.Errorf("%s has no pattern on this schema; used only if the effective schema has an enforced pattern", name)
+			severity = validation.SeverityWarning
+		}
+		if err != nil {
+			if parsed := generrors.GetValidationErr(err); parsed != nil {
+				err = errors.New(parsed.Message)
+			}
+			diagnostics = append(diagnostics, &validation.Error{
+				Rule: r.ID(), Severity: severity, Node: node, UnderlyingError: err,
+			})
+		}
+	}
+	return diagnostics
 }
 
 func (r *ValidateExtensions) validateGlobalsExtension(ctx context.Context, docInfo *linter.DocumentInfo[*openapi.OpenAPI], _ *linter.RuleConfig) []error {
