@@ -164,7 +164,7 @@ func (g *graph) redactForm(body []byte, roots []int) ([]byte, bool, bool) {
 	for i, pair := range pairs {
 		rawKey, rawValue, _ := strings.Cut(pair, "=")
 		key, err := url.QueryUnescape(rawKey)
-		if err != nil || strings.HasPrefix(key, "{") || strings.HasPrefix(key, "[") {
+		if err != nil || isJSONStructure([]byte(key)) {
 			return nil, false, false
 		}
 		value, err := url.QueryUnescape(rawValue)

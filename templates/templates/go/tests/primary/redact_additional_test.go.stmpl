@@ -216,7 +216,9 @@ func TestRedactFormRequestBody(t *testing.T) {
 	assert.Equal(t, "name=visible-name&metadata="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&metadata=secret-text"))), "unparseable JSON-encoded fields are masked")
 	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
 	assert.Equal(t, "tokens="+redact.Mask+"&tokens="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("tokens=null&tokens=secret-tokens-0"))), "every repeated sensitive item is masked")
-	assert.Equal(t, redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte(`{"token": "secret-json", "name": "visible-name"}`))), "a JSON body labelled as a form is masked as a whole")
+	for _, body := range []string{`{"token": "secret-json", "name": "visible-name"}`, " \n\t{\"token\": \"secret-json\"}", `[{"token": "secret-json"}]`} {
+		assert.Equal(t, redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte(body))), "a JSON body labelled as a form is masked as a whole: %q", body)
+	}
 	assert.Equal(t, "token%5B%5D=visible-bracketed&token="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("token%5B%5D=visible-bracketed&token=secret-token"))), "a plain property whose name ends in brackets is not mistaken for a sensitive one")
 
 	responseCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")

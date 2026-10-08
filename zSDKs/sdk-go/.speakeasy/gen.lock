@@ -783,7 +783,7 @@ trackedFiles:
   recursiveformfield.go:
     last_write_checksum: sha1:2e06532b8c5445500bd2ae8ae8586d24e911a3e2
   redact/redact.go:
-    last_write_checksum: sha1:c1d7f8de55abd1651db1e9e5ed38ca01d2c595dd
+    last_write_checksum: sha1:6325bc07070b86ba40da3bbd8489ca30cacf8a1d
   renderassetop.go:
     last_write_checksum: sha1:a788e389967e88581337759b330af30c4e562bf8
   requesttimeouterror.go:
