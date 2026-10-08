@@ -164,7 +164,7 @@ func (f *Field) setWidth(width int) {
 	inner := max(width-4, 1)
 	switch f.kind {
 	case kindInput:
-		f.input.SetWidth(inner - lipgloss.Width(f.input.Prompt) - 1)
+		f.input.SetWidth(max(inner-lipgloss.Width(f.input.Prompt)-1, 1))
 	case kindText:
 		f.area.SetWidth(inner)
 	}
@@ -555,9 +555,12 @@ func (f *Form) renderOptions(field *Field, focused bool, rows int) string {
 }
 
 func renderButtons(yes, focused bool, width int) string {
-	pad := 2
+	pad, yesLabel, noLabel := 2, "Yes", "No"
 	if width < 14 {
-		pad = 0 // "Yes No" without padding still fits very narrow terminals
+		pad = 0
+	}
+	if width < 6 {
+		yesLabel, noLabel = "Y", "N"
 	}
 	on := lipgloss.NewStyle().Padding(0, pad).Foreground(lipgloss.Color("#FFFFFF")).Background(subtle)
 	if focused {
@@ -565,9 +568,9 @@ func renderButtons(yes, focused bool, width int) string {
 	}
 	off := lipgloss.NewStyle().Padding(0, pad).Foreground(dimmed)
 	if yes {
-		return on.Render("Yes") + " " + off.Render("No")
+		return on.Render(yesLabel) + " " + off.Render(noLabel)
 	}
-	return off.Render("Yes") + " " + on.Render("No")
+	return off.Render(yesLabel) + " " + on.Render(noLabel)
 }
 
 // prompt asks every question as a plain line prompt. Blank answers keep the

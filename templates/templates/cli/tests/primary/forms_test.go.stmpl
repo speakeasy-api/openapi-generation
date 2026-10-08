@@ -771,7 +771,9 @@ func TestFormsSelectFitsWithItsHeading(t *testing.T) {
 }
 
 func TestFormsNarrowTerminalsDoNotOverflow(t *testing.T) {
-	for _, width := range []int{8, 12, 16, 20} {
+	// Below 6 columns the field border and input prompt alone overflow, so
+	// those widths only need to render without panicking.
+	for width := 1; width <= 20; width++ {
 		var a, b string
 		var c bool
 		f := formsStart(t, width, 40, forms.NewPage("Settings",
@@ -779,7 +781,11 @@ func TestFormsNarrowTerminalsDoNotOverflow(t *testing.T) {
 			forms.NewSelect(&b, forms.NewOption("Keep current", ""), forms.NewOption("json", "json")).Title("Format"),
 			forms.NewConfirm(&c).Title("Save?"),
 		))
-		for _, line := range strings.Split(formsView(f), "\n") {
+		view := formsView(f)
+		if width < 6 {
+			continue
+		}
+		for _, line := range strings.Split(view, "\n") {
 			if w := lipgloss.Width(line); w > width {
 				t.Fatalf("width %d: %q is %d wide", width, line, w)
 			}
