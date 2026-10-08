@@ -64,7 +64,7 @@ trackedFiles:
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
-    last_write_checksum: sha1:d5ccc0970afac880e050719fe49c883432062904
+    last_write_checksum: sha1:11730e18c9c6f403253ba394cb00e5b6e8beec59
   internal/cli/configure.go:
     last_write_checksum: sha1:81f421f92ba05428359b905815e1dd23c64e7539
   internal/cli/createuser.go:
@@ -74,7 +74,7 @@ trackedFiles:
   internal/cli/deleteuser.go:
     last_write_checksum: sha1:e6876685816745a290da3903a03a3afe8f0812e7
   internal/cli/getasset.go:
-    last_write_checksum: sha1:de1608c08a8516f477d77a1d138a590462fa1f0f
+    last_write_checksum: sha1:5a5d0784d2880dd248401b62b0579e6b21ff7c04
   internal/cli/getbinarydefaultresponse.go:
     last_write_checksum: sha1:75df919b8b943ca85ed7299d14cd2c5ee7cb7b56
   internal/cli/getduplicateexportcollision.go:
@@ -120,9 +120,9 @@ trackedFiles:
   internal/cli/intent_invite.go:
     last_write_checksum: sha1:793f73ebb8278cf397e5a6a0fefb0ce1d34ffb08
   internal/cli/intent_observe.go:
-    last_write_checksum: sha1:a431c4a089387daea5b9f974ae5b4d1663414026
+    last_write_checksum: sha1:73bb5c7809ee73702a3284ab1ac1bc74c064f4f7
   internal/cli/intent_produce.go:
-    last_write_checksum: sha1:41e8095d62f9bab26b77c3be790b4ed1eac7f8f1
+    last_write_checksum: sha1:bd40954296ab4b5dd4265987e5c8918d46209528
   internal/cli/intent_render.go:
     last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
   internal/cli/intent_say.go:
@@ -180,7 +180,7 @@ trackedFiles:
   internal/cli/postfile.go:
     last_write_checksum: sha1:f67d5ddcaa3ea921513ee6f97fe5eb8db9580aae
   internal/cli/renderasset.go:
-    last_write_checksum: sha1:7b64189912eaa0e2c11bdbc91f39d3d035bbc8b3
+    last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
   internal/cli/root.go:
     last_write_checksum: sha1:dad2cd122f67c8465ec46ab90e7e74f9b1f0ce3d
   internal/cli/tag1/auth.go:
@@ -244,13 +244,13 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:dcaf9e57c7fbfc01e64568da488aacc6ee9d158f
+    last_write_checksum: sha1:d03aca42136fca769c6a6613e27a0001911e66d0
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a6cf90b7dd09d11ffbd438fc3aba76806de5752a
   internal/interactive/interactive.go:
-    last_write_checksum: sha1:ba6979695c50a3c2385bc74a4676dfe88814a984
+    last_write_checksum: sha1:cb2abdd024fe02c87a0e558c1573cdc91832edfc
   internal/interactive/policy.go:
     last_write_checksum: sha1:3cf3eec72867230610aa5e7c308fddcaf916b81b
   internal/interactive/policy_test.go:
@@ -260,7 +260,7 @@ trackedFiles:
   internal/output/artifact.go:
     last_write_checksum: sha1:e1dfc09cbda1012a953fe33fece7efaddaf3f03b
   internal/output/async.go:
-    last_write_checksum: sha1:dd97e2b19a859b376462dd1beacb31d7d3668a79
+    last_write_checksum: sha1:a21d71edaa274da8d45b79d6a7511424057c143f
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
@@ -646,7 +646,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:e010e10d24f913bd1c3b5429cb85b74e9fefae1d
+    last_write_checksum: sha1:1320ae9b96590ef597a1423e64da8993a90925fc
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:
@@ -654,7 +654,7 @@ trackedFiles:
   tests/artifact_test.go:
     last_write_checksum: sha1:0f30f25b5dc69938e9ef91371d4b3497bb87f62e
   tests/async_test.go:
-    last_write_checksum: sha1:fb5dafb085f988d482359c61cdb2b800528ceed0
+    last_write_checksum: sha1:6ba96fcf11fc74d77e99c81cea4e3a1cd6dfe297
   tests/cli_harness_test.go:
     last_write_checksum: sha1:f9897cd826a343a3c7d3a43c9c7b086348f108ce
   tests/common_helpers_test.go:

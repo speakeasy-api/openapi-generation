@@ -1048,6 +1048,8 @@ Operation-declared names are checked against generated parameter/body/security f
 
 The projection annotation is attached only to the operation command. SSE-overload operations need no decode-time branch: `StreamResult` projects a real stream and already falls back to normal `Result` output when `--stream=false` produces JSON (including completed-interaction replay APIs). Generated long help explains raw projection, `--stream=false`, and `-o json`; static KDL and live `--usage` include operation-declared flags, and Cobra-generated docs inherit the same flags/help.
 
+Explicit JSON/jq output prepares raw response handling before calling stream-capable operations, so a JSON response can be printed even when its known fields no longer match the generated schema. Actual SSE and JSONL responses still use their streaming decoders.
+
 Ordinary typed `Result` extraction never treats a value with `Next` and `Value` methods as renderable response content; stream wrappers belong exclusively to `StreamResult`. This also keeps a streaming dry-run silent in implicit pretty mode when the dry-run client creates an empty synthetic stream. Explicit JSON dry-runs print the `{"dry_run":true,"request":{...}}` preview object like every other operation.
 
 #### Artifact intent output (`output.artifact`)
@@ -1074,6 +1076,29 @@ output:
 Artifact intents register `--out` and `--raw-response`. When a missing required input triggers the interactive form, an unresolved `--out` is offered directly after required inputs and optional positionals as `Output file`, before the ordinary optional-fields confirmation. An argv-complete invocation does not open a form just for `--out`. Empty input uses the declared `defaultPath`; an existing directory or a path ending in a separator places that generated default name inside the directory. `--out` supplied on argv, `--no-interactive`, and agent mode do not prompt.
 
 The returned MIME type controls a file destination's extension. A matching extension stays unchanged; a missing extension is appended silently; a conflicting extension is rewritten and stderr receives one line such as `Note: wrote image/png as photo.png (requested photo.jpg)`. Like the human-only `Wrote image to ...` status, the note is suppressed in machine modes (agent mode, `--jq`, non-pretty/table formats): the envelope already carries the final path and success keeps stderr silent there. `--out` is output routing only and never participates in request-body source/merge rules.
+
+### Resuming async intents
+
+`intentcmd.go.stmpl` registers `--resume <id>` for commands with an async recipe.
+It polls the existing operation using the recipe's parameters, states and timing,
+then uses the same output and artifact handling as a normal create-and-wait call.
+It never creates another operation. Create arguments, request flags and `--async`
+are incompatible with resume; body files and stdin are not read, and create-input
+forms are not opened. Authentication, server selection, output flags,
+`--poll-interval` and `--poll-timeout` remain available.
+
+`auxiliary/internal/output/async.go.stmpl` shares the polling loop between creation
+and resume. `--dry-run --resume <id>` previews one poll request without network
+calls or artifact writes. Human `--async` output prints the handle on stdout and
+a resume command on stderr. Structured modes retain their existing payload and
+silent stderr. Timeout/error hints also name the original intent with `--resume`
+and shell-quote the handle. Output paths are not retained in hints: pass `--out`
+again when resuming to select the destination.
+
+Artifact output supports inline base64 content. URI-only content retains the
+explicit unsupported-download error and does not create an artifact file.
+`--raw-response` prints the terminal payload instead of writing an artifact.
+The `--resume` flag description in help and static/live `--usage` describes polling an existing operation by ID instead of creating one. Conflict errors explain incompatible inputs.
 
 ### Binary Downloads
 

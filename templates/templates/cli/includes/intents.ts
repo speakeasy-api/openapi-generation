@@ -531,7 +531,7 @@ function validateIntentFlagNames(
     }
   }
   if (cmd.Async) {
-    for (const owned of ["async", "poll-interval", "poll-timeout"]) {
+    for (const owned of ["async", "resume", "poll-interval", "poll-timeout"]) {
       if (generatedFlags.has(owned)) {
         throw new Error(
           `x-speakeasy-cli-commands: command "${cmdKey}" declares async, ` +
@@ -1086,10 +1086,7 @@ function collectIntentManifest(): IntentManifestCtx {
           } to the generated poll request`,
         );
       }
-      const pollFlag = sanitizeFlagNameWithReserved(target.Field.Name);
-      const resumePrefix = `${sanitizeCliName()} ${getCLICommandPath(
-        pollFound.op,
-      ).join(" ")} --${pollFlag}`;
+      const resumePrefix = `${sanitizeCliName()} ${path.join(" ")} --resume`;
       asyncParams = (cmd.Async.ResolvedParams || []).map((param: any) => ({
         In: param.In,
         Name: param.Name,
@@ -1839,6 +1836,43 @@ function templateAsyncTestArgs(): string {
   return parts.map((part) => goStringLiteral(part)).join(", ");
 }
 registerTemplateFunc("templateAsyncTestArgs", templateAsyncTestArgs);
+
+function templateAsyncTestPathArgs(): string {
+  const cmd = getAsyncTestCommand();
+  if (!cmd) return "";
+  return [...cmd.ParentPath, firstUseWord(cmd.Use)]
+    .map((p) => goStringLiteral(p))
+    .join(", ");
+}
+registerTemplateFunc("templateAsyncTestPathArgs", templateAsyncTestPathArgs);
+function templateIntentPathArgs(cmd: IntentCmdCtx): string {
+  return [...cmd.ParentPath, firstUseWord(cmd.Use)]
+    .map((p) => goStringLiteral(p))
+    .join(", ");
+}
+registerTemplateFunc("templateIntentPathArgs", templateIntentPathArgs);
+function templateAsyncPollTestArgs(): string {
+  const cmd = getAsyncTestCommand();
+  return cmd?.PollOp
+    ? getCLICommandPath(cmd.PollOp)
+        .map((p) => goStringLiteral(p))
+        .join(", ")
+    : "";
+}
+registerTemplateFunc("templateAsyncPollTestArgs", templateAsyncPollTestArgs);
+function templateReviewAsyncPollTestEnabled(): boolean {
+  const cmd = getAsyncTestCommand();
+  return (
+    (context.Global.AST as any).OpenAPIDocument?.Info?.Title === "SDK Review" &&
+    cmd?.PollOp?.OriginalID === "getAsset" &&
+    cmd.AsyncParameterName === "id" &&
+    getStreamingFieldName(cmd.PollOp) === "AssetStatusStream"
+  );
+}
+registerTemplateFunc(
+  "templateReviewAsyncPollTestEnabled",
+  templateReviewAsyncPollTestEnabled,
+);
 
 function templateIntentAsyncTestArgs(cmd: IntentCmdCtx | null): string {
   if (!cmd) return "";

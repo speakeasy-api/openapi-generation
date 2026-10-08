@@ -87,6 +87,9 @@ func executeRenderAssetCmd(cmd *cobra.Command, args []string, asyncIntent bool) 
 	if err := output.ValidateGlobalServerIndex(cmd, len(sdk.ServerList)); err != nil {
 		return nil, err
 	}
+	if asyncIntent || output.WantsRawJSON(cmd) {
+		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+	}
 	if !client.IsDryRun(cmd) && !asyncIntent {
 		res, err := s.RenderAsset(cmd.Context(), *request, sdkOpts...)
 		if err != nil {
@@ -96,9 +99,6 @@ func executeRenderAssetCmd(cmd *cobra.Command, args []string, asyncIntent bool) 
 			return nil, err
 		}
 		return nil, nil
-	}
-	if asyncIntent || output.WantsRawJSON(cmd) {
-		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
 	}
 	res, err := s.RenderAsset(cmd.Context(), *request, sdkOpts...)
 	if err != nil {

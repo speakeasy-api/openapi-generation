@@ -332,6 +332,11 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
         })
     }
     {{- end}}
+    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
+    if output.WantsRawJSON(cmd) {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- end}}
     {{- if hasStreamingResponse $op}}
     // Streaming response — iterate events and output incrementally.
     // Skip streaming iteration in dry-run mode (synthetic response has no stream).
@@ -341,11 +346,6 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
             return output.Error(cmd, err)
         }
         return output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}")
-    }
-    {{- end}}
-    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
-    if output.WantsRawJSON(cmd) {
-        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
     }
     {{- end}}
     {{- if not (operationHasDeferredBody $op)}}
@@ -481,6 +481,11 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
         return nil, nil
     }
     {{- end}}
+    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
+    if asyncIntent || output.WantsRawJSON(cmd) {
+        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+    }
+    {{- end}}
     {{- if hasStreamingResponse $op}}
     if !client.IsDryRun(cmd) && !asyncIntent {
         res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
@@ -491,11 +496,6 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
             return nil, err
         }
         return nil, nil
-    }
-    {{- end}}
-    {{- if and (not (hasResponseTransform $op)) (not (hasBinaryResponse $op))}}
-    if asyncIntent || output.WantsRawJSON(cmd) {
-        sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
     }
     {{- end}}
     {{- if not (operationHasDeferredBody $op)}}
