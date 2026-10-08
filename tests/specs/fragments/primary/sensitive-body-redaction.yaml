@@ -226,6 +226,10 @@ components:
       properties:
         message:
           type: string
+        tokens[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, while another response schema of the operation has a sensitive tokens array.
+          type: string
+          x-speakeasy-name-override: bracketedTokens
         secret:
           type: string
           x-speakeasy-param-sensitive: true
@@ -291,6 +295,10 @@ components:
       required:
         - name
       properties:
+        token[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, beside a sensitive token property.
+          type: string
+          x-speakeasy-name-override: bracketedToken
         payload[]:
           description: Property whose wire name ends in brackets; it is not an array.
           type: string

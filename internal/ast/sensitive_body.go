@@ -20,11 +20,11 @@ type SensitiveBodyNode struct {
 	// Sensitive masks the whole value. Streams are masked as a whole when any
 	// of their items holds a sensitive value.
 	Sensitive bool
-	// Fields are object properties by wire name (JSON property, form field
-	// or multipart part name), sorted by name. A property
-	// that is not listed uses Values. When Values is set, declared properties
-	// are listed even when they hold nothing sensitive (with Node 0), so that
-	// they never fall back to Values.
+	// Fields are the declared object properties by wire name (JSON property,
+	// form field or multipart part name), sorted by name, including those
+	// holding nothing sensitive (with Node 0), so that a declared name is
+	// never mistaken for another one or for Values. A property that is not
+	// listed uses Values.
 	Fields []SensitiveBodyField
 	// Item is the schema of array items.
 	Item int
@@ -269,9 +269,7 @@ func (b *sensitiveBodyBuilder) build() *SensitiveBodyGraph {
 		}
 		out.Values = remap[node.values]
 		for _, field := range node.fields {
-			if out.Values != 0 || remap[field.Node] != 0 {
-				out.Fields = append(out.Fields, SensitiveBodyField{Name: field.Name, Node: remap[field.Node]})
-			}
+			out.Fields = append(out.Fields, SensitiveBodyField{Name: field.Name, Node: remap[field.Node]})
 		}
 		sort.SliceStable(out.Fields, func(a, b int) bool { return out.Fields[a].Name < out.Fields[b].Name })
 		out.Item = remap[node.item]

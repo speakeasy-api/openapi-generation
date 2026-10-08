@@ -208,6 +208,10 @@ func TestRedactFormRequestBody(t *testing.T) {
 	assert.Equal(t, plain, redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", plain), "forms without sensitive values are returned unchanged")
 	assert.Equal(t, "name=visible-name&metadata="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&metadata=secret-text"))), "unparseable JSON-encoded fields are masked")
 	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
+	assert.Equal(t, "token%5B%5D=visible-bracketed&token="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("token%5B%5D=visible-bracketed&token=secret-token"))), "a plain property whose name ends in brackets is not mistaken for a sensitive one")
+
+	responseCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+	assert.Equal(t, "tokens[]="+redact.Mask, string(redact.ResponseBody(responseCtx, "application/x-www-form-urlencoded", []byte("tokens[]=secret-tokens-0"))), "a bracketed name declared by one response schema still matches a sensitive array of another")
 }
 
 func TestRedactMultipartRequestBody(t *testing.T) {

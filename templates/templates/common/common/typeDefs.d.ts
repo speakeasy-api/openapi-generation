@@ -2123,8 +2123,8 @@ declare global {
     /** Masks the whole value. */
     Sensitive: boolean;
     /**
-     * Object properties by JSON name, sorted by name. Unlisted properties use
-     * Values.
+     * Declared object properties by wire name, sorted by name, including those
+     * holding nothing sensitive (Node 0). Unlisted properties use Values.
      */
     Fields?: { Name: string; Node: number }[];
     /** Schema of array items. */

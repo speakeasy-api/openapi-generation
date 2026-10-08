@@ -214,6 +214,12 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	assert.False(t, g.Nodes[mixed[0]].PlainArray || g.Nodes[mixed[0]].PlainString || g.Nodes[mixed[0]].PlainNumber || g.Nodes[mixed[0]].PlainBoolean)
 	assert.Len(t, g.Nodes[mixed[0]].Variants, 1)
 
+	var declared []string
+	for _, f := range g.Nodes[g.Roots[0]].Fields {
+		declared = append(declared, f.Name)
+	}
+	assert.Equal(t, []string{"count", "flag", "loop", "mixed", "sensitive", "text"}, declared, "declared properties are listed even when they hold nothing sensitive")
+
 	text := sensitiveChild(g, g.Roots, "text")
 	require.Len(t, text, 1)
 	assert.True(t, g.Nodes[text[0]].PlainString && g.Nodes[text[0]].PlainNumber, "members of a plain nested union are recorded")
