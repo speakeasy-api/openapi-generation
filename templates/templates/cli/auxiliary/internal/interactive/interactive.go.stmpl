@@ -190,7 +190,7 @@ func interceptCommand(cmd *cobra.Command) {
 		}
 
 		bodyTookControl := false
-		if !usage.UsageRequested(runCmd) && !documentationRequested(runCmd) && Resolve(runCmd).PromptRequiredInputs() {
+		if !usage.UsageRequested(runCmd) && !documentationRequested(runCmd) && !flagutil.IsAsyncResume(runCmd) && Resolve(runCmd).PromptRequiredInputs() {
 			supplied, err := wholeBodySupplied(runCmd)
 			if err != nil {
 				return err

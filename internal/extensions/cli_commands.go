@@ -424,6 +424,7 @@ var cliReservedFlagNames = map[string]bool{
 	// adding an async recipe cannot turn a previously valid flag into a
 	// generated pflag collision.
 	"async":         true,
+	"resume":        true,
 	"poll-interval": true,
 	"poll-timeout":  true,
 }

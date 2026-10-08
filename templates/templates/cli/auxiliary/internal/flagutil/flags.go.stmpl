@@ -34,6 +34,10 @@ func FlagChanged(cmd *cobra.Command, name string) bool {
 	return false
 }
 
+func IsAsyncResume(cmd *cobra.Command) bool {
+	return cmd != nil && cmd.Annotations["speakeasy_async"] != "" && FlagChanged(cmd, "resume")
+}
+
 // AnyFlagChanged reports whether any of the named flags was explicitly set.
 func AnyFlagChanged(cmd *cobra.Command, names ...string) bool {
 	for _, name := range names {
