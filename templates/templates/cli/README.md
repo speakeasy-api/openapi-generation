@@ -672,10 +672,12 @@ Three output paths:
    - `pretty` (default): Aligned key-value pairs with color, nested indentation
    - `json`: Marshaled from the typed Go struct (note: field order and precision may differ from original API JSON)
    - `yaml`: Via `gopkg.in/yaml.v3`
-   - `table`: Aligned columns via `printTable()` — multi-row for slices, vertical key-value for single structs, two-column for maps. A struct with slice-of-struct fields (a list response such as `{items, nextPageToken}`, or a resource holding a list) renders in field order: non-nil plain-value fields as key-value blocks and each slice-of-struct field as a titled, indented sub-table. `time.Time` fields are cells in RFC 3339, like JSON output
+   - `table`: Aligned columns via `printTable()` — multi-row for slices, `FIELD`/`VALUE` tables for single structs, two-column for maps. Single-object field labels use their JSON names. Nested structs, maps, and complex arrays render as compact JSON cells using custom JSON marshalers; serialized strings such as dates are displayed without JSON quotes. Root custom marshalers define the displayed fields too, including flattened additional properties and omitted fields. Arrays of structs render as titled sub-tables with one row per non-nil entry; columns come from the serialized object's fields in first-seen order across all rows, including fields introduced by later union variants. Nested values occupy compact JSON cells in those columns. Fields absent from a row have blank cells, explicit JSON nulls remain `null`, and fields omitted by the row's JSON serialization do not introduce columns. Custom row marshalers that produce non-object values, or sections with no object keys, use a single `VALUE` column containing each row's complete JSON value. Section scalar arrays use JSON cells; top-level primitive arrays retain comma-separated cells, including on custom-marshaled objects. List wrappers and pagination without a declared results path use these same tables. Direct array tables and `--all` tables that aggregate a declared results array of structs retain their existing columns, with control characters escaped in row cells, column headers, and map keys/values. Single-object tables exclude `json:"-"` fields, escape control characters, omit nil nested values on the reflected object path and preserve explicit nulls from custom root serialization, retain non-nil empty maps/arrays, and use object, field, or row context for serialization errors. `Result()` buffers a single struct's table output and propagates those errors before writing the object; per-item streaming and per-item pagination retain the existing `outputOneItem()` fallback to pretty output when table rendering fails. Declared-results `--all` struct aggregation bypasses `outputOneItem()` and uses the existing `PaginatedResult()` `flushRows` fallback
    - `toon`: [Token-Oriented Object Notation](https://github.com/toon-format/spec) via `github.com/alpkeskin/gotoon` — compact, line-oriented, 30–60% fewer tokens than JSON. gotoon omits the final newline, so `encodeTOON()` terminates non-empty output with one, matching JSON and YAML and giving per-item streaming/pagination output its blank-line separator
 
    `pretty`, `yaml` and `toon` never reflect over the typed Go structs directly. `normalizeForOutput()` (`output.go.stmpl`) marshals the value once through the SDK's `utils.MarshalJSON` and decodes it back with `json.Decoder.UseNumber`, and the renderers work from that wire shape (`marshalYAML()`, `encodeTOON()`, `prettyPrint()`, shared by `Result()` and the per-item streaming/pagination path in `outputitems.go.stmpl`). Reflecting encoders would otherwise leak generated union internals — wrapper keys such as `ErrorEvent:`, `null` sibling variants, `Type`/`UnknownRaw` — plus raw struct-tag options as keys (`"error,omitzero":`) and lowercased Go field names in YAML. Numbers stay exact: `json.Number` is converted per renderer (`convertNumbers()` with `yamlNumber()`/`toonNumber()`, `formatJSONNumber()` for pretty) to a native `int64`/`float64` only when that value re-encodes to the identical JSON lexeme (`nativeNumber()`); otherwise the lexeme is kept verbatim — a tagged `!!int`/`!!float` scalar node for yaml, a string for TOON (which has no wider numeric type), the literal for pretty — so bigint/decimal fields never lose digits. TOON's own encoder goes through `float64`, so native integers above 2^53 round there (a gotoon property, unchanged). `--include-headers` output (`outputWithHeaders()`) already worked from the marshalled JSON. Covered by `TestEventStreamUnionEventsRenderWireShape` and `TestEventStreamNumbersKeepPrecision` in `tests/primary/eventstreaming_test.go.stmpl`.
+
+Streaming `--output-format table` applies the same single-object renderer to each event, with a blank line between events. An event wrapper containing only a nested `data` value renders a `data` compact JSON cell beneath a `FIELD`/`VALUE` header; it previously had no displayable table fields and fell back to pretty output. JSON, YAML, TOON, and pretty streaming formats keep their existing rendering paths. Covered by `TestTableStreamingUnionDataCells` in `tests/primary/table_additional_test.go.stmpl`.
 
 3. **jq filtering** (`--jq`): Applies a [gojq](https://github.com/itchyny/gojq) expression to the JSON output. Overrides `--output-format` since the result is always JSON — except under `--raw-output` (jq `-r` semantics: string results are written as raw text plus a newline, unquoted, unescaped, never colorized; non-string results stay JSON), so `--jq '.data' --raw-output | base64 -d > image.png` works. The flag's default is the `cli.jqRawOutput` gen.yaml key (default `false`); it threads through `outputJqResults` (single results, `--include-headers`, artifacts) and `outputOneItem` (streams, `--all` pagination).
 
@@ -1046,6 +1048,8 @@ Operation-declared names are checked against generated parameter/body/security f
 
 The projection annotation is attached only to the operation command. SSE-overload operations need no decode-time branch: `StreamResult` projects a real stream and already falls back to normal `Result` output when `--stream=false` produces JSON (including completed-interaction replay APIs). Generated long help explains raw projection, `--stream=false`, and `-o json`; static KDL and live `--usage` include operation-declared flags, and Cobra-generated docs inherit the same flags/help.
 
+Explicit JSON/jq output prepares raw response handling before calling stream-capable operations, so a JSON response can be printed even when its known fields no longer match the generated schema. Actual SSE and JSONL responses still use their streaming decoders.
+
 Ordinary typed `Result` extraction never treats a value with `Next` and `Value` methods as renderable response content; stream wrappers belong exclusively to `StreamResult`. This also keeps a streaming dry-run silent in implicit pretty mode when the dry-run client creates an empty synthetic stream. Explicit JSON dry-runs print the `{"dry_run":true,"request":{...}}` preview object like every other operation.
 
 #### Artifact intent output (`output.artifact`)
@@ -1072,6 +1076,29 @@ output:
 Artifact intents register `--out` and `--raw-response`. When a missing required input triggers the interactive form, an unresolved `--out` is offered directly after required inputs and optional positionals as `Output file`, before the ordinary optional-fields confirmation. An argv-complete invocation does not open a form just for `--out`. Empty input uses the declared `defaultPath`; an existing directory or a path ending in a separator places that generated default name inside the directory. `--out` supplied on argv, `--no-interactive`, and agent mode do not prompt.
 
 The returned MIME type controls a file destination's extension. A matching extension stays unchanged; a missing extension is appended silently; a conflicting extension is rewritten and stderr receives one line such as `Note: wrote image/png as photo.png (requested photo.jpg)`. Like the human-only `Wrote image to ...` status, the note is suppressed in machine modes (agent mode, `--jq`, non-pretty/table formats): the envelope already carries the final path and success keeps stderr silent there. `--out` is output routing only and never participates in request-body source/merge rules.
+
+### Resuming async intents
+
+`intentcmd.go.stmpl` registers `--resume <id>` for commands with an async recipe.
+It polls the existing operation using the recipe's parameters, states and timing,
+then uses the same output and artifact handling as a normal create-and-wait call.
+It never creates another operation. Create arguments, request flags and `--async`
+are incompatible with resume; body files and stdin are not read, and create-input
+forms are not opened. Authentication, server selection, output flags,
+`--poll-interval` and `--poll-timeout` remain available.
+
+`auxiliary/internal/output/async.go.stmpl` shares the polling loop between creation
+and resume. `--dry-run --resume <id>` previews one poll request without network
+calls or artifact writes. Human `--async` output prints the handle on stdout and
+a resume command on stderr. Structured modes retain their existing payload and
+silent stderr. Timeout/error hints also name the original intent with `--resume`
+and shell-quote the handle. Output paths are not retained in hints: pass `--out`
+again when resuming to select the destination.
+
+Artifact output supports inline base64 content. URI-only content retains the
+explicit unsupported-download error and does not create an artifact file.
+`--raw-response` prints the terminal payload instead of writing an artifact.
+The `--resume` flag description in help and static/live `--usage` describes polling an existing operation by ID instead of creating one. Conflict errors explain incompatible inputs.
 
 ### Binary Downloads
 
