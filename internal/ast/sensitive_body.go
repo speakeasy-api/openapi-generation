@@ -20,7 +20,8 @@ type SensitiveBodyNode struct {
 	// Sensitive masks the whole value. Streams are masked as a whole when any
 	// of their items holds a sensitive value.
 	Sensitive bool
-	// Fields are object properties by JSON name, sorted by name. A property
+	// Fields are object properties by wire name (JSON property, form field
+	// or multipart part name), sorted by name. A property
 	// that is not listed uses Values. When Values is set, declared properties
 	// are listed even when they hold nothing sensitive (with Node 0), so that
 	// they never fall back to Values.
@@ -171,11 +172,7 @@ func (b *sensitiveBodyBuilder) addRoot(t *TypeDef) {
 					node.values = walk(child.ItemType)
 				}
 			default:
-				name := field.OriginalName
-				if name == "" {
-					name = field.Name
-				}
-				node.fields = append(node.fields, SensitiveBodyField{Name: name})
+				node.fields = append(node.fields, SensitiveBodyField{Name: sensitiveBodyFieldName(field)})
 				if field.Const == nil {
 					node.fields[len(node.fields)-1].Node = walk(child)
 				}
@@ -184,6 +181,13 @@ func (b *sensitiveBodyBuilder) addRoot(t *TypeDef) {
 		return id
 	}
 	b.roots = append(b.roots, walk(t))
+}
+
+func sensitiveBodyFieldName(field *FieldDef) string {
+	if field.OriginalName != "" {
+		return field.OriginalName
+	}
+	return field.Name
 }
 
 // containsSensitiveBodyType reports whether t or any type below it is marked

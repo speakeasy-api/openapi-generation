@@ -97,6 +97,10 @@ func TestRedactSensitiveBodies(t *testing.T) {
 	assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, "text/plain", []byte(`{"name": "visible-name"}`))), "bodies of other media types are masked as a whole")
 	assert.Equal(t, []byte(sensitiveBodyPayload), redact.ResponseBody(context.Background(), "application/json", []byte(sensitiveBodyPayload)), "requests without an operation are not masked")
 
+	assert.Equal(t, `"`+redact.Mask+`"`, string(redact.ResponseBody(ctx, "application/json", []byte(`"secret-scalar"`))), "values not shaped like their schema are masked")
+	assert.Equal(t, `{"name":"visible-name","nested":"`+redact.Mask+`"}`, string(redact.ResponseBody(ctx, "application/json", []byte(`{"name": "visible-name", "nested": ["secret-shape"]}`))), "values not shaped like their schema are masked")
+	assert.Equal(t, `{"name":null}`, string(redact.ResponseBody(ctx, "application/json", []byte(`{"name":null}`))), "null values are kept")
+
 	errorBody := string(redact.ResponseBody(ctx, "application/json", []byte(`{"message": "visible-message", "secret": "secret-error"}`)))
 	assert.Contains(t, errorBody, "visible-message")
 	assert.NotContains(t, errorBody, "secret-error", "error response schemas are masked")
@@ -193,6 +197,13 @@ func TestRedactMultipartRequestBody(t *testing.T) {
 
 	ctx := redact.WithOperation(context.Background(), "sensitiveMultipartRedaction")
 	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/form-data", client.body)), "multipart bodies without a boundary are masked as a whole")
+	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/mixed; boundary="+params["boundary"], client.body)), "other multipart bodies are masked as a whole")
+
+	encoded := "--b\r\nContent-Disposition: form-data; name=\"token\"\r\nContent-Transfer-Encoding: base64\r\n\r\nc2VjcmV0LWVuY29kZWQ=\r\n--b--\r\n"
+	masked := string(redact.RequestBody(ctx, "multipart/form-data; boundary=b", []byte(encoded)))
+	assert.NotContains(t, masked, "c2VjcmV0LWVuY29kZWQ=")
+	assert.NotContains(t, masked, "Content-Transfer-Encoding", "masked parts are not transfer encoded")
+	assert.Contains(t, masked, redact.Mask)
 }
 
 func TestRedactSplitRequestBodies(t *testing.T) {

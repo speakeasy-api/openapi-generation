@@ -3574,7 +3574,7 @@ trackedFiles:
   internal/sdk/polling/option.go:
     last_write_checksum: sha1:69d4557bf43a1a97b2d3735c442d2d25be53e56f
   internal/sdk/redact/redact.go:
-    last_write_checksum: sha1:e6d46123adf82b18afe8bf186c5acb56294b5197
+    last_write_checksum: sha1:2dfa00e72ee22ba791195dc20ff5ada11afaba31
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:

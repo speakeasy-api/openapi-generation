@@ -10,8 +10,8 @@
 //	body = redact.RequestBody(req.Context(), req.Header.Get("Content-Type"), body)
 //	body = redact.ResponseBody(res.Request.Context(), res.Header.Get("Content-Type"), body)
 //
-// JSON, application/x-www-form-urlencoded and multipart bodies are masked
-// value by value. Other bodies of an operation with sensitive values are
+// JSON, application/x-www-form-urlencoded and multipart/form-data bodies are
+// masked value by value. Other bodies of an operation with sensitive values are
 // masked as a whole.
 package redact
 
@@ -22,6 +22,7 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
+	"net/textproto"
 	"net/url"
 	"strings"
 )
@@ -97,7 +98,7 @@ func (g *graph) redact(contentType string, body []byte) []byte {
 	switch {
 	case mediaType == "application/x-www-form-urlencoded":
 		masked, _, ok = g.redactForm(body, g.roots)
-	case strings.HasPrefix(mediaType, "multipart/"):
+	case mediaType == "multipart/form-data":
 		masked, _, ok = g.redactMultipart(body, params["boundary"], g.roots)
 	case mediaType == "" || mediaType == "application/json" || mediaType == "text/json" || strings.HasSuffix(mediaType, "+json"):
 		masked, _, ok = g.redactJSON(body, g.roots)
@@ -191,7 +192,16 @@ func (g *graph) redactMultipart(body []byte, boundary string, roots []int) ([]by
 		}
 		masked, partChanged := g.redactValue(data, g.child(roots, strings.TrimSuffix(part.FormName(), "[]")))
 		changed = changed || partChanged
-		partWriter, err := writer.CreatePart(part.Header)
+		header := part.Header
+		if partChanged {
+			// The mask is written as is, not in the part's transfer encoding.
+			header = make(textproto.MIMEHeader, len(part.Header))
+			for key, values := range part.Header {
+				header[key] = values
+			}
+			header.Del("Content-Transfer-Encoding")
+		}
+		partWriter, err := writer.CreatePart(header)
 		if err != nil {
 			return nil, false, false
 		}
@@ -236,9 +246,15 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 	if depth >= maxDepth {
 		return Mask, true
 	}
+	// A value that does not have the shape of its schema cannot be followed
+	// to its sensitive values, so it is masked as a whole.
 	changed := false
 	switch v := value.(type) {
+	case nil:
 	case map[string]any:
+		if !g.hasProperties(roots) {
+			return Mask, true
+		}
 		for key, child := range v {
 			if masked, ok := g.mask(child, g.child(roots, key), depth+1); ok {
 				v[key] = masked
@@ -247,14 +263,30 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 		}
 	case []any:
 		items := g.items(roots)
+		if len(items) == 0 {
+			return Mask, true
+		}
 		for i, child := range v {
 			if masked, ok := g.mask(child, items, depth+1); ok {
 				v[i] = masked
 				changed = true
 			}
 		}
+	default:
+		return Mask, true
 	}
 	return value, changed
+}
+
+// hasProperties reports whether any of roots describes object properties or
+// map values.
+func (g *graph) hasProperties(roots []int) bool {
+	for _, id := range g.expand(roots) {
+		if len(g.nodes[id].fields) > 0 || g.nodes[id].values != 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // sensitive reports whether any of roots, or their union variants, is
