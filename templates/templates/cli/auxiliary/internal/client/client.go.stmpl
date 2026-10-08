@@ -22,7 +22,10 @@ package client
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{templateMainSDKTypeName}}, error) {
     var sdkOpts []sdk.SDKOption
     {{- if hasGlobalSecurity}}
-    sdkOpts = append(sdkOpts, sdk.WithSecurity(BuildGlobalSecurity(cmd, allowedSecurityFields)))
+    {{- addImport "reflect"}}
+    globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
+    flagutil.SetCredentialsMissing(cmd, reflect.ValueOf(globalSecurity).IsZero())
+    sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
     {{- else}}
     _ = allowedSecurityFields
     {{- end}}

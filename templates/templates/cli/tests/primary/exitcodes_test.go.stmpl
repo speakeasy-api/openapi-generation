@@ -191,6 +191,37 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 	}
 }
 
+{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
+func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
+	recordTest("cli-forbidden-without-credentials")
+	s := newEchoServer()
+	defer s.Close()
+
+	for name, credential := range map[string]string{"unset": "", "set": "test-credential"} {
+		t.Run(name, func(t *testing.T) {
+			h := NewCLITestHarness(t).WithEnv({{goStringLiteral noKeyringEnvVar}}, "true")
+			for _, envVar := range []string{ {{- templateCredentialEnvVars -}} } {
+				h.WithEnv(envVar, "")
+			}
+			if credential != "" {
+				h.WithEnv({{goStringLiteral templatePrimaryAuthEnvVar}}, credential)
+			}
+			err := h.RunRaw([]string{"--server-url", s.URL, "--agent-mode", "errors", "status-get-error", "--status-code", "403"})
+			require.Error(t, err)
+			assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(err))
+			envelope := agentEnvelope(t, h.GetStderr())
+			if credential == "" {
+				assert.Equal(t, "authentication_error", envelope["error_type"])
+				assert.Contains(t, envelope["hints"], {{goStringLiteral templateAuthErrorHint}})
+			} else {
+				assert.Equal(t, "authorization_error", envelope["error_type"])
+				assert.NotContains(t, envelope["hints"], {{goStringLiteral templateAuthErrorHint}})
+			}
+		})
+	}
+}
+{{- end}}
+
 func TestExitCodeReasonFirstAndEnvelopePrecedence(t *testing.T) {
 	recordTest("cli-exit-code-reason-first")
 

@@ -224,6 +224,9 @@ func Classify(cmd *cobra.Command, err error) Classification {
 		}
 		if c.Type == "" && c.StatusCode != 0 {
 			c.Type = classifyHTTPStatus(c.StatusCode)
+			if c.Type == ErrorTypeAuthorization && flagutil.CredentialsMissing(cmd) {
+				c.Type = ErrorTypeAuthentication
+			}
 		}
 		if c.Type == "" {
 			c.Type = classifyStatuslessError(err, c.Origin)

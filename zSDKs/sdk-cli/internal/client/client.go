@@ -14,6 +14,7 @@ import (
 	"openapi/internal/sdk/models/components"
 	"openapi/internal/sdk/retry"
 	"openapi/internal/testclient"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -25,7 +26,9 @@ import (
 // Empty allowedSecurityFields accepts every global security alternative.
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, error) {
 	var sdkOpts []sdk.SDKOption
-	sdkOpts = append(sdkOpts, sdk.WithSecurity(BuildGlobalSecurity(cmd, allowedSecurityFields)))
+	globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
+	flagutil.SetCredentialsMissing(cmd, reflect.ValueOf(globalSecurity).IsZero())
+	sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
 	if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
 		if err := flagutil.ValidateServerURL(serverURL); err != nil {
 			return nil, err

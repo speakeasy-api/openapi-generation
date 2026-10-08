@@ -405,6 +405,18 @@ function templatePrimaryAuthEnvVar(): string {
 }
 registerTemplateFunc("templatePrimaryAuthEnvVar", templatePrimaryAuthEnvVar);
 
+function templateCredentialEnvVars(): string {
+  const prefix = context.Global.Config.EnvVarPrefix
+    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
+    : "";
+  return getCLISecurityFields()
+    .map((f) =>
+      goStringLiteral(prefix ? `${prefix}_${f.envVarSuffix}` : f.envVarSuffix),
+    )
+    .join(", ");
+}
+registerTemplateFunc("templateCredentialEnvVars", templateCredentialEnvVars);
+
 /**
  * One-line credentials hint for agent-mode authentication errors, derived
  * from the API's actual security fields. Single-scheme APIs name the primary

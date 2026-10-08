@@ -85,6 +85,26 @@ func DidDryRunRequest(cmd *cobra.Command) bool {
 	return cmd != nil && cmd.Annotations[dryRunRequestAnnotation] == "true"
 }
 
+const credentialsMissingAnnotation = "speakeasy_credentials_missing"
+
+func SetCredentialsMissing(cmd *cobra.Command, missing bool) {
+	if cmd == nil {
+		return
+	}
+	if !missing {
+		delete(cmd.Annotations, credentialsMissingAnnotation)
+		return
+	}
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations[credentialsMissingAnnotation] = "true"
+}
+
+func CredentialsMissing(cmd *cobra.Command) bool {
+	return cmd != nil && cmd.Annotations[credentialsMissingAnnotation] == "true"
+}
+
 // GetBoolFlag returns the value of a bool flag and whether it was changed.
 // This correctly handles both local flags and inherited persistent flags.
 func GetBoolFlag(cmd *cobra.Command, name string) (bool, bool) {
