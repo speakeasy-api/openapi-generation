@@ -179,6 +179,31 @@ components:
               type: string
         unrelated:
           $ref: "#/components/schemas/SensitiveBodyUnrelated"
+        tokensOrLabel:
+          description: Union of an array of sensitive values and an object without sensitive values; an object value stays readable.
+          oneOf:
+            - type: array
+              items:
+                type: string
+                x-speakeasy-param-sensitive: true
+            - $ref: "#/components/schemas/SensitiveBodyPlainLabel"
+        secretOrLabels:
+          description: Union of an object with a sensitive value and an array without sensitive values; an array value stays readable.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: array
+              items:
+                type: string
+        secretOrText:
+          description: Union of an object with a sensitive value and a string without sensitive values; a string value stays readable.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: string
+    SensitiveBodyPlainLabel:
+      type: object
+      properties:
+        label:
+          type: string
     SensitiveBodyError:
       type: object
       properties:

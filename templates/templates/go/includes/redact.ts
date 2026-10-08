@@ -18,6 +18,7 @@ function renderRedactGraph(graph: SensitiveBodyGraph | null): string {
     if (node.Values) parts.push(`values: ${node.Values}`);
     if (node.Variants?.length)
       parts.push(`variants: []int{ ${node.Variants.join(", ")} }`);
+    if (node.Plain) parts.push("plain: true");
     return `{ ${parts.join(", ")} }`;
   });
   return `&graph{ nodes: []node{ ${nodes.join(

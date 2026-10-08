@@ -188,3 +188,26 @@ func TestSensitiveRequestBodyGraph(t *testing.T) {
 
 	assert.Nil(t, (&Operation{}).SensitiveRequestBodyGraph())
 }
+
+func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
+	t.Parallel()
+
+	union := func(name string, variants ...*TypeDef) *TypeDef {
+		return &TypeDef{Type: DataTypeUnion, Name: name, AssociatedTypes: variants}
+	}
+	body := class("Body",
+		field("mixed", union("Mixed", &TypeDef{Type: DataTypeArray, ItemType: sensitiveString()}, class("Label", field("label", plainString())))),
+		field("sensitive", union("Sensitive", class("APIKey", field("key", sensitiveString())), sensitiveString())),
+	)
+	g := responseOperation(body).SensitiveResponseBodyGraph()
+	require.NotNil(t, g)
+
+	mixed := sensitiveChild(g, g.Roots, "mixed")
+	require.Len(t, mixed, 1)
+	assert.True(t, g.Nodes[mixed[0]].Plain, "a union with a member holding nothing sensitive is plain")
+	assert.Len(t, g.Nodes[mixed[0]].Variants, 1)
+
+	sensitive := sensitiveChild(g, g.Roots, "sensitive")
+	require.Len(t, sensitive, 1)
+	assert.False(t, g.Nodes[sensitive[0]].Plain, "a union whose members all hold sensitive values is not plain")
+}

@@ -32,6 +32,9 @@ type SensitiveBodyNode struct {
 	Values int
 	// Variants are union members; the member a value matches is not known.
 	Variants []int
+	// Plain reports a union member holding nothing sensitive, so a value
+	// that matches none of Variants may still match the schema.
+	Plain bool
 }
 
 // SensitiveBodyField is an object property of a SensitiveBodyNode.
@@ -265,6 +268,8 @@ func (b *sensitiveBodyBuilder) build() *SensitiveBodyGraph {
 		for _, variant := range node.variants {
 			if remap[variant] != 0 {
 				out.Variants = append(out.Variants, remap[variant])
+			} else {
+				out.Plain = true
 			}
 		}
 	}

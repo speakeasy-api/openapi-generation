@@ -109,6 +109,20 @@ func TestRedactSensitiveBodies(t *testing.T) {
 	assert.Equal(t, redact.Mask, string(redact.ResponseBody(streamCtx, "application/jsonl", []byte(`{"label": "visible", "secret": "secret-stream"}`))), "streams holding sensitive values are masked as a whole")
 }
 
+func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
+	ctx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+	redactJSON := func(body string) string {
+		return string(redact.RequestBody(ctx, "application/json", []byte(body)))
+	}
+
+	assertMasked(t, redactJSON(`{"name": "visible-name", "tokensOrLabel": ["secret-token-item"]}`), []string{"secret-token-item"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "tokensOrLabel": {"label": "visible-label"}}`), nil, []string{"visible-label"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": {"label": "visible-nested", "secret": "secret-nested"}}`), []string{"secret-nested"}, []string{"visible-nested"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": ["visible-item"]}`), nil, []string{"visible-item"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": {"label": "visible-nested", "secret": "secret-nested"}}`), []string{"secret-nested"}, []string{"visible-nested"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": "visible-text"}`), nil, []string{"visible-text"})
+}
+
 func TestRedactOperationOnRequestContext(t *testing.T) {
 	client := &redactCaptureClient{status: http.StatusOK}
 	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))

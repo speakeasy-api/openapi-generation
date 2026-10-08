@@ -80,6 +80,8 @@ type node struct {
 	item     int
 	values   int
 	variants []int
+	// plain reports a union member holding nothing sensitive.
+	plain bool
 }
 
 // redact returns body unchanged when it has nothing to mask. A body that
@@ -232,6 +234,9 @@ func (g *graph) redactValue(value []byte, roots []int) ([]byte, bool) {
 	}
 	masked, changed, ok := g.redactJSON(value, roots)
 	if !ok {
+		if g.plain(roots) {
+			return value, false
+		}
 		return []byte(Mask), true
 	}
 	return masked, changed
@@ -255,7 +260,7 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 	case nil:
 	case map[string]any:
 		if !g.hasProperties(roots) {
-			return Mask, true
+			return g.mismatch(value, roots)
 		}
 		for key, child := range v {
 			if masked, ok := g.mask(child, g.child(roots, key), depth+1); ok {
@@ -266,7 +271,7 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 	case []any:
 		items := g.items(roots)
 		if len(items) == 0 {
-			return Mask, true
+			return g.mismatch(value, roots)
 		}
 		for i, child := range v {
 			if masked, ok := g.mask(child, items, depth+1); ok {
@@ -275,9 +280,29 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 			}
 		}
 	default:
-		return Mask, true
+		return g.mismatch(value, roots)
 	}
 	return value, changed
+}
+
+// mismatch masks a value that does not have the shape of roots, unless a
+// union member holding nothing sensitive may match it.
+func (g *graph) mismatch(value any, roots []int) (any, bool) {
+	if g.plain(roots) {
+		return value, false
+	}
+	return Mask, true
+}
+
+// plain reports whether any of roots, or their union variants, is a union
+// with a member holding nothing sensitive.
+func (g *graph) plain(roots []int) bool {
+	for _, id := range g.expand(roots) {
+		if g.nodes[id].plain {
+			return true
+		}
+	}
+	return false
 }
 
 // hasProperties reports whether any of roots describes object properties or
