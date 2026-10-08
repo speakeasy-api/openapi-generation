@@ -23,6 +23,7 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/utils"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/errors"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/logging"
+	oaextensions "github.com/speakeasy-api/openapi/extensions"
 	"github.com/speakeasy-api/openapi/hashing"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3/core"
@@ -2156,7 +2157,15 @@ func (s *Schemas) handleAnyOfOneOf(ctx context.Context, params Params, nullable 
 		mergedSchema.Minimum = leastRestrictiveMin(minimums)
 		mergedSchema.MinItems = leastRestrictiveMin(minItems)
 		mergedSchema.MinLength = leastRestrictiveMin(minLengths)
-		mergedSchema.Pattern = mergePatterns(patterns)
+		pattern := mergePatterns(patterns)
+		if mergedSchema.Pattern != nil && (pattern == nil || *mergedSchema.Pattern != *pattern) {
+			messageName := s.Subsystem.Extensions.GetResolvedName(extensions.ExtPatternErrorMessage)
+			if mergedSchema.GetExtensions().Has(messageName) {
+				mergedSchema.Extensions = &oaextensions.Extensions{Map: sequencedmap.From(mergedSchema.GetExtensions().All())}
+				mergedSchema.Extensions.Delete(messageName)
+			}
+		}
+		mergedSchema.Pattern = pattern
 
 		// When all oneOf sub-schemas are consts, preserve the parent title so a
 		// variant title does not leak into naming. If there are multiple const
@@ -2954,13 +2963,13 @@ func (s *Schemas) mergeAllOfSchemas(ctx context.Context, allOfSchema *oas3.Schem
 }
 
 func hoistChildExtensionPredicate(fixes *config.Fixes, exts *extensions.Extensions) func(string) bool {
-	if fixes == nil || !fixes.NameOverrideFeb2026 {
-		return func(string) bool { return true }
-	}
-
 	nameOverrideExt := exts.GetResolvedName(extensions.ExtNameOverride)
+	patternMessageExt := exts.GetResolvedName(extensions.ExtPatternErrorMessage)
 	return func(extName string) bool {
-		return extName != nameOverrideExt
+		if extName == patternMessageExt {
+			return false
+		}
+		return fixes == nil || !fixes.NameOverrideFeb2026 || extName != nameOverrideExt
 	}
 }
 

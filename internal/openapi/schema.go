@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/document"
+	genextensions "github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/resolution"
 	"github.com/speakeasy-api/openapi/extensions"
 	"github.com/speakeasy-api/openapi/hashing"
@@ -178,6 +179,7 @@ var comparisonIgnoreFields = []string{
 }
 
 type speakeasyExtensions interface {
+	GetResolvedName(ext genextensions.Extension) string
 	IsExtensionMergable(extName string) bool
 	IsExtensionIdentifying(extName string) bool
 }

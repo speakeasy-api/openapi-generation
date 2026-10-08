@@ -1575,6 +1575,12 @@ declare global {
     Base64InputMode?: "" | "file";
 
     /**
+     * Describes x-speakeasy-pattern-error-message extension configuration.
+     * Empty when the extension is not applied.
+     */
+    PatternErrorMessage?: string;
+
+    /**
      * Describes x-speakeasy-entity extension configuration.
      */
     Entity?: Entity;

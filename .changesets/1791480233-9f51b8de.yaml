@@ -1,0 +1,10 @@
+id: 1791480233-9f51b8de
+features:
+    - core
+targets:
+    - cli
+type: feat
+bump: patch
+description: support custom schema pattern error messages
+author: ThomasRooney
+date: "2026-10-08"
