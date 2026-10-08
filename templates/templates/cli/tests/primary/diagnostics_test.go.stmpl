@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/sdk/redact"
 )
 
 // newDiagnosticsServer creates a test server that echoes requests and includes
@@ -338,6 +341,243 @@ func TestVersionAndWhoamiMachineOutput(t *testing.T) {
 	require.NoError(t, h.RunRaw([]string{"version"}))
 	assert.False(t, json.Valid([]byte(strings.TrimSpace(h.GetStdout()))),
 		"pretty version output turned into JSON")
+}
+
+// diagnosticsOutputModes runs a command under each diagnostics mode that
+// previews the request body and returns the stream holding that preview.
+var diagnosticsOutputModes = []struct {
+	name string
+	run  func(t *testing.T, args []string) string
+}{
+	{"dry-run", func(t *testing.T, args []string) string {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer("http://127.0.0.1:1", append([]string{"--dry-run", "--output-format", "pretty"}, args...)))
+		return h.GetStderr()
+	}},
+	{"dry-run json", func(t *testing.T, args []string) string {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer("http://127.0.0.1:1", append([]string{"--dry-run"}, args...)))
+		return h.GetStdout()
+	}},
+	{"debug", func(t *testing.T, args []string) string {
+		s := newDiagnosticsServer()
+		defer s.Close()
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, append([]string{"--debug"}, args...)))
+		return h.GetStderr()
+	}},
+}
+
+func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		secrets []string
+		visible []string
+	}{
+		{
+			name: "split json body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-json", "--json-value", "canary-json", "--name", "visible-name", "--form-value", "visible-form-value"},
+			secrets: []string{"canary-json"},
+			visible: []string{"visible-name", "visible-form-value"},
+		},
+		{
+			name: "split multipart body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-multipart", "--multipart-value", "canary-multipart", "--name", "visible-name"},
+			secrets: []string{"canary-multipart"},
+			visible: []string{"visible-name"},
+		},
+		{
+			name: "split form body",
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-form", "--form-value", "canary-form", "--name", "visible-name"},
+			secrets: []string{"canary-form"},
+			visible: []string{"visible-name"},
+		},
+		{
+			name: "whole json body",
+			args: []string{"request-bodies", "cli-sensitive-whole-json-post", "--value", "canary-whole-json"},
+			secrets: []string{"canary-whole-json"},
+			visible: []string{redact.Mask},
+		},
+		{
+			name: "whole form body",
+			args: []string{"request-bodies", "cli-sensitive-whole-form-post", "--value", "canary-whole-form"},
+			secrets: []string{"canary-whole-form"},
+			visible: []string{redact.Mask},
+		},
+		{
+			name: "whole multipart body",
+			args: []string{"request-bodies", "cli-sensitive-whole-multipart-post", "--value", "canary-whole-multipart"},
+			secrets: []string{"canary-whole-multipart"},
+			visible: []string{redact.Mask},
+		},
+		{
+			name: "whole text body",
+			args: []string{"request-bodies", "cli-sensitive-whole-text-post", "--request", `"canary-whole-text"`},
+			secrets: []string{"canary-whole-text"},
+			visible: []string{redact.Mask},
+		},
+		{
+			name: "recursive union",
+			args: []string{"request-bodies", "cli-sensitive-recursive-union-post", "--cli-sensitive-recursive-union",
+				`{"kind":"branch","value":"canary-root","plain":{"name":"visible-name","value":"visible-root"},` +
+					`"child":{"kind":"branch","value":"canary-child","plain":{"name":"visible-name","value":"visible-child"},` +
+					`"child":{"kind":"branch","value":"canary-grandchild"}}}`},
+			secrets: []string{"canary-root", "canary-child", "canary-grandchild"},
+			visible: []string{"visible-root", "visible-child"},
+		},
+		{
+			name: "recursive union-reversed",
+			args: []string{"request-bodies", "cli-sensitive-recursive-union-reversed-post", "--cli-sensitive-recursive-union-reversed",
+				`{"kind":"branch","value":"canary-root","plain":{"name":"visible-name","value":"visible-root"},` +
+					`"child":{"kind":"branch","value":"canary-child","plain":{"name":"visible-name","value":"visible-child"},` +
+					`"child":{"kind":"branch","value":"canary-grandchild"}}}`},
+			secrets: []string{"canary-root", "canary-child", "canary-grandchild"},
+			visible: []string{"visible-root", "visible-child"},
+		},
+		{
+			name: "recursive schema edges",
+			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
+				`{"name":"visible-name","value":"canary-top","tree":{"value":"canary-root",` +
+					`"plain":{"name":"visible-name","value":"visible-root"},` +
+					`"children":[{"value":"canary-array","plain":{"name":"visible-name","value":"visible-array"}}],` +
+					`"byName":{"first":{"value":"canary-map","child":{"value":"canary-map-child"},` +
+					`"plain":{"name":"visible-name","value":"visible-map"}}},` +
+					`"link":{"value":"visible-link","next":{"value":"canary-mutual",` +
+					`"link":{"value":"visible-inner-link","next":{"value":"canary-inner-mutual"}}}}}}`},
+			secrets: []string{"canary-top", "canary-root", "canary-array", "canary-map", "canary-map-child", "canary-mutual", "canary-inner-mutual"},
+			visible: []string{"visible-root", "visible-array", "visible-map", "visible-link", "visible-inner-link"},
+		},
+		{
+			name: "marked fields at every depth",
+			args: []string{"request-bodies", "cli-sensitive-body-fields-post", "--body",
+				`{"name":"visible-name","value":"canary-top","passphrase":"canary-password",` +
+					`"nested":{"label":"visible-nested","value":"canary-nested"},` +
+					`"entries":[{"label":"visible-entry","value":"canary-entry"}],` +
+					`"byName":{"first":{"label":"visible-map","value":"canary-map"}},` +
+					`"codes":["canary-item"],"codesByName":{"visible-code":"canary-map-value"},` +
+					`"tree":{"label":"visible-root","value":"canary-root","child":{"label":"visible-child","value":"canary-child",` +
+					`"child":{"value":"canary-grandchild"},"branch":{"label":"visible-branch","value":"canary-branch",` +
+					`"next":{"value":"canary-next"}}}}}`},
+			secrets: []string{"canary-top", "canary-password", "canary-nested", "canary-entry", "canary-map",
+				"canary-item", "canary-map-value", "canary-root", "canary-child", "canary-grandchild",
+				"canary-branch", "canary-next"},
+			visible: []string{"visible-name", "visible-nested", "visible-entry", "visible-map", "visible-code",
+				"visible-root", "visible-child", "visible-branch"},
+		},
+		{
+			name: "additional properties beside declared fields",
+			args: []string{"request-bodies", "cli-sensitive-open-object-post", "--body",
+				`{"name":"visible-name","value":"visible-value","extra":"canary-extra","entries":{"label":"visible-label"}}`},
+			secrets: []string{"canary-extra"},
+			visible: []string{"visible-name", "visible-value", "visible-label", "visible-const"},
+		},
+		{
+			name: "array variant beside object variant",
+			args: []string{"request-bodies", "cli-sensitive-open-object-post", "--body",
+				`{"name":"visible-name","entries":["canary-list"]}`},
+			secrets: []string{"canary-list"},
+			visible: []string{"visible-name", "visible-const"},
+		},
+		{
+			name: "union variant field",
+			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
+				"--cli-sensitive-secret", `{"kind":"static","id":"visible-id","value":"canary-static"}`},
+			secrets: []string{"canary-static"},
+			visible: []string{"visible-id"},
+		},
+		{
+			name: "expanded union variant flags",
+			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
+				"--cli-sensitive-secret.basic.id", "visible-id", "--cli-sensitive-secret.basic.username", "visible-user",
+				"--cli-sensitive-secret.basic.passphrase", "canary-basic"},
+			secrets: []string{"canary-basic"},
+			visible: []string{"visible-id", "visible-user"},
+		},
+		{
+			name: "multipart parts",
+			args: []string{"request-bodies", "cli-sensitive-multipart-post", "--name", "visible-name", "--value", "canary-top", "--bracketed-payload", "canary-brackets",
+				"--config-param", `{"label":"visible-label","value":"canary-config","password":"canary-config-password"}`,
+				"--codes", "canary-code-1", "--codes", "canary-code-2",
+				"--entries", `[{"label":"visible-entry","value":"canary-entry"}]`,
+				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
+			secrets: []string{"canary-top", "canary-brackets", "canary-config", "canary-config-password", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
+			visible: []string{"visible-name", "visible-label", "visible-entry", "visible-tree-plain"},
+		},
+		{
+			name: "form fields",
+			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top", "--bracketed-payload", "canary-brackets",
+				"--config-param", `{"label":"visible-label","value":"canary-config","password":"canary-config-password"}`,
+				"--codes", "canary-code-1", "--codes", "canary-code-2",
+				"--entries", `[{"label":"visible-entry","value":"canary-entry"}]`,
+				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
+			secrets: []string{"canary-top", "canary-brackets", "canary-config", "canary-config-password", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
+			visible: []string{"visible-name", "visible-label", "visible-entry", "visible-tree-plain"},
+		},
+		{
+			name: "form json field without redactions kept as sent",
+			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top",
+				"--tree", `{"label":"visible<tree & label"}`},
+			secrets: []string{"canary-top"},
+			visible: []string{"tree=%7B%22label%22%3A%22visible%5Cu003ctree+%5Cu0026+label%22%7D"},
+		},
+	}
+	for _, mode := range diagnosticsOutputModes {
+		for _, tc := range cases {
+			t.Run(mode.name+"/"+tc.name, func(t *testing.T) {
+				output := mode.run(t, tc.args)
+				for _, secret := range tc.secrets {
+					assert.NotContains(t, output, secret)
+				}
+				for _, value := range tc.visible {
+					assert.Contains(t, output, value)
+				}
+			})
+		}
+	}
+}
+
+func TestDiagnosticsSensitiveBodyPreservesWireAndResponse(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.Contains(t, string(body), "canary-child")
+		assert.Contains(t, string(body), "canary-root")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"value":"visible-response"}`))
+	}))
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"--debug", "request-bodies", "cli-sensitive-recursive-union-post",
+		"--cli-sensitive-recursive-union", `{"kind":"branch","value":"canary-root","child":{"kind":"branch","value":"canary-child"}}`}))
+	assert.NotContains(t, h.GetStderr(), "canary-root")
+	assert.NotContains(t, h.GetStderr(), "canary-child")
+	assert.Contains(t, h.GetStderr(), "visible-response")
+}
+
+func TestDiagnosticsKeepUnmarkedFieldSharingSensitiveName(t *testing.T) {
+	for _, mode := range diagnosticsOutputModes {
+		t.Run(mode.name, func(t *testing.T) {
+			output := mode.run(t, []string{"request-bodies", "cli-plain-body-fields-post",
+				"--name", "visible-name", "--value", "visible-value"})
+			assert.Contains(t, output, "visible-value")
+			assert.NotContains(t, output, redact.Mask)
+			assert.NotRegexp(t, `"value":\s*"\[REDACTED\]"`, output)
+		})
+	}
+}
+
+func TestDebugRedactsSensitiveResponseFields(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name":"visible-name","value":"canary-response"}`))
+	}))
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"--debug", "--output-format", "json", "response-bodies", "cli-sensitive-response-get"}))
+	assert.NotContains(t, h.GetStderr(), "canary-response")
+	assert.Contains(t, h.GetStderr(), "visible-name")
+	assert.Contains(t, h.GetStdout(), "canary-response", "decoded output keeps the value")
 }
 {{- if hasRootVersionFlag}}
 
