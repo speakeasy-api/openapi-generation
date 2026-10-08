@@ -362,8 +362,10 @@ function getDefaultDependencies(): Record<string, string> {
 
   // Interactive mode dependencies (Charm ecosystem)
   if (isInteractiveAuthEnabled() || isInteractiveModeEnabled()) {
-    defaultDependencies["charm.land/huh/v2"] =
-      deps["charm.land/huh/v2"].version;
+    defaultDependencies["charm.land/bubbletea/v2"] =
+      deps["charm.land/bubbletea/v2"].version;
+    defaultDependencies["charm.land/bubbles/v2"] =
+      deps["charm.land/bubbles/v2"].version;
     defaultDependencies["charm.land/lipgloss/v2"] =
       deps["charm.land/lipgloss/v2"].version;
     if (
@@ -373,12 +375,6 @@ function getDefaultDependencies(): Record<string, string> {
       defaultDependencies["github.com/creack/pty"] =
         deps["github.com/creack/pty"].version;
     }
-  }
-  if (isInteractiveModeEnabled()) {
-    defaultDependencies["charm.land/bubbletea/v2"] =
-      deps["charm.land/bubbletea/v2"].version;
-    defaultDependencies["charm.land/bubbles/v2"] =
-      deps["charm.land/bubbles/v2"].version;
   }
 
   return defaultDependencies;
