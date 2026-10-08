@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.947.0] - 2026-10-08
+### :bee: New Features
+- [`a2f7740`](https://github.com/speakeasy-api/openapi-generation/commit/a2f7740dce04c2e21d5f3d9868d42ee09848cfca) - **go,terraform**: mask sensitive body values in HTTP logs ([#72](https://github.com/speakeasy-api/openapi-generation/pull/72)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+- [`bc56dd5`](https://github.com/speakeasy-api/openapi-generation/commit/bc56dd5c3bc2c5e74defbf77ec3075976906aec5) - **cli**: add custom pattern error messages ([#96](https://github.com/speakeasy-api/openapi-generation/pull/96)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.946.5] - 2026-10-08
 ### :bug: Bug Fixes
 - [`56b5a1d`](https://github.com/speakeasy-api/openapi-generation/commit/56b5a1d86b01f8e66d8a59b31e427646d1535dbf) - **typescript**: export and deduplicate SSE params types in public exports ([#73](https://github.com/speakeasy-api/openapi-generation/pull/73)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20505,3 +20511,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.946.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.2...v2.946.3
 [v2.946.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.3...v2.946.4
 [v2.946.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.4...v2.946.5
+[v2.947.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.5...v2.947.0
