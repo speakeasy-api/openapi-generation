@@ -32,9 +32,12 @@ type SensitiveBodyNode struct {
 	Values int
 	// Variants are union members; the member a value matches is not known.
 	Variants []int
-	// Plain reports a union member holding nothing sensitive, so a value
-	// that matches none of Variants may still match the schema.
-	Plain bool
+	// PlainObject, PlainArray and PlainScalar report union members of that
+	// shape holding nothing sensitive, so a value of that shape that matches
+	// none of Variants may still match the schema.
+	PlainObject bool
+	PlainArray  bool
+	PlainScalar bool
 }
 
 // SensitiveBodyField is an object property of a SensitiveBodyNode.
@@ -113,6 +116,9 @@ type sensitiveBodyBuildNode struct {
 	item      int
 	values    int
 	variants  []int
+	// variantTypes are the schemas of variants, so that pruned variants
+	// still describe the shapes the union accepts.
+	variantTypes []*TypeDef
 }
 
 func newSensitiveBodyBuilder() *sensitiveBodyBuilder {
@@ -168,6 +174,7 @@ func (b *sensitiveBodyBuilder) addRoot(t *TypeDef) {
 					node.item = walk(child)
 				case DataTypeUnion:
 					node.variants = append(node.variants, walk(child))
+					node.variantTypes = append(node.variantTypes, child)
 				}
 			case t.Type != DataTypeClass && t.Type != DataTypeError:
 			case field.IsAdditionalProperties:
@@ -265,13 +272,35 @@ func (b *sensitiveBodyBuilder) build() *SensitiveBodyGraph {
 		}
 		sort.SliceStable(out.Fields, func(a, b int) bool { return out.Fields[a].Name < out.Fields[b].Name })
 		out.Item = remap[node.item]
-		for _, variant := range node.variants {
+		for v, variant := range node.variants {
 			if remap[variant] != 0 {
 				out.Variants = append(out.Variants, remap[variant])
 			} else {
-				out.Plain = true
+				out.addPlainShapes(node.variantTypes[v])
 			}
 		}
 	}
 	return graph
+}
+
+// addPlainShapes records the shapes of values that t, a union member
+// holding nothing sensitive, accepts.
+func (n *SensitiveBodyNode) addPlainShapes(t *TypeDef) {
+	if t == nil {
+		return
+	}
+	switch t.Type {
+	case DataTypeClass, DataTypeError, DataTypeMap:
+		n.PlainObject = true
+	case DataTypeArray, DataTypeSet:
+		n.PlainArray = true
+	case DataTypeUnion:
+		for _, member := range t.AssociatedTypes {
+			n.addPlainShapes(member)
+		}
+	case DataTypeAny:
+		n.PlainObject, n.PlainArray, n.PlainScalar = true, true, true
+	default:
+		n.PlainScalar = true
+	}
 }

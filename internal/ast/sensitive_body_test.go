@@ -197,6 +197,7 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	}
 	body := class("Body",
 		field("mixed", union("Mixed", &TypeDef{Type: DataTypeArray, ItemType: sensitiveString()}, class("Label", field("label", plainString())))),
+		field("text", union("Text", class("APIKey", field("key", sensitiveString())), union("Scalars", plainString(), &TypeDef{Type: DataTypeInteger}))),
 		field("sensitive", union("Sensitive", class("APIKey", field("key", sensitiveString())), sensitiveString())),
 	)
 	g := responseOperation(body).SensitiveResponseBodyGraph()
@@ -204,10 +205,19 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 
 	mixed := sensitiveChild(g, g.Roots, "mixed")
 	require.Len(t, mixed, 1)
-	assert.True(t, g.Nodes[mixed[0]].Plain, "a union with a member holding nothing sensitive is plain")
+	assert.True(t, g.Nodes[mixed[0]].PlainObject, "a plain object member is recorded")
+	assert.False(t, g.Nodes[mixed[0]].PlainArray)
+	assert.False(t, g.Nodes[mixed[0]].PlainScalar)
 	assert.Len(t, g.Nodes[mixed[0]].Variants, 1)
+
+	text := sensitiveChild(g, g.Roots, "text")
+	require.Len(t, text, 1)
+	assert.True(t, g.Nodes[text[0]].PlainScalar, "members of a plain nested union are recorded")
+	assert.False(t, g.Nodes[text[0]].PlainObject)
+	assert.False(t, g.Nodes[text[0]].PlainArray)
 
 	sensitive := sensitiveChild(g, g.Roots, "sensitive")
 	require.Len(t, sensitive, 1)
-	assert.False(t, g.Nodes[sensitive[0]].Plain, "a union whose members all hold sensitive values is not plain")
+	node := g.Nodes[sensitive[0]]
+	assert.False(t, node.PlainObject || node.PlainArray || node.PlainScalar, "a union whose members all hold sensitive values has no plain member")
 }

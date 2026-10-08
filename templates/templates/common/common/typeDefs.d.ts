@@ -2133,8 +2133,10 @@ declare global {
     Values: number;
     /** Union members. */
     Variants?: number[];
-    /** A union member holds nothing sensitive. */
-    Plain: boolean;
+    /** Union members of each shape that hold nothing sensitive. */
+    PlainObject: boolean;
+    PlainArray: boolean;
+    PlainScalar: boolean;
   };
 
   type OpenAPILocation = {
