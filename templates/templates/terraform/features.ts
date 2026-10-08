@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.48.4",
+  core: "3.49.0",
   decimal: "1.0.0",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
