@@ -2759,7 +2759,7 @@ commands:
       out: {to: $.engine}
 `, `flag name "out" is reserved`)
 
-	for _, name := range []string{"async", "poll-interval", "poll-timeout"} {
+	for _, name := range []string{"async", "resume", "poll-interval", "poll-timeout"} {
 		t.Run("reserved async flag "+name, func(t *testing.T) {
 			requireDecodeError(t, fmt.Sprintf(`
 version: 1

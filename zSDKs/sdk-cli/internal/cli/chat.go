@@ -105,6 +105,9 @@ func runChatCmd(cmd *cobra.Command, args []string) error {
 	if err := output.ValidateGlobalServerIndex(cmd, len(sdk.ServerList)); err != nil {
 		return err
 	}
+	if output.WantsRawJSON(cmd) {
+		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+	}
 	// Streaming response — iterate events and output incrementally.
 	// Skip streaming iteration in dry-run mode (synthetic response has no stream).
 	if !client.IsDryRun(cmd) {
@@ -113,9 +116,6 @@ func runChatCmd(cmd *cobra.Command, args []string) error {
 			return output.Error(cmd, err)
 		}
 		return output.StreamResult(cmd, res, "ChatStream")
-	}
-	if output.WantsRawJSON(cmd) {
-		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
 	}
 	res, err := s.Chat(cmd.Context(), *request, sdkOpts...)
 	if err != nil {

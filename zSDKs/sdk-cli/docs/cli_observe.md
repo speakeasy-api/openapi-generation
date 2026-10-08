@@ -25,6 +25,7 @@ cli observe [prompt] [flags]
   -h, --help                   help for observe
       --poll-interval string   Override the initial polling interval (positive Go duration, for example 500ms or 2s)
       --poll-timeout string    Override the overall polling deadline (positive Go duration, at least the effective poll interval)
+      --resume string          Resume polling an existing operation by ID instead of creating one
       --schema                 Print the exact JSON Schema of the request body and exit
 ```
 
