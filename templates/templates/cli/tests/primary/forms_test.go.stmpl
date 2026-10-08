@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -824,7 +825,7 @@ func TestFormsFieldTallerThanTerminalShowsItsInput(t *testing.T) {
 }
 
 func formsIntegerOnly(v string) error {
-	if _, err := fmt.Sscanf(v, "%d", new(int)); err != nil {
+	if _, err := strconv.Atoi(strings.TrimSpace(v)); err != nil {
 		return errors.New("must be an integer")
 	}
 	return nil

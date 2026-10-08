@@ -193,9 +193,11 @@ func TestAuthLoginLinePromptsReadMethodAndCredentialsFromOneInput(t *testing.T) 
 	home := t.TempDir()
 
 	h := NewCLITestHarness(t).WithEnv("HOME", home)
+	// Option 3 is basic auth, which prompts for the password before the username.
 	stdin := strings.NewReader("3\nsekr1t-pass\nalice\n")
 	require.NoError(t, h.RunPolicyDefaultWithInput([]string{"auth", "login", "--interactive"}, stdin), "stderr: %s", h.GetStderr())
 	assert.Contains(t, h.GetStdout(), "Authentication Method")
+	assert.Contains(t, h.GetStdout(), "3. HTTP Basic (Username + Password)")
 
 	cfg := readAuthConfig(t, home)
 	assert.Contains(t, cfg, "username: alice")
