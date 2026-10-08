@@ -123,6 +123,9 @@ func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
 	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": "visible-text"}`), nil, []string{"visible-text"})
 	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": ["secret-shape"]}`), []string{"secret-shape"}, []string{"visible-name"})
 	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": "secret-shape"}`), []string{"secret-shape"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrCount": 4242, "secretOrFlag": true}`), nil, []string{"4242", "true"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrCount": "secret-count", "secretOrFlag": "secret-flag"}`), []string{"secret-count", "secret-flag"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": 4242}`), []string{"4242"}, []string{"visible-name"})
 
 	redactForm := func(field, value string) string {
 		masked, err := url.ParseQuery(string(redact.RequestBody(ctx, "application/x-www-form-urlencoded", []byte("name=visible-name&"+field+"="+url.QueryEscape(value)))))
@@ -143,6 +146,16 @@ func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
 		assert.Equal(t, redact.Mask, redactField("tokensOrLabel", "secret-token-item"), "%s: a repeated sensitive array item is masked", name)
 		assert.Equal(t, "visible-text", redactField("secretOrText", "visible-text"), "%s: a plain string member stays readable", name)
 		assert.Equal(t, redact.Mask, redactField("secretOrLabels", `{"secret": "secret-malformed",`), "%s: malformed JSON without a plain string member is masked", name)
+		assert.Equal(t, "4242", redactField("secretOrText", "4242"), "%s: numeric text of a plain string member stays readable", name)
+		assert.Equal(t, redact.Mask, redactField("secretOrText", `{"secret": "secret-malformed",`), "%s: malformed JSON is masked beside a plain string member", name)
+		for _, field := range []string{"secretOrCount", "secretOrFlag"} {
+			assert.Equal(t, redact.Mask, redactField(field, `{"secret": "secret-malformed",`), "%s: malformed JSON in %s is masked", name, field)
+			assert.Equal(t, redact.Mask, redactField(field, "secret-text"), "%s: text in %s is masked", name, field)
+		}
+		assert.Equal(t, "4242", redactField("secretOrCount", "4242"), "%s: a plain integer member stays readable", name)
+		assert.Equal(t, "true", redactField("secretOrFlag", "true"), "%s: a plain boolean member stays readable", name)
+		assert.Equal(t, "visible-item-name", redactField("secretsOrNames", "visible-item-name"), "%s: a repeated item matching a plain string member stays readable", name)
+		assert.NotContains(t, redactField("secretsOrNames", `{"label": "visible-label", "secret": "secret-item"}`), "secret-item", "%s: a repeated object item is masked", name)
 	}
 }
 
@@ -236,10 +249,11 @@ func TestRedactMultipartRequestBody(t *testing.T) {
 	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/form-data", client.body)), "multipart bodies without a boundary are masked as a whole")
 	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/mixed; boundary="+params["boundary"], client.body)), "other multipart bodies are masked as a whole")
 
-	encoded := "--b\r\nContent-Disposition: form-data; name=\"token\"\r\nContent-Transfer-Encoding: base64\r\n\r\nc2VjcmV0LWVuY29kZWQ=\r\n--b--\r\n"
+	encoded := "--b\r\nContent-Disposition: form-data; name=\"token\"\r\nContent-Transfer-Encoding: base64\r\nContent-Length: 20\r\n\r\nc2VjcmV0LWVuY29kZWQ=\r\n--b--\r\n"
 	masked := string(redact.RequestBody(ctx, "multipart/form-data; boundary=b", []byte(encoded)))
 	assert.NotContains(t, masked, "c2VjcmV0LWVuY29kZWQ=")
 	assert.NotContains(t, masked, "Content-Transfer-Encoding", "masked parts are not transfer encoded")
+	assert.NotContains(t, masked, "Content-Length", "masked parts do not keep the original length")
 	assert.Contains(t, masked, redact.Mask)
 }
 

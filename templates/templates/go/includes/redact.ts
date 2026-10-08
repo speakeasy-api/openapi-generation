@@ -20,7 +20,9 @@ function renderRedactGraph(graph: SensitiveBodyGraph | null): string {
       parts.push(`variants: []int{ ${node.Variants.join(", ")} }`);
     if (node.PlainObject) parts.push("plainObject: true");
     if (node.PlainArray) parts.push("plainArray: true");
-    if (node.PlainScalar) parts.push("plainScalar: true");
+    if (node.PlainString) parts.push("plainString: true");
+    if (node.PlainNumber) parts.push("plainNumber: true");
+    if (node.PlainBoolean) parts.push("plainBoolean: true");
     return `{ ${parts.join(", ")} }`;
   });
   return `&graph{ nodes: []node{ ${nodes.join(

@@ -199,6 +199,23 @@ components:
           oneOf:
             - $ref: "#/components/schemas/SensitiveBodyNested"
             - type: string
+        secretOrCount:
+          description: Union of an object with a sensitive value and an integer; an integer value stays readable, text does not.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: integer
+        secretOrFlag:
+          description: Union of an object with a sensitive value and a boolean; a boolean value stays readable, text does not.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: boolean
+        secretsOrNames:
+          description: Array of a union of an object with a sensitive value and a string; string items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: string
     SensitiveBodyPlainLabel:
       type: object
       properties:

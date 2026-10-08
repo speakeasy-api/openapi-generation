@@ -195,9 +195,13 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	union := func(name string, variants ...*TypeDef) *TypeDef {
 		return &TypeDef{Type: DataTypeUnion, Name: name, AssociatedTypes: variants}
 	}
+	recursivePlain := union("RecursivePlain", plainString())
+	recursivePlain.AssociatedTypes = append(recursivePlain.AssociatedTypes, recursivePlain)
 	body := class("Body",
 		field("mixed", union("Mixed", &TypeDef{Type: DataTypeArray, ItemType: sensitiveString()}, class("Label", field("label", plainString())))),
 		field("text", union("Text", class("APIKey", field("key", sensitiveString())), union("Scalars", plainString(), &TypeDef{Type: DataTypeInteger}))),
+		field("flag", union("Flag", class("APIKey", field("key", sensitiveString())), &TypeDef{Type: DataTypeBoolean})),
+		field("loop", union("Loop", class("APIKey", field("key", sensitiveString())), recursivePlain)),
 		field("sensitive", union("Sensitive", class("APIKey", field("key", sensitiveString())), sensitiveString())),
 	)
 	g := responseOperation(body).SensitiveResponseBodyGraph()
@@ -206,18 +210,25 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	mixed := sensitiveChild(g, g.Roots, "mixed")
 	require.Len(t, mixed, 1)
 	assert.True(t, g.Nodes[mixed[0]].PlainObject, "a plain object member is recorded")
-	assert.False(t, g.Nodes[mixed[0]].PlainArray)
-	assert.False(t, g.Nodes[mixed[0]].PlainScalar)
+	assert.False(t, g.Nodes[mixed[0]].PlainArray || g.Nodes[mixed[0]].PlainString || g.Nodes[mixed[0]].PlainNumber || g.Nodes[mixed[0]].PlainBoolean)
 	assert.Len(t, g.Nodes[mixed[0]].Variants, 1)
 
 	text := sensitiveChild(g, g.Roots, "text")
 	require.Len(t, text, 1)
-	assert.True(t, g.Nodes[text[0]].PlainScalar, "members of a plain nested union are recorded")
-	assert.False(t, g.Nodes[text[0]].PlainObject)
-	assert.False(t, g.Nodes[text[0]].PlainArray)
+	assert.True(t, g.Nodes[text[0]].PlainString && g.Nodes[text[0]].PlainNumber, "members of a plain nested union are recorded")
+	assert.False(t, g.Nodes[text[0]].PlainObject || g.Nodes[text[0]].PlainArray || g.Nodes[text[0]].PlainBoolean)
+
+	flag := sensitiveChild(g, g.Roots, "flag")
+	require.Len(t, flag, 1)
+	assert.True(t, g.Nodes[flag[0]].PlainBoolean)
+	assert.False(t, g.Nodes[flag[0]].PlainString || g.Nodes[flag[0]].PlainNumber, "a boolean member does not accept text or numbers")
+
+	loop := sensitiveChild(g, g.Roots, "loop")
+	require.Len(t, loop, 1)
+	assert.True(t, g.Nodes[loop[0]].PlainString, "a recursive plain union is followed once")
 
 	sensitive := sensitiveChild(g, g.Roots, "sensitive")
 	require.Len(t, sensitive, 1)
 	node := g.Nodes[sensitive[0]]
-	assert.False(t, node.PlainObject || node.PlainArray || node.PlainScalar, "a union whose members all hold sensitive values has no plain member")
+	assert.False(t, node.PlainObject || node.PlainArray || node.PlainString || node.PlainNumber || node.PlainBoolean, "a union whose members all hold sensitive values has no plain member")
 }

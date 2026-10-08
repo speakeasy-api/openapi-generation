@@ -2133,10 +2133,12 @@ declare global {
     Values: number;
     /** Union members. */
     Variants?: number[];
-    /** Union members of each shape that hold nothing sensitive. */
+    /** Union members of each JSON type that hold nothing sensitive. */
     PlainObject: boolean;
     PlainArray: boolean;
-    PlainScalar: boolean;
+    PlainString: boolean;
+    PlainNumber: boolean;
+    PlainBoolean: boolean;
   };
 
   type OpenAPILocation = {

@@ -80,11 +80,14 @@ type node struct {
 	item     int
 	values   int
 	variants []int
-	// plainObject, plainArray and plainScalar report union members of that
-	// shape holding nothing sensitive.
-	plainObject bool
-	plainArray  bool
-	plainScalar bool
+	// plainObject, plainArray, plainString, plainNumber and plainBoolean
+	// report union members accepting JSON values of that type and holding
+	// nothing sensitive.
+	plainObject  bool
+	plainArray   bool
+	plainString  bool
+	plainNumber  bool
+	plainBoolean bool
 }
 
 type shape int
@@ -92,7 +95,9 @@ type shape int
 const (
 	objectShape shape = iota
 	arrayShape
-	scalarShape
+	stringShape
+	numberShape
+	booleanShape
 )
 
 // redact returns body unchanged when it has nothing to mask. A body that
@@ -209,12 +214,15 @@ func (g *graph) redactMultipart(body []byte, boundary string, roots []int) ([]by
 		changed = changed || partChanged
 		header := part.Header
 		if partChanged {
-			// The mask is written as is, not in the part's transfer encoding.
+			// The mask is written as is, not in the part's transfer encoding,
+			// and with its own length.
 			header = make(textproto.MIMEHeader, len(part.Header))
 			for key, values := range part.Header {
 				header[key] = values
 			}
 			header.Del("Content-Transfer-Encoding")
+			header.Del("Content-Encoding")
+			header.Del("Content-Length")
 		}
 		partWriter, err := writer.CreatePart(header)
 		if err != nil {
@@ -243,14 +251,23 @@ func (g *graph) redactValue(value []byte, roots []int) ([]byte, bool) {
 	if g.sensitive(roots) {
 		return []byte(Mask), true
 	}
+	// Unencoded text matches a plain string member of the field or of its
+	// items when sent as repeated fields, unless it is a sensitive repeated
+	// item or starts like a JSON object or array, which may carry sensitive
+	// values.
+	items := g.items(roots)
+	if (g.plain(roots, stringShape) || g.plain(items, stringShape)) && !g.sensitive(items) && !isJSONStructure(value) {
+		return value, false
+	}
 	if masked, changed, ok := g.redactJSON(value, roots); ok {
 		return masked, changed
 	}
-	// Text that is not JSON is a repeated array item or a plain string.
-	if !g.sensitive(g.items(roots)) && g.plain(roots, scalarShape) {
-		return value, false
-	}
 	return []byte(Mask), true
+}
+
+func isJSONStructure(value []byte) bool {
+	trimmed := bytes.TrimLeft(value, " \t\r\n")
+	return len(trimmed) > 0 && (trimmed[0] == '{' || trimmed[0] == '[')
 }
 
 func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
@@ -290,8 +307,14 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 				changed = true
 			}
 		}
+	case string:
+		return g.mismatch(value, roots, stringShape)
+	case json.Number, float64:
+		return g.mismatch(value, roots, numberShape)
+	case bool:
+		return g.mismatch(value, roots, booleanShape)
 	default:
-		return g.mismatch(value, roots, scalarShape)
+		return Mask, true
 	}
 	return value, changed
 }
@@ -309,10 +332,25 @@ func (g *graph) mismatch(value any, roots []int, s shape) (any, bool) {
 // with a member of shape s holding nothing sensitive.
 func (g *graph) plain(roots []int, s shape) bool {
 	for _, id := range g.expand(roots) {
-		n := g.nodes[id]
-		if s == objectShape && n.plainObject || s == arrayShape && n.plainArray || s == scalarShape && n.plainScalar {
+		if g.nodes[id].plainShape(s) {
 			return true
 		}
+	}
+	return false
+}
+
+func (n node) plainShape(s shape) bool {
+	switch s {
+	case objectShape:
+		return n.plainObject
+	case arrayShape:
+		return n.plainArray
+	case stringShape:
+		return n.plainString
+	case numberShape:
+		return n.plainNumber
+	case booleanShape:
+		return n.plainBoolean
 	}
 	return false
 }

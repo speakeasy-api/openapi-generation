@@ -32,12 +32,15 @@ type SensitiveBodyNode struct {
 	Values int
 	// Variants are union members; the member a value matches is not known.
 	Variants []int
-	// PlainObject, PlainArray and PlainScalar report union members of that
-	// shape holding nothing sensitive, so a value of that shape that matches
-	// none of Variants may still match the schema.
-	PlainObject bool
-	PlainArray  bool
-	PlainScalar bool
+	// PlainObject, PlainArray, PlainString, PlainNumber and PlainBoolean
+	// report union members accepting JSON values of that type and holding
+	// nothing sensitive, so a value of that type that matches none of
+	// Variants may still match the schema.
+	PlainObject  bool
+	PlainArray   bool
+	PlainString  bool
+	PlainNumber  bool
+	PlainBoolean bool
 }
 
 // SensitiveBodyField is an object property of a SensitiveBodyNode.
@@ -276,19 +279,21 @@ func (b *sensitiveBodyBuilder) build() *SensitiveBodyGraph {
 			if remap[variant] != 0 {
 				out.Variants = append(out.Variants, remap[variant])
 			} else {
-				out.addPlainShapes(node.variantTypes[v])
+				out.addPlainShapes(node.variantTypes[v], map[*TypeDef]bool{})
 			}
 		}
 	}
 	return graph
 }
 
-// addPlainShapes records the shapes of values that t, a union member
-// holding nothing sensitive, accepts.
-func (n *SensitiveBodyNode) addPlainShapes(t *TypeDef) {
-	if t == nil {
+// addPlainShapes records the JSON types of values that t, a union member
+// holding nothing sensitive, accepts. Nested unions are followed once each,
+// so that recursive unions terminate.
+func (n *SensitiveBodyNode) addPlainShapes(t *TypeDef, visited map[*TypeDef]bool) {
+	if t == nil || visited[t] {
 		return
 	}
+	visited[t] = true
 	switch t.Type {
 	case DataTypeClass, DataTypeError, DataTypeMap:
 		n.PlainObject = true
@@ -296,11 +301,23 @@ func (n *SensitiveBodyNode) addPlainShapes(t *TypeDef) {
 		n.PlainArray = true
 	case DataTypeUnion:
 		for _, member := range t.AssociatedTypes {
-			n.addPlainShapes(member)
+			n.addPlainShapes(member, visited)
+		}
+	case DataTypeEnum:
+		if t.Enum != nil && t.Enum.Type != nil && t.Enum.Type.Type != DataTypeEnum {
+			n.addPlainShapes(t.Enum.Type, visited)
+		} else {
+			n.PlainString = true
 		}
 	case DataTypeAny:
-		n.PlainObject, n.PlainArray, n.PlainScalar = true, true, true
-	default:
-		n.PlainScalar = true
+		n.PlainObject, n.PlainArray, n.PlainString, n.PlainNumber, n.PlainBoolean = true, true, true, true, true
+	case DataTypeBoolean:
+		n.PlainBoolean = true
+	case DataTypeInteger, DataTypeNumber:
+		n.PlainNumber = true
+	case DataTypeBigInt, DataTypeDecimal:
+		n.PlainNumber, n.PlainString = true, true
+	case DataTypeString, DataTypeDate, DataTypeDateTime, DataTypeUUID, DataTypeDuration, DataTypeBytes:
+		n.PlainString = true
 	}
 }
