@@ -702,4 +702,113 @@ func TestFormsAccessibleReadErrorIsReturned(t *testing.T) {
 		t.Fatalf("expected the read error, got %v", err)
 	}
 }
+
+func formsTallPage(answers []string) *forms.Page {
+	fields := make([]*forms.Field, len(answers))
+	for i := range answers {
+		fields[i] = forms.NewInput(&answers[i]).Title(fmt.Sprintf("Field %d", i)).Description("--flag")
+	}
+	return forms.NewPage("Tall page", fields...)
+}
+
+func TestFormsTallPageKeepsFocusedFieldVisible(t *testing.T) {
+	for _, height := range []int{4, 6, 10, 15} {
+		t.Run(fmt.Sprint(height), func(t *testing.T) {
+			answers := make([]string, 8)
+			f := formsStart(t, 60, height, formsTallPage(answers))
+			if height >= 6 { // room for the page title and the first field
+				formsContains(t, formsView(f), "Tall page")
+			}
+			for i := range answers {
+				formsType(f, fmt.Sprintf("m%d", i))
+				v := formsView(f)
+				if got := lipgloss.Height(v); got > height {
+					t.Fatalf("field %d: rendered %d lines for height %d", i, got, height)
+				}
+				formsContains(t, v, fmt.Sprintf("> m%d", i))
+				formsPress(f, "tab")
+			}
+			for i := len(answers) - 1; i >= 0; i-- {
+				formsContains(t, formsView(f), fmt.Sprintf("> m%d", i))
+				formsPress(f, "shift+tab")
+			}
+		})
+	}
+}
+
+func TestFormsTallPageKeepsTitleWithFirstField(t *testing.T) {
+	answers := make([]string, 8)
+	f := formsStart(t, 60, 10, formsTallPage(answers))
+	// Render after every key, as the terminal does.
+	for _, k := range []string{"tab", "tab", "tab", "shift+tab", "shift+tab", "shift+tab"} {
+		formsPress(f, k)
+		formsView(f)
+	}
+	v := formsView(f)
+	formsContains(t, v, "Tall page")
+	formsContains(t, v, "Field 0")
+}
+
+func TestFormsSelectFitsWithItsHeading(t *testing.T) {
+	options := make([]forms.Option, 20)
+	for i := range options {
+		options[i] = forms.NewOption(fmt.Sprintf("choice %d", i), fmt.Sprint(i))
+	}
+	for _, height := range []int{6, 9, 14} {
+		var v string
+		f := formsStart(t, 40, height, forms.NewPage("", forms.NewSelect(&v, options...).
+			Title("A select title").Description("A description that wraps onto a second line here")))
+		for range 22 {
+			view := formsView(f)
+			if lipgloss.Height(view) > height {
+				t.Fatalf("height %d: rendered %d lines", height, lipgloss.Height(view))
+			}
+			formsContains(t, view, "A select title")
+			formsContains(t, view, "> choice "+v)
+			formsPress(f, "down")
+		}
+	}
+}
+
+func TestFormsNarrowTerminalsDoNotOverflow(t *testing.T) {
+	for _, width := range []int{8, 12, 16, 20} {
+		var a, b string
+		var c bool
+		f := formsStart(t, width, 40, forms.NewPage("Settings",
+			forms.NewInput(&a).Title("Credential").Description("--credential").Placeholder("unset"),
+			forms.NewSelect(&b, forms.NewOption("Keep current", ""), forms.NewOption("json", "json")).Title("Format"),
+			forms.NewConfirm(&c).Title("Save?"),
+		))
+		for _, line := range strings.Split(formsView(f), "\n") {
+			if w := lipgloss.Width(line); w > width {
+				t.Fatalf("width %d: %q is %d wide", width, line, w)
+			}
+		}
+	}
+}
+
+func TestFormsDumbTerminalUsesLinePrompts(t *testing.T) {
+	t.Setenv("TERM", "dumb")
+	var v string
+	var out bytes.Buffer
+	if err := forms.New(forms.NewPage("", forms.NewInput(&v).Title("Name"))).Accessible(false).IO(strings.NewReader("ada\n"), &out).Run(); err != nil {
+		t.Fatal(err)
+	}
+	if v != "ada" {
+		t.Fatalf("got %q", v)
+	}
+	formsContains(t, out.String(), "Name\n> ")
+}
+
+func TestFormsFieldTallerThanTerminalShowsItsInput(t *testing.T) {
+	var v string
+	f := formsStart(t, 20, 4, forms.NewPage("Page",
+		forms.NewInput(&v).Title("A title long enough to wrap over several narrow lines").Description("--a-long-flag-name")))
+	formsType(f, "typed")
+	view := formsView(f)
+	if lipgloss.Height(view) > 4 {
+		t.Fatalf("rendered %d lines for height 4", lipgloss.Height(view))
+	}
+	formsContains(t, view, "typed")
+}
 {{- end}}

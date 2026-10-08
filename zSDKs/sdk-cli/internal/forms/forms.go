@@ -162,7 +162,7 @@ func (f *Field) blur() {
 }
 
 func (f *Field) setWidth(width int) {
-	inner := max(width-4, 10)
+	inner := max(width-4, 1)
 	switch f.kind {
 	case kindInput:
 		f.input.SetWidth(inner - lipgloss.Width(f.input.Prompt) - 1)
@@ -245,21 +245,27 @@ type Form struct {
 	out        io.Writer
 	width      int
 	height     int
+	scroll     int // first rendered line when the page is taller than the terminal
 	finished   bool
 	aborted    bool
 }
 
-// New returns a form over pages. Dumb terminals default to line prompts.
+// New returns a form over pages.
 func New(pages ...*Page) *Form {
-	f := &Form{pages: pages, accessible: os.Getenv("TERM") == "dumb", in: os.Stdin, out: os.Stdout}
+	f := &Form{pages: pages, in: os.Stdin, out: os.Stdout}
 	f.resize(terminalWidth(), 0)
 	return f
 }
 
-// Accessible switches between the interactive form and line prompts.
+// Accessible switches between the interactive form and line prompts. Dumb
+// terminals cannot redraw, so they always get line prompts.
 func (f *Form) Accessible(on bool) *Form {
 	f.accessible = on
 	return f
+}
+
+func (f *Form) linePrompts() bool {
+	return f.accessible || os.Getenv("TERM") == "dumb"
 }
 
 // IO sets where line prompts read answers and write questions; the
@@ -282,7 +288,7 @@ func (f *Form) Run() error {
 	if f.empty() {
 		return nil
 	}
-	if f.accessible {
+	if f.linePrompts() {
 		return f.prompt(f.out, f.in)
 	}
 	if _, err := tea.NewProgram(f, tea.WithOutput(os.Stderr)).Run(); err != nil {
@@ -419,22 +425,52 @@ func (f *Form) View() tea.View {
 
 func (f *Form) render() string {
 	page := f.pages[f.page]
-	var b strings.Builder
+	var lines []string
 	if page.title != "" {
-		title := wrap(page.title, max(f.width, 10))
-		b.WriteString(lipgloss.NewStyle().Foreground(accent).Bold(true).Render(title) + "\n\n")
+		title := wrap(page.title, max(f.width, 1))
+		lines = append(lines, strings.Split(lipgloss.NewStyle().Foreground(accent).Bold(true).Render(title), "\n")...)
+		lines = append(lines, "")
 	}
+	focusStart, focusEnd := 0, 0
 	for i, field := range page.fields {
 		if i > 0 {
-			b.WriteString("\n\n")
+			lines = append(lines, "")
 		}
-		b.WriteString(f.renderField(field, i == f.field))
+		if i == f.field {
+			focusStart = len(lines)
+		}
+		lines = append(lines, strings.Split(f.renderField(field, i == f.field), "\n")...)
+		if i == f.field {
+			focusEnd = len(lines)
+		}
 	}
-	return b.String()
+	if f.field == 0 && (f.height <= 0 || focusEnd <= f.height) {
+		focusStart = 0 // keep the page title in view with the first field
+	}
+	return strings.Join(f.scrollTo(lines, focusStart, focusEnd), "\n")
+}
+
+// scrollTo returns the lines that fit the terminal, moving the window as
+// little as possible to show lines[start:end]. A block taller than the
+// terminal shows its end, where the input is.
+func (f *Form) scrollTo(lines []string, start, end int) []string {
+	if f.height <= 0 || len(lines) <= f.height {
+		f.scroll = 0
+		return lines
+	}
+	if end-start > f.height {
+		f.scroll = end - f.height
+	} else if start < f.scroll {
+		f.scroll = start
+	} else if end > f.scroll+f.height {
+		f.scroll = end - f.height
+	}
+	f.scroll = min(max(f.scroll, 0), len(lines)-f.height)
+	return lines[f.scroll : f.scroll+f.height]
 }
 
 func (f *Form) renderField(field *Field, focused bool) string {
-	inner := max(f.width-4, 10)
+	inner := max(f.width-4, 1)
 	bar, title := subtle, lipgloss.NewStyle().Foreground(dimmed)
 	if focused {
 		bar, title = accent, lipgloss.NewStyle().Foreground(accent).Bold(true)
@@ -452,9 +488,14 @@ func (f *Form) renderField(field *Field, focused bool) string {
 	case kindText:
 		lines = append(lines, field.area.View())
 	case kindSelect:
-		lines = append(lines, f.renderOptions(field, focused))
+		// Leave room for the field's own heading and the position line.
+		heading := 0
+		for _, l := range lines {
+			heading += lipgloss.Height(l)
+		}
+		lines = append(lines, f.renderOptions(field, focused, f.height-heading-1))
 	case kindConfirm:
-		lines = append(lines, renderButtons(*field.yes, focused))
+		lines = append(lines, renderButtons(*field.yes, focused, inner))
 	}
 	if field.err != nil {
 		lines = append(lines, lipgloss.NewStyle().Foreground(errColor).Render("! "+field.err.Error()))
@@ -467,12 +508,12 @@ func (f *Form) renderField(field *Field, focused bool) string {
 
 // renderOptions shows the options around the cursor that fit the terminal
 // height. Multi-line labels stay aligned under their first line.
-func (f *Form) renderOptions(field *Field, focused bool) string {
+func (f *Form) renderOptions(field *Field, focused bool, rows int) string {
 	picked := lipgloss.NewStyle().Foreground(dimmed)
 	if focused {
 		picked = lipgloss.NewStyle().Foreground(accent).Bold(true)
 	}
-	labelWidth := max(f.width-6, 4)
+	labelWidth := max(f.width-6, 1)
 	blocks := make([]string, len(field.options))
 	for i, o := range field.options {
 		label := strings.ReplaceAll(wrap(o.Label, labelWidth), "\n", "\n  ")
@@ -485,7 +526,7 @@ func (f *Form) renderOptions(field *Field, focused bool) string {
 
 	budget := 0
 	if f.height > 0 {
-		budget = max(3, f.height-8)
+		budget = max(rows, 1)
 	}
 	start, end := 0, len(blocks)
 	if budget > 0 && len(blocks) > 0 {
@@ -514,12 +555,16 @@ func (f *Form) renderOptions(field *Field, focused bool) string {
 	return out
 }
 
-func renderButtons(yes, focused bool) string {
-	on := lipgloss.NewStyle().Padding(0, 2).Foreground(lipgloss.Color("#FFFFFF")).Background(subtle)
+func renderButtons(yes, focused bool, width int) string {
+	pad := 2
+	if width < 14 {
+		pad = 0 // "Yes No" without padding still fits very narrow terminals
+	}
+	on := lipgloss.NewStyle().Padding(0, pad).Foreground(lipgloss.Color("#FFFFFF")).Background(subtle)
 	if focused {
 		on = on.Background(accent)
 	}
-	off := lipgloss.NewStyle().Padding(0, 2).Foreground(dimmed)
+	off := lipgloss.NewStyle().Padding(0, pad).Foreground(dimmed)
 	if yes {
 		return on.Render("Yes") + " " + off.Render("No")
 	}
