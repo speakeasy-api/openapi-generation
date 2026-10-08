@@ -507,6 +507,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
     * [`get-namespace-animal`](docs/cli_namespace-tests_types_get-namespace-animal.md) - Get Namespace Animal (Discriminated Union)
     * [`get-namespace-vehicle`](docs/cli_namespace-tests_types_get-namespace-vehicle.md) - Get Namespace Vehicle (Non-Discriminated Union)
     * [`get-namespace-organization`](docs/cli_namespace-tests_types_get-namespace-organization.md) - Get Namespace Organization (Nested Inline Schemas)
+* [`stream-metadata`](docs/cli_stream-metadata.md) - Streamed events can contain text and an optional resource identifier in separate events.
 <!-- End Commands [operations] -->
 
 <!-- Start Request Body Input [stdinpiping] -->

@@ -23,10 +23,12 @@ func InitIntentSay(parent *cobra.Command) error {
 		Args:    cobra.ArbitraryArgs,
 		RunE:    runIntentSayCmd,
 		Annotations: map[string]string{
-			"speakeasy_operation":            "chat",
-			flagutil.AnnotationWholeBodyFlag: "request",
-			"speakeasy_strict_body_keys":     "true",
-			"speakeasy_stream_select":        "/data/content",
+			"speakeasy_operation":              "chat",
+			flagutil.AnnotationWholeBodyFlag:   "request",
+			"speakeasy_strict_body_keys":       "true",
+			"speakeasy_stream_select":          "/data/content",
+			"speakeasy_stream_metadata_select": "/data/resource_id",
+			"speakeasy_stream_metadata_label":  "Resource ID",
 		},
 	}
 	cmd.Flags().String("request", "", "Request body as JSON (advanced; merges with intent inputs, rejecting duplicate keys). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.")

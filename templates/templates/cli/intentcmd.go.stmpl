@@ -73,6 +73,10 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 			{{- end}}
 			{{- if $c.StreamSelect}}
 			"speakeasy_stream_select": "{{escapeGoString $c.StreamSelect}}",
+			{{- if $c.StreamMetadataPointer}}
+			"speakeasy_stream_metadata_select": "{{escapeGoString $c.StreamMetadataPointer}}",
+			"speakeasy_stream_metadata_label": "{{escapeGoString $c.StreamMetadataLabel}}",
+			{{- end}}
 			{{- end}}
 		},
 	}

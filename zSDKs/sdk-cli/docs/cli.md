@@ -102,6 +102,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 * [cli render](cli_render.md)	 - Render an image asset to a file
 * [cli render-asset](cli_render-asset.md)	 - Render Asset
 * [cli say](cli_say.md)	 - Stream a chat reply
+* [cli stream-metadata](cli_stream-metadata.md)	 - Operations for stream-metadata
 * [cli tag1](cli_tag1.md)	 - The first tag
 * [cli test-endpoint](cli_test-endpoint.md)	 - Test Endpoint
 * [cli test-enum-formats](cli_test-enum-formats.md)	 - Test x-speakeasy-enums in different formats

@@ -2324,7 +2324,14 @@ declare global {
     ResponseCode: string;
   };
 
+  type CLICommandStreamMetadata = {
+    Select: string;
+    Pointer: string;
+    Label: string;
+  };
+
   type CLICommandStreamProjection = {
+    Metadata?: CLICommandStreamMetadata | null;
     Select: string;
     Pointer: string;
   };
