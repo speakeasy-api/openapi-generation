@@ -1223,6 +1223,9 @@ const sseBodyVariantParamsCheck = `import type { Widgets } from "./resources.js"
 import type * as MP from "./models/operations/method-params.js";
 import type { CreateBasicWidget } from "./models/create-basic-widget.js";
 import type { Widget } from "./models/widget.js";
+import type { WidgetEvent } from "./models/widget-event.js";
+import type { CreateWidgetResponse } from "./models/operations/create-widget.js";
+import type { EventStream } from "./lib/event-streams.js";
 import type { Widgets as WidgetsSDK } from "./sdk/widgets.js";
 
 type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -1235,7 +1238,6 @@ type Same<A, B> =
         : false
       : false
     : false;
-type IsStream<T> = [Awaited<T>] extends [AsyncIterable<unknown>] ? true : false;
 
 export const unionStreaming: Same<
   Widgets.WidgetCreateParamsStreaming,
@@ -1262,15 +1264,53 @@ declare const sdk: WidgetsSDK;
 declare const unionStreamingParams: Widgets.WidgetCreateParamsStreaming;
 declare const unionNonStreamingParams: Widgets.WidgetCreateParamsNonStreaming;
 declare const variantStreamingParams: Widgets.WidgetCreateParams.CreateCustomWidgetParamsStreaming;
+declare const dynamicStream: boolean;
 
 export function overloadChecks() {
   const unionStream = sdk.createWidget(unionStreamingParams);
   const unionJSON = sdk.createWidget(unionNonStreamingParams);
   const variantStream = sdk.createWidget(variantStreamingParams);
-  const streams: IsStream<typeof unionStream> = true;
-  const json: Mutual<Awaited<typeof unionJSON>, Widget> = true;
-  const variantStreams: IsStream<typeof variantStream> = true;
-  return [streams, json, variantStreams];
+  const fallback = sdk.createWidget({
+    color: "red",
+    label: "label",
+    stream: dynamicStream,
+  });
+  const mixedJSON = sdk.createWidget({
+    color: "red",
+    template: "template",
+    label: "label",
+    stream: false,
+  });
+  const mixedStream = sdk.createWidget({
+    color: "red",
+    template: "template",
+    label: "label",
+    stream: true,
+  });
+  const streams: Mutual<
+    typeof unionStream,
+    Promise<EventStream<WidgetEvent>>
+  > = true;
+  const json: Mutual<typeof unionJSON, Promise<Widget>> = true;
+  const variantStreams: Mutual<
+    typeof variantStream,
+    Promise<EventStream<WidgetEvent>>
+  > = true;
+  const fallbackType: Mutual<typeof fallback, Promise<CreateWidgetResponse>> =
+    true;
+  const mixedJSONType: Mutual<typeof mixedJSON, Promise<Widget>> = true;
+  const mixedStreamType: Mutual<
+    typeof mixedStream,
+    Promise<EventStream<WidgetEvent>>
+  > = true;
+  return [
+    streams,
+    json,
+    variantStreams,
+    fallbackType,
+    mixedJSONType,
+    mixedStreamType,
+  ];
 }
 `
 
@@ -1683,7 +1723,11 @@ const sseBodyVariantPublicExportCollisionsCheck = `import type { GadgetCreatePar
 import type * as MP from "./models/operations/method-params.js";
 import type { CreateCustomGadget } from "./models/create-custom-gadget.js";
 import type { Gadget } from "./models/gadget.js";
+import type { GadgetEvent } from "./models/gadget-event.js";
 import type { GadgetMetadata } from "./models/gadget-metadata.js";
+import type { CreateGadgetResponse } from "./models/operations/create-gadget.js";
+import type { EventStream } from "./lib/event-streams.js";
+import type { APIPromise } from "./types/async.js";
 import type { Gadgets as GadgetsSDK } from "./sdk/gadgets.js";
 
 type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
@@ -1696,7 +1740,6 @@ type Same<A, B> =
         : false
       : false
     : false;
-type IsStream<T> = [Awaited<T>] extends [AsyncIterable<unknown>] ? true : false;
 
 export const explicitGroup: Same<
   Gadgets.GadgetCreateParamsStreaming,
@@ -1742,13 +1785,43 @@ export const variantKeepsNameNonStreaming: Same<
 declare const sdk: GadgetsSDK;
 declare const unionNonStreamingParams: Gadgets.GadgetCreateParamsNonStreaming;
 declare const unionStreamingParams: Gadgets.GadgetCreateParams.GadgetCreateParamsStreaming;
+declare const dynamicStream: boolean;
 
-export async function overloadChecks() {
-  const json = await sdk.createGadget(unionNonStreamingParams);
+export function overloadChecks() {
+  const json = sdk.createGadget(unionNonStreamingParams);
   const stream = sdk.createGadget(unionStreamingParams);
-  const jsonIsGadget: Mutual<typeof json, Gadget> = true;
-  const streams: IsStream<typeof stream> = true;
-  return [jsonIsGadget, streams];
+  const fallback = sdk.createGadget({
+    color: "red",
+    label: "label",
+    stream: dynamicStream,
+  });
+  const mixedJSON = sdk.createGadget({
+    color: "red",
+    template: "template",
+    label: "label",
+    stream: false,
+  });
+  const mixedStream = sdk.createGadget({
+    color: "red",
+    template: "template",
+    label: "label",
+    stream: true,
+  });
+  const jsonType: Mutual<typeof json, APIPromise<Gadget>> = true;
+  const streamType: Mutual<
+    typeof stream,
+    APIPromise<EventStream<GadgetEvent>>
+  > = true;
+  const fallbackType: Mutual<
+    typeof fallback,
+    APIPromise<CreateGadgetResponse>
+  > = true;
+  const mixedJSONType: Mutual<typeof mixedJSON, APIPromise<Gadget>> = true;
+  const mixedStreamType: Mutual<
+    typeof mixedStream,
+    APIPromise<EventStream<GadgetEvent>>
+  > = true;
+  return [jsonType, streamType, fallbackType, mixedJSONType, mixedStreamType];
 }
 `
 
