@@ -748,7 +748,8 @@ function buildTypeScriptPublicExportFile():
   }
 
   // Deferred so explicit exports keep their names; per-variant params stay
-  // nested-only so they never claim a flat alias.
+  // nested-only so they never claim a flat alias, and are added first so they
+  // keep their names when an export alias equals a variant's params name.
   const sseSuffixes = ["NonStreaming", "Streaming"];
   for (const {
     node,
@@ -757,9 +758,17 @@ function buildTypeScriptPublicExportFile():
     paramsState,
   } of deferredSSEExports) {
     const variantNode =
-      node.ChildrenByKey.get(aliasName) ??
       node.Children.get(aliasName) ??
+      node.ChildrenByKey.get(aliasName) ??
       namespaceNode(node, aliasName, aliasName);
+    for (const variant of paramsState.BodyVariants) {
+      for (const suffix of ["", ...sseSuffixes]) {
+        const name = `${variant.ParamsName}${suffix}`;
+        if (!hasMember(variantNode.Members, name)) {
+          addAlias(variantNode.Members, name, paramsPath, name, false, false);
+        }
+      }
+    }
     for (const suffix of sseSuffixes) {
       const name = `${aliasName}${suffix}`;
       const targets = [node.Members, variantNode.Members].filter(
@@ -775,14 +784,6 @@ function buildTypeScriptPublicExportFile():
       );
       for (const members of targets) {
         addMember(members, name, intermediate, false, members === node.Members);
-      }
-    }
-    for (const variant of paramsState.BodyVariants) {
-      for (const suffix of ["", ...sseSuffixes]) {
-        const name = `${variant.ParamsName}${suffix}`;
-        if (!hasMember(variantNode.Members, name)) {
-          addAlias(variantNode.Members, name, paramsPath, name, false, false);
-        }
       }
     }
   }
