@@ -69,7 +69,7 @@ const supportedFeatures = {
   examplesDirectory: "0.2.1",
   modelNamespaces: "0.1.1",
   methodSignatures: "0.1.2",
-  publicExports: "0.1.4",
+  publicExports: "0.1.5",
 };
 
 //@ts-ignore
