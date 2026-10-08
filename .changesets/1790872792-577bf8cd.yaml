@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: '--dry-run and --debug redact sensitive request-body values and whole bodies across JSON, form, multipart and text previews, including recursive schemas and operations with multiple request content types; unrelated unmarked fields remain readable'
+description: '--dry-run and --debug mask request and response body values marked sensitive (x-speakeasy-param-sensitive or format: password) through the SDK redact package, including whole bodies, recursive schemas and form or multipart fields'
 author: 2ynn
 date: "2026-10-01"

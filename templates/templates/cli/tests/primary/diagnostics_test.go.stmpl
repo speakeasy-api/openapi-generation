@@ -10,6 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/sdk/redact"
 )
 
 // newDiagnosticsServer creates a test server that echoes requests and includes
@@ -375,9 +377,9 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 	}{
 		{
 			name: "split json body",
-			args: []string{"request-bodies", "cli-sensitive-split-body-post-json", "--json-value", "canary-json", "--name", "visible-name"},
+			args: []string{"request-bodies", "cli-sensitive-split-body-post-json", "--json-value", "canary-json", "--name", "visible-name", "--form-value", "visible-form-value"},
 			secrets: []string{"canary-json"},
-			visible: []string{"visible-name"},
+			visible: []string{"visible-name", "visible-form-value"},
 		},
 		{
 			name: "split multipart body",
@@ -395,25 +397,25 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 			name: "whole json body",
 			args: []string{"request-bodies", "cli-sensitive-whole-json-post", "--value", "canary-whole-json"},
 			secrets: []string{"canary-whole-json"},
-			visible: []string{"[REDACTED]"},
+			visible: []string{redact.Mask},
 		},
 		{
 			name: "whole form body",
 			args: []string{"request-bodies", "cli-sensitive-whole-form-post", "--value", "canary-whole-form"},
 			secrets: []string{"canary-whole-form"},
-			visible: []string{"[REDACTED]"},
+			visible: []string{redact.Mask},
 		},
 		{
 			name: "whole multipart body",
 			args: []string{"request-bodies", "cli-sensitive-whole-multipart-post", "--value", "canary-whole-multipart"},
 			secrets: []string{"canary-whole-multipart"},
-			visible: []string{"[REDACTED]"},
+			visible: []string{redact.Mask},
 		},
 		{
 			name: "whole text body",
 			args: []string{"request-bodies", "cli-sensitive-whole-text-post", "--request", `"canary-whole-text"`},
 			secrets: []string{"canary-whole-text"},
-			visible: []string{"[REDACTED]"},
+			visible: []string{redact.Mask},
 		},
 		{
 			name: "recursive union",
@@ -495,21 +497,21 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 		{
 			name: "multipart parts",
 			args: []string{"request-bodies", "cli-sensitive-multipart-post", "--name", "visible-name", "--value", "canary-top",
-				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
+				"--config-param", `{"label":"visible-label","value":"canary-config","password":"canary-config-password"}`,
 				"--codes", "canary-code-1", "--codes", "canary-code-2",
 				"--entries", `[{"label":"visible-entry","value":"canary-entry"}]`,
 				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
-			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
+			secrets: []string{"canary-top", "canary-config", "canary-config-password", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
 			visible: []string{"visible-name", "visible-label", "visible-entry", "visible-tree-plain"},
 		},
 		{
 			name: "form fields",
 			args: []string{"request-bodies", "cli-sensitive-form-put", "--name", "visible-name", "--value", "canary-top",
-				"--config-param", `{"label":"visible-label","value":"canary-config"}`,
+				"--config-param", `{"label":"visible-label","value":"canary-config","password":"canary-config-password"}`,
 				"--codes", "canary-code-1", "--codes", "canary-code-2",
 				"--entries", `[{"label":"visible-entry","value":"canary-entry"}]`,
 				"--tree", `{"value":"canary-tree","child":{"value":"canary-tree-child","plain":{"name":"visible-name","value":"visible-tree-plain"}}}`},
-			secrets: []string{"canary-top", "canary-config", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
+			secrets: []string{"canary-top", "canary-config", "canary-config-password", "canary-code-1", "canary-code-2", "canary-entry", "canary-tree", "canary-tree-child"},
 			visible: []string{"visible-name", "visible-label", "visible-entry", "visible-tree-plain"},
 		},
 		{
@@ -559,9 +561,23 @@ func TestDiagnosticsKeepUnmarkedFieldSharingSensitiveName(t *testing.T) {
 			output := mode.run(t, []string{"request-bodies", "cli-plain-body-fields-post",
 				"--name", "visible-name", "--value", "visible-value"})
 			assert.Contains(t, output, "visible-value")
+			assert.NotContains(t, output, redact.Mask)
 			assert.NotRegexp(t, `"value":\s*"\[REDACTED\]"`, output)
 		})
 	}
+}
+
+func TestDebugRedactsSensitiveResponseFields(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name":"visible-name","value":"canary-response"}`))
+	}))
+	defer s.Close()
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"--debug", "--output-format", "json", "response-bodies", "cli-sensitive-response-get"}))
+	assert.NotContains(t, h.GetStderr(), "canary-response")
+	assert.Contains(t, h.GetStderr(), "visible-name")
+	assert.Contains(t, h.GetStdout(), "canary-response", "decoded output keeps the value")
 }
 {{- if hasRootVersionFlag}}
 

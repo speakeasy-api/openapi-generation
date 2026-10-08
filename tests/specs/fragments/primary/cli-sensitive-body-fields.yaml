@@ -133,6 +133,9 @@ paths:
                 jsonValue:
                   type: string
                   x-speakeasy-param-sensitive: true
+                formValue:
+                  description: Not marked sensitive in this content type, unlike its form counterpart.
+                  type: string
                 name:
                   type: string
           multipart/form-data:
@@ -268,6 +271,23 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/cli/sensitiveResponse:
+    get:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveResponseGet
+      description: >-
+        Response body with a field marked sensitive beside an unmarked one.
+        Debug output must redact the marked value in the logged response while
+        keeping its sibling readable.
+      tags:
+        - responseBodies
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveResponse"
 components:
   schemas:
     CliSensitiveBodyFields:
@@ -377,6 +397,9 @@ components:
             value:
               type: string
               format: password
+            password:
+              description: Not marked sensitive; its name alone requires redaction.
+              type: string
         codes:
           type: array
           items:
@@ -534,3 +557,14 @@ components:
           properties:
             label:
               type: string
+    CliSensitiveResponse:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
