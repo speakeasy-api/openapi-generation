@@ -38,6 +38,7 @@ type TypeDefExtensions struct {
 	// Set on request-side string schemas with format:byte or contentEncoding:base64.
 	Base64InputMode string `yaml:",omitempty"`
 
+	// Describes x-speakeasy-pattern-error-message extension configuration.
 	PatternErrorMessage string `yaml:",omitempty"`
 
 	// Describes x-speakeasy-conflicts-with extension configuration.

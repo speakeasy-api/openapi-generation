@@ -193,11 +193,11 @@ type FlagMeta struct {
 	HasMaxLength        bool     // schema maxLength declared for string flags
 	MaxLength           int64    // schema maxLength (valid when HasMaxLength)
 	Pattern             string   // schema pattern for string flags ("" = unconstrained)
-	PatternErrorMessage string
-	HasMinimum          bool    // schema minimum declared for numeric flags
-	Minimum             float64 // schema minimum (valid when HasMinimum)
-	HasMaximum          bool    // schema maximum declared for numeric flags
-	Maximum             float64 // schema maximum (valid when HasMaximum)
+	PatternErrorMessage string   // custom message used when Pattern doesn't match ("" = default message)
+	HasMinimum          bool     // schema minimum declared for numeric flags
+	Minimum             float64  // schema minimum (valid when HasMinimum)
+	HasMaximum          bool     // schema maximum declared for numeric flags
+	Maximum             float64  // schema maximum (valid when HasMaximum)
 
 	// JSON unmarshal
 	Annotations string // struct tag for JSON unmarshal, e.g. `request:"mediaType=application/json"`
