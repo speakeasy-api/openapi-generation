@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.948.0] - 2026-10-08
+### :bee: New Features
+- [`c970df5`](https://github.com/speakeasy-api/openapi-generation/commit/c970df5c6986892518ff45d5c84992409444754c) - **cli**: add selected stream metadata ([#88](https://github.com/speakeasy-api/openapi-generation/pull/88)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.947.1] - 2026-10-08
 ### :bug: Bug Fixes
 - [`45bcbaf`](https://github.com/speakeasy-api/openapi-generation/commit/45bcbaf41d1e134358f3fa03605de64be563c12a) - **cli**: redact body values marked sensitive in diagnostics ([#91](https://github.com/speakeasy-api/openapi-generation/pull/91)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20518,3 +20523,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.946.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.4...v2.946.5
 [v2.947.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.5...v2.947.0
 [v2.947.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.0...v2.947.1
+[v2.948.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.1...v2.948.0
