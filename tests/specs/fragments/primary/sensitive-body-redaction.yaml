@@ -137,6 +137,56 @@ paths:
       responses:
         "200":
           description: OK
+  /anything/sensitiveBracketedFormRedaction:
+    post:
+      operationId: sensitiveBracketedFormRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: bracketedFormRedaction
+      x-speakeasy-exclude-test-sdk: [cli, csharp, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      description: >-
+        Exercises form field names ending in brackets: a sensitive property
+        whose wire name ends in brackets, a plain bracketed property beside a
+        sensitive one of the same base name, and an array of sensitive values
+        sent as repeated fields with a bracket suffix. A response schema
+        declaring a plain bracketed property must not hide the sensitive array
+        of another response schema.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyBracketedForm"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyBracketedTokens"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyBracketedError"
+  /anything/sensitiveBracketedMultipartRedaction:
+    post:
+      operationId: sensitiveBracketedMultipartRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: bracketedMultipartRedaction
+      x-speakeasy-exclude-test-sdk: [cli, csharp, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      description: >-
+        Exercises a multipart part whose name ends in brackets and holds a
+        sensitive value, beside a plain part.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyBracketedMultipart"
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     SensitiveBodyPayload:
@@ -216,6 +266,20 @@ components:
             oneOf:
               - $ref: "#/components/schemas/SensitiveBodyNested"
               - type: string
+        secretsOrCounts:
+          description: Array of a union of an object with a sensitive value and an integer; integer items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: integer
+        secretsOrFlags:
+          description: Array of a union of an object with a sensitive value and a boolean; boolean items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: boolean
     SensitiveBodyPlainLabel:
       type: object
       properties:
@@ -226,10 +290,6 @@ components:
       properties:
         message:
           type: string
-        tokens[]:
-          description: Property whose wire name ends in brackets, holding nothing sensitive, while another response schema of the operation has a sensitive tokens array.
-          type: string
-          x-speakeasy-name-override: bracketedTokens
         secret:
           type: string
           x-speakeasy-param-sensitive: true
@@ -295,15 +355,6 @@ components:
       required:
         - name
       properties:
-        token[]:
-          description: Property whose wire name ends in brackets, holding nothing sensitive, beside a sensitive token property.
-          type: string
-          x-speakeasy-name-override: bracketedToken
-        payload[]:
-          description: Property whose wire name ends in brackets; it is not an array.
-          type: string
-          x-speakeasy-name-override: bracketedPayload
-          x-speakeasy-param-sensitive: true
         name:
           type: string
         token:
@@ -331,11 +382,6 @@ components:
       required:
         - name
       properties:
-        payload[]:
-          description: Property whose wire name ends in brackets; it is not an array.
-          type: string
-          x-speakeasy-name-override: bracketedPayload
-          x-speakeasy-param-sensitive: true
         name:
           type: string
         token:
@@ -351,3 +397,54 @@ components:
         file:
           type: string
           format: binary
+    SensitiveBodyBracketedForm:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        token[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, beside a sensitive token property.
+          type: string
+          x-speakeasy-name-override: bracketedToken
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+    SensitiveBodyBracketedTokens:
+      type: object
+      properties:
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+    SensitiveBodyBracketedError:
+      type: object
+      properties:
+        tokens[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, while another response schema has a sensitive tokens array.
+          type: string
+          x-speakeasy-name-override: bracketedTokens
+    SensitiveBodyBracketedMultipart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true

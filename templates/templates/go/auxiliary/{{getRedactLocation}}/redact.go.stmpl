@@ -265,6 +265,10 @@ func (g *graph) redactValue(value []byte, roots []int) ([]byte, bool) {
 	if (g.plain(roots, stringShape) || g.plain(items, stringShape)) && !isJSONStructure(value) {
 		return value, false
 	}
+	// A scalar may also be one item of an array sent as repeated fields.
+	if !isJSONStructure(value) {
+		roots = append(append([]int{}, roots...), items...)
+	}
 	if masked, changed, ok := g.redactJSON(value, roots); ok {
 		return masked, changed
 	}

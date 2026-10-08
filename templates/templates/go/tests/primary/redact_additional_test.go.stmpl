@@ -162,6 +162,9 @@ func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
 		assert.Equal(t, "true", redactField("secretOrFlag", "true"), "%s: a plain boolean member stays readable", name)
 		assert.Equal(t, "visible-name", redactField("name", "visible-name"), "%s: fields without sensitive values stay readable", name)
 		assert.Equal(t, "visible-item-name", redactField("secretsOrNames", "visible-item-name"), "%s: a repeated item matching a plain string member stays readable", name)
+		assert.Equal(t, "4242", redactField("secretsOrCounts", "4242"), "%s: a repeated item matching a plain integer member stays readable", name)
+		assert.Equal(t, "true", redactField("secretsOrFlags", "true"), "%s: a repeated item matching a plain boolean member stays readable", name)
+		assert.Equal(t, redact.Mask, redactField("secretsOrCounts", "secret-text"), "%s: a repeated text item without a plain string member is masked", name)
 		assert.NotContains(t, redactField("secretsOrNames", `{"label": "visible-label", "secret": "secret-item"}`), "secret-item", "%s: a repeated object item is masked", name)
 	}
 }
@@ -194,7 +197,6 @@ func TestRedactFormRequestBody(t *testing.T) {
 		Tokens:   []string{"secret-tokens-0", "secret-tokens-1"},
 		Nested:   &shared.SensitiveBodyFormNested{VisibleProperty: sdk.String("visible-nested"), SecretProperty: sdk.String("secret-nested")},
 		Metadata: &shared.SensitiveBodyNested{Label: sdk.String("visible-metadata"), Secret: sdk.String("secret-metadata")},
-		BracketedPayload: sdk.String("secret-brackets"),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "sensitiveFormRedaction", client.operation)
@@ -202,13 +204,12 @@ func TestRedactFormRequestBody(t *testing.T) {
 
 	masked := string(client.masked)
 	assertMasked(t, masked,
-		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-nested", "secret-metadata", "secret-brackets"},
+		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-nested", "secret-metadata"},
 		[]string{"name=visible-name", "visible-nested", "visible-metadata"})
 	values, err := url.ParseQuery(masked)
 	require.NoError(t, err, "the masked body is a form")
 	assert.Equal(t, []string{redact.Mask, redact.Mask}, values["tokens"])
 	assert.JSONEq(t, `{"label": "visible-metadata", "secret": "`+redact.Mask+`"}`, values.Get("metadata"))
-	assert.Equal(t, []string{redact.Mask}, values["payload[]"], "a property whose name ends in brackets is matched by its exact name")
 
 	plainCtx := redact.WithOperation(context.Background(), "sensitiveFormRedaction")
 	plain := []byte("name=visible-name&metadata=%7B%22label%22%3A%22visible%22%7D")
@@ -219,10 +220,36 @@ func TestRedactFormRequestBody(t *testing.T) {
 	for _, body := range []string{`{"token": "secret-json", "name": "visible-name"}`, " \n\t{\"token\": \"secret-json\"}", `[{"token": "secret-json"}]`} {
 		assert.Equal(t, redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte(body))), "a JSON body labelled as a form is masked as a whole: %q", body)
 	}
-	assert.Equal(t, "token%5B%5D=visible-bracketed&token="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("token%5B%5D=visible-bracketed&token=secret-token"))), "a plain property whose name ends in brackets is not mistaken for a sensitive one")
+}
 
-	responseCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
-	assert.Equal(t, "tokens[]="+redact.Mask, string(redact.ResponseBody(responseCtx, "application/x-www-form-urlencoded", []byte("tokens[]=secret-tokens-0"))), "a bracketed name declared by one response schema still matches a sensitive array of another")
+func TestRedactBracketedFieldNames(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	_, _ = s.SensitiveBodies.BracketedFormRedaction(context.Background(), shared.SensitiveBodyBracketedForm{
+		Name:             "visible-name",
+		BracketedPayload: sdk.String("secret-brackets"),
+		Token:            sdk.String("secret-token"),
+		BracketedToken:   sdk.String("visible-bracketed"),
+	})
+	assert.Equal(t, "sensitiveBracketedFormRedaction", client.operation)
+	values, err := url.ParseQuery(string(client.masked))
+	require.NoError(t, err, "the masked body is a form")
+	assert.Equal(t, []string{redact.Mask}, values["payload[]"], "a property whose name ends in brackets is matched by its exact name")
+	assert.Equal(t, []string{redact.Mask}, values["token"])
+	assert.Equal(t, []string{"visible-bracketed"}, values["token[]"], "a plain bracketed property is not mistaken for a sensitive one")
+	assert.Equal(t, []string{"visible-name"}, values["name"])
+
+	ctx := redact.WithOperation(context.Background(), "sensitiveBracketedFormRedaction")
+	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(ctx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
+	assert.Equal(t, "tokens[]="+redact.Mask, string(redact.ResponseBody(ctx, "application/x-www-form-urlencoded", []byte("tokens[]=secret-tokens-0"))), "a bracketed name declared by one response schema still matches a sensitive array of another")
+
+	_, _ = s.SensitiveBodies.BracketedMultipartRedaction(context.Background(), shared.SensitiveBodyBracketedMultipart{
+		Name:             "visible-name",
+		BracketedPayload: sdk.String("secret-brackets"),
+	})
+	assert.Equal(t, "sensitiveBracketedMultipartRedaction", client.operation)
+	assertMasked(t, string(client.masked), []string{"secret-brackets"}, []string{"visible-name", `name="payload[]"`})
 }
 
 func TestRedactMultipartRequestBody(t *testing.T) {
@@ -235,14 +262,13 @@ func TestRedactMultipartRequestBody(t *testing.T) {
 		Tokens:   []string{"secret-tokens-0", "secret-tokens-1"},
 		Metadata: &shared.SensitiveBodyNested{Label: sdk.String("visible-metadata"), Secret: sdk.String("secret-metadata")},
 		File:     &shared.File{FileName: "visible.txt", Content: []byte("visible-file-content")},
-		BracketedPayload: sdk.String("secret-brackets"),
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "sensitiveMultipartRedaction", client.operation)
 	assert.Contains(t, string(client.body), "secret-token", "the body sent is not masked")
 
 	assertMasked(t, string(client.masked),
-		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-metadata", "secret-brackets"},
+		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-metadata"},
 		[]string{"visible-name", "visible-metadata", "visible.txt", "visible-file-content"})
 
 	_, params, err := mime.ParseMediaType(client.contentType)
@@ -262,7 +288,6 @@ func TestRedactMultipartRequestBody(t *testing.T) {
 	assert.Equal(t, []string{"visible-name"}, parts["name"])
 	assert.Equal(t, []string{redact.Mask}, parts["token"])
 	assert.Equal(t, []string{redact.Mask, redact.Mask}, parts["tokens"])
-	assert.Equal(t, []string{redact.Mask}, parts["payload[]"], "a property whose name ends in brackets is matched by its exact name")
 	assert.Equal(t, []string{"visible-file-content"}, parts["file"])
 
 	ctx := redact.WithOperation(context.Background(), "sensitiveMultipartRedaction")

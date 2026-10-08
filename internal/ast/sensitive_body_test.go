@@ -214,7 +214,7 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	assert.False(t, g.Nodes[mixed[0]].PlainArray || g.Nodes[mixed[0]].PlainString || g.Nodes[mixed[0]].PlainNumber || g.Nodes[mixed[0]].PlainBoolean)
 	assert.Len(t, g.Nodes[mixed[0]].Variants, 1)
 
-	var declared []string
+	declared := make([]string, 0, len(g.Nodes[g.Roots[0]].Fields))
 	for _, f := range g.Nodes[g.Roots[0]].Fields {
 		declared = append(declared, f.Name)
 	}
