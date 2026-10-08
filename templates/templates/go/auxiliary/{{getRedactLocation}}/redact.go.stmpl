@@ -137,6 +137,11 @@ func (g *graph) redactJSON(body []byte, roots []int) ([]byte, bool, bool) {
 	if _, err := dec.Token(); err != io.EOF {
 		return nil, false, false
 	}
+	// Decoding keeps the last of duplicate keys, so the bytes returned as is
+	// could hold an earlier, unmasked one.
+	if hasDuplicateKeys(body) {
+		return nil, false, false
+	}
 	masked, changed := g.mask(value, roots, 0)
 	if !changed {
 		return body, false, true
@@ -159,7 +164,7 @@ func (g *graph) redactForm(body []byte, roots []int) ([]byte, bool, bool) {
 	for i, pair := range pairs {
 		rawKey, rawValue, _ := strings.Cut(pair, "=")
 		key, err := url.QueryUnescape(rawKey)
-		if err != nil {
+		if err != nil || strings.HasPrefix(key, "{") || strings.HasPrefix(key, "[") {
 			return nil, false, false
 		}
 		value, err := url.QueryUnescape(rawValue)
@@ -208,7 +213,11 @@ func (g *graph) redactMultipart(body []byte, boundary string, roots []int) ([]by
 		if err != nil {
 			return nil, false, false
 		}
-		masked, partChanged := g.redactValue(data, g.field(roots, part.FormName()))
+		partRoots := g.field(roots, part.FormName())
+		masked, partChanged := g.redactValue(data, partRoots)
+		if !partChanged && len(g.expand(partRoots)) > 0 && isEncodedPart(part.Header) {
+			masked, partChanged = []byte(Mask), true
+		}
 		changed = changed || partChanged
 		header := part.Header
 		if partChanged {
@@ -246,21 +255,71 @@ func (g *graph) redactValue(value []byte, roots []int) ([]byte, bool) {
 	if len(g.expand(roots)) == 0 {
 		return value, false
 	}
-	if g.sensitive(roots) {
+	items := g.items(roots)
+	if g.sensitive(roots) || g.sensitive(items) && !isJSONStructure(value) {
 		return []byte(Mask), true
 	}
 	// Unencoded text matches a plain string member of the field or of its
-	// items when sent as repeated fields, unless it is a sensitive repeated
-	// item or starts like a JSON object or array, which may carry sensitive
-	// values.
-	items := g.items(roots)
-	if (g.plain(roots, stringShape) || g.plain(items, stringShape)) && !g.sensitive(items) && !isJSONStructure(value) {
+	// items when sent as repeated fields, unless it starts like a JSON object
+	// or array, which may carry sensitive values.
+	if (g.plain(roots, stringShape) || g.plain(items, stringShape)) && !isJSONStructure(value) {
 		return value, false
 	}
 	if masked, changed, ok := g.redactJSON(value, roots); ok {
 		return masked, changed
 	}
 	return []byte(Mask), true
+}
+
+// isEncodedPart reports whether a multipart part is transfer or content
+// encoded, so that its bytes cannot be read as its value.
+func isEncodedPart(header textproto.MIMEHeader) bool {
+	switch strings.ToLower(strings.TrimSpace(header.Get("Content-Transfer-Encoding"))) {
+	case "", "7bit", "8bit", "binary":
+		return header.Get("Content-Encoding") != ""
+	}
+	return true
+}
+
+// hasDuplicateKeys reports whether a JSON object in body repeats a key.
+func hasDuplicateKeys(body []byte) bool {
+	type object struct {
+		keys      map[string]bool
+		expectKey bool
+	}
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
+	var stack []*object
+	for {
+		token, err := dec.Token()
+		if err != nil {
+			return false
+		}
+		switch t := token.(type) {
+		case json.Delim:
+			switch t {
+			case '{':
+				stack = append(stack, &object{keys: map[string]bool{}, expectKey: true})
+				continue
+			case '[':
+				stack = append(stack, nil)
+				continue
+			}
+			stack = stack[:len(stack)-1]
+		case string:
+			if n := len(stack); n > 0 && stack[n-1] != nil && stack[n-1].expectKey {
+				if stack[n-1].keys[t] {
+					return true
+				}
+				stack[n-1].keys[t] = true
+				stack[n-1].expectKey = false
+				continue
+			}
+		}
+		if n := len(stack); n > 0 && stack[n-1] != nil {
+			stack[n-1].expectKey = true
+		}
+	}
 }
 
 func isJSONStructure(value []byte) bool {

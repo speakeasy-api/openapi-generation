@@ -105,6 +105,12 @@ func TestRedactSensitiveBodies(t *testing.T) {
 	assert.Contains(t, errorBody, "visible-message")
 	assert.NotContains(t, errorBody, "secret-error", "error response schemas are masked")
 
+	for _, body := range []string{`{"nested": {"secret": "secret-duplicate"}, "nested": null}`, `{"tokens": ["secret-duplicate"], "tokens": null}`} {
+		assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, "application/json", []byte(body))), "bodies repeating a key are masked as a whole")
+	}
+	assert.JSONEq(t, `{"name": "visible-name", "nested": {"label": "a", "secret": "`+redact.Mask+`"}, "items": [{"label": "a"}, {"label": "a"}]}`,
+		string(redact.ResponseBody(ctx, "application/json", []byte(`{"name": "visible-name", "nested": {"label": "a", "secret": "secret-nested"}, "items": [{"label": "a"}, {"label": "a"}]}`))), "keys repeated across objects are not duplicates")
+
 	streamCtx := redact.WithOperation(context.Background(), "sensitiveStreamRedaction")
 	assert.Equal(t, redact.Mask, string(redact.ResponseBody(streamCtx, "application/jsonl", []byte(`{"label": "visible", "secret": "secret-stream"}`))), "streams holding sensitive values are masked as a whole")
 }
@@ -154,6 +160,7 @@ func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
 		}
 		assert.Equal(t, "4242", redactField("secretOrCount", "4242"), "%s: a plain integer member stays readable", name)
 		assert.Equal(t, "true", redactField("secretOrFlag", "true"), "%s: a plain boolean member stays readable", name)
+		assert.Equal(t, "visible-name", redactField("name", "visible-name"), "%s: fields without sensitive values stay readable", name)
 		assert.Equal(t, "visible-item-name", redactField("secretsOrNames", "visible-item-name"), "%s: a repeated item matching a plain string member stays readable", name)
 		assert.NotContains(t, redactField("secretsOrNames", `{"label": "visible-label", "secret": "secret-item"}`), "secret-item", "%s: a repeated object item is masked", name)
 	}
@@ -208,6 +215,8 @@ func TestRedactFormRequestBody(t *testing.T) {
 	assert.Equal(t, plain, redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", plain), "forms without sensitive values are returned unchanged")
 	assert.Equal(t, "name=visible-name&metadata="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&metadata=secret-text"))), "unparseable JSON-encoded fields are masked")
 	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
+	assert.Equal(t, "tokens="+redact.Mask+"&tokens="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("tokens=null&tokens=secret-tokens-0"))), "every repeated sensitive item is masked")
+	assert.Equal(t, redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte(`{"token": "secret-json", "name": "visible-name"}`))), "a JSON body labelled as a form is masked as a whole")
 	assert.Equal(t, "token%5B%5D=visible-bracketed&token="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("token%5B%5D=visible-bracketed&token=secret-token"))), "a plain property whose name ends in brackets is not mistaken for a sensitive one")
 
 	responseCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
@@ -264,6 +273,13 @@ func TestRedactMultipartRequestBody(t *testing.T) {
 	assert.NotContains(t, masked, "Content-Transfer-Encoding", "masked parts are not transfer encoded")
 	assert.NotContains(t, masked, "Content-Length", "masked parts do not keep the original length")
 	assert.Contains(t, masked, redact.Mask)
+
+	payloadCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+	encodedText := "--b\r\nContent-Disposition: form-data; name=\"secretOrText\"\r\nContent-Transfer-Encoding: base64\r\n\r\neyJzZWNyZXQiOiJzZWNyZXQtZW5jb2RlZCJ9\r\n--b--\r\n"
+	masked = string(redact.RequestBody(payloadCtx, "multipart/form-data; boundary=b", []byte(encodedText)))
+	assert.NotContains(t, masked, "eyJzZWNyZXQiOiJzZWNyZXQtZW5jb2RlZCJ9", "encoded parts of a field with sensitive values are masked")
+	plainEncoded := "--b\r\nContent-Disposition: form-data; name=\"name\"\r\nContent-Transfer-Encoding: base64\r\n\r\ndmlzaWJsZS1uYW1l\r\n--b--\r\n"
+	assert.Equal(t, plainEncoded, string(redact.RequestBody(payloadCtx, "multipart/form-data; boundary=b", []byte(plainEncoded))), "encoded parts without sensitive values are kept")
 }
 
 func TestRedactSplitRequestBodies(t *testing.T) {
