@@ -644,13 +644,16 @@ function buildTypeScriptPublicExportFile():
     return node;
   };
 
-  const addAlias = (
+  const hasMember = (
     members: TypeScriptPublicExportMember[],
+    aliasName: string,
+  ): boolean => members.some((member) => member.Name === aliasName);
+
+  const addIntermediate = (
     aliasName: string,
     path: string,
     sourceName: string,
-    canInterface = false,
-  ) => {
+  ): string => {
     const intermediate = uniquePublicExportAlias(
       `${aliasName}$`,
       usedIdentifiers,
@@ -659,15 +662,49 @@ function buildTypeScriptPublicExportFile():
       Name: intermediate,
       Target: importBinding(path, sourceName),
     });
+    return intermediate;
+  };
+
+  const addMember = (
+    members: TypeScriptPublicExportMember[],
+    aliasName: string,
+    intermediate: string,
+    canInterface: boolean,
+    registerFlat: boolean,
+  ) => {
     members.push({
       Name: aliasName,
       Intermediate: intermediate,
       CanInterface: canInterface,
     });
-    if (!flatByName.has(aliasName)) {
+    if (registerFlat && !flatByName.has(aliasName)) {
       flatByName.set(aliasName, intermediate);
     }
   };
+
+  const addAlias = (
+    members: TypeScriptPublicExportMember[],
+    aliasName: string,
+    path: string,
+    sourceName: string,
+    canInterface = false,
+    registerFlat = true,
+  ) => {
+    addMember(
+      members,
+      aliasName,
+      addIntermediate(aliasName, path, sourceName),
+      canInterface,
+      registerFlat,
+    );
+  };
+
+  const deferredSSEExports: {
+    node: TypeScriptPublicExportNamespaceBuilder;
+    aliasName: string;
+    paramsPath: string;
+    paramsState: TSMethodParamsState;
+  }[] = [];
 
   for (const { group, keys, parts } of groups) {
     const node = nodeForParts(keys, parts);
@@ -692,32 +729,8 @@ function buildTypeScriptPublicExportFile():
       if (paramsState) {
         const paramsPath = `${importPrefix}${getOperationsLocation()}/method-params.js`;
         addAlias(node.Members, aliasName, paramsPath, paramsState.ParamsName);
-        if (paramsState.SSE && paramsState.BodyVariants.length === 0) {
-          const variantNode = namespaceNode(node, aliasName, aliasName);
-          addAlias(
-            node.Members,
-            `${aliasName}NonStreaming`,
-            paramsPath,
-            `${paramsState.ParamsName}NonStreaming`,
-          );
-          addAlias(
-            variantNode.Members,
-            `${aliasName}NonStreaming`,
-            paramsPath,
-            `${paramsState.ParamsName}NonStreaming`,
-          );
-          addAlias(
-            node.Members,
-            `${aliasName}Streaming`,
-            paramsPath,
-            `${paramsState.ParamsName}Streaming`,
-          );
-          addAlias(
-            variantNode.Members,
-            `${aliasName}Streaming`,
-            paramsPath,
-            `${paramsState.ParamsName}Streaming`,
-          );
+        if (paramsState.SSE) {
+          deferredSSEExports.push({ node, aliasName, paramsPath, paramsState });
         }
         continue;
       }
@@ -731,6 +744,47 @@ function buildTypeScriptPublicExportFile():
         sanitizeClassName(target.Name),
         publicExportTargetCanMergeNamespace(target),
       );
+    }
+  }
+
+  // Deferred so explicit exports keep their names; per-variant params stay
+  // nested-only so they never claim a flat alias, and are added first so they
+  // keep their names when an export alias equals a variant's params name.
+  const sseSuffixes = ["NonStreaming", "Streaming"];
+  for (const {
+    node,
+    aliasName,
+    paramsPath,
+    paramsState,
+  } of deferredSSEExports) {
+    const variantNode =
+      node.Children.get(aliasName) ??
+      node.ChildrenByKey.get(aliasName) ??
+      namespaceNode(node, aliasName, aliasName);
+    for (const variant of paramsState.BodyVariants) {
+      for (const suffix of ["", ...sseSuffixes]) {
+        const name = `${variant.ParamsName}${suffix}`;
+        if (!hasMember(variantNode.Members, name)) {
+          addAlias(variantNode.Members, name, paramsPath, name, false, false);
+        }
+      }
+    }
+    for (const suffix of sseSuffixes) {
+      const name = `${aliasName}${suffix}`;
+      const targets = [node.Members, variantNode.Members].filter(
+        (members) => !hasMember(members, name),
+      );
+      if (targets.length === 0) {
+        continue;
+      }
+      const intermediate = addIntermediate(
+        name,
+        paramsPath,
+        `${paramsState.ParamsName}${suffix}`,
+      );
+      for (const members of targets) {
+        addMember(members, name, intermediate, false, members === node.Members);
+      }
     }
   }
 
