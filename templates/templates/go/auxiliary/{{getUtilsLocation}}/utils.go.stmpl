@@ -20,6 +20,9 @@ import (
 	"github.com/ericlagergren/decimal"
 	{{end}}
 	"{{getRootModulePath}}/{{getNullableLocation}}"
+	{{- if hasAnyRedactGraphs}}
+	"{{getRootModulePath}}/{{getRedactLocation}}"
+	{{- end}}
 )
 
 const (
@@ -27,6 +30,14 @@ const (
 	headerParamTagKey = "header"
 	pathParamTagKey   = "pathParam"
 )
+
+{{- if hasAnyRedactGraphs}}
+// WithOperation marks requests built from ctx as belonging to operationID, so
+// that transports can mask the operation's sensitive values when logging.
+func WithOperation(ctx context.Context, operationID string) context.Context {
+	return redact.WithOperation(ctx, operationID)
+}
+{{end}}
 
 var (
 	paramRegex                       = regexp.MustCompile(`({.*?})`)

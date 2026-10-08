@@ -1,0 +1,450 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/sensitiveBodyRedaction:
+    post:
+      operationId: sensitiveBodyRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: redaction
+      description: >-
+        Exercises locating values marked sensitive (x-speakeasy-param-sensitive
+        or format password) in request and response bodies by schema path, so
+        that they can be masked when bodies are logged. Sensitive values appear
+        at the top level, in nested objects, in array items, as array items, as
+        additionalProperties values beside a declared plain property, in union
+        variants, through a recursive schema, and as a whole object. An
+        unmarked property sharing a name with a sensitive one stays readable.
+        The error response schema also holds a sensitive value.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyPayload"
+      responses:
+        "200":
+          description: The payload, including newly returned sensitive values.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyPayload"
+        "400":
+          description: An error whose body holds a sensitive value.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyError"
+  /anything/sensitiveStreamRedaction:
+    get:
+      operationId: sensitiveStreamRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: streamRedaction
+      description: >-
+        Exercises a streamed JSON Lines response whose items hold a value marked
+        sensitive. A stream body is not parsed item by item, so it is masked as
+        a whole when logged.
+      responses:
+        "200":
+          description: A stream of items holding sensitive values.
+          content:
+            application/jsonl:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyNested"
+  /anything/sensitiveFormRedaction:
+    post:
+      operationId: sensitiveFormRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: formRedaction
+      description: >-
+        Exercises locating values marked sensitive in a form-urlencoded request
+        body by field name: a sensitive field, an array of sensitive values
+        sent as repeated fields, an object-valued field holding a sensitive
+        property, and a JSON-encoded field holding a sensitive property. Plain
+        fields stay readable.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyForm"
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        "200":
+          description: OK
+  /anything/sensitiveMultipartRedaction:
+    post:
+      operationId: sensitiveMultipartRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: multipartRedaction
+      description: >-
+        Exercises locating values marked sensitive in a multipart request body
+        by part name: a sensitive part, an array of sensitive values sent as
+        repeated parts, and a JSON-encoded part holding a sensitive property.
+        Plain parts and file parts stay readable.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyMultipart"
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        "200":
+          description: OK
+  /anything/sensitiveSplitRedaction:
+    post:
+      operationId: sensitiveSplitRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: splitRedaction
+      description: >-
+        Exercises a request body with distinct schemas per content type, each
+        holding a different sensitive property, so that the body sent in each
+        content type is masked with its own schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, jsonSecret]
+              properties:
+                name:
+                  type: string
+                jsonSecret:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name, formSecret]
+              properties:
+                name:
+                  type: string
+                formSecret:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+      responses:
+        "200":
+          description: OK
+  /anything/sensitiveBracketedFormRedaction:
+    post:
+      operationId: sensitiveBracketedFormRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: bracketedFormRedaction
+      x-speakeasy-exclude-test-sdk: [cli, csharp, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      description: >-
+        Exercises form field names ending in brackets: a sensitive property
+        whose wire name ends in brackets, a plain bracketed property beside a
+        sensitive one of the same base name, and an array of sensitive values
+        sent as repeated fields with a bracket suffix. A response schema
+        declaring a plain bracketed property must not hide the sensitive array
+        of another response schema.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyBracketedForm"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyBracketedTokens"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SensitiveBodyBracketedError"
+  /anything/sensitiveBracketedMultipartRedaction:
+    post:
+      operationId: sensitiveBracketedMultipartRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: bracketedMultipartRedaction
+      x-speakeasy-exclude-test-sdk: [cli, csharp, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      description: >-
+        Exercises a multipart part whose name ends in brackets and holds a
+        sensitive value, beside a plain part.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyBracketedMultipart"
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    SensitiveBodyPayload:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        password:
+          type: string
+          format: password
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        nested:
+          $ref: "#/components/schemas/SensitiveBodyNested"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensitiveBodyNested"
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+        labels:
+          $ref: "#/components/schemas/SensitiveBodyLabels"
+        credential:
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyAPIKeyCredential"
+            - $ref: "#/components/schemas/SensitiveBodyPasswordCredential"
+        tree:
+          $ref: "#/components/schemas/SensitiveBodyTree"
+        whole:
+          type: object
+          x-speakeasy-param-sensitive: true
+          properties:
+            value:
+              type: string
+        unrelated:
+          $ref: "#/components/schemas/SensitiveBodyUnrelated"
+        tokensOrLabel:
+          description: Union of an array of sensitive values and an object without sensitive values; an object value stays readable.
+          oneOf:
+            - type: array
+              items:
+                type: string
+                x-speakeasy-param-sensitive: true
+            - $ref: "#/components/schemas/SensitiveBodyPlainLabel"
+        secretOrLabels:
+          description: Union of an object with a sensitive value and an array without sensitive values; an array value stays readable.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: array
+              items:
+                type: string
+        secretOrText:
+          description: Union of an object with a sensitive value and a string without sensitive values; a string value stays readable.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: string
+        secretOrCount:
+          description: Union of an object with a sensitive value and an integer; an integer value stays readable, text does not.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: integer
+        secretOrFlag:
+          description: Union of an object with a sensitive value and a boolean; a boolean value stays readable, text does not.
+          oneOf:
+            - $ref: "#/components/schemas/SensitiveBodyNested"
+            - type: boolean
+        secretsOrNames:
+          description: Array of a union of an object with a sensitive value and a string; string items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: string
+        secretsOrCounts:
+          description: Array of a union of an object with a sensitive value and an integer; integer items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: integer
+        secretsOrFlags:
+          description: Array of a union of an object with a sensitive value and a boolean; boolean items sent as repeated fields stay readable.
+          type: array
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/SensitiveBodyNested"
+              - type: boolean
+    SensitiveBodyPlainLabel:
+      type: object
+      properties:
+        label:
+          type: string
+    SensitiveBodyError:
+      type: object
+      properties:
+        message:
+          type: string
+        secret:
+          type: string
+          x-speakeasy-param-sensitive: true
+    SensitiveBodyNested:
+      type: object
+      properties:
+        label:
+          type: string
+        secret:
+          type: string
+          x-speakeasy-param-sensitive: true
+    SensitiveBodyLabels:
+      type: object
+      properties:
+        visible:
+          type: string
+      additionalProperties:
+        type: string
+        x-speakeasy-param-sensitive: true
+    SensitiveBodyAPIKeyCredential:
+      type: object
+      required:
+        - kind
+        - key
+      properties:
+        kind:
+          type: string
+          const: api_key
+        key:
+          type: string
+          x-speakeasy-param-sensitive: true
+    SensitiveBodyPasswordCredential:
+      type: object
+      required:
+        - kind
+        - password
+      properties:
+        kind:
+          type: string
+          const: password
+        password:
+          type: string
+          format: password
+    SensitiveBodyTree:
+      type: object
+      properties:
+        label:
+          type: string
+        secret:
+          type: string
+          x-speakeasy-param-sensitive: true
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensitiveBodyTree"
+    SensitiveBodyUnrelated:
+      type: object
+      properties:
+        secret:
+          type: string
+    SensitiveBodyForm:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+        nested:
+          $ref: "#/components/schemas/SensitiveBodyFormNested"
+        metadata:
+          $ref: "#/components/schemas/SensitiveBodyNested"
+    SensitiveBodyFormNested:
+      type: object
+      properties:
+        visibleProperty:
+          type: string
+        secretProperty:
+          type: string
+          x-speakeasy-param-sensitive: true
+    SensitiveBodyMultipart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+        metadata:
+          $ref: "#/components/schemas/SensitiveBodyNested"
+        file:
+          type: string
+          format: binary
+    SensitiveBodyBracketedForm:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        token[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, beside a sensitive token property.
+          type: string
+          x-speakeasy-name-override: bracketedToken
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+    SensitiveBodyBracketedTokens:
+      type: object
+      properties:
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+    SensitiveBodyBracketedError:
+      type: object
+      properties:
+        tokens[]:
+          description: Property whose wire name ends in brackets, holding nothing sensitive, while another response schema has a sensitive tokens array.
+          type: string
+          x-speakeasy-name-override: bracketedTokens
+    SensitiveBodyBracketedMultipart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true

@@ -35,3 +35,4 @@ require("includes/polling.ts");
 require("includes/options.ts");
 require("includes/open-unions.ts");
 require("includes/unions.ts");
+require("includes/redact.ts");

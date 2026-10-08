@@ -2096,6 +2096,49 @@ declare global {
     GetID(): string;
     GetAcceptTypes(): string[];
     GetExampleSeed(): number;
+    /**
+     * Returns the locations of values marked sensitive in the request body,
+     * or null when it holds none.
+     */
+    SensitiveRequestBodyGraph(): SensitiveBodyGraph | null;
+    /**
+     * Returns the locations of values marked sensitive in all response
+     * bodies, including errors, or null when they hold none.
+     */
+    SensitiveResponseBodyGraph(): SensitiveBodyGraph | null;
+    HasSensitiveBodies(): boolean;
+  };
+
+  /**
+   * Locations of values marked sensitive in an operation's bodies. Nodes[0]
+   * is a sentinel for "nothing sensitive below here"; a reference of 0 can be
+   * skipped. Roots are the body schemas.
+   */
+  type SensitiveBodyGraph = {
+    Nodes: SensitiveBodyNode[];
+    Roots: number[];
+  };
+
+  type SensitiveBodyNode = {
+    /** Masks the whole value. */
+    Sensitive: boolean;
+    /**
+     * Declared object properties by wire name, sorted by name, including those
+     * holding nothing sensitive (Node 0). Unlisted properties use Values.
+     */
+    Fields?: { Name: string; Node: number }[];
+    /** Schema of array items. */
+    Item: number;
+    /** Schema of map values and additional properties. */
+    Values: number;
+    /** Union members. */
+    Variants?: number[];
+    /** Union members of each JSON type that hold nothing sensitive. */
+    PlainObject: boolean;
+    PlainArray: boolean;
+    PlainString: boolean;
+    PlainNumber: boolean;
+    PlainBoolean: boolean;
   };
 
   type OpenAPILocation = {

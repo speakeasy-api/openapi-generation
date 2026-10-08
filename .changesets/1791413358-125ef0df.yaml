@@ -1,0 +1,12 @@
+id: 1791413358-125ef0df
+features:
+    - core
+targets:
+    - cli
+    - go
+    - terraform
+type: feat
+bump: minor
+description: mask sensitive request and response body values in HTTP logs and API error messages
+author: ThomasRooney
+date: "2026-10-07"

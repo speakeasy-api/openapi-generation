@@ -171,7 +171,8 @@ func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{$methodName}}(ctx cont
         {{- end}}
     }
 
-    req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
+    {{if hasRedactGraphs $op}}{{addImport "utils"}}ctx = utils.WithOperation(ctx, "{{$op.ID}}")
+    {{end}}req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
 	if err != nil {
         {{templateErrorReturn $op "fmt.Errorf(\"error creating request: %w\", err)"}}
 	}
@@ -780,7 +781,8 @@ func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{$methodName}}(ctx cont
         {{- end}}
     }
 
-    req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
+    {{if hasRedactGraphs $op}}{{addImport "utils"}}ctx = utils.WithOperation(ctx, "{{$op.ID}}")
+    {{end}}req, err := http.NewRequestWithContext(ctx, "{{upper $op.Method}}", opURL, {{if and $op.Request $op.Request.RequestBody}}bodyReader{{else}}nil{{end}})
 	if err != nil {
         {{templateErrorReturn $op "fmt.Errorf(\"error creating request: %w\", err)"}}
 	}
