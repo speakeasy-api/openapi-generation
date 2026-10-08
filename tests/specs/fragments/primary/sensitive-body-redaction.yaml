@@ -291,6 +291,11 @@ components:
       required:
         - name
       properties:
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true
         name:
           type: string
         token:
@@ -318,6 +323,11 @@ components:
       required:
         - name
       properties:
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true
         name:
           type: string
         token:

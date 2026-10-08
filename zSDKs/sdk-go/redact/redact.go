@@ -168,7 +168,7 @@ func (g *graph) redactForm(body []byte, roots []int) ([]byte, bool, bool) {
 		if err != nil {
 			return nil, false, false
 		}
-		masked, fieldChanged := g.redactValue([]byte(value), g.child(roots, strings.TrimSuffix(key, "[]")))
+		masked, fieldChanged := g.redactValue([]byte(value), g.field(roots, key))
 		if !fieldChanged {
 			continue
 		}
@@ -210,7 +210,7 @@ func (g *graph) redactMultipart(body []byte, boundary string, roots []int) ([]by
 		if err != nil {
 			return nil, false, false
 		}
-		masked, partChanged := g.redactValue(data, g.child(roots, strings.TrimSuffix(part.FormName(), "[]")))
+		masked, partChanged := g.redactValue(data, g.field(roots, part.FormName()))
 		changed = changed || partChanged
 		header := part.Header
 		if partChanged {
@@ -391,6 +391,26 @@ func (g *graph) child(roots []int, name string) []int {
 		}
 	}
 	return children
+}
+
+// field returns the schemas of a form field or multipart part of roots. A
+// name ending in [] that no schema declares as such names an array sent as
+// repeated fields.
+func (g *graph) field(roots []int, name string) []int {
+	if strings.HasSuffix(name, "[]") && !g.declares(roots, name) {
+		name = strings.TrimSuffix(name, "[]")
+	}
+	return g.child(roots, name)
+}
+
+// declares reports whether any of roots declares the property name.
+func (g *graph) declares(roots []int, name string) bool {
+	for _, id := range g.expand(roots) {
+		if _, ok := g.nodes[id].fields[name]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 // items returns the array item schemas of roots.
