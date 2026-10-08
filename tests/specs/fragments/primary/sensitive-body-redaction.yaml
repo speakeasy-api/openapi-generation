@@ -57,6 +57,86 @@ paths:
             application/jsonl:
               schema:
                 $ref: "#/components/schemas/SensitiveBodyNested"
+  /anything/sensitiveFormRedaction:
+    post:
+      operationId: sensitiveFormRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: formRedaction
+      description: >-
+        Exercises locating values marked sensitive in a form-urlencoded request
+        body by field name: a sensitive field, an array of sensitive values
+        sent as repeated fields, an object-valued field holding a sensitive
+        property, and a JSON-encoded field holding a sensitive property. Plain
+        fields stay readable.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyForm"
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        "200":
+          description: OK
+  /anything/sensitiveMultipartRedaction:
+    post:
+      operationId: sensitiveMultipartRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: multipartRedaction
+      description: >-
+        Exercises locating values marked sensitive in a multipart request body
+        by part name: a sensitive part, an array of sensitive values sent as
+        repeated parts, and a JSON-encoded part holding a sensitive property.
+        Plain parts and file parts stay readable.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/SensitiveBodyMultipart"
+            encoding:
+              metadata:
+                contentType: application/json
+      responses:
+        "200":
+          description: OK
+  /anything/sensitiveSplitRedaction:
+    post:
+      operationId: sensitiveSplitRedaction
+      x-speakeasy-group: sensitiveBodies
+      x-speakeasy-name-override: splitRedaction
+      description: >-
+        Exercises a request body with distinct schemas per content type, each
+        holding a different sensitive property, so that the body sent in each
+        content type is masked with its own schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, jsonSecret]
+              properties:
+                name:
+                  type: string
+                jsonSecret:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name, formSecret]
+              properties:
+                name:
+                  type: string
+                formSecret:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+      responses:
+        "200":
+          description: OK
 components:
   schemas:
     SensitiveBodyPayload:
@@ -164,3 +244,50 @@ components:
       properties:
         secret:
           type: string
+    SensitiveBodyForm:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+        nested:
+          $ref: "#/components/schemas/SensitiveBodyFormNested"
+        metadata:
+          $ref: "#/components/schemas/SensitiveBodyNested"
+    SensitiveBodyFormNested:
+      type: object
+      properties:
+        visibleProperty:
+          type: string
+        secretProperty:
+          type: string
+          x-speakeasy-param-sensitive: true
+    SensitiveBodyMultipart:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        token:
+          type: string
+          x-speakeasy-param-sensitive: true
+        tokens:
+          type: array
+          items:
+            type: string
+            x-speakeasy-param-sensitive: true
+        metadata:
+          $ref: "#/components/schemas/SensitiveBodyNested"
+        file:
+          type: string
+          format: binary

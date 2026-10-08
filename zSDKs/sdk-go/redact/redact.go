@@ -9,8 +9,12 @@
 // back from the request, or from a response's Request, to select the schema
 // graph used for masking:
 //
-//	body = redact.RequestBody(req.Context(), body)
-//	body = redact.ResponseBody(res.Request.Context(), body)
+//	body = redact.RequestBody(req.Context(), req.Header.Get("Content-Type"), body)
+//	body = redact.ResponseBody(res.Request.Context(), res.Header.Get("Content-Type"), body)
+//
+// JSON, application/x-www-form-urlencoded and multipart bodies are masked
+// value by value. Other bodies of an operation with sensitive values are
+// masked as a whole.
 package redact
 
 import (
@@ -18,6 +22,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime"
+	"mime/multipart"
+	"net/url"
+	"strings"
 )
 
 // Mask replaces each sensitive value.
@@ -42,16 +50,18 @@ func Operation(ctx context.Context) string {
 }
 
 // RequestBody masks the sensitive values of the request body of the
-// operation carried by ctx. Bodies of other operations are returned as is.
-func RequestBody(ctx context.Context, body []byte) []byte {
-	return operations[Operation(ctx)].request.redact(body)
+// operation carried by ctx, serialized as contentType. Bodies of other
+// operations are returned as is.
+func RequestBody(ctx context.Context, contentType string, body []byte) []byte {
+	return operations[Operation(ctx)].request.redact(contentType, body)
 }
 
 // ResponseBody masks the sensitive values of a response body of the
-// operation carried by ctx, matching every response schema of the operation.
-// Bodies of other operations are returned as is.
-func ResponseBody(ctx context.Context, body []byte) []byte {
-	return operations[Operation(ctx)].response.redact(body)
+// operation carried by ctx, serialized as contentType, matching every
+// response schema of the operation. Bodies of other operations are returned
+// as is.
+func ResponseBody(ctx context.Context, contentType string, body []byte) []byte {
+	return operations[Operation(ctx)].response.redact(contentType, body)
 }
 
 // A graph describes where sensitive values sit in a body. Node 0 is a
@@ -72,36 +82,149 @@ type node struct {
 }
 
 // redact returns body unchanged when it has nothing to mask. A body that
-// cannot be parsed as JSON is masked as a whole.
-func (g *graph) redact(body []byte) []byte {
+// cannot be parsed is masked as a whole.
+func (g *graph) redact(contentType string, body []byte) []byte {
 	if g == nil || len(body) == 0 {
 		return body
 	}
-	for _, id := range g.expand(g.roots) {
-		if g.nodes[id].sensitive {
-			return []byte(Mask)
-		}
+	if g.sensitive(g.roots) {
+		return []byte(Mask)
 	}
+	mediaType, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		mediaType = strings.ToLower(strings.TrimSpace(strings.SplitN(contentType, ";", 2)[0]))
+	}
+	var masked []byte
+	ok := false
+	switch {
+	case mediaType == "application/x-www-form-urlencoded":
+		masked, _, ok = g.redactForm(body, g.roots)
+	case strings.HasPrefix(mediaType, "multipart/"):
+		masked, _, ok = g.redactMultipart(body, params["boundary"], g.roots)
+	case mediaType == "" || mediaType == "application/json" || mediaType == "text/json" || strings.HasSuffix(mediaType, "+json"):
+		masked, _, ok = g.redactJSON(body, g.roots)
+	}
+	if !ok {
+		return []byte(Mask)
+	}
+	return masked
+}
+
+func (g *graph) redactJSON(body []byte, roots []int) ([]byte, bool, bool) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var value any
 	if err := dec.Decode(&value); err != nil {
-		return []byte(Mask)
+		return nil, false, false
 	}
 	if _, err := dec.Token(); err != io.EOF {
-		return []byte(Mask)
+		return nil, false, false
 	}
-	masked, changed := g.mask(value, g.roots, 0)
+	masked, changed := g.mask(value, roots, 0)
 	if !changed {
-		return body
+		return body, false, true
 	}
 	var out bytes.Buffer
 	enc := json.NewEncoder(&out)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(masked); err != nil {
-		return []byte(Mask)
+		return nil, false, false
 	}
-	return bytes.TrimSuffix(out.Bytes(), []byte("\n"))
+	return bytes.TrimSuffix(out.Bytes(), []byte("\n")), true, true
+}
+
+// redactForm masks the fields of a form body. A field holding a sensitive
+// value or array of values is masked, and a JSON-encoded field is masked
+// within.
+func (g *graph) redactForm(body []byte, roots []int) ([]byte, bool, bool) {
+	pairs := strings.Split(string(body), "&")
+	changed := false
+	for i, pair := range pairs {
+		rawKey, rawValue, _ := strings.Cut(pair, "=")
+		key, err := url.QueryUnescape(rawKey)
+		if err != nil {
+			return nil, false, false
+		}
+		value, err := url.QueryUnescape(rawValue)
+		if err != nil {
+			return nil, false, false
+		}
+		masked, fieldChanged := g.redactValue([]byte(value), g.child(roots, strings.TrimSuffix(key, "[]")))
+		if !fieldChanged {
+			continue
+		}
+		changed = true
+		if string(masked) == Mask {
+			pairs[i] = rawKey + "=" + Mask
+		} else {
+			pairs[i] = rawKey + "=" + url.QueryEscape(string(masked))
+		}
+	}
+	if !changed {
+		return body, false, true
+	}
+	return []byte(strings.Join(pairs, "&")), true, true
+}
+
+// redactMultipart masks the parts of a multipart body by part name, keeping
+// the boundary and the part headers.
+func (g *graph) redactMultipart(body []byte, boundary string, roots []int) ([]byte, bool, bool) {
+	if boundary == "" {
+		return nil, false, false
+	}
+	reader := multipart.NewReader(bytes.NewReader(body), boundary)
+	var out bytes.Buffer
+	writer := multipart.NewWriter(&out)
+	if err := writer.SetBoundary(boundary); err != nil {
+		return nil, false, false
+	}
+	changed := false
+	for {
+		part, err := reader.NextRawPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, false, false
+		}
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return nil, false, false
+		}
+		masked, partChanged := g.redactValue(data, g.child(roots, strings.TrimSuffix(part.FormName(), "[]")))
+		changed = changed || partChanged
+		partWriter, err := writer.CreatePart(part.Header)
+		if err != nil {
+			return nil, false, false
+		}
+		if _, err := partWriter.Write(masked); err != nil {
+			return nil, false, false
+		}
+	}
+	if !changed {
+		return body, false, true
+	}
+	if err := writer.Close(); err != nil {
+		return nil, false, false
+	}
+	return out.Bytes(), true, true
+}
+
+// redactValue masks a form field or multipart part. A value holding a
+// sensitive value, or one that cannot be parsed as JSON while holding one, is
+// masked as a whole.
+func (g *graph) redactValue(value []byte, roots []int) ([]byte, bool) {
+	if len(g.expand(roots)) == 0 {
+		return value, false
+	}
+	if g.sensitive(roots) || g.sensitive(g.items(roots)) {
+		return []byte(Mask), true
+	}
+	masked, changed, ok := g.redactJSON(value, roots)
+	if !ok {
+		return []byte(Mask), true
+	}
+	return masked, changed
 }
 
 func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
@@ -109,10 +232,8 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 	if len(roots) == 0 {
 		return value, false
 	}
-	for _, id := range roots {
-		if g.nodes[id].sensitive {
-			return Mask, true
-		}
+	if g.sensitive(roots) {
+		return Mask, true
 	}
 	if depth >= maxDepth {
 		return Mask, true
@@ -121,29 +242,13 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 	switch v := value.(type) {
 	case map[string]any:
 		for key, child := range v {
-			var childRoots []int
-			for _, id := range roots {
-				n := g.nodes[id]
-				childID, declared := n.fields[key]
-				if !declared {
-					childID = n.values
-				}
-				if childID != 0 {
-					childRoots = append(childRoots, childID)
-				}
-			}
-			if masked, ok := g.mask(child, childRoots, depth+1); ok {
+			if masked, ok := g.mask(child, g.child(roots, key), depth+1); ok {
 				v[key] = masked
 				changed = true
 			}
 		}
 	case []any:
-		var items []int
-		for _, id := range roots {
-			if item := g.nodes[id].item; item != 0 {
-				items = append(items, item)
-			}
-		}
+		items := g.items(roots)
 		for i, child := range v {
 			if masked, ok := g.mask(child, items, depth+1); ok {
 				v[i] = masked
@@ -152,6 +257,44 @@ func (g *graph) mask(value any, roots []int, depth int) (any, bool) {
 		}
 	}
 	return value, changed
+}
+
+// sensitive reports whether any of roots, or their union variants, is
+// sensitive as a whole.
+func (g *graph) sensitive(roots []int) bool {
+	for _, id := range g.expand(roots) {
+		if g.nodes[id].sensitive {
+			return true
+		}
+	}
+	return false
+}
+
+// child returns the schemas of the property name of roots.
+func (g *graph) child(roots []int, name string) []int {
+	var children []int
+	for _, id := range g.expand(roots) {
+		n := g.nodes[id]
+		childID, declared := n.fields[name]
+		if !declared {
+			childID = n.values
+		}
+		if childID != 0 {
+			children = append(children, childID)
+		}
+	}
+	return children
+}
+
+// items returns the array item schemas of roots.
+func (g *graph) items(roots []int) []int {
+	var items []int
+	for _, id := range g.expand(roots) {
+		if item := g.nodes[id].item; item != 0 {
+			items = append(items, item)
+		}
+	}
+	return items
 }
 
 // expand adds the union variants of roots, since the variant a value matches

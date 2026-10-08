@@ -34,7 +34,7 @@ func (e *{{$errorName}}) Error() string {
 		{{- if hasAnyRedactGraphs}}
 		redacted := e.Body
 		if e.RawResponse != nil && e.RawResponse.Request != nil {
-			redacted = string(redact.ResponseBody(e.RawResponse.Request.Context(), []byte(e.Body)))
+			redacted = string(redact.ResponseBody(e.RawResponse.Request.Context(), e.RawResponse.Header.Get("Content-Type"), []byte(e.Body)))
 		}
 		body = fmt.Sprintf("\n%s", redacted)
 		{{- else}}

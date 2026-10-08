@@ -115,10 +115,14 @@ func newSensitiveBodyBuilder() *sensitiveBodyBuilder {
 	return &sensitiveBodyBuilder{nodes: []*sensitiveBodyBuildNode{{}}}
 }
 
-// addRoot walks a body schema. Custom types are walked once per root, by
-// identity and by registration ID (which also matches the truncated copies
-// that break recursive references), so that recursive schemas terminate.
+// addRoot walks a body schema along the edges given by TypeDef.Children.
+// Custom types are walked once per root, by identity and by registration ID
+// (which also matches the truncated copies that break recursive references),
+// so that recursive schemas terminate.
 func (b *sensitiveBodyBuilder) addRoot(t *TypeDef) {
+	if !containsSensitiveBodyType(t) {
+		return
+	}
 	walkedTypes := map[*TypeDef]int{}
 	walkedIDs := map[string]int{}
 	var walk func(t *TypeDef) int
@@ -147,40 +151,50 @@ func (b *sensitiveBodyBuilder) addRoot(t *TypeDef) {
 			node.sensitive = true
 			return id
 		}
-		switch t.Type {
-		case DataTypeClass, DataTypeError:
-			for _, field := range t.Fields {
-				if field.IsAdditionalProperties {
-					if field.Type != nil {
-						node.values = walk(field.Type.ItemType)
-					}
-					continue
+		for field, child := range t.Children {
+			switch {
+			case field == nil:
+				switch t.Type {
+				case DataTypeArray, DataTypeSet:
+					node.item = walk(child)
+				case DataTypeMap:
+					node.values = walk(child)
+				case DataTypeEventStream, DataTypeJsonL:
+					node.stream = true
+					node.item = walk(child)
+				case DataTypeUnion:
+					node.variants = append(node.variants, walk(child))
 				}
+			case t.Type != DataTypeClass && t.Type != DataTypeError:
+			case field.IsAdditionalProperties:
+				if child != nil {
+					node.values = walk(child.ItemType)
+				}
+			default:
 				name := field.OriginalName
 				if name == "" {
 					name = field.Name
 				}
-				child := 0
+				node.fields = append(node.fields, SensitiveBodyField{Name: name})
 				if field.Const == nil {
-					child = walk(field.Type)
+					node.fields[len(node.fields)-1].Node = walk(child)
 				}
-				node.fields = append(node.fields, SensitiveBodyField{Name: name, Node: child})
-			}
-		case DataTypeArray, DataTypeSet:
-			node.item = walk(t.ItemType)
-		case DataTypeMap:
-			node.values = walk(t.ItemType)
-		case DataTypeEventStream, DataTypeJsonL:
-			node.stream = true
-			node.item = walk(t.ItemType)
-		case DataTypeUnion:
-			for _, variant := range t.AssociatedTypes {
-				node.variants = append(node.variants, walk(variant))
 			}
 		}
 		return id
 	}
 	b.roots = append(b.roots, walk(t))
+}
+
+// containsSensitiveBodyType reports whether t or any type below it is marked
+// sensitive, so that schemas without sensitive values are not walked further.
+func containsSensitiveBodyType(t *TypeDef) bool {
+	for _, typ := range t.Walk() {
+		if isSensitiveBodyType(typ) {
+			return true
+		}
+	}
+	return false
 }
 
 // build prunes the nodes that cannot reach a sensitive value and renumbers

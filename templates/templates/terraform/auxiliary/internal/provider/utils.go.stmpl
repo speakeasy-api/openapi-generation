@@ -42,10 +42,12 @@ func debugResponse(response *http.Response) string {
 	if response.Body != nil {
 		if body, err := io.ReadAll(response.Body); err == nil {
 			response.Body = io.NopCloser(bytes.NewReader(body))
-			dumpRes = append(dumpRes, redact.ResponseBody(ctx, body)...)
+			dumpRes = append(dumpRes, redact.ResponseBody(ctx, response.Header.Get("Content-Type"), body)...)
 		}
 	}
-	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte { return redact.RequestBody(ctx, body) })
+	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte {
+		return redact.RequestBody(ctx, response.Request.Header.Get("Content-Type"), body)
+	})
 	return redactSensitiveValues(ctx, fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes)))
 }
 
@@ -224,7 +226,7 @@ func decomposeRequestForLogging(req *http.Request) (map[string]interface{}, erro
 	}
 
 	// Read the rest of the body content
-	fields[FieldHttpRequestBody] = string(redact.RequestBody(req.Context(), []byte(bodyFromRestOfRequestReader(reqReader))))
+	fields[FieldHttpRequestBody] = string(redact.RequestBody(req.Context(), req.Header.Get("Content-Type"), []byte(bodyFromRestOfRequestReader(reqReader))))
 	redactSensitiveFields(req, fields)
 	return fields, nil
 }
@@ -300,7 +302,7 @@ func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, er
 	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
 
 	if res.Request != nil {
-		resBody = redact.ResponseBody(res.Request.Context(), resBody)
+		resBody = redact.ResponseBody(res.Request.Context(), res.Header.Get("Content-Type"), resBody)
 	}
 	fields[FieldHttpResponseBody] = string(resBody)
 	redactSensitiveFields(res.Request, fields)

@@ -32,7 +32,7 @@ func (e *SDKError) Error() string {
 	if len(e.Body) > 0 {
 		redacted := e.Body
 		if e.RawResponse != nil && e.RawResponse.Request != nil {
-			redacted = string(redact.ResponseBody(e.RawResponse.Request.Context(), []byte(e.Body)))
+			redacted = string(redact.ResponseBody(e.RawResponse.Request.Context(), e.RawResponse.Header.Get("Content-Type"), []byte(e.Body)))
 		}
 		body = fmt.Sprintf("\n%s", redacted)
 	}
