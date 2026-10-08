@@ -413,12 +413,17 @@ function templatePrimaryAuthEnvVar(): string {
 }
 registerTemplateFunc("templatePrimaryAuthEnvVar", templatePrimaryAuthEnvVar);
 
-function templateCredentialEnvVars(): string {
+// Go string literals of every security field's env var, secret or not, so a
+// test can clear the whole credential environment.
+function templateSecurityFieldEnvVars(): string {
   return getCLISecurityFields()
     .map((f) => goStringLiteral(credentialEnvVarName(f)))
     .join(", ");
 }
-registerTemplateFunc("templateCredentialEnvVars", templateCredentialEnvVars);
+registerTemplateFunc(
+  "templateSecurityFieldEnvVars",
+  templateSecurityFieldEnvVars,
+);
 
 /**
  * One-line credentials hint for agent-mode authentication errors, derived

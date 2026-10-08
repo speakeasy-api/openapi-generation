@@ -198,9 +198,10 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 // A 403 answered to a request that carried no credential is an authentication
 // failure carrying the credential setup hint, whether the type came from the
 // HTTP status or from a declared rule, and a rule's own permission hints give
-// way. With a credential sent the 403 stays an authorization error with the
-// rule's hints, and a declared authorization type on any other status is
-// untouched either way.
+// way. With a credential sent, through the global security or an operation's
+// own security, the 403 stays an authorization error with the rule's hints,
+// and a declared authorization type on any other status is untouched either
+// way.
 func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
 	recordTest("cli-forbidden-without-credentials")
 	setupHint := {{goStringLiteral templateAuthErrorHint}}
@@ -211,11 +212,17 @@ func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
 		reason     string
 		ruleHint   string
 		overridden bool
+		// command runs an operation that sends its own credential through
+		// credentialFlag instead of the global one; empty runs the status
+		// probe operation with the global credential.
+		command        []string
+		credentialFlag string
 	}{
 		{name: "status fallback", status: http.StatusForbidden, overridden: true},
 		{name: "declared rule", status: http.StatusForbidden, body: taxonomyBody("unregistered caller", "ACCESS_DENIED"), reason: "ACCESS_DENIED", overridden: true},
 		{name: "declared rule with hints", status: http.StatusForbidden, body: taxonomyBody("access suspended", "ACCESS_DENIED", "WORKSPACE_SUSPENDED"), reason: "WORKSPACE_SUSPENDED", ruleHint: "Ask a workspace owner to restore access before retrying", overridden: true},
 		{name: "declared rule on another status", status: http.StatusBadRequest, body: taxonomyBody("scope missing", "REQUEST_REJECTED", "TOKEN_SCOPE_MISSING"), reason: "TOKEN_SCOPE_MISSING"},
+		{name: "operation credential", status: http.StatusForbidden, command: []string{"auth", "bearer-auth"}, credentialFlag: "--bearer-auth", overridden: true},
 	}
 	for _, response := range responses {
 		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -231,13 +238,19 @@ func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
 			}
 			t.Run(name, func(t *testing.T) {
 				h := NewCLITestHarness(t).WithEnv({{goStringLiteral noKeyringEnvVar}}, "true")
-				for _, envVar := range []string{ {{- templateCredentialEnvVars -}} } {
+				for _, envVar := range []string{ {{- templateSecurityFieldEnvVars -}} } {
 					h.WithEnv(envVar, "")
 				}
-				if credential != "" {
+				args := []string{"--agent-mode", "errors", "status-get-error", "--status-code", strconv.Itoa(response.status)}
+				if response.command != nil {
+					args = append([]string{"--agent-mode"}, response.command...)
+				}
+				if credential != "" && response.credentialFlag != "" {
+					args = append(args, response.credentialFlag, credential)
+				} else if credential != "" {
 					h.WithEnv({{goStringLiteral templatePrimaryAuthEnvVar}}, credential)
 				}
-				err := h.RunWithServer(s.URL, []string{"--agent-mode", "errors", "status-get-error", "--status-code", strconv.Itoa(response.status)})
+				err := h.RunWithServer(s.URL, args)
 				require.Error(t, err)
 				assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(err))
 				envelope := agentEnvelope(t, h.GetStderr())

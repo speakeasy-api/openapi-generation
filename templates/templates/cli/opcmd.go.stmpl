@@ -291,6 +291,12 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
     if err != nil {
         return err
     }
+    {{- if $hasSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    // The request carries the operation's own credential, not the global one
+    // NewClient recorded.
+    flagutil.RecordRequestSecurity(cmd, security)
+    {{- end}}
     {{- addImport "operations"}}
     sdkOpts, err := output.PrepareCallOpts(cmd)
     if err != nil {
@@ -431,6 +437,12 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
     if err != nil {
         return nil, err
     }
+    {{- if $hasSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    // The request carries the operation's own credential, not the global one
+    // NewClient recorded.
+    flagutil.RecordRequestSecurity(cmd, security)
+    {{- end}}
     {{- addImport "operations"}}
     sdkOpts, err := output.PrepareCallOpts(cmd)
     if err != nil {

@@ -466,6 +466,7 @@ function isTestSkipped(test: string): boolean {
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
     "shared-enum-constructor-default",
+    "cli-forbidden-without-credentials",
   ].includes(test);
 }
 

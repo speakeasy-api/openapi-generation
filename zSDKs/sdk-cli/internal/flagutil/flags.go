@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -90,8 +91,14 @@ func DidDryRunRequest(cmd *cobra.Command) bool {
 // missing-credential failure.
 const credentialsMissingAnnotation = "speakeasy_credentials_missing"
 
-func SetCredentialsMissing(cmd *cobra.Command, missing bool) {
-	setMarker(cmd, credentialsMissingAnnotation, missing)
+// RecordRequestSecurity notes whether the security struct the request will
+// carry is empty, which is what CredentialsMissing reports. The struct's shape
+// follows the document (option pointers, strings, scope slices), so the zero
+// check goes through reflect: a struct comparison is invalid once a scheme
+// carries a slice.
+func RecordRequestSecurity(cmd *cobra.Command, security any) {
+	value := reflect.ValueOf(security)
+	setMarker(cmd, credentialsMissingAnnotation, !value.IsValid() || value.IsZero())
 }
 
 func CredentialsMissing(cmd *cobra.Command) bool {
