@@ -2,9 +2,8 @@
 {{- addImport "github.com/spf13/cobra" -}}
 {{- addImport "internal/config" true -}}
 {{- addImport "internal/flagutil" true -}}
-{{- if templateHasSecuritySchemeGroups}}{{- addImport "internal/interactive" true -}}{{- end}}
+{{- if templateHasSecuritySchemeGroups}}{{- addImport "internal/interactive" true -}}{{- addImport "internal/forms" true -}}{{- end}}
 {{- addImport "fmt" -}}
-{{- addImport "internal/forms" true -}}
 package cli
 
 {{genImports}}
