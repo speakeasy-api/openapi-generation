@@ -177,7 +177,7 @@ func (g *graph) expand(roots []int) []int {
 }
 
 var operations = map[string]struct{ request, response *graph }{
-	"create-x-param-sensitive": {request: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_request": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}, response: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_response": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}},
+	"create-x-param-sensitive": {request: &graph{nodes: []node{{}, {fields: map[string]int{"string_request": 3, "string_request_and_response": 2}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}, response: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_response": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}},
 	"get-x-param-sensitive":    {response: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_response": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}},
-	"update-x-param-sensitive": {request: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_request": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}, response: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_response": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}},
+	"update-x-param-sensitive": {request: &graph{nodes: []node{{}, {fields: map[string]int{"string_request": 3, "string_request_and_response": 2}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}, response: &graph{nodes: []node{{}, {fields: map[string]int{"string_request_and_response": 2, "string_response": 3}}, {sensitive: true}, {sensitive: true}}, roots: []int{1}}},
 }
