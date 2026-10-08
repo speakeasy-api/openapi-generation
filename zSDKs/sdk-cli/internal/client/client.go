@@ -14,7 +14,6 @@ import (
 	"openapi/internal/sdk/models/components"
 	"openapi/internal/sdk/retry"
 	"openapi/internal/testclient"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -27,7 +26,7 @@ import (
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, error) {
 	var sdkOpts []sdk.SDKOption
 	globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
-	flagutil.SetCredentialsMissing(cmd, reflect.ValueOf(globalSecurity).IsZero())
+	flagutil.SetCredentialsMissing(cmd, globalSecurity == (components.Security{}))
 	sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
 	if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
 		if err := flagutil.ValidateServerURL(serverURL); err != nil {

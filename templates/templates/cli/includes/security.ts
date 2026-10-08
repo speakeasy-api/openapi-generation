@@ -393,26 +393,24 @@ function noKeyringEnvVar(): string {
 }
 registerTemplateFunc("noKeyringEnvVar", noKeyringEnvVar);
 
+function credentialEnvVarName(field: CLISecurityFieldInfo): string {
+  const prefix = context.Global.Config.EnvVarPrefix
+    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
+    : "";
+  return prefix ? `${prefix}_${field.envVarSuffix}` : field.envVarSuffix;
+}
+
 // Concrete credential variable for compact root setup guidance. Empty means
 // the document has no credential field and the Setup line must be omitted.
 function templatePrimaryAuthEnvVar(): string {
   const primary = primaryCLISecurityField(getCLISecurityFields());
-  if (!primary) return "";
-  const prefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
-  return prefix ? `${prefix}_${primary.envVarSuffix}` : primary.envVarSuffix;
+  return primary ? credentialEnvVarName(primary) : "";
 }
 registerTemplateFunc("templatePrimaryAuthEnvVar", templatePrimaryAuthEnvVar);
 
 function templateCredentialEnvVars(): string {
-  const prefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
   return getCLISecurityFields()
-    .map((f) =>
-      goStringLiteral(prefix ? `${prefix}_${f.envVarSuffix}` : f.envVarSuffix),
-    )
+    .map((f) => goStringLiteral(credentialEnvVarName(f)))
     .join(", ");
 }
 registerTemplateFunc("templateCredentialEnvVars", templateCredentialEnvVars);
