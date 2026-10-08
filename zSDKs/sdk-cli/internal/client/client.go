@@ -14,6 +14,7 @@ import (
 	"openapi/internal/sdk/models/components"
 	"openapi/internal/sdk/retry"
 	"openapi/internal/testclient"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -26,7 +27,10 @@ import (
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, error) {
 	var sdkOpts []sdk.SDKOption
 	globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
-	flagutil.SetCredentialsMissing(cmd, globalSecurity == (components.Security{}))
+	// The security struct's shape follows the document (option pointers,
+	// strings, scope slices), so the zero check goes through reflect: a
+	// struct comparison is invalid once a scheme carries a slice.
+	flagutil.SetCredentialsMissing(cmd, reflect.ValueOf(globalSecurity).IsZero())
 	sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
 	if serverURL, _ := flagutil.GetStringFlag(cmd, "server-url"); serverURL != "" {
 		if err := flagutil.ValidateServerURL(serverURL); err != nil {

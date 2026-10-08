@@ -74,37 +74,45 @@ func ResolveOutputFormat(cmd *cobra.Command, configured string, agentMode bool) 
 const dryRunRequestAnnotation = "speakeasy_dry_run_request"
 
 func MarkDryRunRequest(cmd *cobra.Command) {
-	if cmd == nil {
-		return
-	}
-	if cmd.Annotations == nil {
-		cmd.Annotations = map[string]string{}
-	}
-	cmd.Annotations[dryRunRequestAnnotation] = "true"
+	setMarker(cmd, dryRunRequestAnnotation, true)
 }
 
 func DidDryRunRequest(cmd *cobra.Command) bool {
-	return cmd != nil && cmd.Annotations[dryRunRequestAnnotation] == "true"
+	return hasMarker(cmd, dryRunRequestAnnotation)
 }
 
+// credentialsMissingAnnotation marks a command whose request went out without
+// any credential, so the error classifier can read a permission denial as a
+// missing-credential failure.
 const credentialsMissingAnnotation = "speakeasy_credentials_missing"
 
 func SetCredentialsMissing(cmd *cobra.Command, missing bool) {
+	setMarker(cmd, credentialsMissingAnnotation, missing)
+}
+
+func CredentialsMissing(cmd *cobra.Command) bool {
+	return hasMarker(cmd, credentialsMissingAnnotation)
+}
+
+// setMarker records a boolean marker in the command's annotations. Clearing
+// removes the key so a command reused across invocations never carries a
+// stale marker.
+func setMarker(cmd *cobra.Command, key string, on bool) {
 	if cmd == nil {
 		return
 	}
-	if !missing {
-		delete(cmd.Annotations, credentialsMissingAnnotation)
+	if !on {
+		delete(cmd.Annotations, key)
 		return
 	}
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
 	}
-	cmd.Annotations[credentialsMissingAnnotation] = "true"
+	cmd.Annotations[key] = "true"
 }
 
-func CredentialsMissing(cmd *cobra.Command) bool {
-	return cmd != nil && cmd.Annotations[credentialsMissingAnnotation] == "true"
+func hasMarker(cmd *cobra.Command, key string) bool {
+	return cmd != nil && cmd.Annotations[key] == "true"
 }
 
 // GetBoolFlag returns the value of a bool flag and whether it was changed.

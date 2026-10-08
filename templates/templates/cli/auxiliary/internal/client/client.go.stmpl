@@ -22,8 +22,12 @@ package client
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{templateMainSDKTypeName}}, error) {
     var sdkOpts []sdk.SDKOption
     {{- if hasGlobalSecurity}}
+    {{- addImport "reflect"}}
     globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
-    flagutil.SetCredentialsMissing(cmd, globalSecurity == (components.Security{}))
+    // The security struct's shape follows the document (option pointers,
+    // strings, scope slices), so the zero check goes through reflect: a
+    // struct comparison is invalid once a scheme carries a slice.
+    flagutil.SetCredentialsMissing(cmd, reflect.ValueOf(globalSecurity).IsZero())
     sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
     {{- else}}
     _ = allowedSecurityFields

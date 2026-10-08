@@ -228,8 +228,14 @@ func Classify(cmd *cobra.Command, err error) Classification {
 		if c.Type == "" {
 			c.Type = classifyStatuslessError(err, c.Origin)
 		}
-		if c.Type == ErrorTypeAuthorization && flagutil.CredentialsMissing(cmd) {
+		// A 403 answered to a request that carried no credential is a
+		// missing-credential failure whatever typed it: some APIs reject an
+		// anonymous caller with 403 rather than 401, and without a credential
+		// no permission rule can be describing the caller. The reason is kept;
+		// the rule's permission hints give way to the credential setup hints.
+		if c.Type == ErrorTypeAuthorization && c.StatusCode == 403 && flagutil.CredentialsMissing(cmd) {
 			c.Type = ErrorTypeAuthentication
+			ruleHints = nil
 		}
 		if c.Reason == "" && c.StatusCode == 0 {
 			c.Reason = syntheticCLIReason(c.Type)

@@ -385,19 +385,24 @@ function primaryCLISecurityField(
   return fields.find((f) => f.isSecret) || fields[0];
 }
 
-function noKeyringEnvVar(): string {
-  const prefix = context.Global.Config.EnvVarPrefix
+function cliEnvVarPrefix(): string {
+  return context.Global.Config.EnvVarPrefix
     ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
     : "";
-  return prefix ? `${prefix}_NO_KEYRING` : "NO_KEYRING";
+}
+
+function prefixedEnvVarName(suffix: string): string {
+  const prefix = cliEnvVarPrefix();
+  return prefix ? `${prefix}_${suffix}` : suffix;
+}
+
+function noKeyringEnvVar(): string {
+  return prefixedEnvVarName("NO_KEYRING");
 }
 registerTemplateFunc("noKeyringEnvVar", noKeyringEnvVar);
 
 function credentialEnvVarName(field: CLISecurityFieldInfo): string {
-  const prefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
-  return prefix ? `${prefix}_${field.envVarSuffix}` : field.envVarSuffix;
+  return prefixedEnvVarName(field.envVarSuffix);
 }
 
 // Concrete credential variable for compact root setup guidance. Empty means
@@ -431,28 +436,20 @@ function templateAuthErrorHint(): string {
   const schemeGroups = new Set(
     fields.map((f) => `${f.secType}\u0000${f.secSubType}`),
   );
-  const envVarPrefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
+  const primary = primaryCLISecurityField(fields)!;
+  const primaryEnv = credentialEnvVarName(primary);
   if (schemeGroups.size > 1) {
     // Even with several schemes, steer to the primary credential concretely —
     // agents act on a named variable, not a category. Prefer an API key.
-    const primaryField = primaryCLISecurityField(fields)!;
-    const primaryEnv = envVarPrefix
-      ? `${envVarPrefix}_${primaryField.envVarSuffix}`
-      : primaryField.envVarSuffix;
+    const envVarPrefix = cliEnvVarPrefix();
     const environment = envVarPrefix
       ? `${envVarPrefix}_* environment variables`
       : "environment variables";
     return `Set ${primaryEnv} (or another credential via the ${environment} / the credential flags listed in --help)`;
   }
 
-  const primary = primaryCLISecurityField(fields)!;
   const flagNames = fields.map((f) => `--${f.flagName}`).join(" / ");
-  const envVar = envVarPrefix
-    ? `${envVarPrefix}_${primary.envVarSuffix}`
-    : primary.envVarSuffix;
-  return `Set ${envVar} (or use ${flagNames})`;
+  return `Set ${primaryEnv} (or use ${flagNames})`;
 }
 registerTemplateFunc("templateAuthErrorHint", templateAuthErrorHint);
 
