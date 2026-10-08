@@ -78,6 +78,9 @@ func NewInput(value *string) *Field {
 	return &Field{kind: kindInput, text: value, input: in}
 }
 
+// textRows is the editor height when the terminal has room for it.
+const textRows = 6
+
 // NewText asks for multi-line text such as JSON, starting from *value.
 // alt+enter or ctrl+j inserts a newline; enter moves on.
 func NewText(value *string) *Field {
@@ -85,6 +88,7 @@ func NewText(value *string) *Field {
 	area.ShowLineNumbers = false
 	area.Prompt = ""
 	area.KeyMap.InsertNewline.SetKeys("alt+enter", "ctrl+j")
+	area.SetHeight(textRows)
 	area.SetValue(*value)
 	return &Field{kind: kindText, text: value, area: area}
 }
@@ -135,10 +139,17 @@ func (f *Field) Validate(validate func(string) error) *Field {
 }
 
 func (f *Field) check() error {
-	if f.validate == nil || f.text == nil {
+	if f.text == nil {
 		return nil
 	}
-	return f.validate(*f.text)
+	return f.checkValue(*f.text)
+}
+
+func (f *Field) checkValue(value string) error {
+	if f.validate == nil {
+		return nil
+	}
+	return f.validate(value)
 }
 
 func (f *Field) focus() tea.Cmd {
@@ -267,8 +278,9 @@ func (f *Form) linePrompts() bool {
 	return f.accessible || os.Getenv("TERM") == "dumb"
 }
 
-// IO sets where line prompts read answers and write questions; the
-// interactive form always uses the terminal.
+// IO sets where line prompts read answers and write questions. The
+// interactive form also reads keys from in unless it is standard input, and
+// always draws on the terminal.
 func (f *Form) IO(in io.Reader, out io.Writer) *Form {
 	f.in, f.out = in, out
 	return f
@@ -290,7 +302,11 @@ func (f *Form) Run() error {
 	if f.linePrompts() {
 		return f.prompt(f.out, f.in)
 	}
-	if _, err := tea.NewProgram(f, tea.WithOutput(os.Stderr)).Run(); err != nil {
+	opts := []tea.ProgramOption{tea.WithOutput(os.Stderr)}
+	if in := keyInput(f.in); in != os.Stdin {
+		opts = append(opts, tea.WithInput(in))
+	}
+	if _, err := tea.NewProgram(f, opts...).Run(); err != nil {
 		if errors.Is(err, tea.ErrInterrupted) {
 			return ErrUserAborted
 		}
@@ -300,6 +316,17 @@ func (f *Form) Run() error {
 		return ErrUserAborted
 	}
 	return nil
+}
+
+// keyInput returns where the interactive form reads keys: the file behind a
+// shared Reader so a terminal can be put in raw mode, otherwise in itself.
+// Standard input is left to bubbletea, which falls back to the terminal when
+// stdin is piped.
+func keyInput(in io.Reader) io.Reader {
+	if shared, ok := in.(*Reader); ok && shared.file != nil {
+		return shared.file
+	}
+	return in
 }
 
 func (f *Form) empty() bool {
@@ -438,9 +465,15 @@ func (f *Form) render() string {
 		if i == f.field {
 			focusStart = len(lines)
 		}
-		lines = append(lines, strings.Split(f.renderField(field, i == f.field), "\n")...)
+		block, errRows := f.renderField(field, i == f.field)
+		lines = append(lines, strings.Split(block, "\n")...)
 		if i == f.field {
 			focusEnd = len(lines)
+			if f.height > 0 && focusEnd-focusStart > f.height && errRows > 1 {
+				// Too tall for the terminal: keep the input in view with the
+				// first line of its error under it.
+				focusEnd -= errRows - 1
+			}
 		}
 	}
 	if f.field == 0 && (f.height <= 0 || focusEnd <= f.height) {
@@ -468,7 +501,9 @@ func (f *Form) scrollTo(lines []string, start, end int) []string {
 	return lines[f.scroll : f.scroll+f.height]
 }
 
-func (f *Form) renderField(field *Field, focused bool) string {
+// renderField draws a field inside its border and reports how many of the
+// rows at its end are the validation error.
+func (f *Form) renderField(field *Field, focused bool) (string, int) {
 	inner := max(f.width-4, 1)
 	bar, title := subtle, lipgloss.NewStyle().Foreground(dimmed)
 	if focused {
@@ -481,33 +516,43 @@ func (f *Form) renderField(field *Field, focused bool) string {
 	if field.description != "" {
 		lines = append(lines, lipgloss.NewStyle().Foreground(subtle).Italic(true).Render(wrap(field.description, inner)))
 	}
+	var errLines []string
+	if field.err != nil {
+		errLines = append(errLines, lipgloss.NewStyle().Foreground(errColor).Render(wrap("! "+field.err.Error(), inner)))
+	}
+	// Rows left for the editor or options once the heading and error fit.
+	avail := f.height - rows(lines) - rows(errLines)
 	switch field.kind {
 	case kindInput:
 		lines = append(lines, field.input.View())
 	case kindText:
+		if f.height > 0 {
+			field.area.SetHeight(min(max(avail, 1), textRows))
+		}
 		lines = append(lines, field.area.View())
 	case kindSelect:
-		// Leave room for the field's own heading and the position line.
-		heading := 0
-		for _, l := range lines {
-			heading += lipgloss.Height(l)
-		}
-		lines = append(lines, f.renderOptions(field, focused, f.height-heading-1))
+		lines = append(lines, f.renderOptions(field, focused, avail-1)) // minus the position line
 	case kindConfirm:
 		lines = append(lines, renderButtons(*field.yes, focused, inner))
 	}
-	if field.err != nil {
-		lines = append(lines, lipgloss.NewStyle().Foreground(errColor).Render("! "+field.err.Error()))
-	}
+	lines = append(lines, errLines...)
 	return lipgloss.NewStyle().
 		BorderStyle(lipgloss.ThickBorder()).BorderLeft(true).BorderForeground(bar).
 		PaddingLeft(1).
-		Render(strings.Join(lines, "\n"))
+		Render(strings.Join(lines, "\n")), rows(errLines)
+}
+
+func rows(blocks []string) int {
+	n := 0
+	for _, b := range blocks {
+		n += lipgloss.Height(b)
+	}
+	return n
 }
 
 // renderOptions shows the options around the cursor that fit the terminal
 // height. Multi-line labels stay aligned under their first line.
-func (f *Form) renderOptions(field *Field, focused bool, rows int) string {
+func (f *Form) renderOptions(field *Field, focused bool, height int) string {
 	picked := lipgloss.NewStyle().Foreground(dimmed)
 	if focused {
 		picked = lipgloss.NewStyle().Foreground(accent).Bold(true)
@@ -525,7 +570,7 @@ func (f *Form) renderOptions(field *Field, focused bool, rows int) string {
 
 	budget := 0
 	if f.height > 0 {
-		budget = max(rows, 1)
+		budget = max(height, 1)
 	}
 	start, end := 0, len(blocks)
 	if budget > 0 && len(blocks) > 0 {
@@ -573,13 +618,33 @@ func renderButtons(yes, focused bool, width int) string {
 	return off.Render(yesLabel) + " " + on.Render(noLabel)
 }
 
+// Reader buffers answers for line prompts. Pass the same Reader to every form
+// a command runs over one input so that answers read ahead by one form are
+// left for the next.
+type Reader struct {
+	buf  *bufio.Reader
+	file *os.File // the terminal secrets are read from without echo
+}
+
+// NewReader wraps r for sharing between forms. A Reader is returned as is.
+func NewReader(r io.Reader) *Reader {
+	if shared, ok := r.(*Reader); ok {
+		return shared
+	}
+	file, _ := r.(*os.File)
+	return &Reader{buf: bufio.NewReader(r), file: file}
+}
+
+// Read implements [io.Reader].
+func (r *Reader) Read(p []byte) (int, error) { return r.buf.Read(p) }
+
 // prompt asks every question as a plain line prompt. Blank answers keep the
 // current value; end of input leaves the remaining answers unchanged.
 func (f *Form) prompt(w io.Writer, r io.Reader) error {
-	in := bufio.NewReader(r)
+	in := NewReader(r)
 	for _, page := range f.pages {
 		for _, field := range page.fields {
-			err := field.ask(w, r, in)
+			err := field.ask(w, in)
 			fmt.Fprintln(w)
 			if errors.Is(err, io.EOF) {
 				return nil
@@ -594,7 +659,7 @@ func (f *Form) prompt(w io.Writer, r io.Reader) error {
 
 // ask prompts for one field until the answer is valid. It returns io.EOF at
 // end of input.
-func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) error {
+func (f *Field) ask(w io.Writer, in *Reader) error {
 	if f.title != "" {
 		fmt.Fprintln(w, f.title)
 	}
@@ -620,7 +685,7 @@ func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) error {
 		default:
 			fmt.Fprint(w, "> ")
 		}
-		line, err := readAnswer(w, raw, in, f.secret)
+		line, err := readAnswer(w, in, f.secret)
 		if err != nil {
 			return err
 		}
@@ -635,19 +700,7 @@ func (f *Field) ask(w io.Writer, raw io.Reader, in *bufio.Reader) error {
 // answer applies a typed line, returning a message when it must be re-asked.
 func (f *Field) answer(line string) string {
 	blank := strings.TrimSpace(line) == ""
-	switch f.kind {
-	case kindSelect:
-		if blank {
-			return ""
-		}
-		line = strings.TrimSpace(line)
-		n, err := strconv.Atoi(line)
-		if err != nil || n < 1 || n > len(f.options) {
-			return fmt.Sprintf("Enter a number from 1 to %d.", len(f.options))
-		}
-		f.cursor = n - 1
-		*f.text = f.options[f.cursor].Value
-	case kindConfirm:
+	if f.kind == kindConfirm {
 		switch strings.ToLower(strings.TrimSpace(line)) {
 		case "":
 		case "y", "yes":
@@ -657,30 +710,41 @@ func (f *Field) answer(line string) string {
 		default:
 			return "Answer y or n."
 		}
-	default:
-		value := *f.text
-		if !blank {
-			value = line
-		}
-		if f.validate != nil {
-			if err := f.validate(value); err != nil {
-				return err.Error()
-			}
-		}
-		*f.text = value
+		return ""
 	}
+	value, pick := *f.text, f.cursor
+	if f.kind == kindSelect {
+		if len(f.options) == 0 {
+			return ""
+		}
+		if !blank {
+			n, err := strconv.Atoi(strings.TrimSpace(line))
+			if err != nil || n < 1 || n > len(f.options) {
+				return fmt.Sprintf("Enter a number from 1 to %d.", len(f.options))
+			}
+			pick = n - 1
+		}
+		value = f.options[pick].Value
+	} else if !blank {
+		value = line
+	}
+	if err := f.checkValue(value); err != nil {
+		return err.Error()
+	}
+	f.cursor = pick
+	*f.text = value
 	return ""
 }
 
 // readAnswer reads one line, without echo for secrets typed at a terminal.
 // It returns io.EOF only when no answer was read.
-func readAnswer(w io.Writer, raw io.Reader, in *bufio.Reader, secret bool) (string, error) {
-	if file, ok := raw.(*os.File); ok && secret && term.IsTerminal(int(file.Fd())) {
-		b, err := term.ReadPassword(int(file.Fd()))
+func readAnswer(w io.Writer, in *Reader, secret bool) (string, error) {
+	if in.file != nil && secret && term.IsTerminal(int(in.file.Fd())) {
+		b, err := term.ReadPassword(int(in.file.Fd()))
 		fmt.Fprintln(w)
 		return string(b), err
 	}
-	line, err := in.ReadString('\n')
+	line, err := in.buf.ReadString('\n')
 	if err != nil && (line == "" || !errors.Is(err, io.EOF)) {
 		return "", err
 	}

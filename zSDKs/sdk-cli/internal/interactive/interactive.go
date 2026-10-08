@@ -657,8 +657,10 @@ func (formPrompter) Prompt(cmd *cobra.Command, fields []PromptField) ([]PromptAn
 		}
 	}
 	printCommandHeader(cmd, len(required), len(optionalArgs)+len(direct)+len(optionalFlags))
+	// Every prompt reads from one reader so piped answers carry over.
+	in := forms.NewReader(cmd.InOrStdin())
 	for _, index := range required {
-		answer, err := runPromptField(cmd, fields[index])
+		answer, err := runPromptField(cmd, in, fields[index])
 		if err != nil {
 			return nil, err
 		}
@@ -667,14 +669,14 @@ func (formPrompter) Prompt(cmd *cobra.Command, fields []PromptField) ([]PromptAn
 	for _, index := range optionalArgs {
 		field := fields[index]
 		field.Summary = optionalArgDescription(field.Summary)
-		answer, err := runPromptField(cmd, field)
+		answer, err := runPromptField(cmd, in, field)
 		if err != nil {
 			return nil, err
 		}
 		answers[index] = answer
 	}
 	for _, index := range direct {
-		answer, err := runPromptField(cmd, fields[index])
+		answer, err := runPromptField(cmd, in, fields[index])
 		if err != nil {
 			return nil, err
 		}
@@ -690,13 +692,13 @@ func (formPrompter) Prompt(cmd *cobra.Command, fields []PromptField) ([]PromptAn
 	}
 	form := forms.New(forms.NewPage("", forms.NewConfirm(&fillOptional).
 		Title(fmt.Sprintf("Fill in %d optional field(s)?", len(optionalFlags))).
-		Description(strings.Join(names, ", ")))).IO(cmd.InOrStdin(), cmd.ErrOrStderr())
+		Description(strings.Join(names, ", ")))).IO(in, cmd.ErrOrStderr())
 	if err := form.Run(); err != nil {
 		return nil, err
 	}
 	if fillOptional {
 		for _, index := range optionalFlags {
-			answer, err := runPromptField(cmd, fields[index])
+			answer, err := runPromptField(cmd, in, fields[index])
 			if err != nil {
 				return nil, err
 			}
@@ -713,13 +715,13 @@ func optionalArgDescription(summary string) string {
 	return summary + " · optional, leave empty to skip"
 }
 
-func runPromptField(cmd *cobra.Command, field PromptField) (PromptAnswer, error) {
+func runPromptField(cmd *cobra.Command, in *forms.Reader, field PromptField) (PromptAnswer, error) {
 	if field.Repeatable && field.target == promptTargetFlag {
-		return runRepeatableFlagPrompt(cmd, field)
+		return runRepeatableFlagPrompt(cmd, in, field)
 	}
 
 	ask := func(f *forms.Field) error {
-		return forms.New(forms.NewPage("", f.Title(field.Name).Description(field.Summary))).IO(cmd.InOrStdin(), cmd.ErrOrStderr()).Run()
+		return forms.New(forms.NewPage("", f.Title(field.Name).Description(field.Summary))).IO(in, cmd.ErrOrStderr()).Run()
 	}
 
 	switch field.Kind {
@@ -799,7 +801,7 @@ func checkPromptValue(kind, value string) error {
 	return nil
 }
 
-func runRepeatableFlagPrompt(cmd *cobra.Command, field PromptField) (PromptAnswer, error) {
+func runRepeatableFlagPrompt(cmd *cobra.Command, in *forms.Reader, field PromptField) (PromptAnswer, error) {
 	values := make([]string, 0, 1)
 	for {
 		value := ""
@@ -818,7 +820,7 @@ func runRepeatableFlagPrompt(cmd *cobra.Command, field PromptField) (PromptAnswe
 				return nil
 			})
 		}
-		if err := forms.New(forms.NewPage("", input)).IO(cmd.InOrStdin(), cmd.ErrOrStderr()).Run(); err != nil {
+		if err := forms.New(forms.NewPage("", input)).IO(in, cmd.ErrOrStderr()).Run(); err != nil {
 			return PromptAnswer{}, err
 		}
 		if strings.TrimSpace(value) == "" {

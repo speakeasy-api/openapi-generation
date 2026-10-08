@@ -60,7 +60,7 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:75fd840a41af9780eddf7431ab9168a0c2c2facd
   internal/cli/auth.go:
-    last_write_checksum: sha1:e799fc569e3087788a37cf16a77c7442a321d9dd
+    last_write_checksum: sha1:a64e4aae57deeb18045a8601f4aff422b39931c0
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
@@ -250,9 +250,9 @@ trackedFiles:
   internal/flagutil/preset.go:
     last_write_checksum: sha1:a6cf90b7dd09d11ffbd438fc3aba76806de5752a
   internal/forms/forms.go:
-    last_write_checksum: sha1:84f77e414e9387a1d46cd3dbc7dcb6f52d85da44
+    last_write_checksum: sha1:c21352632fd50812eda8d9ac9159208e26c15cfa
   internal/interactive/interactive.go:
-    last_write_checksum: sha1:612a1d394cfcda48c6384f8a258ac69da9db7541
+    last_write_checksum: sha1:1a5cba48c32805e2756093f15aa476eae3b87b6c
   internal/interactive/policy.go:
     last_write_checksum: sha1:3cf3eec72867230610aa5e7c308fddcaf916b81b
   internal/interactive/policy_test.go:

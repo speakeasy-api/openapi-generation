@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -372,14 +373,14 @@ func TestFormsSelectPageNavigation(t *testing.T) {
 	visible := func() []string {
 		var shown []string
 		for _, n := range names {
-			if regexp.MustCompile(`(?m)^┃ [> ] ` + n + `$`).MatchString(formsView(f)) {
+			if regexp.MustCompile(`(?m)^┃ [> ] ` + n + ` *$`).MatchString(formsView(f)) {
 				shown = append(shown, n)
 			}
 		}
 		return shown
 	}
-	if len(visible()) >= len(names) {
-		t.Fatal("expected a window smaller than the option list")
+	if n := len(visible()); n == 0 || n >= len(names) {
+		t.Fatalf("expected a window smaller than the option list, got %d options", n)
 	}
 	formsContains(t, formsView(f), "> Qux")
 
@@ -392,15 +393,19 @@ func TestFormsSelectPageNavigation(t *testing.T) {
 	formsPress(f, "home")
 	formsContains(t, formsView(f), "> Qux")
 
+	index := func() int { return slices.Index(names, v) }
+	half := len(visible()) / 2
 	formsPress(f, "ctrl+d")
-	if v == "Qux" || v == "Ping" {
-		t.Fatalf("ctrl+d should move half a window, got %q", v)
+	if got := index(); got != half {
+		t.Fatalf("ctrl+d from the top should move %d rows, got option %d", half, got)
 	}
 	formsContains(t, formsView(f), "> "+v)
 
-	formsPress(f, "end", "ctrl+u")
-	if v == "Qux" || v == "Ping" {
-		t.Fatalf("ctrl+u should move half a window, got %q", v)
+	formsPress(f, "end")
+	half = len(visible()) / 2
+	formsPress(f, "ctrl+u")
+	if got := index(); got != len(names)-1-half {
+		t.Fatalf("ctrl+u from the bottom should move %d rows, got option %d", half, got)
 	}
 	formsContains(t, formsView(f), "> "+v)
 	for range 30 {
@@ -816,5 +821,193 @@ func TestFormsFieldTallerThanTerminalShowsItsInput(t *testing.T) {
 		t.Fatalf("rendered %d lines for height 4", lipgloss.Height(view))
 	}
 	formsContains(t, view, "typed")
+}
+
+func formsIntegerOnly(v string) error {
+	if _, err := fmt.Sscanf(v, "%d", new(int)); err != nil {
+		return errors.New("must be an integer")
+	}
+	return nil
+}
+
+func formsAssertFits(t *testing.T, view string, width, height int) {
+	t.Helper()
+	if got := lipgloss.Height(view); got > height {
+		t.Fatalf("rendered %d lines for height %d:\n%s", got, height, view)
+	}
+	for _, line := range strings.Split(view, "\n") {
+		if w := lipgloss.Width(line); w > width {
+			t.Fatalf("width %d: %q is %d wide", width, line, w)
+		}
+	}
+}
+
+// formsUnwrapped joins a view's text with borders and spaces removed, so
+// wrapped words can be matched whole.
+func formsUnwrapped(view string) string {
+	return strings.NewReplacer("┃", "", " ", "", "\n", "").Replace(view)
+}
+
+func TestFormsValidationErrorWrapsToWidth(t *testing.T) {
+	for _, width := range []int{8, 12, 20} {
+		t.Run(fmt.Sprint(width), func(t *testing.T) {
+			var a string
+			f := formsStart(t, width, 12, forms.NewPage("", forms.NewInput(&a).Title("Count").Validate(formsIntegerOnly)))
+			formsType(f, "x")
+			formsPress(f, "enter")
+			view := formsView(f)
+			formsAssertFits(t, view, width, 12)
+			formsContains(t, formsUnwrapped(view), "!mustbeaninteger")
+			formsContains(t, view, "> x")
+
+			b := "bad"
+			f = formsStart(t, width, 12, forms.NewPage("", forms.NewSelect(&b, forms.NewOption("bad", "bad"), forms.NewOption("ok", "ok")).
+				Title("Pick").Validate(formsIntegerOnly)))
+			formsPress(f, "enter")
+			view = formsView(f)
+			formsAssertFits(t, view, width, 12)
+			formsContains(t, formsUnwrapped(view), "!mustbeaninteger")
+			formsContains(t, formsUnwrapped(view), ">bad")
+		})
+	}
+}
+
+func TestFormsSelectKeepsHeadingWhenValidationFails(t *testing.T) {
+	options := make([]forms.Option, 20)
+	for i := range options {
+		options[i] = forms.NewOption(fmt.Sprintf("choice %d", i), fmt.Sprint(i))
+	}
+	var v string
+	f := formsStart(t, 80, 10, forms.NewPage("", forms.NewSelect(&v, options...).Title("Choose").
+		Validate(func(string) error { return errors.New("nope") })))
+	formsPress(f, "down", "down")
+	formsPress(f, "enter")
+	view := formsView(f)
+	formsAssertFits(t, view, 80, 10)
+	formsContains(t, view, "Choose")
+	formsContains(t, view, "> choice 2")
+	formsContains(t, view, "nope")
+}
+
+func TestFormsTextFitsShortTerminals(t *testing.T) {
+	for _, height := range []int{4, 5, 6, 12, 30} {
+		t.Run(fmt.Sprint(height), func(t *testing.T) {
+			var value string
+			f := formsStart(t, 20, height, forms.NewPage("", forms.NewText(&value).Title("JSON")))
+			f.Update(tea.PasteMsg{Content: "VISIBLE"})
+			view := formsView(f)
+			formsAssertFits(t, view, 20, height)
+			formsContains(t, view, "VISIBLE")
+			formsContains(t, view, "JSON")
+
+			formsType(f, "typed")
+			formsContains(t, formsView(f), "VISIBLEtyped")
+		})
+	}
+}
+
+func TestFormsTextResizesAroundValidationError(t *testing.T) {
+	var value string
+	f := formsStart(t, 20, 30, forms.NewPage("", forms.NewText(&value).Title("JSON").Validate(formsRequired)))
+	f.Update(tea.WindowSizeMsg{Width: 20, Height: 4})
+	formsPress(f, "enter")
+	view := formsView(f)
+	formsAssertFits(t, view, 20, 4)
+	formsContains(t, view, "required")
+	formsType(f, "now")
+	view = formsView(f)
+	formsAssertFits(t, view, 20, 4)
+	formsContains(t, view, "now")
+	f.Update(tea.WindowSizeMsg{Width: 20, Height: 30})
+	if got := lipgloss.Height(formsView(f)); got < 6 {
+		t.Fatalf("a tall terminal should give the editor its default rows, got %d lines", got)
+	}
+}
+
+func TestFormsInputStaysVisibleWhenErrorOverflows(t *testing.T) {
+	for _, height := range []int{2, 3, 4} {
+		var a string
+		f := formsStart(t, 8, height, forms.NewPage("Page", forms.NewInput(&a).Title("Count").Validate(formsIntegerOnly)))
+		formsType(f, "x")
+		formsPress(f, "enter")
+		view := formsView(f)
+		formsAssertFits(t, view, 8, height)
+		formsContains(t, view, "> x")
+		formsContains(t, view, "!")
+	}
+}
+
+func TestFormsTextFollowsCursorOnShortTerminals(t *testing.T) {
+	var value string
+	f := formsStart(t, 30, 4, forms.NewPage("", forms.NewText(&value).Title("JSON")))
+	for i := range 8 {
+		formsType(f, fmt.Sprintf("line%d", i))
+		formsPress(f, "ctrl+j")
+		formsView(f)
+	}
+	formsType(f, "last")
+	view := formsView(f)
+	formsAssertFits(t, view, 30, 4)
+	formsContains(t, view, "last")
+	formsContains(t, view, "line7")
+}
+
+func TestFormsAccessibleSelectValidates(t *testing.T) {
+	options := []forms.Option{forms.NewOption("Rejected", "bad"), forms.NewOption("Accepted", "good")}
+	for _, tt := range []struct{ name, initial, input string }{
+		{name: "rejected pick", input: "1\n2\n"},
+		{name: "rejected default", initial: "bad", input: "\n2\n"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			v := tt.initial
+			var out bytes.Buffer
+			err := forms.New(forms.NewPage("", forms.NewSelect(&v, options...).Validate(func(v string) error {
+				calls++
+				if v == "bad" {
+					return errors.New("not that one")
+				}
+				return nil
+			}))).Accessible(true).IO(strings.NewReader(tt.input), &out).Run()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if v != "good" || calls != 2 {
+				t.Fatalf("got %q after %d validations\n%s", v, calls, out.String())
+			}
+			formsContains(t, out.String(), "not that one\nChoose 1-2")
+		})
+	}
+}
+
+func TestFormsSharedReaderSpansForms(t *testing.T) {
+	var method, user, secret string
+	var out bytes.Buffer
+	in := forms.NewReader(strings.NewReader("1\nalice\nsecret\n"))
+	err := forms.New(forms.NewPage("", forms.NewSelect(&method, forms.NewOption("Basic", "basic"), forms.NewOption("Token", "token")))).
+		Accessible(true).IO(in, &out).Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = forms.New(forms.NewPage("", forms.NewInput(&user).Title("User"), forms.NewInput(&secret).Title("Secret").Password())).
+		Accessible(true).IO(in, &out).Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if method != "basic" || user != "alice" || secret != "secret" {
+		t.Fatalf("got method=%q user=%q secret=%q\n%s", method, user, secret, out.String())
+	}
+	if forms.NewReader(in) != in {
+		t.Fatal("wrapping a shared reader again should return it unchanged")
+	}
+}
+
+func TestFormsRunReturnsErrUserAbortedOnCtrlC(t *testing.T) {
+	t.Setenv("TERM", "xterm-256color") // a dumb terminal would get line prompts
+	var v string
+	err := forms.New(forms.NewPage("", forms.NewInput(&v).Title("Foo"))).IO(strings.NewReader("\x03"), &bytes.Buffer{}).Run()
+	if !errors.Is(err, forms.ErrUserAborted) {
+		t.Fatalf("got %v, want ErrUserAborted", err)
+	}
 }
 {{- end}}

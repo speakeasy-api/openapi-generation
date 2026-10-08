@@ -187,4 +187,18 @@ func TestAuthLogoutClearsCredentials(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthLoginLinePromptsReadMethodAndCredentialsFromOneInput(t *testing.T) {
+	installKeyring(t, false, nil)
+	home := t.TempDir()
+
+	h := NewCLITestHarness(t).WithEnv("HOME", home)
+	stdin := strings.NewReader("3\nsekr1t-pass\nalice\n")
+	require.NoError(t, h.RunPolicyDefaultWithInput([]string{"auth", "login", "--interactive"}, stdin), "stderr: %s", h.GetStderr())
+	assert.Contains(t, h.GetStdout(), "Authentication Method")
+
+	cfg := readAuthConfig(t, home)
+	assert.Contains(t, cfg, "username: alice")
+	assert.Contains(t, cfg, "password: sekr1t-pass")
+}
 {{- end}}

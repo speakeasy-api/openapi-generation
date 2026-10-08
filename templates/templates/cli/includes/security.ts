@@ -2551,8 +2551,10 @@ function templateAuthLoginBody(): string {
     lines.push(``);
     lines.push(...genSchemeStore(group.fields));
   } else {
-    // Multiple OR alternatives — show scheme selector first
+    // Multiple OR alternatives — show scheme selector first. Both forms read
+    // line prompts from one shared reader so piped answers carry over.
     lines.push(`accessible := formMode == interactive.FormAccessible`);
+    lines.push(`promptInput := forms.NewReader(cmd.InOrStdin())`);
     lines.push(``);
     lines.push(`var selectedScheme string`);
     lines.push(`schemeSelect := forms.NewSelect(&selectedScheme,`);
@@ -2568,7 +2570,7 @@ function templateAuthLoginBody(): string {
     lines.push(`    Description("Choose which credentials to configure")`);
     lines.push(``);
     lines.push(
-      `if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(cmd.InOrStdin(), cmd.OutOrStdout()).Run(); err != nil {`,
+      `if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout()).Run(); err != nil {`,
     );
     lines.push(`    return fmt.Errorf("auth login: %w", err)`);
     lines.push(`}`);
@@ -2589,7 +2591,7 @@ function templateAuthLoginBody(): string {
       lines.push(`    }`);
       lines.push(``);
       lines.push(
-        `    form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(cmd.InOrStdin(), cmd.OutOrStdout())`,
+        `    form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())`,
       );
       lines.push(``);
       lines.push(`    if err := form.Run(); err != nil {`);
