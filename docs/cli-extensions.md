@@ -53,8 +53,10 @@ and an overriding schema's own message takes precedence. Flattening a primitive
 `oneOf` or `anyOf` that combines different patterns drops the inherited message;
 when the pattern is unchanged, the first member's message is retained. Messages
 on primitive `oneOf` or `anyOf` wrappers are not retained; use an `allOf` wrapper
-for a message override at the use site. An explicitly empty pattern is valid,
-matches all values, and produces no missing-pattern warning. Extension name rewrites through
+for a message override at the use site. Unions with a referenced first member may
+retain that component's pattern and message; inline members use the flattening
+behavior above. An explicitly empty pattern is valid, matches all values, and
+produces no missing-pattern warning. Extension name rewrites through
 `x-speakeasy-extension-rewrite` are supported.
 
 This applies wherever the CLI already checks string flag patterns: path, query,

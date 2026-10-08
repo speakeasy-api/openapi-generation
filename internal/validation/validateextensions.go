@@ -54,11 +54,11 @@ func (r *ValidateExtensions) Summary() string {
 }
 
 func (r *ValidateExtensions) HowToFix() string {
-	return "Define x-speakeasy-globals parameters with unique names, valid schemas (primitive types or enums), and avoid collisions with server variables. Define x-speakeasy-pattern-error-message as a non-empty string on a schema with pattern."
+	return "Define x-speakeasy-globals parameters with unique names, valid schemas (primitive types or enums), and avoid collisions with server variables. Define x-speakeasy-pattern-error-message as a non-empty string. A missing local pattern produces a warning; the message is used only if the effective schema has an enforced pattern."
 }
 
 func (r *ValidateExtensions) Description() string {
-	return "Validate x-speakeasy-globals parameter names and types, and require x-speakeasy-pattern-error-message to contain a non-empty string alongside pattern."
+	return "Validate x-speakeasy-globals parameter names and types, and require x-speakeasy-pattern-error-message to contain a non-empty string. Warn when the message has no pattern on its source schema; runtime use depends on the effective schema having an enforced pattern."
 }
 
 func (r *ValidateExtensions) Link() string {

@@ -48,3 +48,43 @@ func TestPrimitiveUnionPatternErrorMessage(t *testing.T) {
 		}
 	}
 }
+
+func TestPrimitiveUnionReferencePatternErrorMessage(t *testing.T) {
+	t.Parallel()
+	for _, union := range []string{"oneOf", "anyOf"} {
+		for _, message := range []string{"", "Use letters."} {
+			for _, secondPattern := range []string{"^[a-z]+$", "^[0-9]+$"} {
+				t.Run(fmt.Sprintf("%s/message=%q/second=%s", union, message, secondPattern), func(t *testing.T) {
+					t.Parallel()
+					extension := ""
+					if message != "" {
+						extension = "  x-speakeasy-pattern-error-message: " + message + "\n"
+					}
+					doc := testutils.CreateOpenAPIDoc(fmt.Sprintf(`Letters:
+  type: string
+  pattern: '^[a-z]+$'
+%sTestSchema:
+  %s:
+    - $ref: '#/components/schemas/Letters'
+      x-speakeasy-pattern-error-message: Use digits.
+    - type: string
+      pattern: '%s'
+`, extension, union, secondPattern))
+					doc = "openapi: 3.1.0" + doc[len("openapi: 3.0.0"):]
+					common, err := testutils.SetupTestEnvironment(testutils.TestEnvironmentOptions{OpenAPIYAML: doc, MockFeatures: testutils.NewMockFeaturesConfig().WithSupportAllFeatures()})
+					require.NoError(t, err)
+					schemas := &Schemas{Config: common.Config, Target: common.Target, Subsystem: common.Subsystem, Namer: common.Namer}
+					schema := common.DocInfo.Doc.GetComponents().GetSchemas().GetOrZero("TestSchema")
+					field, err := schemas.HandleSchema(context.Background(), Params{Schema: schema, DocInfo: common.DocInfo, MaxDepth: 10, TypeDefCache: map[string]*ast.TypeDef{}, SerializationMethod: ast.SerializationMethodJSON, Scope: ast.ScopeShared})
+					require.NoError(t, err)
+					assert.Equal(t, "^[a-z]+$", *field.Type.Validations.Pattern)
+					assert.Equal(t, message, field.Type.Extensions.PatternErrorMessage)
+					component := common.DocInfo.Doc.GetComponents().GetSchemas().GetOrZero("Letters")
+					got, err := common.Subsystem.Extensions.HandlePatternErrorMessageExtension(component.GetSchema().GetExtensions())
+					require.NoError(t, err)
+					assert.Equal(t, message, got)
+				})
+			}
+		}
+	}
+}
