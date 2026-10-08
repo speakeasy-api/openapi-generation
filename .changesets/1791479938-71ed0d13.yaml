@@ -1,0 +1,10 @@
+id: 1791479938-71ed0d13
+features:
+    - core
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: annotate duration TypeAdapter so mypy passes with pydantic 2.14
+author: 2ynn
+date: "2026-10-08"
