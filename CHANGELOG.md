@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.946.2] - 2026-10-08
+### :bug: Bug Fixes
+- [`9419553`](https://github.com/speakeasy-api/openapi-generation/commit/941955372527a3957bcfdf97655af5e24d569a04) - **cli**: resume async polling and artifacts ([#87](https://github.com/speakeasy-api/openapi-generation/pull/87)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.946.1] - 2026-10-08
 ### :bug: Bug Fixes
 - [`b928f0c`](https://github.com/speakeasy-api/openapi-generation/commit/b928f0c5b10e1c27ba9350ae0fc9d1f134f8e2c0) - **cli**: preserve nested table values ([#86](https://github.com/speakeasy-api/openapi-generation/pull/86)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -20481,3 +20486,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.12...v2.945.13
 [v2.946.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.13...v2.946.0
 [v2.946.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.0...v2.946.1
+[v2.946.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.1...v2.946.2
