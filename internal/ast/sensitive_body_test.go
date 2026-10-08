@@ -201,6 +201,7 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 		field("mixed", union("Mixed", &TypeDef{Type: DataTypeArray, ItemType: sensitiveString()}, class("Label", field("label", plainString())))),
 		field("text", union("Text", class("APIKey", field("key", sensitiveString())), union("Scalars", plainString(), &TypeDef{Type: DataTypeInteger}))),
 		field("flag", union("Flag", class("APIKey", field("key", sensitiveString())), &TypeDef{Type: DataTypeBoolean})),
+		field("count", union("Count", class("APIKey", field("key", sensitiveString())), &TypeDef{Type: DataTypeInt32}, &TypeDef{Type: DataTypeFloat32})),
 		field("loop", union("Loop", class("APIKey", field("key", sensitiveString())), recursivePlain)),
 		field("sensitive", union("Sensitive", class("APIKey", field("key", sensitiveString())), sensitiveString())),
 	)
@@ -222,6 +223,11 @@ func TestSensitiveBodyGraphPlainUnionVariants(t *testing.T) {
 	require.Len(t, flag, 1)
 	assert.True(t, g.Nodes[flag[0]].PlainBoolean)
 	assert.False(t, g.Nodes[flag[0]].PlainString || g.Nodes[flag[0]].PlainNumber, "a boolean member does not accept text or numbers")
+
+	count := sensitiveChild(g, g.Roots, "count")
+	require.Len(t, count, 1)
+	assert.True(t, g.Nodes[count[0]].PlainNumber, "int32 and float32 members are numbers")
+	assert.False(t, g.Nodes[count[0]].PlainString)
 
 	loop := sensitiveChild(g, g.Roots, "loop")
 	require.Len(t, loop, 1)

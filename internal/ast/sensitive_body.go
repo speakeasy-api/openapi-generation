@@ -313,7 +313,7 @@ func (n *SensitiveBodyNode) addPlainShapes(t *TypeDef, visited map[*TypeDef]bool
 		n.PlainObject, n.PlainArray, n.PlainString, n.PlainNumber, n.PlainBoolean = true, true, true, true, true
 	case DataTypeBoolean:
 		n.PlainBoolean = true
-	case DataTypeInteger, DataTypeNumber:
+	case DataTypeInteger, DataTypeInt32, DataTypeNumber, DataTypeFloat32:
 		n.PlainNumber = true
 	case DataTypeBigInt, DataTypeDecimal:
 		n.PlainNumber, n.PlainString = true, true
