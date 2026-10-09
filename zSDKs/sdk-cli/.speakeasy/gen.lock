@@ -280,7 +280,7 @@ trackedFiles:
   internal/output/jq.go:
     last_write_checksum: sha1:4ec4f6429c1d7eaa780a9e33147ba8087b678169
   internal/output/output.go:
-    last_write_checksum: sha1:d0b725d381b6eba3f90f06b98cd0a396e62d35de
+    last_write_checksum: sha1:d529484054231df269785b7182dd554be3a3bbd5
   internal/output/output_test.go:
     last_write_checksum: sha1:9ed67ee7c3facea7b6b759fcc606e5fc14840e7e
   internal/output/outputitems.go:
@@ -1094,7 +1094,7 @@ trackedFiles:
   tests/mockserver/main.go:
     last_write_checksum: sha1:1267817b54decac7af35c5db3f4d865eb628547d
   tests/opstream_test.go:
-    last_write_checksum: sha1:d4c2dbb4adffd2eb60a81fecd4748e2703b3eb7b
+    last_write_checksum: sha1:e9f764ebb931cc09afafef46dbd26e669468ddd8
   tests/positional_test.go:
     last_write_checksum: sha1:422c066a79f386dd5fd19f55dfccb3103ad1f894
   tests/readme_examples_test.go:
