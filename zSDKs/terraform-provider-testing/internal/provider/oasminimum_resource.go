@@ -471,8 +471,6 @@ func (r *OASMinimumResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASMinimumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -536,8 +534,6 @@ func (r *OASMinimumResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasMinimumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -594,8 +590,6 @@ func (r *OASMinimumResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasMinimumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -662,8 +656,6 @@ func (r *OASMinimumResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasMinimumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

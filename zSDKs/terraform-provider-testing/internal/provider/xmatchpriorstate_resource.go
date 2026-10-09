@@ -105,8 +105,6 @@ func (r *XMatchPriorStateResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXMatchPriorStateRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -166,8 +164,6 @@ func (r *XMatchPriorStateResource) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXMatchPriorStateRequest(ctx, nil)
 	resp.Diagnostics.Append(requestDiags...)
@@ -244,8 +240,6 @@ func (r *XMatchPriorStateResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
-
 	request, requestDiags := data.ToOperationsUpdateXMatchPriorStateRequest(ctx, opts)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -305,8 +299,6 @@ func (r *XMatchPriorStateResource) Delete(ctx context.Context, req resource.Dele
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXMatchPriorStateRequest(ctx, nil)
 	resp.Diagnostics.Append(requestDiags...)

@@ -116,8 +116,6 @@ func (r *OASWriteOnlyNestedDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetOasWriteonlyNested(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

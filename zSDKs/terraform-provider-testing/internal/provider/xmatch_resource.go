@@ -114,8 +114,6 @@ func (r *XMatchResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXMatchRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -179,8 +177,6 @@ func (r *XMatchResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXMatchRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -237,8 +233,6 @@ func (r *XMatchResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXMatchRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -305,8 +299,6 @@ func (r *XMatchResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXMatchRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

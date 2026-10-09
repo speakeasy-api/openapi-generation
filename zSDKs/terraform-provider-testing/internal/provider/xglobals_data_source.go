@@ -435,8 +435,6 @@ func (r *XGlobalsDataSource) Read(ctx context.Context, req datasource.ReadReques
 		data.GlobalStringWithDefault = r.GlobalStringWithDefault
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

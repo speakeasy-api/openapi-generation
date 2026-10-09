@@ -51,17 +51,18 @@ func debugResponse(response *http.Response) string {
 	if err != nil {
 		return err.Error()
 	}
-	ctx := response.Request.Context()
 	if response.Body != nil {
 		if body, err := io.ReadAll(response.Body); err == nil {
 			response.Body = io.NopCloser(bytes.NewReader(body))
-			dumpRes = append(dumpRes, redact.ResponseBody(ctx, response.Header.Get("Content-Type"), body)...)
+			body = redact.ResponseBody(response.Request.Context(), response.Header.Get("Content-Type"), body)
+			dumpRes = append(dumpRes, body...)
 		}
 	}
 	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte {
-		return redact.RequestBody(ctx, response.Request.Header.Get("Content-Type"), body)
+		return redact.RequestBody(response.Request.Context(), response.Request.Header.Get("Content-Type"), body)
 	})
-	return redactSensitiveValues(ctx, fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes)))
+	dump := fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes))
+	return redactSensitiveValues(response.Request.Context(), dump)
 }
 
 // redactDumpBody applies redactBody to the body of an HTTP message dump.
@@ -324,7 +325,6 @@ func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, er
 	// to respect the interface of http.Response, as expected by users of the
 	// http.Client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
-
 	if res.Request != nil {
 		resBody = redact.ResponseBody(res.Request.Context(), res.Header.Get("Content-Type"), resBody)
 	}

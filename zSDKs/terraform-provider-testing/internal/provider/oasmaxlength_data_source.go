@@ -120,8 +120,6 @@ func (r *OASMaxlengthDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasMaxlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

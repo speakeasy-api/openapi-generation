@@ -107,8 +107,6 @@ func (r *XMatchNestedReadonlyDataSource) Read(ctx context.Context, req datasourc
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXMatchNestedReadonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

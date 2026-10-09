@@ -166,8 +166,6 @@ func (r *XParamSuppressComputedDiffPropertyDataSource) Read(ctx context.Context,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXParamSuppressComputedDiffRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

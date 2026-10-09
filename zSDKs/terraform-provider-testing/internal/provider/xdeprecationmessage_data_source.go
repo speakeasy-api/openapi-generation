@@ -380,8 +380,6 @@ func (r *XDeprecationMessageDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

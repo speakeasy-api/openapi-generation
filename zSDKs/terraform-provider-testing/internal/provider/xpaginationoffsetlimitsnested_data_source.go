@@ -113,8 +113,6 @@ func (r *XPaginationOffsetLimitsNestedDataSource) Read(ctx context.Context, req 
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsListXPaginationOffsetLimitsNestedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

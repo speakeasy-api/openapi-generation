@@ -91,8 +91,6 @@ func (r *APICreateAndUpdateResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedAPICreateAndUpdateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -159,8 +157,6 @@ func (r *APICreateAndUpdateResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	res, err := r.client.GetApicreateandupdate(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))
@@ -211,8 +207,6 @@ func (r *APICreateAndUpdateResource) Update(ctx context.Context, req resource.Up
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToSharedAPICreateAndUpdateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

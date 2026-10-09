@@ -114,8 +114,6 @@ func (r *ImportDefaultedIDDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportDefaultedIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

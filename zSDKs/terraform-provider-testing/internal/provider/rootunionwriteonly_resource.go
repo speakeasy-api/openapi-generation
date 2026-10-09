@@ -247,8 +247,6 @@ func (r *RootUnionWriteOnlyResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedRootUnionWriteOnlyInput(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -308,8 +306,6 @@ func (r *RootUnionWriteOnlyResource) Read(ctx context.Context, req resource.Read
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.GetRootUnionWriteonly(ctx)
 	if err != nil {
@@ -382,8 +378,6 @@ func (r *RootUnionWriteOnlyResource) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.DeleteRootUnionWriteonly(ctx)
 	if err != nil {

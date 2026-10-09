@@ -98,8 +98,6 @@ func (r *MixedRequestAndResponseTypeResource) Create(ctx context.Context, req re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedMixedRequestAndResponse(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -163,8 +161,6 @@ func (r *MixedRequestAndResponseTypeResource) Read(ctx context.Context, req reso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetMixedRequestAndResponseTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -221,8 +217,6 @@ func (r *MixedRequestAndResponseTypeResource) Update(ctx context.Context, req re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateMixedRequestAndResponseTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -289,8 +283,6 @@ func (r *MixedRequestAndResponseTypeResource) Delete(ctx context.Context, req re
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteMixedRequestAndResponseTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

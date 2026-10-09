@@ -98,8 +98,6 @@ func (r *OASContentMediaTypeDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -110,8 +110,6 @@ func (r *XPaginationSingletonDataSource) Read(ctx context.Context, req datasourc
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsListXPaginationSingletonAndListRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -162,8 +162,6 @@ func (r *XPlanValidatorsDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXPlanValidatorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

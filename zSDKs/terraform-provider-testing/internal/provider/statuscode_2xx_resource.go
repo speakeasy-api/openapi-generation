@@ -89,8 +89,6 @@ func (r *StatusCode2xxResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedStatusCode2XXRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -151,8 +149,6 @@ func (r *StatusCode2xxResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -206,8 +202,6 @@ func (r *StatusCode2xxResource) Update(ctx context.Context, req resource.UpdateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -268,8 +262,6 @@ func (r *StatusCode2xxResource) Delete(ctx context.Context, req resource.DeleteR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

@@ -300,8 +300,6 @@ func (r *OASMinimumDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasMinimumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

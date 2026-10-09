@@ -89,8 +89,6 @@ func (r *ImportIDIntegerResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedImportIDIntegerRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -153,8 +151,6 @@ func (r *ImportIDIntegerResource) Read(ctx context.Context, req resource.ReadReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetImportIDIntegerRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -241,8 +237,6 @@ func (r *ImportIDIntegerResource) Delete(ctx context.Context, req resource.Delet
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteImportIDIntegerRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

@@ -144,8 +144,6 @@ func (r *OASMinlengthResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASMinlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -209,8 +207,6 @@ func (r *OASMinlengthResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasMinlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -267,8 +263,6 @@ func (r *OASMinlengthResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasMinlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -335,8 +329,6 @@ func (r *OASMinlengthResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasMinlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

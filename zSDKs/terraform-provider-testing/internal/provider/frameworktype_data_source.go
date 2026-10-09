@@ -1405,8 +1405,6 @@ func (r *FrameworkTypeDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetFrameworkTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

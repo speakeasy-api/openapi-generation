@@ -106,8 +106,6 @@ func (r *XEntityObjectNestedRequiredDataSource) Read(ctx context.Context, req da
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXEntityObjectNestedRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

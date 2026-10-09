@@ -305,8 +305,6 @@ func (r *NameShadowingResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedNameShadowingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -369,8 +367,6 @@ func (r *NameShadowingResource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetNameShadowingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -457,8 +453,6 @@ func (r *NameShadowingResource) Delete(ctx context.Context, req resource.DeleteR
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteNameShadowingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

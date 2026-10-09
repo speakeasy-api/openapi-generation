@@ -113,8 +113,6 @@ func (r *XMatchDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXMatchRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

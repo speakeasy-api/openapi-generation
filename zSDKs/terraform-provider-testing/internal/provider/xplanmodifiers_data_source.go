@@ -168,8 +168,6 @@ func (r *XPlanModifiersDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetCustomPlanModifiersRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

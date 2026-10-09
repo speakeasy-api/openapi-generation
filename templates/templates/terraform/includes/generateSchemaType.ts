@@ -13,16 +13,7 @@ function generateSchema(
     fieldAttributes += `${templateIndent(field.indent)}"${
       field.name
     }": ${fieldSchemaType}{\n`;
-    const sanitizedClassName = sanitizeClassName(field.name);
-
-    // Check if this is a root-level field (entity.field)
-    const isRootAttribute = field.hierarchy.split(".").length === 2;
-    const isGlobalField =
-      isRootAttribute && sanitizedClassName in entity.GlobalFields;
-    const isPaginationInputField =
-      isRootAttribute && sanitizedClassName in entity.PaginationInputFields;
-    const isPaginationOutputField =
-      isRootAttribute && sanitizedClassName in entity.PaginationOutputFields;
+    const { isGlobalField, isPaginationField } = rootFieldFlags(entity, field);
 
     const fieldConfig = configFromTypeDef(
       field.type,
@@ -47,7 +38,7 @@ function generateSchema(
     // handles all pagination logic and conventionally in the Terraform Provider
     // ecosystem pagination details are not exposed (e.g. always paginate
     // all results automatically).
-    if (isPaginationInputField || isPaginationOutputField) {
+    if (isPaginationField) {
       return {};
     }
 
@@ -259,6 +250,108 @@ function generateSchema(
 }
 
 registerTemplateFunc("generateSchema", generateSchema);
+
+function rootFieldFlags(
+  entity: TerraformEntity,
+  field: AttributeField,
+): { isGlobalField: boolean; isPaginationField: boolean } {
+  const isRootAttribute = field.hierarchy.split(".").length === 2;
+  if (!isRootAttribute) {
+    return { isGlobalField: false, isPaginationField: false };
+  }
+  const name = sanitizeClassName(field.name);
+  return {
+    isGlobalField: name in entity.GlobalFields,
+    isPaginationField:
+      name in entity.PaginationInputFields ||
+      name in entity.PaginationOutputFields,
+  };
+}
+
+/**
+ * Reports whether any attribute generateSchema emits for the entity is
+ * sensitive or write-only.
+ */
+function entityHasSensitiveAttributes(
+  entity: TerraformEntity,
+  resourceType: TerraformResourceType,
+): boolean {
+  if (entity.OperationSecurity) {
+    return true;
+  }
+
+  let found = false;
+  const iterator: IteratorFunction = (field, renderChildren) => {
+    if (found || field.type.Extensions?.TerraformIgnore?.Schema) {
+      return {};
+    }
+
+    const { isGlobalField, isPaginationField } = rootFieldFlags(entity, field);
+    if (isPaginationField) {
+      return {};
+    }
+
+    const config = configFromTypeDef(
+      field.type,
+      field.defaultValue,
+      field.optional,
+      resourceType,
+      isGlobalField,
+    );
+    if (resourceType === "managed" && config.SoftDeleteProperty) {
+      return {};
+    }
+    if (config.Sensitive || config.WriteOnly) {
+      found = true;
+      return {};
+    }
+
+    if (
+      (field.type.Type == "class" && field.type.Fields.length) ||
+      field.type.AssociatedTypes?.length ||
+      field.type.ItemType?.Type.toString() === "class" ||
+      field.type.ItemType?.Type.toString() === "union"
+    ) {
+      renderChildren({ indent: 0 });
+    }
+    return {};
+  };
+
+  AttributeIterator(entity.SchemaTypeDef, iterator, 0, entity.Name);
+  return found;
+}
+
+let sensitiveAttributesResult: { ast: AST; value: boolean } | undefined;
+
+function hasSensitiveAttributes(): boolean {
+  const ast = context.Global.AST;
+  if (sensitiveAttributesResult?.ast !== ast) {
+    sensitiveAttributesResult = { ast, value: computeHasSensitiveAttributes() };
+  }
+  return sensitiveAttributesResult.value;
+}
+registerTemplateFunc("hasSensitiveAttributes", hasSensitiveAttributes);
+
+function computeHasSensitiveAttributes(): boolean {
+  const provider = context.Global.AST.TerraformProvider;
+  const entities: [TerraformEntity[], TerraformResourceType][] = [
+    [provider?.ManagedResources ?? [], "managed"],
+    [provider?.DataResources ?? [], "data"],
+    [provider?.EphemeralResources ?? [], "ephemeral"],
+    [provider?.Actions ?? [], "action"],
+  ];
+  return entities.some(([group, resourceType]) =>
+    group.some((entity) => entityHasSensitiveAttributes(entity, resourceType)),
+  );
+}
+
+function hasSensitiveValues(): boolean {
+  return (
+    !!context.Global.AST.MainSDK.Security?.Type?.Fields?.length ||
+    hasSensitiveAttributes()
+  );
+}
+registerTemplateFunc("hasSensitiveValues", hasSensitiveValues);
 
 function generateCommonAttributes(
   config: TypeDefConfig,

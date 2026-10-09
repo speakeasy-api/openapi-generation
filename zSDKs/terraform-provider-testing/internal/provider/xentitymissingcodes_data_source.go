@@ -91,8 +91,6 @@ func (r *XEntityMissingCodesDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXEntityMissingCodesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

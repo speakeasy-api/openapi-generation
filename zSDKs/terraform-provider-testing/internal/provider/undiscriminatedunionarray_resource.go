@@ -247,8 +247,6 @@ func (r *UndiscriminatedUnionArrayResource) Create(ctx context.Context, req reso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedUndiscriminatedUnionArrayCreateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -328,8 +326,6 @@ func (r *UndiscriminatedUnionArrayResource) Update(ctx context.Context, req reso
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToSharedUndiscriminatedUnionArrayUpdateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

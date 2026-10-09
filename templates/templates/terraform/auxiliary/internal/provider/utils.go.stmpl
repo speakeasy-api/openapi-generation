@@ -20,7 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	tfReflect "{{getRootPackage}}/internal/provider/reflect"
+	{{- if hasAnyRedactGraphs}}
 	"{{getSDKPackage}}/redact"
+	{{- end}}
 )
 
 func debugResponse(response *http.Response) string {
@@ -38,18 +40,28 @@ func debugResponse(response *http.Response) string {
 	if err != nil {
 		return err.Error()
 	}
-	ctx := response.Request.Context()
 	if response.Body != nil {
 		if body, err := io.ReadAll(response.Body); err == nil {
 			response.Body = io.NopCloser(bytes.NewReader(body))
-			dumpRes = append(dumpRes, redact.ResponseBody(ctx, response.Header.Get("Content-Type"), body)...)
+			{{- if hasAnyRedactGraphs}}
+			body = redact.ResponseBody(response.Request.Context(), response.Header.Get("Content-Type"), body)
+			{{- end}}
+			dumpRes = append(dumpRes, body...)
 		}
 	}
+	{{- if hasAnyRedactGraphs}}
 	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte {
-		return redact.RequestBody(ctx, response.Request.Header.Get("Content-Type"), body)
+		return redact.RequestBody(response.Request.Context(), response.Request.Header.Get("Content-Type"), body)
 	})
-	return redactSensitiveValues(ctx, fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes)))
+	{{- end}}
+	dump := fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes))
+	{{- if hasSensitiveValues}}
+	return redactSensitiveValues(response.Request.Context(), dump)
+	{{- else}}
+	return dump
+	{{- end}}
 }
+{{- if hasAnyRedactGraphs}}
 
 // redactDumpBody applies redactBody to the body of an HTTP message dump.
 func redactDumpBody(dump []byte, redactBody func([]byte) []byte) []byte {
@@ -59,6 +71,7 @@ func redactDumpBody(dump []byte, redactBody func([]byte) []byte) []byte {
 	}
 	return bytes.Join([][]byte{head, redactBody(body)}, []byte("\r\n\r\n"))
 }
+{{- end}}
 
 func merge(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse, target interface{}) {
 	var plan types.Object
@@ -226,8 +239,14 @@ func decomposeRequestForLogging(req *http.Request) (map[string]interface{}, erro
 	}
 
 	// Read the rest of the body content
+	{{- if hasAnyRedactGraphs}}
 	fields[FieldHttpRequestBody] = string(redact.RequestBody(req.Context(), req.Header.Get("Content-Type"), []byte(bodyFromRestOfRequestReader(reqReader))))
+	{{- else}}
+	fields[FieldHttpRequestBody] = bodyFromRestOfRequestReader(reqReader)
+	{{- end}}
+	{{- if hasSensitiveValues}}
 	redactSensitiveFields(req, fields)
+	{{- end}}
 	return fields, nil
 }
 
@@ -301,11 +320,15 @@ func decomposeResponseForLogging(res *http.Response) (map[string]interface{}, er
 	// http.Client
 	res.Body = io.NopCloser(bytes.NewBuffer(resBody))
 
+	{{- if hasAnyRedactGraphs}}
 	if res.Request != nil {
 		resBody = redact.ResponseBody(res.Request.Context(), res.Header.Get("Content-Type"), resBody)
 	}
+	{{- end}}
 	fields[FieldHttpResponseBody] = string(resBody)
+	{{- if hasSensitiveValues}}
 	redactSensitiveFields(res.Request, fields)
+	{{- end}}
 
 	return fields, nil
 }

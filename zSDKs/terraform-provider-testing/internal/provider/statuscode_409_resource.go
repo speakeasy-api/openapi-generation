@@ -97,8 +97,6 @@ func (r *StatusCode409Resource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedStatusCode409Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -165,8 +163,6 @@ func (r *StatusCode409Resource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetStatusCode409Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -245,8 +241,6 @@ func (r *StatusCode409Resource) Delete(ctx context.Context, req resource.DeleteR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteStatusCode409Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)

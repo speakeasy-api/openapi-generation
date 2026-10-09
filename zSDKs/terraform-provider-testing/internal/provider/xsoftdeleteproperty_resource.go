@@ -105,8 +105,6 @@ func (r *XSoftDeletePropertyResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXSoftDeletePropertyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -170,8 +168,6 @@ func (r *XSoftDeletePropertyResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXSoftDeletePropertyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -233,8 +229,6 @@ func (r *XSoftDeletePropertyResource) Update(ctx context.Context, req resource.U
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXSoftDeletePropertyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -301,8 +295,6 @@ func (r *XSoftDeletePropertyResource) Delete(ctx context.Context, req resource.D
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXSoftDeletePropertyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

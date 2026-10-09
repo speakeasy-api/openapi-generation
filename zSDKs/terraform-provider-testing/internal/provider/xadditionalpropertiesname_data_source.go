@@ -107,8 +107,6 @@ func (r *XAdditionalPropertiesNameDataSource) Read(ctx context.Context, req data
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

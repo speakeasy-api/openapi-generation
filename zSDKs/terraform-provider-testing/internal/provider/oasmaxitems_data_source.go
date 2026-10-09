@@ -174,8 +174,6 @@ func (r *OASMaxitemsDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasMaxitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

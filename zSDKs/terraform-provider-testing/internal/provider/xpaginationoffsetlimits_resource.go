@@ -100,8 +100,6 @@ func (r *XPaginationOffsetLimitsResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -226,8 +224,6 @@ func (r *XPaginationOffsetLimitsResource) Read(ctx context.Context, req resource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsListXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -308,8 +304,6 @@ func (r *XPaginationOffsetLimitsResource) Update(ctx context.Context, req resour
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToSharedXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -437,8 +431,6 @@ func (r *XPaginationOffsetLimitsResource) Delete(ctx context.Context, req resour
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.DeleteXPaginationOffsetLimits(ctx)
 	if err != nil {

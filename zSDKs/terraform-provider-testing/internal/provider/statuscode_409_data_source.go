@@ -91,8 +91,6 @@ func (r *StatusCode409DataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetStatusCode409Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

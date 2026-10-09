@@ -112,8 +112,6 @@ func (r *XWrappedAttributeDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -94,8 +94,6 @@ func (r *XEntityArrayItemsDataSource) Read(ctx context.Context, req datasource.R
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetXEntityArrayItems(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

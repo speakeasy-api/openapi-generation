@@ -465,8 +465,6 @@ func (r *OASExampleDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasExampleRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

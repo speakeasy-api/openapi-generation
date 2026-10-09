@@ -166,8 +166,6 @@ func (r *OASPatternResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -231,8 +229,6 @@ func (r *OASPatternResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -289,8 +285,6 @@ func (r *OASPatternResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -357,8 +351,6 @@ func (r *OASPatternResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

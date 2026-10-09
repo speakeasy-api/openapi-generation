@@ -101,8 +101,6 @@ func (r *XEntityArrayNestedOptionalsDataSource) Read(ctx context.Context, req da
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetXEntityArrayNestedOptional(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

@@ -174,8 +174,6 @@ func (r *OASMinitemsDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasMinitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

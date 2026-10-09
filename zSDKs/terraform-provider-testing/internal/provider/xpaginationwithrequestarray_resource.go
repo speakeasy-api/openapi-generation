@@ -101,8 +101,6 @@ func (r *XPaginationWithRequestArrayResource) Create(ctx context.Context, req re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -227,8 +225,6 @@ func (r *XPaginationWithRequestArrayResource) Read(ctx context.Context, req reso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsListXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -309,8 +305,6 @@ func (r *XPaginationWithRequestArrayResource) Update(ctx context.Context, req re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToSharedXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -438,8 +432,6 @@ func (r *XPaginationWithRequestArrayResource) Delete(ctx context.Context, req re
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.DeleteXPaginationWithRequestArray(ctx)
 	if err != nil {

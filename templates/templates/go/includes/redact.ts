@@ -50,8 +50,3 @@ function hasRedactGraphs(op: Operation): boolean {
   return op.HasSensitiveBodies();
 }
 registerTemplateFunc("hasRedactGraphs", hasRedactGraphs);
-
-function hasAnyRedactGraphs(): boolean {
-  return allOperations().some((op) => op.HasSensitiveBodies());
-}
-registerTemplateFunc("hasAnyRedactGraphs", hasAnyRedactGraphs);

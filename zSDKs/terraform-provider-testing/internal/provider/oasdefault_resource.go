@@ -1709,8 +1709,6 @@ func (r *OASDefaultResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1774,8 +1772,6 @@ func (r *OASDefaultResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1832,8 +1828,6 @@ func (r *OASDefaultResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -1900,8 +1894,6 @@ func (r *OASDefaultResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

@@ -153,8 +153,6 @@ func (r *XUnknownValuesResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXUnknownValuesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -214,8 +212,6 @@ func (r *XUnknownValuesResource) Read(ctx context.Context, req resource.ReadRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXUnknownValuesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -294,8 +290,6 @@ func (r *XUnknownValuesResource) Delete(ctx context.Context, req resource.Delete
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXUnknownValuesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

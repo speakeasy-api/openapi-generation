@@ -95,8 +95,6 @@ func (r *ImportMultipleIDAcronymDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportMultipleIDAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

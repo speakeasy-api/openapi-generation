@@ -102,8 +102,6 @@ func (r *XEntityOperationInvokeMultipleOpAction) Invoke(ctx context.Context, req
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedXEntityOperationInvokeMultipleOp1Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

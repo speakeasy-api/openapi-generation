@@ -97,8 +97,6 @@ func (r *OASContentMediaTypeResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -159,8 +157,6 @@ func (r *OASContentMediaTypeResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -214,8 +210,6 @@ func (r *OASContentMediaTypeResource) Update(ctx context.Context, req resource.U
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -276,8 +270,6 @@ func (r *OASContentMediaTypeResource) Delete(ctx context.Context, req resource.D
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasContentMediaTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

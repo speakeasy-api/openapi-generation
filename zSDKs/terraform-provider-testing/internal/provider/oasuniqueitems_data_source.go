@@ -150,8 +150,6 @@ func (r *OASUniqueitemsDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasUniqueitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

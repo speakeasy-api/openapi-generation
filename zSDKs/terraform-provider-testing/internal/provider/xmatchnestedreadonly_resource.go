@@ -116,8 +116,6 @@ func (r *XMatchNestedReadonlyResource) Create(ctx context.Context, req resource.
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXMatchNestedReadonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -177,8 +175,6 @@ func (r *XMatchNestedReadonlyResource) Read(ctx context.Context, req resource.Re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXMatchNestedReadonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -257,8 +253,6 @@ func (r *XMatchNestedReadonlyResource) Delete(ctx context.Context, req resource.
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXMatchNestedReadonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

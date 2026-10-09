@@ -98,8 +98,6 @@ func (r *MixedRequestAndResponseTypeDataSource) Read(ctx context.Context, req da
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetMixedRequestAndResponseTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -99,8 +99,6 @@ func (r *RequestBodyRequiredRefXSpeakeasyEntityLevel2WithParameterDataSource) Re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetRequestbodyRequiredRefXspeakeasyentityLevel2WithparameterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

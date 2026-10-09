@@ -88,8 +88,6 @@ func (r *ImportIDStringAcronymResource) Create(ctx context.Context, req resource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedImportIDStringAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -152,8 +150,6 @@ func (r *ImportIDStringAcronymResource) Read(ctx context.Context, req resource.R
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetImportIDStringAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -240,8 +236,6 @@ func (r *ImportIDStringAcronymResource) Delete(ctx context.Context, req resource
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteImportIDStringAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

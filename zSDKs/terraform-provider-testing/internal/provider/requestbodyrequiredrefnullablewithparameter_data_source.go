@@ -99,8 +99,6 @@ func (r *RequestBodyRequiredRefNullableWithParameterDataSource) Read(ctx context
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetRequestbodyRequiredRefNullableWithParameterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

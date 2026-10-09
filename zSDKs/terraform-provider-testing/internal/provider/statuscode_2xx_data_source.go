@@ -91,8 +91,6 @@ func (r *StatusCode2xxDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetStatusCode2xxRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -254,8 +254,6 @@ func (r *XPlanModifiersResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXPlanModifiersRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -319,8 +317,6 @@ func (r *XPlanModifiersResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetCustomPlanModifiersRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -377,8 +373,6 @@ func (r *XPlanModifiersResource) Update(ctx context.Context, req resource.Update
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXPlanModifiersRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -445,8 +439,6 @@ func (r *XPlanModifiersResource) Delete(ctx context.Context, req resource.Delete
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteCustomPlanModifiersRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

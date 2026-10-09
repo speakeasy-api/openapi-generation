@@ -1223,8 +1223,6 @@ func (r *OASEnumResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1288,8 +1286,6 @@ func (r *OASEnumResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1346,8 +1342,6 @@ func (r *OASEnumResource) Update(ctx context.Context, req resource.UpdateRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -1414,8 +1408,6 @@ func (r *OASEnumResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

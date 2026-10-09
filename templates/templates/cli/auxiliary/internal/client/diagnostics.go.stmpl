@@ -19,7 +19,9 @@ import (
 
 	"{{getGolangPackage}}/internal/config"
 	"{{getGolangPackage}}/internal/flagutil"
+	{{- if hasAnyRedactGraphs}}
 	"{{getGolangPackage}}/internal/sdk/redact"
+	{{- end}}
 )
 
 // maxBodyPreview is the maximum number of bytes to show in body previews.
@@ -317,6 +319,8 @@ func previewBody(body []byte, contentType string) interface{} {
 	return redactBase64String(string(body))
 }
 
+{{- if hasAnyRedactGraphs}}
+
 // previewRequestBody masks the values the operation's schema marks sensitive
 // before applying the name-based preview rules.
 func previewRequestBody(req *http.Request, body []byte) interface{} {
@@ -337,6 +341,16 @@ func previewRedactedBody(body []byte, contentType string) interface{} {
 	}
 	return previewBody(body, contentType)
 }
+{{- else}}
+
+func previewRequestBody(req *http.Request, body []byte) interface{} {
+	return previewBody(body, req.Header.Get("Content-Type"))
+}
+
+func previewResponseBody(req *http.Request, resp *http.Response, body []byte) interface{} {
+	return previewBody(body, resp.Header.Get("Content-Type"))
+}
+{{- end}}
 
 func previewForm(body []byte) string {
 	raw := string(body)

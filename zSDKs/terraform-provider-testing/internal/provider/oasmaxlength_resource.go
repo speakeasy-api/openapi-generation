@@ -144,8 +144,6 @@ func (r *OASMaxlengthResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASMaxlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -209,8 +207,6 @@ func (r *OASMaxlengthResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasMaxlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -267,8 +263,6 @@ func (r *OASMaxlengthResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasMaxlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -335,8 +329,6 @@ func (r *OASMaxlengthResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasMaxlengthRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

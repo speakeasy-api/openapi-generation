@@ -169,8 +169,6 @@ func (r *XEntityOneOfResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXEntityOneOfInput(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -234,8 +232,6 @@ func (r *XEntityOneOfResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXEntityOneOfRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -292,8 +288,6 @@ func (r *XEntityOneOfResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXEntityOneOfRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -360,8 +354,6 @@ func (r *XEntityOneOfResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXEntityOneOfRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

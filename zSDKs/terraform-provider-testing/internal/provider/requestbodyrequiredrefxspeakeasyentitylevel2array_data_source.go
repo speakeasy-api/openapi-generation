@@ -94,8 +94,6 @@ func (r *RequestBodyRequiredRefXSpeakeasyEntityLevel2ArrayDataSource) Read(ctx c
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedRequestBodyRefXSpeakeasyEntityLevel2ArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

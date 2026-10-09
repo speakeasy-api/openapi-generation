@@ -146,8 +146,6 @@ func (r *RootUnionWriteOnlyDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetRootUnionWriteonly(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

@@ -99,8 +99,6 @@ func (r *ImportMultipleIDResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToOperationsCreateImportMultipleIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -164,8 +162,6 @@ func (r *ImportMultipleIDResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetImportMultipleIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -222,8 +218,6 @@ func (r *ImportMultipleIDResource) Update(ctx context.Context, req resource.Upda
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateImportMultipleIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -290,8 +284,6 @@ func (r *ImportMultipleIDResource) Delete(ctx context.Context, req resource.Dele
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteImportMultipleIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

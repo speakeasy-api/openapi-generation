@@ -237,8 +237,6 @@ func (r *OASWriteOnlyDataSource) Read(ctx context.Context, req datasource.ReadRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasWriteonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

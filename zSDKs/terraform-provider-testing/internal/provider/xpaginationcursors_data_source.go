@@ -112,8 +112,6 @@ func (r *XPaginationCursorsDataSource) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedXPaginationCursorsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

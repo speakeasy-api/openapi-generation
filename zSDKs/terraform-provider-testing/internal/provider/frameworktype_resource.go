@@ -1907,8 +1907,6 @@ func (r *FrameworkTypeResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedFrameworkTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -1972,8 +1970,6 @@ func (r *FrameworkTypeResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetFrameworkTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -2030,8 +2026,6 @@ func (r *FrameworkTypeResource) Update(ctx context.Context, req resource.UpdateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateFrameworkTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -2098,8 +2092,6 @@ func (r *FrameworkTypeResource) Delete(ctx context.Context, req resource.DeleteR
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteFrameworkTypeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

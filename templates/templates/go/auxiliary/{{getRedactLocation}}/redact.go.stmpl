@@ -1,3 +1,4 @@
+{{- if hasAnyRedactGraphs -}}
 // Package redact masks values marked sensitive in the API description
 // (x-speakeasy-param-sensitive or format: password) in HTTP bodies, so that
 // HTTP clients and transports can log requests and responses safely.
@@ -514,3 +515,4 @@ var operations = map[string]struct{ request, response *graph }{
 	{{.OperationID}}: { {{- if .Request}}request: {{.Request}},{{end}}{{if .Response}} response: {{.Response}},{{end -}} },
 	{{- end}}
 }
+{{- end}}

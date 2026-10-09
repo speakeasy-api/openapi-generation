@@ -201,8 +201,6 @@ func (r *ParametersDeepObjectDataSource) Read(ctx context.Context, req datasourc
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetParametersDeepObjectRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

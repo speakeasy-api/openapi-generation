@@ -89,8 +89,6 @@ func (r *XEntityDescriptionAction) Invoke(ctx context.Context, req action.Invoke
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXEntityDescriptionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

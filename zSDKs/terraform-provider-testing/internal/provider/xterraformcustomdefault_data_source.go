@@ -197,8 +197,6 @@ func (r *XTerraformCustomDefaultDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

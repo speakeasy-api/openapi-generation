@@ -466,8 +466,6 @@ func (r *XDeprecationMessageResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -531,8 +529,6 @@ func (r *XDeprecationMessageResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -589,8 +585,6 @@ func (r *XDeprecationMessageResource) Update(ctx context.Context, req resource.U
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -657,8 +651,6 @@ func (r *XDeprecationMessageResource) Delete(ctx context.Context, req resource.D
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXDeprecationMessageRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
