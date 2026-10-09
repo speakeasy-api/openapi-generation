@@ -260,6 +260,83 @@ function generateSchema(
 
 registerTemplateFunc("generateSchema", generateSchema);
 
+/**
+ * Reports whether any attribute generateSchema emits for the entity is
+ * sensitive or write-only.
+ */
+function entityHasSensitiveAttributes(
+  entity: TerraformEntity,
+  resourceType: TerraformResourceType,
+): boolean {
+  if (entity.OperationSecurity) {
+    return true;
+  }
+
+  let found = false;
+  const iterator: IteratorFunction = (field, renderChildren) => {
+    if (found || field.type.Extensions?.TerraformIgnore?.Schema) {
+      return {};
+    }
+
+    const config = configFromTypeDef(
+      field.type,
+      field.defaultValue,
+      field.optional,
+      resourceType,
+      false,
+    );
+    if (config.Sensitive || config.WriteOnly) {
+      found = true;
+      return {};
+    }
+
+    if (
+      (field.type.Type == "class" && field.type.Fields.length) ||
+      field.type.AssociatedTypes?.length ||
+      field.type.ItemType?.Type.toString() === "class" ||
+      field.type.ItemType?.Type.toString() === "union"
+    ) {
+      renderChildren({ indent: 0 });
+    }
+    return {};
+  };
+
+  AttributeIterator(entity.SchemaTypeDef, iterator, 0, entity.Name);
+  return found;
+}
+
+let sensitiveAttributesResult: { ast: AST; value: boolean } | undefined;
+
+function hasSensitiveAttributes(): boolean {
+  const ast = context.Global.AST;
+  if (sensitiveAttributesResult?.ast !== ast) {
+    sensitiveAttributesResult = { ast, value: computeHasSensitiveAttributes() };
+  }
+  return sensitiveAttributesResult.value;
+}
+registerTemplateFunc("hasSensitiveAttributes", hasSensitiveAttributes);
+
+function computeHasSensitiveAttributes(): boolean {
+  const provider = context.Global.AST.TerraformProvider;
+  const entities: [TerraformEntity[], TerraformResourceType][] = [
+    [provider?.ManagedResources ?? [], "managed"],
+    [provider?.DataResources ?? [], "data"],
+    [provider?.EphemeralResources ?? [], "ephemeral"],
+    [provider?.Actions ?? [], "action"],
+  ];
+  return entities.some(([group, resourceType]) =>
+    group.some((entity) => entityHasSensitiveAttributes(entity, resourceType)),
+  );
+}
+
+function hasSensitiveValues(): boolean {
+  return (
+    !!context.Global.AST.MainSDK.Security?.Type?.Fields?.length ||
+    hasSensitiveAttributes()
+  );
+}
+registerTemplateFunc("hasSensitiveValues", hasSensitiveValues);
+
 function generateCommonAttributes(
   config: TypeDefConfig,
   indent: number,

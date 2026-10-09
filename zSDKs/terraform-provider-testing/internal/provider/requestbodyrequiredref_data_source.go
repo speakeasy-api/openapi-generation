@@ -94,8 +94,6 @@ func (r *RequestBodyRequiredRefDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedRequestBodyRefRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

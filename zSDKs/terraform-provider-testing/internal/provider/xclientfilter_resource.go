@@ -95,8 +95,6 @@ func (r *XClientFilterResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -157,8 +155,6 @@ func (r *XClientFilterResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -212,8 +208,6 @@ func (r *XClientFilterResource) Update(ctx context.Context, req resource.UpdateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -274,8 +268,6 @@ func (r *XClientFilterResource) Delete(ctx context.Context, req resource.DeleteR
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXClientFilterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

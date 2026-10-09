@@ -1,0 +1,12 @@
+id: 1791552427-e81880ca
+features:
+    - core
+targets:
+    - cli
+    - go
+    - terraform
+type: fix
+bump: patch
+description: omit sensitive value redaction code for operations and documents with nothing sensitive
+author: ThomasRooney
+date: "2026-10-09"

@@ -90,8 +90,6 @@ func (r *ImportIDInt32DataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportIDInt32Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

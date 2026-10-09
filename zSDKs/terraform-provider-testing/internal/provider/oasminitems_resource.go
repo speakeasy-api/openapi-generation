@@ -233,8 +233,6 @@ func (r *OASMinitemsResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASMinitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -298,8 +296,6 @@ func (r *OASMinitemsResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasMinitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -356,8 +352,6 @@ func (r *OASMinitemsResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasMinitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -424,8 +418,6 @@ func (r *OASMinitemsResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasMinitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

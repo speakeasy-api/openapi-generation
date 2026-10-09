@@ -233,8 +233,6 @@ func (r *OASMaxitemsResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASMaxitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -298,8 +296,6 @@ func (r *OASMaxitemsResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasMaxitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -356,8 +352,6 @@ func (r *OASMaxitemsResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasMaxitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -424,8 +418,6 @@ func (r *OASMaxitemsResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasMaxitemsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

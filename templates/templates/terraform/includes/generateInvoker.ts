@@ -132,7 +132,7 @@ function generateSDKInvoker(
     subRes += `${templateIndent(1)}if err != nil {\n`;
     subRes += `${templateIndent(
       2,
-    )}resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))\n`;
+    )}resp.Diagnostics.AddError("failure to invoke API", ${templateErrorMessage()})\n`;
     subRes += `${templateIndent(
       2,
     )}if ${resIdentifier} != nil && ${resIdentifier}.RawResponse != nil {\n`;
@@ -301,7 +301,7 @@ function generateSDKInvoker(
       res += `  ${resIdentifier}, err = ${resIdentifier}.Next()\n`;
       res += `\n`;
       res += `  if err != nil {\n`;
-      res += `    resp.Diagnostics.AddError("failed to retrieve next page of results", redactSensitiveValues(ctx, err.Error()))\n`;
+      res += `    resp.Diagnostics.AddError("failed to retrieve next page of results", ${templateErrorMessage()})\n`;
       res += `    if ${resIdentifier} != nil && ${resIdentifier}.RawResponse != nil {\n`;
       res += `      resp.Diagnostics.AddError("unexpected http request/response", debugResponse(${resIdentifier}.RawResponse))\n`;
       res += `    }\n`;
@@ -326,6 +326,12 @@ function generateSDKInvoker(
   return res;
 }
 
+function templateErrorMessage(): string {
+  return hasSensitiveValues()
+    ? "redactSensitiveValues(ctx, err.Error())"
+    : "err.Error()";
+}
+
 /**
  * Returns the request values whose sensitive attributes are known to the
  * resource method being generated. Configuration is included alongside the
@@ -335,6 +341,19 @@ function sensitiveValueSources(
   entity: TerraformEntity,
   resourceOperationType: TerraformResourceOperationType,
 ): string[] {
+  const isManaged = "Create" in entity.Operations;
+  const resourceType: TerraformResourceType =
+    resourceOperationType === "open"
+      ? "ephemeral"
+      : resourceOperationType === "invoke"
+      ? "action"
+      : isManaged
+      ? "managed"
+      : "data";
+  if (!entityHasSensitiveAttributes(entity, resourceType)) {
+    return [];
+  }
+
   switch (resourceOperationType) {
     case "create":
       return ["req.Config", "req.Plan"];
@@ -345,7 +364,7 @@ function sensitiveValueSources(
     case "read":
       // Only managed resource operations have a Create entry; data source
       // reads receive configuration rather than state.
-      return "Create" in entity.Operations ? ["req.State"] : ["req.Config"];
+      return isManaged ? ["req.State"] : ["req.Config"];
     case "open":
     case "invoke":
       return ["req.Config"];

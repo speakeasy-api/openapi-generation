@@ -90,8 +90,6 @@ func (r *XEntityVersionResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXEntityVersionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -154,8 +152,6 @@ func (r *XEntityVersionResource) Read(ctx context.Context, req resource.ReadRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXEntityVersionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -242,8 +238,6 @@ func (r *XEntityVersionResource) Delete(ctx context.Context, req resource.Delete
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXEntityVersionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

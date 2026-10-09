@@ -110,8 +110,6 @@ func (r *XAdditionalPropertiesNameResource) Create(ctx context.Context, req reso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToOperationsCreateXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -175,8 +173,6 @@ func (r *XAdditionalPropertiesNameResource) Read(ctx context.Context, req resour
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -233,8 +229,6 @@ func (r *XAdditionalPropertiesNameResource) Update(ctx context.Context, req reso
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -301,8 +295,6 @@ func (r *XAdditionalPropertiesNameResource) Delete(ctx context.Context, req reso
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyAdditionalPropertiesNameRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

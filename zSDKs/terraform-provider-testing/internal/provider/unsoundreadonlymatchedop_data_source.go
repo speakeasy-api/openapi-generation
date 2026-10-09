@@ -93,8 +93,6 @@ func (r *UnsoundReadonlyMatchedOpDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetUnsoundReadonlyMatchedOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

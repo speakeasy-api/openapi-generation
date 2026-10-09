@@ -20,7 +20,6 @@ import (
 
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
-	"openapi/internal/sdk/redact"
 )
 
 // maxBodyPreview is the maximum number of bytes to show in body previews.
@@ -316,25 +315,12 @@ func previewBody(body []byte, contentType string) interface{} {
 	return redactBase64String(string(body))
 }
 
-// previewRequestBody masks the values the operation's schema marks sensitive
-// before applying the name-based preview rules.
 func previewRequestBody(req *http.Request, body []byte) interface{} {
-	contentType := req.Header.Get("Content-Type")
-	return previewRedactedBody(redact.RequestBody(req.Context(), contentType, body), contentType)
+	return previewBody(body, req.Header.Get("Content-Type"))
 }
 
 func previewResponseBody(req *http.Request, resp *http.Response, body []byte) interface{} {
-	contentType := resp.Header.Get("Content-Type")
-	return previewRedactedBody(redact.ResponseBody(req.Context(), contentType, body), contentType)
-}
-
-// previewRedactedBody shows a body masked as a whole as the mask itself,
-// since it no longer parses as its content type.
-func previewRedactedBody(body []byte, contentType string) interface{} {
-	if string(body) == redact.Mask {
-		return redact.Mask
-	}
-	return previewBody(body, contentType)
+	return previewBody(body, resp.Header.Get("Content-Type"))
 }
 
 func previewForm(body []byte) string {

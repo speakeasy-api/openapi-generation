@@ -103,8 +103,6 @@ func (r *XPaginationOffsetLimitsDataSource) Read(ctx context.Context, req dataso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsListXPaginationOffsetLimitsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -99,8 +99,6 @@ func (r *RequestBodyOptionalInlineWithParameterDataSource) Read(ctx context.Cont
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetRequestbodyOptionalInlineWithparameterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -104,8 +104,6 @@ func (r *XPollingResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -214,8 +212,6 @@ func (r *XPollingResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -272,8 +268,6 @@ func (r *XPollingResource) Update(ctx context.Context, req resource.UpdateReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -382,8 +376,6 @@ func (r *XPollingResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

@@ -320,8 +320,6 @@ func (r *OASRequiredDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasRequiredRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -1,3 +1,4 @@
+{{- if hasSensitiveValues -}}
 package provider
 
 import (
@@ -8,9 +9,11 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	{{- if hasSensitiveAttributes}}
 
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	{{- end}}
 )
 
 // Values shorter than this match too much unrelated text to be worth redacting.
@@ -43,6 +46,7 @@ func registerSensitiveValues(values ...any) {
 		}
 	}
 }
+{{- if hasSensitiveAttributes}}
 
 // withSensitiveValues returns ctx carrying every known string held under an
 // attribute marked sensitive or write-only in the given tfsdk.Config,
@@ -89,6 +93,7 @@ func knownStrings(v tftypes.Value) []string {
 	})
 	return values
 }
+{{- end}}
 
 // redactSensitiveValues replaces the sensitive values carried by ctx, and the
 // registered provider credentials, wherever they appear in s: verbatim,
@@ -119,7 +124,7 @@ func redactSensitiveValues(ctx context.Context, s string) string {
 
 	// Longest first, so a value contained in another cannot split it.
 	sort.Slice(forms, func(i, j int) bool { return len(forms[i]) > len(forms[j]) })
-	pairs := make([]string, 0, 2*len(forms))
+	var pairs []string
 	for _, form := range forms {
 		pairs = append(pairs, form, "(sensitive)")
 	}
@@ -136,3 +141,4 @@ func redactSensitiveFields(req *http.Request, fields map[string]interface{}) {
 		}
 	}
 }
+{{- end}}

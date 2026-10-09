@@ -874,8 +874,6 @@ func (r *OASEnumDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasEnumRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

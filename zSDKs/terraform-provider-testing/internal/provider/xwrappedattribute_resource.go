@@ -117,8 +117,6 @@ func (r *XWrappedAttributeResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -219,8 +217,6 @@ func (r *XWrappedAttributeResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -312,8 +308,6 @@ func (r *XWrappedAttributeResource) Update(ctx context.Context, req resource.Upd
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -417,8 +411,6 @@ func (r *XWrappedAttributeResource) Delete(ctx context.Context, req resource.Del
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyWrappedAttributeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

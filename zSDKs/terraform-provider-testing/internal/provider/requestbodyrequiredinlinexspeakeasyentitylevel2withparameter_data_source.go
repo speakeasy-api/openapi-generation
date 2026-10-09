@@ -99,8 +99,6 @@ func (r *RequestBodyRequiredInlineXSpeakeasyEntityLevel2WithParameterDataSource)
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetRequestbodyRequiredInlineXspeakeasyentityLevel2WithparameterRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

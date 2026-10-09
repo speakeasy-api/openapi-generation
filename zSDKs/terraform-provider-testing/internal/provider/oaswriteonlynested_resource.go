@@ -153,8 +153,6 @@ func (r *OASWriteOnlyNestedResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASWriteOnlyNestedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -214,8 +212,6 @@ func (r *OASWriteOnlyNestedResource) Read(ctx context.Context, req resource.Read
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.GetOasWriteonlyNested(ctx)
 	if err != nil {
@@ -288,8 +284,6 @@ func (r *OASWriteOnlyNestedResource) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	res, err := r.client.DeleteOasWriteonlyNested(ctx)
 	if err != nil {

@@ -90,8 +90,6 @@ func (r *XEntityVersionDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXEntityVersionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

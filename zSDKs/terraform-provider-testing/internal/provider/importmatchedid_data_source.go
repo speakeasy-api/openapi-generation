@@ -96,8 +96,6 @@ func (r *ImportMatchedIDDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportMatchedIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

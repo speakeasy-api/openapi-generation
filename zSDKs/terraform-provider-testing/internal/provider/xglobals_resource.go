@@ -438,8 +438,6 @@ func (r *XGlobalsResource) Create(ctx context.Context, req resource.CreateReques
 		data.GlobalStringWithDefault = r.GlobalStringWithDefault
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToOperationsCreateXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -502,8 +500,6 @@ func (r *XGlobalsResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -653,8 +649,6 @@ func (r *XGlobalsResource) Update(ctx context.Context, req resource.UpdateReques
 	if (data.GlobalStringWithDefault.IsNull() || data.GlobalStringWithDefault.IsUnknown()) && !r.GlobalStringWithDefault.IsUnknown() {
 		data.GlobalStringWithDefault = r.GlobalStringWithDefault
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -813,8 +807,6 @@ func (r *XGlobalsResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXGlobalsRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

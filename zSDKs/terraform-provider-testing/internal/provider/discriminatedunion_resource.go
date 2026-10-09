@@ -224,8 +224,6 @@ func (r *DiscriminatedUnionResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedDiscriminatedUnionCreateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -286,8 +284,6 @@ func (r *DiscriminatedUnionResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetDiscriminatedUnionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -341,8 +337,6 @@ func (r *DiscriminatedUnionResource) Update(ctx context.Context, req resource.Up
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToSharedDiscriminatedUnionUpdateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -403,8 +397,6 @@ func (r *DiscriminatedUnionResource) Delete(ctx context.Context, req resource.De
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteDiscriminatedUnionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

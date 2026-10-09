@@ -313,8 +313,6 @@ func (r *XParamSuppressComputedDiffResource) Create(ctx context.Context, req res
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToOperationsCreateXParamSuppressComputedDiffRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -104,8 +104,6 @@ func (r *XTerraformIgnoreDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformIgnoreRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

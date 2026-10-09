@@ -103,8 +103,6 @@ func (r *ImportMatchedIDResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToOperationsCreateImportMatchedIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -167,8 +165,6 @@ func (r *ImportMatchedIDResource) Read(ctx context.Context, req resource.ReadReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetImportMatchedIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -255,8 +251,6 @@ func (r *ImportMatchedIDResource) Delete(ctx context.Context, req resource.Delet
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteImportMatchedIDRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

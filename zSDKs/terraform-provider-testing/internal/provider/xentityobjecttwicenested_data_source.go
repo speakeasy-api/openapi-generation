@@ -102,8 +102,6 @@ func (r *XEntityObjectTwiceNestedDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetXEntityObjectTwiceNested(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

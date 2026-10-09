@@ -102,8 +102,6 @@ func (r *XEntityObjectNestedOptionalResource) Create(ctx context.Context, req re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXEntityObjectNestedOptionalRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -164,8 +162,6 @@ func (r *XEntityObjectNestedOptionalResource) Read(ctx context.Context, req reso
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXEntityObjectNestedOptionalRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -219,8 +215,6 @@ func (r *XEntityObjectNestedOptionalResource) Update(ctx context.Context, req re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXEntityObjectNestedOptionalRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -281,8 +275,6 @@ func (r *XEntityObjectNestedOptionalResource) Delete(ctx context.Context, req re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXEntityObjectNestedOptionalRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

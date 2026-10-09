@@ -92,8 +92,6 @@ func (r *XTerraformWriteOnlyDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXTerraformWriteOnlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

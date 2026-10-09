@@ -90,8 +90,6 @@ func (r *ImportIDInt64DataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportIDInt64Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

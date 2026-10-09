@@ -93,8 +93,6 @@ func (r *XMatchPriorStateDataSource) Read(ctx context.Context, req datasource.Re
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXMatchPriorStateRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

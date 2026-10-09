@@ -292,8 +292,6 @@ func (r *XTerraformCustomDefaultResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -357,8 +355,6 @@ func (r *XTerraformCustomDefaultResource) Read(ctx context.Context, req resource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -415,8 +411,6 @@ func (r *XTerraformCustomDefaultResource) Update(ctx context.Context, req resour
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -483,8 +477,6 @@ func (r *XTerraformCustomDefaultResource) Delete(ctx context.Context, req resour
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXSpeakeasyTerraformCustomDefaultRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

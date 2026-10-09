@@ -89,8 +89,6 @@ func (r *XEntityDescriptionEphemeralResource) Open(ctx context.Context, req ephe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXEntityDescriptionRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

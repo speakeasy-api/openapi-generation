@@ -93,8 +93,6 @@ func (r *XEntityOperationInvokeSingleOpAction) Invoke(ctx context.Context, req a
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedXEntityOperationInvokeSingleOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

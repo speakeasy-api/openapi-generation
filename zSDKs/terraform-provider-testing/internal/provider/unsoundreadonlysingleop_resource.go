@@ -98,8 +98,6 @@ func (r *UnsoundReadonlySingleOpResource) Create(ctx context.Context, req resour
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedUnsoundReadonlySingleOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -159,8 +157,6 @@ func (r *UnsoundReadonlySingleOpResource) Read(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetUnsoundReadonlySingleOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -239,8 +235,6 @@ func (r *UnsoundReadonlySingleOpResource) Delete(ctx context.Context, req resour
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteUnsoundReadonlySingleOpRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

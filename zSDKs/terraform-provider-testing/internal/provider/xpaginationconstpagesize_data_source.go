@@ -101,8 +101,6 @@ func (r *XPaginationConstPageSizeDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsListXPaginationConstPageSizeRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

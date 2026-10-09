@@ -90,8 +90,6 @@ func (r *ImportIDStringAcronymDataSource) Read(ctx context.Context, req datasour
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportIDStringAcronymRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

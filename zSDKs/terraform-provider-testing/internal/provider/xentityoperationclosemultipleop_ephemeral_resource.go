@@ -118,8 +118,6 @@ func (r *XEntityOperationCloseMultipleOpEphemeralResource) Open(ctx context.Cont
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToSharedXEntityOperationCloseMultipleOpOpenRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

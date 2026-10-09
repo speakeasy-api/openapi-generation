@@ -97,8 +97,6 @@ func (r *XEntityMissingCodesResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedXEntityMissingCodesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -158,8 +156,6 @@ func (r *XEntityMissingCodesResource) Read(ctx context.Context, req resource.Rea
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsGetXEntityMissingCodesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -238,8 +234,6 @@ func (r *XEntityMissingCodesResource) Delete(ctx context.Context, req resource.D
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteXEntityMissingCodesRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

@@ -135,8 +135,6 @@ func (r *OASPatternDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasPatternRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -90,8 +90,6 @@ func (r *ImportIDIntegerDataSource) Read(ctx context.Context, req datasource.Rea
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetImportIDIntegerRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

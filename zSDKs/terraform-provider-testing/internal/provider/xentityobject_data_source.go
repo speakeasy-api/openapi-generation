@@ -94,8 +94,6 @@ func (r *XEntityObjectDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	res, err := r.client.GetXEntityObject(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("failure to invoke API", redactSensitiveValues(ctx, err.Error()))

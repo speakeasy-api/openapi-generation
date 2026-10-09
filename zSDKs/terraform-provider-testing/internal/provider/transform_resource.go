@@ -101,8 +101,6 @@ func (r *TransformResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedTransformedInput(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

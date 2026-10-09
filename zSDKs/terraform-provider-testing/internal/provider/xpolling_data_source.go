@@ -104,8 +104,6 @@ func (r *XPollingDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetXPollingRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

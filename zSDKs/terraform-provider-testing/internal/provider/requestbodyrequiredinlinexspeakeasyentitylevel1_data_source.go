@@ -94,8 +94,6 @@ func (r *RequestBodyRequiredInlineXSpeakeasyEntityLevel1DataSource) Read(ctx con
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetRequestbodyRequiredInlineXspeakeasyentityLevel1Request(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -380,8 +380,6 @@ func (r *OASDeprecatedDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasDeprecatedRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

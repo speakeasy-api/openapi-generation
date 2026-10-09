@@ -103,8 +103,6 @@ func (r *XPaginationWithRequestArrayDataSource) Read(ctx context.Context, req da
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsListXPaginationWithRequestArrayRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

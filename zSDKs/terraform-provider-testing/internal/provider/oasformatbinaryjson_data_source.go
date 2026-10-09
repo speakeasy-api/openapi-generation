@@ -116,8 +116,6 @@ func (r *OASFormatBinaryJSONDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config)
-
 	request, requestDiags := data.ToOperationsGetOasFormatBinaryJSONRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 

@@ -404,8 +404,6 @@ func (r *OASWriteOnlyResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan)
-
 	request, requestDiags := data.ToSharedOASWriteOnlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -469,8 +467,6 @@ func (r *OASWriteOnlyResource) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	ctx = withSensitiveValues(ctx, req.State)
-
 	request, requestDiags := data.ToOperationsGetOasWriteonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
 
@@ -527,8 +523,6 @@ func (r *OASWriteOnlyResource) Update(ctx context.Context, req resource.UpdateRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	ctx = withSensitiveValues(ctx, req.Config, req.Plan, req.State)
 
 	request, requestDiags := data.ToOperationsUpdateOasWriteonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)
@@ -595,8 +589,6 @@ func (r *OASWriteOnlyResource) Delete(ctx context.Context, req resource.DeleteRe
 
 	// #region pre-delete
 	// #endregion pre-delete
-
-	ctx = withSensitiveValues(ctx, req.State)
 
 	request, requestDiags := data.ToOperationsDeleteOasWriteonlyRequest(ctx)
 	resp.Diagnostics.Append(requestDiags...)

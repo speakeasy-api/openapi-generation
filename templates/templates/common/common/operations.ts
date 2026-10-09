@@ -240,6 +240,11 @@ function allOperations(
 }
 registerTemplateFunc("allOperations", allOperations);
 
+function hasAnyRedactGraphs(): boolean {
+  return allOperations().some((op) => op.HasSensitiveBodies());
+}
+registerTemplateFunc("hasAnyRedactGraphs", hasAnyRedactGraphs);
+
 // @ts-ignore
 function getAllowEmptyValueQueryParamNames(op: Operation): string[] {
   const queryParams = op.Request?.Params?.QueryParams ?? [];
