@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.948.2] - 2026-10-09
+### :bug: Bug Fixes
+- [`71d29b7`](https://github.com/speakeasy-api/openapi-generation/commit/71d29b747614b098c8a6faef48263160a7de78e5) - **cli**: surface settings flags, examples and related commands in configure and auth login help ([#85](https://github.com/speakeasy-api/openapi-generation/pull/85)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.948.1] - 2026-10-09
 ### :bug: Bug Fixes
 - [`09615dd`](https://github.com/speakeasy-api/openapi-generation/commit/09615dd57d38c59c1458f18b8d74b3084e0549a8) - **cli**: keep the async handle and resume command when poll setup fails ([#90](https://github.com/speakeasy-api/openapi-generation/pull/90)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20530,3 +20535,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.947.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.0...v2.947.1
 [v2.948.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.1...v2.948.0
 [v2.948.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.0...v2.948.1
+[v2.948.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.1...v2.948.2
