@@ -249,13 +249,6 @@ interface SecurityLeafInfo {
   secret: boolean;
 }
 
-function isSecretSecurityField(field: FieldDef): boolean {
-  if (field.Name.toLowerCase().includes("username")) return false;
-  return isSecuritySecret(
-    field.Annotations?.Get("security") as SecurityAnnotation | undefined,
-  );
-}
-
 function walkSecurityLeafFields(
   fields: FieldDef[],
   visitor: (leaf: SecurityLeafInfo) => void,
@@ -282,7 +275,9 @@ function walkSecurityLeafFields(
       visitor({
         name: field.Name,
         description: field.Comments?.Description || "Security credential",
-        secret: isSecretSecurityField(field),
+        secret: isSecuritySecret(
+          field.Annotations?.Get("security") as SecurityAnnotation | undefined,
+        ),
       });
     }
   }

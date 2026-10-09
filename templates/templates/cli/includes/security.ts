@@ -137,15 +137,7 @@ function flattenCLISecurityObject(
       description = getDefaultSecurityDescription(field.Name, secAnno);
     }
 
-    // Determine if this is a secret based on security type and field name
-    // Usernames are not secrets, even in basic auth
-    // Array fields like Scopes are not secrets
-    const isUsernameField = field.Name.toLowerCase().includes("username");
-    const isSecret = isArray
-      ? false
-      : isUsernameField
-      ? false
-      : isSecuritySecret(secAnno);
+    const isSecret = !isArray && isSecuritySecret(secAnno);
 
     results.push({
       field: {
@@ -250,8 +242,10 @@ function isSecuritySecret(secAnno: SecurityAnnotation | undefined): boolean {
   if (!secAnno) {
     return false;
   }
+  if (secAnno.FieldName === "username") {
+    return false;
+  }
 
-  // All security fields except usernames are considered secrets
   switch (secAnno.SecType) {
     case "apiKey":
       return true; // API keys are always secrets
@@ -260,9 +254,6 @@ function isSecuritySecret(secAnno: SecurityAnnotation | undefined): boolean {
         case "bearer":
           return true; // Bearer tokens are secrets
         case "basic":
-          // Password is secret, username is not
-          // But we can't easily tell from the annotation alone
-          // The safest is to treat all as potentially secret
           return true;
         case "custom":
           return true;
