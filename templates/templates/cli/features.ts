@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.0",
+  core: "0.9.2",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
