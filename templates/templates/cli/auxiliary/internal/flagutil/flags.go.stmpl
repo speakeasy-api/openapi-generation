@@ -84,44 +84,90 @@ func DidDryRunRequest(cmd *cobra.Command) bool {
 	return hasMarker(cmd, dryRunRequestAnnotation)
 }
 
-// credentialsMissingAnnotation marks a command whose request went out without
-// any credential, so the error classifier can read a permission denial as a
-// missing-credential failure.
-const credentialsMissingAnnotation = "speakeasy_credentials_missing"
+// credentialsMissingAnnotation marks a command whose request goes out without
+// a credential while the caller has configured none it could have carried, so
+// the error classifier can read a permission denial as a missing-credential
+// failure. credentialsMissingHintAnnotation carries the hint that names the
+// credential the request accepts when the global setup hints would mislead.
+const (
+	credentialsMissingAnnotation     = "speakeasy_credentials_missing"
+	credentialsMissingHintAnnotation = "speakeasy_credentials_missing_hint"
+)
 
-// RecordRequestSecurity notes whether the security struct the request will
-// carry is empty, which is what CredentialsMissing reports. The struct's shape
-// follows the document (option pointers, strings, scope slices), so the zero
-// check goes through reflect: a struct comparison is invalid once a scheme
-// carries a slice.
-func RecordRequestSecurity(cmd *cobra.Command, security any) {
+// RecordCredentialsMissing notes whether the request will go out without any
+// credential the caller could have supplied. A non-empty hint replaces the
+// global credential setup hints when the classifier applies the override; the
+// hint is dropped whenever missing is false.
+func RecordCredentialsMissing(cmd *cobra.Command, missing bool, hint string) {
+	setMarker(cmd, credentialsMissingAnnotation, missing)
+	if !missing {
+		hint = ""
+	}
+	setAnnotation(cmd, credentialsMissingHintAnnotation, hint)
+}
+
+// RecordRequestSecurity records the credentials as missing when the security
+// struct the request will carry is the zero value. The struct's shape follows
+// the document (option pointers, strings, scope slices), so the zero check
+// goes through reflect: a struct comparison is invalid once a scheme carries a
+// slice, and a pointer is followed so a non-nil pointer to an empty struct
+// still counts as missing.
+func RecordRequestSecurity(cmd *cobra.Command, security any, hint string) {
+	RecordCredentialsMissing(cmd, isZeroSecurity(security), hint)
+}
+
+func isZeroSecurity(security any) bool {
 	value := reflect.ValueOf(security)
-	setMarker(cmd, credentialsMissingAnnotation, !value.IsValid() || value.IsZero())
+	for value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return true
+		}
+		value = value.Elem()
+	}
+	return !value.IsValid() || value.IsZero()
 }
 
 func CredentialsMissing(cmd *cobra.Command) bool {
 	return hasMarker(cmd, credentialsMissingAnnotation)
 }
 
+// CredentialsMissingHint returns the hint recorded alongside a missing
+// credential, or "" when the global setup hints apply.
+func CredentialsMissingHint(cmd *cobra.Command) string {
+	if cmd == nil {
+		return ""
+	}
+	return cmd.Annotations[credentialsMissingHintAnnotation]
+}
+
 // setMarker records a boolean marker in the command's annotations. Clearing
 // removes the key so a command reused across invocations never carries a
 // stale marker.
 func setMarker(cmd *cobra.Command, key string, on bool) {
+	value := ""
+	if on {
+		value = "true"
+	}
+	setAnnotation(cmd, key, value)
+}
+
+func hasMarker(cmd *cobra.Command, key string) bool {
+	return cmd != nil && cmd.Annotations[key] == "true"
+}
+
+// setAnnotation stores value under key, removing the key for an empty value.
+func setAnnotation(cmd *cobra.Command, key, value string) {
 	if cmd == nil {
 		return
 	}
-	if !on {
+	if value == "" {
 		delete(cmd.Annotations, key)
 		return
 	}
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
 	}
-	cmd.Annotations[key] = "true"
-}
-
-func hasMarker(cmd *cobra.Command, key string) bool {
-	return cmd != nil && cmd.Annotations[key] == "true"
+	cmd.Annotations[key] = value
 }
 
 // GetBoolFlag returns the value of a bool flag and whether it was changed.

@@ -664,7 +664,6 @@ const (
 	TestCliExitCodeSingleEnvelope
 	TestCliExitCodeSuccessAndDiscovery
 	TestCliExitCodesRenderingModes
-	TestCliForbiddenWithoutCredentials
 	TestClientCredentialsDryRunTokenAndApi
 	TestClierrorsAgentModeExplicitlyDisabled
 	TestClierrorsAgentModeFromEnvironment

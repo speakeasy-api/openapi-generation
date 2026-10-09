@@ -299,6 +299,30 @@ function templateSecurityFlagRegistration(op: Operation): string {
   });
   return lines.join("\n    ");
 }
+
+/**
+ * Hint naming the operation-level credential flags, recorded with the
+ * missing-credential marker: an operation that sends its own security never
+ * sends the global credential, so the global setup hints would misdirect.
+ */
+function templateOperationSecurityHint(op: Operation): string {
+  if (!op.Security) return "";
+
+  const flags: string[] = [];
+  walkSecurityLeafFields(op.Security.Type.Fields || [], (leaf) => {
+    const flag = `--${sanitizeFlagNameWithReserved(leaf.name)}`;
+    if (!flags.includes(flag)) flags.push(flag);
+  });
+  if (flags.length === 0) return "";
+  return `Pass ${flags.join(
+    " / ",
+  )} to authenticate this operation (it does not use the global credential)`;
+}
+registerTemplateFunc(
+  "templateOperationSecurityHint",
+  templateOperationSecurityHint,
+);
+
 registerTemplateFunc(
   "templateSecurityFlagRegistration",
   templateSecurityFlagRegistration,

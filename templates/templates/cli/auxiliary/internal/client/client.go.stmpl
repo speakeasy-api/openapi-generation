@@ -22,9 +22,7 @@ package client
 func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{templateMainSDKTypeName}}, error) {
     var sdkOpts []sdk.SDKOption
     {{- if hasGlobalSecurity}}
-    globalSecurity := BuildGlobalSecurity(cmd, allowedSecurityFields)
-    flagutil.RecordRequestSecurity(cmd, globalSecurity)
-    sdkOpts = append(sdkOpts, sdk.WithSecurity(globalSecurity))
+    sdkOpts = append(sdkOpts, sdk.WithSecurity(BuildGlobalSecurity(cmd, allowedSecurityFields)))
     {{- else}}
     _ = allowedSecurityFields
     {{- end}}
@@ -149,12 +147,18 @@ func resolveStringFlag(cmd *cobra.Command, name string) string {
 {{- if hasGlobalSecurity}}
 
 // BuildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
+// It records on the command whether the caller has configured any credential
+// at all (flagutil.CredentialsMissing), which the error classifier reads to
+// tell an anonymous caller apart from one whose credential was refused.
 func BuildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecurityFields"}} []string) {{templateGlobalSecurityTypeName}} {
     {{- if not hasMultipleSecuritySchemes}}
     _ = {{securityIdentifier "allowedSecurityFields"}}
     {{- end}}
     {{templateSecurityFieldParsing | indent 4 | trim}}
     {{templateGlobalSecurityConstruction | indent 4 | trim}}
+    {{- if not hasMultipleSecuritySchemes}}
+    flagutil.RecordRequestSecurity(cmd, globalSecurity, "")
+    {{- end}}
     return globalSecurity
 }
 {{- end}}
