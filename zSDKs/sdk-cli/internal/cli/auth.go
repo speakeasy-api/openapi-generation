@@ -53,6 +53,9 @@ with a config file fallback.
 
 All fields are optional — press Enter to skip any field you don't need.
 Use the configure command for both authentication and global parameters.`,
+		Annotations: map[string]string{
+			"speakeasy_settings_command": "true",
+		},
 		Args: cobra.NoArgs,
 		RunE: runAuthLoginCmd,
 	})
@@ -70,8 +73,9 @@ Sources are shown as:
   [unset]   - Not configured
 
 Credential values are masked for security.`,
-		Args: cobra.NoArgs,
-		RunE: runWhoamiCmd,
+		Annotations: map[string]string{"speakeasy_settings_command": "true"},
+		Args:        cobra.NoArgs,
+		RunE:        runWhoamiCmd,
 	})
 
 	addAuthSubcommand(&cobra.Command{
@@ -80,8 +84,9 @@ Credential values are masked for security.`,
 		Long: `Clear all stored authentication credentials from both the OS keychain and config file.
 
 This removes all credentials previously set via auth login or configure.`,
-		Args: cobra.NoArgs,
-		RunE: runAuthLogoutCmd,
+		Annotations: map[string]string{"speakeasy_settings_command": "true"},
+		Args:        cobra.NoArgs,
+		RunE:        runAuthLogoutCmd,
 	})
 
 	return nil

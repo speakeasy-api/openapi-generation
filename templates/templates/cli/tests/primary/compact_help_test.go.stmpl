@@ -94,6 +94,51 @@ func TestCompactOperationAndGroupHelp(t *testing.T) {
 	assert.NotContains(t, builtIn, "Learn:")
 }
 
+func TestCompactSettingsCommandHelp(t *testing.T) {
+	configure := runBareHelp(t, "configure", "--help")
+	assert.Contains(t, configure, "Just works:\n  cli configure\n  cli configure --api-key-auth \"$CLI_API_KEY_AUTH\"\n")
+	assert.Contains(t, configure, "Settings Flags:\n")
+	assert.Contains(t, configure, "--api-key-auth string")
+	assert.Contains(t, configure, "--global-query-param string")
+	assert.Contains(t, configure, "See also: cli whoami · cli auth logout")
+	assert.NotContains(t, configure, "--timeout")
+	assert.NotContains(t, configure, "--no-interactive")
+
+	login := runBareHelp(t, "auth", "login", "--help")
+	assert.Contains(t, login, "Just works:\n  cli auth login\n  cli auth login --api-key-auth \"$CLI_API_KEY_AUTH\"\n")
+	assert.Contains(t, login, "Settings Flags:\n")
+	assert.Contains(t, login, "--api-key-auth string")
+	assert.NotContains(t, login, "--global-query-param")
+	assert.Contains(t, login, "See also: cli configure · cli whoami · cli auth logout")
+
+	configureUsage := runBareHelp(t, "configure", "--usage")
+	assert.Contains(t, configureUsage, `flag "--api-key-auth <api_key_auth>"`)
+	assert.Contains(t, configureUsage, `flag "--global-query-param <global_query_param>"`)
+	assert.NotContains(t, configureUsage, "global=#true")
+	assert.NotContains(t, configureUsage, "--no-interactive")
+	loginUsage := runBareHelp(t, "auth", "login", "--usage")
+	assert.Contains(t, loginUsage, `flag "--api-key-auth <api_key_auth>"`)
+	assert.NotContains(t, loginUsage, "--global-query-param")
+
+	// Tree views declare each global once at the root; only a command's own
+	// schema repeats the settings flags it stores.
+	rootUsage := runBareHelp(t, "--usage")
+	assert.Equal(t, 1, strings.Count(rootUsage, `flag "--api-key-auth <api_key_auth>"`), "%s", rootUsage)
+	assert.Contains(t, rootUsage, `flag "--api-key-auth <api_key_auth>" help="Authenticate using an API Key generated via our platform." global=#true`)
+	authUsage := runBareHelp(t, "auth", "--usage")
+	assert.NotContains(t, authUsage, "--api-key-auth")
+
+	home := t.TempDir()
+	h := NewCLITestHarness(t).WithEnv("HOME", home).WithEnv("CLI_NO_KEYRING", "true")
+	require.NoError(t, h.RunBare([]string{"configure", "--api-key-auth", "settings-example-key"}))
+	saved, err := os.ReadFile(filepath.Join(home, ".config", "cli", "config.yaml"))
+	require.NoError(t, err)
+	assert.Contains(t, string(saved), "settings-example-key")
+	require.NoError(t, h.RunBare([]string{"whoami"}))
+	assert.Contains(t, h.GetStdout(), `"api-key-auth"`)
+	assert.NotContains(t, h.GetStdout(), "settings-example-key")
+}
+
 func TestCompactRootHelp(t *testing.T) {
 	output := runBareHelp(t, "--help")
 	assert.Contains(t, output, compactMachineLine)

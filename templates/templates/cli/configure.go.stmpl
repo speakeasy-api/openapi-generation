@@ -32,6 +32,12 @@ func initConfigureCmd(parent *cobra.Command) error {
         Args:  cobra.NoArgs,
         RunE:  runConfigureCmd,
     }
+    cmd.Annotations = map[string]string{"speakeasy_settings_command": "true"}
+    {{- if and (eq (helpStyle) "compact") (isAnyInteractiveEnabled)}}
+    cmd.Example = "{{templateSettingsHelpExample "configure"}}"
+    cmd.Annotations["speakeasy_help_settings"] = "{{templateSettingsHelpFlags "configure"}}"
+    cmd.Annotations["speakeasy_help_see_also"] = "{{templateSettingsHelpSeeAlso "configure"}}"
+    {{- end}}
     {{- if isAnyInteractiveEnabled}}
     cmd.Flags().String("{{defaultOutputFormatFlag}}", "", "Store the default output format without opening the form. Options: "+strings.Join(output.Formats, ", ")+". Pass an empty value to clear it.")
     {{- end}}
