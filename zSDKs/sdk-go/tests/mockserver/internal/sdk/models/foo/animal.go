@@ -63,7 +63,7 @@ func (u *Animal) UnmarshalJSON(data []byte) error {
 	case "dog":
 		dog := new(Dog)
 		if err := utils.UnmarshalJSON(data, &dog, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (AnimalType == dog) type Dog within Animal: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (AnimalType == dog) type Dog within Animal: %w", err)
 		}
 
 		u.Dog = dog
@@ -72,7 +72,7 @@ func (u *Animal) UnmarshalJSON(data []byte) error {
 	case "cat":
 		cat := new(Cat)
 		if err := utils.UnmarshalJSON(data, &cat, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (AnimalType == cat) type Cat within Animal: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (AnimalType == cat) type Cat within Animal: %w", err)
 		}
 
 		u.Cat = cat
@@ -80,7 +80,7 @@ func (u *Animal) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for Animal", string(data))
+	return errors.New("could not unmarshal into any supported union types for Animal")
 }
 
 func (u Animal) MarshalJSON() ([]byte, error) {

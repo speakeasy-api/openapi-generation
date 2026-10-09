@@ -4,7 +4,6 @@ package bar
 
 import (
 	"errors"
-	"fmt"
 	"mockserver/internal/sdk/utils"
 )
 
@@ -57,7 +56,7 @@ func (u *Vehicle) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for Vehicle", string(data))
+	return errors.New("could not unmarshal into any supported union types for Vehicle")
 }
 
 func (u Vehicle) MarshalJSON() ([]byte, error) {

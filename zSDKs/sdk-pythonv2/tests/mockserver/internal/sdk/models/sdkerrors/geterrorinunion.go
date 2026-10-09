@@ -5,7 +5,6 @@ package sdkerrors
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"mockserver/internal/sdk/models/components"
 	"mockserver/internal/sdk/utils"
 )
@@ -63,7 +62,7 @@ func (u *GetErrorInUnionInternalServerError) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for GetErrorInUnionInternalServerError", string(data))
+	return errors.New("could not unmarshal into any supported union types for GetErrorInUnionInternalServerError")
 }
 
 func (u GetErrorInUnionInternalServerError) MarshalJSON() ([]byte, error) {

@@ -1654,3 +1654,28 @@ func TestCircularReferenceRecursiveOneOf(t *testing.T) {
 	require.NotNil(t, res.Object)
 	assert.Equal(t, payload, res.Object.JSON.Value)
 }
+
+func TestUnionUnmarshalErrorOmitsPayload(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		data   string
+		target any
+	}{
+		{
+			name:   "discriminated variant mismatch",
+			data:   `{"kind":"model","model":5,"input":"canary-discriminated"}`,
+			target: &shared.DiscriminatedVariantBody{},
+		},
+		{
+			name:   "no matching member",
+			data:   `{"value":"canary-undiscriminated"}`,
+			target: &shared.PrimitiveTypeUnion{},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := json.Unmarshal([]byte(tc.data), tc.target)
+			require.Error(t, err)
+			assert.NotContains(t, err.Error(), "canary-")
+		})
+	}
+}

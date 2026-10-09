@@ -379,7 +379,7 @@ func (u *OASWriteOnlyRequestUnionWithPartialWriteonly) UnmarshalJSON(data []byte
 	case "password":
 		oasWriteOnlyRequestPasswordAuth := new(OASWriteOnlyRequestPasswordAuth)
 		if err := utils.UnmarshalJSON(data, &oasWriteOnlyRequestPasswordAuth, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (AuthType == password) type OASWriteOnlyRequestPasswordAuth within OASWriteOnlyRequestUnionWithPartialWriteonly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (AuthType == password) type OASWriteOnlyRequestPasswordAuth within OASWriteOnlyRequestUnionWithPartialWriteonly: %w", err)
 		}
 
 		u.OASWriteOnlyRequestPasswordAuth = oasWriteOnlyRequestPasswordAuth
@@ -388,7 +388,7 @@ func (u *OASWriteOnlyRequestUnionWithPartialWriteonly) UnmarshalJSON(data []byte
 	case "token":
 		oasWriteOnlyRequestTokenAuth := new(OASWriteOnlyRequestTokenAuth)
 		if err := utils.UnmarshalJSON(data, &oasWriteOnlyRequestTokenAuth, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (AuthType == token) type OASWriteOnlyRequestTokenAuth within OASWriteOnlyRequestUnionWithPartialWriteonly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (AuthType == token) type OASWriteOnlyRequestTokenAuth within OASWriteOnlyRequestUnionWithPartialWriteonly: %w", err)
 		}
 
 		u.OASWriteOnlyRequestTokenAuth = oasWriteOnlyRequestTokenAuth
@@ -396,7 +396,7 @@ func (u *OASWriteOnlyRequestUnionWithPartialWriteonly) UnmarshalJSON(data []byte
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASWriteOnlyRequestUnionWithPartialWriteonly", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASWriteOnlyRequestUnionWithPartialWriteonly")
 }
 
 func (u OASWriteOnlyRequestUnionWithPartialWriteonly) MarshalJSON() ([]byte, error) {

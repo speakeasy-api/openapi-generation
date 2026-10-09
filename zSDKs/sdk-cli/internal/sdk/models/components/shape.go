@@ -94,7 +94,7 @@ func (u *Shape) UnmarshalJSON(data []byte) (err error) {
 	case "circle":
 		circle := new(Circle)
 		if err := utils.UnmarshalJSON(data, &circle, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == circle) type Circle within Shape: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == circle) type Circle within Shape: %w", err)
 		}
 
 		u.Circle = circle
@@ -103,7 +103,7 @@ func (u *Shape) UnmarshalJSON(data []byte) (err error) {
 	case "rectangle":
 		rectangle := new(Rectangle)
 		if err := utils.UnmarshalJSON(data, &rectangle, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == rectangle) type Rectangle within Shape: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == rectangle) type Rectangle within Shape: %w", err)
 		}
 
 		u.Rectangle = rectangle

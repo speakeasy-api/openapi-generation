@@ -63,7 +63,7 @@ func (u *UndiscriminatedUnionArrayCreateRequestItem) UnmarshalJSON(data []byte) 
 	case "a":
 		undiscriminatedUnionArrayItemA := new(UndiscriminatedUnionArrayItemA)
 		if err := utils.UnmarshalJSON(data, &undiscriminatedUnionArrayItemA, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (TypeIndicator == a) type UndiscriminatedUnionArrayItemA within UndiscriminatedUnionArrayCreateRequestItem: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (TypeIndicator == a) type UndiscriminatedUnionArrayItemA within UndiscriminatedUnionArrayCreateRequestItem: %w", err)
 		}
 
 		u.UndiscriminatedUnionArrayItemA = undiscriminatedUnionArrayItemA
@@ -72,7 +72,7 @@ func (u *UndiscriminatedUnionArrayCreateRequestItem) UnmarshalJSON(data []byte) 
 	case "b":
 		undiscriminatedUnionArrayItemB := new(UndiscriminatedUnionArrayItemB)
 		if err := utils.UnmarshalJSON(data, &undiscriminatedUnionArrayItemB, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (TypeIndicator == b) type UndiscriminatedUnionArrayItemB within UndiscriminatedUnionArrayCreateRequestItem: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (TypeIndicator == b) type UndiscriminatedUnionArrayItemB within UndiscriminatedUnionArrayCreateRequestItem: %w", err)
 		}
 
 		u.UndiscriminatedUnionArrayItemB = undiscriminatedUnionArrayItemB
@@ -80,7 +80,7 @@ func (u *UndiscriminatedUnionArrayCreateRequestItem) UnmarshalJSON(data []byte) 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for UndiscriminatedUnionArrayCreateRequestItem", string(data))
+	return errors.New("could not unmarshal into any supported union types for UndiscriminatedUnionArrayCreateRequestItem")
 }
 
 func (u UndiscriminatedUnionArrayCreateRequestItem) MarshalJSON() ([]byte, error) {
@@ -207,13 +207,13 @@ func (u *UndiscriminatedUnionArrayCreateRequestAcronymIDUnion) UnmarshalJSON(dat
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -227,7 +227,7 @@ func (u *UndiscriminatedUnionArrayCreateRequestAcronymIDUnion) UnmarshalJSON(dat
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for UndiscriminatedUnionArrayCreateRequestAcronymIDUnion")
 }
 
 func (u UndiscriminatedUnionArrayCreateRequestAcronymIDUnion) MarshalJSON() ([]byte, error) {

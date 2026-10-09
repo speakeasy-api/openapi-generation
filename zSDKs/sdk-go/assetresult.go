@@ -114,7 +114,7 @@ func (u *Step) UnmarshalJSON(data []byte) (err error) {
 	case "note":
 		assetNoteStep := new(AssetNoteStep)
 		if err := utils.UnmarshalJSON(data, &assetNoteStep, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == note) type AssetNoteStep within Step: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == note) type AssetNoteStep within Step: %w", err)
 		}
 
 		u.AssetNoteStep = assetNoteStep
@@ -123,7 +123,7 @@ func (u *Step) UnmarshalJSON(data []byte) (err error) {
 	case "output":
 		assetOutputStep := new(AssetOutputStep)
 		if err := utils.UnmarshalJSON(data, &assetOutputStep, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == output) type AssetOutputStep within Step: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == output) type AssetOutputStep within Step: %w", err)
 		}
 
 		u.AssetOutputStep = assetOutputStep

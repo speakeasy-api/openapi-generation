@@ -3074,7 +3074,7 @@ trackedFiles:
   internal/sdk/models/shared/basicsearch.go:
     last_write_checksum: sha1:ebc8943a31148f7623c5f8ff940dd81c1b52f23d
   internal/sdk/models/shared/discriminatedobject.go:
-    last_write_checksum: sha1:9bb5641a1bcb27ec59c1f16d82d8a251ec733286
+    last_write_checksum: sha1:fb1ef1d0e7d879d032d2d6db81cd535f4c997bdb
   internal/sdk/models/shared/discriminatedunionarraycreaterequest.go:
     last_write_checksum: sha1:e7c635e59fdd576d13f636f856e59c80cc8c568e
   internal/sdk/models/shared/discriminatedunionarrayitema.go:
@@ -3090,9 +3090,9 @@ trackedFiles:
   internal/sdk/models/shared/discriminatedunionarrayresponse.go:
     last_write_checksum: sha1:d9e72c42c53e3205a44b273898468ca4756204dc
   internal/sdk/models/shared/discriminatedunionarrayscheme.go:
-    last_write_checksum: sha1:10baf851b85d3af1406467c1b19f410634449c34
+    last_write_checksum: sha1:a4f9f1cbf8adeb62d26e2d8f4eebe3eed2884f72
   internal/sdk/models/shared/discriminatedunionarrayschemesensitivedataaware.go:
-    last_write_checksum: sha1:b97ef021268b5245246fd8fad29a0b9d4bbf3f4b
+    last_write_checksum: sha1:defc48abfbc350d7ba1b4d60e0fa48e8bf3d4993
   internal/sdk/models/shared/discriminatedunionarrayupdaterequest.go:
     last_write_checksum: sha1:1a4137329d87210af5f4ffb5fbd240c49363b52a
   internal/sdk/models/shared/discriminatedunionclasstypevaryingfield.go:
@@ -3112,15 +3112,15 @@ trackedFiles:
   internal/sdk/models/shared/discriminatedunionresponse.go:
     last_write_checksum: sha1:3e2959324df5b8b609db60eb85d8f9e8b5c6f69a
   internal/sdk/models/shared/discriminatedunionscheme.go:
-    last_write_checksum: sha1:02ae81cd3c0d760c1a3184d403f9e4b6fac87d6f
+    last_write_checksum: sha1:eca49cd28bf7d3dffb8ce39edf503f64e56380fc
   internal/sdk/models/shared/discriminatedunionschemesensitivedataaware.go:
-    last_write_checksum: sha1:c898da3c05f6a60c92de68c720974fa3708354c4
+    last_write_checksum: sha1:180cc08113bf3ea099fae4f47012383415c696c7
   internal/sdk/models/shared/discriminatedunionupdaterequest.go:
     last_write_checksum: sha1:cd5ec0c9a8593ff008819d5dfcb1a33d8eaef9d1
   internal/sdk/models/shared/frameworktyperequest.go:
-    last_write_checksum: sha1:3ca83f0e972a631c2f41ca88ed8ff000b5c669ed
+    last_write_checksum: sha1:c0071824d1db8df8db7082c6afab7adc58f3585c
   internal/sdk/models/shared/frameworktyperesponse.go:
-    last_write_checksum: sha1:940d4653a779d638a5bac432e795dd5060098d50
+    last_write_checksum: sha1:2c25b2b859bb6eeadd9cf66a6a04b2d9fbe02bab
   internal/sdk/models/shared/globalenumint32.go:
     last_write_checksum: sha1:8a491e8b3a7b2a68189501d66a387c715ad2d50f
   internal/sdk/models/shared/globalenumint64.go:
@@ -3250,9 +3250,9 @@ trackedFiles:
   internal/sdk/models/shared/oasoneofobjectstring.go:
     last_write_checksum: sha1:086a316170abf1ff01a0b1900125f19bf516f03b
   internal/sdk/models/shared/oasoneofrequest.go:
-    last_write_checksum: sha1:2f8ea81dcf3a85612275e72b421f39229ba93602
+    last_write_checksum: sha1:f18988d2bd599ee50cc01241c65b6a4ca8889b59
   internal/sdk/models/shared/oasoneofresponse.go:
-    last_write_checksum: sha1:2255d6bce076137eb59811d95f485cb235e35bae
+    last_write_checksum: sha1:dbb87f672ced28715864a169e0a2341488fe60ea
   internal/sdk/models/shared/oaspatternrequest.go:
     last_write_checksum: sha1:f821041e626f5e2fe98dc89ca93a7df83157d1aa
   internal/sdk/models/shared/oaspatternresponse.go:
@@ -3286,9 +3286,9 @@ trackedFiles:
   internal/sdk/models/shared/oaswriteonlynestedresponse.go:
     last_write_checksum: sha1:e97e121db85e36fb4b07e88cdbd0e8b0faac7913
   internal/sdk/models/shared/oaswriteonlyrequest.go:
-    last_write_checksum: sha1:17a325225528dbbab6e2042b9601598045a5d940
+    last_write_checksum: sha1:831c6b2949da660b90d2924f075421036ebc759b
   internal/sdk/models/shared/oaswriteonlyresponse.go:
-    last_write_checksum: sha1:5fb807d63149bbc488fa1d41168273de962198a2
+    last_write_checksum: sha1:eabdc680dfacb47fd593234f37fd611fb31f4459
   internal/sdk/models/shared/object.go:
     last_write_checksum: sha1:cf594ca5071a91b68172b439beabbf0fb1726c1a
   internal/sdk/models/shared/objectreadonlyproperties.go:
@@ -3322,9 +3322,9 @@ trackedFiles:
   internal/sdk/models/shared/requestbodyrefxspeakeasyentitylevel2request.go:
     last_write_checksum: sha1:79f02efdebf964229304a1eb5baa41b8a964a368
   internal/sdk/models/shared/rootunionwriteonlyinput.go:
-    last_write_checksum: sha1:b401f033dd3e5fab0f2fd104899769c6acd15725
+    last_write_checksum: sha1:d49e723533baaf29a8ee5c05d137f2ac9ee51438
   internal/sdk/models/shared/rootunionwriteonlyoutput.go:
-    last_write_checksum: sha1:225d16f1e8e1c52999e05bf5b9edd41e59a8359a
+    last_write_checksum: sha1:d7df29a3c7e3a33656a6665dfa3229bbe4973576
   internal/sdk/models/shared/schemebasic.go:
     last_write_checksum: sha1:125093d189ca28465255fa328b975a59094871ed
   internal/sdk/models/shared/schemeclientcredentials.go:
@@ -3360,7 +3360,7 @@ trackedFiles:
   internal/sdk/models/shared/transformedinput.go:
     last_write_checksum: sha1:01c9466cd5947f30b7a5050fb0a4bc9081f4b126
   internal/sdk/models/shared/undiscriminatedunionarraycreaterequest.go:
-    last_write_checksum: sha1:c273b79670cd8aa182381d3ca7bde68c36aad8ec
+    last_write_checksum: sha1:f30b70bec6d63e8ccb892aa207b6b686bac00a11
   internal/sdk/models/shared/undiscriminatedunionarrayitema.go:
     last_write_checksum: sha1:5b8dd04ce8f8a4564675ced67c1b58ac88167a38
   internal/sdk/models/shared/undiscriminatedunionarrayitemb.go:
@@ -3368,9 +3368,9 @@ trackedFiles:
   internal/sdk/models/shared/undiscriminatedunionarrayitemc.go:
     last_write_checksum: sha1:14b72582704fcb71ca2bedeff030005275fa1f64
   internal/sdk/models/shared/undiscriminatedunionarrayresponse.go:
-    last_write_checksum: sha1:3e6d4847ea4a1a38466f4475292f3fe1b317b96b
+    last_write_checksum: sha1:b3378eb7d15b212e1c61511415ad28eb649cb87f
   internal/sdk/models/shared/undiscriminatedunionarrayupdaterequest.go:
-    last_write_checksum: sha1:0acec3fdb998327dd94094a576f79110d8a242f8
+    last_write_checksum: sha1:9967f0517c921c84551e4c421f5020b72bf46a76
   internal/sdk/models/shared/unsoundreadonlymatchedoprequest.go:
     last_write_checksum: sha1:5f881b66dbf7452d67eb25b09547c484dfa67b7d
   internal/sdk/models/shared/unsoundreadonlymatchedopresponse.go:
@@ -3420,9 +3420,9 @@ trackedFiles:
   internal/sdk/models/shared/xentityobjecttwicenestedlevel2.go:
     last_write_checksum: sha1:347e4d6e0af3cdbc1de5752581f23e28c70b0150
   internal/sdk/models/shared/xentityoneof.go:
-    last_write_checksum: sha1:b8585d489622f074f4c316bd2251dc45f4086d52
+    last_write_checksum: sha1:ff19bd0e72c81afc2e5986df385bc6881d90309c
   internal/sdk/models/shared/xentityoneofinput.go:
-    last_write_checksum: sha1:c4900d1bd61b60a930a8ce650b79dd07623b662b
+    last_write_checksum: sha1:aacba076c96a4277d434bb1a2145779faef17aab
   internal/sdk/models/shared/xentityoperationclosemultipleopclose1request.go:
     last_write_checksum: sha1:ca947a0d21fadd7cedb28b641e50a5e0791174b2
   internal/sdk/models/shared/xentityoperationclosemultipleopopenrequest.go:

@@ -1,0 +1,12 @@
+id: 1791564396-736f4bf4
+features:
+    - unions
+targets:
+    - go
+    - cli
+    - terraform
+type: fix
+bump: patch
+description: union unmarshal errors no longer embed the raw JSON payload, so sensitive values in a malformed body or response cannot leak into error messages
+author: ThomasRooney
+date: "2026-10-09"

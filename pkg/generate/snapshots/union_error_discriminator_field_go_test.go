@@ -170,7 +170,7 @@ func (u *BadRequest) UnmarshalJSON(data []byte) (err error) {
 	case "err":
 		errorVar := new(Error)
 		if err := utils.UnmarshalJSON(data, &errorVar, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (Kind == err) type Error within BadRequest: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == err) type Error within BadRequest: %w", err)
 		}
 
 		u.ErrorInfo = errorVar
@@ -179,7 +179,7 @@ func (u *BadRequest) UnmarshalJSON(data []byte) (err error) {
 	case "other":
 		otherError := new(OtherError)
 		if err := utils.UnmarshalJSON(data, &otherError, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (Kind == other) type OtherError within BadRequest: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == other) type OtherError within BadRequest: %w", err)
 		}
 
 		u.OtherError = otherError

@@ -620,9 +620,11 @@ func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
 	require.NotEmpty(t, hints, "expected protocol hints: %s", stderr)
 	assert.Equal(t, "Report the response payload and CLI version to the API operator", hints[0])
 
-	// The decode error itself is surfaced (it names the field and carries
-	// the raw event data), and events before it were still streamed.
-	assert.Contains(t, envelope["error"], "code")
+	// The decode error itself is surfaced (it names the variant that failed
+	// to decode but not the raw event data), and events before it were still
+	// streamed.
+	assert.Contains(t, envelope["error"], "DiscriminatedErrorEvent")
+	assert.NotContains(t, envelope["error"], "quota exceeded")
 	events := parseNDJSON(t, h.GetStdout())
 	assert.Equal(t, 1, len(events))
 }

@@ -4,7 +4,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"openapi/internal/sdk/models/components"
 	"openapi/internal/sdk/sdkinternal/utils"
 	"openapi/internal/sdk/types/stream"
@@ -71,13 +70,13 @@ func (u *ChatRequest) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for ChatRequest", string(data))
+		return errors.New("could not unmarshal into any supported union types for ChatRequest")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for ChatRequest", string(data))
+		return errors.New("could not unmarshal into any supported union types for ChatRequest")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -91,7 +90,7 @@ func (u *ChatRequest) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for ChatRequest", string(data))
+	return errors.New("could not unmarshal into any supported union types for ChatRequest")
 }
 
 func (u ChatRequest) MarshalJSON() ([]byte, error) {

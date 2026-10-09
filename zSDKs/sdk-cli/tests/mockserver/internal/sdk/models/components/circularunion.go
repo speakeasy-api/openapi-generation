@@ -4,7 +4,6 @@ package components
 
 import (
 	"errors"
-	"fmt"
 	"mockserver/internal/sdk/utils"
 )
 
@@ -128,7 +127,7 @@ func (u *CircularUnion) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for CircularUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for CircularUnion")
 }
 
 func (u CircularUnion) MarshalJSON() ([]byte, error) {

@@ -209,7 +209,7 @@ func (u *RootUnionWriteOnlyInput) UnmarshalJSON(data []byte) (err error) {
 	case "alpha":
 		rootUnionWriteOnlyAlphaInput := new(RootUnionWriteOnlyAlphaInput)
 		if err := utils.UnmarshalJSON(data, &rootUnionWriteOnlyAlphaInput, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == alpha) type RootUnionWriteOnlyAlphaInput within RootUnionWriteOnlyInput: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == alpha) type RootUnionWriteOnlyAlphaInput within RootUnionWriteOnlyInput: %w", err)
 		}
 
 		u.RootUnionWriteOnlyAlphaInput = rootUnionWriteOnlyAlphaInput
@@ -218,7 +218,7 @@ func (u *RootUnionWriteOnlyInput) UnmarshalJSON(data []byte) (err error) {
 	case "beta":
 		rootUnionWriteOnlyBetaInput := new(RootUnionWriteOnlyBetaInput)
 		if err := utils.UnmarshalJSON(data, &rootUnionWriteOnlyBetaInput, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Kind == beta) type RootUnionWriteOnlyBetaInput within RootUnionWriteOnlyInput: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == beta) type RootUnionWriteOnlyBetaInput within RootUnionWriteOnlyInput: %w", err)
 		}
 
 		u.RootUnionWriteOnlyBetaInput = rootUnionWriteOnlyBetaInput
@@ -226,7 +226,7 @@ func (u *RootUnionWriteOnlyInput) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RootUnionWriteOnlyInput", string(data))
+	return errors.New("could not unmarshal into any supported union types for RootUnionWriteOnlyInput")
 }
 
 func (u RootUnionWriteOnlyInput) MarshalJSON() ([]byte, error) {

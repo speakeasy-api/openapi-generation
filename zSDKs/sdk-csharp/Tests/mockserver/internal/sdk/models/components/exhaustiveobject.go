@@ -122,7 +122,7 @@ func (u *Any) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for Any", string(data))
+	return errors.New("could not unmarshal into any supported union types for Any")
 }
 
 func (u Any) MarshalJSON() ([]byte, error) {

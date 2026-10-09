@@ -62,7 +62,7 @@ func (u *ClientError) UnmarshalJSON(data []byte) error {
 	case "tag1":
 		taggedError1 := new(TaggedError1)
 		if err := utils.UnmarshalJSON(data, &taggedError1, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Tag == tag1) type TaggedError1 within ClientError: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Tag == tag1) type TaggedError1 within ClientError: %w", err)
 		}
 
 		u.TaggedError1 = taggedError1
@@ -71,7 +71,7 @@ func (u *ClientError) UnmarshalJSON(data []byte) error {
 	case "tag2":
 		taggedError2 := new(TaggedError2)
 		if err := utils.UnmarshalJSON(data, &taggedError2, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Tag == tag2) type TaggedError2 within ClientError: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Tag == tag2) type TaggedError2 within ClientError: %w", err)
 		}
 
 		u.TaggedError2 = taggedError2
@@ -79,7 +79,7 @@ func (u *ClientError) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for ClientError", string(data))
+	return errors.New("could not unmarshal into any supported union types for ClientError")
 }
 
 func (u ClientError) MarshalJSON() ([]byte, error) {
@@ -160,7 +160,7 @@ func (u *GetUnionErrorsInternalServerError) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for GetUnionErrorsInternalServerError", string(data))
+	return errors.New("could not unmarshal into any supported union types for GetUnionErrorsInternalServerError")
 }
 
 func (u GetUnionErrorsInternalServerError) MarshalJSON() ([]byte, error) {
