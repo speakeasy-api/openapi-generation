@@ -4,18 +4,18 @@
 {{- addImport "./console-logger.js" "ConsoleLogger" }}
 {{- addImport "../core.js" $coreName }}
 {{- addImport "./scopes.js" "MCPScope" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "GetPromptResult" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerRequest" }}
-{{- addImport "@modelcontextprotocol/sdk/types.js" "ServerNotification" }}
-{{- addImport "@modelcontextprotocol/sdk/shared/protocol.js" "RequestHandlerExtra" }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "McpServer" }}
+{{- addImport "@modelcontextprotocol/server" "GetPromptResult" }}
+{{- addImport "./shared.js" "MCPServerContext" }}
+{{- addImport "./shared.js" "mcpServerContext" }}
+{{- addImport "@modelcontextprotocol/server" "McpServer" }}
+{{- addImport "@modelcontextprotocol/server" "isCompletable" }}
 {{- addZodPackageImport "objectOutputType" }}
 {{- addZodPackageImport "ZodOptional" }}
 {{- addZodPackageImport "ZodType" }}
 {{- addZodPackageImport "ZodTypeAny" }}
 {{- addZodPackageImport "ZodTypeDef" }}
+{{- addImport "./shared.js" "mcpSchema" }}
 
-// '@modelcontextprotocol/sdk' currently does not export this type
 export type PromptArgsRawShape = {
   [k: string]: ZodType<string, ZodTypeDef, string> | ZodOptional<ZodType<string, ZodTypeDef, string>>;
 };
@@ -29,7 +29,7 @@ export type PromptDefinition<Args extends undefined | PromptArgsRawShape = undef
       prompt: (
         client: {{$coreName}},
         args: objectOutputType<Args, ZodTypeAny>,
-        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     }
     : {
@@ -39,7 +39,7 @@ export type PromptDefinition<Args extends undefined | PromptArgsRawShape = undef
       args?: undefined;
       prompt: (
         client: {{$coreName}},
-        extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+        extra: MCPServerContext,
       ) => GetPromptResult | Promise<GetPromptResult>;
     };
 
@@ -75,25 +75,21 @@ export function createRegisterPrompt(
     }
 
     if (prompt.args) {
-      if (prompt.description) {
-        server.prompt(prompt.name, prompt.description, prompt.args, async (args, ctx) =>
-          prompt.prompt(sdk, args, ctx)
-        );
-      } else {
-        server.prompt(prompt.name, prompt.args, async (args, ctx) =>
-          prompt.prompt(sdk, args, ctx)
-        );
-      }
+      const shape = Object.fromEntries(Object.entries(prompt.args).map(([name, arg]) => {
+        let field = arg;
+        while (field instanceof ZodOptional && !isCompletable(field)) {
+          field = field.unwrap();
+        }
+        return [name, field];
+      }));
+      server.registerPrompt(prompt.name, {
+        ...(prompt.description === undefined ? {} : { description: prompt.description }),
+        argsSchema: { ...mcpSchema(prompt.args), shape },
+      }, async (args, ctx) => prompt.prompt(sdk, args, mcpServerContext(ctx)));
     } else {
-      if (prompt.description) {
-        server.prompt(prompt.name, prompt.description, async (ctx) =>
-          prompt.prompt(sdk, ctx)
-        );
-      } else {
-        server.prompt(prompt.name, async (ctx) =>
-          prompt.prompt(sdk, ctx)
-        );
-      }
+      server.registerPrompt(prompt.name, {
+        ...(prompt.description === undefined ? {} : { description: prompt.description }),
+      }, async (ctx) => prompt.prompt(sdk, mcpServerContext(ctx)));
     }
 
     logger.debug("Registered prompt", { name: prompt.name });

@@ -1,0 +1,10 @@
+id: 1791371504-7b97c87e
+features:
+    - mcpServer
+targets:
+    - typescriptv2
+type: feat
+bump: major
+description: migrate MCP servers to the v2 SDK and require Node.js 20
+author: ThomasRooney
+date: "2026-10-07"

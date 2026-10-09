@@ -22,7 +22,7 @@ but also an operation.
   tool: async (client, ctx) => {
     const [result] = await groupRootGroupOp(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

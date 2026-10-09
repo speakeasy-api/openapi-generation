@@ -28,7 +28,7 @@ It has a description.`,
     const [result] = await testGroupTag2PostTest(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

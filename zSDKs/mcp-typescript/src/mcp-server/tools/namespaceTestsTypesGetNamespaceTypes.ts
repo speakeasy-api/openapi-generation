@@ -21,7 +21,7 @@ non-discriminated unions, and models with nested inline schemas.`,
   tool: async (client, ctx) => {
     const [result] = await namespaceTestsTypesGetNamespaceTypes(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

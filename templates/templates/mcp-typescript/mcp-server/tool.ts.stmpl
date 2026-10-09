@@ -50,7 +50,7 @@ export const {{ sanitizeMCPPrimitiveExport $op }}: ToolDefinition{{ if $hasArgs 
       {{- range $field := $op.Arguments.Sorted }}
       {{    sanitizeAccessor "args" (sanitizeFieldName $field.Name) }},
       {{- end }}
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

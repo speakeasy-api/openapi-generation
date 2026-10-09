@@ -20,7 +20,7 @@ This endpoint tests the behavior when an error response has an empty object sche
   tool: async (client, ctx) => {
     const [result] = await getEmptyObjectError(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

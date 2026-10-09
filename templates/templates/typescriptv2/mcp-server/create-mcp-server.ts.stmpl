@@ -1,7 +1,7 @@
 {{- $globalSDK := .Global.AST.MainSDK -}}
 {{- $globalSecurity := $globalSDK.Security }}
 {{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
-createMCPServer({
+{{ if .Local.Factory }}createMCPServerFactory{{ else }}createMCPServer{{ end }}({
   logger,
   allowedTools: flags.tool,
   {{- if gt (len .Local.Scopes) 0 }}

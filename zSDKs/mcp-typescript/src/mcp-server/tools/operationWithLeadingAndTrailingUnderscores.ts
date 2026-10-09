@@ -27,7 +27,7 @@ export const tool$operationWithLeadingAndTrailingUnderscores: ToolDefinition<
     const [result] = await operationWithLeadingAndTrailingUnderscores(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

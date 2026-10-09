@@ -1,4 +1,6 @@
 {{- $flags := generateMCPFlagsUsage -}}
+
+The MCP server requires Node.js {{ if .Global.Config.GramEnabled }}22.18.0 or later because Gram is enabled{{ else }}20 or later{{ end }}.
 {{- $packageName := .Global.Config.PackageName -}}
 
 {{- if not .Global.Config.Published }}

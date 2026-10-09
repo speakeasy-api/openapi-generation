@@ -56,6 +56,9 @@ Then install with Claude Code CLI:
 {{ templateMcpCLICommand (dict "client" "claude" "cloudflareURL" "http://localhost:8787") }}
 ```
 
+The worker serves MCP over Streamable HTTP at `/mcp` and legacy HTTP+SSE at `/sse`. Existing clients can keep their endpoints. Legacy Streamable HTTP and SSE clients retain session state in Durable Objects; modern protocol requests are handled statelessly.
+
+Keep the Durable Object binding, exported class, and `v1` migration in `wrangler.toml`: legacy Streamable HTTP and SSE sessions require them. Only modern protocol requests are stateless. Removing the binding disables legacy sessions; deleting the namespace also permanently destroys its stored data.
 
 
 {{end}}

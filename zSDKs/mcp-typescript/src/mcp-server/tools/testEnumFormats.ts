@@ -28,7 +28,7 @@ including partial map coverage and both string and integer enum types.`,
     const [result] = await testEnumFormats(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {
