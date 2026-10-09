@@ -1,0 +1,10 @@
+id: 1791563922-e72fa062
+features:
+    - serverEvents
+targets:
+    - cli
+type: fix
+bump: patch
+description: a config file output_format of pretty, as saved by configure, no longer disables the default stream projection or the complete-response selection for --jq on default-streaming commands
+author: ThomasRooney
+date: "2026-10-09"

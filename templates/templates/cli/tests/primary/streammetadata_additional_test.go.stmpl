@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,19 +37,25 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 			}))
 			defer srv.Close()
 			for _, mode := range []struct {
-				name string
-				args []string
+				name       string
+				args       []string
+				configured string
 			}{
-				{"default", nil},
-				{"json", []string{"--output-format", "json"}},
-				{"pretty", []string{"--output-format", "pretty"}},
-				{"jq", []string{"--jq", ".", "--stream=true"}},
-				{"agent", []string{"--agent-mode"}},
+				{"default", nil, ""},
+				{"configured pretty", nil, "pretty"},
+				{"configured json", nil, "json"},
+				{"json", []string{"--output-format", "json"}, ""},
+				{"pretty", []string{"--output-format", "pretty"}, ""},
+				{"jq", []string{"--jq", ".", "--stream=true"}, ""},
+				{"agent", []string{"--agent-mode"}, ""},
 			} {
 				t.Run(mode.name, func(t *testing.T) {
 					t.Cleanup(config.ResetKeyring)
 					h := NewCLITestHarness(t)
 					h.resetAndSetupEnv()
+					if mode.configured != "" {
+						writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{"output_format": mode.configured})
+					}
 					root, err := cli.NewRootCommand()
 					require.NoError(t, err)
 					root.SetOut(h.stdout)
@@ -58,9 +65,9 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 					args = append(args, mode.args...)
 					require.NoError(t, cli.ExecuteRoot(context.Background(), root, args), h.GetStderr())
 					switch mode.name {
-					case "default", "agent":
+					case "default", "configured pretty", "agent":
 						assert.Equal(t, "Hello\n", h.GetStdout())
-					case "json", "jq":
+					case "json", "configured json", "jq":
 						assertMetadataJSONEvents(t, h.GetStdout(),
 							`{"data":{"resource_id":"first"}}`,
 							`{"data":{"content":"Hello"}}`,
@@ -72,7 +79,7 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 						assert.Regexp(t, `content:\s+Hello\b`, h.GetStdout())
 						assert.Regexp(t, `resource_id:\s+last\b`, h.GetStdout())
 					}
-					if mode.name == "default" {
+					if mode.name == "default" || mode.name == "configured pretty" {
 						assert.Equal(t, "Resource ID: \"last\"\n", h.GetStderr())
 					} else {
 						assert.Empty(t, h.GetStderr())
