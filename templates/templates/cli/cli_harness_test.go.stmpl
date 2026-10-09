@@ -1153,6 +1153,16 @@ func (h *CLITestHarness) WithEnv(key, value string) *CLITestHarness {
 	return h
 }
 
+// WithoutCredentialEnv clears every credential environment variable so the
+// run sees only the credentials the test supplies, whatever the developer's
+// shell exports.
+func (h *CLITestHarness) WithoutCredentialEnv() *CLITestHarness {
+	for _, envVar := range []string{ {{- templateSecurityFieldEnvVars -}} } {
+		h.WithEnv(envVar, "")
+	}
+	return h
+}
+
 // resetAndSetupEnv resets output buffers, config state, and agent mode,
 // then configures test environment variables. It also isolates from the
 // user's real HOME directory to prevent stale config files from interfering

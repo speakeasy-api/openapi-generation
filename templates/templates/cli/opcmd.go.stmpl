@@ -299,6 +299,13 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
     if err != nil {
         return err
     }
+    {{- if $hasSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    flagutil.RecordRequestSecurity(cmd, security, {{goStringLiteral (templateOperationSecurityHint $op)}})
+    {{- else if not $op.GlobalSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    flagutil.RecordCredentialsMissing(cmd, false, "")
+    {{- end}}
     {{- addImport "operations"}}
     sdkOpts, err := output.PrepareCallOpts(cmd)
     if err != nil {
@@ -439,6 +446,13 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
     if err != nil {
         return nil, err
     }
+    {{- if $hasSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    flagutil.RecordRequestSecurity(cmd, security, {{goStringLiteral (templateOperationSecurityHint $op)}})
+    {{- else if not $op.GlobalSecurity}}
+    {{- addImport "internal/flagutil" true}}
+    flagutil.RecordCredentialsMissing(cmd, false, "")
+    {{- end}}
     {{- addImport "operations"}}
     sdkOpts, err := output.PrepareCallOpts(cmd)
     if err != nil {

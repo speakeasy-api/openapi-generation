@@ -246,6 +246,7 @@ registerTemplateFunc("hasResponseTransform", hasResponseTransform);
 interface SecurityLeafInfo {
   name: string;
   description: string;
+  secret: boolean;
 }
 
 function walkSecurityLeafFields(
@@ -266,6 +267,7 @@ function walkSecurityLeafFields(
             name: assocType.Name,
             description:
               assocType.Comments?.Description || "Security credential",
+            secret: true,
           });
         }
       }
@@ -273,6 +275,9 @@ function walkSecurityLeafFields(
       visitor({
         name: field.Name,
         description: field.Comments?.Description || "Security credential",
+        secret: isSecuritySecret(
+          field.Annotations?.Get("security") as SecurityAnnotation | undefined,
+        ),
       });
     }
   }
@@ -299,6 +304,28 @@ function templateSecurityFlagRegistration(op: Operation): string {
   });
   return lines.join("\n    ");
 }
+
+// Hint naming the operation-level credential flags; "" when the operation
+// has no secret field.
+function templateOperationSecurityHint(op: Operation): string {
+  if (!op.Security) return "";
+
+  const flags: string[] = [];
+  walkSecurityLeafFields(op.Security.Type.Fields || [], (leaf) => {
+    if (!leaf.secret) return;
+    const flag = `--${sanitizeFlagNameWithReserved(leaf.name)}`;
+    if (!flags.includes(flag)) flags.push(flag);
+  });
+  if (flags.length === 0) return "";
+  return `Pass ${flags.join(
+    " / ",
+  )} to authenticate this operation (it does not use the global credential)`;
+}
+registerTemplateFunc(
+  "templateOperationSecurityHint",
+  templateOperationSecurityHint,
+);
+
 registerTemplateFunc(
   "templateSecurityFlagRegistration",
   templateSecurityFlagRegistration,

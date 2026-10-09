@@ -141,15 +141,7 @@ function flattenCLISecurityObject(
       description = getDefaultSecurityDescription(field.Name, secAnno);
     }
 
-    // Determine if this is a secret based on security type and field name
-    // Usernames are not secrets, even in basic auth
-    // Array fields like Scopes are not secrets
-    const isUsernameField = field.Name.toLowerCase().includes("username");
-    const isSecret = isArray
-      ? false
-      : isUsernameField
-      ? false
-      : isSecuritySecret(secAnno);
+    const isSecret = !isArray && isSecuritySecret(secAnno);
 
     results.push({
       field: {
@@ -256,8 +248,14 @@ function isSecuritySecret(secAnno: SecurityAnnotation | undefined): boolean {
   if (!secAnno) {
     return false;
   }
+  if (
+    secAnno.FieldName === "username" &&
+    ((secAnno.SecType === "http" && secAnno.SubType === "basic") ||
+      (secAnno.SecType === "oauth2" && secAnno.SubType === "password"))
+  ) {
+    return false;
+  }
 
-  // All security fields except usernames are considered secrets
   switch (secAnno.SecType) {
     case "apiKey":
       return true; // API keys are always secrets
@@ -266,9 +264,6 @@ function isSecuritySecret(secAnno: SecurityAnnotation | undefined): boolean {
         case "bearer":
           return true; // Bearer tokens are secrets
         case "basic":
-          // Password is secret, username is not
-          // But we can't easily tell from the annotation alone
-          // The safest is to treat all as potentially secret
           return true;
         case "custom":
           return true;
@@ -391,25 +386,45 @@ function primaryCLISecurityField(
   return fields.find((f) => f.isSecret) || fields[0];
 }
 
-function noKeyringEnvVar(): string {
-  const prefix = context.Global.Config.EnvVarPrefix
+function cliEnvVarPrefix(): string {
+  return context.Global.Config.EnvVarPrefix
     ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
     : "";
-  return prefix ? `${prefix}_NO_KEYRING` : "NO_KEYRING";
+}
+
+function prefixedEnvVarName(suffix: string): string {
+  const prefix = cliEnvVarPrefix();
+  return prefix ? `${prefix}_${suffix}` : suffix;
+}
+
+function noKeyringEnvVar(): string {
+  return prefixedEnvVarName("NO_KEYRING");
 }
 registerTemplateFunc("noKeyringEnvVar", noKeyringEnvVar);
+
+function credentialEnvVarName(field: CLISecurityFieldInfo): string {
+  return prefixedEnvVarName(field.envVarSuffix);
+}
 
 // Concrete credential variable for compact root setup guidance. Empty means
 // the document has no credential field and the Setup line must be omitted.
 function templatePrimaryAuthEnvVar(): string {
   const primary = primaryCLISecurityField(getCLISecurityFields());
-  if (!primary) return "";
-  const prefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
-  return prefix ? `${prefix}_${primary.envVarSuffix}` : primary.envVarSuffix;
+  return primary ? credentialEnvVarName(primary) : "";
 }
 registerTemplateFunc("templatePrimaryAuthEnvVar", templatePrimaryAuthEnvVar);
+
+// Go string literals of every security field's env var, secret or not, so a
+// test can clear the whole credential environment.
+function templateSecurityFieldEnvVars(): string {
+  return getCLISecurityFields()
+    .map((f) => goStringLiteral(credentialEnvVarName(f)))
+    .join(", ");
+}
+registerTemplateFunc(
+  "templateSecurityFieldEnvVars",
+  templateSecurityFieldEnvVars,
+);
 
 /**
  * One-line credentials hint for agent-mode authentication errors, derived
@@ -427,28 +442,20 @@ function templateAuthErrorHint(): string {
   const schemeGroups = new Set(
     fields.map((f) => `${f.secType}\u0000${f.secSubType}`),
   );
-  const envVarPrefix = context.Global.Config.EnvVarPrefix
-    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
-    : "";
+  const primary = primaryCLISecurityField(fields)!;
+  const primaryEnv = credentialEnvVarName(primary);
   if (schemeGroups.size > 1) {
     // Even with several schemes, steer to the primary credential concretely —
     // agents act on a named variable, not a category. Prefer an API key.
-    const primaryField = primaryCLISecurityField(fields)!;
-    const primaryEnv = envVarPrefix
-      ? `${envVarPrefix}_${primaryField.envVarSuffix}`
-      : primaryField.envVarSuffix;
+    const envVarPrefix = cliEnvVarPrefix();
     const environment = envVarPrefix
       ? `${envVarPrefix}_* environment variables`
       : "environment variables";
     return `Set ${primaryEnv} (or another credential via the ${environment} / the credential flags listed in --help)`;
   }
 
-  const primary = primaryCLISecurityField(fields)!;
   const flagNames = fields.map((f) => `--${f.flagName}`).join(" / ");
-  const envVar = envVarPrefix
-    ? `${envVarPrefix}_${primary.envVarSuffix}`
-    : primary.envVarSuffix;
-  return `Set ${envVar} (or use ${flagNames})`;
+  return `Set ${primaryEnv} (or use ${flagNames})`;
 }
 registerTemplateFunc("templateAuthErrorHint", templateAuthErrorHint);
 
@@ -1216,9 +1223,15 @@ function templateRankedSecurityConstruction(
   );
   lines.push(`if ${pickedVar} == -1 {`);
   lines.push(
-    `    ${pickedVar} = config.PickCredential(${resolveCandidatesVar}(config.ResolveRequestSecurityCredential), ${allowedVar})`,
+    `    ${candidatesVar} = ${resolveCandidatesVar}(config.ResolveRequestSecurityCredential)`,
+  );
+  lines.push(
+    `    ${pickedVar} = config.PickCredential(${candidatesVar}, ${allowedVar})`,
   );
   lines.push("}");
+  lines.push(
+    `flagutil.RecordCredentialsMissing(cmd, ${pickedVar} == -1 && config.PickCredential(${candidatesVar}, nil) == -1, "")`,
+  );
   lines.push(`switch ${pickedVar} {`);
   candidates.forEach((c, i) => {
     lines.push(`case ${i}:`);

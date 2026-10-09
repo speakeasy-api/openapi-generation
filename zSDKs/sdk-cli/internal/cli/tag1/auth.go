@@ -44,6 +44,7 @@ func runAuthCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	flagutil.RecordRequestSecurity(cmd, security, "Pass --access-token to authenticate this operation (it does not use the global credential)")
 	sdkOpts, err := output.PrepareCallOpts(cmd)
 	if err != nil {
 		return err

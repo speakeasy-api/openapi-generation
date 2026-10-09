@@ -153,6 +153,9 @@ func BuildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecuri
     {{- end}}
     {{templateSecurityFieldParsing | indent 4 | trim}}
     {{templateGlobalSecurityConstruction | indent 4 | trim}}
+    {{- if not hasMultipleSecuritySchemes}}
+    flagutil.RecordRequestSecurity(cmd, globalSecurity, "")
+    {{- end}}
     return globalSecurity
 }
 {{- end}}

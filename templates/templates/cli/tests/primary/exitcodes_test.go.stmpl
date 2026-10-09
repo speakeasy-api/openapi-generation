@@ -8,6 +8,11 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
+	"io"
+	"net/http/httptest"
+	"strconv"
+	{{- end}}
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -191,6 +196,117 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 	}
 }
 
+{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
+// A 403 answered to a request that carried no credential, from a caller who
+// has configured none, is an authentication failure carrying the credential
+// setup hint, whether the type came from the HTTP status or from a declared
+// rule, and a rule's own permission hints give way. The 403 stays an
+// authorization error with the rule's hints when a credential was sent, and
+// when the caller configured one that this operation does not accept (telling
+// them to set what is set would mislead). An operation that sends its own
+// credential never sends the global one, so a missing credential there is
+// named by the operation's flag whatever is configured globally. An operation
+// that declares no security sends no credential at all, so its 403 is never
+// re-typed. A declared authorization type on any other status is untouched
+// throughout, and the human renderer carries the same hints as the agent
+// envelope.
+func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
+	recordTest("cli-forbidden-without-credentials")
+	setupHint := {{goStringLiteral templateAuthErrorHint}}
+	workspaceHint := "Ask a workspace owner to restore access before retrying"
+	statusProbe := func(status int) []string {
+		return []string{"errors", "status-get-error", "--status-code", strconv.Itoa(status)}
+	}
+	serve := func(t *testing.T, status int, body string) *httptest.Server {
+		t.Helper()
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_, _ = io.WriteString(w, body)
+		}))
+		t.Cleanup(s.Close)
+		return s
+	}
+	// Hints are matched as substrings of the rendered hint list, so a case can
+	// name the flag an operation hint must mention without fixing its wording.
+	type forbiddenCase struct {
+		name   string
+		status int
+		body   string
+		args   []string
+		// globalCredential exports the primary credential env var; flag passes
+		// an operation-level credential on the command line.
+		globalCredential bool
+		flag             []string
+		wantType         string
+		wantReason       string
+		wantHints        []string
+		wantNotHints     []string
+	}
+	ruleBody := taxonomyBody("unregistered caller", "ACCESS_DENIED")
+	ruleWithHintsBody := taxonomyBody("access suspended", "ACCESS_DENIED", "WORKSPACE_SUSPENDED")
+	otherStatusBody := taxonomyBody("scope missing", "REQUEST_REJECTED", "TOKEN_SCOPE_MISSING")
+	operation := []string{"auth", "bearer-auth"}
+	hoisted := []string{"auth", "hoisted-security-access-token-only"}
+	noSecurity := []string{"generation", "circular-reference-one-degree"}
+	cases := []forbiddenCase{
+		{name: "status fallback/credential unset", status: 403, args: statusProbe(403), wantType: "authentication_error", wantHints: []string{setupHint}},
+		{name: "status fallback/credential set", status: 403, args: statusProbe(403), globalCredential: true, wantType: "authorization_error", wantNotHints: []string{setupHint}},
+		{name: "declared rule/credential unset", status: 403, body: ruleBody, args: statusProbe(403), wantType: "authentication_error", wantReason: "ACCESS_DENIED", wantHints: []string{setupHint}},
+		{name: "declared rule/credential set", status: 403, body: ruleBody, args: statusProbe(403), globalCredential: true, wantType: "authorization_error", wantReason: "ACCESS_DENIED", wantNotHints: []string{setupHint}},
+		{name: "declared rule with hints/credential unset", status: 403, body: ruleWithHintsBody, args: statusProbe(403), wantType: "authentication_error", wantReason: "WORKSPACE_SUSPENDED", wantHints: []string{setupHint}, wantNotHints: []string{workspaceHint}},
+		{name: "declared rule with hints/credential set", status: 403, body: ruleWithHintsBody, args: statusProbe(403), globalCredential: true, wantType: "authorization_error", wantReason: "WORKSPACE_SUSPENDED", wantHints: []string{workspaceHint}, wantNotHints: []string{setupHint}},
+		{name: "declared rule on another status/credential unset", status: 400, body: otherStatusBody, args: statusProbe(400), wantType: "authorization_error", wantReason: "TOKEN_SCOPE_MISSING", wantNotHints: []string{setupHint}},
+		{name: "declared rule on another status/credential set", status: 400, body: otherStatusBody, args: statusProbe(400), globalCredential: true, wantType: "authorization_error", wantReason: "TOKEN_SCOPE_MISSING", wantNotHints: []string{setupHint}},
+		{name: "unaccepted global alternative/credential unset", status: 403, args: hoisted, wantType: "authentication_error", wantHints: []string{setupHint}},
+		{name: "unaccepted global alternative/credential set", status: 403, args: hoisted, globalCredential: true, wantType: "authorization_error", wantNotHints: []string{setupHint}},
+		{name: "operation credential/credential unset", status: 403, args: operation, wantType: "authentication_error", wantHints: []string{"--bearer-auth"}, wantNotHints: []string{setupHint}},
+		{name: "operation credential/global credential set", status: 403, args: operation, globalCredential: true, wantType: "authentication_error", wantHints: []string{"--bearer-auth"}, wantNotHints: []string{setupHint}},
+		{name: "operation credential/flag set", status: 403, args: operation, flag: []string{"--bearer-auth", "test-credential"}, wantType: "authorization_error", wantNotHints: []string{setupHint, "--bearer-auth"}},
+		{name: "no-security operation/credential unset", status: 403, args: noSecurity, wantType: "authorization_error", wantNotHints: []string{setupHint}},
+		{name: "no-security operation/credential set", status: 403, args: noSecurity, globalCredential: true, wantType: "authorization_error", wantNotHints: []string{setupHint}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := serve(t, tc.status, tc.body)
+			h := NewCLITestHarness(t).WithEnv({{goStringLiteral noKeyringEnvVar}}, "true").WithoutCredentialEnv()
+			if tc.globalCredential {
+				h.WithEnv({{goStringLiteral templatePrimaryAuthEnvVar}}, "test-credential")
+			}
+			args := append(append([]string{"--agent-mode"}, tc.args...), tc.flag...)
+			err := h.RunWithServer(s.URL, args)
+			require.Error(t, err)
+			assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(err))
+			envelope := agentEnvelope(t, h.GetStderr())
+			assert.Equal(t, tc.wantType, envelope["error_type"])
+			if tc.wantReason != "" {
+				assert.Equal(t, tc.wantReason, envelope["error_reason"])
+			}
+			rendered, _ := json.Marshal(envelope["hints"])
+			for _, hint := range tc.wantHints {
+				assert.Contains(t, string(rendered), hint)
+			}
+			for _, hint := range tc.wantNotHints {
+				assert.NotContains(t, string(rendered), hint)
+			}
+		})
+	}
+
+	t.Run("pretty renders the setup hint", func(t *testing.T) {
+		s := serve(t, 403, "")
+		h := NewCLITestHarness(t).WithEnv({{goStringLiteral noKeyringEnvVar}}, "true").WithoutCredentialEnv()
+		// RunPolicyDefault leaves the output format alone, so the human
+		// renderer handles the error.
+		err := h.RunPolicyDefault(append(append(baseArgs(), "--server-url", s.URL, "--color", "never"), statusProbe(403)...))
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitAuth, clierrors.ExitCode(err))
+		stderr := h.GetStderr()
+		assert.Contains(t, stderr, "Error (authentication_error): ")
+		assert.Contains(t, stderr, "Fix:\n  - "+setupHint+"\n")
+	})
+}
+{{- end}}
+
 func TestExitCodeReasonFirstAndEnvelopePrecedence(t *testing.T) {
 	recordTest("cli-exit-code-reason-first")
 
@@ -236,8 +352,11 @@ func TestExitCodeReasonFirstAndEnvelopePrecedence(t *testing.T) {
 			var stderr bytes.Buffer
 			cmd := &cobra.Command{}
 			cmd.SetErr(&stderr)
-			cmd.PersistentFlags().Bool("agent-mode", false, "")
-			require.NoError(t, cmd.PersistentFlags().Set("agent-mode", "true"))
+			// Register on the command's own flag set: nothing parses this
+			// command, so a persistent flag would never be merged into it and
+			// InitAgentMode would not see it.
+			cmd.Flags().Bool("agent-mode", false, "")
+			require.NoError(t, cmd.Flags().Set("agent-mode", "true"))
 			output.InitAgentMode(cmd)
 			err := output.Error(cmd, &agentModeTestError{Body: tc.body, StatusCode: tc.statusCode})
 			require.Error(t, err)
