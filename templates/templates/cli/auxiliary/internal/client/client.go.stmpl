@@ -147,9 +147,6 @@ func resolveStringFlag(cmd *cobra.Command, name string) string {
 {{- if hasGlobalSecurity}}
 
 // BuildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
-// It records on the command whether the caller has configured any credential
-// at all (flagutil.CredentialsMissing), which the error classifier reads to
-// tell an anonymous caller apart from one whose credential was refused.
 func BuildGlobalSecurity(cmd *cobra.Command, {{securityIdentifier "allowedSecurityFields"}} []string) {{templateGlobalSecurityTypeName}} {
     {{- if not hasMultipleSecuritySchemes}}
     _ = {{securityIdentifier "allowedSecurityFields"}}

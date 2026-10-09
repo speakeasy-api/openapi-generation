@@ -563,6 +563,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-formats",
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
+    "cli-forbidden-without-credentials",
   ].includes(test);
 }
 

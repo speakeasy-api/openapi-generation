@@ -44,8 +44,6 @@ func runAuthCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	// The request carries the operation's own credential, not the global one
-	// NewClient recorded, so a missing one is named by this operation's flags.
 	flagutil.RecordRequestSecurity(cmd, security, "Pass --access-token to authenticate this operation (it does not use the global credential)")
 	sdkOpts, err := output.PrepareCallOpts(cmd)
 	if err != nil {

@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
-	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
+	{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
+	"io"
+	"net/http/httptest"
+	"strconv"
+	{{- end}}
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -203,10 +205,13 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 // when the caller configured one that this operation does not accept (telling
 // them to set what is set would mislead). An operation that sends its own
 // credential never sends the global one, so a missing credential there is
-// named by the operation's flag whatever is configured globally. A declared
-// authorization type on any other status is untouched throughout, and the
-// human renderer carries the same hints as the agent envelope.
+// named by the operation's flag whatever is configured globally. An operation
+// that declares no security sends no credential at all, so its 403 is never
+// re-typed. A declared authorization type on any other status is untouched
+// throughout, and the human renderer carries the same hints as the agent
+// envelope.
 func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
+	recordTest("cli-forbidden-without-credentials")
 	setupHint := {{goStringLiteral templateAuthErrorHint}}
 	workspaceHint := "Ask a workspace owner to restore access before retrying"
 	statusProbe := func(status int) []string {
@@ -243,6 +248,7 @@ func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
 	otherStatusBody := taxonomyBody("scope missing", "REQUEST_REJECTED", "TOKEN_SCOPE_MISSING")
 	operation := []string{"auth", "bearer-auth"}
 	hoisted := []string{"auth", "hoisted-security-access-token-only"}
+	noSecurity := []string{"generation", "circular-reference-one-degree"}
 	cases := []forbiddenCase{
 		{name: "status fallback/credential unset", status: 403, args: statusProbe(403), wantType: "authentication_error", wantHints: []string{setupHint}},
 		{name: "status fallback/credential set", status: 403, args: statusProbe(403), globalCredential: true, wantType: "authorization_error", wantNotHints: []string{setupHint}},
@@ -257,6 +263,8 @@ func TestForbiddenWithoutCredentialsIsAuthentication(t *testing.T) {
 		{name: "operation credential/credential unset", status: 403, args: operation, wantType: "authentication_error", wantHints: []string{"--bearer-auth"}, wantNotHints: []string{setupHint}},
 		{name: "operation credential/global credential set", status: 403, args: operation, globalCredential: true, wantType: "authentication_error", wantHints: []string{"--bearer-auth"}, wantNotHints: []string{setupHint}},
 		{name: "operation credential/flag set", status: 403, args: operation, flag: []string{"--bearer-auth", "test-credential"}, wantType: "authorization_error", wantNotHints: []string{setupHint, "--bearer-auth"}},
+		{name: "no-security operation/credential unset", status: 403, args: noSecurity, wantType: "authorization_error", wantNotHints: []string{setupHint}},
+		{name: "no-security operation/credential set", status: 403, args: noSecurity, globalCredential: true, wantType: "authorization_error", wantNotHints: []string{setupHint}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

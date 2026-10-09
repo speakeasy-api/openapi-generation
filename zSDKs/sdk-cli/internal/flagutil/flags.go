@@ -86,20 +86,12 @@ func DidDryRunRequest(cmd *cobra.Command) bool {
 	return hasMarker(cmd, dryRunRequestAnnotation)
 }
 
-// credentialsMissingAnnotation marks a command whose request goes out without
-// a credential while the caller has configured none it could have carried, so
-// the error classifier can read a permission denial as a missing-credential
-// failure. credentialsMissingHintAnnotation carries the hint that names the
-// credential the request accepts when the global setup hints would mislead.
 const (
 	credentialsMissingAnnotation     = "speakeasy_credentials_missing"
 	credentialsMissingHintAnnotation = "speakeasy_credentials_missing_hint"
 )
 
-// RecordCredentialsMissing notes whether the request will go out without any
-// credential the caller could have supplied. A non-empty hint replaces the
-// global credential setup hints when the classifier applies the override; the
-// hint is dropped whenever missing is false.
+// RecordCredentialsMissing records whether the request carries no credential; a non-empty hint replaces the credential setup hints.
 func RecordCredentialsMissing(cmd *cobra.Command, missing bool, hint string) {
 	setMarker(cmd, credentialsMissingAnnotation, missing)
 	if !missing {
@@ -108,12 +100,7 @@ func RecordCredentialsMissing(cmd *cobra.Command, missing bool, hint string) {
 	setAnnotation(cmd, credentialsMissingHintAnnotation, hint)
 }
 
-// RecordRequestSecurity records the credentials as missing when the security
-// struct the request will carry is the zero value. The struct's shape follows
-// the document (option pointers, strings, scope slices), so the zero check
-// goes through reflect: a struct comparison is invalid once a scheme carries a
-// slice, and a pointer is followed so a non-nil pointer to an empty struct
-// still counts as missing.
+// RecordRequestSecurity records the credentials as missing when security is the zero value.
 func RecordRequestSecurity(cmd *cobra.Command, security any, hint string) {
 	RecordCredentialsMissing(cmd, isZeroSecurity(security), hint)
 }
@@ -133,8 +120,7 @@ func CredentialsMissing(cmd *cobra.Command) bool {
 	return hasMarker(cmd, credentialsMissingAnnotation)
 }
 
-// CredentialsMissingHint returns the hint recorded alongside a missing
-// credential, or "" when the global setup hints apply.
+// CredentialsMissingHint returns the hint recorded with RecordCredentialsMissing, or "".
 func CredentialsMissingHint(cmd *cobra.Command) string {
 	if cmd == nil {
 		return ""
@@ -142,9 +128,6 @@ func CredentialsMissingHint(cmd *cobra.Command) string {
 	return cmd.Annotations[credentialsMissingHintAnnotation]
 }
 
-// setMarker records a boolean marker in the command's annotations. Clearing
-// removes the key so a command reused across invocations never carries a
-// stale marker.
 func setMarker(cmd *cobra.Command, key string, on bool) {
 	value := ""
 	if on {

@@ -128,6 +128,8 @@ func (t Test) String() string {
         return "cli-exit-code-success-and-discovery"
     case TestCliExitCodesRenderingModes:
         return "cli-exit-codes-rendering-modes"
+    case TestCliForbiddenWithoutCredentials:
+        return "cli-forbidden-without-credentials"
     case TestClientCredentialsDryRunTokenAndApi:
         return "client-credentials-dry-run-token-and-api"
     case TestClierrorsAgentModeExplicitlyDisabled:
@@ -1630,6 +1632,8 @@ func TestFromString(s string) Test {
         return TestCliExitCodeSuccessAndDiscovery
     case "cli-exit-codes-rendering-modes":
         return TestCliExitCodesRenderingModes
+    case "cli-forbidden-without-credentials":
+        return TestCliForbiddenWithoutCredentials
     case "client-credentials-dry-run-token-and-api":
         return TestClientCredentialsDryRunTokenAndApi
     case "clierrors-agent-mode-explicitly-disabled":
@@ -3069,6 +3073,7 @@ var testList = []Test{
     TestCliExitCodeSingleEnvelope,
     TestCliExitCodeSuccessAndDiscovery,
     TestCliExitCodesRenderingModes,
+    TestCliForbiddenWithoutCredentials,
     TestClientCredentialsDryRunTokenAndApi,
     TestClierrorsAgentModeExplicitlyDisabled,
     TestClierrorsAgentModeFromEnvironment,

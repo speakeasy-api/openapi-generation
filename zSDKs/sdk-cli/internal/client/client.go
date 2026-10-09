@@ -123,9 +123,6 @@ func resolveStringFlag(cmd *cobra.Command, name string) string {
 }
 
 // BuildGlobalSecurity reads security credentials with priority: flag > env var > keyring > config.
-// It records on the command whether the caller has configured any credential
-// at all (flagutil.CredentialsMissing), which the error classifier reads to
-// tell an anonymous caller apart from one whose credential was refused.
 func BuildGlobalSecurity(cmd *cobra.Command, allowedSecurityFields []string) components.Security {
 	// Resolve request credentials: flag > env var > keyring > config file (keyring skipped for dry-run)
 	var (
@@ -178,10 +175,6 @@ func BuildGlobalSecurity(cmd *cobra.Command, allowedSecurityFields []string) com
 		credentialCandidates = resolveCandidates(config.ResolveRequestSecurityCredential)
 		picked = config.PickCredential(credentialCandidates, allowedSecurityFields)
 	}
-	// A credential configured for an alternative this request does not
-	// accept is still a configured credential: the error classifier must
-	// not tell the caller to set what is set, so only a caller with nothing
-	// configured for any alternative counts as missing credentials.
 	flagutil.RecordCredentialsMissing(cmd, picked == -1 && config.PickCredential(credentialCandidates, nil) == -1, "")
 	switch picked {
 	case 0:

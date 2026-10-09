@@ -1229,12 +1229,6 @@ function templateRankedSecurityConstruction(
   );
   lines.push("}");
   lines.push(
-    "// A credential configured for an alternative this request does not",
-    "// accept is still a configured credential: the error classifier must",
-    "// not tell the caller to set what is set, so only a caller with nothing",
-    "// configured for any alternative counts as missing credentials.",
-  );
-  lines.push(
     `flagutil.RecordCredentialsMissing(cmd, ${pickedVar} == -1 && config.PickCredential(${candidatesVar}, nil) == -1, "")`,
   );
   lines.push(`switch ${pickedVar} {`);

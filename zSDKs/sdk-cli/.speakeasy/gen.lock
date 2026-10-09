@@ -184,7 +184,7 @@ trackedFiles:
   internal/cli/root.go:
     last_write_checksum: sha1:dad2cd122f67c8465ec46ab90e7e74f9b1f0ce3d
   internal/cli/tag1/auth.go:
-    last_write_checksum: sha1:5b6abfbc05c2ec0bfb45101dfa9f61756ed6ca09
+    last_write_checksum: sha1:f25ba9acd8909779428dd8bc0a7eeab5f5a292a4
   internal/cli/tag1/deprecated1.go:
     last_write_checksum: sha1:a0f494499d9989ec692a7222bae9af3b9c23b9c2
   internal/cli/tag1/intent_tag1-recent.go:
@@ -220,7 +220,7 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:b46476d7ae53fb8450ed016f83a3c11f20552cd4
   internal/client/client.go:
-    last_write_checksum: sha1:04ccdcd3014d21eeefef86237ec6e718d94109eb
+    last_write_checksum: sha1:58db154dfc3b80e998471223136423d3ffc1ca92
   internal/client/diagnostics.go:
     last_write_checksum: sha1:36245f95381109b1b8e1b0a041acd7b89737cd2e
   internal/clierrors/clierrors.go:
@@ -244,7 +244,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:f199fee86e3c81f4662e92b662194403be20edfe
+    last_write_checksum: sha1:39da30c99a7c8b3c698639bdbb8d29deedb4458a
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:1936c82d8e36a6612364827ffc05dcbea0e1dd8f
   internal/flagutil/preset.go:
@@ -264,7 +264,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
-    last_write_checksum: sha1:f00b129935fdc99c22edc68a9ee150a62143e1ec
+    last_write_checksum: sha1:f3ec208f5e0c5c44525d5ae63618f5c9d35b5a8d
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:

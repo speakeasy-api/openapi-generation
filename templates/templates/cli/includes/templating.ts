@@ -246,6 +246,14 @@ registerTemplateFunc("hasResponseTransform", hasResponseTransform);
 interface SecurityLeafInfo {
   name: string;
   description: string;
+  secret: boolean;
+}
+
+function isSecretSecurityField(field: FieldDef): boolean {
+  if (field.Name.toLowerCase().includes("username")) return false;
+  return isSecuritySecret(
+    field.Annotations?.Get("security") as SecurityAnnotation | undefined,
+  );
 }
 
 function walkSecurityLeafFields(
@@ -266,6 +274,7 @@ function walkSecurityLeafFields(
             name: assocType.Name,
             description:
               assocType.Comments?.Description || "Security credential",
+            secret: true,
           });
         }
       }
@@ -273,6 +282,7 @@ function walkSecurityLeafFields(
       visitor({
         name: field.Name,
         description: field.Comments?.Description || "Security credential",
+        secret: isSecretSecurityField(field),
       });
     }
   }
@@ -300,16 +310,14 @@ function templateSecurityFlagRegistration(op: Operation): string {
   return lines.join("\n    ");
 }
 
-/**
- * Hint naming the operation-level credential flags, recorded with the
- * missing-credential marker: an operation that sends its own security never
- * sends the global credential, so the global setup hints would misdirect.
- */
+// Hint naming the operation-level credential flags; "" when the operation
+// has no secret field.
 function templateOperationSecurityHint(op: Operation): string {
   if (!op.Security) return "";
 
   const flags: string[] = [];
   walkSecurityLeafFields(op.Security.Type.Fields || [], (leaf) => {
+    if (!leaf.secret) return;
     const flag = `--${sanitizeFlagNameWithReserved(leaf.name)}`;
     if (!flags.includes(flag)) flags.push(flag);
   });

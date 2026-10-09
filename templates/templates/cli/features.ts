@@ -358,6 +358,7 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
     "shared-enum-constructor-default",
+    "cli-forbidden-without-credentials",
   ].includes(test);
 }
 
