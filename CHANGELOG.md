@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.948.4] - 2026-10-09
+### :bug: Bug Fixes
+- [`226d4f4`](https://github.com/speakeasy-api/openapi-generation/commit/226d4f402b0b621672848ab5659deeaab913456b) - **cli**: classify a 403 sent without credentials as an authentication error ([#94](https://github.com/speakeasy-api/openapi-generation/pull/94)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.948.3] - 2026-10-09
 ### :bug: Bug Fixes
 - [`9eb6e36`](https://github.com/speakeasy-api/openapi-generation/commit/9eb6e36f0166685893b5b021a4a5528e117d3318) - **terraform,go,cli**: only emit sensitive value redaction where needed ([#97](https://github.com/speakeasy-api/openapi-generation/pull/97)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
@@ -20542,3 +20547,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.948.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.0...v2.948.1
 [v2.948.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.1...v2.948.2
 [v2.948.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.2...v2.948.3
+[v2.948.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.3...v2.948.4
