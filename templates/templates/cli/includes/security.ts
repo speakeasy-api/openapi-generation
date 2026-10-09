@@ -21,6 +21,8 @@ interface CLISecurityFieldInfo {
   isArray: boolean; // Whether this is a string array field (e.g., Scopes)
   secType: string; // apiKey, http, oauth2, etc.
   secSubType: string; // basic, bearer, custom, etc.
+  composite: boolean; // Part of a requirement that needs several schemes
+  schemeKey: string; // Security scheme name the field belongs to
 }
 
 /**
@@ -103,6 +105,8 @@ function flattenCLISecurityObject(
               isArray: false,
               secType: secAnno?.SecType || "",
               secSubType: secAnno?.SubType || "",
+              composite: !!secAnno?.Composite,
+              schemeKey: secAnno?.SchemeKey || "",
             });
           }
         }
@@ -160,6 +164,8 @@ function flattenCLISecurityObject(
       isArray: isArray,
       secType: secAnno?.SecType || "",
       secSubType: secAnno?.SubType || "",
+      composite: !!secAnno?.Composite,
+      schemeKey: secAnno?.SchemeKey || "",
     });
   }
 
@@ -2725,22 +2731,96 @@ function goFlagNameArgs(names: string[]): string {
   return names.map((n) => `"${n}"`).join(", ");
 }
 
-function templateAuthLoginFlagNames(): string {
-  return goFlagNameArgs(getCLISecurityFields().map((f) => f.flagName));
-}
-registerTemplateFunc("templateAuthLoginFlagNames", templateAuthLoginFlagNames);
-
-function templateConfigureFlagNames(): string {
+function storedFlagNames(command: string): string[] {
   const names = getCLISecurityFields().map((f) => f.flagName);
-  if (hasGlobals()) {
+  if (command === "configure" && hasGlobals()) {
     for (const field of context.Global.AST.MainSDK.Globals.Fields) {
       names.push(sanitizeFlagNameWithReserved(field.Name));
     }
   }
-  names.push(DEFAULT_OUTPUT_FORMAT_FLAG);
-  return goFlagNameArgs(names);
+  return names;
+}
+
+function templateAuthLoginFlagNames(): string {
+  return goFlagNameArgs(storedFlagNames("login"));
+}
+registerTemplateFunc("templateAuthLoginFlagNames", templateAuthLoginFlagNames);
+
+function templateConfigureFlagNames(): string {
+  return goFlagNameArgs([
+    ...storedFlagNames("configure"),
+    DEFAULT_OUTPUT_FORMAT_FLAG,
+  ]);
 }
 registerTemplateFunc("templateConfigureFlagNames", templateConfigureFlagNames);
+
+function templateSettingsHelpFlags(command: string): string {
+  return escapeGoString(storedFlagNames(command).join(","));
+}
+registerTemplateFunc("templateSettingsHelpFlags", templateSettingsHelpFlags);
+
+function primarySchemeFields(): CLISecurityFieldInfo[] {
+  const security = context.Global.AST.MainSDK.Security;
+  const fields = getCLISecurityFields();
+  const primary = primaryCLISecurityField(fields);
+  if (!security || !primary) return [];
+  const scalars: FieldDef[] = [];
+  for (const top of security.Type.Fields || []) {
+    if (top.Const) continue;
+    const kind = top.Type.Type.toString();
+    if (kind === "class" || kind === "union") {
+      const scheme = flattenCLISecurityObject({ Fields: [top] } as TypeDef);
+      if (scheme.some((f) => f.flagName === primary.flagName)) return scheme;
+    } else {
+      scalars.push(top);
+    }
+  }
+  const flat = flattenCLISecurityObject({ Fields: scalars } as TypeDef);
+  const self = flat.find((f) => f.flagName === primary.flagName);
+  if (!self) return [primary];
+  if (self.composite) return flat.filter((f) => f.composite);
+  if (!self.schemeKey) return [primary];
+  return flat.filter((f) => f.schemeKey === self.schemeKey);
+}
+
+function templateSettingsHelpExample(commandPath: string): string {
+  const cliName = sanitizeCliName();
+  const lines = [`  ${cliName} ${commandPath}`];
+  const scheme = primarySchemeFields();
+  const prefix = context.Global.Config.EnvVarPrefix
+    ? String(context.Global.Config.EnvVarPrefix).toUpperCase()
+    : "";
+  if (scheme.length > 0 && scheme.length <= 2) {
+    const flags = scheme
+      .map(
+        (f) =>
+          `--${f.flagName} "$${
+            prefix ? `${prefix}_${f.envVarSuffix}` : f.envVarSuffix
+          }"`,
+      )
+      .join(" ");
+    lines.push(`  ${cliName} ${commandPath} ${flags}`);
+  }
+  return escapeGoString(lines.join("\n"));
+}
+registerTemplateFunc(
+  "templateSettingsHelpExample",
+  templateSettingsHelpExample,
+);
+
+function templateSettingsHelpSeeAlso(command: string): string {
+  const paths: string[] = [];
+  if (command !== "configure") paths.push("configure");
+  if (hasConfigurableSettings()) paths.push("whoami");
+  if (isInteractiveAuthEnabled() && hasGlobalSecurity()) {
+    paths.push("auth logout");
+  }
+  return escapeGoString(paths.join(","));
+}
+registerTemplateFunc(
+  "templateSettingsHelpSeeAlso",
+  templateSettingsHelpSeeAlso,
+);
 
 /** Generate var declarations for a set of scheme fields */
 function genSchemeVarDecls(fields: CLISecurityFieldInfo[]): string[] {

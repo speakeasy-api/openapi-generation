@@ -11,7 +11,7 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.1.17
+    cliCommands: 0.1.18
     constsAndDefaults: 0.0.0
     core: 0.9.0
     customSecuritySchemes: 0.0.0
@@ -60,13 +60,13 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:75fd840a41af9780eddf7431ab9168a0c2c2facd
   internal/cli/auth.go:
-    last_write_checksum: sha1:a64e4aae57deeb18045a8601f4aff422b39931c0
+    last_write_checksum: sha1:5120764443e6565b7a63c06ad91d6323806cdfea
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
     last_write_checksum: sha1:79b4228fea48fee311f437e253ec4bed6903675e
   internal/cli/configure.go:
-    last_write_checksum: sha1:72b513337b8bdbb36773683424a76635e6b6a631
+    last_write_checksum: sha1:91f681e0c0bb3ec3fccfe48939b8bb0b71d89619
   internal/cli/createuser.go:
     last_write_checksum: sha1:5b60000059db85dcf4c90f5e67c37b7fff3cf852
   internal/cli/createwithunion.go:
@@ -222,7 +222,7 @@ trackedFiles:
   internal/cli/version.go:
     last_write_checksum: sha1:ef4d924ad83b7b2e9e4698a9f0ac229bac4060d4
   internal/cli/whoami.go:
-    last_write_checksum: sha1:b46476d7ae53fb8450ed016f83a3c11f20552cd4
+    last_write_checksum: sha1:ad27d6ccfed17dd213951f981030b010ababbf79
   internal/client/client.go:
     last_write_checksum: sha1:bca25435230238b7194798699e137ef94d983844
   internal/client/diagnostics.go:
@@ -658,7 +658,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:110540be88fd0b33f29d767b732c1c6f4b115d24
+    last_write_checksum: sha1:22b415ccb2fb4c1c80de2944a995e73ceef459c1
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:

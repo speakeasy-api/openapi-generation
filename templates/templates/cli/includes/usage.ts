@@ -14,6 +14,7 @@ interface UsageFlagDef {
   count?: boolean;
   variadic?: boolean;
   hidden?: boolean;
+  settings?: boolean;
 }
 
 interface UsageArgDef {
@@ -1231,6 +1232,29 @@ function applyDeclaredUsageOrder(
   reorder(root);
 }
 
+function rootUsageFlagsByName(
+  rootFlags: UsageFlagDef[],
+): Map<string, UsageFlagDef> {
+  const byName = new Map<string, UsageFlagDef>();
+  for (const flag of rootFlags) {
+    const name = /--([A-Za-z0-9_-]+)/.exec(flag.spec)?.[1];
+    if (name) byName.set(name, flag);
+  }
+  return byName;
+}
+
+function settingsUsageFlags(
+  command: string,
+  rootFlags: Map<string, UsageFlagDef>,
+): UsageFlagDef[] {
+  const flags: UsageFlagDef[] = [];
+  for (const name of storedFlagNames(command)) {
+    const flag = rootFlags.get(name);
+    if (flag) flags.push({ ...flag, global: false, settings: true });
+  }
+  return flags;
+}
+
 function buildRootUsageCommand(): UsageCommandDef {
   const intentManifest = collectIntentManifest();
   const root: UsageCommandDef = {
@@ -1239,6 +1263,7 @@ function buildRootUsageCommand(): UsageCommandDef {
     flags: getRootUsageFlags(),
     commands: [],
   };
+  const rootFlagsByName = rootUsageFlagsByName(root.flags!);
 
   for (const op of context.Global.AST.MainSDK.Operations) {
     const child = buildOperationUsageCommand(op);
@@ -1259,6 +1284,9 @@ function buildRootUsageCommand(): UsageCommandDef {
         help: "Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.",
         suggestions: ["pretty", "json", "yaml", "table", "toon"],
       },
+      ...(isAnyInteractiveEnabled()
+        ? settingsUsageFlags("configure", rootFlagsByName)
+        : []),
     ],
     commands: [],
   });
@@ -1285,6 +1313,7 @@ function buildRootUsageCommand(): UsageCommandDef {
       {
         name: "login",
         help: templateAuthLoginShort(),
+        flags: settingsUsageFlags("login", rootFlagsByName),
         commands: [],
       },
       {
@@ -1412,7 +1441,11 @@ function renderUsageFlag(flag: UsageFlagDef, indent: number): string[] {
   ];
 }
 
-function renderUsageCommand(cmd: UsageCommandDef, indent: number): string[] {
+function renderUsageCommand(
+  cmd: UsageCommandDef,
+  indent: number,
+  includeSettings = false,
+): string[] {
   const lines: string[] = [];
   const childLines: string[] = [];
   for (const alias of cmd.aliases || []) {
@@ -1442,6 +1475,7 @@ function renderUsageCommand(cmd: UsageCommandDef, indent: number): string[] {
     );
   }
   for (const flag of cmd.flags || []) {
+    if (flag.settings && !includeSettings) continue;
     childLines.push(...renderUsageFlag(flag, indent + 1));
   }
   for (const child of cmd.commands || []) {
@@ -1496,7 +1530,7 @@ function collectCommandPathSchemas(
       lines.push(...renderUsageCommand(child, 0));
     }
   } else {
-    lines.push(...renderUsageCommand(cmd, 0));
+    lines.push(...renderUsageCommand(cmd, 0, true));
   }
   const schema = lines.join("\n") + "\n";
   out.set(path.join(" "), schema);
