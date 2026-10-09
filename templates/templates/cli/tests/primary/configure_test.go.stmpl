@@ -166,7 +166,7 @@ func TestConfigureSkipsOptionalCredentials(t *testing.T) {
 	output := h.GetStdout()
 
 {{- if not (isInteractiveAuthEnabled)}}
-	// Verify intro messages (readline mode only — huh forms don't print these)
+	// Verify intro messages (readline mode only — guided forms don't print these)
 	assert.Contains(t, output, "Configure ")
 	assert.Contains(t, output, "Enter - to clear a previously set value.")
 {{- end}}
@@ -264,7 +264,7 @@ func TestConfigureMaskSecretDisplay(t *testing.T) {
 	// In readline mode, existing value should be masked inline in the prompt
 	assert.Contains(t, output, "sk******ef")
 {{- end}}
-	// In huh form mode, the masked value is used as a Placeholder which may not
+	// In guided form mode, the masked value is used as a Placeholder which may not
 	// appear in accessible text output. The key assertion is that the full secret
 	// is never printed.
 }

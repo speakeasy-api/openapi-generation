@@ -148,8 +148,12 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	}
 
 	if projector != nil {
+		if err := projector.finish(out); err != nil {
+			return err
+		}
 		projector.reportEmpty(cmd)
-		return projector.finish(out)
+		projector.reportMetadata(cmd)
+		return nil
 	}
 	return nil
 }

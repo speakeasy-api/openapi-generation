@@ -73,6 +73,10 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 			{{- end}}
 			{{- if $c.StreamSelect}}
 			"speakeasy_stream_select": "{{escapeGoString $c.StreamSelect}}",
+			{{- if $c.StreamMetadataPointer}}
+			"speakeasy_stream_metadata_select": "{{escapeGoString $c.StreamMetadataPointer}}",
+			"speakeasy_stream_metadata_label": "{{escapeGoString $c.StreamMetadataLabel}}",
+			{{- end}}
 			{{- end}}
 		},
 	}
@@ -152,6 +156,8 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the {{$c.ArtifactKind}} to a file")
 	{{- end}}
 	{{- if $c.AsyncJSON}}
+	cmd.Flags().String("resume", "", "Resume polling an existing operation by ID instead of creating one")
+	_ = flagutil.AnnotatePromptFlag(cmd, "resume", flagutil.PromptFlagSpec{Kind: "string"})
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
 	cmd.Flags().String("poll-interval", "", "Override the initial polling interval (positive Go duration, for example 500ms or 2s)")
 	cmd.Flags().String("poll-timeout", "", "Override the overall polling deadline (positive Go duration, at least the effective poll interval)")
@@ -188,6 +194,7 @@ var intent{{$c.FuncName}}Preset = flagutil.PresetMerge{
 	DiscriminatorAliases: []string{ {{- range $i, $v := $c.DiscriminatorAliasesJSON}}{{if $i}}, {{end}}"{{escapeGoString $v}}"{{end -}} },
 	{{- end}}
 	{{- end}}
+	{{- template "presetMergePoints" $c.PresetMergePoints}}
 	Escape: "{{escapeGoString $c.EscapeCommand}}",
 }
 {{- end}}
@@ -207,6 +214,7 @@ var intent{{$c.FuncName}}Dispatch = flagutil.DispatchTable{
 				Command: "{{escapeGoString $c.CommandDisplay}}", Variant: "{{escapeGoString $route.VariantLabel}}",
 				Preset: "{{escapeGoString $route.PresetJSON}}",
 				Foreign: []string{ {{- range $i, $key := $route.ForeignSelectors}}{{if $i}}, {{end}}"{{escapeGoString $key}}"{{end -}} },
+				{{- template "presetMergePoints" $route.PresetMergePoints}}
 				Escape: "{{escapeGoString $c.EscapeCommand}}",
 			},
 		},
@@ -246,6 +254,20 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	{{- if $c.ArtifactJSON}}
 	if flagutil.FlagChanged(cmd, "raw-response") && flagutil.FlagChanged(cmd, "out") {
 		return flagutil.WithCLIValidation(fmt.Errorf("--raw-response prints the raw API response and cannot be combined with --out"))
+	}
+	{{- end}}
+	{{- if $c.AsyncJSON}}
+	if flagutil.IsAsyncResume(cmd) {
+		if err := output.ValidateAsyncResume(cmd, args); err != nil {
+			return err
+		}
+		{{- if $c.JQ}}
+		if f := cmd.Flag("jq"); f != nil && !f.Changed {
+			_ = f.Value.Set("{{escapeGoString $c.JQ}}")
+		}
+		{{- end}}
+		id, _ := flagutil.GetStringFlag(cmd, "resume")
+		return output.ResumeAsync(cmd, id, newPollIntent{{$c.FuncName}})
 	}
 	{{- end}}
 	{{- if $c.Dispatch}}
@@ -338,7 +360,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 			}
 			{{- end}}
 			{{- end}}
+			{{- if gt (len .Path) 1}}
+			if err := intent{{$c.FuncName}}Preset.MergeNestedInput(cmd, suppliedBodyFlag, {{template "bodyPath" .Path}}, "--{{.Name}}", v); err != nil {
+			{{- else}}
 			if err := flagutil.MergeInputIntoBody(cmd, suppliedBodyFlag, "{{escapeGoString .Key}}", "--{{.Name}}", v); err != nil {
+			{{- end}}
 				return flagutil.WithCLIValidation(err)
 			}
 		}
@@ -417,7 +443,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 			{{- else}}
 			v, _ := flagutil.GetStringFlag(cmd, "{{.Name}}")
 			{{- end}}
+			{{- if gt (len .Path) 1}}
+			flagutil.SetBodyPath(body, {{template "bodyPath" .Path}}, v)
+			{{- else}}
 			body["{{escapeGoString .Key}}"] = v
+			{{- end}}
 		}
 		{{- end}}
 		{{- with $c.StreamToggle}}
@@ -444,6 +474,11 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if err := cmd.Flags().Set(surface, merged); err != nil {
+				return err
+			}
+		}
+		if suppliedBodyFlag == "" {
+			if err := flagutil.MergePresetStdinBody(cmd, intent{{$c.FuncName}}Preset); err != nil {
 				return err
 			}
 		}
@@ -524,3 +559,15 @@ func newPollIntent{{$c.FuncName}}(cmd *cobra.Command, id string, params []output
 	}, nil
 }
 {{- end}}
+
+{{- define "presetMergePoints"}}
+{{- if .}}
+	Nested: map[string]flagutil.PresetMergePoint{
+		{{- range $d := .}}
+		"{{escapeGoString $d.Pointer}}": {Key: "{{escapeGoString $d.Key}}", Values: []string{ {{- range $i, $v := $d.ValuesJSON}}{{if $i}}, {{end}}"{{escapeGoString $v}}"{{end -}} }},
+		{{- end}}
+	},
+{{- end}}
+{{- end}}
+
+{{- define "bodyPath"}}[]string{ {{- range $i, $segment := .}}{{if $i}}, {{end}}"{{escapeGoString $segment}}"{{end -}} }{{- end}}

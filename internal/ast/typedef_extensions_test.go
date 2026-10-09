@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -1489,4 +1490,29 @@ func TestTypeDefExtensions_TerraformMerge(t *testing.T) {
 			tt.validate(t, testE1)
 		})
 	}
+}
+
+func TestPatternErrorMessageTypeDefExtensions(t *testing.T) {
+	t.Parallel()
+	parser := extensions.New(types.Target{})
+	input := yamlToOAExtensions(t, `x-speakeasy-pattern-error-message: Use letters.`)
+	parsed, err := NewTypeDefExtensions(parser, &TypeDef{}, input)
+	require.NoError(t, err)
+	assert.Equal(t, "Use letters.", parsed.PatternErrorMessage)
+	assert.Equal(t, parsed.PatternErrorMessage, parsed.Clone().PatternErrorMessage)
+
+	merged := &TypeDefExtensions{All: map[string]any{}}
+	merged.Merge(parsed)
+	assert.Equal(t, parsed.PatternErrorMessage, merged.PatternErrorMessage)
+	merged.Merge(&TypeDefExtensions{PatternErrorMessage: "Other message."})
+	assert.Equal(t, parsed.PatternErrorMessage, merged.PatternErrorMessage)
+
+	field := &TypeDef{Extensions: &TypeDefExtensions{All: map[string]any{}}}
+	require.NoError(t, field.Extensions.MergeWithoutOverwrite(parser, field, input))
+	assert.Equal(t, parsed.PatternErrorMessage, field.Extensions.PatternErrorMessage)
+	require.NoError(t, field.Extensions.MergeWithoutOverwrite(parser, field, yamlToOAExtensions(t, `x-speakeasy-pattern-error-message: Other message.`)))
+	assert.Equal(t, parsed.PatternErrorMessage, field.Extensions.PatternErrorMessage)
+
+	_, err = NewTypeDefExtensions(parser, &TypeDef{}, yamlToOAExtensions(t, `x-speakeasy-pattern-error-message: false`))
+	require.ErrorContains(t, err, "must be a non-empty string")
 }

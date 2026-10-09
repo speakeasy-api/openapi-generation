@@ -11,6 +11,7 @@ import (
 	"openapi/internal/cli/group"
 	"openapi/internal/cli/namespacetests"
 	"openapi/internal/cli/obsolete"
+	"openapi/internal/cli/streammetadata"
 	"openapi/internal/cli/tag1"
 	"openapi/internal/cli/testgroup"
 	"openapi/internal/clierrors"
@@ -88,6 +89,9 @@ func NewRootCommand() (*cobra.Command, error) {
 	}
 	if err := namespacetests.InitNamespaceTestsRoot(rootCmd); err != nil {
 		return nil, fmt.Errorf("init namespace-tests: %w", err)
+	}
+	if err := streammetadata.InitStreamMetadataRoot(rootCmd); err != nil {
+		return nil, fmt.Errorf("init stream-metadata: %w", err)
 	}
 	if err := initOperationWithLeadingAndTrailingUnderscoresCmd(rootCmd); err != nil {
 		return nil, fmt.Errorf("init operation-with-leading-and-trailing-underscores: %w", err)

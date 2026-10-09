@@ -91,6 +91,9 @@ DEBUG	prepend_op_id: Renamed to "renderAsset_request"
 DEBUG	prepend_op_id: Renamed to "getErrorOnlyExample_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:getErrorOnlyExample requestResponse:response" 
 	 registrationID: "scope:operations operation:getErrorOnlyExample requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "streamMetadata_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:streamMetadata requestResponse:response responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream originalName:ResponseBody"
 DEBUG	prepend_op_id: Renamed to "paymentCreated_request" 
 	 labels: "original_name:request operation:paymentCreated operationTag:hooks" 
 	 registrationID: "scope:webhooks operationTag:hooks operation:paymentCreated requestResponse:request constProperty:PaymentCreated originalName:RequestBody"
@@ -178,6 +181,15 @@ DEBUG	discriminated: Renamed to "TaggedError2_error"
 DEBUG	discriminated: Renamed to "ErrorType2_error" 
 	 labels: "original_name:error scope:shared refName:ErrorType2" 
 	 registrationID: "scope:shared refType:Schemas refName:ErrorType2 originalName:error"
+DEBUG	
+
+--- Renaming 2 types with name "data" ---
+DEBUG	discriminated: Renamed to "chat_data" 
+	 labels: "original_name:data operation:chat requestResponse:response responseBody:ResponseBody responseMediaType:EventStream" 
+	 registrationID: "scope:operations operation:chat requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream responseBody:responseBody originalName:data"
+DEBUG	discriminated: Renamed to "streamMetadata_data" 
+	 labels: "original_name:data operation:streamMetadata requestResponse:response responseBody:ResponseBody responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream responseBody:responseBody originalName:data"
 DEBUG	
 
 --- Renaming 2 types with name "InternalServerError" ---
@@ -268,6 +280,9 @@ DEBUG	prepend_op_id: N/A rename "renderAsset_request"
 DEBUG	prepend_op_id: N/A rename "getErrorOnlyExample_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:getErrorOnlyExample requestResponse:response" 
 	 registrationID: "scope:operations operation:getErrorOnlyExample requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "streamMetadata_ResponseBody" 
+	 labels: "original_name:ResponseBody operation:streamMetadata requestResponse:response responseMediaType:EventStream" 
+	 registrationID: "scope:operations operationTag:streamMetadata operation:streamMetadata requestResponse:response responseStatusCode:200 responseMediaType:text/event-stream originalName:ResponseBody"
 DEBUG	prepend_op_id: N/A rename "paymentCreated_request" 
 	 labels: "original_name:request operation:paymentCreated operationTag:hooks" 
 	 registrationID: "scope:webhooks operationTag:hooks operation:paymentCreated requestResponse:request constProperty:PaymentCreated originalName:RequestBody"
@@ -371,6 +386,10 @@ GetNamespaceTypesResponse (HttpMeta: HTTPMetadata, NamespaceTypesTest: Namespace
 GetNamespaceAnimalResponse (HttpMeta: HTTPMetadata, Animal: Animal)
 GetNamespaceVehicleResponse (HttpMeta: HTTPMetadata, Vehicle: Vehicle)
 GetNamespaceOrganizationResponse (HttpMeta: HTTPMetadata, Organization: Organization)
+StreamMetadata (SDK empty)
+StreamMetadataResponse (HttpMeta: HTTPMetadata, object: event-stream)
+  StreamMetadataResponseBody (data: class)
+   StreamMetadataData (content: string, resource_id: string)
 OperationWithLeadingAndTrailingUnderscoresRequest (qp1: string)
 OperationWithLeadingAndTrailingUnderscoresResponse (HttpMeta: HTTPMetadata)
 PostFileRequest (upload: File)
@@ -446,7 +465,7 @@ ChatRequest (union)
 ChatResponse (HttpMeta: HTTPMetadata, object: class, ChatStream: event-stream)
  ChatResponseBody (data: string)
   ChatStream (data: class)
-   Data (content: string)
+   ChatData (content: string, resource_id: string)
 GetBinaryDefaultResponseResponse (HttpMeta: HTTPMetadata, bytes: response-stream)
 TestEnumFormatsRequest (stringArrayFormat: enum, stringMapFormat: enum, stringPartialMapFormat: enum ...)
  StringArrayFormat (enum: pending_review, approved_final, rejected_permanently ...)

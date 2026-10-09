@@ -95,6 +95,7 @@ const (
 	ExtCLICommands
 	ExtCLIErrors
 	ExtEnumGroups
+	ExtPatternErrorMessage
 )
 
 var extensionNames = map[Extension]string{
@@ -164,6 +165,7 @@ var extensionNames = map[Extension]string{
 	ExtCLICommands:                        "x-speakeasy-cli-commands",
 	ExtCLIErrors:                          "x-speakeasy-cli-errors",
 	ExtEnumGroups:                         "x-speakeasy-enum-groups",
+	ExtPatternErrorMessage:                "x-speakeasy-pattern-error-message",
 	ExtGoOptionalMethodArguments:          "x-speakeasy-go-optional-method-arguments",
 }
 

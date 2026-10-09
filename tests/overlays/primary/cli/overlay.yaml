@@ -88,10 +88,20 @@ actions:
       categories:
       - Create
       operations:
+        streamMetadata:
+          output:
+            stream:
+              select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
         cliInteract:
           output:
             stream:
               select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
           flags:
             stream:
               to: $.stream
@@ -149,10 +159,36 @@ actions:
           output:
             stream:
               select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
           examples:
             basic:
               summary: Generate with the default model
               command: cli generate "Explain concurrency in one sentence"
+        stream-reply:
+          routes:
+            model:
+              op: cliInteract#CliModelInteraction
+              default: true
+              selector: model
+            agent:
+              op: cliInteract#CliAgentInteraction
+              selector: agent
+          args:
+            input: {to: $.input, variadic: true, summary: Prompt text}
+          flags:
+            model: {to: $.model, defaultFrom: schema}
+            agent: {to: $.agent}
+            stream: {to: $.stream, type: bool, defaultFrom: schema}
+          preset:
+            $.stream: true
+          output:
+            stream:
+              select: $.data.content
+              metadata:
+                select: $.data.resource_id
+                label: Resource ID
         render:
           category: Create
           summary: Run the render model
@@ -172,9 +208,14 @@ actions:
               summary: Model to run
               defaultFrom: schema
               suggestions: [render-1, render-2]
+            width:
+              to: $.image_format.width
+              summary: Image width in pixels
           preset:
             $.model: render-1
             $.output_modalities: image
+            $.image_format:
+              kind: png
           hints:
             CLI_VALIDATION: Print the exact request schema with --schema
           examples:
@@ -193,6 +234,8 @@ actions:
               selector: model
               preset:
                 $.output_modalities: image
+                $.image_format:
+                  kind: png
             agent:
               label: Agent
               op: cliIntentRun#CliIntentAgentRequest
@@ -391,3 +434,36 @@ actions:
           properties:
             content:
               type: string
+            resource_id:
+              type: string
+
+- target: $.paths
+  update:
+    /stream-metadata:
+      get:
+        operationId: streamMetadata
+        tags: [streamMetadata]
+        description: Streamed events can contain text and an optional resource identifier in separate events.
+        parameters:
+          - name: stream
+            in: query
+            schema:
+              type: boolean
+              default: true
+        responses:
+          "200":
+            description: Streamed resource events.
+            content:
+              text/event-stream:
+                x-speakeasy-sse-sentinel: "[DONE]"
+                schema:
+                  type: object
+                  required: [data]
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        content:
+                          type: string
+                        resource_id:
+                          type: string

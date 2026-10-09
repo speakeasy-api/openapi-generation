@@ -65,6 +65,9 @@ func runGetAssetCmd(cmd *cobra.Command, args []string) error {
 	if err := output.ValidateGlobalServerIndex(cmd, len(sdk.ServerList)); err != nil {
 		return err
 	}
+	if output.WantsRawJSON(cmd) {
+		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
+	}
 	// Streaming response — iterate events and output incrementally.
 	// Skip streaming iteration in dry-run mode (synthetic response has no stream).
 	if !client.IsDryRun(cmd) {
@@ -73,9 +76,6 @@ func runGetAssetCmd(cmd *cobra.Command, args []string) error {
 			return output.Error(cmd, err)
 		}
 		return output.StreamResult(cmd, res, "AssetStatusStream")
-	}
-	if output.WantsRawJSON(cmd) {
-		sdkOpts = append(sdkOpts, operations.WithSkipDeserialization())
 	}
 	res, err := s.GetAsset(cmd.Context(), *req, sdkOpts...)
 	if err != nil {

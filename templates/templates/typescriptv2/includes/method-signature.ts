@@ -416,16 +416,11 @@ function tsImportMethodParamsTypes(
   )}/method-params.js`;
   addImport(path, state.ParamsName, typeImport);
   if (state.SSE) {
-    // With per-variant overloads the union NonStreaming/Streaming aliases
-    // are not referenced by the method.
-    if (state.BodyVariants.length > 0) {
-      for (const variant of state.BodyVariants) {
-        addImport(path, `${variant.ParamsName}NonStreaming`, typeImport);
-        addImport(path, `${variant.ParamsName}Streaming`, typeImport);
-      }
-    } else {
-      addImport(path, `${state.ParamsName}NonStreaming`, typeImport);
-      addImport(path, `${state.ParamsName}Streaming`, typeImport);
+    addImport(path, `${state.ParamsName}NonStreaming`, typeImport);
+    addImport(path, `${state.ParamsName}Streaming`, typeImport);
+    for (const variant of state.BodyVariants) {
+      addImport(path, `${variant.ParamsName}NonStreaming`, typeImport);
+      addImport(path, `${variant.ParamsName}Streaming`, typeImport);
     }
   }
   return "";

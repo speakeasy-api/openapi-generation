@@ -38,6 +38,9 @@ type TypeDefExtensions struct {
 	// Set on request-side string schemas with format:byte or contentEncoding:base64.
 	Base64InputMode string `yaml:",omitempty"`
 
+	// Describes x-speakeasy-pattern-error-message extension configuration.
+	PatternErrorMessage string `yaml:",omitempty"`
+
 	// Describes x-speakeasy-conflicts-with extension configuration.
 	// TODO: Migrate usage to this field.
 	// ConflictsWith *extensions.ConflictsWith `yaml:",omitempty"`
@@ -231,6 +234,12 @@ func NewTypeDefExtensions(e *extensions.Extensions, typeDef *TypeDef, oaExtensio
 		return result, nil
 	}
 
+	message, err := e.HandlePatternErrorMessageExtension(oaExtensions)
+	if err != nil {
+		return nil, err
+	}
+	result.PatternErrorMessage = message
+
 	for oasExtensionKey, oasExtensionValue := range oaExtensions.All() {
 		var decodedValue any
 
@@ -389,6 +398,7 @@ func (e *TypeDefExtensions) Clone() *TypeDefExtensions {
 		All:                     maps.Clone(e.All),
 		AllowEmptyValue:         e.AllowEmptyValue,
 		Base64InputMode:         e.Base64InputMode,
+		PatternErrorMessage:     e.PatternErrorMessage,
 		Entity:                  e.Entity.Clone(),
 		EntityDescription:       e.EntityDescription.Clone(),
 		EntityVersion:           e.EntityVersion.Clone(),
@@ -509,6 +519,10 @@ func (e *TypeDefExtensions) Merge(other *TypeDefExtensions) {
 
 	if e.Base64InputMode == "" {
 		e.Base64InputMode = other.Base64InputMode
+	}
+
+	if e.PatternErrorMessage == "" {
+		e.PatternErrorMessage = other.PatternErrorMessage
 	}
 
 	if e.Entity == nil {
@@ -643,6 +657,10 @@ func (e *TypeDefExtensions) MergeWithoutOverwrite(extensions *extensions.Extensi
 
 	if e.Base64InputMode == "" {
 		e.Base64InputMode = newTypeDefExtensions.Base64InputMode
+	}
+
+	if e.PatternErrorMessage == "" {
+		e.PatternErrorMessage = newTypeDefExtensions.PatternErrorMessage
 	}
 
 	if e.Entity == nil {
