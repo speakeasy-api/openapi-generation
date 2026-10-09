@@ -238,7 +238,7 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 	   		{{- addImport "utils"}}
 			{{- addImport "fmt"}}
 			if err := utils.UnmarshalJSON(data, &{{$variableName}}, {{templateTypeAnnotations $mapping.Type true true}}, true, nil); err != nil {
-				return fmt.Errorf("could not unmarshal `%s` into expected ({{$fieldName}} == {{sanitizeEnumValue $mapping.Name "string" | trimAll "\""}}) type {{sanitizeType $mapping.Type false $outputLocation}} within {{$className}}: %w", string(data), err)
+				return fmt.Errorf("could not unmarshal into expected ({{$fieldName}} == {{sanitizeEnumValue $mapping.Name "string" | trimAll "\""}}) type {{sanitizeType $mapping.Type false $outputLocation}} within {{$className}}: %w", err)
 			}
 
 			u.{{$assignFieldName}} = {{$variableName}}
@@ -281,8 +281,8 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 		u.Type = {{openUnionUnknownEnumName $unionType}}
 		return nil
 		{{- else}}
-		{{- addImport "fmt"}}
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+		{{- addImport "errors"}}
+		return errors.New("could not unmarshal into any supported union types for {{$className}}")
 		{{- end}}
 	}
 
@@ -295,8 +295,8 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 		u.Type = {{openUnionUnknownEnumName $unionType}}
 		return nil
 		{{- else}}
-		{{- addImport "fmt"}}
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+		{{- addImport "errors"}}
+		return errors.New("could not unmarshal into any supported union types for {{$className}}")
 		{{- end}}
 	}
 
@@ -333,8 +333,8 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 	u.Type = {{openUnionUnknownEnumName $unionType}}
 	return nil
 	{{- else}}
-	{{- addImport "fmt"}}
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+	{{- addImport "errors"}}
+	return errors.New("could not unmarshal into any supported union types for {{$className}}")
 	{{- end}}
 	{{- end}}
 }

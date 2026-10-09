@@ -58,7 +58,7 @@ trackedFiles:
   cmd/gendocs/main_test.go:
     last_write_checksum: sha1:80e37af8940a8575a635b643431bb16f204209bb
   go.mod:
-    last_write_checksum: sha1:75fd840a41af9780eddf7431ab9168a0c2c2facd
+    last_write_checksum: sha1:4c3f7f2f1db6c59daf99b8488e2e0b38efc8b1f3
   internal/cli/auth.go:
     last_write_checksum: sha1:5120764443e6565b7a63c06ad91d6323806cdfea
   internal/cli/binaryandstringupload.go:
@@ -330,9 +330,9 @@ trackedFiles:
   internal/sdk/models/components/assetnotestep.go:
     last_write_checksum: sha1:11f8dd0bed22957c8ac6f0007229b888c9095e3f
   internal/sdk/models/components/assetoutputstep.go:
-    last_write_checksum: sha1:ea0befe5bb06149f8aa50fb7013437c2ca7e1dfe
+    last_write_checksum: sha1:237f101fd7c4af6d8d6a31fe5315b60a68187a4e
   internal/sdk/models/components/assetresult.go:
-    last_write_checksum: sha1:a57fb9673b97693ebc1593497699c6bce6b5a63e
+    last_write_checksum: sha1:f637eebdeec0a91cd6dbdb1a9daa1ad25f3fda91
   internal/sdk/models/components/assettextblock.go:
     last_write_checksum: sha1:1951f911e13c8760a2f73a64dc5db40538dd5efe
   internal/sdk/models/components/badrequestresponseerror.go:
@@ -352,7 +352,7 @@ trackedFiles:
   internal/sdk/models/components/color.go:
     last_write_checksum: sha1:2fbf3e966c6958f476599a33026428f51d3b280f
   internal/sdk/models/components/disriminatedunionwithonemember.go:
-    last_write_checksum: sha1:8a8ca37ce34fb78b59fe842d923c8740e0fbf12f
+    last_write_checksum: sha1:36bf8474376196e4a3f4ac230b21f3249b142df3
   internal/sdk/models/components/enum.go:
     last_write_checksum: sha1:a1b661aef3f7c713e1aa34a1e919527e9acfcbd7
   internal/sdk/models/components/errortype2.go:
@@ -386,13 +386,13 @@ trackedFiles:
   internal/sdk/models/components/rectangle.go:
     last_write_checksum: sha1:9832ff96e70bc0484ced296bd8119b2fb550edf1
   internal/sdk/models/components/recursiveformfield.go:
-    last_write_checksum: sha1:2a80e0a86de189b083c0621d657ffd19c9fd388e
+    last_write_checksum: sha1:c8866684ed0b25d6bda2d6aa266d06e318f709b0
   internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:f9a20b23682fe33408cc919f22a3fc70977a94cf
   internal/sdk/models/components/security.go:
     last_write_checksum: sha1:7df79fe462af6d1a4f1fea1b273fc9e4eabc61a2
   internal/sdk/models/components/shape.go:
-    last_write_checksum: sha1:926fd2608338a005edace85201bf76b8404f0abe
+    last_write_checksum: sha1:0c87d031b97153143675d978710ea087e000ab5e
   internal/sdk/models/components/shaperequest.go:
     last_write_checksum: sha1:2e21a9bf07fc2147b3c73d17baee520ff298c338
   internal/sdk/models/components/simpleobject.go:
@@ -416,9 +416,9 @@ trackedFiles:
   internal/sdk/models/components/user.go:
     last_write_checksum: sha1:5c4b31544dbc94b4eca689c00c443f2ed42c662c
   internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:773de5ec25a50c8e677cb852b4e43e18dc1b8326
+    last_write_checksum: sha1:f9a4ed6659ed74470b215e77db2caeb00f44edea
   internal/sdk/models/foo/animal.go:
-    last_write_checksum: sha1:c754259c787bdfee3ef48cc8762763a9c10df257
+    last_write_checksum: sha1:26eb1c2ff27f83f4152890be0e47927176e20fca
   internal/sdk/models/foo/cat.go:
     last_write_checksum: sha1:0d441a8a2b12657876a07212c4f8869f347f7c37
   internal/sdk/models/foo/dog.go:
@@ -436,7 +436,7 @@ trackedFiles:
   internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:7fb4d81daaf907f9894a74cbcda0474399461414
   internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:aa4756ca1e28c2fbefbbf10e588652e842e67e0d
+    last_write_checksum: sha1:0c3d56b00a4ee8ec6eaacc002cc04a334cae4cc7
   internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:fa39c1f2ddb12ccafded76afcf4cd754aa6b4d21
   internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -546,7 +546,7 @@ trackedFiles:
   internal/sdk/models/sdkerrors/geterrorinunion.go:
     last_write_checksum: sha1:cda88009d649a67653892547691e47e37ae776dd
   internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:c0e20962bf9496c88f2b1e1e78049503400590a6
+    last_write_checksum: sha1:3582cde670e873cf5181dc584009bb63c74c5be9
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
@@ -808,7 +808,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/bar/petstatus.go:
     last_write_checksum: sha1:d4fcbde91ce9d218a82dcb8e1a80f10c2360dc29
   tests/mockserver/internal/sdk/models/bar/vehicle.go:
-    last_write_checksum: sha1:00b9c5ca1e8776c9dde28238fd94113ad3c67ba6
+    last_write_checksum: sha1:83a355ac25f4741a21d87e2dc16caa655d98488e
   tests/mockserver/internal/sdk/models/baz/namespaced.go:
     last_write_checksum: sha1:01900b399ef20cbfcdf1a2d8a469836e3740557c
   tests/mockserver/internal/sdk/models/baz/pet.go:
@@ -822,13 +822,13 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/components/assetnotestep.go:
     last_write_checksum: sha1:97f9a4588da525885e2c6c37b81143fdd99acce4
   tests/mockserver/internal/sdk/models/components/assetoutputstep.go:
-    last_write_checksum: sha1:cc43defdd53dee8ea17d4e5000851e888a9220d0
+    last_write_checksum: sha1:467b8b95f50954079e3dc522f47e62a16883700c
   tests/mockserver/internal/sdk/models/components/assetresult.go:
-    last_write_checksum: sha1:f2eaa196a580b1e35de714a794c2219c3d203489
+    last_write_checksum: sha1:baf467da55e27d458652207be1c84978961cb742
   tests/mockserver/internal/sdk/models/components/assettextblock.go:
     last_write_checksum: sha1:39b45fd5cf551f179162d68607f7621288b1217f
   tests/mockserver/internal/sdk/models/components/badrequestresponseerror.go:
-    last_write_checksum: sha1:a1d11e4d35f19260a8cdc1e31d4c9b04b1b11141
+    last_write_checksum: sha1:cec734a03fb1bf533753f47bfeb794fd93dd395f
   tests/mockserver/internal/sdk/models/components/baseuser.go:
     last_write_checksum: sha1:52c4997704473038090f2f8193af733d75961315
   tests/mockserver/internal/sdk/models/components/boole.go:
@@ -840,11 +840,11 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/components/circle.go:
     last_write_checksum: sha1:f59bfa8e1be914affc0606670c2097c53cf6e4c1
   tests/mockserver/internal/sdk/models/components/circularunion.go:
-    last_write_checksum: sha1:5e10f4fd248b3d5efe83c412b16d85fdaba2e9a5
+    last_write_checksum: sha1:fe07664ad7dad3bd5c013f342a99c99d6ecbec64
   tests/mockserver/internal/sdk/models/components/color.go:
     last_write_checksum: sha1:d73282b709bbfcbde3a6f067764703d522142eab
   tests/mockserver/internal/sdk/models/components/disriminatedunionwithonemember.go:
-    last_write_checksum: sha1:a86f006be5681c2d322fe96a9dd4f0b0247f2cdd
+    last_write_checksum: sha1:a9c620707ff612f3c6d954bec104d829a59a784d
   tests/mockserver/internal/sdk/models/components/enum.go:
     last_write_checksum: sha1:67ab4ea6146ffc403776a804541c215d532c78b3
   tests/mockserver/internal/sdk/models/components/errortype2.go:
@@ -852,7 +852,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/components/escalation.go:
     last_write_checksum: sha1:c5aa83c9d40b0a795c7af0c4f69b4571902baab3
   tests/mockserver/internal/sdk/models/components/exhaustiveobject.go:
-    last_write_checksum: sha1:489127e2f9182c654df68b0a5df6e1b85e5b79f2
+    last_write_checksum: sha1:0d98883b7174b8ff7fc6e6307d9519d54fa87f49
   tests/mockserver/internal/sdk/models/components/file.go:
     last_write_checksum: sha1:a8eb000d20a81070b5266d149fc190b9f87661e1
   tests/mockserver/internal/sdk/models/components/gender.go:
@@ -872,25 +872,25 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/components/objwithrenamedproperties.go:
     last_write_checksum: sha1:0f802cd676b7110876d547ca401ad560657f4a8e
   tests/mockserver/internal/sdk/models/components/oneofwithfactoredoutproperties.go:
-    last_write_checksum: sha1:c9a3c38c1e82ef26b0291391486ffa7fc6fcd00b
+    last_write_checksum: sha1:2ab92496e7c3d0d73070459d859899b2ed0aecc7
   tests/mockserver/internal/sdk/models/components/policystep.go:
     last_write_checksum: sha1:fbe39a10465e5150c315ab1f29bc21f27bcbdf29
   tests/mockserver/internal/sdk/models/components/rectangle.go:
     last_write_checksum: sha1:0060fa72430a51cc09b7ab9c503efea75fcc82a5
   tests/mockserver/internal/sdk/models/components/recursiveformfield.go:
-    last_write_checksum: sha1:38e5b5da8e0ae6c3384a2b30c3b99fe406ae09d7
+    last_write_checksum: sha1:cc62d1cc51e9be8c44dd1085ba32278a6ae9ac7a
   tests/mockserver/internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:6307b9681565aa2921e4c8ce4885cf256020526e
   tests/mockserver/internal/sdk/models/components/security.go:
     last_write_checksum: sha1:a2f48138dc300fdafb5a132faa4568407450fcb4
   tests/mockserver/internal/sdk/models/components/shape.go:
-    last_write_checksum: sha1:a5681815325712dfbabfe6a0813a6a1bc6b5a274
+    last_write_checksum: sha1:d5c55a38520b87b1874bc25e553e9b4535617d91
   tests/mockserver/internal/sdk/models/components/shaperequest.go:
     last_write_checksum: sha1:84f9a2e4f285704779dc141a5e21e2ddd4a8205d
   tests/mockserver/internal/sdk/models/components/simpleobject.go:
     last_write_checksum: sha1:25fb9b1f98654af76ffa25ddc803be297594237d
   tests/mockserver/internal/sdk/models/components/someunion.go:
-    last_write_checksum: sha1:072e126922fe8eadd5c9b13e60aae4270ad06cb0
+    last_write_checksum: sha1:5d6b51543389b3d1e3c7a31b039ac13c8d5a9807
   tests/mockserver/internal/sdk/models/components/taggederror1.go:
     last_write_checksum: sha1:afafda28c0a6df5c91b329f2c4cd88ef0a14ca51
   tests/mockserver/internal/sdk/models/components/taggederror2.go:
@@ -908,9 +908,9 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/components/user.go:
     last_write_checksum: sha1:3a001b1ba2dbad5fabebfb5be54f11a88e820d5f
   tests/mockserver/internal/sdk/models/components/variantrecord.go:
-    last_write_checksum: sha1:d44922b3832e3ceec3630f9550cf601748866ee3
+    last_write_checksum: sha1:99ba25bd081bc3c22e4098b0f2ba0fdd0b2048ea
   tests/mockserver/internal/sdk/models/foo/animal.go:
-    last_write_checksum: sha1:c36e092569363487fc029dc71160bedfc57f6a81
+    last_write_checksum: sha1:e28d755bfe485c801c82a9f71893e687ec20a159
   tests/mockserver/internal/sdk/models/foo/cat.go:
     last_write_checksum: sha1:bc314ca2202e67b69439d9f205553b53c14ed946
   tests/mockserver/internal/sdk/models/foo/dog.go:
@@ -928,7 +928,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
   tests/mockserver/internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:d51dfc8a83c2049c9573f1336a4c420888065383
+    last_write_checksum: sha1:25078b6f6b0c0a0a7fd244a97550d64a65dca18e
   tests/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
   tests/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -972,7 +972,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/operations/getpetowners.go:
     last_write_checksum: sha1:7f269ef15fa48bf3481db6d8a66732027dd71cd3
   tests/mockserver/internal/sdk/models/operations/getpolymorphism.go:
-    last_write_checksum: sha1:194ec701e708f199e804255f1ca1844a8804b959
+    last_write_checksum: sha1:261efc64d43a5d9b449bc0b0effce2a16826d8ca
   tests/mockserver/internal/sdk/models/operations/getpositionaldefault.go:
     last_write_checksum: sha1:9cb84c706939ce7b31a730a9c7d2c5490538686e
   tests/mockserver/internal/sdk/models/operations/getrequestbodyflattenedaway.go:
@@ -1034,9 +1034,9 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/sdkerrors/failedresponseerror.go:
     last_write_checksum: sha1:e0853306a2c94cadfac3ff65032e0ac0e837d06e
   tests/mockserver/internal/sdk/models/sdkerrors/geterrorinunion.go:
-    last_write_checksum: sha1:3c8d4367795419eb9212e73677784ebce9c01c48
+    last_write_checksum: sha1:8c395f6bd244d8e4e4ebb82267cf2b88bca33e25
   tests/mockserver/internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:52c567c65961272decd67749942f62f444194dae
+    last_write_checksum: sha1:875388fb839262405a6f44ee24e08c76590463d4
   tests/mockserver/internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:e7ac819e142cacbe4a87fa1ff3bc2bd1a1ecb7de
   tests/mockserver/internal/sdk/models/sdkerrors/taggederror1.go:

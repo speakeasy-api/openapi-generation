@@ -537,6 +537,35 @@ func TestDiagnosticsRedactSensitiveBodyFields(t *testing.T) {
 	}
 }
 
+func TestInvalidUnionBodyErrorOmitsSensitiveValues(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "discriminated variant",
+			args: []string{"request-bodies", "cli-sensitive-union-body-post", "--scope", "visible-scope",
+				"--body", `{"kind":"static","id":5,"value":"canary-static"}`},
+		},
+		{
+			name: "undiscriminated member",
+			args: []string{"request-bodies", "cli-sensitive-open-object-post",
+				"--body", `{"kind":"visible-const","name":"visible-name","entries":["canary-list",5]}`},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newDiagnosticsServer()
+			defer s.Close()
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, tc.args)
+			require.Error(t, err)
+			assert.NotContains(t, err.Error(), "canary-")
+			assert.NotContains(t, h.GetStderr(), "canary-")
+			assert.NotContains(t, h.GetStdout(), "canary-")
+		})
+	}
+}
+
 func TestDiagnosticsSensitiveBodyPreservesWireAndResponse(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)

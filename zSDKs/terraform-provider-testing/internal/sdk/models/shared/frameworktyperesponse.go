@@ -201,13 +201,13 @@ func (u *FrameworkTypeResponseListOneofNumberString) UnmarshalJSON(data []byte) 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -221,7 +221,7 @@ func (u *FrameworkTypeResponseListOneofNumberString) UnmarshalJSON(data []byte) 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberString")
 }
 
 func (u FrameworkTypeResponseListOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -297,13 +297,13 @@ func (u *FrameworkTypeResponseListOneofNumberStringNull) UnmarshalJSON(data []by
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNull")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNull")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -317,7 +317,7 @@ func (u *FrameworkTypeResponseListOneofNumberStringNull) UnmarshalJSON(data []by
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNull", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNull")
 }
 
 func (u FrameworkTypeResponseListOneofNumberStringNull) MarshalJSON() ([]byte, error) {
@@ -393,13 +393,13 @@ func (u *FrameworkTypeResponseListOneofNumberStringNullable) UnmarshalJSON(data 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -413,7 +413,7 @@ func (u *FrameworkTypeResponseListOneofNumberStringNullable) UnmarshalJSON(data 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListOneofNumberStringNullable")
 }
 
 func (u FrameworkTypeResponseListOneofNumberStringNullable) MarshalJSON() ([]byte, error) {
@@ -526,13 +526,13 @@ func (u *FrameworkTypeResponseListNullOneofNumberString) UnmarshalJSON(data []by
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -546,7 +546,7 @@ func (u *FrameworkTypeResponseListNullOneofNumberString) UnmarshalJSON(data []by
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullOneofNumberString")
 }
 
 func (u FrameworkTypeResponseListNullOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -659,13 +659,13 @@ func (u *FrameworkTypeResponseListNullableOneofNumberString) UnmarshalJSON(data 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullableOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullableOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullableOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullableOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -679,7 +679,7 @@ func (u *FrameworkTypeResponseListNullableOneofNumberString) UnmarshalJSON(data 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseListNullableOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseListNullableOneofNumberString")
 }
 
 func (u FrameworkTypeResponseListNullableOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -780,13 +780,13 @@ func (u *FrameworkTypeResponseOneofNumberString) UnmarshalJSON(data []byte) (err
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -800,7 +800,7 @@ func (u *FrameworkTypeResponseOneofNumberString) UnmarshalJSON(data []byte) (err
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberString")
 }
 
 func (u FrameworkTypeResponseOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -876,13 +876,13 @@ func (u *FrameworkTypeResponseOneofNumberStringNull) UnmarshalJSON(data []byte) 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNull")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNull")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -896,7 +896,7 @@ func (u *FrameworkTypeResponseOneofNumberStringNull) UnmarshalJSON(data []byte) 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNull", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNull")
 }
 
 func (u FrameworkTypeResponseOneofNumberStringNull) MarshalJSON() ([]byte, error) {
@@ -972,13 +972,13 @@ func (u *FrameworkTypeResponseOneofNumberStringNullable) UnmarshalJSON(data []by
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNullable")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNullable")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -992,7 +992,7 @@ func (u *FrameworkTypeResponseOneofNumberStringNullable) UnmarshalJSON(data []by
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseOneofNumberStringNullable", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseOneofNumberStringNullable")
 }
 
 func (u FrameworkTypeResponseOneofNumberStringNullable) MarshalJSON() ([]byte, error) {
@@ -1197,13 +1197,13 @@ func (u *FrameworkTypeResponseSetOneofNumberString) UnmarshalJSON(data []byte) (
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1217,7 +1217,7 @@ func (u *FrameworkTypeResponseSetOneofNumberString) UnmarshalJSON(data []byte) (
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberString")
 }
 
 func (u FrameworkTypeResponseSetOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -1293,13 +1293,13 @@ func (u *FrameworkTypeResponseSetOneofNumberStringNull) UnmarshalJSON(data []byt
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1313,7 +1313,7 @@ func (u *FrameworkTypeResponseSetOneofNumberStringNull) UnmarshalJSON(data []byt
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNull")
 }
 
 func (u FrameworkTypeResponseSetOneofNumberStringNull) MarshalJSON() ([]byte, error) {
@@ -1389,13 +1389,13 @@ func (u *FrameworkTypeResponseSetOneofNumberStringNullable) UnmarshalJSON(data [
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1409,7 +1409,7 @@ func (u *FrameworkTypeResponseSetOneofNumberStringNullable) UnmarshalJSON(data [
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetOneofNumberStringNullable")
 }
 
 func (u FrameworkTypeResponseSetOneofNumberStringNullable) MarshalJSON() ([]byte, error) {
@@ -1522,13 +1522,13 @@ func (u *FrameworkTypeResponseSetNullOneofNumberString) UnmarshalJSON(data []byt
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1542,7 +1542,7 @@ func (u *FrameworkTypeResponseSetNullOneofNumberString) UnmarshalJSON(data []byt
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullOneofNumberString")
 }
 
 func (u FrameworkTypeResponseSetNullOneofNumberString) MarshalJSON() ([]byte, error) {
@@ -1655,13 +1655,13 @@ func (u *FrameworkTypeResponseSetNullableOneofNumberString) UnmarshalJSON(data [
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString", string(data))
+		return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1675,7 +1675,7 @@ func (u *FrameworkTypeResponseSetNullableOneofNumberString) UnmarshalJSON(data [
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString", string(data))
+	return errors.New("could not unmarshal into any supported union types for FrameworkTypeResponseSetNullableOneofNumberString")
 }
 
 func (u FrameworkTypeResponseSetNullableOneofNumberString) MarshalJSON() ([]byte, error) {

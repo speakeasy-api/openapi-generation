@@ -87,7 +87,7 @@ func (u *Content) UnmarshalJSON(data []byte) (err error) {
 	case "text":
 		assetTextBlock := new(AssetTextBlock)
 		if err := utils.UnmarshalJSON(data, &assetTextBlock, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == text) type AssetTextBlock within Content: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == text) type AssetTextBlock within Content: %w", err)
 		}
 
 		u.AssetTextBlock = assetTextBlock
@@ -96,7 +96,7 @@ func (u *Content) UnmarshalJSON(data []byte) (err error) {
 	case "image":
 		assetImageBlock := new(AssetImageBlock)
 		if err := utils.UnmarshalJSON(data, &assetImageBlock, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == image) type AssetImageBlock within Content: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == image) type AssetImageBlock within Content: %w", err)
 		}
 
 		u.AssetImageBlock = assetImageBlock

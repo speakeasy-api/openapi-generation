@@ -74,7 +74,7 @@ func (u *DiscriminatedObject) UnmarshalJSON(data []byte) (err error) {
 	case "string":
 		oasOneOfDiscriminatorObjectString := new(OASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &oasOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OASOneOfDiscriminatorObjectString within DiscriminatedObject: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OASOneOfDiscriminatorObjectString within DiscriminatedObject: %w", err)
 		}
 
 		u.OASOneOfDiscriminatorObjectString = oasOneOfDiscriminatorObjectString
@@ -83,7 +83,7 @@ func (u *DiscriminatedObject) UnmarshalJSON(data []byte) (err error) {
 	case "number":
 		oasOneOfDiscriminatorObjectNumber := new(OASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &oasOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OASOneOfDiscriminatorObjectNumber within DiscriminatedObject: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OASOneOfDiscriminatorObjectNumber within DiscriminatedObject: %w", err)
 		}
 
 		u.OASOneOfDiscriminatorObjectNumber = oasOneOfDiscriminatorObjectNumber
@@ -92,7 +92,7 @@ func (u *DiscriminatedObject) UnmarshalJSON(data []byte) (err error) {
 	case "allOf":
 		oasOneOfDiscriminatorObjectAllOf := new(OASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &oasOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allOf) type OASOneOfDiscriminatorObjectAllOf within DiscriminatedObject: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allOf) type OASOneOfDiscriminatorObjectAllOf within DiscriminatedObject: %w", err)
 		}
 
 		u.OASOneOfDiscriminatorObjectAllOf = oasOneOfDiscriminatorObjectAllOf
@@ -100,7 +100,7 @@ func (u *DiscriminatedObject) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for DiscriminatedObject", string(data))
+	return errors.New("could not unmarshal into any supported union types for DiscriminatedObject")
 }
 
 func (u DiscriminatedObject) MarshalJSON() ([]byte, error) {

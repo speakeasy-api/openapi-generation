@@ -61,7 +61,7 @@ func (u *DisriminatedUnionWithOneMember) UnmarshalJSON(data []byte) (err error) 
 	case "type1":
 		exhaustiveObject := new(ExhaustiveObject)
 		if err := utils.UnmarshalJSON(data, &exhaustiveObject, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == type1) type ExhaustiveObject within DisriminatedUnionWithOneMember: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == type1) type ExhaustiveObject within DisriminatedUnionWithOneMember: %w", err)
 		}
 
 		u.ExhaustiveObject = exhaustiveObject
@@ -69,7 +69,7 @@ func (u *DisriminatedUnionWithOneMember) UnmarshalJSON(data []byte) (err error) 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for DisriminatedUnionWithOneMember", string(data))
+	return errors.New("could not unmarshal into any supported union types for DisriminatedUnionWithOneMember")
 }
 
 func (u DisriminatedUnionWithOneMember) MarshalJSON() ([]byte, error) {

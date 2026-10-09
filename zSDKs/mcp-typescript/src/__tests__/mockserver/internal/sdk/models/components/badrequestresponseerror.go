@@ -4,7 +4,6 @@ package components
 
 import (
 	"errors"
-	"fmt"
 	"mockserver/internal/sdk/utils"
 )
 
@@ -71,7 +70,7 @@ func (u *DetailUnion) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for DetailUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for DetailUnion")
 }
 
 func (u DetailUnion) MarshalJSON() ([]byte, error) {

@@ -75,7 +75,7 @@ func (u *DiscriminatedUnionSchemeSensitiveDataAware) UnmarshalJSON(data []byte) 
 	case "item_a":
 		discriminatedUnionItemAlt := new(DiscriminatedUnionItemAlt)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionItemAlt, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_a) type DiscriminatedUnionItemAlt within DiscriminatedUnionSchemeSensitiveDataAware: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_a) type DiscriminatedUnionItemAlt within DiscriminatedUnionSchemeSensitiveDataAware: %w", err)
 		}
 
 		u.DiscriminatedUnionItemAlt = discriminatedUnionItemAlt
@@ -84,7 +84,7 @@ func (u *DiscriminatedUnionSchemeSensitiveDataAware) UnmarshalJSON(data []byte) 
 	case "item_b":
 		discriminatedUnionItemB := new(DiscriminatedUnionItemB)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionItemB, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_b) type DiscriminatedUnionItemB within DiscriminatedUnionSchemeSensitiveDataAware: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_b) type DiscriminatedUnionItemB within DiscriminatedUnionSchemeSensitiveDataAware: %w", err)
 		}
 
 		u.DiscriminatedUnionItemB = discriminatedUnionItemB
@@ -93,7 +93,7 @@ func (u *DiscriminatedUnionSchemeSensitiveDataAware) UnmarshalJSON(data []byte) 
 	case "item_d_alt":
 		discriminatedUnionItemD := new(DiscriminatedUnionItemD)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionItemD, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_d_alt) type DiscriminatedUnionItemD within DiscriminatedUnionSchemeSensitiveDataAware: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_d_alt) type DiscriminatedUnionItemD within DiscriminatedUnionSchemeSensitiveDataAware: %w", err)
 		}
 
 		u.DiscriminatedUnionItemD = discriminatedUnionItemD
@@ -101,7 +101,7 @@ func (u *DiscriminatedUnionSchemeSensitiveDataAware) UnmarshalJSON(data []byte) 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for DiscriminatedUnionSchemeSensitiveDataAware", string(data))
+	return errors.New("could not unmarshal into any supported union types for DiscriminatedUnionSchemeSensitiveDataAware")
 }
 
 func (u DiscriminatedUnionSchemeSensitiveDataAware) MarshalJSON() ([]byte, error) {

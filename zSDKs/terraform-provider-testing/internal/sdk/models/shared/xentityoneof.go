@@ -171,7 +171,7 @@ func (u *XEntityOneOf) UnmarshalJSON(data []byte) (err error) {
 	case "branch-one":
 		xEntityOneOfBranchOne := new(XEntityOneOfBranchOne)
 		if err := utils.UnmarshalJSON(data, &xEntityOneOfBranchOne, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (DiscriminatorProperty == branch-one) type XEntityOneOfBranchOne within XEntityOneOf: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (DiscriminatorProperty == branch-one) type XEntityOneOfBranchOne within XEntityOneOf: %w", err)
 		}
 
 		u.XEntityOneOfBranchOne = xEntityOneOfBranchOne
@@ -180,7 +180,7 @@ func (u *XEntityOneOf) UnmarshalJSON(data []byte) (err error) {
 	case "branch-two":
 		xEntityOneOfBranchTwo := new(XEntityOneOfBranchTwo)
 		if err := utils.UnmarshalJSON(data, &xEntityOneOfBranchTwo, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (DiscriminatorProperty == branch-two) type XEntityOneOfBranchTwo within XEntityOneOf: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (DiscriminatorProperty == branch-two) type XEntityOneOfBranchTwo within XEntityOneOf: %w", err)
 		}
 
 		u.XEntityOneOfBranchTwo = xEntityOneOfBranchTwo
@@ -188,7 +188,7 @@ func (u *XEntityOneOf) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for XEntityOneOf", string(data))
+	return errors.New("could not unmarshal into any supported union types for XEntityOneOf")
 }
 
 func (u XEntityOneOf) MarshalJSON() ([]byte, error) {

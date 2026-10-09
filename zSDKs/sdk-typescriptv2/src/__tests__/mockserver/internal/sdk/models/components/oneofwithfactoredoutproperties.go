@@ -154,7 +154,7 @@ func (u *OneOfWithFactoredOutPropertiesAny) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutPropertiesAny", string(data))
+	return errors.New("could not unmarshal into any supported union types for OneOfWithFactoredOutPropertiesAny")
 }
 
 func (u OneOfWithFactoredOutPropertiesAny) MarshalJSON() ([]byte, error) {
@@ -604,7 +604,7 @@ func (u *OneOfWithFactoredOutProperties) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutProperties", string(data))
+	return errors.New("could not unmarshal into any supported union types for OneOfWithFactoredOutProperties")
 }
 
 func (u OneOfWithFactoredOutProperties) MarshalJSON() ([]byte, error) {

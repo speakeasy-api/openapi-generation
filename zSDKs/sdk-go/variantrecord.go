@@ -152,7 +152,7 @@ func (u *VariantRecord) UnmarshalJSON(data []byte) (err error) {
 	case "$text":
 		textRecord := new(TextRecord)
 		if err := utils.UnmarshalJSON(data, &textRecord, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == $text) type TextRecord within VariantRecord: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == $text) type TextRecord within VariantRecord: %w", err)
 		}
 
 		u.TextRecord = textRecord
@@ -161,7 +161,7 @@ func (u *VariantRecord) UnmarshalJSON(data []byte) (err error) {
 	case "$image":
 		imageRecord := new(ImageRecord)
 		if err := utils.UnmarshalJSON(data, &imageRecord, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == $image) type ImageRecord within VariantRecord: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == $image) type ImageRecord within VariantRecord: %w", err)
 		}
 
 		u.ImageRecord = imageRecord
@@ -169,7 +169,7 @@ func (u *VariantRecord) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for VariantRecord", string(data))
+	return errors.New("could not unmarshal into any supported union types for VariantRecord")
 }
 
 func (u VariantRecord) MarshalJSON() ([]byte, error) {

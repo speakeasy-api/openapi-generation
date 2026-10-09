@@ -191,7 +191,7 @@ func (u *OptionalDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "string":
 		optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString := new(OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString within OptionalDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString within OptionalDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString = optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString
@@ -200,7 +200,7 @@ func (u *OptionalDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "number":
 		optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber := new(OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber within OptionalDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber within OptionalDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber = optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber
@@ -209,7 +209,7 @@ func (u *OptionalDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "allOf":
 		optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf := new(OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allOf) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf within OptionalDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allOf) type OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf within OptionalDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.OptionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf = optionalDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf
@@ -217,7 +217,7 @@ func (u *OptionalDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalDiscriminatorRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for OptionalDiscriminatorRequestOnly")
 }
 
 func (u OptionalDiscriminatorRequestOnly) MarshalJSON() ([]byte, error) {
@@ -418,7 +418,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "string":
 		oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString := new(OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString = oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString
@@ -427,7 +427,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "number":
 		oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber := new(OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber = oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber
@@ -436,7 +436,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "allof":
 		oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf := new(OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allof) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allof) type OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestOptionalDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf = oasOneOfRequestOptionalDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf
@@ -444,7 +444,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestAndResponse) UnmarshalJSON(d
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalDiscriminatorRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalDiscriminatorRequestAndResponse")
 }
 
 func (u OASOneOfRequestOptionalDiscriminatorRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -645,7 +645,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse) UnmarshalJ
 	case "string":
 		oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString := new(OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString = oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectString
@@ -654,7 +654,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse) UnmarshalJ
 	case "number":
 		oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber := new(OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber = oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectNumber
@@ -663,7 +663,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse) UnmarshalJ
 	case "allof":
 		oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf := new(OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allof) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allof) type OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse: %w", err)
 		}
 
 		u.OASOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf = oasOneOfRequestOptionalDiscriminatorRequestRequiredResponseOASOneOfDiscriminatorObjectAllOf
@@ -671,7 +671,7 @@ func (u *OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse) UnmarshalJ
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse")
 }
 
 func (u OASOneOfRequestOptionalDiscriminatorRequestRequiredResponse) MarshalJSON() ([]byte, error) {
@@ -810,13 +810,13 @@ func (u *OptionalInlineObjectRequestOnlyUnion) UnmarshalJSON(data []byte) (err e
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlineObjectRequestOnlyUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalInlineObjectRequestOnlyUnion")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlineObjectRequestOnlyUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalInlineObjectRequestOnlyUnion")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -830,7 +830,7 @@ func (u *OptionalInlineObjectRequestOnlyUnion) UnmarshalJSON(data []byte) (err e
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlineObjectRequestOnlyUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for OptionalInlineObjectRequestOnlyUnion")
 }
 
 func (u OptionalInlineObjectRequestOnlyUnion) MarshalJSON() ([]byte, error) {
@@ -965,13 +965,13 @@ func (u *OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion) UnmarshalJS
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -985,7 +985,7 @@ func (u *OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion) UnmarshalJS
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion")
 }
 
 func (u OASOneOfRequestOptionalInlineObjectRequestAndResponseUnion) MarshalJSON() ([]byte, error) {
@@ -1062,13 +1062,13 @@ func (u *OptionalInlinePrimitivesRequestOnly) UnmarshalJSON(data []byte) (err er
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlinePrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalInlinePrimitivesRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlinePrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalInlinePrimitivesRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1082,7 +1082,7 @@ func (u *OptionalInlinePrimitivesRequestOnly) UnmarshalJSON(data []byte) (err er
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalInlinePrimitivesRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for OptionalInlinePrimitivesRequestOnly")
 }
 
 func (u OptionalInlinePrimitivesRequestOnly) MarshalJSON() ([]byte, error) {
@@ -1159,13 +1159,13 @@ func (u *OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse) UnmarshalJSO
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1179,7 +1179,7 @@ func (u *OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse) UnmarshalJSO
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse")
 }
 
 func (u OASOneOfRequestOptionalInlinePrimitivesRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -1256,13 +1256,13 @@ func (u *OptionalRefObjectRequestOnly) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefObjectRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalRefObjectRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefObjectRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalRefObjectRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1276,7 +1276,7 @@ func (u *OptionalRefObjectRequestOnly) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefObjectRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for OptionalRefObjectRequestOnly")
 }
 
 func (u OptionalRefObjectRequestOnly) MarshalJSON() ([]byte, error) {
@@ -1353,13 +1353,13 @@ func (u *OASOneOfRequestOptionalRefObjectRequestAndResponse) UnmarshalJSON(data 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1373,7 +1373,7 @@ func (u *OASOneOfRequestOptionalRefObjectRequestAndResponse) UnmarshalJSON(data 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefObjectRequestAndResponse")
 }
 
 func (u OASOneOfRequestOptionalRefObjectRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -1450,13 +1450,13 @@ func (u *OptionalRefPrimitivesRequestOnly) UnmarshalJSON(data []byte) (err error
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefPrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalRefPrimitivesRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefPrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for OptionalRefPrimitivesRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1470,7 +1470,7 @@ func (u *OptionalRefPrimitivesRequestOnly) UnmarshalJSON(data []byte) (err error
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OptionalRefPrimitivesRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for OptionalRefPrimitivesRequestOnly")
 }
 
 func (u OptionalRefPrimitivesRequestOnly) MarshalJSON() ([]byte, error) {
@@ -1547,13 +1547,13 @@ func (u *OASOneOfRequestOptionalRefPrimitivesRequestAndResponse) UnmarshalJSON(d
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -1567,7 +1567,7 @@ func (u *OASOneOfRequestOptionalRefPrimitivesRequestAndResponse) UnmarshalJSON(d
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestOptionalRefPrimitivesRequestAndResponse")
 }
 
 func (u OASOneOfRequestOptionalRefPrimitivesRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -1764,7 +1764,7 @@ func (u *RequiredDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "string":
 		requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString := new(RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString within RequiredDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString within RequiredDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString = requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectString
@@ -1773,7 +1773,7 @@ func (u *RequiredDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "number":
 		requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber := new(RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber within RequiredDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber within RequiredDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber = requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectNumber
@@ -1782,7 +1782,7 @@ func (u *RequiredDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 	case "allof":
 		requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf := new(RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allof) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf within RequiredDiscriminatorRequestOnly: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allof) type RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf within RequiredDiscriminatorRequestOnly: %w", err)
 		}
 
 		u.RequiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf = requiredDiscriminatorRequestOnlyOASOneOfDiscriminatorObjectAllOf
@@ -1790,7 +1790,7 @@ func (u *RequiredDiscriminatorRequestOnly) UnmarshalJSON(data []byte) (err error
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredDiscriminatorRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for RequiredDiscriminatorRequestOnly")
 }
 
 func (u RequiredDiscriminatorRequestOnly) MarshalJSON() ([]byte, error) {
@@ -1991,7 +1991,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "string":
 		oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString := new(OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString = oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectString
@@ -2000,7 +2000,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "number":
 		oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber := new(OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber = oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectNumber
@@ -2009,7 +2009,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestAndResponse) UnmarshalJSON(d
 	case "allof":
 		oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf := new(OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allof) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allof) type OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestRequiredDiscriminatorRequestAndResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf = oasOneOfRequestRequiredDiscriminatorRequestAndResponseOASOneOfDiscriminatorObjectAllOf
@@ -2017,7 +2017,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestAndResponse) UnmarshalJSON(d
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredDiscriminatorRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredDiscriminatorRequestAndResponse")
 }
 
 func (u OASOneOfRequestRequiredDiscriminatorRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -2218,7 +2218,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse) UnmarshalJ
 	case "string":
 		oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString := new(OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == string) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == string) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString = oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectString
@@ -2227,7 +2227,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse) UnmarshalJ
 	case "number":
 		oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber := new(OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == number) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == number) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber = oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectNumber
@@ -2236,7 +2236,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse) UnmarshalJ
 	case "allof":
 		oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf := new(OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf)
 		if err := utils.UnmarshalJSON(data, &oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Discriminator == allof) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Discriminator == allof) type OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf within OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse: %w", err)
 		}
 
 		u.OASOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf = oasOneOfRequestRequiredDiscriminatorRequestOptionalResponseOASOneOfDiscriminatorObjectAllOf
@@ -2244,7 +2244,7 @@ func (u *OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse) UnmarshalJ
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse")
 }
 
 func (u OASOneOfRequestRequiredDiscriminatorRequestOptionalResponse) MarshalJSON() ([]byte, error) {
@@ -2383,13 +2383,13 @@ func (u *RequiredInlineObjectRequestOnlyUnion) UnmarshalJSON(data []byte) (err e
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlineObjectRequestOnlyUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredInlineObjectRequestOnlyUnion")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlineObjectRequestOnlyUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredInlineObjectRequestOnlyUnion")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2403,7 +2403,7 @@ func (u *RequiredInlineObjectRequestOnlyUnion) UnmarshalJSON(data []byte) (err e
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlineObjectRequestOnlyUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for RequiredInlineObjectRequestOnlyUnion")
 }
 
 func (u RequiredInlineObjectRequestOnlyUnion) MarshalJSON() ([]byte, error) {
@@ -2538,13 +2538,13 @@ func (u *OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion) UnmarshalJS
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2558,7 +2558,7 @@ func (u *OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion) UnmarshalJS
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion")
 }
 
 func (u OASOneOfRequestRequiredInlineObjectRequestAndResponseUnion) MarshalJSON() ([]byte, error) {
@@ -2635,13 +2635,13 @@ func (u *RequiredInlinePrimitivesRequestOnly) UnmarshalJSON(data []byte) (err er
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlinePrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredInlinePrimitivesRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlinePrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredInlinePrimitivesRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2655,7 +2655,7 @@ func (u *RequiredInlinePrimitivesRequestOnly) UnmarshalJSON(data []byte) (err er
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredInlinePrimitivesRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for RequiredInlinePrimitivesRequestOnly")
 }
 
 func (u RequiredInlinePrimitivesRequestOnly) MarshalJSON() ([]byte, error) {
@@ -2732,13 +2732,13 @@ func (u *OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse) UnmarshalJSO
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2752,7 +2752,7 @@ func (u *OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse) UnmarshalJSO
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse")
 }
 
 func (u OASOneOfRequestRequiredInlinePrimitivesRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -2829,13 +2829,13 @@ func (u *RequiredRefObjectRequestOnly) UnmarshalJSON(data []byte) (err error) {
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefObjectRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredRefObjectRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefObjectRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredRefObjectRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2849,7 +2849,7 @@ func (u *RequiredRefObjectRequestOnly) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefObjectRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for RequiredRefObjectRequestOnly")
 }
 
 func (u RequiredRefObjectRequestOnly) MarshalJSON() ([]byte, error) {
@@ -2926,13 +2926,13 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -2946,7 +2946,7 @@ func (u *OASOneOfRequestRequiredRefObjectRequestAndResponse) UnmarshalJSON(data 
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefObjectRequestAndResponse")
 }
 
 func (u OASOneOfRequestRequiredRefObjectRequestAndResponse) MarshalJSON() ([]byte, error) {
@@ -3023,13 +3023,13 @@ func (u *RequiredRefPrimitivesRequestOnly) UnmarshalJSON(data []byte) (err error
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefPrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredRefPrimitivesRequestOnly")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefPrimitivesRequestOnly", string(data))
+		return errors.New("could not unmarshal into any supported union types for RequiredRefPrimitivesRequestOnly")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -3043,7 +3043,7 @@ func (u *RequiredRefPrimitivesRequestOnly) UnmarshalJSON(data []byte) (err error
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for RequiredRefPrimitivesRequestOnly", string(data))
+	return errors.New("could not unmarshal into any supported union types for RequiredRefPrimitivesRequestOnly")
 }
 
 func (u RequiredRefPrimitivesRequestOnly) MarshalJSON() ([]byte, error) {
@@ -3120,13 +3120,13 @@ func (u *OASOneOfRequestRequiredRefPrimitivesRequestAndResponse) UnmarshalJSON(d
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse")
 	}
 
 	// Pick the best candidate using multi-stage filtering
 	best := utils.PickBestUnionCandidate(candidates, data)
 	if best == nil {
-		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse", string(data))
+		return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse")
 	}
 
 	// Set the union type and value based on the best candidate
@@ -3140,7 +3140,7 @@ func (u *OASOneOfRequestRequiredRefPrimitivesRequestAndResponse) UnmarshalJSON(d
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse", string(data))
+	return errors.New("could not unmarshal into any supported union types for OASOneOfRequestRequiredRefPrimitivesRequestAndResponse")
 }
 
 func (u OASOneOfRequestRequiredRefPrimitivesRequestAndResponse) MarshalJSON() ([]byte, error) {

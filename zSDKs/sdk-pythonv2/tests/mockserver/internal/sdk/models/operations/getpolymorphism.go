@@ -4,7 +4,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"mockserver/internal/sdk/models/components"
 	"mockserver/internal/sdk/utils"
 )
@@ -58,7 +57,7 @@ func (u *OneOfWithUnionDescription) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithUnionDescription", string(data))
+	return errors.New("could not unmarshal into any supported union types for OneOfWithUnionDescription")
 }
 
 func (u OneOfWithUnionDescription) MarshalJSON() ([]byte, error) {

@@ -231,7 +231,7 @@ func (u *RecursiveFormField) UnmarshalJSON(data []byte) (err error) {
 	case "text":
 		recursiveFormFieldText := new(RecursiveFormFieldText)
 		if err := utils.UnmarshalJSON(data, &recursiveFormFieldText, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == text) type RecursiveFormFieldText within RecursiveFormField: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == text) type RecursiveFormFieldText within RecursiveFormField: %w", err)
 		}
 
 		u.RecursiveFormFieldText = recursiveFormFieldText
@@ -240,7 +240,7 @@ func (u *RecursiveFormField) UnmarshalJSON(data []byte) (err error) {
 	case "number":
 		recursiveFormFieldNumber := new(RecursiveFormFieldNumber)
 		if err := utils.UnmarshalJSON(data, &recursiveFormFieldNumber, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == number) type RecursiveFormFieldNumber within RecursiveFormField: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == number) type RecursiveFormFieldNumber within RecursiveFormField: %w", err)
 		}
 
 		u.RecursiveFormFieldNumber = recursiveFormFieldNumber
@@ -249,7 +249,7 @@ func (u *RecursiveFormField) UnmarshalJSON(data []byte) (err error) {
 	case "array":
 		recursiveFormFieldArray := new(RecursiveFormFieldArray)
 		if err := utils.UnmarshalJSON(data, &recursiveFormFieldArray, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == array) type RecursiveFormFieldArray within RecursiveFormField: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == array) type RecursiveFormFieldArray within RecursiveFormField: %w", err)
 		}
 
 		u.RecursiveFormFieldArray = recursiveFormFieldArray

@@ -86,7 +86,7 @@ func (u *DiscriminatedUnionArrayScheme) UnmarshalJSON(data []byte) (err error) {
 	case "item_a":
 		discriminatedUnionArrayItemA := new(DiscriminatedUnionArrayItemA)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionArrayItemA, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_a) type DiscriminatedUnionArrayItemA within DiscriminatedUnionArrayScheme: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_a) type DiscriminatedUnionArrayItemA within DiscriminatedUnionArrayScheme: %w", err)
 		}
 
 		u.DiscriminatedUnionArrayItemA = discriminatedUnionArrayItemA
@@ -95,7 +95,7 @@ func (u *DiscriminatedUnionArrayScheme) UnmarshalJSON(data []byte) (err error) {
 	case "item_b":
 		discriminatedUnionArrayItemB := new(DiscriminatedUnionArrayItemB)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionArrayItemB, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_b) type DiscriminatedUnionArrayItemB within DiscriminatedUnionArrayScheme: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_b) type DiscriminatedUnionArrayItemB within DiscriminatedUnionArrayScheme: %w", err)
 		}
 
 		u.DiscriminatedUnionArrayItemB = discriminatedUnionArrayItemB
@@ -104,7 +104,7 @@ func (u *DiscriminatedUnionArrayScheme) UnmarshalJSON(data []byte) (err error) {
 	case "item_c":
 		discriminatedUnionArrayItemC := new(DiscriminatedUnionArrayItemC)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionArrayItemC, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_c) type DiscriminatedUnionArrayItemC within DiscriminatedUnionArrayScheme: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_c) type DiscriminatedUnionArrayItemC within DiscriminatedUnionArrayScheme: %w", err)
 		}
 
 		u.DiscriminatedUnionArrayItemC = discriminatedUnionArrayItemC
@@ -113,7 +113,7 @@ func (u *DiscriminatedUnionArrayScheme) UnmarshalJSON(data []byte) (err error) {
 	case "item_d":
 		discriminatedUnionArrayItemD := new(DiscriminatedUnionArrayItemD)
 		if err := utils.UnmarshalJSON(data, &discriminatedUnionArrayItemD, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal `%s` into expected (Type == item_d) type DiscriminatedUnionArrayItemD within DiscriminatedUnionArrayScheme: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Type == item_d) type DiscriminatedUnionArrayItemD within DiscriminatedUnionArrayScheme: %w", err)
 		}
 
 		u.DiscriminatedUnionArrayItemD = discriminatedUnionArrayItemD
@@ -121,7 +121,7 @@ func (u *DiscriminatedUnionArrayScheme) UnmarshalJSON(data []byte) (err error) {
 		return nil
 	}
 
-	return fmt.Errorf("could not unmarshal `%s` into any supported union types for DiscriminatedUnionArrayScheme", string(data))
+	return errors.New("could not unmarshal into any supported union types for DiscriminatedUnionArrayScheme")
 }
 
 func (u DiscriminatedUnionArrayScheme) MarshalJSON() ([]byte, error) {

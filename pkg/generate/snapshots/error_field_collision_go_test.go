@@ -235,7 +235,7 @@ func (u *GatewayTimeout) UnmarshalJSON(data []byte) (err error) {
 	case "error":
 		errorVar := new(Error)
 		if err := utils.UnmarshalJSON(data, &errorVar, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (Kind == error) type Error within GatewayTimeout: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == error) type Error within GatewayTimeout: %w", err)
 		}
 
 		u.ErrorInfo = errorVar
@@ -244,7 +244,7 @@ func (u *GatewayTimeout) UnmarshalJSON(data []byte) (err error) {
 	case "other":
 		otherError := new(OtherError)
 		if err := utils.UnmarshalJSON(data, &otherError, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (Kind == other) type OtherError within GatewayTimeout: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (Kind == other) type OtherError within GatewayTimeout: %w", err)
 		}
 
 		u.OtherError = otherError
@@ -376,7 +376,7 @@ func (u *ServiceUnavailable) UnmarshalJSON(data []byte) (err error) {
 	case "alpha":
 		alphaError := new(AlphaError)
 		if err := utils.UnmarshalJSON(data, &alphaError, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (MarshalJSONValue == alpha) type AlphaError within ServiceUnavailable: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (MarshalJSONValue == alpha) type AlphaError within ServiceUnavailable: %w", err)
 		}
 
 		u.AlphaError = alphaError
@@ -385,7 +385,7 @@ func (u *ServiceUnavailable) UnmarshalJSON(data []byte) (err error) {
 	case "beta":
 		betaError := new(BetaError)
 		if err := utils.UnmarshalJSON(data, &betaError, "", true, nil); err != nil {
-			return fmt.Errorf("could not unmarshal ` + "`" + `%s` + "`" + ` into expected (MarshalJSONValue == beta) type BetaError within ServiceUnavailable: %w", string(data), err)
+			return fmt.Errorf("could not unmarshal into expected (MarshalJSONValue == beta) type BetaError within ServiceUnavailable: %w", err)
 		}
 
 		u.BetaError = betaError
