@@ -13,16 +13,7 @@ function generateSchema(
     fieldAttributes += `${templateIndent(field.indent)}"${
       field.name
     }": ${fieldSchemaType}{\n`;
-    const sanitizedClassName = sanitizeClassName(field.name);
-
-    // Check if this is a root-level field (entity.field)
-    const isRootAttribute = field.hierarchy.split(".").length === 2;
-    const isGlobalField =
-      isRootAttribute && sanitizedClassName in entity.GlobalFields;
-    const isPaginationInputField =
-      isRootAttribute && sanitizedClassName in entity.PaginationInputFields;
-    const isPaginationOutputField =
-      isRootAttribute && sanitizedClassName in entity.PaginationOutputFields;
+    const { isGlobalField, isPaginationField } = rootFieldFlags(entity, field);
 
     const fieldConfig = configFromTypeDef(
       field.type,
@@ -47,7 +38,7 @@ function generateSchema(
     // handles all pagination logic and conventionally in the Terraform Provider
     // ecosystem pagination details are not exposed (e.g. always paginate
     // all results automatically).
-    if (isPaginationInputField || isPaginationOutputField) {
+    if (isPaginationField) {
       return {};
     }
 
@@ -260,6 +251,23 @@ function generateSchema(
 
 registerTemplateFunc("generateSchema", generateSchema);
 
+function rootFieldFlags(
+  entity: TerraformEntity,
+  field: AttributeField,
+): { isGlobalField: boolean; isPaginationField: boolean } {
+  const isRootAttribute = field.hierarchy.split(".").length === 2;
+  if (!isRootAttribute) {
+    return { isGlobalField: false, isPaginationField: false };
+  }
+  const name = sanitizeClassName(field.name);
+  return {
+    isGlobalField: name in entity.GlobalFields,
+    isPaginationField:
+      name in entity.PaginationInputFields ||
+      name in entity.PaginationOutputFields,
+  };
+}
+
 /**
  * Reports whether any attribute generateSchema emits for the entity is
  * sensitive or write-only.
@@ -278,13 +286,21 @@ function entityHasSensitiveAttributes(
       return {};
     }
 
+    const { isGlobalField, isPaginationField } = rootFieldFlags(entity, field);
+    if (isPaginationField) {
+      return {};
+    }
+
     const config = configFromTypeDef(
       field.type,
       field.defaultValue,
       field.optional,
       resourceType,
-      false,
+      isGlobalField,
     );
+    if (resourceType === "managed" && config.SoftDeleteProperty) {
+      return {};
+    }
     if (config.Sensitive || config.WriteOnly) {
       found = true;
       return {};
