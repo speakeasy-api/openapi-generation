@@ -342,18 +342,23 @@ function sensitiveValueSources(
   resourceOperationType: TerraformResourceOperationType,
 ): string[] {
   const isManaged = "Create" in entity.Operations;
-  const resourceType: TerraformResourceType =
-    resourceOperationType === "open"
-      ? "ephemeral"
-      : resourceOperationType === "invoke"
-      ? "action"
-      : isManaged
-      ? "managed"
-      : "data";
-  if (!entityHasSensitiveAttributes(entity, resourceType)) {
+  const sources = sensitiveValueSourceNames(resourceOperationType, isManaged);
+  if (
+    !sources.length ||
+    !entityHasSensitiveAttributes(
+      entity,
+      resourceTypeForOperation(resourceOperationType, isManaged),
+    )
+  ) {
     return [];
   }
+  return sources;
+}
 
+function sensitiveValueSourceNames(
+  resourceOperationType: TerraformResourceOperationType,
+  isManaged: boolean,
+): string[] {
   switch (resourceOperationType) {
     case "create":
       return ["req.Config", "req.Plan"];
@@ -370,6 +375,21 @@ function sensitiveValueSources(
       return ["req.Config"];
     default:
       return [];
+  }
+}
+
+function resourceTypeForOperation(
+  resourceOperationType: TerraformResourceOperationType,
+  isManaged: boolean,
+): TerraformResourceType {
+  switch (resourceOperationType) {
+    case "open":
+    case "close":
+      return "ephemeral";
+    case "invoke":
+      return "action";
+    default:
+      return isManaged ? "managed" : "data";
   }
 }
 

@@ -51,15 +51,15 @@ func debugResponse(response *http.Response) string {
 	if err != nil {
 		return err.Error()
 	}
-	ctx := response.Request.Context()
 	if response.Body != nil {
 		if body, err := io.ReadAll(response.Body); err == nil {
 			response.Body = io.NopCloser(bytes.NewReader(body))
-			dumpRes = append(dumpRes, redact.ResponseBody(ctx, response.Header.Get("Content-Type"), body)...)
+			body = redact.ResponseBody(response.Request.Context(), response.Header.Get("Content-Type"), body)
+			dumpRes = append(dumpRes, body...)
 		}
 	}
 	dumpReq = redactDumpBody(dumpReq, func(body []byte) []byte {
-		return redact.RequestBody(ctx, response.Request.Header.Get("Content-Type"), body)
+		return redact.RequestBody(response.Request.Context(), response.Request.Header.Get("Content-Type"), body)
 	})
 	dump := fmt.Sprintf("**Request**:\n%s\n**Response**:\n%s", string(dumpReq), string(dumpRes))
 	return redactSensitiveValues(response.Request.Context(), dump)

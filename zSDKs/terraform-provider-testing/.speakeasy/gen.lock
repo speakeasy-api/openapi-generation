@@ -2078,7 +2078,7 @@ trackedFiles:
   internal/provider/unsoundreadonlysingleop_resource_sdk.go:
     last_write_checksum: sha1:9ebe7ce0a238c2f58ec4fab7e587fc8d91f1b5bd
   internal/provider/utils.go:
-    last_write_checksum: sha1:c7af6472c7d4e87010d76d340873901d038e9983
+    last_write_checksum: sha1:db0f136133d7de260cc9ca76a22342330401864f
   internal/provider/utils_test.go:
     last_write_checksum: sha1:40da24e32eac29a8aac14e772e5fce44044f2ae0
   internal/provider/xadditionalpropertiesname_data_source.go:
