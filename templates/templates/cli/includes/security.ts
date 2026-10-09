@@ -242,7 +242,11 @@ function isSecuritySecret(secAnno: SecurityAnnotation | undefined): boolean {
   if (!secAnno) {
     return false;
   }
-  if (secAnno.FieldName === "username") {
+  if (
+    secAnno.FieldName === "username" &&
+    ((secAnno.SecType === "http" && secAnno.SubType === "basic") ||
+      (secAnno.SecType === "oauth2" && secAnno.SubType === "password"))
+  ) {
     return false;
   }
 
