@@ -32302,6 +32302,7 @@ func (s *SDK) CreateXParamSensitive(ctx context.Context, request shared.XParamSe
 		defer cancel()
 	}
 
+	ctx = utils.WithOperation(ctx, "create-x-param-sensitive")
 	req, err := http.NewRequestWithContext(ctx, "POST", opURL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
@@ -32546,6 +32547,7 @@ func (s *SDK) GetXParamSensitive(ctx context.Context, request operations.GetXPar
 		defer cancel()
 	}
 
+	ctx = utils.WithOperation(ctx, "get-x-param-sensitive")
 	req, err := http.NewRequestWithContext(ctx, "GET", opURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
@@ -32681,6 +32683,7 @@ func (s *SDK) UpdateXParamSensitive(ctx context.Context, request operations.Upda
 		defer cancel()
 	}
 
+	ctx = utils.WithOperation(ctx, "update-x-param-sensitive")
 	req, err := http.NewRequestWithContext(ctx, "PATCH", opURL, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)

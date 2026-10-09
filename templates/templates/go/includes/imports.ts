@@ -56,6 +56,10 @@ function addImport(
         imp = getRetryLocation();
         local = true;
         break;
+      case "redact":
+        imp = getRedactLocation();
+        local = true;
+        break;
       case "config":
         imp = `${getInternalPackageName()}/config`;
         local = true;
@@ -208,6 +212,7 @@ function resolveNamespaceAlias(outputLocation: string): string {
         getUtilsLocation(),
         getPollingLocation(),
         getRetryLocation(),
+        getRedactLocation(),
         getNullableLocation(),
       ]
         .filter(Boolean)

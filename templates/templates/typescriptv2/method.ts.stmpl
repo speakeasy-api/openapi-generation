@@ -1,3 +1,22 @@
+{{- define "methodPositionalParams" }}
+{{- $op := .op }}
+{{- $usageLocation := .usageLocation }}
+{{- range $field := tsMethodPositionalFields $op }}
+  {{- $fieldType := resolveOutbound (
+    dict
+      "usageLocation" $usageLocation
+      "typeDef" $field.Type
+      "rootTypeDef" $op.OwningSDK.Type
+      "optional" $field.Optional
+      "nullable" $field.Nullable
+      "streamable" (isMultipartFileField $field)
+      "constValue" $field.Const
+      "defaultValue" $field.Default
+    ) }}
+  {{- callImportTypesFunc $fieldType.importInputTypes }}
+    {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
+{{- end }}
+{{- end }}
 {{- $dg := .Local.DocGroup -}}
 {{- $op := .Local.Operation -}}
 {{- $methodName := sanitizeMethodName $op -}}
@@ -20,99 +39,32 @@
 {{- $paramsOpt := "" }}{{- if not $paramsState.ParamsRequired }}{{- $paramsOpt = "?" }}{{- end }}
 {{- if $sseTypes }}
 {{ $tsdoc }}
-{{- if $paramsState.BodyVariants }}
 {{- range $variant := $paramsState.BodyVariants }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-      {{- $fieldType := resolveOutbound (
-        dict
-          "usageLocation" $usageLocation
-          "typeDef" $field.Type
-          "rootTypeDef" $op.OwningSDK.Type
-          "optional" $field.Optional
-          "nullable" $field.Nullable
-          "streamable" (isMultipartFileField $field)
-          "constValue" $field.Const
-          "defaultValue" $field.Default
-        ) }}
-      {{- callImportTypesFunc $fieldType.importInputTypes }}
-      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params{{$paramsOpt}}: {{$variant.ParamsName}}NonStreaming,
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.jsonReturnType}}>;
 {{- end }}
 {{- range $variant := $paramsState.BodyVariants }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
-      dict
-        "usageLocation" $usageLocation
-        "typeDef" $field.Type
-        "rootTypeDef" $op.OwningSDK.Type
-        "optional" $field.Optional
-        "nullable" $field.Nullable
-        "streamable" (isMultipartFileField $field)
-        "constValue" $field.Const
-        "defaultValue" $field.Default
-      )).inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params: {{$variant.ParamsName}}Streaming,
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
 {{- end }}
-{{- else }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-      {{- $fieldType := resolveOutbound (
-        dict
-          "usageLocation" $usageLocation
-          "typeDef" $field.Type
-          "rootTypeDef" $op.OwningSDK.Type
-          "optional" $field.Optional
-          "nullable" $field.Nullable
-          "streamable" (isMultipartFileField $field)
-          "constValue" $field.Const
-          "defaultValue" $field.Default
-        ) }}
-      {{- callImportTypesFunc $fieldType.importInputTypes }}
-      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params{{$paramsOpt}}: {{$paramsState.ParamsName}}NonStreaming,
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.jsonReturnType}}>;
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
-      dict
-        "usageLocation" $usageLocation
-        "typeDef" $field.Type
-        "rootTypeDef" $op.OwningSDK.Type
-        "optional" $field.Optional
-        "nullable" $field.Nullable
-        "streamable" (isMultipartFileField $field)
-        "constValue" $field.Const
-        "defaultValue" $field.Default
-      )).inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params: {{$paramsState.ParamsName}}Streaming,
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$sseTypes.sseReturnType}}>;
-{{- end }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-    {{sanitizeFieldName $field.Name}}: {{(resolveOutbound (
-      dict
-        "usageLocation" $usageLocation
-        "typeDef" $field.Type
-        "rootTypeDef" $op.OwningSDK.Type
-        "optional" $field.Optional
-        "nullable" $field.Nullable
-        "streamable" (isMultipartFileField $field)
-        "constValue" $field.Const
-        "defaultValue" $field.Default
-      )).inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params{{$paramsOpt}}: {{$paramsState.ParamsName}},
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}>;
@@ -122,21 +74,7 @@
 {{ $tsdoc }}
 {{- end }}
   {{if not $useAPIPromise}}async {{end}}{{$methodName}}(
-    {{- range $field := tsMethodPositionalFields $op }}
-      {{- $fieldType := resolveOutbound (
-        dict
-          "usageLocation" $usageLocation
-          "typeDef" $field.Type
-          "rootTypeDef" $op.OwningSDK.Type
-          "optional" $field.Optional
-          "nullable" $field.Nullable
-          "streamable" (isMultipartFileField $field)
-          "constValue" $field.Const
-          "defaultValue" $field.Default
-        ) }}
-      {{- callImportTypesFunc $fieldType.importInputTypes }}
-      {{sanitizeFieldName $field.Name}}: {{$fieldType.inputType}},
-    {{- end }}
+    {{- template "methodPositionalParams" (dict "op" $op "usageLocation" $usageLocation) }}
     params{{$paramsOpt}}: {{$paramsState.ParamsName}},
     options?: {{ $methodOptions }},
   ): {{if $useAPIPromise}}API{{end}}Promise<{{$returnType}}> {

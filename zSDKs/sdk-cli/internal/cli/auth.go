@@ -3,16 +3,13 @@
 package cli
 
 import (
-	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
 	"cmp"
 	"fmt"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
+	"openapi/internal/forms"
 	"openapi/internal/interactive"
-	"os"
 )
 
 // initAuthCmd registers the auth command group with login, whoami, and logout subcommands.
@@ -90,7 +87,7 @@ This removes all credentials previously set via auth login or configure.`,
 	return nil
 }
 
-// runAuthLoginCmd executes the auth login command using huh forms.
+// runAuthLoginCmd executes the auth login command using guided forms.
 func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 	if dryRunLocalNoop(cmd, "auth login changes local credentials only (no API request); nothing was changed.") {
 		return nil
@@ -186,23 +183,22 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 	} else {
 
 		accessible := formMode == interactive.FormAccessible
+		promptInput := forms.NewReader(cmd.InOrStdin())
 
 		var selectedScheme string
-		schemeSelect := huh.NewSelect[string]().
+		schemeSelect := forms.NewSelect(&selectedScheme,
+			forms.NewOption("HTTP Basic (Username + Password)", "user-pass-auth"),
+			forms.NewOption("HTTP Bearer + API Key", "option2"),
+			forms.NewOption("OAuth2 Authorization", "option3"),
+			forms.NewOption("Custom (Custom authentication credential + Custom authentication credential)", "option4"),
+			forms.NewOption("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.", "option5"),
+			forms.NewOption("OAuth2 Client Credentials", "option6"),
+			forms.NewOption("API Key", "my-api-key"),
+		).
 			Title("Authentication Method").
-			Description("Choose which credentials to configure").
-			Options(
-				huh.NewOption("HTTP Basic (Username + Password)", "user-pass-auth"),
-				huh.NewOption("HTTP Bearer + API Key", "option2"),
-				huh.NewOption("OAuth2 Authorization", "option3"),
-				huh.NewOption("Custom (Custom authentication credential + Custom authentication credential)", "option4"),
-				huh.NewOption("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.", "option5"),
-				huh.NewOption("OAuth2 Client Credentials", "option6"),
-				huh.NewOption("API Key", "my-api-key"),
-			).
-			Value(&selectedScheme)
+			Description("Choose which credentials to configure")
 
-		if err := huh.NewForm(huh.NewGroup(schemeSelect)).WithAccessible(accessible).WithTheme(authFormTheme()).WithWidth(authFormWidth()).WithShowHelp(false).Run(); err != nil {
+		if err := forms.New(forms.NewPage("", schemeSelect)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout()).Run(); err != nil {
 			return fmt.Errorf("auth login: %w", err)
 		}
 
@@ -211,25 +207,19 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			var authUsername string
 			var authPassword string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authUsername).
 					Title("HTTP Basic username").
 					Description("--username").
-					Placeholder(cfg.Security.Username).
-					Value(&authUsername),
-				huh.NewInput().
+					Placeholder(cfg.Security.Username),
+				forms.NewInput(&authPassword).
 					Title("HTTP Basic password").
 					Description("--password").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))).
-					Value(&authPassword),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -249,26 +239,20 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			var authBearerAuth string
 			var authMyApiKey string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authBearerAuth).
 					Title("HTTP Bearer").
 					Description("--bearer-auth").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))).
-					Value(&authBearerAuth),
-				huh.NewInput().
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))),
+				forms.NewInput(&authMyApiKey).
 					Title("API Key").
 					Description("--my-api-key").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
-					Value(&authMyApiKey),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -289,20 +273,15 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 		case "option3":
 			var authOauth2 string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authOauth2).
 					Title("OAuth2 Authorization").
 					Description("--oauth2").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))).
-					Value(&authOauth2),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -318,26 +297,20 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			var authAppId string
 			var authSecret string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authAppId).
 					Title("Custom authentication credential").
 					Description("--app-id").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))).
-					Value(&authAppId),
-				huh.NewInput().
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))),
+				forms.NewInput(&authSecret).
 					Title("Custom authentication credential").
 					Description("--secret").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))).
-					Value(&authSecret),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -358,20 +331,15 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 		case "option5":
 			var authMobileAuth string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authMobileAuth).
 					Title("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.").
 					Description("--mobile-auth").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))).
-					Value(&authMobileAuth),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -388,31 +356,24 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 			var authClientSecret string
 			var authTokenURL string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authClientID).
 					Title("Client Credentials flow. client identifier").
 					Description("--client-id").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))).
-					Value(&authClientID),
-				huh.NewInput().
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))),
+				forms.NewInput(&authClientSecret).
 					Title("Client Credentials flow. client secret").
 					Description("--client-secret").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))).
-					Value(&authClientSecret),
-				huh.NewInput().
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))),
+				forms.NewInput(&authTokenURL).
 					Title("Client Credentials flow. token URL").
 					Description("--token-url").
-					Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")).
-					Value(&authTokenURL),
+					Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -437,20 +398,15 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 		case "my-api-key":
 			var authMyApiKey string
 
-			fields := []huh.Field{
-				huh.NewInput().
+			fields := []*forms.Field{
+				forms.NewInput(&authMyApiKey).
 					Title("API Key").
 					Description("--my-api-key").
-					EchoMode(huh.EchoModePassword).
-					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
-					Value(&authMyApiKey),
+					Password().
+					Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
 			}
 
-			form := huh.NewForm(huh.NewGroup(fields...)).
-				WithAccessible(accessible).
-				WithTheme(authFormTheme()).
-				WithWidth(authFormWidth()).
-				WithShowHelp(false)
+			form := forms.New(forms.NewPage("", fields...)).Accessible(accessible).IO(promptInput, cmd.OutOrStdout())
 
 			if err := form.Run(); err != nil {
 				return fmt.Errorf("auth login: %w", err)
@@ -539,65 +495,4 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
 	return nil
-}
-
-// authFormTheme builds the form theme for auth login.
-func authFormTheme() huh.Theme {
-	return huh.ThemeFunc(authFormStyles)
-}
-
-func authFormStyles(isDark bool) *huh.Styles {
-	t := *huh.ThemeBase(isDark)
-
-	accent := lipgloss.Color("#38BDF8")
-	dimmed := lipgloss.Color("#64748B")
-	subtle := lipgloss.Color("#475569")
-	errColor := lipgloss.Color("#F87171")
-	greenColor := lipgloss.Color("#4ADE80")
-
-	t.Focused.Base = t.Focused.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(accent).
-		PaddingLeft(1)
-	t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
-	t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
-	t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
-	t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
-	t.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(greenColor).SetString("✓ ").Bold(true)
-	t.Focused.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
-	t.Focused.Next = t.Focused.FocusedButton
-
-	t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
-
-	t.Blurred.Base = t.Blurred.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(subtle).
-		PaddingLeft(1)
-	t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
-	t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
-	t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
-	t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
-	t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
-	t.Blurred.SelectedPrefix = lipgloss.NewStyle().Foreground(dimmed).SetString("✓ ")
-	t.Blurred.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
-
-	return &t
-}
-
-// authFormWidth returns the terminal width for sizing huh forms.
-func authFormWidth() int {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 {
-		width = 80
-	}
-	return width
 }

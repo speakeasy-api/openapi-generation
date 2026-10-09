@@ -47,6 +47,7 @@ const reservedFlagNames = [
   "out",
   "raw-response",
   "async",
+  "resume",
   "poll-interval",
   "poll-timeout",
 ];

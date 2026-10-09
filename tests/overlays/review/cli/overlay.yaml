@@ -1,0 +1,52 @@
+overlay: 1.0.0
+info:
+  title: CLI review stream metadata fixture
+  version: 0.0.0
+actions:
+  - target: $.paths
+    update:
+      /stream-metadata:
+        get:
+          operationId: streamMetadata
+          tags: [streamMetadata]
+          description: Streamed events can contain text and an optional resource identifier in separate events.
+          responses:
+            "200":
+              description: Streamed resource events.
+              content:
+                text/event-stream:
+                  x-speakeasy-sse-sentinel: "[DONE]"
+                  schema:
+                    type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          content:
+                            type: string
+                          resource_id:
+                            type: string
+  - target: $['x-speakeasy-cli-commands'].operations
+    update:
+      streamMetadata:
+        output:
+          stream:
+            select: $.data.content
+            metadata:
+              select: $.data.resource_id
+              label: Resource ID
+  - target: $['x-speakeasy-cli-commands'].commands.say.output.stream
+    update:
+      metadata:
+        select: $.data.resource_id
+        label: Resource ID
+  - target: $['x-speakeasy-cli-commands'].operations.chat.output.stream
+    update:
+      metadata:
+        select: $.data.resource_id
+        label: Resource ID
+  - target: $.paths['/chat'].post.responses['200'].content['text/event-stream'].schema.properties.data.properties
+    update:
+      resource_id:
+        type: string

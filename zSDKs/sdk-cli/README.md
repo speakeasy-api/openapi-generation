@@ -272,7 +272,7 @@ Commands that produce media write the file and print only its path on stdout (`-
 cli render "a lighthouse at sunset" --out ./output/
 ```
 
-Long-running commands poll to a terminal response; human progress goes to stderr and machine-mode success keeps stderr silent. Add `--async` to `cli produce "a lighthouse at sunrise"` to return its handle immediately, or tune foreground polling with `--poll-interval <duration>` and `--poll-timeout <duration>`. Resume an escaped or timed-out operation with `cli get-asset --stream=false --id <id>`.
+Long-running commands poll to a terminal response; human progress goes to stderr and machine-mode success keeps stderr silent. Add `--async` to `cli produce "a lighthouse at sunrise"` to return its handle immediately, or tune foreground polling with `--poll-interval <duration>` and `--poll-timeout <duration>`. Resume an escaped or timed-out operation with `cli produce --resume <id>`.
 <!-- End For AI agents [agents] -->
 
 <!-- Start Authentication [security] -->
@@ -507,6 +507,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
     * [`get-namespace-animal`](docs/cli_namespace-tests_types_get-namespace-animal.md) - Get Namespace Animal (Discriminated Union)
     * [`get-namespace-vehicle`](docs/cli_namespace-tests_types_get-namespace-vehicle.md) - Get Namespace Vehicle (Non-Discriminated Union)
     * [`get-namespace-organization`](docs/cli_namespace-tests_types_get-namespace-organization.md) - Get Namespace Organization (Nested Inline Schemas)
+* [`stream-metadata`](docs/cli_stream-metadata.md) - Streamed events can contain text and an optional resource identifier in separate events.
 <!-- End Commands [operations] -->
 
 <!-- Start Request Body Input [stdinpiping] -->

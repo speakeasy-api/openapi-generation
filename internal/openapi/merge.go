@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/document"
+	genextensions "github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/resolution"
 	"github.com/speakeasy-api/openapi/extensions"
 	"github.com/speakeasy-api/openapi/jsonschema/oas3"
@@ -13,6 +14,8 @@ import (
 )
 
 func Merge(ctx context.Context, baseSchema *oas3.Schema, overridingSchema *oas3.Schema, mergeDescriptiveFields, allOfMerge bool, e speakeasyExtensions, allOfMergeStrategy config.AllOfMergeStrategy, docInfo *document.DocumentInfo) error {
+	mergePatternErrorMessage(baseSchema, overridingSchema, e)
+
 	deepMerge := allOfMerge && allOfMergeStrategy == config.AllOfMergeStrategyDeepMerge
 
 	// Type modifying fields
@@ -306,6 +309,7 @@ func deepMergeInto(ctx context.Context, baseSchema, overridingSchema *oas3.Schem
 	if overridingSchema == nil {
 		return nil
 	}
+	mergePatternErrorMessage(baseSchema, overridingSchema, e)
 
 	// Type modifying fields - deep merge for containers, override for scalars
 
@@ -611,4 +615,14 @@ func deepMergeJSONSchema(ctx context.Context, baseSchema, overridingSchema *oas3
 
 	// Create a new schema proxy with the merged schema
 	return oas3.NewJSONSchemaFromSchema[oas3.Referenceable](base), nil
+}
+
+func mergePatternErrorMessage(baseSchema, overridingSchema *oas3.Schema, e speakeasyExtensions) {
+	if overridingSchema.Pattern == nil || (baseSchema.Pattern != nil && *baseSchema.Pattern == *overridingSchema.Pattern) {
+		return
+	}
+	name := e.GetResolvedName(genextensions.ExtPatternErrorMessage)
+	if _, ownMessage := overridingSchema.GetExtensions().Get(name); !ownMessage {
+		baseSchema.GetExtensions().Delete(name)
+	}
 }

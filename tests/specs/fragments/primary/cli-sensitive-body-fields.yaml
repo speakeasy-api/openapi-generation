@@ -1,0 +1,575 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/sensitiveBodyFields:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveBodyFieldsPost
+      description: >-
+        Request body whose secrets have generic names, marked sensitive with
+        x-speakeasy-param-sensitive or format: password at the top level, in
+        a nested object, in array items and map values (as object fields or as
+        the items and values themselves), and at every depth of nested
+        recursive schemas. Diagnostics output must redact each of them while
+        keeping their unmarked siblings readable.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveBodyFields"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveUnionBody/{scope}:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveUnionBodyPost
+      description: >-
+        Discriminated-union request body next to a path parameter, whose
+        variants mark a generically named field sensitive. Diagnostics output
+        must redact it whichever variant is sent.
+      tags:
+        - requestBodies
+      parameters:
+        - name: scope
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveSecret"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveEncodedFields:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveMultipartPost
+      description: >-
+        Multipart request body with a sensitive top-level part, a sensitive
+        array sent as repeated parts, a JSON part that nests a sensitive
+        field, and an array of objects with a sensitive field. Diagnostics
+        output must redact all of them.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveEncodedFields"
+      responses:
+        "200":
+          description: OK
+    put:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveFormPut
+      description: >-
+        Form-encoded request body with a sensitive top-level field, a sensitive
+        array sent as repeated fields, a JSON-encoded field that nests a
+        sensitive field, and an array of objects with a sensitive field.
+        Diagnostics output must redact all of them.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveEncodedFields"
+            encoding:
+              config:
+                contentType: application/json
+      responses:
+        "200":
+          description: OK
+  /anything/cli/plainBodyFields:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliPlainBodyFieldsPost
+      description: >-
+        Request body with a field that shares the name of a sensitive field in
+        another schema but is not marked sensitive. Diagnostics output must
+        keep it readable.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliPlainBodyFields"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveSplitBody:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveSplitBodyPost
+      description: Distinct request content types each contain a sensitive value.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jsonValue]
+              properties:
+                jsonValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                formValue:
+                  description: Not marked sensitive in this content type, unlike its form counterpart.
+                  type: string
+                name:
+                  type: string
+          multipart/form-data:
+            schema:
+              type: object
+              required: [multipartValue]
+              properties:
+                multipartValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                name:
+                  type: string
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [formValue]
+              properties:
+                formValue:
+                  type: string
+                  x-speakeasy-param-sensitive: true
+                name:
+                  type: string
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeJson:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeJsonPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeForm:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeFormPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeMultipart:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeMultipartPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeBody"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveWholeText:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveWholeTextPost
+      description: The entire request body is marked sensitive on its schema.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveWholeValue"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveRecursiveUnion:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveRecursiveUnionPost
+      description: Union variants share a sensitive field and one variant is recursive.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveRecursiveUnion"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveRecursiveUnionReversed:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveRecursiveUnionReversedPost
+      description: Union variants share a sensitive field and one variant is recursive.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveRecursiveUnionReversed"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveOpenObject:
+    post:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveOpenObjectPost
+      description: >-
+        Request body whose additional properties are marked sensitive next to
+        declared fields, one of them a union of a sensitive array and a plain
+        object. Diagnostics output must redact the additional properties and
+        the array items while keeping the declared fields, the constant and
+        the plain object readable.
+      tags: [requestBodies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CliSensitiveOpenObject"
+      responses:
+        "200":
+          description: OK
+  /anything/cli/sensitiveResponse:
+    get:
+      x-speakeasy-exclude-test-sdk: [csharp, go, javav2, mcp-typescript, php, postman, pythonv2, ruby, terraform, typescriptv2, unity]
+      operationId: cliSensitiveResponseGet
+      description: >-
+        Response body with a field marked sensitive beside an unmarked one.
+        Debug output must redact the marked value in the logged response while
+        keeping its sibling readable.
+      tags:
+        - responseBodies
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CliSensitiveResponse"
+components:
+  schemas:
+    CliSensitiveBodyFields:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+        passphrase:
+          type: string
+          format: password
+        nested:
+          type: object
+          properties:
+            label:
+              type: string
+            value:
+              type: string
+              x-speakeasy-param-sensitive: true
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+                format: password
+        byName:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+                x-speakeasy-param-sensitive: true
+        codes:
+          type: array
+          items:
+            type: string
+            format: password
+        codesByName:
+          type: object
+          additionalProperties:
+            type: string
+            x-speakeasy-param-sensitive: true
+        tree:
+          $ref: "#/components/schemas/CliSensitiveNode"
+    CliSensitiveNode:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+        child:
+          $ref: "#/components/schemas/CliSensitiveNode"
+        branch:
+          $ref: "#/components/schemas/CliSensitiveBranch"
+        plain:
+          $ref: "#/components/schemas/CliPlainBodyFields"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/CliSensitiveNode"
+        byName:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CliSensitiveNode"
+        link:
+          $ref: "#/components/schemas/CliSensitiveLink"
+    CliSensitiveBranch:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+          format: password
+        next:
+          $ref: "#/components/schemas/CliSensitiveBranch"
+    CliSensitiveEncodedFields:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        payload[]:
+          description: Property whose wire name ends in brackets; it is not an array.
+          type: string
+          x-speakeasy-name-override: bracketedPayload
+          x-speakeasy-param-sensitive: true
+        name:
+          type: string
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+        config:
+          type: object
+          properties:
+            label:
+              type: string
+            value:
+              type: string
+              format: password
+            password:
+              description: Not marked sensitive; its name alone requires redaction.
+              type: string
+        codes:
+          type: array
+          items:
+            type: string
+            format: password
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+                x-speakeasy-param-sensitive: true
+        tree:
+          $ref: "#/components/schemas/CliSensitiveNode"
+    CliSensitiveSecret:
+      oneOf:
+        - $ref: "#/components/schemas/CliSensitiveStaticSecret"
+        - $ref: "#/components/schemas/CliSensitiveBasicSecret"
+      discriminator:
+        propertyName: kind
+        mapping:
+          static: "#/components/schemas/CliSensitiveStaticSecret"
+          basic: "#/components/schemas/CliSensitiveBasicSecret"
+    CliSensitiveStaticSecret:
+      type: object
+      required:
+        - kind
+        - id
+        - value
+      properties:
+        kind:
+          type: string
+          const: static
+        id:
+          type: string
+        value:
+          type: string
+          writeOnly: true
+          x-speakeasy-param-sensitive: true
+    CliSensitiveBasicSecret:
+      type: object
+      required:
+        - kind
+        - id
+        - username
+        - passphrase
+      properties:
+        kind:
+          type: string
+          const: basic
+        id:
+          type: string
+        username:
+          type: string
+        passphrase:
+          type: string
+          writeOnly: true
+          format: password
+    CliPlainBodyFields:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    CliSensitiveWholeBody:
+      type: object
+      x-speakeasy-param-sensitive: true
+      required: [value]
+      properties:
+        value:
+          type: string
+    CliSensitiveWholeValue:
+      type: string
+      format: password
+    CliSensitiveLink:
+      type: object
+      properties:
+        value:
+          type: string
+        next:
+          $ref: "#/components/schemas/CliSensitiveNode"
+    CliSensitiveRecursiveLeaf:
+      type: object
+      required: [kind, value]
+      properties:
+        kind:
+          type: string
+          const: leaf
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+    CliSensitiveRecursiveBranch:
+      type: object
+      required: [kind, value]
+      properties:
+        kind:
+          type: string
+          const: branch
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true
+        child:
+          $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+        plain:
+          $ref: "#/components/schemas/CliPlainBodyFields"
+    CliSensitiveRecursiveUnion:
+      oneOf:
+        - $ref: "#/components/schemas/CliSensitiveRecursiveLeaf"
+        - $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+      discriminator:
+        propertyName: kind
+        mapping:
+          leaf: "#/components/schemas/CliSensitiveRecursiveLeaf"
+          branch: "#/components/schemas/CliSensitiveRecursiveBranch"
+    CliSensitiveRecursiveUnionReversed:
+      oneOf:
+        - $ref: "#/components/schemas/CliSensitiveRecursiveBranch"
+        - $ref: "#/components/schemas/CliSensitiveRecursiveLeaf"
+      discriminator:
+        propertyName: kind
+        mapping:
+          leaf: "#/components/schemas/CliSensitiveRecursiveLeaf"
+          branch: "#/components/schemas/CliSensitiveRecursiveBranch"
+    CliSensitiveOpenObject:
+      type: object
+      required: [kind, name]
+      properties:
+        kind:
+          type: string
+          const: visible-const
+        name:
+          type: string
+        value:
+          type: string
+        entries:
+          $ref: "#/components/schemas/CliSensitiveListOrLabel"
+      additionalProperties:
+        type: string
+        x-speakeasy-param-sensitive: true
+    CliSensitiveListOrLabel:
+      oneOf:
+        - type: array
+          items:
+            type: string
+            format: password
+        - type: object
+          required: [label]
+          properties:
+            label:
+              type: string
+    CliSensitiveResponse:
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+          x-speakeasy-param-sensitive: true

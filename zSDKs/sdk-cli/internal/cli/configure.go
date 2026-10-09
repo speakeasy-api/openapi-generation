@@ -3,20 +3,17 @@
 package cli
 
 import (
-	"charm.land/huh/v2"
-	"charm.land/lipgloss/v2"
 	"cmp"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"openapi/internal/client"
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
+	"openapi/internal/forms"
 	"openapi/internal/interactive"
 	"openapi/internal/output"
 	"openapi/internal/usage"
-	"os"
 	"strings"
 )
 
@@ -184,125 +181,104 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 		var cfgGlobalLoneQueryParam string
 		accessible := formMode == interactive.FormAccessible
 
-		var groups []*huh.Group
-		securityFields := []huh.Field{
-			huh.NewInput().
+		var pages []*forms.Page
+		securityFields := []*forms.Field{
+			forms.NewInput(&authUsername).
 				Title("HTTP Basic username").
 				Description("--username").
-				Placeholder(cfg.Security.Username).
-				Value(&authUsername),
-			huh.NewInput().
+				Placeholder(cfg.Security.Username),
+			forms.NewInput(&authPassword).
 				Title("HTTP Basic password").
 				Description("--password").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))).
-				Value(&authPassword),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("password", cfg.Security.Password))),
+			forms.NewInput(&authBearerAuth).
 				Title("HTTP Bearer").
 				Description("--bearer-auth").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))).
-				Value(&authBearerAuth),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("bearer-auth", cfg.Security.BearerAuth))),
+			forms.NewInput(&authMyApiKey).
 				Title("API Key").
 				Description("--my-api-key").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))).
-				Value(&authMyApiKey),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("my-api-key", cfg.Security.MyApiKey))),
+			forms.NewInput(&authOauth2).
 				Title("OAuth2 Authorization").
 				Description("--oauth2").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))).
-				Value(&authOauth2),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("oauth2", cfg.Security.Oauth2))),
+			forms.NewInput(&authAppId).
 				Title("Custom authentication credential").
 				Description("--app-id").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))).
-				Value(&authAppId),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("app-id", cfg.Security.AppId))),
+			forms.NewInput(&authSecret).
 				Title("Custom authentication credential").
 				Description("--secret").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))).
-				Value(&authSecret),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("secret", cfg.Security.Secret))),
+			forms.NewInput(&authMobileAuth).
 				Title("OAuth2 Password flow, a flow that is too\nlong to describe in a single line.").
 				Description("--mobile-auth").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))).
-				Value(&authMobileAuth),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("mobile-auth", cfg.Security.MobileAuth))),
+			forms.NewInput(&authClientID).
 				Title("Client Credentials flow. client identifier").
 				Description("--client-id").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))).
-				Value(&authClientID),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("client-id", cfg.Security.ClientID))),
+			forms.NewInput(&authClientSecret).
 				Title("Client Credentials flow. client secret").
 				Description("--client-secret").
-				EchoMode(huh.EchoModePassword).
-				Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))).
-				Value(&authClientSecret),
-			huh.NewInput().
+				Password().
+				Placeholder(maskSecret(config.GetStoredSecret("client-secret", cfg.Security.ClientSecret))),
+			forms.NewInput(&authTokenURL).
 				Title("Client Credentials flow. token URL").
 				Description("--token-url").
-				Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")).
-				Value(&authTokenURL),
+				Placeholder(cmp.Or(cfg.Security.TokenURL, "/clientcredentials/token")),
 		}
-		groups = append(groups, huh.NewGroup(securityFields...).Title("Authentication"))
-		globalFields := []huh.Field{
-			huh.NewInput().
+		pages = append(pages, forms.NewPage("Authentication", securityFields...))
+		globalFields := []*forms.Field{
+			forms.NewInput(&cfgGlobalQueryParam1).
 				Title("A long winded, multi-line description").
 				Description("--query-param1").
-				Placeholder(cfg.Globals.QueryParam1).
-				Value(&cfgGlobalQueryParam1),
-			huh.NewInput().
+				Placeholder(cfg.Globals.QueryParam1),
+			forms.NewInput(&cfgGlobalDeprecatedQueryParam1).
 				Title("A deprecated description").
 				Description("--deprecated-query-param1").
-				Placeholder(cfg.Globals.DeprecatedQueryParam1).
-				Value(&cfgGlobalDeprecatedQueryParam1),
-			huh.NewInput().
+				Placeholder(cfg.Globals.DeprecatedQueryParam1),
+			forms.NewInput(&cfgGlobalDeprecatedQueryParam2).
 				Title("Global deprecated-query-param2 parameter").
 				Description("--deprecated-query-param2").
-				Placeholder(cfg.Globals.DeprecatedQueryParam2).
-				Value(&cfgGlobalDeprecatedQueryParam2),
-			huh.NewInput().
+				Placeholder(cfg.Globals.DeprecatedQueryParam2),
+			forms.NewInput(&cfgGlobalLoneQueryParam).
 				Title("Global lone-query-param parameter").
 				Description("--lone-query-param").
-				Placeholder(cfg.Globals.LoneQueryParam).
-				Value(&cfgGlobalLoneQueryParam),
+				Placeholder(cfg.Globals.LoneQueryParam),
 		}
-		groups = append(groups, huh.NewGroup(globalFields...).Title("Global Parameters"))
+		pages = append(pages, forms.NewPage("Global Parameters", globalFields...))
 
-		// Preference fields use huh.Select which loops forever on EOF in
-		// accessible mode (non-TTY). Only show them when truly interactive.
+		// Preferences are only offered in the interactive form; line prompts
+		// cover credentials and global parameters.
 		var cfgOutputFormat string
 		if !accessible {
-			preferenceFields := []huh.Field{
-				huh.NewSelect[string]().
+			preferenceFields := []*forms.Field{
+				forms.NewSelect(&cfgOutputFormat,
+					forms.NewOption("Keep current", ""),
+					forms.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),
+					forms.NewOption("pretty", "pretty"),
+					forms.NewOption("json", "json"),
+					forms.NewOption("yaml", "yaml"),
+					forms.NewOption("table", "table"),
+					forms.NewOption("toon", "toon"),
+				).
 					Title("Default output format").
-					Description("Choose the default response rendering format for this CLI").
-					Options(
-						huh.NewOption("Keep current", ""),
-						huh.NewOption("Clear (use built-in default: pretty)", "__CLEAR__"),
-						huh.NewOption("pretty", "pretty"),
-						huh.NewOption("json", "json"),
-						huh.NewOption("yaml", "yaml"),
-						huh.NewOption("table", "table"),
-						huh.NewOption("toon", "toon"),
-					).
-					Value(&cfgOutputFormat),
+					Description("Choose the default response rendering format for this CLI"),
 			}
-			groups = append(groups, huh.NewGroup(preferenceFields...).Title("Preferences"))
+			pages = append(pages, forms.NewPage("Preferences", preferenceFields...))
 		}
 
-		form := huh.NewForm(groups...).
-			WithAccessible(accessible).
-			WithTheme(configureFormTheme()).
-			WithWidth(configureFormWidth()).
-			WithShowHelp(false)
+		form := forms.New(pages...).Accessible(accessible).IO(cmd.InOrStdin(), cmd.OutOrStdout())
 
 		if err := form.Run(); err != nil {
 			return fmt.Errorf("configure: %w", err)
@@ -426,65 +402,4 @@ func dryRunLocalNoop(cmd *cobra.Command, message string) bool {
 		fmt.Fprintln(cmd.ErrOrStderr(), "[DRY-RUN] "+message)
 	}
 	return true
-}
-
-// configureFormTheme builds the form theme for the configure command.
-func configureFormTheme() huh.Theme {
-	return huh.ThemeFunc(configureFormStyles)
-}
-
-func configureFormStyles(isDark bool) *huh.Styles {
-	t := *huh.ThemeBase(isDark)
-
-	accent := lipgloss.Color("#38BDF8")
-	dimmed := lipgloss.Color("#64748B")
-	subtle := lipgloss.Color("#475569")
-	errColor := lipgloss.Color("#F87171")
-	greenColor := lipgloss.Color("#4ADE80")
-
-	t.Focused.Base = t.Focused.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(accent).
-		PaddingLeft(1)
-	t.Focused.Title = t.Focused.Title.Foreground(accent).Bold(true)
-	t.Focused.Description = t.Focused.Description.Foreground(dimmed).Italic(true)
-	t.Focused.ErrorIndicator = t.Focused.ErrorIndicator.Foreground(errColor)
-	t.Focused.ErrorMessage = t.Focused.ErrorMessage.Foreground(errColor)
-	t.Focused.SelectSelector = t.Focused.SelectSelector.Foreground(accent).SetString("> ")
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(accent).Bold(true)
-	t.Focused.SelectedPrefix = lipgloss.NewStyle().Foreground(greenColor).SetString("✓ ").Bold(true)
-	t.Focused.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
-	t.Focused.FocusedButton = t.Focused.FocusedButton.Background(accent).Foreground(lipgloss.Color("#FFFFFF"))
-	t.Focused.BlurredButton = t.Focused.BlurredButton.Background(subtle)
-	t.Focused.Next = t.Focused.FocusedButton
-
-	t.Focused.TextInput.Cursor = t.Focused.TextInput.Cursor.Foreground(accent)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Focused.TextInput.Prompt = t.Focused.TextInput.Prompt.Foreground(accent)
-
-	t.Blurred.Base = t.Blurred.Base.
-		BorderLeft(true).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(subtle).
-		PaddingLeft(1)
-	t.Blurred.Title = t.Blurred.Title.Foreground(dimmed)
-	t.Blurred.Description = t.Blurred.Description.Foreground(subtle).Italic(true)
-	t.Blurred.TextInput.Text = t.Blurred.TextInput.Text.Foreground(dimmed)
-	t.Blurred.TextInput.Placeholder = t.Blurred.TextInput.Placeholder.Foreground(subtle).Italic(true)
-	t.Blurred.SelectedOption = t.Blurred.SelectedOption.Foreground(dimmed)
-	t.Blurred.SelectSelector = t.Blurred.SelectSelector.Foreground(dimmed)
-	t.Blurred.SelectedPrefix = lipgloss.NewStyle().Foreground(dimmed).SetString("✓ ")
-	t.Blurred.UnselectedPrefix = lipgloss.NewStyle().SetString("  ")
-
-	return &t
-}
-
-// configureFormWidth returns the terminal width for sizing huh forms.
-func configureFormWidth() int {
-	width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil || width <= 0 {
-		width = 80
-	}
-	return width
 }

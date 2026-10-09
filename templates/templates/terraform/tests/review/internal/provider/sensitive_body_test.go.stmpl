@@ -1,0 +1,71 @@
+package provider
+
+import (
+	"bytes"
+	stderrors "errors"
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
+
+	"{{getSDKPackage}}"
+	"{{getSDKPackage}}/models/errors"
+	"{{getSDKPackage}}/models/operations"
+)
+
+// A computed sensitive value is unknown before the response arrives, so only
+// the response schema can identify it in the transport log and diagnostics.
+func TestSensitiveResponseValuesRedactedFromLogsAndErrors(t *testing.T) {
+	status := http.StatusOK
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(`{"id":"visible-id","string_request":"visible-request","string_response":"computed-secret","string_request_and_response":"both-secret"}`))
+	}))
+	defer server.Close()
+
+	var logs bytes.Buffer
+	ctx := tflogtest.RootLogger(context.Background(), &logs)
+	client := sdk.New(
+		sdk.WithServerURL(server.URL),
+		sdk.WithClient(&http.Client{Transport: NewProviderHTTPTransport(ProviderHTTPTransportOpts{Transport: http.DefaultTransport})}),
+	)
+
+	res, err := client.GetXParamSensitive(ctx, operations.GetXParamSensitiveRequest{ID: "visible-id"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := res.XParamSensitiveResponse.GetStringResponse(); got == nil || *got != "computed-secret" {
+		t.Errorf("SDK decoded string_response as %v, want the original value", got)
+	}
+
+	status = http.StatusBadRequest
+	_, err = client.GetXParamSensitive(ctx, operations.GetXParamSensitiveRequest{ID: "visible-id"})
+	var apiErr *errors.SDKError
+	if !stderrors.As(err, &apiErr) {
+		t.Fatalf("expected an SDK API error, got %v", err)
+	}
+	if !strings.Contains(apiErr.Body, "computed-secret") {
+		t.Errorf("SDKError.Body should keep the original body: %s", apiErr.Body)
+	}
+
+	for name, output := range map[string]string{
+		"transport log":  logs.String(),
+		"error message":  err.Error(),
+		"debug response": debugResponse(apiErr.RawResponse),
+	} {
+		for _, secret := range []string{"computed-secret", "both-secret"} {
+			if strings.Contains(output, secret) {
+				t.Errorf("%s leaked %q: %s", name, secret, output)
+			}
+		}
+		for _, visible := range []string{"visible-id", "visible-request"} {
+			if !strings.Contains(output, visible) {
+				t.Errorf("%s dropped non-sensitive %q: %s", name, visible, output)
+			}
+		}
+	}
+}

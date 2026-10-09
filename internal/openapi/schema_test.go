@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	genextensions "github.com/speakeasy-api/openapi-generation/v2/internal/extensions"
 	"testing"
 
 	"github.com/speakeasy-api/openapi/extensions"
@@ -11,6 +12,10 @@ import (
 )
 
 type testExtensions struct{}
+
+func (t *testExtensions) GetResolvedName(ext genextensions.Extension) string {
+	return ext.Name()
+}
 
 func (t *testExtensions) IsExtensionMergable(extName string) bool {
 	return false

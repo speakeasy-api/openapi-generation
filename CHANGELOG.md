@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.948.0] - 2026-10-08
+### :bee: New Features
+- [`c970df5`](https://github.com/speakeasy-api/openapi-generation/commit/c970df5c6986892518ff45d5c84992409444754c) - **cli**: add selected stream metadata ([#88](https://github.com/speakeasy-api/openapi-generation/pull/88)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.947.1] - 2026-10-08
+### :bug: Bug Fixes
+- [`45bcbaf`](https://github.com/speakeasy-api/openapi-generation/commit/45bcbaf41d1e134358f3fa03605de64be563c12a) - **cli**: redact body values marked sensitive in diagnostics ([#91](https://github.com/speakeasy-api/openapi-generation/pull/91)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.947.0] - 2026-10-08
+### :bee: New Features
+- [`a2f7740`](https://github.com/speakeasy-api/openapi-generation/commit/a2f7740dce04c2e21d5f3d9868d42ee09848cfca) - **go,terraform**: mask sensitive body values in HTTP logs ([#72](https://github.com/speakeasy-api/openapi-generation/pull/72)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+- [`bc56dd5`](https://github.com/speakeasy-api/openapi-generation/commit/bc56dd5c3bc2c5e74defbf77ec3075976906aec5) - **cli**: add custom pattern error messages ([#96](https://github.com/speakeasy-api/openapi-generation/pull/96)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.946.5] - 2026-10-08
+### :bug: Bug Fixes
+- [`56b5a1d`](https://github.com/speakeasy-api/openapi-generation/commit/56b5a1d86b01f8e66d8a59b31e427646d1535dbf) - **typescript**: export and deduplicate SSE params types in public exports ([#73](https://github.com/speakeasy-api/openapi-generation/pull/73)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.946.4] - 2026-10-08
+### :wrench: Chores
+- [`25b18ac`](https://github.com/speakeasy-api/openapi-generation/commit/25b18ac3d97428e55a0090429be5d026fac70dcc) - **cli**: replace the huh form library with a built-in forms package ([#92](https://github.com/speakeasy-api/openapi-generation/pull/92)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.946.3] - 2026-10-08
+### :bug: Bug Fixes
+- [`148bd58`](https://github.com/speakeasy-api/openapi-generation/commit/148bd58d247f4e5f8c8726650eb3161f00574cc5) - **python**: annotate duration TypeAdapter for pydantic 2.14 ([#95](https://github.com/speakeasy-api/openapi-generation/pull/95)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.946.2] - 2026-10-08
+### :bug: Bug Fixes
+- [`9419553`](https://github.com/speakeasy-api/openapi-generation/commit/941955372527a3957bcfdf97655af5e24d569a04) - **cli**: resume async polling and artifacts ([#87](https://github.com/speakeasy-api/openapi-generation/pull/87)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.946.1] - 2026-10-08
+### :bug: Bug Fixes
+- [`b928f0c`](https://github.com/speakeasy-api/openapi-generation/commit/b928f0c5b10e1c27ba9350ae0fc9d1f134f8e2c0) - **cli**: preserve nested table values ([#86](https://github.com/speakeasy-api/openapi-generation/pull/86)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
+## [v2.946.0] - 2026-10-07
+### :bee: New Features
+- [`9278dff`](https://github.com/speakeasy-api/openapi-generation/commit/9278dffdd02d2d4426285a3a82cca4e7b7b7743b) - **cli**: bind intent flags one level beneath an object preset ([#83](https://github.com/speakeasy-api/openapi-generation/pull/83)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.945.13] - 2026-10-07
+### :bug: Bug Fixes
+- [`adbaf1e`](https://github.com/speakeasy-api/openapi-generation/commit/adbaf1eee002ec65b7b7fc6f3274c2927468520c) - **cli**: fill nested keys of a partial object from an intent's object preset ([#82](https://github.com/speakeasy-api/openapi-generation/pull/82)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.945.12] - 2026-10-07
 ### :bug: Bug Fixes
 - [`f984647`](https://github.com/speakeasy-api/openapi-generation/commit/f9846472ac7f141c88b61fa97932b4c83c8d359a) - **cli**: merge an intent's presets into a request body piped on stdin ([#89](https://github.com/speakeasy-api/openapi-generation/pull/89)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20463,3 +20514,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.945.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.9...v2.945.10
 [v2.945.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.10...v2.945.11
 [v2.945.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.11...v2.945.12
+[v2.945.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.12...v2.945.13
+[v2.946.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.945.13...v2.946.0
+[v2.946.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.0...v2.946.1
+[v2.946.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.1...v2.946.2
+[v2.946.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.2...v2.946.3
+[v2.946.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.3...v2.946.4
+[v2.946.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.4...v2.946.5
+[v2.947.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.946.5...v2.947.0
+[v2.947.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.0...v2.947.1
+[v2.948.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.947.1...v2.948.0

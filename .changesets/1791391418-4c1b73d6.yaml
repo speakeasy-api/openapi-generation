@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: keep the operation handle and resume command when async poll setup fails, and include pinned poll parameters in the resume command
+description: keep the operation handle and resume command when async poll setup fails
 author: AshGodfrey
 date: "2026-10-07"

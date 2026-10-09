@@ -4,6 +4,10 @@ package {{sanitizeModelPackageName .Global.Config.Imports.GetErrorsPath false}}
 import (
 	"fmt"
 	"net/http"
+	{{- if hasAnyRedactGraphs}}
+
+	"{{getRootModulePath}}/{{getRedactLocation}}"
+	{{- end}}
 )
 
 type {{$errorName}} struct {
@@ -27,7 +31,15 @@ func New{{$errorName}}(message string, statusCode int, body string, httpRes *htt
 func (e *{{$errorName}}) Error() string {
 	body := ""
 	if len(e.Body) > 0 {
+		{{- if hasAnyRedactGraphs}}
+		redacted := e.Body
+		if e.RawResponse != nil && e.RawResponse.Request != nil {
+			redacted = string(redact.ResponseBody(e.RawResponse.Request.Context(), e.RawResponse.Header.Get("Content-Type"), []byte(e.Body)))
+		}
+		body = fmt.Sprintf("\n%s", redacted)
+		{{- else}}
 		body = fmt.Sprintf("\n%s", e.Body)
+		{{- end}}
 	}
 
 	return fmt.Sprintf("%s: Status %d%s", e.Message, e.StatusCode, body)

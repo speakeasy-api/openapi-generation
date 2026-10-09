@@ -701,6 +701,10 @@ function buildMetaEntryForField(
       validations.Pattern == null ? "" : String(validations.Pattern);
     if (kind === "FlagKindString" && pattern && isPortablePattern(pattern)) {
       parts.push(`Pattern: ${goStringLiteral(pattern)}`);
+      const message = typeDef.Extensions?.PatternErrorMessage;
+      if (message) {
+        parts.push(`PatternErrorMessage: ${goStringLiteral(message)}`);
+      }
     }
     if (kind === "FlagKindInt64" || kind === "FlagKindFloat64") {
       const minimum = numeric(validations.Minimum);

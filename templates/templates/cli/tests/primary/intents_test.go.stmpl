@@ -48,6 +48,35 @@ func TestIntentPresetMergeMatrix(t *testing.T) {
 		Escape:               "cli request-bodies body-variant-overloads-discriminated",
 	}
 	noPreset := flagutil.PresetMerge{Command: "alias", Variant: "CliIntentModelRequest", Foreign: []string{"agent"}}
+	nestedPreset := flagutil.PresetMerge{
+		Command: "draw",
+		Preset:  `{"format":{"kind":"png","quality":"high"}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/format": {Key: "kind", Values: []string{`"png"`, `"portable"`}}},
+	}
+	numericPreset := flagutil.PresetMerge{
+		Command: "draw",
+		Preset:  `{"format":{"version":1,"strict":true}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/format": {Key: "version", Values: []string{`1`}}},
+	}
+	largeNumericPreset := flagutil.PresetMerge{
+		Command: "draw",
+		Preset:  `{"format":{"version":12345678901234567890,"strict":true}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/format": {Key: "version", Values: []string{`12345678901234567890`}}},
+	}
+	undiscriminatedPreset := flagutil.PresetMerge{
+		Command: "fetch",
+		Preset:  `{"source":{"url":"https://example.com/a"}}`,
+	}
+	plainPreset := flagutil.PresetMerge{
+		Command: "cfg",
+		Preset:  `{"config":{"a":1,"deep":{"b":2}}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/config": {}, "/config/deep": {}},
+	}
+	deepPreset := flagutil.PresetMerge{
+		Command: "draw",
+		Preset:  `{"config":{"dpi":72,"format":{"kind":"png","width":10}}}`,
+		Nested:  map[string]flagutil.PresetMergePoint{"/config": {}, "/config/format": {Key: "kind", Values: []string{`"png"`}}},
+	}
 
 	cases := []struct {
 		name      string
@@ -63,7 +92,27 @@ func TestIntentPresetMergeMatrix(t *testing.T) {
 		{name: "own selector present: user wins, other presets fill", merge: renderPreset, body: `{"model":"other-2","input":"cat"}`, want: `{"input":"cat","model":"other-2","output_modalities":["image"]}`},
 		{name: "user overrides a non-selector preset", merge: renderPreset, body: `{"output_modalities":["text"],"input":"cat"}`, want: `{"input":"cat","model":"render-1","output_modalities":["text"]}`},
 		{name: "explicit null keeps the user's null (own selector)", merge: renderPreset, body: `{"model":null,"input":"cat"}`, want: `{"input":"cat","model":null,"output_modalities":["image"]}`},
-		{name: "shallow merge: nested object replaced whole, not merged", merge: flagutil.PresetMerge{Command: "cfg", Preset: `{"config":{"a":1,"b":2}}`}, body: `{"config":{"c":3}}`, want: `{"config":{"c":3}}`},
+		{name: "nested object: missing keys filled at every merge point", merge: plainPreset, body: `{"config":{"c":3,"deep":{}}}`, want: `{"config":{"a":1,"c":3,"deep":{"b":2}}}`},
+		{name: "nested object: user keys win at every depth", merge: plainPreset, body: `{"config":{"a":9,"deep":{"b":8}}}`, want: `{"config":{"a":9,"deep":{"b":8}}}`},
+		{name: "nested object: no merge point keeps the user's object whole", merge: flagutil.PresetMerge{Command: "cfg", Preset: `{"config":{"a":1}}`}, body: `{"config":{"c":3}}`, want: `{"config":{"c":3}}`},
+		{name: "nested object: merge point stops at an unlisted child", merge: flagutil.PresetMerge{Command: "cfg", Preset: `{"config":{"a":1,"deep":{"b":2}}}`, Nested: map[string]flagutil.PresetMergePoint{"/config": {}}}, body: `{"config":{"deep":{"c":3}}}`, want: `{"config":{"a":1,"deep":{"c":3}}}`},
+		{name: "nested discriminator absent: filled from the preset", merge: nestedPreset, body: `{"format":{"width":10}}`, want: `{"format":{"kind":"png","quality":"high","width":10}}`},
+		{name: "nested discriminator equal: other preset keys fill", merge: nestedPreset, body: `{"format":{"kind":"png","width":10}}`, want: `{"format":{"kind":"png","quality":"high","width":10}}`},
+		{name: "nested discriminator alias: other preset keys fill", merge: nestedPreset, body: `{"format":{"kind":"portable"}}`, want: `{"format":{"kind":"portable","quality":"high"}}`},
+		{name: "nested discriminator differs: user object kept as is", merge: nestedPreset, body: `{"format":{"kind":"svg"}}`, want: `{"format":{"kind":"svg"}}`},
+		{name: "nested preset key set to a scalar: user wins", merge: nestedPreset, body: `{"format":"raw"}`, want: `{"format":"raw"}`},
+		{name: "nested preset key set to an array: user wins", merge: nestedPreset, body: `{"format":[{"kind":"svg"}]}`, want: `{"format":[{"kind":"svg"}]}`},
+		{name: "nested preset key set to null: user wins", merge: nestedPreset, body: `{"format":null}`, want: `{"format":null}`},
+		{name: "nested preset key absent: preset object added", merge: nestedPreset, body: `{"other":1}`, want: `{"other":1,"format":{"kind":"png","quality":"high"}}`},
+		{name: "nested numeric discriminator equal: preset keys fill", merge: numericPreset, body: `{"format":{"version":1}}`, want: `{"format":{"version":1,"strict":true}}`},
+		{name: "nested numeric discriminator differs: user object kept as is", merge: numericPreset, body: `{"format":{"version":2}}`, want: `{"format":{"version":2}}`},
+		{name: "nested numeric discriminator in another notation: preset keys fill", merge: numericPreset, body: `{"format":{"version":1.0}}`, want: `{"format":{"strict":true,"version":1.0}}`},
+		{name: "nested large integer discriminator differs past float64 precision: user object kept as is", merge: largeNumericPreset, body: `{"format":{"version":12345678901234567891}}`, want: `{"format":{"version":12345678901234567891}}`},
+		{name: "nested large integer discriminator equal: preset keys fill", merge: largeNumericPreset, body: `{"format":{"version":12345678901234567890}}`, want: `{"format":{"strict":true,"version":12345678901234567890}}`},
+		{name: "union without a merge point: user object kept as is", merge: undiscriminatedPreset, body: `{"source":{"path":"/x"}}`, want: `{"source":{"path":"/x"}}`},
+		{name: "undiscriminated union absent: preset object added", merge: undiscriminatedPreset, body: `{}`, want: `{"source":{"url":"https://example.com/a"}}`},
+		{name: "union below a plain object: same member filled", merge: deepPreset, body: `{"config":{"format":{"scale":2}}}`, want: `{"config":{"dpi":72,"format":{"kind":"png","scale":2,"width":10}}}`},
+		{name: "union below a plain object: other member kept, siblings filled", merge: deepPreset, body: `{"config":{"format":{"kind":"svg","scale":2}}}`, want: `{"config":{"dpi":72,"format":{"kind":"svg","scale":2}}}`},
 		{name: "raw values are preserved (large integer, precise decimal)", merge: renderPreset, body: `{"input":"cat","n":12345678901234567890,"d":0.10000000000000000001}`, want: `{"d":0.10000000000000000001,"input":"cat","model":"render-1","n":12345678901234567890,"output_modalities":["image"]}`},
 		{name: "foreign selector: hard usage error", merge: renderPreset, body: `{"agent":"helper","input":"cat"}`, wantErr: `"render" presets the CliIntentModelRequest request variant, but the supplied body names "agent"`},
 		{name: "foreign selector alongside own selector: still an error", merge: renderPreset, body: `{"agent":"helper","model":"x"}`, wantErr: `names "agent"`},
@@ -126,8 +175,25 @@ func TestIntentRouteDispatchFlagPathsAndPresets(t *testing.T) {
 		assert.Equal(t, "draw a lighthouse", body["input"])
 		assert.Equal(t, true, body["background"], "command preset applies to the model route")
 		assert.Equal(t, []interface{}{"image"}, body["output_modalities"], "model preset applies only after model selection")
+		assert.Equal(t, map[string]interface{}{"kind": "png"}, body["image_format"])
 		assert.NotContains(t, body, "token_budget")
 	})
+
+	for _, tc := range []struct {
+		name string
+		body string
+		want map[string]interface{}
+	}{
+		{name: "model body kind filled", body: `{"model":"text-2","input":"x","image_format":{"width":10}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "model body other kind kept", body: `{"model":"text-2","input":"x","image_format":{"kind":"svg"}}`, want: map[string]interface{}{"kind": "svg"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithServer(s.URL, []string{"cli-intents", "cli-intent-run", "--body", tc.body}))
+			body := echoedJSON(t, h.GetStdout())
+			assert.Equal(t, tc.want, body["image_format"])
+		})
+	}
 
 	t.Run("agent", func(t *testing.T) {
 		h := NewCLITestHarness(t)
@@ -139,6 +205,7 @@ func TestIntentRouteDispatchFlagPathsAndPresets(t *testing.T) {
 		assert.Equal(t, true, body["background"], "command preset applies to the agent route")
 		assert.Equal(t, float64(512), body["token_budget"], "agent preset applies only after agent selection")
 		assert.NotContains(t, body, "output_modalities")
+		assert.NotContains(t, body, "image_format")
 	})
 }
 
@@ -362,7 +429,13 @@ func TestIntentPresetFromArgs(t *testing.T) {
 	body := echoedJSON(t, h.GetStdout())
 	assert.Equal(t, "render-1", body["model"])
 	assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
+	assert.Equal(t, map[string]interface{}{"kind": "png"}, body["image_format"])
 	assert.Equal(t, "a lighthouse at dusk", body["input"])
+
+	h = NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "a lighthouse at dusk", "--width", "10"}))
+	body = echoedJSON(t, h.GetStdout())
+	assert.Equal(t, map[string]interface{}{"kind": "png", "width": float64(10)}, body["image_format"])
 }
 
 // TestIntentPartialBodyKeepsPresets is the regression for the preset being
@@ -381,6 +454,52 @@ func TestIntentPartialBodyKeepsPresets(t *testing.T) {
 			assert.Equal(t, "render-1", body["model"], "preset selector must survive a partial body")
 			assert.Equal(t, []interface{}{"image"}, body["output_modalities"])
 			assert.Equal(t, "cat", body["input"])
+		})
+	}
+
+	// An object preset over a union keeps its kind under a partial object
+	// for the same key, unless the caller's object names another kind.
+	for _, tc := range []struct {
+		name string
+		body string
+		want map[string]interface{}
+	}{
+		{name: "kind filled", body: `{"input":"cat","image_format":{"width":10}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "same kind", body: `{"input":"cat","image_format":{"kind":"png","width":10}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "other kind kept", body: `{"input":"cat","image_format":{"kind":"svg","scale":2}}`, want: map[string]interface{}{"kind": "svg", "scale": float64(2)}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithServer(s.URL, []string{"render", "--body", tc.body}))
+			body := echoedJSON(t, h.GetStdout())
+			assert.Equal(t, tc.want, body["image_format"])
+		})
+	}
+
+	for _, tc := range []struct {
+		name    string
+		body    string
+		want    map[string]interface{}
+		wantErr string
+	}{
+		{name: "flag without the key", body: `{"input":"cat"}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag into a partial object", body: `{"input":"cat","image_format":{}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag into the same kind", body: `{"input":"cat","image_format":{"kind":"png"}}`, want: map[string]interface{}{"kind": "png", "width": float64(10)}},
+		{name: "flag and body set the field", body: `{"input":"cat","image_format":{"width":5}}`, wantErr: `key "image_format.width" is set both by --width and by --body`},
+		{name: "flag into another kind", body: `{"input":"cat","image_format":{"kind":"svg"}}`, wantErr: `--width applies when image_format.kind is "png", but --body sets "svg"`},
+		{name: "flag into a non-object", body: `{"input":"cat","image_format":"raw"}`, wantErr: `cannot combine --width with --body: image_format must be a JSON object`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, []string{"render", "--body", tc.body, "--width", "10"})
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			body := echoedJSON(t, h.GetStdout())
+			assert.Equal(t, tc.want, body["image_format"])
 		})
 	}
 }
@@ -424,6 +543,24 @@ func TestIntentPipedBodyKeepsPresets(t *testing.T) {
 	assert.Equal(t, "CLI_VALIDATION", conflict.CLIReason())
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 	assert.Zero(t, requests.Load())
+}
+
+func TestIntentNestedFlagIntoPipedBody(t *testing.T) {
+	s := newEchoServer()
+	defer s.Close()
+
+	withDelayedStdinPipe(t, 0, `{"input":"cat","image_format":{}}`, true)
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"render", "--width", "10"}))
+	body := echoedJSON(t, h.GetStdout())
+	assert.Equal(t, "cat", body["input"])
+	assert.Equal(t, map[string]interface{}{"kind": "png", "width": float64(10)}, body["image_format"])
+
+	withDelayedStdinPipe(t, 0, `{"input":"cat","image_format":{"width":5}}`, true)
+	h = NewCLITestHarness(t)
+	err := h.RunWithServer(s.URL, []string{"render", "--width", "10"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `key "image_format.width" is set both by --width and by stdin`)
 }
 
 func TestIntentPartialBodyUserKeysWin(t *testing.T) {

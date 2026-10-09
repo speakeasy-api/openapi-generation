@@ -1839,7 +1839,8 @@ commands:
 		{`$['a','b']`, "union selector"},
 		{`$[-1]`, "negative index"},
 		{`$['unterminated]`, "unterminated"},
-		{`$.content.parts`, "multi-segment"},
+		{`$.content.parts.text`, "multi-segment"},
+		{`$.content[0]`, "addresses an array index; a nested bind"},
 		{`$[0]`, "array index at the body root"},
 	}
 	for _, testCase := range pathCases {
@@ -2758,7 +2759,7 @@ commands:
       out: {to: $.engine}
 `, `flag name "out" is reserved`)
 
-	for _, name := range []string{"async", "poll-interval", "poll-timeout"} {
+	for _, name := range []string{"async", "resume", "poll-interval", "poll-timeout"} {
 		t.Run("reserved async flag "+name, func(t *testing.T) {
 			requireDecodeError(t, fmt.Sprintf(`
 version: 1
@@ -3732,6 +3733,13 @@ version: 1
 operations:
   StreamTask:
     flags:
+      nested: {to: $.stream.level}
+`, `operation "StreamTask" flag "nested" binds /stream/level; operation flags bind top-level body fields only`)
+	requireDecodeError(t, `
+version: 1
+operations:
+  StreamTask:
+    flags:
       all: {to: $.stream}
 `, `flag "all" collides with the generated operation flag for pagination`)
 	requireDecodeError(t, `
@@ -4044,6 +4052,30 @@ func TestCLICommands_RouteDispatchPresetRules(t *testing.T) {
 	routePreset := strings.Replace(cliRouteDispatchManifest, "        selector: engine\n", "        selector: engine\n        preset: {$.batch: nightly}\n", 1)
 	requireCLIErrorExact(t, thirdSpec, routePreset,
 		`command "jobs run" route "engine": preset batch is required by another member of the request body union but only optional on the pinned variant EngineJobParams, so a body built from the presets could be read as that other variant; drop that preset (bind an arg or flag instead) or add a discriminator to the union`)
+}
+
+// A command-level object preset over a union property shared by every route
+// records its discriminator on each route's effective preset set.
+func TestCLICommands_RouteDispatchPresetMergePoints(t *testing.T) {
+	formatProp := "        format:\n          oneOf:\n            - {$ref: '#/components/schemas/PngFormat'}\n            - {$ref: '#/components/schemas/SvgFormat'}\n"
+	spec := strings.ReplaceAll(cliRouteDispatchSpec, "        background:\n", formatProp+"        background:\n") + `    PngFormat:
+      type: object
+      properties:
+        kind: {const: png}
+        width: {type: integer}
+    SvgFormat:
+      type: object
+      properties:
+        kind: {const: svg}
+        scale: {type: number}
+`
+	manifestYAML := strings.Replace(cliRouteDispatchManifest, "    args:\n", "    preset:\n      $.format: {kind: png}\n    args:\n", 1)
+	manifest, err := decodeCLITestSpec(t, spec, manifestYAML)
+	require.NoError(t, err)
+	want := []CLIPresetMergePoint{{Pointer: "/format", Key: "kind", Values: []any{"png"}}}
+	for _, route := range manifest.Commands[0].Source.Routes {
+		assert.Equal(t, want, route.PresetMergePoints, route.ID)
+	}
 }
 
 func TestCLICommands_RouteDispatchCrossRouteFacts(t *testing.T) {
@@ -4445,6 +4477,497 @@ commands:
 
 }
 
+const cliNestedPresetSpec = `openapi: 3.1.0
+info:
+  title: Drawings
+  version: 1.0.0
+paths:
+  /drawings:
+    post:
+      operationId: CreateDrawing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                format:
+                  oneOf:
+                    - $ref: '#/components/schemas/Format'
+                    - type: array
+                      items:
+                        $ref: '#/components/schemas/Format'
+                mapped:
+                  $ref: '#/components/schemas/MappedFormat'
+                described:
+                  $ref: '#/components/schemas/MappedFormat'
+                  description: Same union behind a $ref with sibling keywords
+                implicit:
+                  $ref: '#/components/schemas/ImplicitFormat'
+                source:
+                  oneOf:
+                    - $ref: '#/components/schemas/UrlSource'
+                    - $ref: '#/components/schemas/FileSource'
+                versioned:
+                  oneOf:
+                    - $ref: '#/components/schemas/VersionedPng'
+                    - $ref: '#/components/schemas/VersionedSvg'
+                tiered:
+                  oneOf:
+                    - $ref: '#/components/schemas/VersionedPng'
+                    - $ref: '#/components/schemas/VersionedSvg'
+                    - $ref: '#/components/schemas/TieredPdf'
+                custom:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - type: object
+                      additionalProperties:
+                        type: string
+                config:
+                  type: object
+                  properties:
+                    dpi:
+                      type: integer
+                    serial:
+                      type: string
+                      readOnly: true
+                    format:
+                      $ref: '#/components/schemas/Format'
+                palette:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/Format'
+                layered:
+                  allOf:
+                    - type: object
+                      additionalProperties:
+                        $ref: '#/components/schemas/Format'
+                inclusive:
+                  anyOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: object
+                      additionalProperties: true
+                nullable:
+                  anyOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: [object, "null"]
+                      additionalProperties: true
+                empty:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - {}
+                remapped:
+                  oneOf:
+                    - $ref: '#/components/schemas/SwappedFormat'
+                    - $ref: '#/components/schemas/MappedFormat'
+                scoped:
+                  oneOf:
+                    - $ref: '#/components/schemas/ImplicitFormat'
+                    - $ref: '#/components/schemas/ApiFormat'
+                composed:
+                  allOf:
+                    - type: object
+                      properties:
+                        format:
+                          $ref: '#/components/schemas/Format'
+                    - oneOf:
+                        - type: object
+                          properties:
+                            mode:
+                              const: fast
+                        - type: object
+                          properties:
+                            mode:
+                              const: slow
+                labelled:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: object
+                      required: [label]
+                      additionalProperties:
+                        type: string
+                constant:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - const:
+                        kind: svg
+                wrapped:
+                  allOf:
+                    - type: object
+                    - anyOf:
+                        - $ref: '#/components/schemas/PngFormat'
+                        - $ref: '#/components/schemas/SvgFormat'
+                        - type: object
+                          additionalProperties: true
+                refined:
+                  allOf:
+                    - type: object
+                      properties:
+                        format:
+                          $ref: '#/components/schemas/Format'
+                    - oneOf:
+                        - type: object
+                          properties:
+                            mode:
+                              const: fast
+                            format:
+                              type: object
+                        - type: object
+                          properties:
+                            mode:
+                              const: slow
+                            format:
+                              type: object
+                listed:
+                  enum:
+                    - kind: png
+                    - preset: vector
+                typedListed:
+                  type: object
+                  enum:
+                    - kind: png
+                    - preset: vector
+                listedMember:
+                  oneOf:
+                    - enum:
+                        - kind: png
+                        - preset: vector
+                    - type: string
+                mixed:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - type: string
+                  discriminator:
+                    propertyName: kind
+                listedFields:
+                  type: object
+                  properties:
+                    kind:
+                      type: string
+                    width:
+                      type: integer
+                  enum:
+                    - kind: png
+                    - kind: svg
+                      width: 10
+                listedUnion:
+                  enum:
+                    - kind: png
+                    - kind: svg
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                overlap:
+                  oneOf:
+                    - $ref: '#/components/schemas/PngFormat'
+                    - $ref: '#/components/schemas/SvgFormat'
+                    - type: object
+                      properties:
+                        kind:
+                          type: string
+                          enum: [png, raw]
+                        label:
+                          type: string
+                plain:
+                  type: object
+                  properties:
+                    kind:
+                      type: string
+                    width:
+                      type: integer
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    Format:
+      oneOf:
+        - $ref: '#/components/schemas/PngFormat'
+        - $ref: '#/components/schemas/SvgFormat'
+        - type: object
+          additionalProperties: true
+    SwappedFormat:
+      oneOf:
+        - $ref: '#/components/schemas/VersionedSvg'
+      discriminator:
+        propertyName: kind
+        mapping:
+          portable: '#/components/schemas/VersionedSvg'
+    ApiFormat:
+      oneOf:
+        - $ref: '#/components/schemas/VersionedSvg'
+      discriminator:
+        propertyName: api
+        mapping:
+          png: '#/components/schemas/VersionedSvg'
+    MappedFormat:
+      oneOf:
+        - $ref: '#/components/schemas/PngFormat'
+        - $ref: '#/components/schemas/SvgFormat'
+      discriminator:
+        propertyName: kind
+        mapping:
+          png: '#/components/schemas/PngFormat'
+          portable: '#/components/schemas/PngFormat'
+          svg: '#/components/schemas/SvgFormat'
+    ImplicitFormat:
+      oneOf:
+        - $ref: '#/components/schemas/PngFormat'
+        - $ref: '#/components/schemas/SvgFormat'
+      discriminator:
+        propertyName: kind
+    UrlSource:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+    FileSource:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+    VersionedPng:
+      type: object
+      properties:
+        api:
+          const: v1
+        kind:
+          const: png
+    VersionedSvg:
+      type: object
+      properties:
+        api:
+          const: v1
+        kind:
+          const: svg
+    TieredPdf:
+      type: object
+      properties:
+        api:
+          const: v2
+        kind:
+          const: pdf
+    PngFormat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          const: png
+        width:
+          type: integer
+    SvgFormat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [svg]
+        scale:
+          type: number
+`
+
+// An object-valued preset records a merge point for every object of its value
+// the schema proves safe to fill into a caller's object: plain objects and
+// map entries, and union members the preset identifies uniquely, guarded by
+// their discriminator. Unions without one (no discriminator, overlapping
+// accepted values, map-shaped members) get none.
+func TestCLICommands_PresetMergePoints(t *testing.T) {
+	manifest, err := decodeCLITestSpec(t, cliNestedPresetSpec, `
+version: 1
+commands:
+  draw:
+    op: CreateDrawing
+    preset:
+      $.format:
+        kind: png
+      $.mapped:
+        kind: png
+        width: 10
+      $.plain:
+        kind: png
+      $.described:
+        kind: png
+      $.implicit:
+        kind: png
+      $.source:
+        url: https://example.com/a
+      $.versioned:
+        api: v1
+        kind: png
+      $.tiered:
+        api: v1
+        kind: png
+      $.custom:
+        kind: png
+      $.config:
+        dpi: 72
+        format:
+          kind: png
+          width: 10
+      $.palette:
+        logo:
+          kind: png
+          width: 10
+      $.layered:
+        logo:
+          kind: png
+      $.nullable:
+        kind: png
+      $.inclusive:
+        kind: png
+      $.empty:
+        kind: png
+      $.remapped:
+        kind: png
+      $.scoped:
+        kind: png
+      $.composed:
+        mode: fast
+        format:
+          kind: png
+          width: 10
+      $.labelled:
+        kind: png
+        width: 10
+      $.constant:
+        kind: png
+      $.wrapped:
+        kind: png
+      $.refined:
+        mode: fast
+        format:
+          kind: png
+          width: 10
+      $.listed:
+        kind: png
+      $.typedListed:
+        kind: png
+      $.listedMember:
+        kind: png
+      $.listedUnion:
+        kind: png
+      $.overlap:
+        kind: png
+`)
+	require.NoError(t, err)
+	got := map[string]CLIPresetMergePoint{}
+	for _, disc := range manifest.Commands[0].Source.Routes[0].PresetMergePoints {
+		got[disc.Pointer] = disc
+	}
+	assert.Equal(t, map[string]CLIPresetMergePoint{
+		"/format":          {Pointer: "/format", Key: "kind", Values: []any{"png"}},
+		"/mapped":          {Pointer: "/mapped", Key: "kind", Values: []any{"png", "portable"}},
+		"/described":       {Pointer: "/described", Key: "kind", Values: []any{"png", "portable"}},
+		"/implicit":        {Pointer: "/implicit", Key: "kind", Values: []any{"png", "PngFormat"}},
+		"/versioned":       {Pointer: "/versioned", Key: "kind", Values: []any{"png"}},
+		"/tiered":          {Pointer: "/tiered", Key: "kind", Values: []any{"png"}},
+		"/config/format":   {Pointer: "/config/format", Key: "kind", Values: []any{"png"}},
+		"/plain":           {Pointer: "/plain"},
+		"/config":          {Pointer: "/config"},
+		"/palette":         {Pointer: "/palette"},
+		"/palette/logo":    {Pointer: "/palette/logo", Key: "kind", Values: []any{"png"}},
+		"/layered":         {Pointer: "/layered"},
+		"/layered/logo":    {Pointer: "/layered/logo", Key: "kind", Values: []any{"png"}},
+		"/scoped":          {Pointer: "/scoped", Key: "kind", Values: []any{"png", "PngFormat"}},
+		"/remapped":        {Pointer: "/remapped", Key: "kind", Values: []any{"png"}},
+		"/composed":        {Pointer: "/composed", Key: "mode", Values: []any{"fast"}},
+		"/composed/format": {Pointer: "/composed/format", Key: "kind", Values: []any{"png"}},
+		"/inclusive":       {Pointer: "/inclusive", Key: "kind", Values: []any{"png"}},
+		"/nullable":        {Pointer: "/nullable", Key: "kind", Values: []any{"png"}},
+		"/wrapped":         {Pointer: "/wrapped", Key: "kind", Values: []any{"png"}},
+		"/refined":         {Pointer: "/refined", Key: "mode", Values: []any{"fast"}},
+		"/refined/format":  {Pointer: "/refined/format", Key: "kind", Values: []any{"png"}},
+	}, got)
+}
+
+func TestCLICommands_NestedPresetBinds(t *testing.T) {
+	manifest, err := decodeCLITestSpec(t, cliNestedPresetSpec, `
+version: 1
+commands:
+  draw:
+    op: CreateDrawing
+    preset:
+      $.format:
+        kind: png
+      $.mapped:
+        kind: png
+        width: 10
+      $.plain:
+        kind: png
+    flags:
+      width: {to: $.format.width}
+      mapped-width: {to: $.mapped.width}
+      plain-width: {to: $.plain.width}
+`)
+	require.NoError(t, err)
+	flags := map[string]CLICommandInput{}
+	for _, flag := range manifest.Commands[0].Flags {
+		flags[flag.Name] = flag
+	}
+	assert.Equal(t, "/format/width", flags["width"].Bind.Pointer)
+	assert.Equal(t, "int", flags["width"].Type)
+	assert.Nil(t, flags["width"].Default)
+	assert.Equal(t, "int", flags["mapped-width"].Type)
+	assert.Equal(t, "preset", flags["mapped-width"].DefaultFrom)
+	assert.EqualValues(t, 10, flags["mapped-width"].Default)
+	assert.Equal(t, "int", flags["plain-width"].Type)
+}
+
+func TestCLICommands_NestedPresetBindErrors(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"no preset", "flags:\n      dpi: {to: $.config.dpi}", `flag "dpi" bind /config/dpi nests beneath /config, which no object preset sets`},
+		{"scalar preset", "preset:\n      $.prompt: hello\n    flags:\n      x: {to: $.prompt.x}", `flag "x" bind /prompt/x nests beneath /prompt, which no object preset sets`},
+		{"discriminator", "preset:\n      $.format: {kind: png}\n    flags:\n      kind: {to: $.format.kind}", `targets the discriminator of the union at /format, which the preset pins`},
+		{"discriminator of a single object member", "preset:\n      $.mixed: {kind: png}\n    flags:\n      kind: {to: $.mixed.kind, type: string}", `targets the discriminator of the union at /mixed, which the preset pins`},
+		{"no unique member", "preset:\n      $.source: {url: https://example.com/a}\n    flags:\n      url: {to: $.source.url}", `the preset at /source does not select exactly one member of its union`},
+		{"other member field", "preset:\n      $.format: {kind: png}\n    flags:\n      scale: {to: $.format.scale}", `flag "scale" bind beneath /format: /scale does not resolve in PngFormat`},
+		{"typo", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.widht}", `did you mean "width"`},
+		{"readOnly field", "preset:\n      $.config: {dpi: 72}\n    flags:\n      serial: {to: $.config.serial}", `flag "serial" bind beneath /config: /config/serial targets a readOnly property`},
+		{"const/enum object", "preset:\n      $.listedFields: {kind: png}\n    flags:\n      width: {to: $.listedFields.width}", `flag "width" bind /listedFields/width nests beneath /listedFields, whose schema restricts the object to const/enum values`},
+		{"positional", "preset:\n      $.format: {kind: png}\n    args:\n      w: {to: $.format.width, variadic: true, type: string}", `arg "w" binds /format/width; the positional binds a top-level body field`},
+		{"parent flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      format: {to: $.format, type: string}\n      width: {to: $.format.width}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+		{"nested flag first", "preset:\n      $.format: {kind: png}\n    flags:\n      width: {to: $.format.width}\n      format: {to: $.format, type: string}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+		{"positional parent", "preset:\n      $.format: {kind: png}\n    args:\n      format: {to: $.format, variadic: true, type: string}\n    flags:\n      width: {to: $.format.width}", `input "format" binds /format and input "width" binds /format/width beneath it`},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, err := decodeCLITestSpec(t, cliNestedPresetSpec, "\nversion: 1\ncommands:\n  draw:\n    op: CreateDrawing\n    "+testCase.input+"\n")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), testCase.want)
+		})
+	}
+}
+
+func TestCLICommands_NestedBindRejectedOnRouteDispatch(t *testing.T) {
+	formatProp := "        format:\n          oneOf:\n            - {$ref: '#/components/schemas/PngFormat'}\n            - {$ref: '#/components/schemas/SvgFormat'}\n"
+	spec := strings.ReplaceAll(cliRouteDispatchSpec, "        background:\n", formatProp+"        background:\n") + `    PngFormat:
+      type: object
+      properties:
+        kind: {const: png}
+        width: {type: integer}
+    SvgFormat:
+      type: object
+      properties:
+        kind: {const: svg}
+        scale: {type: number}
+`
+	manifestYAML := strings.Replace(cliRouteDispatchManifest, "    args:\n", "    preset:\n      $.format: {kind: png}\n    args:\n", 1) + "      width: {to: $.format.width}\n"
+	_, err := decodeCLITestSpec(t, spec, manifestYAML)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `flag "width" binds /format/width; nested binds are not part of route dispatch`)
+}
+
 func TestCLICommands_InputNamePatternHyphens(t *testing.T) {
 	for _, name := range []string{"a", "a1", "a-b", "a-b-c", "a1-2b", "engine-mode"} {
 		assert.True(t, cliInputNamePattern.MatchString(name), name)
@@ -4795,4 +5318,69 @@ commands:
 	assert.Equal(t, "background", background.Name)
 	assert.Empty(t, background.DefaultFrom)
 	assert.Nil(t, background.Default)
+}
+
+func TestCLICommands_StreamMetadata(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, `
+version: 1
+commands:
+  say:
+    op: StreamTask
+    output:
+      stream:
+        select: $.data.delta.text
+        metadata:
+          select: $.data.error.message
+          label: Resource ID
+`)
+	require.NoError(t, err)
+	metadata := manifest.Commands[0].Output.Stream.Metadata
+	require.NotNil(t, metadata)
+	assert.Equal(t, "$.data.error.message", metadata.Select)
+	assert.Equal(t, "/data/error/message", metadata.Pointer)
+	assert.Equal(t, "Resource ID", metadata.Label)
+}
+
+func TestCLICommands_StreamMetadataValidation(t *testing.T) {
+	for _, tc := range []struct{ name, metadata, want string }{
+		{"missing select", "{label: ID}", "requires nonempty select and label"},
+		{"missing label", "{select: $.data.error.message}", "requires nonempty select and label"},
+		{"empty label", "{select: $.data.error.message, label: '  '}", "requires nonempty select and label"},
+		{"label type", "{select: $.data.error.message, label: 12}", "metadata.label"},
+		{"select type", "{select: [], label: ID}", "metadata.select"},
+		{"unknown key", "{select: $.data.error.message, label: ID, labels: ID}", "metadata has unknown key"},
+		{"wildcard", "{select: '$.data[*]', label: ID}", "metadata.select"},
+		{"absent path", "{select: $.data.missing, label: ID}", "output.stream.metadata.select $.data.missing does not resolve"},
+		{"number", "{select: $.data.index, label: ID}", "output.stream.metadata.select $.data.index resolves to an integer"},
+		{"object", "{select: $.data.delta, label: ID}", "output.stream.metadata.select $.data.delta resolves to an object"},
+		{"newline label", `{select: $.data.error.message, label: "ID\nInjected"}`, "metadata.label must contain only printable"},
+		{"escape label", `{select: $.data.error.message, label: "ID\x1b"}`, "metadata.label must contain only printable"},
+		{"bidi label", `{select: $.data.error.message, label: "ID\u202e"}`, "metadata.label must contain only printable"},
+		{"separator label", `{select: $.data.error.message, label: "ID\u2028"}`, "metadata.label must contain only printable"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requireDecodeError(t, "version: 1\ncommands:\n  say:\n    op: StreamTask\n    output:\n      stream:\n        select: $.data.delta.text\n        metadata: "+tc.metadata+"\n", tc.want)
+		})
+	}
+}
+
+func TestCLICommands_StreamMetadataOpenSchema(t *testing.T) {
+	manifest, warnings, err := decodeCLITest(t, `
+version: 1
+operations:
+  StreamTaskLines:
+    output:
+      stream:
+        select: $.text
+        metadata:
+          select: $['resource/id~key']
+          label: Resource ID
+`)
+	require.NoError(t, err)
+	require.Len(t, manifest.Operations, 1)
+	require.NotNil(t, manifest.Operations[0].Output.Stream.Metadata)
+	assert.Equal(t, "/resource~1id~0key", manifest.Operations[0].Output.Stream.Metadata.Pointer)
+	require.Len(t, warnings, 2)
+	assert.Contains(t, warnings[1], "output.stream.metadata.select")
+	assert.Contains(t, warnings[1], "could not be verified")
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/document"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/errors"
@@ -96,6 +97,21 @@ type CLICommandRoute struct {
 	// usage error instead of a silently re-targeted request. Nil when the
 	// request body is not a union.
 	Selectors *CLIVariantSelectors `json:"selectors,omitempty" yaml:"selectors,omitempty"`
+
+	// PresetMergePoints lists the JSON pointers at which an object-valued
+	// preset fills the missing keys of a caller's object. A caller's object
+	// at any other pointer is kept whole.
+	PresetMergePoints []CLIPresetMergePoint `json:"presetMergePoints,omitempty" yaml:"presetMergePoints,omitempty"`
+}
+
+// CLIPresetMergePoint is a pointer at which a preset object fills a caller's
+// object. On a union, Key is the discriminator the preset sets and Values
+// every value selecting the preset's member: a caller's object setting Key to
+// any other value is kept whole.
+type CLIPresetMergePoint struct {
+	Pointer string `json:"pointer" yaml:"pointer"`
+	Key     string `json:"key,omitempty" yaml:"key,omitempty"`
+	Values  []any  `json:"values,omitempty" yaml:"values,omitempty"`
 }
 
 // CLICommandDispatchKey records body-key membership across the complete
@@ -199,14 +215,21 @@ type CLICommandArtifact struct {
 	explicitBindings map[string]bool
 }
 
+type CLICommandStreamMetadata struct {
+	Select  string `json:"select" yaml:"select"`
+	Pointer string `json:"pointer" yaml:"pointer"`
+	Label   string `json:"label" yaml:"label"`
+}
+
 // CLICommandStreamProjection selects the field of each streamed event whose
 // string value is written raw to stdout as the event arrives (stream mode
 // only). Select is the authored singular JSONPath from the event root as the
 // CLI sees each event (the same root a per-event --jq filter sees); Pointer
 // is its RFC 6901 lowering, which the generated runtime evaluates.
 type CLICommandStreamProjection struct {
-	Select  string `json:"select" yaml:"select"`
-	Pointer string `json:"pointer" yaml:"pointer"`
+	Metadata *CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Select   string                    `json:"select" yaml:"select"`
+	Pointer  string                    `json:"pointer" yaml:"pointer"`
 }
 
 // CLICommandOutput groups output behavior for a declared command.
@@ -409,6 +432,7 @@ var cliReservedFlagNames = map[string]bool{
 	// adding an async recipe cannot turn a previously valid flag into a
 	// generated pflag collision.
 	"async":         true,
+	"resume":        true,
 	"poll-interval": true,
 	"poll-timeout":  true,
 }
@@ -485,7 +509,7 @@ var CLIRuntimeHintReasons = []string{
 // to the capability an author is asking for, so the error can name it instead
 // of pretending the key is a typo.
 var cliReservedCommandKeys = map[string]string{
-	"payload": "payload templates require the request-plan.payload-holes capability, which is not part of v1; multi-segment binds stay hard errors until it ships",
+	"payload": "payload templates require the request-plan.payload-holes capability, which is not part of v1; binds deeper than one level beneath an object preset stay hard errors until it ships",
 	"via":     "via is reserved for a future routing capability and is not part of v1",
 	"pos":     "pos is reserved for a future positional-layout capability and is not part of v1",
 	"format":  "format is reserved for a future output-format capability and is not part of v1; use jq for projections",
@@ -499,7 +523,7 @@ var cliCommandKeys = []string{
 
 var cliOutputKeys = []string{"artifact", "stream"}
 
-var cliOutputStreamKeys = []string{"select"}
+var cliOutputStreamKeys = []string{"select", "metadata"}
 
 var cliOperationKeys = []string{"output", "flags"}
 
@@ -2129,11 +2153,14 @@ func (d *cliManifestDecoder) decodeBind(cmdKey, name string, node *yaml.Node) (*
 		if err != nil {
 			return nil, fmt.Errorf("line %d: command %q input %q: %w", node.Line, cmdKey, name, err)
 		}
-		if len(segments) > 1 {
-			return nil, fmt.Errorf("line %d: command %q input %q: to: %s is a multi-segment body path; nested construction requires the request-plan.payload-holes capability and multi-segment binds stay hard errors until it ships", node.Line, cmdKey, name, raw)
+		if len(segments) > 2 {
+			return nil, fmt.Errorf("line %d: command %q input %q: to: %s is a multi-segment body path; a flag may bind one level beneath an object preset ($.<preset>.<field>), deeper construction requires the request-plan.payload-holes capability and stays a hard error until it ships", node.Line, cmdKey, name, raw)
 		}
 		if segments[0].IsIndex {
 			return nil, fmt.Errorf("line %d: command %q input %q: to: %s addresses an array index at the body root, which cannot be a JSON object field", node.Line, cmdKey, name, raw)
+		}
+		if len(segments) == 2 && segments[1].IsIndex {
+			return nil, fmt.Errorf("line %d: command %q input %q: to: %s addresses an array index; a nested bind targets a field of an object preset", node.Line, cmdKey, name, raw)
 		}
 		return &CLICommandBind{In: "body", Pointer: cliSegmentsToPointer(segments), Mode: "set"}, nil
 	case yaml.MappingNode:
@@ -2206,6 +2233,13 @@ func (d *cliManifestDecoder) decodeStreamProjection(cmdKey string, node *yaml.No
 			}
 			stream.Select = raw
 			stream.Pointer = cliSegmentsToPointer(segments)
+		case "metadata":
+			metadata, err := d.decodeStreamMetadata(entry.Value)
+			if err != nil {
+				return nil, fmt.Errorf("command %q: %w", cmdKey, err)
+			}
+			stream.Metadata = metadata
+
 		default:
 			return nil, fmt.Errorf("line %d: command %q output.stream has unknown key %q%s", entry.Key.Line, cmdKey, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputStreamKeys))
 		}
@@ -2391,6 +2425,20 @@ func (d *cliManifestDecoder) checkCommandInputs(cmd *CLICommand, key string) err
 			}
 		}
 	}
+	for _, list := range [][]CLICommandInput{cmd.Args, cmd.Flags} {
+		for _, input := range list {
+			if input.Bind == nil || input.Bind.In != "body" {
+				continue
+			}
+			parent, _, nested := cliSplitNestedPointer(input.Bind.Pointer)
+			if !nested {
+				continue
+			}
+			if prev, ok := pointers[parent]; ok {
+				return fmt.Errorf("command %q: input %q binds %s and input %q binds %s beneath it; bind the object or its field, not both", key, prev, parent, input.Name, input.Bind.Pointer)
+			}
+		}
+	}
 	return nil
 }
 
@@ -2409,4 +2457,44 @@ func cliMapKeys(m map[string]bool) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) (*CLICommandStreamMetadata, error) {
+	entries, err := cliMapEntries(node, "output.stream.metadata")
+	if err != nil {
+		return nil, err
+	}
+	metadata := &CLICommandStreamMetadata{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "select":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.select")
+			if err != nil {
+				return nil, err
+			}
+			segments, err := cliParseSingularPath(value)
+			if err != nil {
+				return nil, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+			}
+			metadata.Select = value
+			metadata.Pointer = cliSegmentsToPointer(segments)
+		case "label":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.label")
+			if err != nil {
+				return nil, err
+			}
+			for _, r := range value {
+				if !unicode.IsPrint(r) {
+					return nil, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
+				}
+			}
+			metadata.Label = value
+		default:
+			return nil, fmt.Errorf("line %d: output.stream.metadata has unknown key %q", entry.Key.Line, entry.Key.Value)
+		}
+	}
+	if metadata.Select == "" || strings.TrimSpace(metadata.Label) == "" {
+		return nil, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
+	}
+	return metadata, nil
 }

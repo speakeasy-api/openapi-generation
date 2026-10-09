@@ -31,7 +31,7 @@ func InitIntentProduce(parent *cobra.Command) error {
 			"speakeasy_strict_body_keys":     "true",
 			"speakeasy_command_hints":        "{\"CLI_ASYNC_FAILED\":[\"Inspect the terminal response and resume command\"],\"CLI_ASYNC_TIMEOUT\":[\"Resume polling with the returned handle\"],\"CLI_ASYNC_UNKNOWN_STATE\":[\"Regenerate the CLI against the current API schema\"]}",
 			"speakeasy_artifact":             "{\"pointer\":[{\"field\":\"steps\"},{\"wild\":true},{\"field\":\"content\"},{\"wild\":true}],\"kind\":\"image\",\"defaultPath\":\"produce-{timestamp}-{rand}.{ext}\"}",
-			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"produce\",\"resume\":\"cli get-asset --stream=false --id\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
+			"speakeasy_async":                "{\"idPointer\":\"/id\",\"statePointer\":\"/status\",\"states\":{\"completed\":\"success\",\"failed\":\"failure\",\"in_progress\":\"pending\",\"requires_action\":\"handoff\"},\"interval\":\"20ms\",\"backoff\":1.5,\"maxInterval\":\"60ms\",\"timeout\":\"5s\",\"command\":\"produce\",\"resume\":\"cli produce --resume\",\"parameterIn\":\"path\",\"parameterName\":\"id\",\"params\":[{\"in\":\"query\",\"name\":\"stream\",\"value\":false}]}",
 		},
 	}
 	intentMeta := flagutil.NonBodyMeta(renderAssetCmdMeta, "")
@@ -58,6 +58,8 @@ func InitIntentProduce(parent *cobra.Command) error {
 		Kind:         "string",
 	})
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the image to a file")
+	cmd.Flags().String("resume", "", "Resume polling an existing operation by ID instead of creating one")
+	_ = flagutil.AnnotatePromptFlag(cmd, "resume", flagutil.PromptFlagSpec{Kind: "string"})
 	cmd.Flags().Bool("async", false, "Return the operation handle without waiting for a terminal response")
 	cmd.Flags().String("poll-interval", "", "Override the initial polling interval (positive Go duration, for example 500ms or 2s)")
 	cmd.Flags().String("poll-timeout", "", "Override the overall polling deadline (positive Go duration, at least the effective poll interval)")
@@ -88,6 +90,13 @@ func runIntentProduceCmd(cmd *cobra.Command, args []string) error {
 	}
 	if flagutil.FlagChanged(cmd, "raw-response") && flagutil.FlagChanged(cmd, "out") {
 		return flagutil.WithCLIValidation(fmt.Errorf("--raw-response prints the raw API response and cannot be combined with --out"))
+	}
+	if flagutil.IsAsyncResume(cmd) {
+		if err := output.ValidateAsyncResume(cmd, args); err != nil {
+			return err
+		}
+		id, _ := flagutil.GetStringFlag(cmd, "resume")
+		return output.ResumeAsync(cmd, id, newPollIntentProduce)
 	}
 	bodySurfaces := []string{"body"}
 	for _, surface := range bodySurfaces {

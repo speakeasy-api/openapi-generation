@@ -1,0 +1,127 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/cli/patternMessages/{code}:
+    post:
+      operationId: cliPatternMessages
+      description: >-
+        String constraints with custom pattern messages on a referenced path
+        schema, query, header and body properties. A second body property
+        retains the default pattern message, and a lookahead remains a server
+        constraint. Messages preserve punctuation, Unicode and line breaks.
+      tags:
+        - cliHygiene
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PatternMessageCode'
+        - name: tag
+          in: query
+          schema:
+            type: string
+            pattern: '^[a-z]+$'
+            x-speakeasy-pattern-error-message: 'Use "a" through "z" with 100% accuracy; café.'
+        - name: X-Label
+          in: header
+          schema:
+            type: string
+            pattern: '^[a-z]+$'
+            x-speakeasy-pattern-error-message: |-
+              Use lowercase letters.
+              Try "sample".
+        - name: composed
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PatternMessageCode'
+        - name: changed
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PatternMessageCode'
+            pattern: '^[0-9]+$'
+        - name: same
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PatternMessageCode'
+            pattern: '^[a-z0-9-]+$'
+        - name: replaced
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PatternMessageCode'
+            pattern: '^[0-9]+$'
+            x-speakeasy-pattern-error-message: Use digits.
+        - name: wrapper
+          in: query
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/PatternMessageCode'
+            x-speakeasy-pattern-error-message: Use a lowercase code.
+        - name: unionCode
+          in: query
+          schema:
+            oneOf:
+              - type: string
+                pattern: '^[a-z]+$'
+                x-speakeasy-pattern-error-message: Use letters.
+              - type: string
+                pattern: '^[0-9]+$'
+                x-speakeasy-pattern-error-message: Use digits.
+        - name: unionSame
+          in: query
+          schema:
+            oneOf:
+              - type: string
+                pattern: '^[a-z]+$'
+                x-speakeasy-pattern-error-message: Use letters.
+              - type: string
+                pattern: '^[a-z]+$'
+                x-speakeasy-pattern-error-message: Use lowercase letters.
+        - name: slug
+          in: query
+          schema:
+            type: string
+            pattern: '^(?!x)[a-z]+$'
+            x-speakeasy-pattern-error-message: Avoid the x prefix.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  pattern: '^[a-z]+$'
+                  x-speakeasy-pattern-error-message: Use a lowercase name.
+                fallback:
+                  type: string
+                  pattern: '^[a-z]+$'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+components:
+  schemas:
+    PatternMessageCode:
+      description: A referenced string constraint with a custom mismatch message.
+      type: string
+      pattern: '^[a-z0-9-]+$'
+      maxLength: 6
+      x-speakeasy-pattern-error-message: Use lowercase letters, digits or hyphens.

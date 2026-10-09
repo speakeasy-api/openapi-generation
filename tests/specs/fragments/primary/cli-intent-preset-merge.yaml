@@ -71,8 +71,36 @@ components:
           items:
             type: string
             enum: [text, image]
+        image_format:
+          description: >-
+            Union of objects told apart by a constant kind property. An intent
+            presets one member as an object; a partial object for this key in
+            a caller-supplied body must keep the preset's kind.
+          oneOf:
+            - $ref: "#/components/schemas/CliIntentPngFormat"
+            - $ref: "#/components/schemas/CliIntentSvgFormat"
         background:
           type: boolean
+    CliIntentPngFormat:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          const: png
+        width:
+          type: integer
+    CliIntentSvgFormat:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          const: svg
+        scale:
+          type: number
     CliIntentAgentRequest:
       type: object
       required:

@@ -1,0 +1,325 @@
+package tests
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"strings"
+	"testing"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/{{getRedactLocation}}"
+	"{{getRootModulePath}}/pkg/models/apierrors"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/models/shared"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+const sensitiveBodyPayload = `{
+	"name": "visible-name",
+	"password": "secret-password",
+	"token": "secret-token",
+	"nested": {"label": "visible-nested", "secret": "secret-nested"},
+	"items": [{"label": "visible-item", "secret": "secret-item"}],
+	"tokens": ["secret-tokens-0", "secret-tokens-1"],
+	"labels": {"visible": "visible-label", "extra": "secret-label"},
+	"credential": {"kind": "password", "password": "secret-credential"},
+	"tree": {"label": "visible-root", "secret": "secret-root", "children": [{"label": "visible-child", "secret": "secret-child", "children": []}]},
+	"whole": {"value": "secret-whole"},
+	"unrelated": {"secret": "visible-unrelated"}
+}`
+
+type redactCaptureClient struct {
+	status      int
+	operation   string
+	contentType string
+	body        []byte
+	masked      []byte
+}
+
+// Do records the request body as sent and as masked for the operation
+// carried by the request context.
+func (c *redactCaptureClient) Do(req *http.Request) (*http.Response, error) {
+	c.operation = redact.Operation(req.Context())
+	c.contentType = req.Header.Get("Content-Type")
+	c.body = nil
+	if req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			return nil, err
+		}
+		c.body = body
+	}
+	c.masked = redact.RequestBody(req.Context(), c.contentType, c.body)
+	return &http.Response{
+		StatusCode: c.status,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(sensitiveBodyPayload)),
+		Request:    req,
+	}, nil
+}
+
+func assertMasked(t *testing.T, output string, secrets, visible []string) {
+	t.Helper()
+	for _, secret := range secrets {
+		assert.NotContains(t, output, secret)
+	}
+	for _, value := range visible {
+		assert.Contains(t, output, value)
+	}
+}
+
+func assertSensitiveBodyMasked(t *testing.T, output string) {
+	t.Helper()
+	for _, secret := range []string{"secret-password", "secret-token", "secret-nested", "secret-item", "secret-tokens-0", "secret-tokens-1", "secret-label", "secret-credential", "secret-root", "secret-child", "secret-whole"} {
+		assert.NotContains(t, output, secret)
+	}
+	for _, visible := range []string{"visible-name", "visible-nested", "visible-item", "visible-label", "visible-root", "visible-child", "visible-unrelated"} {
+		assert.Contains(t, output, visible)
+	}
+}
+
+func TestRedactSensitiveBodies(t *testing.T) {
+	ctx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+
+	assertSensitiveBodyMasked(t, string(redact.RequestBody(ctx, "application/json", []byte(sensitiveBodyPayload))))
+	assertSensitiveBodyMasked(t, string(redact.ResponseBody(ctx, "application/json; charset=utf-8", []byte(sensitiveBodyPayload))))
+
+	plain := []byte(`{"name": "visible-name"}`)
+	assert.Equal(t, plain, redact.ResponseBody(ctx, "application/json", plain), "bodies without sensitive values are returned unchanged")
+	assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, "application/json", []byte("secret-text"))), "unparseable bodies are masked as a whole")
+	assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, "text/plain", []byte(`{"name": "visible-name"}`))), "bodies of other media types are masked as a whole")
+	assert.Equal(t, []byte(sensitiveBodyPayload), redact.ResponseBody(context.Background(), "application/json", []byte(sensitiveBodyPayload)), "requests without an operation are not masked")
+
+	assert.Equal(t, `"`+redact.Mask+`"`, string(redact.ResponseBody(ctx, "application/json", []byte(`"secret-scalar"`))), "values not shaped like their schema are masked")
+	assert.Equal(t, `{"name":"visible-name","nested":"`+redact.Mask+`"}`, string(redact.ResponseBody(ctx, "application/json", []byte(`{"name": "visible-name", "nested": ["secret-shape"]}`))), "values not shaped like their schema are masked")
+	assert.Equal(t, `{"name":null}`, string(redact.ResponseBody(ctx, "application/json", []byte(`{"name":null}`))), "null values are kept")
+
+	errorBody := string(redact.ResponseBody(ctx, "application/json", []byte(`{"message": "visible-message", "secret": "secret-error"}`)))
+	assert.Contains(t, errorBody, "visible-message")
+	assert.NotContains(t, errorBody, "secret-error", "error response schemas are masked")
+
+	for _, body := range []string{`{"nested": {"secret": "secret-duplicate"}, "nested": null}`, `{"tokens": ["secret-duplicate"], "tokens": null}`} {
+		assert.Equal(t, redact.Mask, string(redact.ResponseBody(ctx, "application/json", []byte(body))), "bodies repeating a key are masked as a whole")
+	}
+	assert.JSONEq(t, `{"name": "visible-name", "nested": {"label": "a", "secret": "`+redact.Mask+`"}, "items": [{"label": "a"}, {"label": "a"}]}`,
+		string(redact.ResponseBody(ctx, "application/json", []byte(`{"name": "visible-name", "nested": {"label": "a", "secret": "secret-nested"}, "items": [{"label": "a"}, {"label": "a"}]}`))), "keys repeated across objects are not duplicates")
+
+	streamCtx := redact.WithOperation(context.Background(), "sensitiveStreamRedaction")
+	assert.Equal(t, redact.Mask, string(redact.ResponseBody(streamCtx, "application/jsonl", []byte(`{"label": "visible", "secret": "secret-stream"}`))), "streams holding sensitive values are masked as a whole")
+}
+
+func TestRedactUnionVariantsWithoutSensitiveValues(t *testing.T) {
+	ctx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+	redactJSON := func(body string) string {
+		return string(redact.RequestBody(ctx, "application/json", []byte(body)))
+	}
+
+	assertMasked(t, redactJSON(`{"name": "visible-name", "tokensOrLabel": ["secret-token-item"]}`), []string{"secret-token-item"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "tokensOrLabel": {"label": "visible-label"}}`), nil, []string{"visible-label"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": {"label": "visible-nested", "secret": "secret-nested"}}`), []string{"secret-nested"}, []string{"visible-nested"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": ["visible-item"]}`), nil, []string{"visible-item"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": {"label": "visible-nested", "secret": "secret-nested"}}`), []string{"secret-nested"}, []string{"visible-nested"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": "visible-text"}`), nil, []string{"visible-text"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": ["secret-shape"]}`), []string{"secret-shape"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrLabels": "secret-shape"}`), []string{"secret-shape"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrCount": 4242, "secretOrFlag": true}`), nil, []string{"4242", "true"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrCount": "secret-count", "secretOrFlag": "secret-flag"}`), []string{"secret-count", "secret-flag"}, []string{"visible-name"})
+	assertMasked(t, redactJSON(`{"name": "visible-name", "secretOrText": 4242}`), []string{"4242"}, []string{"visible-name"})
+
+	redactForm := func(field, value string) string {
+		masked, err := url.ParseQuery(string(redact.RequestBody(ctx, "application/x-www-form-urlencoded", []byte("name=visible-name&"+field+"="+url.QueryEscape(value)))))
+		require.NoError(t, err)
+		return masked.Get(field)
+	}
+	redactPart := func(field, value string) string {
+		body := "--b\r\nContent-Disposition: form-data; name=\"" + field + "\"\r\n\r\n" + value + "\r\n--b--\r\n"
+		part, err := multipart.NewReader(bytes.NewReader(redact.RequestBody(ctx, "multipart/form-data; boundary=b", []byte(body))), "b").NextPart()
+		require.NoError(t, err)
+		data, err := io.ReadAll(part)
+		require.NoError(t, err)
+		return string(data)
+	}
+	for name, redactField := range map[string]func(field, value string) string{"form": redactForm, "multipart": redactPart} {
+		assert.JSONEq(t, `{"label": "visible-label"}`, redactField("tokensOrLabel", `{"label": "visible-label"}`), "%s: a plain object member stays readable", name)
+		assert.JSONEq(t, `["`+redact.Mask+`"]`, redactField("tokensOrLabel", `["secret-token-item"]`), "%s: sensitive array items are masked", name)
+		assert.Equal(t, redact.Mask, redactField("tokensOrLabel", "secret-token-item"), "%s: a repeated sensitive array item is masked", name)
+		assert.Equal(t, "visible-text", redactField("secretOrText", "visible-text"), "%s: a plain string member stays readable", name)
+		assert.Equal(t, redact.Mask, redactField("secretOrLabels", `{"secret": "secret-malformed",`), "%s: malformed JSON without a plain string member is masked", name)
+		assert.Equal(t, "4242", redactField("secretOrText", "4242"), "%s: numeric text of a plain string member stays readable", name)
+		assert.Equal(t, redact.Mask, redactField("secretOrText", `{"secret": "secret-malformed",`), "%s: malformed JSON is masked beside a plain string member", name)
+		for _, field := range []string{"secretOrCount", "secretOrFlag"} {
+			assert.Equal(t, redact.Mask, redactField(field, `{"secret": "secret-malformed",`), "%s: malformed JSON in %s is masked", name, field)
+			assert.Equal(t, redact.Mask, redactField(field, "secret-text"), "%s: text in %s is masked", name, field)
+		}
+		assert.Equal(t, "4242", redactField("secretOrCount", "4242"), "%s: a plain integer member stays readable", name)
+		assert.Equal(t, "true", redactField("secretOrFlag", "true"), "%s: a plain boolean member stays readable", name)
+		assert.Equal(t, "visible-name", redactField("name", "visible-name"), "%s: fields without sensitive values stay readable", name)
+		assert.Equal(t, "visible-item-name", redactField("secretsOrNames", "visible-item-name"), "%s: a repeated item matching a plain string member stays readable", name)
+		assert.Equal(t, "4242", redactField("secretsOrCounts", "4242"), "%s: a repeated item matching a plain integer member stays readable", name)
+		assert.Equal(t, "true", redactField("secretsOrFlags", "true"), "%s: a repeated item matching a plain boolean member stays readable", name)
+		assert.Equal(t, redact.Mask, redactField("secretsOrCounts", "secret-text"), "%s: a repeated text item without a plain string member is masked", name)
+		assert.NotContains(t, redactField("secretsOrNames", `{"label": "visible-label", "secret": "secret-item"}`), "secret-item", "%s: a repeated object item is masked", name)
+	}
+}
+
+func TestRedactOperationOnRequestContext(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	res, err := s.SensitiveBodies.Redaction(context.Background(), shared.SensitiveBodyPayload{Name: "visible-name"})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveBodyRedaction", client.operation)
+	require.NotNil(t, res.SensitiveBodyPayload)
+	assert.Equal(t, "secret-password", *res.SensitiveBodyPayload.Password, "decoded values are not masked")
+
+	client.status = http.StatusInternalServerError
+	_, err = s.SensitiveBodies.Redaction(context.Background(), shared.SensitiveBodyPayload{Name: "visible-name"})
+	var apiErr *apierrors.APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.Contains(t, apiErr.Body, "secret-password", "the error body is not masked")
+	assertSensitiveBodyMasked(t, apiErr.Error())
+}
+
+func TestRedactFormRequestBody(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	_, err := s.SensitiveBodies.FormRedaction(context.Background(), shared.SensitiveBodyForm{
+		Name:     "visible-name",
+		Token:    sdk.String("secret-token"),
+		Tokens:   []string{"secret-tokens-0", "secret-tokens-1"},
+		Nested:   &shared.SensitiveBodyFormNested{VisibleProperty: sdk.String("visible-nested"), SecretProperty: sdk.String("secret-nested")},
+		Metadata: &shared.SensitiveBodyNested{Label: sdk.String("visible-metadata"), Secret: sdk.String("secret-metadata")},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveFormRedaction", client.operation)
+	assert.Contains(t, string(client.body), "secret-token", "the body sent is not masked")
+
+	masked := string(client.masked)
+	assertMasked(t, masked,
+		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-nested", "secret-metadata"},
+		[]string{"name=visible-name", "visible-nested", "visible-metadata"})
+	values, err := url.ParseQuery(masked)
+	require.NoError(t, err, "the masked body is a form")
+	assert.Equal(t, []string{redact.Mask, redact.Mask}, values["tokens"])
+	assert.JSONEq(t, `{"label": "visible-metadata", "secret": "`+redact.Mask+`"}`, values.Get("metadata"))
+
+	plainCtx := redact.WithOperation(context.Background(), "sensitiveFormRedaction")
+	plain := []byte("name=visible-name&metadata=%7B%22label%22%3A%22visible%22%7D")
+	assert.Equal(t, plain, redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", plain), "forms without sensitive values are returned unchanged")
+	assert.Equal(t, "name=visible-name&metadata="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&metadata=secret-text"))), "unparseable JSON-encoded fields are masked")
+	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
+	assert.Equal(t, "tokens="+redact.Mask+"&tokens="+redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte("tokens=null&tokens=secret-tokens-0"))), "every repeated sensitive item is masked")
+	for _, body := range []string{`{"token": "secret-json", "name": "visible-name"}`, " \n\t{\"token\": \"secret-json\"}", `[{"token": "secret-json"}]`} {
+		assert.Equal(t, redact.Mask, string(redact.RequestBody(plainCtx, "application/x-www-form-urlencoded", []byte(body))), "a JSON body labelled as a form is masked as a whole: %q", body)
+	}
+}
+
+func TestRedactBracketedFieldNames(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	_, _ = s.SensitiveBodies.BracketedFormRedaction(context.Background(), shared.SensitiveBodyBracketedForm{
+		Name:             "visible-name",
+		BracketedPayload: sdk.String("secret-brackets"),
+		Token:            sdk.String("secret-token"),
+		BracketedToken:   sdk.String("visible-bracketed"),
+	})
+	assert.Equal(t, "sensitiveBracketedFormRedaction", client.operation)
+	values, err := url.ParseQuery(string(client.masked))
+	require.NoError(t, err, "the masked body is a form")
+	assert.Equal(t, []string{redact.Mask}, values["payload[]"], "a property whose name ends in brackets is matched by its exact name")
+	assert.Equal(t, []string{redact.Mask}, values["token"])
+	assert.Equal(t, []string{"visible-bracketed"}, values["token[]"], "a plain bracketed property is not mistaken for a sensitive one")
+	assert.Equal(t, []string{"visible-name"}, values["name"])
+
+	ctx := redact.WithOperation(context.Background(), "sensitiveBracketedFormRedaction")
+	assert.Equal(t, "name=visible-name&tokens[]="+redact.Mask+"&tokens[]="+redact.Mask, string(redact.RequestBody(ctx, "application/x-www-form-urlencoded", []byte("name=visible-name&tokens[]=secret-tokens-0&tokens[]=secret-tokens-1"))), "arrays sent with a [] suffix are matched by their property name")
+	assert.Equal(t, "tokens[]="+redact.Mask, string(redact.ResponseBody(ctx, "application/x-www-form-urlencoded", []byte("tokens[]=secret-tokens-0"))), "a bracketed name declared by one response schema still matches a sensitive array of another")
+
+	_, _ = s.SensitiveBodies.BracketedMultipartRedaction(context.Background(), shared.SensitiveBodyBracketedMultipart{
+		Name:             "visible-name",
+		BracketedPayload: sdk.String("secret-brackets"),
+	})
+	assert.Equal(t, "sensitiveBracketedMultipartRedaction", client.operation)
+	assertMasked(t, string(client.masked), []string{"secret-brackets"}, []string{"visible-name", `name="payload[]"`})
+}
+
+func TestRedactMultipartRequestBody(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	_, err := s.SensitiveBodies.MultipartRedaction(context.Background(), shared.SensitiveBodyMultipart{
+		Name:     "visible-name",
+		Token:    sdk.String("secret-token"),
+		Tokens:   []string{"secret-tokens-0", "secret-tokens-1"},
+		Metadata: &shared.SensitiveBodyNested{Label: sdk.String("visible-metadata"), Secret: sdk.String("secret-metadata")},
+		File:     &shared.File{FileName: "visible.txt", Content: []byte("visible-file-content")},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveMultipartRedaction", client.operation)
+	assert.Contains(t, string(client.body), "secret-token", "the body sent is not masked")
+
+	assertMasked(t, string(client.masked),
+		[]string{"secret-token", "secret-tokens-0", "secret-tokens-1", "secret-metadata"},
+		[]string{"visible-name", "visible-metadata", "visible.txt", "visible-file-content"})
+
+	_, params, err := mime.ParseMediaType(client.contentType)
+	require.NoError(t, err)
+	reader := multipart.NewReader(bytes.NewReader(client.masked), params["boundary"])
+	parts := map[string][]string{}
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		require.NoError(t, err, "the masked body is multipart with the same boundary")
+		data, err := io.ReadAll(part)
+		require.NoError(t, err)
+		parts[part.FormName()] = append(parts[part.FormName()], string(data))
+	}
+	assert.Equal(t, []string{"visible-name"}, parts["name"])
+	assert.Equal(t, []string{redact.Mask}, parts["token"])
+	assert.Equal(t, []string{redact.Mask, redact.Mask}, parts["tokens"])
+	assert.Equal(t, []string{"visible-file-content"}, parts["file"])
+
+	ctx := redact.WithOperation(context.Background(), "sensitiveMultipartRedaction")
+	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/form-data", client.body)), "multipart bodies without a boundary are masked as a whole")
+	assert.Equal(t, redact.Mask, string(redact.RequestBody(ctx, "multipart/mixed; boundary="+params["boundary"], client.body)), "other multipart bodies are masked as a whole")
+
+	encoded := "--b\r\nContent-Disposition: form-data; name=\"token\"\r\nContent-Transfer-Encoding: base64\r\nContent-Length: 20\r\n\r\nc2VjcmV0LWVuY29kZWQ=\r\n--b--\r\n"
+	masked := string(redact.RequestBody(ctx, "multipart/form-data; boundary=b", []byte(encoded)))
+	assert.NotContains(t, masked, "c2VjcmV0LWVuY29kZWQ=")
+	assert.NotContains(t, masked, "Content-Transfer-Encoding", "masked parts are not transfer encoded")
+	assert.NotContains(t, masked, "Content-Length", "masked parts do not keep the original length")
+	assert.Contains(t, masked, redact.Mask)
+
+	payloadCtx := redact.WithOperation(context.Background(), "sensitiveBodyRedaction")
+	encodedText := "--b\r\nContent-Disposition: form-data; name=\"secretOrText\"\r\nContent-Transfer-Encoding: base64\r\n\r\neyJzZWNyZXQiOiJzZWNyZXQtZW5jb2RlZCJ9\r\n--b--\r\n"
+	masked = string(redact.RequestBody(payloadCtx, "multipart/form-data; boundary=b", []byte(encodedText)))
+	assert.NotContains(t, masked, "eyJzZWNyZXQiOiJzZWNyZXQtZW5jb2RlZCJ9", "encoded parts of a field with sensitive values are masked")
+	plainEncoded := "--b\r\nContent-Disposition: form-data; name=\"name\"\r\nContent-Transfer-Encoding: base64\r\n\r\ndmlzaWJsZS1uYW1l\r\n--b--\r\n"
+	assert.Equal(t, plainEncoded, string(redact.RequestBody(payloadCtx, "multipart/form-data; boundary=b", []byte(plainEncoded))), "encoded parts without sensitive values are kept")
+}
+
+func TestRedactSplitRequestBodies(t *testing.T) {
+	client := &redactCaptureClient{status: http.StatusOK}
+	s := sdk.New(sdk.WithServerURL("http://localhost"), sdk.WithClient(client))
+
+	_, err := s.SensitiveBodies.SplitRedactionJSON(context.Background(), operations.SensitiveSplitRedactionJSONRequestBody{Name: "visible-name", JSONSecret: "secret-json"})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveSplitRedaction_json", client.operation)
+	assertMasked(t, string(client.masked), []string{"secret-json"}, []string{"visible-name"})
+
+	_, err = s.SensitiveBodies.SplitRedactionForm(context.Background(), operations.SensitiveSplitRedactionFormRequestBody{Name: "visible-name", FormSecret: "secret-form"})
+	require.NoError(t, err)
+	assert.Equal(t, "sensitiveSplitRedaction_form", client.operation)
+	assertMasked(t, string(client.masked), []string{"secret-form"}, []string{"name=visible-name"})
+}

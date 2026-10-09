@@ -19,6 +19,7 @@
 
 interface IntentBodyEntry {
   Key: string; // top-level body key (from a single-segment JSON Pointer)
+  Path?: string[]; // [Key, field] for a flag bound beneath an object preset
   Name?: string; // flag name
   SatisfiedBy?: string[];
   Shorthand?: string;
@@ -45,6 +46,14 @@ interface IntentDispatchRoute {
   PresetJSON: string;
   VariantLabel: string;
   ForeignSelectors: string[];
+  PresetMergePoints: IntentPresetMergePoint[];
+}
+
+// Pointer at which a preset object fills a caller object (flagutil.PresetMergePoint).
+interface IntentPresetMergePoint {
+  Pointer: string;
+  Key: string;
+  ValuesJSON: string[];
 }
 
 interface IntentDispatchKey {
@@ -99,6 +108,7 @@ interface IntentCmdCtx {
   DiscriminatorKey: string;
   DiscriminatorValueJSON: string; // JSON text of the pinned discriminator value ("" when unknown)
   DiscriminatorAliasesJSON: string[]; // JSON text of every value that selects the pinned variant
+  PresetMergePoints: IntentPresetMergePoint[];
   EscapeCommand: string; // "<cli> agent run": full-control invocation for conflict errors
   HasPresetMerge: boolean; // a caller-supplied body needs merging/checking (presets or variant selectors exist)
   HintsJSON: string; // JSON object of reason → hint lines (agent envelope)
@@ -125,6 +135,8 @@ interface IntentCmdCtx {
   AsyncMissingStateTestJSON: string;
   AsyncMissingHandleTestJSON: string;
   AsyncFailureHint: string;
+  StreamMetadataPointer: string;
+  StreamMetadataLabel: string;
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
   StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
@@ -189,6 +201,8 @@ interface CLIOperationFlagCtx {
 
 interface CLIOperationCtx {
   OperationID: string;
+  StreamMetadataPointer: string;
+  StreamMetadataLabel: string;
   StreamSelect: string;
   Flags: CLIOperationFlagCtx[];
   BodyFlags: string[];
@@ -267,13 +281,27 @@ function intentFallbackFlag(entry: IntentBodyEntry): string {
   return `--${entry.Name} ${intentExamplePlaceholder(entry.Name || "value")}`;
 }
 
-// Single-segment RFC 6901 pointer → top-level body key. The decoder only
-// admits single-segment body pointers in v1, so a miss here is unreachable.
+// Single-segment RFC 6901 pointer → top-level body key. Args, presets and
+// dispatch keys bind single-segment pointers only, so a miss here is
+// unreachable; flags may nest and use intentPointerPath.
 function intentPointerKey(pointer: string): string {
   if (!pointer || !pointer.startsWith("/")) return "";
   const rest = pointer.slice(1);
   if (rest.includes("/")) return "";
   return rest.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+
+function intentHasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
+// RFC 6901 pointer → decoded body path segments.
+function intentPointerPath(pointer: string): string[] {
+  if (!pointer || !pointer.startsWith("/")) return [];
+  return pointer
+    .slice(1)
+    .split("/")
+    .map((token) => token.replace(/~1/g, "/").replace(/~0/g, "~"));
 }
 
 function mergeIntentTestValue(left: any, right: any): any {
@@ -507,7 +535,7 @@ function validateIntentFlagNames(
     }
   }
   if (cmd.Async) {
-    for (const owned of ["async", "poll-interval", "poll-timeout"]) {
+    for (const owned of ["async", "resume", "poll-interval", "poll-timeout"]) {
       if (generatedFlags.has(owned)) {
         throw new Error(
           `x-speakeasy-cli-commands: command "${cmdKey}" declares async, ` +
@@ -608,6 +636,18 @@ function intentPresetJSON(presets: any[]): string {
     obj[key] = preset.Value;
   }
   return Object.keys(obj).length > 0 ? JSON.stringify(obj) : "";
+}
+
+function intentPresetMergePoints(
+  discriminators: any[],
+): IntentPresetMergePoint[] {
+  return (discriminators || [])
+    .map((d: any) => ({
+      Pointer: d.Pointer || "",
+      Key: d.Key || "",
+      ValuesJSON: (d.Values || []).map((v: any) => JSON.stringify(v)),
+    }))
+    .filter((d) => d.Pointer !== "");
 }
 
 function intentRouteGroup(routeIDs: string[], routes: any[]): string {
@@ -817,30 +857,40 @@ function collectIntentManifest(): IntentManifestCtx {
         Summary: a.Summary || "",
         Variadic: Boolean(a.Variadic),
         Required: Boolean(a.Required),
-        PresetCovered: dispatch ? false : key in presetObj,
+        PresetCovered: dispatch ? false : intentHasOwn(presetObj, key),
         Suggestions: (a.Enum || []).map((v: any) => `${v}`),
         RouteIDs: (a as any).RouteIDs || [],
         RequiredRouteIDs: (a as any).RequiredRouteIDs || [],
         Positional: true,
       });
-      if (a.Required && (dispatch || !(key in presetObj))) minArgs = 1;
+      if (a.Required && (dispatch || !intentHasOwn(presetObj, key)))
+        minArgs = 1;
       break; // v1: one (variadic) positional joined with spaces
     }
 
     const flags: IntentBodyEntry[] = [];
     for (const f of cmd.Flags || []) {
-      const key = intentPointerKey(f.Bind?.Pointer || "");
+      const path = intentPointerPath(f.Bind?.Pointer || "");
+      const key = path[0] || "";
       if (!key || !f.Name) continue;
       const declaredFlagName = sanitizeFlagNameWithReserved(f.Name);
+      const presetParent = presetObj[key];
+      const presetCovered =
+        path.length > 1
+          ? typeof presetParent === "object" &&
+            presetParent !== null &&
+            intentHasOwn(presetParent, path[1])
+          : intentHasOwn(presetObj, key);
 
       flags.push({
         Key: key,
+        Path: path,
         Name: declaredFlagName,
         Shorthand: f.Shorthand || "",
         Summary: intentFlagHelp(f),
         Type: f.Type || "string",
         Required: Boolean(f.Required),
-        PresetCovered: dispatch ? false : key in presetObj,
+        PresetCovered: dispatch ? false : presetCovered,
         DefaultValue: f.Default,
         HasDefault: f.Default !== undefined && f.Default !== null,
         Suggestions: (f.Enum || []).map((v: any) => `${v}`),
@@ -1040,56 +1090,7 @@ function collectIntentManifest(): IntentManifestCtx {
           } to the generated poll request`,
         );
       }
-      const pollFlag = sanitizeFlagNameWithReserved(target.Field.Name);
-      const pollParams = [
-        ...(pollFound.op.Request.Params?.PathParams || []).map((p: any) => ({
-          in: "path",
-          field: p.Field,
-        })),
-        ...(pollFound.op.Request.Params?.QueryParams || []).map((p: any) => ({
-          in: "query",
-          field: p.Field,
-        })),
-        ...(pollFound.op.Request.Params?.HeaderParams || []).map((p: any) => ({
-          in: "header",
-          field: p.Field,
-        })),
-      ];
-      const pinnedFlags: string[] = [];
-      for (const param of cmd.Async.ResolvedParams || []) {
-        const match = pollParams.find(
-          (p) =>
-            p.in === param.In &&
-            (p.field?.OriginalName || p.field?.Name) === param.Name,
-        );
-        if (!match) {
-          throw new Error(
-            `x-speakeasy-cli-commands: command "${path.join(
-              " ",
-            )}" cannot map async.params ${param.In} parameter ${
-              param.Name
-            } to the generated poll request`,
-          );
-        }
-        if (match.field.Const) continue;
-        const flag = sanitizeFlagNameWithReserved(match.field.Name);
-        if (
-          typeof param.Value === "boolean" ||
-          typeof param.Value === "number"
-        ) {
-          pinnedFlags.push(`--${flag}=${param.Value}`);
-          continue;
-        }
-        pinnedFlags.push(
-          `--${flag} ${intentExampleQuoted(String(param.Value))}`,
-        );
-      }
-      const resumePrefix = [
-        sanitizeCliName(),
-        ...getCLICommandPath(pollFound.op),
-        ...pinnedFlags,
-        `--${pollFlag}`,
-      ].join(" ");
+      const resumePrefix = `${sanitizeCliName()} ${path.join(" ")} --resume`;
       asyncParams = (cmd.Async.ResolvedParams || []).map((param: any) => ({
         In: param.In,
         Name: param.Name,
@@ -1219,6 +1220,9 @@ function collectIntentManifest(): IntentManifestCtx {
             "",
           ),
           ForeignSelectors: dispatchRoute.Selectors?.Foreign || [],
+          PresetMergePoints: intentPresetMergePoints(
+            dispatchRoute.PresetMergePoints,
+          ),
         }))
       : [];
     const dispatchKeys: IntentDispatchKey[] = dispatch
@@ -1299,6 +1303,7 @@ function collectIntentManifest(): IntentManifestCtx {
       DiscriminatorAliasesJSON: (selectors?.DiscriminatorAliases || []).map(
         (v: any) => JSON.stringify(v),
       ),
+      PresetMergePoints: intentPresetMergePoints(route?.PresetMergePoints),
       EscapeCommand: escapeCommand,
       HasPresetMerge:
         !dispatch &&
@@ -1331,6 +1336,8 @@ function collectIntentManifest(): IntentManifestCtx {
       AsyncMissingHandleTestJSON: asyncMissingHandleTestJSON,
       AsyncFailureHint: cmd.Hints?.CLI_ASYNC_FAILED?.[0] || "",
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
+      StreamMetadataPointer: cmd.Output?.Stream?.Metadata?.Pointer || "",
+      StreamMetadataLabel: cmd.Output?.Stream?.Metadata?.Label || "",
       StreamToggle:
         !dispatch && intentStreamKind(found.op).kind
           ? intentDefaultOnStreamToggle(flags, presetJSON)
@@ -1562,6 +1569,8 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
   return {
     OperationID: declared.OperationID,
     StreamSelect: declared.Output?.Stream?.Pointer || "",
+    StreamMetadataPointer: declared.Output?.Stream?.Metadata?.Pointer || "",
+    StreamMetadataLabel: declared.Output?.Stream?.Metadata?.Label || "",
     Flags: flags,
     BodyFlags: bodyFlags,
     CanonicalBodyFlag: bodyFlags[bodyFlags.length - 1] || "",
@@ -1835,6 +1844,43 @@ function templateAsyncTestArgs(): string {
   return parts.map((part) => goStringLiteral(part)).join(", ");
 }
 registerTemplateFunc("templateAsyncTestArgs", templateAsyncTestArgs);
+
+function templateAsyncTestPathArgs(): string {
+  const cmd = getAsyncTestCommand();
+  if (!cmd) return "";
+  return [...cmd.ParentPath, firstUseWord(cmd.Use)]
+    .map((p) => goStringLiteral(p))
+    .join(", ");
+}
+registerTemplateFunc("templateAsyncTestPathArgs", templateAsyncTestPathArgs);
+function templateIntentPathArgs(cmd: IntentCmdCtx): string {
+  return [...cmd.ParentPath, firstUseWord(cmd.Use)]
+    .map((p) => goStringLiteral(p))
+    .join(", ");
+}
+registerTemplateFunc("templateIntentPathArgs", templateIntentPathArgs);
+function templateAsyncPollTestArgs(): string {
+  const cmd = getAsyncTestCommand();
+  return cmd?.PollOp
+    ? getCLICommandPath(cmd.PollOp)
+        .map((p) => goStringLiteral(p))
+        .join(", ")
+    : "";
+}
+registerTemplateFunc("templateAsyncPollTestArgs", templateAsyncPollTestArgs);
+function templateReviewAsyncPollTestEnabled(): boolean {
+  const cmd = getAsyncTestCommand();
+  return (
+    (context.Global.AST as any).OpenAPIDocument?.Info?.Title === "SDK Review" &&
+    cmd?.PollOp?.OriginalID === "getAsset" &&
+    cmd.AsyncParameterName === "id" &&
+    getStreamingFieldName(cmd.PollOp) === "AssetStatusStream"
+  );
+}
+registerTemplateFunc(
+  "templateReviewAsyncPollTestEnabled",
+  templateReviewAsyncPollTestEnabled,
+);
 
 function templateIntentAsyncTestArgs(cmd: IntentCmdCtx | null): string {
   if (!cmd) return "";
