@@ -65,9 +65,9 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 					args = append(args, mode.args...)
 					require.NoError(t, cli.ExecuteRoot(context.Background(), root, args), h.GetStderr())
 					switch mode.name {
-					case "default", "configured pretty", "agent":
+					case "default", "configured pretty", "configured json", "agent":
 						assert.Equal(t, "Hello\n", h.GetStdout())
-					case "json", "configured json", "jq":
+					case "json", "jq":
 						assertMetadataJSONEvents(t, h.GetStdout(),
 							`{"data":{"resource_id":"first"}}`,
 							`{"data":{"content":"Hello"}}`,

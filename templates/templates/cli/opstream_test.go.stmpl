@@ -346,28 +346,21 @@ func TestOperationStream_PersistedOutputFormat(t *testing.T) {
 	chunks := []string{"persisted ", "default"}
 	srv := newOperationStreamServer(t, chunks, nil)
 	body := {{templateOperationStreamBodyJSON}}
+	for _, format := range []string{"pretty", "json", "yaml", "table", "toon"} {
+		t.Run(format, func(t *testing.T) {
+			configYAML := "output_format: " + format + "\n"
+			var out bytes.Buffer
+			stderr, err := runOperationStreamWithConfig(t, &out, srv.URL, body, configYAML)
+			require.NoError(t, err, "stderr: %s", stderr)
+			assert.Equal(t, strings.Join(chunks, "")+"\n", out.String(), "a persisted default keeps the stream projection")
 
-	var out bytes.Buffer
-	stderr, err := runOperationStreamWithConfig(t, &out, srv.URL, body, "output_format: pretty\n")
-	require.NoError(t, err, "stderr: %s", stderr)
-	assert.Equal(t, strings.Join(chunks, "")+"\n", out.String(), "a persisted pretty default keeps the stream projection")
-
-	out.Reset()
-	stderr, err = runOperationStreamWithConfig(t, &out, srv.URL, body, "output_format: pretty\n", "--jq", ".complete")
-	require.NoError(t, err, "stderr: %s", stderr)
-	assert.Equal(t, false, srv.lastBody(t)[{{templateOperationStreamToggleKey}}], "a persisted pretty default keeps --jq on the complete response")
-	assert.Equal(t, "true\n", out.String())
-
-	out.Reset()
-	stderr, err = runOperationStreamWithConfig(t, &out, srv.URL, body, "output_format: json\n")
-	require.NoError(t, err, "stderr: %s", stderr)
-	assert.Equal(t, len(chunks), strings.Count(out.String(), "\n"), "a persisted machine format keeps one frame per event: %s", out.String())
-	assert.NotEqual(t, strings.Join(chunks, "")+"\n", out.String())
-
-	out.Reset()
-	stderr, err = runOperationStreamWithConfig(t, &out, srv.URL, body, "output_format: json\n", "--jq", ".complete")
-	require.NoError(t, err, "stderr: %s", stderr)
-	assert.Equal(t, true, srv.lastBody(t)[{{templateOperationStreamToggleKey}}], "a persisted machine format keeps the streamed events under --jq")
+			out.Reset()
+			stderr, err = runOperationStreamWithConfig(t, &out, srv.URL, body, configYAML, "--jq", ".complete")
+			require.NoError(t, err, "stderr: %s", stderr)
+			assert.Equal(t, false, srv.lastBody(t)[{{templateOperationStreamToggleKey}}], "a persisted default keeps --jq on the complete response")
+			assert.Equal(t, "true\n", out.String())
+		})
+	}
 }
 
 func TestOperationStream_BodyFalseFallsBackToNormalJSONResult(t *testing.T) {

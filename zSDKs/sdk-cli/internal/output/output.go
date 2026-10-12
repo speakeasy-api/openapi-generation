@@ -117,8 +117,8 @@ func resolveOutputFormat(cmd *cobra.Command) string {
 	return flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), IsAgentMode())
 }
 
-// A config file value is a saved default, so a persisted "pretty" behaves like
-// no setting at all; the flag and env var always count as explicit.
+// A config file value is a saved default, not a per-invocation choice, so it
+// never counts as explicit even though resolveOutputFormat still honours it.
 func outputFormatExplicit(cmd *cobra.Command) bool {
 	if preparsedRendering.outputFormat != "" {
 		return true
@@ -126,11 +126,7 @@ func outputFormatExplicit(cmd *cobra.Command) bool {
 	if flagutil.FlagChanged(cmd, "output-format") {
 		return true
 	}
-	if config.GetEnvValue("output-format") != "" {
-		return true
-	}
-	configured := config.GetConfigValue("output-format")
-	return configured != "" && configured != "pretty"
+	return config.GetEnvValue("output-format") != ""
 }
 
 func JQSelectsCompleteResponse(cmd *cobra.Command, streamFlag string) bool {
