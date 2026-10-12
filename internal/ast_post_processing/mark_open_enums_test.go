@@ -90,6 +90,32 @@ func TestMarkOpenEnumsKeepsSingleValueDiscriminatorTagClosedWithFix(t *testing.T
 	assert.True(t, language.Enum.Open, "unrelated single-value enum opens")
 }
 
+func TestMarkOpenEnumsKeepsNestedUnionDiscriminatorTagsClosedWithFix(t *testing.T) {
+	audioTag := responseEnum("AudioMediaType", "media")
+	videoTag := responseEnum("VideoMediaType", "media")
+	audioMember := enumTaggedMember("AudioMedia", "type", audioTag)
+	videoMember := enumTaggedMember("VideoMedia", "type", videoTag)
+	mediaUnion := &ast.TypeDef{
+		Name:            "Media",
+		Type:            ast.DataTypeUnion,
+		AssociatedTypes: ast.TypeDefs{audioMember, videoMember},
+	}
+	contentUnion := &ast.TypeDef{
+		Name:           "Content",
+		Type:           ast.DataTypeUnion,
+		UsedInResponse: true,
+		Discriminator: &ast.Discriminator{
+			TypePropertyName: "type",
+			Mapping:          ast.DiscriminatorMappings{{Name: "media", Type: mediaUnion}},
+		},
+	}
+
+	runMarkOpenEnums(true, contentUnion, mediaUnion, audioMember, videoMember, audioTag, videoTag)
+
+	assert.False(t, audioTag.Enum.Open)
+	assert.False(t, videoTag.Enum.Open)
+}
+
 func TestMarkOpenEnumsMatchesDiscriminatorTagByOriginalName(t *testing.T) {
 	tag := responseEnum("KindTag", "widget")
 	member := &ast.TypeDef{

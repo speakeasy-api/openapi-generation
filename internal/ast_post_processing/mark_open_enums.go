@@ -78,16 +78,35 @@ func collectDiscriminatorTagEnums(types []*ast.TypeDef) map[*ast.TypeDef]bool {
 				continue
 			}
 
-			field := findDiscriminatorField(mapping.Type, typeDef.Discriminator.TypePropertyName)
-			if field == nil || field.Type == nil || field.Type.Type != ast.DataTypeEnum {
-				continue
-			}
-
-			tagEnums[field.Type] = true
+			collectDiscriminatorTagEnumsFromType(
+				mapping.Type,
+				typeDef.Discriminator.TypePropertyName,
+				tagEnums,
+				map[*ast.TypeDef]bool{},
+			)
 		}
 	}
 
 	return tagEnums
+}
+
+func collectDiscriminatorTagEnumsFromType(member *ast.TypeDef, propertyName string, tagEnums, visited map[*ast.TypeDef]bool) {
+	if member == nil || visited[member] {
+		return
+	}
+	visited[member] = true
+
+	field := findDiscriminatorField(member, propertyName)
+	if field != nil && field.Type != nil && field.Type.Type == ast.DataTypeEnum {
+		tagEnums[field.Type] = true
+	}
+
+	if member.Type != ast.DataTypeUnion {
+		return
+	}
+	for _, associatedType := range member.AssociatedTypes {
+		collectDiscriminatorTagEnumsFromType(associatedType, propertyName, tagEnums, visited)
+	}
 }
 
 func findDiscriminatorField(member *ast.TypeDef, propertyName string) *ast.FieldDef {
