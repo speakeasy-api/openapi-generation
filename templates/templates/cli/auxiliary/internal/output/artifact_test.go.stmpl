@@ -1,0 +1,68 @@
+{{- if hasCliArtifacts}}
+package output
+
+import (
+	"encoding/json"
+	"testing"
+)
+
+func artifactTestConfig(kind string) *artifactConfig {
+	pointer := []artifactSegment{
+		{Field: "steps"},
+		{Wild: true},
+		{Field: "content"},
+		{Wild: true},
+	}
+	return &artifactConfig{
+		Pointer:   pointer,
+		Kind:      kind,
+		TypeField: "type",
+		DataField: "data",
+	}
+}
+
+func parseArtifactResponse(t *testing.T, raw string) interface{} {
+	t.Helper()
+	var parsed interface{}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	return parsed
+}
+
+func TestFindArtifactItemReturnsLastMatchingBlock(t *testing.T) {
+	parsed := parseArtifactResponse(t, `{"steps":[
+		{"type":"model_output","content":[{"type":"text","text":"draft"},{"type":"image","data":"Zmlyc3Q="}]},
+		{"type":"model_output","content":[{"type":"image","data":"bGFzdA=="},{"type":"text","text":"done"}]}]}`)
+
+	item := findArtifactItem(parsed, artifactTestConfig("image"))
+	if item == nil {
+		t.Fatal("expected an image block")
+	}
+	if got := item["data"]; got != "bGFzdA==" {
+		t.Fatalf("data = %v, want the last image block", got)
+	}
+}
+
+func TestFindArtifactItemSkipsOtherKindsAfterTheMatch(t *testing.T) {
+	parsed := parseArtifactResponse(t, `{"steps":[
+		{"type":"model_output","content":[{"type":"audio","data":"YXVkaW8="}]},
+		{"type":"model_output","content":[{"type":"text","text":"caption"}]}]}`)
+
+	item := findArtifactItem(parsed, artifactTestConfig("audio"))
+	if item == nil {
+		t.Fatal("expected an audio block")
+	}
+	if got := item["data"]; got != "YXVkaW8=" {
+		t.Fatalf("data = %v, want the audio block", got)
+	}
+}
+
+func TestFindArtifactItemReturnsNilWithoutMatch(t *testing.T) {
+	parsed := parseArtifactResponse(t, `{"steps":[{"type":"model_output","content":[{"type":"text","text":"only text"}]}]}`)
+
+	if item := findArtifactItem(parsed, artifactTestConfig("video")); item != nil {
+		t.Fatalf("expected no video block, got %v", item)
+	}
+}
+{{- end}}

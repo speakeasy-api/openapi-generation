@@ -2066,14 +2066,33 @@ function artifactTestMockJSON(
         [mimeField]: mime,
       };
   }
+  // "multiple" places an intermediate block of the same kind before the
+  // terminal in the innermost [*], so the runtime's choice between them is
+  // observable.
+  const leading =
+    variant === "multiple"
+      ? {
+          [typeField]: kind,
+          [dataField]: "aW50ZXJtZWRpYXRl",
+          [mimeField]: mime,
+        }
+      : undefined;
   // "empty" and "notready" start the fold with no terminal: the innermost
   // [*] becomes an empty array and every outer segment wraps normally.
   let node: any =
     variant === "empty" || variant === "notready" ? undefined : terminal;
   const segments = [...(spec.pointer || [])].reverse();
+  let innermostWild = true;
   for (const seg of segments) {
     if (seg.wild) {
-      node = node === undefined ? [] : [node];
+      if (node === undefined) {
+        node = [];
+      } else if (innermostWild && leading !== undefined) {
+        node = [leading, node];
+      } else {
+        node = [node];
+      }
+      innermostWild = false;
     } else {
       node = node === undefined ? {} : { [seg.field]: node };
     }

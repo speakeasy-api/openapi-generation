@@ -1,0 +1,10 @@
+id: 1791809449-b3f55917
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: write the last matching artifact block instead of the first
+author: AshGodfrey
+date: "2026-10-12"
