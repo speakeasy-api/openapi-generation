@@ -71,9 +71,8 @@ func TestFindArtifactItemSkipsNonObjectCandidates(t *testing.T) {
 	}
 }
 
-// Selection is by kind alone. A trailing block of the kind that carries a URI
-// instead of inline data is still the selected block (the caller turns it
-// into the URI error), so an earlier inline block is never silently preferred.
+// Selection is by kind, not payload: a trailing URI-only block wins over an
+// earlier inline one.
 func TestFindArtifactItemSelectsTrailingURIBlockOverEarlierInline(t *testing.T) {
 	parsed := parseArtifactResponse(t, `{"steps":[
 		{"type":"model_output","content":[{"type":"image","data":"aW5saW5l"}]},

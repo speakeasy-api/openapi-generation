@@ -81,12 +81,9 @@ func TestArtifact_DefaultPathPrintsAbsolutePathOnly(t *testing.T) {
 	assert.NoError(t, err, "first artifact must survive a second run")
 }
 
-{{- /* Only a pointer with a [*] can yield more than one candidate block;
-without one the "multiple" stub has nothing to choose between, so the test
-is not generated rather than passing vacuously. */}}
+{{- /* Without a [*] the pointer has one candidate and nothing to choose. */}}
 {{- if templateArtifactTestPointerHasWild}}
-// A response carrying two blocks of the declared kind, an intermediate one
-// before the final one, must yield the final block's bytes.
+// Two blocks of the declared kind: the final one must be written.
 func TestArtifact_WritesLastMatchingBlock(t *testing.T) {
 	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "multiple" templateArtifactTestMime}}`)
 	dir := t.TempDir()

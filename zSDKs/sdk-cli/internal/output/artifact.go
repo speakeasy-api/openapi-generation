@@ -223,11 +223,9 @@ func artifactCandidates(node interface{}, segs []artifactSegment) []interface{} 
 	return artifactCandidates(child, segs[1:])
 }
 
-// findArtifactItem returns the last content block of the configured kind in
-// document order, so a response that carries intermediate artifacts before
-// the final one yields the final artifact. Selection is by kind alone: the
-// caller reports a trailing URI-only or data-less block as an error rather
-// than falling back to an earlier block with inline content.
+// findArtifactItem returns the last block of the configured kind in document
+// order. Selection is by kind, not payload: a trailing URI-only or data-less
+// block is returned, and the caller reports it, rather than an earlier block.
 func findArtifactItem(parsed interface{}, cfg *artifactConfig) map[string]interface{} {
 	candidates := artifactCandidates(parsed, cfg.Pointer)
 	for i := len(candidates) - 1; i >= 0; i-- {

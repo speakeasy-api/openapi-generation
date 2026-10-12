@@ -2023,9 +2023,8 @@ registerTemplateFunc(
 // Builds a mock response JSON matching the artifact command's content pointer
 // by folding the pointer segments outside-in around a terminal content item.
 // variant: "inline" (base64 data), "uri" (URI-only delivery), "empty" (no
-// content items), "notready" (no content items and a non-terminal status),
-// "wrongkind" (a text block only), "multiple" (an intermediate block of the
-// declared kind before the inline terminal).
+// content items), "notready" (empty with a non-terminal status), "wrongkind"
+// (a text block only), "multiple" (an intermediate block before the terminal).
 function templateArtifactTestMockJSON(variant: string, mime: string): string {
   const cmd = getArtifactTestCommand();
   if (!cmd) return "{}";
@@ -2036,9 +2035,8 @@ registerTemplateFunc(
   templateArtifactTestMockJSON,
 );
 
-// Whether the artifact test command's content pointer contains a [*]: only
-// then can a response carry more than one candidate block, which the
-// "multiple" variant and the last-match runtime test rely on.
+// Whether the artifact test command's pointer contains a [*]; only then can
+// a response carry more than one candidate block.
 function templateArtifactTestPointerHasWild(): boolean {
   const cmd = getArtifactTestCommand();
   if (!cmd) return false;
@@ -2082,13 +2080,9 @@ function artifactTestMockJSON(
         [mimeField]: mime,
       };
   }
-  // "multiple" places an intermediate block of the same kind before the
-  // terminal in the innermost [*], so the runtime's choice between them is
-  // observable. The intermediate block is wrapped in the same field segments
-  // that follow the innermost [*] as the terminal, so both are candidates of
-  // the pointer walk. A pointer without [*] has a single candidate and the
-  // variant degenerates to "inline" (templateArtifactTestPointerHasWild
-  // gates the generated test).
+  // "multiple" puts an intermediate block before the terminal in the
+  // innermost [*], wrapped in the same trailing field segments so both are
+  // candidates. Without a [*] it degenerates to "inline".
   let leading: any =
     variant === "multiple"
       ? {
@@ -2102,8 +2096,7 @@ function artifactTestMockJSON(
   let node: any =
     variant === "empty" || variant === "notready" ? undefined : terminal;
   const segments = [...(spec.pointer || [])].reverse();
-  // Folding outward, beforeFirstWild is true until the innermost [*] has
-  // been applied; field segments seen before it also wrap the leading block.
+  // Field segments folded before the innermost [*] also wrap the leading block.
   let beforeFirstWild = true;
   for (const seg of segments) {
     if (seg.wild) {
