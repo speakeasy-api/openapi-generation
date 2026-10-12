@@ -7,7 +7,9 @@ import (
 )
 
 // MarkOpenEnums marks enums as open (tolerating unknown values) based on configuration and usage.
-func MarkOpenEnums(types []*ast.TypeDef, cfg map[string]any) {
+// openSingleValue extends the pass to single-value enums (fixes.openSingleValueEnumsOct2026);
+// enums that act as union discriminator tags stay closed either way.
+func MarkOpenEnums(types []*ast.TypeDef, cfg map[string]any, openSingleValue bool) {
 	forwardCompatibleEnumsByDefault := false
 	if forwardCompatibleEnumsByDefaultConfig, ok := cfg["forwardCompatibleEnumsByDefault"].(bool); ok {
 		forwardCompatibleEnumsByDefault = forwardCompatibleEnumsByDefaultConfig
@@ -17,12 +19,17 @@ func MarkOpenEnums(types []*ast.TypeDef, cfg map[string]any) {
 		return
 	}
 
+	var tagEnums map[*ast.TypeDef]bool
+	if openSingleValue {
+		tagEnums = collectDiscriminatorTagEnums(types)
+	}
+
 	for _, typeDef := range types {
-		markEnumAsOpenIfNeeded(typeDef)
+		markEnumAsOpenIfNeeded(typeDef, openSingleValue, tagEnums)
 	}
 }
 
-func markEnumAsOpenIfNeeded(typeDef *ast.TypeDef) {
+func markEnumAsOpenIfNeeded(typeDef *ast.TypeDef, openSingleValue bool, tagEnums map[*ast.TypeDef]bool) {
 	if typeDef.Type != ast.DataTypeEnum || typeDef.Enum == nil {
 		return
 	}
@@ -31,9 +38,14 @@ func markEnumAsOpenIfNeeded(typeDef *ast.TypeDef) {
 		return
 	}
 
-	if len(typeDef.Enum.Values) <= 1 {
-		// If there is only one value, it is almost always intended as a "const" rather than an enum
+	if len(typeDef.Enum.Values) == 0 {
 		return
+	}
+
+	if len(typeDef.Enum.Values) == 1 {
+		if !openSingleValue || tagEnums[typeDef] {
+			return
+		}
 	}
 
 	if typeDef.Extensions != nil && typeDef.Extensions.All != nil {
@@ -48,6 +60,44 @@ func markEnumAsOpenIfNeeded(typeDef *ast.TypeDef) {
 	}
 
 	typeDef.Enum.Open = true
+}
+
+// collectDiscriminatorTagEnums returns the enum types that identify a union
+// member through the union's discriminator property. Those stay closed: the
+// union is dispatched on their value and open unions cover unknown tags.
+func collectDiscriminatorTagEnums(types []*ast.TypeDef) map[*ast.TypeDef]bool {
+	tagEnums := map[*ast.TypeDef]bool{}
+
+	for _, typeDef := range types {
+		if typeDef == nil || typeDef.Discriminator == nil {
+			continue
+		}
+
+		for _, mapping := range typeDef.Discriminator.Mapping {
+			if mapping == nil || mapping.Type == nil {
+				continue
+			}
+
+			field := findDiscriminatorField(mapping.Type, typeDef.Discriminator.TypePropertyName)
+			if field == nil || field.Type == nil || field.Type.Type != ast.DataTypeEnum {
+				continue
+			}
+
+			tagEnums[field.Type] = true
+		}
+	}
+
+	return tagEnums
+}
+
+func findDiscriminatorField(member *ast.TypeDef, propertyName string) *ast.FieldDef {
+	for _, field := range member.Fields {
+		if field.OriginalName == propertyName {
+			return field
+		}
+	}
+
+	return member.Fields.GetField(propertyName)
 }
 
 // Special case patterns that should automatically be marked as closed

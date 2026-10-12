@@ -462,7 +462,8 @@ func (g *Generator) GenerateAST(ctx context.Context, docInfo *document.DocumentI
 	ast_post_processing.PreApplyUnionDiscriminators(ctx, a, mergedLangCfg)
 	ast_post_processing.MarkUnionsOpen(ctx, slices.Collect(g.subsystem.Register.Types.Values()), mergedLangCfg)
 	ast_post_processing.PropagateIncludeExtension(g.subsystem.Register.AllTypes())
-	ast_post_processing.MarkOpenEnums(g.subsystem.Register.AllTypes(), mergedLangCfg)
+	fixes := g.subsystem.Config.Generation.Fixes
+	ast_post_processing.MarkOpenEnums(g.subsystem.Register.AllTypes(), mergedLangCfg, fixes != nil && fixes.OpenSingleValueEnumsOct2026)
 	g.log.Debug(fmt.Sprintf("ast_post_processing completed in '%s'", time.Since(startPostProcessing)))
 
 	elapsed := time.Since(start)

@@ -1,0 +1,19 @@
+id: 1791821362-80111bf7
+features:
+    - openEnums
+targets:
+    - go
+    - cli
+    - typescriptv2
+    - pythonv2
+    - javav2
+    - csharp
+    - ruby
+    - php
+    - terraform
+    - mcp-typescript
+type: fix
+bump: patch
+description: open single-value response enums under forwardCompatibleEnumsByDefault when fixes.openSingleValueEnumsOct2026 is set, keeping union discriminator tags closed
+author: AshGodfrey
+date: "2026-10-12"
