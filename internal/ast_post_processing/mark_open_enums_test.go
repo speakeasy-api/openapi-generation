@@ -19,14 +19,14 @@ func responseEnum(name string, values ...string) *ast.TypeDef {
 	}
 }
 
-func enumTaggedMember(name, tagProp string, tagEnum *ast.TypeDef) *ast.TypeDef {
+func enumTaggedMember(name string, tagEnum *ast.TypeDef) *ast.TypeDef {
 	return &ast.TypeDef{
 		Name: name,
 		Type: ast.DataTypeClass,
 		Fields: ast.Fields{
 			{
-				Name:         tagProp,
-				OriginalName: tagProp,
+				Name:         "type",
+				OriginalName: "type",
 				Type:         tagEnum,
 			},
 		},
@@ -66,8 +66,8 @@ func TestMarkOpenEnumsOpensSingleValueResponseEnumWithFix(t *testing.T) {
 func TestMarkOpenEnumsKeepsSingleValueDiscriminatorTagClosedWithFix(t *testing.T) {
 	textTag := responseEnum("TextContentType", "text")
 	imageTag := responseEnum("ImageContentType", "image")
-	textMember := enumTaggedMember("TextContent", "type", textTag)
-	imageMember := enumTaggedMember("ImageContent", "type", imageTag)
+	textMember := enumTaggedMember("TextContent", textTag)
+	imageMember := enumTaggedMember("ImageContent", imageTag)
 	union := &ast.TypeDef{
 		Name:            "Content",
 		Type:            ast.DataTypeUnion,
@@ -93,8 +93,8 @@ func TestMarkOpenEnumsKeepsSingleValueDiscriminatorTagClosedWithFix(t *testing.T
 func TestMarkOpenEnumsKeepsNestedUnionDiscriminatorTagsClosedWithFix(t *testing.T) {
 	audioTag := responseEnum("AudioMediaType", "media")
 	videoTag := responseEnum("VideoMediaType", "media")
-	audioMember := enumTaggedMember("AudioMedia", "type", audioTag)
-	videoMember := enumTaggedMember("VideoMedia", "type", videoTag)
+	audioMember := enumTaggedMember("AudioMedia", audioTag)
+	videoMember := enumTaggedMember("VideoMedia", videoTag)
 	mediaUnion := &ast.TypeDef{
 		Name:            "Media",
 		Type:            ast.DataTypeUnion,
