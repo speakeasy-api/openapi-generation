@@ -81,6 +81,10 @@ func TestArtifact_DefaultPathPrintsAbsolutePathOnly(t *testing.T) {
 	assert.NoError(t, err, "first artifact must survive a second run")
 }
 
+{{- if templateArtifactTestPointerHasWild}}
+// Only a pointer with a [*] can yield more than one candidate block; without
+// one the "multiple" stub has nothing to choose between and the test is
+// omitted rather than passing vacuously.
 func TestArtifact_WritesLastMatchingBlock(t *testing.T) {
 	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "multiple" templateArtifactTestMime}}`)
 	dir := t.TempDir()
@@ -93,6 +97,7 @@ func TestArtifact_WritesLastMatchingBlock(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, artifactTestBytes, string(written), "the last block of the declared kind must be written, not an earlier one")
 }
+{{- end}}
 
 func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	server := artifactTestServer(t, `{{templateArtifactTestMockJSON "inline" templateArtifactTestMime}}`)

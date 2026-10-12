@@ -2023,7 +2023,9 @@ registerTemplateFunc(
 // Builds a mock response JSON matching the artifact command's content pointer
 // by folding the pointer segments outside-in around a terminal content item.
 // variant: "inline" (base64 data), "uri" (URI-only delivery), "empty" (no
-// content items), "wrongkind" (a text block only).
+// content items), "notready" (no content items and a non-terminal status),
+// "wrongkind" (a text block only), "multiple" (an intermediate block of the
+// declared kind before the inline terminal).
 function templateArtifactTestMockJSON(variant: string, mime: string): string {
   const cmd = getArtifactTestCommand();
   if (!cmd) return "{}";
@@ -2032,6 +2034,20 @@ function templateArtifactTestMockJSON(variant: string, mime: string): string {
 registerTemplateFunc(
   "templateArtifactTestMockJSON",
   templateArtifactTestMockJSON,
+);
+
+// Whether the artifact test command's content pointer contains a [*]: only
+// then can a response carry more than one candidate block, which the
+// "multiple" variant and the last-match runtime test rely on.
+function templateArtifactTestPointerHasWild(): boolean {
+  const cmd = getArtifactTestCommand();
+  if (!cmd) return false;
+  const spec = JSON.parse(cmd.ArtifactJSON);
+  return (spec.pointer || []).some((seg: any) => Boolean(seg.wild));
+}
+registerTemplateFunc(
+  "templateArtifactTestPointerHasWild",
+  templateArtifactTestPointerHasWild,
 );
 
 // artifactTestMockJSON builds the mock body from whatever field bindings the
@@ -2068,8 +2084,12 @@ function artifactTestMockJSON(
   }
   // "multiple" places an intermediate block of the same kind before the
   // terminal in the innermost [*], so the runtime's choice between them is
-  // observable.
-  const leading =
+  // observable. The intermediate block is wrapped in the same field segments
+  // that follow the innermost [*] as the terminal, so both are candidates of
+  // the pointer walk. A pointer without [*] has a single candidate and the
+  // variant degenerates to "inline" (templateArtifactTestPointerHasWild
+  // gates the generated test).
+  let leading: any =
     variant === "multiple"
       ? {
           [typeField]: kind,
@@ -2095,6 +2115,9 @@ function artifactTestMockJSON(
       innermostWild = false;
     } else {
       node = node === undefined ? {} : { [seg.field]: node };
+      if (innermostWild && leading !== undefined) {
+        leading = { [seg.field]: leading };
+      }
     }
   }
   // Object roots gain response identity fields ("notready" carries a

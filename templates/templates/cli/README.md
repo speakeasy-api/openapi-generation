@@ -1092,6 +1092,8 @@ output:
       terminalStatus: done
 ```
 
+When the content pointer yields more than one block of the declared kind (for example an intermediate image before the final one across `$.steps[*].content[*]`), the runtime writes the **last** such block in document order; a response with a single matching block is unaffected. The rule selects by kind alone, not by payload: if the last matching block is URI-only or carries no data, the command fails with the URI or missing-content error even when an earlier block held inline content.
+
 Artifact intents register `--out` and `--raw-response`. When a missing required input triggers the interactive form, an unresolved `--out` is offered directly after required inputs and optional positionals as `Output file`, before the ordinary optional-fields confirmation. An argv-complete invocation does not open a form just for `--out`. Empty input uses the declared `defaultPath`; an existing directory or a path ending in a separator places that generated default name inside the directory. `--out` supplied on argv, `--no-interactive`, and agent mode do not prompt.
 
 The returned MIME type controls a file destination's extension. A matching extension stays unchanged; a missing extension is appended silently; a conflicting extension is rewritten and stderr receives one line such as `Note: wrote image/png as photo.png (requested photo.jpg)`. Like the human-only `Wrote image to ...` status, the note is suppressed in machine modes (agent mode, `--jq`, non-pretty/table formats): the envelope already carries the final path and success keeps stderr silent there. `--out` is output routing only and never participates in request-body source/merge rules.

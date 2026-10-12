@@ -59,6 +59,19 @@ func TestFindArtifactItemSkipsOtherKindsAfterTheMatch(t *testing.T) {
 	}
 }
 
+func TestFindArtifactItemSkipsNonObjectCandidates(t *testing.T) {
+	parsed := parseArtifactResponse(t, `{"steps":[
+		{"type":"model_output","content":[{"type":"image","data":"Zmlyc3Q="},"trailing text",42,null]}]}`)
+
+	item := findArtifactItem(parsed, artifactTestConfig("image"))
+	if item == nil {
+		t.Fatal("expected the image block before the non-object candidates")
+	}
+	if got := item["data"]; got != "Zmlyc3Q=" {
+		t.Fatalf("data = %v, want the image block", got)
+	}
+}
+
 func TestFindArtifactItemReturnsNilWithoutMatch(t *testing.T) {
 	parsed := parseArtifactResponse(t, `{"steps":[{"type":"model_output","content":[{"type":"text","text":"only text"}]}]}`)
 
