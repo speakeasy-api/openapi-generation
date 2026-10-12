@@ -9,7 +9,6 @@ targets:
     - javav2
     - csharp
     - ruby
-    - php
     - terraform
     - mcp-typescript
 type: fix
