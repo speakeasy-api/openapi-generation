@@ -180,9 +180,10 @@ type CLICommandArtifactSegment struct {
 // disk, and reports the path. When the pointer yields several blocks of the
 // declared kind, the last one in document order wins, so intermediate
 // artifacts that precede the final one are not written. The content-block
-// shape is declaration-driven: block: binds the member names the runtime reads (discriminating kind,
-// base64 payload, MIME type, URI), and identity: binds the response-root
-// members used to enrich the reported envelope and not-ready diagnostics.
+// shape is declaration-driven: block: binds the member names the runtime
+// reads (discriminating kind, base64 payload, MIME type, URI), and identity:
+// binds the response-root members used to enrich the reported envelope and
+// not-ready diagnostics.
 // Both default to the v1 shape ({type, data, mime_type, uri} blocks and
 // {id, status} roots with terminal status "completed") so declarations that
 // spell nothing keep their existing linked shape and runtime behavior.

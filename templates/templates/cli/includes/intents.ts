@@ -2102,20 +2102,22 @@ function artifactTestMockJSON(
   let node: any =
     variant === "empty" || variant === "notready" ? undefined : terminal;
   const segments = [...(spec.pointer || [])].reverse();
-  let innermostWild = true;
+  // Folding outward, beforeFirstWild is true until the innermost [*] has
+  // been applied; field segments seen before it also wrap the leading block.
+  let beforeFirstWild = true;
   for (const seg of segments) {
     if (seg.wild) {
       if (node === undefined) {
         node = [];
-      } else if (innermostWild && leading !== undefined) {
+      } else if (beforeFirstWild && leading !== undefined) {
         node = [leading, node];
       } else {
         node = [node];
       }
-      innermostWild = false;
+      beforeFirstWild = false;
     } else {
       node = node === undefined ? {} : { [seg.field]: node };
-      if (innermostWild && leading !== undefined) {
+      if (beforeFirstWild && leading !== undefined) {
         leading = { [seg.field]: leading };
       }
     }
