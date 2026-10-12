@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 216f33ec8f74a9d30931cf2c96c66ef1
+  configChecksum: 141d8be8c05cdfcbef25d30b67689996
 features:
   go:
     acceptHeaders: 2.81.2

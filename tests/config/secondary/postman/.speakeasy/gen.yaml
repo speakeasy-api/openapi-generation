@@ -7,3 +7,4 @@ generation:
     nameResolutionDec2023: false
     securityFeb2025: true
     nameOverrideFeb2026: false
+    openSingleValueEnumsOct2026: false

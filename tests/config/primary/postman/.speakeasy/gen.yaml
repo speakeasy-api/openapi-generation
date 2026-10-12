@@ -8,3 +8,4 @@ generation:
     requestResponseComponentNamesFeb2024: false
     securityFeb2025: true
     nameOverrideFeb2026: true
+    openSingleValueEnumsOct2026: true

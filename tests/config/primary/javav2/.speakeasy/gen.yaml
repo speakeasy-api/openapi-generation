@@ -11,6 +11,7 @@ generation:
     securityFeb2025: true
     operationScopedParamsNov2025: true
     nameOverrideFeb2026: true
+    openSingleValueEnumsOct2026: true
   auth:
     oAuth2ClientCredentialsEnabled: true
   tests:

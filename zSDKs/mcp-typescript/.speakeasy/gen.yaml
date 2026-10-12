@@ -14,7 +14,7 @@ generation:
     sharedErrorComponentsApr2025: false
     sharedNestedComponentsJan2026: false
     nameOverrideFeb2026: true
-    openSingleValueEnumsOct2026: false
+    openSingleValueEnumsOct2026: true
   auth:
     oAuth2ClientCredentialsEnabled: false
     oAuth2PasswordEnabled: false

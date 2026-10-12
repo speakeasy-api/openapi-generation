@@ -2,6 +2,7 @@ configVersion: 2.0.0
 generation:
   fixes:
     nameOverrideFeb2026: false
+    openSingleValueEnumsOct2026: false
   sdkClassName: SDK
 mcp-typescript:
   inferUnionDiscriminators: true

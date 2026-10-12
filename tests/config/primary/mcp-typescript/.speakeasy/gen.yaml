@@ -2,6 +2,7 @@ configVersion: 2.0.0
 generation:
   fixes:
     nameOverrideFeb2026: true
+    openSingleValueEnumsOct2026: true
   sdkClassName: SDK
   tests:
     generateTests: true
