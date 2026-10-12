@@ -34,7 +34,7 @@ require (
 	github.com/speakeasy-api/jsonpath v0.6.3
 	github.com/speakeasy-api/openapi v1.24.1
 	github.com/speakeasy-api/openapi/openapi/linter/customrules v0.0.0-20260206023826-2483fb8e98b4
-	github.com/speakeasy-api/sdk-gen-config v1.59.1-0.20261012160517-9c750ece80fe
+	github.com/speakeasy-api/sdk-gen-config v1.60.0
 	github.com/speakeasy-api/speakeasy-client-sdk-go/v3 v3.26.7
 	github.com/speakeasy-api/versioning-reports v0.7.0
 	github.com/spewerspew/spew v0.0.0-20230513223542-89b69fbbe2bd
