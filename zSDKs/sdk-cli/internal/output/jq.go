@@ -7,9 +7,29 @@ import (
 	"fmt"
 
 	"github.com/itchyny/gojq"
+	"github.com/spf13/cobra"
 
 	"openapi/internal/flagutil"
 )
+
+// ValidateJqFlag parses an explicitly set --jq expression so a syntax error is
+// reported as a usage error before any request is sent.
+func ValidateJqFlag(cmd *cobra.Command) error {
+	if !flagutil.FlagChanged(cmd, "jq") {
+		return nil
+	}
+	expression, _ := flagutil.GetStringFlag(cmd, "jq")
+	_, err := parseJqExpression(expression)
+	return err
+}
+
+func parseJqExpression(expression string) (*gojq.Query, error) {
+	query, err := gojq.Parse(expression)
+	if err != nil {
+		return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid jq expression %q: %w", expression, err))
+	}
+	return query, nil
+}
 
 // ApplyJqFilter applies a jq expression to the given content and returns the results.
 // The content is first marshaled to JSON and back to ensure a clean interface{} structure,
@@ -28,9 +48,9 @@ func ApplyJqFilter(content interface{}, expression string) ([]interface{}, error
 		return nil, fmt.Errorf("failed to prepare data for jq: %w", err)
 	}
 
-	query, err := gojq.Parse(expression)
+	query, err := parseJqExpression(expression)
 	if err != nil {
-		return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid jq expression %q: %w", expression, err))
+		return nil, err
 	}
 
 	var results []interface{}

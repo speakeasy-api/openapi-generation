@@ -1,0 +1,10 @@
+id: 1791885426-3c79ad3b
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: reject a malformed --jq expression as a usage error before any request is sent
+author: AshGodfrey
+date: "2026-10-13"

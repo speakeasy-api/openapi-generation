@@ -564,6 +564,7 @@ function isTestSkipped(test: string): boolean {
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
     "cli-forbidden-without-credentials",
+    "cli-exit-codes-invalid-jq-before-request",
   ].includes(test);
 }
 

@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
 	"io"
-	"net/http/httptest"
 	"strconv"
 	{{- end}}
 
@@ -194,6 +195,29 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestExitCodeInvalidJqRejectedBeforeRequest(t *testing.T) {
+	recordTest("cli-exit-codes-invalid-jq-before-request")
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status_code": 200, "error": http.StatusText(200)})
+	}))
+	defer s.Close()
+	op := []string{"errors", "status-get-error", "--status-code", "200"}
+
+	h, err := runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", "invalid[[["))
+	require.Error(t, err)
+	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err), h.GetStderr())
+	assert.Contains(t, h.GetStderr(), "invalid jq expression")
+	assert.Equal(t, int32(0), requests.Load(), "a malformed --jq must be rejected before the request is sent")
+
+	h, err = runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", ".status_code"))
+	require.NoError(t, err, h.GetStderr())
+	assert.Equal(t, "200", strings.TrimSpace(h.GetStdout()))
+	assert.Equal(t, int32(1), requests.Load())
 }
 
 {{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}

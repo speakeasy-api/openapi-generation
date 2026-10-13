@@ -126,6 +126,8 @@ func (t Test) String() string {
         return "cli-exit-code-single-envelope"
     case TestCliExitCodeSuccessAndDiscovery:
         return "cli-exit-code-success-and-discovery"
+    case TestCliExitCodesInvalidJqBeforeRequest:
+        return "cli-exit-codes-invalid-jq-before-request"
     case TestCliExitCodesRenderingModes:
         return "cli-exit-codes-rendering-modes"
     case TestCliForbiddenWithoutCredentials:
@@ -1630,6 +1632,8 @@ func TestFromString(s string) Test {
         return TestCliExitCodeSingleEnvelope
     case "cli-exit-code-success-and-discovery":
         return TestCliExitCodeSuccessAndDiscovery
+    case "cli-exit-codes-invalid-jq-before-request":
+        return TestCliExitCodesInvalidJqBeforeRequest
     case "cli-exit-codes-rendering-modes":
         return TestCliExitCodesRenderingModes
     case "cli-forbidden-without-credentials":
@@ -3072,6 +3076,7 @@ var testList = []Test{
     TestCliExitCodeRootUnknownMessage,
     TestCliExitCodeSingleEnvelope,
     TestCliExitCodeSuccessAndDiscovery,
+    TestCliExitCodesInvalidJqBeforeRequest,
     TestCliExitCodesRenderingModes,
     TestCliForbiddenWithoutCredentials,
     TestClientCredentialsDryRunTokenAndApi,

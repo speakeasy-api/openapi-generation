@@ -421,6 +421,7 @@ function isTestSkipped(test: string): boolean {
     "clierrors-unknown-flag-suggestion",
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
+    "cli-exit-codes-invalid-jq-before-request",
   ].includes(test);
 }
 
