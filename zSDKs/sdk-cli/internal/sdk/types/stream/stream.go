@@ -177,8 +177,8 @@ func (es *EventStream[T]) Next() bool {
 
 		if !es.scanner.Scan() {
 			es.err = es.scanner.Err()
-			if es.sentinel != "" && (es.err == nil || errors.Is(es.err, io.ErrUnexpectedEOF)) {
-				es.err = es.truncatedBeforeSentinel()
+			if es.sentinel != "" {
+				es.err = es.endedBeforeSentinel()
 			}
 			es.finished.Store(true)
 			es.release()
@@ -256,7 +256,7 @@ func (es *EventStream[T]) Next() bool {
 		}
 
 		if es.sentinel != "" && es.splitter.unterminated {
-			es.err = es.truncatedBeforeSentinel()
+			es.err = es.endedBeforeSentinel()
 			es.finished.Store(true)
 			es.release()
 			return false
@@ -325,7 +325,13 @@ func (es *EventStream[T]) Next() bool {
 	}
 }
 
-func (es *EventStream[T]) truncatedBeforeSentinel() error {
+func (es *EventStream[T]) endedBeforeSentinel() error {
+	if err := es.scanner.Err(); err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return err
+	}
+	if err := es.ctx.Err(); err != nil {
+		return err
+	}
 	return fmt.Errorf("stream ended before the %q sentinel: %w", es.sentinel, io.ErrUnexpectedEOF)
 }
 

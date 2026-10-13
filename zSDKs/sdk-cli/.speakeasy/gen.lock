@@ -650,7 +650,7 @@ trackedFiles:
   internal/sdk/types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   internal/sdk/types/stream/stream.go:
-    last_write_checksum: sha1:104dccc95168fb6f7eb40968eed8f062703571c3
+    last_write_checksum: sha1:08cba0dd035d9a9e3aca5df6ce9f1617796b4872
   internal/testclient/testclient.go:
     last_write_checksum: sha1:7107e59d336235c44af152c5a61ee3896a7841fa
   internal/usage/bodyschemas.go:
