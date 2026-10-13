@@ -155,12 +155,15 @@ func TestOpenUnionEmbedded(t *testing.T) {
 
 // Bytes that are not JSON at all are a decode error, not an unknown variant:
 // storing them as the raw payload only defers the failure to the next
-// marshal. Valid JSON that is not an object still takes the unknown path.
+// marshal. The method is called directly because encoding/json validates the
+// input before dispatching to it, which is not the case for an SSE frame
+// handed to the union by the stream reader. Valid JSON that is not an object
+// still takes the unknown path.
 func TestOpenUnionInvalidJSONIsAnError(t *testing.T) {
 	recordTest("open-union-invalid-json-is-an-error")
 
 	var v shared.Vehicle
-	err := json.Unmarshal([]byte(`{"vehicleType":"car","wheelsType":"fo`), &v)
+	err := v.UnmarshalJSON([]byte(`{"vehicleType":"car","wheelsType":"fo`))
 	require.Error(t, err)
 	assert.False(t, v.IsUnknown())
 	assert.Nil(t, v.GetUnknownRaw())
