@@ -614,6 +614,12 @@ func TestCLIProjectionLintMatrix(t *testing.T) {
 		{name: "syntax-error", jq: ".items | map(.name", severity: "error", contains: []string{
 			`command "syntax-error": jq projection ".items | map(.name" is not valid jq`,
 		}},
+		{name: "undefined-function", jq: ".items | nosuchfn", severity: "error", contains: []string{
+			`command "undefined-function": jq projection ".items | nosuchfn" is not valid jq: function not defined: nosuchfn/0`,
+		}},
+		{name: "undefined-variable", jq: ".items | $undef", severity: "error", contains: []string{
+			`command "undefined-variable": jq projection ".items | $undef" is not valid jq: variable not defined: $undef`,
+		}},
 	}
 
 	restore := cliCaptureProjectionStdio(t)
@@ -702,15 +708,17 @@ commands:
 }
 
 func TestCLIProjectionLintAnalyzerFailureWarns(t *testing.T) {
-	warnings, err := decodeCLIProjectionTest(t, cliProjectionTestSpec, `version: 1
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	warnings, err := decodeCLIProjectionTestContext(t, ctx, cliProjectionTestSpec, `version: 1
 commands:
   inspect-result:
     op: GetResult
-    jq: projection_function_not_defined
+    jq: .id
 `)
 	require.NoError(t, err)
 	require.Len(t, warnings, 1)
-	assert.Contains(t, warnings[0], `command "inspect-result": jq projection "projection_function_not_defined" cannot be statically verified — could not be analyzed:`)
+	assert.Contains(t, warnings[0], `command "inspect-result": jq projection ".id" cannot be statically verified — could not be analyzed:`)
 	assert.Contains(t, warnings[0], "it will only be checked at runtime")
 }
 
@@ -829,6 +837,11 @@ commands:
 
 func decodeCLIProjectionTest(t *testing.T, spec, manifestYAML string) ([]string, error) {
 	t.Helper()
+	return decodeCLIProjectionTestContext(t, context.Background(), spec, manifestYAML)
+}
+
+func decodeCLIProjectionTestContext(t *testing.T, ctx context.Context, spec, manifestYAML string) ([]string, error) {
+	t.Helper()
 	var indented strings.Builder
 	indented.WriteString("x-speakeasy-cli-commands:\n")
 	for _, line := range strings.Split(strings.TrimRight(manifestYAML, "\n"), "\n") {
@@ -839,8 +852,7 @@ func decodeCLIProjectionTest(t *testing.T, spec, manifestYAML string) ([]string,
 		indented.WriteString("  " + line + "\n")
 	}
 	fullYAML := spec + indented.String()
-	ctx := context.Background()
-	doc, _, err := openapi.Unmarshal(ctx, bytes.NewReader([]byte(fullYAML)))
+	doc, _, err := openapi.Unmarshal(context.Background(), bytes.NewReader([]byte(fullYAML)))
 	require.NoError(t, err)
 	docInfo := &document.DocumentInfo{Doc: doc, Schema: []byte(fullYAML), SchemaPath: "projection-test.yaml"}
 	for name, node := range doc.GetExtensions().All() {

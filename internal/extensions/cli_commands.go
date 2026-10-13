@@ -176,11 +176,12 @@ type CLICommandArtifactSegment struct {
 
 // CLICommandArtifact declares that the command's semantic result is a media
 // file: the renderer generates --out/--raw-response flags and a runtime that
-// extracts the first matching content block from the response, writes it to
-// disk, and reports the path. The content-block shape is declaration-driven:
-// block: binds the member names the runtime reads (discriminating kind,
-// base64 payload, MIME type, URI), and identity: binds the response-root
-// members used to enrich the reported envelope and not-ready diagnostics.
+// extracts the last content block of the declared kind (document order),
+// writes it to disk, and reports the path. The content-block shape is
+// declaration-driven: block: binds the member names the runtime reads
+// (discriminating kind, base64 payload, MIME type, URI), and identity: binds
+// the response-root members used to enrich the reported envelope and
+// not-ready diagnostics.
 // Both default to the v1 shape ({type, data, mime_type, uri} blocks and
 // {id, status} roots with terminal status "completed") so declarations that
 // spell nothing keep their existing linked shape and runtime behavior.

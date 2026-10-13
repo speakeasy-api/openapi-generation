@@ -2023,7 +2023,10 @@ registerTemplateFunc(
 // Builds a mock response JSON matching the artifact command's content pointer
 // by folding the pointer segments outside-in around a terminal content item.
 // variant: "inline" (base64 data), "uri" (URI-only delivery), "empty" (no
-// content items), "wrongkind" (a text block only).
+// content items), "notready" (empty with a non-terminal status), "wrongkind"
+// (a text block only), "multiple" (an intermediate block before the terminal),
+// "multiple-missing-data" / "multiple-empty-data" (an intermediate inline block
+// before a terminal of the declared kind that carries no usable data).
 function templateArtifactTestMockJSON(variant: string, mime: string): string {
   const cmd = getArtifactTestCommand();
   if (!cmd) return "{}";
@@ -2032,6 +2035,19 @@ function templateArtifactTestMockJSON(variant: string, mime: string): string {
 registerTemplateFunc(
   "templateArtifactTestMockJSON",
   templateArtifactTestMockJSON,
+);
+
+// Whether the artifact test command's pointer contains a [*]; only then can
+// a response carry more than one candidate block.
+function templateArtifactTestPointerHasWild(): boolean {
+  const cmd = getArtifactTestCommand();
+  if (!cmd) return false;
+  const spec = JSON.parse(cmd.ArtifactJSON);
+  return (spec.pointer || []).some((seg: any) => Boolean(seg.wild));
+}
+registerTemplateFunc(
+  "templateArtifactTestPointerHasWild",
+  templateArtifactTestPointerHasWild,
 );
 
 // artifactTestMockJSON builds the mock body from whatever field bindings the
@@ -2058,6 +2074,12 @@ function artifactTestMockJSON(
     case "wrongkind":
       terminal = { [typeField]: "text", text: "no media here" };
       break;
+    case "multiple-missing-data":
+      terminal = { [typeField]: kind, [mimeField]: mime };
+      break;
+    case "multiple-empty-data":
+      terminal = { [typeField]: kind, [dataField]: "", [mimeField]: mime };
+      break;
     default:
       // "artifact-bytes" base64-encoded without relying on runtime helpers.
       terminal = {
@@ -2066,16 +2088,38 @@ function artifactTestMockJSON(
         [mimeField]: mime,
       };
   }
+  // "multiple" puts an intermediate block before the terminal in the
+  // innermost [*], wrapped in the same trailing field segments so both are
+  // candidates. Without a [*] it degenerates to "inline".
+  let leading: any = variant.startsWith("multiple")
+    ? {
+        [typeField]: kind,
+        [dataField]: "aW50ZXJtZWRpYXRl",
+        [mimeField]: mime,
+      }
+    : undefined;
   // "empty" and "notready" start the fold with no terminal: the innermost
   // [*] becomes an empty array and every outer segment wraps normally.
   let node: any =
     variant === "empty" || variant === "notready" ? undefined : terminal;
   const segments = [...(spec.pointer || [])].reverse();
+  // Field segments folded before the innermost [*] also wrap the leading block.
+  let beforeFirstWild = true;
   for (const seg of segments) {
     if (seg.wild) {
-      node = node === undefined ? [] : [node];
+      if (node === undefined) {
+        node = [];
+      } else if (beforeFirstWild && leading !== undefined) {
+        node = [leading, node];
+      } else {
+        node = [node];
+      }
+      beforeFirstWild = false;
     } else {
       node = node === undefined ? {} : { [seg.field]: node };
+      if (beforeFirstWild && leading !== undefined) {
+        leading = { [seg.field]: leading };
+      }
     }
   }
   // Object roots gain response identity fields ("notready" carries a

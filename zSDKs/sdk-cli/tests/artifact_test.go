@@ -77,6 +77,41 @@ func TestArtifact_DefaultPathPrintsAbsolutePathOnly(t *testing.T) {
 	assert.NoError(t, err, "first artifact must survive a second run")
 }
 
+// Two blocks of the declared kind: the final one must be written.
+func TestArtifact_WritesLastMatchingBlock(t *testing.T) {
+	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"aW50ZXJtZWRpYXRl","mime_type":"image/png"},{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifact(t, h, server.URL, dir))
+
+	stdout := strings.TrimSpace(h.GetStdout())
+	written, err := os.ReadFile(stdout)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written), "the last block of the declared kind must be written, not an earlier one")
+}
+
+func TestArtifact_TrailingBlockWithoutDataIsAnError(t *testing.T) {
+	for name, body := range map[string]string{
+		"missing": `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"aW50ZXJtZWRpYXRl","mime_type":"image/png"},{"type":"image","mime_type":"image/png"}]}]}`,
+		"empty":   `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"aW50ZXJtZWRpYXRl","mime_type":"image/png"},{"type":"image","data":"","mime_type":"image/png"}]}]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := artifactTestServer(t, body)
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+
+			err := runArtifact(t, h, server.URL, dir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "no image content")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+			entries, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			assert.Empty(t, entries, "a trailing block without data must not write an earlier artifact")
+		})
+	}
+}
+
 func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()

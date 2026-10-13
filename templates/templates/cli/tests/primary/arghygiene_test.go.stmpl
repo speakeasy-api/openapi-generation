@@ -66,7 +66,7 @@ func TestGlobalShorthandPointsToSimilarLocalFlag(t *testing.T) {
 		},
 		{
 			[]string{"parameters", "mixed-parameters-primitives", "-p", "a", "-q", "qs"},
-			"",
+			"-q is short for --jq, not --query-string-param. Use --query-string-param qs",
 		},
 		{
 			[]string{"-d", "unions", "infected-with-any", "--body", "{"},

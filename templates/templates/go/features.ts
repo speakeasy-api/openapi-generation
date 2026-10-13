@@ -422,6 +422,7 @@ function isTestSkipped(test: string): boolean {
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel-is-connection-error",
+    "cli-exit-codes-invalid-jq-before-request",
   ].includes(test);
 }
 

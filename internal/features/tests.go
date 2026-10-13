@@ -666,6 +666,7 @@ const (
 	TestCliExitCodeSingleEnvelope
 	TestCliExitCodeSuccessAndDiscovery
 	TestCliExitCodesRenderingModes
+	TestCliExitCodesInvalidJqBeforeRequest
 	TestCliForbiddenWithoutCredentials
 	TestClientCredentialsDryRunTokenAndApi
 	TestClierrorsAgentModeExplicitlyDisabled

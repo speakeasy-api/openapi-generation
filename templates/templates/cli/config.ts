@@ -38,7 +38,7 @@ function getTemplateDependencies(): Record<string, TemplateDependency> {
     },
     "github.com/itchyny/gojq": {
       name: "github.com/itchyny/gojq",
-      version: "v0.12.18",
+      version: "v0.12.19",
       cpe: "cpe:2.3:a:itchyny:gojq:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",

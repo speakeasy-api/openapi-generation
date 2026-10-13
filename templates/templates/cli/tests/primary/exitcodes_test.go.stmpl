@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	{{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
 	"io"
-	"net/http/httptest"
 	"strconv"
 	{{- end}}
 
@@ -194,6 +195,69 @@ func TestExitCodesAcrossRenderingModes(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestExitCodeInvalidJqRejectedBeforeRequest(t *testing.T) {
+	recordTest("cli-exit-codes-invalid-jq-before-request")
+	var requests atomic.Int32
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"status_code": 200, "error": http.StatusText(200)})
+	}))
+	defer s.Close()
+	op := []string{"errors", "status-get-error", "--status-code", "200"}
+
+	rejected := []struct {
+		name       string
+		expression string
+	}{
+		{name: "syntax", expression: "invalid[[["},
+		{name: "undefined function", expression: ".status_code | nosuchfn"},
+		{name: "undefined variable", expression: "$undef"},
+	}
+	modes := []struct {
+		name string
+		args []string
+	}{
+		{name: "plain"},
+		{name: "agent", args: []string{"--agent-mode"}},
+		{name: "json", args: []string{"--output-format", "json"}},
+	}
+	for _, tc := range rejected {
+		for _, mode := range modes {
+			t.Run(tc.name+"/"+mode.name, func(t *testing.T) {
+				requests.Store(0)
+				h, err := runExitCodeInvocation(t, s.URL, mode.args, append(op, "--jq", tc.expression))
+				require.Error(t, err)
+				assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err), h.GetStderr())
+				assert.Contains(t, h.GetStderr(), "invalid jq expression")
+				assert.Equal(t, int32(0), requests.Load(), "a malformed --jq must be rejected before the request is sent")
+				if mode.name != "plain" {
+					envelope := agentEnvelope(t, h.GetStderr())
+					assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+				}
+			})
+		}
+	}
+
+	t.Run("valid expression", func(t *testing.T) {
+		requests.Store(0)
+		h, err := runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", ".status_code"))
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "200", strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, int32(1), requests.Load())
+	})
+
+	t.Run("empty expression is unset", func(t *testing.T) {
+		requests.Store(0)
+		h, err := runExitCodeInvocation(t, s.URL, []string{"--output-format", "json"}, append(op, "--jq", ""))
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, int32(1), requests.Load())
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &body), h.GetStdout())
+		assert.Equal(t, float64(200), body["status_code"])
+	})
 }
 
 {{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}

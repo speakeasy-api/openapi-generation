@@ -75,6 +75,9 @@ func NewRootCommand() (*cobra.Command, error) {
             if err := flagutil.ValidateEnumFlag(cmd, "color", []string{"auto", "always", "never"}); err != nil {
                 return err
             }
+            if err := output.ValidateJqFlag(cmd); err != nil {
+                return err
+            }
             if err := config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"); err != nil {
                 return err
             }
@@ -884,6 +887,9 @@ func NewRootCommand() (*cobra.Command, error) {
                 return err
             }
             if err := flagutil.ValidateEnumFlag(cmd, "color", []string{"auto", "always", "never"}); err != nil {
+                return err
+            }
+            if err := output.ValidateJqFlag(cmd); err != nil {
                 return err
             }
             if err := config.Init("{{sanitizeCliName}}", "{{.Global.Config.EnvVarPrefix}}"); err != nil {

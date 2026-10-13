@@ -282,8 +282,12 @@ func cliParseProjection(owner, kind, jqExpr string) (*analyzerjq.Query, *cliProj
 	if jqExpr == "" {
 		return nil, nil
 	}
-	if _, err := runtimejq.Parse(jqExpr); err != nil {
-		return nil, newCLIProjectionDiagnostic(owner, kind, jqExpr, "error", "is not valid jq: %s", cliCondenseJQParseError(err))
+	runtimeQuery, err := runtimejq.Parse(jqExpr)
+	if err == nil {
+		_, err = runtimejq.Compile(runtimeQuery)
+	}
+	if err != nil {
+		return nil, newCLIProjectionDiagnostic(owner, kind, jqExpr, "error", "is not valid jq: %s", cliCondenseJQError(err))
 	}
 	query, err := analyzerjq.Parse(jqExpr)
 	if err != nil {
@@ -371,8 +375,7 @@ func cliUnverifiableCause(causes []string) string {
 	return cliFirstSentence(causes[0])
 }
 
-// cliCondenseJQParseError reduces a gojq parse error to its first line.
-func cliCondenseJQParseError(err error) string {
+func cliCondenseJQError(err error) string {
 	msg := err.Error()
 	if idx := strings.IndexByte(msg, '\n'); idx != -1 {
 		msg = msg[:idx]

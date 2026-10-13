@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.948.8] - 2026-10-13
+### :bug: Bug Fixes
+- [`4d93dd9`](https://github.com/speakeasy-api/openapi-generation/commit/4d93dd936b4df36cb8c1731b6ec74e71d95c56f2) - **cli**: reject a malformed --jq expression before any request is sent ([#104](https://github.com/speakeasy-api/openapi-generation/pull/104)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.948.7] - 2026-10-13
+### :bug: Bug Fixes
+- [`93f04fd`](https://github.com/speakeasy-api/openapi-generation/commit/93f04fda20cda921a12a17fe31bf5d48a63b8663) - **cli**: write the last matching artifact block instead of the first ([#100](https://github.com/speakeasy-api/openapi-generation/pull/100)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.948.6] - 2026-10-13
 ### :bug: Bug Fixes
 - [`08ed0ad`](https://github.com/speakeasy-api/openapi-generation/commit/08ed0ade3f8c19e2e7ded018c6f63bb09c517ba5) - **all**: open single-value response enums behind fixes.openSingleValueEnumsOct2026 ([#102](https://github.com/speakeasy-api/openapi-generation/pull/102)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20560,3 +20570,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.948.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.3...v2.948.4
 [v2.948.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.4...v2.948.5
 [v2.948.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.5...v2.948.6
+[v2.948.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.6...v2.948.7
+[v2.948.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.948.7...v2.948.8

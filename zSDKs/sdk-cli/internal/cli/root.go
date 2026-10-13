@@ -58,6 +58,9 @@ func NewRootCommand() (*cobra.Command, error) {
 			if err := flagutil.ValidateEnumFlag(cmd, "color", []string{"auto", "always", "never"}); err != nil {
 				return err
 			}
+			if err := output.ValidateJqFlag(cmd); err != nil {
+				return err
+			}
 			if err := config.Init("cli", "CLI"); err != nil {
 				return err
 			}
