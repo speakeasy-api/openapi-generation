@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: reject a malformed --jq expression as a usage error before any request is sent
+description: reject a malformed --jq expression as a usage error before any request is sent, and fail generation on a declared projection that does not compile
 author: AshGodfrey
 date: "2026-10-13"

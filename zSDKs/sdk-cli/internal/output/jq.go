@@ -23,26 +23,28 @@ func ValidateJqFlag(cmd *cobra.Command) error {
 	return err
 }
 
-var compiledJq sync.Map
+var compiledJq struct {
+	sync.Mutex
+	expression string
+	code       *gojq.Code
+}
 
 func compileJqExpression(expression string) (*gojq.Code, error) {
-	if code, ok := compiledJq.Load(expression); ok {
-		return code.(*gojq.Code), nil
+	compiledJq.Lock()
+	defer compiledJq.Unlock()
+	if compiledJq.code != nil && compiledJq.expression == expression {
+		return compiledJq.code, nil
 	}
-	code, err := compileJq(expression)
+	var code *gojq.Code
+	query, err := gojq.Parse(expression)
+	if err == nil {
+		code, err = gojq.Compile(query)
+	}
 	if err != nil {
 		return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid jq expression %q: %w", expression, err))
 	}
-	compiledJq.Store(expression, code)
+	compiledJq.expression, compiledJq.code = expression, code
 	return code, nil
-}
-
-func compileJq(expression string) (*gojq.Code, error) {
-	query, err := gojq.Parse(expression)
-	if err != nil {
-		return nil, err
-	}
-	return gojq.Compile(query)
 }
 
 // ApplyJqFilter applies a jq expression to the given content and returns the results.
