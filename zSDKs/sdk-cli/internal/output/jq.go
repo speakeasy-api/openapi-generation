@@ -13,7 +13,6 @@ import (
 	"openapi/internal/flagutil"
 )
 
-// ValidateJqFlag compiles an explicitly set, non-empty --jq expression.
 func ValidateJqFlag(cmd *cobra.Command) error {
 	expression, changed := flagutil.GetStringFlag(cmd, "jq")
 	if !changed || expression == "" {
