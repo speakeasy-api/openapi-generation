@@ -186,6 +186,13 @@ func (u {{$className}}) IsUnknown() bool {
 {{end}}
 {{- $hasErrorPath := or (not $isUnionOpen) $discriminator}}
 func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err error){{else}}error{{end}} {
+	{{- if and $isUnionOpen (not $discriminator)}}
+	{{- addImport "encoding/json"}}
+	{{- addImport "fmt"}}
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal {{$className}}: invalid JSON")
+	}
+	{{- end}}
 	{{- if or $hasErrorPath .Local.Type.Fields}}
 	previous := *u
 	{{- end}}

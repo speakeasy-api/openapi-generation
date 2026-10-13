@@ -5,6 +5,7 @@ package components
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ericlagergren/decimal"
 	"math/big"
 	"openapi/internal/sdk/optionalnullable"
@@ -111,6 +112,9 @@ func (u Any) IsUnknown() bool {
 }
 
 func (u *Any) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal Any: invalid JSON")
+	}
 	*u = Any{}
 
 	var candidates []utils.UnionCandidate

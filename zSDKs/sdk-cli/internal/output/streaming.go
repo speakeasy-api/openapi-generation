@@ -75,8 +75,6 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	// Projected output already written must end with its terminating
 	// newline before any error is rendered. The primary error keeps the
 	// exit classification; a failed finish is joined rather than swallowed.
-	// Metadata observed before the failure is still reported, so the caller
-	// can resume or inspect the interaction the stream belonged to.
 	finishJoin := func(primary error) error {
 		if projector != nil {
 			if finishErr := projector.finish(out); finishErr != nil {
@@ -86,8 +84,6 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 		}
 		return primary
 	}
-	// Errors rendered here follow the terminated projection and its metadata
-	// line, so the diagnostic reads after the output it belongs to.
 	renderAfterFinish := func(e error) error {
 		finishErr := finishJoin(nil)
 		rendered := Error(cmd, e)

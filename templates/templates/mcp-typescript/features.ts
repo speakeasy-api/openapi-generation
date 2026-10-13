@@ -101,6 +101,9 @@ function getFeatureVersion(feature: string): string {
 //@ts-ignore
 function isTestSkipped(test: string): boolean {
   return [
+    "event-stream-truncated-before-sentinel",
+    "event-stream-truncated-before-sentinel-is-connection-error",
+    "open-union-invalid-json-is-an-error",
     "event-stream-timeout-still-bounds-slow-stream",
     "event-stream-with-timeout-streams-to-completion",
     "smart-union-nullable-collection-item",

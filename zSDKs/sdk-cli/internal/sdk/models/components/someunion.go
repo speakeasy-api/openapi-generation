@@ -5,6 +5,7 @@ package components
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"openapi/internal/sdk/sdkinternal/utils"
 )
 
@@ -84,6 +85,9 @@ func (u SomeUnion) IsUnknown() bool {
 }
 
 func (u *SomeUnion) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal SomeUnion: invalid JSON")
+	}
 	*u = SomeUnion{}
 
 	var candidates []utils.UnionCandidate

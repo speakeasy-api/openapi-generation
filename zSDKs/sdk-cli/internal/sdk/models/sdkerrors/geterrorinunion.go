@@ -5,6 +5,7 @@ package sdkerrors
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"openapi/internal/sdk/models/components"
 	"openapi/internal/sdk/sdkinternal/utils"
 )
@@ -64,6 +65,9 @@ func (u GetErrorInUnionInternalServerError) IsUnknown() bool {
 }
 
 func (u *GetErrorInUnionInternalServerError) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal GetErrorInUnionInternalServerError: invalid JSON")
+	}
 	previous := *u
 	*u = GetErrorInUnionInternalServerError{
 		HTTPMeta: previous.HTTPMeta,

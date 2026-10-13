@@ -40,8 +40,6 @@ const maxEventSize = 1 << 30
 // newServerEventSplitter returns a stateful bufio.SplitFunc that only re-scans
 // the trailing maxBoundaryLen-1 bytes across reads. That keeps large events
 // linear to parse while still finding boundaries split across two chunks.
-// A strict splitter treats an unterminated trailing frame at EOF as a
-// truncated stream instead of dispatching it.
 func newServerEventSplitter(strict bool) bufio.SplitFunc {
 	scanned := 0
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {

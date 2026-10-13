@@ -5,6 +5,7 @@ package components
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"openapi/internal/sdk/sdkinternal/utils"
 )
 
@@ -102,6 +103,9 @@ func (u CircularUnion) IsUnknown() bool {
 }
 
 func (u *CircularUnion) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal CircularUnion: invalid JSON")
+	}
 	*u = CircularUnion{}
 
 	var candidates []utils.UnionCandidate

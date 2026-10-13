@@ -61,6 +61,9 @@ func (u OneOfWithUnionDescription) IsUnknown() bool {
 }
 
 func (u *OneOfWithUnionDescription) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal OneOfWithUnionDescription: invalid JSON")
+	}
 	*u = OneOfWithUnionDescription{}
 
 	var candidates []utils.UnionCandidate

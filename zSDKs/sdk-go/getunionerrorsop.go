@@ -234,6 +234,9 @@ func (u GetUnionErrorsInternalServerError) IsUnknown() bool {
 }
 
 func (u *GetUnionErrorsInternalServerError) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal GetUnionErrorsInternalServerError: invalid JSON")
+	}
 	previous := *u
 	*u = GetUnionErrorsInternalServerError{
 		HTTPMeta: previous.HTTPMeta,

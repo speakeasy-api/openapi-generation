@@ -581,9 +581,6 @@ func TestIntentStream_IntentFlagMatchingOperationFlagIsIsolated(t *testing.T) {
 	assert.Equal(t, false, srv.lastBody(t)["stream"])
 }
 
-// A stream that drops before its declared sentinel, between frames or inside
-// one, is a failure rather than a clean exit; the text received before the
-// drop has already been written.
 func TestIntentStream_TruncatedBeforeSentinelFails(t *testing.T) {
 	if intentStreamSentinel == "" {
 		t.Skip("the declared intent stream has no end-of-stream sentinel")

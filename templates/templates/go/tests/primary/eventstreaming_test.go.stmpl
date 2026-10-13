@@ -758,10 +758,6 @@ func TestEventStreamTimeoutStillBoundsSlowStream(t *testing.T) {
 	assert.Less(t, time.Since(start), 15*time.Second, "the deadline must cut the stalled stream short")
 }
 
-// A stream that declares an end-of-stream sentinel is complete only once the
-// sentinel arrives: a connection dropped between frames or inside a frame ends
-// with io.ErrUnexpectedEOF instead of looking like a clean completion, and the
-// complete frames received before the drop are still delivered.
 func TestEventStreamTruncatedBeforeSentinel(t *testing.T) {
 	recordTest("event-stream-truncated-before-sentinel")
 

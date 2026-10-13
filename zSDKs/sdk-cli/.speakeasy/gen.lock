@@ -292,7 +292,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:d1e13e9d09d69e0444a00c8b6e468d32d73d7c56
+    last_write_checksum: sha1:65c6783da972ee644d63dfddaf619af4df86bdb6
   internal/output/streamproject.go:
     last_write_checksum: sha1:95088b4a0809c2f02782c950edfe240b8c3e885a
   internal/sdk/.gitattributes:
@@ -316,7 +316,7 @@ trackedFiles:
   internal/sdk/models/bar/petstatus.go:
     last_write_checksum: sha1:f7d8754aaba839f8fbb4bbdb45dc4f1a3fae363b
   internal/sdk/models/bar/vehicle.go:
-    last_write_checksum: sha1:0f254c11797793e921aeb5d4cfab13b14ad1fd60
+    last_write_checksum: sha1:15777da4ca183a9225a18e1ccc7c9d2a6ba6e20a
   internal/sdk/models/baz/namespaced.go:
     last_write_checksum: sha1:8d4298ce1761572be70717f7907e85214f92f3f0
   internal/sdk/models/baz/pet.go:
@@ -336,7 +336,7 @@ trackedFiles:
   internal/sdk/models/components/assettextblock.go:
     last_write_checksum: sha1:1951f911e13c8760a2f73a64dc5db40538dd5efe
   internal/sdk/models/components/badrequestresponseerror.go:
-    last_write_checksum: sha1:63ce0f441a375b56cb0c64d4a4dc1c805bbefab8
+    last_write_checksum: sha1:9563dfe58f0c60cb815364b635764fd104b450e7
   internal/sdk/models/components/baseuser.go:
     last_write_checksum: sha1:0845ddc8b90316da6c5748ae570f9a911e86856e
   internal/sdk/models/components/boole.go:
@@ -348,7 +348,7 @@ trackedFiles:
   internal/sdk/models/components/circle.go:
     last_write_checksum: sha1:f73d485d7f8690f76acc7252cd5544003329ff3d
   internal/sdk/models/components/circularunion.go:
-    last_write_checksum: sha1:8f5774cd27e55a4215f56d78b8a95efafc02683a
+    last_write_checksum: sha1:882633d95c572129e0eb438e39a405731c646f1c
   internal/sdk/models/components/color.go:
     last_write_checksum: sha1:2fbf3e966c6958f476599a33026428f51d3b280f
   internal/sdk/models/components/disriminatedunionwithonemember.go:
@@ -360,7 +360,7 @@ trackedFiles:
   internal/sdk/models/components/escalation.go:
     last_write_checksum: sha1:c480ce518345ca70b750a47b4fb6eb311251b849
   internal/sdk/models/components/exhaustiveobject.go:
-    last_write_checksum: sha1:749b65c621d158a42d2e29265c79077f746f8119
+    last_write_checksum: sha1:e42071e43f99e1e285d3cbeab996ac62440c2659
   internal/sdk/models/components/file.go:
     last_write_checksum: sha1:4787a0d44b801e41b430fceace1a31f107f9afa4
   internal/sdk/models/components/gender.go:
@@ -380,7 +380,7 @@ trackedFiles:
   internal/sdk/models/components/objwithrenamedproperties.go:
     last_write_checksum: sha1:915876836804c9bf3c41d7debe9df648ac00242d
   internal/sdk/models/components/oneofwithfactoredoutproperties.go:
-    last_write_checksum: sha1:372cb67495c1e839d7704dcf8fe9ace5640b0ff7
+    last_write_checksum: sha1:60564e0e81d3abc1080fa246a829d1724f2dd430
   internal/sdk/models/components/policystep.go:
     last_write_checksum: sha1:8719c8f6893f962b51eac54a9967234250d3257f
   internal/sdk/models/components/rectangle.go:
@@ -398,7 +398,7 @@ trackedFiles:
   internal/sdk/models/components/simpleobject.go:
     last_write_checksum: sha1:640f969aa7521ff1fca2e08cb033632b317e084c
   internal/sdk/models/components/someunion.go:
-    last_write_checksum: sha1:27ee5bba9bf92eb742da93fdc1a297aba9e80460
+    last_write_checksum: sha1:72dbd57b9692055ce18d33627babfe1a3fab8c24
   internal/sdk/models/components/taggederror1.go:
     last_write_checksum: sha1:afafda28c0a6df5c91b329f2c4cd88ef0a14ca51
   internal/sdk/models/components/taggederror2.go:
@@ -480,7 +480,7 @@ trackedFiles:
   internal/sdk/models/operations/getpetowners.go:
     last_write_checksum: sha1:dc4f65104a512104863a6ebadc5eba3591995d3c
   internal/sdk/models/operations/getpolymorphism.go:
-    last_write_checksum: sha1:9852de09530b49e031d1ef13e07c1c805d296376
+    last_write_checksum: sha1:f96ad7d6c2d30e8f7e9b8b421c7a99aa83b0b407
   internal/sdk/models/operations/getpositionaldefault.go:
     last_write_checksum: sha1:39de29e2bb07e09cd026404312d57dfd255349dd
   internal/sdk/models/operations/getrequestbodyflattenedaway.go:
@@ -544,9 +544,9 @@ trackedFiles:
   internal/sdk/models/sdkerrors/failedresponseerror.go:
     last_write_checksum: sha1:9f3a5f50740244b5976fde99cbb908ad289eda91
   internal/sdk/models/sdkerrors/geterrorinunion.go:
-    last_write_checksum: sha1:cda88009d649a67653892547691e47e37ae776dd
+    last_write_checksum: sha1:8af1add259272b96d90ad2d1002407f0e139e552
   internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:5c9032bee475a8404a2f50fa75d61a799b1d1ee9
+    last_write_checksum: sha1:4b845d5d51b23420e1f7d82c17b441ed0aabd9b8
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
@@ -650,7 +650,7 @@ trackedFiles:
   internal/sdk/types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   internal/sdk/types/stream/stream.go:
-    last_write_checksum: sha1:abb205026134b8a81bb2ffe2693e9caa328f491c
+    last_write_checksum: sha1:02116c4bb9e2ee1159462ae532d2651b7cbc1bc3
   internal/testclient/testclient.go:
     last_write_checksum: sha1:7107e59d336235c44af152c5a61ee3896a7841fa
   internal/usage/bodyschemas.go:
@@ -680,7 +680,7 @@ trackedFiles:
   tests/intenthint_test.go:
     last_write_checksum: sha1:a4157f549c7c601ec6c7e486e1f520402b9c758e
   tests/intentstream_test.go:
-    last_write_checksum: sha1:c62494391aeb30f7a3ebd6e5dad923dcd47494b9
+    last_write_checksum: sha1:1d27249f7c7b2cb6728d7e9594828061ee3af7d2
   tests/mockserver/.gitignore:
     last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
   tests/mockserver/Dockerfile:

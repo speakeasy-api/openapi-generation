@@ -77,7 +77,7 @@ trackedFiles:
   authop.go:
     last_write_checksum: sha1:fa2bb0e63a2630c9f0a02ff6ade9607a349d752f
   badrequestresponseerror.go:
-    last_write_checksum: sha1:51bceba1b9448ed28d2647037595269970f7c0b8
+    last_write_checksum: sha1:fc823c3b05ad4e5e9f987bbdae99813d1799ab59
   bar/bike.go:
     last_write_checksum: sha1:926178f5c0e7415500fafcfc2004d5efa8bb7356
   bar/car.go:
@@ -89,7 +89,7 @@ trackedFiles:
   bar/petstatus.go:
     last_write_checksum: sha1:f7d8754aaba839f8fbb4bbdb45dc4f1a3fae363b
   bar/vehicle.go:
-    last_write_checksum: sha1:e31a572a7f1076cec02709efa44be0c8fbb68f72
+    last_write_checksum: sha1:a23a321244307196580ea8388f0d6816ad5cd30b
   baseuser.go:
     last_write_checksum: sha1:e147d32cf444161c77ea74cd3850d05242645080
   baz/namespaced.go:
@@ -109,7 +109,7 @@ trackedFiles:
   circle.go:
     last_write_checksum: sha1:d78503f217129a8d461d0fdf4dfa69d86ce2004b
   circularunion.go:
-    last_write_checksum: sha1:eee97132fa425ecbd02c4509490d9f55c305c388
+    last_write_checksum: sha1:6c817948b3d2e8def1297352b13a2c2ee099da4a
   color.go:
     last_write_checksum: sha1:6527f53d066ff96cf6ba2ce62e4b145ae9f08277
   conflicts.go:
@@ -623,7 +623,7 @@ trackedFiles:
   escalation.go:
     last_write_checksum: sha1:191befebaa2a2fe0b8d5ed7982b97c1f73c3dbf9
   exhaustiveobject.go:
-    last_write_checksum: sha1:27b57b8a268307436065ef78d1e38b29305ddc46
+    last_write_checksum: sha1:eb1dbceaf4def933cbeefeb818f8bd47e9fdb8cd
   failedresponseerror.go:
     last_write_checksum: sha1:8ec5c1203874745c08e365276737a8069e18589f
   file.go:
@@ -653,7 +653,7 @@ trackedFiles:
   getemptyobjecterrorop.go:
     last_write_checksum: sha1:28e4586ea75ef0c90c5fb912153f041400c66129
   geterrorinunionop.go:
-    last_write_checksum: sha1:5ca4727e72d4450d9514d92f5cf51501b3dd43f4
+    last_write_checksum: sha1:d736f0814c2752d7f180ee7647f66ab93751b14d
   geterroronlyexampleop.go:
     last_write_checksum: sha1:f5300cd22e15fa0ccf6600fb8d505c7758203bce
   getfullyflattenedrequestop.go:
@@ -675,7 +675,7 @@ trackedFiles:
   getpetownersop.go:
     last_write_checksum: sha1:d3f3bd720db28dadaa6ce6cbeeb6d9b26a5fe83b
   getpolymorphismop.go:
-    last_write_checksum: sha1:3b13c6485b9fb099801ac24ddddf6400bcb31531
+    last_write_checksum: sha1:e49ebae637d8af579762964bd27ee8be44195132
   getpositionaldefaultop.go:
     last_write_checksum: sha1:e18045e88df66ef3d76cceb3882aaff109783306
   getrequestbodyflattenedawayop.go:
@@ -687,7 +687,7 @@ trackedFiles:
   gettriplenamespaceconflictop.go:
     last_write_checksum: sha1:dde51c485a4c22de5d0897ba2df1186d9663ceb2
   getunionerrorsop.go:
-    last_write_checksum: sha1:0ba18c38e71731d4551cbbed76b9bdd588807ef5
+    last_write_checksum: sha1:99c7d593314a44d55c3b2a660f3e662ab4f8daac
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
@@ -753,7 +753,7 @@ trackedFiles:
   obsolete.go:
     last_write_checksum: sha1:aab3a8f3b68d4e643cbd9ce783f5921b0d721456
   oneofwithfactoredoutproperties.go:
-    last_write_checksum: sha1:092d47d13179037ac348df5727f1a7cca4c88cb6
+    last_write_checksum: sha1:1473d8ef297d4a26d1d4dc8a15fca76b479c0845
   operationwithleadingandtrailingunderscoresop.go:
     last_write_checksum: sha1:700ce7646614f1bb787d03c34e91f51465de60bb
   optionalnullable/optionalnullable.go:
@@ -811,7 +811,7 @@ trackedFiles:
   singlefoo.go:
     last_write_checksum: sha1:33988793bc6c5ca280883b0fbda68cc231d1618c
   someunion.go:
-    last_write_checksum: sha1:e57de88bf804fd3a13769372572be5a51939bd08
+    last_write_checksum: sha1:becbe0569225b28010d45ee0c512b21df59f552f
   subgroup.go:
     last_write_checksum: sha1:caf08f9b78d4ca133141cb4512b649866da71d8b
   subgroupopop.go:
@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:abb205026134b8a81bb2ffe2693e9caa328f491c
+    last_write_checksum: sha1:02116c4bb9e2ee1159462ae532d2651b7cbc1bc3
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

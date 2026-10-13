@@ -145,6 +145,9 @@ func (u OneOfWithFactoredOutPropertiesAny) IsUnknown() bool {
 }
 
 func (u *OneOfWithFactoredOutPropertiesAny) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal OneOfWithFactoredOutPropertiesAny: invalid JSON")
+	}
 	*u = OneOfWithFactoredOutPropertiesAny{}
 
 	var candidates []utils.UnionCandidate
@@ -643,6 +646,9 @@ func (u OneOfWithFactoredOutProperties) IsUnknown() bool {
 }
 
 func (u *OneOfWithFactoredOutProperties) UnmarshalJSON(data []byte) error {
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal OneOfWithFactoredOutProperties: invalid JSON")
+	}
 	*u = OneOfWithFactoredOutProperties{}
 
 	var candidates []utils.UnionCandidate
