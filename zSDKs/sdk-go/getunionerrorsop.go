@@ -105,7 +105,8 @@ func (u *ClientError) UnmarshalJSON(data []byte) (err error) {
 
 	dis := new(discriminator)
 	if err := json.Unmarshal(data, &dis); err != nil {
-		if !json.Valid(data) {
+		var syntaxErr *json.SyntaxError
+		if errors.As(err, &syntaxErr) {
 			return fmt.Errorf("could not unmarshal discriminator: %w", err)
 		}
 		u.UnknownRaw = json.RawMessage(data)
@@ -259,6 +260,9 @@ func (u *GetUnionErrorsInternalServerError) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(candidates) == 0 {
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for GetUnionErrorsInternalServerError", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = GetUnionErrorsInternalServerErrorTypeUnknown
 		return nil
@@ -283,6 +287,9 @@ func (u *GetUnionErrorsInternalServerError) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for GetUnionErrorsInternalServerError", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = GetUnionErrorsInternalServerErrorTypeUnknown
 	return nil

@@ -37,40 +37,37 @@ const maxBoundaryLen = 4
 // demand, so this caps pathological streams without reserving memory up front.
 const maxEventSize = 1 << 30
 
-// newServerEventSplitter returns a stateful bufio.SplitFunc that only re-scans
-// the trailing maxBoundaryLen-1 bytes across reads. That keeps large events
+// serverEventSplitter is a stateful bufio.SplitFunc that only re-scans the
+// trailing maxBoundaryLen-1 bytes across reads. That keeps large events
 // linear to parse while still finding boundaries split across two chunks.
-// A strict splitter treats an unterminated trailing frame at EOF as a
-// truncated stream instead of dispatching it.
-func newServerEventSplitter(strict bool) bufio.SplitFunc {
-	scanned := 0
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
-		}
+type serverEventSplitter struct {
+	scanned      int
+	unterminated bool
+}
 
-		start := scanned - (maxBoundaryLen - 1)
-		if start < 0 {
-			start = 0
-		}
-
-		if result := boundary.FindIndex(data[start:]); result != nil {
-			scanned = 0
-			return start + result[1], data[:start+result[0]], nil
-		}
-
-		if atEOF {
-			scanned = 0
-			rest := bytes.TrimRight(data, "\r\n")
-			if strict && len(rest) > 0 {
-				return 0, nil, io.ErrUnexpectedEOF
-			}
-			return len(data), rest, nil
-		}
-
-		scanned = len(data)
+func (s *serverEventSplitter) split(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
+
+	start := s.scanned - (maxBoundaryLen - 1)
+	if start < 0 {
+		start = 0
+	}
+
+	if result := boundary.FindIndex(data[start:]); result != nil {
+		s.scanned = 0
+		return start + result[1], data[:start+result[0]], nil
+	}
+
+	if atEOF {
+		s.scanned = 0
+		s.unterminated = true
+		return len(data), bytes.TrimRight(data, "\r\n"), nil
+	}
+
+	s.scanned = len(data)
+	return 0, nil, nil
 }
 
 type EventType interface {
@@ -80,6 +77,7 @@ type EventType interface {
 type EventStream[T any] struct {
 	r            io.ReadCloser
 	scanner      *bufio.Scanner
+	splitter     serverEventSplitter
 	unmarshaller func(se []byte) (T, error)
 	sentinel     string
 	ctx          context.Context
@@ -101,10 +99,6 @@ func NewEventStream[T any](
 	sentinel string,
 	opts ...func(*EventStream[T]),
 ) *EventStream[T] {
-	scanner := bufio.NewScanner(source)
-	scanner.Buffer(nil, maxEventSize)
-	scanner.Split(newServerEventSplitter(sentinel != ""))
-
 	var src io.ReadCloser
 	if s, ok := source.(io.ReadCloser); ok {
 		src = s
@@ -118,13 +112,15 @@ func NewEventStream[T any](
 
 	es := &EventStream[T]{
 		r:            src,
-		scanner:      scanner,
+		scanner:      bufio.NewScanner(source),
 		unmarshaller: unmarshaller,
 		sentinel:     sentinel,
 		ctx:          ctx,
 		first:        true,
 		dataRequired: true,
 	}
+	es.scanner.Buffer(nil, maxEventSize)
+	es.scanner.Split(es.splitter.split)
 	for _, opt := range opts {
 		opt(es)
 	}
@@ -182,7 +178,7 @@ func (es *EventStream[T]) Next() bool {
 		if !es.scanner.Scan() {
 			es.err = es.scanner.Err()
 			if es.sentinel != "" && (es.err == nil || errors.Is(es.err, io.ErrUnexpectedEOF)) {
-				es.err = fmt.Errorf("stream ended before the %q sentinel: %w", es.sentinel, io.ErrUnexpectedEOF)
+				es.err = es.truncatedBeforeSentinel()
 			}
 			es.finished.Store(true)
 			es.release()
@@ -259,6 +255,13 @@ func (es *EventStream[T]) Next() bool {
 			return false
 		}
 
+		if es.sentinel != "" && es.splitter.unterminated {
+			es.err = es.truncatedBeforeSentinel()
+			es.finished.Store(true)
+			es.release()
+			return false
+		}
+
 		if len(data) > 0 {
 			data = data[:len(data)-1]
 		}
@@ -320,6 +323,10 @@ func (es *EventStream[T]) Next() bool {
 
 		return true
 	}
+}
+
+func (es *EventStream[T]) truncatedBeforeSentinel() error {
+	return fmt.Errorf("stream ended before the %q sentinel: %w", es.sentinel, io.ErrUnexpectedEOF)
 }
 
 // Value returns the most recent event that was generated from a call to Next

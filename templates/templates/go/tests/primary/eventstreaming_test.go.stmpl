@@ -761,17 +761,22 @@ func TestEventStreamTimeoutStillBoundsSlowStream(t *testing.T) {
 // A stream that declares an end-of-stream sentinel is complete only once the
 // sentinel arrives: a connection dropped between frames or inside a frame ends
 // with io.ErrUnexpectedEOF instead of looking like a clean completion, and the
-// complete frames received before the drop are still delivered.
+// complete frames received before the drop are still delivered. A sentinel
+// frame that the server closes on without its terminating blank line still
+// completes the stream.
 func TestEventStreamTruncatedBeforeSentinel(t *testing.T) {
 	recordTest("event-stream-truncated-before-sentinel")
 
 	for _, tc := range []struct {
-		name   string
-		body   string
-		events int
+		name     string
+		body     string
+		events   int
+		complete bool
 	}{
-		{"between frames", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"content\":\" world\"}}\n\n", 2},
-		{"mid frame", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"con", 1},
+		{"between frames", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"content\":\" world\"}}\n\n", 2, false},
+		{"mid frame", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"con", 1, false},
+		{"frame without blank line", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"content\":\" world\"}}\n", 1, false},
+		{"sentinel without blank line", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: [DONE]\n", 1, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -792,6 +797,10 @@ func TestEventStreamTruncatedBeforeSentinel(t *testing.T) {
 				count++
 			}
 			assert.Equal(t, tc.events, count, "complete frames before the drop are still delivered")
+			if tc.complete {
+				require.NoError(t, res.ChatCompletionEvent.Err())
+				return
+			}
 			require.Error(t, res.ChatCompletionEvent.Err())
 			assert.ErrorIs(t, res.ChatCompletionEvent.Err(), io.ErrUnexpectedEOF)
 		})

@@ -69,15 +69,15 @@ trackedFiles:
   assetnotestep.go:
     last_write_checksum: sha1:ed269ba90a489d95e005c24209fb58b7864754f7
   assetoutputstep.go:
-    last_write_checksum: sha1:b08f76a99f1cc9c98ff6bc62d3760f498dcefb53
+    last_write_checksum: sha1:c0bfdc786639c5f5f4203d3e312b7b9b110c804e
   assetresult.go:
-    last_write_checksum: sha1:df701bc22b7edf119239a617853bdb0dcae290dc
+    last_write_checksum: sha1:1bd62d89ba2a864199c70bc15e1c22b22e787509
   assettextblock.go:
     last_write_checksum: sha1:cdbdb48e28b19558b9a580123b22b21e33eced3d
   authop.go:
     last_write_checksum: sha1:fa2bb0e63a2630c9f0a02ff6ade9607a349d752f
   badrequestresponseerror.go:
-    last_write_checksum: sha1:51bceba1b9448ed28d2647037595269970f7c0b8
+    last_write_checksum: sha1:385cc7d6739b5e4931fdbb6183109c1198333399
   bar/bike.go:
     last_write_checksum: sha1:926178f5c0e7415500fafcfc2004d5efa8bb7356
   bar/car.go:
@@ -89,7 +89,7 @@ trackedFiles:
   bar/petstatus.go:
     last_write_checksum: sha1:f7d8754aaba839f8fbb4bbdb45dc4f1a3fae363b
   bar/vehicle.go:
-    last_write_checksum: sha1:e31a572a7f1076cec02709efa44be0c8fbb68f72
+    last_write_checksum: sha1:624c49af71775611d07b16d35bdd12ac1e41b281
   baseuser.go:
     last_write_checksum: sha1:e147d32cf444161c77ea74cd3850d05242645080
   baz/namespaced.go:
@@ -109,7 +109,7 @@ trackedFiles:
   circle.go:
     last_write_checksum: sha1:d78503f217129a8d461d0fdf4dfa69d86ce2004b
   circularunion.go:
-    last_write_checksum: sha1:eee97132fa425ecbd02c4509490d9f55c305c388
+    last_write_checksum: sha1:c359b5b8af9f0267afd40b9fd88082eb28ac7dd6
   color.go:
     last_write_checksum: sha1:6527f53d066ff96cf6ba2ce62e4b145ae9f08277
   conflicts.go:
@@ -623,13 +623,13 @@ trackedFiles:
   escalation.go:
     last_write_checksum: sha1:191befebaa2a2fe0b8d5ed7982b97c1f73c3dbf9
   exhaustiveobject.go:
-    last_write_checksum: sha1:27b57b8a268307436065ef78d1e38b29305ddc46
+    last_write_checksum: sha1:b190b08c98f2f96a8e4059ee282bdae270207148
   failedresponseerror.go:
     last_write_checksum: sha1:8ec5c1203874745c08e365276737a8069e18589f
   file.go:
     last_write_checksum: sha1:f64ef570bfd5dff677302e7d7844ed68d087c89c
   foo/animal.go:
-    last_write_checksum: sha1:20c97a2433121a66ef18d26b8699226872a8a7db
+    last_write_checksum: sha1:8cdc066ebda80e1dc25e4f1c98e1d480e139c70e
   foo/cat.go:
     last_write_checksum: sha1:ecbb9e73dad2265a66bc5fb214e972d7fe958f9e
   foo/dog.go:
@@ -653,7 +653,7 @@ trackedFiles:
   getemptyobjecterrorop.go:
     last_write_checksum: sha1:28e4586ea75ef0c90c5fb912153f041400c66129
   geterrorinunionop.go:
-    last_write_checksum: sha1:5ca4727e72d4450d9514d92f5cf51501b3dd43f4
+    last_write_checksum: sha1:f10d2469ab4afa1d8898820accb4b2a223f74a03
   geterroronlyexampleop.go:
     last_write_checksum: sha1:f5300cd22e15fa0ccf6600fb8d505c7758203bce
   getfullyflattenedrequestop.go:
@@ -675,7 +675,7 @@ trackedFiles:
   getpetownersop.go:
     last_write_checksum: sha1:d3f3bd720db28dadaa6ce6cbeeb6d9b26a5fe83b
   getpolymorphismop.go:
-    last_write_checksum: sha1:3b13c6485b9fb099801ac24ddddf6400bcb31531
+    last_write_checksum: sha1:21681866a564df2b487e11d7490bed2f677bf573
   getpositionaldefaultop.go:
     last_write_checksum: sha1:e18045e88df66ef3d76cceb3882aaff109783306
   getrequestbodyflattenedawayop.go:
@@ -687,7 +687,7 @@ trackedFiles:
   gettriplenamespaceconflictop.go:
     last_write_checksum: sha1:dde51c485a4c22de5d0897ba2df1186d9663ceb2
   getunionerrorsop.go:
-    last_write_checksum: sha1:0ba18c38e71731d4551cbbed76b9bdd588807ef5
+    last_write_checksum: sha1:dc228f4408ed7ebcf9baadf01e5bbb7c25144e6a
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
@@ -753,7 +753,7 @@ trackedFiles:
   obsolete.go:
     last_write_checksum: sha1:aab3a8f3b68d4e643cbd9ce783f5921b0d721456
   oneofwithfactoredoutproperties.go:
-    last_write_checksum: sha1:092d47d13179037ac348df5727f1a7cca4c88cb6
+    last_write_checksum: sha1:4b289d033478345c1d7aaecd1639d57d99750453
   operationwithleadingandtrailingunderscoresop.go:
     last_write_checksum: sha1:700ce7646614f1bb787d03c34e91f51465de60bb
   optionalnullable/optionalnullable.go:
@@ -781,7 +781,7 @@ trackedFiles:
   rectangle.go:
     last_write_checksum: sha1:f33d36ba2e0ca6811572cd08ce53fe5f3c5664aa
   recursiveformfield.go:
-    last_write_checksum: sha1:7893210f8d017b50690e5a348566dbc2bd91cbf4
+    last_write_checksum: sha1:47d65301d5c32ef821fa2cab7b0cf98124a7403f
   renderassetop.go:
     last_write_checksum: sha1:a788e389967e88581337759b330af30c4e562bf8
   requesttimeouterror.go:
@@ -801,7 +801,7 @@ trackedFiles:
   security.go:
     last_write_checksum: sha1:8db64ccb0819aa35e06ad3efa18e74c1b7c19441
   shape.go:
-    last_write_checksum: sha1:edf220439f2446b61d37ec21b4e3d191a5976bf5
+    last_write_checksum: sha1:1ce0e00a6d8b69e3c58db12cd3e4d31fd244fa45
   shaperequest.go:
     last_write_checksum: sha1:b4bc448176210cb333c9cedf547e116395ad377c
   simpleobject.go:
@@ -811,7 +811,7 @@ trackedFiles:
   singlefoo.go:
     last_write_checksum: sha1:33988793bc6c5ca280883b0fbda68cc231d1618c
   someunion.go:
-    last_write_checksum: sha1:e57de88bf804fd3a13769372572be5a51939bd08
+    last_write_checksum: sha1:b7bc12e963f49cfde39b2b5a97d0495bf81c081f
   subgroup.go:
     last_write_checksum: sha1:caf08f9b78d4ca133141cb4512b649866da71d8b
   subgroupopop.go:
@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:abb205026134b8a81bb2ffe2693e9caa328f491c
+    last_write_checksum: sha1:104dccc95168fb6f7eb40968eed8f062703571c3
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

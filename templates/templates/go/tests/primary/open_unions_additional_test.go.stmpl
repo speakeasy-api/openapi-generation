@@ -172,4 +172,15 @@ func TestOpenUnionInvalidJSONIsAnError(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, v.IsUnknown())
 	assert.JSONEq(t, `["car"]`, string(v.GetUnknownRaw()))
+
+	var m shared.MixedUnionTypes
+	err = m.UnmarshalJSON([]byte(`[{"wheelsType":"tw`))
+	require.Error(t, err)
+	assert.False(t, m.IsUnknown())
+	assert.Nil(t, m.GetUnknownRaw())
+
+	err = json.Unmarshal([]byte(`"bike"`), &m)
+	require.NoError(t, err)
+	assert.True(t, m.IsUnknown())
+	assert.JSONEq(t, `"bike"`, string(m.GetUnknownRaw()))
 }

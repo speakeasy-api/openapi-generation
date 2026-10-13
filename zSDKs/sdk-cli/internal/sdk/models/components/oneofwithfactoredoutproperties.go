@@ -5,6 +5,7 @@ package components
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ericlagergren/decimal"
 	"math/big"
 	"openapi/internal/sdk/optionalnullable"
@@ -165,6 +166,9 @@ func (u *OneOfWithFactoredOutPropertiesAny) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(candidates) == 0 {
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutPropertiesAny", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = OneOfWithFactoredOutPropertiesAnyTypeUnknown
 		return nil
@@ -189,6 +193,9 @@ func (u *OneOfWithFactoredOutPropertiesAny) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutPropertiesAny", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = OneOfWithFactoredOutPropertiesAnyTypeUnknown
 	return nil
@@ -662,6 +669,9 @@ func (u *OneOfWithFactoredOutProperties) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(candidates) == 0 {
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutProperties", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = OneOfWithFactoredOutPropertiesTypeUnknown
 		return nil
@@ -686,6 +696,9 @@ func (u *OneOfWithFactoredOutProperties) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for OneOfWithFactoredOutProperties", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = OneOfWithFactoredOutPropertiesTypeUnknown
 	return nil

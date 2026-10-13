@@ -112,6 +112,9 @@ func (u *SomeUnion) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(candidates) == 0 {
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for SomeUnion", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = SomeUnionTypeUnknown
 		return nil
@@ -139,6 +142,9 @@ func (u *SomeUnion) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for SomeUnion", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = SomeUnionTypeUnknown
 	return nil

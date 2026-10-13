@@ -213,7 +213,9 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 	{{- addImport "fmt"}}
 	if err := json.Unmarshal(data, &dis); err != nil {
 		{{- if $isUnionOpen}}
-		if !json.Valid(data) {
+		{{- addImport "errors"}}
+		var syntaxErr *json.SyntaxError
+		if errors.As(err, &syntaxErr) {
 			return fmt.Errorf("could not unmarshal discriminator: %w", err)
 		}
 		u.UnknownRaw = json.RawMessage(data)
@@ -280,6 +282,10 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 	if len(candidates) == 0 {
 		{{- if $isUnionOpen}}
 		{{- addImport "encoding/json"}}
+		{{- addImport "fmt"}}
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = {{openUnionUnknownEnumName $unionType}}
 		return nil
@@ -332,6 +338,10 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 
 	{{- if $isUnionOpen}}
 	{{- addImport "encoding/json"}}
+	{{- addImport "fmt"}}
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = {{openUnionUnknownEnumName $unionType}}
 	return nil

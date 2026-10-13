@@ -627,8 +627,6 @@ func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
 	assert.Equal(t, 1, len(events))
 }
 
-// A genuine connection failure still classifies as connection_error: the
-// protocol class must not swallow it.
 // A stream whose response declares a sentinel is truncated when the server
 // closes before sending it: the events received are still printed, and the
 // failure is a retryable connection error rather than a clean exit.
@@ -651,6 +649,8 @@ func TestEventStreamTruncatedBeforeSentinelIsConnectionError(t *testing.T) {
 	assert.Equal(t, 2, len(parseNDJSON(t, h.GetStdout())))
 }
 
+// A genuine connection failure still classifies as connection_error: the
+// protocol class must not swallow it.
 func TestEventStreamConnectionRefusedStaysConnectionError(t *testing.T) {
 	recordTest("event-stream-connection-refused-stays-connection-error")
 

@@ -5,6 +5,7 @@ package bar
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"openapi/internal/sdk/sdkinternal/utils"
 )
 
@@ -81,6 +82,9 @@ func (u *Vehicle) UnmarshalJSON(data []byte) error {
 	}
 
 	if len(candidates) == 0 {
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal `%s` into any supported union types for Vehicle", string(data))
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = VehicleTypeUnknown
 		return nil
@@ -105,6 +109,9 @@ func (u *Vehicle) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	if !json.Valid(data) {
+		return fmt.Errorf("could not unmarshal `%s` into any supported union types for Vehicle", string(data))
+	}
 	u.UnknownRaw = json.RawMessage(data)
 	u.Type = VehicleTypeUnknown
 	return nil
