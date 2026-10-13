@@ -270,7 +270,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
-    last_write_checksum: sha1:f3ec208f5e0c5c44525d5ae63618f5c9d35b5a8d
+    last_write_checksum: sha1:77d90ab410b90a73de70b2672afb545cfa184e42
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -292,7 +292,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:838823dddf69133729070cc5990fe12d7d69a17e
+    last_write_checksum: sha1:d1e13e9d09d69e0444a00c8b6e468d32d73d7c56
   internal/output/streamproject.go:
     last_write_checksum: sha1:95088b4a0809c2f02782c950edfe240b8c3e885a
   internal/sdk/.gitattributes:
@@ -330,9 +330,9 @@ trackedFiles:
   internal/sdk/models/components/assetnotestep.go:
     last_write_checksum: sha1:11f8dd0bed22957c8ac6f0007229b888c9095e3f
   internal/sdk/models/components/assetoutputstep.go:
-    last_write_checksum: sha1:ea0befe5bb06149f8aa50fb7013437c2ca7e1dfe
+    last_write_checksum: sha1:275f8fcc850403c7addb44d9457a9b6681a7174c
   internal/sdk/models/components/assetresult.go:
-    last_write_checksum: sha1:a57fb9673b97693ebc1593497699c6bce6b5a63e
+    last_write_checksum: sha1:3c94e1a1e13d675de56e346cefbf093f988a584a
   internal/sdk/models/components/assettextblock.go:
     last_write_checksum: sha1:1951f911e13c8760a2f73a64dc5db40538dd5efe
   internal/sdk/models/components/badrequestresponseerror.go:
@@ -386,13 +386,13 @@ trackedFiles:
   internal/sdk/models/components/rectangle.go:
     last_write_checksum: sha1:9832ff96e70bc0484ced296bd8119b2fb550edf1
   internal/sdk/models/components/recursiveformfield.go:
-    last_write_checksum: sha1:2a80e0a86de189b083c0621d657ffd19c9fd388e
+    last_write_checksum: sha1:02440d576950893489038b45e823a324f606e465
   internal/sdk/models/components/reviewtask.go:
     last_write_checksum: sha1:f9a20b23682fe33408cc919f22a3fc70977a94cf
   internal/sdk/models/components/security.go:
     last_write_checksum: sha1:7df79fe462af6d1a4f1fea1b273fc9e4eabc61a2
   internal/sdk/models/components/shape.go:
-    last_write_checksum: sha1:926fd2608338a005edace85201bf76b8404f0abe
+    last_write_checksum: sha1:f3091d27147cedf546f030f7563b4b3775ab8b26
   internal/sdk/models/components/shaperequest.go:
     last_write_checksum: sha1:2e21a9bf07fc2147b3c73d17baee520ff298c338
   internal/sdk/models/components/simpleobject.go:
@@ -418,7 +418,7 @@ trackedFiles:
   internal/sdk/models/components/variantrecord.go:
     last_write_checksum: sha1:773de5ec25a50c8e677cb852b4e43e18dc1b8326
   internal/sdk/models/foo/animal.go:
-    last_write_checksum: sha1:c754259c787bdfee3ef48cc8762763a9c10df257
+    last_write_checksum: sha1:f3772c1e42265102a1d04064c24afd5046e7df85
   internal/sdk/models/foo/cat.go:
     last_write_checksum: sha1:0d441a8a2b12657876a07212c4f8869f347f7c37
   internal/sdk/models/foo/dog.go:
@@ -546,7 +546,7 @@ trackedFiles:
   internal/sdk/models/sdkerrors/geterrorinunion.go:
     last_write_checksum: sha1:cda88009d649a67653892547691e47e37ae776dd
   internal/sdk/models/sdkerrors/getunionerrors.go:
-    last_write_checksum: sha1:c0e20962bf9496c88f2b1e1e78049503400590a6
+    last_write_checksum: sha1:5c9032bee475a8404a2f50fa75d61a799b1d1ee9
   internal/sdk/models/sdkerrors/requesttimeouterror.go:
     last_write_checksum: sha1:5342a762baaf8c6374580a8d7034cb7ef885840c
   internal/sdk/models/sdkerrors/responsevalidationerror.go:
@@ -650,7 +650,7 @@ trackedFiles:
   internal/sdk/types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   internal/sdk/types/stream/stream.go:
-    last_write_checksum: sha1:0ae543052b937abdda3220639387c8ecd350558a
+    last_write_checksum: sha1:abb205026134b8a81bb2ffe2693e9caa328f491c
   internal/testclient/testclient.go:
     last_write_checksum: sha1:7107e59d336235c44af152c5a61ee3896a7841fa
   internal/usage/bodyschemas.go:
@@ -680,7 +680,7 @@ trackedFiles:
   tests/intenthint_test.go:
     last_write_checksum: sha1:a4157f549c7c601ec6c7e486e1f520402b9c758e
   tests/intentstream_test.go:
-    last_write_checksum: sha1:d17dafba2b2dcc8dfbd0dc8e17f4cf29c4e76664
+    last_write_checksum: sha1:c62494391aeb30f7a3ebd6e5dad923dcd47494b9
   tests/mockserver/.gitignore:
     last_write_checksum: sha1:228e1b05712a973948fd771323a2140a3b355ff4
   tests/mockserver/Dockerfile:

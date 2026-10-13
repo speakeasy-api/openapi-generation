@@ -629,6 +629,28 @@ func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
 
 // A genuine connection failure still classifies as connection_error: the
 // protocol class must not swallow it.
+// A stream whose response declares a sentinel is truncated when the server
+// closes before sending it: the events received are still printed, and the
+// failure is a retryable connection error rather than a clean exit.
+func TestEventStreamTruncatedBeforeSentinelIsConnectionError(t *testing.T) {
+	recordTest("event-stream-truncated-before-sentinel-is-connection-error")
+
+	server := newSSEServer(t, `{"data":{"content":"Hello"}}`, `{"data":{"content":" world"}}`)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "chat-skip-sentinel", "--prompt", "Print test content", "--agent-mode"})
+	require.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	var envelope map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(stderr), &envelope), "expected JSON envelope: %s", stderr)
+	assert.Equal(t, "connection_error", envelope["error_type"], stderr)
+	assert.Equal(t, "CLI_CONNECTION", envelope["error_reason"], stderr)
+	assert.Contains(t, envelope["error"], "sentinel")
+	assert.Equal(t, 2, len(parseNDJSON(t, h.GetStdout())))
+}
+
 func TestEventStreamConnectionRefusedStaysConnectionError(t *testing.T) {
 	recordTest("event-stream-connection-refused-stays-connection-error")
 

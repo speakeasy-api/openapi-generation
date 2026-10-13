@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"strings"
@@ -636,7 +637,7 @@ func isConnectionError(err error) bool {
 	if errors.As(err, &dnsErr) {
 		return true
 	}
-	if errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return true
 	}
 	return strings.HasPrefix(err.Error(), sdkSendErrorMarker)

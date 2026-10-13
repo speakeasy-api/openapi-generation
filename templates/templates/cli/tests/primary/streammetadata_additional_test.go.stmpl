@@ -130,7 +130,8 @@ func TestStreamMetadataGeneratedCommandDecodeFailure(t *testing.T) {
 	assert.Equal(t, output.ReasonCLIProtocol, classification.Reason)
 	assert.Equal(t, "Hello\n", h.GetStdout())
 	assert.Contains(t, h.GetStderr(), "CLI_PROTOCOL")
-	assert.NotContains(t, h.GetStderr(), "Resource ID:")
+	assert.True(t, strings.HasPrefix(h.GetStderr(), "Resource ID: \"valid\"\n"), "metadata observed before the failure is reported ahead of the error: %q", h.GetStderr())
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Resource ID:"))
 }
 
 type metadataTestStream struct {
@@ -227,13 +228,22 @@ func TestStreamMetadataRetention(t *testing.T) {
 	}
 }
 
-func TestStreamMetadataSuppressesOnFailure(t *testing.T) {
-	for _, failure := range []string{"stream", "cancel", "text type", "write", "finish"} {
-		t.Run(failure, func(t *testing.T) {
+func TestStreamMetadataOnFailure(t *testing.T) {
+	for _, tc := range []struct {
+		failure  string
+		reported bool
+	}{
+		{"stream", true},
+		{"text type", true},
+		{"write", true},
+		{"cancel", false},
+		{"finish", false},
+	} {
+		t.Run(tc.failure, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
 			cmd := metadataTestCommand(t, &stdout, &stderr)
 			stream := &metadataTestStream{items: []map[string]interface{}{map[string]interface{}{"id": "valid", "text": "hello"}}}
-			switch failure {
+			switch tc.failure {
 			case "stream":
 				stream.err = errors.New("stream interrupted")
 			case "cancel":
@@ -249,7 +259,12 @@ func TestStreamMetadataSuppressesOnFailure(t *testing.T) {
 				cmd.SetOut(metadataFailWriter{finishOnly: true})
 			}
 			require.Error(t, output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream"))
-			assert.NotContains(t, stderr.String(), "Resource ID:")
+			if tc.reported {
+				assert.True(t, strings.HasPrefix(stderr.String(), "Resource ID: \"valid\"\n"), stderr.String())
+				assert.Equal(t, 1, strings.Count(stderr.String(), "Resource ID:"))
+			} else {
+				assert.NotContains(t, stderr.String(), "Resource ID:")
+			}
 		})
 	}
 }

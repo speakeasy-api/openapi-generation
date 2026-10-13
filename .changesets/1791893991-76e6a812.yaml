@@ -1,0 +1,11 @@
+id: 1791893991-76e6a812
+features:
+    - unions
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: return the decode error for invalid JSON in open unions instead of deferring it to the next marshal
+author: AshGodfrey
+date: "2026-10-13"

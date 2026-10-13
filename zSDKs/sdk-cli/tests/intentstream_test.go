@@ -580,3 +580,34 @@ func TestIntentStream_IntentFlagMatchingOperationFlagIsIsolated(t *testing.T) {
 	require.NoError(t, err, "the operation run function must ignore same-named intent flags: %s", stderr)
 	assert.Equal(t, false, srv.lastBody(t)["stream"])
 }
+
+// A stream that drops before its declared sentinel, between frames or inside
+// one, is a failure rather than a clean exit; the text received before the
+// drop has already been written.
+func TestIntentStream_TruncatedBeforeSentinelFails(t *testing.T) {
+	if intentStreamSentinel == "" {
+		t.Skip("the declared intent stream has no end-of-stream sentinel")
+	}
+	for _, tc := range []struct{ name, tail string }{
+		{"between frames", ""},
+		{"mid frame", "data: {\"da"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintf(w, "data: %s\n\n", intentStreamPayload("Hello"))
+				fmt.Fprint(w, tc.tail)
+			}))
+			t.Cleanup(srv.Close)
+
+			var out bytes.Buffer
+			ctx, cancel := context.WithTimeout(context.Background(), intentStreamTestTimeout)
+			defer cancel()
+			stderr, err := runIntentStream(t, ctx, &out, srv.URL)
+			require.Error(t, err, "stderr: %s", stderr)
+			assert.Equal(t, "Hello\n", out.String())
+			assert.Contains(t, stderr, intentStreamSentinel)
+		})
+	}
+}

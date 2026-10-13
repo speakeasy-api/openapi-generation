@@ -69,9 +69,9 @@ trackedFiles:
   assetnotestep.go:
     last_write_checksum: sha1:ed269ba90a489d95e005c24209fb58b7864754f7
   assetoutputstep.go:
-    last_write_checksum: sha1:c0454985266227a8ae7a4a49a2f12524dd49dcc7
+    last_write_checksum: sha1:b08f76a99f1cc9c98ff6bc62d3760f498dcefb53
   assetresult.go:
-    last_write_checksum: sha1:042f139429ab2e54848ce744d1bb23e525f00a47
+    last_write_checksum: sha1:df701bc22b7edf119239a617853bdb0dcae290dc
   assettextblock.go:
     last_write_checksum: sha1:cdbdb48e28b19558b9a580123b22b21e33eced3d
   authop.go:
@@ -629,7 +629,7 @@ trackedFiles:
   file.go:
     last_write_checksum: sha1:f64ef570bfd5dff677302e7d7844ed68d087c89c
   foo/animal.go:
-    last_write_checksum: sha1:f041f8e30e23cb993b91e27f5ed4ce0c659efc2c
+    last_write_checksum: sha1:20c97a2433121a66ef18d26b8699226872a8a7db
   foo/cat.go:
     last_write_checksum: sha1:ecbb9e73dad2265a66bc5fb214e972d7fe958f9e
   foo/dog.go:
@@ -687,7 +687,7 @@ trackedFiles:
   gettriplenamespaceconflictop.go:
     last_write_checksum: sha1:dde51c485a4c22de5d0897ba2df1186d9663ceb2
   getunionerrorsop.go:
-    last_write_checksum: sha1:8e7a6323483676211938e185aa96bfce71d655f7
+    last_write_checksum: sha1:0ba18c38e71731d4551cbbed76b9bdd588807ef5
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
@@ -781,7 +781,7 @@ trackedFiles:
   rectangle.go:
     last_write_checksum: sha1:f33d36ba2e0ca6811572cd08ce53fe5f3c5664aa
   recursiveformfield.go:
-    last_write_checksum: sha1:2e06532b8c5445500bd2ae8ae8586d24e911a3e2
+    last_write_checksum: sha1:7893210f8d017b50690e5a348566dbc2bd91cbf4
   renderassetop.go:
     last_write_checksum: sha1:a788e389967e88581337759b330af30c4e562bf8
   requesttimeouterror.go:
@@ -801,7 +801,7 @@ trackedFiles:
   security.go:
     last_write_checksum: sha1:8db64ccb0819aa35e06ad3efa18e74c1b7c19441
   shape.go:
-    last_write_checksum: sha1:c6ab05315f4d5881ff420076a64b85e5078710a7
+    last_write_checksum: sha1:edf220439f2446b61d37ec21b4e3d191a5976bf5
   shaperequest.go:
     last_write_checksum: sha1:b4bc448176210cb333c9cedf547e116395ad377c
   simpleobject.go:
@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:0ae543052b937abdda3220639387c8ecd350558a
+    last_write_checksum: sha1:abb205026134b8a81bb2ffe2693e9caa328f491c
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

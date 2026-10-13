@@ -213,6 +213,9 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) {{if $hasErrorPath}}(err err
 	{{- addImport "fmt"}}
 	if err := json.Unmarshal(data, &dis); err != nil {
 		{{- if $isUnionOpen}}
+		if !json.Valid(data) {
+			return fmt.Errorf("could not unmarshal discriminator: %w", err)
+		}
 		u.UnknownRaw = json.RawMessage(data)
 		u.Type = {{openUnionUnknownEnumName $unionType}}
 		return nil

@@ -758,6 +758,46 @@ func TestEventStreamTimeoutStillBoundsSlowStream(t *testing.T) {
 	assert.Less(t, time.Since(start), 15*time.Second, "the deadline must cut the stalled stream short")
 }
 
+// A stream that declares an end-of-stream sentinel is complete only once the
+// sentinel arrives: a connection dropped between frames or inside a frame ends
+// with io.ErrUnexpectedEOF instead of looking like a clean completion, and the
+// complete frames received before the drop are still delivered.
+func TestEventStreamTruncatedBeforeSentinel(t *testing.T) {
+	recordTest("event-stream-truncated-before-sentinel")
+
+	for _, tc := range []struct {
+		name   string
+		body   string
+		events int
+	}{
+		{"between frames", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"content\":\" world\"}}\n\n", 2},
+		{"mid frame", "data: {\"data\":{\"content\":\"Hello\"}}\n\ndata: {\"data\":{\"con", 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprint(w, tc.body)
+			}))
+			defer server.Close()
+
+			s := sdk.New()
+			res, err := s.Eventstreams.ChatSkipSentinel(context.Background(), operations.ChatSkipSentinelRequestBody{Prompt: "Print test content"}, operations.WithServerURL(server.URL))
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			defer res.ChatCompletionEvent.Close()
+
+			count := 0
+			for res.ChatCompletionEvent.Next() {
+				count++
+			}
+			assert.Equal(t, tc.events, count, "complete frames before the drop are still delivered")
+			require.Error(t, res.ChatCompletionEvent.Err())
+			assert.ErrorIs(t, res.ChatCompletionEvent.Err(), io.ErrUnexpectedEOF)
+		})
+	}
+}
+
 func decodeRawEvent(se []byte) (map[string]json.RawMessage, error) {
 	var event map[string]json.RawMessage
 	if err := json.Unmarshal(se, &event); err != nil {

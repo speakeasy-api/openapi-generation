@@ -422,6 +422,9 @@ function isTestSkipped(test: string): boolean {
     "clierrors-unknown-flag-suggestion",
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
+    "event-stream-truncated-before-sentinel",
+    "event-stream-truncated-before-sentinel-is-connection-error",
+    "open-union-invalid-json-is-an-error",
   ].includes(test);
 }
 

@@ -564,6 +564,9 @@ function isTestSkipped(test: string): boolean {
     "pagination-object-results-page-params",
     "clierrors-unknown-flag-suggestion",
     "cli-forbidden-without-credentials",
+    "event-stream-truncated-before-sentinel",
+    "event-stream-truncated-before-sentinel-is-connection-error",
+    "open-union-invalid-json-is-an-error",
   ].includes(test);
 }
 

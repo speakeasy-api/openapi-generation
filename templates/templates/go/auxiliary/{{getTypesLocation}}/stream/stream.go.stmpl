@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"regexp"
 	"strconv"
@@ -37,7 +39,9 @@ const maxEventSize = 1 << 30
 // newServerEventSplitter returns a stateful bufio.SplitFunc that only re-scans
 // the trailing maxBoundaryLen-1 bytes across reads. That keeps large events
 // linear to parse while still finding boundaries split across two chunks.
-func newServerEventSplitter() bufio.SplitFunc {
+// A strict splitter treats an unterminated trailing frame at EOF as a
+// truncated stream instead of dispatching it.
+func newServerEventSplitter(strict bool) bufio.SplitFunc {
 	scanned := 0
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
@@ -56,7 +60,11 @@ func newServerEventSplitter() bufio.SplitFunc {
 
 		if atEOF {
 			scanned = 0
-			return len(data), bytes.TrimRight(data, "\r\n"), nil
+			rest := bytes.TrimRight(data, "\r\n")
+			if strict && len(rest) > 0 {
+				return 0, nil, io.ErrUnexpectedEOF
+			}
+			return len(data), rest, nil
 		}
 
 		scanned = len(data)
@@ -94,7 +102,7 @@ func NewEventStream[T any](
 ) *EventStream[T] {
 	scanner := bufio.NewScanner(source)
 	scanner.Buffer(nil, maxEventSize)
-	scanner.Split(newServerEventSplitter())
+	scanner.Split(newServerEventSplitter(sentinel != ""))
 
 	var src io.ReadCloser
 	if s, ok := source.(io.ReadCloser); ok {
@@ -172,6 +180,9 @@ func (es *EventStream[T]) Next() bool {
 
 		if !es.scanner.Scan() {
 			es.err = es.scanner.Err()
+			if es.sentinel != "" && (es.err == nil || errors.Is(es.err, io.ErrUnexpectedEOF)) {
+				es.err = fmt.Errorf("stream ended before the %q sentinel: %w", es.sentinel, io.ErrUnexpectedEOF)
+			}
 			es.finished.Store(true)
 			es.release()
 			return false

@@ -1,0 +1,11 @@
+id: 1791894921-5ba915b4
+features:
+    - serverEventsSentinels
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: fail an event stream that ends before its declared sentinel instead of completing silently
+author: AshGodfrey
+date: "2026-10-13"

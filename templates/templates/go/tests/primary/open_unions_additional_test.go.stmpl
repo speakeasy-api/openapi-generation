@@ -152,3 +152,21 @@ func TestOpenUnionEmbedded(t *testing.T) {
 	assert.Equal(t, "green", vehicles[2].Bike.Colour)
 	assert.False(t, vehicles[2].IsUnknown())
 }
+
+// Bytes that are not JSON at all are a decode error, not an unknown variant:
+// storing them as the raw payload only defers the failure to the next
+// marshal. Valid JSON that is not an object still takes the unknown path.
+func TestOpenUnionInvalidJSONIsAnError(t *testing.T) {
+	recordTest("open-union-invalid-json-is-an-error")
+
+	var v shared.Vehicle
+	err := json.Unmarshal([]byte(`{"vehicleType":"car","wheelsType":"fo`), &v)
+	require.Error(t, err)
+	assert.False(t, v.IsUnknown())
+	assert.Nil(t, v.GetUnknownRaw())
+
+	err = json.Unmarshal([]byte(`["car"]`), &v)
+	require.NoError(t, err)
+	assert.True(t, v.IsUnknown())
+	assert.JSONEq(t, `["car"]`, string(v.GetUnknownRaw()))
+}

@@ -498,6 +498,7 @@ const (
 	TestEventStreamMixedData
 	TestEventStreamMalformedFrameStrict
 	TestEventStreamMalformedFrameLenient
+	TestEventStreamTruncatedBeforeSentinel
 	TestTestHooks
 	TestTestHooksError
 	TestTestHooksBeforeCreateRequest
@@ -627,6 +628,7 @@ const (
 	TestOpenUnionKnownVariant
 	TestOpenUnionUnknownDiscriminator
 	TestOpenUnionMissingDiscriminator
+	TestOpenUnionInvalidJSONIsAnError
 	TestOpenUnionInvalidPayload
 	TestOpenUnionKnownDiscInvalidSchema
 	TestOpenUnionStrictRequestValidation
@@ -690,6 +692,7 @@ const (
 	TestErrorTaxonomyPrettyResidualDetails
 	TestErrorTaxonomyReservedKeysAndRenderedClassification
 	TestEventStreamConnectionRefusedStaysConnectionError
+	TestEventStreamTruncatedBeforeSentinelIsConnectionError
 	TestEventStreamDecodeFailureIsProtocolError
 	TestEventStreamDecodeFailureWithoutJsonErrorType
 	TestEventStreamErrorEventAgentMode
