@@ -96,6 +96,27 @@ func TestArtifact_WritesLastMatchingBlock(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, artifactTestBytes, string(written), "the last block of the declared kind must be written, not an earlier one")
 }
+
+func TestArtifact_TrailingBlockWithoutDataIsAnError(t *testing.T) {
+	for name, body := range map[string]string{
+		"missing": `{{templateArtifactTestMockJSON "multiple-missing-data" templateArtifactTestMime}}`,
+		"empty":   `{{templateArtifactTestMockJSON "multiple-empty-data" templateArtifactTestMime}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := artifactTestServer(t, body)
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+
+			err := runArtifact(t, h, server.URL, dir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "no {{templateArtifactTestKind}} content")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+			entries, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			assert.Empty(t, entries, "a trailing block without data must not write an earlier artifact")
+		})
+	}
+}
 {{- end}}
 
 func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {

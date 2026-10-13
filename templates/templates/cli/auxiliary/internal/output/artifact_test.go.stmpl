@@ -90,6 +90,27 @@ func TestFindArtifactItemSelectsTrailingURIBlockOverEarlierInline(t *testing.T) 
 	}
 }
 
+func TestFindArtifactItemSelectsTrailingBlockWithoutData(t *testing.T) {
+	for name, raw := range map[string]string{
+		"missing": `{"steps":[{"content":[{"type":"image","data":"aW5saW5l"},{"type":"image"}]}]}`,
+		"empty":   `{"steps":[{"content":[{"type":"image","data":"aW5saW5l"},{"type":"image","data":""}]}]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			parsed := parseArtifactResponse(t, raw)
+			item := findArtifactItem(parsed, artifactTestConfig("image"))
+			if item == nil {
+				t.Fatal("expected the trailing image block")
+			}
+			if got := item["type"]; got != "image" {
+				t.Fatalf("type = %v, want image", got)
+			}
+			if got, present := item["data"]; name == "missing" && present || name == "empty" && got != "" {
+				t.Fatalf("data = %v (present %t), want the trailing %s data field", got, present, name)
+			}
+		})
+	}
+}
+
 func TestFindArtifactItemReturnsNilWithoutMatch(t *testing.T) {
 	parsed := parseArtifactResponse(t, `{"steps":[{"type":"model_output","content":[{"type":"text","text":"only text"}]}]}`)
 

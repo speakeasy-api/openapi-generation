@@ -2024,7 +2024,9 @@ registerTemplateFunc(
 // by folding the pointer segments outside-in around a terminal content item.
 // variant: "inline" (base64 data), "uri" (URI-only delivery), "empty" (no
 // content items), "notready" (empty with a non-terminal status), "wrongkind"
-// (a text block only), "multiple" (an intermediate block before the terminal).
+// (a text block only), "multiple" (an intermediate block before the terminal),
+// "multiple-missing-data" / "multiple-empty-data" (an intermediate inline block
+// before a terminal of the declared kind that carries no usable data).
 function templateArtifactTestMockJSON(variant: string, mime: string): string {
   const cmd = getArtifactTestCommand();
   if (!cmd) return "{}";
@@ -2072,6 +2074,12 @@ function artifactTestMockJSON(
     case "wrongkind":
       terminal = { [typeField]: "text", text: "no media here" };
       break;
+    case "multiple-missing-data":
+      terminal = { [typeField]: kind, [mimeField]: mime };
+      break;
+    case "multiple-empty-data":
+      terminal = { [typeField]: kind, [dataField]: "", [mimeField]: mime };
+      break;
     default:
       // "artifact-bytes" base64-encoded without relying on runtime helpers.
       terminal = {
@@ -2083,14 +2091,13 @@ function artifactTestMockJSON(
   // "multiple" puts an intermediate block before the terminal in the
   // innermost [*], wrapped in the same trailing field segments so both are
   // candidates. Without a [*] it degenerates to "inline".
-  let leading: any =
-    variant === "multiple"
-      ? {
-          [typeField]: kind,
-          [dataField]: "aW50ZXJtZWRpYXRl",
-          [mimeField]: mime,
-        }
-      : undefined;
+  let leading: any = variant.startsWith("multiple")
+    ? {
+        [typeField]: kind,
+        [dataField]: "aW50ZXJtZWRpYXRl",
+        [mimeField]: mime,
+      }
+    : undefined;
   // "empty" and "notready" start the fold with no terminal: the innermost
   // [*] becomes an empty array and every outer segment wraps normally.
   let node: any =
