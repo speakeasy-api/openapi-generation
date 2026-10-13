@@ -162,7 +162,7 @@ func TestOpenUnionInvalidJSONIsAnError(t *testing.T) {
 	assert.False(t, v.IsUnknown())
 	assert.Nil(t, v.GetUnknownRaw())
 
-	var u shared.SomeUnion
+	var u shared.OneOfPrimitives
 	err = u.UnmarshalJSON([]byte(`{`))
 	require.Error(t, err)
 	assert.False(t, u.IsUnknown())
