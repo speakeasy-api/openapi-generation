@@ -1748,8 +1748,12 @@ func (d *cliManifestDecoder) linkStreamProjection(owner string, stream *CLIComma
 	if err := d.linkStreamSelection(owner, "output.stream.select", stream.Select, opInfo); err != nil {
 		return err
 	}
-	if stream.Metadata != nil {
-		return d.linkStreamSelection(owner, "output.stream.metadata.select", stream.Metadata.Select, opInfo)
+	for _, field := range stream.Metadata {
+		for _, path := range field.Select {
+			if err := d.linkStreamSelection(owner, "output.stream.metadata.select", path, opInfo); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

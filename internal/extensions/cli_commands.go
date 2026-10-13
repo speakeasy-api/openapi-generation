@@ -217,9 +217,11 @@ type CLICommandArtifact struct {
 }
 
 type CLICommandStreamMetadata struct {
-	Select  string `json:"select" yaml:"select"`
-	Pointer string `json:"pointer" yaml:"pointer"`
-	Label   string `json:"label" yaml:"label"`
+	Select   []string `json:"select" yaml:"select"`
+	Pointers []string `json:"pointers" yaml:"pointers"`
+	Label    string   `json:"label" yaml:"label"`
+	Complete []string `json:"complete,omitempty" yaml:"complete,omitempty"`
+	When     string   `json:"when,omitempty" yaml:"when,omitempty"`
 }
 
 // CLICommandStreamProjection selects the field of each streamed event whose
@@ -228,9 +230,9 @@ type CLICommandStreamMetadata struct {
 // CLI sees each event (the same root a per-event --jq filter sees); Pointer
 // is its RFC 6901 lowering, which the generated runtime evaluates.
 type CLICommandStreamProjection struct {
-	Metadata *CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Select   string                    `json:"select" yaml:"select"`
-	Pointer  string                    `json:"pointer" yaml:"pointer"`
+	Metadata []CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Select   string                     `json:"select" yaml:"select"`
+	Pointer  string                     `json:"pointer" yaml:"pointer"`
 }
 
 // CLICommandOutput groups output behavior for a declared command.
@@ -525,6 +527,8 @@ var cliCommandKeys = []string{
 var cliOutputKeys = []string{"artifact", "stream"}
 
 var cliOutputStreamKeys = []string{"select", "metadata"}
+
+var cliOutputStreamMetadataKeys = []string{"select", "label", "complete", "when"}
 
 var cliOperationKeys = []string{"output", "flags"}
 
@@ -2460,42 +2464,101 @@ func cliMapKeys(m map[string]bool) []string {
 	return keys
 }
 
-func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) (*CLICommandStreamMetadata, error) {
+func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) ([]CLICommandStreamMetadata, error) {
+	items := []*yaml.Node{node}
+	if node.Kind == yaml.SequenceNode {
+		if len(node.Content) == 0 {
+			return nil, fmt.Errorf("line %d: output.stream.metadata must list at least one field", node.Line)
+		}
+		items = node.Content
+	}
+
+	fields := make([]CLICommandStreamMetadata, 0, len(items))
+	labels := map[string]bool{}
+	statusLine := 0
+	incompleteLine := 0
+	for _, item := range items {
+		field, err := d.decodeStreamMetadataField(item)
+		if err != nil {
+			return nil, err
+		}
+		if labels[field.Label] {
+			return nil, fmt.Errorf("line %d: output.stream.metadata label %q is declared more than once", item.Line, field.Label)
+		}
+		labels[field.Label] = true
+		if field.Complete != nil {
+			if statusLine != 0 {
+				return nil, fmt.Errorf("line %d: output.stream.metadata declares complete on more than one field; only the stream's status field lists its complete values", item.Line)
+			}
+			statusLine = item.Line
+		}
+		if field.When != "" && incompleteLine == 0 {
+			incompleteLine = item.Line
+		}
+		fields = append(fields, field)
+	}
+	if incompleteLine != 0 && statusLine == 0 {
+		return nil, fmt.Errorf("line %d: output.stream.metadata when: incomplete requires a status field that lists its complete values", incompleteLine)
+	}
+	return fields, nil
+}
+
+func (d *cliManifestDecoder) decodeStreamMetadataField(node *yaml.Node) (CLICommandStreamMetadata, error) {
+	var field CLICommandStreamMetadata
 	entries, err := cliMapEntries(node, "output.stream.metadata")
 	if err != nil {
-		return nil, err
+		return field, err
 	}
-	metadata := &CLICommandStreamMetadata{}
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "select":
-			value, err := cliScalarString(entry.Value, "output.stream.metadata.select")
+			paths, err := cliScalarOrStringList(entry.Value, "output.stream.metadata.select")
 			if err != nil {
-				return nil, err
+				return field, err
 			}
-			segments, err := cliParseSingularPath(value)
-			if err != nil {
-				return nil, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+			for _, path := range paths {
+				segments, err := cliParseSingularPath(path)
+				if err != nil {
+					return field, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+				}
+				field.Select = append(field.Select, path)
+				field.Pointers = append(field.Pointers, cliSegmentsToPointer(segments))
 			}
-			metadata.Select = value
-			metadata.Pointer = cliSegmentsToPointer(segments)
 		case "label":
 			value, err := cliScalarString(entry.Value, "output.stream.metadata.label")
 			if err != nil {
-				return nil, err
+				return field, err
 			}
 			for _, r := range value {
 				if !unicode.IsPrint(r) {
-					return nil, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
+					return field, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
 				}
 			}
-			metadata.Label = value
+			field.Label = value
+		case "complete":
+			values, err := cliScalarOrStringList(entry.Value, "output.stream.metadata.complete")
+			if err != nil {
+				return field, err
+			}
+			field.Complete = values
+		case "when":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.when")
+			if err != nil {
+				return field, err
+			}
+			if value != "incomplete" {
+				return field, fmt.Errorf("line %d: output.stream.metadata.when must be incomplete, got %q", entry.Value.Line, value)
+			}
+			field.When = value
 		default:
-			return nil, fmt.Errorf("line %d: output.stream.metadata has unknown key %q", entry.Key.Line, entry.Key.Value)
+			return field, fmt.Errorf("line %d: output.stream.metadata has unknown key %q%s", entry.Key.Line, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputStreamMetadataKeys))
 		}
 	}
-	if metadata.Select == "" || strings.TrimSpace(metadata.Label) == "" {
-		return nil, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
+	if len(field.Select) == 0 || strings.TrimSpace(field.Label) == "" {
+		return field, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
 	}
-	return metadata, nil
+	if field.Complete != nil && field.When != "" {
+		return field, fmt.Errorf("line %d: output.stream.metadata field %q lists complete values, so it is already reported only when incomplete; remove when", node.Line, field.Label)
+	}
+	return field, nil
 }

@@ -1,0 +1,10 @@
+id: 1791905206-481ab114
+features:
+    - cliCommands
+targets:
+    - cli
+type: feat
+bump: minor
+description: 'output.stream.metadata accepts a list of fields with fallback paths; a status field lists its complete values, and an incomplete stream also reports the status and fields marked when: incomplete'
+author: AshGodfrey
+date: "2026-10-13"
