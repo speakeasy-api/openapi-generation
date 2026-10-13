@@ -5,6 +5,7 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/itchyny/gojq"
 	"github.com/spf13/cobra"
@@ -12,23 +13,36 @@ import (
 	"openapi/internal/flagutil"
 )
 
-// ValidateJqFlag parses an explicitly set --jq expression so a syntax error is
-// reported as a usage error before any request is sent.
+// ValidateJqFlag compiles an explicitly set, non-empty --jq expression.
 func ValidateJqFlag(cmd *cobra.Command) error {
-	if !flagutil.FlagChanged(cmd, "jq") {
+	expression, changed := flagutil.GetStringFlag(cmd, "jq")
+	if !changed || expression == "" {
 		return nil
 	}
-	expression, _ := flagutil.GetStringFlag(cmd, "jq")
-	_, err := parseJqExpression(expression)
+	_, err := compileJqExpression(expression)
 	return err
 }
 
-func parseJqExpression(expression string) (*gojq.Query, error) {
-	query, err := gojq.Parse(expression)
+var compiledJq sync.Map
+
+func compileJqExpression(expression string) (*gojq.Code, error) {
+	if code, ok := compiledJq.Load(expression); ok {
+		return code.(*gojq.Code), nil
+	}
+	code, err := compileJq(expression)
 	if err != nil {
 		return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid jq expression %q: %w", expression, err))
 	}
-	return query, nil
+	compiledJq.Store(expression, code)
+	return code, nil
+}
+
+func compileJq(expression string) (*gojq.Code, error) {
+	query, err := gojq.Parse(expression)
+	if err != nil {
+		return nil, err
+	}
+	return gojq.Compile(query)
 }
 
 // ApplyJqFilter applies a jq expression to the given content and returns the results.
@@ -48,13 +62,13 @@ func ApplyJqFilter(content interface{}, expression string) ([]interface{}, error
 		return nil, fmt.Errorf("failed to prepare data for jq: %w", err)
 	}
 
-	query, err := parseJqExpression(expression)
+	code, err := compileJqExpression(expression)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []interface{}
-	iter := query.Run(data)
+	iter := code.Run(data)
 	for {
 		v, ok := iter.Next()
 		if !ok {

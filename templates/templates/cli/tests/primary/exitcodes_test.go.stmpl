@@ -208,16 +208,56 @@ func TestExitCodeInvalidJqRejectedBeforeRequest(t *testing.T) {
 	defer s.Close()
 	op := []string{"errors", "status-get-error", "--status-code", "200"}
 
-	h, err := runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", "invalid[[["))
-	require.Error(t, err)
-	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err), h.GetStderr())
-	assert.Contains(t, h.GetStderr(), "invalid jq expression")
-	assert.Equal(t, int32(0), requests.Load(), "a malformed --jq must be rejected before the request is sent")
+	rejected := []struct {
+		name       string
+		expression string
+	}{
+		{name: "syntax", expression: "invalid[[["},
+		{name: "undefined function", expression: ".status_code | nosuchfn"},
+		{name: "undefined variable", expression: "$undef"},
+	}
+	modes := []struct {
+		name string
+		args []string
+	}{
+		{name: "plain"},
+		{name: "agent", args: []string{"--agent-mode"}},
+		{name: "json", args: []string{"--output-format", "json"}},
+	}
+	for _, tc := range rejected {
+		for _, mode := range modes {
+			t.Run(tc.name+"/"+mode.name, func(t *testing.T) {
+				requests.Store(0)
+				h, err := runExitCodeInvocation(t, s.URL, mode.args, append(op, "--jq", tc.expression))
+				require.Error(t, err)
+				assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err), h.GetStderr())
+				assert.Contains(t, h.GetStderr(), "invalid jq expression")
+				assert.Equal(t, int32(0), requests.Load(), "a malformed --jq must be rejected before the request is sent")
+				if mode.name != "plain" {
+					envelope := agentEnvelope(t, h.GetStderr())
+					assert.Equal(t, float64(clierrors.ExitUsage), envelope["exit_code"])
+				}
+			})
+		}
+	}
 
-	h, err = runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", ".status_code"))
-	require.NoError(t, err, h.GetStderr())
-	assert.Equal(t, "200", strings.TrimSpace(h.GetStdout()))
-	assert.Equal(t, int32(1), requests.Load())
+	t.Run("valid expression", func(t *testing.T) {
+		requests.Store(0)
+		h, err := runExitCodeInvocation(t, s.URL, nil, append(op, "--jq", ".status_code"))
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "200", strings.TrimSpace(h.GetStdout()))
+		assert.Equal(t, int32(1), requests.Load())
+	})
+
+	t.Run("empty expression is unset", func(t *testing.T) {
+		requests.Store(0)
+		h, err := runExitCodeInvocation(t, s.URL, []string{"--output-format", "json"}, append(op, "--jq", ""))
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, int32(1), requests.Load())
+		var body map[string]interface{}
+		require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &body), h.GetStdout())
+		assert.Equal(t, float64(200), body["status_code"])
+	})
 }
 
 {{- if and hasGlobalSecurity templatePrimaryAuthEnvVar}}
