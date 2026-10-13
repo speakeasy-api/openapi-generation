@@ -1,4 +1,4 @@
-package templates
+package generate
 
 import (
 	"os/exec"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/speakeasy-api/openapi-generation/v2/templates"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,10 +23,10 @@ func selectedGojqVersion(t *testing.T, dir string) string {
 // them at generation time; the generated CLI must run the same gojq version
 // so an expression that passes generation cannot fail at runtime.
 func TestCLIGojqPinMatchesGenerator(t *testing.T) {
-	generator := selectedGojqVersion(t, "..")
-	generatedCLI := selectedGojqVersion(t, "../zSDKs/sdk-cli")
+	generator := selectedGojqVersion(t, "../..")
+	generatedCLI := selectedGojqVersion(t, "../../zSDKs/sdk-cli")
 
-	config, err := TemplateFS.ReadFile("templates/cli/config.ts")
+	config, err := templates.TemplateFS.ReadFile("templates/cli/config.ts")
 	require.NoError(t, err)
 	cli := regexp.MustCompile(`"github\.com/itchyny/gojq",\s*version: "([^"]+)"`).FindSubmatch(config)
 	require.NotNil(t, cli, "gojq pin not found in templates/cli/config.ts")
