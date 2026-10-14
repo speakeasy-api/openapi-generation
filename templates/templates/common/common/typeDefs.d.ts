@@ -1728,6 +1728,7 @@ declare global {
     IsEmpty: () => boolean;
     IsPrimitive: () => boolean;
     IsCustomType: () => boolean;
+    HasSensitiveValues: () => boolean;
     IsCustomClass: () => boolean;
     IsContainer: () => boolean;
     IsPrimitiveContainer: () => boolean;
