@@ -219,6 +219,14 @@ func ensureDPrint() {
 	})
 }
 
-func init() {
+// Prewarm starts compiling the WASM formatters (dprint, clang-format and
+// rubyfmt) in the background so they are ready by the time generation formats
+// its first file. Formatting calls the ensure functions itself, so Prewarm is
+// only a latency optimisation. It is deliberately not run from init: commands
+// that never format, such as lint and validate, should not pay for compiling
+// the formatters.
+func Prewarm() {
 	go ensureDPrint()
+	go func() { _ = ensureClangfmt() }()
+	go func() { _ = ensureRubyfmt() }()
 }

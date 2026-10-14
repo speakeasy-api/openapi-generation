@@ -25,6 +25,7 @@ import (
 	"github.com/speakeasy-api/openapi-generation/v2/internal/document"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/env"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/features"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/format"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/instrument"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/processrunner"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/schemas"
@@ -634,6 +635,10 @@ func (g *Generator) createMockServerGenerator(ctx context.Context) (*Generator, 
 // It returns a slice of errors that occurred during generation.
 // ctx must carry generation access state (generation-context/access) or a license token (licensetoken.WithToken).
 func (g *Generator) Generate(ctx context.Context, schema []byte, schemaPath, target, outDir string, isRemote, compileOutput bool) []error {
+	// Compile the WASM formatters while the document loads so they are ready
+	// when the first generated file is formatted.
+	format.Prewarm()
+
 	ctx, err := g.establishLicense(ctx, target, outDir)
 	if err != nil {
 		return []error{err}
