@@ -176,6 +176,37 @@ func cliScalarString(node *yaml.Node, what string) (string, error) {
 	return node.Value, nil
 }
 
+func cliScalarOrStringList(node *yaml.Node, what string) ([]string, error) {
+	if node == nil || node.Kind != yaml.SequenceNode {
+		value, err := cliScalarString(node, what)
+		if err != nil {
+			return nil, fmt.Errorf("%w or a list of strings", err)
+		}
+		if value == "" {
+			return nil, fmt.Errorf("line %d: %s must be a non-empty string", node.Line, what)
+		}
+		return []string{value}, nil
+	}
+	if len(node.Content) == 0 {
+		return nil, fmt.Errorf("line %d: %s must list at least one string", node.Line, what)
+	}
+	values := make([]string, 0, len(node.Content))
+	for _, item := range node.Content {
+		value, err := cliScalarString(item, what)
+		if err != nil {
+			return nil, err
+		}
+		if value == "" {
+			return nil, fmt.Errorf("line %d: %s must not contain empty strings", item.Line, what)
+		}
+		if cliContains(values, value) {
+			return nil, fmt.Errorf("line %d: %s lists %q more than once", item.Line, what, value)
+		}
+		values = append(values, value)
+	}
+	return values, nil
+}
+
 func cliScalarBool(node *yaml.Node, what string) (bool, error) {
 	if node == nil || node.Kind != yaml.ScalarNode || node.Tag != "!!bool" {
 		line := 0

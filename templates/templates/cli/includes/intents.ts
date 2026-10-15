@@ -135,8 +135,7 @@ interface IntentCmdCtx {
   AsyncMissingStateTestJSON: string;
   AsyncMissingHandleTestJSON: string;
   AsyncFailureHint: string;
-  StreamMetadataPointer: string;
-  StreamMetadataLabel: string;
+  StreamMetadataJSON: string;
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
   StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
@@ -201,8 +200,7 @@ interface CLIOperationFlagCtx {
 
 interface CLIOperationCtx {
   OperationID: string;
-  StreamMetadataPointer: string;
-  StreamMetadataLabel: string;
+  StreamMetadataJSON: string;
   StreamSelect: string;
   Flags: CLIOperationFlagCtx[];
   BodyFlags: string[];
@@ -1336,8 +1334,7 @@ function collectIntentManifest(): IntentManifestCtx {
       AsyncMissingHandleTestJSON: asyncMissingHandleTestJSON,
       AsyncFailureHint: cmd.Hints?.CLI_ASYNC_FAILED?.[0] || "",
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
-      StreamMetadataPointer: cmd.Output?.Stream?.Metadata?.Pointer || "",
-      StreamMetadataLabel: cmd.Output?.Stream?.Metadata?.Label || "",
+      StreamMetadataJSON: streamMetadataJSON(cmd.Output?.Stream?.Metadata),
       StreamToggle:
         !dispatch && intentStreamKind(found.op).kind
           ? intentDefaultOnStreamToggle(flags, presetJSON)
@@ -1374,6 +1371,22 @@ function intentStreamKind(op: Operation): { kind: string; sentinel: string } {
     }
   }
   return { kind: "", sentinel: "" };
+}
+
+function streamMetadataJSON(
+  fields: CLICommandStreamMetadata[] | null | undefined,
+): string {
+  if (!fields?.length) {
+    return "";
+  }
+  return JSON.stringify(
+    fields.map((field) => ({
+      label: field.Label,
+      pointers: field.Pointers,
+      ...(field.Complete?.length ? { complete: field.Complete } : {}),
+      ...(field.When ? { when: field.When } : {}),
+    })),
+  );
 }
 
 // intentOperationHasRequiredParams reports whether the operation declares
@@ -1569,8 +1582,7 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
   return {
     OperationID: declared.OperationID,
     StreamSelect: declared.Output?.Stream?.Pointer || "",
-    StreamMetadataPointer: declared.Output?.Stream?.Metadata?.Pointer || "",
-    StreamMetadataLabel: declared.Output?.Stream?.Metadata?.Label || "",
+    StreamMetadataJSON: streamMetadataJSON(declared.Output?.Stream?.Metadata),
     Flags: flags,
     BodyFlags: bodyFlags,
     CanonicalBodyFlag: bodyFlags[bodyFlags.length - 1] || "",

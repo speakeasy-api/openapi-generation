@@ -93,8 +93,17 @@ actions:
             stream:
               select: $.data.content
               metadata:
-                select: $.data.resource_id
-                label: Resource ID
+                - select: $.data.resource_id
+                  label: Resource ID
+                - select: [$.data.state, $.data.checkpoint.state]
+                  label: State
+                  complete: [done]
+                - select: [$.data.cursor, $.data.checkpoint.cursor]
+                  label: Cursor
+                  when: incomplete
+                - select: $.data.event_id
+                  label: Last event ID
+                  when: incomplete
         cliInteract:
           output:
             stream:
@@ -443,7 +452,7 @@ actions:
       get:
         operationId: streamMetadata
         tags: [streamMetadata]
-        description: Streamed events can contain text and an optional resource identifier in separate events.
+        description: Streamed events can contain text, an optional resource identifier, and a status with a resume cursor, carried either at the event root or inside a checkpoint.
         parameters:
           - name: stream
             in: query
@@ -467,3 +476,16 @@ actions:
                           type: string
                         resource_id:
                           type: string
+                        event_id:
+                          type: string
+                        state:
+                          type: string
+                        cursor:
+                          type: string
+                        checkpoint:
+                          type: object
+                          properties:
+                            state:
+                              type: string
+                            cursor:
+                              type: string

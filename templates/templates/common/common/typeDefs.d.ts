@@ -2325,13 +2325,15 @@ declare global {
   };
 
   type CLICommandStreamMetadata = {
-    Select: string;
-    Pointer: string;
+    Select: string[];
+    Pointers: string[];
     Label: string;
+    Complete?: string[] | null;
+    When?: string;
   };
 
   type CLICommandStreamProjection = {
-    Metadata?: CLICommandStreamMetadata | null;
+    Metadata?: CLICommandStreamMetadata[] | null;
     Select: string;
     Pointer: string;
   };

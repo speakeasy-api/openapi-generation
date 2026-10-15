@@ -5334,11 +5334,33 @@ commands:
           label: Resource ID
 `)
 	require.NoError(t, err)
-	metadata := manifest.Commands[0].Output.Stream.Metadata
-	require.NotNil(t, metadata)
-	assert.Equal(t, "$.data.error.message", metadata.Select)
-	assert.Equal(t, "/data/error/message", metadata.Pointer)
-	assert.Equal(t, "Resource ID", metadata.Label)
+	assert.Equal(t, []CLICommandStreamMetadata{{
+		Select:   []string{"$.data.error.message"},
+		Pointers: []string{"/data/error/message"},
+		Label:    "Resource ID",
+	}}, manifest.Commands[0].Output.Stream.Metadata)
+
+	manifest, _, err = decodeCLITest(t, `
+version: 1
+commands:
+  say:
+    op: StreamTask
+    output:
+      stream:
+        select: $.data.delta.text
+        metadata:
+          - select: $.data.event_id
+            label: Event ID
+            when: incomplete
+          - select: [$.data.reason, $.data.error.message]
+            label: Status
+            complete: done
+`)
+	require.NoError(t, err)
+	assert.Equal(t, []CLICommandStreamMetadata{
+		{Select: []string{"$.data.event_id"}, Pointers: []string{"/data/event_id"}, Label: "Event ID", When: "incomplete"},
+		{Select: []string{"$.data.reason", "$.data.error.message"}, Pointers: []string{"/data/reason", "/data/error/message"}, Label: "Status", Complete: []string{"done"}},
+	}, manifest.Commands[0].Output.Stream.Metadata)
 }
 
 func TestCLICommands_StreamMetadataValidation(t *testing.T) {
@@ -5357,6 +5379,23 @@ func TestCLICommands_StreamMetadataValidation(t *testing.T) {
 		{"escape label", `{select: $.data.error.message, label: "ID\x1b"}`, "metadata.label must contain only printable"},
 		{"bidi label", `{select: $.data.error.message, label: "ID\u202e"}`, "metadata.label must contain only printable"},
 		{"separator label", `{select: $.data.error.message, label: "ID\u2028"}`, "metadata.label must contain only printable"},
+		{"empty list", "[]", "metadata must list at least one field"},
+		{"absent fallback path", "{select: [$.data.reason, $.data.missing], label: ID}", "output.stream.metadata.select $.data.missing does not resolve"},
+		{"repeated path", "{select: [$.data.reason, $.data.reason], label: ID}", "lists \"$.data.reason\" more than once"},
+		{"duplicate label", "[{select: $.data.reason, label: ID}, {select: $.data.event_id, label: ID}]", "label \"ID\" is declared more than once"},
+		{"complete type", "{select: $.data.reason, label: Status, complete: {done: true}}", "metadata.complete must be a string or a list of strings"},
+		{"two status fields", "[{select: $.data.reason, label: Status, complete: done}, {select: $.data.event_id, label: Event, complete: x}]", "declares complete on more than one field"},
+		{"when without status", "[{select: $.data.event_id, label: Event, when: incomplete}]", "when: incomplete requires a status field"},
+		{"when value", "[{select: $.data.reason, label: Status, complete: done}, {select: $.data.event_id, label: Event, when: always}]", "metadata.when must be incomplete"},
+		{"status with when", "{select: $.data.reason, label: Status, complete: done, when: incomplete}", "already reported only when incomplete"},
+		{"misspelled key", "{select: $.data.reason, label: Status, complet: done}", `unknown key "complet" (did you mean "complete"?)`},
+		{"empty complete", "{select: $.data.reason, label: Status, complete: []}", "metadata.complete must list at least one string"},
+		{"empty complete value", `{select: $.data.reason, label: Status, complete: [done, ""]}`, "metadata.complete must not contain empty strings"},
+		{"repeated complete value", "{select: $.data.reason, label: Status, complete: [done, done]}", `metadata.complete lists "done" more than once`},
+		{"complete member type", "{select: $.data.reason, label: Status, complete: [done, 42]}", "metadata.complete must be a string"},
+		{"empty fallback path", `{select: [$.data.reason, ""], label: ID}`, "metadata.select must not contain empty strings"},
+		{"fallback path type", "{select: [$.data.reason, 42], label: ID}", "metadata.select must be a string"},
+		{"non-string fallback path", "{select: [$.data.reason, $.data.index], label: ID}", "output.stream.metadata.select $.data.index resolves to an integer"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			requireDecodeError(t, "version: 1\ncommands:\n  say:\n    op: StreamTask\n    output:\n      stream:\n        select: $.data.delta.text\n        metadata: "+tc.metadata+"\n", tc.want)
@@ -5378,8 +5417,8 @@ operations:
 `)
 	require.NoError(t, err)
 	require.Len(t, manifest.Operations, 1)
-	require.NotNil(t, manifest.Operations[0].Output.Stream.Metadata)
-	assert.Equal(t, "/resource~1id~0key", manifest.Operations[0].Output.Stream.Metadata.Pointer)
+	require.Len(t, manifest.Operations[0].Output.Stream.Metadata, 1)
+	assert.Equal(t, []string{"/resource~1id~0key"}, manifest.Operations[0].Output.Stream.Metadata[0].Pointers)
 	require.Len(t, warnings, 2)
 	assert.Contains(t, warnings[1], "output.stream.metadata.select")
 	assert.Contains(t, warnings[1], "could not be verified")
