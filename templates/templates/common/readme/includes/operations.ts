@@ -176,7 +176,9 @@ function collectSDKDocsJobs(group: SDKGroup, jobs: Job[]): void {
       isMintlify && group.Path
         ? group.Path.split(".")
             .map((p) =>
-              /\s/.test(p) ? p.trim() : caser().ToPascal(sanitizeName(p)),
+              /\s/.test(p)
+                ? p.trim().replace(/\s+/g, " ")
+                : caser().ToPascal(sanitizeName(p)),
             )
             .join(".")
         : group.Name;
