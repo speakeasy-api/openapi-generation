@@ -276,6 +276,44 @@ func TestStreamMetadataRetention(t *testing.T) {
 	}
 }
 
+type metadataEvent = map[string]interface{}
+
+func metadataEvents(events ...metadataEvent) []metadataEvent { return events }
+
+func TestStreamMetadataStatusBoundaries(t *testing.T) {
+	const annotation = `[{"label":"Cursor","pointers":["/cursor","/checkpoint/cursor"],"when":"incomplete"},{"label":"State","pointers":["/state"],"complete":["done","completed"]}]`
+	for _, tc := range []struct {
+		name   string
+		events []metadataEvent
+		err    error
+		want   string
+	}{
+		{"first path wins", metadataEvents(metadataEvent{"state": "truncated", "cursor": "current", "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"current\"\nState: \"truncated\"\n"},
+		{"empty first path falls back", metadataEvents(metadataEvent{"state": "truncated", "cursor": "", "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"older\"\nState: \"truncated\"\n"},
+		{"non-string first path falls back", metadataEvents(metadataEvent{"state": "truncated", "cursor": 7, "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"older\"\nState: \"truncated\"\n"},
+		{"value retained", metadataEvents(metadataEvent{"cursor": "c1"}, metadataEvent{"state": "truncated", "cursor": nil}), nil, "Cursor: \"c1\"\nState: \"truncated\"\n"},
+		{"no status", metadataEvents(metadataEvent{"cursor": "c1"}), nil, ""},
+		{"second complete value", metadataEvents(metadataEvent{"cursor": "c1", "state": "completed"}), nil, ""},
+		{"stream failure", metadataEvents(metadataEvent{"cursor": "c1", "state": "truncated"}), errors.New("stream interrupted"), "Cursor: \"c1\"\nState: \"truncated\"\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cmd := metadataTestCommand(t, &stdout, &stderr)
+			cmd.Annotations["speakeasy_stream_metadata"] = annotation
+			stream := &metadataTestStream{items: append(tc.events, metadataEvent{"text": "hello"}), err: tc.err}
+			err := output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream")
+			assert.Equal(t, "hello\n", stdout.String())
+			if tc.err != nil {
+				require.Error(t, err)
+				assert.True(t, strings.HasPrefix(stderr.String(), tc.want), stderr.String())
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, stderr.String())
+		})
+	}
+}
+
 func TestStreamMetadataOnFailure(t *testing.T) {
 	for _, tc := range []struct {
 		failure  string

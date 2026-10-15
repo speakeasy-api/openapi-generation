@@ -5389,6 +5389,13 @@ func TestCLICommands_StreamMetadataValidation(t *testing.T) {
 		{"when value", "[{select: $.data.reason, label: Status, complete: done}, {select: $.data.event_id, label: Event, when: always}]", "metadata.when must be incomplete"},
 		{"status with when", "{select: $.data.reason, label: Status, complete: done, when: incomplete}", "already reported only when incomplete"},
 		{"misspelled key", "{select: $.data.reason, label: Status, complet: done}", `unknown key "complet" (did you mean "complete"?)`},
+		{"empty complete", "{select: $.data.reason, label: Status, complete: []}", "metadata.complete must list at least one string"},
+		{"empty complete value", `{select: $.data.reason, label: Status, complete: [done, ""]}`, "metadata.complete must not contain empty strings"},
+		{"repeated complete value", "{select: $.data.reason, label: Status, complete: [done, done]}", `metadata.complete lists "done" more than once`},
+		{"complete member type", "{select: $.data.reason, label: Status, complete: [done, 42]}", "metadata.complete must be a string"},
+		{"empty fallback path", `{select: [$.data.reason, ""], label: ID}`, "metadata.select must not contain empty strings"},
+		{"fallback path type", "{select: [$.data.reason, 42], label: ID}", "metadata.select must be a string"},
+		{"non-string fallback path", "{select: [$.data.reason, $.data.index], label: ID}", "output.stream.metadata.select $.data.index resolves to an integer"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			requireDecodeError(t, "version: 1\ncommands:\n  say:\n    op: StreamTask\n    output:\n      stream:\n        select: $.data.delta.text\n        metadata: "+tc.metadata+"\n", tc.want)

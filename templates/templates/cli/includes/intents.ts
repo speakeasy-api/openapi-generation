@@ -1359,6 +1359,20 @@ function collectIntentManifest(): IntentManifestCtx {
 // generated command iterates it through output.StreamResult): "sse" for
 // text/event-stream (with its declared end-of-stream sentinel, if any),
 // "jsonl" for JSON Lines / JSON sequences, "" when it does not stream.
+function intentStreamKind(op: Operation): { kind: string; sentinel: string } {
+  for (const resp of op.Response?.Responses || []) {
+    if (resp.Error) continue;
+    for (const content of resp.Content || []) {
+      const sm = content.SerializationMethod?.toString();
+      if (sm === "eventstream") {
+        return { kind: "sse", sentinel: content.SSESentinel || "" };
+      }
+      if (sm === "jsonl") return { kind: "jsonl", sentinel: "" };
+    }
+  }
+  return { kind: "", sentinel: "" };
+}
+
 function streamMetadataJSON(
   fields: CLICommandStreamMetadata[] | null | undefined,
 ): string {
@@ -1373,20 +1387,6 @@ function streamMetadataJSON(
       ...(field.When ? { when: field.When } : {}),
     })),
   );
-}
-
-function intentStreamKind(op: Operation): { kind: string; sentinel: string } {
-  for (const resp of op.Response?.Responses || []) {
-    if (resp.Error) continue;
-    for (const content of resp.Content || []) {
-      const sm = content.SerializationMethod?.toString();
-      if (sm === "eventstream") {
-        return { kind: "sse", sentinel: content.SSESentinel || "" };
-      }
-      if (sm === "jsonl") return { kind: "jsonl", sentinel: "" };
-    }
-  }
-  return { kind: "", sentinel: "" };
 }
 
 // intentOperationHasRequiredParams reports whether the operation declares
