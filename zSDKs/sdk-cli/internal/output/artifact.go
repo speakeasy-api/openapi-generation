@@ -146,12 +146,12 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 
 	mimeType, _ := item[cfg.MimeTypeField].(string)
 	outFlag, _ := flagutil.GetStringFlag(cmd, "out")
-	finalPath, extensionRewritten, err := writeArtifact(outFlag, payload, mimeType, cfg)
+	finalPath, extensionMismatch, err := writeArtifact(outFlag, payload, mimeType, cfg)
 	if err != nil {
 		return err
 	}
-	if extensionRewritten && !IsMachineMode(cmd) {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Note: wrote %s as %s (requested %s)\n", mimeType, filepath.Base(finalPath), filepath.Base(outFlag))
+	if extensionMismatch && !IsMachineMode(cmd) {
+		fmt.Fprintf(cmd.ErrOrStderr(), "Note: %s contains %s content; its extension does not match\n", filepath.Base(finalPath), mimeType)
 	}
 	absPath, err := filepath.Abs(finalPath)
 	if err != nil {
@@ -180,6 +180,9 @@ func artifactResult(cmd *cobra.Command, res interface{}, cfg *artifactConfig) er
 	}
 	if mimeType != "" {
 		envelope["mime_type"] = mimeType
+	}
+	if extensionMismatch {
+		envelope["extension_mismatch"] = true
 	}
 	if m, ok := parsed.(map[string]interface{}); ok {
 		if id, ok := m[cfg.IDField].(string); ok && id != "" {
@@ -293,7 +296,7 @@ func writeArtifact(outFlag string, payload []byte, mimeType string, cfg *artifac
 		return path, false, err
 	}
 
-	finalPath := artifactRewriteExtension(outFlag, ext)
+	finalPath, mismatch := artifactOutPath(outFlag, ext)
 	if dir := filepath.Dir(finalPath); dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return "", false, fmt.Errorf("cannot create output directory %s: %w", dir, err)
@@ -302,23 +305,28 @@ func writeArtifact(outFlag string, payload []byte, mimeType string, cfg *artifac
 	if err := artifactAtomicReplace(finalPath, payload); err != nil {
 		return "", false, err
 	}
-	rewritten := filepath.Ext(outFlag) != "" && finalPath != outFlag
-	return finalPath, rewritten, nil
+	return finalPath, mismatch, nil
 }
 
-func artifactRewriteExtension(path, ext string) string {
-	if ext == "" {
-		return path
+var artifactMediaExtensions = map[string]string{
+	"png": "png", "jpg": "jpg", "jpeg": "jpg", "gif": "gif", "webp": "webp", "bmp": "bmp",
+	"tif": "tif", "tiff": "tif", "heic": "heic", "heif": "heif", "avif": "avif", "svg": "svg",
+	"ico": "ico",
+	"wav": "wav", "wave": "wav", "mp3": "mp3", "ogg": "ogg", "oga": "ogg", "opus": "opus", "m4a": "m4a",
+	"aac": "aac", "flac": "flac", "pcm": "pcm", "l16": "l16",
+	"mp4": "mp4", "m4v": "m4v", "webm": "webm", "mov": "mov", "mpg": "mpg", "mpeg": "mpg",
+	"avi": "avi", "mkv": "mkv",
+}
+
+func artifactOutPath(path, ext string) (string, bool) {
+	if ext == "" || strings.EqualFold(filepath.Ext(path), "."+ext) {
+		return path, false
 	}
-	currentExt := filepath.Ext(path)
-	current := strings.TrimPrefix(strings.ToLower(currentExt), ".")
-	if current == ext || (current == "jpeg" && ext == "jpg") || (current == "jpg" && ext == "jpeg") {
-		return path
+	current, ok := artifactMediaExtensions[strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")]
+	if !ok {
+		return path + "." + ext, false
 	}
-	if current == "" {
-		return path + "." + ext
-	}
-	return strings.TrimSuffix(path, currentExt) + "." + ext
+	return path, current != artifactMediaExtensions[ext]
 }
 
 func writeArtifactDefault(dir string, payload []byte, ext string, cfg *artifactConfig) (string, error) {
@@ -425,6 +433,7 @@ func artifactExtension(kind, mimeType string) string {
 	case "video/mpeg":
 		return "mpg"
 	}
+	sub, _, _ = strings.Cut(strings.TrimPrefix(sub, "x-"), "+")
 	var b strings.Builder
 	for _, r := range sub {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {

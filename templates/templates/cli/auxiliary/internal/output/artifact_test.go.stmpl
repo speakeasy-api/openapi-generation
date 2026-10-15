@@ -3,6 +3,7 @@ package output
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -108,6 +109,25 @@ func TestFindArtifactItemSelectsTrailingBlockWithoutData(t *testing.T) {
 				t.Fatalf("data = %v (present %t), want the trailing %s data field", got, present, name)
 			}
 		})
+	}
+}
+
+func TestArtifactExtensionNormalizesSubtype(t *testing.T) {
+	cases := map[string]string{
+		"image/png":         "png",
+		"image/svg+xml":     "svg",
+		"image/webp; q=0.9": "webp",
+		"audio/x-flac":      "flac",
+		"audio/x-wav":       "wav",
+	}
+	for mime, want := range cases {
+		kind, _, _ := strings.Cut(mime, "/")
+		if got := artifactExtension(kind, mime); got != want {
+			t.Errorf("artifactExtension(%q) = %q, want %q", mime, got, want)
+		}
+	}
+	if got := artifactExtension("image", "audio/wav"); got != "" {
+		t.Errorf("wrong-kind MIME resolved to %q", got)
 	}
 }
 

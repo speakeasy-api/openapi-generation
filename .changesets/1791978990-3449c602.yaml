@@ -1,0 +1,10 @@
+id: 1791978990-3449c602
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: write an artifact --out path that already has a media extension exactly as given, reporting a MIME mismatch instead of rewriting it; a path without one still gets the returned extension appended, so a suffix such as .v1 is kept
+author: AshGodfrey
+date: "2026-10-14"
