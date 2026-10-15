@@ -778,7 +778,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/security.py:
     last_write_checksum: sha1:e553de0abe14cbfcc18c6d9a710bdf364d8dd40d
   src/speakeasy/new_openapi/utils/serializers.py:
-    last_write_checksum: sha1:24df2ceb4c7ac20b632c284c6cacf33384eda03f
+    last_write_checksum: sha1:8cde58eb8db4fda429f8815ab56ee5c497ad0fa5
   src/speakeasy/new_openapi/utils/unions.py:
     last_write_checksum: sha1:17ab6b95a0fe6402da6ee0f4b706ac1738031683
   src/speakeasy/new_openapi/utils/unmarshal_json_response.py:

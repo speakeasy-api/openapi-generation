@@ -1,0 +1,10 @@
+id: 1791823576-59c70fbe
+features:
+    - core
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: reuse the pydantic wrapper models built when serializing and deserializing values instead of rebuilding them on every call
+author: ThomasRooney
+date: "2026-10-12"
