@@ -1,0 +1,22 @@
+id: 1792067846-52c84bcf
+features:
+    - docs
+targets:
+    - cli
+    - csharp
+    - go
+    - javav2
+    - mcp-typescript
+    - mockserver
+    - php
+    - postman
+    - pythonv2
+    - ruby
+    - terraform
+    - typescriptv2
+    - unity
+type: fix
+bump: patch
+description: keep spaces from tag names in Mintlify page titles
+author: AshGodfrey
+date: "2026-10-15"

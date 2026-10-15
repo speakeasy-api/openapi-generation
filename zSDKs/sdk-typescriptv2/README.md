@@ -586,6 +586,10 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 
 * [~~deprecated1~~](docs/sdks/obsolete/README.md#deprecated1) - Deprecated Operation :warning: **Deprecated** Use [getRequestBodyFlattenedAway](docs/sdks/sdk/README.md#getrequestbodyflattenedaway) instead.
 
+### [SpacedTagName](docs/sdks/spacedtagname/README.md)
+
+* [getSpacedTag](docs/sdks/spacedtagname/README.md#getspacedtag) - Operation grouped under a tag whose name contains spaces, so documentation that uses the tag name as a title keeps the spaces.
+
 ### [Tag1](docs/sdks/tag1/README.md)
 
 * [~~deprecated1~~](docs/sdks/tag1/README.md#deprecated1) - Deprecated Operation :warning: **Deprecated** Use [getRequestBodyFlattenedAway](docs/sdks/sdk/README.md#getrequestbodyflattenedaway) instead.
@@ -666,6 +670,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 
 - [`postFile`](docs/sdks/sdk/README.md#postfile) - Post File
 - [`renderAsset`](docs/sdks/sdk/README.md#renderasset) - Render Asset
+- [`spacedTagNameGetSpacedTag`](docs/sdks/spacedtagname/README.md#getspacedtag) - Operation grouped under a tag whose name contains spaces, so documentation that uses the tag name as a title keeps the spaces.
 - [`tag1Auth`](docs/sdks/tag1/README.md#auth) - This operation aims at testing available OAuth2 scopes collection:
  - only operation with oauth2 authorizationCode security flow
  - belongs to a subSDK
@@ -750,6 +755,7 @@ and  \'escaped single quotes\' and \"escaped double quotes\".
 
 - [`usePostFileMutation`](docs/sdks/sdk/README.md#postfile) - Post File
 - [`useRenderAssetMutation`](docs/sdks/sdk/README.md#renderasset) - Render Asset
+- [`useSpacedTagNameGetSpacedTag`](docs/sdks/spacedtagname/README.md#getspacedtag) - Operation grouped under a tag whose name contains spaces, so documentation that uses the tag name as a title keeps the spaces.
 - [`useTag1Auth`](docs/sdks/tag1/README.md#auth) - This operation aims at testing available OAuth2 scopes collection:
  - only operation with oauth2 authorizationCode security flow
  - belongs to a subSDK
@@ -1048,15 +1054,15 @@ run();
 
 
 **Inherit from [`SDKBaseError`](./src/models/sdkbaseerror.ts)**:
-* [`ErrorsError`](./src/models/errorserror.ts): A not-so-long multi-line error model description. Applicable to 7 of 51 methods.*
-* [`BadRequestResponseError`](./src/models/badrequestresponseerror.ts): Bad Request. Status code `400`. Applicable to 2 of 51 methods.*
-* [`TaggedError1`](./src/models/taggederror1.ts): Applicable to 2 of 51 methods.*
-* [`RequestTimeoutError`](./src/models/httpclienterrors.ts): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 51 methods.*
-* [`TaggedError2`](./src/models/taggederror2.ts): Something went wrong. Status code `4XX`. Applicable to 1 of 51 methods.*
-* [`ErrorType1`](./src/models/errortype1.ts): An error of type one. Status code `500`. Applicable to 1 of 51 methods.*
-* [`ErrorType2`](./src/models/errortype2.ts): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
-* [`FailedResponseError`](./src/models/failedresponseerror.ts): An error response with an empty object schema. Status code `500`. Applicable to 1 of 51 methods.*
-* [`Test2ResponseError`](./src/models/test2responseerror.ts): Internal Server Error. Status code `500`. Applicable to 1 of 51 methods.*
+* [`ErrorsError`](./src/models/errorserror.ts): A not-so-long multi-line error model description. Applicable to 7 of 52 methods.*
+* [`BadRequestResponseError`](./src/models/badrequestresponseerror.ts): Bad Request. Status code `400`. Applicable to 2 of 52 methods.*
+* [`TaggedError1`](./src/models/taggederror1.ts): Applicable to 2 of 52 methods.*
+* [`RequestTimeoutError`](./src/models/httpclienterrors.ts): A spec-defined error that collides with the built-in RequestTimeoutError in httpclienterrors.ts. Status code `408`. Applicable to 1 of 52 methods.*
+* [`TaggedError2`](./src/models/taggederror2.ts): Something went wrong. Status code `4XX`. Applicable to 1 of 52 methods.*
+* [`ErrorType1`](./src/models/errortype1.ts): An error of type one. Status code `500`. Applicable to 1 of 52 methods.*
+* [`ErrorType2`](./src/models/errortype2.ts): Internal Server Error. Status code `500`. Applicable to 1 of 52 methods.*
+* [`FailedResponseError`](./src/models/failedresponseerror.ts): An error response with an empty object schema. Status code `500`. Applicable to 1 of 52 methods.*
+* [`Test2ResponseError`](./src/models/test2responseerror.ts): Internal Server Error. Status code `500`. Applicable to 1 of 52 methods.*
 * [`ResponseValidationError`](./src/models/responsevalidationerror.ts): Type mismatch between the data returned from the server and the structure expected by the SDK. See `error.rawValue` for the raw value and `error.pretty()` for a nicely formatted multi-line string.
 
 </details>

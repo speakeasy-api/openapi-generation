@@ -40,6 +40,7 @@ import { PageIterator, unwrapResultIterator } from "../types/operations.js";
 import { Group } from "./group.js";
 import { NamespaceTests } from "./namespacetests.js";
 import { Obsolete } from "./obsolete.js";
+import { SpacedTagName } from "./spacedtagname.js";
 import { Tag1 } from "./tag1.js";
 import { TestGroup } from "./testgroup.js";
 
@@ -73,6 +74,11 @@ export class SDK extends ClientSDK {
   private _namespaceTests?: NamespaceTests;
   get namespaceTests(): NamespaceTests {
     return (this._namespaceTests ??= new NamespaceTests(this._options));
+  }
+
+  private _spacedTagName?: SpacedTagName;
+  get spacedTagName(): SpacedTagName {
+    return (this._spacedTagName ??= new SpacedTagName(this._options));
   }
 
   operationWithLeadingAndTrailingUnderscores(

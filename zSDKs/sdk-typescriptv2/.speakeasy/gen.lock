@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: dd982b4f4b37f4155da107717836388f
+  docChecksum: ffcf9c23e61b77ee2a289b6d576d6ce3
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -446,6 +446,8 @@ trackedFiles:
     last_write_checksum: sha1:81a1591d4e66b615a712c26162afea42dc153f21
   docs/sdks/singlefoo/README.mdx:
     last_write_checksum: sha1:8e16d81e058d8bbb26a319a9d597d50d3638a9f7
+  docs/sdks/spacedtagname/README.mdx:
+    last_write_checksum: sha1:e75fe82baf8677e82cb288afdcac5f741b6366a3
   docs/sdks/subgroup/README.mdx:
     last_write_checksum: sha1:068c8ea1c0520b704c36b8ac8353b7311a4913cb
   docs/sdks/tag1/README.mdx:
@@ -778,6 +780,8 @@ trackedFiles:
     last_write_checksum: sha1:8feb5970564c85bb8eb6e72203c2958feee7c8fd
   src/__tests__/mockserver/internal/sdk/models/operations/getsinglenamespacefoopet.go:
     last_write_checksum: sha1:9b681d56ad2cd757783c611dcfc557bcc9d0df74
+  src/__tests__/mockserver/internal/sdk/models/operations/getspacedtag.go:
+    last_write_checksum: sha1:6f6b7ebe2f7f45fabbceedb8c19ad3b04171a5d5
   src/__tests__/mockserver/internal/sdk/models/operations/gettriplenamespaceconflict.go:
     last_write_checksum: sha1:4ce47047f9afbc63bf37f792e113f299964c30f2
   src/__tests__/mockserver/internal/sdk/models/operations/getunionerrors.go:
@@ -1020,6 +1024,8 @@ trackedFiles:
     last_write_checksum: sha1:50834c01a4800428e85d73b069849997e1bf06d0
   src/funcs/renderAsset.ts:
     last_write_checksum: sha1:705b20a313f9dfc71171ca3f953586cb130324bf
+  src/funcs/spacedTagNameGetSpacedTag.ts:
+    last_write_checksum: sha1:e153405549f2d45bad853cc45ec08246faa45814
   src/funcs/tag1Auth.ts:
     last_write_checksum: sha1:16a97e5f9d5b7bdcd1deec824564ad1aaca38ee8
   src/funcs/tag1Deprecated1.ts:
@@ -1347,7 +1353,7 @@ trackedFiles:
   src/react-query/groupSubGroupSubGroupOp.ts:
     last_write_checksum: sha1:6ceb6596c3fda01cef392b4cb63e7b8a1946398f
   src/react-query/index.ts:
-    last_write_checksum: sha1:67e1bd0f49cd48b85b95b1f1b4b1dcc6a893e2c7
+    last_write_checksum: sha1:d717eef0a241926402014b4b8b5cb270831c08cc
   src/react-query/login.core.ts:
     last_write_checksum: sha1:fece6bac56d7669ad2cb127b04935922bf94cc7f
   src/react-query/login.ts:
@@ -1404,6 +1410,10 @@ trackedFiles:
     last_write_checksum: sha1:26fd24aebc593bef5c40050ad97074707abfcf1a
   src/react-query/renderAsset.ts:
     last_write_checksum: sha1:4199ba1018f05ad36f690d5425065f0e28cfdf97
+  src/react-query/spacedTagNameGetSpacedTag.core.ts:
+    last_write_checksum: sha1:74c998ad484a32cea8c2494268363cf28c7c0cb5
+  src/react-query/spacedTagNameGetSpacedTag.ts:
+    last_write_checksum: sha1:5d51f22795e948f99323c2d77f365cfa66bce215
   src/react-query/tag1Auth.core.ts:
     last_write_checksum: sha1:d4322cedf206699e72be28ccbc30932d70efb1cb
   src/react-query/tag1Auth.ts:
@@ -1447,11 +1457,13 @@ trackedFiles:
   src/sdk/obsolete.ts:
     last_write_checksum: sha1:b1666be8dcbe986d6f3b2bb86ff8732e9a41d2b6
   src/sdk/sdk.ts:
-    last_write_checksum: sha1:2a44b27d5c92fb690c19b3668e0897b7467eab26
+    last_write_checksum: sha1:350b10c07fa2265d178c28cab2ffcf60f891dcee
   src/sdk/singlebar.ts:
     last_write_checksum: sha1:264c106e9015117ed2dc3eaec00cf3abf906fdd8
   src/sdk/singlefoo.ts:
     last_write_checksum: sha1:cb9480c75e500ccf8e6e12038b189db2bd7c5cfb
+  src/sdk/spacedtagname.ts:
+    last_write_checksum: sha1:5b247196dfdf288ad60c67630748ccbb665e0a13
   src/sdk/subgroup.ts:
     last_write_checksum: sha1:4ca3a2ca6164f4727034cbfa4cc7fe74c1de58c4
   src/sdk/tag1.ts:
@@ -1831,6 +1843,7 @@ examples:
       parameters:
         path:
           id: "default-id"
+  getSpacedTag: {}
 examplesVersion: 1.0.2
 generatedTests:
   testEndpoint: "2026-03-11T11:17:07-04:00"

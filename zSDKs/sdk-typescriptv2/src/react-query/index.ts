@@ -43,6 +43,7 @@ export * from "./operationWithLeadingAndTrailingUnderscores.js";
 export * from "./parenthesesInPathAllowed.js";
 export * from "./postFile.js";
 export * from "./renderAsset.js";
+export * from "./spacedTagNameGetSpacedTag.js";
 export * from "./tag1Auth.js";
 export * from "./tag1Deprecated1.js";
 export * from "./tag1ListTest1.js";
