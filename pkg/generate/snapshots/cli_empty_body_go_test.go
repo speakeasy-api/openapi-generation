@@ -228,12 +228,12 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 					}
 					usageSource, err := os.ReadFile(filepath.Join(outputDir, "internal", "usage", "schema.go"))
 					require.NoError(t, err)
-					usagePattern := regexp.MustCompile(`"widgets (optional|optionalexample|required|formoptional|formrequired)":\s*"(.*)"`)
-					usageSchemas := usagePattern.FindAllStringSubmatch(string(usageSource), -1)
-					require.Len(t, usageSchemas, 5)
-					for _, schema := range usageSchemas {
-						require.Contains(t, schema[2], "--body <body>")
-						require.NotContains(t, schema[2], "--body-param")
+					usagePattern := regexp.MustCompile(`"widgets (optional|optionalexample|required|formoptional|formrequired)":\s*\{(.*)\}`)
+					usageNodes := usagePattern.FindAllStringSubmatch(string(usageSource), -1)
+					require.Len(t, usageNodes, 5)
+					for _, node := range usageNodes {
+						require.Contains(t, node[2], "--body <body>")
+						require.NotContains(t, node[2], "--body-param")
 					}
 					for _, name := range []string{"required", "formrequired"} {
 						command := readCommand(name)

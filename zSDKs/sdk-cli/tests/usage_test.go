@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"openapi/internal/cli"
 	"openapi/internal/clierrors"
+	"openapi/internal/usage"
 	"regexp"
 	"strings"
 	"testing"
@@ -199,6 +200,68 @@ func TestUsageSchema_GroupSubtree(t *testing.T) {
 	assert.Contains(t, stdout, "cmd \"tag2\"")
 	assert.NotContains(t, stdout, "name \"")
 	assert.Empty(t, stderr)
+}
+
+func TestUsageSchema_ComposesRuntimeCommands(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	completion, _, err := root.Find([]string{"completion"})
+	require.NoError(t, err)
+
+	var before strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &before))
+
+	leaf := &cobra.Command{Use: "runtime-leaf", Short: "Runtime leaf", RunE: func(*cobra.Command, []string) error { return nil }}
+	leaf.Flags().String("runtime-flag", "", "Runtime flag")
+	usage.MarkDynamic(leaf)
+	completion.AddCommand(leaf)
+
+	var after strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &after))
+	block := "  cmd \"runtime-leaf\" help=\"Runtime leaf\" {\n    flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n  }\n"
+	assert.Contains(t, after.String(), block)
+	assert.Equal(t, before.String(), strings.Replace(after.String(), block, "", 1))
+
+	var group strings.Builder
+	require.NoError(t, usage.EmitSchema(completion, &group))
+	assert.Contains(t, group.String(), "\n  cmd \"runtime-leaf\" help=\"Runtime leaf\" {\n")
+}
+
+func TestUsageSchema_DynamicCommandKeepsGeneratedLines(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	configure, _, err := root.Find([]string{"configure"})
+	require.NoError(t, err)
+
+	var ownBefore, rootBefore strings.Builder
+	require.NoError(t, usage.EmitSchema(configure, &ownBefore))
+	require.NoError(t, usage.EmitSchema(root, &rootBefore))
+	configure.Flags().String("runtime-flag", "", "Runtime flag")
+	usage.MarkDynamic(configure)
+
+	var ownAfter, rootAfter strings.Builder
+	require.NoError(t, usage.EmitSchema(configure, &ownAfter))
+	require.NoError(t, usage.EmitSchema(root, &rootAfter))
+	flag := "  flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n"
+	assert.Equal(t, strings.TrimSuffix(ownBefore.String(), "}\n")+flag+"}\n", ownAfter.String())
+
+	start := strings.Index(rootBefore.String(), "\ncmd \"configure\"")
+	require.GreaterOrEqual(t, start, 0)
+	end := start + strings.Index(rootBefore.String()[start:], "\n}\n") + 1
+	assert.Equal(t, rootBefore.String()[:end]+flag+rootBefore.String()[end:], rootAfter.String())
+}
+
+func TestUsageSchema_DynamicRootUnchanged(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+
+	var before strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &before))
+	usage.MarkDynamic(root)
+
+	var after strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &after))
+	assert.Equal(t, before.String(), after.String())
 }
 
 func TestUsageSchema_UsageFalseDoesNotEmitSchema(t *testing.T) {
