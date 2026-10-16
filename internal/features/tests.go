@@ -680,6 +680,8 @@ const (
 	TestClierrorsPlainModeClassified
 	TestClierrorsTypedReasons
 	TestClierrorsUnknownFlagSuggestion
+	TestClierrorsUnknownCommandSuggestion
+	TestClierrorsDryRunHintServerValidationOnly
 	TestErrorTaxonomyDeclaredRulesAndOrdering
 	TestErrorTaxonomyEveryClosedTypeHasAHint
 	TestErrorTaxonomyFallbackMessageOmitsRawBody

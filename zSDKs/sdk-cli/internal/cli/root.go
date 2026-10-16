@@ -367,7 +367,7 @@ func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string) error 
 		executed = root
 	}
 	if err != nil && findErr != nil {
-		err = flagutil.WithCLIValidation(err)
+		err = output.UnknownCommandError(err)
 	}
 	return output.CLIError(executed, err)
 }

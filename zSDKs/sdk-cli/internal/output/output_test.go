@@ -625,3 +625,63 @@ func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
 		})
 	}
 }
+
+func TestUnknownCommandErrorMovesSuggestionsIntoHints(t *testing.T) {
+	cases := []struct {
+		name      string
+		err       error
+		wantMsg   string
+		wantHints []string
+	}{
+		{
+			name:    "one suggestion",
+			err:     errors.New("unknown command \"genreate\" for \"cli\"\n\nDid you mean this?\n\tgenerate\n"),
+			wantMsg: `unknown command "genreate" for "cli"`,
+			wantHints: []string{
+				"Did you mean generate?",
+				"Run 'cli --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+		{
+			name:    "several suggestions under a group",
+			err:     errors.New("unknown command \"lis\" for \"cli agents\"\n\nDid you mean this?\n\tlist\n\tlint\n"),
+			wantMsg: `unknown command "lis" for "cli agents"`,
+			wantHints: []string{
+				"Did you mean one of list, lint?",
+				"Run 'cli agents --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+		{
+			name:    "no suggestion",
+			err:     errors.New(`unknown command "zzz" for "cli"`),
+			wantMsg: `unknown command "zzz" for "cli"`,
+			wantHints: []string{
+				"Run 'cli --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := UnknownCommandError(tc.err)
+			if got.Error() != tc.wantMsg {
+				t.Fatalf("message = %q, want %q", got.Error(), tc.wantMsg)
+			}
+			if !reflect.DeepEqual(errorCLIHints(got), tc.wantHints) {
+				t.Fatalf("hints = %q, want %q", errorCLIHints(got), tc.wantHints)
+			}
+			if !omitsTypeHints(got) {
+				t.Fatal("expected the built-in validation hints to be omitted")
+			}
+		})
+	}
+}
+
+func TestUnknownCommandErrorLeavesOtherErrorsAlone(t *testing.T) {
+	got := UnknownCommandError(errors.New("accepts 1 arg(s), received 2"))
+	if got.Error() != "accepts 1 arg(s), received 2" {
+		t.Fatalf("message = %q", got.Error())
+	}
+	if omitsTypeHints(got) {
+		t.Fatal("non-command errors keep the built-in hints")
+	}
+}

@@ -1,0 +1,10 @@
+id: 1792150719-40eeb80f
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: move cobra's command suggestions out of the unknown-command message into hints, and omit the dry-run hint for validation errors the CLI raised itself
+author: AshGodfrey
+date: "2026-10-16"

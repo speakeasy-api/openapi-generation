@@ -3,10 +3,12 @@
 package output
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -84,6 +86,37 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 			return runE(current, args)
 		}
 	}
+}
+
+const cobraSuggestionsHeader = "\n\nDid you mean this?\n"
+
+// UnknownCommandError moves cobra's multi-line "Did you mean this?" block out
+// of the message and into hints, so structured output carries one line.
+func UnknownCommandError(err error) error {
+	if err == nil || !strings.HasPrefix(err.Error(), "unknown command ") {
+		return flagutil.WithCLIValidation(err)
+	}
+	message, block, _ := strings.Cut(err.Error(), cobraSuggestionsHeader)
+	var suggestions []string
+	for _, line := range strings.Split(block, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			suggestions = append(suggestions, line)
+		}
+	}
+	var hints []string
+	switch len(suggestions) {
+	case 0:
+	case 1:
+		hints = append(hints, "Did you mean "+suggestions[0]+"?")
+	default:
+		hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
+	}
+	helpHint := "Run the command with --help to list available commands, or --usage for the machine-readable surface"
+	if i := strings.LastIndex(message, ` for "`); i >= 0 && strings.HasSuffix(message, `"`) {
+		helpHint = fmt.Sprintf("Run '%s --help' to list available commands, or --usage for the machine-readable surface", message[i+len(` for "`):len(message)-1])
+	}
+	hints = append(hints, helpHint)
+	return cliHintsError{error: flagutil.WithCLIValidation(errors.New(message)), hints: hints, omitTypeHints: true}
 }
 
 func renderingMode(cmd *cobra.Command) (format, jqExpr string) {

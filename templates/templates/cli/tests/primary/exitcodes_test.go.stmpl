@@ -88,8 +88,10 @@ func TestExitCodeRootUnknownCommandPreservesCobraMessage(t *testing.T) {
 	root.SetErr(&stderr)
 	err = cli.ExecuteRoot(context.Background(), root, args)
 	require.Error(t, err)
-	assert.Equal(t, findErr.Error(), err.Error())
+	message, _, _ := strings.Cut(findErr.Error(), "\n\nDid you mean this?\n")
+	assert.Equal(t, message, err.Error())
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Contains(t, output.Classify(root, err).Hints, "Did you mean errors?")
 }
 
 func TestExitCodeSynthesizedGroupAndNilArgsLeaf(t *testing.T) {
