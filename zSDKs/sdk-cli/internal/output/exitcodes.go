@@ -48,7 +48,7 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 		cmd.Args = func(current *cobra.Command, args []string) error {
 			err := argsValidator(current, args)
 			if err != nil && len(args) > 0 && current.HasSubCommands() && strings.HasPrefix(err.Error(), "unknown command ") {
-				return unknownCommandError(err.Error(), current.SuggestionsFor(args[0]))
+				return unknownCommandError(err.Error(), commandSuggestions(current, args[0]))
 			}
 			return flagutil.WithCLIValidation(err)
 		}
@@ -108,6 +108,18 @@ func UnknownCommandError(err error) error {
 		}
 	}
 	return unknownCommandError(message, suggestions)
+}
+
+// commandSuggestions applies the same policy cobra uses before its own
+// suggestion lookup at the root.
+func commandSuggestions(cmd *cobra.Command, name string) []string {
+	if cmd.DisableSuggestions {
+		return nil
+	}
+	if cmd.SuggestionsMinimumDistance <= 0 {
+		cmd.SuggestionsMinimumDistance = 2
+	}
+	return cmd.SuggestionsFor(name)
 }
 
 func unknownCommandError(message string, suggestions []string) error {
