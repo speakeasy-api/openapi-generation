@@ -104,7 +104,15 @@ func TestEventStreamRichEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	events := parseNDJSON(t, h.GetStdout())
-	assert.Equal(t, 3, len(events), "expected 3 rich events")
+	require.Equal(t, 3, len(events), "expected 3 rich events")
+	// The stream element is a union of envelopes: each event keeps the
+	// envelope fields of the member it decoded to.
+	assert.Equal(t, map[string]interface{}{
+		"id":    "job-1",
+		"event": "completion",
+		"data":  map[string]interface{}{"completion": "Hello", "stop_reason": nil, "model": "jeeves-1"},
+	}, events[0])
+	assert.Equal(t, map[string]interface{}{"event": "heartbeat", "data": "ping", "retry": float64(3000)}, events[1])
 }
 
 func TestEventStreamChatSentinel(t *testing.T) {
@@ -660,6 +668,29 @@ func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
 	} {
 		t.Run(format, func(t *testing.T) {
 			server := newSSEServer(t, `{"event_type":"delta","text":"n","ratio":1.0,"scale":1e3,"tiny":1e-05}`)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			for _, s := range want {
+				assert.Contains(t, h.GetStdout(), s)
+			}
+		})
+	}
+}
+
+// A value the model declares prints as the model renders it, whatever the
+// server's lexeme: an int field sent as -0 prints 0, a double sent with
+// more digits than float64 holds prints its float64 value, natively in toon.
+func TestEventStreamDeclaredValuesPrintAsTheModelRendersThem(t *testing.T) {
+	for format, want := range map[string][]string{
+		"json": {`"seq":0,`, `"weight":0.1}`},
+		"toon": {"seq: 0\n", "weight: 0.1\n"},
+	} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, `{"event_type":"delta","text":"n","seq":-0,"weight":0.10000000000000001}`)
 			defer server.Close()
 
 			h := NewCLITestHarness(t)

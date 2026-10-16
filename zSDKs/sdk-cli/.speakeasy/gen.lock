@@ -294,7 +294,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:fd94a3a0f39a96cca0b81b3eea9002600b6a09aa
+    last_write_checksum: sha1:ab67ecb23c2fc97c7920379bc48a6f2512bccfc8
   internal/output/streamproject.go:
     last_write_checksum: sha1:19d7dec64b1f78cbcfb5420cc4e968aa7aedadd0
   internal/sdk/.gitattributes:
