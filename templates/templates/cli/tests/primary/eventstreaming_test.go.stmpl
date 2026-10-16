@@ -604,6 +604,8 @@ func TestEventStreamNumbersKeepPrecision(t *testing.T) {
 // set), so every renderer works from the frame the server sent: the stream
 // continues and the event gets no invented `outcome`.
 func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
+	recordTest("event-stream-absent-required-union")
+
 	frames := []string{
 		`{"event_type":"delta","text":"before"}`,
 		`{"event_type":"tool","tool_id":"c1"}`,
@@ -641,6 +643,8 @@ func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
 // model's: an explicit null stays null rather than becoming a zero value,
 // and fields the event schema does not declare are kept.
 func TestEventStreamRendersWireValues(t *testing.T) {
+	recordTest("event-stream-null-and-undeclared-fields")
+
 	server := newSSEServer(t,
 		`{"event_type":"tool","tool_id":"c1","outcome":null}`,
 		`{"event_type":"delta","text":"x","extra":{"k":1}}`,
@@ -661,6 +665,8 @@ func TestEventStreamRendersWireValues(t *testing.T) {
 // prints as the decoded model would, in every format; toon and yaml keep it a
 // native number rather than a quoted string.
 func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
+	recordTest("event-stream-equivalent-number-lexemes")
+
 	for format, want := range map[string][]string{
 		"json": {`"ratio":1,`, `"scale":1000,`, `"tiny":0.00001`},
 		"yaml": {"ratio: 1\n", "scale: 1000\n", "tiny: 1e-05\n"},
@@ -685,6 +691,8 @@ func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
 // server's lexeme: an int field sent as -0 prints 0, a double sent with
 // more digits than float64 holds prints its float64 value, natively in toon.
 func TestEventStreamDeclaredValuesPrintAsTheModelRendersThem(t *testing.T) {
+	recordTest("event-stream-equivalent-number-lexemes")
+
 	for format, want := range map[string][]string{
 		"json": {`"seq":0,`, `"weight":0.1}`},
 		"toon": {"seq: 0\n", "weight: 0.1\n"},

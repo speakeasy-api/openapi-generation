@@ -422,6 +422,9 @@ function isTestSkipped(test: string): boolean {
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
     "cli-exit-codes-invalid-jq-before-request",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
   ].includes(test);
 }
 

@@ -418,6 +418,9 @@ function isTestSkipped(test: string): boolean {
     "event-stream-truncated-before-sentinel",
     "open-union-invalid-json-is-an-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
   ].includes(test);
 }
 
