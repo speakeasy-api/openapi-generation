@@ -1,0 +1,11 @@
+id: 1792172761-fc501533
+features:
+    - core
+targets:
+    - go
+    - cli
+type: fix
+bump: patch
+description: read a body-less success response inside the method when deserialization is skipped, so a per-request timeout no longer cancels the raw body before the caller reads it
+author: 2ynn
+date: "2026-10-16"
