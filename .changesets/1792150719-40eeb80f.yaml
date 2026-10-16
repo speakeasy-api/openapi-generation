@@ -5,6 +5,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: report an unknown command, at the root or under a group, as a one-line message with the nearest commands as hints instead of cobra's multi-line suggestion block, and omit the dry-run hint for validation errors the CLI raised itself; plain stderr and the error message no longer contain the suggestion block, and the help hint for unknown commands now reads "Run '<command> --help' to list available commands"
+description: report an unknown command, at the root or under a group, as a one-line message with the nearest commands as hints instead of cobra's multi-line suggestion block, and omit the dry-run hint for validation errors the CLI raised itself; plain stderr and the error message no longer contain the suggestion block, and the help hint for unknown commands now reads "Run '<command> --help' to list available commands, or --usage for the machine-readable surface"
 author: AshGodfrey
 date: "2026-10-16"

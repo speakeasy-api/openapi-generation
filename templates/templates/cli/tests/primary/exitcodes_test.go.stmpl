@@ -75,13 +75,15 @@ func TestExitCodeMappingTables(t *testing.T) {
 	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(invalidExitCodeError{base}))
 }
 
-func TestExitCodeRootUnknownCommandPreservesCobraMessage(t *testing.T) {
+func TestExitCodeRootUnknownCommandKeepsCobraMessageLine(t *testing.T) {
 	recordTest("cli-exit-code-root-unknown-message")
 	resetAgentMode(t)
 	root, err := cli.NewRootCommand()
 	require.NoError(t, err)
 	args := []string{"errorz"}
-	_, _, findErr := root.Find(args)
+	plain := &cobra.Command{Use: root.Use}
+	plain.AddCommand(&cobra.Command{Use: "errors", Run: func(*cobra.Command, []string) {}})
+	_, _, findErr := plain.Find(args)
 	require.Error(t, findErr)
 	var stdout, stderr bytes.Buffer
 	root.SetOut(&stdout)

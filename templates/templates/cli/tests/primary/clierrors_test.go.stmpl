@@ -360,6 +360,20 @@ func TestCLIErrorUnknownCommandSuggestsNearestCommand(t *testing.T) {
 		assert.Contains(t, hints, "Did you mean status-get-error?")
 	})
 
+	t.Run("help after a typo still prints help", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"errors", "status-get-erro", "--help"}))
+		assert.Contains(t, h.GetStdout(), "status-get-error")
+	})
+
+	t.Run("shell completion is not rejected", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"__complete", "errors", ""}))
+		assert.Contains(t, h.GetStdout(), "status-get-error")
+	})
+
 	t.Run("no near match", func(t *testing.T) {
 		resetAgentMode(t)
 		h := NewCLITestHarness(t)
