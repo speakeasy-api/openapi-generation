@@ -342,12 +342,8 @@ func (es *EventStream[T]) Value() *T {
 	return es.val
 }
 
-// RawValue returns the most recent event as it was handed to the
-// unmarshaller: a JSON object with the SSE fields event, data and retry of
-// the frame, and id, the last event ID seen on the stream. data is the JSON
-// the server sent, or a JSON string for text data. Unlike re-encoding Value,
-// it keeps fields the model does not declare and never adds values the
-// server did not send.
+// RawValue returns the most recent event as handed to the unmarshaller: the
+// frame's event, data and retry, plus the last event id seen, as JSON.
 func (es *EventStream[T]) RawValue() json.RawMessage {
 	return es.raw
 }

@@ -178,8 +178,6 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	return nil
 }
 
-// wireEvent is a streamed event kept as JSON. Renderers treat it like any
-// model with a custom MarshalJSON.
 type wireEvent struct {
 	data json.RawMessage
 }
@@ -188,12 +186,7 @@ func (w wireEvent) MarshalJSON() ([]byte, error) {
 	return w.data, nil
 }
 
-// wireStreamItem rebuilds a streamed event from the frame the server sent,
-// keeping the envelope fields the event type declares. Re-encoding the
-// decoded model alone drops fields the model does not declare, turns an
-// absent or null required field into its zero value, and fails outright on
-// an absent required union. Each value the server sent still prints as the
-// decoded model renders it wherever the model has one (see typedLeaves).
+// Re-encoding the decoded model drops undeclared fields and zero-fills absent ones.
 func wireStreamItem(item interface{}, raw []byte) interface{} {
 	keys, ok := envelopeKeys(reflect.ValueOf(item))
 	if len(raw) == 0 || !ok {
@@ -225,11 +218,7 @@ func wireStreamItem(item interface{}, raw []byte) interface{} {
 	return wireEvent{data: data}
 }
 
-// envelopeKeys returns the JSON names of the envelope fields the event v
-// declares, or nil when every frame field belongs to it: a union event whose
-// frame matched no member keeps the whole frame, as its decoded form does.
-// For a union event the envelope is the member that decoded. ok is false
-// when v is not a struct event.
+// nil keys keep the whole frame: a union event that matched no member.
 func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
 	v = derefValue(v)
 	if !v.IsValid() || v.Kind() != reflect.Struct {
@@ -272,12 +261,6 @@ func decodeWithNumbers(data []byte) (interface{}, error) {
 	return parsed, err
 }
 
-// typedLeaves walks the values the server sent (wire) alongside the decoded
-// model's rendering of the same event (typed, nil when the model cannot be
-// encoded) and returns wire with each scalar replaced by the typed scalar at
-// the same place, so numbers, dates and other formatted values print as
-// before. Nulls and values the model lacks (undeclared fields, events it
-// cannot encode) keep the server's value, numbers in their shortest form.
 func typedLeaves(wire, typed interface{}) interface{} {
 	switch w := wire.(type) {
 	case nil:
@@ -309,9 +292,7 @@ func typedLeaves(wire, typed interface{}) interface{} {
 	return typed
 }
 
-// canonicalNumber rewrites a lexeme the model does not render ("1.0", "1e3")
-// to its shortest form ("1", "1000") when float64 holds the same value. A
-// lexeme float64 would change (bigint, long decimals) is kept as sent.
+// Bigint and long-decimal lexemes are kept: float64 would change their value.
 func canonicalNumber(n json.Number) interface{} {
 	exact, ok := new(big.Rat).SetString(n.String())
 	if !ok {
@@ -331,9 +312,6 @@ func canonicalNumber(n json.Number) interface{} {
 	return json.Number(shortest)
 }
 
-// streamErrorEvent reports whether item is an in-band error event and returns
-// its body. A decoded error that cannot be re-encoded falls back to the data
-// the server sent, so the event still fails the stream.
 func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	u, ok := errorUnionValue(reflect.ValueOf(item))
 	if !ok {
