@@ -104,7 +104,18 @@ func TestEventStreamRichEvents(t *testing.T) {
 	require.NoError(t, err)
 
 	events := parseNDJSON(t, h.GetStdout())
-	assert.Equal(t, 3, len(events), "expected 3 rich events")
+	require.Equal(t, 3, len(events), "expected 3 rich events")
+	assert.Equal(t, map[string]interface{}{
+		"id":    "job-1",
+		"event": "completion",
+		"data":  map[string]interface{}{"completion": "Hello", "stop_reason": nil, "model": "jeeves-1"},
+	}, events[0])
+	assert.Equal(t, map[string]interface{}{"event": "heartbeat", "data": "ping", "retry": float64(3000)}, events[1])
+	assert.Equal(t, map[string]interface{}{
+		"id":    "job-1",
+		"event": "completion",
+		"data":  map[string]interface{}{"completion": "world!", "stop_reason": "stop_sequence", "model": "jeeves-1"},
+	}, events[2])
 }
 
 func TestEventStreamChatSentinel(t *testing.T) {
@@ -591,6 +602,142 @@ func TestEventStreamNumbersKeepPrecision(t *testing.T) {
 	}
 }
 
+func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
+	recordTest("event-stream-absent-required-union")
+
+	frames := []string{
+		`{"event_type":"delta","text":"before"}`,
+		`{"event_type":"tool","tool_id":"c1"}`,
+		`{"event_type":"delta","text":"after"}`,
+	}
+	for _, format := range []string{"json", "yaml", "toon", "pretty", "table"} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, frames...)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			stdout := h.GetStdout()
+			assert.Contains(t, stdout, "before")
+			assert.Contains(t, stdout, "c1")
+			assert.Contains(t, stdout, "after")
+			assert.NotContains(t, stdout, "outcome", "%s output invented an outcome the server did not send", format)
+		})
+	}
+
+	t.Run("jq", func(t *testing.T) {
+		server := newSSEServer(t, frames...)
+		defer server.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--jq", ".data.event_type"})
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "\"delta\"\n\"tool\"\n\"delta\"", strings.TrimSpace(h.GetStdout()))
+	})
+}
+
+func TestEventStreamKeepsNullAndUndeclaredFields(t *testing.T) {
+	recordTest("event-stream-null-and-undeclared-fields")
+
+	server := newSSEServer(t,
+		`{"event_type":"tool","tool_id":"c1","outcome":null}`,
+		`{"event_type":"delta","text":"x","extra":{"k":1}}`,
+		`{"event_type":"delta","text":null}`,
+		`{"event_type":"delta"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events"})
+	require.NoError(t, err, h.GetStderr())
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Len(t, events, 4)
+	assert.Equal(t, map[string]any{"event_type": "tool", "tool_id": "c1", "outcome": nil}, events[0]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": "x", "extra": map[string]any{"k": float64(1)}}, events[1]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": nil}, events[2]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta"}, events[3]["data"])
+}
+
+func TestEventStreamErrorEventWithoutRequiredUnionFails(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"before"}`,
+		`{"event_type":"tool_error","tool_id":"c1","error":{"code":"TOOL_FAILED","message":"tool crashed"}}`,
+		`{"event_type":"delta","text":"after"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events"})
+	require.Error(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Len(t, events, 1, h.GetStdout())
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": "before"}, events[0]["data"])
+	assert.Contains(t, h.GetStderr(), "tool crashed")
+}
+
+func TestEventStreamProjectionStreamsThroughAbsentRequiredUnion(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"Hello, "}`,
+		`{"event_type":"tool","tool_id":"c1"}`,
+		`{"event_type":"delta","text":"world"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"eventstreams", "discriminated-projected-events", "--server-url", server.URL})
+	require.NoError(t, err, h.GetStderr())
+	assert.Equal(t, "Hello, world\n", h.GetStdout())
+}
+
+func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
+	recordTest("event-stream-equivalent-number-lexemes")
+
+	for format, want := range map[string][]string{
+		"json": {`"ratio":1,`, `"scale":1000,`, `"tiny":0.00001`},
+		"yaml": {"ratio: 1\n", "scale: 1000\n", "tiny: 1e-05\n"},
+		"toon": {"ratio: 1\n", "scale: 1000\n", "tiny: 0.00001\n"},
+	} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, `{"event_type":"delta","text":"n","ratio":1.0,"scale":1e3,"tiny":1e-05}`)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			for _, s := range want {
+				assert.Contains(t, h.GetStdout(), s)
+			}
+		})
+	}
+}
+
+func TestEventStreamDeclaredValuesPrintAsTheModelRendersThem(t *testing.T) {
+	recordTest("event-stream-equivalent-number-lexemes")
+
+	for format, want := range map[string][]string{
+		"json": {`"seq":0,`, `"weight":0.1}`},
+		"toon": {"seq: 0\n", "weight: 0.1\n"},
+	} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, `{"event_type":"delta","text":"n","seq":-0,"weight":0.10000000000000001}`)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			for _, s := range want {
+				assert.Contains(t, h.GetStdout(), s)
+			}
+		})
+	}
+}
+
 // A stream event the server did deliver but that fails strict decode (a
 // numeric error code where the schema declares a string) is a protocol
 // mismatch, not a connection failure: agent mode classifies it
@@ -631,7 +778,7 @@ func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
 // closes before sending it: the events received are still printed, and the
 // failure is a retryable connection error rather than a clean exit.
 func TestEventStreamTruncatedBeforeSentinelIsConnectionError(t *testing.T) {
-	recordTest("event-stream-truncated-before-sentinel-is-connection-error")
+	recordTest("event-stream-truncated-before-sentinel")
 
 	server := newSSEServer(t, `{"data":{"content":"Hello"}}`, `{"data":{"content":" world"}}`)
 	defer server.Close()

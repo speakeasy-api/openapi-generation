@@ -894,6 +894,24 @@ func TestEventStreamNextAfterEOFStaysFinished(t *testing.T) {
 	assert.EqualValues(t, 1, releases.Load(), "the owned cancel runs exactly once")
 }
 
+func TestEventStreamRawValue(t *testing.T) {
+	src := "event: tick\nid: 7\ndata: {\"b\":1,\"a\":null}\n\ndata: {\"c\":2}\n\n"
+	es := stream.NewEventStream(context.Background(), strings.NewReader(src), decodeRawEvent, "")
+	defer es.Close()
+
+	assert.Nil(t, es.RawValue(), "no event has been read yet")
+
+	require.True(t, es.Next())
+	assert.JSONEq(t, `{"id":"7","event":"tick","data":{"b":1,"a":null}}`, string(es.RawValue()))
+	assert.Equal(t, `{"b":1,"a":null}`, string((*es.Value())["data"]), "data keeps the bytes the server sent")
+
+	require.True(t, es.Next())
+	assert.JSONEq(t, `{"id":"7","data":{"c":2}}`, string(es.RawValue()), "the last event ID carries over, as in the SSE spec")
+
+	require.False(t, es.Next())
+	require.NoError(t, es.Err())
+}
+
 // signalReadCloser closes started on its first Read, before delegating to the
 // wrapped reader, so a test knows the consumer is inside a blocking Read
 // rather than merely scheduled.
