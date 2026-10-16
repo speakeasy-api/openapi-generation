@@ -399,6 +399,9 @@ actions:
           type: string
           format: date
           description: a date, so a malformed value fails decode without an encoding/json error type
+        weight:
+          type: number
+          format: double
     discriminatedErrorEvent:
       type: object
       required:

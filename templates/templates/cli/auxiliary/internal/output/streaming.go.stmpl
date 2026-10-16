@@ -190,48 +190,128 @@ func (w wireEvent) MarshalJSON() ([]byte, error) {
 
 // wireStreamItem rebuilds a streamed event from the frame the server sent,
 // keeping the envelope fields the event type declares. Re-encoding the
-// decoded model instead drops fields the model does not declare, turns an
+// decoded model alone drops fields the model does not declare, turns an
 // absent or null required field into its zero value, and fails outright on
-// an absent required union.
+// an absent required union. Each value the server sent still prints as the
+// decoded model renders it wherever the model has one (see typedLeaves).
 func wireStreamItem(item interface{}, raw []byte) interface{} {
-	t := reflect.TypeOf(item)
-	if len(raw) == 0 || t == nil || derefType(t).Kind() != reflect.Struct {
+	keys, ok := envelopeKeys(reflect.ValueOf(item))
+	if len(raw) == 0 || !ok {
 		return item
 	}
-	t = derefType(t)
 	var frame map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &frame); err != nil {
 		return item
 	}
-	wire := make(map[string]interface{}, t.NumField())
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if !singleTableField(f) {
+	wire := make(map[string]interface{}, len(frame))
+	for name, value := range frame {
+		if keys != nil && !keys[name] {
 			continue
 		}
-		name := tableFieldName(f)
-		value, ok := frame[name]
-		if !ok {
-			continue
-		}
-		dec := json.NewDecoder(bytes.NewReader(value))
-		dec.UseNumber()
-		var parsed interface{}
-		if err := dec.Decode(&parsed); err != nil {
+		parsed, err := decodeWithNumbers(value)
+		if err != nil {
 			return item
 		}
-		wire[name] = convertNumbers(parsed, canonicalNumber)
+		wire[name] = parsed
 	}
-	data, err := json.Marshal(wire)
+	var typed interface{}
+	if data, err := marshalJSON(item); err == nil {
+		typed, _ = decodeWithNumbers(data)
+	}
+	data, err := json.Marshal(typedLeaves(wire, typed))
 	if err != nil {
 		return item
 	}
 	return wireEvent{data: data}
 }
 
-// canonicalNumber rewrites a lexeme to the form the decoded model would print
-// ("1.0" and "1e3" become "1" and "1000") when float64 holds the same value.
-// A lexeme float64 would change (bigint, long decimals) is kept as sent.
+// envelopeKeys returns the JSON names of the envelope fields the event v
+// declares, or nil when every frame field belongs to it: a union event whose
+// frame matched no member keeps the whole frame, as its decoded form does.
+// For a union event the envelope is the member that decoded. ok is false
+// when v is not a struct event.
+func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
+	v = derefValue(v)
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return nil, false
+	}
+	t := v.Type()
+	if isUnionStruct(t) {
+		member := reflect.Value{}
+		for i := 0; i < t.NumField(); i++ {
+			if t.Field(i).Tag.Get("union") == "member" && !v.Field(i).IsZero() {
+				member = derefValue(v.Field(i))
+				break
+			}
+		}
+		if !member.IsValid() || member.Kind() != reflect.Struct {
+			return nil, true
+		}
+		t = member.Type()
+	}
+	keys := map[string]bool{}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		name := strings.Split(f.Tag.Get("json"), ",")[0]
+		if name == "-" || (name == "" && !f.IsExported()) {
+			continue
+		}
+		if name == "" {
+			name = f.Name
+		}
+		keys[name] = true
+	}
+	return keys, true
+}
+
+func decodeWithNumbers(data []byte) (interface{}, error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var parsed interface{}
+	err := dec.Decode(&parsed)
+	return parsed, err
+}
+
+// typedLeaves walks the values the server sent (wire) alongside the decoded
+// model's rendering of the same event (typed, nil when the model cannot be
+// encoded) and returns wire with each scalar replaced by the typed scalar at
+// the same place, so numbers, dates and other formatted values print as
+// before. Nulls and values the model lacks (undeclared fields, events it
+// cannot encode) keep the server's value, numbers in their shortest form.
+func typedLeaves(wire, typed interface{}) interface{} {
+	switch w := wire.(type) {
+	case nil:
+		return nil
+	case map[string]interface{}:
+		t, _ := typed.(map[string]interface{})
+		for k, v := range w {
+			w[k] = typedLeaves(v, t[k])
+		}
+		return w
+	case []interface{}:
+		t, _ := typed.([]interface{})
+		for i, v := range w {
+			var tv interface{}
+			if i < len(t) {
+				tv = t[i]
+			}
+			w[i] = typedLeaves(v, tv)
+		}
+		return w
+	}
+	switch typed.(type) {
+	case nil, map[string]interface{}, []interface{}:
+		if n, ok := wire.(json.Number); ok {
+			return canonicalNumber(n)
+		}
+		return wire
+	}
+	return typed
+}
+
+// canonicalNumber rewrites a lexeme the model does not render ("1.0", "1e3")
+// to its shortest form ("1", "1000") when float64 holds the same value. A
+// lexeme float64 would change (bigint, long decimals) is kept as sent.
 func canonicalNumber(n json.Number) interface{} {
 	exact, ok := new(big.Rat).SetString(n.String())
 	if !ok {
