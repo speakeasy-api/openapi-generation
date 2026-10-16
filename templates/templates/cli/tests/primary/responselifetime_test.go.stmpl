@@ -14,9 +14,9 @@ import (
 )
 
 // slowJSONServer sends response headers immediately, then delivers the JSON
-// body in two chunks with a pause in between. The pause lands after the SDK
-// method has returned, so a body left unread at return would be read only
-// after the operation's deferred context cancel has fired.
+// body in two chunks with a pause in between. The pause outlasts the SDK
+// method's return, so a body left unread at return would be read only after
+// the operation's deferred context cancel has fired.
 func slowJSONServer(status int, body string, pause time.Duration) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -25,7 +25,11 @@ func slowJSONServer(status int, body string, pause time.Duration) *httptest.Serv
 		half := len(body) / 2
 		fmt.Fprint(w, body[:half])
 		fl.Flush()
-		time.Sleep(pause)
+		select {
+		case <-time.After(pause):
+		case <-r.Context().Done():
+			return
+		}
 		fmt.Fprint(w, body[half:])
 	}))
 }
@@ -42,7 +46,7 @@ var slowBodyCases = []struct {
 }
 
 // A per-operation timeout arms a context that is cancelled when the SDK method
-// returns. The skip-deserialized JSON body must be consumed before that —
+// returns. The skip-deserialized body must be consumed before that —
 // otherwise a body still in flight at return is read against a cancelled
 // context and the response is lost even though the server delivered it well
 // within the timeout.
