@@ -676,6 +676,26 @@ func TestUnknownCommandErrorMovesSuggestionsIntoHints(t *testing.T) {
 	}
 }
 
+func TestUnknownCommandErrorUnderGroupSuggestsSiblings(t *testing.T) {
+	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
+	group := &cobra.Command{Use: "errors", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
+	group.AddCommand(&cobra.Command{Use: "status-get-error", RunE: func(*cobra.Command, []string) error { return nil }})
+	root.AddCommand(group)
+	InstallErrorHandling(root)
+	root.SetArgs([]string{"errors", "status-get-erro"})
+	err := root.Execute()
+	if err == nil || err.Error() != `unknown command "status-get-erro" for "cli errors"` {
+		t.Fatalf("err = %v", err)
+	}
+	want := []string{
+		"Did you mean status-get-error?",
+		"Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface",
+	}
+	if !reflect.DeepEqual(errorCLIHints(err), want) {
+		t.Fatalf("hints = %q, want %q", errorCLIHints(err), want)
+	}
+}
+
 func TestUnknownCommandErrorLeavesOtherErrorsAlone(t *testing.T) {
 	got := UnknownCommandError(errors.New("accepts 1 arg(s), received 2"))
 	if got.Error() != "accepts 1 arg(s), received 2" {

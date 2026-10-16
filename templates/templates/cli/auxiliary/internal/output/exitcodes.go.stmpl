@@ -44,7 +44,11 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 	}
 	if argsValidator := cmd.Args; argsValidator != nil {
 		cmd.Args = func(current *cobra.Command, args []string) error {
-			return flagutil.WithCLIValidation(argsValidator(current, args))
+			err := argsValidator(current, args)
+			if err != nil && len(args) > 0 && current.HasSubCommands() && strings.HasPrefix(err.Error(), "unknown command ") {
+				return unknownCommandError(err.Error(), current.SuggestionsFor(args[0]))
+			}
+			return flagutil.WithCLIValidation(err)
 		}
 	}
 
@@ -101,6 +105,10 @@ func UnknownCommandError(err error) error {
 			suggestions = append(suggestions, line)
 		}
 	}
+	return unknownCommandError(message, suggestions)
+}
+
+func unknownCommandError(message string, suggestions []string) error {
 	var hints []string
 	switch len(suggestions) {
 	case 0:
