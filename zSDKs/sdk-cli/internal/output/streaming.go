@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"math/big"
 	"reflect"
 	"strings"
 
@@ -133,14 +134,19 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 			}
 		}
 
+		var raw []byte
+		if rawMethod.IsValid() {
+			raw = rawMethod.Call(nil)[0].Bytes()
+		}
+
 		if len(valueResults) == 1 {
-			if body, isErr := streamErrorEvent(item); isErr {
+			if body, isErr := streamErrorEvent(item, raw); isErr {
 				return renderAfterFinish(&StreamEventError{Body: string(body)})
 			}
 		}
 
-		if rawMethod.IsValid() {
-			item = wireStreamItem(item, rawMethod.Call(nil)[0].Bytes())
+		if raw != nil {
+			item = wireStreamItem(item, raw)
 		}
 
 		if projector != nil {
@@ -215,7 +221,7 @@ func wireStreamItem(item interface{}, raw []byte) interface{} {
 		if err := dec.Decode(&parsed); err != nil {
 			return item
 		}
-		wire[name] = parsed
+		wire[name] = convertNumbers(parsed, canonicalNumber)
 	}
 	data, err := json.Marshal(wire)
 	if err != nil {
@@ -224,16 +230,44 @@ func wireStreamItem(item interface{}, raw []byte) interface{} {
 	return wireEvent{data: data}
 }
 
-func streamErrorEvent(item interface{}) (json.RawMessage, bool) {
+// canonicalNumber rewrites a lexeme to the form the decoded model would print
+// ("1.0" and "1e3" become "1" and "1000") when float64 holds the same value.
+// A lexeme float64 would change (bigint, long decimals) is kept as sent.
+func canonicalNumber(n json.Number) interface{} {
+	exact, ok := new(big.Rat).SetString(n.String())
+	if !ok {
+		return n
+	}
+	f, err := n.Float64()
+	if err != nil {
+		return n
+	}
+	shortest, err := json.Marshal(f)
+	if err != nil {
+		return n
+	}
+	if r, ok := new(big.Rat).SetString(string(shortest)); !ok || r.Cmp(exact) != 0 {
+		return n
+	}
+	return json.Number(shortest)
+}
+
+// streamErrorEvent reports whether item is an in-band error event and returns
+// its body. A decoded error that cannot be re-encoded falls back to the data
+// the server sent, so the event still fails the stream.
+func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	u, ok := errorUnionValue(reflect.ValueOf(item))
 	if !ok {
 		return nil, false
 	}
-	data, err := marshalJSON(u.Interface())
-	if err != nil {
+	if data, err := marshalJSON(u.Interface()); err == nil {
+		return data, true
+	}
+	var frame map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &frame); err != nil || len(frame["data"]) == 0 {
 		return nil, false
 	}
-	return data, true
+	return frame["data"], true
 }
 
 func errorUnionValue(v reflect.Value) (reflect.Value, bool) {
