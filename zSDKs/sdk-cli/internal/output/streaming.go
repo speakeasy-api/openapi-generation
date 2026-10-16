@@ -5,7 +5,6 @@
 package output
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -146,7 +145,7 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 		}
 
 		if raw != nil {
-			item = wireStreamItem(item, raw)
+			item = wireStreamItem(item, raw, format == "table" && jqExpr == "")
 		}
 
 		if projector != nil {
@@ -188,29 +187,25 @@ func (w wireEvent) MarshalJSON() ([]byte, error) {
 }
 
 // Re-encoding the decoded model drops undeclared fields and zero-fills absent ones.
-func wireStreamItem(item interface{}, raw []byte) interface{} {
+func wireStreamItem(item interface{}, raw []byte, table bool) interface{} {
 	keys, ok := envelopeKeys(reflect.ValueOf(item))
 	if len(raw) == 0 || !ok {
 		return item
 	}
-	var frame map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &frame); err != nil {
+	typed, err := normalizeForOutput(item)
+	// Tables lay out the model's fields and sections, which the wire map loses.
+	if err == nil && table {
 		return item
 	}
-	wire := make(map[string]interface{}, len(frame))
-	for name, value := range frame {
-		if keys != nil && !keys[name] {
-			continue
-		}
-		parsed, err := decodeWithNumbers(value)
-		if err != nil {
-			return item
-		}
-		wire[name] = parsed
+	frame, err := decodeWithNumbers(raw)
+	wire, isObject := frame.(map[string]interface{})
+	if err != nil || !isObject {
+		return item
 	}
-	var typed interface{}
-	if data, err := marshalJSON(item); err == nil {
-		typed, _ = decodeWithNumbers(data)
+	for name := range wire {
+		if keys != nil && !keys[name] {
+			delete(wire, name)
+		}
 	}
 	data, err := json.Marshal(typedLeaves(wire, typed))
 	if err != nil {
@@ -225,11 +220,10 @@ func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return nil, false
 	}
-	t := v.Type()
-	if isUnionStruct(t) {
+	for isUnionStruct(v.Type()) {
 		member := reflect.Value{}
-		for i := 0; i < t.NumField(); i++ {
-			if t.Field(i).Tag.Get("union") == "member" && !v.Field(i).IsZero() {
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).Tag.Get("union") == "member" && !v.Field(i).IsZero() {
 				member = derefValue(v.Field(i))
 				break
 			}
@@ -237,8 +231,9 @@ func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
 		if !member.IsValid() || member.Kind() != reflect.Struct {
 			return nil, true
 		}
-		t = member.Type()
+		v = member
 	}
+	t := v.Type()
 	keys := map[string]bool{}
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
@@ -252,14 +247,6 @@ func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
 		keys[name] = true
 	}
 	return keys, true
-}
-
-func decodeWithNumbers(data []byte) (interface{}, error) {
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	var parsed interface{}
-	err := dec.Decode(&parsed)
-	return parsed, err
 }
 
 func typedLeaves(wire, typed interface{}) interface{} {

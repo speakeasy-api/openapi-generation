@@ -639,6 +639,8 @@ func TestEventStreamKeepsNullAndUndeclaredFields(t *testing.T) {
 	server := newSSEServer(t,
 		`{"event_type":"tool","tool_id":"c1","outcome":null}`,
 		`{"event_type":"delta","text":"x","extra":{"k":1}}`,
+		`{"event_type":"delta","text":null}`,
+		`{"event_type":"delta"}`,
 	)
 	defer server.Close()
 
@@ -647,9 +649,43 @@ func TestEventStreamKeepsNullAndUndeclaredFields(t *testing.T) {
 	require.NoError(t, err, h.GetStderr())
 
 	events := parseNDJSON(t, h.GetStdout())
-	require.Len(t, events, 2)
+	require.Len(t, events, 4)
 	assert.Equal(t, map[string]any{"event_type": "tool", "tool_id": "c1", "outcome": nil}, events[0]["data"])
 	assert.Equal(t, map[string]any{"event_type": "delta", "text": "x", "extra": map[string]any{"k": float64(1)}}, events[1]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": nil}, events[2]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta"}, events[3]["data"])
+}
+
+func TestEventStreamErrorEventWithoutRequiredUnionFails(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"before"}`,
+		`{"event_type":"tool_error","tool_id":"c1","error":{"code":"TOOL_FAILED","message":"tool crashed"}}`,
+		`{"event_type":"delta","text":"after"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events"})
+	require.Error(t, err)
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Len(t, events, 1, h.GetStdout())
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": "before"}, events[0]["data"])
+	assert.Contains(t, h.GetStderr(), "tool crashed")
+}
+
+func TestEventStreamProjectionStreamsThroughAbsentRequiredUnion(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"delta","text":"Hello, "}`,
+		`{"event_type":"tool","tool_id":"c1"}`,
+		`{"event_type":"delta","text":"world"}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunRaw([]string{"eventstreams", "discriminated-projected-events", "--server-url", server.URL})
+	require.NoError(t, err, h.GetStderr())
+	assert.Equal(t, "Hello, world\n", h.GetStdout())
 }
 
 func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
