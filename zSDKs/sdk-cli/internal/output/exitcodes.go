@@ -47,13 +47,15 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 		return cliHintsError{error: flagutil.WithCLIValidation(err), hints: hints, omitTypeHints: true}
 	})
 
-	if cmd.Args == nil && (usage.GroupMadeRunnable(cmd) || !cmd.HasParent()) {
+	rejectsPositionals := cmd.Args == nil && (usage.GroupMadeRunnable(cmd) || !cmd.HasParent())
+	if rejectsPositionals {
 		cmd.Args = cobra.NoArgs
 	}
 	if argsValidator := cmd.Args; argsValidator != nil {
+		rejectsPositionals = rejectsPositionals || isNoArgs(argsValidator)
 		cmd.Args = func(current *cobra.Command, args []string) error {
 			err := argsValidator(current, args)
-			if err != nil && len(args) > 0 && current.HasSubCommands() {
+			if err != nil && rejectsPositionals && len(args) > 0 && current.HasSubCommands() {
 				return UnknownSubcommandError(current, args[0])
 			}
 			return flagutil.WithCLIValidation(err)
@@ -98,33 +100,52 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 	}
 }
 
+func isNoArgs(validator cobra.PositionalArgs) bool {
+	return reflect.ValueOf(validator).Pointer() == reflect.ValueOf(cobra.NoArgs).Pointer()
+}
+
 // UnknownSubcommandError reports a positional that names no subcommand of
 // cmd, with the nearest commands as hints rather than in the message.
 func UnknownSubcommandError(cmd *cobra.Command, name string) error {
 	var hints []string
-	switch suggestions := commandSuggestions(cmd, name); len(suggestions) {
-	case 0:
-	case 1:
-		hints = append(hints, "Did you mean "+suggestions[0]+"?")
-	default:
-		hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
+	if hasSubcommandNamed(cmd, name) {
+		hints = append(hints, fmt.Sprintf("%s is a command; remove the -- before it", name))
+	} else {
+		switch suggestions := commandSuggestions(cmd, name); len(suggestions) {
+		case 0:
+		case 1:
+			hints = append(hints, "Did you mean "+suggestions[0]+"?")
+		default:
+			hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
+		}
 	}
 	hints = append(hints, helpPointerHint(cmd, "to list available commands"))
 	err := fmt.Errorf("unknown command %q for %q", name, cmd.CommandPath())
 	return cliHintsError{error: flagutil.WithCLIValidation(err), hints: hints, omitTypeHints: true}
 }
 
+func hasSubcommandNamed(cmd *cobra.Command, name string) bool {
+	for _, sub := range cmd.Commands() {
+		if sub.Name() == name || sub.HasAlias(name) {
+			return true
+		}
+	}
+	return false
+}
+
 func helpPointerHint(cmd *cobra.Command, purpose string) string {
 	return fmt.Sprintf("Run '%s --help' %s, or --usage for the machine-readable surface", cmd.CommandPath(), purpose)
 }
 
-// commandSuggestions applies the policy cobra uses before its own lookup.
+// commandSuggestions applies cobra's own suggestion policy without changing the command.
 func commandSuggestions(cmd *cobra.Command, name string) []string {
 	if cmd.DisableSuggestions {
 		return nil
 	}
-	if cmd.SuggestionsMinimumDistance <= 0 {
+	distance := cmd.SuggestionsMinimumDistance
+	if distance <= 0 {
 		cmd.SuggestionsMinimumDistance = 2
+		defer func() { cmd.SuggestionsMinimumDistance = distance }()
 	}
 	return cmd.SuggestionsFor(name)
 }

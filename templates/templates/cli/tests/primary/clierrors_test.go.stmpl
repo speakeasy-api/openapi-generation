@@ -409,6 +409,21 @@ func TestCLIErrorDryRunHintOnlyForServerValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("bare configure", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{"--agent-mode", "configure"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+		assert.Contains(t, envelope["error"], "no flags provided")
+		hints, _ := envelope["hints"].([]interface{})
+		require.NotEmpty(t, hints)
+		for _, hint := range hints {
+			assert.NotContains(t, hint, "--dry-run")
+		}
+	})
+
 	t.Run("server", func(t *testing.T) {
 		resetAgentMode(t)
 		s := newEchoServer()

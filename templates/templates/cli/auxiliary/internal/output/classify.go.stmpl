@@ -543,8 +543,6 @@ func assembleHints(cmd *cobra.Command, err error, c Classification, bodyMap, err
 	return deduped
 }
 
-// A validation error raised by the CLI itself fails the same way under
-// --dry-run, so only server-side validation keeps the dry-run hint.
 func builtinHints(c Classification) []string {
 	hints := builtinTypeHints[c.Type]
 	if c.Type != ErrorTypeValidation || c.Origin != ErrorOriginCLI {
