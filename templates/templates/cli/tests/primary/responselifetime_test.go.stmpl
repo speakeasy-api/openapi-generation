@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -84,6 +85,8 @@ func TestTimedOutBodyReadReportsTheRealCause(t *testing.T) {
 			err := h.RunRaw(append([]string{"--server-url", s.URL, "--timeout", "300ms",
 				"--output-format", "json"}, tc.command...))
 			require.Error(t, err)
+			assert.ErrorIs(t, err, context.DeadlineExceeded)
+			assert.NotErrorIs(t, err, context.Canceled)
 
 			combined := h.GetStdout() + h.GetStderr() + err.Error()
 			assert.NotContains(t, combined, "response body is empty")
