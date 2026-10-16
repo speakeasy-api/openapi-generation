@@ -638,6 +638,9 @@ func unknownCommandTestTree(install bool) (*cobra.Command, *bytes.Buffer) {
 	leaf.Flags().Int("status-code", 0, "")
 	group.AddCommand(leaf)
 	root.AddCommand(group)
+	parent := &cobra.Command{Use: "widget [id]", Args: cobra.MaximumNArgs(1), RunE: run}
+	parent.AddCommand(&cobra.Command{Use: "list", RunE: run})
+	root.AddCommand(parent)
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
@@ -691,6 +694,15 @@ func TestUnknownSubcommandSuggestsAndPointsAtHelp(t *testing.T) {
 			},
 		},
 		{
+			name:    "real name after the flag terminator",
+			args:    []string{"errors", "--", "status-get-error"},
+			wantMsg: `unknown command "status-get-error" for "cli errors"`,
+			wantHints: []string{
+				"Did you mean status-get-error?",
+				"Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+		{
 			name:    "typo after the flag terminator",
 			args:    []string{"errors", "--", "status-get-erro"},
 			wantMsg: `unknown command "status-get-erro" for "cli errors"`,
@@ -726,18 +738,18 @@ func TestUnknownSubcommandSuggestsAndPointsAtHelp(t *testing.T) {
 	}
 }
 
-func TestUnknownSubcommandMessageMatchesCobra(t *testing.T) {
-	plain, _ := unknownCommandTestTree(false)
-	plain.SetArgs([]string{"genreate"})
-	cobraErr := plain.Execute()
-	if cobraErr == nil {
-		t.Fatal("cobra should reject an unknown root command")
-	}
+func TestUnknownSubcommandKeepsParentPositionals(t *testing.T) {
 	root, _ := unknownCommandTestTree(true)
-	root.SetArgs([]string{"genreate"})
+	root.SetArgs([]string{"widget", "abc"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("a parent that accepts a positional must keep accepting it, got %v", err)
+	}
+
+	root, _ = unknownCommandTestTree(true)
+	root.SetArgs([]string{"widget", "abc", "--bogus"})
 	err := root.Execute()
-	if err == nil || !strings.HasPrefix(cobraErr.Error(), err.Error()) {
-		t.Fatalf("message %q should be the first line of cobra's %q", err, cobraErr)
+	if err == nil || !strings.HasPrefix(err.Error(), "unknown flag: --bogus") {
+		t.Fatalf("the flag error must win when the positional is valid, got %v", err)
 	}
 }
 

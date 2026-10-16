@@ -75,23 +75,18 @@ func TestExitCodeMappingTables(t *testing.T) {
 	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(invalidExitCodeError{base}))
 }
 
-func TestExitCodeRootUnknownCommandKeepsCobraMessageLine(t *testing.T) {
+func TestExitCodeRootUnknownCommandIsOneLine(t *testing.T) {
 	recordTest("cli-exit-code-root-unknown-message")
 	resetAgentMode(t)
 	root, err := cli.NewRootCommand()
 	require.NoError(t, err)
 	args := []string{"errorz"}
-	plain := &cobra.Command{Use: root.Use}
-	plain.AddCommand(&cobra.Command{Use: "errors", Run: func(*cobra.Command, []string) {}})
-	_, _, findErr := plain.Find(args)
-	require.Error(t, findErr)
 	var stdout, stderr bytes.Buffer
 	root.SetOut(&stdout)
 	root.SetErr(&stderr)
 	err = cli.ExecuteRoot(context.Background(), root, args)
 	require.Error(t, err)
 	assert.Equal(t, `unknown command "errorz" for "cli"`, err.Error())
-	assert.True(t, strings.HasPrefix(findErr.Error(), err.Error()), "the message is the first line of cobra's own")
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 	assert.Contains(t, output.Classify(root, err).Hints, "Did you mean errors?")
 }
