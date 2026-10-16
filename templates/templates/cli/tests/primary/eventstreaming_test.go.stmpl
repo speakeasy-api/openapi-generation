@@ -111,6 +111,11 @@ func TestEventStreamRichEvents(t *testing.T) {
 		"data":  map[string]interface{}{"completion": "Hello", "stop_reason": nil, "model": "jeeves-1"},
 	}, events[0])
 	assert.Equal(t, map[string]interface{}{"event": "heartbeat", "data": "ping", "retry": float64(3000)}, events[1])
+	assert.Equal(t, map[string]interface{}{
+		"id":    "job-1",
+		"event": "completion",
+		"data":  map[string]interface{}{"completion": "world!", "stop_reason": "stop_sequence", "model": "jeeves-1"},
+	}, events[2])
 }
 
 func TestEventStreamChatSentinel(t *testing.T) {
