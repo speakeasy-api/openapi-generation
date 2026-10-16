@@ -591,6 +591,64 @@ func TestEventStreamNumbersKeepPrecision(t *testing.T) {
 	}
 }
 
+// A tool call announced before its outcome is known omits the required
+// `outcome` union. The decoded event cannot be re-encoded (no union member is
+// set), so every renderer works from the frame the server sent: the stream
+// continues and the event gets no invented `outcome`.
+func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
+	frames := []string{
+		`{"event_type":"delta","text":"before"}`,
+		`{"event_type":"tool","tool_id":"c1"}`,
+		`{"event_type":"delta","text":"after"}`,
+	}
+	for _, format := range []string{"json", "yaml", "toon", "pretty", "table"} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, frames...)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			stdout := h.GetStdout()
+			assert.Contains(t, stdout, "before")
+			assert.Contains(t, stdout, "c1")
+			assert.Contains(t, stdout, "after")
+			assert.NotContains(t, stdout, "outcome", "%s output invented an outcome the server did not send", format)
+		})
+	}
+
+	t.Run("jq", func(t *testing.T) {
+		server := newSSEServer(t, frames...)
+		defer server.Close()
+
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--jq", ".data.event_type"})
+		require.NoError(t, err, h.GetStderr())
+		assert.Equal(t, "\"delta\"\n\"tool\"\n\"delta\"", strings.TrimSpace(h.GetStdout()))
+	})
+}
+
+// Streamed events render the values the server sent, not the decoded
+// model's: an explicit null stays null rather than becoming a zero value,
+// and fields the event schema does not declare are kept.
+func TestEventStreamRendersWireValues(t *testing.T) {
+	server := newSSEServer(t,
+		`{"event_type":"tool","tool_id":"c1","outcome":null}`,
+		`{"event_type":"delta","text":"x","extra":{"k":1}}`,
+	)
+	defer server.Close()
+
+	h := NewCLITestHarness(t)
+	err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events"})
+	require.NoError(t, err, h.GetStderr())
+
+	events := parseNDJSON(t, h.GetStdout())
+	require.Len(t, events, 2)
+	assert.Equal(t, map[string]any{"event_type": "tool", "tool_id": "c1", "outcome": nil}, events[0]["data"])
+	assert.Equal(t, map[string]any{"event_type": "delta", "text": "x", "extra": map[string]any{"k": float64(1)}}, events[1]["data"])
+}
+
 // A stream event the server did deliver but that fails strict decode (a
 // numeric error code where the schema declares a string) is a protocol
 // mismatch, not a connection failure: agent mode classifies it

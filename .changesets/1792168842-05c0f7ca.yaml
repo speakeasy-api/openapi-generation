@@ -1,0 +1,10 @@
+id: 1792168842-05c0f7ca
+features:
+    - serverEvents
+targets:
+    - cli
+type: fix
+bump: patch
+description: render streamed events from the frame the server sent, so an absent required union no longer aborts the stream and absent, null or undeclared fields are shown as sent
+author: 2ynn
+date: "2026-10-16"

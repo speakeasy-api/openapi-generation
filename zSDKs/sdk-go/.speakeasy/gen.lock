@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:08cba0dd035d9a9e3aca5df6ce9f1617796b4872
+    last_write_checksum: sha1:da0a3ea2c22e5ef08eb695169bf309bbe172501f
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

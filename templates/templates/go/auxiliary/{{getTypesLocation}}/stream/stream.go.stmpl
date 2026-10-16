@@ -88,6 +88,7 @@ type EventStream[T any] struct {
 	first    bool
 	err      error
 	val      *T
+	raw      json.RawMessage
 	eventID  *string
 }
 
@@ -319,6 +320,7 @@ func (es *EventStream[T]) Next() bool {
 		}
 
 		es.val = &parsedEvent
+		es.raw = e
 
 		return true
 	}
@@ -337,6 +339,15 @@ func (es *EventStream[T]) endedBeforeSentinel() error {
 // Value returns the most recent event that was generated from a call to Next
 func (es *EventStream[T]) Value() *T {
 	return es.val
+}
+
+// RawValue returns the most recent event as it was handed to the
+// unmarshaller: a JSON object with the frame's SSE fields (id, event, data,
+// retry), where data is the JSON the server sent, or a JSON string for text
+// data. Unlike re-encoding Value, it keeps fields the model does not declare
+// and never adds values the server did not send.
+func (es *EventStream[T]) RawValue() json.RawMessage {
+	return es.raw
 }
 
 // Err returns the first non-EOF error that was encountered

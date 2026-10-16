@@ -366,11 +366,13 @@ actions:
       oneOf:
       - $ref: '#/components/schemas/discriminatedDeltaEvent'
       - $ref: '#/components/schemas/discriminatedErrorEvent'
+      - $ref: '#/components/schemas/discriminatedToolEvent'
       discriminator:
         propertyName: event_type
         mapping:
           delta: '#/components/schemas/discriminatedDeltaEvent'
           error: '#/components/schemas/discriminatedErrorEvent'
+          tool: '#/components/schemas/discriminatedToolEvent'
     discriminatedDeltaEvent:
       type: object
       required:
@@ -408,6 +410,24 @@ actions:
           const: error
         error:
           $ref: '#/components/schemas/discriminatedStreamError'
+    discriminatedToolEvent:
+      description: A tool call announced before its outcome is known, so the required outcome may be absent on the wire
+      type: object
+      required:
+      - event_type
+      - tool_id
+      - outcome
+      properties:
+        event_type:
+          type: string
+          const: tool
+        tool_id:
+          type: string
+        outcome:
+          oneOf:
+          - type: string
+          - type: object
+            additionalProperties: true
     discriminatedStreamError:
       type: object
       required:
