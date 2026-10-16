@@ -18,6 +18,7 @@ import (
 // InstallErrorHandling runs after usage.Intercept, which rewrites the hooks and Args wrapped here.
 func InstallErrorHandling(root *cobra.Command) {
 	installCommandErrorHandling(root)
+	installHelpTopicCheck(root)
 }
 
 func installCommandErrorHandling(cmd *cobra.Command) {
@@ -26,13 +27,19 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 		installCommandErrorHandling(child)
 	}
 
+	rejectsPositionals := cmd.Args == nil && (usage.GroupMadeRunnable(cmd) || !cmd.HasParent())
+	if rejectsPositionals {
+		cmd.Args = cobra.NoArgs
+	}
+	rejectsPositionals = rejectsPositionals || (cmd.Args != nil && isNoArgs(cmd.Args))
+
 	flagError := cmd.FlagErrorFunc()
 	cmd.SetFlagErrorFunc(func(current *cobra.Command, err error) error {
 		err = flagError(current, err)
 		if err == nil {
 			return nil
 		}
-		if current.HasSubCommands() {
+		if rejectsPositionals && current.HasSubCommands() {
 			if positionals := current.Flags().Args(); len(positionals) > 0 {
 				if argsErr := current.ValidateArgs(positionals); argsErr != nil {
 					return argsErr
@@ -47,12 +54,7 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 		return cliHintsError{error: flagutil.WithCLIValidation(err), hints: hints, omitTypeHints: true}
 	})
 
-	rejectsPositionals := cmd.Args == nil && (usage.GroupMadeRunnable(cmd) || !cmd.HasParent())
-	if rejectsPositionals {
-		cmd.Args = cobra.NoArgs
-	}
 	if argsValidator := cmd.Args; argsValidator != nil {
-		rejectsPositionals = rejectsPositionals || isNoArgs(argsValidator)
 		cmd.Args = func(current *cobra.Command, args []string) error {
 			err := argsValidator(current, args)
 			if err != nil && rejectsPositionals && len(args) > 0 && current.HasSubCommands() {
@@ -98,6 +100,42 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 			return runE(current, args)
 		}
 	}
+}
+
+// installHelpTopicCheck reports a help topic that names no command.
+func installHelpTopicCheck(root *cobra.Command) {
+	for _, child := range root.Commands() {
+		if child.Name() != "help" {
+			continue
+		}
+		run, runE := child.Run, child.RunE
+		child.Run = nil
+		child.RunE = func(current *cobra.Command, args []string) error {
+			if topic := unresolvedHelpTopic(root, args); topic != "" {
+				fmt.Fprintf(current.OutOrStderr(), "Unknown help topic %#q\n", args)
+				return root.Usage()
+			}
+			if runE != nil {
+				return runE(current, args)
+			}
+			run(current, args)
+			return nil
+		}
+		return
+	}
+}
+
+func unresolvedHelpTopic(root *cobra.Command, args []string) string {
+	target, rest, _ := root.Find(args)
+	if target == nil {
+		return args[0]
+	}
+	for _, token := range rest {
+		if !strings.HasPrefix(token, "-") {
+			return token
+		}
+	}
+	return ""
 }
 
 func isNoArgs(validator cobra.PositionalArgs) bool {

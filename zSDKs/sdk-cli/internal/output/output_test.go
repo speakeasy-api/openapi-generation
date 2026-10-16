@@ -642,6 +642,11 @@ func unknownCommandTestTree() (*cobra.Command, *bytes.Buffer) {
 	parent := &cobra.Command{Use: "widget [id]", Args: cobra.MaximumNArgs(1), RunE: run}
 	parent.AddCommand(&cobra.Command{Use: "list", RunE: run})
 	root.AddCommand(parent)
+	copyCmd := &cobra.Command{Use: "copy source destination", Args: cobra.ExactArgs(2), RunE: run}
+	copyCmd.Flags().Int("count", 1, "")
+	copyCmd.AddCommand(&cobra.Command{Use: "list", RunE: run})
+	root.AddCommand(copyCmd)
+	root.InitDefaultHelpCmd()
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
@@ -782,22 +787,70 @@ func TestUnknownSubcommandKeepsParentPositionals(t *testing.T) {
 		t.Fatalf("the flag error must win when the positional is valid, got %v", err)
 	}
 
-	tooMany := [][]string{
-		{"widget", "abc", "def"},
-		{"widget", "abc", "def", "--bogus"},
+	root, _ = unknownCommandTestTree()
+	root.SetArgs([]string{"widget", "abc", "def"})
+	err = root.Execute()
+	if err == nil || !strings.HasPrefix(err.Error(), "accepts at most 1 arg") {
+		t.Fatalf("the parent's own validator must report its error, got %v", err)
 	}
-	for _, args := range tooMany {
-		root, _ = unknownCommandTestTree()
-		root.SetArgs(args)
-		err = root.Execute()
-		if err == nil || !strings.HasPrefix(err.Error(), "accepts at most 1 arg") {
-			t.Fatalf("args %q: the parent's own validator must report its error, got %v", args, err)
+	for _, hint := range errorCLIHints(err) {
+		if strings.Contains(hint, "Did you mean") {
+			t.Fatalf("no command suggestion for a positional the parent accepts, got %q", hint)
 		}
-		for _, hint := range errorCLIHints(err) {
-			if strings.Contains(hint, "Did you mean") {
-				t.Fatalf("args %q: no command suggestion for a positional the parent accepts, got %q", args, hint)
-			}
+	}
+
+	root, _ = unknownCommandTestTree()
+	root.SetArgs([]string{"widget", "abc", "def", "--bogus"})
+	err = root.Execute()
+	if err == nil || !strings.HasPrefix(err.Error(), "unknown flag: --bogus") {
+		t.Fatalf("a parent that accepts positionals keeps the flag error, got %v", err)
+	}
+}
+
+func TestFlagErrorWinsWhenPositionalsStraddleTheFlag(t *testing.T) {
+	cases := []struct {
+		args    []string
+		wantErr string
+	}{
+		{[]string{"copy", "first", "--bogus", "second"}, "unknown flag: --bogus"},
+		{[]string{"copy", "first", "--count=oops", "second"}, "invalid argument \"oops\" for \"--count\""},
+	}
+	for _, tc := range cases {
+		root, _ := unknownCommandTestTree()
+		root.SetArgs(tc.args)
+		err := root.Execute()
+		if err == nil || !strings.HasPrefix(err.Error(), tc.wantErr) {
+			t.Fatalf("args %q: err = %v, want prefix %q", tc.args, err, tc.wantErr)
 		}
+	}
+}
+
+func TestHelpCommandReportsUnknownTopic(t *testing.T) {
+	root, out := unknownCommandTestTree()
+	root.SetArgs([]string{"help", "genreate"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("help with an unknown topic should still succeed, got %v", err)
+	}
+	if !strings.Contains(out.String(), "Unknown help topic [`genreate`]") {
+		t.Fatalf("expected the unknown-topic diagnostic, got %q", out.String())
+	}
+
+	root, out = unknownCommandTestTree()
+	root.SetArgs([]string{"help", "errors", "status-get-errr"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	if !strings.Contains(out.String(), "Unknown help topic") {
+		t.Fatalf("a stray topic under a group must be reported, got %q", out.String())
+	}
+
+	root, out = unknownCommandTestTree()
+	root.SetArgs([]string{"help", "errors"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	if strings.Contains(out.String(), "Unknown help topic") || !strings.Contains(out.String(), "status-get-error") {
+		t.Fatalf("a resolved topic must print that command's help, got %q", out.String())
 	}
 }
 

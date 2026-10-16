@@ -374,6 +374,13 @@ func TestCLIErrorUnknownCommandSuggestsNearestCommand(t *testing.T) {
 		assert.Contains(t, h.GetStdout(), "status-get-error")
 	})
 
+	t.Run("help with an unknown topic", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"help", "erors"}))
+		assert.Contains(t, h.GetStderr()+h.GetStdout(), "Unknown help topic [`erors`]")
+	})
+
 	t.Run("no near match", func(t *testing.T) {
 		resetAgentMode(t)
 		h := NewCLITestHarness(t)
