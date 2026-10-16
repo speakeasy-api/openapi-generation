@@ -300,3 +300,147 @@ func TestCLIErrorTypedReasons(t *testing.T) {
 	assert.Nil(t, output.WithCLIReason(nil, "CLI_VALIDATION"))
 	assert.False(t, output.IsRendered(base))
 }
+
+// TestCLIErrorUnknownCommandSuggestsNearestCommand: a mistyped command keeps
+// a one-line message; cobra's "Did you mean this?" block becomes a hint, and
+// the dry-run hint, which cannot fix a typo, is replaced by a --help pointer.
+func TestCLIErrorUnknownCommandSuggestsNearestCommand(t *testing.T) {
+	recordTest("clierrors-unknown-command-suggestion")
+
+	t.Run("agent mode", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "erors"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+		message, _ := envelope["error"].(string)
+		assert.Contains(t, message, `unknown command "erors"`)
+		assert.NotContains(t, message, "\n")
+		assert.NotContains(t, message, "Did you mean")
+		hints, _ := envelope["hints"].([]interface{})
+		assert.Contains(t, hints, "Did you mean errors?")
+		for _, hint := range hints {
+			assert.NotContains(t, hint, "--dry-run")
+		}
+	})
+
+	t.Run("plain", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"erors"})
+		require.Error(t, err)
+		stderr := strings.TrimSpace(h.GetStderr())
+		assert.Contains(t, stderr, `Error (validation_error): unknown command "erors"`)
+		assert.Contains(t, stderr, "Did you mean errors?")
+		assert.Contains(t, stderr, "--help' to list available commands, or --usage for the machine-readable surface")
+		assert.NotContains(t, stderr, "--dry-run")
+	})
+
+	t.Run("under a group", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "errors", "status-get-erro"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, `unknown command "status-get-erro" for "cli errors"`, envelope["error"])
+		hints, _ := envelope["hints"].([]interface{})
+		assert.Contains(t, hints, "Did you mean status-get-error?")
+		assert.Contains(t, hints, "Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface")
+	})
+
+	t.Run("typo followed by the leaf's flags", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "errors", "status-get-erro", "--status-code", "200"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, `unknown command "status-get-erro" for "cli errors"`, envelope["error"])
+		hints, _ := envelope["hints"].([]interface{})
+		assert.Contains(t, hints, "Did you mean status-get-error?")
+	})
+
+	t.Run("help after a typo still prints help", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"errors", "status-get-erro", "--help"}))
+		assert.Contains(t, h.GetStdout(), "status-get-error")
+	})
+
+	t.Run("shell completion is not rejected", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"__complete", "errors", ""}))
+		assert.Contains(t, h.GetStdout(), "status-get-error")
+	})
+
+	t.Run("help with an unknown topic", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunRaw([]string{"help", "erors"}))
+		assert.Contains(t, h.GetStderr()+h.GetStdout(), "Unknown help topic [`erors`]")
+	})
+
+	t.Run("no near match", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "qqqqqqqqqqqq"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		message, _ := envelope["error"].(string)
+		assert.NotContains(t, message, "\n")
+		for _, hint := range envelope["hints"].([]interface{}) {
+			assert.NotContains(t, hint, "Did you mean")
+		}
+	})
+}
+
+// TestCLIErrorDryRunHintOnlyForServerValidation: --dry-run cannot get past a
+// check the CLI itself failed, so a local validation error points at --help
+// only, while a server-side 400 keeps the dry-run hint.
+func TestCLIErrorDryRunHintOnlyForServerValidation(t *testing.T) {
+	recordTest("clierrors-dry-run-hint-server-validation-only")
+
+	t.Run("local", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "errors", "status-get-error"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+		assert.Contains(t, envelope["error"], "required flag")
+		hints, _ := envelope["hints"].([]interface{})
+		require.NotEmpty(t, hints)
+		for _, hint := range hints {
+			assert.NotContains(t, hint, "--dry-run")
+		}
+	})
+
+	t.Run("bare configure", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunBare([]string{"--agent-mode", "configure"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "CLI_VALIDATION", envelope["error_reason"])
+		assert.Contains(t, envelope["error"], "no flags provided")
+		hints, _ := envelope["hints"].([]interface{})
+		require.NotEmpty(t, hints)
+		for _, hint := range hints {
+			assert.NotContains(t, hint, "--dry-run")
+		}
+	})
+
+	t.Run("server", func(t *testing.T) {
+		resetAgentMode(t)
+		s := newEchoServer()
+		defer s.Close()
+		h := NewCLITestHarness(t)
+		err := h.RunWithServer(s.URL, []string{"--agent-mode", "errors", "status-get-error", "--status-code", "400"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, "validation_error", envelope["error_type"])
+		hints, _ := envelope["hints"].([]interface{})
+		assert.Contains(t, hints, "Use --dry-run to preview the request and check parameters")
+	})
+}

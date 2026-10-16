@@ -75,21 +75,20 @@ func TestExitCodeMappingTables(t *testing.T) {
 	assert.Equal(t, clierrors.ExitRuntime, clierrors.ExitCode(invalidExitCodeError{base}))
 }
 
-func TestExitCodeRootUnknownCommandPreservesCobraMessage(t *testing.T) {
+func TestExitCodeRootUnknownCommandIsOneLine(t *testing.T) {
 	recordTest("cli-exit-code-root-unknown-message")
 	resetAgentMode(t)
 	root, err := cli.NewRootCommand()
 	require.NoError(t, err)
 	args := []string{"errorz"}
-	_, _, findErr := root.Find(args)
-	require.Error(t, findErr)
 	var stdout, stderr bytes.Buffer
 	root.SetOut(&stdout)
 	root.SetErr(&stderr)
 	err = cli.ExecuteRoot(context.Background(), root, args)
 	require.Error(t, err)
-	assert.Equal(t, findErr.Error(), err.Error())
+	assert.Equal(t, `unknown command "errorz" for "cli"`, err.Error())
 	assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+	assert.Contains(t, output.Classify(root, err).Hints, "Did you mean errors?")
 }
 
 func TestExitCodeSynthesizedGroupAndNilArgsLeaf(t *testing.T) {

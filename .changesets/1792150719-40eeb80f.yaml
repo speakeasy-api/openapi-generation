@@ -1,0 +1,10 @@
+id: 1792150719-40eeb80f
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: report an unknown command, at the root or under a group, as a one-line message with the nearest commands as hints instead of cobra's multi-line suggestion block, and omit the dry-run hint for validation errors the CLI raised itself; plain stderr and the error message no longer contain the suggestion block, the help hint for unknown commands now reads "Run '<command> --help' to list available commands, or --usage for the machine-readable surface", a suggestion is made when the typo precedes its flags, a real subcommand placed after -- gets a hint to remove the --, a hand-written parent command that accepts positionals keeps its own validation message, and a mistyped root command followed by --help now prints help with exit 0 as it already did under a group
+author: AshGodfrey
+date: "2026-10-16"

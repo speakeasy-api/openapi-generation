@@ -423,6 +423,8 @@ function isTestSkipped(test: string): boolean {
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel-is-connection-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
   ].includes(test);
 }
 
