@@ -744,7 +744,7 @@ func TestEventStreamDecodeFailureIsProtocolError(t *testing.T) {
 // closes before sending it: the events received are still printed, and the
 // failure is a retryable connection error rather than a clean exit.
 func TestEventStreamTruncatedBeforeSentinelIsConnectionError(t *testing.T) {
-	recordTest("event-stream-truncated-before-sentinel-is-connection-error")
+	recordTest("event-stream-truncated-before-sentinel")
 
 	server := newSSEServer(t, `{"data":{"content":"Hello"}}`, `{"data":{"content":" world"}}`)
 	defer server.Close()

@@ -421,7 +421,6 @@ function isTestSkipped(test: string): boolean {
     "clierrors-unknown-flag-suggestion",
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "cli-exit-codes-invalid-jq-before-request",
     "clierrors-dry-run-hint-server-validation-only",
     "clierrors-unknown-command-suggestion",

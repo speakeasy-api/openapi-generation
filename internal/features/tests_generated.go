@@ -322,8 +322,6 @@ func (t Test) String() string {
         return "event-stream-timeout-still-bounds-slow-stream"
     case TestEventStreamTruncatedBeforeSentinel:
         return "event-stream-truncated-before-sentinel"
-    case TestEventStreamTruncatedBeforeSentinelIsConnectionError:
-        return "event-stream-truncated-before-sentinel-is-connection-error"
     case TestEventStreamUndiscriminatedErrorShapedVariantIsData:
         return "event-stream-undiscriminated-error-shaped-variant-is-data"
     case TestEventStreamUnionEventsRenderWireShape:
@@ -1838,8 +1836,6 @@ func TestFromString(s string) Test {
         return TestEventStreamTimeoutStillBoundsSlowStream
     case "event-stream-truncated-before-sentinel":
         return TestEventStreamTruncatedBeforeSentinel
-    case "event-stream-truncated-before-sentinel-is-connection-error":
-        return TestEventStreamTruncatedBeforeSentinelIsConnectionError
     case "event-stream-undiscriminated-error-shaped-variant-is-data":
         return TestEventStreamUndiscriminatedErrorShapedVariantIsData
     case "event-stream-union-events-render-wire-shape":
@@ -3194,7 +3190,6 @@ var testList = []Test{
     TestEventStreamTextData,
     TestEventStreamTimeoutStillBoundsSlowStream,
     TestEventStreamTruncatedBeforeSentinel,
-    TestEventStreamTruncatedBeforeSentinelIsConnectionError,
     TestEventStreamUndiscriminatedErrorShapedVariantIsData,
     TestEventStreamUnionEventsRenderWireShape,
     TestEventStreamUnionWithStandaloneComments,

@@ -358,7 +358,6 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
     "shared-enum-constructor-default",
-    "event-stream-truncated-before-sentinel",
     "open-union-invalid-json-is-an-error",
   ].includes(test);
 }
