@@ -715,6 +715,28 @@ func TestUnknownSubcommandSuggestsAndPointsAtHelp(t *testing.T) {
 	}
 }
 
+func TestUnknownSubcommandSuggestionLeadsDeclaredValidationHints(t *testing.T) {
+	root, _ := unknownCommandTestTree()
+	err := UnknownSubcommandError(root, "genreate")
+	hints := assembleHints(
+		root,
+		err,
+		Classification{Type: ErrorTypeValidation, Reason: ReasonCLIValidation, Origin: ErrorOriginCLI},
+		nil,
+		nil,
+		[]string{"Follow the declared validation guidance"},
+		true,
+	)
+	want := []string{
+		"Did you mean generate?",
+		"Follow the declared validation guidance",
+		"Run 'cli --help' to list available commands, or --usage for the machine-readable surface",
+	}
+	if !reflect.DeepEqual(hints, want) {
+		t.Fatalf("hints = %q, want %q", hints, want)
+	}
+}
+
 func TestUnknownSubcommandKeepsParentPositionals(t *testing.T) {
 	root, _ := unknownCommandTestTree()
 	root.SetArgs([]string{"widget", "abc"})

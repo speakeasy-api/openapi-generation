@@ -107,21 +107,25 @@ func isNoArgs(validator cobra.PositionalArgs) bool {
 // UnknownSubcommandError reports a positional that names no subcommand of
 // cmd, with the nearest commands as hints rather than in the message.
 func UnknownSubcommandError(cmd *cobra.Command, name string) error {
-	var hints []string
+	var leadingHints []string
 	if hasSubcommandNamed(cmd, name) {
-		hints = append(hints, fmt.Sprintf("%s is a command; remove the -- before it", name))
+		leadingHints = append(leadingHints, fmt.Sprintf("%s is a command; remove the -- before it", name))
 	} else {
 		switch suggestions := commandSuggestions(cmd, name); len(suggestions) {
 		case 0:
 		case 1:
-			hints = append(hints, "Did you mean "+suggestions[0]+"?")
+			leadingHints = append(leadingHints, "Did you mean "+suggestions[0]+"?")
 		default:
-			hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
+			leadingHints = append(leadingHints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
 		}
 	}
-	hints = append(hints, helpPointerHint(cmd, "to list available commands"))
 	err := fmt.Errorf("unknown command %q for %q", name, cmd.CommandPath())
-	return cliHintsError{error: flagutil.WithCLIValidation(err), hints: hints, omitTypeHints: true}
+	err = withCLILeadingHints(flagutil.WithCLIValidation(err), leadingHints)
+	return cliHintsError{
+		error:         err,
+		hints:         []string{helpPointerHint(cmd, "to list available commands")},
+		omitTypeHints: true,
+	}
 }
 
 func hasSubcommandNamed(cmd *cobra.Command, name string) bool {

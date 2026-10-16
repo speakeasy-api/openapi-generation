@@ -758,9 +758,24 @@ func (e cliHintsError) CLIHints() []string      { return e.hints }
 func (e cliHintsError) CLIOmitTypeHints() bool { return e.omitTypeHints }
 func (e cliHintsError) Unwrap() error           { return e.error }
 
+type cliLeadingHintsError struct {
+	error
+	hints []string
+}
+
+func (e cliLeadingHintsError) CLILeadingHints() []string { return e.hints }
+func (e cliLeadingHintsError) Unwrap() error              { return e.error }
+
 func withCLIHints(err error, hints []string) error {
 	if err == nil || len(hints) == 0 {
 		return err
 	}
 	return cliHintsError{error: err, hints: hints}
+}
+
+func withCLILeadingHints(err error, hints []string) error {
+	if err == nil || len(hints) == 0 {
+		return err
+	}
+	return cliLeadingHintsError{error: err, hints: hints}
 }
