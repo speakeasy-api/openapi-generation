@@ -278,7 +278,7 @@ trackedFiles:
   internal/output/errortable.go:
     last_write_checksum: sha1:ccc29887b4f88d007edf4c5606a7b97e5adafe2a
   internal/output/exitcodes.go:
-    last_write_checksum: sha1:4173de72b4463c3e8ba6d8e43d309ce59b727161
+    last_write_checksum: sha1:67b44aade10613648ffafea2b8aad9a92fdce91d
   internal/output/jq.go:
     last_write_checksum: sha1:9e59e92439a8c6269a76be1fa44e85cbbf2dee59
   internal/output/output.go:

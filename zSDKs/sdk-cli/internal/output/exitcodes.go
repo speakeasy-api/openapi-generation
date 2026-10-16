@@ -121,9 +121,11 @@ func UnknownSubcommandError(cmd *cobra.Command, name string) error {
 	}
 	err := fmt.Errorf("unknown command %q for %q", name, cmd.CommandPath())
 	err = withCLILeadingHints(flagutil.WithCLIValidation(err), leadingHints)
+	hints := append([]string(nil), leadingHints...)
+	hints = append(hints, helpPointerHint(cmd, "to list available commands"))
 	return cliHintsError{
 		error:         err,
-		hints:         []string{helpPointerHint(cmd, "to list available commands")},
+		hints:         hints,
 		omitTypeHints: true,
 	}
 }
