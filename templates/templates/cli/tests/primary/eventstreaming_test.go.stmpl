@@ -105,8 +105,6 @@ func TestEventStreamRichEvents(t *testing.T) {
 
 	events := parseNDJSON(t, h.GetStdout())
 	require.Equal(t, 3, len(events), "expected 3 rich events")
-	// The stream element is a union of envelopes: each event keeps the
-	// envelope fields of the member it decoded to.
 	assert.Equal(t, map[string]interface{}{
 		"id":    "job-1",
 		"event": "completion",
@@ -599,10 +597,6 @@ func TestEventStreamNumbersKeepPrecision(t *testing.T) {
 	}
 }
 
-// A tool call announced before its outcome is known omits the required
-// `outcome` union. The decoded event cannot be re-encoded (no union member is
-// set), so every renderer works from the frame the server sent: the stream
-// continues and the event gets no invented `outcome`.
 func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
 	recordTest("event-stream-absent-required-union")
 
@@ -639,10 +633,7 @@ func TestEventStreamAbsentRequiredUnionStreamsThrough(t *testing.T) {
 	})
 }
 
-// Streamed events render the values the server sent, not the decoded
-// model's: an explicit null stays null rather than becoming a zero value,
-// and fields the event schema does not declare are kept.
-func TestEventStreamRendersWireValues(t *testing.T) {
+func TestEventStreamKeepsNullAndUndeclaredFields(t *testing.T) {
 	recordTest("event-stream-null-and-undeclared-fields")
 
 	server := newSSEServer(t,
@@ -661,9 +652,6 @@ func TestEventStreamRendersWireValues(t *testing.T) {
 	assert.Equal(t, map[string]any{"event_type": "delta", "text": "x", "extra": map[string]any{"k": float64(1)}}, events[1]["data"])
 }
 
-// A number lexeme float64 holds without change ("1.0", "1e3", "1e-05")
-// prints as the decoded model would, in every format; toon and yaml keep it a
-// native number rather than a quoted string.
 func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
 	recordTest("event-stream-equivalent-number-lexemes")
 
@@ -687,9 +675,6 @@ func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
 	}
 }
 
-// A value the model declares prints as the model renders it, whatever the
-// server's lexeme: an int field sent as -0 prints 0, a double sent with
-// more digits than float64 holds prints its float64 value, natively in toon.
 func TestEventStreamDeclaredValuesPrintAsTheModelRendersThem(t *testing.T) {
 	recordTest("event-stream-equivalent-number-lexemes")
 
