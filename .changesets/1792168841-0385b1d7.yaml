@@ -1,0 +1,11 @@
+id: 1792168841-0385b1d7
+features:
+    - serverEvents
+targets:
+    - go
+    - cli
+type: feat
+bump: patch
+description: expose the raw event behind each streamed Value through EventStream.RawValue
+author: 2ynn
+date: "2026-10-16"

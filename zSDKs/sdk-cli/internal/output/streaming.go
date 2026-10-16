@@ -5,6 +5,7 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -61,6 +62,7 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	valueMethod := streamVal.MethodByName("Value")
 	errMethod := streamVal.MethodByName("Err")
 	closeMethod := streamVal.MethodByName("Close")
+	rawMethod := streamVal.MethodByName("RawValue")
 	if !nextMethod.IsValid() || !valueMethod.IsValid() {
 		// Fallback: not a streaming type — output as regular result
 		return Result(cmd, res)
@@ -137,6 +139,10 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 			}
 		}
 
+		if rawMethod.IsValid() {
+			item = wireStreamItem(item, rawMethod.Call(nil)[0].Bytes())
+		}
+
 		if projector != nil {
 			if err := projector.emit(out, item); err != nil {
 				return finishJoin(err)
@@ -165,6 +171,57 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 		return nil
 	}
 	return nil
+}
+
+// wireEvent is a streamed event kept as JSON. Renderers treat it like any
+// model with a custom MarshalJSON.
+type wireEvent struct {
+	data json.RawMessage
+}
+
+func (w wireEvent) MarshalJSON() ([]byte, error) {
+	return w.data, nil
+}
+
+// wireStreamItem rebuilds a streamed event from the frame the server sent,
+// keeping the envelope fields the event type declares. Re-encoding the
+// decoded model instead drops fields the model does not declare, turns an
+// absent or null required field into its zero value, and fails outright on
+// an absent required union.
+func wireStreamItem(item interface{}, raw []byte) interface{} {
+	t := reflect.TypeOf(item)
+	if len(raw) == 0 || t == nil || derefType(t).Kind() != reflect.Struct {
+		return item
+	}
+	t = derefType(t)
+	var frame map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &frame); err != nil {
+		return item
+	}
+	wire := make(map[string]interface{}, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if !singleTableField(f) {
+			continue
+		}
+		name := tableFieldName(f)
+		value, ok := frame[name]
+		if !ok {
+			continue
+		}
+		dec := json.NewDecoder(bytes.NewReader(value))
+		dec.UseNumber()
+		var parsed interface{}
+		if err := dec.Decode(&parsed); err != nil {
+			return item
+		}
+		wire[name] = parsed
+	}
+	data, err := json.Marshal(wire)
+	if err != nil {
+		return item
+	}
+	return wireEvent{data: data}
 }
 
 func streamErrorEvent(item interface{}) (json.RawMessage, bool) {
