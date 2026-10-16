@@ -356,18 +356,18 @@ func InterruptContext(parent context.Context) (context.Context, context.CancelFu
 func ExecuteRoot(ctx context.Context, root *cobra.Command, args []string) error {
 	// Cobra aborts on an unknown command or flag before PersistentPreRunE runs.
 	output.InitAgentMode(root)
-	target, _, findErr := root.Find(args)
-	if findErr != nil || target == nil {
-		target = root
+	target, rest, _ := root.Find(args)
+	if target == nil {
+		target, rest = root, args
 	}
 	output.PreparseRenderingFlags(target, args)
+	if err := output.UnknownSubcommandError(target, rest); err != nil {
+		return output.CLIError(target, err)
+	}
 	root.SetArgs(args)
 	executed, err := root.ExecuteContextC(ctx)
 	if executed == nil {
 		executed = root
-	}
-	if err != nil && findErr != nil {
-		err = output.UnknownCommandError(err)
 	}
 	return output.CLIError(executed, err)
 }

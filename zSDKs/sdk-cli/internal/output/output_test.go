@@ -626,16 +626,30 @@ func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
 	}
 }
 
-func TestUnknownCommandErrorMovesSuggestionsIntoHints(t *testing.T) {
+func unknownCommandTestTree() *cobra.Command {
+	run := func(*cobra.Command, []string) error { return nil }
+	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true, RunE: run}
+	root.PersistentFlags().String("output-format", "", "")
+	root.PersistentFlags().StringP("jq", "q", "", "")
+	root.PersistentFlags().Bool("agent-mode", false, "")
+	root.AddCommand(&cobra.Command{Use: "generate", RunE: run})
+	group := &cobra.Command{Use: "errors", Args: cobra.NoArgs, RunE: run}
+	group.AddCommand(&cobra.Command{Use: "status-get-error", RunE: run})
+	root.AddCommand(group)
+	InstallErrorHandling(root)
+	return root
+}
+
+func TestUnknownSubcommandErrorSuggestsAndPointsAtHelp(t *testing.T) {
 	cases := []struct {
 		name      string
-		err       error
+		args      []string
 		wantMsg   string
 		wantHints []string
 	}{
 		{
-			name:    "one suggestion",
-			err:     errors.New("unknown command \"genreate\" for \"cli\"\n\nDid you mean this?\n\tgenerate\n"),
+			name:    "root typo",
+			args:    []string{"genreate"},
 			wantMsg: `unknown command "genreate" for "cli"`,
 			wantHints: []string{
 				"Did you mean generate?",
@@ -643,18 +657,36 @@ func TestUnknownCommandErrorMovesSuggestionsIntoHints(t *testing.T) {
 			},
 		},
 		{
-			name:    "several suggestions under a group",
-			err:     errors.New("unknown command \"lis\" for \"cli agents\"\n\nDid you mean this?\n\tlist\n\tlint\n"),
-			wantMsg: `unknown command "lis" for "cli agents"`,
+			name:    "root typo behind global flags",
+			args:    []string{"--output-format", "json", "-q", ".x", "--agent-mode", "genreate", "--jq", ".y"},
+			wantMsg: `unknown command "genreate" for "cli"`,
 			wantHints: []string{
-				"Did you mean one of list, lint?",
-				"Run 'cli agents --help' to list available commands, or --usage for the machine-readable surface",
+				"Did you mean generate?",
+				"Run 'cli --help' to list available commands, or --usage for the machine-readable surface",
 			},
 		},
 		{
-			name:    "no suggestion",
-			err:     errors.New(`unknown command "zzz" for "cli"`),
-			wantMsg: `unknown command "zzz" for "cli"`,
+			name:    "typo under a group",
+			args:    []string{"errors", "status-get-errr"},
+			wantMsg: `unknown command "status-get-errr" for "cli errors"`,
+			wantHints: []string{
+				"Did you mean status-get-error?",
+				"Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+		{
+			name:    "typo under a group followed by the leaf's flags",
+			args:    []string{"errors", "status-get-erro", "--status-code", "200"},
+			wantMsg: `unknown command "status-get-erro" for "cli errors"`,
+			wantHints: []string{
+				"Did you mean status-get-error?",
+				"Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface",
+			},
+		},
+		{
+			name:    "no near match",
+			args:    []string{"qqqqqqqq"},
+			wantMsg: `unknown command "qqqqqqqq" for "cli"`,
 			wantHints: []string{
 				"Run 'cli --help' to list available commands, or --usage for the machine-readable surface",
 			},
@@ -662,48 +694,56 @@ func TestUnknownCommandErrorMovesSuggestionsIntoHints(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := UnknownCommandError(tc.err)
-			if got.Error() != tc.wantMsg {
-				t.Fatalf("message = %q, want %q", got.Error(), tc.wantMsg)
+			root := unknownCommandTestTree()
+			target, rest, _ := root.Find(tc.args)
+			err := UnknownSubcommandError(target, rest)
+			if err == nil || err.Error() != tc.wantMsg {
+				t.Fatalf("err = %v, want %q", err, tc.wantMsg)
 			}
-			if !reflect.DeepEqual(errorCLIHints(got), tc.wantHints) {
-				t.Fatalf("hints = %q, want %q", errorCLIHints(got), tc.wantHints)
+			if !reflect.DeepEqual(errorCLIHints(err), tc.wantHints) {
+				t.Fatalf("hints = %q, want %q", errorCLIHints(err), tc.wantHints)
 			}
-			if !omitsTypeHints(got) {
+			if !omitsTypeHints(err) {
 				t.Fatal("expected the built-in validation hints to be omitted")
 			}
 		})
 	}
 }
 
-func TestUnknownCommandErrorUnderGroupSuggestsSiblings(t *testing.T) {
-	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
-	group := &cobra.Command{Use: "errors", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
-	group.AddCommand(&cobra.Command{Use: "status-get-error", RunE: func(*cobra.Command, []string) error { return nil }})
-	root.AddCommand(group)
-	InstallErrorHandling(root)
-	root.SetArgs([]string{"errors", "status-get-errr"})
-	err := root.Execute()
-	if err == nil || err.Error() != `unknown command "status-get-errr" for "cli errors"` {
-		t.Fatalf("err = %v", err)
+func TestUnknownSubcommandErrorMatchesCobraMessage(t *testing.T) {
+	root := unknownCommandTestTree()
+	target, rest, findErr := root.Find([]string{"genreate"})
+	if findErr == nil {
+		t.Fatal("cobra should reject an unknown root command")
 	}
-	want := []string{
-		"Did you mean status-get-error?",
-		"Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface",
-	}
-	if !reflect.DeepEqual(errorCLIHints(err), want) {
-		t.Fatalf("hints = %q, want %q", errorCLIHints(err), want)
+	err := UnknownSubcommandError(target, rest)
+	if err == nil || !strings.HasPrefix(findErr.Error(), err.Error()) {
+		t.Fatalf("message %q should be the first line of cobra's %q", err, findErr)
 	}
 }
 
-func TestUnknownCommandErrorUnderGroupHonoursDisableSuggestions(t *testing.T) {
-	root := &cobra.Command{Use: "cli", SilenceErrors: true, SilenceUsage: true}
-	group := &cobra.Command{Use: "errors", Args: cobra.NoArgs, DisableSuggestions: true, RunE: func(*cobra.Command, []string) error { return nil }}
-	group.AddCommand(&cobra.Command{Use: "status-get-error", RunE: func(*cobra.Command, []string) error { return nil }})
-	root.AddCommand(group)
-	InstallErrorHandling(root)
-	root.SetArgs([]string{"errors", "status-get-errr"})
-	err := root.Execute()
+func TestUnknownSubcommandErrorIgnoresResolvedInvocations(t *testing.T) {
+	for _, args := range [][]string{
+		{},
+		{"errors"},
+		{"generate", "extra"},
+		{"errors", "status-get-error", "extra"},
+		{"--", "genreate"},
+	} {
+		root := unknownCommandTestTree()
+		target, rest, _ := root.Find(args)
+		if err := UnknownSubcommandError(target, rest); err != nil {
+			t.Fatalf("args %q: unexpected error %v", args, err)
+		}
+	}
+}
+
+func TestUnknownSubcommandErrorHonoursDisableSuggestions(t *testing.T) {
+	root := unknownCommandTestTree()
+	group, _, _ := root.Find([]string{"errors"})
+	group.DisableSuggestions = true
+	target, rest, _ := root.Find([]string{"errors", "status-get-errr"})
+	err := UnknownSubcommandError(target, rest)
 	if err == nil {
 		t.Fatal("expected an unknown-command error")
 	}
@@ -711,15 +751,5 @@ func TestUnknownCommandErrorUnderGroupHonoursDisableSuggestions(t *testing.T) {
 		if strings.Contains(hint, "Did you mean") {
 			t.Fatalf("suggestions are disabled on the group, got %q", hint)
 		}
-	}
-}
-
-func TestUnknownCommandErrorLeavesOtherErrorsAlone(t *testing.T) {
-	got := UnknownCommandError(errors.New("accepts 1 arg(s), received 2"))
-	if got.Error() != "accepts 1 arg(s), received 2" {
-		t.Fatalf("message = %q", got.Error())
-	}
-	if omitsTypeHints(got) {
-		t.Fatal("non-command errors keep the built-in hints")
 	}
 }

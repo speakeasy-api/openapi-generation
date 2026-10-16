@@ -1,7 +1,6 @@
 package output
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -44,11 +43,7 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 	}
 	if argsValidator := cmd.Args; argsValidator != nil {
 		cmd.Args = func(current *cobra.Command, args []string) error {
-			err := argsValidator(current, args)
-			if err != nil && len(args) > 0 && current.HasSubCommands() && strings.HasPrefix(err.Error(), "unknown command ") {
-				return unknownCommandError(err.Error(), commandSuggestions(current, args[0]))
-			}
-			return flagutil.WithCLIValidation(err)
+			return flagutil.WithCLIValidation(argsValidator(current, args))
 		}
 	}
 
@@ -90,26 +85,57 @@ func installCommandErrorHandling(cmd *cobra.Command) {
 	}
 }
 
-const cobraSuggestionsHeader = "\n\nDid you mean this?\n"
-
-// UnknownCommandError moves cobra's multi-line "Did you mean this?" block out
-// of the message and into hints, so structured output carries one line.
-func UnknownCommandError(err error) error {
-	if err == nil || !strings.HasPrefix(err.Error(), "unknown command ") {
-		return flagutil.WithCLIValidation(err)
+// UnknownSubcommandError reports the first positional under a command group
+// that names no subcommand. Cobra performs this check only at the root, and
+// it renders the suggestions into the message; here they become hints.
+func UnknownSubcommandError(cmd *cobra.Command, args []string) error {
+	if cmd == nil || !cmd.HasSubCommands() {
+		return nil
 	}
-	message, block, _ := strings.Cut(err.Error(), cobraSuggestionsHeader)
-	var suggestions []string
-	for _, line := range strings.Split(block, "\n") {
-		if line = strings.TrimSpace(line); line != "" {
-			suggestions = append(suggestions, line)
-		}
+	name := firstPositional(cmd, args)
+	if name == "" {
+		return nil
 	}
-	return unknownCommandError(message, suggestions)
+	var hints []string
+	switch suggestions := commandSuggestions(cmd, name); len(suggestions) {
+	case 0:
+	case 1:
+		hints = append(hints, "Did you mean "+suggestions[0]+"?")
+	default:
+		hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
+	}
+	hints = append(hints, fmt.Sprintf("Run '%s --help' to list available commands, or --usage for the machine-readable surface", cmd.CommandPath()))
+	err := fmt.Errorf("unknown command %q for %q", name, cmd.CommandPath())
+	return cliHintsError{error: flagutil.WithCLIValidation(err), hints: hints, omitTypeHints: true}
 }
 
-// commandSuggestions applies the same policy cobra uses before its own
-// suggestion lookup at the root.
+// firstPositional skips flags the way cobra does when it looks for the next
+// subcommand: a flag without a NoOptDefVal, or one the command does not
+// declare, consumes the following argument as its value.
+func firstPositional(cmd *cobra.Command, args []string) string {
+	cmd.InheritedFlags()
+	flags := cmd.Flags()
+	for i := 0; i < len(args); i++ {
+		s := args[i]
+		switch {
+		case s == "--":
+			return ""
+		case strings.HasPrefix(s, "--") && !strings.Contains(s, "="):
+			if f := flags.Lookup(s[2:]); f == nil || f.NoOptDefVal == "" {
+				i++
+			}
+		case strings.HasPrefix(s, "-") && !strings.Contains(s, "=") && len(s) == 2:
+			if f := flags.ShorthandLookup(s[1:]); f == nil || f.NoOptDefVal == "" {
+				i++
+			}
+		case s != "" && !strings.HasPrefix(s, "-"):
+			return s
+		}
+	}
+	return ""
+}
+
+// commandSuggestions applies the policy cobra uses before its own lookup.
 func commandSuggestions(cmd *cobra.Command, name string) []string {
 	if cmd.DisableSuggestions {
 		return nil
@@ -118,23 +144,6 @@ func commandSuggestions(cmd *cobra.Command, name string) []string {
 		cmd.SuggestionsMinimumDistance = 2
 	}
 	return cmd.SuggestionsFor(name)
-}
-
-func unknownCommandError(message string, suggestions []string) error {
-	var hints []string
-	switch len(suggestions) {
-	case 0:
-	case 1:
-		hints = append(hints, "Did you mean "+suggestions[0]+"?")
-	default:
-		hints = append(hints, "Did you mean one of "+strings.Join(suggestions, ", ")+"?")
-	}
-	helpHint := "Run the command with --help to list available commands, or --usage for the machine-readable surface"
-	if i := strings.LastIndex(message, ` for "`); i >= 0 && strings.HasSuffix(message, `"`) {
-		helpHint = fmt.Sprintf("Run '%s --help' to list available commands, or --usage for the machine-readable surface", message[i+len(` for "`):len(message)-1])
-	}
-	hints = append(hints, helpHint)
-	return cliHintsError{error: flagutil.WithCLIValidation(errors.New(message)), hints: hints, omitTypeHints: true}
 }
 
 func renderingMode(cmd *cobra.Command) (format, jqExpr string) {

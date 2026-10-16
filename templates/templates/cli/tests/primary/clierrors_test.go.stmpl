@@ -349,6 +349,17 @@ func TestCLIErrorUnknownCommandSuggestsNearestCommand(t *testing.T) {
 		assert.Contains(t, hints, "Run 'cli errors --help' to list available commands, or --usage for the machine-readable surface")
 	})
 
+	t.Run("typo followed by the leaf's flags", func(t *testing.T) {
+		resetAgentMode(t)
+		h := NewCLITestHarness(t)
+		err := h.RunRaw([]string{"--agent-mode", "errors", "status-get-erro", "--status-code", "200"})
+		require.Error(t, err)
+		envelope := agentEnvelope(t, h.GetStderr())
+		assert.Equal(t, `unknown command "status-get-erro" for "cli errors"`, envelope["error"])
+		hints, _ := envelope["hints"].([]interface{})
+		assert.Contains(t, hints, "Did you mean status-get-error?")
+	})
+
 	t.Run("no near match", func(t *testing.T) {
 		resetAgentMode(t)
 		h := NewCLITestHarness(t)
