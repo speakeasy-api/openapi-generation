@@ -684,6 +684,9 @@ function isTestSkipped(test: string): boolean {
     "cli-exit-codes-invalid-jq-before-request",
     "clierrors-dry-run-hint-server-validation-only",
     "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
   ].includes(test);
 }
 

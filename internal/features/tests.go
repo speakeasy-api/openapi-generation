@@ -499,6 +499,9 @@ const (
 	TestEventStreamMalformedFrameStrict
 	TestEventStreamMalformedFrameLenient
 	TestEventStreamTruncatedBeforeSentinel
+	TestEventStreamAbsentRequiredUnion
+	TestEventStreamNullAndUndeclaredFields
+	TestEventStreamEquivalentNumberLexemes
 	TestTestHooks
 	TestTestHooksError
 	TestTestHooksBeforeCreateRequest
