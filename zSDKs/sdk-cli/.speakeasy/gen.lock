@@ -294,7 +294,7 @@ trackedFiles:
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:a25abe5986c1a2bf3dc015a3b7b8fde434b58b3d
+    last_write_checksum: sha1:fd94a3a0f39a96cca0b81b3eea9002600b6a09aa
   internal/output/streamproject.go:
     last_write_checksum: sha1:95088b4a0809c2f02782c950edfe240b8c3e885a
   internal/sdk/.gitattributes:
@@ -652,7 +652,7 @@ trackedFiles:
   internal/sdk/types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   internal/sdk/types/stream/stream.go:
-    last_write_checksum: sha1:da0a3ea2c22e5ef08eb695169bf309bbe172501f
+    last_write_checksum: sha1:6271a5222961fe20d8e0f9a984a395786421f438
   internal/testclient/testclient.go:
     last_write_checksum: sha1:7107e59d336235c44af152c5a61ee3896a7841fa
   internal/usage/bodyschemas.go:

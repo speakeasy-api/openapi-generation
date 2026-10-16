@@ -906,7 +906,7 @@ func TestEventStreamRawValue(t *testing.T) {
 	assert.Equal(t, `{"b":1,"a":null}`, string((*es.Value())["data"]), "data keeps the bytes the server sent")
 
 	require.True(t, es.Next())
-	assert.JSONEq(t, `{"data":{"c":2}}`, string(es.RawValue()))
+	assert.JSONEq(t, `{"id":"7","data":{"c":2}}`, string(es.RawValue()), "the last event ID carries over, as in the SSE spec")
 
 	require.False(t, es.Next())
 	require.NoError(t, es.Err())

@@ -649,6 +649,30 @@ func TestEventStreamRendersWireValues(t *testing.T) {
 	assert.Equal(t, map[string]any{"event_type": "delta", "text": "x", "extra": map[string]any{"k": float64(1)}}, events[1]["data"])
 }
 
+// A number lexeme float64 holds without change ("1.0", "1e3", "1e-05")
+// prints as the decoded model would, in every format; toon and yaml keep it a
+// native number rather than a quoted string.
+func TestEventStreamEquivalentNumberLexemesPrintCanonically(t *testing.T) {
+	for format, want := range map[string][]string{
+		"json": {`"ratio":1,`, `"scale":1000,`, `"tiny":0.00001`},
+		"yaml": {"ratio: 1\n", "scale: 1000\n", "tiny: 1e-05\n"},
+		"toon": {"ratio: 1\n", "scale: 1000\n", "tiny: 0.00001\n"},
+	} {
+		t.Run(format, func(t *testing.T) {
+			server := newSSEServer(t, `{"event_type":"delta","text":"n","ratio":1.0,"scale":1e3,"tiny":1e-05}`)
+			defer server.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(server.URL, []string{"eventstreams", "discriminated-events", "--output-format", format})
+			require.NoError(t, err, h.GetStderr())
+
+			for _, s := range want {
+				assert.Contains(t, h.GetStdout(), s)
+			}
+		})
+	}
+}
+
 // A stream event the server did deliver but that fails strict decode (a
 // numeric error code where the schema declares a string) is a protocol
 // mismatch, not a connection failure: agent mode classifies it
