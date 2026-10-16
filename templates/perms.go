@@ -65,6 +65,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/auxiliary/internal/output/pretty.go.stmpl":                                                           0o644,
 	"templates/cli/auxiliary/internal/output/progress.go.stmpl":                                                         0o644,
 	"templates/cli/auxiliary/internal/output/streaming.go.stmpl":                                                        0o644,
+	"templates/cli/auxiliary/internal/output/streaming_test.go.stmpl":                                                   0o644,
 	"templates/cli/auxiliary/internal/output/streamproject.go.stmpl":                                                    0o644,
 	"templates/cli/auxiliary/internal/testclient":                                                                       0o20000000755,
 	"templates/cli/auxiliary/internal/testclient/testclient.go.stmpl":                                                   0o644,
