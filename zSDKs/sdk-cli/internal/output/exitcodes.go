@@ -126,14 +126,22 @@ func installHelpTopicCheck(root *cobra.Command) {
 }
 
 func unresolvedHelpTopic(root *cobra.Command, args []string) string {
-	target, rest, _ := root.Find(args)
-	if target == nil {
-		return args[0]
-	}
-	for _, token := range rest {
-		if !strings.HasPrefix(token, "-") {
-			return token
+	var topic []string
+	for _, token := range args {
+		if strings.HasPrefix(token, "-") {
+			break
 		}
+		topic = append(topic, token)
+	}
+	if len(topic) == 0 {
+		return ""
+	}
+	target, rest, _ := root.Find(topic)
+	if target == nil {
+		return topic[0]
+	}
+	if len(rest) > 0 {
+		return rest[0]
 	}
 	return ""
 }

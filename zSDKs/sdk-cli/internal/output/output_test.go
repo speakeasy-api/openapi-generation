@@ -844,13 +844,19 @@ func TestHelpCommandReportsUnknownTopic(t *testing.T) {
 		t.Fatalf("a stray topic under a group must be reported, got %q", out.String())
 	}
 
-	root, out = unknownCommandTestTree()
-	root.SetArgs([]string{"help", "errors"})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("unexpected error %v", err)
+	resolved := [][]string{
+		{"help", "errors"},
+		{"help", "errors", "--output-format", "status-get-errr"},
 	}
-	if strings.Contains(out.String(), "Unknown help topic") || !strings.Contains(out.String(), "status-get-error") {
-		t.Fatalf("a resolved topic must print that command's help, got %q", out.String())
+	for _, args := range resolved {
+		root, out = unknownCommandTestTree()
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatalf("args %q: unexpected error %v", args, err)
+		}
+		if strings.Contains(out.String(), "Unknown help topic") || !strings.Contains(out.String(), "status-get-error") {
+			t.Fatalf("args %q: a resolved topic must print that command's help, got %q", args, out.String())
+		}
 	}
 }
 
