@@ -279,7 +279,10 @@ func TestUsageSchema_DynamicRoot(t *testing.T) {
     root.PersistentFlags().String("runtime-root", "", "Runtime root flag")
     var after strings.Builder
     require.NoError(t, usage.EmitSchema(root, &after))
-    assert.Contains(t, after.String(), "\nflag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n")
+    children := strings.Index(before.String(), "\ncmd \"") + 1
+    require.Positive(t, children)
+    want := before.String()[:children] + "flag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n" + before.String()[children:]
+    assert.Equal(t, want, after.String())
 }
 
 func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
@@ -292,6 +295,27 @@ func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
     var out strings.Builder
     require.NoError(t, usage.EmitSchema(root, &out))
     assert.NotContains(t, out.String(), "\ncmd \"version\"")
+}
+
+func TestUsageSchema_ReplacedCommandDropsStaleFlagSyntax(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    original, _, err := root.Find([]string{"configure"})
+    require.NoError(t, err)
+    root.RemoveCommand(original)
+    replacement := &cobra.Command{Use: "configure", Short: "Replacement", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
+    replacement.Flags().BoolP("default-output-format", "x", false, "New switch")
+    root.AddCommand(replacement)
+    usage.MarkDynamic(replacement)
+
+    var rootOut strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &rootOut))
+    assert.Contains(t, rootOut.String(), "\ncmd \"configure\" help=\"Replacement\" {\n  flag \"-x --default-output-format\" help=\"New switch\"\n}\n")
+
+    var own strings.Builder
+    require.NoError(t, usage.EmitSchema(replacement, &own))
+    assert.Contains(t, own.String(), "\n  flag \"-x --default-output-format\" help=\"New switch\"\n")
+    assert.NotContains(t, own.String(), "<format>")
 }
 
 func TestUsageSchema_DetachedCommand(t *testing.T) {
@@ -397,6 +421,23 @@ func TestUsageSchema_IntentCommandWithArgs(t *testing.T) {
     assert.Contains(t, stdout, "cmd \"{{templateIntentUsageCmdName}}\"")
     assert.Contains(t, stdout, "arg \"")
     assert.Empty(t, stderr)
+}
+
+func TestUsageSchema_ReplacedIntentDropsStaleArgs(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    original, _, err := root.Find([]string{ {{templateIntentUsagePathArgs}} })
+    require.NoError(t, err)
+    parent := original.Parent()
+    parent.RemoveCommand(original)
+    replacement := &cobra.Command{Use: original.Name(), Short: "Replacement", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
+    parent.AddCommand(replacement)
+    usage.MarkDynamic(replacement)
+
+    var own strings.Builder
+    require.NoError(t, usage.EmitSchema(replacement, &own))
+    assert.Contains(t, own.String(), "cmd \"{{templateIntentUsageCmdName}}\" help=\"Replacement\"")
+    assert.NotContains(t, own.String(), "arg \"")
 }
 {{- end }}
 

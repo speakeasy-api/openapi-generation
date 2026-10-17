@@ -15,12 +15,15 @@ type usageItem struct {
 	text     string
 	settings bool
 	hidden   bool
+	short    string
+	value    bool
+	repeat   bool
 }
 
 type usageNode struct {
 	head     string
 	aliases  []usageItem
-	args     []string
+	args     []usageItem
 	flags    []usageItem
 	children []string
 }
@@ -164,7 +167,9 @@ func staticUsageBody(node usageNode, own bool) []string {
 	for _, alias := range node.aliases {
 		body = append(body, alias.text)
 	}
-	body = append(body, node.args...)
+	for _, arg := range node.args {
+		body = append(body, arg.text)
+	}
 	for _, flag := range node.flags {
 		if own || !flag.settings {
 			body = append(body, flag.text)
@@ -188,8 +193,10 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 			body = append(body, prefix+"alias "+kdlQuote(alias))
 		}
 	}
-	if len(node.args) > 0 {
-		body = append(body, node.args...)
+	if usageArgsUnchanged(node.args, usagePromptArgs(cmd)) {
+		for _, arg := range node.args {
+			body = append(body, arg.text)
+		}
 	} else {
 		body = append(body, liveUsageArgs(cmd, prefix)...)
 	}
@@ -197,7 +204,13 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 	for _, flag := range node.flags {
 		listed[flag.key] = true
 		f := cmd.Flags().Lookup(flag.key)
-		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
+		switch {
+		case f == nil || (!own && flag.settings):
+		case !usageFlagUnchanged(flag, f):
+			if !f.Hidden {
+				body = append(body, liveUsageFlag(f, prefix))
+			}
+		case flag.hidden || !f.Hidden:
 			body = append(body, flag.text)
 		}
 	}
@@ -343,19 +356,45 @@ func kdlQuoteAt(s, contentPrefix string) string {
 	return b.String()
 }
 
-func liveUsageArgs(cmd *cobra.Command, prefix string) []string {
-	var promptArgs struct {
-		Version int `json:"version"`
-		Args    []struct {
-			Name     string `json:"name"`
-			Summary  string `json:"summary"`
-			Required bool   `json:"required"`
-			Variadic bool   `json:"variadic"`
-		} `json:"args"`
+func usageFlagUnchanged(item usageItem, f *pflag.Flag) bool {
+	_, repeat := f.Value.(pflag.SliceValue)
+	return f.Shorthand == item.short && (f.NoOptDefVal == "") == item.value && repeat == item.repeat
+}
+
+func usageArgsUnchanged(generated []usageItem, live []usagePromptArg) bool {
+	if len(generated) == 0 || len(generated) != len(live) {
+		return false
 	}
-	if raw := cmd.Annotations["speakeasy_prompt_args"]; raw != "" && json.Unmarshal([]byte(raw), &promptArgs) == nil && promptArgs.Version == 1 {
+	for i, arg := range generated {
+		if arg.key != live[i].Name {
+			return false
+		}
+	}
+	return true
+}
+
+type usagePromptArg struct {
+	Name     string `json:"name"`
+	Summary  string `json:"summary"`
+	Required bool   `json:"required"`
+	Variadic bool   `json:"variadic"`
+}
+
+func usagePromptArgs(cmd *cobra.Command) []usagePromptArg {
+	var promptArgs struct {
+		Version int              `json:"version"`
+		Args    []usagePromptArg `json:"args"`
+	}
+	if raw := cmd.Annotations["speakeasy_prompt_args"]; raw == "" || json.Unmarshal([]byte(raw), &promptArgs) != nil || promptArgs.Version != 1 {
+		return nil
+	}
+	return promptArgs.Args
+}
+
+func liveUsageArgs(cmd *cobra.Command, prefix string) []string {
+	if promptArgs := usagePromptArgs(cmd); promptArgs != nil {
 		var lines []string
-		for _, arg := range promptArgs.Args {
+		for _, arg := range promptArgs {
 			line := prefix + "arg " + kdlQuote(arg.Name)
 			if arg.Summary != "" {
 				line += " help=" + kdlQuoteAt(arg.Summary, prefix+"  ")

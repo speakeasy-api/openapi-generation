@@ -1489,13 +1489,16 @@ interface UsageNodeItem {
   text: string;
   settings?: boolean;
   hidden?: boolean;
+  short?: string;
+  value?: boolean;
+  repeat?: boolean;
 }
 
 // Rendered at indent 0; the runtime re-indents each line by depth.
 interface UsageNodeEntry {
   head: string;
   aliases: UsageNodeItem[];
-  args: string[];
+  args: UsageNodeItem[];
   flags: UsageNodeItem[];
   children: string[];
 }
@@ -1513,12 +1516,18 @@ function collectUsageNodes(
       key: alias,
       text: `${"  ".repeat(depth)}alias ${kdlQuoted(alias)}`,
     })),
-    args: (cmd.args || []).map((arg) => renderUsageArg(arg, depth).join("\n")),
+    args: (cmd.args || []).map((arg) => ({
+      key: arg.name,
+      text: renderUsageArg(arg, depth).join("\n"),
+    })),
     flags: (cmd.flags || []).map((flag) => ({
       key: usageFlagKey(flag),
       text: renderUsageFlag(flag, depth).join("\n"),
       settings: flag.settings,
       hidden: flag.hidden,
+      short: /^-([^-\s]+)\s/.exec(flag.spec)?.[1],
+      value: flag.spec.includes(" <"),
+      repeat: flag.spec.includes("...>"),
     })),
     children: (cmd.commands || []).map((child) => child.name),
   });
@@ -2389,14 +2398,18 @@ registerTemplateFunc(
 
 function goUsageNodeItems(items: UsageNodeItem[]): string {
   return `[]usageItem{ ${items
-    .map(
-      (item) =>
-        `{key: ${goStringLiteral(item.key)}, text: ${goTemplateSafeStringExpr(
-          item.text,
-        )}${item.settings ? ", settings: true" : ""}${
-          item.hidden ? ", hidden: true" : ""
-        } }`,
-    )
+    .map((item) => {
+      const fields = [
+        `key: ${goStringLiteral(item.key)}`,
+        `text: ${goTemplateSafeStringExpr(item.text)}`,
+      ];
+      if (item.settings) fields.push("settings: true");
+      if (item.hidden) fields.push("hidden: true");
+      if (item.short) fields.push(`short: ${goStringLiteral(item.short)}`);
+      if (item.value) fields.push("value: true");
+      if (item.repeat) fields.push("repeat: true");
+      return `{${fields.join(", ")} }`;
+    })
     .join(", ")} }`;
 }
 
@@ -2406,9 +2419,7 @@ function goUsageNodeEntry(node: UsageNodeEntry): string {
     fields.push(`aliases: ${goUsageNodeItems(node.aliases)}`);
   }
   if (node.args.length) {
-    fields.push(
-      `args: []string{ ${node.args.map(goTemplateSafeStringExpr).join(", ")} }`,
-    );
+    fields.push(`args: ${goUsageNodeItems(node.args)}`);
   }
   if (node.flags.length) {
     fields.push(`flags: ${goUsageNodeItems(node.flags)}`);
