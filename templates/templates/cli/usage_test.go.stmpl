@@ -264,7 +264,7 @@ func TestUsageSchema_DynamicCommandKeepsGeneratedLines(t *testing.T) {
     assert.Equal(t, rootBefore.String()[:end]+flag+rootBefore.String()[end:], rootAfter.String())
 }
 
-func TestUsageSchema_DynamicRootUnchanged(t *testing.T) {
+func TestUsageSchema_DynamicRoot(t *testing.T) {
     root, err := cli.NewRootCommand()
     require.NoError(t, err)
 
@@ -272,9 +272,35 @@ func TestUsageSchema_DynamicRootUnchanged(t *testing.T) {
     require.NoError(t, usage.EmitSchema(root, &before))
     usage.MarkDynamic(root)
 
+    var unchanged strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &unchanged))
+    assert.Equal(t, before.String(), unchanged.String())
+
+    root.PersistentFlags().String("runtime-root", "", "Runtime root flag")
     var after strings.Builder
     require.NoError(t, usage.EmitSchema(root, &after))
-    assert.Equal(t, before.String(), after.String())
+    assert.Contains(t, after.String(), "\nflag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n")
+}
+
+func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    version, _, err := root.Find([]string{"version"})
+    require.NoError(t, err)
+    version.Hidden = true
+
+    var out strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &out))
+    assert.NotContains(t, out.String(), "\ncmd \"version\"")
+}
+
+func TestUsageSchema_DetachedDynamicCommand(t *testing.T) {
+    detached := &cobra.Command{Use: "detached", Short: "Detached"}
+    usage.MarkDynamic(detached)
+
+    var out strings.Builder
+    require.NoError(t, usage.EmitSchema(detached, &out))
+    assert.Equal(t, "cmd \"detached\" help=\"Detached\"\n", out.String())
 }
 
 func TestUsageSchema_UsageFalseDoesNotEmitSchema(t *testing.T) {
