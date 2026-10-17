@@ -281,13 +281,17 @@ func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
 	assert.NotContains(t, out.String(), "\ncmd \"version\"")
 }
 
-func TestUsageSchema_DetachedDynamicCommand(t *testing.T) {
-	detached := &cobra.Command{Use: "detached", Short: "Detached"}
-	usage.MarkDynamic(detached)
-
+func TestUsageSchema_DetachedCommand(t *testing.T) {
+	leaf := &cobra.Command{Use: "detached", Short: "Detached"}
 	var out strings.Builder
-	require.NoError(t, usage.EmitSchema(detached, &out))
+	require.NoError(t, usage.EmitSchema(leaf, &out))
 	assert.Equal(t, "cmd \"detached\" help=\"Detached\"\n", out.String())
+
+	group := &cobra.Command{Use: "detached", Short: "Detached group"}
+	group.AddCommand(&cobra.Command{Use: "version", Short: "Detached child", RunE: func(*cobra.Command, []string) error { return nil }})
+	out.Reset()
+	require.NoError(t, usage.EmitSchema(group, &out))
+	assert.Equal(t, "cmd \"detached\" help=\"Detached group\" {\n  cmd \"version\" help=\"Detached child\"\n}\n", out.String())
 }
 
 func TestUsageSchema_UsageFalseDoesNotEmitSchema(t *testing.T) {

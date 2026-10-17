@@ -190,18 +190,23 @@ func selectedCommandPath(cmd *cobra.Command) []string {
 
 func EmitSchema(cmd *cobra.Command, w io.Writer) error {
 	var b strings.Builder
-	renderUsageNode(&b, cmd, strings.Join(selectedCommandPath(cmd), " "), 0, true)
+	tabled := cmd.Root().Name() == usageRootName
+	renderUsageNode(&b, cmd, strings.Join(selectedCommandPath(cmd), " "), 0, true, tabled)
 	_, err := io.WriteString(w, b.String())
 	return err
 }
 
-const usageDynamicAnnotation = "speakeasy_usage_dynamic"
+const (
+	usageDynamicAnnotation = "speakeasy_usage_dynamic"
+	usageRootName          = "cli"
+)
 
-func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent int, own bool) {
-	isRoot := cmd.Parent() == nil && cmd.HasSubCommands()
-	node, static := usageNodes[path]
-	if path == "" && !isRoot {
-		node, static = usageNode{}, false
+func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent int, own, tabled bool) {
+	isRoot := tabled && cmd.Parent() == nil
+	var node usageNode
+	static := false
+	if tabled {
+		node, static = usageNodes[path]
 	}
 	dynamic := !static || cmd.Annotations[usageDynamicAnnotation] == "true"
 	itemPrefix := "  "
@@ -239,7 +244,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 		if path != "" {
 			childPath = path + " " + childPath
 		}
-		renderUsageNode(b, child, childPath, childIndent, false)
+		renderUsageNode(b, child, childPath, childIndent, false, tabled)
 	}
 	if block {
 		b.WriteString(strings.Repeat("  ", indent) + "}\n")
