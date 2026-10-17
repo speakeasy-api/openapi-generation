@@ -10,7 +10,25 @@ package usage
 
 {{genImports}}
 
-{{templateUsageSchemaMap}}
+type usageItem struct {
+	key      string
+	text     string
+	settings bool
+	hidden   bool
+	short    string
+	value    bool
+	repeat   bool
+}
+
+type usageNode struct {
+	head     string
+	aliases  []usageItem
+	args     []usageItem
+	flags    []usageItem
+	children []string
+}
+
+{{templateUsageNodeMap}}
 
 func UsageRequested(cmd *cobra.Command) bool {
 	if cmd == nil {
@@ -81,15 +99,160 @@ func selectedCommandPath(cmd *cobra.Command) []string {
 }
 
 func EmitSchema(cmd *cobra.Command, w io.Writer) error {
-	path := strings.Join(selectedCommandPath(cmd), " ")
-	if cmd.Annotations["speakeasy_usage_dynamic"] == "true" {
-		return emitLiveSchema(cmd, w)
+	var b strings.Builder
+	tabled := cmd.Root().Name() == usageRootName
+	renderUsageNode(&b, cmd, strings.Join(selectedCommandPath(cmd), " "), 0, true, tabled)
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+const (
+	usageDynamicAnnotation = "speakeasy_usage_dynamic"
+	usageRootName          = "{{sanitizeCliName}}"
+)
+
+func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent int, own, tabled bool) {
+	isRoot := tabled && cmd.Parent() == nil
+	var node usageNode
+	static := false
+	if tabled {
+		node, static = usageNodes[path]
 	}
-	if schema, ok := usageSchemas[path]; ok {
-		_, err := io.WriteString(w, schema)
-		return err
+	dynamic := !static || cmd.Annotations[usageDynamicAnnotation] == "true"
+	itemPrefix := "  "
+	if isRoot {
+		itemPrefix = ""
 	}
-	return emitLiveSchema(cmd, w)
+	head := node.head
+	if dynamic && !isRoot {
+		head = "cmd " + kdlQuote(cmd.Name()) + " help=" + kdlQuoteAt(cmd.Short, "  ")
+	}
+	var body []string
+	if dynamic {
+		body = mergedUsageBody(cmd, node, own, itemPrefix)
+	} else {
+		body = staticUsageBody(node, own)
+	}
+	children := usageChildren(cmd, node.children)
+	block := !isRoot && (len(body) > 0 || len(children) > 0)
+
+	writeUsageIndented(b, head, indent)
+	if block {
+		b.WriteString(" {")
+	}
+	b.WriteByte('\n')
+	for _, item := range body {
+		writeUsageIndented(b, item, indent)
+		b.WriteByte('\n')
+	}
+	childIndent := indent + 1
+	if isRoot {
+		childIndent = indent
+	}
+	for _, child := range children {
+		childPath := child.Name()
+		if path != "" {
+			childPath = path + " " + childPath
+		}
+		renderUsageNode(b, child, childPath, childIndent, false, tabled)
+	}
+	if block {
+		b.WriteString(strings.Repeat("  ", indent) + "}\n")
+	}
+}
+
+// Settings flags are declared once on the root, so only a command's own schema lists them.
+func staticUsageBody(node usageNode, own bool) []string {
+	var body []string
+	for _, alias := range node.aliases {
+		body = append(body, alias.text)
+	}
+	for _, arg := range node.args {
+		body = append(body, arg.text)
+	}
+	for _, flag := range node.flags {
+		if own || !flag.settings {
+			body = append(body, flag.text)
+		}
+	}
+	return body
+}
+
+func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string) []string {
+	local := cmd.LocalFlags()
+	var body []string
+	listed := map[string]bool{}
+	for _, alias := range node.aliases {
+		listed[alias.key] = true
+		if cmd.HasAlias(alias.key) {
+			body = append(body, alias.text)
+		}
+	}
+	for _, alias := range cmd.Aliases {
+		if !listed[alias] {
+			body = append(body, prefix+"alias "+kdlQuote(alias))
+		}
+	}
+	if usageArgsUnchanged(node.args, usagePromptArgs(cmd)) {
+		for _, arg := range node.args {
+			body = append(body, arg.text)
+		}
+	} else {
+		body = append(body, liveUsageArgs(cmd, prefix)...)
+	}
+	listed = map[string]bool{}
+	for _, flag := range node.flags {
+		listed[flag.key] = true
+		f := cmd.Flags().Lookup(flag.key)
+		switch {
+		case f == nil || (!own && flag.settings):
+		case !usageFlagUnchanged(flag, f):
+			if !f.Hidden {
+				body = append(body, liveUsageFlag(f, prefix))
+			}
+		case flag.hidden || !f.Hidden:
+			body = append(body, flag.text)
+		}
+	}
+	local.VisitAll(func(f *pflag.Flag) {
+		if !f.Hidden && f.Name != "help" && !listed[f.Name] {
+			body = append(body, liveUsageFlag(f, prefix))
+		}
+	})
+	return body
+}
+
+func usageChildren(cmd *cobra.Command, declared []string) []*cobra.Command {
+	var children []*cobra.Command
+	listed := map[string]bool{}
+	for _, name := range declared {
+		listed[name] = true
+		for _, child := range cmd.Commands() {
+			if child.Name() == name && !child.Hidden {
+				children = append(children, child)
+				break
+			}
+		}
+	}
+	for _, child := range cmd.Commands() {
+		if !listed[child.Name()] && child.IsAvailableCommand() {
+			children = append(children, child)
+		}
+	}
+	return children
+}
+
+// KDL multi-line strings keep empty lines unindented, so re-indenting skips them.
+func writeUsageIndented(b *strings.Builder, text string, indent int) {
+	prefix := strings.Repeat("  ", indent)
+	for i, line := range strings.Split(text, "\n") {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		if line != "" {
+			b.WriteString(prefix + line)
+		}
+	}
 }
 
 // MarkDynamic makes --usage render the command's schema live from its cobra definition.
@@ -97,7 +260,7 @@ func MarkDynamic(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
 	}
-	cmd.Annotations["speakeasy_usage_dynamic"] = "true"
+	cmd.Annotations[usageDynamicAnnotation] = "true"
 }
 
 // Go's %q emits \a, \v, and \xNN escapes that KDL v2 does not define.
@@ -193,64 +356,83 @@ func kdlQuoteAt(s, contentPrefix string) string {
 	return b.String()
 }
 
-func emitLiveSchema(cmd *cobra.Command, w io.Writer) error {
-	nl := string(rune(10))
-	var b strings.Builder
-	fmt.Fprintf(&b, "cmd %s help=%s {%s", kdlQuote(cmd.Name()), kdlQuoteAt(cmd.Short, "  "), nl)
-	for _, alias := range cmd.Aliases {
-		fmt.Fprintf(&b, "  alias %s%s", kdlQuote(alias), nl)
+func usageFlagUnchanged(item usageItem, f *pflag.Flag) bool {
+	_, repeat := f.Value.(pflag.SliceValue)
+	return f.Shorthand == item.short && (f.NoOptDefVal == "") == item.value && repeat == item.repeat
+}
+
+func usageArgsUnchanged(generated []usageItem, live []usagePromptArg) bool {
+	if len(generated) == 0 || len(generated) != len(live) {
+		return false
 	}
+	for i, arg := range generated {
+		if arg.key != live[i].Name {
+			return false
+		}
+	}
+	return true
+}
+
+type usagePromptArg struct {
+	Name     string `json:"name"`
+	Summary  string `json:"summary"`
+	Required bool   `json:"required"`
+	Variadic bool   `json:"variadic"`
+}
+
+func usagePromptArgs(cmd *cobra.Command) []usagePromptArg {
 	var promptArgs struct {
-		Version int `json:"version"`
-		Args []struct {
-			Name string `json:"name"`
-			Summary string `json:"summary"`
-			Required bool `json:"required"`
-			Variadic bool `json:"variadic"`
-		} `json:"args"`
+		Version int              `json:"version"`
+		Args    []usagePromptArg `json:"args"`
 	}
-	if raw := cmd.Annotations["speakeasy_prompt_args"]; raw != "" && json.Unmarshal([]byte(raw), &promptArgs) == nil && promptArgs.Version == 1 {
-		for _, arg := range promptArgs.Args {
-			fmt.Fprintf(&b, "  arg %s", kdlQuote(arg.Name))
+	if raw := cmd.Annotations["speakeasy_prompt_args"]; raw == "" || json.Unmarshal([]byte(raw), &promptArgs) != nil || promptArgs.Version != 1 {
+		return nil
+	}
+	return promptArgs.Args
+}
+
+func liveUsageArgs(cmd *cobra.Command, prefix string) []string {
+	if promptArgs := usagePromptArgs(cmd); promptArgs != nil {
+		var lines []string
+		for _, arg := range promptArgs {
+			line := prefix + "arg " + kdlQuote(arg.Name)
 			if arg.Summary != "" {
-				fmt.Fprintf(&b, " help=%s", kdlQuoteAt(arg.Summary, "    "))
+				line += " help=" + kdlQuoteAt(arg.Summary, prefix+"  ")
 			}
 			if arg.Required {
-				b.WriteString(" required=#true")
+				line += " required=#true"
 			}
 			if arg.Variadic {
-				b.WriteString(" var=#true")
+				line += " var=#true"
 			}
-			b.WriteString(nl)
+			lines = append(lines, line)
 		}
-	} else if args := cmd.Annotations["speakeasy_args_help"]; args != "" {
-		fmt.Fprintf(&b, "  args %s%s", kdlQuoteAt(args, "    "), nl)
+		return lines
 	}
-	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
-		if f.Hidden || f.Name == "help" {
-			return
-		}
-		name := "--" + f.Name
-		if f.Shorthand != "" {
-			name = "-" + f.Shorthand + " " + name
-		}
-		_, repeatable := f.Value.(pflag.SliceValue)
-		if f.Value.Type() != "bool" {
-			placeholder := strings.ReplaceAll(f.Name, "-", "_")
-			if repeatable {
-				placeholder += "..."
-			}
-			name += " <" + placeholder + ">"
-		}
-		fmt.Fprintf(&b, "  flag %s help=%s", kdlQuote(name), kdlQuoteAt(f.Usage, "    "))
+	if args := cmd.Annotations["speakeasy_args_help"]; args != "" {
+		return []string{prefix + "args " + kdlQuoteAt(args, prefix+"  ")}
+	}
+	return nil
+}
+
+func liveUsageFlag(f *pflag.Flag, prefix string) string {
+	name := "--" + f.Name
+	if f.Shorthand != "" {
+		name = "-" + f.Shorthand + " " + name
+	}
+	_, repeatable := f.Value.(pflag.SliceValue)
+	if f.Value.Type() != "bool" {
+		placeholder := strings.ReplaceAll(f.Name, "-", "_")
 		if repeatable {
-			b.WriteString(" var=#true")
+			placeholder += "..."
 		}
-		b.WriteString(nl)
-	})
-	b.WriteString("}" + nl)
-	_, err := io.WriteString(w, b.String())
-	return err
+		name += " <" + placeholder + ">"
+	}
+	line := prefix + "flag " + kdlQuote(name) + " help=" + kdlQuoteAt(f.Usage, prefix+"  ")
+	if repeatable {
+		line += " var=#true"
+	}
+	return line
 }
 
 func Intercept(root *cobra.Command) {

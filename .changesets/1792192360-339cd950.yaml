@@ -1,0 +1,10 @@
+id: 1792192360-339cd950
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: compose root and group --usage schemas from the runtime command tree so commands and flags attached after generation appear
+author: 2ynn
+date: "2026-10-16"

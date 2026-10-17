@@ -7,6 +7,7 @@
 {{- addImport "github.com/stretchr/testify/require" -}}
 {{- addImport "github.com/spf13/cobra" -}}
 {{- addImport "internal/cli" true -}}
+{{- addImport "internal/usage" true -}}
 {{- if $custom -}}
 {{- addImport "github.com/spf13/pflag" -}}
 {{- end -}}
@@ -214,6 +215,122 @@ func TestUsageSchema_GroupSubtree(t *testing.T) {
 }
 {{- end }}
 
+func TestUsageSchema_ComposesRuntimeCommands(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    completion, _, err := root.Find([]string{"completion"})
+    require.NoError(t, err)
+
+    var before strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &before))
+
+    leaf := &cobra.Command{Use: "runtime-leaf", Short: "Runtime leaf", RunE: func(*cobra.Command, []string) error { return nil }}
+    leaf.Flags().String("runtime-flag", "", "Runtime flag")
+    usage.MarkDynamic(leaf)
+    completion.AddCommand(leaf)
+
+    var after strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &after))
+    block := "  cmd \"runtime-leaf\" help=\"Runtime leaf\" {\n    flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n  }\n"
+    assert.Contains(t, after.String(), block)
+    assert.Equal(t, before.String(), strings.Replace(after.String(), block, "", 1))
+
+    var group strings.Builder
+    require.NoError(t, usage.EmitSchema(completion, &group))
+    assert.Contains(t, group.String(), "\n  cmd \"runtime-leaf\" help=\"Runtime leaf\" {\n")
+}
+
+func TestUsageSchema_DynamicCommandKeepsGeneratedLines(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    configure, _, err := root.Find([]string{"configure"})
+    require.NoError(t, err)
+
+    var ownBefore, rootBefore strings.Builder
+    require.NoError(t, usage.EmitSchema(configure, &ownBefore))
+    require.NoError(t, usage.EmitSchema(root, &rootBefore))
+    configure.Flags().String("runtime-flag", "", "Runtime flag")
+    usage.MarkDynamic(configure)
+
+    var ownAfter, rootAfter strings.Builder
+    require.NoError(t, usage.EmitSchema(configure, &ownAfter))
+    require.NoError(t, usage.EmitSchema(root, &rootAfter))
+    flag := "  flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n"
+    assert.Equal(t, strings.TrimSuffix(ownBefore.String(), "}\n")+flag+"}\n", ownAfter.String())
+
+    start := strings.Index(rootBefore.String(), "\ncmd \"configure\"")
+    require.GreaterOrEqual(t, start, 0)
+    end := start + strings.Index(rootBefore.String()[start:], "\n}\n") + 1
+    assert.Equal(t, rootBefore.String()[:end]+flag+rootBefore.String()[end:], rootAfter.String())
+}
+
+func TestUsageSchema_DynamicRoot(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+
+    var before strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &before))
+    usage.MarkDynamic(root)
+
+    var unchanged strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &unchanged))
+    assert.Equal(t, before.String(), unchanged.String())
+
+    root.PersistentFlags().String("runtime-root", "", "Runtime root flag")
+    var after strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &after))
+    children := strings.Index(before.String(), "\ncmd \"") + 1
+    require.Positive(t, children)
+    want := before.String()[:children] + "flag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n" + before.String()[children:]
+    assert.Equal(t, want, after.String())
+}
+
+func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    version, _, err := root.Find([]string{"version"})
+    require.NoError(t, err)
+    version.Hidden = true
+
+    var out strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &out))
+    assert.NotContains(t, out.String(), "\ncmd \"version\"")
+}
+
+func TestUsageSchema_ReplacedCommandDropsStaleFlagSyntax(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    original, _, err := root.Find([]string{"configure"})
+    require.NoError(t, err)
+    root.RemoveCommand(original)
+    replacement := &cobra.Command{Use: "configure", Short: "Replacement", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
+    replacement.Flags().BoolP("default-output-format", "x", false, "New switch")
+    root.AddCommand(replacement)
+    usage.MarkDynamic(replacement)
+
+    var rootOut strings.Builder
+    require.NoError(t, usage.EmitSchema(root, &rootOut))
+    assert.Contains(t, rootOut.String(), "\ncmd \"configure\" help=\"Replacement\" {\n  flag \"-x --default-output-format\" help=\"New switch\"\n}\n")
+
+    var own strings.Builder
+    require.NoError(t, usage.EmitSchema(replacement, &own))
+    assert.Contains(t, own.String(), "\n  flag \"-x --default-output-format\" help=\"New switch\"\n")
+    assert.NotContains(t, own.String(), "<format>")
+}
+
+func TestUsageSchema_DetachedCommand(t *testing.T) {
+    leaf := &cobra.Command{Use: "detached", Short: "Detached"}
+    var out strings.Builder
+    require.NoError(t, usage.EmitSchema(leaf, &out))
+    assert.Equal(t, "cmd \"detached\" help=\"Detached\"\n", out.String())
+
+    group := &cobra.Command{Use: "detached", Short: "Detached group"}
+    group.AddCommand(&cobra.Command{Use: "version", Short: "Detached child", RunE: func(*cobra.Command, []string) error { return nil }})
+    out.Reset()
+    require.NoError(t, usage.EmitSchema(group, &out))
+    assert.Equal(t, "cmd \"detached\" help=\"Detached group\" {\n  cmd \"version\" help=\"Detached child\"\n}\n", out.String())
+}
+
 func TestUsageSchema_UsageFalseDoesNotEmitSchema(t *testing.T) {
     h := NewCLITestHarness(t)
     err := h.RunBare([]string{"version", "--usage=false"})
@@ -304,6 +421,23 @@ func TestUsageSchema_IntentCommandWithArgs(t *testing.T) {
     assert.Contains(t, stdout, "cmd \"{{templateIntentUsageCmdName}}\"")
     assert.Contains(t, stdout, "arg \"")
     assert.Empty(t, stderr)
+}
+
+func TestUsageSchema_ReplacedIntentDropsStaleArgs(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    original, _, err := root.Find([]string{ {{templateIntentUsagePathArgs}} })
+    require.NoError(t, err)
+    parent := original.Parent()
+    parent.RemoveCommand(original)
+    replacement := &cobra.Command{Use: original.Name(), Short: "Replacement", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
+    parent.AddCommand(replacement)
+    usage.MarkDynamic(replacement)
+
+    var own strings.Builder
+    require.NoError(t, usage.EmitSchema(replacement, &own))
+    assert.Contains(t, own.String(), "cmd \"{{templateIntentUsageCmdName}}\" help=\"Replacement\"")
+    assert.NotContains(t, own.String(), "arg \"")
 }
 {{- end }}
 
