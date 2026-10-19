@@ -438,10 +438,15 @@ func TestUsageSchema_ReplacedIntentDropsStaleArgs(t *testing.T) {
 	replacement := &cobra.Command{Use: original.Name(), Short: "Replacement", Args: cobra.NoArgs, RunE: func(*cobra.Command, []string) error { return nil }}
 	parent.AddCommand(replacement)
 
+	line := "cmd \"invite\" help=\"Replacement\"\n"
 	var own strings.Builder
 	require.NoError(t, usage.EmitSchema(replacement, &own))
-	assert.Contains(t, own.String(), "cmd \"invite\" help=\"Replacement\"")
-	assert.NotContains(t, own.String(), "arg \"")
+	assert.Equal(t, line, own.String())
+
+	var rootOut strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &rootOut))
+	depth := len([]string{"invite"}) - 1
+	assert.Contains(t, rootOut.String(), "\n"+strings.Repeat("  ", depth)+line)
 }
 
 // --usage documents the command and wins over --schema (matching operation
