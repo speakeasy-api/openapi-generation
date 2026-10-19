@@ -228,7 +228,7 @@ cli explore
 ```
 
 ### Agent mode and structured errors
-Agent mode turns on only when explicitly requested with `--agent-mode`; environment variables do not identify the caller.
+Agent mode turns on only when explicitly requested with `--agent-mode` or `CLI_AGENT_MODE=1`; other environment variables do not identify the caller. `--agent-mode=false` overrides the variable.
 In agent mode interactive prompts never launch, output defaults to TOON, and every failure — API errors and CLI usage errors alike — is one JSON envelope on stderr:
 `--output-format json` and `--jq` use the same error envelope without requiring agent mode.
 

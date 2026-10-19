@@ -120,9 +120,9 @@ This CLI is non-interactive by default. Pass `--interactive` to open guided `con
 ### Agent mode and structured errors
 
 {{- if agentEnvironmentDetection}}
-Agent mode turns on automatically when a known agent environment is detected (`CLAUDECODE`, `CURSOR_AGENT`, `CODEX`, `AIDER`, `CLINE`, `WINDSURF_AGENT`, `GITHUB_COPILOT`, `AMAZON_Q`, `GEMINI_CODE_ASSIST`, `SRC_CODY`) or with `--agent-mode` (`--agent-mode=false` disables detection).
+Agent mode turns on automatically when a known agent environment is detected (`CLAUDECODE`, `CURSOR_AGENT`, `CODEX`, `AIDER`, `CLINE`, `WINDSURF_AGENT`, `GITHUB_COPILOT`, `AMAZON_Q`, `GEMINI_CODE_ASSIST`, `SRC_CODY`), with `{{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1`, or with `--agent-mode` (`--agent-mode=false` disables detection).
 {{- else}}
-Agent mode turns on only when explicitly requested with `--agent-mode`; environment variables do not identify the caller.
+Agent mode turns on only when explicitly requested with `--agent-mode` or `{{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1`; other environment variables do not identify the caller. `--agent-mode=false` overrides the variable.
 {{- end}}
 In agent mode interactive prompts never launch, output defaults to TOON, and every failure — API errors and CLI usage errors alike — is one JSON envelope on stderr:
 

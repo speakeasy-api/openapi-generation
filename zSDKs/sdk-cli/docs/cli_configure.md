@@ -27,7 +27,7 @@ cli configure [flags]
 ### Options inherited from parent commands
 
 ```
-      --agent-mode                       Enable structured errors and default TOON output for AI coding agents.
+      --agent-mode                       Enable structured errors and default TOON output for AI coding agents. CLI_AGENT_MODE=1 enables it without the flag; --agent-mode=false wins.
       --app-id string                    Custom authentication credential
       --bearer-auth string               HTTP Bearer
       --client-id string                 Client Credentials flow. client identifier

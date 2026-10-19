@@ -198,11 +198,13 @@ func NewRootCommand() (*cobra.Command, error) {
     // Use this flag to explicitly enable or disable (--agent-mode=false) the behavior.
     rootCmd.PersistentFlags().Bool("agent-mode", false,
         "Enable structured errors and default TOON output for AI coding agents. "+
-            "Automatically enabled when a known agent environment is detected (CLAUDECODE, CURSOR_AGENT, etc.). "+
+            "Automatically enabled when a known agent environment is detected (CLAUDECODE, CURSOR_AGENT, etc.) "+
+            "or when {{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1 is set. "+
             "Use --agent-mode=false to disable.")
     {{- else}}
     rootCmd.PersistentFlags().Bool("agent-mode", false,
-        "Enable structured errors and default TOON output for AI coding agents.")
+        "Enable structured errors and default TOON output for AI coding agents. "+
+            "{{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1 enables it without the flag; --agent-mode=false wins.")
     {{- end}}
 
     {{- if and (isFeatureUsed "retries") (ne (retryFlagsVisibility) "none")}}
@@ -1009,11 +1011,13 @@ func NewRootCommand() (*cobra.Command, error) {
     // Use this flag to explicitly enable or disable (--agent-mode=false) the behavior.
     rootCmd.PersistentFlags().Bool("agent-mode", false,
         "Enable structured errors and default TOON output for AI coding agents. "+
-            "Automatically enabled when a known agent environment is detected (CLAUDECODE, CURSOR_AGENT, etc.). "+
+            "Automatically enabled when a known agent environment is detected (CLAUDECODE, CURSOR_AGENT, etc.) "+
+            "or when {{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1 is set. "+
             "Use --agent-mode=false to disable.")
     {{- else}}
     rootCmd.PersistentFlags().Bool("agent-mode", false,
-        "Enable structured errors and default TOON output for AI coding agents.")
+        "Enable structured errors and default TOON output for AI coding agents. "+
+            "{{.Global.Config.EnvVarPrefix}}_AGENT_MODE=1 enables it without the flag; --agent-mode=false wins.")
     {{- end}}
 
     {{- if and (isFeatureUsed "retries") (ne (retryFlagsVisibility) "none")}}

@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
   internal/cli/root.go:
-    last_write_checksum: sha1:36ff704c14aa2e9d8f6cabf8e089acfa011349b8
+    last_write_checksum: sha1:ff5e06364d69c7e56db80b0b43467c5b4a425af2
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:
@@ -262,7 +262,7 @@ trackedFiles:
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
-    last_write_checksum: sha1:5b8c409dde2bd954b9d96e158d5e651c77d1ef10
+    last_write_checksum: sha1:16cbb1bd253dce779c21a185e7ffe90a4afb493b
   internal/output/artifact.go:
     last_write_checksum: sha1:9375a066c2b18e6e076c4c1bebdf5137ada58170
   internal/output/artifact_test.go:

@@ -173,6 +173,48 @@ func TestAgentModeFlagOverridesEnv(t *testing.T) {
 }
 {{- end}}
 
+const productAgentModeEnvVar = "{{.Global.Config.EnvVarPrefix}}_AGENT_MODE"
+
+// TestAgentModeProductEnvVar verifies that the CLI's own agent-mode variable
+// enables agent mode without --agent-mode, whatever the detection setting.
+func TestAgentModeProductEnvVar(t *testing.T) {
+	resetAgentMode(t)
+
+	s := newEchoServer()
+	defer s.Close()
+
+	h := NewCLITestHarness(t).WithEnv(productAgentModeEnvVar, "1")
+	err := h.RunRaw([]string{"--server-url", s.URL,
+		"errors", "status-get-error", "--status-code", "400"})
+	assert.Error(t, err)
+
+	stderr := strings.TrimSpace(h.GetStderr())
+	require.NotEmpty(t, stderr, "%s=1 should output errors as JSON", productAgentModeEnvVar)
+	assert.True(t, json.Valid([]byte(stderr)),
+		"%s=1 should produce valid JSON error output, got: %s", productAgentModeEnvVar, stderr)
+	assert.True(t, output.IsAgentMode(), "%s=1 should enable agent mode", productAgentModeEnvVar)
+}
+
+// TestAgentModeProductEnvVarFalsey verifies that a falsey value leaves agent
+// mode off.
+func TestAgentModeProductEnvVarFalsey(t *testing.T) {
+	resetAgentMode(t)
+
+	h := NewCLITestHarness(t).WithEnv(productAgentModeEnvVar, "0")
+	_ = h.RunBare([]string{"version"})
+	assert.False(t, output.IsAgentMode(), "%s=0 should not enable agent mode", productAgentModeEnvVar)
+}
+
+// TestAgentModeFlagOverridesProductEnvVar verifies that --agent-mode=false
+// wins over the variable.
+func TestAgentModeFlagOverridesProductEnvVar(t *testing.T) {
+	resetAgentMode(t)
+
+	h := NewCLITestHarness(t).WithEnv(productAgentModeEnvVar, "1")
+	_ = h.RunBare([]string{"--agent-mode=false", "version"})
+	assert.False(t, output.IsAgentMode(), "--agent-mode=false should override %s=1", productAgentModeEnvVar)
+}
+
 {{- if not (agentEnvironmentDetection)}}
 // TestAgentModeEnvironmentIgnored verifies that explicit-mode CLIs do not infer
 // agent mode from any legacy compatibility environment variable.

@@ -231,7 +231,8 @@ func NewRootCommand() (*cobra.Command, error) {
 
 	// Agent mode — optimized output for AI coding agent consumption.
 	rootCmd.PersistentFlags().Bool("agent-mode", false,
-		"Enable structured errors and default TOON output for AI coding agents.")
+		"Enable structured errors and default TOON output for AI coding agents. "+
+			"CLI_AGENT_MODE=1 enables it without the flag; --agent-mode=false wins.")
 	// Retry control flags
 	// Defaults: exponential backoff, 500ms initial / 10s max interval, 1.5x exponent, 30s max elapsed time.
 	rootCmd.PersistentFlags().Bool("no-retries", false, "Disable automatic retries (default: retries enabled with exponential backoff)")

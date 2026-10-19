@@ -3,11 +3,9 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	{{- if agentEnvironmentDetection}}
 	"os"
-	"strings"
-	{{- end}}
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/spf13/cobra"
@@ -16,12 +14,27 @@ import (
 	"{{getGolangPackage}}/internal/flagutil"
 )
 
+const agentModeEnvVar = "{{.Global.Config.EnvVarPrefix}}_AGENT_MODE"
+
 var (
 	agentMode atomic.Bool
 	{{- if agentEnvironmentDetection}}
 	agentDetected atomic.Bool
 	{{- end}}
 )
+
+// agentModeFromEnv reports the explicit setting carried by the CLI's own
+// agent-mode environment variable: enabled, and whether it was set at all.
+func agentModeFromEnv() (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(agentModeEnvVar))) {
+	case "1", "true", "yes", "on":
+		return true, true
+	case "0", "false", "no", "off":
+		return false, true
+	default:
+		return false, false
+	}
+}
 
 {{- if agentEnvironmentDetection}}
 
@@ -48,6 +61,13 @@ var agentEnvVars = []string{
 func InitAgentMode(cmd *cobra.Command) {
 	if flagVal, changed := flagutil.GetBoolFlag(cmd, "agent-mode"); changed {
 		agentMode.Store(flagVal)
+		{{- if agentEnvironmentDetection}}
+		agentDetected.Store(true)
+		{{- end}}
+		return
+	}
+	if enabled, ok := agentModeFromEnv(); ok {
+		agentMode.Store(enabled)
 		{{- if agentEnvironmentDetection}}
 		agentDetected.Store(true)
 		{{- end}}
@@ -182,6 +202,11 @@ func PreparseRenderingFlags(target *cobra.Command, args []string) {
 			agentDetected.Store(true)
 			{{- end}}
 		}
+	} else if enabled, ok := agentModeFromEnv(); ok {
+		agentMode.Store(enabled)
+		{{- if agentEnvironmentDetection}}
+		agentDetected.Store(true)
+		{{- end}}
 	}
 	if fs.Changed("output-format") {
 		preparsedRendering.outputFormat = fs.Lookup("output-format").Value.String()
