@@ -341,8 +341,8 @@ func (es *EventStream[T]) Value() *T {
 	return es.val
 }
 
-// RawValue returns the most recent event as handed to the unmarshaller: the
-// frame's event, data and retry, plus the last event id seen, as JSON.
+// RawValue returns the JSON that Value was decoded from: the frame's event,
+// data and retry, plus the last event id seen.
 func (es *EventStream[T]) RawValue() json.RawMessage {
 	return es.raw
 }

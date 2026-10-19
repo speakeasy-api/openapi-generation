@@ -236,6 +236,9 @@ func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
 	keys := map[string]bool{}
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
+		if f.Tag.Get("additionalProperties") == "true" {
+			return nil, true
+		}
 		name := strings.Split(f.Tag.Get("json"), ",")[0]
 		if name == "-" || (name == "" && !f.IsExported()) {
 			continue
@@ -306,6 +309,10 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	}
 	if data, err := marshalJSON(u.Interface()); err == nil {
 		return data, true
+	}
+	if isUnionStruct(derefValue(reflect.ValueOf(item)).Type()) {
+		data, err := json.Marshal(wireStreamItem(item, raw, false))
+		return data, err == nil
 	}
 	var frame map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &frame); err != nil || len(frame["data"]) == 0 {

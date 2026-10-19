@@ -50,6 +50,65 @@ func TestWireStreamItemUnwrapsNestedEnvelopeUnions(t *testing.T) {
 	}
 }
 
+type openEnvelope struct {
+	Data                 string                 `json:"data"`
+	AdditionalProperties map[string]interface{} `additionalProperties:"true" json:"-"`
+}
+
+func TestWireStreamItemKeepsFrameOfEnvelopeWithAdditionalProperties(t *testing.T) {
+	raw := []byte(`{"data":"hello","event":"tick","id":"7"}`)
+	want := `{"data":"hello","event":"tick","id":"7"}`
+	got, err := json.Marshal(wireStreamItem(openEnvelope{Data: "hello"}, raw, false))
+	if err != nil || string(got) != want {
+		t.Fatalf("got %s, error %v; want %s", got, err, want)
+	}
+}
+
+type errorEnvelopeUnion struct {
+	Envelope *nestedEnvelope `union:"member"`
+	Type     string
+}
+
+func (errorEnvelopeUnion) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("required union has no member")
+}
+
+type errorData struct {
+	Message string `json:"message"`
+}
+
+type errorDataUnion struct {
+	Error *errorData `union:"member"`
+	Type  string
+}
+
+func (errorDataUnion) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("required union has no member")
+}
+
+type dataErrorEnvelope struct {
+	Data  *errorDataUnion `json:"data"`
+	Event string          `json:"event"`
+}
+
+func TestStreamErrorEventUnencodableBodyMatchesEncodableShape(t *testing.T) {
+	for name, tc := range map[string]struct {
+		item interface{}
+		raw  string
+		want string
+	}{
+		"union of envelopes": {errorEnvelopeUnion{Envelope: &nestedEnvelope{Data: "boom", Event: "error"}, Type: "error"}, `{"data":"boom","event":"error","id":"7"}`, `{"data":"boom","event":"error"}`},
+		"data union":         {dataErrorEnvelope{Data: &errorDataUnion{Error: &errorData{Message: "boom"}, Type: "error"}, Event: "error"}, `{"data":{"message":"boom"},"event":"error"}`, `{"message":"boom"}`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			body, isErr := streamErrorEvent(tc.item, []byte(tc.raw))
+			if !isErr || string(body) != tc.want {
+				t.Fatalf("got %s, error event %v; want %s", body, isErr, tc.want)
+			}
+		})
+	}
+}
+
 type tableEnvelopeRow struct {
 	Name string `json:"name"`
 	Age  int    `json:"age"`
