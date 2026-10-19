@@ -331,8 +331,53 @@ func TestUsageSchema_GeneratedCommandsMarked(t *testing.T) {
 	for _, path := range [][]string{{"version"}, {"configure"}, {"help"}, {"completion"}, {"completion", "bash"}} {
 		cmd, _, err := root.Find(path)
 		require.NoError(t, err)
-		assert.Equal(t, "true", cmd.Annotations["speakeasy_usage_generated"], strings.Join(path, " "))
+		assert.NotEmpty(t, cmd.Annotations["speakeasy_usage_generated"], strings.Join(path, " "))
 	}
+}
+
+func TestUsageSchema_CustomCompletionRendersLive(t *testing.T) {
+	root := &cobra.Command{Use: "cli"}
+	usage.MarkGenerated(root)
+	completion := &cobra.Command{Use: "completion", Short: "Custom completion", RunE: func(*cobra.Command, []string) error { return nil }}
+	completion.Flags().String("destination", "", "Destination")
+	root.AddCommand(completion)
+	usage.InitDefaultCommands(root)
+
+	help, _, err := root.Find([]string{"help"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, help.Annotations["speakeasy_usage_generated"])
+	assert.Empty(t, completion.Annotations["speakeasy_usage_generated"])
+
+	block := "cmd \"completion\" help=\"Custom completion\" {\n  flag \"--destination <destination>\" help=\"Destination\"\n}\n"
+	var own strings.Builder
+	require.NoError(t, usage.EmitSchema(completion, &own))
+	assert.Equal(t, block, own.String())
+
+	var rootOut strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &rootOut))
+	assert.Contains(t, rootOut.String(), "\n"+block)
+}
+
+func TestUsageSchema_ResetFlagsRendersLive(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	configure, _, err := root.Find([]string{"configure"})
+	require.NoError(t, err)
+	configure.ResetFlags()
+	configure.Flags().BoolP("default-output-format", "x", false, "New switch")
+	usage.MarkDynamic(configure)
+
+	flag := "  flag \"-x --default-output-format\" help=\"New switch\"\n"
+	var own strings.Builder
+	require.NoError(t, usage.EmitSchema(configure, &own))
+	assert.Contains(t, own.String(), "\n"+flag)
+	assert.NotContains(t, own.String(), "<format>")
+
+	var rootOut strings.Builder
+	require.NoError(t, usage.EmitSchema(root, &rootOut))
+	assert.Contains(t, rootOut.String(), "\ncmd \"configure\" help=")
+	assert.NotContains(t, rootOut.String(), "--default-output-format <format>")
+	assert.Contains(t, rootOut.String(), "\n"+flag)
 }
 
 func TestUsageSchema_DetachedCommand(t *testing.T) {

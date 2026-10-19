@@ -319,13 +319,7 @@ func NewRootCommand() (*cobra.Command, error) {
 	custom.Register(rootCmd)
 
 	// Cobra creates its default help and completion commands lazily inside Execute.
-	rootCmd.InitDefaultHelpCmd()
-	rootCmd.InitDefaultCompletionCmd()
-	for _, builtin := range rootCmd.Commands() {
-		if builtin.Name() == "help" || builtin.Name() == "completion" {
-			usage.MarkGenerated(builtin)
-		}
-	}
+	usage.InitDefaultCommands(rootCmd)
 	applyDeclaredCommandOrder(rootCmd)
 	interactive.Intercept(rootCmd)
 	usage.Intercept(rootCmd)

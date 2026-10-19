@@ -182,7 +182,7 @@ trackedFiles:
   internal/cli/renderasset.go:
     last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
   internal/cli/root.go:
-    last_write_checksum: sha1:7b8443d86ef585967c2ba0a0b4576f812a3502c1
+    last_write_checksum: sha1:48f538b9ead4f7b896c5064555a05f04987b0e1c
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:
@@ -660,7 +660,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:e26a787b1b5d11947027f40186b9ca9ce90f6b2a
+    last_write_checksum: sha1:13350f445bdbbcc99e06b70d23316ca7e4a632b9
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:
@@ -1122,7 +1122,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:9f35ec70688e94b38c43ddd05af7b5b2c887ae80
+    last_write_checksum: sha1:6dd7b7205958c3f3f7ea18c7cbb579497327a900
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

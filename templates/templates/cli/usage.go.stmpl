@@ -116,7 +116,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	if tabled {
 		node, static = usageNodes[path]
 	}
-	if static && !isRoot && cmd.Annotations[usageGeneratedAnnotation] != "true" {
+	if static && !isRoot && cmd.Annotations[usageGeneratedAnnotation] != usageFlagSetIdentity(cmd) {
 		node, static = usageNode{children: node.children}, false
 	}
 	dynamic := !static || cmd.Annotations[usageDynamicAnnotation] == "true"
@@ -250,7 +250,9 @@ func writeUsageIndented(b *strings.Builder, text string, indent int) {
 	}
 }
 
-// MarkDynamic makes --usage render the command's schema live from its cobra definition.
+// MarkDynamic makes --usage render a generated command's runtime help, aliases,
+// args and added flags from its cobra definition, keeping generated lines for
+// the inputs it still has.
 func MarkDynamic(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
@@ -259,15 +261,36 @@ func MarkDynamic(cmd *cobra.Command) {
 }
 
 // MarkGenerated records cmd and its subtree as the generated commands the
-// usageNodes table describes; a same-named command attached later renders live.
+// usageNodes table describes; a same-named command attached later, or a marked
+// command whose flag sets are replaced, renders live.
 func MarkGenerated(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
 	}
-	cmd.Annotations[usageGeneratedAnnotation] = "true"
+	cmd.Annotations[usageGeneratedAnnotation] = usageFlagSetIdentity(cmd)
 	for _, child := range cmd.Commands() {
 		MarkGenerated(child)
 	}
+}
+
+// InitDefaultCommands creates cobra's default help and completion commands and
+// marks only the ones cobra created, leaving a custom command of the same name live.
+func InitDefaultCommands(root *cobra.Command) {
+	existing := map[*cobra.Command]bool{}
+	for _, cmd := range root.Commands() {
+		existing[cmd] = true
+	}
+	root.InitDefaultHelpCmd()
+	root.InitDefaultCompletionCmd()
+	for _, cmd := range root.Commands() {
+		if !existing[cmd] {
+			MarkGenerated(cmd)
+		}
+	}
+}
+
+func usageFlagSetIdentity(cmd *cobra.Command) string {
+	return fmt.Sprintf("%p %p", cmd.Flags(), cmd.PersistentFlags())
 }
 
 // Go's %q emits \a, \v, and \xNN escapes that KDL v2 does not define.
