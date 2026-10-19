@@ -90,6 +90,55 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 	}
 }
 
+func TestStreamMetadataReportsIncompleteStream(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		body       string
+		wantStdout string
+		wantStderr string
+	}{
+		{
+			name:       "complete",
+			body:       "data: {\"resource_id\":\"r1\",\"event_id\":\"e1\"}\n\ndata: {\"content\":\"Hello\",\"event_id\":\"e2\"}\n\ndata: {\"checkpoint\":{\"state\":\"running\",\"cursor\":\"c1\"},\"event_id\":\"e3\"}\n\ndata: {\"state\":\"done\",\"event_id\":\"e4\"}\n\ndata: [DONE]\n\n",
+			wantStdout: "Hello\n",
+			wantStderr: "Resource ID: \"r1\"\n",
+		},
+		{
+			name:       "incomplete",
+			body:       "data: {\"resource_id\":\"r1\",\"event_id\":\"e1\"}\n\ndata: {\"content\":\"Hel\",\"event_id\":\"e2\"}\n\ndata: {\"checkpoint\":{\"state\":\"running\",\"cursor\":\"c1\"},\"event_id\":\"e3\"}\n\ndata: {\"state\":\"truncated\",\"cursor\":\"c2\",\"event_id\":\"e4\"}\n\ndata: [DONE]\n\n",
+			wantStdout: "Hel\n",
+			wantStderr: "Resource ID: \"r1\"\nState: \"truncated\"\nCursor: \"c2\"\nLast event ID: \"e4\"\n",
+		},
+		{
+			name:       "checkpoint only",
+			body:       "data: {\"resource_id\":\"r1\",\"event_id\":\"e1\"}\n\ndata: {\"checkpoint\":{\"state\":\"running\",\"cursor\":\"c1\"},\"event_id\":\"e2\"}\n\ndata: [DONE]\n\n",
+			wantStderr: "No output: 2 streamed events had no text at /data/content; use --output-format json to see the full events.\nResource ID: \"r1\"\nState: \"running\"\nCursor: \"c1\"\nLast event ID: \"e2\"\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "text/event-stream")
+				fmt.Fprint(w, tc.body)
+			}))
+			defer srv.Close()
+			t.Cleanup(config.ResetKeyring)
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+			root.SetIn(strings.NewReader(""))
+			require.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{
+				"--server-url", srv.URL, "--color", "never", "--no-interactive", "--no-keyring", "--agent-mode=false",
+				"stream-metadata", "stream-metadata",
+			}), h.GetStderr())
+			assert.Equal(t, tc.wantStdout, h.GetStdout())
+			assert.Equal(t, tc.wantStderr, h.GetStderr())
+		})
+	}
+}
+
 func assertMetadataJSONEvents(t *testing.T, stdout string, want ...string) {
 	t.Helper()
 	decoder := json.NewDecoder(strings.NewReader(stdout))
@@ -173,9 +222,8 @@ func metadataTestCommand(t *testing.T, out io.Writer, stderr io.Writer) *cobra.C
 	h := NewCLITestHarness(t)
 	h.resetAndSetupEnv()
 	cmd := &cobra.Command{Annotations: map[string]string{
-		"speakeasy_stream_select":          "/text",
-		"speakeasy_stream_metadata_select": "/id",
-		"speakeasy_stream_metadata_label":  "Resource ID",
+		"speakeasy_stream_select":   "/text",
+		"speakeasy_stream_metadata": `[{"label":"Resource ID","pointers":["/id"]}]`,
 	}}
 	cmd.SetContext(context.Background())
 	cmd.SetOut(out)
@@ -225,6 +273,44 @@ func TestStreamMetadataRetention(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+type metadataEvent = map[string]interface{}
+
+func metadataEvents(events ...metadataEvent) []metadataEvent { return events }
+
+func TestStreamMetadataStatusBoundaries(t *testing.T) {
+	const annotation = `[{"label":"Cursor","pointers":["/cursor","/checkpoint/cursor"],"when":"incomplete"},{"label":"State","pointers":["/state"],"complete":["done","completed"]}]`
+	for _, tc := range []struct {
+		name   string
+		events []metadataEvent
+		err    error
+		want   string
+	}{
+		{"first path wins", metadataEvents(metadataEvent{"state": "truncated", "cursor": "current", "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"current\"\nState: \"truncated\"\n"},
+		{"empty first path falls back", metadataEvents(metadataEvent{"state": "truncated", "cursor": "", "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"older\"\nState: \"truncated\"\n"},
+		{"non-string first path falls back", metadataEvents(metadataEvent{"state": "truncated", "cursor": 7, "checkpoint": metadataEvent{"cursor": "older"}}), nil, "Cursor: \"older\"\nState: \"truncated\"\n"},
+		{"value retained", metadataEvents(metadataEvent{"cursor": "c1"}, metadataEvent{"state": "truncated", "cursor": nil}), nil, "Cursor: \"c1\"\nState: \"truncated\"\n"},
+		{"no status", metadataEvents(metadataEvent{"cursor": "c1"}), nil, ""},
+		{"second complete value", metadataEvents(metadataEvent{"cursor": "c1", "state": "completed"}), nil, ""},
+		{"stream failure", metadataEvents(metadataEvent{"cursor": "c1", "state": "truncated"}), errors.New("stream interrupted"), "Cursor: \"c1\"\nState: \"truncated\"\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cmd := metadataTestCommand(t, &stdout, &stderr)
+			cmd.Annotations["speakeasy_stream_metadata"] = annotation
+			stream := &metadataTestStream{items: append(tc.events, metadataEvent{"text": "hello"}), err: tc.err}
+			err := output.StreamResult(cmd, struct{ Stream *metadataTestStream }{stream}, "Stream")
+			assert.Equal(t, "hello\n", stdout.String())
+			if tc.err != nil {
+				require.Error(t, err)
+				assert.True(t, strings.HasPrefix(stderr.String(), tc.want), stderr.String())
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, stderr.String())
+		})
 	}
 }
 
@@ -306,7 +392,7 @@ func TestStreamMetadataLateCancellationPreservesReturn(t *testing.T) {
 			cmd := metadataTestCommand(t, &stdout, &stderr)
 			switch mode {
 			case "plain projection":
-				delete(cmd.Annotations, "speakeasy_stream_metadata_select")
+				delete(cmd.Annotations, "speakeasy_stream_metadata")
 			case "json":
 				require.NoError(t, cmd.Flags().Set("output-format", "json"))
 			case "raw":

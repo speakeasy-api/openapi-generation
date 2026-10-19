@@ -41,3 +41,4 @@ go:
   unionStrategy: populated-fields
   enableCustomCodeRegions: true
   forwardCompatibleUnionsByDefault: tagged-and-untagged
+  enableSkipDeserialization: true

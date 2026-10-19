@@ -23,8 +23,7 @@ func initStreamMetadataCmd(parent *cobra.Command) error {
 	parent.Annotations["speakeasy_operation"] = "streamMetadata"
 	parent.Annotations["speakeasy_cli_promoted"] = "true"
 	parent.Annotations["speakeasy_stream_select"] = "/data/content"
-	parent.Annotations["speakeasy_stream_metadata_select"] = "/data/resource_id"
-	parent.Annotations["speakeasy_stream_metadata_label"] = "Resource ID"
+	parent.Annotations["speakeasy_stream_metadata"] = "[{\"label\":\"Resource ID\",\"pointers\":[\"/data/resource_id\"]}]"
 	return nil
 }
 

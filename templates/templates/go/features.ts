@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.16.1",
+  core: "3.16.2",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -423,6 +423,8 @@ function isTestSkipped(test: string): boolean {
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel-is-connection-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
   ].includes(test);
 }
 

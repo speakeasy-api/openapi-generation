@@ -452,6 +452,8 @@ func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{ $privateMethodName }}
         {{- if isSkipDeserializationEnabled}}
         if o.SkipDeserialization == nil || !*o.SkipDeserialization {
             {{addImport "utils"}}utils.DrainBody(httpRes)
+        } else if _, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes); err != nil {
+            {{templateErrorReturn $op "err"}}
         }
         {{- else}}
         {{addImport "utils"}}utils.DrainBody(httpRes)
@@ -1059,6 +1061,8 @@ func (s *{{sanitizeClassName $op.OwningSDK.Type.Name}}) {{ $privateMethodName }}
         {{- if isSkipDeserializationEnabled}}
         if o.SkipDeserialization == nil || !*o.SkipDeserialization {
             {{addImport "utils"}}utils.DrainBody(httpRes)
+        } else if _, err := {{addImport "utils"}}utils.ConsumeRawBody(httpRes); err != nil {
+            {{templateErrorReturn $op "err"}}
         }
         {{- else}}
         {{addImport "utils"}}utils.DrainBody(httpRes)

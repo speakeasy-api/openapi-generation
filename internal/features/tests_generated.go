@@ -144,6 +144,8 @@ func (t Test) String() string {
         return "clierrors-api-error-not-double-wrapped"
     case TestClierrorsDeclaredHintsFire:
         return "clierrors-declared-hints-fire"
+    case TestClierrorsDryRunHintServerValidationOnly:
+        return "clierrors-dry-run-hint-server-validation-only"
     case TestClierrorsFlagValuesNotRenderingFlags:
         return "clierrors-flag-values-not-rendering-flags"
     case TestClierrorsInvalidValuesDoNotStopPreparse:
@@ -154,6 +156,8 @@ func (t Test) String() string {
         return "clierrors-plain-mode-classified"
     case TestClierrorsTypedReasons:
         return "clierrors-typed-reasons"
+    case TestClierrorsUnknownCommandSuggestion:
+        return "clierrors-unknown-command-suggestion"
     case TestClierrorsUnknownFlagSuggestion:
         return "clierrors-unknown-flag-suggestion"
     case TestCollectionsContainingNull:
@@ -1656,6 +1660,8 @@ func TestFromString(s string) Test {
         return TestClierrorsApiErrorNotDoubleWrapped
     case "clierrors-declared-hints-fire":
         return TestClierrorsDeclaredHintsFire
+    case "clierrors-dry-run-hint-server-validation-only":
+        return TestClierrorsDryRunHintServerValidationOnly
     case "clierrors-flag-values-not-rendering-flags":
         return TestClierrorsFlagValuesNotRenderingFlags
     case "clierrors-invalid-values-do-not-stop-preparse":
@@ -1666,6 +1672,8 @@ func TestFromString(s string) Test {
         return TestClierrorsPlainModeClassified
     case "clierrors-typed-reasons":
         return TestClierrorsTypedReasons
+    case "clierrors-unknown-command-suggestion":
+        return TestClierrorsUnknownCommandSuggestion
     case "clierrors-unknown-flag-suggestion":
         return TestClierrorsUnknownFlagSuggestion
     case "collections-containing-null":
@@ -3097,11 +3105,13 @@ var testList = []Test{
     TestClierrorsAgentModeMatrix,
     TestClierrorsApiErrorNotDoubleWrapped,
     TestClierrorsDeclaredHintsFire,
+    TestClierrorsDryRunHintServerValidationOnly,
     TestClierrorsFlagValuesNotRenderingFlags,
     TestClierrorsInvalidValuesDoNotStopPreparse,
     TestClierrorsJsonOutputEnvelope,
     TestClierrorsPlainModeClassified,
     TestClierrorsTypedReasons,
+    TestClierrorsUnknownCommandSuggestion,
     TestClierrorsUnknownFlagSuggestion,
     TestCollectionsContainingNull,
     TestCollectionsMapInputAcceptsNonDictMapping,

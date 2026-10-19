@@ -699,6 +699,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/go/tests/primary/redact_additional_test.go.stmpl":                                                        0o644,
 	"templates/go/tests/primary/requestbodies_additional_test.go.stmpl":                                                 0o644,
 	"templates/go/tests/primary/responsebodies_additional_test.go.stmpl":                                                0o644,
+	"templates/go/tests/primary/responselifetime_test.go.stmpl":                                                         0o644,
 	"templates/go/tests/primary/retries_test.go.stmpl":                                                                  0o644,
 	"templates/go/tests/primary/security_additional_test.go.stmpl":                                                      0o644,
 	"templates/go/tests/primary/servers_test.go.stmpl":                                                                  0o644,

@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,41 +15,60 @@ import (
 )
 
 // slowJSONServer sends response headers immediately, then delivers the JSON
-// body in two chunks with a pause in between. The pause lands after the SDK
-// method has returned, so a body left unread at return would be read only
-// after the operation's deferred context cancel has fired.
-func slowJSONServer(body string, pause time.Duration) *httptest.Server {
+// body in two chunks with a pause in between. The pause outlasts the SDK
+// method's return, so a body left unread at return would be read only after
+// the operation's deferred context cancel has fired.
+func slowJSONServer(status int, body string, pause time.Duration) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(status)
 		fl := w.(http.Flusher)
 		half := len(body) / 2
 		fmt.Fprint(w, body[:half])
 		fl.Flush()
-		time.Sleep(pause)
+		select {
+		case <-time.After(pause):
+		case <-r.Context().Done():
+			return
+		}
 		fmt.Fprint(w, body[half:])
 	}))
 }
 
+var slowBodyCases = []struct {
+	name    string
+	status  int
+	command []string
+}{
+	{"json success", http.StatusOK, []string{"methods", "method-get"}},
+	{"success without declared content", http.StatusOK, []string{"health", "check"}},
+	{"success without declared content beside a json success", http.StatusAccepted,
+		[]string{"polling", "success-criteria-status-code", "--request-id", "slow-body", "--status-code", "200"}},
+}
+
 // A per-operation timeout arms a context that is cancelled when the SDK method
-// returns. The skip-deserialized JSON body must be consumed before that —
+// returns. The skip-deserialized body must be consumed before that —
 // otherwise a body still in flight at return is read against a cancelled
 // context and the response is lost even though the server delivered it well
 // within the timeout.
 func TestSkipDeserializedBodySurvivesSlowDeliveryUnderTimeout(t *testing.T) {
 	body := `{"message":"slow but complete"}`
-	s := slowJSONServer(body, 400*time.Millisecond)
-	defer s.Close()
+	for _, tc := range slowBodyCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := slowJSONServer(tc.status, body, 400*time.Millisecond)
+			defer s.Close()
 
-	h := NewCLITestHarness(t)
-	err := h.RunRaw([]string{"--server-url", s.URL, "--timeout", "10s",
-		"--output-format", "json", "methods", "method-get"})
-	require.NoError(t, err, "stderr: %s", h.GetStderr())
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(append([]string{"--server-url", s.URL, "--timeout", "10s",
+				"--output-format", "json"}, tc.command...))
+			require.NoError(t, err, "stderr: %s", h.GetStderr())
 
-	stdout := strings.TrimSpace(h.GetStdout())
-	var parsed map[string]interface{}
-	require.NoError(t, json.Unmarshal([]byte(stdout), &parsed), "stdout: %s", stdout)
-	assert.Equal(t, "slow but complete", parsed["message"])
+			stdout := strings.TrimSpace(h.GetStdout())
+			var parsed map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(stdout), &parsed), "stdout: %s", stdout)
+			assert.Equal(t, "slow but complete", parsed["message"])
+		})
+	}
 }
 
 // When the body genuinely exceeds the timeout, the failure must carry the
@@ -56,15 +76,21 @@ func TestSkipDeserializedBodySurvivesSlowDeliveryUnderTimeout(t *testing.T) {
 // the read was cancelled.
 func TestTimedOutBodyReadReportsTheRealCause(t *testing.T) {
 	body := `{"message":"never arrives in time"}`
-	s := slowJSONServer(body, 3*time.Second)
-	defer s.Close()
+	for _, tc := range slowBodyCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := slowJSONServer(tc.status, body, 3*time.Second)
+			defer s.Close()
 
-	h := NewCLITestHarness(t)
-	err := h.RunRaw([]string{"--server-url", s.URL, "--timeout", "300ms",
-		"--output-format", "json", "methods", "method-get"})
-	require.Error(t, err)
+			h := NewCLITestHarness(t)
+			err := h.RunRaw(append([]string{"--server-url", s.URL, "--timeout", "300ms",
+				"--output-format", "json"}, tc.command...))
+			require.Error(t, err)
+			assert.ErrorIs(t, err, context.DeadlineExceeded)
+			assert.NotErrorIs(t, err, context.Canceled)
 
-	combined := h.GetStdout() + h.GetStderr() + err.Error()
-	assert.NotContains(t, combined, "response body is empty")
-	assert.Contains(t, combined, "context deadline exceeded")
+			combined := h.GetStdout() + h.GetStderr() + err.Error()
+			assert.NotContains(t, combined, "response body is empty")
+			assert.Contains(t, combined, "context deadline exceeded")
+		})
+	}
 }
