@@ -1,0 +1,114 @@
+package tests
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	sdk "{{getRootModulePath}}"
+	"{{getRootModulePath}}/pkg/models/operations"
+	"{{getRootModulePath}}/pkg/polling"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// slowPollingServer answers the i-th request with statuses[i] (the last status
+// repeats), sending headers immediately and the body in two chunks with a
+// pause in between, so the body is still in flight when the SDK method has
+// the response headers.
+func slowPollingServer(statuses []int, body string, pause time.Duration, requests *atomic.Int32) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		i := int(requests.Add(1)) - 1
+		if i >= len(statuses) {
+			i = len(statuses) - 1
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statuses[i])
+		half := len(body) / 2
+		fmt.Fprint(w, body[:half])
+		w.(http.Flusher).Flush()
+		select {
+		case <-time.After(pause):
+		case <-r.Context().Done():
+			return
+		}
+		fmt.Fprint(w, body[half:])
+	}))
+}
+
+// Each polling attempt reads a response without declared content under its own
+// context; cancelling that attempt must not reach the next attempt's
+// skip-deserialized JSON body.
+func TestPollingSkipDeserializedBodySurvivesAttemptsUnderTimeout(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int32
+	body := `{"status":"completed"}`
+	s := slowPollingServer([]int{http.StatusAccepted, http.StatusOK}, body, 200*time.Millisecond, &requests)
+	defer s.Close()
+
+	client := sdk.New()
+	res, err := client.Polling.SuccessCriteriaStatusCode(
+		t.Context(),
+		pseudo_uuid(),
+		http.StatusOK,
+		operations.WithServerURL(s.URL),
+		operations.WithOperationTimeout(10*time.Second),
+		operations.WithSkipDeserialization(),
+		operations.WithPolling(
+			client.Polling.SuccessCriteriaStatusCodeWaitForSuccess(),
+			polling.WithDelaySecondsOverride(0),
+			polling.WithIntervalSecondsOverride(0),
+			polling.WithLimitCountOverride(3),
+		),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	assert.Equal(t, int32(2), requests.Load())
+	assert.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+
+	raw, err := io.ReadAll(res.HTTPMeta.Response.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, body, string(raw))
+}
+
+// A response without declared content that ends polling through its failure
+// criteria is returned alongside the error; its skip-deserialized body must
+// still be readable once the method has cancelled the attempt's context.
+func TestPollingFailureCriteriaBodylessResponseReadableAfterReturn(t *testing.T) {
+	t.Parallel()
+
+	var requests atomic.Int32
+	body := `{"message":"failed slowly"}`
+	s := slowPollingServer([]int{http.StatusAccepted}, body, 200*time.Millisecond, &requests)
+	defer s.Close()
+
+	client := sdk.New()
+	res, err := client.Polling.FailureCriteriaStatusCode(
+		t.Context(),
+		operations.WithServerURL(s.URL),
+		operations.WithOperationTimeout(10*time.Second),
+		operations.WithSkipDeserialization(),
+		operations.WithPolling(
+			client.Polling.FailureCriteriaStatusCodeWaitForSuccess(),
+			polling.WithDelaySecondsOverride(0),
+			polling.WithIntervalSecondsOverride(0),
+			polling.WithLimitCountOverride(3),
+		),
+	)
+	var failure *polling.FailureCriteriaError
+	require.True(t, errors.As(err, &failure), "err = %v", err)
+	require.NotNil(t, res)
+	assert.Equal(t, int32(1), requests.Load())
+	assert.Equal(t, http.StatusAccepted, res.HTTPMeta.Response.StatusCode)
+
+	raw, err := io.ReadAll(res.HTTPMeta.Response.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, body, string(raw))
+}
