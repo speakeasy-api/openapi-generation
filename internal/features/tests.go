@@ -499,6 +499,9 @@ const (
 	TestEventStreamMalformedFrameStrict
 	TestEventStreamMalformedFrameLenient
 	TestEventStreamTruncatedBeforeSentinel
+	TestEventStreamAbsentRequiredUnion
+	TestEventStreamNullAndUndeclaredFields
+	TestEventStreamEquivalentNumberLexemes
 	TestTestHooks
 	TestTestHooksError
 	TestTestHooksBeforeCreateRequest
@@ -695,7 +698,6 @@ const (
 	TestErrorTaxonomyPrettyResidualDetails
 	TestErrorTaxonomyReservedKeysAndRenderedClassification
 	TestEventStreamConnectionRefusedStaysConnectionError
-	TestEventStreamTruncatedBeforeSentinelIsConnectionError
 	TestEventStreamDecodeFailureIsProtocolError
 	TestEventStreamDecodeFailureWithoutJsonErrorType
 	TestEventStreamErrorEventAgentMode

@@ -88,6 +88,10 @@ actions:
       categories:
       - Create
       operations:
+        discriminatedProjectedEvents:
+          output:
+            stream:
+              select: $.data.text
         streamMetadata:
           output:
             stream:
@@ -320,6 +324,21 @@ actions:
               text/event-stream:
                 schema:
                   $ref: '#/components/schemas/discriminatedStreamEvent'
+    /eventstreams/discriminated-projected:
+      post:
+        tags:
+        - eventstreams
+        operationId: discriminatedProjectedEvents
+        description: SSE stream of discriminated events projected to their text.
+        servers:
+        - url: http://localhost:35456
+        responses:
+          '200':
+            description: Ok
+            content:
+              text/event-stream:
+                schema:
+                  $ref: '#/components/schemas/discriminatedStreamEvent'
     /eventstreams/undiscriminated:
       post:
         tags:
@@ -375,11 +394,15 @@ actions:
       oneOf:
       - $ref: '#/components/schemas/discriminatedDeltaEvent'
       - $ref: '#/components/schemas/discriminatedErrorEvent'
+      - $ref: '#/components/schemas/discriminatedToolEvent'
+      - $ref: '#/components/schemas/discriminatedToolErrorEvent'
       discriminator:
         propertyName: event_type
         mapping:
           delta: '#/components/schemas/discriminatedDeltaEvent'
           error: '#/components/schemas/discriminatedErrorEvent'
+          tool: '#/components/schemas/discriminatedToolEvent'
+          tool_error: '#/components/schemas/discriminatedToolErrorEvent'
     discriminatedDeltaEvent:
       type: object
       required:
@@ -406,6 +429,9 @@ actions:
           type: string
           format: date
           description: a date, so a malformed value fails decode without an encoding/json error type
+        weight:
+          type: number
+          format: double
     discriminatedErrorEvent:
       type: object
       required:
@@ -415,6 +441,44 @@ actions:
         event_type:
           type: string
           const: error
+        error:
+          $ref: '#/components/schemas/discriminatedStreamError'
+    discriminatedToolEvent:
+      description: A tool call announced before its outcome is known, so the required outcome may be absent on the wire
+      type: object
+      required:
+      - event_type
+      - tool_id
+      - outcome
+      properties:
+        event_type:
+          type: string
+          const: tool
+        tool_id:
+          type: string
+        outcome:
+          oneOf:
+          - type: string
+          - type: object
+            additionalProperties: true
+    discriminatedToolErrorEvent:
+      description: A failed tool call whose required outcome is absent on the wire, so the decoded event cannot be re-encoded
+      type: object
+      required:
+      - event_type
+      - tool_id
+      - outcome
+      properties:
+        event_type:
+          type: string
+          const: tool_error
+        tool_id:
+          type: string
+        outcome:
+          oneOf:
+          - type: string
+          - type: object
+            additionalProperties: true
         error:
           $ref: '#/components/schemas/discriminatedStreamError'
     discriminatedStreamError:

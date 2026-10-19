@@ -47,7 +47,7 @@ features:
     responseFormat: 0.1.2
     retries: 2.84.6
     sdkHooks: 0.3.1
-    serverEvents: 0.1.10
+    serverEvents: 0.1.11
     serverEventsSentinels: 0.1.1
     serverIDs: 2.81.1
     stringNumberFormats: 0.2.2
@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:08cba0dd035d9a9e3aca5df6ce9f1617796b4872
+    last_write_checksum: sha1:c2c34f5f7678390f0342c034e11cf321ddcea044
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

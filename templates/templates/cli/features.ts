@@ -36,7 +36,7 @@ const supportedFeatures = {
   additionalProperties: "0.0.1",
   deepObjectParams: "0.0.0",
   downloadStreams: "0.0.2",
-  serverEvents: "0.1.2",
+  serverEvents: "0.1.4",
   oauth2ClientCredentials: "0.0.1",
   webhooks: "0.0.0",
   callbacks: "0.0.0",
@@ -358,7 +358,6 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-format-union",
     "parameters-path-parameter-formats",
     "shared-enum-constructor-default",
-    "event-stream-truncated-before-sentinel",
     "open-union-invalid-json-is-an-error",
   ].includes(test);
 }

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.950.2] - 2026-10-19
+### :bug: Bug Fixes
+- [`f538ec3`](https://github.com/speakeasy-api/openapi-generation/commit/f538ec3b005784f255525557ed6a4521f9d3076c) - **go,cli**: render streamed events from the frame the server sent ([#116](https://github.com/speakeasy-api/openapi-generation/pull/116)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.950.1] - 2026-10-19
 ### :bug: Bug Fixes
 - [`4604e87`](https://github.com/speakeasy-api/openapi-generation/commit/4604e87bb475b5fc0f4f83540f6a7e469a542c14) - **go,cli**: read body-less success responses before the timeout is cancelled ([#117](https://github.com/speakeasy-api/openapi-generation/pull/117)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20614,3 +20619,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.949.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.949.0...v2.949.1
 [v2.950.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.949.1...v2.950.0
 [v2.950.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.0...v2.950.1
+[v2.950.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.1...v2.950.2

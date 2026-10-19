@@ -258,6 +258,8 @@ func (t Test) String() string {
         return "errors-union-of-errors"
     case TestErrorsUnionOfErrorsDiscriminated:
         return "errors-union-of-errors-discriminated"
+    case TestEventStreamAbsentRequiredUnion:
+        return "event-stream-absent-required-union"
     case TestEventStreamChatHeartbeatSkipsDataless:
         return "event-stream-chat-heartbeat-skips-dataless"
     case TestEventStreamChatJSON:
@@ -274,6 +276,8 @@ func (t Test) String() string {
         return "event-stream-decode-failure-without-json-error-type"
     case TestEventStreamDifferentDataSchemas:
         return "event-stream-different-data-schemas"
+    case TestEventStreamEquivalentNumberLexemes:
+        return "event-stream-equivalent-number-lexemes"
     case TestEventStreamErrorEventAgentMode:
         return "event-stream-error-event-agent-mode"
     case TestEventStreamErrorEventAgentModeFallback:
@@ -296,6 +300,8 @@ func (t Test) String() string {
         return "event-stream-mixed-data"
     case TestEventStreamMultilineData:
         return "event-stream-multiline-data"
+    case TestEventStreamNullAndUndeclaredFields:
+        return "event-stream-null-and-undeclared-fields"
     case TestEventStreamNumbersKeepPrecision:
         return "event-stream-numbers-keep-precision"
     case TestEventStreamOptionalDataField:
@@ -322,8 +328,6 @@ func (t Test) String() string {
         return "event-stream-timeout-still-bounds-slow-stream"
     case TestEventStreamTruncatedBeforeSentinel:
         return "event-stream-truncated-before-sentinel"
-    case TestEventStreamTruncatedBeforeSentinelIsConnectionError:
-        return "event-stream-truncated-before-sentinel-is-connection-error"
     case TestEventStreamUndiscriminatedErrorShapedVariantIsData:
         return "event-stream-undiscriminated-error-shaped-variant-is-data"
     case TestEventStreamUnionEventsRenderWireShape:
@@ -1774,6 +1778,8 @@ func TestFromString(s string) Test {
         return TestErrorsUnionOfErrors
     case "errors-union-of-errors-discriminated":
         return TestErrorsUnionOfErrorsDiscriminated
+    case "event-stream-absent-required-union":
+        return TestEventStreamAbsentRequiredUnion
     case "event-stream-chat-heartbeat-skips-dataless":
         return TestEventStreamChatHeartbeatSkipsDataless
     case "event-stream-chat-json":
@@ -1790,6 +1796,8 @@ func TestFromString(s string) Test {
         return TestEventStreamDecodeFailureWithoutJsonErrorType
     case "event-stream-different-data-schemas":
         return TestEventStreamDifferentDataSchemas
+    case "event-stream-equivalent-number-lexemes":
+        return TestEventStreamEquivalentNumberLexemes
     case "event-stream-error-event-agent-mode":
         return TestEventStreamErrorEventAgentMode
     case "event-stream-error-event-agent-mode-fallback":
@@ -1812,6 +1820,8 @@ func TestFromString(s string) Test {
         return TestEventStreamMixedData
     case "event-stream-multiline-data":
         return TestEventStreamMultilineData
+    case "event-stream-null-and-undeclared-fields":
+        return TestEventStreamNullAndUndeclaredFields
     case "event-stream-numbers-keep-precision":
         return TestEventStreamNumbersKeepPrecision
     case "event-stream-optional-data-field":
@@ -1838,8 +1848,6 @@ func TestFromString(s string) Test {
         return TestEventStreamTimeoutStillBoundsSlowStream
     case "event-stream-truncated-before-sentinel":
         return TestEventStreamTruncatedBeforeSentinel
-    case "event-stream-truncated-before-sentinel-is-connection-error":
-        return TestEventStreamTruncatedBeforeSentinelIsConnectionError
     case "event-stream-undiscriminated-error-shaped-variant-is-data":
         return TestEventStreamUndiscriminatedErrorShapedVariantIsData
     case "event-stream-union-events-render-wire-shape":
@@ -3162,6 +3170,7 @@ var testList = []Test{
     TestErrorsStatusGetErrorXSpeakeasyErrorsNone,
     TestErrorsUnionOfErrors,
     TestErrorsUnionOfErrorsDiscriminated,
+    TestEventStreamAbsentRequiredUnion,
     TestEventStreamChatHeartbeatSkipsDataless,
     TestEventStreamChatJSON,
     TestEventStreamChatSentinelEvent,
@@ -3170,6 +3179,7 @@ var testList = []Test{
     TestEventStreamDecodeFailureIsProtocolError,
     TestEventStreamDecodeFailureWithoutJsonErrorType,
     TestEventStreamDifferentDataSchemas,
+    TestEventStreamEquivalentNumberLexemes,
     TestEventStreamErrorEventAgentMode,
     TestEventStreamErrorEventAgentModeFallback,
     TestEventStreamErrorEventExitsNonZero,
@@ -3181,6 +3191,7 @@ var testList = []Test{
     TestEventStreamMalformedFrameStrict,
     TestEventStreamMixedData,
     TestEventStreamMultilineData,
+    TestEventStreamNullAndUndeclaredFields,
     TestEventStreamNumbersKeepPrecision,
     TestEventStreamOptionalDataField,
     TestEventStreamPartialWithComments,
@@ -3194,7 +3205,6 @@ var testList = []Test{
     TestEventStreamTextData,
     TestEventStreamTimeoutStillBoundsSlowStream,
     TestEventStreamTruncatedBeforeSentinel,
-    TestEventStreamTruncatedBeforeSentinelIsConnectionError,
     TestEventStreamUndiscriminatedErrorShapedVariantIsData,
     TestEventStreamUnionEventsRenderWireShape,
     TestEventStreamUnionWithStandaloneComments,
