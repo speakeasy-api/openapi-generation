@@ -842,7 +842,7 @@ function collectIntentManifest(): IntentManifestCtx {
     const hintsJSON =
       Object.keys(sortedHints).length > 0 ? JSON.stringify(sortedHints) : "";
 
-    const hasMeta = intentOperationHasMeta(found.op);
+    const hasMeta = operationUsesMetadataFlags(found.op);
     const args: IntentBodyEntry[] = [];
     let minArgs = 0;
     for (const a of cmd.Args || []) {
@@ -1451,7 +1451,7 @@ function cliOperationDeclaration(op: Operation): any | null {
 function operationBodyFlagSurfaces(op: Operation): string[] {
   if (!op.Request) return [];
   const names: string[] = [];
-  if (intentOperationHasMeta(op)) {
+  if (operationUsesMetadataFlags(op)) {
     if (templateHasBodyFlag(op)) names.push("body");
     const whole = wholeBodyFlagName(op);
     if (whole) names.push(whole);
@@ -1493,7 +1493,7 @@ function operationGeneratedFlagNames(op: Operation): Set<string> {
   if (templateHasBodyFlag(op)) names.add("body");
   const whole = wholeBodyFlagName(op);
   if (whole) names.add(whole);
-  if (op.Request?.IsRequestBody && !intentOperationHasMeta(op)) {
+  if (op.Request?.IsRequestBody && !operationUsesMetadataFlags(op)) {
     names.add(getRequestBodyFlagName(op.Request.RequestBody));
   }
   if (hasBodySchemaForOp(op)) names.add("schema");
@@ -1703,23 +1703,6 @@ function collectOperationNonBodyFlagMeta(
     });
   }
   return flags;
-}
-
-// intentOperationHasMeta mirrors templateFlagMetadataVar's decision about
-// whether the operation emits a flag-metadata variable, without that
-// function's addImport side effect (this runs while other files render).
-function intentOperationHasMeta(op: Operation): boolean {
-  if (!op.Request) return false;
-  if (op.Request.IsRequestBody) {
-    const serMethod = op.SerializationMethod?.toString() || "";
-    if (serMethod === "multipart" || isRequestBodyExpandable(op)) {
-      const fields = op.Request.RequestBody.Type.Fields || [];
-      return fields.some((f: FieldDef) => !f.Const);
-    }
-    return false; // complex JSON bodies use BuildRequestBody, no metadata var
-  }
-  const fields = op.Request.Field.Type.Fields || [];
-  return fields.some((f: FieldDef) => !f.Const);
 }
 
 // Two bound commands emitted into different packages that share a Go

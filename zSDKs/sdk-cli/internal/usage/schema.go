@@ -225,7 +225,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	if dynamic {
 		body = mergedUsageBody(cmd, node, own, itemPrefix)
 	} else {
-		body = append(staticUsageBody(node, own), addedUsageFlags(cmd, node.flags, itemPrefix)...)
+		body = staticUsageBody(cmd, node, own, itemPrefix)
 	}
 	children := usageChildren(cmd, node.children)
 	block := !isRoot && (len(body) > 0 || len(children) > 0)
@@ -255,8 +255,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	}
 }
 
-// Settings flags are declared once on the root, so only a command's own schema lists them.
-func staticUsageBody(node usageNode, own bool) []string {
+func staticUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string) []string {
 	var body []string
 	for _, alias := range node.aliases {
 		body = append(body, alias.text)
@@ -264,12 +263,7 @@ func staticUsageBody(node usageNode, own bool) []string {
 	for _, arg := range node.args {
 		body = append(body, arg.text)
 	}
-	for _, flag := range node.flags {
-		if own || !flag.settings {
-			body = append(body, flag.text)
-		}
-	}
-	return body
+	return append(body, usageFlagLines(cmd, node.flags, own, prefix)...)
 }
 
 func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string) []string {
@@ -293,22 +287,23 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 	} else {
 		body = append(body, liveUsageArgs(cmd, prefix)...)
 	}
-	for _, flag := range node.flags {
-		f := cmd.Flags().Lookup(flag.key)
-		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
-			body = append(body, flag.text)
-		}
-	}
-	return append(body, addedUsageFlags(cmd, node.flags, prefix)...)
+	return append(body, usageFlagLines(cmd, node.flags, own, prefix)...)
 }
 
-func addedUsageFlags(cmd *cobra.Command, generated []usageItem, prefix string) []string {
+// Settings flags are declared once on the root, so only a command's own schema lists them.
+func usageFlagLines(cmd *cobra.Command, generated []usageItem, own bool, prefix string) []string {
+	// LocalFlags merges persistent flags into Flags() before the lookups below.
+	local := cmd.LocalFlags()
+	var lines []string
 	listed := map[string]bool{}
 	for _, flag := range generated {
 		listed[flag.key] = true
+		f := cmd.Flags().Lookup(flag.key)
+		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
+			lines = append(lines, flag.text)
+		}
 	}
-	var lines []string
-	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+	local.VisitAll(func(f *pflag.Flag) {
 		if !f.Hidden && f.Name != "help" && !listed[f.Name] {
 			lines = append(lines, liveUsageFlag(f, prefix))
 		}
@@ -350,8 +345,8 @@ func writeUsageIndented(b *strings.Builder, text string, indent int) {
 }
 
 // MarkDynamic makes --usage render a generated command's runtime help, aliases
-// and args from its cobra definition, keeping generated lines for the inputs it
-// still has.
+// and args from its cobra definition, keeping generated lines for the aliases
+// and args it still has.
 func MarkDynamic(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}

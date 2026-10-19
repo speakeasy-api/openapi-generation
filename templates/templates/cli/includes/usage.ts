@@ -536,7 +536,7 @@ function getOperationWholeBodyUsageFlag(op: Operation): UsageFlagDef | null {
     if (!templateHasBodyFlag(op)) return null;
     return {
       spec: usageFlagSpec("body", undefined, "body"),
-      help: templateBodyFlagDescription(op),
+      help: bodyFlagDescription(op),
     };
   }
   if (op.Request.IsRequestBody) {

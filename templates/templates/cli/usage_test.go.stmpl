@@ -283,6 +283,9 @@ func TestUsageSchema_DynamicRoot(t *testing.T) {
 
     var before strings.Builder
     require.NoError(t, usage.EmitSchema(root, &before))
+
+    root, err = cli.NewRootCommand()
+    require.NoError(t, err)
     usage.MarkDynamic(root)
 
     var unchanged strings.Builder
@@ -296,6 +299,20 @@ func TestUsageSchema_DynamicRoot(t *testing.T) {
     require.Positive(t, children)
     want := before.String()[:children] + "flag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n" + before.String()[children:]
     assert.Equal(t, want, after.String())
+}
+
+func TestUsageSchema_RuntimeHiddenFlagDropped(t *testing.T) {
+    root, err := cli.NewRootCommand()
+    require.NoError(t, err)
+    configure, _, err := root.Find([]string{"configure"})
+    require.NoError(t, err)
+
+    var before, after strings.Builder
+    require.NoError(t, usage.EmitSchema(configure, &before))
+    require.Contains(t, before.String(), "--default-output-format")
+    require.NoError(t, configure.Flags().MarkHidden("default-output-format"))
+    require.NoError(t, usage.EmitSchema(configure, &after))
+    assert.NotContains(t, after.String(), "--default-output-format")
 }
 
 func TestUsageSchema_HiddenGeneratedCommandDropped(t *testing.T) {
@@ -409,14 +426,16 @@ func TestUsageSchema_ResetFlagsRendersLive(t *testing.T) {
 func TestUsageSchema_FlagsMatchRegisteredFlags(t *testing.T) {
     root, err := cli.NewRootCommand()
     require.NoError(t, err)
-    flagLine := regexp.MustCompile(`(?m)^  flag "(?:-\S )?--([^\s"<]+)`)
+    childFlagLine := regexp.MustCompile(`(?m)^  flag "(?:-\S )?--([^\s"<]+)`)
+    rootFlagLine := regexp.MustCompile(`(?m)^flag "(?:-\S )?--([^\s"<]+)`)
     var walk func(cmd *cobra.Command)
     walk = func(cmd *cobra.Command) {
         for _, child := range cmd.Commands() {
             walk(child)
         }
+        flagLine := childFlagLine
         if cmd == root {
-            return
+            flagLine = rootFlagLine
         }
         local := cmd.LocalFlags()
         var out strings.Builder

@@ -154,7 +154,7 @@ function requestBodyDescription(field: FieldDef): string {
     desc = "Request body as JSON";
   }
 
-  if (!field.Optional) {
+  if (!field.Optional && !field.Nullable) {
     desc += " [required]";
   }
   desc +=

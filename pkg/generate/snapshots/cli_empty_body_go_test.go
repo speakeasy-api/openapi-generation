@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/generate/snapshots/snaptest"
@@ -234,6 +235,23 @@ func TestSnapCLIEmptyBodyExamplesAndFlags(t *testing.T) {
 					for _, node := range usageNodes {
 						require.Contains(t, node[2], "--body <body>")
 						require.NotContains(t, node[2], "--body-param")
+					}
+					wholeBodyFlagPattern := regexp.MustCompile(`AnnotationWholeBodyFlag\] = "([^"]+)"`)
+					for _, name := range []string{"standaloneoptional", "standalonerequired", "standalonenullable"} {
+						command := readCommand(name)
+						flagName := wholeBodyFlagPattern.FindStringSubmatch(command)
+						require.Len(t, flagName, 2, name)
+						node := regexp.MustCompile(`"widgets ` + name + `":\s*\{(.*)\}`).FindStringSubmatch(string(usageSource))
+						require.Len(t, node, 2, name)
+						require.Contains(t, node[1], "--"+flagName[1]+" <", name)
+						require.NotContains(t, node[1], "--body <body>", name)
+						required := strings.Contains(command, `PromptFlagSpec{Required: true, Kind: "json", BodyFlag: true}`)
+						require.Equal(t, required, strings.Contains(node[1], "[required]"), name)
+					}
+					completionNodes := regexp.MustCompile(`"completion (bash|zsh|fish|powershell)":\s*\{(.*)\}`).FindAllStringSubmatch(string(usageSource), -1)
+					require.Len(t, completionNodes, 4)
+					for _, node := range completionNodes {
+						require.Contains(t, node[2], `\"--no-descriptions\"`, node[1])
 					}
 					for _, name := range []string{"required", "formrequired"} {
 						command := readCommand(name)
