@@ -15,19 +15,7 @@
 {{- $paginationProbeHasContinuation := paginationProbeHasContinuation $paginationProbe -}}
 {{- $positional := getOperationPositional $op -}}
 {{- /* Compute request building strategy once — used by both init and run */ -}}
-{{- $useMetadataFlags := false -}}
-{{- if $op.Request -}}
-{{- if $op.Request.IsRequestBody -}}
-{{- $sm := $op.GetSerializationMethod -}}
-{{- if or (and (eq $sm "multipart") (operationHasFlagMetadata $op)) (and (or (eq $sm "json") (eq $sm "form")) (isRequestBodyExpandable $op)) -}}
-{{- $useMetadataFlags = true -}}
-{{- end -}}
-{{- else -}}
-{{- if (operationHasFlagMetadata $op) -}}
-{{- $useMetadataFlags = true -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+{{- $useMetadataFlags := operationUsesMetadataFlags $op -}}
 {{- addImport "github.com/spf13/cobra" -}}
 {{- addImport "internal/output" true -}}
 {{- addImport "internal/client" true -}}

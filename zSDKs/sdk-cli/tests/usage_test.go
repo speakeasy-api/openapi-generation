@@ -227,28 +227,43 @@ func TestUsageSchema_ComposesRuntimeCommands(t *testing.T) {
 	assert.Contains(t, group.String(), "\n  cmd \"runtime-leaf\" help=\"Runtime leaf\" {\n")
 }
 
-func TestUsageSchema_DynamicCommandKeepsGeneratedLines(t *testing.T) {
-	root, err := cli.NewRootCommand()
-	require.NoError(t, err)
-	configure, _, err := root.Find([]string{"configure"})
-	require.NoError(t, err)
+func TestUsageSchema_RuntimeFlagsKeepGeneratedLines(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		dynamic bool
+	}{{name: "generated"}, {name: "dynamic", dynamic: true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			configure, _, err := root.Find([]string{"configure"})
+			require.NoError(t, err)
 
-	var ownBefore, rootBefore strings.Builder
-	require.NoError(t, usage.EmitSchema(configure, &ownBefore))
-	require.NoError(t, usage.EmitSchema(root, &rootBefore))
-	configure.Flags().String("runtime-flag", "", "Runtime flag")
-	usage.MarkDynamic(configure)
+			var ownBefore, rootBefore strings.Builder
+			require.NoError(t, usage.EmitSchema(configure, &ownBefore))
+			require.NoError(t, usage.EmitSchema(root, &rootBefore))
+			configure.Flags().String("runtime-flag", "", "Runtime flag")
+			root.PersistentFlags().String("runtime-root", "", "Runtime root flag")
+			if tc.dynamic {
+				usage.MarkDynamic(configure)
+				usage.MarkDynamic(root)
+			}
 
-	var ownAfter, rootAfter strings.Builder
-	require.NoError(t, usage.EmitSchema(configure, &ownAfter))
-	require.NoError(t, usage.EmitSchema(root, &rootAfter))
-	flag := "  flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n"
-	assert.Equal(t, strings.TrimSuffix(ownBefore.String(), "}\n")+flag+"}\n", ownAfter.String())
+			var ownAfter, rootAfter strings.Builder
+			require.NoError(t, usage.EmitSchema(configure, &ownAfter))
+			require.NoError(t, usage.EmitSchema(root, &rootAfter))
+			flag := "  flag \"--runtime-flag <runtime_flag>\" help=\"Runtime flag\"\n"
+			assert.Equal(t, strings.TrimSuffix(ownBefore.String(), "}\n")+flag+"}\n", ownAfter.String())
 
-	start := strings.Index(rootBefore.String(), "\ncmd \"configure\"")
-	require.GreaterOrEqual(t, start, 0)
-	end := start + strings.Index(rootBefore.String()[start:], "\n}\n") + 1
-	assert.Equal(t, rootBefore.String()[:end]+flag+rootBefore.String()[end:], rootAfter.String())
+			before := rootBefore.String()
+			children := strings.Index(before, "\ncmd \"") + 1
+			require.Positive(t, children)
+			start := strings.Index(before, "\ncmd \"configure\"")
+			require.GreaterOrEqual(t, start, 0)
+			end := start + strings.Index(before[start:], "\n}\n") + 1
+			rootFlag := "flag \"--runtime-root <runtime_root>\" help=\"Runtime root flag\"\n"
+			assert.Equal(t, before[:children]+rootFlag+before[children:end]+flag+before[end:], rootAfter.String())
+		})
+	}
 }
 
 func TestUsageSchema_DynamicRoot(t *testing.T) {
@@ -378,6 +393,35 @@ func TestUsageSchema_ResetFlagsRendersLive(t *testing.T) {
 	assert.Contains(t, rootOut.String(), "\ncmd \"configure\" help=")
 	assert.NotContains(t, rootOut.String(), "--default-output-format <format>")
 	assert.Contains(t, rootOut.String(), "\n"+flag)
+}
+
+func TestUsageSchema_FlagsMatchRegisteredFlags(t *testing.T) {
+	root, err := cli.NewRootCommand()
+	require.NoError(t, err)
+	flagLine := regexp.MustCompile(`(?m)^  flag "(?:-\S )?--([^\s"<]+)`)
+	var walk func(cmd *cobra.Command)
+	walk = func(cmd *cobra.Command) {
+		for _, child := range cmd.Commands() {
+			walk(child)
+		}
+		if cmd == root {
+			return
+		}
+		local := cmd.LocalFlags()
+		var out strings.Builder
+		require.NoError(t, usage.EmitSchema(cmd, &out))
+		listed := map[string]bool{}
+		for _, match := range flagLine.FindAllStringSubmatch(out.String(), -1) {
+			listed[match[1]] = true
+			assert.NotNil(t, cmd.Flags().Lookup(match[1]), "%s --usage lists unregistered --%s", cmd.CommandPath(), match[1])
+		}
+		local.VisitAll(func(f *pflag.Flag) {
+			if !f.Hidden && f.Name != "help" {
+				assert.True(t, listed[f.Name], "%s --usage omits --%s", cmd.CommandPath(), f.Name)
+			}
+		})
+	}
+	walk(root)
 }
 
 func TestUsageSchema_DetachedCommand(t *testing.T) {

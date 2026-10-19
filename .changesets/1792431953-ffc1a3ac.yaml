@@ -1,0 +1,10 @@
+id: 1792431953-ffc1a3ac
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: 'list the flags each command registers in --usage: the whole-body flag of body-only operations under its registered name, --no-descriptions on completion shells, and flags added to generated commands at runtime'
+author: 2ynn
+date: "2026-10-19"

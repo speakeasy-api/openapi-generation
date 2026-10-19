@@ -660,7 +660,7 @@ trackedFiles:
   internal/usage/bodyschemas.go:
     last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
   internal/usage/schema.go:
-    last_write_checksum: sha1:13350f445bdbbcc99e06b70d23316ca7e4a632b9
+    last_write_checksum: sha1:a97ab4b8337ff1e155e8dee94a57ee06de1559e5
   scripts/install.ps1:
     last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
   scripts/install.sh:
@@ -1122,7 +1122,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:6dd7b7205958c3f3f7ea18c7cbb579497327a900
+    last_write_checksum: sha1:08d035295338efe1b9dc0a52f9561bfec3953fdc
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

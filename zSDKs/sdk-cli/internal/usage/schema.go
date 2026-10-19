@@ -47,12 +47,12 @@ var usageNodes = map[string]usageNode{
 	"auth logout":                          {head: "cmd \"logout\" help=\"Clear all stored authentication credentials\""},
 	"auth whoami":                          {head: "cmd \"whoami\" help=\"Display current authentication and global parameter configuration\""},
 	"binary-and-string-upload":             {head: "cmd \"binary-and-string-upload\" help=\"Binary And String Upload\"", aliases: []usageItem{{key: "basu", text: "  alias \"basu\""}}, flags: []usageItem{{key: "binary", text: "  flag \"-b --binary <binary>\" help=\"binary data (file:<path> or b64:<base64>)\""}, {key: "string", text: "  flag \"-s --string <string>\" help=\"string value\""}, {key: "body", text: "  flag \"--body <body>\" help=\"Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.\""}, {key: "schema", text: "  flag \"--schema\" help=\"Print the exact JSON Schema of the request body and exit\""}}},
-	"chat":                                 {head: "cmd \"chat\" help=\"Chat\"", flags: []usageItem{{key: "body", text: "  flag \"--body <body>\" help=\"Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.\""}, {key: "schema", text: "  flag \"--schema\" help=\"Print the exact JSON Schema of the request body and exit\""}, {key: "stream", text: "  flag \"--stream\" help=\"Stream events as they arrive\" default=#true"}, {key: "max-tokens", text: "  flag \"--max-tokens <max_tokens>\" help=\"Maximum number of tokens to generate\""}, {key: "temperature", text: "  flag \"--temperature <temperature>\" help=\"Sampling temperature\""}}},
+	"chat":                                 {head: "cmd \"chat\" help=\"Chat\"", flags: []usageItem{{key: "request", text: "  flag \"--request <request>\" help=\"Request body as JSON [required]. Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.\""}, {key: "schema", text: "  flag \"--schema\" help=\"Print the exact JSON Schema of the request body and exit\""}, {key: "stream", text: "  flag \"--stream\" help=\"Stream events as they arrive\" default=#true"}, {key: "max-tokens", text: "  flag \"--max-tokens <max_tokens>\" help=\"Maximum number of tokens to generate\""}, {key: "temperature", text: "  flag \"--temperature <temperature>\" help=\"Sampling temperature\""}}},
 	"completion":                           {head: "cmd \"completion\" help=\"Generate the autocompletion script for the specified shell\"", children: []string{"bash", "fish", "powershell", "zsh"}},
-	"completion bash":                      {head: "cmd \"bash\" help=\"Generate the autocompletion script for bash\""},
-	"completion fish":                      {head: "cmd \"fish\" help=\"Generate the autocompletion script for fish\""},
-	"completion powershell":                {head: "cmd \"powershell\" help=\"Generate the autocompletion script for powershell\""},
-	"completion zsh":                       {head: "cmd \"zsh\" help=\"Generate the autocompletion script for zsh\""},
+	"completion bash":                      {head: "cmd \"bash\" help=\"Generate the autocompletion script for bash\"", flags: []usageItem{{key: "no-descriptions", text: "  flag \"--no-descriptions\" help=\"disable completion descriptions\""}}},
+	"completion fish":                      {head: "cmd \"fish\" help=\"Generate the autocompletion script for fish\"", flags: []usageItem{{key: "no-descriptions", text: "  flag \"--no-descriptions\" help=\"disable completion descriptions\""}}},
+	"completion powershell":                {head: "cmd \"powershell\" help=\"Generate the autocompletion script for powershell\"", flags: []usageItem{{key: "no-descriptions", text: "  flag \"--no-descriptions\" help=\"disable completion descriptions\""}}},
+	"completion zsh":                       {head: "cmd \"zsh\" help=\"Generate the autocompletion script for zsh\"", flags: []usageItem{{key: "no-descriptions", text: "  flag \"--no-descriptions\" help=\"disable completion descriptions\""}}},
 	"configure":                            {head: "cmd \"configure\" help=\"Configure authentication, global parameters, and preferences\"", flags: []usageItem{{key: "default-output-format", text: "  flag \"--default-output-format <format>\" help=\"Store the default output format without opening the form. Options: pretty, json, yaml, table, toon. Pass an empty value to clear it.\" {\n    suggestions \"pretty\" \"json\" \"yaml\" \"table\" \"toon\"\n  }"}, {key: "username", text: "  flag \"--username <username>\" help=\"HTTP Basic username\" env=\"CLI_USERNAME\" config=\"security.username\"", settings: true}, {key: "password", text: "  flag \"--password <password>\" help=\"HTTP Basic password\" env=\"CLI_PASSWORD\" config=\"security.password\"", settings: true}, {key: "bearer-auth", text: "  flag \"--bearer-auth <bearer_auth>\" help=\"HTTP Bearer\" env=\"CLI_BEARER_AUTH\" config=\"security.bearer_auth\"", settings: true}, {key: "my-api-key", text: "  flag \"--my-api-key <my_api_key>\" help=\"API Key\" env=\"CLI_MY_API_KEY\" config=\"security.my_api_key\"", settings: true}, {key: "oauth2", text: "  flag \"--oauth2 <oauth2>\" help=\"OAuth2 Authorization\" env=\"CLI_OAUTH2\" config=\"security.oauth2\"", settings: true}, {key: "app-id", text: "  flag \"--app-id <app_id>\" help=\"Custom authentication credential\" env=\"CLI_APP_ID\" config=\"security.app_id\"", settings: true}, {key: "secret", text: "  flag \"--secret <secret>\" help=\"Custom authentication credential\" env=\"CLI_SECRET\" config=\"security.secret\"", settings: true}, {key: "mobile-auth", text: "  flag \"--mobile-auth <mobile_auth>\" help=\"\"\"\n    OAuth2 Password flow, a flow that is too\n    long to describe in a single line.\n    \"\"\" env=\"CLI_MOBILE_AUTH\" config=\"security.mobile_auth\"", settings: true}, {key: "client-id", text: "  flag \"--client-id <client_id>\" help=\"Client Credentials flow. client identifier\" env=\"CLI_CLIENT_ID\" config=\"security.client_id\"", settings: true}, {key: "client-secret", text: "  flag \"--client-secret <client_secret>\" help=\"Client Credentials flow. client secret\" env=\"CLI_CLIENT_SECRET\" config=\"security.client_secret\"", settings: true}, {key: "token-url", text: "  flag \"--token-url <token_url>\" help=\"Client Credentials flow. token URL\" env=\"CLI_TOKEN_URL\" config=\"security.token_url\"", settings: true}, {key: "query-param1", text: "  flag \"--query-param1 <query_param1>\" help=\"A long winded, multi-line description\" env=\"CLI_QUERY_PARAM1\" config=\"globals.query_param1\"", settings: true}, {key: "deprecated-query-param1", text: "  flag \"--deprecated-query-param1 <deprecated_query_param1>\" help=\"A deprecated description\" env=\"CLI_DEPRECATED_QUERY_PARAM1\" config=\"globals.deprecated_query_param1\"", settings: true}, {key: "deprecated-query-param2", text: "  flag \"--deprecated-query-param2 <deprecated_query_param2>\" help=\"Global deprecated-query-param2 parameter\" env=\"CLI_DEPRECATED_QUERY_PARAM2\" config=\"globals.deprecated_query_param2\"", settings: true}, {key: "lone-query-param", text: "  flag \"--lone-query-param <lone_query_param>\" help=\"Global lone-query-param parameter\" env=\"CLI_LONE_QUERY_PARAM\" config=\"globals.lone_query_param\"", settings: true}}},
 	"create-user":                          {head: "cmd \"create-user\" help=\"Create User\"", aliases: []usageItem{{key: "cu", text: "  alias \"cu\""}}, flags: []usageItem{{key: "id", text: "  flag \"-i --id <id>\" help=\"string value\""}, {key: "email", text: "  flag \"-e --email <email>\" help=\"[required]\""}, {key: "first-name", text: "  flag \"-f --first-name <first_name>\" help=\"string value\""}, {key: "last-name", text: "  flag \"-l --last-name <last_name>\" help=\"string value\""}, {key: "age", text: "  flag \"--age <age>\" help=\"number value\""}, {key: "postal-code", text: "  flag \"-p --postal-code <postal_code>\" help=\"string value\""}, {key: "gender", text: "  flag \"-g --gender <gender>\" help=\"options: male, female, other\""}, {key: "associated-ids", text: "  flag \"--associated-ids <associated_ids...>\" help=\"list of values\" var=#true"}, {key: "metadata", text: "  flag \"--metadata <metadata>\" help=\"JSON object\""}, {key: "metadata-any", text: "  flag \"--metadata-any <metadata_any>\" help=\"A metadata object with additionalProperties true (any type) - should be flattened\""}, {key: "body", text: "  flag \"--body <body>\" help=\"Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.\""}, {key: "schema", text: "  flag \"--schema\" help=\"Print the exact JSON Schema of the request body and exit\""}}},
 	"create-with-union":                    {head: "cmd \"create-with-union\" help=\"Create with discriminated union request body\"", aliases: []usageItem{{key: "cwu", text: "  alias \"cwu\""}}, flags: []usageItem{{key: "dry-run-param", text: "  flag \"--dry-run-param\" help=\"If true, validates without creating\""}, {key: "name", text: "  flag \"-n --name <name>\" help=\"Name for the shape [required]\""}, {key: "shape", text: "  flag \"-s --shape <shape>\" help=\"{ \\\"type\\\": string, \\\"radius\\\": number, ... } | { \\\"type\\\": string, \\\"width\\\": number, \\\"height\\\": number, ... }\""}, {key: "shape.circle", text: "  flag \"--shape.circle <circle>\" help=\"Circle variant as JSON\""}, {key: "shape.circle.radius", text: "  flag \"--shape.circle.radius <radius>\" help=\"The radius of the circle [required]\""}, {key: "shape.circle.color-param", text: "  flag \"--shape.circle.color-param <color_param>\" help=\"Optional color of the circle\""}, {key: "shape.rectangle", text: "  flag \"--shape.rectangle <rectangle>\" help=\"Rectangle variant as JSON\""}, {key: "shape.rectangle.width", text: "  flag \"--shape.rectangle.width <width>\" help=\"The width of the rectangle [required]\""}, {key: "shape.rectangle.height", text: "  flag \"--shape.rectangle.height <height>\" help=\"The height of the rectangle [required]\""}, {key: "shape.rectangle.color-param", text: "  flag \"--shape.rectangle.color-param <color_param>\" help=\"Optional color of the rectangle\""}, {key: "description", text: "  flag \"--description <description>\" help=\"Optional description\""}, {key: "body", text: "  flag \"--body <body>\" help=\"Request body as JSON (alternative to individual flags). Can also be provided via stdin; @path reads a file, @- reads stdin to EOF. Use --schema to print the exact JSON Schema.\""}, {key: "schema", text: "  flag \"--schema\" help=\"Print the exact JSON Schema of the request body and exit\""}}},
@@ -225,7 +225,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	if dynamic {
 		body = mergedUsageBody(cmd, node, own, itemPrefix)
 	} else {
-		body = staticUsageBody(node, own)
+		body = append(staticUsageBody(node, own), addedUsageFlags(cmd, node.flags, itemPrefix)...)
 	}
 	children := usageChildren(cmd, node.children)
 	block := !isRoot && (len(body) > 0 || len(children) > 0)
@@ -273,7 +273,6 @@ func staticUsageBody(node usageNode, own bool) []string {
 }
 
 func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string) []string {
-	local := cmd.LocalFlags()
 	var body []string
 	listed := map[string]bool{}
 	for _, alias := range node.aliases {
@@ -294,20 +293,27 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 	} else {
 		body = append(body, liveUsageArgs(cmd, prefix)...)
 	}
-	listed = map[string]bool{}
 	for _, flag := range node.flags {
-		listed[flag.key] = true
 		f := cmd.Flags().Lookup(flag.key)
 		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
 			body = append(body, flag.text)
 		}
 	}
-	local.VisitAll(func(f *pflag.Flag) {
+	return append(body, addedUsageFlags(cmd, node.flags, prefix)...)
+}
+
+func addedUsageFlags(cmd *cobra.Command, generated []usageItem, prefix string) []string {
+	listed := map[string]bool{}
+	for _, flag := range generated {
+		listed[flag.key] = true
+	}
+	var lines []string
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Hidden && f.Name != "help" && !listed[f.Name] {
-			body = append(body, liveUsageFlag(f, prefix))
+			lines = append(lines, liveUsageFlag(f, prefix))
 		}
 	})
-	return body
+	return lines
 }
 
 func usageChildren(cmd *cobra.Command, declared []string) []*cobra.Command {
@@ -343,9 +349,9 @@ func writeUsageIndented(b *strings.Builder, text string, indent int) {
 	}
 }
 
-// MarkDynamic makes --usage render a generated command's runtime help, aliases,
-// args and added flags from its cobra definition, keeping generated lines for
-// the inputs it still has.
+// MarkDynamic makes --usage render a generated command's runtime help, aliases
+// and args from its cobra definition, keeping generated lines for the inputs it
+// still has.
 func MarkDynamic(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}

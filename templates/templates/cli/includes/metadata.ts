@@ -48,6 +48,19 @@ function operationHasFlagMetadata(op: Operation): boolean {
 }
 registerTemplateFunc("operationHasFlagMetadata", operationHasFlagMetadata);
 
+/**
+ * Whether the operation command registers its inputs from flag metadata
+ * (BuildRequest) rather than one whole-body flag (BuildRequestBody).
+ * Side-effect free (no addImport), so it is safe to call while other files render.
+ */
+function operationUsesMetadataFlags(op: Operation): boolean {
+  const built = buildOperationMetadataEntries(op);
+  return (
+    built !== null && (built.entries.length > 0 || built.hadCandidateFields)
+  );
+}
+registerTemplateFunc("operationUsesMetadataFlags", operationUsesMetadataFlags);
+
 function getMixedRequestMetadataFields(op: Operation): FieldDef[] {
   const fields = op.Request.Field.Type.Fields || [];
   if (!templateHasBodyFlag(op)) return fields;

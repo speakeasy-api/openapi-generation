@@ -529,14 +529,35 @@ function getOperationNonBodyUsageFlags(op: Operation): UsageFlagDef[] {
   return withAutoShorthands(op, flags, true);
 }
 
+// Mirrors the whole-body flag opcmd.go.stmpl registers.
+function getOperationWholeBodyUsageFlag(op: Operation): UsageFlagDef | null {
+  if (!op.Request) return null;
+  if (operationUsesMetadataFlags(op)) {
+    if (!templateHasBodyFlag(op)) return null;
+    return {
+      spec: usageFlagSpec("body", undefined, "body"),
+      help: templateBodyFlagDescription(op),
+    };
+  }
+  if (op.Request.IsRequestBody) {
+    const name = getRequestBodyFlagName(op.Request.RequestBody);
+    return {
+      spec: usageFlagSpec(name, undefined, name.replace(/-/g, "_")),
+      help: requestBodyDescription(op.Request.RequestBody),
+    };
+  }
+  return {
+    spec: usageFlagSpec("body", undefined, "body"),
+    help: "Request body (JSON)",
+  };
+}
+
 function getOperationFieldUsageFlags(op: Operation): UsageFlagDef[] {
   const flags = getOperationBodyFieldUsageFlags(op);
 
-  if (templateHasBodyFlag(op)) {
-    flags.push({
-      spec: usageFlagSpec("body", undefined, "body"),
-      help: templateBodyFlagDescription(op),
-    });
+  const bodyFlag = getOperationWholeBodyUsageFlag(op);
+  if (bodyFlag) {
+    flags.push(bodyFlag);
   }
 
   if (hasBodySchemaForOp(op)) {
@@ -1403,6 +1424,12 @@ function buildRootUsageCommand(): UsageCommandDef {
       commands: ["bash", "zsh", "fish", "powershell"].map((shell) => ({
         name: shell,
         help: `Generate the autocompletion script for ${shell}`,
+        flags: [
+          {
+            spec: usageFlagSpec("no-descriptions"),
+            help: "disable completion descriptions",
+          },
+        ],
         commands: [],
       })),
     });

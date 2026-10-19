@@ -132,7 +132,7 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	if dynamic {
 		body = mergedUsageBody(cmd, node, own, itemPrefix)
 	} else {
-		body = staticUsageBody(node, own)
+		body = append(staticUsageBody(node, own), addedUsageFlags(cmd, node.flags, itemPrefix)...)
 	}
 	children := usageChildren(cmd, node.children)
 	block := !isRoot && (len(body) > 0 || len(children) > 0)
@@ -180,7 +180,6 @@ func staticUsageBody(node usageNode, own bool) []string {
 }
 
 func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string) []string {
-	local := cmd.LocalFlags()
 	var body []string
 	listed := map[string]bool{}
 	for _, alias := range node.aliases {
@@ -201,20 +200,27 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 	} else {
 		body = append(body, liveUsageArgs(cmd, prefix)...)
 	}
-	listed = map[string]bool{}
 	for _, flag := range node.flags {
-		listed[flag.key] = true
 		f := cmd.Flags().Lookup(flag.key)
 		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
 			body = append(body, flag.text)
 		}
 	}
-	local.VisitAll(func(f *pflag.Flag) {
+	return append(body, addedUsageFlags(cmd, node.flags, prefix)...)
+}
+
+func addedUsageFlags(cmd *cobra.Command, generated []usageItem, prefix string) []string {
+	listed := map[string]bool{}
+	for _, flag := range generated {
+		listed[flag.key] = true
+	}
+	var lines []string
+	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
 		if !f.Hidden && f.Name != "help" && !listed[f.Name] {
-			body = append(body, liveUsageFlag(f, prefix))
+			lines = append(lines, liveUsageFlag(f, prefix))
 		}
 	})
-	return body
+	return lines
 }
 
 func usageChildren(cmd *cobra.Command, declared []string) []*cobra.Command {
@@ -250,9 +256,9 @@ func writeUsageIndented(b *strings.Builder, text string, indent int) {
 	}
 }
 
-// MarkDynamic makes --usage render a generated command's runtime help, aliases,
-// args and added flags from its cobra definition, keeping generated lines for
-// the inputs it still has.
+// MarkDynamic makes --usage render a generated command's runtime help, aliases
+// and args from its cobra definition, keeping generated lines for the inputs it
+// still has.
 func MarkDynamic(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
