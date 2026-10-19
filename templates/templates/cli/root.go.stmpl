@@ -269,6 +269,7 @@ func NewRootCommand() (*cobra.Command, error) {
     }
     {{- end}}
 
+    usage.MarkGenerated(rootCmd)
     {{- if isCustomCommandsEnabled}}
     {{- addImport "internal/cli/custom" true}}
 
@@ -278,6 +279,11 @@ func NewRootCommand() (*cobra.Command, error) {
     // Cobra creates its default help and completion commands lazily inside Execute.
     rootCmd.InitDefaultHelpCmd()
     rootCmd.InitDefaultCompletionCmd()
+    for _, builtin := range rootCmd.Commands() {
+        if builtin.Name() == "help" || builtin.Name() == "completion" {
+            usage.MarkGenerated(builtin)
+        }
+    }
     {{- if hasCliIntents}}
     applyDeclaredCommandOrder(rootCmd)
     {{- end}}
@@ -1083,6 +1089,7 @@ func NewRootCommand() (*cobra.Command, error) {
     }
     {{- end}}
 
+    usage.MarkGenerated(rootCmd)
     {{- if isCustomCommandsEnabled}}
     {{- addImport "internal/cli/custom" true}}
 
@@ -1092,6 +1099,11 @@ func NewRootCommand() (*cobra.Command, error) {
     // Cobra creates its default help and completion commands lazily inside Execute.
     rootCmd.InitDefaultHelpCmd()
     rootCmd.InitDefaultCompletionCmd()
+    for _, builtin := range rootCmd.Commands() {
+        if builtin.Name() == "help" || builtin.Name() == "completion" {
+            usage.MarkGenerated(builtin)
+        }
+    }
     {{- if hasCliIntents}}
     applyDeclaredCommandOrder(rootCmd)
     {{- end}}

@@ -15,9 +15,6 @@ type usageItem struct {
 	text     string
 	settings bool
 	hidden   bool
-	short    string
-	value    bool
-	repeat   bool
 }
 
 type usageNode struct {
@@ -107,8 +104,9 @@ func EmitSchema(cmd *cobra.Command, w io.Writer) error {
 }
 
 const (
-	usageDynamicAnnotation = "speakeasy_usage_dynamic"
-	usageRootName          = "{{sanitizeCliName}}"
+	usageDynamicAnnotation   = "speakeasy_usage_dynamic"
+	usageGeneratedAnnotation = "speakeasy_usage_generated"
+	usageRootName            = "{{sanitizeCliName}}"
 )
 
 func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent int, own, tabled bool) {
@@ -117,6 +115,9 @@ func renderUsageNode(b *strings.Builder, cmd *cobra.Command, path string, indent
 	static := false
 	if tabled {
 		node, static = usageNodes[path]
+	}
+	if static && !isRoot && cmd.Annotations[usageGeneratedAnnotation] != "true" {
+		node, static = usageNode{children: node.children}, false
 	}
 	dynamic := !static || cmd.Annotations[usageDynamicAnnotation] == "true"
 	itemPrefix := "  "
@@ -204,13 +205,7 @@ func mergedUsageBody(cmd *cobra.Command, node usageNode, own bool, prefix string
 	for _, flag := range node.flags {
 		listed[flag.key] = true
 		f := cmd.Flags().Lookup(flag.key)
-		switch {
-		case f == nil || (!own && flag.settings):
-		case !usageFlagUnchanged(flag, f):
-			if !f.Hidden {
-				body = append(body, liveUsageFlag(f, prefix))
-			}
-		case flag.hidden || !f.Hidden:
+		if f != nil && (own || !flag.settings) && (flag.hidden || !f.Hidden) {
 			body = append(body, flag.text)
 		}
 	}
@@ -261,6 +256,18 @@ func MarkDynamic(cmd *cobra.Command) {
 		cmd.Annotations = map[string]string{}
 	}
 	cmd.Annotations[usageDynamicAnnotation] = "true"
+}
+
+// MarkGenerated records cmd and its subtree as the generated commands the
+// usageNodes table describes; a same-named command attached later renders live.
+func MarkGenerated(cmd *cobra.Command) {
+	if cmd.Annotations == nil {
+		cmd.Annotations = map[string]string{}
+	}
+	cmd.Annotations[usageGeneratedAnnotation] = "true"
+	for _, child := range cmd.Commands() {
+		MarkGenerated(child)
+	}
 }
 
 // Go's %q emits \a, \v, and \xNN escapes that KDL v2 does not define.
@@ -354,11 +361,6 @@ func kdlQuoteAt(s, contentPrefix string) string {
 	b.WriteString(contentPrefix)
 	b.WriteString(`"""`)
 	return b.String()
-}
-
-func usageFlagUnchanged(item usageItem, f *pflag.Flag) bool {
-	_, repeat := f.Value.(pflag.SliceValue)
-	return f.Shorthand == item.short && (f.NoOptDefVal == "") == item.value && repeat == item.repeat
 }
 
 func usageArgsUnchanged(generated []usageItem, live []usagePromptArg) bool {

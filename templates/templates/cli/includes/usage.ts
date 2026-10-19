@@ -1489,9 +1489,6 @@ interface UsageNodeItem {
   text: string;
   settings?: boolean;
   hidden?: boolean;
-  short?: string;
-  value?: boolean;
-  repeat?: boolean;
 }
 
 // Rendered at indent 0; the runtime re-indents each line by depth.
@@ -1525,9 +1522,6 @@ function collectUsageNodes(
       text: renderUsageFlag(flag, depth).join("\n"),
       settings: flag.settings,
       hidden: flag.hidden,
-      short: /^-([^-\s]+)\s/.exec(flag.spec)?.[1],
-      value: flag.spec.includes(" <"),
-      repeat: flag.spec.includes("...>"),
     })),
     children: (cmd.commands || []).map((child) => child.name),
   });
@@ -2405,9 +2399,6 @@ function goUsageNodeItems(items: UsageNodeItem[]): string {
       ];
       if (item.settings) fields.push("settings: true");
       if (item.hidden) fields.push("hidden: true");
-      if (item.short) fields.push(`short: ${goStringLiteral(item.short)}`);
-      if (item.value) fields.push("value: true");
-      if (item.repeat) fields.push("repeat: true");
       return `{${fields.join(", ")} }`;
     })
     .join(", ")} }`;
