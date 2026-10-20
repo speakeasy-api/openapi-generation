@@ -179,6 +179,7 @@ func (r *Register) RegisterType(ctx context.Context, typeDef *ast.TypeDef, isInp
 		case errors.Is(err, ast.ErrScopeMismatch):
 			// Special case for shared types that are used as errors they get moved to the errors scope
 			if typeDef.Scope == ast.ScopeShared && existing.Scope == ast.ScopeErrors || typeDef.Scope == ast.ScopeErrors && existing.Scope == ast.ScopeShared {
+				mergeBase64InputMode(existing, typeDef)
 				return existing
 			}
 			fallthrough

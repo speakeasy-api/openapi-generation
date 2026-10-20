@@ -300,7 +300,7 @@ function typeAcceptsBase64FileInput(
     return false;
   }
 
-  const uniqueID = typeDef.GetRegistrationID();
+  const uniqueID = typeDef.GetRegistrationIDOrType();
   if (visited[uniqueID]) {
     return false;
   }

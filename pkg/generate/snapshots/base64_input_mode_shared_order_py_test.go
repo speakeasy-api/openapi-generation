@@ -140,6 +140,7 @@ components:
 
 	genYaml := `python:
   packageName: base64order
+  flattenRequests: true
 `
 
 	expectedSnapshot := `--- src/base64order/models/gadget_2.py ---
