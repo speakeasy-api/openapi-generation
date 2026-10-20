@@ -1,0 +1,10 @@
+id: 1792514307-d5b3c1aa
+features:
+    - uploadStreams
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: keep base64 file input types on components shared by a response and a request body, including array items, map values and union members, regardless of operation order
+author: 2ynn
+date: "2026-10-20"

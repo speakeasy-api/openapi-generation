@@ -226,7 +226,7 @@
                 {{- range (sortBodyParamFields $op.Arguments.BodyFields) }}
                 {{- if not .IsAdditionalProperties }}
                 {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
-                  {{- if isBase64FileInputField .}}  # type: ignore[arg-type]
+                  {{- if acceptsBase64FileInput .}}  # type: ignore[arg-type]
                     {{/* BeforeValidator accepts Union[str, Base64FileInput] but BaseModel field typed as str */}}
                   {{- end}}
                 {{- else}}
@@ -242,7 +242,7 @@
             {{- range (sortBodyParamFields $op.Arguments.BodyFields) }}
             {{- if not .IsAdditionalProperties }}
             {{sanitizeFieldName .Name}}={{sanitizeFlattenedRequestParamAccessor .}},
-              {{- if isBase64FileInputField .}}  # type: ignore[arg-type]
+              {{- if acceptsBase64FileInput .}}  # type: ignore[arg-type]
                 {{/* BeforeValidator accepts Union[str, Base64FileInput] but BaseModel field typed as str */}}
               {{- end}}
             {{- else}}
