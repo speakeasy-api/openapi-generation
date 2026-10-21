@@ -3,6 +3,7 @@
 {{- $discriminator := .Local.Type.Discriminator -}}
 {{- $unionType := (getUnionTypeName $className $outputLocation) -}}
 {{- $isError := eq .Local.Type.Scope "errors" -}}
+{{- $omitPayload := typeHasSensitiveValues .Local.Type -}}
 {{- $dg := .Local.DocGroup -}}
 {{- $enumNames := "" -}}
 {{if $discriminator}}
@@ -94,7 +95,11 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) error {
 	   		{{- addImport "utils"}}
 			{{- addImport "fmt"}}
 			if err := utils.UnmarshalJSON(data, &{{$variableName}}, {{templateTypeAnnotations $mapping.Type true true}}, true, nil); err != nil {
+				{{- if $omitPayload}}
+				return fmt.Errorf("could not unmarshal into expected ({{$fieldName}} == {{sanitizeEnumValue $mapping.Name "string" | trimAll "\""}}) type {{sanitizeType $mapping.Type false $outputLocation}} within {{$className}}: %w", err)
+				{{- else}}
 				return fmt.Errorf("could not unmarshal `%s` into expected ({{$fieldName}} == {{sanitizeEnumValue $mapping.Name "string" | trimAll "\""}}) type {{sanitizeType $mapping.Type false $outputLocation}} within {{$className}}: %w", string(data), err)
+				{{- end}}
 			}
 
 			u.{{sanitizeFieldName $mapping.Type.Name}} = {{$variableName}}
@@ -117,8 +122,13 @@ func (u *{{$className}}) UnmarshalJSON(data []byte) error {
 	}
 	{{end}}{{end}}
 
+	{{- if $omitPayload}}
+	{{- addImport "errors"}}
+	return errors.New("could not unmarshal into any supported union types for {{$className}}")
+	{{- else}}
 	{{- addImport "fmt"}}
 	return fmt.Errorf("could not unmarshal `%s` into any supported union types for {{$className}}", string(data))
+	{{- end}}
 }
 
 func (u {{$className}}) MarshalJSON() ([]byte, error) {
