@@ -1,0 +1,10 @@
+id: 1792681505-f8024730
+features:
+    - flattening
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: report unknown keyword arguments on body-variant overloads and send path, query and header arguments passed with them
+author: 2ynn
+date: "2026-10-22"

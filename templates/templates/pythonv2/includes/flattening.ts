@@ -322,7 +322,6 @@ function templateBodyVariantNonBodyOverloadArguments(op: Operation): string {
       const paramName = sanitizeParameterName(field.Name);
       const paramType = sanitizeInputParameterType(field, {
         optional: isArgumentOptional(op, field),
-        nullable: false,
         iterableCollections: true,
       });
       return `${paramName}: ${paramType}${templateInputParamDefault(
@@ -488,6 +487,26 @@ registerTemplateFunc(
   templateBodyVariantImplBodyDict,
 );
 
+function escapePythonStringContent(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+}
+
+function bodyVariantRequestKwargEntry(field: FieldDef): string {
+  return `"${escapePythonStringContent(
+    bodyVariantRequestFieldKey(field),
+  )}": ${sanitizeParameterName(field.Name)}`;
+}
+
+// Matches the pydantic alias rendered by templateParamAnnotations.
+function bodyVariantRequestFieldKey(field: FieldDef): string {
+  for (const annotation of field.Annotations ?? []) {
+    if (annotation.Type().toString() === "param") {
+      return (annotation as ParamAnnotation).Name;
+    }
+  }
+  return sanitizeFieldName(field.Name);
+}
+
 function templateBodyVariantImplRequestAssignment(op: Operation): string {
   const requestField = op?.Request?.Field;
   if (!requestField) {
@@ -506,14 +525,7 @@ function templateBodyVariantImplRequestAssignment(op: Operation): string {
   const paramFields = getBodyVariantNonBodyParamFields(op);
   const lines: string[] = [];
   if (paramFields.length > 0) {
-    const paramEntries = paramFields.map((field) => {
-      const fieldName = field.Name.replaceAll("\\", "\\\\").replaceAll(
-        '"',
-        '\\"',
-      );
-      const paramName = sanitizeParameterName(field.Name);
-      return `"${fieldName}": ${paramName}`;
-    });
+    const paramEntries = paramFields.map(bodyVariantRequestKwargEntry);
 
     lines.push(
       `            _request_kwargs: dict[str, Any] = {${paramEntries.join(
@@ -527,12 +539,10 @@ function templateBodyVariantImplRequestAssignment(op: Operation): string {
 
   const bodyField = op?.Arguments?.BodyField;
   if (bodyField) {
-    const bodyFieldName = bodyField.Name.replaceAll("\\", "\\\\").replaceAll(
-      '"',
-      '\\"',
-    );
     lines.push(
-      `            _request_kwargs["${bodyFieldName}"] = _body_kwargs`,
+      `            _request_kwargs["${escapePythonStringContent(
+        bodyVariantRequestFieldKey(bodyField),
+      )}"] = _body_kwargs`,
     );
   } else {
     lines.push(`            _request_kwargs.update(_body_kwargs)`);
@@ -546,6 +556,39 @@ function templateBodyVariantImplRequestAssignment(op: Operation): string {
 registerTemplateFunc(
   "templateBodyVariantImplRequestAssignment",
   templateBodyVariantImplRequestAssignment,
+);
+
+// @ts-ignore
+function templateBodyVariantRequestOverrides(op: Operation): string {
+  const requestField = op?.Request?.Field;
+  if (!requestField || op.Request.IsRequestBody) {
+    return "";
+  }
+  const fields = getBodyVariantNonBodyParamFields(op).filter(
+    (field) => field.Name !== "security",
+  );
+  if (fields.length === 0) {
+    return "";
+  }
+
+  addImport("typing", "Any");
+  addImport("typing", "cast");
+  addUtilsImport();
+  const requestType = sanitizeType(requestField, {
+    optional: false,
+    nullable: false,
+  });
+  const entries = fields.map(bodyVariantRequestKwargEntry);
+  return [
+    `            _request_overrides: dict[str, Any] = {${entries.join(", ")}}`,
+    `            _request_overrides = {k: v for k, v in _request_overrides.items() if v is not UNSET and v is not None}`,
+    `            if _request_overrides:`,
+    `                request_ = cast(${requestType}, utils_.unmarshal({**request_.model_dump(by_alias=True), **_request_overrides}, ${requestType}))`,
+  ].join("\n");
+}
+registerTemplateFunc(
+  "templateBodyVariantRequestOverrides",
+  templateBodyVariantRequestOverrides,
 );
 
 // Returns the runtime expression used by SSE overload composition to choose
@@ -688,37 +731,26 @@ function templateBodyVariantExpandedOverloadArguments(
   for (const field of variant.fields) {
     const paramName = sanitizeParameterName(field.Name);
 
-    let paramType: string;
     if (streamType !== "" && field.Name === sseStreamFieldName(op)) {
       lines.push(
         templateStreamParameterOverloadType(field, op, paramName, streamType),
       );
       continue;
-    } else if (
-      variant.discriminatorField &&
-      field === variant.discriminatorField &&
-      variant.discriminatorValue
-    ) {
-      addImport("typing", "Literal");
-      paramType = `Literal["${variant.discriminatorValue}"]`;
-    } else {
-      paramType = sanitizeTypedDictType(
-        field,
-        { optional: false, nullable: false },
-        "",
-        null,
-        true,
-        false,
-      );
     }
+    const paramType = bodyVariantExpandedFieldType(variant, field, true);
 
     // Required fields: no default. Optional (`NotRequired[T]` in the
     // TypedDict): `= ...` matches the stub-style default Pylance + Sphinx
-    // expect for overloaded protocol declarations and prevents the
-    // overload from accidentally accepting `None` where the TypedDict
-    // would not.
-    const defaultClause = field.Optional ? " = ..." : "";
-    lines.push(`${paramName}: ${paramType}${defaultClause}`);
+    // expect for overloaded protocol declarations. Optional fields also
+    // accept `None`, which the runtime omits from the request body.
+    if (!field.Optional) {
+      lines.push(`${paramName}: ${paramType}`);
+    } else if (field.Nullable) {
+      lines.push(`${paramName}: ${paramType} = ...`);
+    } else {
+      addImport("typing", "Optional");
+      lines.push(`${paramName}: Optional[${paramType}] = ...`);
+    }
   }
 
   return lines.join(",\n        ");
@@ -726,6 +758,136 @@ function templateBodyVariantExpandedOverloadArguments(
 registerTemplateFunc(
   "templateBodyVariantExpandedOverloadArguments",
   templateBodyVariantExpandedOverloadArguments,
+);
+
+function bodyVariantExpandedFieldType(
+  variant: BodyVariant,
+  field: FieldDef,
+  addImports: boolean,
+): string {
+  if (
+    variant.discriminatorField &&
+    field === variant.discriminatorField &&
+    variant.discriminatorValue
+  ) {
+    addImports && addImport("typing", "Literal");
+    return `Literal["${variant.discriminatorValue}"]`;
+  }
+  return bodyVariantTypedDictFieldType(field, addImports);
+}
+
+function bodyVariantDiscriminatorNarrowed(
+  variant: BodyVariant,
+  field: FieldDef,
+): boolean {
+  if (
+    bodyVariantExpandedFieldType(variant, field, false) ===
+    bodyVariantTypedDictFieldType(field, false)
+  ) {
+    return false;
+  }
+  const enumDef = field.Type?.Enum;
+  return !(
+    field.Type?.Type?.toString() === "enum" &&
+    enumDef &&
+    !enumDef.Open &&
+    enumDef.Type?.Type?.toString() === "string" &&
+    getEnumFormat(field.Type) === "union" &&
+    enumDef.Values?.length === 1 &&
+    `${enumDef.Values[0]}` === variant.discriminatorValue
+  );
+}
+
+function bodyVariantTypedDictFieldType(
+  field: FieldDef,
+  addImports: boolean,
+): string {
+  return sanitizeTypedDictType(
+    field,
+    { optional: false },
+    "",
+    null,
+    addImports,
+    false,
+  );
+}
+
+function bodyVariantOverloadParamNames(
+  op: Operation,
+  sseTypes: SSEOverloadInfo | null,
+): Set<string> {
+  const names = new Set(
+    commonMethodParamLines(
+      op,
+      op.Extensions?.Pagination,
+      shouldAllowAcceptHeaderOverride(op, sseTypes),
+    ).map((line) => line.split(":")[0]),
+  );
+  names.add("self");
+  names.add("request");
+  for (const field of getBodyVariantNonBodyMethodFields(op)) {
+    names.add(sanitizeParameterName(field.Name));
+  }
+  return names;
+}
+
+type BodyVariantUnpackOverloadMode = "skip" | "emit" | "emitWithOverlapIgnored";
+
+// pyright rejects TypedDict keys that collide with a named parameter and
+// reports Unpack overloads covered by an earlier overload.
+function getBodyVariantUnpackOverloadModes(
+  op: Operation,
+  sseTypes: SSEOverloadInfo | null,
+): BodyVariantUnpackOverloadMode[] {
+  const paramNames = bodyVariantOverloadParamNames(op, sseTypes);
+  let emitted = false;
+
+  return getBodyVariants(op).map((variant) => {
+    const collides = variant.fields.some((field) =>
+      paramNames.has(sanitizeFieldName(field.Name)),
+    );
+    const narrowed = variant.fields.some(
+      (field) =>
+        (sseTypes && field.Name === sseStreamFieldName(op)) ||
+        sanitizeParameterName(field.Name) !== sanitizeFieldName(field.Name) ||
+        bodyVariantDiscriminatorNarrowed(variant, field),
+    );
+    if (collides || !narrowed) {
+      return "skip";
+    }
+    const mode = emitted ? "emitWithOverlapIgnored" : "emit";
+    emitted = true;
+    return mode;
+  });
+}
+
+// @ts-ignore
+function shouldEmitBodyVariantUnpackOverload(
+  op: Operation,
+  variantIdx: number,
+  sseTypes: SSEOverloadInfo | null,
+): boolean {
+  return getBodyVariantUnpackOverloadModes(op, sseTypes)[variantIdx] !== "skip";
+}
+registerTemplateFunc(
+  "shouldEmitBodyVariantUnpackOverload",
+  shouldEmitBodyVariantUnpackOverload,
+);
+
+// @ts-ignore
+function templateBodyVariantUnpackOverloadIgnore(
+  op: Operation,
+  variantIdx: number,
+  sseTypes: SSEOverloadInfo | null,
+): string {
+  return getBodyVariantUnpackOverloadModes(op, sseTypes)[variantIdx] ===
+    "emitWithOverlapIgnored"
+    ? "  # pyright: ignore[reportOverlappingOverload]"
+    : "";
+}
+registerTemplateFunc(
+  "templateBodyVariantUnpackOverloadIgnore",
+  templateBodyVariantUnpackOverloadIgnore,
 );
 
 // Returns the BodyVariant list for an operation whose body is a flattenable
