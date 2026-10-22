@@ -54,7 +54,12 @@ function Invoke-Installer {
     }
     $global:InstallerTestArchive = $Sandbox.Archive
     $global:InstallerTestDownloads = @()
-    & $InstallerPath *>&1 | ForEach-Object { "$_" }
+    $global:InstallerTestOutput = @()
+    & $InstallerPath *>&1 | ForEach-Object {
+        $line = "$_"
+        $global:InstallerTestOutput += $line
+        $line
+    }
 }
 
 function global:Invoke-RestMethod {
@@ -79,7 +84,6 @@ function global:Expand-Archive {
     }
 }
 
-$output = @()
 try {
     Write-Host '--- install succeeds and cleans up'
     $global:InstallerTestHoldExtractedBinary = $false
@@ -111,7 +115,7 @@ try {
 }
 catch {
     Write-Host '--- installer output'
-    $output | ForEach-Object { Write-Host "  $_" }
+    $global:InstallerTestOutput | ForEach-Object { Write-Host "  $_" }
     throw
 }
 finally {
