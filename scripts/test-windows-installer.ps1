@@ -67,6 +67,8 @@ function global:Invoke-WebRequest {
     Copy-Item -LiteralPath $global:InstallerTestArchive -Destination $OutFile
 }
 
+Import-Module Microsoft.PowerShell.Archive
+
 $global:InstallerTestOpenHandle = $null
 function global:Expand-Archive {
     param([string]$Path, [string]$DestinationPath, [switch]$Force)
@@ -77,6 +79,7 @@ function global:Expand-Archive {
     }
 }
 
+$output = @()
 try {
     Write-Host '--- install succeeds and cleans up'
     $global:InstallerTestHoldExtractedBinary = $false
@@ -105,6 +108,11 @@ try {
     else {
         Write-Host '--- skipping held-file cleanup case: open files can be deleted on this platform'
     }
+}
+catch {
+    Write-Host '--- installer output'
+    $output | ForEach-Object { Write-Host "  $_" }
+    throw
 }
 finally {
     if ($global:InstallerTestOpenHandle) {
