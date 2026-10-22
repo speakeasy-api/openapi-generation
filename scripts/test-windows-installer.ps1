@@ -84,6 +84,7 @@ function global:Expand-Archive {
     }
 }
 
+$global:InstallerTestOutput = @()
 try {
     Write-Host '--- install succeeds and cleans up'
     $global:InstallerTestHoldExtractedBinary = $false
