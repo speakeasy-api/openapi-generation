@@ -2198,6 +2198,16 @@ function templateCommonMethodParams(
   pagination: any,
   canOverrideAcceptHeader: boolean,
 ): string {
+  return commonMethodParamLines(op, pagination, canOverrideAcceptHeader)
+    .map((line) => `        ${line}`)
+    .join(",\n");
+}
+
+function commonMethodParamLines(
+  op: Operation,
+  pagination: any,
+  canOverrideAcceptHeader: boolean,
+): string[] {
   const lines: string[] = [];
   const requestExtrasEnabled = pythonMethodRequestExtrasEnabled();
   const timeoutArgumentName = pythonMethodTimeoutArgumentName();
@@ -2253,7 +2263,7 @@ function templateCommonMethodParams(
     lines.push("http_headers: Optional[Mapping[str, str]] = None");
   }
 
-  return lines.map((line) => `        ${line}`).join(",\n");
+  return lines;
 }
 registerTemplateFunc("templateCommonMethodParams", templateCommonMethodParams);
 

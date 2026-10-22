@@ -1690,6 +1690,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/pythonv2/tests/primary/testUpload.json":                                                             0o644,
 	"templates/pythonv2/tests/primary/test_async_hooks_additional.py":                                              0o644,
 	"templates/pythonv2/tests/primary/test_auth_additional.py":                                                     0o644,
+	"templates/pythonv2/tests/primary/test_body_variant_overloads.py":                                              0o644,
 	"templates/pythonv2/tests/primary/test_collections_additional.py":                                              0o644,
 	"templates/pythonv2/tests/primary/test_custom_client.py":                                                       0o644,
 	"templates/pythonv2/tests/primary/test_custom_code_additional.py":                                              0o644,

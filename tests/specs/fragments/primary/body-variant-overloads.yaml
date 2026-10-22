@@ -30,6 +30,20 @@ paths:
           required: false
           schema:
             type: boolean
+        - in: query
+          name: tags
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type:
+              - string
+              - "null"
         - in: header
           name: X-Trace-ID
           required: false
@@ -118,6 +132,175 @@ paths:
             text/event-stream:
               schema:
                 $ref: "#/components/schemas/BodyVariantStreamEvent"
+
+  /anything/body-variant-overloads/reserved-field-names:
+    post:
+      operationId: bodyVariantOverloadsReservedFieldNames
+      description: >-
+        Exercises a oneOf-of-classes request body whose variants declare properties
+        named like per-call method options (retries, timeout, server URL). Generated
+        method signatures must stay valid when body properties share names with
+        those options.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservedFieldNamesVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/subset-variants:
+    post:
+      operationId: bodyVariantOverloadsSubsetVariants
+      description: >-
+        Exercises a oneOf-of-classes request body where one variant's properties are a
+        subset of another's, and a property name that is renamed in method
+        signatures. Every variant must stay accepted by the generated method
+        signatures.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubsetVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/disjoint-field-types:
+    post:
+      operationId: bodyVariantOverloadsDisjointFieldTypes
+      description: >-
+        Exercises a oneOf-of-classes request body whose variants share the same
+        properties, including one renamed in method signatures, where a property
+        has a different scalar type in each variant. Every variant must stay
+        accepted by the generated method signatures.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisjointFieldTypesBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/renamed-params/{item_id}:
+    post:
+      operationId: bodyVariantOverloadsRenamedParams
+      description: >-
+        Exercises a oneOf-of-classes request body on an operation with a required
+        query parameter and query and header parameters whose method argument names
+        differ from their serialized names. The request object alone must satisfy
+        the required parameter, and parameter arguments passed alongside it must
+        reach the HTTP request.
+      tags:
+        - requestBodies
+      parameters:
+        - in: path
+          name: item_id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: count
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: q
+          required: false
+          x-speakeasy-name-override: search
+          schema:
+            type: string
+        - in: header
+          name: X-Request-Ref
+          required: false
+          x-speakeasy-name-override: requestRef
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/single-value-enum-discriminator:
+    post:
+      operationId: bodyVariantOverloadsSingleValueEnumDiscriminator
+      description: >-
+        Exercises a discriminated oneOf-of-classes request body whose discriminator
+        property is a single-value enum in each variant. Every generated overload
+        must remain reachable.
+      tags:
+        - requestBodies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SingleValueEnumDiscriminatorBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
 
 components:
   schemas:
@@ -303,3 +486,136 @@ components:
           type: string
       required:
         - data
+
+    ReservedFieldNamesVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/ReservedFieldNamesVariantA"
+        - $ref: "#/components/schemas/ReservedFieldNamesVariantB"
+
+    ReservedFieldNamesVariantA:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - alpha
+      properties:
+        alpha:
+          type: string
+        retries:
+          type: integer
+        timeout_ms:
+          type: integer
+
+    ReservedFieldNamesVariantB:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - beta
+      properties:
+        beta:
+          type: string
+        server_url:
+          type: string
+
+    SubsetVariantBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/SubsetVariantBase"
+        - $ref: "#/components/schemas/SubsetVariantExtended"
+
+    SubsetVariantBase:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
+    SubsetVariantExtended:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        extra:
+          type: string
+
+    DisjointFieldTypesBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/DisjointFieldTypesString"
+        - $ref: "#/components/schemas/DisjointFieldTypesInteger"
+
+    DisjointFieldTypesString:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+
+    DisjointFieldTypesInteger:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - name
+        - value
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        value:
+          type: integer
+
+    SingleValueEnumDiscriminatorBody:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: "#/components/schemas/SingleValueEnumDiscriminatorA"
+        - $ref: "#/components/schemas/SingleValueEnumDiscriminatorB"
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: "#/components/schemas/SingleValueEnumDiscriminatorA"
+          b: "#/components/schemas/SingleValueEnumDiscriminatorB"
+
+    SingleValueEnumDiscriminatorA:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - alpha
+      properties:
+        kind:
+          type: string
+          enum:
+            - a
+        alpha:
+          type: string
+
+    SingleValueEnumDiscriminatorB:
+      x-speakeasy-include: true
+      type: object
+      required:
+        - kind
+        - beta
+      properties:
+        kind:
+          type: string
+          enum:
+            - b
+        beta:
+          type: string
