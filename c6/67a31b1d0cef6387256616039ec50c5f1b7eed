@@ -1,0 +1,24 @@
+templates/templates/cli/auxiliary/internal/config/keyring.go.stmpl
+  s_979af1bd34a593::t_7bae9491964a74 174-175,180-182,184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c667a31b1d0cef6387256616039ec50c5f1b7eed",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_979af1bd34a593": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c3277567-67ff-4056-8024-d6dbe9fd139b",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
