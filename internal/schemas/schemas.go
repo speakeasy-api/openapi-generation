@@ -562,9 +562,7 @@ func (s *Schemas) handleArray(ctx context.Context, params Params, nullable bool)
 		Optional: nullable,
 		Nullable: nullable,
 	}
-	if s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultArrays) && schema.Default != nil {
-		fieldDef = s.handleFieldDefMetaData(ctx, fieldDef, nullable, schema)
-	}
+	fieldDef = s.handleContainerMetaData(ctx, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultArrays), features.FeatureConstArrays)
 
 	// We need to inherit the multipart annotations
 	if itemField != nil {
@@ -818,12 +816,12 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 
 				typeDef.Extensions = extensions
 
-				return &ast.FieldDef{
+				return s.handleContainerMetaData(ctx, &ast.FieldDef{
 					Name:     fieldName,
 					Type:     ast.NewType(typeDef, nil),
 					Optional: nullable,
 					Nullable: nullable,
-				}, nil
+				}, nullable, schema, false, features.FeatureConstObjects), nil
 			}
 		case recurseAdditionalProperties:
 			additionalPropertiesParams := params
@@ -891,12 +889,12 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 
 				typeDef.Extensions = extensions
 
-				return &ast.FieldDef{
+				return s.handleContainerMetaData(ctx, &ast.FieldDef{
 					Name:     fieldName,
 					Type:     ast.NewType(typeDef, nil),
 					Optional: nullable,
 					Nullable: nullable,
-				}, nil
+				}, nullable, schema, false, features.FeatureConstObjects), nil
 			}
 		}
 	}
@@ -1298,9 +1296,7 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 		Nullable: nullable,
 	}
 
-	if s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultObjects) && schema.Default != nil {
-		fieldDef = s.handleFieldDefMetaData(ctx, fieldDef, nullable, schema)
-	}
+	fieldDef = s.handleContainerMetaData(ctx, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultObjects), features.FeatureConstObjects)
 
 	s.setCachedType(fieldType, &params)
 
@@ -1660,6 +1656,17 @@ func (s *Schemas) checkDefaultConformsToType(ctx context.Context, field *ast.Fie
 			continue
 		}
 
+		if pair.label == "const" && (field.Type.IsContainer() || field.Type.Type == ast.DataTypeClass) {
+			if !constContainerValueSupported(v.Value, field.Type) {
+				logging.LogWarning(ctx, "validation warning", errors.NewValidationWarning(
+					fmt.Sprintf("const value %v is not supported for type %q, only arrays and maps of scalar values are supported, omitting const", v.Value, dataType),
+					schema.GetPropertyNode("Const"), nil,
+				))
+				*pair.val = nil
+			}
+			continue
+		}
+
 		if !defaultValueMatchesType(v.Value, dataType) {
 			// Before clearing, try to coerce string values to the target type.
 			// Many real-world specs have string defaults on numeric fields (e.g. default: "0.00").
@@ -1678,6 +1685,60 @@ func (s *Schemas) checkDefaultConformsToType(ctx context.Context, field *ast.Fie
 				*pair.val = nil
 			}
 		}
+	}
+}
+
+func constContainerValueSupported(val any, typ *ast.TypeDef) bool {
+	if typ.ContainsNull {
+		return false
+	}
+
+	switch typ.Type {
+	case ast.DataTypeArray, ast.DataTypeSet:
+		items, ok := val.([]any)
+		if !ok {
+			return false
+		}
+		for _, item := range items {
+			if !constScalarMatchesType(item, typ.ItemType) {
+				return false
+			}
+		}
+		return true
+	case ast.DataTypeMap:
+		entries, ok := val.(map[string]any)
+		if !ok {
+			return false
+		}
+		for _, item := range entries {
+			if !constScalarMatchesType(item, typ.ItemType) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func constScalarMatchesType(val any, itemType *ast.TypeDef) bool {
+	if val == nil || itemType == nil {
+		return false
+	}
+
+	switch itemType.Type {
+	case ast.DataTypeEnum:
+		return itemType.Enum != nil && slices.Contains(itemType.Enum.Values, fmt.Sprint(val))
+	case ast.DataTypeBoolean, ast.DataTypeInteger, ast.DataTypeInt32, ast.DataTypeBigInt,
+		ast.DataTypeNumber, ast.DataTypeFloat32, ast.DataTypeDecimal,
+		ast.DataTypeString, ast.DataTypeDate, ast.DataTypeDateTime, ast.DataTypeUUID, ast.DataTypeDuration:
+		dataType := itemType.Type
+		if itemType.Format == "string" {
+			dataType = ast.DataTypeString
+		}
+		return defaultValueMatchesType(val, dataType)
+	default:
+		return false
 	}
 }
 
@@ -2747,6 +2808,28 @@ func (s *Schemas) handleFieldDefMetaData(ctx context.Context, fieldDef *ast.Fiel
 
 	if fieldDef.Nullable {
 		s.Subsystem.Features.RecordFeatureUsage(ctx, features.FeatureNullables)
+	}
+
+	return fieldDef
+}
+
+func (s *Schemas) handleContainerMetaData(ctx context.Context, fieldDef *ast.FieldDef, nullable bool, schema *oas3.Schema, defaultSupported bool, constFeature features.Feature) *ast.FieldDef {
+	applyDefault := schema.Default != nil && defaultSupported
+	applyConst := schema.Const != nil && s.Subsystem.Features.IsFeatureSupported(ctx, constFeature)
+	if !applyDefault && !applyConst {
+		return fieldDef
+	}
+
+	fieldDef = s.handleFieldDefMetaData(ctx, fieldDef, nullable, schema)
+	if !applyDefault {
+		fieldDef.Default = nil
+		fieldDef.Optional = nullable
+	}
+	if !applyConst {
+		fieldDef.Const = nil
+	}
+	if fieldDef.Const != nil {
+		s.Subsystem.Features.RecordFeatureUsage(ctx, constFeature)
 	}
 
 	return fieldDef
