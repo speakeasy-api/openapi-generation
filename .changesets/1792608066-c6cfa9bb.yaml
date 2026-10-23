@@ -1,0 +1,10 @@
+id: 1792608066-c6cfa9bb
+features:
+    - envVarSecurityUsage
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: omit the empty-string default from os.getenv in usage snippets for optional security fields so an unset environment variable no longer sends an empty credential
+author: LukasParke
+date: "2026-10-21"
