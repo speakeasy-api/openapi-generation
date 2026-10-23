@@ -1,0 +1,29 @@
+internal/extensions/cli_commands_test.go
+  h_9630b74bdac540 2204,5677-5939
+internal/extensions/cli_commands.go
+  h_9630b74bdac540 277,279-313,418,502-504,574,590,601,603-612,623-624,912-915,920-921,976,1043-1044,1079-1081,1083-1085,1094-1095,1123-1125,1565-1566,1573-1694
+  s_ff2b62a0724bfb::t_280f72a8ae0521 274-276,278,602,619-622,1082,1086,1096,1695-1696
+internal/extensions/cli_commands_link.go
+  h_9630b74bdac540 137-350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f563cedf89a28be0a27a4a90aff891cc614079de",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_ff2b62a0724bfb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbb4b0e3-5207-4d25-a8fd-24434e2da332",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
