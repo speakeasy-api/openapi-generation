@@ -473,7 +473,7 @@ trackedFiles:
   jsr.json:
     last_write_checksum: sha1:a0d4bbf9b701ecb182d54503a9b0d41d7ac78a6e
   package.json:
-    last_write_checksum: sha1:8fb98aa89ca69d43dc011a68e7e3573d93c46175
+    last_write_checksum: sha1:01fd2ddc596aadda47f92d8632ad36a8cd603ffa
   src/__tests__/assertions.ts:
     last_write_checksum: sha1:f89afdb1173560667909423fa438e55e3f9ed1aa
   src/__tests__/conflicts.test.ts:

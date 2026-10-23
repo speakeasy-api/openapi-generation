@@ -676,7 +676,7 @@ trackedFiles:
   examples/resources/testing_x_wrapped_attribute/resource.tf:
     last_write_checksum: sha1:40d7f3658495fad3dc9e3e2ac5856266268b58b6
   go.mod:
-    last_write_checksum: sha1:3ebb9e002ec2a763d52b0fbc8a9e96d432531afc
+    last_write_checksum: sha1:b64c6423e28666f52d3409783d23e2845f2a1217
   internal/planmodifiers/boolplanmodifier/suppress_diff.go:
     last_write_checksum: sha1:3454bf0a277768b5d23ed4f7752666f9752effbb
   internal/planmodifiers/boolplanmodifier/use_config_value.go:
