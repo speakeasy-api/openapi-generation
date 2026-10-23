@@ -1,0 +1,11 @@
+id: 1792742734-f1c0ed3e
+features:
+    - core
+targets:
+    - javav2
+    - pythonv2
+type: fix
+bump: patch
+description: bump jackson-databind to 2.22.4 and the httpx2 floor to 2.12.0 to pick up upstream fixes for unbounded type-id caching and streaming decompression memory use
+author: AshGodfrey
+date: "2026-10-23"
