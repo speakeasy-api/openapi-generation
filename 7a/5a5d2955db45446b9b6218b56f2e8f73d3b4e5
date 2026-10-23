@@ -1,0 +1,14 @@
+templates/templates/cli/request_progress_test.go.stmpl
+  h_9630b74bdac540 126,178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a5a5d2955db45446b9b6218b56f2e8f73d3b4e5",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
