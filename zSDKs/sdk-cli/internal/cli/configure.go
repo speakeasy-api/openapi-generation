@@ -35,6 +35,7 @@ Priority: CLI flags > environment variables > OS keychain > config file`,
 	}
 	cmd.Annotations = map[string]string{"speakeasy_settings_command": "true"}
 	cmd.Flags().String("default-output-format", "", "Store the default output format without opening the form. Options: "+strings.Join(output.Formats, ", ")+". Pass an empty value to clear it.")
+	cmd.Flags().StringSlice("clear", nil, "Remove stored values without opening the form (repeatable or comma-separated). Options: username, password, bearer-auth, my-api-key, oauth2, app-id, secret, mobile-auth, client-id, client-secret, token-url, query-param1, deprecated-query-param1, deprecated-query-param2, lone-query-param, default-output-format")
 	parent.AddCommand(cmd)
 	return nil
 }
@@ -54,8 +55,9 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 
 	keychainStored := false
 
-	formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url", "query-param1", "deprecated-query-param1", "deprecated-query-param2", "lone-query-param", "default-output-format"))
-	if cmd.Flags().Changed("default-output-format") {
+	var cleared []string
+	formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url", "query-param1", "deprecated-query-param1", "deprecated-query-param2", "lone-query-param", "default-output-format", "clear"))
+	if cmd.Flags().Changed("default-output-format") || cmd.Flags().Changed("clear") {
 		formMode = interactive.FormOff
 	}
 	if formMode == interactive.FormOff {
@@ -158,6 +160,83 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 		}
 		if f := cmd.Flags().Lookup("lone-query-param"); f != nil && f.Changed {
 			cfg.Globals.LoneQueryParam = f.Value.String()
+			changed = true
+		}
+		if f := cmd.Flags().Lookup("clear"); f != nil && f.Changed {
+			names, _ := cmd.Flags().GetStringSlice("clear")
+			keys := make([]string, 0, len(names))
+			for _, name := range names {
+				switch key := strings.TrimPrefix(strings.TrimSpace(name), "--"); key {
+				case "username", "password", "bearer-auth", "my-api-key", "oauth2", "app-id", "secret", "mobile-auth", "client-id", "client-secret", "token-url", "query-param1", "deprecated-query-param1", "deprecated-query-param2", "lone-query-param", "default-output-format":
+					keys = append(keys, key)
+				default:
+					return flagutil.WithCLIValidation(fmt.Errorf("invalid --clear %q; options: username, password, bearer-auth, my-api-key, oauth2, app-id, secret, mobile-auth, client-id, client-secret, token-url, query-param1, deprecated-query-param1, deprecated-query-param2, lone-query-param, default-output-format", name))
+				}
+			}
+			for _, key := range keys {
+				switch key {
+				case "username":
+					cfg.Security.Username = ""
+				case "password":
+					if err := config.DeleteStoredSecret("password"); err != nil {
+						return fmt.Errorf("failed to remove --password from the OS keychain: %w", err)
+					}
+					cfg.Security.Password = ""
+				case "bearer-auth":
+					if err := config.DeleteStoredSecret("bearer-auth"); err != nil {
+						return fmt.Errorf("failed to remove --bearer-auth from the OS keychain: %w", err)
+					}
+					cfg.Security.BearerAuth = ""
+				case "my-api-key":
+					if err := config.DeleteStoredSecret("my-api-key"); err != nil {
+						return fmt.Errorf("failed to remove --my-api-key from the OS keychain: %w", err)
+					}
+					cfg.Security.MyApiKey = ""
+				case "oauth2":
+					if err := config.DeleteStoredSecret("oauth2"); err != nil {
+						return fmt.Errorf("failed to remove --oauth2 from the OS keychain: %w", err)
+					}
+					cfg.Security.Oauth2 = ""
+				case "app-id":
+					if err := config.DeleteStoredSecret("app-id"); err != nil {
+						return fmt.Errorf("failed to remove --app-id from the OS keychain: %w", err)
+					}
+					cfg.Security.AppId = ""
+				case "secret":
+					if err := config.DeleteStoredSecret("secret"); err != nil {
+						return fmt.Errorf("failed to remove --secret from the OS keychain: %w", err)
+					}
+					cfg.Security.Secret = ""
+				case "mobile-auth":
+					if err := config.DeleteStoredSecret("mobile-auth"); err != nil {
+						return fmt.Errorf("failed to remove --mobile-auth from the OS keychain: %w", err)
+					}
+					cfg.Security.MobileAuth = ""
+				case "client-id":
+					if err := config.DeleteStoredSecret("client-id"); err != nil {
+						return fmt.Errorf("failed to remove --client-id from the OS keychain: %w", err)
+					}
+					cfg.Security.ClientID = ""
+				case "client-secret":
+					if err := config.DeleteStoredSecret("client-secret"); err != nil {
+						return fmt.Errorf("failed to remove --client-secret from the OS keychain: %w", err)
+					}
+					cfg.Security.ClientSecret = ""
+				case "token-url":
+					cfg.Security.TokenURL = ""
+				case "query-param1":
+					cfg.Globals.QueryParam1 = ""
+				case "deprecated-query-param1":
+					cfg.Globals.DeprecatedQueryParam1 = ""
+				case "deprecated-query-param2":
+					cfg.Globals.DeprecatedQueryParam2 = ""
+				case "lone-query-param":
+					cfg.Globals.LoneQueryParam = ""
+				case "default-output-format":
+					cfg.OutputFormat = ""
+				}
+				cleared = append(cleared, key)
+			}
 			changed = true
 		}
 
@@ -377,6 +456,9 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 	out := cmd.OutOrStdout()
 	if keychainStored {
 		fmt.Fprintln(out, "Secret credentials stored in OS keychain")
+	}
+	for _, name := range cleared {
+		fmt.Fprintf(out, "Cleared --%s\n", name)
 	}
 	fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())
 	return nil
