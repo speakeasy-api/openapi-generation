@@ -1,0 +1,46 @@
+templates/templates/cli/includes/security.ts
+  h_9630b74bdac540 2390-2392,2400,2403,2754-2755,2763,2768-2769,2776-2779,2787,2790,2806
+  s_02fdb66acf023a::t_12207cde770cc6 2399,2401-2402,2404,2770-2775,2788-2789
+templates/templates/cli/tests/primary/configure_test.go.stmpl
+  h_9630b74bdac540 6,312-427
+  h_9630b74bdac540 428
+templates/templates/cli/auxiliary/internal/config/keyring.go.stmpl
+  h_9630b74bdac540 173-186
+templates/templates/cli/configure.go.stmpl
+  h_9630b74bdac540 13,57-58,176,181,185
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  h_9630b74bdac540 120-130
+templates/templates/cli/auth.go.stmpl
+  h_9630b74bdac540 7,161-165
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 63,69,235,285
+zSDKs/sdk-cli/internal/cli/auth.go
+  h_9630b74bdac540 7,460,462-463,466-467,470-471,474-475,478-479,482-483,486-487,490-491,494-495,503-505
+zSDKs/sdk-cli/internal/cli/configure.go
+  h_9630b74bdac540 51-52,169,172-179,183-184,188-189,193-194,198-199,203-204,208-209,213-214,218-219,223-224,240,457-458
+zSDKs/sdk-cli/internal/config/keyring.go
+  h_9630b74bdac540 173-186
+zSDKs/sdk-cli/internal/output/output.go
+  h_9630b74bdac540 120-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75db594412adf3afdad4d9d8a1e4df414f4ca3b9",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_02fdb66acf023a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "844db906-06af-4714-a935-0b36d4b62976",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
