@@ -1751,6 +1751,7 @@ def main():
 
     with SDK() as sdk:
         # Rest of application here...
+        pass
 
 
 # Or when using async:
@@ -1758,6 +1759,7 @@ async def amain():
 
     async with AsyncSDK() as sdk:
         # Rest of application here...
+        pass
 ```
 <!-- End Resource Management [resource-management] -->
 

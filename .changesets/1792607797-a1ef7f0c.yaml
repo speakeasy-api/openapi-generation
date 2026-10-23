@@ -1,0 +1,10 @@
+id: 1792607797-a1ef7f0c
+features:
+    - docs
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: make the Resource Management README snippet valid Python
+author: LukasParke
+date: "2026-10-21"
