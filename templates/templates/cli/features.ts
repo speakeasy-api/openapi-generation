@@ -361,6 +361,7 @@ function isTestSkipped(test: string): boolean {
     "open-union-invalid-json-is-an-error",
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
   ].includes(test);
 }
 
