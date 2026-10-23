@@ -150,7 +150,7 @@ const additionalDependencyMinimumVersions: Record<string, string> = {
   // defaults, so without these minimums a customer explicitly pinning an
   // older version would silently downgrade below the patched releases.
   "golang.org/x/crypto": "v0.57.0",
-  "golang.org/x/net": "v0.59.0",
+  "golang.org/x/net": "v0.60.0",
   "golang.org/x/text": "v0.42.0",
   "google.golang.org/grpc": "v1.83.2",
 };

@@ -296,7 +296,7 @@ function getTemplateDependencies() {
     },
     vitest: {
       name: "vitest",
-      version: "^4.1.11",
+      version: "^3.2.6",
       cpe: "cpe:2.3:a:vitest:vitest:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -304,7 +304,7 @@ function getTemplateDependencies() {
     },
     "@types/node": {
       name: "@types/node",
-      version: "^20.19.0",
+      version: "^18.19.3",
       cpe: "cpe:2.3:a:definitelytyped:types-node:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
