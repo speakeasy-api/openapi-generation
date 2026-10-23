@@ -1,3 +1,6 @@
+import os
+
+import httpx
 import pytest
 
 from openapi.models import shared
@@ -38,6 +41,53 @@ def test_global_security_fields_ordering():
     with pytest.raises(APIError) as exc_info:
         s.auth.global_security_basic_http()
     assert exc_info.value.status_code == 401
+
+
+def test_global_security_fields_ordering_keeps_empty_string_selected():
+    record_test("auth-global-security-fields-ordering")
+
+    captured = {}
+
+    def capture(request):
+        captured["headers"] = request.headers
+        return httpx.Response(401, request=request)
+
+    client = httpx.Client(transport=httpx.MockTransport(capture))
+    s = SDK(
+        server_url=HTTPBIN_URL,
+        security=shared.Security(access_token="", oauth2="global"),
+        client=client,
+    )
+    with pytest.raises(APIError):
+        s.auth.global_bearer_auth()
+
+    assert "authorization" not in captured["headers"]
+
+
+@pytest.mark.parametrize(
+    "security",
+    [shared.Security(), shared.Security(access_token="")],
+    ids=["omitted", "empty-string"],
+)
+def test_global_security_empty_ignores_env_vars(security):
+    record_test("auth-global-security-fields-ordering")
+
+    captured = {}
+
+    def capture(request):
+        captured["headers"] = request.headers
+        return httpx.Response(401, request=request)
+
+    os.environ["SPEAKEASY_ACCESS_TOKEN"] = "global"
+    try:
+        client = httpx.Client(transport=httpx.MockTransport(capture))
+        s = SDK(server_url=HTTPBIN_URL, security=security, client=client)
+        with pytest.raises(APIError):
+            s.auth.global_bearer_auth()
+    finally:
+        os.environ.pop("SPEAKEASY_ACCESS_TOKEN", None)
+
+    assert "authorization" not in captured["headers"]
 
 
 def test_hoisted_security_access_token_only():
