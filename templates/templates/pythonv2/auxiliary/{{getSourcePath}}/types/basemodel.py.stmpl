@@ -1,17 +1,62 @@
 from pydantic import ConfigDict, model_serializer
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic_core import core_schema
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union
+from pydantic_core import PydanticSerializationUnexpectedValue, core_schema
+from typing import TYPE_CHECKING, Any, Literal, Optional, Type, TypeVar, Union
 from typing_extensions import TypeAliasType, TypeAlias
 
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(
-        populate_by_name=True, arbitrary_types_allowed=True, protected_namespaces=()
+        populate_by_name=True, arbitrary_types_allowed=True, protected_namespaces=(){{if .Global.Config.PreserveUnknownFields}}, extra="allow"{{end}}
     )
 
+{{if .Global.Config.ModelSerializationMethods}}
+    def to_dict(
+        self,
+        *,
+        mode: Literal["json", "python"] = "python",
+        use_api_names: bool = True,
+        exclude_unset: bool = True,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        warnings: bool = True,
+    ) -> dict[str, Any]:
+        return self.model_dump(
+            mode=mode,
+            by_alias=use_api_names,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            warnings=warnings,
+            context={SERIALIZATION_METHODS_DUMP: True},
+        )
+
+    def to_json(
+        self,
+        *,
+        indent: Optional[int] = 2,
+        use_api_names: bool = True,
+        exclude_unset: bool = True,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        warnings: bool = True,
+    ) -> str:
+        return self.model_dump_json(
+            indent=indent,
+            by_alias=use_api_names,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            warnings=warnings,
+            context={SERIALIZATION_METHODS_DUMP: True},
+        )
+
+{{end}}
 
 class Unset(BaseModel):
+{{- if .Global.Config.PreserveUnknownFields}}
+    model_config = ConfigDict(extra="ignore")
+{{end}}
     @model_serializer(mode="plain")
     def serialize_model(self):
         return UNSET_SENTINEL
@@ -22,6 +67,9 @@ class Unset(BaseModel):
 
 UNSET = Unset()
 UNSET_SENTINEL = "~?~unset~?~sentinel~?~"
+{{- if .Global.Config.ModelSerializationMethods}}
+SERIALIZATION_METHODS_DUMP = "speakeasy_serialization_methods_dump"
+{{- end}}
 
 
 T = TypeVar("T")
@@ -33,6 +81,18 @@ else:
     OptionalNullable = TypeAliasType(
         "OptionalNullable", Union[Optional[Nullable[T]], Unset], type_params=(T,)
     )
+
+
+def _unrecognized_serialization(cls: Type[Union[str, int]]) -> core_schema.PlainSerializerFunctionSerSchema:
+    def serialize(value: Any, info: core_schema.SerializationInfo) -> Any:
+        # Decline other values so union serialization tries the remaining members
+        if not isinstance(value, cls):
+            raise PydanticSerializationUnexpectedValue(f"Expected {cls.__name__}")
+        if info.mode == "python":
+            return value
+        return str(value) if isinstance(value, str) else int(value)
+
+    return core_schema.plain_serializer_function_ser_schema(serialize, info_arg=True)
 
 
 class UnrecognizedStr(str):
@@ -54,6 +114,7 @@ class UnrecognizedStr(str):
                 core_schema.no_info_plain_validator_function(validate_lax)
             ]),
             strict_schema=core_schema.none_schema(),  # Always fails in strict mode
+            serialization=_unrecognized_serialization(cls),
         )
 
 
@@ -72,4 +133,5 @@ class UnrecognizedInt(int):
                 core_schema.no_info_plain_validator_function(validate_lax)
             ]),
             strict_schema=core_schema.none_schema(),  # Always fails in strict mode
+            serialization=_unrecognized_serialization(cls),
         )

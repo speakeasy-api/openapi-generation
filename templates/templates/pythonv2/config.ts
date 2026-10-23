@@ -325,6 +325,24 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    modelSerializationMethods: {
+      Name: "modelSerializationMethods",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Add to_dict and to_json convenience methods to models, using API field names and excluding unset fields by default.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    preserveUnknownFields: {
+      Name: "preserveUnknownFields",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Preserve undeclared fields in JSON request and response models, including nested models and schemas with additionalProperties: false. Explicitly typed additional properties retain their validation. Flattened operation arguments accept only declared fields, so undeclared top-level request fields require flattenRequests: false; nested models passed as arguments keep theirs. Disabled by default.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     responseSchemaValidation: {
       Name: "responseSchemaValidation",
       Required: false,
