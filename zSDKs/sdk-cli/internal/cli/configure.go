@@ -48,6 +48,8 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 	if dryRunLocalNoop(cmd, "configure changes local settings only (no API request); nothing was changed.") {
 		return nil
 	}
+	defer output.PinOutputFormat(cmd)()
+	machineOutput := output.IsMachineMode(cmd)
 	cfg := config.GetConfig()
 	if cfg == nil {
 		cfg = &config.Config{}
@@ -453,6 +455,14 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
+	if machineOutput {
+		result := map[string]any{"config_file": config.GetConfigPath()}
+		result["keychain_stored"] = keychainStored
+		if len(cleared) > 0 {
+			result["cleared"] = cleared
+		}
+		return output.LocalResult(cmd, result)
+	}
 	out := cmd.OutOrStdout()
 	if keychainStored {
 		fmt.Fprintln(out, "Secret credentials stored in OS keychain")

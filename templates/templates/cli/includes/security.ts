@@ -2387,14 +2387,21 @@ function templateAuthLogoutClear(): string {
 
   const acc = securityConfigAccessor();
   const lines: string[] = [];
+  if (fields.some((f) => f.isSecret)) {
+    lines.push(`var keychainErrs []error`);
+  }
 
   for (const field of fields) {
     const fieldName = caser().ToPascal(field.field.Name);
     const cfgField = `${acc}${fieldName}`;
 
     if (field.isSecret) {
-      lines.push(`if config.KeyringAvailable() {`);
-      lines.push(`    _ = config.DeleteKeyringValue("${field.flagName}")`);
+      lines.push(
+        `if err := config.DeleteStoredSecret("${field.flagName}"); err != nil {`,
+      );
+      lines.push(
+        `    keychainErrs = append(keychainErrs, fmt.Errorf("--${field.flagName}: %w", err))`,
+      );
       lines.push(`}`);
     }
     if (field.isArray) {
