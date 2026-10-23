@@ -1,0 +1,20 @@
+templates/templates/cli/includes/intents.ts
+  h_9630b74bdac540 289
+templates/templates/cli/auxiliary/internal/flagutil/preset.go.stmpl
+  h_9630b74bdac540 9,371,373,376-403,406,415,425,429,431
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255
+zSDKs/sdk-cli/internal/flagutil/preset.go
+  h_9630b74bdac540 11,373,375,378-405,408,417,427,431,433
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4456a4f597c4dc6a02ea13c4493ee2dfb2a7756e",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
