@@ -1,0 +1,26 @@
+templates/templates/cli/auth.go.stmpl
+  s_f04de23dc9770b::t_087a41a9c93d7e 7,127-134,161-167
+templates/templates/cli/configure.go.stmpl
+  s_f04de23dc9770b::t_07f848a51e3bf0 174-185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3b819b85b6e7800bc744526b00c558886fcfd63",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_f04de23dc9770b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c92a1a82-5d5c-4ad5-ba70-27e0ea3dbc9c",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
