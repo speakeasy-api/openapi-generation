@@ -121,7 +121,57 @@ actions:
               type: bool
               defaultFrom: schema
               summary: Stream events as they arrive
+        outcomeGetInteraction:
+          output:
+            outcome:
+              statePointer: $.status
+              errorPointer: $.errors
+              states:
+                queued: pending
+                in_progress: pending
+                completed: success
+                incomplete: success
+                failed: failure
+                cancelled: failure
+        outcomeListInteractions:
+          output:
+            outcome:
+              statePointer: $.status
+              errorPointer: $.errors
+              states:
+                queued: pending
+                in_progress: pending
+                completed: success
+                incomplete: success
+                failed: failure
+                cancelled: failure
       commands:
+        outcome-check:
+          category: Create
+          summary: Fetch an interaction and fail when it ended in a failure state (output.outcome inherited from the operation entry)
+          op: outcomeGetInteraction
+        outcome-say:
+          category: Create
+          summary: Stream an interaction and fail when it completes in a failure state
+          op: outcomeStream
+          args:
+            prompt:
+              to: $.input
+              variadic: true
+              summary: Prompt text
+          output:
+            stream:
+              select: $.data.content
+            outcome:
+              streamStatePointer: $.data.interaction.status
+              streamErrorPointer: $.data.interaction.errors
+              states:
+                queued: pending
+                in_progress: pending
+                completed: success
+                incomplete: success
+                failed: failure
+                cancelled: failure
         create-widget:
           op: cliCatalogOptionsPost
           preset:
@@ -553,3 +603,132 @@ actions:
                               type: string
                             cursor:
                               type: string
+
+- target: $.paths
+  update:
+    /outcome/interactions/{id}:
+      get:
+        operationId: outcomeGetInteraction
+        tags: [outcome]
+        description: Discrete lookup whose success response carries the interaction's terminal status, so the CLI can classify a failure reported with HTTP 200 (output.outcome).
+        servers:
+        - url: http://localhost:35456
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          "200":
+            description: The interaction.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/outcomeInteraction'
+    /outcome/interactions:
+      get:
+        operationId: outcomeListInteractions
+        tags: [outcome]
+        description: Cursor-paginated listing whose every page carries the batch's terminal status, so output.outcome classifies each page fetched with --all and not only the first response.
+        servers:
+        - url: http://localhost:35456
+        parameters:
+          - name: cursor
+            in: query
+            schema:
+              type: string
+        x-speakeasy-pagination:
+          type: cursor
+          inputs:
+            - name: cursor
+              in: parameters
+              type: cursor
+          outputs:
+            nextCursor: $.next_cursor
+        responses:
+          "200":
+            description: One page of interactions.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/outcomeInteractionPage'
+    /outcome/stream:
+      post:
+        operationId: outcomeStream
+        tags: [outcome]
+        description: SSE stream whose completion event carries the interaction's terminal status (output.outcome on streamed events).
+        servers:
+        - url: http://localhost:35456
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [input]
+                properties:
+                  input:
+                    type: string
+        responses:
+          "200":
+            description: Streamed interaction events.
+            content:
+              text/event-stream:
+                x-speakeasy-sse-sentinel: "[DONE]"
+                schema:
+                  $ref: '#/components/schemas/outcomeStreamEvent'
+- target: $.components.schemas
+  update:
+    outcomeInteraction:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [queued, in_progress, completed, incomplete, failed, cancelled]
+        output_text:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/outcomeError'
+    outcomeError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    outcomeInteractionPage:
+      type: object
+      required: [status, items]
+      properties:
+        status:
+          type: string
+          enum: [queued, in_progress, completed, incomplete, failed, cancelled]
+        next_cursor:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/outcomeInteraction'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/outcomeError'
+    outcomeStreamEvent:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            event_type:
+              type: string
+            content:
+              type: string
+            interaction:
+              $ref: '#/components/schemas/outcomeInteraction'

@@ -73,6 +73,11 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	}
 
 	projector := newStreamProjector(cmd)
+	outcomeCfg := activeOutcome(cmd)
+	if outcomeCfg != nil && outcomeCfg.StreamStatePointer == "" {
+		outcomeCfg = nil
+	}
+	var streamFailure *outcomeError
 
 	// Projected output already written must end with its terminating
 	// newline before any error is rendered. The primary error keeps the
@@ -144,9 +149,12 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 			}
 		}
 
-		if raw != nil {
-			item = wireStreamItem(item, raw, format == "table" && jqExpr == "")
+		var frame map[string]interface{}
+		if outcomeCfg != nil && streamFailure == nil {
+			frame, _ = decodeStreamFrame(raw)
+			streamFailure = outcomeStreamFailure(cmd, outcomeCfg, item, frame)
 		}
+		item = wireStreamItem(item, raw, frame, format == "table" && jqExpr == "")
 
 		if projector != nil {
 			if err := projector.emit(out, item); err != nil {
@@ -165,6 +173,9 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 		if len(errResults) > 0 && !errResults[0].IsNil() {
 			return renderAfterFinish(errResults[0].Interface().(error))
 		}
+	}
+	if streamFailure != nil {
+		return renderAfterFinish(streamFailure)
 	}
 
 	if projector != nil {
@@ -187,7 +198,9 @@ func (w wireEvent) MarshalJSON() ([]byte, error) {
 }
 
 // Re-encoding the decoded model drops undeclared fields and zero-fills absent ones.
-func wireStreamItem(item interface{}, raw []byte, table bool) interface{} {
+// frame is the wire object when the caller already decoded raw; nil decodes
+// it here, and only once the item is known to need it.
+func wireStreamItem(item interface{}, raw []byte, frame map[string]interface{}, table bool) interface{} {
 	keys, ok := envelopeKeys(reflect.ValueOf(item))
 	if len(raw) == 0 || !ok {
 		return item
@@ -197,10 +210,11 @@ func wireStreamItem(item interface{}, raw []byte, table bool) interface{} {
 	if err == nil && table {
 		return item
 	}
-	frame, err := decodeWithNumbers(raw)
-	wire, isObject := frame.(map[string]interface{})
-	if err != nil || !isObject {
-		return item
+	wire := frame
+	if wire == nil {
+		if wire, ok = decodeStreamFrame(raw); !ok {
+			return item
+		}
 	}
 	for name := range wire {
 		if keys != nil && !keys[name] {
@@ -212,6 +226,18 @@ func wireStreamItem(item interface{}, raw []byte, table bool) interface{} {
 		return item
 	}
 	return wireEvent{data: data}
+}
+
+func decodeStreamFrame(raw []byte) (map[string]interface{}, bool) {
+	if len(raw) == 0 {
+		return nil, false
+	}
+	frame, err := decodeWithNumbers(raw)
+	wire, isObject := frame.(map[string]interface{})
+	if err != nil || !isObject {
+		return nil, false
+	}
+	return wire, true
 }
 
 // nil keys keep the whole frame: a union event that matched no member.
@@ -312,7 +338,7 @@ func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 		return data, true
 	}
 	if isUnionStruct(derefValue(reflect.ValueOf(item)).Type()) {
-		data, err := json.Marshal(wireStreamItem(item, raw, false))
+		data, err := json.Marshal(wireStreamItem(item, raw, nil, false))
 		return data, err == nil
 	}
 	var frame map[string]json.RawMessage
