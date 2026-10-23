@@ -288,7 +288,7 @@ function getTemplateDependencies() {
     },
     express: {
       name: "express",
-      version: "^4.21.2",
+      version: "^4.22.3",
       cpe: "cpe:2.3:a:expressjs:express:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -296,7 +296,7 @@ function getTemplateDependencies() {
     },
     vitest: {
       name: "vitest",
-      version: "^3.2.6",
+      version: "^4.1.11",
       cpe: "cpe:2.3:a:vitest:vitest:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -304,7 +304,7 @@ function getTemplateDependencies() {
     },
     "@types/node": {
       name: "@types/node",
-      version: "^18.19.3",
+      version: "^20.19.0",
       cpe: "cpe:2.3:a:definitelytyped:types-node:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",

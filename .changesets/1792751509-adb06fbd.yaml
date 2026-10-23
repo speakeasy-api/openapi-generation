@@ -1,0 +1,12 @@
+id: 1792751509-adb06fbd
+features:
+    - core
+targets:
+    - terraform
+    - typescriptv2
+    - mcp-typescript
+type: fix
+bump: patch
+description: raise the golang.org/x/net floor to v0.60.0, move vitest to 4.1.11 with @types/node 20 to match its Node floor, bump the express floors, and lift the MCP server npm overrides so generated projects resolve patched hono, fast-uri, js-yaml, ip-address, brace-expansion, proxy-addr and qs
+author: AshGodfrey
+date: "2026-10-23"

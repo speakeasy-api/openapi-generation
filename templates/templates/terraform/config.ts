@@ -64,7 +64,7 @@ function getTemplateDependencies() {
     },
     "golang.org/x/net": {
       name: "golang.org/x/net",
-      version: "v0.59.0",
+      version: "v0.60.0",
       cpe: "cpe:2.3:a:golang:networking:*:*:*:*:*:go:*:*",
       ecosystem: "Go",
       category: "runtime",
