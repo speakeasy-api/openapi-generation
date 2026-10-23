@@ -1,0 +1,10 @@
+id: 1792407801-8bc109ac
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: stream structured events on stdout under agent mode and saved machine output formats instead of projecting plain text and dropping the stream metadata
+author: AshGodfrey
+date: "2026-10-19"

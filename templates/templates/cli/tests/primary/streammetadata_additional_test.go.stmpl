@@ -44,6 +44,7 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 				{"default", nil, ""},
 				{"configured pretty", nil, "pretty"},
 				{"configured json", nil, "json"},
+				{"configured toon", nil, "toon"},
 				{"json", []string{"--output-format", "json"}, ""},
 				{"pretty", []string{"--output-format", "pretty"}, ""},
 				{"jq", []string{"--jq", ".", "--stream=true"}, ""},
@@ -65,7 +66,7 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 					args = append(args, mode.args...)
 					require.NoError(t, cli.ExecuteRoot(context.Background(), root, args), h.GetStderr())
 					switch mode.name {
-					case "default", "configured pretty", "configured json", "agent":
+					case "default", "configured pretty", "configured json", "configured toon":
 						assert.Equal(t, "Hello\n", h.GetStdout())
 					case "json", "jq":
 						assertMetadataJSONEvents(t, h.GetStdout(),
@@ -73,7 +74,7 @@ func TestStreamMetadataGeneratedCommands(t *testing.T) {
 							`{"data":{"content":"Hello"}}`,
 							`{"data":{"resource_id":"last"}}`,
 						)
-					case "pretty":
+					case "pretty", "agent":
 						assert.Equal(t, 3, strings.Count(h.GetStdout(), "data:"))
 						assert.Regexp(t, `resource_id:\s+first\b`, h.GetStdout())
 						assert.Regexp(t, `content:\s+Hello\b`, h.GetStdout())

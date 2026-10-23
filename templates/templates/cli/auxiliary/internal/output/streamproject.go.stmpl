@@ -48,7 +48,7 @@ func newStreamProjector(cmd *cobra.Command) *streamProjector {
 	if flagutil.FlagChanged(cmd, "jq") {
 		return nil
 	}
-	if outputFormatExplicit(cmd) {
+	if outputFormatExplicit(cmd) || IsAgentMode() {
 		return nil
 	}
 	// --raw-response asks for complete events; the declared projection must
