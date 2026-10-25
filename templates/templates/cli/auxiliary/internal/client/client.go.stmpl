@@ -99,19 +99,38 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{temp
     {{- end}}
 }
 
-// SameOriginRedirect refuses redirects to another scheme or host: net/http
-// forwards custom credential headers (API keys) and replays 307/308 bodies
-// across origins.
+// SameOriginRedirect refuses redirects to another scheme or host, and
+// redirects that change the request method: net/http forwards custom
+// credential headers (API keys) across origins and turns a POST answered with
+// 301/302/303 into a bodiless GET.
 func SameOriginRedirect(req *http.Request, via []*http.Request) error {
     if len(via) >= 10 {
         return fmt.Errorf("stopped after 10 redirects")
     }
     from := via[0].URL
     if urlOrigin(req.URL) != urlOrigin(from) {
-        return fmt.Errorf("refusing to follow a redirect from %s://%s to %s://%s: credentials are only sent to the configured server", from.Scheme, from.Host, req.URL.Scheme, req.URL.Host)
+        return &RedirectRefusedError{message: fmt.Sprintf("refusing to follow a redirect from %s://%s to %s://%s: credentials are only sent to the configured server", from.Scheme, from.Host, req.URL.Scheme, req.URL.Host)}
+    }
+    if prev := via[len(via)-1]; req.Method != prev.Method {
+        return &RedirectRefusedError{message: fmt.Sprintf("refusing to follow a redirect to %s that would send %s instead of %s: the server tried to convert the request", req.URL.Path, req.Method, prev.Method)}
     }
     return nil
 }
+
+// RedirectRefusedError is returned for a redirect the CLI declined to follow.
+type RedirectRefusedError struct {
+    message string
+}
+
+func (e *RedirectRefusedError) Error() string { return e.message }
+
+func (e *RedirectRefusedError) CLIRedirectRefused() bool { return true }
+
+func (e *RedirectRefusedError) CLIHints() []string {
+    return []string{"Point --server-url at the endpoint the server redirects to, so the request needs no redirect"}
+}
+
+func (e *RedirectRefusedError) CLIOmitTypeHints() bool { return true }
 
 func urlOrigin(u *url.URL) string {
     scheme := strings.ToLower(u.Scheme)

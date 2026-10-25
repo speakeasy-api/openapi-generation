@@ -224,9 +224,9 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:ad27d6ccfed17dd213951f981030b010ababbf79
   internal/client/client.go:
-    last_write_checksum: sha1:461c08574c9a79efebb38c51b5ba8fbb407dc9c8
+    last_write_checksum: sha1:9d81fb507f12e5d09b0e993fa9f38451591fc7b6
   internal/client/client_test.go:
-    last_write_checksum: sha1:b34318212a7159e4d235f846c9f86c7f2a93b4c3
+    last_write_checksum: sha1:a5d768bff17445b98030feb537f130c54ca1071a
   internal/client/diagnostics.go:
     last_write_checksum: sha1:30b37c632ff875e00e6bce57caa64050dff89fcf
   internal/clierrors/clierrors.go:
@@ -274,7 +274,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
-    last_write_checksum: sha1:11ad9caaff14fc584399c2f88b328d9cc74f92a9
+    last_write_checksum: sha1:2d17c649096fbd0384e2a8be2e1e5efe189ed40d
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:

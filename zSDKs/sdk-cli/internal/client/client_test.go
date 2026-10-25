@@ -3,14 +3,20 @@
 package client
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
+
+	"openapi/internal/output"
 )
 
 func TestSameOriginRedirect(t *testing.T) {
-	var leakedKey string
+	var leakedKey, landedMethod, landedBody string
 	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		leakedKey = r.Header.Get("x-api-key")
 		w.WriteHeader(http.StatusOK)
@@ -22,8 +28,12 @@ func TestSameOriginRedirect(t *testing.T) {
 		case "/cross":
 			http.Redirect(w, r, other.URL+"/landed", http.StatusTemporaryRedirect)
 		case "/same":
-			http.Redirect(w, r, "/landed", http.StatusFound)
+			http.Redirect(w, r, "/landed", http.StatusTemporaryRedirect)
+		case "/convert":
+			http.Redirect(w, r, "/landed", http.StatusSeeOther)
 		default:
+			body, _ := io.ReadAll(r.Body)
+			landedMethod, landedBody = r.Method, string(body)
 			w.WriteHeader(http.StatusOK)
 		}
 	}))
@@ -47,6 +57,18 @@ func TestSameOriginRedirect(t *testing.T) {
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("same-origin redirect status = %d", res.StatusCode)
 	}
+	if landedMethod != http.MethodPost || landedBody != "{}" {
+		t.Fatalf("307 redirect landed as %s with body %q", landedMethod, landedBody)
+	}
+
+	landedMethod = ""
+	_, err = do("/convert")
+	if err == nil || !strings.Contains(err.Error(), "the server tried to convert the request") {
+		t.Fatalf("method-changing redirect error = %v", err)
+	}
+	if landedMethod != "" {
+		t.Fatalf("method-changing redirect reached the target as %s", landedMethod)
+	}
 
 	_, err = do("/cross")
 	if err == nil || !strings.Contains(err.Error(), "refusing to follow a redirect") {
@@ -54,6 +76,20 @@ func TestSameOriginRedirect(t *testing.T) {
 	}
 	if leakedKey != "" {
 		t.Fatalf("credential header reached the redirect target: %q", leakedKey)
+	}
+	var refused *RedirectRefusedError
+	if !errors.As(err, &refused) {
+		t.Fatalf("cross-origin redirect error is %T, want *RedirectRefusedError", err)
+	}
+
+	c := output.Classify(&cobra.Command{}, err)
+	if c.Type != output.ErrorTypeProtocol {
+		t.Fatalf("refused redirect classified as %s", c.Type)
+	}
+	for _, hint := range c.Hints {
+		if strings.Contains(hint, "network connectivity") {
+			t.Fatalf("refused redirect carries connection hints: %v", c.Hints)
+		}
 	}
 }
 
