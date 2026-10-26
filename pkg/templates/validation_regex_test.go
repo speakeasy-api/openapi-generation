@@ -9,20 +9,22 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/executor"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
+	config "github.com/speakeasy-api/sdk-gen-config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// RegExp.source emits "/" as the Unicode escape below, which the CLI rewrites before compiling the pattern with Go's regexp.
-const escapedSlash = "\x5cu002f"
+// goja's RegExp.source emits an unescaped "/" as the Unicode escape below, which the CLI rewrites before compiling the pattern with Go's regexp.
+const escapedSlash = `\u002f`
 
 type validationField struct {
-	DefaultValue       any
-	ValidationRegex    *string
-	ValidationExamples struct {
+	config.SDKGenConfigField `mapstructure:",squash"`
+	ValidationExamples       struct {
 		Valid   []string
 		Invalid []string
 	}
+	// Declared on some fields in config.ts but read by neither the generator nor the CLI.
+	ValidationFunc any
 }
 
 func TestValidationRegexes(t *testing.T) {
@@ -80,7 +82,9 @@ func decodeValidationFields(t *testing.T, rawFields any) map[string]validationFi
 		}
 
 		var field validationField
-		require.NoError(t, mapstructure.Decode(rawField, &field), "field %q", key)
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{ErrorUnused: true, Result: &field})
+		require.NoError(t, err)
+		require.NoError(t, decoder.Decode(rawField), "field %q", key)
 		fields[key] = field
 	}
 
@@ -100,7 +104,7 @@ func checkValidationFields(t *testing.T, fields map[string]validationField, newS
 		require.NoError(t, err, "field %q (newSDK=%v)", key, newSDK)
 
 		if field.DefaultValue != nil {
-			defaultValue := fmt.Sprintf("%v", field.DefaultValue)
+			defaultValue := fmt.Sprintf("%v", *field.DefaultValue)
 			assert.True(t, regex.MatchString(defaultValue),
 				"field %q (newSDK=%v): default %q does not match %s", key, newSDK, defaultValue, pattern)
 		}

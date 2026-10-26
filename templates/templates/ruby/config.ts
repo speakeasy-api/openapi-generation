@@ -242,7 +242,7 @@ function getConfigFields(
       ValidationMessage:
         "Module names should be PascalCase and have no special chars",
       ValidationExamples: {
-        valid: ["OpenApiSdk", "AcmeRubySDK", "OpenAPI", "SDK", "Acme2"],
+        valid: ["AcmeRubySDK", "OpenAPI", "SDK", "Acme2"],
         invalid: [
           "openApiSdk",
           "Open_Api",
