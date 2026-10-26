@@ -184,6 +184,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     description: {
       Name: "description",
@@ -199,6 +203,10 @@ function getConfigFields(
         "The NuGet package ID, also used as the root namespace. https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-namespaces.",
       ValidationRegex: /^[\w\d._]+$/.source,
       ValidationMessage: "Letters, numbers, or ._ only",
+      ValidationExamples: {
+        valid: ["Acme", "Acme.Sdk", "Acme.Petstore.Client", "Acme_Sdk"],
+        invalid: ["", "Acme-Sdk", "Acme Sdk", "Acme/Sdk"],
+      },
     },
     sourceDirectory: {
       Name: "sourceDirectory",
@@ -207,6 +215,10 @@ function getConfigFields(
       Description: 'The name of the source directory. Default is "src"',
       ValidationRegex: /^\w*$/.source,
       ValidationMessage: "Letters, numbers and underscores only",
+      ValidationExamples: {
+        valid: ["", "src", "Source", "src_v2"],
+        invalid: ["src/Acme", "src-v2", "./src"],
+      },
     },
     disableNamespacePascalCasingApr2024: {
       Name: "disableNamespacePascalCasingApr2024",
@@ -225,6 +237,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     author: {
       Name: "author",
@@ -408,6 +424,10 @@ function getConfigFields(
         "The name of the default exception that is thrown when an API error occurs.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     httpClientPrefix: {
       Name: "httpClientPrefix",
@@ -417,6 +437,10 @@ function getConfigFields(
         "The prefix used to name the HTTP client interface: 'I<Prefix>HttpClient'. If left empty, the SDK name will be used instead.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["", "Speakeasy", "Acme"],
+        invalid: ["Acme_", "Acme-Http", "Acme Http"],
+      },
     },
     enableCancellationToken: {
       Name: "enableCancellationToken",

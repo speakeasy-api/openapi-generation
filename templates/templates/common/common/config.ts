@@ -10,6 +10,10 @@ function getCommonConfigFields(newSDK: boolean): SDKGenConfigFields {
         "The suffix to add to models with writeOnly fields that are created as input models",
       ValidationRegex: /^[\w\d.\-_]*$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["input", "Input", "request_input", ""],
+        invalid: ["input v2", "input/v2", "input!"],
+      },
     },
     outputModelSuffix: {
       Name: "outputModelSuffix",
@@ -19,6 +23,10 @@ function getCommonConfigFields(newSDK: boolean): SDKGenConfigFields {
         "The suffix to add to models with writeOnly fields that are created as input models",
       ValidationRegex: /^[\w\d.\-_]*$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["output", "Output", "request_output", ""],
+        invalid: ["output v2", "output/v2", "output!"],
+      },
     },
     customCasings: {
       Name: "customCasings",

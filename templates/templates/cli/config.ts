@@ -316,6 +316,18 @@ function getConfigFields(
         "The go module package name. https://go.dev/ref/mod#module-path.",
       ValidationRegex: /^[\w\d.\-_/]+$/.source,
       ValidationMessage: "Letters, numbers, or /.-_ only",
+      ValidationExamples: {
+        valid: [
+          "acme-cli",
+          "github.com/acme/acme-cli",
+          "example.com/acme/cli/v2",
+        ],
+        invalid: [
+          "",
+          "github.com/acme/acme cli",
+          "https://github.com/acme/acme-cli",
+        ],
+      },
     },
     cliName: {
       Name: "cliName",
@@ -326,6 +338,10 @@ function getConfigFields(
       ValidationRegex: /^[a-z][a-z0-9\-]*$/.source,
       ValidationMessage:
         "Lowercase letters, numbers, and hyphens only. Must start with a letter.",
+      ValidationExamples: {
+        valid: ["acme", "acme-cli", "acme2"],
+        invalid: ["", "Acme", "acme_cli", "2acme", "-acme"],
+      },
     },
     envVarPrefix: {
       Name: "envVarPrefix",
@@ -336,6 +352,10 @@ function getConfigFields(
       ValidationRegex: /^[A-Z][A-Z0-9_]*$/.source,
       ValidationMessage:
         "Uppercase letters, numbers, and underscores only. Must start with a letter.",
+      ValidationExamples: {
+        valid: ["ACME", "ACME_CLI", "ACME2"],
+        invalid: ["", "acme", "ACME-CLI", "_ACME", "2ACME"],
+      },
     },
     additionalDependencies: {
       Name: "additionalDependencies",
@@ -482,6 +502,10 @@ function getConfigFields(
         "Default network timeout applied to each API operation when --timeout is not given (a Go duration such as 60s). Bounds one HTTP operation including retries; operations whose body outlives the call (event streams, JSONL, raw response streams) are exempt so long-lived reads survive, and polling loops re-arm it per request without capping their own total budget. Empty or zero disables the default.",
       ValidationRegex: /^$|^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$/.source,
       ValidationMessage: "a Go duration such as 60s or 2m, or empty",
+      ValidationExamples: {
+        valid: ["", "60s", "2m", "1h30m", "1.5s", "500ms", "250µs"],
+        invalid: ["60", "1d", "-5s", "60 s", "s"],
+      },
     },
     jqRawOutput: {
       Name: "jqRawOutput",
