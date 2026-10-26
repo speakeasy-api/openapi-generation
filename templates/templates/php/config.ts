@@ -146,7 +146,7 @@ function getConfigFields(
       Description:
         "The name of the composer package. https://getcomposer.org/doc/04-schema.md#name",
       ValidationRegex:
-        /^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*/
+        /^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9](([_.]|-{1,2})?[a-z0-9]+)*$/
           .source,
       ValidationMessage:
         "Package name must match the pattern given here https://getcomposer.org/doc/04-schema.md#name",
@@ -164,6 +164,9 @@ function getConfigFields(
           "acme/",
           "/petstore",
           "-acme/petstore",
+          "acme/petstoreSDK",
+          "acme/petstore sdk",
+          "acme/petstore---sdk",
         ],
       },
     },
