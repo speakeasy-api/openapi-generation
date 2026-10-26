@@ -886,15 +886,18 @@ function validateConfig(cfg: Record<string, any>): string {
     if (typeof item !== "object" || item === null) {
       return `usageSDKInitImports[${i}] must be an object`;
     }
-    if (!item.package || typeof item.package !== "string") {
+    const pkg = item.package || item.Package;
+    const imp = item.import || item.Import;
+    const type = item.type || item.Type;
+    if (!pkg || typeof pkg !== "string") {
       return `usageSDKInitImports[${i}].package must be a non-empty string`;
     }
-    if (!item.import || typeof item.import !== "string") {
+    if (!imp || typeof imp !== "string") {
       return `usageSDKInitImports[${i}].import must be a non-empty string`;
     }
     if (
-      item.type &&
-      !["typeImport", "packageImport", "aliasImport"].includes(item.type)
+      type &&
+      !["typeImport", "packageImport", "aliasImport"].includes(type)
     ) {
       return `usageSDKInitImports[${i}].type must be one of: typeImport, packageImport, aliasImport`;
     }

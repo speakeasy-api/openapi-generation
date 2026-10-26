@@ -27,10 +27,29 @@ func TestValidateConfigTypeScriptFieldValidation(t *testing.T) {
 			cfg:    map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{"acme"}},
 			errMsg: "usageSDKInitImports[0] must be an object",
 		},
+		"usageSDKInitImports items must not be null": {
+			target: "typescript",
+			cfg:    map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{nil}},
+			errMsg: "usageSDKInitImports[0] must be an object",
+		},
 		"usageSDKInitImports items require package": {
 			target: "typescript",
 			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
 				map[string]any{"import": "Acme"},
+			}},
+			errMsg: "usageSDKInitImports[0].package must be a non-empty string",
+		},
+		"usageSDKInitImports items reject empty package": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"package": "", "import": "Acme"},
+			}},
+			errMsg: "usageSDKInitImports[0].package must be a non-empty string",
+		},
+		"usageSDKInitImports items reject non-string package": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"package": 1, "import": "Acme"},
 			}},
 			errMsg: "usageSDKInitImports[0].package must be a non-empty string",
 		},
@@ -41,6 +60,20 @@ func TestValidateConfigTypeScriptFieldValidation(t *testing.T) {
 			}},
 			errMsg: "usageSDKInitImports[0].import must be a non-empty string",
 		},
+		"usageSDKInitImports items reject empty import": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"package": "@acme/sdk", "Import": ""},
+			}},
+			errMsg: "usageSDKInitImports[0].import must be a non-empty string",
+		},
+		"usageSDKInitImports items reject non-string import": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"package": "@acme/sdk", "import": 1},
+			}},
+			errMsg: "usageSDKInitImports[0].import must be a non-empty string",
+		},
 		"usageSDKInitImports items reject unknown type": {
 			target: "typescript",
 			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
@@ -48,6 +81,13 @@ func TestValidateConfigTypeScriptFieldValidation(t *testing.T) {
 				map[string]any{"package": "@acme/sdk", "import": "Acme", "type": "defaultImport"},
 			}},
 			errMsg: "usageSDKInitImports[1].type must be one of: typeImport, packageImport, aliasImport",
+		},
+		"usageSDKInitImports items reject unknown capitalized type": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"Package": "@acme/sdk", "Import": "Acme", "Type": "defaultImport"},
+			}},
+			errMsg: "usageSDKInitImports[0].type must be one of: typeImport, packageImport, aliasImport",
 		},
 		"advancedFlags must be an array": {
 			target: "mcp-typescript",
@@ -63,6 +103,11 @@ func TestValidateConfigTypeScriptFieldValidation(t *testing.T) {
 			target: "mcp-typescript",
 			cfg:    map[string]any{"advancedFlags": []any{"verbose", "dry-run"}},
 			errMsg: "advancedFlags[1] must contain only letters or numbers",
+		},
+		"advancedFlags items must not be empty": {
+			target: "mcp-typescript",
+			cfg:    map[string]any{"advancedFlags": []any{""}},
+			errMsg: "advancedFlags[0] must contain only letters or numbers",
 		},
 	}
 
@@ -107,6 +152,21 @@ func TestValidateConfigTypeScriptFieldValidationSuccess(t *testing.T) {
 			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
 				map[string]any{"package": "@acme/sdk", "import": "Acme"},
 				map[string]any{"package": "@acme/sdk", "import": "AcmeOptions", "type": "packageImport"},
+				map[string]any{"package": "@acme/sdk", "import": "AcmeTypes", "type": "typeImport"},
+				map[string]any{"package": "@acme/sdk", "import": "acme", "type": "aliasImport"},
+			}},
+		},
+		"usageSDKInitImports capitalized keys": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"Package": "@acme/sdk", "Import": "Acme", "Type": "packageImport"},
+			}},
+		},
+		"usageSDKInitImports mixed-case keys": {
+			target: "typescript",
+			cfg: map[string]any{"templateVersion": "v2", "usageSDKInitImports": []any{
+				map[string]any{"package": "@acme/sdk", "Import": "Acme", "type": "packageImport"},
+				map[string]any{"package": "", "Package": "@acme/sdk", "import": "AcmeOptions"},
 			}},
 		},
 		"advancedFlags absent": {
@@ -119,7 +179,11 @@ func TestValidateConfigTypeScriptFieldValidationSuccess(t *testing.T) {
 		},
 		"advancedFlags valid": {
 			target: "mcp-typescript",
-			cfg:    map[string]any{"advancedFlags": []any{"verbose", "loneQueryParam"}},
+			cfg:    map[string]any{"advancedFlags": []any{"verbose", "loneQueryParam", "option2"}},
+		},
+		"advancedFlags empty": {
+			target: "mcp-typescript",
+			cfg:    map[string]any{"advancedFlags": []any{}},
 		},
 	}
 
