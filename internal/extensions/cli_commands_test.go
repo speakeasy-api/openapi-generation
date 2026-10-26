@@ -5657,21 +5657,40 @@ operations:
 	}
 }
 
+func TestCLICommands_OutcomeStreamStateRefSiblingCycle(t *testing.T) {
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+	spec := strings.Replace(cliCommandsTestSpec, stopArm, stopArm+"        - $ref: '#/components/schemas/TaskEvent'\n          properties:\n            reason:\n              enum: [done]\n", 1)
+
+	_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+	require.NoError(t, err)
+	require.NotEmpty(t, warnings)
+	for _, warning := range warnings {
+		assert.Contains(t, warning, "schema reference cycle at TaskEvent")
+	}
+}
+
 func TestCLICommands_OutcomeStreamStateAllOfIntersectsEnums(t *testing.T) {
 	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
 	require.Contains(t, cliCommandsTestSpec, stopReason)
 	typoTable := strings.Replace(validOutcomeManifest, "          done: success\n          cancelled: failure", "          done: success\n          canceled: failure", 1)
 
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+
 	for _, tc := range []struct {
-		name   string
-		schema string
+		name            string
+		schema          string
+		stopArmSiblings string
 	}{
-		{"type-only arm", "    StopReason:\n      allOf:\n        - type: string\n        - enum: [done, cancelled]\n"},
-		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n"},
-		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n"},
+		{"type-only arm", "    StopReason:\n      allOf:\n        - type: string\n        - enum: [done, cancelled]\n", ""},
+		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n", ""},
+		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n", ""},
+		{"properties beside ref on the path", "    StopReason:\n      type: string\n      enum: [done, cancelled, extra]\n", "          properties:\n            reason:\n              enum: [done, cancelled]\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := strings.Replace(cliCommandsTestSpec, stopReason, tc.schema, 1)
+			spec = strings.Replace(spec, stopArm, stopArm+tc.stopArmSiblings, 1)
 
 			_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
 			require.NoError(t, err)

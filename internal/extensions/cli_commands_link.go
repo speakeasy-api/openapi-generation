@@ -2192,8 +2192,20 @@ func (w *cliStreamPathWalker) walk(schema any, segments []cliPathSegment, seen [
 			w.err = fmt.Errorf("%s %s %s: referenced schema %q does not exist in components.schemas%s", w.owner, w.field, w.selectPath, name, cliDidYouMean(name, cliComponentNames(w.d.schemaIndex.components)))
 			return
 		}
-		if len(segments) == 0 && cliRefHasSiblingConstraints(schemaMap) {
-			w.checkLeaf(schemaMap, seen)
+		if cliRefHasSiblingConstraints(schemaMap) {
+			if len(segments) == 0 {
+				w.checkLeaf(schemaMap, seen)
+				return
+			}
+			// The rewrite keeps seen free of name so its $ref branch still
+			// resolves; the marker stops a union that re-enters this
+			// reference from recursing forever.
+			marker := name + " (with siblings)"
+			if cliContains(seen, marker) {
+				w.unverifiable("schema reference cycle at " + name)
+				return
+			}
+			w.walk(cliRefSiblingsAsAllOf(schemaMap), segments, append(seen, marker))
 			return
 		}
 		w.walk(component, segments, append(seen, name))
@@ -3475,6 +3487,28 @@ func cliUnionMemberRefs(schema map[string]any) []string {
 	return refs
 }
 
+// cliRefSiblingsAsAllOf rewrites a reference with sibling keywords as an
+// implicit allOf: JSON Schema 2020-12 applies keywords beside $ref
+// conjunctively, and the existing composition (with its cycle detection via
+// seen) then handles the reference branch alongside the siblings.
+func cliRefSiblingsAsAllOf(schemaMap map[string]any) map[string]any {
+	branches := []any{map[string]any{"$ref": schemaMap["$ref"]}}
+	rest := map[string]any{}
+	for k, v := range schemaMap {
+		switch k {
+		case "$ref":
+		case "allOf":
+			if list, ok := v.([]any); ok {
+				branches = append(branches, list...)
+			}
+		default:
+			rest[k] = v
+		}
+	}
+	rest["allOf"] = branches
+	return rest
+}
+
 func cliTrimRefPrefixes(refs []string) []string {
 	out := make([]string, 0, len(refs))
 	for _, ref := range refs {
@@ -3515,25 +3549,7 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 			return nil, fmt.Errorf("referenced schema %q does not exist in components.schemas%s", name, cliDidYouMean(name, cliComponentNames(d.schemaIndex.components)))
 		}
 		if len(schemaMap) > 1 {
-			// JSON Schema 2020-12: keywords beside $ref apply conjunctively.
-			// Rewrite as an implicit allOf so the existing composition (and
-			// its cycle detection via seen) handles the reference branch
-			// alongside the siblings instead of discarding them.
-			branches := []any{map[string]any{"$ref": ref}}
-			rest := map[string]any{}
-			for k, v := range schemaMap {
-				switch k {
-				case "$ref":
-				case "allOf":
-					if list, ok := v.([]any); ok {
-						branches = append(branches, list...)
-					}
-				default:
-					rest[k] = v
-				}
-			}
-			rest["allOf"] = branches
-			resolved, err := d.resolveObjectSchema(rest, seen)
+			resolved, err := d.resolveObjectSchema(cliRefSiblingsAsAllOf(schemaMap), seen)
 			if err != nil {
 				return nil, err
 			}
