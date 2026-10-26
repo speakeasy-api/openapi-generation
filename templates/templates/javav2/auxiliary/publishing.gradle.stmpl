@@ -10,6 +10,12 @@ if (context.Global.Config.Published) {
     context.LocalComputed.PublishV2 = true;
   }
 }
+
+context.LocalComputed.GithubURL = (context.Global.Config.GithubURL || "")
+  .replace(/^https?:\/\//, "")
+  .replace(/^www\./, "")
+  .replace(/\/+$/, "")
+  .replace(/\.git$/, "");
 sjs```
 {{- "" -}}
 
@@ -74,10 +80,10 @@ afterEvaluate {
                     ]
                     name = config.name
                     description = config.description
-                    url = 'https://{{.Global.Config.GithubURL}}'
+                    url = 'https://{{.LocalComputed.GithubURL}}'
                     scm {
-                        url = '{{.Global.Config.GithubURL}}'
-                        connection = 'scm:git:ssh://git@{{.Global.Config.GithubURL}}.git'
+                        url = '{{.LocalComputed.GithubURL}}'
+                        connection = 'scm:git:ssh://git@{{.LocalComputed.GithubURL}}.git'
                     }
                     licenses {
                         license {

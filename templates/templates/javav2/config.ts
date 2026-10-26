@@ -343,12 +343,21 @@ function getConfigFields(
       ValidationMessage:
         "Must be a valid github.com URL, including an owner and repo (e.g. github.com/owner/repo)",
       ValidationExamples: {
-        valid: ["github.com/owner/repo", "github.com/acme/acme-java"],
+        valid: [
+          "github.com/owner/repo",
+          "github.com/acme/acme-java",
+          "https://github.com/acme/acme-java",
+          "http://github.com/acme/acme-java",
+          "www.github.com/acme/acme-java",
+          "github.com/acme/acme-java.git",
+          "github.com/acme_labs/acme-java/",
+        ],
         invalid: [
           "",
           "gitlab.com/acme/acme-java",
           "github.com/acme",
           "github.com/acme/",
+          "git@github.com:acme/acme-java",
         ],
       },
     },
