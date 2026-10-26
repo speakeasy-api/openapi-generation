@@ -438,7 +438,7 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
       ValidationExamples: {
-        valid: ["", "Speakeasy", "Acme"],
+        valid: ["", "Acme", "AcmeHttp"],
         invalid: ["Acme_", "Acme-Http", "Acme Http"],
       },
     },
