@@ -338,7 +338,7 @@ func TestValidateConfigCLIReleaseDistributionValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			err := g.validateConfig(context.Background(), newLanguageTestConfig("cli", tc.cfg), "cli")
+			err := g.validateConfig(context.Background(), newCLITestConfig(tc.cfg), "cli")
 			require.Error(t, err)
 
 			var validationErr *pkgerrors.ValidationError
@@ -396,15 +396,19 @@ func TestValidateConfigCLIReleaseDistributionValidationSuccess(t *testing.T) {
 	for name, cfg := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			assert.NoError(t, g.validateConfig(context.Background(), newLanguageTestConfig("cli", cfg), "cli"))
+			assert.NoError(t, g.validateConfig(context.Background(), newCLITestConfig(cfg), "cli"))
 		})
 	}
 }
 
-func newLanguageTestConfig(target string, cfg map[string]any) config.Config {
-	return config.Config{Config: &config.Configuration{
+func newCLITestConfig(cliCfg map[string]any) config.Config {
+	baseConfig := &config.Configuration{
 		Languages: map[string]config.LanguageConfig{
-			target: {Cfg: cfg},
+			"cli": {
+				Cfg: cliCfg,
+			},
 		},
-	}}
+	}
+
+	return config.Config{Config: baseConfig}
 }
