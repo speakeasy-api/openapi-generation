@@ -241,6 +241,17 @@ function getConfigFields(
       ValidationRegex: /^[A-Z][A-Za-z0-9]*$/.source,
       ValidationMessage:
         "Module names should be PascalCase and have no special chars",
+      ValidationExamples: {
+        valid: ["OpenApiSdk", "AcmeRubySDK", "OpenAPI", "SDK", "Acme2"],
+        invalid: [
+          "openApiSdk",
+          "Open_Api",
+          "Open::Api",
+          "Open-Api",
+          "2Acme",
+          "",
+        ],
+      },
     },
     additionalDependencies: {
       Name: "additionalDependencies",
