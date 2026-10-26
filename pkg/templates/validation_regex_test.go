@@ -96,6 +96,8 @@ func checkValidationFields(t *testing.T, fields map[string]validationField, newS
 
 	for key, field := range fields {
 		if field.ValidationRegex == nil {
+			assert.Empty(t, field.ValidationExamples.Valid, "field %q (newSDK=%v): valid examples without a ValidationRegex", key, newSDK)
+			assert.Empty(t, field.ValidationExamples.Invalid, "field %q (newSDK=%v): invalid examples without a ValidationRegex", key, newSDK)
 			continue
 		}
 
