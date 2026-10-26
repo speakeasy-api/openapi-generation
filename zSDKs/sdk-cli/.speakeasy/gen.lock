@@ -270,7 +270,7 @@ trackedFiles:
   internal/output/async.go:
     last_write_checksum: sha1:e37ed62e5a320b897388e4d0dcfa3cdfe1ffa989
   internal/output/binary.go:
-    last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
+    last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
     last_write_checksum: sha1:69884bcf5cb351f74a358b2e7905a02d17395b53
   internal/output/color.go:
