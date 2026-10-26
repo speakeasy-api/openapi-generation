@@ -315,10 +315,6 @@ function getConfigFields(
       Required: false,
       Description:
         "Specify Go module retractions to include in the generated go.mod. Each retraction should have a 'version' field and optional 'comment' field.",
-      ValidationRegex:
-        /^v\d+\.\d+\.\d+(-[a-zA-Z0-9\-_.]+)?(\+[a-zA-Z0-9\-_.]+)?$/.source,
-      ValidationMessage:
-        "Each version must follow semantic versioning format starting with 'v' (e.g., 'v1.0.0', 'v1.2.3-beta.1'). Example: [{version: 'v1.0.0', comment: 'Published accidentally'}, {version: 'v1.0.1', comment: 'Contains retractions only'}]",
     },
     includeEmptyObjects: {
       Name: "includeEmptyObjects",
@@ -543,6 +539,21 @@ function validateConfig(cfg: Record<string, any>): string {
     optionalMethodArguments !== "method-options"
   ) {
     return 'optionalMethodArguments must be "pointers", "shared-options", or "method-options"';
+  }
+
+  const retractions = cfg.retractions;
+  if (retractions !== undefined && retractions !== null) {
+    if (!Array.isArray(retractions)) {
+      return "retractions must be an array";
+    }
+
+    const semver = /^v\d+\.\d+\.\d+(-[a-zA-Z0-9\-_.]+)?(\+[a-zA-Z0-9\-_.]+)?$/;
+    for (let i = 0; i < retractions.length; i++) {
+      const version = retractions[i]?.version;
+      if (typeof version !== "string" || !semver.test(version)) {
+        return `retractions[${i}].version must follow semantic versioning format starting with 'v' (e.g., 'v1.0.0', 'v1.2.3-beta.1')`;
+      }
+    }
   }
 
   return "";
