@@ -348,6 +348,7 @@ function getConfigFields(
           "github.com/acme/acme-java",
           "https://github.com/acme/acme-java",
           "http://github.com/acme/acme-java",
+          "HTTPS://WWW.github.com/acme/acme-java.GIT",
           "www.github.com/acme/acme-java",
           "github.com/acme/acme-java.git",
           "github.com/acme_labs/acme-java/",
