@@ -1,11 +1,11 @@
-package generate_test
+package templates_test
 
 import (
 	"regexp"
 	"testing"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
-	"github.com/speakeasy-api/openapi-generation/v2/pkg/generate"
+	"github.com/speakeasy-api/openapi-generation/v2/pkg/templates"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestRubyModuleValidationRegex(t *testing.T) {
 	t.Parallel()
 
-	fields, err := generate.GetLanguageConfigFields(types.NewTargetFromTemplate("ruby"), false)
+	fields, err := templates.GetLanguageConfigFields(types.NewTargetFromTemplate("ruby"), false)
 	require.NoError(t, err)
 
 	var pattern string
