@@ -398,7 +398,7 @@ function getConfigFields(
       Name: "mcpName",
       Required: false,
       Description:
-        "The unique identifier for the MCP server in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
+        "The unique identifier for the MCP server: a namespace and a server name separated by one slash, with the namespace usually in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
         "This is required for publishing to the Anthropic MCP registry. " +
         "See: https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/publishing/publish-server.md",
       ValidationRegex: /^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/.source,
