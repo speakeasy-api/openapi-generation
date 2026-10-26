@@ -541,21 +541,6 @@ function validateConfig(cfg: Record<string, any>): string {
     return 'optionalMethodArguments must be "pointers", "shared-options", or "method-options"';
   }
 
-  const retractions = cfg.retractions;
-  if (retractions !== undefined && retractions !== null) {
-    if (!Array.isArray(retractions)) {
-      return "retractions must be an array";
-    }
-
-    const semver = /^v\d+\.\d+\.\d+(-[a-zA-Z0-9\-_.]+)?(\+[a-zA-Z0-9\-_.]+)?$/;
-    for (let i = 0; i < retractions.length; i++) {
-      const version = retractions[i]?.version;
-      if (typeof version !== "string" || !semver.test(version)) {
-        return `retractions[${i}].version must follow semantic versioning format starting with 'v' (e.g., 'v1.0.0', 'v1.2.3-beta.1')`;
-      }
-    }
-  }
-
   return "";
 }
 
