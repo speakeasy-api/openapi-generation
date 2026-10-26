@@ -3,6 +3,7 @@ package templates
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -25,6 +26,29 @@ type validationField struct {
 	}
 	// Declared on some fields in config.ts but read by neither the generator nor the CLI.
 	ValidationFunc any
+}
+
+// The CLI matches ValidationRegex against the value formatted with %v, so a pattern on a list field rejects every list.
+// List fields with a default are already caught by the default value check.
+var listFieldsWithoutDefault = map[string][]string{
+	"go": {"retractions"},
+}
+
+func TestListFieldsHaveNoValidationRegex(t *testing.T) {
+	t.Parallel()
+
+	for template, names := range listFieldsWithoutDefault {
+		for _, newSDK := range []bool{false, true} {
+			fields, err := GetLanguageConfigFields(types.NewTargetFromTemplate(template), newSDK)
+			require.NoError(t, err)
+
+			for _, name := range names {
+				i := slices.IndexFunc(fields, func(field config.SDKGenConfigField) bool { return field.Name == name })
+				require.NotEqual(t, -1, i, "%s field %q not found (newSDK=%v)", template, name, newSDK)
+				assert.Nil(t, fields[i].ValidationRegex, "%s field %q (newSDK=%v)", template, name, newSDK)
+			}
+		}
+	}
 }
 
 func TestValidationRegexes(t *testing.T) {
