@@ -1,0 +1,16 @@
+internal/extensions/cli_commands_test.go
+  h_9630b74bdac540 5503-5512
+internal/extensions/cli_commands_link.go
+  h_9630b74bdac540 1043-1045
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8092ec75930b3434578aa5ae06f78ffd57359cb",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
