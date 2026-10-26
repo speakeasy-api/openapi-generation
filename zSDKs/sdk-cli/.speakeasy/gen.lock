@@ -224,9 +224,9 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:dbbfb30c1445584c4365afa9a81354a6721d8a50
   internal/client/client.go:
-    last_write_checksum: sha1:9d81fb507f12e5d09b0e993fa9f38451591fc7b6
+    last_write_checksum: sha1:a9c5d6b2d6251fa62325f3668db8b1920596e0d3
   internal/client/client_test.go:
-    last_write_checksum: sha1:a5d768bff17445b98030feb537f130c54ca1071a
+    last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
     last_write_checksum: sha1:30b37c632ff875e00e6bce57caa64050dff89fcf
   internal/clierrors/clierrors.go:

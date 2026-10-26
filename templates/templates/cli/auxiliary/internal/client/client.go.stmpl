@@ -7,6 +7,7 @@
 {{- addImport "net" -}}
 {{- addImport "net/http" -}}
 {{- addImport "net/url" -}}
+{{- addImport "errors" -}}
 {{- addImport "strings" -}}
 {{- addImport "sync" -}}
 {{- addImport "time" -}}
@@ -85,7 +86,7 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.{{temp
 
     // Diagnostics and test client composition.
     // Order: test client (innermost) → diagnostics wrapper (outermost).
-    var httpClient HTTPClient = &http.Client{Transport: newPhaseBoundedTransport(cmd), CheckRedirect: SameOriginRedirect}
+    var httpClient HTTPClient = &redirectGuardClient{&http.Client{Transport: newPhaseBoundedTransport(cmd), CheckRedirect: SameOriginRedirect}}
     if testClient := testclient.NewTestHTTPClient(); testClient != nil {
         httpClient = testClient
     }
@@ -132,6 +133,27 @@ func (e *RedirectRefusedError) CLIHints() []string {
 
 func (e *RedirectRefusedError) CLIOmitTypeHints() bool { return true }
 
+// redirectGuardClient strips the query, fragment and userinfo from the
+// Location net/http attaches to a refused redirect, so tokens in it are never
+// printed in error or debug output.
+type redirectGuardClient struct {
+    *http.Client
+}
+
+func (c *redirectGuardClient) Do(req *http.Request) (*http.Response, error) {
+    res, err := c.Client.Do(req)
+    var urlErr *url.Error
+    var refused *RedirectRefusedError
+    if errors.As(err, &urlErr) && errors.As(err, &refused) {
+        if u, parseErr := url.Parse(urlErr.URL); parseErr == nil {
+            urlErr.URL = (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path}).String()
+        } else {
+            urlErr.URL = "<redirect target>"
+        }
+    }
+    return res, err
+}
+
 func urlOrigin(u *url.URL) string {
     scheme := strings.ToLower(u.Scheme)
     port := u.Port()
@@ -143,7 +165,19 @@ func urlOrigin(u *url.URL) string {
             port = "80"
         }
     }
-    return scheme + "://" + net.JoinHostPort(strings.ToLower(u.Hostname()), port)
+    return scheme + "://" + net.JoinHostPort(asciiLower(u.Hostname()), port)
+}
+
+// asciiLower folds only A-Z. Unicode case folding would equate hosts the
+// transport dials as different IDNA names (U+0130 "İ" and "i").
+func asciiLower(s string) string {
+    b := []byte(s)
+    for i, c := range b {
+        if 'A' <= c && c <= 'Z' {
+            b[i] = c + ('a' - 'A')
+        }
+    }
+    return string(b)
 }
 
 func newPhaseBoundedTransport(cmd *cobra.Command) http.RoundTripper {
