@@ -1,0 +1,10 @@
+id: 1793046178-b45e569c
+features:
+    - core
+targets:
+    - javav2
+type: fix
+bump: patch
+description: write correct Maven POM links when githubURL includes a scheme, www., trailing slash or .git
+author: 2ynn
+date: "2026-10-26"
