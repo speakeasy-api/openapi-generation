@@ -154,6 +154,7 @@ function getConfigFields(
         valid: [
           "openapi/openapi",
           "acme/petstore-sdk",
+          "acme/petstore--sdk",
           "acme/petstore.sdk",
           "acme2/petstore_sdk",
         ],

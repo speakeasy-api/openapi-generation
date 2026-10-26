@@ -11,11 +11,11 @@ if (context.Global.Config.Published) {
   }
 }
 
-context.LocalComputed.GithubURL = (context.Global.Config.GithubURL || "")
-  .replace(/^https?:\/\//, "")
-  .replace(/^www\./, "")
+context.LocalComputed.GithubURL = String(context.Global.Config.GithubURL ?? "")
+  .replace(/^https?:\/\//i, "")
+  .replace(/^www\./i, "")
   .replace(/\/+$/, "")
-  .replace(/\.git$/, "");
+  .replace(/\.git$/i, "");
 sjs```
 {{- "" -}}
 

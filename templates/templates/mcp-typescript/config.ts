@@ -407,6 +407,7 @@ function getConfigFields(
       ValidationExamples: {
         valid: [
           "io.github.acme/petstore-mcp",
+          "io.github.acme/2petstore",
           "com.example/acme",
           "io.github.acme-labs/petstore",
           "io.github.Acme/petstore_mcp.v2",
