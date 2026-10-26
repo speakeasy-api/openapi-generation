@@ -4,7 +4,7 @@ const supportedFeatures = {
   getRequestBodies: "3.0.0",
   flattening: "3.1.1",
   flatRequests: "1.0.1",
-  globalSecurity: "3.0.7",
+  globalSecurity: "3.0.8",
   methodSecurity: "3.0.3",
   globalServerURLs: "3.2.1",
   methodServerURLs: "3.1.2",
