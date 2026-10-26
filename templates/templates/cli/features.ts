@@ -359,6 +359,8 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-formats",
     "shared-enum-constructor-default",
     "open-union-invalid-json-is-an-error",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
   ].includes(test);
 }
 
