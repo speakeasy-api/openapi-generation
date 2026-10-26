@@ -4,12 +4,14 @@ package cli
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
 	"openapi/internal/forms"
 	"openapi/internal/interactive"
+	"openapi/internal/output"
 )
 
 // initAuthCmd registers the auth command group with login, whoami, and logout subcommands.
@@ -68,7 +70,7 @@ Use the configure command for both authentication and global parameters.`,
 Sources are shown as:
   [flag]    - Set via command line flag
   [env]     - Set via environment variable (CLI_*)
-  [keyring] - Set via OS keychain (stored by login/configure command)
+  [keyring] - Set via OS credential store: macOS Keychain, Windows Credential Manager or Secret Service (stored by login/configure command)
   [config]  - Set via config file (~/.config/cli/config.yaml)
   [unset]   - Not configured
 
@@ -431,6 +433,12 @@ func runAuthLoginCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
+	if output.IsMachineMode(cmd) {
+		return output.LocalResult(cmd, map[string]any{
+			"config_file":     config.GetConfigPath(),
+			"keychain_stored": keychainStored,
+		})
+	}
 	out := cmd.OutOrStdout()
 	if keychainStored {
 		fmt.Fprintln(out, "Secret credentials stored in OS keychain")
@@ -449,41 +457,42 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 		cfg = &config.Config{}
 	}
 
+	var keychainErrs []error
 	cfg.Security.Username = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("password")
+	if err := config.DeleteStoredSecret("password"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--password: %w", err))
 	}
 	cfg.Security.Password = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("bearer-auth")
+	if err := config.DeleteStoredSecret("bearer-auth"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--bearer-auth: %w", err))
 	}
 	cfg.Security.BearerAuth = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("my-api-key")
+	if err := config.DeleteStoredSecret("my-api-key"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--my-api-key: %w", err))
 	}
 	cfg.Security.MyApiKey = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("oauth2")
+	if err := config.DeleteStoredSecret("oauth2"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--oauth2: %w", err))
 	}
 	cfg.Security.Oauth2 = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("app-id")
+	if err := config.DeleteStoredSecret("app-id"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--app-id: %w", err))
 	}
 	cfg.Security.AppId = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("secret")
+	if err := config.DeleteStoredSecret("secret"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--secret: %w", err))
 	}
 	cfg.Security.Secret = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("mobile-auth")
+	if err := config.DeleteStoredSecret("mobile-auth"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--mobile-auth: %w", err))
 	}
 	cfg.Security.MobileAuth = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("client-id")
+	if err := config.DeleteStoredSecret("client-id"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--client-id: %w", err))
 	}
 	cfg.Security.ClientID = ""
-	if config.KeyringAvailable() {
-		_ = config.DeleteKeyringValue("client-secret")
+	if err := config.DeleteStoredSecret("client-secret"); err != nil {
+		keychainErrs = append(keychainErrs, fmt.Errorf("--client-secret: %w", err))
 	}
 	cfg.Security.ClientSecret = ""
 	cfg.Security.TokenURL = ""
@@ -491,7 +500,17 @@ func runAuthLogoutCmd(cmd *cobra.Command, args []string) error {
 	if err := config.SaveConfig(cfg); err != nil {
 		return fmt.Errorf("failed to save configuration: %w", err)
 	}
+	if err := errors.Join(keychainErrs...); err != nil {
+		return fmt.Errorf("credentials were cleared from the config file, but removing them from the OS keychain failed: %w", err)
+	}
 
+	if output.IsMachineMode(cmd) {
+		return output.LocalResult(cmd, map[string]any{
+			"config_file":      config.GetConfigPath(),
+			"cleared":          true,
+			"keychain_cleared": config.KeyringAvailable(),
+		})
+	}
 	out := cmd.OutOrStdout()
 	if !config.KeyringAvailable() {
 		fmt.Fprintln(out, "Authentication credentials have been cleared from the config file; the OS keychain was skipped, so credentials stored there (if any) were kept.")

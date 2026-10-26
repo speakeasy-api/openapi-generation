@@ -36,12 +36,16 @@ func (t Test) String() string {
         return "auth-custom-security-scheme-only"
     case TestAuthFunctionCallbacksOauthGlobalSecurity:
         return "auth-function-callbacks-oauth-global-security"
+    case TestAuthGlobalSecurityEmpty:
+        return "auth-global-security-empty"
     case TestAuthGlobalSecurityFieldsOrdering:
         return "auth-global-security-fields-ordering"
     case TestAuthGlobalSecurityFlattening:
         return "auth-global-security-flattening"
     case TestAuthGlobalSecurityFlatteningCallback:
         return "auth-global-security-flattening-callback"
+    case TestAuthGlobalSecurityFlatteningEmpty:
+        return "auth-global-security-flattening-empty"
     case TestAuthGlobalSecurityFlatteningEnvVarFallback:
         return "auth-global-security-flattening-env-var-fallback"
     case TestAuthGlobalSecurityOptionFieldsOrdering:
@@ -1556,12 +1560,16 @@ func TestFromString(s string) Test {
         return TestAuthCustomSecuritySchemeOnly
     case "auth-function-callbacks-oauth-global-security":
         return TestAuthFunctionCallbacksOauthGlobalSecurity
+    case "auth-global-security-empty":
+        return TestAuthGlobalSecurityEmpty
     case "auth-global-security-fields-ordering":
         return TestAuthGlobalSecurityFieldsOrdering
     case "auth-global-security-flattening":
         return TestAuthGlobalSecurityFlattening
     case "auth-global-security-flattening-callback":
         return TestAuthGlobalSecurityFlatteningCallback
+    case "auth-global-security-flattening-empty":
+        return TestAuthGlobalSecurityFlatteningEmpty
     case "auth-global-security-flattening-env-var-fallback":
         return TestAuthGlobalSecurityFlatteningEnvVarFallback
     case "auth-global-security-option-fields-ordering":
@@ -3059,9 +3067,11 @@ var testList = []Test{
     TestAuthCustomSecuritySchemeAppId,
     TestAuthCustomSecuritySchemeOnly,
     TestAuthFunctionCallbacksOauthGlobalSecurity,
+    TestAuthGlobalSecurityEmpty,
     TestAuthGlobalSecurityFieldsOrdering,
     TestAuthGlobalSecurityFlattening,
     TestAuthGlobalSecurityFlatteningCallback,
+    TestAuthGlobalSecurityFlatteningEmpty,
     TestAuthGlobalSecurityFlatteningEnvVarFallback,
     TestAuthGlobalSecurityOptionFieldsOrdering,
     TestAuthHoistedBasicAuth,

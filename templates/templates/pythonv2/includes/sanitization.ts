@@ -2688,7 +2688,14 @@ registerTemplateFunc("paginationRequestNoneGuard", paginationRequestNoneGuard);
 function languageSpecificEnvVarWrapping(
   envVar: EnvVar,
   additionalContext?: TemplateValueContext,
+  fieldDef?: FieldDef,
 ): string {
   addImport("os", "");
+  if (
+    envVar.defaultValue === "" &&
+    (fieldDef?.Optional || fieldDef?.Nullable)
+  ) {
+    return `os.getenv("${envVar.name}")`;
+  }
   return `os.getenv("${envVar.name}", "${envVar.defaultValue}")`;
 }

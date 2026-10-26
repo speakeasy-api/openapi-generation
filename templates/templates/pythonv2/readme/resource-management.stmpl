@@ -16,12 +16,14 @@ The `{{$sdkClassName}}` class implements the context manager protocol and regist
 def main():
 {{templateString "usage/init.stmpl" $syncCallContext | indentPresent 4}}
         # Rest of application here...
+        pass
 
 
 # Or when using async:
 async def amain():
 {{templateString "usage/init.stmpl" $asyncCallContext | indentPresent 4}}
         # Rest of application here...
+        pass
 ```
 {{- end }}
 {{- else if eq .Global.Config.AsyncMode "split"}}
@@ -41,12 +43,14 @@ The `{{$sdkClassName}}` and `Async{{$sdkClassName}}` classes implement the conte
 def main():
 {{templateString "usage/init.stmpl" $syncCallContext | indentPresent 4}}
         # Rest of application here...
+        pass
 
 
 # Or when using async:
 async def amain():
 {{templateString "usage/init.stmpl" $asyncCallContext | indentPresent 4}}
         # Rest of application here...
+        pass
 ```
 {{- end }}
 {{- end }}
