@@ -22,6 +22,10 @@ function getConfigFields(
       ValidationRegex: /^[\w\d\-~]([\w\d.\-_\/~]*[\w\d\-~])?$/.source,
       ValidationMessage:
         "Letters, numbers, or /.-_~ only. Cannot start or end with slash or dot.",
+      ValidationExamples: {
+        valid: ["acme", "acme-api", "acme/api", "a"],
+        invalid: ["", "acme api", "/acme", ".acme", "acme.", "acme/"],
+      },
     },
     fileName: {
       Name: "fileName",
@@ -32,6 +36,10 @@ function getConfigFields(
       ValidationRegex: /^[\w\d\-~]([\w\d.\-_\/~]*[\w\d\-~])?$/.source,
       ValidationMessage:
         "Letters, numbers, or /._~ only. Cannot start or end with slash or dot.",
+      ValidationExamples: {
+        valid: ["acme", "acme-api", "acme/api", "a"],
+        invalid: ["", "acme api", "/acme", ".acme", "acme.", "acme/"],
+      },
     },
     imports: {
       Name: "imports",

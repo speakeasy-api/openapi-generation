@@ -303,6 +303,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     envVarPrefix: {
       Name: "envVarPrefix",
@@ -332,6 +336,15 @@ function getConfigFields(
       ValidationRegex: /^https?:\/\/.+$/.source,
       ValidationMessage:
         "Must be a valid URL starting with http:// or https://",
+      ValidationExamples: {
+        valid: ["https://acme-mcp.acme.workers.dev", "http://localhost:8787"],
+        invalid: [
+          "",
+          "acme-mcp.acme.workers.dev",
+          "ftp://acme.dev",
+          "https://",
+        ],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -341,6 +354,10 @@ function getConfigFields(
         "The npm package name. https://docs.npmjs.com/package-name-guidelines.",
       ValidationRegex: /^[\w\d._@\/-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["acme-sdk", "@acme/sdk", "@acme/sdk.core"],
+        invalid: ["", "acme sdk", "acme:sdk"],
+      },
     },
     version: {
       Name: "version",
@@ -349,6 +366,10 @@ function getConfigFields(
       Description: "The current version of the MCP Server",
       ValidationRegex: /^[\w\d._-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     dxtManifestOverlay: {
       Name: "dxtManifestOverlay",
@@ -384,6 +405,15 @@ function getConfigFields(
         .source,
       ValidationMessage:
         "Must be in reverse-DNS format (e.g., 'io.github.username/server-name')",
+      ValidationExamples: {
+        valid: ["io.github.acme/petstore-mcp", "com.example/acme"],
+        invalid: [
+          "",
+          "io.github.acme",
+          "acme/petstore/mcp",
+          "io.github.acme/petstore mcp",
+        ],
+      },
     },
     responseFormat: {
       Name: "responseFormat",

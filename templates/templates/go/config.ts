@@ -126,6 +126,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     modulePath: {
       Name: "modulePath",
@@ -136,6 +140,21 @@ function getConfigFields(
       ValidationRegex: /^([\w\d\-~]([\w\d.\-_\/~]*[\w\d\-~])?)?$/.source,
       ValidationMessage:
         "Letters, numbers, or /.-_~ only. Cannot start or end with slash or dot. For more information: https://go.dev/ref/mod#go-mod-file-ident",
+      ValidationExamples: {
+        valid: [
+          "",
+          "acme",
+          "github.com/acme/acme-go",
+          "github.com/acme/acme-go/v2",
+        ],
+        invalid: [
+          "/github.com/acme/acme-go",
+          "github.com/acme/acme-go/",
+          ".acme",
+          "github.com/acme/acme-go.",
+          "github.com/acme/acme go",
+        ],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -145,6 +164,21 @@ function getConfigFields(
       ValidationRegex: /^([\w\d\-~]([\w\d.\-_\/~]*[\w\d\-~])?)?$/.source,
       ValidationMessage:
         "Letters, numbers, or /.-_~ only. Cannot start or end with slash or dot. For more information: https://go.dev/ref/mod#go-mod-file-ident",
+      ValidationExamples: {
+        valid: [
+          "",
+          "acme",
+          "github.com/acme/acme-go",
+          "github.com/acme/acme-go/v2",
+        ],
+        invalid: [
+          "/github.com/acme/acme-go",
+          "github.com/acme/acme-go/",
+          ".acme",
+          "github.com/acme/acme-go.",
+          "github.com/acme/acme go",
+        ],
+      },
     },
     sdkPackageAlias: {
       Name: "sdkPackageAlias",
@@ -154,6 +188,10 @@ function getConfigFields(
       ValidationRegex: /^(\w[\w\d_]*)?$/.source,
       ValidationMessage:
         "Letters, numbers, or underscore (_) only. Must start with letter. For more information: https://go.dev/ref/spec#Packages",
+      ValidationExamples: {
+        valid: ["", "acme", "acmesdk", "acme_v2"],
+        invalid: ["acme-sdk", "acme.sdk", "acme/sdk"],
+      },
     },
     sdkPackageName: {
       Name: "sdkPackageName",
@@ -164,6 +202,10 @@ function getConfigFields(
       ValidationRegex: /^(\w[\w\d_]*)?$/.source,
       ValidationMessage:
         "Letters, numbers, or underscore (_) only. Must start with letter. For more information: https://go.dev/ref/spec#Packages",
+      ValidationExamples: {
+        valid: ["", "acme", "acmesdk", "acme_v2"],
+        invalid: ["acme-sdk", "acme.sdk", "acme/sdk"],
+      },
     },
     maxMethodParams: {
       Name: "maxMethodParams",
@@ -173,6 +215,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     clientServerStatusCodesAsErrors: {
       Name: "clientServerStatusCodesAsErrors",
@@ -291,6 +337,10 @@ function getConfigFields(
         "The name of the default error type used to represent API errors",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     respectRequiredFields: {
       Name: "respectRequiredFields",
