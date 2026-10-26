@@ -15,7 +15,7 @@ import (
 // RegExp.source emits "/" as the Unicode escape below, which the CLI rewrites before compiling the pattern with Go's regexp.
 const escapedSlash = "\x5cu002f"
 
-func TestConfigFieldValidationRegexes(t *testing.T) {
+func TestValidationRegexesCompileAndMatchDefaults(t *testing.T) {
 	t.Parallel()
 
 	for _, name := range templates.GetAvailableTemplates() {
