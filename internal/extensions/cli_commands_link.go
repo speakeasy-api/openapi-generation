@@ -1040,6 +1040,9 @@ func (d *cliManifestDecoder) linkAsync(cmdKey string, cmd *CLICommand, createInf
 				return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s is an open enum; every possible state must be classifiable at generation time", cmdKey, recipe.StateFrom, recipe.OperationID, response.code)
 			}
 			for _, value := range facts.enum {
+				if value == nil {
+					continue
+				}
 				state, ok := value.(string)
 				if !ok {
 					return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s has a non-string enum member %v", cmdKey, recipe.StateFrom, recipe.OperationID, response.code, value)

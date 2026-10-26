@@ -5500,6 +5500,16 @@ func TestCLICommands_OutcomeNullableLeaves(t *testing.T) {
 	assert.Equal(t, "/steps", manifest.Operations[0].Output.Outcome.ErrorPointer)
 }
 
+func TestCLICommands_AsyncNullableState(t *testing.T) {
+	spec := strings.Replace(cliCommandsTestSpec, "        status:\n          type: string\n          enum: [in_progress, completed, failed, requires_action]\n", "        status:\n          type: [string, \"null\"]\n          enum: [in_progress, completed, failed, requires_action, null]\n", 1)
+	require.NotEqual(t, cliCommandsTestSpec, spec)
+	manifest, _, err := decodeCLIWithSpec(t, spec, strings.Replace(validAsyncManifest, "      params:\n        stream: false\n", "", 1))
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 1)
+	require.NotNil(t, manifest.Commands[0].Async)
+	assert.Equal(t, "/status", manifest.Commands[0].Async.StatePointer)
+}
+
 func TestCLICommands_OutcomeErrors(t *testing.T) {
 	base := validOutcomeManifest
 	for _, tc := range []struct {
