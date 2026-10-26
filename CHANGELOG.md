@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.952.4] - 2026-10-26
+### :bug: Bug Fixes
+- [`b8fa621`](https://github.com/speakeasy-api/openapi-generation/commit/b8fa6212f2d55faddba4e0eda6b98a2321c8de31) - **cli**: refuse cross-origin redirects so credentials stay with the configured server ([#137](https://github.com/speakeasy-api/openapi-generation/pull/137)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.952.3] - 2026-10-26
 ### :bug: Bug Fixes
 - [`50f2665`](https://github.com/speakeasy-api/openapi-generation/commit/50f26655ae946a9f4162b2ee31378aeb5d1b89e6) - **python**: don't send empty-string security credentials ([#130](https://github.com/speakeasy-api/openapi-generation/pull/130)) *(commit by [@LukasParke](https://github.com/LukasParke))*
@@ -20725,3 +20730,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.952.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.0...v2.952.1
 [v2.952.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.1...v2.952.2
 [v2.952.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.2...v2.952.3
+[v2.952.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.3...v2.952.4
