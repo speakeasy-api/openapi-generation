@@ -1,3 +1,4 @@
+{{- skipFormat "prevent churn induced when renaming basemodel.py -> basemodel.py.stmpl" }}
 from contextvars import ContextVar
 from pydantic import ConfigDict, model_serializer
 from pydantic import BaseModel as PydanticBaseModel
@@ -8,11 +9,14 @@ from typing_extensions import TypeAliasType, TypeAlias
 
 class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(
-        populate_by_name=True, arbitrary_types_allowed=True, protected_namespaces=()
+        populate_by_name=True, arbitrary_types_allowed=True, protected_namespaces=(){{if .Global.Config.PreserveUnknownFields}}, extra="allow"{{end}}
     )
 
 
 class Unset(BaseModel):
+{{- if .Global.Config.PreserveUnknownFields}}
+    model_config = ConfigDict(extra="ignore")
+{{end}}
     @model_serializer(mode="plain")
     def serialize_model(self):
         return UNSET_SENTINEL
@@ -37,21 +41,37 @@ else:
 
 
 _exclude_none: ContextVar[Optional[bool]] = ContextVar("exclude_none", default=None)
+{{- if .Global.Config.PreserveUnknownFields}}
+_by_alias: ContextVar[Optional[bool]] = ContextVar("by_alias", default=None)
+{{- end}}
 
 
 def serialize_with_info(
     serialize: Callable[[Any], Any], handler: Any, info: core_schema.SerializationInfo
 ) -> Any:
     token = _exclude_none.set(info.exclude_none)
+{{- if .Global.Config.PreserveUnknownFields}}
+    by_alias_token = _by_alias.set(info.by_alias)
+{{- end}}
     try:
         return serialize(handler)
     finally:
+{{- if .Global.Config.PreserveUnknownFields}}
+        _by_alias.reset(by_alias_token)
+{{- end}}
         _exclude_none.reset(token)
 
 
 def current_exclude_none() -> Optional[bool]:
     """Return the exclude_none option of the enclosing serialize_with_info call, or None outside of one."""
     return _exclude_none.get()
+{{- if .Global.Config.PreserveUnknownFields}}
+
+
+def current_by_alias() -> Optional[bool]:
+    """Return the by_alias option of the enclosing serialize_with_info call, or None outside of one."""
+    return _by_alias.get()
+{{- end}}
 
 
 def _unrecognized_serialization(cls: Type[Union[str, int]]) -> core_schema.PlainSerializerFunctionSerSchema:
