@@ -1,0 +1,14 @@
+pkg/generate/snapshots/cli_release_go_test.go
+  h_9630b74bdac540 595,1645,2754
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7740d6edc62f06be5e292fbe1259d271d9537014",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
