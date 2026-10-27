@@ -683,13 +683,13 @@ func BuildRequest[T any](cmd *cobra.Command, meta []FlagMeta, bodyFieldPath stri
 			}
 			withDefaults := applyNestedUnionDefaults(applyUnionDefaults(data, u), meta, bodyFieldPath, bodyField.Type())
 			if err := unmarshalIntoField(bodyField, withDefaults); err != nil {
-				return fmt.Errorf("failed to parse %s as JSON: %w", source, err)
+				return newDecodeError("failed to parse "+source+" as JSON", err)
 			}
 			return enforceStrictOrWarn(cmd, verifyBodyKeys(source, data, bodyField, u))
 		}
 		withDefaults := applyNestedUnionDefaults(data, meta, "", reflect.TypeOf(req))
 		if err := json.Unmarshal(withDefaults, &req); err != nil {
-			return fmt.Errorf("failed to parse %s as JSON: %w", source, err)
+			return newDecodeError("failed to parse "+source+" as JSON", err)
 		}
 		v = reflect.ValueOf(&req).Elem() // refresh after unmarshal
 		return enforceStrictOrWarn(cmd, verifyBodyKeys(source, data, v, nil))
@@ -830,7 +830,7 @@ func BuildRequestBody[T any](cmd *cobra.Command, flagName string, annotations st
 		return &req, nil
 	}
 	if err := utils.UnmarshalJsonFromString(requestData, &req, annotations); err != nil {
-		return nil, fmt.Errorf("invalid %s: %w", flagName, err)
+		return nil, newDecodeError("invalid "+flagName, err)
 	}
 	source := "stdin"
 	if FlagChanged(cmd, flagName) {
@@ -1126,6 +1126,52 @@ func bodyTypeIsUnion(t reflect.Type) bool {
 		}
 	}
 	return false
+}
+
+const unionDecodePrefix = "could not unmarshal `"
+
+var unionDecodeSuffixes = []string{"` into expected (", "` into any supported union types for "}
+
+// decodeError keeps the decode failure in the error chain but replaces its
+// text, because SDK union decoders embed the raw input, which can carry
+// credentials.
+type decodeError struct {
+	msg string
+	err error
+}
+
+func newDecodeError(context string, err error) error {
+	return &decodeError{msg: context + ": " + decodeErrorMessage(err), err: err}
+}
+
+func (e *decodeError) Error() string { return e.msg }
+func (e *decodeError) Unwrap() error { return e.err }
+
+// decodeErrorMessage drops each "could not unmarshal `<input>`" input; an
+// unrecognised closing quote drops the rest of the message.
+func decodeErrorMessage(err error) string {
+	msg := err.Error()
+	var b strings.Builder
+	for {
+		start := strings.Index(msg, unionDecodePrefix)
+		if start < 0 {
+			b.WriteString(msg)
+			return b.String()
+		}
+		b.WriteString(msg[:start])
+		b.WriteString("could not unmarshal value")
+		rest := msg[start+len(unionDecodePrefix):]
+		end := -1
+		for _, suffix := range unionDecodeSuffixes {
+			if i := strings.Index(rest, suffix); i >= 0 && (end < 0 || i < end) {
+				end = i
+			}
+		}
+		if end < 0 {
+			return b.String()
+		}
+		msg = rest[end+1:]
+	}
 }
 
 func verifyBodyKeys(source string, input []byte, target reflect.Value, u *UnionMeta) error {
@@ -2090,13 +2136,13 @@ func buildJSONField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		holder := reflect.New(reflect.PtrTo(fieldType))
 		holder.Elem().Set(reflect.New(fieldType))
 		if err := utils.UnmarshalJsonFromString(val, holder.Interface(), m.Annotations); err != nil {
-			return fmt.Errorf("invalid value for --%s: %w", m.FlagName, err)
+			return newDecodeError("invalid value for --"+m.FlagName, err)
 		}
 		field.Set(holder.Elem())
 	} else {
 		target := reflect.New(fieldType)
 		if err := utils.UnmarshalJsonFromString(val, target.Interface(), m.Annotations); err != nil {
-			return fmt.Errorf("invalid value for --%s: %w", m.FlagName, err)
+			return newDecodeError("invalid value for --"+m.FlagName, err)
 		}
 		field.Set(target.Elem())
 	}
@@ -2421,7 +2467,7 @@ func buildUnionField(cmd *cobra.Command, root reflect.Value, m FlagMeta) error {
 		jsonStr, _ := GetStringFlag(cmd, m.FlagName)
 		target := reflect.New(unionType)
 		if err := utils.UnmarshalJsonFromString(string(applyUnionDefaults([]byte(jsonStr), u)), target.Interface(), ""); err != nil {
-			return fmt.Errorf("invalid value for --%s: %w", m.FlagName, err)
+			return newDecodeError("invalid value for --"+m.FlagName, err)
 		}
 		if err := enforceStrictOrWarn(cmd, verifyBodyKeys("--"+m.FlagName, []byte(jsonStr), target, u)); err != nil {
 			return err
@@ -2449,7 +2495,7 @@ func buildUnionField(cmd *cobra.Command, root reflect.Value, m FlagMeta) error {
 			jsonStr, _ := GetStringFlag(cmd, v.FlagName)
 			variantPtr := reflect.New(variantType)
 			if err := utils.UnmarshalJsonFromString(jsonStr, variantPtr.Interface(), ""); err != nil {
-				return fmt.Errorf("invalid value for --%s: %w", v.FlagName, err)
+				return newDecodeError("invalid value for --"+v.FlagName, err)
 			}
 			injectDiscriminator(variantPtr.Elem(), u.DiscriminatorKey, v.DiscriminatorValue)
 			unionVal := assembleUnionValue(unionType, v.FieldName, variantPtr)
