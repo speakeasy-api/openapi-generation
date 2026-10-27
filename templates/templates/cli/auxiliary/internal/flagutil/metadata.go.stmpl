@@ -1145,31 +1145,27 @@ func newDecodeError(context string, err error) error {
 func (e *decodeError) Error() string { return e.msg }
 func (e *decodeError) Unwrap() error { return e.err }
 
-// decodeErrorMessage drops each "could not unmarshal `<input>`" input; an
-// unrecognised closing quote drops the rest of the message.
+// decodeErrorMessage drops everything from the first "could not unmarshal `"
+// to the last closing phrase: the input may itself contain a closing phrase,
+// and nested union errors repeat the pattern. Without a closing phrase the
+// rest of the message is dropped.
 func decodeErrorMessage(err error) string {
 	msg := err.Error()
-	var b strings.Builder
-	for {
-		start := strings.Index(msg, unionDecodePrefix)
-		if start < 0 {
-			b.WriteString(msg)
-			return b.String()
-		}
-		b.WriteString(msg[:start])
-		b.WriteString("could not unmarshal value")
-		rest := msg[start+len(unionDecodePrefix):]
-		end := -1
-		for _, suffix := range unionDecodeSuffixes {
-			if i := strings.Index(rest, suffix); i >= 0 && (end < 0 || i < end) {
-				end = i
-			}
-		}
-		if end < 0 {
-			return b.String()
-		}
-		msg = rest[end+1:]
+	start := strings.Index(msg, unionDecodePrefix)
+	if start < 0 {
+		return msg
 	}
+	rest := msg[start+len(unionDecodePrefix):]
+	end := -1
+	for _, suffix := range unionDecodeSuffixes {
+		if i := strings.LastIndex(rest, suffix); i > end {
+			end = i
+		}
+	}
+	if end < 0 {
+		return msg[:start] + "could not unmarshal value"
+	}
+	return msg[:start] + "could not unmarshal value" + rest[end+1:]
 }
 
 func verifyBodyKeys(source string, input []byte, target reflect.Value, u *UnionMeta) error {

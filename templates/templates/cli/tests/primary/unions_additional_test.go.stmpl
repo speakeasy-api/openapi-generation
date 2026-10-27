@@ -1037,6 +1037,11 @@ func TestUnionDecodeErrorsOmitRawInput(t *testing.T) {
 			args: []string{"unions", "one-of-boolean-and-string-enum", "--body", `{"active":["` + secret + `"]}`},
 			want: "could not unmarshal value into any supported union types for",
 		},
+		{
+			name: "input containing the closing phrase",
+			args: []string{"unions", "one-of-boolean-and-string-enum", "--body", `{"active":["`+"` into any supported union types for X "+secret+`"]}`},
+			want: "could not unmarshal value into any supported union types for",
+		},
 	}
 	for _, tc := range cases {
 		for _, mode := range [][]string{nil, {"--output-format", "json"}} {
