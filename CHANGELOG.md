@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.0] - 2026-10-27
+### :bee: New Features
+- [`a629490`](https://github.com/speakeasy-api/openapi-generation/commit/a6294905af0bcea4311443c735957f7f1e1adbd3) - **python**: add modelSerializationMethods option ([#147](https://github.com/speakeasy-api/openapi-generation/pull/147)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.953.0] - 2026-10-27
 ### :bee: New Features
 - [`bb257c2`](https://github.com/speakeasy-api/openapi-generation/commit/bb257c28b028f167cc3e83620c9a0c0e662b4513) - **python**: add preserveUnknownFields option ([#146](https://github.com/speakeasy-api/openapi-generation/pull/146)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20767,3 +20772,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.952.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.7...v2.952.8
 [v2.952.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.8...v2.952.9
 [v2.953.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.9...v2.953.0
+[v2.954.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.953.0...v2.954.0
