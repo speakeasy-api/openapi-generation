@@ -16,7 +16,7 @@ features:
     additionalProperties: 0.1.1
     bigint: 0.1.0
     constsAndDefaults: 0.1.2
-    core: 2.0.0
+    core: 2.0.1
     customSecuritySchemes: 0.1.1
     decimal: 0.1.0
     defaultEnabledRetries: 0.1.0
@@ -58,7 +58,7 @@ trackedFiles:
   manifest.json:
     last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
-    last_write_checksum: sha1:4b0ecf94b179c07fabd75eac7a9f7ebf37868fbc
+    last_write_checksum: sha1:54f9720c0126bb69e772016bfab3bfa9a01cb4da
   server.json:
     last_write_checksum: sha1:cdd68ed3cc00a507a2bc71e85823fe10482e2527
   src/__tests__/assertions.ts:
