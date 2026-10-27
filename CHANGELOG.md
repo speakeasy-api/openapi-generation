@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.952.7] - 2026-10-27
+### :bug: Bug Fixes
+- [`15921c4`](https://github.com/speakeasy-api/openapi-generation/commit/15921c4c33c1feeb71d524e8cb8600139131b6e9) - **ruby**: accept acronyms in module name validation ([#152](https://github.com/speakeasy-api/openapi-generation/pull/152)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.952.6] - 2026-10-27
 ### :bug: Bug Fixes
 - [`49e7403`](https://github.com/speakeasy-api/openapi-generation/commit/49e74034de3cdbc79b98149a716f78f89f48055f) - **typescript,mcp**: validate usageSDKInitImports and advancedFlags in gen.yaml ([#154](https://github.com/speakeasy-api/openapi-generation/pull/154)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20743,3 +20748,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.952.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.3...v2.952.4
 [v2.952.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.4...v2.952.5
 [v2.952.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.5...v2.952.6
+[v2.952.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.6...v2.952.7
