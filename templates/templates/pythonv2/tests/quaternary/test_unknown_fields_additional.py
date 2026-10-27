@@ -131,6 +131,11 @@ def test_unrecognized_enum_generated_model():
         dumped = model.model_dump(by_alias=True)
         assert type(dumped["futureKind"]) is UnrecognizedStr
         assert type(dumped["futureCode"]) is UnrecognizedInt
+        helper_dumped = model.to_dict()
+        assert type(helper_dumped["futureKind"]) is str
+        assert type(helper_dumped["futureCode"]) is int
+        assert helper_dumped == {"label": "root", "futureKind": "third", "futureCode": 3}
+        assert json.loads(model.to_json()) == helper_dumped
         assert json.loads(utils.marshal_json(model, shared.FieldEnvelope)) == {"label": "root", "futureKind": "third", "futureCode": 3}
 
 
