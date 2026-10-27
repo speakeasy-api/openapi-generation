@@ -238,9 +238,20 @@ function getConfigFields(
       DefaultValue: "OpenApiSdk",
       Description:
         "The top level module names for your sdk https://ruby-doc.org/3.2.6/syntax/modules_and_classes_rdoc.html",
-      ValidationRegex: /^([A-Z][a-z0-9]+)+$/.source,
+      ValidationRegex: /^[A-Z][A-Za-z0-9]*$/.source,
       ValidationMessage:
         "Module names should be PascalCase and have no special chars",
+      ValidationExamples: {
+        valid: ["AcmeRubySDK", "OpenAPI", "SDK", "Acme2", "A"],
+        invalid: [
+          "openApiSdk",
+          "Open_Api",
+          "Open::Api",
+          "Open-Api",
+          "2Acme",
+          "",
+        ],
+      },
     },
     additionalDependencies: {
       Name: "additionalDependencies",
