@@ -1,0 +1,22 @@
+templates/templates/cli/tests/primary/unions_additional_test.go.stmpl
+  h_9630b74bdac540 1022-1053
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 684,690,831,1129-1174,2137,2143,2468,2496
+.changesets/1793075990-10521f23.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 686,692,833,1131-1176,2139,2145,2470,2498
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "55258448d4ab29534601a4ec3b5ae5d4e386e0e4",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
