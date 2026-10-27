@@ -1718,7 +1718,6 @@ function sanitizeAdditionalPropertiesField(
   }
 
   addImport("typing", "Dict");
-  addImport("pydantic", "");
   return `Dict[str, ${sanitizePydanticType(
     typeDefToFieldDef(
       field.Type.ItemType,
@@ -1729,7 +1728,7 @@ function sanitizeAdditionalPropertiesField(
     { optional: false, nullable: field.Type.ContainsNull },
     usageLocation,
     owningModelInfo,
-  )}] = pydantic.Field(init=False)`;
+  )}]`;
 }
 registerTemplateFunc(
   "sanitizeAdditionalPropertiesField",
