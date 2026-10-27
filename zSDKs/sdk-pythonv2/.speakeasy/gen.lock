@@ -502,19 +502,19 @@ trackedFiles:
   src/speakeasy/new_openapi/models/_operation_with_leading_and_trailing_underscores_op.py:
     last_write_checksum: sha1:9da7c78f1847e53efbd5892794ba082c856ccc88
   src/speakeasy/new_openapi/models/aloof.py:
-    last_write_checksum: sha1:b2164f2a6f9d7b5d583cd080a41ab5df96fad723
+    last_write_checksum: sha1:7d5c2f9f93ff0d2eaccf19e894805a036d0e4644
   src/speakeasy/new_openapi/models/approvalconfig.py:
     last_write_checksum: sha1:7412b9518b49bedad8b8965bd94e907ede790c97
   src/speakeasy/new_openapi/models/assetimageblock.py:
-    last_write_checksum: sha1:c7d29fd275edc489ee0630fcbc63f7b85565a5be
+    last_write_checksum: sha1:3e7482f00de1249646d0cb5880b955eb5d99f532
   src/speakeasy/new_openapi/models/assetnotestep.py:
-    last_write_checksum: sha1:4dfe8fdc2a59b79ed69ea5a25258df1f1eaaf92d
+    last_write_checksum: sha1:b1f7c2b50aa5e51315f1bf780167d8d7257c1e5d
   src/speakeasy/new_openapi/models/assetoutputstep.py:
-    last_write_checksum: sha1:7ae4ec2281d94ad13a988fc42a44091e7d5ebe1f
+    last_write_checksum: sha1:a3427e648ce9b6da7268219944a6bdb592c23dab
   src/speakeasy/new_openapi/models/assetresult.py:
-    last_write_checksum: sha1:0a801e767e2b549137c1a6249169032634b63c92
+    last_write_checksum: sha1:4a83b820c5e97289860c50fe29beaa71400e3edb
   src/speakeasy/new_openapi/models/assettextblock.py:
-    last_write_checksum: sha1:74f18001ce9c562ffa9c0187f336d3dfcb4b0254
+    last_write_checksum: sha1:f12c2b6c140b931ae6eadcce83f71f3e723b6a5a
   src/speakeasy/new_openapi/models/authop.py:
     last_write_checksum: sha1:7ccdc07da84bfe62e2bd395cc016d72aabc44b2e
   src/speakeasy/new_openapi/models/badrequestresponse_error.py:
@@ -528,37 +528,37 @@ trackedFiles:
   src/speakeasy/new_openapi/models/bar/pet.py:
     last_write_checksum: sha1:c8a5a8ed46d1c0db53ff55b0a75f68e003d79767
   src/speakeasy/new_openapi/models/bar/petowner.py:
-    last_write_checksum: sha1:93277e77b8743de38a13379b888bc01db40fc116
+    last_write_checksum: sha1:c7477a97f9e07544f2caa179e268ca66b7621e26
   src/speakeasy/new_openapi/models/bar/petstatus.py:
     last_write_checksum: sha1:37b688c141361461830c1dfe2933997fd6a00951
   src/speakeasy/new_openapi/models/bar/vehicle.py:
     last_write_checksum: sha1:5c6366c72438154f3adff350cef5c7da577cc2f6
   src/speakeasy/new_openapi/models/baseuser.py:
-    last_write_checksum: sha1:e601f193506b0224fc3fb3c5c555d7e15e5e31dc
+    last_write_checksum: sha1:9c43fc13b1c56d3d71fec599c44feaedd8c3a6b2
   src/speakeasy/new_openapi/models/baz/__init__.py:
     last_write_checksum: sha1:fbb65d90be5fef910378ae7ea0d3dd972ac7752e
   src/speakeasy/new_openapi/models/baz/namespaced.py:
-    last_write_checksum: sha1:6f701f924e3741626961b78e7e19e8dac857850d
+    last_write_checksum: sha1:be1a641b3ed6141607dc82d6230dca0a2b5d62b2
   src/speakeasy/new_openapi/models/baz/pet.py:
-    last_write_checksum: sha1:7c227b01ea95cbe60dffe0e5230c662a0763d8c4
+    last_write_checksum: sha1:b4f8f9c05ef7b80677e41efaed107f004068113a
   src/speakeasy/new_openapi/models/binaryandstringuploadop.py:
-    last_write_checksum: sha1:c0a1fd5ad923c8902abb0bcc93e422dc0373472c
+    last_write_checksum: sha1:b5f0ff8e0a8ee3d4cfefbac3968814e4ef37ddd6
   src/speakeasy/new_openapi/models/boole.py:
-    last_write_checksum: sha1:e459ad288012e3d166ecf22b4a50997d95a4fb67
+    last_write_checksum: sha1:d0bece48dee869be0295c136baa8a39241b19e28
   src/speakeasy/new_openapi/models/chatagentrequest.py:
-    last_write_checksum: sha1:1b66ce4c673ecdd79ae3f573eb4b4d1e7c16ad4d
+    last_write_checksum: sha1:fc3497158390367bb7980cfa28f1cb9a3c84b26a
   src/speakeasy/new_openapi/models/chatmodelrequest.py:
-    last_write_checksum: sha1:d3dc2aec37ac31a58ec32a3da9eb7ece15776afa
+    last_write_checksum: sha1:ada3acf0366b89d5372844d819c9a2878c37b627
   src/speakeasy/new_openapi/models/chatop.py:
-    last_write_checksum: sha1:279a27e75bf0778cac65c894ce1a4eb9faaae86e
+    last_write_checksum: sha1:1a7c2d7c150bcf4627385d1248b64e4f0e8f77b0
   src/speakeasy/new_openapi/models/circle.py:
-    last_write_checksum: sha1:523bca86d4f6a2f339f4ea1ba1eb6c26ff0a6ed7
+    last_write_checksum: sha1:59fecfeb6fcae929a0b3008842eed775e6aee9ac
   src/speakeasy/new_openapi/models/circularunion.py:
     last_write_checksum: sha1:82a4d2ffc8dbd0662e0649763a65bdc7e31478e7
   src/speakeasy/new_openapi/models/color.py:
     last_write_checksum: sha1:3cbf117fac27321e49b2989a82adac7105121b82
   src/speakeasy/new_openapi/models/createwithunionop.py:
-    last_write_checksum: sha1:600021d77f1d41c0af11cca7d057499300a76d39
+    last_write_checksum: sha1:852a860989bb94f6da7555642a184907fbc54c2b
   src/speakeasy/new_openapi/models/deleteuserop.py:
     last_write_checksum: sha1:757b8d3047b3ae8383ac982267c7a3d6456a338c
   src/speakeasy/new_openapi/models/deprecated1op.py:
@@ -576,49 +576,49 @@ trackedFiles:
   src/speakeasy/new_openapi/models/escalation.py:
     last_write_checksum: sha1:d6e4cb3baf6dbdc96219e96ce57a92f11c1b582b
   src/speakeasy/new_openapi/models/exhaustiveobject.py:
-    last_write_checksum: sha1:7263eaba9ddb80c6d2abc12c285587ea3d304a79
+    last_write_checksum: sha1:62b2e4ee73fcff9281b549102651f9d6a2fd2ceb
   src/speakeasy/new_openapi/models/failedresponse_error.py:
     last_write_checksum: sha1:29230b2bcd0614d4ccf00b8b19e9660a7bdda77e
   src/speakeasy/new_openapi/models/file.py:
-    last_write_checksum: sha1:c349c81d4db8c9af5015747019ca94f6693c858b
+    last_write_checksum: sha1:77bc34d9843b7ae79a8d867bbed4f59ac330aa54
   src/speakeasy/new_openapi/models/foo/__init__.py:
     last_write_checksum: sha1:c85b4cda9e10fac134bf17e81db393b79d9d79b7
   src/speakeasy/new_openapi/models/foo/animal.py:
     last_write_checksum: sha1:1e9b5c9e735c19a027e5d90564cba3b6216ad3f7
   src/speakeasy/new_openapi/models/foo/cat.py:
-    last_write_checksum: sha1:8cf0d4a57c1f29263e49c6525c46beb5dad2a0da
+    last_write_checksum: sha1:be5a4ca4c749cea9648c7c23a7f1c54d9b2ccbaf
   src/speakeasy/new_openapi/models/foo/dog.py:
-    last_write_checksum: sha1:8774fb7f35620a81adcd357134eb75024d32dce7
+    last_write_checksum: sha1:936f47a96e8305d6e2675a8d0fd63f8d2c7a4757
   src/speakeasy/new_openapi/models/foo/organization.py:
-    last_write_checksum: sha1:3265d850c86165d6f55cea0ab2ca88b90a802d43
+    last_write_checksum: sha1:7351aebee79f474fb1b06c7d90b16229e2ac5c0c
   src/speakeasy/new_openapi/models/foo/pet.py:
-    last_write_checksum: sha1:ca44a1afc4037e980036c6c8ff9e7a0776581cbd
+    last_write_checksum: sha1:240c2ca9b4837191ebbc96a325c16387632f0225
   src/speakeasy/new_openapi/models/foo/petowner.py:
-    last_write_checksum: sha1:8dfd29d75ce3e27525c85c2ac96fd35c3cb02109
+    last_write_checksum: sha1:e15a7705b1b30855051539691fcf97139f3e413b
   src/speakeasy/new_openapi/models/foo/petspecies.py:
     last_write_checksum: sha1:a5df0b625565ecf78ea933a3f2af562386fba17a
   src/speakeasy/new_openapi/models/gender.py:
     last_write_checksum: sha1:e935cf4f6a56e1109e0c326a15d967644b2c8106
   src/speakeasy/new_openapi/models/getassetop.py:
-    last_write_checksum: sha1:886734759a5e164221e61171058e8bd81b26ea1e
+    last_write_checksum: sha1:44277245515c29448f58b8f59374ea9a58ab234f
   src/speakeasy/new_openapi/models/getduplicateexportcollisionop.py:
-    last_write_checksum: sha1:5fe8c40dbb42afad36cde813f752254f0b51a04e
+    last_write_checksum: sha1:db815162db233e531630dfe5e4544d1532469f3c
   src/speakeasy/new_openapi/models/getemptyobjecterrorop.py:
     last_write_checksum: sha1:75c623983f8830cd7252d230ce6e0e9d4df6829e
   src/speakeasy/new_openapi/models/geterrorinunionop.py:
     last_write_checksum: sha1:356f45f833c96cce62bda024eacf978475a07d0c
   src/speakeasy/new_openapi/models/geterroronlyexampleop.py:
-    last_write_checksum: sha1:2b7afea7ce33742d138d5de67ea32f0c7c098852
+    last_write_checksum: sha1:2411418d8fa81b92d4d6d9a57babf87b6b40b9a7
   src/speakeasy/new_openapi/models/getfullyflattenedrequestop.py:
-    last_write_checksum: sha1:8170c959699f163fd33bd5259ec533d2cac2bef6
+    last_write_checksum: sha1:3aa6f3ee594ca9afad7d0b4d09f9aeb9243fedea
   src/speakeasy/new_openapi/models/getpetownersop.py:
     last_write_checksum: sha1:9b7829885bcdbb78f372af13245e3c1b29d49ae5
   src/speakeasy/new_openapi/models/getpolymorphismop.py:
-    last_write_checksum: sha1:32f35b2a0b892f22ccaff15b5acbdaa32975ffe1
+    last_write_checksum: sha1:a6045de4c5fce5ed40ea616b03dadedbeab70cb2
   src/speakeasy/new_openapi/models/getpositionaldefaultop.py:
     last_write_checksum: sha1:72ca9dae3ea68f51322778f910fc1aa899be05b3
   src/speakeasy/new_openapi/models/getrequestbodyflattenedawayop.py:
-    last_write_checksum: sha1:82adc42381b9fb423e15fe5b211030eff0d0c930
+    last_write_checksum: sha1:0d5473e179be890a71a193055a8ac515398c67a9
   src/speakeasy/new_openapi/models/getunionerrorsop.py:
     last_write_checksum: sha1:0b4b09143c2133f9440983ce6297890124117b9f
   src/speakeasy/new_openapi/models/getuserop.py:
@@ -626,17 +626,17 @@ trackedFiles:
   src/speakeasy/new_openapi/models/internal/__init__.py:
     last_write_checksum: sha1:fa00c646cfffc2553593346d80fbd5c7ddb4d9b5
   src/speakeasy/new_openapi/models/internal/globals.py:
-    last_write_checksum: sha1:0a3087d3adf4d09be45158681672b17c41dfd9a8
+    last_write_checksum: sha1:11c41d1841e6e10c3ad70bd708fb7e3ac1627c12
   src/speakeasy/new_openapi/models/listtest1op.py:
-    last_write_checksum: sha1:ffb790772a222c6141bf0a108fba14833226556f
+    last_write_checksum: sha1:2cca9f8fc68dbb6c209c0f6eb1766e5a7b70d0c6
   src/speakeasy/new_openapi/models/loginop.py:
     last_write_checksum: sha1:468add7ca4aea76c9e1a7ccaa627b59c45fb3e70
   src/speakeasy/new_openapi/models/mcppolicy.py:
     last_write_checksum: sha1:79b406c5b22b34cc7d9b42eed4d5763ed4dffb81
   src/speakeasy/new_openapi/models/metadata.py:
-    last_write_checksum: sha1:7869949e0863792f6a866efea5afa4b868da0883
+    last_write_checksum: sha1:08aebfa97e52c1f3e396e93eec5700c9ddf9e3ec
   src/speakeasy/new_openapi/models/metadataany.py:
-    last_write_checksum: sha1:cccb2dc6b800a00f4ca94a7c4f261f20686140e8
+    last_write_checksum: sha1:3119c8620b5f91e1de3c334f8ed9d90bc23a38c2
   src/speakeasy/new_openapi/models/namespaceconflicttest.py:
     last_write_checksum: sha1:3c086e737bdd18289b7b56a14e9813070773cafa
   src/speakeasy/new_openapi/models/namespacetypestest.py:
@@ -644,9 +644,9 @@ trackedFiles:
   src/speakeasy/new_openapi/models/no_response_error.py:
     last_write_checksum: sha1:7f326424a7d5ae1bcd5c89a0d6b3dbda9138942f
   src/speakeasy/new_openapi/models/objwithrenamedproperties.py:
-    last_write_checksum: sha1:cdadeab32a6c3c99362fcec3f55cbc0b86b6eb34
+    last_write_checksum: sha1:a1cb0a0e9f2b3b0ee3609973aa23bfa8403dabc0
   src/speakeasy/new_openapi/models/oneofwithfactoredoutproperties.py:
-    last_write_checksum: sha1:8fd6e2006cdff72b85b146fe2a1a5af05d0d3ac1
+    last_write_checksum: sha1:cf82ca7c17376a48b597dc4d3cc4c7fc6d9ffa04
   src/speakeasy/new_openapi/models/parenthesesinpathallowedop.py:
     last_write_checksum: sha1:ee19301a0804f599fa29c944f7bc86d3db6ebe19
   src/speakeasy/new_openapi/models/paymentcreatedop.py:
@@ -658,15 +658,15 @@ trackedFiles:
   src/speakeasy/new_openapi/models/postfileop.py:
     last_write_checksum: sha1:bc0eb2314695db796f69f04532d81dc3c606f963
   src/speakeasy/new_openapi/models/postfilewithencodingop.py:
-    last_write_checksum: sha1:915f5d7218c3e763984740a9ea906bb0ea86ddd2
+    last_write_checksum: sha1:7f67dddd29b57a33120d494d93c1c04b90f3f5c4
   src/speakeasy/new_openapi/models/posttest2op.py:
-    last_write_checksum: sha1:35e784f7654988be14f04225f231b9427524aa65
+    last_write_checksum: sha1:60bea245fd32613810e5097f6f67c03ba1941474
   src/speakeasy/new_openapi/models/rectangle.py:
-    last_write_checksum: sha1:ffebca58dbcf1e02ce6dc07dabf75f1c3100bcd4
+    last_write_checksum: sha1:b6a9e8d5cb586eabe77586a63a96060d969cb999
   src/speakeasy/new_openapi/models/recursiveformfield.py:
-    last_write_checksum: sha1:ebd842a94d0132478dc8f86e2db15e72da7c0684
+    last_write_checksum: sha1:433873f8617d1251423cb37fdb26153b93fd3b62
   src/speakeasy/new_openapi/models/renderassetop.py:
-    last_write_checksum: sha1:eb9a82e3b356cbe462dc641c0b915e814aeb497d
+    last_write_checksum: sha1:7f91b58d0d30605b310ad1cea0f20218d858434a
   src/speakeasy/new_openapi/models/requesttimeouterror.py:
     last_write_checksum: sha1:c77b2803afb86e196db8e547bde9128effdc50a8
   src/speakeasy/new_openapi/models/responsevalidationerror.py:
@@ -678,11 +678,11 @@ trackedFiles:
   src/speakeasy/new_openapi/models/sdkerror.py:
     last_write_checksum: sha1:0f8bfdf0fadae51b100d3e3ca9e861c757cbbabc
   src/speakeasy/new_openapi/models/security.py:
-    last_write_checksum: sha1:7a35b6171d527d4dc2dbc364fdeaa43abb042382
+    last_write_checksum: sha1:64b7a508bc67ec5540f5d95cab4636612a2509e3
   src/speakeasy/new_openapi/models/shape.py:
     last_write_checksum: sha1:efe7d67814c451101cdbf6e6a39c713096e68853
   src/speakeasy/new_openapi/models/shaperequest.py:
-    last_write_checksum: sha1:8332105d406ffcf40f8a5539c0686a48eab3c06f
+    last_write_checksum: sha1:b563e440470bc8de0bdaf9dbe33d8113a1d98d67
   src/speakeasy/new_openapi/models/simpleobject.py:
     last_write_checksum: sha1:eddf0fd28390a97b1f5f2fd4ca813067fdf5c42a
   src/speakeasy/new_openapi/models/someunion.py:
@@ -694,11 +694,11 @@ trackedFiles:
   src/speakeasy/new_openapi/models/taskresponse.py:
     last_write_checksum: sha1:5efbbd31fa80e1e17e8765f77ece3c04e5ddf68a
   src/speakeasy/new_openapi/models/templatebracestest.py:
-    last_write_checksum: sha1:14e753f840d6e46640b0060fa307af4e7112526a
+    last_write_checksum: sha1:a3c6a7940de5d91eca7035c053f8249957ecd969
   src/speakeasy/new_openapi/models/test2request.py:
-    last_write_checksum: sha1:f8bebe6b06c5fd8e8d6bff6d9084f384569eb92a
+    last_write_checksum: sha1:de50ce6bcc6fd6b3e8fd7efc86330d7a67116e0f
   src/speakeasy/new_openapi/models/test2response.py:
-    last_write_checksum: sha1:2b4745f99f22719e044b8811b18a899132990aac
+    last_write_checksum: sha1:6e5e54783658f8859c15ee23e039561fa7a52f66
   src/speakeasy/new_openapi/models/test2response_error.py:
     last_write_checksum: sha1:77b07c54b21fc19d9a9e5b5e13430e8795ad9bc3
   src/speakeasy/new_openapi/models/testendpointop.py:
@@ -710,11 +710,11 @@ trackedFiles:
   src/speakeasy/new_openapi/models/updateuserop.py:
     last_write_checksum: sha1:6afb62851a48192e0d31b237389b364d681107fd
   src/speakeasy/new_openapi/models/user.py:
-    last_write_checksum: sha1:e1433ee25b200ce57ec3046f529354caa6e8b497
+    last_write_checksum: sha1:1d72f49732c8f7cb7e7611e9fd2ee05ee70b45ce
   src/speakeasy/new_openapi/models/validateop.py:
-    last_write_checksum: sha1:9401bf8b417a78611a49ec7e701d3aa76f7bf156
+    last_write_checksum: sha1:5ed40dabc7287602fee6d10293c13f439f98739c
   src/speakeasy/new_openapi/models/variantrecord.py:
-    last_write_checksum: sha1:92cdc12e1aea3f0cf7eb9bcf8785c7d3b3d1d8f0
+    last_write_checksum: sha1:af782587820dc4e6c06e6ff138f8380d76a1ede8
   src/speakeasy/new_openapi/namespacetests.py:
     last_write_checksum: sha1:e8dda8124b42827a2e415670fb668bc28372ffa4
   src/speakeasy/new_openapi/obsolete.py:
@@ -742,11 +742,11 @@ trackedFiles:
   src/speakeasy/new_openapi/testgroup.py:
     last_write_checksum: sha1:086431534cbb4def1de44a50b88c88f6f7b9954f
   src/speakeasy/new_openapi/types/__init__.py:
-    last_write_checksum: sha1:f9ad14217f832e74f594285960125add50324be9
+    last_write_checksum: sha1:166eb50af851c4200ed67fe47c64b1d58b99ed72
   src/speakeasy/new_openapi/types/base64fileinput.py:
     last_write_checksum: sha1:1522687ae3398374c35710cad993a6e82b5ab99d
   src/speakeasy/new_openapi/types/basemodel.py:
-    last_write_checksum: sha1:6295cc5750e00e0323902092f7e52549937b0b9c
+    last_write_checksum: sha1:ebe5d75bf430ed4b0c52cfbdda3e3cb9ba6c9c64
   src/speakeasy/new_openapi/types_.py:
     last_write_checksum: sha1:05e36f6428f04b1ea7d2609aa55f3966868b58f0
   src/speakeasy/new_openapi/utils/__init__.py:

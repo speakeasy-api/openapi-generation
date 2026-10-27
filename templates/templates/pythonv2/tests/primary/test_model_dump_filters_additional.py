@@ -1,7 +1,7 @@
 import json
 from typing import List, Optional
 
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, model_serializer
 
 from openapi import utils
 from openapi.models import errors, shared
@@ -204,3 +204,29 @@ class TestEmptyAlias:
         assert model.model_dump()[""] == b"x"
         assert "content" not in model.model_dump(by_alias=True)
         assert "" not in model.model_dump(by_alias=True, exclude={"content"})
+
+
+class TestSerializerOverrides:
+    def test_decorated_override_calls_parent(self):
+        class Custom(shared.FilteredFields):
+            @model_serializer(mode="wrap")
+            def serialize_model(self, handler):
+                return {**super().serialize_model(handler), "custom": True}
+
+        dumped = Custom(display_name="name", required_nullable=None).model_dump()
+
+        assert dumped["displayName"] == "name"
+        assert dumped["requiredNullable"] is None
+        assert dumped["custom"] is True
+
+    def test_undecorated_override_keeps_filters(self):
+        class Custom(shared.FilteredFields):
+            def serialize_model(self, handler):
+                return {**super().serialize_model(handler), "custom": True}
+
+        dumped = Custom(display_name="name", required_nullable=None).model_dump(
+            exclude={"display_name"}
+        )
+
+        assert "displayName" not in dumped
+        assert dumped["custom"] is True
