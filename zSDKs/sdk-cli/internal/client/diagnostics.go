@@ -20,6 +20,7 @@ import (
 
 	"openapi/internal/config"
 	"openapi/internal/flagutil"
+	"openapi/internal/output"
 )
 
 // maxBodyPreview is the maximum number of bytes to show in body previews.
@@ -34,12 +35,18 @@ func IsDryRun(cmd *cobra.Command) bool {
 	return v
 }
 
+// IsJSONDryRun reports whether --dry-run should write NDJSON previews to
+// stdout: in agent mode, with a caller-explicit --jq, or with any machine
+// output format (json, yaml, toon). Command-declared jq presets do not count.
 func IsJSONDryRun(cmd *cobra.Command) bool {
 	if !IsDryRun(cmd) {
 		return false
 	}
+	if output.IsAgentMode() || flagutil.FlagChanged(cmd, "jq") {
+		return true
+	}
 	format := flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), false)
-	return format == "json" || flagutil.FlagChanged(cmd, "jq")
+	return format != "pretty" && format != "table"
 }
 
 // IsDebug returns true when --debug is set and --dry-run is not.
