@@ -11,6 +11,48 @@ class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(
         populate_by_name=True, arbitrary_types_allowed=True, protected_namespaces=(){{if .Global.Config.PreserveUnknownFields}}, extra="allow"{{end}}
     )
+{{- if .Global.Config.ModelSerializationMethods}}
+
+    def to_dict(
+        self,
+        *,
+        mode: Literal["json", "python"] = "python",
+        use_api_names: bool = True,
+        exclude_unset: bool = True,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        warnings: bool = True,
+    ) -> dict[str, Any]:
+        return self.model_dump(
+            mode=mode,
+            by_alias=use_api_names,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            warnings=warnings,
+            context={SERIALIZATION_METHODS_DUMP: True},
+        )
+
+    def to_json(
+        self,
+        *,
+        indent: Optional[int] = 2,
+        use_api_names: bool = True,
+        exclude_unset: bool = True,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        warnings: bool = True,
+    ) -> str:
+        return self.model_dump_json(
+            indent=indent,
+            by_alias=use_api_names,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            warnings=warnings,
+            context={SERIALIZATION_METHODS_DUMP: True},
+        )
+{{- end}}
 
 
 class Unset(BaseModel):
@@ -27,6 +69,9 @@ class Unset(BaseModel):
 
 UNSET = Unset()
 UNSET_SENTINEL = "~?~unset~?~sentinel~?~"
+{{- if .Global.Config.ModelSerializationMethods}}
+SERIALIZATION_METHODS_DUMP = "speakeasy_serialization_methods_dump"
+{{- end}}
 
 
 T = TypeVar("T")
@@ -41,8 +86,14 @@ else:
 
 
 _exclude_none: ContextVar[Optional[bool]] = ContextVar("exclude_none", default=None)
-{{- if .Global.Config.PreserveUnknownFields}}
+{{- $exposeByAlias := or .Global.Config.PreserveUnknownFields .Global.Config.ModelSerializationMethods}}
+{{- if $exposeByAlias}}
 _by_alias: ContextVar[Optional[bool]] = ContextVar("by_alias", default=None)
+{{- end}}
+{{- if .Global.Config.ModelSerializationMethods}}
+_serialization_methods_dump: ContextVar[bool] = ContextVar(
+    "serialization_methods_dump", default=False
+)
 {{- end}}
 
 
@@ -50,13 +101,21 @@ def serialize_with_info(
     serialize: Callable[[Any], Any], handler: Any, info: core_schema.SerializationInfo
 ) -> Any:
     token = _exclude_none.set(info.exclude_none)
-{{- if .Global.Config.PreserveUnknownFields}}
+{{- if $exposeByAlias}}
     by_alias_token = _by_alias.set(info.by_alias)
+{{- end}}
+{{- if .Global.Config.ModelSerializationMethods}}
+    serialization_methods_dump_token = _serialization_methods_dump.set(
+        isinstance(info.context, dict) and SERIALIZATION_METHODS_DUMP in info.context
+    )
 {{- end}}
     try:
         return serialize(handler)
     finally:
-{{- if .Global.Config.PreserveUnknownFields}}
+{{- if .Global.Config.ModelSerializationMethods}}
+        _serialization_methods_dump.reset(serialization_methods_dump_token)
+{{- end}}
+{{- if $exposeByAlias}}
         _by_alias.reset(by_alias_token)
 {{- end}}
         _exclude_none.reset(token)
@@ -65,12 +124,19 @@ def serialize_with_info(
 def current_exclude_none() -> Optional[bool]:
     """Return the exclude_none option of the enclosing serialize_with_info call, or None outside of one."""
     return _exclude_none.get()
-{{- if .Global.Config.PreserveUnknownFields}}
+{{- if $exposeByAlias}}
 
 
 def current_by_alias() -> Optional[bool]:
     """Return the by_alias option of the enclosing serialize_with_info call, or None outside of one."""
     return _by_alias.get()
+{{- end}}
+{{- if .Global.Config.ModelSerializationMethods}}
+
+
+def current_serialization_methods_dump() -> bool:
+    """Return whether the enclosing serialize_with_info call comes from to_dict() or to_json()."""
+    return _serialization_methods_dump.get()
 {{- end}}
 
 
