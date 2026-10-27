@@ -103,6 +103,59 @@ func TestWhoamiGlobalDefaults(t *testing.T) {
 	}
 }
 
+func TestWhoamiShowsOutputFormatPreference(t *testing.T) {
+	type preference struct {
+		Source string `json:"source" yaml:"source"`
+		Value  string `json:"value" yaml:"value"`
+	}
+	type whoamiInfo struct {
+		Preferences map[string]preference `json:"preferences" yaml:"preferences"`
+	}
+	for _, tt := range []struct {
+		name       string
+		configured string
+		env        string
+		args       []string
+		decode     func([]byte, any) error
+		want       preference
+	}{
+		{name: "config", configured: "json", decode: json.Unmarshal, want: preference{Source: "config", Value: "json"}},
+		{name: "env over config", configured: "json", env: "yaml", decode: yaml.Unmarshal, want: preference{Source: "env", Value: "yaml"}},
+		{name: "flag over config", configured: "yaml", args: []string{"--output-format", "json"}, decode: json.Unmarshal, want: preference{Source: "flag", Value: "json"}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			resetConfig(t)
+			h := NewCLITestHarness(t)
+			h.resetAndSetupEnv()
+			writeConfigFile(t, os.Getenv("HOME"), map[string]interface{}{"output_format": tt.configured})
+			t.Setenv("CLI_OUTPUT_FORMAT", tt.env)
+			root, err := cli.NewRootCommand()
+			require.NoError(t, err)
+			root.SetOut(h.stdout)
+			root.SetErr(h.stderr)
+
+			require.NoError(t, cli.ExecuteRoot(context.Background(), root, append([]string{"whoami", "--no-interactive"}, tt.args...)))
+			var info whoamiInfo
+			require.NoError(t, tt.decode([]byte(h.GetStdout()), &info), h.GetStdout())
+			assert.Equal(t, tt.want, info.Preferences["output-format"])
+		})
+	}
+
+	t.Run("default", func(t *testing.T) {
+		resetConfig(t)
+		h := NewCLITestHarness(t)
+		h.resetAndSetupEnv()
+		root, err := cli.NewRootCommand()
+		require.NoError(t, err)
+		root.SetOut(h.stdout)
+		root.SetErr(h.stderr)
+
+		require.NoError(t, cli.ExecuteRoot(context.Background(), root, []string{"whoami", "--no-interactive"}))
+		assert.Contains(t, h.GetStdout(), "Preferences:")
+		assert.Regexp(t, `--output-format\s+\[default\]\s+pretty`, h.GetStdout())
+	})
+}
+
 func TestResolveCredentialDefaultPrecedence(t *testing.T) {
 	for _, tt := range []struct {
 		name string
