@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.952.9] - 2026-10-27
+### :bug: Bug Fixes
+- [`5fe3d55`](https://github.com/speakeasy-api/openapi-generation/commit/5fe3d55216daf36d6dcc727e31993b43aaa1e770) - **python**: serialize unrecognized open enum values ([#145](https://github.com/speakeasy-api/openapi-generation/pull/145)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.952.8] - 2026-10-27
 ### :bug: Bug Fixes
 - [`1f63a44`](https://github.com/speakeasy-api/openapi-generation/commit/1f63a44cff6ee468325dbe87dc2de43c6b96be17) - **go,mcp,php,java**: declare config validation examples and fix the patterns they expose ([#155](https://github.com/speakeasy-api/openapi-generation/pull/155)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20755,3 +20760,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.952.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.5...v2.952.6
 [v2.952.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.6...v2.952.7
 [v2.952.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.7...v2.952.8
+[v2.952.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.8...v2.952.9
