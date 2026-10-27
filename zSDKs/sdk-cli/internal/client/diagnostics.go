@@ -18,7 +18,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"openapi/internal/config"
 	"openapi/internal/flagutil"
 	"openapi/internal/output"
 )
@@ -45,7 +44,7 @@ func IsJSONDryRun(cmd *cobra.Command) bool {
 	if output.IsAgentMode() || flagutil.FlagChanged(cmd, "jq") {
 		return true
 	}
-	format := flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), false)
+	format := output.EffectiveOutputFormat(cmd)
 	return format != "pretty" && format != "table"
 }
 
