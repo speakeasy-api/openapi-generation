@@ -1,10 +1,12 @@
 package snapshots
 
 import (
-	"os/exec"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
-	"github.com/speakeasy-api/openapi-generation/v2/internal/env"
 	"github.com/speakeasy-api/openapi-generation/v2/pkg/generate/snapshots/snaptest"
 	"github.com/stretchr/testify/require"
 )
@@ -134,15 +136,27 @@ def __dir__():
 		Expected:     expectedSnapshot,
 		AfterGenerate: func(t *testing.T, tempDir string) {
 			t.Helper()
-			if env.SnapshotSkipCompile() {
-				return
-			}
-			// Static checks accept any name imported from types because its
+			// Type checkers accept any name imported from types because its
 			// __init__.py defines a module-level __getattr__.
-			cmd := exec.Command("uv", "run", "--no-sync", "python", "-c", "from testpkg.types import Widget")
-			cmd.Dir = tempDir
-			output, err := cmd.CombinedOutput()
-			require.NoError(t, err, string(output))
+			typesDir := filepath.Join(tempDir, "src", "testpkg", "types")
+			initSource, err := os.ReadFile(filepath.Join(typesDir, "__init__.py"))
+			require.NoError(t, err)
+			allBlock := regexp.MustCompile(`(?s)__all__ = \[(.*?)\]`).FindSubmatch(initSource)
+			require.NotNil(t, allBlock)
+			exported := map[string]bool{}
+			for _, name := range regexp.MustCompile(`"(\w+)"`).FindAllSubmatch(allBlock[1], -1) {
+				exported[string(name[1])] = true
+			}
+
+			modelSource, err := os.ReadFile(filepath.Join(typesDir, "widget.py"))
+			require.NoError(t, err)
+			importBlock := regexp.MustCompile(`(?s)from testpkg\.types import \((.*?)\)`).FindSubmatch(modelSource)
+			require.NotNil(t, importBlock)
+			for _, name := range strings.Split(string(importBlock[1]), ",") {
+				if name = strings.TrimSpace(name); name != "" {
+					require.True(t, exported[name], "types/__init__.py does not export %q imported by types/widget.py", name)
+				}
+			}
 		},
 	})
 }
