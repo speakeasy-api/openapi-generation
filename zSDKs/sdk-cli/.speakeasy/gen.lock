@@ -13,7 +13,7 @@ features:
     bigint: 0.0.0
     cliCommands: 0.2.1
     constsAndDefaults: 0.0.0
-    core: 0.9.14
+    core: 0.9.15
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -224,7 +224,9 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:dbbfb30c1445584c4365afa9a81354a6721d8a50
   internal/client/client.go:
-    last_write_checksum: sha1:58db154dfc3b80e998471223136423d3ffc1ca92
+    last_write_checksum: sha1:a9c5d6b2d6251fa62325f3668db8b1920596e0d3
+  internal/client/client_test.go:
+    last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
     last_write_checksum: sha1:30b37c632ff875e00e6bce57caa64050dff89fcf
   internal/clierrors/clierrors.go:
@@ -272,7 +274,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
   internal/output/classify.go:
-    last_write_checksum: sha1:11ad9caaff14fc584399c2f88b328d9cc74f92a9
+    last_write_checksum: sha1:2d17c649096fbd0384e2a8be2e1e5efe189ed40d
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
