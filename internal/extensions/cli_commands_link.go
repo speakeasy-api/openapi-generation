@@ -2394,9 +2394,10 @@ func (w *cliStreamPathWalker) recordLeafEnum(schemaMap map[string]any, seen []st
 
 // leafEnum reports the string members a string leaf is closed over. Every
 // keyword on the schema constrains conjunctively: a const, a closed enum, the
-// referenced component, each allOf arm, and a oneOf/anyOf (whose non-null arms
-// must all be closed) each contribute a member set, and the leaf is closed
-// over their intersection. Arms that only set a type constrain nothing.
+// referenced component and each allOf arm contribute a member set, and the
+// leaf is closed over their intersection. Arms that only set a type constrain
+// nothing. A oneOf/anyOf then filters those members, or supplies them when no
+// other keyword does and every non-null arm is closed.
 func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) (values []string, closed, open bool) {
 	if unknownValues, ok := schemaMap["x-speakeasy-unknown-values"].(string); ok && unknownValues == "allow" {
 		return nil, false, true
@@ -2450,9 +2451,16 @@ func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) 
 			}
 		}
 	}
-	if members := cliUnionMembers(schemaMap); members != nil {
-		unionClosed := true
-		var unionValues []string
+	closed = len(sources) > 0
+	if closed {
+		values = cliIntersectStrings(sources)
+	}
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		members, _ := schemaMap[keyword].([]any)
+		if len(members) == 0 {
+			continue
+		}
+		var arms []cliEnumArm
 		for _, member := range members {
 			memberMap, ok := member.(map[string]any)
 			if !ok {
@@ -2468,18 +2476,59 @@ func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) 
 			if memberOpen {
 				return nil, false, true
 			}
-			unionClosed = unionClosed && memberClosed
-			unionValues = append(unionValues, memberValues...)
+			arms = append(arms, cliEnumArm{values: memberValues, closed: memberClosed})
 		}
-		if !unionClosed {
-			return nil, false, false
+		if !closed {
+			for _, arm := range arms {
+				if !arm.closed {
+					return nil, false, false
+				}
+				for _, value := range arm.values {
+					if !cliContains(values, value) {
+						values = append(values, value)
+					}
+				}
+			}
+			closed = true
 		}
-		sources = append(sources, unionValues)
+		values = cliFilterUnionMembers(values, arms, keyword == "oneOf")
 	}
-	if len(sources) == 0 {
+	if !closed {
 		return nil, false, false
 	}
-	return cliIntersectStrings(sources), true, false
+	return values, true, false
+}
+
+// cliEnumArm is one oneOf/anyOf arm of a string leaf: the members it is
+// closed over, or any string when it is not closed.
+type cliEnumArm struct {
+	values []string
+	closed bool
+}
+
+// cliFilterUnionMembers keeps the candidates the union accepts: at least one
+// arm for anyOf, exactly one for oneOf. An arm that is not closed may carry
+// constraints that cannot be evaluated here, so a oneOf containing one only
+// requires a match, which keeps every possible member in the table.
+func cliFilterUnionMembers(candidates []string, arms []cliEnumArm, exactlyOne bool) []string {
+	for _, arm := range arms {
+		if !arm.closed {
+			exactlyOne = false
+		}
+	}
+	var out []string
+	for _, candidate := range candidates {
+		matches := 0
+		for _, arm := range arms {
+			if !arm.closed || cliContains(arm.values, candidate) {
+				matches++
+			}
+		}
+		if matches > 0 && (!exactlyOne || matches == 1) {
+			out = append(out, candidate)
+		}
+	}
+	return out
 }
 
 // cliIntersectStrings keeps the members of the first set present in every

@@ -5657,6 +5657,30 @@ operations:
 	}
 }
 
+func TestCLICommands_OutcomeStreamStateOneOfExcludesOverlap(t *testing.T) {
+	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
+	require.Contains(t, cliCommandsTestSpec, stopReason)
+	const table = "          done: success\n          cancelled: failure"
+	require.Contains(t, validOutcomeManifest, table)
+
+	spec := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      oneOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, warnings, err := decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          extra: failure", 1))
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `output.outcome.states classifies "cancelled", which is not an enum member at $.data.reason`)
+
+	anyOf := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      anyOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, _, err = decodeCLIWithSpec(t, anyOf, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.NoError(t, err)
+
+	unbounded := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      oneOf:\n        - enum: [done, cancelled]\n        - type: string\n", 1)
+	_, _, err = decodeCLIWithSpec(t, unbounded, validOutcomeManifest)
+	require.NoError(t, err)
+}
+
 func TestCLICommands_OutcomeStreamStateRefSiblingCycle(t *testing.T) {
 	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
 	require.Contains(t, cliCommandsTestSpec, stopArm)
@@ -5687,6 +5711,7 @@ func TestCLICommands_OutcomeStreamStateAllOfIntersectsEnums(t *testing.T) {
 		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n", ""},
 		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n", ""},
 		{"properties beside ref on the path", "    StopReason:\n      type: string\n      enum: [done, cancelled, extra]\n", "          properties:\n            reason:\n              enum: [done, cancelled]\n"},
+		{"enum beside union with an unbounded arm", "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      anyOf:\n        - type: string\n        - enum: [done]\n", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := strings.Replace(cliCommandsTestSpec, stopReason, tc.schema, 1)
