@@ -165,6 +165,58 @@ func isSensitiveName(key string) bool {
 	return false
 }
 
+// isSensitiveJSONKey also matches header names, so header maps carried in a
+// request body (for example tool or proxy headers) are masked.
+func isSensitiveJSONKey(key string) bool {
+	normalized := normalizeSensitiveKey(key)
+	if sensitiveJSONKeys[normalized] {
+		return true
+	}
+	for _, header := range sensitiveHeaderKeys {
+		if normalizeSensitiveKey(header) == normalized {
+			return true
+		}
+	}
+	return false
+}
+
+var jsonSchemaKeywords = map[string]bool{
+	"$comment": true, "$id": true, "$ref": true, "$schema": true,
+	"additionalProperties": true, "allOf": true, "anyOf": true, "const": true,
+	"contentEncoding": true, "contentMediaType": true, "default": true,
+	"deprecated": true, "description": true, "enum": true, "examples": true,
+	"exclusiveMaximum": true, "exclusiveMinimum": true, "format": true,
+	"items": true, "maxItems": true, "maxLength": true, "maxProperties": true,
+	"maximum": true, "minItems": true, "minLength": true, "minProperties": true,
+	"minimum": true, "multipleOf": true, "not": true, "nullable": true,
+	"oneOf": true, "pattern": true, "patternProperties": true,
+	"properties": true, "readOnly": true, "required": true, "title": true,
+	"type": true, "uniqueItems": true, "writeOnly": true,
+}
+
+var jsonSchemaValueKeywords = []string{"const", "default", "enum", "examples"}
+
+// sensitiveSchemaObject reports whether v is a JSON Schema (every key a
+// schema keyword, with a type or $ref) rather than a value, so a property
+// named like a credential keeps its definition in previews.
+func sensitiveSchemaObject(v interface{}) (map[string]interface{}, bool) {
+	obj, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	_, hasType := obj["type"]
+	_, hasRef := obj["$ref"]
+	if !hasType && !hasRef {
+		return nil, false
+	}
+	for k := range obj {
+		if !jsonSchemaKeywords[k] {
+			return nil, false
+		}
+	}
+	return obj, true
+}
+
 // redactJSON recursively redacts sensitive keys in a JSON structure.
 func redactJSON(v interface{}, depth int) interface{} {
 	if depth > maxRedactDepth {
@@ -174,11 +226,25 @@ func redactJSON(v interface{}, depth int) interface{} {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(val))
 		for k, child := range val {
-			if sensitiveJSONKeys[normalizeSensitiveKey(k)] {
-				out[k] = "[REDACTED]"
-			} else {
+			if !isSensitiveJSONKey(k) {
 				out[k] = redactJSON(child, depth+1)
+				continue
 			}
+			schema, ok := sensitiveSchemaObject(child)
+			if !ok {
+				out[k] = "[REDACTED]"
+				continue
+			}
+			masked := make(map[string]interface{}, len(schema))
+			for sk, sv := range schema {
+				masked[sk] = sv
+			}
+			for _, keyword := range jsonSchemaValueKeywords {
+				if _, present := masked[keyword]; present {
+					masked[keyword] = "[REDACTED]"
+				}
+			}
+			out[k] = redactJSON(masked, depth+1)
 		}
 		return out
 	case []interface{}:

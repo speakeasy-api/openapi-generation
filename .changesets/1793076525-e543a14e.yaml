@@ -1,0 +1,10 @@
+id: 1793076525-e543a14e
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: mask header-named fields such as Authorization inside request and response body previews, and keep JSON Schema definitions stored under credential-like names readable
+author: TristanSpeakEasy
+date: "2026-10-27"

@@ -351,6 +351,39 @@ func TestDebugUsesSameRequestAndResponseRedactor(t *testing.T) {
 	require.GreaterOrEqual(t, strings.Count(stderr.String(), "[REDACTED]"), 2)
 }
 
+func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
+	body := `{` +
+		`"tools":[{"headers":{"Authorization":"Bearer header-secret","X-Trace":"visible-trace"}}],` +
+		`"parameters":{"type":"object","properties":{"password":{"type":"string","description":"visible-description","default":"default-secret"}}},` +
+		`"token":{"type":"bearer","value":"object-secret"}` +
+		`}`
+	req, err := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	var stdout bytes.Buffer
+	resp, err := (&client.DryRunClient{Stdout: &stdout, JSON: true}).Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	var preview struct {
+		Request struct {
+			Body map[string]interface{} `json:"body"`
+		} `json:"request"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &preview))
+	out := stdout.String()
+	require.NotContains(t, out, "header-secret")
+	require.NotContains(t, out, "default-secret")
+	require.NotContains(t, out, "object-secret")
+	require.Contains(t, out, "visible-trace")
+	require.Contains(t, out, "visible-description")
+
+	password := preview.Request.Body["parameters"].(map[string]interface{})["properties"].(map[string]interface{})["password"].(map[string]interface{})
+	require.Equal(t, "string", password["type"])
+	require.Equal(t, "[REDACTED]", password["default"])
+	require.Equal(t, "[REDACTED]", preview.Request.Body["token"])
+}
+
 func TestDryRunDepthLimitIsExplicit(t *testing.T) {
 	body := `"not-shown"`
 	for i := 0; i < 66; i++ {
