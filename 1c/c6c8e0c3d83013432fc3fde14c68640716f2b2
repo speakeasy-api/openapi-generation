@@ -1,0 +1,239 @@
+templates/templates/cli/auxiliary/internal/output/continuation.go.stmpl
+  h_9630b74bdac540 569
+internal/extensions/cli_commands_test.go
+  h_9630b74bdac540 5504-5513,5661-5694,5703-5705,5709,5711-5715,5719,6051-6137
+  s_bb77256f598b5c::t_5b0443242f05f5 5695-5697,5707-5708,6138
+templates/templates/cli/opcmd.go.stmpl
+  h_9630b74bdac540 360,385,388,391,541,544,547
+templates/templates/cli/auxiliary/internal/output/streaming.go.stmpl
+  h_9630b74bdac540 24-34,46-50,145,221
+.github/workflows/test.yml
+  s_bb77256f598b5c::t_d28a7b388ac6b0 179-202,207
+.security-ignore.json
+  s_bb77256f598b5c::t_6ae831c7fc2410 42-46
+CHANGELOG.md
+  s_bb77256f598b5c::t_8dc1065842807f 7-64,20722-20733
+changelogs/cli/cliCommands-0.2.1.md
+  s_bb77256f598b5c::t_89d279ddf64330 1-3
+changelogs/cli/core-0.9.11.md
+  s_bb77256f598b5c::t_8e02c12b9115b4 1-3
+changelogs/cli/core-0.9.12.md
+  s_bb77256f598b5c::t_8bf9c991c91ed7 1-3
+changelogs/cli/core-0.9.13.md
+  s_bb77256f598b5c::t_fdfacd966a32a0 1-3
+changelogs/cli/core-0.9.14.md
+  s_bb77256f598b5c::t_044ad74080beb8 1-3
+changelogs/cli/core-0.9.15.md
+  s_bb77256f598b5c::t_958e61dc61b578 1-3
+changelogs/cli/globalSecurity-0.1.1.md
+  s_bb77256f598b5c::t_5243b33fa49f23 1-3
+changelogs/cli/globals-0.1.2.md
+  s_bb77256f598b5c::t_5cb6549c25de00 1-3
+changelogs/cli/serverEvents-0.1.5.md
+  s_bb77256f598b5c::t_37b9042e3feb50 1-3
+changelogs/javav2/core-3.57.3.md
+  s_bb77256f598b5c::t_cf74a7bf4c1a7f 1-3
+changelogs/mcp-typescript/core-2.0.1.md
+  s_bb77256f598b5c::t_df5b9be3cbfe72 1-3
+changelogs/pythonv2/core-6.1.5.md
+  s_bb77256f598b5c::t_e32c25cfd14e9c 1-3
+changelogs/pythonv2/docs-1.5.6.md
+  s_bb77256f598b5c::t_8f8381ee2b08ee 1-3
+changelogs/pythonv2/envVarSecurityUsage-0.3.4.md
+  s_bb77256f598b5c::t_a5a3fd7d1bf4e2 1-3
+changelogs/pythonv2/globalSecurity-3.0.8.md
+  s_bb77256f598b5c::t_b6dd9298433da7 1-3
+changelogs/terraform/core-3.50.3.md
+  s_bb77256f598b5c::t_76e07176243692 1-3
+changelogs/typescriptv2/core-3.31.7.md
+  s_bb77256f598b5c::t_ac749e802efeff 1-3
+internal/extensions/cli_commands.go
+  s_bb77256f598b5c::t_0b4dac7c9979a6 61-63,631,933-935,2434-2445,2465-2474
+internal/extensions/cli_commands_link.go
+  s_bb77256f598b5c::t_5afa4ef4331e68 781-783,998-1006,1306-1308,2458-2471,2648-2651,2705-2714,2730,2732-2743,2745,2747,2750-2782,3802-3823,3864,4819-4852
+internal/features/tests.go
+  s_bb77256f598b5c::t_e735a39c87aa8b 45,62
+pkg/generate/snapshots/cli_release_go_test.go
+  s_bb77256f598b5c::t_c63790efeb30e8 787-793,1837-1843,2946-2952
+reports/features-report.md
+  s_bb77256f598b5c::t_168de9dc0e1ba6 165,182
+reports/tests.csv
+  s_bb77256f598b5c::t_ac23c0e812b179 27,44
+scripts/test-windows-installer.ps1
+  s_bb77256f598b5c::t_95beb40ea26ee1 1-126
+templates/templates/cli/README.md
+  s_bb77256f598b5c::t_e335ae41ce88bd 579-587
+templates/templates/cli/auth.go.stmpl
+  s_bb77256f598b5c::t_de2c4ccd48b667 7-8,71-73,128-135,161-165,167-173
+templates/templates/cli/auxiliary/internal/client/client.go.stmpl
+  s_bb77256f598b5c::t_c0bca76d349c73 9-11,89,103-182
+templates/templates/cli/auxiliary/internal/client/client_test.go.stmpl
+  s_bb77256f598b5c::t_1e8929fe235737 1-203
+templates/templates/cli/auxiliary/internal/config/keyring.go.stmpl
+  s_bb77256f598b5c::t_4e718af9434c30 173-186
+templates/templates/cli/auxiliary/internal/flagutil/preset.go.stmpl
+  s_bb77256f598b5c::t_e9d8c94dc6767f 9,363-432
+templates/templates/cli/auxiliary/internal/output/binary.go.stmpl
+  s_bb77256f598b5c::t_54832be07b1ef0 25,77,80-86,96,126-128
+templates/templates/cli/auxiliary/internal/output/classify.go.stmpl
+  s_bb77256f598b5c::t_e3c4ccc11f46f8 469-472
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  s_bb77256f598b5c::t_600cd9e9df26aa 120-130
+templates/templates/cli/configure.go.stmpl
+  s_bb77256f598b5c::t_a4c012273855db 13,43,57-58,69,71,176-187,194-198
+templates/templates/cli/features.ts
+  s_bb77256f598b5c::t_b76792158f8e9e 4,8,12,39,52,362-363
+templates/templates/cli/includes/intents.ts
+  s_bb77256f598b5c::t_12bd40df9e8642 101,291-305,1316
+templates/templates/cli/includes/security.ts
+  s_bb77256f598b5c::t_62171a43d3c081 2390-2392,2399-2404,2731-2732,2747-2817,2846
+templates/templates/cli/intentcmd.go.stmpl
+  s_bb77256f598b5c::t_d0f0a4a278ece0 498-506
+templates/templates/cli/release/install.ps1.stmpl
+  s_bb77256f598b5c::t_944af69c87aa67 132-138
+templates/templates/cli/request_progress_test.go.stmpl
+  s_bb77256f598b5c::t_ba7b50e179d79c 126-178
+templates/templates/cli/tests/primary/configure_test.go.stmpl
+  s_bb77256f598b5c::t_74636ac58f637c 6,312-428
+templates/templates/cli/tests/primary/outcome_additional_test.go.stmpl
+  s_bb77256f598b5c::t_9a7db7933f0aa8 5,10-11,39,150-192
+templates/templates/cli/whoami.go.stmpl
+  s_bb77256f598b5c::t_d8653242bb2ec2 21-23
+templates/templates/csharp/features.ts
+  s_bb77256f598b5c::t_a58aa44b14fb61 433-434
+templates/templates/go/features.ts
+  s_bb77256f598b5c::t_5f0a7caedffa23 430-431
+templates/templates/javav2/config.ts
+  s_bb77256f598b5c::t_6fd881bf90499a 17,24,31
+templates/templates/javav2/features.ts
+  s_bb77256f598b5c::t_bd369d7b6d37b4 3,481-482
+templates/templates/mcp-typescript/config.ts
+  s_bb77256f598b5c::t_42c7e890e27fc6 68,226,256
+templates/templates/mcp-typescript/features.ts
+  s_bb77256f598b5c::t_cde1953a5342b4 8,690-691
+templates/templates/mcp-typescript/package.json.stmpl
+  s_bb77256f598b5c::t_33d9cb761ded66 57-60,62-65,71
+templates/templates/mcp-typescript/readme/installation.stmpl
+  s_bb77256f598b5c::t_b4ad39ca557b07 3
+templates/templates/php/features.ts
+  s_bb77256f598b5c::t_043f6d46169de8 575-576
+templates/templates/pythonv2/auxiliary/{{getSourcePath}}/utils/security.py.stmpl
+  s_bb77256f598b5c::t_be993f7a74d6d8 169-171
+templates/templates/pythonv2/config.ts
+  s_bb77256f598b5c::t_5271eadbdd1ae8 25
+templates/templates/pythonv2/features.ts
+  s_bb77256f598b5c::t_68bfb3b3fdc297 3,7,16,61
+templates/templates/pythonv2/includes/sanitization.ts
+  s_bb77256f598b5c::t_a4369edc9c8c96 2691,2694-2699
+templates/templates/pythonv2/readme/resource-management.stmpl
+  s_bb77256f598b5c::t_510b82b8a0c731 19,26,46,53
+templates/templates/pythonv2/tests/primary/test_auth_additional.py
+  s_bb77256f598b5c::t_96b2444568b825 1-3,29-34,37-41,44,47,50,56-82
+templates/templates/pythonv2/tests/quaternary/test_auth_additional.py
+  s_bb77256f598b5c::t_d39cd8b1d1caa2 2,4,64-84
+templates/templates/ruby/features.ts
+  s_bb77256f598b5c::t_dd3778171cd59c 478-479
+templates/templates/terraform/config.ts
+  s_bb77256f598b5c::t_ce2633ff16bab2 67,153
+templates/templates/terraform/features.ts
+  s_bb77256f598b5c::t_06019ff58c2325 3
+templates/templates/typescriptv2/config.ts
+  s_bb77256f598b5c::t_3cf909fe27afc3 291
+templates/templates/typescriptv2/features.ts
+  s_bb77256f598b5c::t_d24238e2b1bf85 3,426-427
+templates/templates/unity/features.ts
+  s_bb77256f598b5c::t_d070b20c48fd74 599-600
+tests/overlays/primary/cli/overlay.yaml
+  s_bb77256f598b5c::t_91e98fa36e18c0 136-147,720-743
+zSDKs/mcp-typescript/.speakeasy/gen.lock
+  s_bb77256f598b5c::t_13a88983dfb432 19,61
+zSDKs/mcp-typescript/package-lock.json
+  s_bb77256f598b5c::t_ed929d1ba229f9 22,35,41,2168-2177,2230-2233,2242-2245,2247-2250,2259-2262,2264-2267,2276-2279,2281-2284,2294-2296,2298-2301,2311-2313,2315-2318,2328-2330,2332-2335,2345-2347,2349-2352,2354,2362-2364,2366-2369,2379-2381,2383-2386,2395-2398,2400-2403,2412-2415,2417-2420,2430-2432,2434-2437,2446-2449,2451-2454,2464-2466,2468-2471,2481-2488,2490,2630-2632,2636,2963-2965,2969,2971-2989,2993-3004,3008-3010,3014,3021-3023,3027-3028,3035-3037,3041-3043,3051-3053,3061-3063,3067-3069,3586-3588,3681-3683,3702-3708,3908-3910,4252-4254,4258-4260,4276-4277,4283,4312-4328,4666-4668,4755-4757,4863-4865,4967-4969,5110-5370,5534-5552,5609-5622,5791-5793,5813-5815,5833,5835,5880-5882,5890-5893,5907-5909,5972-5974,6011-6014,6018-6019,6022,6025,6028-6042,6315-6317,6341-6343,6521-6523,6525-6528,6531-6533,6548-6550,6706-6708,6766-6769,6773-6777,6793-6794,6809,6812,6815-6818,6845-6861,6863-6864,6866-6869,6876,6883-6890,6892-6893,6899,6905,6908,6911,6914,6917,6920,6923,6926,6929-6930
+zSDKs/mcp-typescript/package.json
+  s_bb77256f598b5c::t_4c33f66a628ca9 40,44-47,49-52,60,66
+zSDKs/sdk-javav2/.speakeasy/gen.lock
+  s_bb77256f598b5c::t_19fd870ce27224 17,58
+zSDKs/sdk-javav2/build.gradle
+  s_bb77256f598b5c::t_c2b34421943798 119-120
+zSDKs/sdk-pythonv2/.speakeasy/gen.lock
+  s_bb77256f598b5c::t_87aa3b416f4158 20,26,30,36,779
+zSDKs/sdk-pythonv2/README.md
+  s_bb77256f598b5c::t_49cc7a38935119 1754,1762
+zSDKs/sdk-pythonv2/src/speakeasy/new_openapi/utils/security.py
+  s_bb77256f598b5c::t_a809dfef1d9f91 217-219
+zSDKs/sdk-typescriptv2/.speakeasy/gen.lock
+  s_bb77256f598b5c::t_d4babe4a1ed578 19
+zSDKs/terraform-provider-testing/.speakeasy/gen.lock
+  s_bb77256f598b5c::t_f2b9bc32464ee8 16,679
+zSDKs/terraform-provider-testing/go.mod
+  s_bb77256f598b5c::t_4b61d204ddd674 86
+zSDKs/terraform-provider-testing/go.sum
+  s_bb77256f598b5c::t_6fe89d6aa351d8 259-260
+internal/features/tests_generated.go
+  h_9630b74bdac540 39-40,47-48,1563-1564,1571-1572,3070,3074
+templates/perms.go
+  h_9630b74bdac540 27
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 14,16,26,28,40,63,67,69,77,183,189,225,227-229,237,257,275,277,289,301,669,1111
+zSDKs/sdk-cli/docs/cli_auth_whoami.md
+  h_9630b74bdac540 12
+zSDKs/sdk-cli/docs/cli_configure.md
+  h_9630b74bdac540 23
+zSDKs/sdk-cli/docs/cli_whoami.md
+  h_9630b74bdac540 12
+zSDKs/sdk-cli/internal/cli/auth.go
+  h_9630b74bdac540 7,14,73,436-441,460,462-463,466-467,470-471,474-475,478-479,482-483,486-487,490-491,494-495,503-505,507-513
+zSDKs/sdk-cli/internal/cli/chat.go
+  h_9630b74bdac540 115,118,121
+zSDKs/sdk-cli/internal/cli/configure.go
+  h_9630b74bdac540 38,51-52,60-62,167-243,458-465,470-472
+zSDKs/sdk-cli/internal/cli/getasset.go
+  h_9630b74bdac540 74,77,80
+zSDKs/sdk-cli/internal/cli/renderasset.go
+  h_9630b74bdac540 94,97,100
+zSDKs/sdk-cli/internal/cli/streammetadata/streammetadata.go
+  h_9630b74bdac540 57,60,63
+zSDKs/sdk-cli/internal/cli/whoami.go
+  h_9630b74bdac540 23
+zSDKs/sdk-cli/internal/client/client.go
+  h_9630b74bdac540 7,12,20,77,86-165
+zSDKs/sdk-cli/internal/client/client_test.go
+  h_9630b74bdac540 1-205
+zSDKs/sdk-cli/internal/config/keyring.go
+  h_9630b74bdac540 173-186
+zSDKs/sdk-cli/internal/flagutil/preset.go
+  h_9630b74bdac540 11,365-434
+zSDKs/sdk-cli/internal/output/binary.go
+  h_9630b74bdac540 26,78,81-87,97,127-129
+zSDKs/sdk-cli/internal/output/classify.go
+  h_9630b74bdac540 455-458
+zSDKs/sdk-cli/internal/output/output.go
+  h_9630b74bdac540 120-130
+zSDKs/sdk-cli/internal/output/streaming.go
+  h_9630b74bdac540 25-35,47-51,146,222
+zSDKs/sdk-cli/scripts/install.ps1
+  h_9630b74bdac540 132-138
+zSDKs/sdk-cli/tests/request_progress_test.go
+  h_9630b74bdac540 129-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1cc6c8e0c3d83013432fc3fde14c68640716f2b2",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_bb77256f598b5c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41b8f80f-5648-45a6-ac15-de2cbbd6b05b",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
