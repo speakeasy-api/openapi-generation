@@ -417,22 +417,6 @@ function getConfigFields(
       Description:
         "A list of flags that are considered advanced and should not be exposed to the user.",
       DefaultValue: [],
-      ValidationFunc: (value: any): string | null => {
-        if (!Array.isArray(value)) {
-          return "advancedFlags must be an array";
-        }
-        const validPattern = /^[a-zA-Z0-9]+$/;
-        for (let i = 0; i < value.length; i++) {
-          const item = value[i];
-          if (typeof item !== "string") {
-            return `advancedFlags[${i}] must be a string`;
-          }
-          if (!validPattern.test(item)) {
-            return `advancedFlags[${i}] must contain only letters or numbers`;
-          }
-        }
-        return null;
-      },
     },
     fixEnumNameSanitization: {
       Name: "fixEnumNameSanitization",
@@ -462,6 +446,29 @@ function getConfigFields(
       ValidationMessage: '"true" or "false" only',
     },
   };
+}
+
+// @ts-ignore
+function validateConfig(cfg: Record<string, any>): string {
+  const advancedFlags = cfg.advancedFlags;
+  if (advancedFlags === undefined || advancedFlags === null) {
+    return "";
+  }
+
+  if (!Array.isArray(advancedFlags)) {
+    return "advancedFlags must be an array";
+  }
+  const validPattern = /^[a-zA-Z0-9]+$/;
+  for (let i = 0; i < advancedFlags.length; i++) {
+    const item = advancedFlags[i];
+    if (typeof item !== "string") {
+      return `advancedFlags[${i}] must be a string`;
+    }
+    if (!validPattern.test(item)) {
+      return `advancedFlags[${i}] must contain only letters or numbers`;
+    }
+  }
+  return "";
 }
 
 /**

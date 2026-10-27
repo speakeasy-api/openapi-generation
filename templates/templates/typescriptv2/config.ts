@@ -687,30 +687,6 @@ function getConfigFields(
       DefaultValue: [],
       Description:
         "Array of imports to add when usageSDKInit is configured. Each import should have 'package', 'import', and optionally 'type' fields.",
-      ValidationFunc: (value: any): string | null => {
-        if (!Array.isArray(value)) {
-          return "usageSDKInitImports must be an array";
-        }
-        for (let i = 0; i < value.length; i++) {
-          const item = value[i];
-          if (typeof item !== "object" || item === null) {
-            return `usageSDKInitImports[${i}] must be an object`;
-          }
-          if (!item.package || typeof item.package !== "string") {
-            return `usageSDKInitImports[${i}].package must be a non-empty string`;
-          }
-          if (!item.import || typeof item.import !== "string") {
-            return `usageSDKInitImports[${i}].import must be a non-empty string`;
-          }
-          if (
-            item.type &&
-            !["typeImport", "packageImport", "aliasImport"].includes(item.type)
-          ) {
-            return `usageSDKInitImports[${i}].type must be one of: typeImport, packageImport, aliasImport`;
-          }
-        }
-        return null;
-      },
     },
     sseFlatResponse: {
       Name: "sseFlatResponse",
@@ -893,6 +869,40 @@ function getConfigFields(
       ValidationMessage: "words or legacy only",
     },
   };
+}
+
+// @ts-ignore
+function validateConfig(cfg: Record<string, any>): string {
+  const usageSDKInitImports = cfg.usageSDKInitImports;
+  if (usageSDKInitImports === undefined || usageSDKInitImports === null) {
+    return "";
+  }
+
+  if (!Array.isArray(usageSDKInitImports)) {
+    return "usageSDKInitImports must be an array";
+  }
+  for (let i = 0; i < usageSDKInitImports.length; i++) {
+    const item = usageSDKInitImports[i];
+    if (typeof item !== "object" || item === null) {
+      return `usageSDKInitImports[${i}] must be an object`;
+    }
+    const pkg = item.package || item.Package;
+    const imp = item.import || item.Import;
+    const type = item.type || item.Type;
+    if (!pkg || typeof pkg !== "string") {
+      return `usageSDKInitImports[${i}].package must be a non-empty string`;
+    }
+    if (!imp || typeof imp !== "string") {
+      return `usageSDKInitImports[${i}].import must be a non-empty string`;
+    }
+    if (
+      type &&
+      !["typeImport", "packageImport", "aliasImport"].includes(type)
+    ) {
+      return `usageSDKInitImports[${i}].type must be one of: typeImport, packageImport, aliasImport`;
+    }
+  }
+  return "";
 }
 
 /** Represents the initial target implementation configuration presented to
