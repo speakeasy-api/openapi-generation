@@ -75,8 +75,14 @@ class {{$className}}(BaseModel):
     {{- if or $hasNullableField $hasOptionalField}}
     {{-   addImport "pydantic" "model_serializer"}}
     {{-   addImport "types" "UNSET_SENTINEL" true}}
+    {{-   addImport "types" "serialize_with_info" true}}
+    {{-   addImport "types" "current_exclude_none" true}}
+    {{-   $serializeMethodName := sanitizeSerializeMethodName $type}}
     @model_serializer(mode="wrap")
-    def {{sanitizeSerializeMethodName $type}}(self, handler):
+    def _serialize_model_with_info(self, handler, info):
+        return serialize_with_info(self.{{$serializeMethodName}}, handler, info)
+
+    def {{$serializeMethodName}}(self, handler):
         {{- $nullDefaultFields := templateNullDefaultFieldList $type}}
         {{- $hasNullDefaultField := gt (len $nullDefaultFields) 0}}
         {{- if $hasOptionalField}}
@@ -88,11 +94,14 @@ class {{$className}}(BaseModel):
         {{-     end}}
         {{-   end}}
         {{- end}}
+        exclude_none = current_exclude_none()
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
-            k = f.alias or n
+            k = f.alias if f.alias is not None else n
+            if k not in serialized and n not in serialized and exclude_none is False:
+                continue
             val = serialized.get(k, serialized.get(n))
             {{- if $hasAdditionalProperties}}
             serialized.pop(k, serialized.pop(n, None))
