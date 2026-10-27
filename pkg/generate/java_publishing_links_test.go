@@ -38,25 +38,25 @@ func TestJavaPublishingLinksNormalizeGithubURL(t *testing.T) {
 		"canonical": {
 			githubURL:     "github.com/acme/acme-java",
 			pomURL:        "https://github.com/acme/acme-java",
-			scmURL:        "github.com/acme/acme-java",
+			scmURL:        "https://github.com/acme/acme-java",
 			scmConnection: "scm:git:ssh://git@github.com/acme/acme-java.git",
 		},
 		"scheme, www, .git and trailing slash": {
 			githubURL:     "https://www.github.com/acme/acme-java.git/",
 			pomURL:        "https://github.com/acme/acme-java",
-			scmURL:        "github.com/acme/acme-java",
+			scmURL:        "https://github.com/acme/acme-java",
 			scmConnection: "scm:git:ssh://git@github.com/acme/acme-java.git",
 		},
 		"uppercase scheme, www and .git": {
 			githubURL:     "HTTPS://WWW.github.com/acme/acme-java.GIT",
 			pomURL:        "https://github.com/acme/acme-java",
-			scmURL:        "github.com/acme/acme-java",
+			scmURL:        "https://github.com/acme/acme-java",
 			scmConnection: "scm:git:ssh://git@github.com/acme/acme-java.git",
 		},
 		"non-string value": {
 			githubURL:     "123",
 			pomURL:        "https://123",
-			scmURL:        "123",
+			scmURL:        "https://123",
 			scmConnection: "scm:git:ssh://git@123.git",
 		},
 	}

@@ -82,7 +82,7 @@ afterEvaluate {
                     description = config.description
                     url = 'https://{{.LocalComputed.GithubURL}}'
                     scm {
-                        url = '{{.LocalComputed.GithubURL}}'
+                        url = 'https://{{.LocalComputed.GithubURL}}'
                         connection = 'scm:git:ssh://git@{{.LocalComputed.GithubURL}}.git'
                     }
                     licenses {

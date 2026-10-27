@@ -511,7 +511,7 @@ trackedFiles:
   gradlew.bat:
     last_write_checksum: sha1:755607dcbac0ba8adba338ef00aafc1177ceb2b5
   publishing.gradle:
-    last_write_checksum: sha1:c62a7e5882a34d2fa79eb436d99efa74828f214a
+    last_write_checksum: sha1:51b6c709d3ad4164ccce8fc7eb514b765fbf27b7
   settings.gradle:
     last_write_checksum: sha1:b5b2f4aa4269fea383621740c89e1a847d952da9
   spring/openapi-spring-boot-autoconfigure/build.gradle:
