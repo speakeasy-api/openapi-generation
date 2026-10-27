@@ -1,0 +1,31 @@
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 1148-1151,1155-1157,1161-1162,1165-1166,1168
+  s_2f0ea380eccca0::t_6663b407260da1 1154,1158-1160,1167
+templates/templates/cli/tests/primary/unions_additional_test.go.stmpl
+  h_9630b74bdac540 1040-1044
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 1150-1153,1156-1164,1167-1170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3497b511a48f01bf0dd29fb47ee898592c3bef0",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_2f0ea380eccca0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b93262cd-2e59-4709-8c67-4d920d2bba00",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
