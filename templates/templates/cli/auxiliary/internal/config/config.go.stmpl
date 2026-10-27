@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -106,6 +107,10 @@ func Reset() {
 	envPrefix = ""
 	initErr = nil
 	initialized = false
+
+	secretsMu.Lock()
+	secretValues = nil
+	secretsMu.Unlock()
 }
 
 // GetString returns a configuration value with priority: env var > config file.
@@ -165,12 +170,18 @@ var (
 // RegisterSecret records a resolved credential, including its JSON-escaped and
 // query-escaped forms, so ScrubSecrets can mask it in diagnostics.
 func RegisterSecret(value string) {
-	if len(value) < minScrubbedSecretLength {
+	if utf8.RuneCountInString(value) < minScrubbedSecretLength {
 		return
 	}
 	forms := []string{value}
-	if escaped, err := json.Marshal(value); err == nil {
-		forms = append(forms, string(escaped[1:len(escaped)-1]))
+	for _, escapeHTML := range []bool{true, false} {
+		var buf strings.Builder
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(escapeHTML)
+		if enc.Encode(value) == nil {
+			escaped := strings.TrimSuffix(buf.String(), "\n")
+			forms = append(forms, escaped[1:len(escaped)-1])
+		}
 	}
 	forms = append(forms, url.QueryEscape(value), url.PathEscape(value))
 
@@ -229,6 +240,12 @@ func ResolveCredential(cmd *cobra.Command, flagName string, hasSchemaDefault boo
 func registeredSecret(value, source string) (string, string) {
 	RegisterSecret(value)
 	return value, source
+}
+
+// ResolveTokenCredential resolves a string token variant of a union
+// credential like ResolveCredential, recording it for ScrubSecrets.
+func ResolveTokenCredential(cmd *cobra.Command, flagName string) (value, source string) {
+	return registeredSecret(ResolveCredential(cmd, flagName, false))
 }
 
 // ResolveSecurityCredential resolves a security credential using the priority chain:

@@ -186,7 +186,9 @@ func TestDebugRedactsSensitiveResponseHeaders(t *testing.T) {
 }
 
 func TestResolvedCredentialsScrubbedFromEchoedOutput(t *testing.T) {
-	const apiKey = "echoed-api-key-4821"
+	const apiKey = `echoed<api>&key"4821`
+	// json.Encoder escapes <, > and & as \u003c, \u003e and \u0026, and " as \".
+	const jsonEscapedKey = `echoed\u003capi\u003e\u0026key\"4821`
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Echo-Key", r.Header.Get("Authorization"))
@@ -213,6 +215,8 @@ func TestResolvedCredentialsScrubbedFromEchoedOutput(t *testing.T) {
 
 			stderr := h.GetStderr()
 			assert.NotContains(t, stderr, apiKey)
+			assert.NotContains(t, stderr, jsonEscapedKey)
+			assert.NotContains(t, stderr, `key\"4821`)
 			assert.Contains(t, stderr, "[REDACTED]")
 		})
 	}
