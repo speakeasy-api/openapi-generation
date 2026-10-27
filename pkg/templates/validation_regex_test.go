@@ -24,8 +24,6 @@ type validationField struct {
 		Valid   []string
 		Invalid []string
 	}
-	// Declared on some fields in config.ts but read by neither the generator nor the CLI.
-	ValidationFunc any
 }
 
 // The CLI matches ValidationRegex against the value formatted with %v, so a pattern on a list field rejects every list.
