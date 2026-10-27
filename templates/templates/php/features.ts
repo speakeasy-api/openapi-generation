@@ -572,6 +572,8 @@ function isTestSkipped(test: string): boolean {
     "event-stream-absent-required-union",
     "event-stream-equivalent-number-lexemes",
     "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
   ].includes(test);
 }
 

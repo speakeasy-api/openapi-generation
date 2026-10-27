@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.952.4] - 2026-10-26
+### :bug: Bug Fixes
+- [`b8fa621`](https://github.com/speakeasy-api/openapi-generation/commit/b8fa6212f2d55faddba4e0eda6b98a2321c8de31) - **cli**: refuse cross-origin redirects so credentials stay with the configured server ([#137](https://github.com/speakeasy-api/openapi-generation/pull/137)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.952.3] - 2026-10-26
+### :bug: Bug Fixes
+- [`50f2665`](https://github.com/speakeasy-api/openapi-generation/commit/50f26655ae946a9f4162b2ee31378aeb5d1b89e6) - **python**: don't send empty-string security credentials ([#130](https://github.com/speakeasy-api/openapi-generation/pull/130)) *(commit by [@LukasParke](https://github.com/LukasParke))*
+
+
+## [v2.952.2] - 2026-10-26
+### :bug: Bug Fixes
+- [`e6e7aa2`](https://github.com/speakeasy-api/openapi-generation/commit/e6e7aa24bb6c2125cbe4b413fc8f2b0887951f86) - **python**: stop defaulting env-var credentials to an empty string in usage snippets ([#129](https://github.com/speakeasy-api/openapi-generation/pull/129)) *(commit by [@LukasParke](https://github.com/LukasParke))*
+
+
+## [v2.952.1] - 2026-10-26
+### :bug: Bug Fixes
+- [`9e6a125`](https://github.com/speakeasy-api/openapi-generation/commit/9e6a125095775c1e5f376937baf38d5b4087a25c) - **python**: make the resource management README snippet valid Python ([#128](https://github.com/speakeasy-api/openapi-generation/pull/128)) *(commit by [@LukasParke](https://github.com/LukasParke))*
+
+
+## [v2.952.0] - 2026-10-26
+### :bee: New Features
+- [`66264d5`](https://github.com/speakeasy-api/openapi-generation/commit/66264d553c704214ed64d86a3896f71d4bc65635) - **cli**: let declarative command flags imply other request body values ([#139](https://github.com/speakeasy-api/openapi-generation/pull/139)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.951.0] - 2026-10-26
+### :bee: New Features
+- [`fb77f13`](https://github.com/speakeasy-api/openapi-generation/commit/fb77f1335c475e40fe3b87a61e741030df867ca6) - **cli**: add configure --clear and name the supported OS credential stores in whoami help ([#140](https://github.com/speakeasy-api/openapi-generation/pull/140)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+### :bug: Bug Fixes
+- [`f2485ac`](https://github.com/speakeasy-api/openapi-generation/commit/f2485acd97ef2d246e3cbdb6943093573c6d6377) - **cli**: return structured results from configure and auth login/logout in machine output modes ([#141](https://github.com/speakeasy-api/openapi-generation/pull/141)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.950.14] - 2026-10-26
+### :bug: Bug Fixes
+- [`f90e757`](https://github.com/speakeasy-api/openapi-generation/commit/f90e757e77805a0c6e266103abc479f1b5c431fd) - **cli**: show request progress while streaming-capable operations wait for a response ([#138](https://github.com/speakeasy-api/openapi-generation/pull/138)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.950.13] - 2026-10-23
 ### :bug: Bug Fixes
 - [`7ab7969`](https://github.com/speakeasy-api/openapi-generation/commit/7ab7969e1a7faad80633fe0b966dec58edaee551) - **terraform,typescript,mcp**: raise x/net, vitest, express and MCP server override floors past open advisories ([#144](https://github.com/speakeasy-api/openapi-generation/pull/144)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20686,3 +20724,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.950.11]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.10...v2.950.11
 [v2.950.12]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.11...v2.950.12
 [v2.950.13]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.12...v2.950.13
+[v2.950.14]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.13...v2.950.14
+[v2.951.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.950.14...v2.951.0
+[v2.952.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.951.0...v2.952.0
+[v2.952.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.0...v2.952.1
+[v2.952.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.1...v2.952.2
+[v2.952.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.2...v2.952.3
+[v2.952.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.3...v2.952.4

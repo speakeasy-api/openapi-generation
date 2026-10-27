@@ -23,17 +23,17 @@ features:
     decimal: 1.0.0
     defaultEnabledRetries: 0.2.0
     deprecations: 3.0.2
-    docs: 1.5.5
+    docs: 1.5.6
     downloadStreams: 1.0.1
     enumUnions: 0.1.1
     enums: 3.2.2
-    envVarSecurityUsage: 0.3.3
+    envVarSecurityUsage: 0.3.4
     errorUnions: 1.0.2
     errors: 3.4.5
     examples: 3.0.4
     flatRequests: 1.0.1
     flattening: 3.1.1
-    globalSecurity: 3.0.7
+    globalSecurity: 3.0.8
     globalSecurityCallbacks: 1.0.0
     globalServerURLs: 3.2.1
     globals: 3.0.0
@@ -776,7 +776,7 @@ trackedFiles:
   src/speakeasy/new_openapi/utils/retries.py:
     last_write_checksum: sha1:251e4dd969bb6c06025afe1bad1b5035e94c2060
   src/speakeasy/new_openapi/utils/security.py:
-    last_write_checksum: sha1:e553de0abe14cbfcc18c6d9a710bdf364d8dd40d
+    last_write_checksum: sha1:e58034e6e574abe61237f9cfc31cf18e2a0f064b
   src/speakeasy/new_openapi/utils/serializers.py:
     last_write_checksum: sha1:24df2ceb4c7ac20b632c284c6cacf33384eda03f
   src/speakeasy/new_openapi/utils/unions.py:

@@ -1,3 +1,6 @@
+import os
+
+import httpx
 import pytest
 
 from openapi.models import shared
@@ -23,21 +26,60 @@ def test_function_callbacks_for_o_auth_support_global_security():
     assert res.token.token == "global"
 
 
-def test_global_security_fields_ordering():
+@pytest.mark.parametrize(
+    "api_key_auth,expected_authorization",
+    [("testApiKey", "testApiKey"), ("", None)],
+    ids=["populated", "empty-string"],
+)
+def test_global_security_fields_ordering(api_key_auth, expected_authorization):
     record_test("auth-global-security-fields-ordering")
+
+    captured = {}
+
+    def capture(request):
+        captured["headers"] = request.headers
 
     # When maintainOpenApiOrder: false is set, the first non-nil field (in alphabetical order) is selected.
     # In this case api_key_auth takes precedence over basic_http, which is invalid for this endpoint.
+    # An explicitly empty api_key_auth stays selected and sends no credential.
     s = SDK(
         security=shared.Security(
-            api_key_auth="testApiKey",
+            api_key_auth=api_key_auth,
             basic_http=shared.SchemeBasicHTTP(username="testUser", password="testPass"),
         ),
+        client=httpx.Client(event_hooks={"request": [capture]}),
     )
 
     with pytest.raises(APIError) as exc_info:
         s.auth.global_security_basic_http()
     assert exc_info.value.status_code == 401
+    assert captured["headers"].get("authorization") == expected_authorization
+
+
+@pytest.mark.parametrize(
+    "security",
+    [shared.Security(), shared.Security(access_token="")],
+    ids=["omitted", "empty-string"],
+)
+def test_global_security_empty_ignores_env_vars(security):
+    record_test("auth-global-security-empty")
+
+    captured = {}
+
+    def capture(request):
+        captured["headers"] = request.headers
+        return httpx.Response(401, request=request)
+
+    os.environ["SPEAKEASY_ACCESS_TOKEN"] = "global"
+    try:
+        client = httpx.Client(transport=httpx.MockTransport(capture))
+        s = SDK(server_url=HTTPBIN_URL, security=security, client=client)
+        with pytest.raises(APIError):
+            s.auth.global_bearer_auth()
+    finally:
+        os.environ.pop("SPEAKEASY_ACCESS_TOKEN", None)
+
+    assert "authorization" not in captured["headers"]
 
 
 def test_hoisted_security_access_token_only():
