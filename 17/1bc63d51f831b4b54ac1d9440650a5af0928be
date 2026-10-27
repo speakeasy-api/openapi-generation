@@ -1,0 +1,35 @@
+templates/templates/cli/whoami.go.stmpl
+  h_9630b74bdac540 25,54-57,79-82,86-94
+  s_1813d9b1583a2d::t_ad8472487a0375 83,95
+templates/templates/cli/tests/primary/configure_test.go.stmpl
+  h_9630b74bdac540 106-158
+.changesets/1793077134-fee76773.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 225
+zSDKs/sdk-cli/docs/cli_whoami.md
+  h_9630b74bdac540 14
+zSDKs/sdk-cli/internal/cli/whoami.go
+  h_9630b74bdac540 25,112-115,221-225,228-237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "171bc63d51f831b4b54ac1d9440650a5af0928be",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_1813d9b1583a2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9fca710a-93ff-4bdd-a06b-b9b06a6dcde1",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
