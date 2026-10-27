@@ -357,6 +357,7 @@ func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 		`"parameters":{"type":"object","properties":{"password":{"type":"string","description":"visible-description","default":"default-secret"}}},` +
 		`"secret":{"anyOf":[{"type":"object","properties":{"visible_inner":{"type":"string","default":"nested-secret"}}}]},` +
 		`"token":{"type":"bearer","value":"object-secret"},` +
+		`"api_key":{"properties":{"visible_name":"raw-secret"}},` +
 		`"max_tokens":42` +
 		`}`
 	req, err := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(body))
@@ -374,7 +375,7 @@ func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &preview))
 	out := stdout.String()
-	for _, hidden := range []string{"header-secret", "suffix-secret", "default-secret", "nested-secret", "object-secret"} {
+	for _, hidden := range []string{"header-secret", "suffix-secret", "default-secret", "nested-secret", "object-secret", "raw-secret"} {
 		require.NotContains(t, out, hidden)
 	}
 	for _, shown := range []string{"visible-trace", "visible-description", "visible_inner"} {

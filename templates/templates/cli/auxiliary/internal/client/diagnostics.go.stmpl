@@ -193,9 +193,10 @@ var jsonSchemaKeywords = map[string]bool{
 	"additionalProperties": true, "allOf": true, "anyOf": true, "const": true,
 	"contentEncoding": true, "contentMediaType": true, "default": true,
 	"definitions": true, "dependentSchemas": true, "deprecated": true,
-	"description": true, "else": true, "enum": true, "example": true,
-	"examples": true, "exclusiveMaximum": true, "exclusiveMinimum": true,
-	"format": true, "if": true, "items": true, "maxItems": true,
+	"contains": true, "description": true, "else": true, "enum": true,
+	"example": true, "examples": true, "exclusiveMaximum": true,
+	"exclusiveMinimum": true, "format": true, "if": true, "items": true,
+	"maxItems": true, "propertyNames": true,
 	"maxLength": true, "maxProperties": true, "maximum": true, "minItems": true,
 	"minLength": true, "minProperties": true, "minimum": true,
 	"multipleOf": true, "not": true, "nullable": true, "oneOf": true,
@@ -216,6 +217,15 @@ var jsonSchemaValueKeywords = map[string]bool{
 var jsonSchemaNamedSubschemas = map[string]bool{
 	"$defs": true, "definitions": true, "dependentSchemas": true,
 	"patternProperties": true, "properties": true,
+}
+
+var jsonSchemaSubschemas = map[string]bool{
+	"additionalProperties": true, "contains": true, "else": true, "if": true,
+	"items": true, "not": true, "propertyNames": true, "then": true,
+}
+
+var jsonSchemaSubschemaLists = map[string]bool{
+	"allOf": true, "anyOf": true, "oneOf": true, "prefixItems": true,
 }
 
 // sensitiveSchemaObject reports whether v is a JSON Schema (every key a
@@ -239,37 +249,83 @@ func sensitiveSchemaObject(v interface{}) (map[string]interface{}, bool) {
 	return nil, false
 }
 
-// maskSchemaValues masks value-bearing keywords at every level of a schema,
-// treating the keys under properties-style keywords as names, not keywords.
+// maskSchemaValues walks a schema and fails closed: value-bearing keywords
+// are masked, anything in a subschema position that is not itself a schema is
+// masked, and annotation keywords keep only scalar values.
 func maskSchemaValues(v interface{}, depth int) interface{} {
 	if depth > maxRedactDepth {
 		return redactionDepthMarker
 	}
-	switch val := v.(type) {
+	switch schema := v.(type) {
+	case bool:
+		return schema
 	case map[string]interface{}:
-		out := make(map[string]interface{}, len(val))
-		for k, child := range val {
-			if jsonSchemaValueKeywords[k] {
-				out[k] = "[REDACTED]"
-				continue
+		for k := range schema {
+			if !jsonSchemaKeywords[k] {
+				return "[REDACTED]"
 			}
-			if named, ok := child.(map[string]interface{}); ok && jsonSchemaNamedSubschemas[k] {
+		}
+		out := make(map[string]interface{}, len(schema))
+		for k, child := range schema {
+			switch {
+			case jsonSchemaValueKeywords[k]:
+				out[k] = "[REDACTED]"
+			case jsonSchemaNamedSubschemas[k]:
+				named, ok := child.(map[string]interface{})
+				if !ok {
+					out[k] = "[REDACTED]"
+					continue
+				}
 				schemas := make(map[string]interface{}, len(named))
-				for name, schema := range named {
-					schemas[name] = maskSchemaValues(schema, depth+1)
+				for name, sub := range named {
+					schemas[name] = maskSchemaValues(sub, depth+1)
 				}
 				out[k] = schemas
-				continue
+			case jsonSchemaSubschemas[k]:
+				if list, ok := child.([]interface{}); ok {
+					out[k] = maskSchemaList(list, depth+1)
+				} else {
+					out[k] = maskSchemaValues(child, depth+1)
+				}
+			case jsonSchemaSubschemaLists[k]:
+				list, ok := child.([]interface{})
+				if !ok {
+					out[k] = "[REDACTED]"
+					continue
+				}
+				out[k] = maskSchemaList(list, depth+1)
+			default:
+				out[k] = schemaAnnotationValue(child)
 			}
-			out[k] = maskSchemaValues(child, depth+1)
 		}
 		return out
+	default:
+		return "[REDACTED]"
+	}
+}
+
+func maskSchemaList(list []interface{}, depth int) []interface{} {
+	out := make([]interface{}, len(list))
+	for i, sub := range list {
+		out[i] = maskSchemaValues(sub, depth)
+	}
+	return out
+}
+
+func schemaAnnotationValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		return "[REDACTED]"
 	case []interface{}:
-		out := make([]interface{}, len(val))
-		for i, child := range val {
-			out[i] = maskSchemaValues(child, depth+1)
+		for _, item := range val {
+			if _, nested := item.(map[string]interface{}); nested {
+				return "[REDACTED]"
+			}
+			if _, nested := item.([]interface{}); nested {
+				return "[REDACTED]"
+			}
 		}
-		return out
+		return val
 	default:
 		return v
 	}
