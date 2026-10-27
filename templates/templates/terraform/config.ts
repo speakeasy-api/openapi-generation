@@ -229,6 +229,10 @@ function getConfigFields(
       Description: "Current version of the Terraform Provider.",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     environmentVariables: {
       Name: "environmentVariables",
@@ -340,6 +344,10 @@ function getConfigFields(
         "Terraform Provider name. Prefixes all resource names unless providerTypeNameOverride is set. For providers published in the public Terraform Registry, this typically matches the suffix after 'terraform-provider-' in the GitHub Repository name.",
       ValidationRegex: /^[\w\d-]+$/.source,
       ValidationMessage: "Letters, numbers, or - only",
+      ValidationExamples: {
+        valid: ["terraform", "acme", "acme-cloud"],
+        invalid: ["", "acme.cloud", "acme cloud", "acme/cloud"],
+      },
     },
     providerTypeNameOverride: {
       Name: "providerTypeNameOverride",
@@ -349,6 +357,10 @@ function getConfigFields(
         "Overrides the provider type name used for resource naming. When set, this value is used as the prefix for all resource, data source, ephemeral resource, and action type names instead of packageName. This is useful for variant providers that need to use the same resource names as another provider (e.g. a beta provider sharing resource names with the main provider).",
       ValidationRegex: /^[\w\d-]*$/.source,
       ValidationMessage: "Letters, numbers, or - only",
+      ValidationExamples: {
+        valid: ["", "acme", "acme_cloud"],
+        invalid: ["acme.cloud", "acme cloud"],
+      },
     },
     author: {
       Name: "author",
@@ -383,6 +395,10 @@ function getConfigFields(
         "The name of the default error type used to represent API errors",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     respectRequiredFields: {
       Name: "respectRequiredFields",

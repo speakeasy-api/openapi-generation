@@ -1,0 +1,10 @@
+id: 1793042947-3a9d1266
+features:
+    - core
+targets:
+    - go
+type: fix
+bump: patch
+description: accept retractions lists in gen.yaml validation
+author: 2ynn
+date: "2026-10-26"

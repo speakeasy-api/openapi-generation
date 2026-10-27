@@ -303,6 +303,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     envVarPrefix: {
       Name: "envVarPrefix",
@@ -332,6 +336,15 @@ function getConfigFields(
       ValidationRegex: /^https?:\/\/.+$/.source,
       ValidationMessage:
         "Must be a valid URL starting with http:// or https://",
+      ValidationExamples: {
+        valid: ["https://acme-mcp.acme.workers.dev", "http://localhost:8787"],
+        invalid: [
+          "",
+          "acme-mcp.acme.workers.dev",
+          "ftp://acme.dev",
+          "https://",
+        ],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -341,6 +354,10 @@ function getConfigFields(
         "The npm package name. https://docs.npmjs.com/package-name-guidelines.",
       ValidationRegex: /^[\w\d._@\/-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["acme-sdk", "@acme/sdk", "@acme/sdk.core"],
+        invalid: ["", "acme sdk", "acme:sdk"],
+      },
     },
     version: {
       Name: "version",
@@ -349,6 +366,10 @@ function getConfigFields(
       Description: "The current version of the MCP Server",
       ValidationRegex: /^[\w\d._-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     dxtManifestOverlay: {
       Name: "dxtManifestOverlay",
@@ -377,13 +398,27 @@ function getConfigFields(
       Name: "mcpName",
       Required: false,
       Description:
-        "The unique identifier for the MCP server in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
+        "The unique identifier for the MCP server: a namespace and a server name separated by one slash, with the namespace usually in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
         "This is required for publishing to the Anthropic MCP registry. " +
         "See: https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/publishing/publish-server.md",
-      ValidationRegex: /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*\/[a-z][a-z0-9\-]*$/
-        .source,
+      ValidationRegex: /^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/.source,
       ValidationMessage:
-        "Must be in reverse-DNS format (e.g., 'io.github.username/server-name')",
+        "Must be a namespace and a server name separated by one slash (e.g., 'io.github.username/server-name'): letters, numbers, '.' or '-' in the namespace, and also '_' in the server name",
+      ValidationExamples: {
+        valid: [
+          "io.github.acme/petstore-mcp",
+          "io.github.acme/2petstore",
+          "com.example/acme",
+          "io.github.acme-labs/petstore",
+          "io.github.Acme/petstore_mcp.v2",
+        ],
+        invalid: [
+          "",
+          "io.github.acme",
+          "acme/petstore/mcp",
+          "io.github.acme/petstore mcp",
+        ],
+      },
     },
     responseFormat: {
       Name: "responseFormat",
