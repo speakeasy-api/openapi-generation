@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.952.8] - 2026-10-27
+### :bug: Bug Fixes
+- [`1f63a44`](https://github.com/speakeasy-api/openapi-generation/commit/1f63a44cff6ee468325dbe87dc2de43c6b96be17) - **go,mcp,php,java**: declare config validation examples and fix the patterns they expose ([#155](https://github.com/speakeasy-api/openapi-generation/pull/155)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.952.7] - 2026-10-27
 ### :bug: Bug Fixes
 - [`15921c4`](https://github.com/speakeasy-api/openapi-generation/commit/15921c4c33c1feeb71d524e8cb8600139131b6e9) - **ruby**: accept acronyms in module name validation ([#152](https://github.com/speakeasy-api/openapi-generation/pull/152)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20749,3 +20754,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.952.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.4...v2.952.5
 [v2.952.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.5...v2.952.6
 [v2.952.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.6...v2.952.7
+[v2.952.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.7...v2.952.8
