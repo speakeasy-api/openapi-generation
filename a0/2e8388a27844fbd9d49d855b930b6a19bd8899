@@ -1,0 +1,18 @@
+templates/templates/cli/auxiliary/internal/output/paginated.go.stmpl
+  h_9630b74bdac540 168
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 293
+zSDKs/sdk-cli/internal/output/paginated.go
+  h_9630b74bdac540 169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a02e8388a27844fbd9d49d855b930b6a19bd8899",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
