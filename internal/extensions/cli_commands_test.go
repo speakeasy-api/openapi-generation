@@ -5501,6 +5501,16 @@ func TestCLICommands_OutcomeNullableLeaves(t *testing.T) {
 	assert.Equal(t, "/steps", manifest.Operations[0].Output.Outcome.ErrorPointer)
 }
 
+func TestCLICommands_AsyncNullableState(t *testing.T) {
+	spec := strings.Replace(cliCommandsTestSpec, "        status:\n          type: string\n          enum: [in_progress, completed, failed, requires_action]\n", "        status:\n          type: [string, \"null\"]\n          enum: [in_progress, completed, failed, requires_action, null]\n", 1)
+	require.NotEqual(t, cliCommandsTestSpec, spec)
+	manifest, _, err := decodeCLIWithSpec(t, spec, strings.Replace(validAsyncManifest, "      params:\n        stream: false\n", "", 1))
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 1)
+	require.NotNil(t, manifest.Commands[0].Async)
+	assert.Equal(t, "/status", manifest.Commands[0].Async.StatePointer)
+}
+
 func TestCLICommands_OutcomeErrors(t *testing.T) {
 	base := validOutcomeManifest
 	for _, tc := range []struct {
@@ -5648,21 +5658,65 @@ operations:
 	}
 }
 
+func TestCLICommands_OutcomeStreamStateOneOfExcludesOverlap(t *testing.T) {
+	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
+	require.Contains(t, cliCommandsTestSpec, stopReason)
+	const table = "          done: success\n          cancelled: failure"
+	require.Contains(t, validOutcomeManifest, table)
+
+	spec := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      oneOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, warnings, err := decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          extra: failure", 1))
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `output.outcome.states classifies "cancelled", which is not an enum member at $.data.reason`)
+
+	anyOf := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      anyOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, _, err = decodeCLIWithSpec(t, anyOf, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.NoError(t, err)
+
+	unbounded := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      oneOf:\n        - enum: [done, cancelled]\n        - type: string\n", 1)
+	_, _, err = decodeCLIWithSpec(t, unbounded, validOutcomeManifest)
+	require.NoError(t, err)
+}
+
+func TestCLICommands_OutcomeStreamStateRefSiblingCycle(t *testing.T) {
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+	spec := strings.Replace(cliCommandsTestSpec, stopArm, stopArm+"        - $ref: '#/components/schemas/TaskEvent'\n          properties:\n            reason:\n              enum: [done]\n", 1)
+
+	_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+	require.NoError(t, err)
+	require.NotEmpty(t, warnings)
+	for _, warning := range warnings {
+		assert.Contains(t, warning, "schema reference cycle at TaskEvent")
+	}
+}
+
 func TestCLICommands_OutcomeStreamStateAllOfIntersectsEnums(t *testing.T) {
 	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
 	require.Contains(t, cliCommandsTestSpec, stopReason)
 	typoTable := strings.Replace(validOutcomeManifest, "          done: success\n          cancelled: failure", "          done: success\n          canceled: failure", 1)
 
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+
 	for _, tc := range []struct {
-		name   string
-		schema string
+		name            string
+		schema          string
+		stopArmSiblings string
 	}{
-		{"type-only arm", "    StopReason:\n      allOf:\n        - type: string\n        - enum: [done, cancelled]\n"},
-		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n"},
-		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n"},
+		{"type-only arm", "    StopReason:\n      allOf:\n        - type: string\n        - enum: [done, cancelled]\n", ""},
+		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n", ""},
+		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n", ""},
+		{"properties beside ref on the path", "    StopReason:\n      type: string\n      enum: [done, cancelled, extra]\n", "          properties:\n            reason:\n              enum: [done, cancelled]\n"},
+		{"enum beside union with an unbounded arm", "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      anyOf:\n        - type: string\n        - enum: [done]\n", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			spec := strings.Replace(cliCommandsTestSpec, stopReason, tc.schema, 1)
+			spec = strings.Replace(spec, stopArm, stopArm+tc.stopArmSiblings, 1)
 
 			_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
 			require.NoError(t, err)
@@ -5993,4 +6047,92 @@ commands:
 `)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `async.states["more_required"] has unsupported classification "continue"`)
+}
+
+func TestCLICommands_FlagImplies(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, `
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      background: {to: $.background, implies: {$.priority: 1}}
+`)
+	require.NoError(t, err)
+	background := manifest.Commands[0].Flags[0]
+	assert.Equal(t, "bool", background.Type)
+	require.Len(t, background.Implies, 1)
+	assert.Equal(t, "/priority", background.Implies[0].Bind.Pointer)
+	assert.EqualValues(t, 1, background.Implies[0].Value)
+
+	streamed := strings.ReplaceAll(cliRouteDispatchSpec,
+		"        background:\n          type: boolean\n          description: Run in the background.\n",
+		"        background:\n          type: boolean\n          description: Run in the background.\n        stream:\n          type: boolean\n          default: true\n")
+	dispatch := strings.Replace(cliRouteDispatchManifest,
+		"      background: {to: $.background}\n",
+		"      background: {to: $.background, implies: {$.stream: false}}\n", 1)
+	manifest, err = decodeCLITestSpec(t, streamed, dispatch)
+	require.NoError(t, err)
+	flag := cliFindDispatchFlag(manifest.Commands[0].Flags, "background")
+	require.NotNil(t, flag)
+	require.Len(t, flag.Implies, 1)
+	assert.Equal(t, CLICommandPreset{Bind: CLICommandBind{In: "body", Pointer: "/stream", Mode: "set"}, Value: false}, flag.Implies[0])
+
+	_, err = decodeCLITestSpec(t, cliRouteDispatchSpec, strings.Replace(cliRouteDispatchManifest,
+		"      background: {to: $.background}\n",
+		"      background: {to: $.background, implies: {$.output_modes: sync}}\n", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `implied property /output_modes is not declared by`)
+
+	for _, tc := range []struct{ manifest, want string }{
+		{`
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    args:
+      prompt: {to: $.input, type: string, variadic: true, implies: {$.priority: 1}}
+`, `implies is only valid on flags`},
+		{`
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      engine: {to: $.engine, implies: {$.priority: 1}}
+`, `implies requires a bool flag`},
+		{`
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      background: {to: $.background, implies: {$.background: false}}
+`, `implies cannot set the flag's own property /background`},
+		{`
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      background: {to: $.background, implies: {$.priority: fast}}
+`, `not an integer`},
+		{`
+version: 1
+commands:
+  render:
+    op: CreateTask#CreateRenderTaskParams
+    flags:
+      background: {to: $.background, implies: {}}
+`, `implies must set at least one body value`},
+		{`
+version: 1
+operations:
+  CreateUpload:
+    flags:
+      name: {to: $.name, implies: {$.other: 1}}
+`, `implies is only supported on x-speakeasy-cli-commands commands`},
+	} {
+		requireDecodeError(t, tc.manifest, tc.want)
+	}
 }

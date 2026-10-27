@@ -21,8 +21,17 @@ import (
 // "Object"). The function uses reflection to call Next()/Value()/Err()/Close()
 // on the stream field, handling both EventStream (Value() *T) and JsonLStream
 // (Value() (T, error)) signatures.
-func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) error {
-	return streamResult(cmd, res, streamFieldName, nil)
+// stopProgress, when given, runs before anything is written: on the first
+// event, at end of stream, or before falling back to a single JSON result.
+func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string, stopProgress ...func()) error {
+	stop := func() {
+		for _, fn := range stopProgress {
+			if fn != nil {
+				fn()
+			}
+		}
+	}
+	return streamResult(cmd, res, streamFieldName, nil, stop)
 }
 
 // streamHops continues a stream into the next hop's stream when one ends,
@@ -34,7 +43,11 @@ type streamHops interface {
 	discrete(res interface{}) error
 }
 
-func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, hops streamHops) error {
+func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, hops streamHops, stop func()) error {
+	if stop == nil {
+		stop = func() {}
+	}
+	defer stop()
 	if flagutil.DidDryRunRequest(cmd) {
 		return nil
 	}
@@ -129,6 +142,7 @@ func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, h
 
 			// Call Next() bool
 			nextResults := nextMethod.Call(nil)
+			stop()
 			if !nextResults[0].Bool() {
 				break
 			}
@@ -204,6 +218,7 @@ func streamResult(cmd *cobra.Command, res interface{}, streamFieldName string, h
 	for hop := 0; ; hop++ {
 		fallback, err := drain(res)
 		if fallback {
+			stop()
 			if hop > 0 {
 				if finishErr := finishJoin(nil); finishErr != nil {
 					return finishErr

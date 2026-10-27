@@ -13,7 +13,7 @@ features:
     additionalProperties: 0.1.5
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.50.2
+    core: 3.50.3
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
@@ -676,7 +676,7 @@ trackedFiles:
   examples/resources/testing_x_wrapped_attribute/resource.tf:
     last_write_checksum: sha1:40d7f3658495fad3dc9e3e2ac5856266268b58b6
   go.mod:
-    last_write_checksum: sha1:3ebb9e002ec2a763d52b0fbc8a9e96d432531afc
+    last_write_checksum: sha1:63913c24e4c7ff051e77c66626af279020bc4fb6
   internal/planmodifiers/boolplanmodifier/suppress_diff.go:
     last_write_checksum: sha1:3454bf0a277768b5d23ed4f7752666f9752effbb
   internal/planmodifiers/boolplanmodifier/use_config_value.go:

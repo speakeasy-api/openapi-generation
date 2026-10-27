@@ -778,6 +778,9 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 		if err := d.linkInput(key, &cmd.Flags[i], variant, presetPointers, presetValues, false); err != nil {
 			return err
 		}
+		if err := d.linkImplies(key, &cmd.Flags[i], []*cliResolvedSchema{variant}); err != nil {
+			return err
+		}
 	}
 
 	d.checkSatisfiability(key, cmd, variant, presetPointers)
@@ -990,6 +993,15 @@ func (d *cliManifestDecoder) linkDispatchCommand(cmd *CLICommand) error {
 	}
 	for i := range cmd.Flags {
 		if err := d.linkDispatchInput(key, &cmd.Flags[i], links, false); err != nil {
+			return err
+		}
+		var variants []*cliResolvedSchema
+		for _, link := range links {
+			if cliContains(cmd.Flags[i].RouteIDs, link.route.ID) {
+				variants = append(variants, link.variant)
+			}
+		}
+		if err := d.linkImplies(key, &cmd.Flags[i], variants); err != nil {
 			return err
 		}
 	}
@@ -1291,6 +1303,9 @@ func (d *cliManifestDecoder) linkAsync(cmdKey string, cmd *CLICommand, createInf
 				return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s is an open enum; every possible state must be classifiable at generation time", cmdKey, recipe.StateFrom, recipe.OperationID, response.code)
 			}
 			for _, value := range facts.enum {
+				if value == nil {
+					continue
+				}
 				state, ok := value.(string)
 				if !ok {
 					return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s has a non-string enum member %v", cmdKey, recipe.StateFrom, recipe.OperationID, response.code, value)
@@ -2440,8 +2455,20 @@ func (w *cliStreamPathWalker) walk(schema any, segments []cliPathSegment, seen [
 			w.err = fmt.Errorf("%s %s %s: referenced schema %q does not exist in components.schemas%s", w.owner, w.field, w.selectPath, name, cliDidYouMean(name, cliComponentNames(w.d.schemaIndex.components)))
 			return
 		}
-		if len(segments) == 0 && cliRefHasSiblingConstraints(schemaMap) {
-			w.checkLeaf(schemaMap, seen)
+		if cliRefHasSiblingConstraints(schemaMap) {
+			if len(segments) == 0 {
+				w.checkLeaf(schemaMap, seen)
+				return
+			}
+			// The rewrite keeps seen free of name so its $ref branch still
+			// resolves; the marker stops a union that re-enters this
+			// reference from recursing forever.
+			marker := name + " (with siblings)"
+			if cliContains(seen, marker) {
+				w.unverifiable("schema reference cycle at " + name)
+				return
+			}
+			w.walk(cliRefSiblingsAsAllOf(schemaMap), segments, append(seen, marker))
 			return
 		}
 		w.walk(component, segments, append(seen, name))
@@ -2618,9 +2645,10 @@ func (w *cliStreamPathWalker) recordLeafEnum(schemaMap map[string]any, seen []st
 
 // leafEnum reports the string members a string leaf is closed over. Every
 // keyword on the schema constrains conjunctively: a const, a closed enum, the
-// referenced component, each allOf arm, and a oneOf/anyOf (whose non-null arms
-// must all be closed) each contribute a member set, and the leaf is closed
-// over their intersection. Arms that only set a type constrain nothing.
+// referenced component and each allOf arm contribute a member set, and the
+// leaf is closed over their intersection. Arms that only set a type constrain
+// nothing. A oneOf/anyOf then filters those members, or supplies them when no
+// other keyword does and every non-null arm is closed.
 func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) (values []string, closed, open bool) {
 	if unknownValues, ok := schemaMap["x-speakeasy-unknown-values"].(string); ok && unknownValues == "allow" {
 		return nil, false, true
@@ -2674,9 +2702,16 @@ func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) 
 			}
 		}
 	}
-	if members := cliUnionMembers(schemaMap); members != nil {
-		unionClosed := true
-		var unionValues []string
+	closed = len(sources) > 0
+	if closed {
+		values = cliIntersectStrings(sources)
+	}
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		members, _ := schemaMap[keyword].([]any)
+		if len(members) == 0 {
+			continue
+		}
+		var arms []cliEnumArm
 		for _, member := range members {
 			memberMap, ok := member.(map[string]any)
 			if !ok {
@@ -2692,18 +2727,59 @@ func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) 
 			if memberOpen {
 				return nil, false, true
 			}
-			unionClosed = unionClosed && memberClosed
-			unionValues = append(unionValues, memberValues...)
+			arms = append(arms, cliEnumArm{values: memberValues, closed: memberClosed})
 		}
-		if !unionClosed {
-			return nil, false, false
+		if !closed {
+			for _, arm := range arms {
+				if !arm.closed {
+					return nil, false, false
+				}
+				for _, value := range arm.values {
+					if !cliContains(values, value) {
+						values = append(values, value)
+					}
+				}
+			}
+			closed = true
 		}
-		sources = append(sources, unionValues)
+		values = cliFilterUnionMembers(values, arms, keyword == "oneOf")
 	}
-	if len(sources) == 0 {
+	if !closed {
 		return nil, false, false
 	}
-	return cliIntersectStrings(sources), true, false
+	return values, true, false
+}
+
+// cliEnumArm is one oneOf/anyOf arm of a string leaf: the members it is
+// closed over, or any string when it is not closed.
+type cliEnumArm struct {
+	values []string
+	closed bool
+}
+
+// cliFilterUnionMembers keeps the candidates the union accepts: at least one
+// arm for anyOf, exactly one for oneOf. An arm that is not closed may carry
+// constraints that cannot be evaluated here, so a oneOf containing one only
+// requires a match, which keeps every possible member in the table.
+func cliFilterUnionMembers(candidates []string, arms []cliEnumArm, exactlyOne bool) []string {
+	for _, arm := range arms {
+		if !arm.closed {
+			exactlyOne = false
+		}
+	}
+	var out []string
+	for _, candidate := range candidates {
+		matches := 0
+		for _, arm := range arms {
+			if !arm.closed || cliContains(arm.values, candidate) {
+				matches++
+			}
+		}
+		if matches > 0 && (!exactlyOne || matches == 1) {
+			out = append(out, candidate)
+		}
+	}
+	return out
 }
 
 // cliIntersectStrings keeps the members of the first set present in every
@@ -3723,6 +3799,28 @@ func cliUnionMemberRefs(schema map[string]any) []string {
 	return refs
 }
 
+// cliRefSiblingsAsAllOf rewrites a reference with sibling keywords as an
+// implicit allOf: JSON Schema 2020-12 applies keywords beside $ref
+// conjunctively, and the existing composition (with its cycle detection via
+// seen) then handles the reference branch alongside the siblings.
+func cliRefSiblingsAsAllOf(schemaMap map[string]any) map[string]any {
+	branches := []any{map[string]any{"$ref": schemaMap["$ref"]}}
+	rest := map[string]any{}
+	for k, v := range schemaMap {
+		switch k {
+		case "$ref":
+		case "allOf":
+			if list, ok := v.([]any); ok {
+				branches = append(branches, list...)
+			}
+		default:
+			rest[k] = v
+		}
+	}
+	rest["allOf"] = branches
+	return rest
+}
+
 func cliTrimRefPrefixes(refs []string) []string {
 	out := make([]string, 0, len(refs))
 	for _, ref := range refs {
@@ -3763,25 +3861,7 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 			return nil, fmt.Errorf("referenced schema %q does not exist in components.schemas%s", name, cliDidYouMean(name, cliComponentNames(d.schemaIndex.components)))
 		}
 		if len(schemaMap) > 1 {
-			// JSON Schema 2020-12: keywords beside $ref apply conjunctively.
-			// Rewrite as an implicit allOf so the existing composition (and
-			// its cycle detection via seen) handles the reference branch
-			// alongside the siblings instead of discarding them.
-			branches := []any{map[string]any{"$ref": ref}}
-			rest := map[string]any{}
-			for k, v := range schemaMap {
-				switch k {
-				case "$ref":
-				case "allOf":
-					if list, ok := v.([]any); ok {
-						branches = append(branches, list...)
-					}
-				default:
-					rest[k] = v
-				}
-			}
-			rest["allOf"] = branches
-			resolved, err := d.resolveObjectSchema(rest, seen)
+			resolved, err := d.resolveObjectSchema(cliRefSiblingsAsAllOf(schemaMap), seen)
 			if err != nil {
 				return nil, err
 			}
@@ -4734,6 +4814,40 @@ func cliSortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// linkImplies checks a flag's implied values against every request variant
+// that declares the flag. Each implied property must exist on all of them and
+// normalize to the same value, because one runtime rule serves every route.
+func (d *cliManifestDecoder) linkImplies(cmdKey string, input *CLICommandInput, variants []*cliResolvedSchema) error {
+	if len(input.Implies) == 0 {
+		return nil
+	}
+	if input.Type != "bool" {
+		return fmt.Errorf("command %q flag %q: implies requires a bool flag, but the flag is %s", cmdKey, input.Name, input.Type)
+	}
+	for i := range input.Implies {
+		pointer := input.Implies[i].Bind.Pointer
+		name := cliPointerPropertyName(pointer)
+		var normalized any
+		for j, variant := range variants {
+			if _, declared := variant.properties[name]; !declared {
+				return fmt.Errorf("command %q flag %q: implied property %s is not declared by %s", cmdKey, input.Name, pointer, cliSchemaLabel(variant))
+			}
+			candidate := input.Implies[i]
+			if err := d.linkPreset(cmdKey, &candidate, variant); err != nil {
+				return fmt.Errorf("flag %q implies: %w", input.Name, err)
+			}
+			if j > 0 && !cliValuesEqual(normalized, candidate.Value) {
+				return fmt.Errorf("command %q flag %q: implied value for %s normalizes differently across request variants", cmdKey, input.Name, pointer)
+			}
+			normalized = candidate.Value
+		}
+		if len(variants) > 0 {
+			input.Implies[i].Value = normalized
+		}
+	}
+	return nil
 }
 
 func (d *cliManifestDecoder) linkPreset(cmdKey string, preset *CLICommandPreset, variant *cliResolvedSchema) error {

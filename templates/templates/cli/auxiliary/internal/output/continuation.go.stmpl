@@ -566,7 +566,7 @@ func ContinuationStream(cmd *cobra.Command, request interface{}, hop Continuatio
 	}
 	run.beginHop()
 	hops := &streamContinuation{run: run}
-	if err := streamResult(cmd, res, streamFieldName, hops); err != nil || hops.finished {
+	if err := streamResult(cmd, res, streamFieldName, hops, nil); err != nil || hops.finished {
 		return err
 	}
 	return run.finish()

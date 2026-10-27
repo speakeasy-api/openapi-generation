@@ -1,15 +1,15 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.10",
+  core: "0.9.15",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
-  globalSecurity: "0.1.0",
+  globalSecurity: "0.1.1",
   methodSecurity: "0.0.0",
   globalServerURLs: "0.1.0",
   methodServerURLs: "0.0.0",
-  globals: "0.1.1",
+  globals: "0.1.2",
   enums: "0.0.2",
   openEnums: "0.0.1",
   serverIDs: "0.0.0",
@@ -36,7 +36,7 @@ const supportedFeatures = {
   additionalProperties: "0.0.1",
   deepObjectParams: "0.0.0",
   downloadStreams: "0.0.2",
-  serverEvents: "0.1.4",
+  serverEvents: "0.1.5",
   oauth2ClientCredentials: "0.0.1",
   webhooks: "0.0.0",
   callbacks: "0.0.0",
@@ -49,7 +49,7 @@ const supportedFeatures = {
   transformJq: "0.0.0",
   jsonlResponses: "0.0.1",
   customCodeRegions: "0.0.1",
-  cliCommands: "0.2.0",
+  cliCommands: "0.2.1",
 };
 
 // @ts-ignore
@@ -359,6 +359,8 @@ function isTestSkipped(test: string): boolean {
     "parameters-path-parameter-formats",
     "shared-enum-constructor-default",
     "open-union-invalid-json-is-an-error",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
   ].includes(test);
 }
 

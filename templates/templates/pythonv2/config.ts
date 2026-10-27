@@ -22,7 +22,7 @@ function getTemplateDependencies() {
     },
     httpx2: {
       name: "httpx2",
-      version: ">=2.10.0",
+      version: ">=2.12.0",
       cpe: "cpe:2.3:a:pydantic:httpx2:*:*:*:*:*:python:*:*",
       ecosystem: "PyPI",
       category: "runtime",

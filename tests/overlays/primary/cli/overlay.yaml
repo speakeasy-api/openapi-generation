@@ -133,6 +133,18 @@ actions:
                 incomplete: success
                 failed: failure
                 cancelled: failure
+        outcomeExportInteraction:
+          output:
+            outcome:
+              statePointer: $.status
+              errorPointer: $.errors
+              states:
+                queued: pending
+                in_progress: pending
+                completed: success
+                incomplete: success
+                failed: failure
+                cancelled: failure
         outcomeListInteractions:
           output:
             outcome:
@@ -705,6 +717,30 @@ actions:
               application/json:
                 schema:
                   $ref: '#/components/schemas/outcomeInteraction'
+    /outcome/exports/{id}:
+      get:
+        operationId: outcomeExportInteraction
+        tags: [outcome]
+        description: Lookup whose success response is either the interaction as JSON or its exported binary, so output.outcome is classified when the JSON response is saved with --output-file or printed with --output-b64.
+        servers:
+        - url: http://localhost:35456
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          "200":
+            description: The interaction, or its exported binary.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/outcomeInteraction'
+              application/octet-stream:
+                schema:
+                  type: string
+                  format: binary
     /outcome/interactions:
       get:
         operationId: outcomeListInteractions

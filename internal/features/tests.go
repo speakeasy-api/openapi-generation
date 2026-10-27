@@ -42,6 +42,7 @@ const (
 	TestAuthBearerAuthOperationWithPrefix
 	TestAuthBearerAuthOperationWithoutPrefix
 	TestAuthGlobalSecurityFieldsOrdering
+	TestAuthGlobalSecurityEmpty
 	TestAuthGlobalSecurityOptionFieldsOrdering
 	TestAuthOauth2Auth
 	TestAuthOpenIDConnectAuth
@@ -58,6 +59,7 @@ const (
 	TestAuthGlobalSecurityFlattening
 	TestAuthGlobalSecurityFlatteningCallback
 	TestAuthGlobalSecurityFlatteningEnvVarFallback
+	TestAuthGlobalSecurityFlatteningEmpty
 	TestAuthHoistedOperationAuthRetained
 	TestAuthCustomSecurityOptionAppId
 	TestAuthCustomSecuritySchemeAppId

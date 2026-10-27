@@ -288,7 +288,7 @@ function getTemplateDependencies() {
     },
     express: {
       name: "express",
-      version: "^4.21.2",
+      version: "^4.22.3",
       cpe: "cpe:2.3:a:expressjs:express:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
