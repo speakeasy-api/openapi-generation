@@ -625,7 +625,7 @@ If both ` + "`" + `--dry-run` + "`" + ` and ` + "`" + `--debug` + "`" + ` are se
 
 Sensitive information is automatically redacted in diagnostic output:
 - **Headers**: ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + `, ` + "`" + `Set-Cookie` + "`" + `, ` + "`" + `X-API-Key` + "`" + `, and other security headers show ` + "`" + `[REDACTED]` + "`" + `
-- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + ` or ` + "`" + `Cookie` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its definition; only its ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + ` and ` + "`" + `examples` + "`" + ` are masked
+- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + ` or ` + "`" + `X-Auth-Token` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its structure, with ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + `, ` + "`" + `example` + "`" + ` and ` + "`" + `examples` + "`" + ` masked at every level
 - **Binary data**: binary media and canonical base64 strings are replaced with ` + "`" + `<bytes:N>` + "`" + `
 - **URL query**: credential-like query parameters are replaced with ` + "`" + `[REDACTED]` + "`" + `
 
@@ -1675,7 +1675,7 @@ If both ` + "`" + `--dry-run` + "`" + ` and ` + "`" + `--debug` + "`" + ` are se
 
 Sensitive information is automatically redacted in diagnostic output:
 - **Headers**: ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + `, ` + "`" + `Set-Cookie` + "`" + `, ` + "`" + `X-API-Key` + "`" + `, and other security headers show ` + "`" + `[REDACTED]` + "`" + `
-- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + ` or ` + "`" + `Cookie` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its definition; only its ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + ` and ` + "`" + `examples` + "`" + ` are masked
+- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + ` or ` + "`" + `X-Auth-Token` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its structure, with ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + `, ` + "`" + `example` + "`" + ` and ` + "`" + `examples` + "`" + ` masked at every level
 - **Binary data**: binary media and canonical base64 strings are replaced with ` + "`" + `<bytes:N>` + "`" + `
 - **URL query**: credential-like query parameters are replaced with ` + "`" + `[REDACTED]` + "`" + `
 
@@ -2784,7 +2784,7 @@ If both ` + "`" + `--dry-run` + "`" + ` and ` + "`" + `--debug` + "`" + ` are se
 
 Sensitive information is automatically redacted in diagnostic output:
 - **Headers**: ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + `, ` + "`" + `Set-Cookie` + "`" + `, ` + "`" + `X-API-Key` + "`" + `, and other security headers show ` + "`" + `[REDACTED]` + "`" + `
-- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + ` or ` + "`" + `Cookie` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its definition; only its ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + ` and ` + "`" + `examples` + "`" + ` are masked
+- **Body**: JSON fields named ` + "`" + `password` + "`" + `, ` + "`" + `secret` + "`" + `, ` + "`" + `token` + "`" + `, ` + "`" + `api_key` + "`" + `, ` + "`" + `client_secret` + "`" + `, etc., and fields named like sensitive headers (such as ` + "`" + `Authorization` + "`" + `, ` + "`" + `Cookie` + "`" + ` or ` + "`" + `X-Auth-Token` + "`" + `), show ` + "`" + `[REDACTED]` + "`" + `. A JSON Schema stored under such a name keeps its structure, with ` + "`" + `default` + "`" + `, ` + "`" + `const` + "`" + `, ` + "`" + `enum` + "`" + `, ` + "`" + `example` + "`" + ` and ` + "`" + `examples` + "`" + ` masked at every level
 - **Binary data**: binary media and canonical base64 strings are replaced with ` + "`" + `<bytes:N>` + "`" + `
 - **URL query**: credential-like query parameters are replaced with ` + "`" + `[REDACTED]` + "`" + `
 

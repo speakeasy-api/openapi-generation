@@ -355,9 +355,11 @@ func TestDebugUsesSameRequestAndResponseRedactor(t *testing.T) {
 
 func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 	body := `{` +
-		`"tools":[{"headers":{"Authorization":"Bearer header-secret","X-Trace":"visible-trace"}}],` +
+		`"tools":[{"headers":{"Authorization":"Bearer header-secret","X-Auth-Token":"suffix-secret","X-Trace":"visible-trace"}}],` +
 		`"parameters":{"type":"object","properties":{"password":{"type":"string","description":"visible-description","default":"default-secret"}}},` +
-		`"token":{"type":"bearer","value":"object-secret"}` +
+		`"secret":{"anyOf":[{"type":"object","properties":{"visible_inner":{"type":"string","default":"nested-secret"}}}]},` +
+		`"token":{"type":"bearer","value":"object-secret"},` +
+		`"max_tokens":42` +
 		`}`
 	req, err := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(body))
 	require.NoError(t, err)
@@ -374,11 +376,13 @@ func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &preview))
 	out := stdout.String()
-	require.NotContains(t, out, "header-secret")
-	require.NotContains(t, out, "default-secret")
-	require.NotContains(t, out, "object-secret")
-	require.Contains(t, out, "visible-trace")
-	require.Contains(t, out, "visible-description")
+	for _, hidden := range []string{"header-secret", "suffix-secret", "default-secret", "nested-secret", "object-secret"} {
+		require.NotContains(t, out, hidden)
+	}
+	for _, shown := range []string{"visible-trace", "visible-description", "visible_inner"} {
+		require.Contains(t, out, shown)
+	}
+	require.EqualValues(t, 42, preview.Request.Body["max_tokens"])
 
 	password := preview.Request.Body["parameters"].(map[string]interface{})["properties"].(map[string]interface{})["password"].(map[string]interface{})
 	require.Equal(t, "string", password["type"])

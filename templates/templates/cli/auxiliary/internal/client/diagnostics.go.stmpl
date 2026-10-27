@@ -166,7 +166,9 @@ func isSensitiveName(key string) bool {
 }
 
 // isSensitiveJSONKey also matches header names, so header maps carried in a
-// request body (for example tool or proxy headers) are masked.
+// request body (for example tool or proxy headers) are masked. The broad
+// name-substring check used for headers is skipped: it would mask ordinary
+// body fields such as max_tokens.
 func isSensitiveJSONKey(key string) bool {
 	normalized := normalizeSensitiveKey(key)
 	if sensitiveJSONKeys[normalized] {
@@ -177,36 +179,51 @@ func isSensitiveJSONKey(key string) bool {
 			return true
 		}
 	}
+	lower := strings.ToLower(key)
+	for _, suffix := range sensitiveHeaderSuffixes {
+		if strings.HasSuffix(lower, suffix) {
+			return true
+		}
+	}
 	return false
 }
 
 var jsonSchemaKeywords = map[string]bool{
-	"$comment": true, "$id": true, "$ref": true, "$schema": true,
+	"$comment": true, "$defs": true, "$id": true, "$ref": true, "$schema": true,
 	"additionalProperties": true, "allOf": true, "anyOf": true, "const": true,
 	"contentEncoding": true, "contentMediaType": true, "default": true,
-	"deprecated": true, "description": true, "enum": true, "examples": true,
-	"exclusiveMaximum": true, "exclusiveMinimum": true, "format": true,
-	"items": true, "maxItems": true, "maxLength": true, "maxProperties": true,
-	"maximum": true, "minItems": true, "minLength": true, "minProperties": true,
-	"minimum": true, "multipleOf": true, "not": true, "nullable": true,
-	"oneOf": true, "pattern": true, "patternProperties": true,
-	"properties": true, "readOnly": true, "required": true, "title": true,
-	"type": true, "uniqueItems": true, "writeOnly": true,
+	"definitions": true, "dependentSchemas": true, "deprecated": true,
+	"description": true, "else": true, "enum": true, "example": true,
+	"examples": true, "exclusiveMaximum": true, "exclusiveMinimum": true,
+	"format": true, "if": true, "items": true, "maxItems": true,
+	"maxLength": true, "maxProperties": true, "maximum": true, "minItems": true,
+	"minLength": true, "minProperties": true, "minimum": true,
+	"multipleOf": true, "not": true, "nullable": true, "oneOf": true,
+	"pattern": true, "patternProperties": true, "prefixItems": true,
+	"properties": true, "readOnly": true, "required": true, "then": true,
+	"title": true, "type": true, "uniqueItems": true, "writeOnly": true,
 }
 
-var jsonSchemaValueKeywords = []string{"const", "default", "enum", "examples"}
+var jsonSchemaStructuralKeywords = []string{
+	"$defs", "$ref", "allOf", "anyOf", "definitions", "items", "not", "oneOf",
+	"prefixItems", "properties", "type",
+}
+
+var jsonSchemaValueKeywords = map[string]bool{
+	"const": true, "default": true, "enum": true, "example": true, "examples": true,
+}
+
+var jsonSchemaNamedSubschemas = map[string]bool{
+	"$defs": true, "definitions": true, "dependentSchemas": true,
+	"patternProperties": true, "properties": true,
+}
 
 // sensitiveSchemaObject reports whether v is a JSON Schema (every key a
-// schema keyword, with a type or $ref) rather than a value, so a property
-// named like a credential keeps its definition in previews.
+// schema keyword, at least one of them structural) rather than a value, so a
+// property named like a credential keeps its definition in previews.
 func sensitiveSchemaObject(v interface{}) (map[string]interface{}, bool) {
 	obj, ok := v.(map[string]interface{})
 	if !ok {
-		return nil, false
-	}
-	_, hasType := obj["type"]
-	_, hasRef := obj["$ref"]
-	if !hasType && !hasRef {
 		return nil, false
 	}
 	for k := range obj {
@@ -214,7 +231,48 @@ func sensitiveSchemaObject(v interface{}) (map[string]interface{}, bool) {
 			return nil, false
 		}
 	}
-	return obj, true
+	for _, k := range jsonSchemaStructuralKeywords {
+		if _, present := obj[k]; present {
+			return obj, true
+		}
+	}
+	return nil, false
+}
+
+// maskSchemaValues masks value-bearing keywords at every level of a schema,
+// treating the keys under properties-style keywords as names, not keywords.
+func maskSchemaValues(v interface{}, depth int) interface{} {
+	if depth > maxRedactDepth {
+		return redactionDepthMarker
+	}
+	switch val := v.(type) {
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(val))
+		for k, child := range val {
+			if jsonSchemaValueKeywords[k] {
+				out[k] = "[REDACTED]"
+				continue
+			}
+			if named, ok := child.(map[string]interface{}); ok && jsonSchemaNamedSubschemas[k] {
+				schemas := make(map[string]interface{}, len(named))
+				for name, schema := range named {
+					schemas[name] = maskSchemaValues(schema, depth+1)
+				}
+				out[k] = schemas
+				continue
+			}
+			out[k] = maskSchemaValues(child, depth+1)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(val))
+		for i, child := range val {
+			out[i] = maskSchemaValues(child, depth+1)
+		}
+		return out
+	default:
+		return v
+	}
 }
 
 // redactJSON recursively redacts sensitive keys in a JSON structure.
@@ -235,16 +293,7 @@ func redactJSON(v interface{}, depth int) interface{} {
 				out[k] = "[REDACTED]"
 				continue
 			}
-			masked := make(map[string]interface{}, len(schema))
-			for sk, sv := range schema {
-				masked[sk] = sv
-			}
-			for _, keyword := range jsonSchemaValueKeywords {
-				if _, present := masked[keyword]; present {
-					masked[keyword] = "[REDACTED]"
-				}
-			}
-			out[k] = redactJSON(masked, depth+1)
+			out[k] = redactJSON(maskSchemaValues(schema, depth+1), depth+1)
 		}
 		return out
 	case []interface{}:
