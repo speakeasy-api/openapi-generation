@@ -166,7 +166,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 // and the typed path should render it instead.
 func outputRawPage(out io.Writer, page interface{}, itemsOnly bool, resultsPath, jqExpr string, colorize, jqRaw bool) (bool, error) {
 	rawBody := peekRawBody(page)
-	if len(rawBody) == 0 {
+	if len(rawBody) == 0 || !json.Valid(rawBody) {
 		return false, nil
 	}
 	if !itemsOnly {
