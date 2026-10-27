@@ -52,7 +52,7 @@ trackedFiles:
   USAGE.md:
     last_write_checksum: sha1:99ff99ed97e23963b9b6596c6c695b3ae0df0e5b
   cmd/cli/main.go:
-    last_write_checksum: sha1:d6899a14abd11391a2c144413365cc60b6b351ea
+    last_write_checksum: sha1:2dc24fc3ab0bbb8943aa9f1928689751d324c250
   cmd/gendocs/main.go:
     last_write_checksum: sha1:35c39ad98d33d6683b5e687a0b750c4f9aded222
   cmd/gendocs/main_test.go:
@@ -228,11 +228,11 @@ trackedFiles:
   internal/client/client_test.go:
     last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
-    last_write_checksum: sha1:30b37c632ff875e00e6bce57caa64050dff89fcf
+    last_write_checksum: sha1:69940011c9872eab44f9607eb34928b46fe1b9cf
   internal/clierrors/clierrors.go:
     last_write_checksum: sha1:e17fb3e33e439c6997834182011540427d760857
   internal/config/config.go:
-    last_write_checksum: sha1:7d3e1555d3be75dcd615fb460f44bf1a4da784dd
+    last_write_checksum: sha1:258c1204397854dd4bcde65d9516b07f588ffebb
   internal/config/keyring.go:
     last_write_checksum: sha1:893474c3d2734f82532552c53eb3782623933eb1
   internal/explorer/explorer.go:
@@ -284,7 +284,7 @@ trackedFiles:
   internal/output/jq.go:
     last_write_checksum: sha1:9e59e92439a8c6269a76be1fa44e85cbbf2dee59
   internal/output/output.go:
-    last_write_checksum: sha1:d57b00cf9e196c416590bb936efb38bc037252e7
+    last_write_checksum: sha1:7c53e435f12338f53f780910318094f8e4563a0d
   internal/output/output_test.go:
     last_write_checksum: sha1:fc3d380351e2c9e5ffb2bc663e948ab37755e167
   internal/output/outputitems.go:
