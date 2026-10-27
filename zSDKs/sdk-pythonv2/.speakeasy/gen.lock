@@ -17,7 +17,7 @@ features:
     bigint: 1.0.0
     configurableModuleName: 0.2.0
     constsAndDefaults: 1.0.8
-    core: 6.1.6
+    core: 6.1.8
     customCodeRegions: 0.1.2
     customSecuritySchemes: 0.1.0
     decimal: 1.0.0
