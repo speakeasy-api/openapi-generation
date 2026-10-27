@@ -203,6 +203,8 @@ const classReservedKeywords = [
   "Base64FileInput",
   "UnrecognizedInt",
   "UnrecognizedStr",
+  "current_exclude_none",
+  "serialize_with_info",
   // typing module names commonly imported in generated model files
   "Optional",
   "Union",
