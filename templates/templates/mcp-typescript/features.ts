@@ -5,7 +5,7 @@ const supportedFeatures = {
   additionalProperties: "0.1.1",
   bigint: "0.1.0",
   constsAndDefaults: "0.1.2",
-  core: "2.0.1",
+  core: "2.0.2",
   customSecuritySchemes: "0.1.1",
   decimal: "0.1.0",
   deepObjectParams: "0.1.0",
