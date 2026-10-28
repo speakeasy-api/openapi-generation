@@ -1,0 +1,10 @@
+id: 1793074091-94a1973c
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: write the --dry-run JSON preview to stdout in every machine output mode, including agent mode, yaml and toon
+author: TristanSpeakEasy
+date: "2026-10-27"
