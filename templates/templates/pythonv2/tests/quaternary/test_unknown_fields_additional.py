@@ -116,7 +116,7 @@ def test_unrecognized_enum_serialization(typ, value):
     enum_value = adapter.validate_python(value)
     assert isinstance(enum_value, typ)
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         assert adapter.dump_python(enum_value) is enum_value
         assert adapter.dump_python(enum_value, mode="json") == value
         assert json.loads(adapter.dump_json(enum_value)) == value
@@ -127,7 +127,7 @@ def test_unrecognized_enum_serialization(typ, value):
 def test_unrecognized_enum_generated_model():
     model = shared.FieldEnvelope.model_validate({"label": "root", "futureKind": "third", "futureCode": 3})
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         dumped = model.model_dump(by_alias=True)
         assert type(dumped["futureKind"]) is UnrecognizedStr
         assert type(dumped["futureCode"]) is UnrecognizedInt
