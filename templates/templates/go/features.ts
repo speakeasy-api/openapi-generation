@@ -27,7 +27,7 @@ const supportedFeatures = {
   bigint: "0.0.2",
   decimal: "0.1.1",
   devContainers: "2.90.0",
-  constsAndDefaults: "0.1.14",
+  constsAndDefaults: "0.1.15",
   additionalProperties: "0.1.3",
   downloadStreams: "0.1.3",
   tests: "0.16.8",
