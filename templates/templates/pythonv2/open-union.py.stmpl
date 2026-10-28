@@ -12,7 +12,13 @@ class {{openUnionUnknownClassName $type}}(BaseModel):
     is_unknown: Literal[True] = True
 
     model_config = ConfigDict(frozen=True)
-    {{- if .Global.Config.ModelSerializationMethods}}
+    {{- if .Global.Config.PreserveUnknownFields}}
+    {{-   addImport "pydantic" "model_serializer"}}
+
+    @model_serializer
+    def serialize_model(self) -> Any:
+        return self.raw
+    {{- else if .Global.Config.ModelSerializationMethods}}
     {{-   addImport "pydantic" "model_serializer"}}
     {{-   addImport "types.basemodel" "SERIALIZATION_METHODS_DUMP" true}}
 
