@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.3] - 2026-10-28
+### :bug: Bug Fixes
+- [`7a142a7`](https://github.com/speakeasy-api/openapi-generation/commit/7a142a7e6afddda57c1d818fe8778eaeb3931e9e) - **cli**: show the effective output format and its source in whoami ([#162](https://github.com/speakeasy-api/openapi-generation/pull/162)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.954.2] - 2026-10-28
 ### :bug: Bug Fixes
 - [`7071207`](https://github.com/speakeasy-api/openapi-generation/commit/7071207a7474d9059c6bafd94105e3cdf85c5598) - **cli**: write --dry-run previews to stdout in every machine output mode ([#158](https://github.com/speakeasy-api/openapi-generation/pull/158)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20785,3 +20790,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.953.0...v2.954.0
 [v2.954.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.0...v2.954.1
 [v2.954.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.1...v2.954.2
+[v2.954.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.2...v2.954.3
