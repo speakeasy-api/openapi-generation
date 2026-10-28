@@ -1,0 +1,33 @@
+templates/templates/cli/auxiliary/internal/output/output_test.go.stmpl
+  h_9630b74bdac540 623-624,639
+  s_578df4d7619ed7::t_4c18b9e28d43f9 622,625
+templates/templates/cli/auxiliary/internal/config/config.go.stmpl
+  h_9630b74bdac540 16,226,230,249-251,255
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 235,289
+zSDKs/sdk-cli/internal/config/config.go
+  h_9630b74bdac540 14,284,288,307-309,313
+zSDKs/sdk-cli/internal/output/output_test.go
+  h_9630b74bdac540 652-656,670
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "198ea344ba886e323b6fde41832f43f81cf46a58",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_578df4d7619ed7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a354bc42-8311-411b-94ec-6ab4200630b0",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
