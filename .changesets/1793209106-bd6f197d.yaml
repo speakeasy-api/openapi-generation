@@ -1,0 +1,10 @@
+id: 1793209106-bd6f197d
+features:
+    - unions
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: select the matching open union inside unions of open unions
+author: 2ynn
+date: "2026-10-28"
