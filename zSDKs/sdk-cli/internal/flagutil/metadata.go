@@ -1155,7 +1155,7 @@ func decodeErrorMessage(err error) string {
 	msg := err.Error()
 	start := strings.Index(msg, unionDecodePrefix)
 	if start < 0 {
-		return msg
+		return maskQuotedParseInput(msg)
 	}
 	rest := msg[start+len(unionDecodePrefix):]
 	end := -1
@@ -1167,7 +1167,28 @@ func decodeErrorMessage(err error) string {
 	if end < 0 {
 		return msg[:start] + "could not unmarshal value"
 	}
-	return msg[:start] + "could not unmarshal value" + rest[end+1:]
+	return msg[:start] + "could not unmarshal value" + maskQuotedParseInput(rest[end+1:])
+}
+
+const quotedGoString = `"(?:[^"\\]|\\.)*"`
+
+// quotedParseInput matches the input that time.ParseError and
+// strconv.NumError quote; the expected layouts they also quote are kept.
+var quotedParseInput = []struct {
+	pattern *regexp.Regexp
+	repl    string
+}{
+	{regexp.MustCompile(`parsing time ` + quotedGoString), "parsing time value"},
+	{regexp.MustCompile(`cannot parse ` + quotedGoString + ` as`), "cannot parse value as"},
+	{regexp.MustCompile(`extra text: ` + quotedGoString), "extra text"},
+	{regexp.MustCompile(`(strconv\.\w+): parsing ` + quotedGoString), "$1: parsing value"},
+}
+
+func maskQuotedParseInput(msg string) string {
+	for _, p := range quotedParseInput {
+		msg = p.pattern.ReplaceAllString(msg, p.repl)
+	}
+	return msg
 }
 
 func verifyBodyKeys(source string, input []byte, target reflect.Value, u *UnionMeta) error {
