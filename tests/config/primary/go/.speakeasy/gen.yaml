@@ -17,6 +17,7 @@ generation:
 go:
   fixFlags:
     encodePathParams: true
+    applyPathParamDefaults: true
   inferUnionDiscriminators: true
   version: 0.0.1
   clientServerStatusCodesAsErrors: true

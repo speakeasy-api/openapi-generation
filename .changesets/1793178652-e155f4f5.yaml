@@ -1,0 +1,10 @@
+id: 1793178652-e155f4f5
+features:
+    - constsAndDefaults
+targets:
+    - go
+type: fix
+bump: patch
+description: substitute the schema default for empty string path parameters when fixFlags.applyPathParamDefaults is enabled (default for new SDKs)
+author: ThomasRooney
+date: "2026-10-28"

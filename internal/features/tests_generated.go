@@ -704,6 +704,8 @@ func (t Test) String() string {
         return "parameters-deep-object-query-params-map"
     case TestParametersDeepObjectQueryParamsObject:
         return "parameters-deep-object-query-params-object"
+    case TestParametersDefaultPathParams:
+        return "parameters-default-path-params"
     case TestParametersDefaultQueryParams:
         return "parameters-default-query-params"
     case TestParametersFormQueryParamsArray:
@@ -2230,6 +2232,8 @@ func TestFromString(s string) Test {
         return TestParametersDeepObjectQueryParamsMap
     case "parameters-deep-object-query-params-object":
         return TestParametersDeepObjectQueryParamsObject
+    case "parameters-default-path-params":
+        return TestParametersDefaultPathParams
     case "parameters-default-query-params":
         return TestParametersDefaultQueryParams
     case "parameters-form-query-params-array":
@@ -3405,6 +3409,7 @@ var testList = []Test{
     TestParametersDeepObjectQueryParamsDeepObject,
     TestParametersDeepObjectQueryParamsMap,
     TestParametersDeepObjectQueryParamsObject,
+    TestParametersDefaultPathParams,
     TestParametersDefaultQueryParams,
     TestParametersFormQueryParamsArray,
     TestParametersFormQueryParamsCamelObject,
