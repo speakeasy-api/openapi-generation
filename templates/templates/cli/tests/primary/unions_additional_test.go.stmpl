@@ -1019,3 +1019,40 @@ func TestCircularReferenceRecursiveOneOf(t *testing.T) {
 	assert.Contains(t, output, `"nested"`)
 	assert.Contains(t, output, `"world"`)
 }
+
+func TestUnionDecodeErrorsOmitRawInput(t *testing.T) {
+	const secret = "sk-test-0123456789abcdef"
+	cases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "discriminated flag value",
+			args: []string{"unions", "strongly-typed-one-of-post", "--strongly-typed-one-of-object", `{"type":"simpleObjectWithType","str":"` + secret + `","int":"not-an-int"}`},
+			want: "could not unmarshal value into expected (",
+		},
+		{
+			name: "undiscriminated union in body",
+			args: []string{"unions", "one-of-boolean-and-string-enum", "--body", `{"active":["` + secret + `"]}`},
+			want: "could not unmarshal value into any supported union types for",
+		},
+		{
+			name: "input containing the closing phrase",
+			args: []string{"unions", "one-of-boolean-and-string-enum", "--body", `{"active":["`+"` into any supported union types for X "+secret+`"]}`},
+			want: "could not unmarshal value into any supported union types for",
+		},
+	}
+	for _, tc := range cases {
+		for _, mode := range [][]string{nil, {"--output-format", "json"}} {
+			t.Run(tc.name+"/"+strings.Join(mode, " "), func(t *testing.T) {
+				h := NewCLITestHarness(t)
+				err := h.RunWithStdinServerRaw("http://127.0.0.1:1", append(append([]string{"--no-interactive"}, mode...), tc.args...), "")
+				require.Error(t, err)
+				combined := err.Error() + h.GetStdout() + h.GetStderr()
+				assert.Contains(t, combined, tc.want)
+				assert.NotContains(t, combined, secret)
+			})
+		}
+	}
+}
