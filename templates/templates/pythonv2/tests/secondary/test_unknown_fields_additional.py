@@ -120,3 +120,20 @@ def test_top_level_none_still_validates():
 def test_coerced_top_level_none_stays_empty():
     typ = Annotated[Optional[int], pydantic.BeforeValidator(lambda value: None)]
     assert utils.marshal_json("empty", typ) == ""
+
+
+@pytest.mark.parametrize("model, options, expected", [
+    (shared.FieldNode(display_name="child", nullable="value"), {"include": {"nullable"}}, {"nullable": "value"}),
+    (shared.FieldNode(display_name="child", nullable="value"), {"exclude": {"display_name"}}, {"nullable": "value"}),
+    (shared.ConstFields(label="label"), {"exclude": {"kind"}}, {"label": "label", "priority": 1}),
+    (shared.ConstFields(label="label"), {"exclude_defaults": True}, {"label": "label"}),
+])
+def test_exclude_none_with_filters_leaves_filtered_fields_out(model, options, expected):
+    assert model.model_dump(by_alias=True, exclude_none=True, **options) == expected
+    assert json.loads(model.model_dump_json(by_alias=True, exclude_none=True, **options)) == expected
+
+
+def test_exclude_none_filter_applies_to_its_own_level():
+    model = shared.FieldEnvelope(label="root", child=shared.FieldNode(display_name="child", nullable=None), constant=shared.ConstFields())
+    assert model.model_dump(by_alias=True, exclude_none=True, exclude={"label"}) == {"child": {"displayName": "child", "nullable": None}, "constant": {"kind": "fixed", "priority": 1}}
+    assert model.model_dump(by_alias=True, exclude_none=True, exclude={"child": {"display_name"}}) == {"label": "root", "child": {}, "constant": {"kind": "fixed", "priority": 1}}
