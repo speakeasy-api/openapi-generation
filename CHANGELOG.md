@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.7] - 2026-10-28
+### :bug: Bug Fixes
+- [`14fb245`](https://github.com/speakeasy-api/openapi-generation/commit/14fb245dfee3ba307b01f8ceb883b516f16acd1f) - **cli**: redact header maps in body previews and keep schemas under credential-like keys ([#161](https://github.com/speakeasy-api/openapi-generation/pull/161)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.954.6] - 2026-10-28
 ### :bug: Bug Fixes
 - [`d1dc869`](https://github.com/speakeasy-api/openapi-generation/commit/d1dc869951bf938c57372021aa5b3fe9780dbc29) - **cli**: mask resolved credentials in error output and debug logs ([#165](https://github.com/speakeasy-api/openapi-generation/pull/165)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20809,3 +20814,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.3...v2.954.4
 [v2.954.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.4...v2.954.5
 [v2.954.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.5...v2.954.6
+[v2.954.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.6...v2.954.7
