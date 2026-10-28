@@ -1,0 +1,46 @@
+CHANGELOG.md
+  s_f9c6eb95da30b5::t_96a52f0f0f9cf1 7-11,20810-20811
+changelogs/cli/core-0.9.20.md
+  s_f9c6eb95da30b5::t_ae6ced23db3f13 1-3
+templates/templates/cli/auxiliary/cmd/{{sanitizeCliName}}/main.go.stmpl
+  s_f9c6eb95da30b5::t_45b8abbcc8e41f 10,33
+templates/templates/cli/auxiliary/internal/client/diagnostics.go.stmpl
+  s_f9c6eb95da30b5::t_26c39a7acaf515 20,617-620,624-625,627-633,706-707,712,715,722,727-728,732,737,740,748-759
+templates/templates/cli/auxiliary/internal/config/config.go.stmpl
+  s_f9c6eb95da30b5::t_e25004c25488b7 11,13,16-17,20,111-114,163-261,285-295,306,309,318,321,334,338,445-451,456,459,462,465,473,476,481,485
+templates/templates/cli/auxiliary/internal/output/agentmode.go.stmpl
+  s_f9c6eb95da30b5::t_89af71eaada6cf 228
+templates/templates/cli/auxiliary/internal/output/async.go.stmpl
+  s_f9c6eb95da30b5::t_33acb1c35e2c95 523
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  s_f9c6eb95da30b5::t_ae16bd34b554ed 558,560-562,567-593,602,604-606,611,634,698,701,732,748
+templates/templates/cli/auxiliary/internal/output/output_test.go.stmpl
+  s_f9c6eb95da30b5::t_88691c4a42e4ce 22-23,666-739
+templates/templates/cli/features.ts
+  s_f9c6eb95da30b5::t_7c842b9d5224d9 4
+templates/templates/cli/includes/security.ts
+  s_f9c6eb95da30b5::t_f1167066299bdf 21,106,701-703
+templates/templates/cli/tests/primary/diagnostics_test.go.stmpl
+  s_f9c6eb95da30b5::t_ee0d1c03941f06 188-274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "70a08be2147318d16fd4c9c398a24ed202884955",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_f9c6eb95da30b5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea35256b-c211-4e8e-8684-e0f52ff69fb9",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
