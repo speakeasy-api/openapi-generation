@@ -122,6 +122,83 @@ registerTemplateFunc(
   shouldTemplateOpenUnionDispatch,
 );
 
+function collectOpenUnions(
+  typeDef: TypeDef,
+  found: Map<string, TypeDef>,
+  visitedUnions: Set<string>,
+): void {
+  if (isOpenDiscriminatedUnion(typeDef)) {
+    found.set(typeDef.Name, typeDef);
+  } else if (isArrayOrMap(typeDef)) {
+    collectOpenUnions(typeDef.ItemType, found, visitedUnions);
+  } else if (
+    typeDef.Type.toString() === "union" &&
+    !typeDef.Discriminator &&
+    !visitedUnions.has(typeDef.Name)
+  ) {
+    visitedUnions.add(typeDef.Name);
+    for (const associatedType of typeDef.AssociatedTypes) {
+      collectOpenUnions(associatedType, found, visitedUnions);
+    }
+  }
+}
+
+/**
+ * Maps each open discriminated union reachable from the members of a
+ * non-discriminated union (directly, as array or map items at any depth, or
+ * through nested non-discriminated unions) to the discriminator values of the
+ * other reachable open unions as a Python literal, e.g.
+ * (("kind", frozenset({"note", "pause"})),). Empty unless at least two open
+ * unions are reachable.
+ */
+function openUnionSiblingVariants(unionTypeDef: TypeDef): Map<string, string> {
+  const found = new Map<string, TypeDef>();
+  collectOpenUnions(unionTypeDef, found, new Set<string>());
+  const siblingVariants = new Map<string, string>();
+  if (found.size < 2) {
+    return siblingVariants;
+  }
+  for (const name of found.keys()) {
+    const valuesByKey = new Map<string, Set<string>>();
+    for (const [siblingName, sibling] of found) {
+      if (siblingName === name) {
+        continue;
+      }
+      const key = sibling.Discriminator.TypePropertyName;
+      if (!valuesByKey.has(key)) {
+        valuesByKey.set(key, new Set<string>());
+      }
+      for (const mapping of sibling.Discriminator.Mapping) {
+        valuesByKey.get(key)!.add(mapping.Name);
+      }
+    }
+    const entries = [...valuesByKey.keys()].sort().map((key) => {
+      const values = [...valuesByKey.get(key)!]
+        .sort()
+        .map((value) => JSON.stringify(value))
+        .join(", ");
+      return `(${JSON.stringify(key)}, frozenset({${values}}))`;
+    });
+    siblingVariants.set(name, `(${entries.join(", ")},)`);
+  }
+  return siblingVariants;
+}
+
+function renderOpenUnionSiblingGuard(
+  openUnionRef: string,
+  openUnion: TypeDef,
+  siblingVariants: string,
+): string {
+  addImport("typing_extensions", "Annotated");
+  addImport("pydantic", "");
+  addImport("functools", "partial");
+  addImport("utils.unions", "decline_sibling_variants", true);
+
+  return `Annotated[${openUnionRef}, pydantic.WrapValidator(partial(decline_sibling_variants, union_name=${JSON.stringify(
+    sanitizeClassName(openUnion.Name),
+  )}, sibling_variants=${siblingVariants}))]`;
+}
+
 /** Returns the Unknown fallback class name, e.g. "UnknownShape" */
 function openUnionUnknownClassName(typeDef: TypeDef): string {
   return `Unknown${sanitizeClassName(typeDef.Name)}`;

@@ -154,8 +154,7 @@ def test_serialization_methods_return_raw_payload_of_nested_unknown_variants():
     assert json.loads(model.to_json()) == payload
     assert model.model_dump(by_alias=True)["choice"] == choice
     assert shared.FieldEnvelope.model_validate(model.to_dict(), context={ALLOW_UNKNOWN_UNION_VARIANTS: True}).to_dict() == payload
-    with pytest.raises(pydantic.ValidationError, match="unrecognized kind value 'future'"):
-        shared.FieldEnvelope.model_validate(model.to_dict())
+    assert shared.FieldEnvelope.model_validate(model.to_dict()).to_dict() == payload
 
 
 @pytest.mark.parametrize("model, options, expected", [

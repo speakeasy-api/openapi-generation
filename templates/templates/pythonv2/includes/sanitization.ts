@@ -1309,6 +1309,19 @@ function sanitizeType(
           suffixForTypes + modelSuffix,
         );
 
+        const siblingVariants = openUnionSiblingGuards?.get(fieldDef.Type.Name);
+        if (
+          siblingVariants &&
+          modelSuffix === "" &&
+          isOpenDiscriminatedUnion(fieldDef.Type)
+        ) {
+          return renderOpenUnionSiblingGuard(
+            clss,
+            fieldDef.Type,
+            siblingVariants,
+          );
+        }
+
         return clss;
       case "string":
         if (isBase64FileInputField(fieldDef)) {
@@ -1714,6 +1727,8 @@ registerTemplateFunc(
   sanitizeFieldTypeAndAnnotations,
 );
 
+let openUnionSiblingGuards: Map<string, string> | null = null;
+
 type UnionMember = {
   typeStr: string;
   associatedType: TypeDef;
@@ -1831,6 +1846,7 @@ function renderTypeAliasType(
 function renderOpenUnionDispatchTypeAliasType(
   unionName: string,
   members: UnionMember[],
+  dispatchMembers: UnionMember[],
 ): string {
   addImport("typing_extensions", "Annotated");
   addImport("typing_extensions", "TypeAliasType");
@@ -1839,7 +1855,7 @@ function renderOpenUnionDispatchTypeAliasType(
   addImport("utils.unions", "dispatch_open_union_members", true);
 
   const unionType = renderUnionMembers(members);
-  const targets = members
+  const targets = dispatchMembers
     .filter((m) => openUnionDispatchTarget(m.associatedType))
     .map((m) => m.typeStr)
     .join(", ");
@@ -2023,16 +2039,35 @@ function sanitizeUnionType(
     )}], ${discRef}(${lambda})]`;
   }
 
-  const members = collectUnionAssociatedTypes(
-    typeDef,
-    usageLocation,
-    owningModelInfo,
-    suffixForTypes,
-  );
-  if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
-    return renderOpenUnionDispatchTypeAliasType(unionName, members);
+  const collectMembers = () =>
+    collectUnionAssociatedTypes(
+      typeDef,
+      usageLocation,
+      owningModelInfo,
+      suffixForTypes,
+    );
+  const members = collectMembers();
+  const siblingGuards = context.Global.Config.PreserveUnknownFields
+    ? openUnionSiblingVariants(typeDef)
+    : new Map<string, string>();
+  let guardedMembers = members;
+  if (siblingGuards.size > 0) {
+    const enclosingGuards = openUnionSiblingGuards;
+    openUnionSiblingGuards = siblingGuards;
+    try {
+      guardedMembers = collectMembers();
+    } finally {
+      openUnionSiblingGuards = enclosingGuards;
+    }
   }
-  return renderTypeAliasType(unionName, members);
+  if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
+    return renderOpenUnionDispatchTypeAliasType(
+      unionName,
+      guardedMembers,
+      members,
+    );
+  }
+  return renderTypeAliasType(unionName, guardedMembers);
 }
 registerTemplateFunc("sanitizeUnionType", sanitizeUnionType);
 
