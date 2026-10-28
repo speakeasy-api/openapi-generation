@@ -1715,6 +1715,7 @@ registerTemplateFunc(
 
 type UnionMember = {
   typeStr: string;
+  associatedType: TypeDef;
   pyrightIgnore?: string;
 };
 
@@ -1791,6 +1792,7 @@ function collectUnionAssociatedTypes(
 
       return {
         typeStr,
+        associatedType,
         pyrightIgnore: isSelfReferringArrayOrMap
           ? "reportInvalidTypeForm"
           : undefined,
@@ -1799,12 +1801,8 @@ function collectUnionAssociatedTypes(
   );
 }
 
-function renderTypeAliasType(
-  unionName: string,
-  members: UnionMember[],
-): string {
+function renderUnionMembers(members: UnionMember[]): string {
   addImport("typing", "Union");
-  addImport("typing_extensions", "TypeAliasType");
 
   if (members.some((t) => t.pyrightIgnore)) {
     const renderedMembers = members.map(({ typeStr, pyrightIgnore }) =>
@@ -1812,15 +1810,39 @@ function renderTypeAliasType(
         ? `${typeStr},  # pyright: ignore[${pyrightIgnore}]`
         : `${typeStr},`,
     );
-    const unionType = `Union[\n${renderedMembers
+    return `Union[\n${renderedMembers
       .map((member) => `        ${member}`)
       .join("\n")}\n    ]`;
-    return `TypeAliasType("${unionName}", ${unionType})`;
   }
 
-  return `TypeAliasType("${unionName}", Union[${members
+  return `Union[${members.map((m) => m.typeStr).join(", ")}]`;
+}
+
+function renderTypeAliasType(
+  unionName: string,
+  members: UnionMember[],
+): string {
+  addImport("typing_extensions", "TypeAliasType");
+
+  return `TypeAliasType("${unionName}", ${renderUnionMembers(members)})`;
+}
+
+function renderOpenUnionDispatchTypeAliasType(
+  unionName: string,
+  members: UnionMember[],
+): string {
+  addImport("typing_extensions", "Annotated");
+  addImport("typing_extensions", "TypeAliasType");
+  addImport("pydantic", "");
+  addImport("functools", "partial");
+  addImport("utils.unions", "dispatch_open_union_members", true);
+
+  const unionType = renderUnionMembers(members);
+  const targets = members
+    .filter((m) => openUnionDispatchTarget(m.associatedType))
     .map((m) => m.typeStr)
-    .join(", ")}])`;
+    .join(", ");
+  return `TypeAliasType("${unionName}", Annotated[${unionType}, pydantic.WrapValidator(partial(dispatch_open_union_members, members=(${targets})))])`;
 }
 
 // @ts-ignore
@@ -2006,6 +2028,9 @@ function sanitizeUnionType(
     owningModelInfo,
     suffixForTypes,
   );
+  if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
+    return renderOpenUnionDispatchTypeAliasType(unionName, members);
+  }
   return renderTypeAliasType(unionName, members);
 }
 registerTemplateFunc("sanitizeUnionType", sanitizeUnionType);
