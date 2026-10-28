@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.8] - 2026-10-28
+### :bug: Bug Fixes
+- [`ea6f1fb`](https://github.com/speakeasy-api/openapi-generation/commit/ea6f1fbb93934c8e83d869d443a51a2105a50348) - **go**: apply schema defaults to empty string path parameters ([#167](https://github.com/speakeasy-api/openapi-generation/pull/167)) *(commit by [@ThomasRooney](https://github.com/ThomasRooney))*
+
+
 ## [v2.954.7] - 2026-10-28
 ### :bug: Bug Fixes
 - [`14fb245`](https://github.com/speakeasy-api/openapi-generation/commit/14fb245dfee3ba307b01f8ceb883b516f16acd1f) - **cli**: redact header maps in body previews and keep schemas under credential-like keys ([#161](https://github.com/speakeasy-api/openapi-generation/pull/161)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20815,3 +20820,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.4...v2.954.5
 [v2.954.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.5...v2.954.6
 [v2.954.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.6...v2.954.7
+[v2.954.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.7...v2.954.8
