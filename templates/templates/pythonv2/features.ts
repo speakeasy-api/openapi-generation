@@ -23,7 +23,7 @@ const supportedFeatures = {
   ignores: "3.0.1",
   typeOverrides: "3.0.0",
   errors: "3.4.5",
-  unions: "3.1.12",
+  unions: "3.1.13",
   sliceUnions: "0.0.1",
   multiLevelTagging: "3.0.0",
   bigint: "1.0.0",
