@@ -16,7 +16,7 @@ features:
     additionalProperties: 0.1.4
     bigint: 0.0.3
     constsAndDefaults: 0.1.14
-    core: 3.31.7
+    core: 3.31.8
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     decimal: 0.1.2

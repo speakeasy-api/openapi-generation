@@ -14,7 +14,7 @@ features:
     additionalProperties: 0.0.2
     bigint: 0.0.1
     constsAndDefaults: 0.1.3
-    core: 3.57.3
+    core: 3.57.5
     customCodeRegions: 0.2.2
     customSecuritySchemes: 0.2.0
     decimal: 0.0.1
@@ -511,7 +511,7 @@ trackedFiles:
   gradlew.bat:
     last_write_checksum: sha1:755607dcbac0ba8adba338ef00aafc1177ceb2b5
   publishing.gradle:
-    last_write_checksum: sha1:c62a7e5882a34d2fa79eb436d99efa74828f214a
+    last_write_checksum: sha1:51b6c709d3ad4164ccce8fc7eb514b765fbf27b7
   settings.gradle:
     last_write_checksum: sha1:b5b2f4aa4269fea383621740c89e1a847d952da9
   spring/openapi-spring-boot-autoconfigure/build.gradle:

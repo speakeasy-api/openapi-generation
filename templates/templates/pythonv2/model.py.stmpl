@@ -7,6 +7,14 @@
 {{- $hasOptionalField := gt (len $optionalFields) 0 -}}
 {{- $hasNullableField := gt (len $nullableFields) 0 -}}
 {{- $hasAdditionalProperties := hasAdditionalPropertiesField $type -}}
+{{- $preserveUnknownFields := .Global.Config.PreserveUnknownFields -}}
+{{- $modelSerializationMethods := .Global.Config.ModelSerializationMethods -}}
+{{- $outputKey := "k" -}}
+{{- $skipFilteredFieldsWhen := "exclude_none is False" -}}
+{{- if $modelSerializationMethods}}
+{{-   $outputKey = "n if use_field_names else k"}}
+{{-   $skipFilteredFieldsWhen = "(serialization_methods_dump or exclude_none is False)"}}
+{{- end -}}
 {{- if $hasAdditionalProperties}}{{addImport "pydantic" "ConfigDict"}}{{end -}}
 {{- $fields := (sortFields $type.Fields) -}}
 {{- $className := sanitizeClassName $type.Name }}
@@ -56,6 +64,14 @@ class {{$className}}(BaseModel):
         self.__pydantic_extra__ = value # pyright: ignore[reportIncompatibleVariableOverride]
     {{end}}
 
+    {{- $constFieldAttributes := templateConstFieldAttributeList $type}}
+    {{- if and $modelSerializationMethods $constFieldAttributes}}
+    {{-   addImport "typing" "Any"}}
+
+    def model_post_init(self, context: Any, /) -> None:
+        self.__pydantic_fields_set__.update([{{$constFieldAttributes}}])
+    {{- end}}
+
     {{- if hasOpenEnumField $type}}
     {{-   range openEnums $type}}
     {{-     if and (not .Const) (not (eq (getEnumFormat .Type) "union"))}}
@@ -75,8 +91,20 @@ class {{$className}}(BaseModel):
     {{- if or $hasNullableField $hasOptionalField}}
     {{-   addImport "pydantic" "model_serializer"}}
     {{-   addImport "types" "UNSET_SENTINEL" true}}
+    {{-   addImport "types" "serialize_with_info" true}}
+    {{-   addImport "types" "current_exclude_none" true}}
+    {{-   if or $preserveUnknownFields $modelSerializationMethods}}
+    {{-     addImport "types.basemodel" "current_by_alias" true}}
+    {{-   end}}
+    {{-   if $modelSerializationMethods}}
+    {{-     addImport "types.basemodel" "current_serialization_methods_dump" true}}
+    {{-   end}}
+    {{-   $serializeMethodName := sanitizeSerializeMethodName $type}}
     @model_serializer(mode="wrap")
-    def {{sanitizeSerializeMethodName $type}}(self, handler):
+    def _serialize_model_with_info(self, handler, info):
+        return serialize_with_info(self.{{$serializeMethodName}}, handler, info)
+
+    def {{$serializeMethodName}}(self, handler):
         {{- $nullDefaultFields := templateNullDefaultFieldList $type}}
         {{- $hasNullDefaultField := gt (len $nullDefaultFields) 0}}
         {{- if $hasOptionalField}}
@@ -88,14 +116,33 @@ class {{$className}}(BaseModel):
         {{-     end}}
         {{-   end}}
         {{- end}}
+        exclude_none = current_exclude_none()
+        {{- if or $preserveUnknownFields $modelSerializationMethods}}
+        by_alias = current_by_alias()
+        {{- end}}
+        {{- if $modelSerializationMethods}}
+        use_field_names = by_alias is False
+        serialization_methods_dump = current_serialization_methods_dump()
+        {{- end}}
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
-            k = f.alias or n
+            k = f.alias if f.alias is not None else n
+            {{- if $preserveUnknownFields}}
+            {{- /* Pydantic writes extras after declared fields, so an extra under a field's emitted key replaces that field's value */}}
+            {{- /* A nested model is serialized again from its own output, which may already use aliases */}}
+            key = k if by_alias or k in serialized else n
+            if key not in serialized and {{$skipFilteredFieldsWhen}}:
+                continue
+            val = serialized.pop(key, None)
+            {{- else}}
+            if k not in serialized and n not in serialized and {{$skipFilteredFieldsWhen}}:
+                continue
             val = serialized.get(k, serialized.get(n))
-            {{- if $hasAdditionalProperties}}
+            {{-   if $hasAdditionalProperties}}
             serialized.pop(k, serialized.pop(n, None))
+            {{-   end}}
             {{- end}}
 
             {{- if and $hasOptionalField $hasNullableField}}
@@ -112,7 +159,7 @@ class {{$className}}(BaseModel):
 
             if val != UNSET_SENTINEL:
                 {{- if not $hasOptionalField}}
-                m[k] = val
+                m[{{$outputKey}}] = val
                 {{- else }}
                 if (
                     val is not None
@@ -121,10 +168,10 @@ class {{$className}}(BaseModel):
                     or is_nullable_and_explicitly_set
                     {{- end}}
                 ):
-                    m[k] = val
+                    m[{{$outputKey}}] = val
                 {{- end}}
 
-        {{- if $hasAdditionalProperties}}
+        {{- if or $hasAdditionalProperties $preserveUnknownFields}}
         for k, v in serialized.items():
             m[k] = v
         {{- end}}

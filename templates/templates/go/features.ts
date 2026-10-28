@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.16.3",
+  core: "3.16.4",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -429,6 +429,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-null-and-undeclared-fields",
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
   ].includes(test);
 }
 

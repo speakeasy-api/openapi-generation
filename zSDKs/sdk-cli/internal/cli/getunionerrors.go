@@ -80,12 +80,13 @@ func runGetUnionErrorsCmd(cmd *cobra.Command, args []string) error {
 			return output.Error(cmd, err)
 		}
 		return output.PaginatedResult(cmd, res, "Object", "Pages", maxPages, output.PaginationProbe{
-			Type:       "offsetLimit",
-			CursorKind: "",
-			NextCursor: "",
-			NextURL:    "",
-			Results:    "$.pages",
-			HasLimit:   false,
+			Type:        "offsetLimit",
+			CursorKind:  "",
+			NextCursor:  "",
+			NextURL:     "",
+			Results:     "$.pages",
+			HasLimit:    false,
+			Transformed: false,
 		})
 	}
 	if output.WantsRawJSON(cmd) {

@@ -2694,6 +2694,10 @@ declare global {
     SecretName?: string;
     ValidationRegex?: string;
     ValidationMessage?: string;
+    ValidationExamples?: {
+      valid?: string[];
+      invalid?: string[];
+    };
   };
 
   type SDKGenConfigFields = Record<string, SDKGenConfigField>;

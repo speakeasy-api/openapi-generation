@@ -851,7 +851,7 @@ In human output modes, stdout is empty and the `[DRY-RUN]` block goes to stderr.
 - Request headers (sensitive values redacted)
 - Request body preview (sensitive fields redacted)
 
-With `--output-format json`, or with a caller-explicit `--jq`, stderr is silent and stdout is NDJSON: one compact preview object per would-be request. The jq filter is not applied, and command-declared jq presets do not select the JSON protocol.
+In machine modes (`--agent-mode`, `--output-format json`, `yaml` or `toon`, or a caller-explicit `--jq`), stderr is silent and stdout is NDJSON: one compact preview object per would-be request, whatever the output format. The jq filter is not applied, and command-declared jq presets do not select the JSON protocol.
 
 ```json
 {"dry_run":true,"request":{"method":"POST","url":"https://…","headers":{"Accept":["application/json"],…},"body":<JSON value | string | null>}}

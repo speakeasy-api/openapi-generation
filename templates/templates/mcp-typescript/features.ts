@@ -5,7 +5,7 @@ const supportedFeatures = {
   additionalProperties: "0.1.1",
   bigint: "0.1.0",
   constsAndDefaults: "0.1.2",
-  core: "2.0.1",
+  core: "2.0.3",
   customSecuritySchemes: "0.1.1",
   decimal: "0.1.0",
   deepObjectParams: "0.1.0",
@@ -689,6 +689,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-null-and-undeclared-fields",
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
   ].includes(test);
 }
 
