@@ -1,0 +1,25 @@
+templates/templates/cli/tests/primary/unions_additional_test.go.stmpl
+  h_9630b74bdac540 1046-1053
+  s_9e76f9b7e297fa::t_2feb6c9a360008 1044-1045
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93c212db347ba60f40b8c61712563016479efcc8",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_9e76f9b7e297fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd540dd9-e9bd-4123-babf-535b5d3e05d8",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
