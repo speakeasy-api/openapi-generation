@@ -18,6 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"openapi/internal/config"
 	"openapi/internal/flagutil"
 	"openapi/internal/output"
 )
@@ -584,17 +585,23 @@ func encodeJSON(value interface{}, indent string) (string, error) {
 }
 
 func formatBodyPreview(value interface{}, capBytes int) string {
+	return capPreview(renderBodyPreview(value), capBytes)
+}
+
+func renderBodyPreview(value interface{}) string {
 	if value == nil {
 		return "(empty)"
 	}
-	var rendered string
-	if _, ok := value.(string); ok {
-		rendered = value.(string)
-	} else if out, err := encodeJSON(value, "  "); err == nil {
-		rendered = out
-	} else {
-		rendered = fmt.Sprint(value)
+	if s, ok := value.(string); ok {
+		return s
 	}
+	if out, err := encodeJSON(value, "  "); err == nil {
+		return out
+	}
+	return fmt.Sprint(value)
+}
+
+func capPreview(rendered string, capBytes int) string {
 	if capBytes > 0 && len(rendered) > capBytes {
 		return rendered[:capBytes] + "... (truncated)"
 	}
@@ -667,46 +674,58 @@ type HTTPClient interface {
 // Do executes the request, logging diagnostics before and after.
 func (c *DebugClient) Do(req *http.Request) (*http.Response, error) {
 	// Log request
-	fmt.Fprintf(c.Stderr, "[DEBUG] Request: %s %s\n", req.Method, redactURL(req.URL.String()))
-	fmt.Fprintf(c.Stderr, "[DEBUG] Request Headers:\n%s", formatHeaders(redactHeaders(req.Header)))
+	c.logf("[DEBUG] Request: %s %s\n", req.Method, redactURL(req.URL.String()))
+	c.logf("[DEBUG] Request Headers:\n%s", formatHeaders(redactHeaders(req.Header)))
 	if req.Body != nil {
 		bodyData, restored, readErr := readAndRestoreBody(req.Body)
 		req.Body = restored
 		if readErr != nil {
-			fmt.Fprintf(c.Stderr, "[DEBUG] Request Body Read Error: %v\n", readErr)
+			c.logf("[DEBUG] Request Body Read Error: %v\n", readErr)
 		} else {
 			body := previewRequestBody(req, bodyData)
-			fmt.Fprintf(c.Stderr, "[DEBUG] Request Body:\n  %s\n", formatBodyPreview(body, maxBodyPreview))
+			c.logf("[DEBUG] Request Body:\n  %s\n", debugBodyPreview(body))
 		}
 	}
 
 	// Execute
 	resp, err := c.Inner.Do(req)
 	if err != nil {
-		fmt.Fprintf(c.Stderr, "[DEBUG] Transport Error: %v\n", err)
+		c.logf("[DEBUG] Transport Error: %v\n", err)
 		return nil, err
 	}
 
 	// Log response
-	fmt.Fprintf(c.Stderr, "[DEBUG] Response: %d %s\n", resp.StatusCode, resp.Status)
-	fmt.Fprintf(c.Stderr, "[DEBUG] Response Headers:\n%s", formatHeaders(redactHeaders(resp.Header)))
+	c.logf("[DEBUG] Response: %d %s\n", resp.StatusCode, resp.Status)
+	c.logf("[DEBUG] Response Headers:\n%s", formatHeaders(redactHeaders(resp.Header)))
 	if resp.Body != nil {
 		if isStreamingResponse(resp) {
 			// Reading a streaming body here buffers every event until the server closes the stream.
-			fmt.Fprintf(c.Stderr, "[DEBUG] Response Body: <streaming %s; not captured>\n", resp.Header.Get("Content-Type"))
+			c.logf("[DEBUG] Response Body: <streaming %s; not captured>\n", resp.Header.Get("Content-Type"))
 		} else {
 			bodyData, restored, readErr := readAndRestoreBody(resp.Body)
 			resp.Body = restored
 			if readErr != nil {
-				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body Read Error: %v\n", readErr)
+				c.logf("[DEBUG] Response Body Read Error: %v\n", readErr)
 			} else if len(bodyData) > 0 {
 				body := previewResponseBody(req, resp, bodyData)
-				fmt.Fprintf(c.Stderr, "[DEBUG] Response Body:\n  %s\n", formatBodyPreview(body, maxBodyPreview))
+				c.logf("[DEBUG] Response Body:\n  %s\n", debugBodyPreview(body))
 			}
 		}
 	}
 
 	return resp, nil
+}
+
+// logf masks resolved credentials, which a server can echo back, in every
+// debug line.
+func (c *DebugClient) logf(format string, args ...interface{}) {
+	fmt.Fprint(c.Stderr, config.ScrubSecrets(fmt.Sprintf(format, args...)))
+}
+
+// debugBodyPreview scrubs before truncating so a credential cut at the
+// preview limit cannot leave its prefix behind.
+func debugBodyPreview(value interface{}) string {
+	return capPreview(config.ScrubSecrets(renderBodyPreview(value)), maxBodyPreview)
 }
 
 func isStreamingResponse(resp *http.Response) bool {

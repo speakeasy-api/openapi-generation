@@ -18,6 +18,7 @@ interface CLISecurityFieldInfo {
   configKey: string; // snake_case config key
   description: string; // Help text for the flag
   isSecret: boolean; // Whether to use secure input
+  isTokenVariant?: boolean; // String variant of a union credential (e.g., an OAuth2 token)
   isArray: boolean; // Whether this is a string array field (e.g., Scopes)
   secType: string; // apiKey, http, oauth2, etc.
   secSubType: string; // basic, bearer, custom, etc.
@@ -102,6 +103,7 @@ function flattenCLISecurityObject(
               configKey: toConfigKey(assocType.Name),
               description: description.trim(),
               isSecret: false,
+              isTokenVariant: true,
               isArray: false,
               secType: secAnno?.SecType || "",
               secSubType: secAnno?.SubType || "",
@@ -695,6 +697,9 @@ function securityFieldResolver(
 ): string {
   if (field.isArray) {
     return `config.ResolveStringSliceCredential(cmd, "${field.flagName}")`;
+  }
+  if (field.isTokenVariant) {
+    return `config.ResolveTokenCredential(cmd, "${field.flagName}")`;
   }
   if (!field.isSecret) {
     return `config.ResolveCredential(cmd, "${field.flagName}", false)`;
