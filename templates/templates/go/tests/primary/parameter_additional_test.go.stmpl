@@ -71,3 +71,25 @@ func TestParametersAllowEmptyValueQueryParams(t *testing.T) {
 		"nullableStrParam=nullable&numParam=123&strParam=test"
 	require.Equal(t, expectedURL2, sortQueryParameters(*res2.Res.URL))
 }
+
+func TestParametersDefaultPathParams(t *testing.T) {
+	recordTest("parameters-default-path-params")
+
+	s := sdk.New(sdk.WithServerURL(getHTTPBinURL()))
+
+	res, err := s.Parameters.PathParameterDefault(context.Background(), "", "")
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.Equal(t, getHTTPBinURL()+"/anything/pathParams/default/defaultString/enum/second", res.Res.URL)
+
+	res, err = s.Parameters.PathParameterDefault(context.Background(), operations.EnumParamFirst, "supplied")
+
+	require.Nil(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, http.StatusOK, res.HTTPMeta.Response.StatusCode)
+	require.NotNil(t, res.Res)
+	require.Equal(t, getHTTPBinURL()+"/anything/pathParams/default/supplied/enum/first", res.Res.URL)
+}

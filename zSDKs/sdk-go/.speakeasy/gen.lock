@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 141d8be8c05cdfcbef25d30b67689996
+  configChecksum: a128d4089661743cc900fb9d30c2fb61
 features:
   go:
     acceptHeaders: 2.81.2
@@ -715,7 +715,7 @@ trackedFiles:
   internal/utils/json.go:
     last_write_checksum: sha1:785278d21e06d3c0b820630fc9d5ca38d364f9ee
   internal/utils/pathparams.go:
-    last_write_checksum: sha1:440aadb18d886ea0a79af0772eb65cdddc9eee60
+    last_write_checksum: sha1:a092fc31b7c8fac29c359ddfa8bf2e02763fa097
   internal/utils/queryparams.go:
     last_write_checksum: sha1:6625d7f77067bf181254067b89ae437f29cbeab9
   internal/utils/requestbody.go:

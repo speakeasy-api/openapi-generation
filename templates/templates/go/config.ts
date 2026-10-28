@@ -426,6 +426,7 @@ function getConfigFields(
       Required: false,
       DefaultValue: {
         encodePathParams: newSDK,
+        applyPathParamDefaults: newSDK,
       },
       Description:
         "Fixes to apply to the generated SDK, generally should be set to true but may be false for backwards compatibility",
