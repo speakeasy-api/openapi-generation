@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.2] - 2026-10-28
+### :bug: Bug Fixes
+- [`7071207`](https://github.com/speakeasy-api/openapi-generation/commit/7071207a7474d9059c6bafd94105e3cdf85c5598) - **cli**: write --dry-run previews to stdout in every machine output mode ([#158](https://github.com/speakeasy-api/openapi-generation/pull/158)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.954.1] - 2026-10-27
 ### :bug: Bug Fixes
 - [`d301dc2`](https://github.com/speakeasy-api/openapi-generation/commit/d301dc2e4b1a37b88c475a372e5e69cf9e18c7a9) - **python**: export serializer helpers from generated types package ([#164](https://github.com/speakeasy-api/openapi-generation/pull/164)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20779,3 +20784,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.953.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.952.9...v2.953.0
 [v2.954.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.953.0...v2.954.0
 [v2.954.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.0...v2.954.1
+[v2.954.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.1...v2.954.2
