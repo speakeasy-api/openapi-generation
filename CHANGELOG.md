@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.954.6] - 2026-10-28
+### :bug: Bug Fixes
+- [`d1dc869`](https://github.com/speakeasy-api/openapi-generation/commit/d1dc869951bf938c57372021aa5b3fe9780dbc29) - **cli**: mask resolved credentials in error output and debug logs ([#165](https://github.com/speakeasy-api/openapi-generation/pull/165)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.954.5] - 2026-10-28
 ### :bug: Bug Fixes
 - [`484763b`](https://github.com/speakeasy-api/openapi-generation/commit/484763b414ffa788a241c82ee58b265dcea40bf7) - **cli**: keep undeclared response fields when --all prints raw JSON pages ([#159](https://github.com/speakeasy-api/openapi-generation/pull/159)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20803,3 +20808,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.2...v2.954.3
 [v2.954.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.3...v2.954.4
 [v2.954.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.4...v2.954.5
+[v2.954.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.5...v2.954.6
