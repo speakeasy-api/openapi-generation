@@ -228,7 +228,7 @@ trackedFiles:
   internal/client/client_test.go:
     last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
-    last_write_checksum: sha1:4eba31e2f560ca55996e2ab69d00b5cf10cc403e
+    last_write_checksum: sha1:0a6e1bee335561b110b33f656f5e78072dadd45d
   internal/clierrors/clierrors.go:
     last_write_checksum: sha1:e17fb3e33e439c6997834182011540427d760857
   internal/config/config.go:
@@ -680,7 +680,7 @@ trackedFiles:
   tests/dryrun_matrix_test.go:
     last_write_checksum: sha1:6351cc5e9154ee932714f0037bfc9ee1c560daf6
   tests/dryrun_response_test.go:
-    last_write_checksum: sha1:d6299d8757149e230df2c47145f3c85df2fc8460
+    last_write_checksum: sha1:5b51354ae4312320191d52915b7aee7f3bee69c5
   tests/echo_server_test.go:
     last_write_checksum: sha1:c2325d3d67e1aeeb81e76b0df4f79eedb38e8742
   tests/intenthint_test.go:

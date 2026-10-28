@@ -360,6 +360,7 @@ func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 		`"secret":{"anyOf":[{"type":"object","properties":{"visible_inner":{"type":"string","default":"nested-secret"}}}]},` +
 		`"token":{"type":"bearer","value":"object-secret"},` +
 		`"api_key":{"properties":{"visible_name":"raw-secret"}},` +
+		`"client_secret":{"type":"object","properties":{"password":true,"api_key":{}}},` +
 		`"max_tokens":42` +
 		`}`
 	req, err := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(body))
@@ -389,6 +390,10 @@ func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
 	require.Equal(t, "string", password["type"])
 	require.Equal(t, "[REDACTED]", password["default"])
 	require.Equal(t, "[REDACTED]", preview.Request.Body["token"])
+
+	trivial := preview.Request.Body["client_secret"].(map[string]interface{})["properties"].(map[string]interface{})
+	require.Equal(t, true, trivial["password"])
+	require.Equal(t, map[string]interface{}{}, trivial["api_key"])
 }
 
 func TestDryRunDepthLimitIsExplicit(t *testing.T) {

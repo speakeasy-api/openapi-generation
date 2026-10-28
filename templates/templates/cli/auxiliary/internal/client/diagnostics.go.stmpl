@@ -332,6 +332,8 @@ func schemaAnnotationValue(v interface{}) interface{} {
 			}
 		}
 		return val
+	case string:
+		return redactBase64String(val)
 	default:
 		return v
 	}
@@ -355,7 +357,7 @@ func redactJSON(v interface{}, depth int) interface{} {
 				out[k] = "[REDACTED]"
 				continue
 			}
-			out[k] = redactJSON(maskSchemaValues(schema, depth+1), depth+1)
+			out[k] = maskSchemaValues(schema, depth+1)
 		}
 		return out
 	case []interface{}:
