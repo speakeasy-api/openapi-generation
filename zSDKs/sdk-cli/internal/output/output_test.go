@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
+	"openapi/internal/config"
 )
 
 type tableTestRow struct {
@@ -685,6 +687,50 @@ func TestUnclassifiedRenderersKeepPollHandle(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAsyncFailureScrubsResolvedCredentials(t *testing.T) {
+	t.Cleanup(config.Reset)
+	config.RegisterSecret("example-secret")
+	cmd := &cobra.Command{}
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+
+	runtimeErr := &asyncRuntimeError{reason: ReasonCLIAsyncFailed, message: `job reached failure state "failed": invalid key example-secret`, id: "handle", resume: "wait handle"}
+	if err := renderAsyncError(cmd, runtimeErr); !IsRendered(err) {
+		t.Fatalf("expected the async error to be rendered, got %v", err)
+	}
+	if strings.Contains(stderr.String(), "example-secret") || !strings.Contains(stderr.String(), "invalid key [REDACTED]") {
+		t.Fatalf("expected the credential to be masked, got:\n%s", stderr.String())
+	}
+}
+
+func TestScrubJSONDocumentMasksDecodedValues(t *testing.T) {
+	t.Cleanup(config.Reset)
+	config.RegisterSecret(`example"secret`)
+	config.RegisterSecret("123456")
+	data, err := json.MarshalIndent(map[string]interface{}{
+		"error":    `401: "invalid key example\"secret"`,
+		"echo":     json.Number("123456"),
+		"decimal":  json.Number("123456.0"),
+		"exponent": json.Number("1.23456e5"),
+		"other":    json.Number("1234567"),
+	}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	scrubbed := scrubJSONDocument(data)
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(scrubbed, &decoded); err != nil {
+		t.Fatalf("scrubbed document is not valid JSON: %v\n%s", err, scrubbed)
+	}
+	if strings.Contains(string(scrubbed), "secret") {
+		t.Fatalf("nested escaped credential leaked:\n%s", scrubbed)
+	}
+	if decoded["echo"] != "[REDACTED]" || decoded["decimal"] != "[REDACTED]" || decoded["exponent"] != "[REDACTED]" || decoded["other"] != float64(1234567) {
+		t.Fatalf("unexpected numeric masking:\n%s", scrubbed)
 	}
 }
 
