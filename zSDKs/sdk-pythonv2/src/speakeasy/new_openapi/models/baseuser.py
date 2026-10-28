@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from ..types import BaseModel, UNSET_SENTINEL, current_exclude_none, serialize_with_info
+from ..types.basemodel import current_filtered_dump
 from .gender import Gender
 from .metadata import Metadata, MetadataParam
 from .metadataany import MetadataAny, MetadataAnyParam
@@ -70,12 +71,13 @@ class BaseUser(BaseModel):
             ]
         )
         exclude_none = current_exclude_none()
+        skip_filtered = exclude_none is False or current_filtered_dump()
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
             k = f.alias if f.alias is not None else n
-            if k not in serialized and n not in serialized and exclude_none is False:
+            if k not in serialized and n not in serialized and skip_filtered:
                 continue
             val = serialized.get(k, serialized.get(n))
 

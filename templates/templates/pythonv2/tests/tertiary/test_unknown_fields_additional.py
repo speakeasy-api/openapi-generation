@@ -58,6 +58,7 @@ def test_excluded_fields_stay_out_of_serialization_methods():
     node = shared.FieldNode(display_name="child", nullable=None)
     assert node.model_dump(by_alias=True, exclude={"display_name"}) == {"nullable": None}
     assert node.model_dump(by_alias=True, exclude_none=True) == {"displayName": "child", "nullable": None}
+    assert node.model_dump(by_alias=True, exclude={"display_name"}, exclude_none=True) == {}
 
 
 def test_model_serialization_methods_field_names():

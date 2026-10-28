@@ -1,0 +1,10 @@
+id: 1793207837-f0066771
+features:
+    - core
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: honour include, exclude, exclude_unset and exclude_defaults in model dumps that use exclude_none
+author: 2ynn
+date: "2026-10-28"

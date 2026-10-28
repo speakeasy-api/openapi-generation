@@ -204,6 +204,7 @@ const classReservedKeywords = [
   "UnrecognizedInt",
   "UnrecognizedStr",
   "current_exclude_none",
+  "current_filtered_dump",
   "serialize_with_info",
   // typing module names commonly imported in generated model files
   "Optional",

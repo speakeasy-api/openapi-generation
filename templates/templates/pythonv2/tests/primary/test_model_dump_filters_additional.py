@@ -1,6 +1,7 @@
 import json
 from typing import List, Optional
 
+import pytest
 from pydantic import TypeAdapter, model_serializer
 
 from openapi import utils
@@ -12,6 +13,25 @@ def filtered_fields(display_name="name", **kwargs):
     return shared.FilteredFields(
         display_name=display_name, required_nullable=None, **kwargs
     )
+
+
+def filtered_values(**kwargs):
+    return shared.FilteredFields(
+        display_name="name", required_nullable="value", **kwargs
+    )
+
+
+ALL_VALUES = {
+    "displayName": "name",
+    "requiredNullable": "value",
+    "kind": "filtered",
+    "nullDefault": "value",
+    "withDefault": "fallback",
+}
+
+
+def all_values_except(key):
+    return {k: v for k, v in ALL_VALUES.items() if k != key}
 
 
 class TestModelDumpFilters:
@@ -53,13 +73,6 @@ class TestModelDumpFilters:
             "withDefault": "other",
         }
 
-    def test_exclude_none_still_writes_back_excluded_required_field(self):
-        model = filtered_fields()
-
-        dumped = model.model_dump(exclude={"display_name"}, exclude_none=True)
-
-        assert dumped["displayName"] is None
-
     def test_nested_exclude(self):
         model = filtered_fields(
             child=filtered_fields("child"), children=[filtered_fields("item")]
@@ -75,6 +88,177 @@ class TestModelDumpFilters:
         assert dumped["displayName"] == "name"
         assert "displayName" not in dumped["child"]
         assert "displayName" not in dumped["children"][0]
+
+
+class TestExcludeNoneWithFilters:
+    @pytest.mark.parametrize(
+        "kwargs, options, expected",
+        [
+            (
+                {"null_default": "value"},
+                {"include": {"with_default"}},
+                {"withDefault": "fallback"},
+            ),
+            (
+                {"null_default": "value"},
+                {"include": {"display_name", "kind", "null_default"}},
+                {"displayName": "name", "kind": "filtered", "nullDefault": "value"},
+            ),
+            (
+                {"null_default": "value"},
+                {"exclude": {"display_name"}},
+                all_values_except("displayName"),
+            ),
+            (
+                {"null_default": "value"},
+                {"exclude": {"kind"}},
+                all_values_except("kind"),
+            ),
+            (
+                {"null_default": "value"},
+                {"exclude": {"null_default"}},
+                all_values_except("nullDefault"),
+            ),
+            (
+                {"null_default": "value"},
+                {"exclude_unset": True},
+                {
+                    "displayName": "name",
+                    "requiredNullable": "value",
+                    "nullDefault": "value",
+                },
+            ),
+            (
+                {},
+                {"exclude_unset": True},
+                {"displayName": "name", "requiredNullable": "value"},
+            ),
+            (
+                {"null_default": "value"},
+                {"exclude_defaults": True},
+                {
+                    "displayName": "name",
+                    "requiredNullable": "value",
+                    "nullDefault": "value",
+                },
+            ),
+            (
+                {},
+                {"exclude_defaults": True},
+                {"displayName": "name", "requiredNullable": "value"},
+            ),
+        ],
+    )
+    def test_filtered_fields_stay_out(self, kwargs, options, expected):
+        model = filtered_values(**kwargs)
+
+        assert model.model_dump(exclude_none=True, **options) == expected
+        assert (
+            json.loads(model.model_dump_json(exclude_none=True, **options)) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs, options, expected",
+        [
+            (
+                {"null_default": "value"},
+                {
+                    "include": {
+                        "child": {"with_default"},
+                        "children": {"__all__": {"with_default"}},
+                    }
+                },
+                {
+                    "child": {"withDefault": "fallback"},
+                    "children": [{"withDefault": "fallback"}],
+                },
+            ),
+            (
+                {"null_default": "value"},
+                {
+                    "exclude": {
+                        "child": {"display_name", "kind", "null_default"},
+                        "children": {
+                            "__all__": {"display_name", "kind", "null_default"}
+                        },
+                    }
+                },
+                {
+                    **ALL_VALUES,
+                    "child": {"requiredNullable": "value", "withDefault": "fallback"},
+                    "children": [
+                        {"requiredNullable": "value", "withDefault": "fallback"}
+                    ],
+                },
+            ),
+            (
+                {},
+                {"exclude_unset": True},
+                {
+                    "displayName": "name",
+                    "requiredNullable": "value",
+                    "child": {"displayName": "name", "requiredNullable": "value"},
+                    "children": [{"displayName": "name", "requiredNullable": "value"}],
+                },
+            ),
+            (
+                {},
+                {"exclude_defaults": True},
+                {
+                    "displayName": "name",
+                    "requiredNullable": "value",
+                    "child": {"displayName": "name", "requiredNullable": "value"},
+                    "children": [{"displayName": "name", "requiredNullable": "value"}],
+                },
+            ),
+        ],
+    )
+    def test_nested_filtered_fields_stay_out(self, kwargs, options, expected):
+        model = filtered_values(
+            child=filtered_values(**kwargs),
+            children=[filtered_values(**kwargs)],
+            **kwargs,
+        )
+
+        assert model.model_dump(exclude_none=True, **options) == expected
+        assert (
+            json.loads(model.model_dump_json(exclude_none=True, **options)) == expected
+        )
+
+    def test_filter_applies_to_its_own_level(self):
+        model = filtered_fields(
+            child=filtered_fields("child"), children=[filtered_fields("item")]
+        )
+
+        dumped = model.model_dump(by_alias=True, exclude_none=True, exclude={"kind"})
+
+        assert "kind" not in dumped
+        assert "requiredNullable" not in dumped
+        assert dumped["child"] == model.child.model_dump(
+            by_alias=True, exclude_none=True
+        )
+        assert dumped["child"]["requiredNullable"] is None
+        assert dumped["children"] == [
+            model.children[0].model_dump(by_alias=True, exclude_none=True)
+        ]
+        assert model.model_dump(by_alias=True, exclude_none=True)[
+            "requiredNullable"
+        ] is None
+
+    def test_empty_exclude_is_not_a_filter(self):
+        model = filtered_fields(optional_nullable=None)
+
+        assert model.model_dump(
+            by_alias=True, exclude_none=True, exclude=set()
+        ) == model.model_dump(by_alias=True, exclude_none=True)
+
+    def test_without_filters_keeps_explicit_nulls(self):
+        model = filtered_fields(optional_nullable=None)
+
+        dumped = model.model_dump(by_alias=True, exclude_none=True)
+
+        assert dumped == json.loads(utils.marshal_json(model, shared.FilteredFields))
+        assert shared.FilteredFields.model_validate(dumped) == model
 
 
 class TestNestedDefaultDumps:
