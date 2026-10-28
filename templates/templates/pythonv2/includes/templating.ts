@@ -45,12 +45,14 @@ const PYTHON_V2_TYPES_SUPPORT_MODELS: PythonV2ModelToExport[] = [
     Name: "basemodel",
     Types: [
       "BaseModel",
+      "current_exclude_none",
       "Nullable",
       "OptionalNullable",
       "UnrecognizedInt",
       "UnrecognizedStr",
       "UNSET",
       "UNSET_SENTINEL",
+      "serialize_with_info",
     ],
   },
   {

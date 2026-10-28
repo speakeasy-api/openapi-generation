@@ -19,6 +19,7 @@ import (
 
 	"{{getGolangPackage}}/internal/config"
 	"{{getGolangPackage}}/internal/flagutil"
+	"{{getGolangPackage}}/internal/output"
 	{{- if hasAnyRedactGraphs}}
 	"{{getGolangPackage}}/internal/sdk/redact"
 	{{- end}}
@@ -36,12 +37,18 @@ func IsDryRun(cmd *cobra.Command) bool {
 	return v
 }
 
+// IsJSONDryRun reports whether --dry-run should write NDJSON previews to
+// stdout: in agent mode, with a caller-explicit --jq, or with any machine
+// output format (json, yaml, toon). Command-declared jq presets do not count.
 func IsJSONDryRun(cmd *cobra.Command) bool {
 	if !IsDryRun(cmd) {
 		return false
 	}
-	format := flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), false)
-	return format == "json" || flagutil.FlagChanged(cmd, "jq")
+	if output.IsAgentMode() || flagutil.FlagChanged(cmd, "jq") {
+		return true
+	}
+	format := output.EffectiveOutputFormat(cmd)
+	return format != "pretty" && format != "table"
 }
 
 // IsDebug returns true when --debug is set and --dry-run is not.

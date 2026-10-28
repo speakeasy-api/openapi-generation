@@ -94,6 +94,10 @@ _by_alias: ContextVar[Optional[bool]] = ContextVar("by_alias", default=None)
 _serialization_methods_dump: ContextVar[bool] = ContextVar(
     "serialization_methods_dump", default=False
 )
+
+
+def _is_serialization_methods_dump(info: core_schema.SerializationInfo) -> bool:
+    return isinstance(info.context, dict) and SERIALIZATION_METHODS_DUMP in info.context
 {{- end}}
 
 
@@ -106,7 +110,7 @@ def serialize_with_info(
 {{- end}}
 {{- if .Global.Config.ModelSerializationMethods}}
     serialization_methods_dump_token = _serialization_methods_dump.set(
-        isinstance(info.context, dict) and SERIALIZATION_METHODS_DUMP in info.context
+        _is_serialization_methods_dump(info)
     )
 {{- end}}
     try:
@@ -145,7 +149,7 @@ def _unrecognized_serialization(cls: Type[Union[str, int]]) -> core_schema.Plain
         # Decline other values so union serialization tries the remaining members
         if not isinstance(value, cls):
             raise PydanticSerializationUnexpectedValue(f"Expected {cls.__name__}")
-        if not info.mode_is_json():
+        if not info.mode_is_json(){{if .Global.Config.ModelSerializationMethods}} and not _is_serialization_methods_dump(info){{end}}:
             return value
         return str(value) if isinstance(value, str) else int(value)
 

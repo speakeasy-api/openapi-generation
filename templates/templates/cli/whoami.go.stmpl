@@ -22,7 +22,7 @@ Sources are shown as:
   [keyring] - Set via OS credential store: macOS Keychain, Windows Credential Manager or Secret Service (stored by configure command)
 {{- end}}
   [config]  - Set via config file (~/.config/{{sanitizeCliName}}/config.yaml)
-  [default] - Built-in global parameter flag default
+  [default] - Built-in default
   [unset]   - Not configured
 {{- if hasGlobalSecurity}}
 
@@ -51,6 +51,10 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
         }
         {{templateWhoamiCredentialsStructured | indent 8 | trim}}
         {{templateWhoamiGlobalsStructured | indent 8 | trim}}
+        outputFormat, outputFormatSource := whoamiOutputFormat(cmd)
+        info["preferences"] = map[string]any{
+            "output-format": map[string]any{"source": outputFormatSource, "value": outputFormat},
+        }
         return output.LocalResult(cmd, info)
     }
 
@@ -72,5 +76,20 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
 
     {{templateWhoamiGlobals | indent 4 | trim}}
 
+    fmt.Fprintln(out)
+    fmt.Fprintln(out, "Preferences:")
+    outputFormat, outputFormatSource := whoamiOutputFormat(cmd)
+    fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "output-format", outputFormatSource, outputFormat)
+
     return nil
+}
+
+func whoamiOutputFormat(cmd *cobra.Command) (value, source string) {
+    if value, source := config.ResolveCredential(cmd, "output-format", false); source != "unset" {
+        return value, source
+    }
+    if output.IsAgentMode() {
+        return "toon", "default"
+    }
+    return "pretty", "default"
 }

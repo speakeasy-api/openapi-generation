@@ -117,6 +117,11 @@ func resolveOutputFormat(cmd *cobra.Command) string {
 	return flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), IsAgentMode())
 }
 
+// EffectiveOutputFormat returns the format the command renders with.
+func EffectiveOutputFormat(cmd *cobra.Command) string {
+	return resolveOutputFormat(cmd)
+}
+
 // PinOutputFormat fixes the output format until the returned func is called,
 // so a command that rewrites the saved default still renders in the format it
 // started with.
