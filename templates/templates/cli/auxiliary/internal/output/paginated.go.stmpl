@@ -26,6 +26,9 @@ type PaginationProbe struct {
 	NextURL    string
 	Results    string
 	HasLimit   bool
+	// Transformed marks operations whose response is transformed after
+	// decoding, so pages must render from the typed value, not the wire bytes.
+	Transformed bool
 }
 
 type paginationContinuation struct {
@@ -52,7 +55,7 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 	colorize := ShouldColorize(colorFlag)
 	jqExpr, _ := flagutil.GetStringFlag(cmd, "jq")
 	jqRaw := jqRawOutput(cmd)
-	rawJSON := WantsRawJSON(cmd)
+	rawJSON := WantsRawJSON(cmd) && !probe.Transformed
 
 	first := true
 	pageCount := 0

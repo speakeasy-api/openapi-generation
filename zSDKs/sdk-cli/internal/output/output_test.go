@@ -22,6 +22,68 @@ type tableTestRow struct {
 	Name string `json:"name"`
 }
 
+type transformedPageItem struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+}
+
+type transformedPageContent struct {
+	Data []transformedPageItem `json:"data"`
+}
+
+type transformedPage struct {
+	HTTPMeta struct{ Response *http.Response }
+	Object   *transformedPageContent
+}
+
+func TestPaginatedResultKeepsTransformedItems(t *testing.T) {
+	newPage := func() *transformedPage {
+		item := transformedPageItem{Name: "widget", DisplayName: "Widget"}
+		page := &transformedPage{Object: &transformedPageContent{Data: []transformedPageItem{item}}}
+		page.HTTPMeta.Response = &http.Response{Body: io.NopCloser(strings.NewReader(`{"data":[{"name":"widget"}]}`))}
+		return page
+	}
+
+	for name, tc := range map[string]struct {
+		flag, value string
+		transformed bool
+		want        string
+	}{
+		"json transformed":   {flag: "output-format", value: "json", transformed: true, want: `"display_name":"Widget"`},
+		"jq transformed":     {flag: "jq", value: ".display_name", transformed: true, want: `"Widget"`},
+		"json untransformed": {flag: "output-format", value: "json", want: `{"name":"widget"}`},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("output-format", "", "")
+			cmd.Flags().String("jq", "", "")
+			cmd.Flags().String("color", "never", "")
+			if err := cmd.Flags().Set(tc.flag, tc.value); err != nil {
+				t.Fatal(err)
+			}
+			cmd.SetContext(context.Background())
+			var stdout bytes.Buffer
+			cmd.SetOut(&stdout)
+
+			page := newPage()
+			if err := PaginatedResult(cmd, page, "Object", "Data", 0, PaginationProbe{Results: "$.data", Transformed: tc.transformed}); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(stdout.String(), tc.want) {
+				t.Fatalf("expected %s in output, got:\n%s", tc.want, stdout.String())
+			}
+			if tc.transformed {
+				rest, _ := io.ReadAll(page.HTTPMeta.Response.Body)
+				if string(rest) != `{"data":[{"name":"widget"}]}` {
+					t.Fatalf("raw body must stay readable for continuation, got %q", rest)
+				}
+			} else if strings.Contains(stdout.String(), "Widget") {
+				t.Fatalf("untransformed pages should print the response bytes, got:\n%s", stdout.String())
+			}
+		})
+	}
+}
+
 func TestPrintTableDerivesColumnsFromFirstStructElement(t *testing.T) {
 	var buf bytes.Buffer
 	if err := printTable(&buf, []any{nil, tableTestRow{ID: 1, Name: "alpha"}}); err != nil {
