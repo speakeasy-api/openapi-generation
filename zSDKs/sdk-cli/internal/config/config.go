@@ -11,11 +11,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -281,11 +281,11 @@ func ScrubSecretValues(v interface{}) interface{} {
 	case string:
 		return ScrubSecrets(val)
 	case json.Number:
-		if isRegisteredSecret(val.String()) {
+		if n, ok := new(big.Rat).SetString(val.String()); ok && isRegisteredNumber(n) {
 			return "[REDACTED]"
 		}
 	case float64:
-		if isRegisteredSecret(strconv.FormatFloat(val, 'f', -1, 64)) {
+		if n := new(big.Rat); n.SetFloat64(val) != nil && isRegisteredNumber(n) {
 			return "[REDACTED]"
 		}
 	case map[string]interface{}:
@@ -304,11 +304,13 @@ func ScrubSecretValues(v interface{}) interface{} {
 	return v
 }
 
-func isRegisteredSecret(s string) bool {
+// isRegisteredNumber compares numerically, so 123456.0 and 1.23456e5 match a
+// registered 123456.
+func isRegisteredNumber(n *big.Rat) bool {
 	secretsMu.RLock()
 	defer secretsMu.RUnlock()
 	for _, secret := range secretValues {
-		if secret == s {
+		if s, ok := new(big.Rat).SetString(secret); ok && s.Cmp(n) == 0 {
 			return true
 		}
 	}

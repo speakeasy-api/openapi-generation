@@ -649,9 +649,11 @@ func TestScrubJSONDocumentMasksDecodedValues(t *testing.T) {
 	config.RegisterSecret(`example"secret`)
 	config.RegisterSecret("123456")
 	data, err := json.MarshalIndent(map[string]interface{}{
-		"error": `401: "invalid key example\"secret"`,
-		"echo":  json.Number("123456"),
-		"other": json.Number("1234567"),
+		"error":    `401: "invalid key example\"secret"`,
+		"echo":     json.Number("123456"),
+		"decimal":  json.Number("123456.0"),
+		"exponent": json.Number("1.23456e5"),
+		"other":    json.Number("1234567"),
 	}, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -665,7 +667,7 @@ func TestScrubJSONDocumentMasksDecodedValues(t *testing.T) {
 	if strings.Contains(string(scrubbed), "secret") {
 		t.Fatalf("nested escaped credential leaked:\n%s", scrubbed)
 	}
-	if decoded["echo"] != "[REDACTED]" || decoded["other"] != float64(1234567) {
+	if decoded["echo"] != "[REDACTED]" || decoded["decimal"] != "[REDACTED]" || decoded["exponent"] != "[REDACTED]" || decoded["other"] != float64(1234567) {
 		t.Fatalf("unexpected numeric masking:\n%s", scrubbed)
 	}
 }
