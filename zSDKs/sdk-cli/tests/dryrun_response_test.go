@@ -353,6 +353,49 @@ func TestDebugUsesSameRequestAndResponseRedactor(t *testing.T) {
 	require.GreaterOrEqual(t, strings.Count(stderr.String(), "[REDACTED]"), 2)
 }
 
+func TestDryRunRedactsHeaderMapsAndKeepsSchemas(t *testing.T) {
+	body := `{` +
+		`"tools":[{"headers":{"Authorization":"Bearer header-secret","X-Auth-Token":"suffix-secret","X-Trace":"visible-trace"}}],` +
+		`"parameters":{"type":"object","properties":{"password":{"type":"string","description":"visible-description","default":"default-secret"}}},` +
+		`"secret":{"anyOf":[{"type":"object","properties":{"visible_inner":{"type":"string","default":"nested-secret"}}}]},` +
+		`"token":{"type":"bearer","value":"object-secret"},` +
+		`"api_key":{"properties":{"visible_name":"raw-secret"}},` +
+		`"client_secret":{"type":"object","properties":{"password":true,"api_key":{}}},` +
+		`"max_tokens":42` +
+		`}`
+	req, err := http.NewRequest(http.MethodPost, "https://example.com", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	var stdout bytes.Buffer
+	resp, err := (&client.DryRunClient{Stdout: &stdout, JSON: true}).Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	var preview struct {
+		Request struct {
+			Body map[string]interface{} `json:"body"`
+		} `json:"request"`
+	}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &preview))
+	out := stdout.String()
+	for _, hidden := range []string{"header-secret", "suffix-secret", "default-secret", "nested-secret", "object-secret", "raw-secret"} {
+		require.NotContains(t, out, hidden)
+	}
+	for _, shown := range []string{"visible-trace", "visible-description", "visible_inner"} {
+		require.Contains(t, out, shown)
+	}
+	require.EqualValues(t, 42, preview.Request.Body["max_tokens"])
+
+	password := preview.Request.Body["parameters"].(map[string]interface{})["properties"].(map[string]interface{})["password"].(map[string]interface{})
+	require.Equal(t, "string", password["type"])
+	require.Equal(t, "[REDACTED]", password["default"])
+	require.Equal(t, "[REDACTED]", preview.Request.Body["token"])
+
+	trivial := preview.Request.Body["client_secret"].(map[string]interface{})["properties"].(map[string]interface{})
+	require.Equal(t, true, trivial["password"])
+	require.Equal(t, map[string]interface{}{}, trivial["api_key"])
+}
+
 func TestDryRunDepthLimitIsExplicit(t *testing.T) {
 	body := `"not-shown"`
 	for i := 0; i < 66; i++ {
