@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -270,6 +271,48 @@ func ScrubSecrets(s string) string {
 		s = strings.ReplaceAll(s, secret, "[REDACTED]")
 	}
 	return s
+}
+
+// ScrubSecretValues masks registered credentials inside a decoded JSON value.
+// A number equal to a credential becomes the string [REDACTED], so the value
+// still marshals to valid JSON.
+func ScrubSecretValues(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return ScrubSecrets(val)
+	case json.Number:
+		if isRegisteredSecret(val.String()) {
+			return "[REDACTED]"
+		}
+	case float64:
+		if isRegisteredSecret(strconv.FormatFloat(val, 'f', -1, 64)) {
+			return "[REDACTED]"
+		}
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(val))
+		for k, child := range val {
+			out[ScrubSecrets(k)] = ScrubSecretValues(child)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, len(val))
+		for i, child := range val {
+			out[i] = ScrubSecretValues(child)
+		}
+		return out
+	}
+	return v
+}
+
+func isRegisteredSecret(s string) bool {
+	secretsMu.RLock()
+	defer secretsMu.RUnlock()
+	for _, secret := range secretValues {
+		if secret == s {
+			return true
+		}
+	}
+	return false
 }
 
 // ResolveCredential resolves a credential value using the priority chain:

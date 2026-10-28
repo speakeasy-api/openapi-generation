@@ -222,6 +222,56 @@ func TestResolvedCredentialsScrubbedFromEchoedOutput(t *testing.T) {
 	}
 }
 
+func TestResolvedCredentialsScrubbedFromJSONErrorEnvelopes(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		apiKey string
+		body   func(key string) []byte
+		check  func(t *testing.T, envelope map[string]interface{})
+	}{
+		{
+			name:   "scalar body with an escaped credential",
+			apiKey: `example"secret-91`,
+			body: func(key string) []byte {
+				data, _ := json.Marshal("invalid key " + key)
+				return data
+			},
+		},
+		{
+			name:   "numeric credential echo",
+			apiKey: "123456",
+			body: func(string) []byte {
+				return []byte(`{"message":"invalid key","echo":123456,"other":1234567}`)
+			},
+			check: func(t *testing.T, envelope map[string]interface{}) {
+				assert.Equal(t, "[REDACTED]", envelope["echo"])
+				assert.Equal(t, float64(1234567), envelope["other"])
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				_, _ = w.Write(tc.body(r.Header.Get("Authorization")))
+			}))
+			defer s.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, []string{"--api-key-auth", tc.apiKey, "--output-format", "json", "methods", "method-get"})
+			require.Error(t, err)
+
+			stderr := h.GetStderr()
+			var envelope map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(stderr)), &envelope), "error envelope must stay valid JSON: %s", stderr)
+			assert.NotContains(t, stderr, "secret-91")
+			if tc.check != nil {
+				tc.check(t, envelope)
+			}
+		})
+	}
+}
+
 func TestDryRunWithRequestBody(t *testing.T) {
 
 

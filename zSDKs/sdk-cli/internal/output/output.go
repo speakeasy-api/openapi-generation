@@ -547,13 +547,13 @@ func renderClassifiedError(cmd *cobra.Command, err error, classification Classif
 	if IsRendered(err) {
 		return err
 	}
-	var buf bytes.Buffer
 	if structured {
-		renderStructuredError(cmd, &buf, err, classification)
+		renderStructuredError(cmd, cmd.ErrOrStderr(), err, classification)
 	} else {
+		var buf bytes.Buffer
 		renderPrettyError(cmd, &buf, err, classification)
+		writeScrubbed(cmd.ErrOrStderr(), buf.String())
 	}
-	writeScrubbed(cmd.ErrOrStderr(), buf.String())
 	return markRendered(err, classification)
 }
 
@@ -563,6 +563,27 @@ func writeScrubbed(out io.Writer, rendered string) {
 	fmt.Fprint(out, config.ScrubSecrets(rendered))
 }
 
+// printScrubbedJSON masks resolved credentials in the decoded values rather
+// than the serialized text: a credential nested in a string is escaped once
+// more than the registered forms, and masking inside a number breaks the JSON.
+func printScrubbedJSON(out io.Writer, jsonData []byte, colorize bool) {
+	printJSON(out, scrubJSONDocument(jsonData), colorize)
+}
+
+func scrubJSONDocument(data []byte) []byte {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var value interface{}
+	if err := dec.Decode(&value); err != nil {
+		return []byte(config.ScrubSecrets(string(data)))
+	}
+	scrubbed, err := json.MarshalIndent(config.ScrubSecretValues(value), "", "  ")
+	if err != nil {
+		return []byte(config.ScrubSecrets(string(data)))
+	}
+	return scrubbed
+}
+
 // renderUnclassifiedAPIError is the compatibility rendering path used when
 // classified rendering is not requested: the raw API error text or envelope is
 // preserved without the error_type/error_reason taxonomy.
@@ -570,13 +591,13 @@ func renderUnclassifiedAPIError(cmd *cobra.Command, err error, classification Cl
 	if IsRendered(err) {
 		return err
 	}
-	var buf bytes.Buffer
 	if structured {
-		renderUnclassifiedStructuredAPIError(cmd, &buf, err, classification)
+		renderUnclassifiedStructuredAPIError(cmd, cmd.ErrOrStderr(), err, classification)
 	} else {
+		var buf bytes.Buffer
 		renderUnclassifiedPrettyAPIError(cmd, &buf, err, classification)
+		writeScrubbed(cmd.ErrOrStderr(), buf.String())
 	}
-	writeScrubbed(cmd.ErrOrStderr(), buf.String())
 	return markRendered(err, classification)
 }
 
@@ -667,7 +688,7 @@ func renderUnclassifiedStructuredAPIError(cmd *cobra.Command, out io.Writer, err
 		jsonData, _ = json.MarshalIndent(map[string]interface{}{"error": err.Error(), "exit_code": ExitCodeFor(classification)}, "", "  ")
 	}
 	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
 }
 
 func renderPrettyError(cmd *cobra.Command, out io.Writer, err error, classification Classification) {
@@ -717,7 +738,7 @@ func renderStructuredError(cmd *cobra.Command, out io.Writer, err error, classif
 		}, "", "  ")
 	}
 	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
-	printJSON(out, jsonData, ShouldColorize(colorFlag))
+	printScrubbedJSON(out, jsonData, ShouldColorize(colorFlag))
 }
 
 func classifiedErrorEnvelope(err error, classification Classification) map[string]interface{} {
