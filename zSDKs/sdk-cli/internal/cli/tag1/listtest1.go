@@ -99,12 +99,13 @@ func runListTest1Cmd(cmd *cobra.Command, args []string) error {
 			return output.Error(cmd, err)
 		}
 		return output.PaginatedResult(cmd, res, "Object", "ResultArray", maxPages, output.PaginationProbe{
-			Type:       "offsetLimit",
-			CursorKind: "",
-			NextCursor: "",
-			NextURL:    "",
-			Results:    "$.resultArray",
-			HasLimit:   false,
+			Type:        "offsetLimit",
+			CursorKind:  "",
+			NextCursor:  "",
+			NextURL:     "",
+			Results:     "$.resultArray",
+			HasLimit:    false,
+			Transformed: false,
 		})
 	}
 	if output.WantsRawJSON(cmd) {
