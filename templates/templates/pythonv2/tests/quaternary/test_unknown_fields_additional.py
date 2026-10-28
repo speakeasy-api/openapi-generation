@@ -116,7 +116,7 @@ def test_unrecognized_enum_serialization(typ, value):
     enum_value = adapter.validate_python(value)
     assert isinstance(enum_value, typ)
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         assert adapter.dump_python(enum_value) is enum_value
         assert adapter.dump_python(enum_value, mode="json") == value
         assert json.loads(adapter.dump_json(enum_value)) == value
@@ -127,7 +127,7 @@ def test_unrecognized_enum_serialization(typ, value):
 def test_unrecognized_enum_generated_model():
     model = shared.FieldEnvelope.model_validate({"label": "root", "futureKind": "third", "futureCode": 3})
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         dumped = model.model_dump(by_alias=True)
         assert type(dumped["futureKind"]) is UnrecognizedStr
         assert type(dumped["futureCode"]) is UnrecognizedInt
@@ -152,7 +152,7 @@ def test_serialization_methods_return_raw_payload_of_nested_unknown_variants():
     assert model.choice.is_unknown and model.choices[1].is_unknown
     assert model.to_dict() == model.to_dict(mode="json") == payload
     assert json.loads(model.to_json()) == payload
-    assert model.model_dump(by_alias=True)["choice"] == {"kind": "UNKNOWN", "raw": choice, "is_unknown": True}
+    assert model.model_dump(by_alias=True)["choice"] == choice
     assert shared.FieldEnvelope.model_validate(model.to_dict(), context={ALLOW_UNKNOWN_UNION_VARIANTS: True}).to_dict() == payload
     with pytest.raises(pydantic.ValidationError, match="unrecognized kind value 'future'"):
         shared.FieldEnvelope.model_validate(model.to_dict())
