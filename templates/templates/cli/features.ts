@@ -1,7 +1,7 @@
 //@ts-ignore
 // TODO: determine if this needs to be insync with the go version or can define these differently
 const supportedFeatures = {
-  core: "0.9.19",
+  core: "0.9.21",
   allowReserved: "0.2.0",
   getRequestBodies: "0.0.1",
   flattening: "0.0.0",
@@ -362,6 +362,7 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
+    "parameters-default-path-params",
   ].includes(test);
 }
 

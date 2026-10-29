@@ -137,6 +137,7 @@ const (
 	TestParametersCamelCase
 	TestParametersConstQueryParams
 	TestParametersDefaultQueryParams
+	TestParametersDefaultPathParams
 	TestMultiLevelGrouping
 	TestRequestBodiesPostEmptyObject
 	TestRequestBodiesPostApplicationJSONSimple

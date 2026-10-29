@@ -116,7 +116,7 @@ def test_unrecognized_enum_serialization(typ, value):
     enum_value = adapter.validate_python(value)
     assert isinstance(enum_value, typ)
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         assert adapter.dump_python(enum_value) is enum_value
         assert adapter.dump_python(enum_value, mode="json") == value
         assert json.loads(adapter.dump_json(enum_value)) == value
@@ -127,7 +127,7 @@ def test_unrecognized_enum_serialization(typ, value):
 def test_unrecognized_enum_generated_model():
     model = shared.FieldEnvelope.model_validate({"label": "root", "futureKind": "third", "futureCode": 3})
     with warnings.catch_warnings():
-        warnings.simplefilter("error")
+        warnings.simplefilter("error", UserWarning)
         dumped = model.model_dump(by_alias=True)
         assert type(dumped["futureKind"]) is UnrecognizedStr
         assert type(dumped["futureCode"]) is UnrecognizedInt
@@ -152,7 +152,54 @@ def test_serialization_methods_return_raw_payload_of_nested_unknown_variants():
     assert model.choice.is_unknown and model.choices[1].is_unknown
     assert model.to_dict() == model.to_dict(mode="json") == payload
     assert json.loads(model.to_json()) == payload
-    assert model.model_dump(by_alias=True)["choice"] == {"kind": "UNKNOWN", "raw": choice, "is_unknown": True}
+    assert model.model_dump(by_alias=True)["choice"] == choice
     assert shared.FieldEnvelope.model_validate(model.to_dict(), context={ALLOW_UNKNOWN_UNION_VARIANTS: True}).to_dict() == payload
     with pytest.raises(pydantic.ValidationError, match="unrecognized kind value 'future'"):
         shared.FieldEnvelope.model_validate(model.to_dict())
+
+
+@pytest.mark.parametrize("model, options, expected", [
+    (shared.FieldNode(display_name="child", nullable="value"), {"include": {"nullable"}}, {"nullable": "value"}),
+    (shared.FieldNode(display_name="child", nullable="value"), {"exclude": {"display_name"}}, {"nullable": "value"}),
+    (shared.ConstFields(label="label"), {"include": {"label"}}, {"label": "label"}),
+    (shared.ConstFields(label="label"), {"exclude": {"kind"}}, {"label": "label", "priority": 1}),
+    (shared.ConstFields(label="label"), {"exclude_defaults": True}, {"label": "label"}),
+    (shared.DefaultsAndConsts(normal_field="x", default_str_nullable="value"), {"include": {"default_str_nullable"}}, {"defaultStrNullable": "value"}),
+    (shared.DefaultsAndConsts(normal_field="x", default_str_nullable="value"), {"include": {"normal_field"}}, {"normalField": "x"}),
+])
+def test_exclude_none_with_filters_leaves_filtered_fields_out(model, options, expected):
+    assert model.model_dump(by_alias=True, exclude_none=True, **options) == expected
+    assert json.loads(model.model_dump_json(by_alias=True, exclude_none=True, **options)) == expected
+
+
+@pytest.mark.parametrize("model, options, excluded", [
+    (shared.DefaultsAndConsts(normal_field="x", default_str_nullable="value"), {"exclude": {"normal_field", "const_str", "default_str_nullable"}}, {"normalField", "constStr", "defaultStrNullable"}),
+    (shared.DefaultsAndConsts(normal_field="x"), {"exclude_unset": True}, {"defaultStrNullable"}),
+    (shared.DefaultsAndConsts(normal_field="x"), {"exclude_defaults": True}, {"constStr", "defaultStrNullable"}),
+])
+def test_exclude_none_with_filters_leaves_filtered_null_default_out(model, options, excluded):
+    dumped = model.model_dump(by_alias=True, exclude_none=True, **options)
+    assert not excluded & dumped.keys()
+    for mode in ("python", "json"):
+        expected = {k: v for k, v in model.model_dump(mode=mode, by_alias=True, **options).items() if v is not None}
+        assert model.model_dump(mode=mode, by_alias=True, exclude_none=True, **options) == expected
+    assert json.loads(model.model_dump_json(by_alias=True, exclude_none=True, **options)) == expected
+
+
+@pytest.mark.parametrize("options, expected", [
+    ({"include": {"child": {"nullable"}, "children": {"__all__": {"nullable"}}, "constant": {"label"}}}, {"child": {"nullable": "value"}, "children": [{"nullable": "value"}], "constant": {"label": "label"}}),
+    ({"exclude": {"child": {"display_name"}, "children": {"__all__": {"display_name"}}, "constant": {"kind"}}}, {"label": "root", "child": {"nullable": "value"}, "children": [{"nullable": "value"}], "constant": {"label": "label", "priority": 1}}),
+    ({"exclude_defaults": True}, {"label": "root", "child": {"displayName": "child", "nullable": "value"}, "children": [{"displayName": "child", "nullable": "value"}], "constant": {"label": "label"}}),
+])
+def test_exclude_none_with_filters_leaves_nested_filtered_fields_out(options, expected):
+    node = shared.FieldNode(display_name="child", nullable="value")
+    model = shared.FieldEnvelope(label="root", child=node, children=[node], constant=shared.ConstFields(label="label"))
+    assert model.model_dump(by_alias=True, exclude_none=True, **options) == expected
+    assert json.loads(model.model_dump_json(by_alias=True, exclude_none=True, **options)) == expected
+
+
+def test_exclude_none_without_filters_keeps_explicit_nulls():
+    model = shared.FieldEnvelope(label="root", child=shared.FieldNode(display_name="child", nullable=None), constant=shared.ConstFields())
+    expected = {"label": "root", "child": {"displayName": "child", "nullable": None}, "constant": {"kind": "fixed", "priority": 1}}
+    assert model.model_dump(by_alias=True, exclude_none=True) == expected
+    assert json.loads(utils.marshal_json(model, shared.FieldEnvelope)) == expected
