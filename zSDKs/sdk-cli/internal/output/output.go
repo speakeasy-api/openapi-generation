@@ -186,8 +186,16 @@ func decodeWithNumbers(data []byte) (interface{}, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	var parsed interface{}
-	err := dec.Decode(&parsed)
-	return parsed, err
+	if err := dec.Decode(&parsed); err != nil {
+		return nil, err
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		if err == nil {
+			err = errors.New("invalid character after top-level value")
+		}
+		return nil, err
+	}
+	return parsed, nil
 }
 
 func convertNumbers(v interface{}, conv func(json.Number) interface{}) interface{} {
@@ -438,8 +446,7 @@ func result(cmd *cobra.Command, res interface{}, allowArtifact bool) error {
 		if len(rawBody) > 0 {
 			if includeHeaders {
 				headers := extractResponseHeaders(res)
-				var parsed interface{}
-				if err := json.Unmarshal(rawBody, &parsed); err == nil {
+				if parsed, err := decodeWithNumbers(rawBody); err == nil {
 					merged := injectHeaders(parsed, headers)
 					if jqExpr != "" {
 						return applyJqToTyped(out, merged, jqExpr, colorize, jqRaw)
@@ -1236,7 +1243,7 @@ func outputWithHeaders(out io.Writer, content interface{}, headers http.Header, 
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(data, &parsed); err != nil {
+		if parsed, err = decodeWithNumbers(data); err != nil {
 			return err
 		}
 	}
@@ -1249,7 +1256,7 @@ func outputWithHeaders(out io.Writer, content interface{}, headers http.Header, 
 
 	switch format {
 	case "yaml":
-		yamlData, err := yaml.Marshal(merged)
+		yamlData, err := yaml.Marshal(convertNumbers(merged, yamlNumber))
 		if err != nil {
 			return fmt.Errorf("failed to marshal response as YAML: %w", err)
 		}
@@ -1332,8 +1339,8 @@ func outputJqResults(out io.Writer, results []interface{}, colorize, raw bool) e
 
 // applyJqToRawJSON applies a jq expression to raw JSON bytes.
 func applyJqToRawJSON(out io.Writer, rawBody []byte, jqExpr string, colorize, raw bool) error {
-	var data interface{}
-	if err := json.Unmarshal(rawBody, &data); err != nil {
+	data, err := decodeWithNumbers(rawBody)
+	if err != nil {
 		return fmt.Errorf("failed to parse response JSON for jq: %w", err)
 	}
 	results, err := ApplyJqFilter(data, jqExpr)

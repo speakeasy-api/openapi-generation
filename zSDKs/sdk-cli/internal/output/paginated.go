@@ -214,8 +214,8 @@ func outputRawPage(out io.Writer, page interface{}, itemsOnly bool, resultsPath,
 
 func outputRawItem(out io.Writer, raw []byte, jqExpr string, colorize, jqRaw bool) error {
 	if jqExpr != "" {
-		var data interface{}
-		if err := json.Unmarshal(raw, &data); err != nil {
+		data, err := decodeWithNumbers(raw)
+		if err != nil {
 			return fmt.Errorf("failed to parse response JSON for jq: %w", err)
 		}
 		return outputOneItem(out, data, "json", jqExpr, colorize, jqRaw, false)
