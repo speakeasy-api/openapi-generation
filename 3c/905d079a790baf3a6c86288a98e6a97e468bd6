@@ -1,0 +1,16 @@
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 1153-1154,1156,1159,1171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c905d079a790baf3a6c86288a98e6a97e468bd6",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
