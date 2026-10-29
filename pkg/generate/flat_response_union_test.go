@@ -64,6 +64,25 @@ paths:
                 properties:
                   id:
                     type: string
+  /events:
+    get:
+      operationId: streamEvents
+      responses:
+        "200":
+          description: OK
+          content:
+            application/jsonl:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+            application/x-ndjson:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
 `
 
 func resolveFlatResponseTypes(t *testing.T, target string) map[string]*ast.TypeDef {
@@ -107,6 +126,14 @@ func TestFlatResponseCollapsesEqualContentTypesForGo(t *testing.T) {
 	require.NotNil(t, widget)
 	require.Equal(t, ast.DataTypeUnion, widget.Type)
 	assert.Len(t, widget.AssociatedTypes, 2)
+
+	events := types["streamEvents"]
+	require.NotNil(t, events)
+	require.Equal(t, ast.DataTypeUnion, events.Type)
+	assert.Len(t, events.AssociatedTypes, 2)
+	for _, member := range events.AssociatedTypes {
+		assert.Equal(t, ast.DataTypeJsonL, member.Type)
+	}
 }
 
 func TestFlatResponseKeepsUnionForOtherTargets(t *testing.T) {
