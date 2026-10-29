@@ -26,7 +26,6 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
             services/**/go.sum
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
@@ -49,7 +48,9 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
-          key: composer-php-src-v2-${{ runner.os }}-${{ hashFiles('templates/templates/php/**/composer.json.stmpl') }}
+          key: composer-php-src-v3-${{ runner.os }}-${{ hashFiles('templates/templates/php/config.ts', 'templates/templates/php/**/composer.json.stmpl') }}
+          restore-keys: |
+            composer-php-src-v3-${{ runner.os }}-
 
       - name: Test
         env:

@@ -26,6 +26,45 @@ jobs:
   detect-targets:
     uses: ./.github/workflows/detect-targets.yml
 
+  # PHP target jobs are skipped on pushes to main, so this is the only job that
+  # saves the composer cache under the main ref, the only scope pull-request and
+  # merge-queue runs can restore it from.
+  warm-php-composer-cache:
+    if: github.event_name == 'push'
+    timeout-minutes: 15
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, xml, curl
+        env:
+          update: true
+          COMPOSER_PROCESS_TIMEOUT: 300
+      - name: Configure Composer
+        run: composer config --global preferred-install source
+      - name: Get Composer cache dir
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-dir)" >> "$GITHUB_OUTPUT"
+      - name: Cache Composer packages
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-php-src-v3-${{ runner.os }}-${{ hashFiles('templates/templates/php/config.ts', 'templates/templates/php/**/composer.json.stmpl') }}
+      - name: Resolve and clone PHP SDK dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          workdir=$(mktemp -d)
+          cp zSDKs/sdk-php/composer.json "$workdir/"
+          composer update --working-dir="$workdir" --no-interaction --no-progress
+
   test-generator:
     timeout-minutes: 45
     runs-on: ubicloud-standard-4-ubuntu-2404
@@ -44,7 +83,6 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
             services/**/go.sum
 
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -1028,7 +1066,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
+            services/**/go.sum
       - name: Test
         env:
           SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only
