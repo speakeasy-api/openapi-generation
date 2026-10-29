@@ -1355,6 +1355,9 @@ func (t *TypeDef) IsEqual(other *TypeDef, opts ...IsEqualOpt) error {
 			if t.Discriminator.TypePropertyName != other.Discriminator.TypePropertyName {
 				return ErrUnionDiscriminatorMismatch.Wrap(fmt.Errorf("expected discriminator %s in %s, got %s in %s", t.Discriminator.TypePropertyName, t.getNameOrType(), other.Discriminator.TypePropertyName, other.getNameOrType()))
 			}
+			if len(t.Discriminator.Mapping) != len(other.Discriminator.Mapping) {
+				return ErrUnionDiscriminatorMismatch.Wrap(fmt.Errorf("expected %d discriminator mappings in %s, got %d in %s", len(t.Discriminator.Mapping), t.getNameOrType(), len(other.Discriminator.Mapping), other.getNameOrType()))
+			}
 			for i, mapping := range t.Discriminator.Mapping {
 				if mapping.Name != other.Discriminator.Mapping[i].Name {
 					return ErrUnionDiscriminatorMismatch.Wrap(fmt.Errorf("expected discriminator mapping %s in %s, got %s in %s", mapping.Name, t.getNameOrType(), other.Discriminator.Mapping[i].Name, other.getNameOrType()))
