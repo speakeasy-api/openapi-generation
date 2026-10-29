@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.955.0] - 2026-10-29
+### :bee: New Features
+- [`0a9f76f`](https://github.com/speakeasy-api/openapi-generation/commit/0a9f76fbe61e0054f738c79e40d0b58a7fbcfd68) - **python**: accept unknown open-union variants in request input with preserveUnknownFields ([#171](https://github.com/speakeasy-api/openapi-generation/pull/171)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
 ## [v2.954.10] - 2026-10-29
 ### :bug: Bug Fixes
 - [`04fddee`](https://github.com/speakeasy-api/openapi-generation/commit/04fddee0f6c753b1f04120e6aaa1912f2163117f) - **cli**: mask input quoted by nested parse errors in body decode errors ([#166](https://github.com/speakeasy-api/openapi-generation/pull/166)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20833,3 +20838,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.8]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.7...v2.954.8
 [v2.954.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.8...v2.954.9
 [v2.954.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.9...v2.954.10
+[v2.955.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.10...v2.955.0
