@@ -1,0 +1,57 @@
+internal/extensions/cli_body_schemas.go
+  h_9630b74bdac540 10,263-294,300-303,310-320,361,439,446-457,467-477,479-485,487,489-508,511-528,531-532,535-550,552-555,557-574,576-580,582-590,593-602,604-607,609-610,612-616,618-634,637-642,645-651,653-656,658-659,661-664,666-667
+  s_39a5b6668a9f43::t_b8e214f97d74b6 458-466,488,575,581
+internal/extensions/cli_body_schemas_normalize.go
+  h_9630b74bdac540 1-179
+templates/templates/cli/includes/intents.ts
+  h_9630b74bdac540 96,1297-1300,2267-2282
+  s_835c4c990c3eed::t_15f0cc051bb64f 2283
+pkg/generate/generate.go
+  h_9630b74bdac540 216
+templates/templates/cli/usage_test.go.stmpl
+  h_9630b74bdac540 15-17,606-620
+  s_835c4c990c3eed::t_8f3a1714835566 621-622
+templates/templates/cli/intentcmd.go.stmpl
+  h_9630b74bdac540 250
+internal/extensions/cli_body_schemas_normalize_test.go
+  h_9630b74bdac540 1-236
+.changesets/1793246796-cae66c13.yaml
+  h_9630b74bdac540 1-10
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 129,663,1127
+zSDKs/sdk-cli/internal/cli/intent_say.go
+  h_9630b74bdac540 78
+zSDKs/sdk-cli/internal/usage/bodyschemas.go
+  h_9630b74bdac540 13
+zSDKs/sdk-cli/tests/usage_test.go
+  h_9630b74bdac540 6,576-589
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5fd787d3e5574303728515f712b08c1e023dcff",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_39a5b6668a9f43": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "165e6e5e-069e-4171-96f4-dd2290614b1a",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    },
+    "s_835c4c990c3eed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18f4b6e4-8f09-4800-9f78-ab5b8f62f4f5",
+        "model": "unknown"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
