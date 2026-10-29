@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: b76f0639e425901fecb124d1ffa0f638
+  docChecksum: 542812afcb058d0bf283cdd12d4e3e4a
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -124,9 +124,9 @@ trackedFiles:
   internal/cli/intent_produce.go:
     last_write_checksum: sha1:bd40954296ab4b5dd4265987e5c8918d46209528
   internal/cli/intent_render.go:
-    last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
+    last_write_checksum: sha1:78811930e627878b1fcaf41dd2a6fcd208a3003d
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:b0e2860aa03588884166695a4904b025757f5b47
+    last_write_checksum: sha1:9a0baf8595e51aef6bdbbd381cfede03ea73b55e
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -272,9 +272,9 @@ trackedFiles:
   internal/output/async.go:
     last_write_checksum: sha1:3fee77ef0cdf3414e9a903222a4a671b5ad90f2c
   internal/output/binary.go:
-    last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
+    last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:2d17c649096fbd0384e2a8be2e1e5efe189ed40d
+    last_write_checksum: sha1:db7e072a1c68803b44a68ab0c0a620170bb5c6d1
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -283,22 +283,24 @@ trackedFiles:
     last_write_checksum: sha1:313fa20ec561de744a818df99d4659ba715e0a86
   internal/output/jq.go:
     last_write_checksum: sha1:9e59e92439a8c6269a76be1fa44e85cbbf2dee59
+  internal/output/outcome.go:
+    last_write_checksum: sha1:5b7a3ad24255889f7a5cdc53478c237e7f358b85
   internal/output/output.go:
-    last_write_checksum: sha1:387be8156f26d964a2b8f7eb679899dfa17b6478
+    last_write_checksum: sha1:ad43078f33c1cd610c08a6417d4b5143e9caace6
   internal/output/output_test.go:
     last_write_checksum: sha1:84a8a6cf79bfa62ae9635f992bc7578a2bbbcce3
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
-    last_write_checksum: sha1:d060d669c8f1ca4390e46c5b4b684baf8b169898
+    last_write_checksum: sha1:ef1ce0609772febe04419419ab06da121e649f27
   internal/output/pretty.go:
     last_write_checksum: sha1:b7c74bd93d4e8a464956f098724dc653e9f8e594
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:3ffdcd4e995640502eaf0b10086fb4d1324ae971
+    last_write_checksum: sha1:0bab1d6cbb6a5d6dca122c8d57a14467dd3f9237
   internal/output/streaming_test.go:
-    last_write_checksum: sha1:9bb53612aa2a3e6d3da96f0c8f8e2ce4ba99b509
+    last_write_checksum: sha1:ed4ffe1ebf27f5b32e69d0d2e4a377d47e1655c4
   internal/output/streamproject.go:
     last_write_checksum: sha1:19d7dec64b1f78cbcfb5420cc4e968aa7aedadd0
   internal/sdk/.gitattributes:
@@ -442,7 +444,7 @@ trackedFiles:
   internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:7fb4d81daaf907f9894a74cbcda0474399461414
   internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:aa4756ca1e28c2fbefbbf10e588652e842e67e0d
+    last_write_checksum: sha1:601be5db5ea03d1206810ce26998975748283dd5
   internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:fa39c1f2ddb12ccafded76afcf4cd754aa6b4d21
   internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -668,7 +670,7 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:933a9f1df6a4192d6decfac193e1f93af3eb63f1
+    last_write_checksum: sha1:4ca3d41f09f6dc66d58a3c2b8de36722bb7e9dc3
   tests/async_test.go:
     last_write_checksum: sha1:7feb37653f240d6b9c625f4476365b018f738a03
   tests/cli_harness_test.go:
@@ -934,7 +936,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
   tests/mockserver/internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:d51dfc8a83c2049c9573f1336a4c420888065383
+    last_write_checksum: sha1:68425147994d2985f0a230579ce88d0b6d18704d
   tests/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
   tests/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
