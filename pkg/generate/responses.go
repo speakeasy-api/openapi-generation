@@ -820,7 +820,7 @@ func (g *Generator) flattenResponseObject(ctx context.Context, responseObj *ast.
 					// Separate headers from body fields
 					for _, field := range responseObj.Fields {
 						if field.Name != "Headers" {
-							if g.dedupeFlatResponseUnionMembers() && containsEqualType(associatedTypes, field.Type) {
+							if g.dedupeFlatResponseUnionMembers() && containsEqualScalarBody(associatedTypes, field.Type) {
 								continue
 							}
 							associatedTypes = append(associatedTypes, field.Type)
@@ -979,13 +979,30 @@ func (g *Generator) dedupeFlatResponseUnionMembers() bool {
 	return g.target.Target == "go"
 }
 
-func containsEqualType(types ast.TypeDefs, candidate *ast.TypeDef) bool {
+// Only unnamed scalar bodies collapse: a named inline object per status code is
+// deserialized into its own type, which must stay a member of the union.
+func containsEqualScalarBody(types ast.TypeDefs, candidate *ast.TypeDef) bool {
+	if !isUnnamedScalarBody(candidate) {
+		return false
+	}
 	for _, t := range types {
-		if t.IsEqual(candidate) == nil {
+		if isUnnamedScalarBody(t) && t.IsEqual(candidate) == nil {
 			return true
 		}
 	}
 	return false
+}
+
+func isUnnamedScalarBody(t *ast.TypeDef) bool {
+	if t == nil || t.Name != "" || len(t.Fields) > 0 || len(t.AssociatedTypes) > 0 {
+		return false
+	}
+	switch t.Type {
+	case ast.DataTypeBytes, ast.DataTypeResponseStream:
+		return true
+	default:
+		return t.IsPrimitive()
+	}
 }
 
 func addSubResponse(subResps []*ast.SubResponse, subResp *ast.SubResponse) []*ast.SubResponse {

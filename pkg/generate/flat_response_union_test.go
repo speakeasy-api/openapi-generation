@@ -42,6 +42,28 @@ paths:
                 properties:
                   rows:
                     type: integer
+  /widgets:
+    post:
+      operationId: createWidget
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
 `
 
 func resolveFlatResponseTypes(t *testing.T, target string) map[string]*ast.TypeDef {
@@ -80,6 +102,11 @@ func TestFlatResponseCollapsesEqualContentTypesForGo(t *testing.T) {
 	require.NotNil(t, report)
 	require.Equal(t, ast.DataTypeUnion, report.Type)
 	assert.Len(t, report.AssociatedTypes, 2)
+
+	widget := types["createWidget"]
+	require.NotNil(t, widget)
+	require.Equal(t, ast.DataTypeUnion, widget.Type)
+	assert.Len(t, widget.AssociatedTypes, 2)
 }
 
 func TestFlatResponseKeepsUnionForOtherTargets(t *testing.T) {
