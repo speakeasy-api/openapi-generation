@@ -1148,9 +1148,10 @@ func (e *decodeError) Unwrap() error { return e.err }
 // decodeErrorMessage drops everything from the first "could not unmarshal `"
 // to the last closing phrase: the input may itself contain a closing phrase,
 // and nested union errors repeat the pattern. Without a closing phrase the
-// rest of the message is dropped.
+// rest of the message is dropped. Parse inputs are masked first, so a value
+// containing these phrases cannot shift the cut.
 func decodeErrorMessage(err error) string {
-	msg := err.Error()
+	msg := maskQuotedParseInput(err.Error())
 	start := strings.Index(msg, unionDecodePrefix)
 	if start < 0 {
 		return msg
@@ -1166,6 +1167,27 @@ func decodeErrorMessage(err error) string {
 		return msg[:start] + "could not unmarshal value"
 	}
 	return msg[:start] + "could not unmarshal value" + rest[end+1:]
+}
+
+const quotedGoString = `"(?:[^"\\]|\\.)*"`
+
+// quotedParseInput matches the input that time.ParseError and
+// strconv.NumError quote; the expected layouts they also quote are kept.
+var quotedParseInput = []struct {
+	pattern *regexp.Regexp
+	repl    string
+}{
+	{regexp.MustCompile(`parsing time ` + quotedGoString), "parsing time value"},
+	{regexp.MustCompile(`cannot parse ` + quotedGoString + ` as`), "cannot parse value as"},
+	{regexp.MustCompile(`extra text: ` + quotedGoString), "extra text"},
+	{regexp.MustCompile(`(strconv\.\w+): parsing ` + quotedGoString), "$1: parsing value"},
+}
+
+func maskQuotedParseInput(msg string) string {
+	for _, p := range quotedParseInput {
+		msg = p.pattern.ReplaceAllString(msg, p.repl)
+	}
+	return msg
 }
 
 func verifyBodyKeys(source string, input []byte, target reflect.Value, u *UnionMeta) error {

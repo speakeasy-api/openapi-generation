@@ -1033,6 +1033,41 @@ func TestUnionDecodeErrorsOmitRawInput(t *testing.T) {
 			want: "could not unmarshal value into expected (",
 		},
 		{
+			name: "discriminated variant with an unparseable date-time",
+			args: []string{"unions", "strongly-typed-one-of-post", "--strongly-typed-one-of-object", `{"type":"simpleObjectWithType","str":"x","dateTime":"` + secret + `"}`},
+			want: `parsing time value as "2006-01-02T15:04:05.999999999Z07:00": cannot parse value as "2006"`,
+		},
+		{
+			name: "discriminated variant with an unparseable date",
+			args: []string{"unions", "strongly-typed-one-of-post", "--strongly-typed-one-of-object", `{"type":"simpleObjectWithType","str":"x","date":"` + secret + `"}`},
+			want: `parsing time value as "2006-01-02"`,
+		},
+		{
+			name: "plain body with an unparseable date-time",
+			args: []string{"request-bodies", "request-body-post-application-json-simple", "--body", `{"str":"x","dateTime":"` + secret + `"}`},
+			want: `failed to parse --body as JSON: failed to parse string as time.Time: parsing time value as "2006-01-02T15:04:05.999999999Z07:00": cannot parse value as "2006"`,
+		},
+		{
+			name: "plain body with an unparseable date",
+			args: []string{"request-bodies", "request-body-post-application-json-simple", "--body", `{"str":"x","date":"` + secret + `"}`},
+			want: `failed to parse --body as JSON: failed to parse string as types.Date: parsing time value as "2006-01-02"`,
+		},
+		{
+			name: "plain date-time containing the union phrasing",
+			args: []string{"request-bodies", "request-body-post-application-json-simple", "--body", `{"str":"x","dateTime":"` + secret + " could not unmarshal `x` into expected (" + `"}`},
+			want: `parsing time value as "2006-01-02T15:04:05.999999999Z07:00"`,
+		},
+		{
+			name: "plain date-time containing the union prefix only",
+			args: []string{"request-bodies", "request-body-post-application-json-simple", "--body", `{"str":"x","dateTime":"` + secret + " could not unmarshal `x" + `"}`},
+			want: `parsing time value as "2006-01-02T15:04:05.999999999Z07:00"`,
+		},
+		{
+			name: "discriminated variant date-time containing a closing phrase",
+			args: []string{"unions", "strongly-typed-one-of-post", "--strongly-typed-one-of-object", `{"type":"simpleObjectWithType","str":"x","dateTime":"x` + "` into expected (" + secret + `"}`},
+			want: `could not unmarshal value into expected (`,
+		},
+		{
 			name: "undiscriminated union in body",
 			args: []string{"unions", "one-of-boolean-and-string-enum", "--body", `{"active":["` + secret + `"]}`},
 			want: "could not unmarshal value into any supported union types for",
