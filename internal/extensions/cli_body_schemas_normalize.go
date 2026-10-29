@@ -1,6 +1,7 @@
 package extensions
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -39,8 +40,14 @@ func walkSchemaObjects(schema any, fn func(map[string]any)) {
 }
 
 // cliSchemaAnnotationKeywords stay on the outer schema when a nullable schema
-// without a type is wrapped in anyOf.
+// without a type is wrapped in anyOf. Definition containers stay there too so
+// that #/$defs references keep resolving against the bundle root.
 var cliSchemaAnnotationKeywords = map[string]bool{
+	"$schema":     true,
+	"$id":         true,
+	"$comment":    true,
+	"$defs":       true,
+	"definitions": true,
 	"title":       true,
 	"description": true,
 	"default":     true,
@@ -105,59 +112,187 @@ func convertExclusiveBound(schema map[string]any, exclusiveKey, boundKey string)
 
 // stripReadOnlyProperties removes readOnly properties, and their required
 // entries, from every object schema in a bundle. A property is readOnly when
-// it says so itself or references a bundled definition that does.
+// it says so itself, references a schema that is, is an allOf with a readOnly
+// member, or is an anyOf/oneOf whose non-null members are all readOnly.
+// Required entries are removed wherever the object, its allOf members or the
+// schemas they reference declare the property readOnly.
 func stripReadOnlyProperties(bundle any) {
-	root, _ := bundle.(map[string]any)
-	defs, _ := root["$defs"].(map[string]any)
-	isReadOnly := func(prop any) bool {
-		m, ok := prop.(map[string]any)
-		if !ok {
-			return false
+	s := readOnlyStripper{root: bundle, resolving: map[string]bool{}}
+	walkSchemaObjects(bundle, func(schema map[string]any) {
+		names := map[string]bool{}
+		s.collectReadOnlyNames(schema, names)
+		if len(names) == 0 {
+			return
 		}
-		if readOnly, _ := m["readOnly"].(bool); readOnly {
-			return true
+		removeRequired(schema, names)
+		if members, ok := schema["allOf"].([]any); ok {
+			for _, member := range members {
+				if m, isMap := member.(map[string]any); isMap {
+					removeRequired(m, names)
+				}
+			}
 		}
-		ref, _ := m["$ref"].(string)
-		name, found := strings.CutPrefix(ref, "#/$defs/")
-		if !found || strings.Contains(name, "/") {
-			return false
-		}
-		def, _ := defs[name].(map[string]any)
-		readOnly, _ := def["readOnly"].(bool)
-		return readOnly
-	}
+	})
 	walkSchemaObjects(bundle, func(schema map[string]any) {
 		props, ok := schema["properties"].(map[string]any)
 		if !ok {
 			return
 		}
-		removed := map[string]bool{}
 		for name, prop := range props {
-			if isReadOnly(prop) {
-				removed[name] = true
+			if s.isReadOnly(prop) {
 				delete(props, name)
 			}
 		}
-		if len(removed) == 0 {
-			return
+	})
+}
+
+type readOnlyStripper struct {
+	root      any
+	resolving map[string]bool
+}
+
+func (s *readOnlyStripper) withRef(schema map[string]any, fn func(target any)) {
+	ref, _ := schema["$ref"].(string)
+	if ref == "" || s.resolving[ref] {
+		return
+	}
+	target, ok := resolveLocalPointer(s.root, ref)
+	if !ok {
+		return
+	}
+	s.resolving[ref] = true
+	defer delete(s.resolving, ref)
+	fn(target)
+}
+
+func (s *readOnlyStripper) isReadOnly(schema any) bool {
+	m, ok := schema.(map[string]any)
+	if !ok {
+		return false
+	}
+	if readOnly, _ := m["readOnly"].(bool); readOnly {
+		return true
+	}
+	result := false
+	s.withRef(m, func(target any) { result = s.isReadOnly(target) })
+	if result {
+		return true
+	}
+	if members, ok := m["allOf"].([]any); ok {
+		for _, member := range members {
+			if s.isReadOnly(member) {
+				return true
+			}
 		}
-		required, ok := schema["required"].([]any)
+	}
+	for _, key := range []string{"anyOf", "oneOf"} {
+		members, ok := m[key].([]any)
 		if !ok {
-			return
+			continue
 		}
-		kept := make([]any, 0, len(required))
-		for _, name := range required {
-			if s, isString := name.(string); isString && removed[s] {
+		matched := 0
+		for _, member := range members {
+			if isNullOnlySchema(member) {
 				continue
 			}
-			kept = append(kept, name)
+			if !s.isReadOnly(member) {
+				matched = -1
+				break
+			}
+			matched++
 		}
-		if len(kept) == 0 {
-			delete(schema, "required")
-		} else {
-			schema["required"] = kept
+		if matched > 0 {
+			return true
 		}
-	})
+	}
+	return false
+}
+
+func (s *readOnlyStripper) collectReadOnlyNames(schema any, names map[string]bool) {
+	m, ok := schema.(map[string]any)
+	if !ok {
+		return
+	}
+	if props, ok := m["properties"].(map[string]any); ok {
+		for name, prop := range props {
+			if s.isReadOnly(prop) {
+				names[name] = true
+			}
+		}
+	}
+	s.withRef(m, func(target any) { s.collectReadOnlyNames(target, names) })
+	if members, ok := m["allOf"].([]any); ok {
+		for _, member := range members {
+			s.collectReadOnlyNames(member, names)
+		}
+	}
+}
+
+func removeRequired(schema map[string]any, names map[string]bool) {
+	required, ok := schema["required"].([]any)
+	if !ok {
+		return
+	}
+	kept := make([]any, 0, len(required))
+	for _, name := range required {
+		if str, isString := name.(string); isString && names[str] {
+			continue
+		}
+		kept = append(kept, name)
+	}
+	if len(kept) == len(required) {
+		return
+	}
+	if len(kept) == 0 {
+		delete(schema, "required")
+	} else {
+		schema["required"] = kept
+	}
+}
+
+func isNullOnlySchema(schema any) bool {
+	m, ok := schema.(map[string]any)
+	if !ok {
+		return false
+	}
+	typ, _ := m["type"].(string)
+	return typ == "null"
+}
+
+// resolveLocalPointer resolves a same-document JSON Pointer reference such as
+// "#/$defs/Wrapper/properties/inner" against root.
+func resolveLocalPointer(root any, ref string) (any, bool) {
+	pointer, ok := strings.CutPrefix(ref, "#")
+	if !ok {
+		return nil, false
+	}
+	if pointer == "" {
+		return root, true
+	}
+	if !strings.HasPrefix(pointer, "/") {
+		return nil, false
+	}
+	current := root
+	for _, token := range strings.Split(pointer[1:], "/") {
+		token = strings.ReplaceAll(strings.ReplaceAll(token, "~1", "/"), "~0", "~")
+		switch typed := current.(type) {
+		case map[string]any:
+			next, exists := typed[token]
+			if !exists {
+				return nil, false
+			}
+			current = next
+		case []any:
+			index, err := strconv.Atoi(token)
+			if err != nil || index < 0 || index >= len(typed) {
+				return nil, false
+			}
+			current = typed[index]
+		default:
+			return nil, false
+		}
+	}
+	return current, true
 }
 
 func containsNil(values []any) bool {

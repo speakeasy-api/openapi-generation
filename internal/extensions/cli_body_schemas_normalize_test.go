@@ -185,6 +185,137 @@ components:
 	assert.Equal(t, map[string]any{"type": []any{"string", "null"}}, parent["properties"].(map[string]any)["label"])
 }
 
+func TestCollectCLIBodySchemas_RemovesReadOnlyThroughCompositionAndPointers(t *testing.T) {
+	spec := `openapi: 3.0.3
+info:
+  title: t
+  version: 1.0.0
+paths:
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Child"
+      responses:
+        "200":
+          description: ok
+components:
+  schemas:
+    Child:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          required: [id, name, audit, stamp]
+          properties:
+            name:
+              type: string
+            audit:
+              nullable: true
+              allOf:
+                - $ref: "#/components/schemas/Audit"
+            stamp:
+              $ref: "#/components/schemas/Holder/properties/stamp"
+    Base:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+    Audit:
+      type: object
+      readOnly: true
+    Holder:
+      type: object
+      properties:
+        stamp:
+          type: string
+          readOnly: true
+`
+	schemas := collectBodySchemaVariantsFromYAML(t, spec)
+	defs := decodeBodySchema(t, schemas["createThing"])["$defs"].(map[string]any)
+
+	own := defs["Child"].(map[string]any)["allOf"].([]any)[1].(map[string]any)
+	assert.Equal(t, []any{"name"}, own["required"], "required entries from allOf siblings and references are removed")
+	props := own["properties"].(map[string]any)
+	assert.Contains(t, props, "name")
+	assert.NotContains(t, props, "audit", "nullable reference to a readOnly definition")
+	assert.NotContains(t, props, "stamp", "deep pointer to a readOnly property")
+
+	assert.NotContains(t, defs["Base"].(map[string]any)["properties"].(map[string]any), "id")
+}
+
+func TestCollectCLIBodySchemas_NullableRootKeepsDefinitions(t *testing.T) {
+	spec := `openapi: 3.0.3
+info:
+  title: t
+  version: 1.0.0
+paths:
+  /things:
+    post:
+      operationId: createThing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              nullable: true
+              allOf:
+                - $ref: "#/components/schemas/Parent"
+      responses:
+        "200":
+          description: ok
+components:
+  schemas:
+    Parent:
+      type: object
+      properties:
+        label:
+          type: string
+`
+	schemas := collectBodySchemaVariantsFromYAML(t, spec)
+	bundled := decodeBodySchema(t, schemas["createThing"])
+	assert.Equal(t, "https://json-schema.org/draft/2020-12/schema", bundled["$schema"])
+	assert.Contains(t, bundled["$defs"], "Parent")
+	inner := bundled["anyOf"].([]any)[0].(map[string]any)
+	assert.NotContains(t, inner, "$defs")
+	assert.NotContains(t, inner, "$schema")
+	assert.Equal(t, []any{map[string]any{"$ref": "#/$defs/Parent"}}, inner["allOf"])
+}
+
+func TestCollectCLIBodySchemas_BooleanSchemasDeclareDraft(t *testing.T) {
+	spec := `openapi: 3.1.0
+info:
+  title: t
+  version: 1.0.0
+paths:
+  /accept:
+    post:
+      operationId: acceptAnything
+      requestBody:
+        content:
+          application/json:
+            schema: true
+      responses:
+        "200":
+          description: ok
+  /reject:
+    post:
+      operationId: rejectEverything
+      requestBody:
+        content:
+          application/json:
+            schema: false
+      responses:
+        "200":
+          description: ok
+`
+	schemas := collectBodySchemaVariantsFromYAML(t, spec)
+	assert.JSONEq(t, `{"$schema":"https://json-schema.org/draft/2020-12/schema"}`, schemas["acceptAnything"])
+	assert.JSONEq(t, `{"$schema":"https://json-schema.org/draft/2020-12/schema","not":{}}`, schemas["rejectEverything"])
+}
+
 func TestCollectCLIBodySchemas_KeepsOpenAPI31Keywords(t *testing.T) {
 	spec := `openapi: 3.1.0
 info:

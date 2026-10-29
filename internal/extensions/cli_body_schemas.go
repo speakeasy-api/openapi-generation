@@ -267,6 +267,16 @@ type CLIBodySchemaVariant struct {
 	RequestVariant string
 }
 
+// cliBooleanSchemaBundle expresses a boolean schema as an object so that it
+// can declare its draft.
+func cliBooleanSchemaBundle(accept bool) map[string]any {
+	bundle := map[string]any{"$schema": "https://json-schema.org/draft/2020-12/schema"}
+	if !accept {
+		bundle["not"] = map[string]any{}
+	}
+	return bundle
+}
+
 // CLIBodySchemaVariantKey is the CLIBodySchemas key of the bundle rooted at
 // a request variant such as "#/components/schemas/Name".
 func CLIBodySchemaVariantKey(operationID, requestVariant string) string {
@@ -420,7 +430,7 @@ func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *documen
 				if boolSchema == nil {
 					continue
 				}
-				encoded, err := json.Marshal(*boolSchema)
+				encoded, err := json.Marshal(cliBooleanSchemaBundle(*boolSchema))
 				if err != nil {
 					return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
 				}
@@ -513,11 +523,14 @@ func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *documen
 				rootMap, ok := root.(map[string]any)
 				if !ok {
 					// A non-object root is still a schema (an empty node means
-					// "anything"); emit it directly instead of silently dropping
-					// the operation's schema surface.
+					// "anything"); emit it instead of silently dropping the
+					// operation's schema surface.
 					value := root
-					if value == nil {
-						value = true
+					switch typed := root.(type) {
+					case nil:
+						value = cliBooleanSchemaBundle(true)
+					case bool:
+						value = cliBooleanSchemaBundle(typed)
 					}
 					encoded, err := json.Marshal(value)
 					if err != nil {
@@ -655,10 +668,10 @@ func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *documen
 				if dangling != nil {
 					return nil, dangling
 				}
+				stripReadOnlyProperties(copied)
 				if isOpenAPI30 {
 					walkSchemaObjects(copied, convertOpenAPI30Schema)
 				}
-				stripReadOnlyProperties(copied)
 				encoded, err := json.Marshal(copied)
 				if err != nil {
 					return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)

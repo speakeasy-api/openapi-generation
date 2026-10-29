@@ -768,7 +768,7 @@ paths:
 `
 	schemas, err := collectBodySchemasFromYAML(t, spec)
 	require.NoError(t, err)
-	assert.Equal(t, "true", schemas["createThing"])
+	assert.JSONEq(t, `{"$schema":"https://json-schema.org/draft/2020-12/schema"}`, schemas["createThing"])
 }
 
 func TestCollectCLIBodySchemas_BundlesBooleanComponent(t *testing.T) {
