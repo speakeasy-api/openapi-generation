@@ -1,0 +1,46 @@
+templates/templates/cli/tests/primary/jsonnumbers_additional_test.go.stmpl
+  h_9630b74bdac540 1-121
+templates/templates/go/auxiliary/{{getUtilsLocation}}/json.go.stmpl
+  h_9630b74bdac540 10,13,149-176,192,612,614,619,621,816
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 9,663,691,800,1401,1412-1426,2143
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  h_9630b74bdac540 443,1256,1269,1352-1353
+templates/templates/cli/auxiliary/internal/output/jq.go.stmpl
+  h_9630b74bdac540 59-60
+templates/templates/cli/auxiliary/internal/output/paginated.go.stmpl
+  h_9630b74bdac540 216-217
+.changesets/1793244742-f68592ed.yaml
+  h_9630b74bdac540 1-10
+.changesets/1793244743-9c91ccaf.yaml
+  h_9630b74bdac540 1-10
+templates/perms.go
+  h_9630b74bdac540 201
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255,285,287,293,603
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 11,665,693,802,1403,1414-1428,2145
+zSDKs/sdk-cli/internal/output/jq.go
+  h_9630b74bdac540 61-62
+zSDKs/sdk-cli/internal/output/output.go
+  h_9630b74bdac540 441,1238,1251,1334-1335
+zSDKs/sdk-cli/internal/output/paginated.go
+  h_9630b74bdac540 217-218
+zSDKs/sdk-cli/internal/sdk/sdkinternal/utils/json.go
+  h_9630b74bdac540 10,15,150-177,193,609,611,616,618,811
+zSDKs/sdk-go/.speakeasy/gen.lock
+  h_9630b74bdac540 716
+zSDKs/sdk-go/internal/utils/json.go
+  h_9630b74bdac540 10,15,150-177,193,609,611,616,618,811
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b34e16edfa184672f0d337e9f48b0fc8edb84a71",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
