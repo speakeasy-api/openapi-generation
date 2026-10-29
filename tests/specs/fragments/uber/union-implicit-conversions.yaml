@@ -1,0 +1,117 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+components:
+  schemas:
+    ImplicitConversionCircle:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        radius:
+          type: number
+      required: [kind, radius]
+    ImplicitConversionSquare:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        side:
+          type: number
+      required: [kind, side]
+    ImplicitConversionTriangle:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        base:
+          type: number
+        height:
+          type: number
+      required: [kind, base, height]
+    ImplicitConversionShape:
+      x-speakeasy-include: true
+      description: >-
+        Discriminated union whose members are distinct object schemas. Each
+        member can be converted to the union without naming the variant.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - $ref: '#/components/schemas/ImplicitConversionTriangle'
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: '#/components/schemas/ImplicitConversionCircle'
+          square: '#/components/schemas/ImplicitConversionSquare'
+          triangle: '#/components/schemas/ImplicitConversionTriangle'
+    ImplicitConversionAliasedShape:
+      x-speakeasy-include: true
+      description: >-
+        Discriminated union with two discriminator values mapped to the same
+        schema. That schema has no single discriminator value to infer, so it
+        gets no conversion; the other member does.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: '#/components/schemas/ImplicitConversionCircle'
+          round: '#/components/schemas/ImplicitConversionCircle'
+          square: '#/components/schemas/ImplicitConversionSquare'
+    ImplicitConversionPolygon:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - $ref: '#/components/schemas/ImplicitConversionTriangle'
+    ImplicitConversionNested:
+      x-speakeasy-include: true
+      description: >-
+        Undiscriminated union whose members include other unions. Members of
+        the inner unions convert to the outer union only when reachable through
+        exactly one inner union and not also a direct member: the circle
+        converts, the square is a direct member, and the triangle is reachable
+        through both inner unions.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionShape'
+        - $ref: '#/components/schemas/ImplicitConversionPolygon'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+    ImplicitConversionPrimitives:
+      x-speakeasy-include: true
+      description: >-
+        Undiscriminated union of a string, an integer, a number, an array of
+        objects and a free-form object. A whole-number argument must resolve to
+        the integer member rather than the number member.
+      oneOf:
+        - type: string
+        - type: integer
+        - type: number
+        - type: array
+          items:
+            $ref: '#/components/schemas/ImplicitConversionCircle'
+        - type: object
+          additionalProperties: true
+    ImplicitConversionNullable:
+      x-speakeasy-include: true
+      description: Nullable union of two object schemas.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - type: 'null'
+    ImplicitConversionWithAny:
+      x-speakeasy-include: true
+      description: >-
+        Union with an unconstrained member. Only the constrained member can be
+        converted to the union.
+      oneOf:
+        - type: string
+        - {}

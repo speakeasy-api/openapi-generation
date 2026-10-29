@@ -85,7 +85,7 @@
     {{- templateComments .Local.Type.Comments 1 $className "class"}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
     [JsonConverter(typeof({{$className}}.{{$className}}Converter))]
-    public class {{$className}}{{if $isUnionOpen}} : {{$utils}}.IOpenUnion{{end}}
+    public {{templatePartial}}class {{$className}}{{if $isUnionOpen}} : {{$utils}}.IOpenUnion{{end}}
     {
         public {{$className}}({{$unionType}} type)
         {
@@ -198,6 +198,7 @@
             return new {{$className}}(typ);
         }
 {{- end}}
+{{- templateUnionImplicitConversions .Local.Type}}
 
         public class {{$className}}Converter : JsonConverter
         {

@@ -286,6 +286,24 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
+    unionImplicitConversions: {
+      Name: "unionImplicitConversions",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Generate implicit conversion operators from each union member type (and members of nested unions) to the union type, so a member value can be assigned directly instead of calling the Create* factory. Members that would be ambiguous are skipped.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    partialClasses: {
+      Name: "partialClasses",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Declare generated model, union, error, open enum and SDK classes and interfaces as partial, so they can be extended from separate source files that are not overwritten by regeneration.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
     presenceAwareJsonSerialization: {
       Name: "presenceAwareJsonSerialization",
       Required: false,
