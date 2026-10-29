@@ -1309,6 +1309,19 @@ function sanitizeType(
           suffixForTypes + modelSuffix,
         );
 
+        const siblingVariants = openUnionSiblingGuards?.get(fieldDef.Type.Name);
+        if (
+          siblingVariants &&
+          modelSuffix === "" &&
+          isOpenDiscriminatedUnion(fieldDef.Type)
+        ) {
+          return renderOpenUnionSiblingGuard(
+            clss,
+            fieldDef.Type,
+            siblingVariants,
+          );
+        }
+
         return clss;
       case "string":
         if (isBase64FileInputField(fieldDef)) {
@@ -1714,6 +1727,8 @@ registerTemplateFunc(
   sanitizeFieldTypeAndAnnotations,
 );
 
+let openUnionSiblingGuards: Map<string, string> | null = null;
+
 type UnionMember = {
   typeStr: string;
   associatedType: TypeDef;
@@ -2023,12 +2038,24 @@ function sanitizeUnionType(
     )}], ${discRef}(${lambda})]`;
   }
 
-  const members = collectUnionAssociatedTypes(
-    typeDef,
-    usageLocation,
-    owningModelInfo,
-    suffixForTypes,
-  );
+  const siblingGuards = context.Global.Config.PreserveUnknownFields
+    ? openUnionSiblingVariants(typeDef)
+    : new Map<string, string>();
+  const enclosingGuards = openUnionSiblingGuards;
+  if (siblingGuards.size > 0) {
+    openUnionSiblingGuards = siblingGuards;
+  }
+  let members: UnionMember[];
+  try {
+    members = collectUnionAssociatedTypes(
+      typeDef,
+      usageLocation,
+      owningModelInfo,
+      suffixForTypes,
+    );
+  } finally {
+    openUnionSiblingGuards = enclosingGuards;
+  }
   if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
     return renderOpenUnionDispatchTypeAliasType(unionName, members);
   }

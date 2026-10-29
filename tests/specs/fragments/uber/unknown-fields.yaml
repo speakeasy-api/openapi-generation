@@ -139,6 +139,66 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Choice'
+        history:
+          description: A union of open discriminated unions sharing the discriminator property, holding earlier responses sent back as request input. History steps nest the other union.
+          anyOf:
+            - $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                $ref: '#/components/schemas/HistoryStep'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Choice'
+            - type: string
+        nullableHistory:
+          description: A union of open discriminated unions held as nullable array items, so no member owns a value on its own.
+          anyOf:
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/Choice'
+                  - type: 'null'
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoryStep'
+                  - type: 'null'
+        nestedHistory:
+          description: A union of open discriminated unions held two array levels deep.
+          anyOf:
+            - type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryStep'
+        historyByName:
+          description: A union of open discriminated unions held as map values.
+          anyOf:
+            - type: object
+              additionalProperties:
+                $ref: '#/components/schemas/Choice'
+            - type: object
+              additionalProperties:
+                $ref: '#/components/schemas/HistoryStep'
+        freeformHistory:
+          description: A union of open discriminated unions with a free-form object member, which accepts values that neither open union accepts.
+          anyOf:
+            - $ref: '#/components/schemas/HistoryStep'
+            - $ref: '#/components/schemas/Choice'
+            - type: object
+              additionalProperties: true
+        stepHistory:
+          description: A union of an open discriminated union and an array of another one, so a list is validated against the array member even when an item carries a discriminator value of the other union.
+          anyOf:
+            - $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                $ref: '#/components/schemas/HistoryStep'
         plainChoice:
           anyOf:
             - $ref: '#/components/schemas/TextFields'
@@ -217,12 +277,45 @@ components:
           $ref: '#/components/schemas/NumberChoiceKind'
         number:
           type: integer
+    HistoryStep:
+      oneOf:
+        - $ref: '#/components/schemas/NoteStep'
+        - $ref: '#/components/schemas/PauseStep'
+      discriminator:
+        propertyName: kind
+        mapping:
+          note: '#/components/schemas/NoteStep'
+          pause: '#/components/schemas/PauseStep'
+    NoteStep:
+      type: object
+      required: [kind, content]
+      properties:
+        kind:
+          $ref: '#/components/schemas/NoteStepKind'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Choice'
+    PauseStep:
+      type: object
+      required: [kind, seconds]
+      properties:
+        kind:
+          $ref: '#/components/schemas/PauseStepKind'
+        seconds:
+          type: integer
     TextChoiceKind:
       type: string
       enum: [text]
     NumberChoiceKind:
       type: string
       enum: [number]
+    NoteStepKind:
+      type: string
+      enum: [note]
+    PauseStepKind:
+      type: string
+      enum: [pause]
     OpenFields:
       type: object
       additionalProperties: true
