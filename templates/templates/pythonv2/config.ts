@@ -149,6 +149,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -160,6 +164,10 @@ function getConfigFields(
         .source,
       ValidationMessage:
         "Only ASCII letters and numbers, period, underscore, and hyphen characters allowed. It must start and end with a letter or number.",
+      ValidationExamples: {
+        valid: ["openapi", "a", "acme-sdk", "acme.sdk", "acme_sdk2"],
+        invalid: ["", "-acme", "acme-", "acme sdk", "acme/sdk"],
+      },
     },
     moduleName: {
       Name: "moduleName",
@@ -177,6 +185,10 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9_.]*$/.source,
       ValidationMessage:
         "Only letters, numbers, underscore (_), or period (.) are allowed",
+      ValidationExamples: {
+        valid: ["", "acme", "acme_sdk", "acme.sdk"],
+        invalid: ["acme-sdk", "acme sdk", "acme/sdk"],
+      },
     },
     authors: {
       Name: "authors",
@@ -219,6 +231,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     flatteningOrder: {
       Name: "flatteningOrder",
@@ -306,6 +322,10 @@ function getConfigFields(
       ValidationRegex: /^[A-Za-z][A-Za-z0-9_]*$/.source,
       ValidationMessage:
         "Must start with a letter; remaining characters may be letters, digits, or underscores. PascalCased automatically (e.g. 'param' -> 'Param').",
+      ValidationExamples: {
+        valid: ["TypedDict", "Param", "Input_2"],
+        invalid: ["", "2Param", "_Param", "Typed-Dict"],
+      },
     },
     rawResponseHelpers: {
       Name: "rawResponseHelpers",
@@ -322,6 +342,24 @@ function getConfigFields(
       DefaultValue: true,
       Description:
         "Whether to validate error response bodies against typed error models. When disabled, schema mismatches fall back to the SDK default error while preserving the raw body.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    modelSerializationMethods: {
+      Name: "modelSerializationMethods",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Add to_dict and to_json convenience methods to models, using API field names and excluding unset fields by default.",
+      ValidationRegex: /^(true|false)$/.source,
+      ValidationMessage: "true or false only",
+    },
+    preserveUnknownFields: {
+      Name: "preserveUnknownFields",
+      Required: false,
+      DefaultValue: false,
+      Description:
+        "Preserve undeclared fields in JSON request and response models, including nested models and schemas with additionalProperties: false. Explicitly typed additional properties retain their validation. Flattened operation arguments accept only declared fields, so undeclared top-level request fields require flattenRequests: false; nested models passed as arguments keep theirs. Undeclared fields are sent as given: an undeclared field set to None is sent as null, unlike declared optional non-nullable fields, which are omitted when None. Unknown variants of open discriminated unions serialize as their raw payload rather than the SDK wrapper, and request input accepts unknown discriminator values, so variants received from the server can be sent back; known discriminator values with an invalid payload still raise, and the Unknown fallback declines a discriminator value that another open union in the same field recognizes, so another member of the field can accept it. Disabled by default.",
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
@@ -380,6 +418,10 @@ function getConfigFields(
       ValidationRegex: /^v\d+$/.source,
       ValidationMessage:
         "Template version must be in the format v1, v2, and so on",
+      ValidationExamples: {
+        valid: ["v2", "v10"],
+        invalid: ["", "2", "V2", "v2.1"],
+      },
     },
     flattenRequests: {
       Name: "flattenRequests",
@@ -469,6 +511,10 @@ function getConfigFields(
         "The name of the default exception that is raised when an API error occurs.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     baseErrorName: {
       Name: "baseErrorName",
@@ -480,6 +526,10 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage:
         "Must start with a capital letter and contain only letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     enableCustomCodeRegions: {
       Name: "enableCustomCodeRegions",
@@ -504,6 +554,10 @@ function getConfigFields(
         "When value is greater than 0, installs pytest-timeout and sets the global pytest-timeout configuration value, which is the number of seconds before individual tests are timed out.",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Integer number of seconds",
+      ValidationExamples: {
+        valid: ["0", "30"],
+        invalid: ["", "-1", "1.5", "30s"],
+      },
     },
     packageManager: {
       Name: "packageManager",

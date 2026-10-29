@@ -1,0 +1,50 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/pathParams/default/{stringParam}/enum/{enumParam}:
+    get:
+      operationId: pathParameterDefault
+      tags:
+        - parameters
+      description: >-
+        Exercises required string path parameters whose schemas declare a
+        default, one a plain string and one a string enum. When a target treats
+        an empty value as omitted, the default must be substituted into the
+        path instead of producing an empty path segment; a supplied value must
+        still take precedence.
+      parameters:
+        - name: stringParam
+          in: path
+          required: true
+          schema:
+            type: string
+            default: defaultString
+        - name: enumParam
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - first
+              - second
+            default: second
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                title: res
+                type: object
+                properties:
+                  url:
+                    type: string
+                required:
+                  - url

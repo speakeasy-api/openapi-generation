@@ -346,6 +346,7 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
             NextURL: {{goStringLiteral $paginationProbe.NextURL}},
             Results: {{goStringLiteral $paginationProbe.Results}},
             HasLimit: {{$paginationProbe.HasLimit}},
+            Transformed: {{hasResponseTransform $op}},
         })
     }
     {{- end}}
@@ -525,6 +526,7 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
             NextURL: {{goStringLiteral $paginationProbe.NextURL}},
             Results: {{goStringLiteral $paginationProbe.Results}},
             HasLimit: {{$paginationProbe.HasLimit}},
+            Transformed: {{hasResponseTransform $op}},
         }); err != nil {
             return nil, err
         }

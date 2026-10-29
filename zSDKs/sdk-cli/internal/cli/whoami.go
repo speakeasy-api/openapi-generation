@@ -22,7 +22,7 @@ Sources are shown as:
   [env]     - Set via environment variable (CLI_*)
   [keyring] - Set via OS credential store: macOS Keychain, Windows Credential Manager or Secret Service (stored by configure command)
   [config]  - Set via config file (~/.config/cli/config.yaml)
-  [default] - Built-in global parameter flag default
+  [default] - Built-in default
   [unset]   - Not configured
 
 Credential values are masked for security.`,
@@ -109,6 +109,10 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
 			parameters["lone-query-param"] = map[string]any{"source": source, "value": value}
 		}
 		info["global_parameters"] = parameters
+		outputFormat, outputFormatSource := whoamiOutputFormat(cmd)
+		info["preferences"] = map[string]any{
+			"output-format": map[string]any{"source": outputFormatSource, "value": outputFormat},
+		}
 		return output.LocalResult(cmd, info)
 	}
 
@@ -214,5 +218,20 @@ func runWhoamiCmd(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "lone-query-param", source, value)
 	}
 
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Preferences:")
+	outputFormat, outputFormatSource := whoamiOutputFormat(cmd)
+	fmt.Fprintf(out, "  --%-25s [%-7s] %s\n", "output-format", outputFormatSource, outputFormat)
+
 	return nil
+}
+
+func whoamiOutputFormat(cmd *cobra.Command) (value, source string) {
+	if value, source := config.ResolveCredential(cmd, "output-format", false); source != "unset" {
+		return value, source
+	}
+	if output.IsAgentMode() {
+		return "toon", "default"
+	}
+	return "pretty", "default"
 }

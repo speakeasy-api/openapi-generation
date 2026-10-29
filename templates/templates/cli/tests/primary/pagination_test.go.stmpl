@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -908,6 +909,39 @@ func TestPaginationTableOutputCollectsRowsAcrossPages(t *testing.T) {
 	assert.Equal(t, []string{"3", "gamma"}, strings.Fields(lines[4]))
 	assert.NotContains(t, stdout, "numPages", "page envelope leaked into table output")
 	assert.NotContains(t, stdout, "resultArray", "page envelope leaked into table output")
+}
+
+func TestPaginationAllRawJSONKeepsUnmodelledFields(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		page := r.URL.Query().Get("page")
+		w.Header().Set("Content-Type", "application/json")
+		if page != "0" && page != "1" {
+			fmt.Fprint(w, `{"numPages":2,"resultArray":[]}`)
+			return
+		}
+		fmt.Fprintf(w, `{"numPages":2,"pageExtra":true,"resultArray":[{"id":1%s,"name":"item-%s","extra":{"tag":"keep"},"big":12345678901234567890}]}`, page, page)
+	}))
+	defer s.Close()
+
+	t.Run("json", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-object-results-page-params", "--page", "0", "--all", "--output-format", "json",
+		}))
+		lines := strings.Split(strings.TrimSpace(h.GetStdout()), "\n")
+		require.Equal(t, []string{
+			`{"id":10,"name":"item-0","extra":{"tag":"keep"},"big":12345678901234567890}`,
+			`{"id":11,"name":"item-1","extra":{"tag":"keep"},"big":12345678901234567890}`,
+		}, lines)
+	})
+
+	t.Run("jq", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{
+			"pagination", "pagination-object-results-page-params", "--page", "0", "--all", "--jq", ".extra.tag", "--raw-output",
+		}))
+		assert.Equal(t, "keep\nkeep", strings.TrimSpace(h.GetStdout()))
+	})
 }
 
 // TestPaginationTableOutputFlushesRowsBeforeError verifies that rows collected

@@ -1,0 +1,186 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/open-union-siblings:
+    post:
+      operationId: openUnionSiblingsPost
+      description: >-
+        Sends an object whose properties are anyOf unions of two discriminated
+        unions sharing the same discriminator property, and reads the echoed
+        object back from the response. Each discriminator value belongs to
+        exactly one of the two discriminated unions.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenUnionSiblings"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/OpenUnionSiblings"
+components:
+  schemas:
+    OpenUnionSiblings:
+      type: object
+      description: >-
+        Object with anyOf properties whose members are two discriminated
+        unions that share a discriminator property but map disjoint
+        discriminator values: directly, as arrays of each union, and as maps
+        of each union. A value must resolve to the discriminated union whose
+        mapping contains its discriminator value, whichever member is listed
+        first. Properties that add a member which is not a discriminated union
+        check that this member is still tried when the owning discriminated
+        union rejects the value, and that an object whose property values are
+        discriminated objects is not taken for a map. A property mixing a
+        discriminated union, arrays of both unions and a string checks that an
+        array resolves to the union owning its items, whichever array is listed
+        first.
+      properties:
+        labelOrShape:
+          anyOf:
+            - $ref: "#/components/schemas/SiblingLabel"
+            - $ref: "#/components/schemas/SiblingShape"
+        labelsOrShapes:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingLabel"
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingShape"
+        labelOrShapeMap:
+          anyOf:
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/SiblingLabel"
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/SiblingShape"
+        labelShapeOrFreeform:
+          anyOf:
+            - $ref: "#/components/schemas/SiblingLabel"
+            - $ref: "#/components/schemas/SiblingShape"
+            - $ref: "#/components/schemas/SiblingFreeform"
+        labelsShapesOrFreeforms:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingLabel"
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingShape"
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingFreeform"
+        labelOrShapeMapOrSettings:
+          anyOf:
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/SiblingLabel"
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/SiblingShape"
+            - $ref: "#/components/schemas/SiblingSettings"
+        labelOrShapeMapEntry:
+          anyOf:
+            - $ref: "#/components/schemas/SiblingLabel"
+            - type: object
+              additionalProperties:
+                $ref: "#/components/schemas/SiblingShape"
+        labelOrListsOrText:
+          anyOf:
+            - $ref: "#/components/schemas/SiblingLabel"
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingShape"
+            - type: array
+              items:
+                $ref: "#/components/schemas/SiblingLabel"
+            - type: string
+    SiblingFreeform:
+      description: Object accepting any properties, with an optional kind.
+      type: object
+      additionalProperties: true
+      properties:
+        kind:
+          type: string
+    SiblingSettings:
+      description: Object whose primary property is a discriminated union.
+      type: object
+      properties:
+        title:
+          type: string
+        primary:
+          $ref: "#/components/schemas/SiblingShape"
+    SiblingLabel:
+      description: Discriminated union mapping the text and number values of kind.
+      oneOf:
+        - $ref: "#/components/schemas/SiblingTextLabel"
+        - $ref: "#/components/schemas/SiblingNumberLabel"
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: "#/components/schemas/SiblingTextLabel"
+          number: "#/components/schemas/SiblingNumberLabel"
+    SiblingTextLabel:
+      type: object
+      required: [kind, text]
+      properties:
+        kind:
+          type: string
+          enum: [text]
+        text:
+          type: string
+    SiblingNumberLabel:
+      type: object
+      required: [kind, number]
+      properties:
+        kind:
+          type: string
+          enum: [number]
+        number:
+          type: integer
+    SiblingShape:
+      description: Discriminated union mapping the circle and square values of kind.
+      oneOf:
+        - $ref: "#/components/schemas/SiblingCircle"
+        - $ref: "#/components/schemas/SiblingSquare"
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: "#/components/schemas/SiblingCircle"
+          square: "#/components/schemas/SiblingSquare"
+    SiblingCircle:
+      type: object
+      required: [kind, radius]
+      properties:
+        kind:
+          type: string
+          enum: [circle]
+        radius:
+          type: integer
+    SiblingSquare:
+      type: object
+      required: [kind, side]
+      properties:
+        kind:
+          type: string
+          enum: [square]
+        side:
+          type: integer

@@ -137,6 +137,7 @@ const (
 	TestParametersCamelCase
 	TestParametersConstQueryParams
 	TestParametersDefaultQueryParams
+	TestParametersDefaultPathParams
 	TestMultiLevelGrouping
 	TestRequestBodiesPostEmptyObject
 	TestRequestBodiesPostApplicationJSONSimple
@@ -783,6 +784,7 @@ const (
 	TestJsonlStreamTimeoutStillBoundsSlowStream
 	TestJsonlStreamWithTimeoutStreamsToCompletion
 	TestSharedEnumConstructorDefault
+	TestUnknownFieldsJsonRoundTrip
 )
 
 func GetAllTests() []Test {

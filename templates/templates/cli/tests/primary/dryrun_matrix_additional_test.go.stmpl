@@ -173,22 +173,45 @@ func TestDryRunComposesWithClassifiedMachineErrors(t *testing.T) {
 	}
 }
 
-func TestDryRunExplicitAgentModeKeepsHumanPreview(t *testing.T) {
-	recorder := &recordingKeyring{}
-	config.SetKeyringBackend(recorder)
-	t.Cleanup(config.ResetKeyring)
-	server, requests := newRequestTracker()
-	t.Cleanup(server.Close)
+func TestDryRunMachineModesWriteJSONPreview(t *testing.T) {
+	cases := []struct {
+		name     string
+		selector []string
+		machine  bool
+	}{
+		{name: "agent mode", selector: []string{"--agent-mode"}, machine: true},
+		{name: "yaml", selector: []string{"--output-format", "yaml"}, machine: true},
+		{name: "toon", selector: []string{"--output-format", "toon"}, machine: true},
+		{name: "agent mode with yaml", selector: []string{"--agent-mode", "--output-format", "yaml"}, machine: true},
+		{name: "table", selector: []string{"--output-format", "table"}, machine: false},
+		{name: "pretty", selector: []string{"--output-format", "pretty"}, machine: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			recorder := &recordingKeyring{}
+			config.SetKeyringBackend(recorder)
+			t.Cleanup(config.ResetKeyring)
+			server, requests := newRequestTracker()
+			t.Cleanup(server.Close)
 
-	h := NewCLITestHarness(t)
-	require.NoError(t, h.RunWithStdinServerRaw(server.URL, []string{
-		"--dry-run", "--no-interactive", "--agent-mode", "methods", "method-get",
-	}, ""))
-	assert.Empty(t, h.GetStdout())
-	assert.Contains(t, h.GetStderr(), "[DRY-RUN] Would send:")
-	assert.Contains(t, h.GetStderr(), "[DRY-RUN] Network call skipped.")
-	assert.Zero(t, *requests)
-	assert.Zero(t, recorder.gets)
+			args := append([]string{"--dry-run", "--no-interactive"}, tc.selector...)
+			args = append(args, "methods", "method-get")
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithStdinServerRaw(server.URL, args, ""))
+			if tc.machine {
+				assert.Empty(t, h.GetStderr())
+				previews := primaryDryRunPreviews(t, h.GetStdout())
+				require.Len(t, previews, 1)
+				assert.Equal(t, "GET", previews[0].Request.Method)
+			} else {
+				assert.Empty(t, h.GetStdout())
+				assert.Contains(t, h.GetStderr(), "[DRY-RUN] Would send:")
+				assert.Contains(t, h.GetStderr(), "[DRY-RUN] Network call skipped.")
+			}
+			assert.Zero(t, *requests)
+			assert.Zero(t, recorder.gets)
+		})
+	}
 }
 
 func TestExplorerHandoffPreservesDiagnosticsFlags(t *testing.T) {
