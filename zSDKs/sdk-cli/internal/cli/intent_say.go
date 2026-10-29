@@ -75,7 +75,7 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
-		return usage.EmitBodySchema(cmd.OutOrStdout(), "chat")
+		return usage.EmitBodySchema(cmd.OutOrStdout(), "chat#ChatModelRequest")
 	}
 	bodySurfaces := []string{"request"}
 	for _, surface := range bodySurfaces {

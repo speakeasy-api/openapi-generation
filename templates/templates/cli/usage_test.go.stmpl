@@ -12,6 +12,9 @@
 {{- if templatePlannedUsageTestEnabled -}}
   {{- addImport "internal/clierrors" true -}}
 {{- end -}}
+{{- if templatePinnedSchemaIntent -}}
+  {{- addImport "encoding/json" -}}
+{{- end -}}
 package tests
 
 {{genImports}}
@@ -598,6 +601,23 @@ func TestUsageSchema_IntentUsageBeatsSchema(t *testing.T) {
     assert.Empty(t, stderr)
 }
 {{- end }}
+{{- end }}
+
+{{- with templatePinnedSchemaIntent }}
+
+// An intent pinned to one member of a union request body prints that
+// member's schema, not the whole union.
+func TestUsageSchema_IntentSchemaUsesPinnedVariant(t *testing.T) {
+    h := NewCLITestHarness(t)
+    require.NoError(t, h.RunBare([]string{ {{templateIntentPathArgs .}}, "--schema" }))
+
+    var schema map[string]any
+    require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &schema))
+    assert.Equal(t, "https://json-schema.org/draft/2020-12/schema", schema["$schema"])
+    assert.Equal(t, {{goStringLiteral (print "#/$defs/" .VariantLabel)}}, schema["$ref"])
+    assert.NotContains(t, schema, "oneOf")
+    assert.NotContains(t, schema, "anyOf")
+}
 {{- end }}
 
 {{- if templateArtifactIntentUsageTestEnabled }}

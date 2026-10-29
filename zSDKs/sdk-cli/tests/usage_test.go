@@ -3,6 +3,7 @@
 package tests
 
 import (
+	"encoding/json"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
@@ -570,6 +571,20 @@ func TestUsageSchema_IntentUsageBeatsSchema(t *testing.T) {
 	assert.Contains(t, stdout, "cmd \"invite\"")
 	assert.Contains(t, stdout, "flag \"--schema\"")
 	assert.Empty(t, stderr)
+}
+
+// An intent pinned to one member of a union request body prints that
+// member's schema, not the whole union.
+func TestUsageSchema_IntentSchemaUsesPinnedVariant(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"say", "--schema"}))
+
+	var schema map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &schema))
+	assert.Equal(t, "https://json-schema.org/draft/2020-12/schema", schema["$schema"])
+	assert.Equal(t, "#/$defs/ChatModelRequest", schema["$ref"])
+	assert.NotContains(t, schema, "oneOf")
+	assert.NotContains(t, schema, "anyOf")
 }
 
 // Artifact intent commands document the output flags they register after

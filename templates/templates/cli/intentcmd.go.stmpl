@@ -247,7 +247,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}
 	{{- if $c.HasSchema}}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
-		return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $c.OpID}})
+		return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $c.SchemaKey}})
 	}
 	{{- end}}
 	{{- if $c.ArtifactJSON}}

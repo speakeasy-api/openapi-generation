@@ -213,7 +213,7 @@ func (g *Generator) GenerateAST(ctx context.Context, docInfo *document.DocumentI
 		}
 		a.CLIErrors = cliErrors
 
-		cliBodySchemas, cliBodySchemasErr := g.subsystem.Extensions.CollectCLIBodySchemas(ctx, docInfo)
+		cliBodySchemas, cliBodySchemasErr := g.subsystem.Extensions.CollectCLIBodySchemas(ctx, docInfo, cliCommands.PinnedRequestVariants()...)
 		if cliBodySchemasErr != nil {
 			return nil, cliBodySchemasErr
 		}

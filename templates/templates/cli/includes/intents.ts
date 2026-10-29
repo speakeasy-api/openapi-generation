@@ -93,6 +93,7 @@ interface IntentCmdCtx {
   ExecuteFunc: string;
   OpID: string;
   HasSchema: boolean;
+  SchemaKey: string; // body-schema key: the pinned variant's bundle when one exists, else OpID
   MinArgs: number;
   Args: IntentBodyEntry[];
   ArgsHelp: string; // "Arguments:" section lines for the help page
@@ -1293,6 +1294,10 @@ function collectIntentManifest(): IntentManifestCtx {
       ExecuteFunc: `execute${sanitizeCommandName(found.op.GetID())}`,
       OpID: found.op.OriginalID,
       HasSchema: hasBodySchemaForOp(found.op),
+      SchemaKey: intentBodySchemaKey(
+        found.op,
+        dispatch ? "" : route?.RequestVariant || "",
+      ),
       MinArgs: minArgs,
       Args: args,
       ArgsHelp: (cmd.Args || [])
@@ -2258,6 +2263,23 @@ function hasBodySchemaForOp(op: Operation): boolean {
   return Boolean(schemas && schemas[op.OriginalID]);
 }
 registerTemplateFunc("hasBodySchemaForOp", hasBodySchemaForOp);
+
+function templatePinnedSchemaIntent(): IntentCmdCtx | null {
+  return (
+    collectIntentManifest().Bound.find(
+      (cmd) => cmd.HasSchema && cmd.SchemaKey !== cmd.OpID,
+    ) || null
+  );
+}
+registerTemplateFunc("templatePinnedSchemaIntent", templatePinnedSchemaIntent);
+
+// Mirrors CLIBodySchemaVariantKey in internal/extensions/cli_body_schemas.go.
+function intentBodySchemaKey(op: Operation, requestVariant: string): string {
+  const schemas = context.Global.AST.CLIBodySchemas;
+  const variant = requestVariant.replace(/^#\/components\/schemas\//, "");
+  const key = `${op.OriginalID}#${variant}`;
+  return variant && schemas && schemas[key] ? key : op.OriginalID;
+}
 
 // Stable cobra Group ID from a help category title (e.g. "Create" → "create").
 // Mirrored by cliCategoryID in internal/extensions/cli_commands.go, which
