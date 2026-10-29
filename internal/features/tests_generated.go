@@ -704,6 +704,8 @@ func (t Test) String() string {
         return "parameters-deep-object-query-params-map"
     case TestParametersDeepObjectQueryParamsObject:
         return "parameters-deep-object-query-params-object"
+    case TestParametersDefaultPathParams:
+        return "parameters-default-path-params"
     case TestParametersDefaultQueryParams:
         return "parameters-default-query-params"
     case TestParametersFormQueryParamsArray:
@@ -1506,6 +1508,8 @@ func (t Test) String() string {
         return "unions-weakly-typed-one-of-post-basic"
     case TestUnionsWeaklyTypedOneOfPostDeep:
         return "unions-weakly-typed-one-of-post-deep"
+    case TestUnknownFieldsJsonRoundTrip:
+        return "unknown-fields-json-round-trip"
     case TestWebhooksConsume:
         return "webhooks-consume"
     case TestWebhooksConsumeBadData:
@@ -2228,6 +2232,8 @@ func TestFromString(s string) Test {
         return TestParametersDeepObjectQueryParamsMap
     case "parameters-deep-object-query-params-object":
         return TestParametersDeepObjectQueryParamsObject
+    case "parameters-default-path-params":
+        return TestParametersDefaultPathParams
     case "parameters-default-query-params":
         return TestParametersDefaultQueryParams
     case "parameters-form-query-params-array":
@@ -3030,6 +3036,8 @@ func TestFromString(s string) Test {
         return TestUnionsWeaklyTypedOneOfPostBasic
     case "unions-weakly-typed-one-of-post-deep":
         return TestUnionsWeaklyTypedOneOfPostDeep
+    case "unknown-fields-json-round-trip":
+        return TestUnknownFieldsJsonRoundTrip
     case "webhooks-consume":
         return TestWebhooksConsume
     case "webhooks-consume-bad-data":
@@ -3401,6 +3409,7 @@ var testList = []Test{
     TestParametersDeepObjectQueryParamsDeepObject,
     TestParametersDeepObjectQueryParamsMap,
     TestParametersDeepObjectQueryParamsObject,
+    TestParametersDefaultPathParams,
     TestParametersDefaultQueryParams,
     TestParametersFormQueryParamsArray,
     TestParametersFormQueryParamsCamelObject,
@@ -3802,6 +3811,7 @@ var testList = []Test{
     TestUnionsUnionOfArrays,
     TestUnionsWeaklyTypedOneOfPostBasic,
     TestUnionsWeaklyTypedOneOfPostDeep,
+    TestUnknownFieldsJsonRoundTrip,
     TestWebhooksConsume,
     TestWebhooksConsumeBadData,
     TestWebhooksConsumeBadSignature,

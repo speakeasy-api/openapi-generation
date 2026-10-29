@@ -203,6 +203,9 @@ const classReservedKeywords = [
   "Base64FileInput",
   "UnrecognizedInt",
   "UnrecognizedStr",
+  "current_exclude_none",
+  "current_filtered_dump",
+  "serialize_with_info",
   // typing module names commonly imported in generated model files
   "Optional",
   "Union",
@@ -257,12 +260,12 @@ function sanitizeSDKAccess(sdk: SDK): string {
   let formattedName = "";
   if (group.includes(".") && ".".repeat(group.length) !== group) {
     const pieces = group.split(".");
-    formattedName = sanitizeFieldName(pieces[0]);
+    formattedName = sanitizeSubSDKFieldName(pieces[0]);
     for (const i of pieces.slice(1)) {
-      formattedName += "." + sanitizeFieldName(i);
+      formattedName += "." + sanitizeSubSDKFieldName(i);
     }
   } else {
-    formattedName = sanitizeFieldName(group);
+    formattedName = sanitizeSubSDKFieldName(group);
   }
 
   if (formattedName != "") {
@@ -311,6 +314,20 @@ registerTemplateFunc("sanitizeSDKFileName", sanitizeSDKFileName);
 
 // @ts-ignore
 function sanitizeFieldName(name: string): string {
+  name = sanitizeAttributeName(name);
+
+  if (
+    context.Global.Config.ModelSerializationMethods &&
+    ["to_dict", "to_json"].includes(name)
+  ) {
+    name += "_";
+  }
+
+  return name;
+}
+registerTemplateFunc("sanitizeFieldName", sanitizeFieldName);
+
+function sanitizeAttributeName(name: string): string {
   name = sanitizeName(name);
   if (name.endsWith("_")) {
     name = name.substring(0, name.length - 1);
@@ -326,7 +343,6 @@ function sanitizeFieldName(name: string): string {
 
   return name;
 }
-registerTemplateFunc("sanitizeFieldName", sanitizeFieldName);
 
 function useConflictResistantModelImports(): boolean {
   return !!context.Global.Config.FixFlags?.[
@@ -413,9 +429,7 @@ function doesModuleNameConflictAcrossNamespaces(
 
 // @ts-ignore
 function sanitizeSubSDKFieldName(name: string): string {
-  name = sanitizeFieldName(name);
-
-  return name;
+  return sanitizeAttributeName(name);
 }
 registerTemplateFunc("sanitizeSubSDKFieldName", sanitizeSubSDKFieldName);
 
@@ -1295,6 +1309,19 @@ function sanitizeType(
           suffixForTypes + modelSuffix,
         );
 
+        const siblingVariants = openUnionSiblingGuards?.get(fieldDef.Type.Name);
+        if (
+          siblingVariants &&
+          modelSuffix === "" &&
+          isOpenDiscriminatedUnion(fieldDef.Type)
+        ) {
+          return renderOpenUnionSiblingGuard(
+            clss,
+            fieldDef.Type,
+            siblingVariants,
+          );
+        }
+
         return clss;
       case "string":
         if (isBase64FileInputField(fieldDef)) {
@@ -1700,8 +1727,11 @@ registerTemplateFunc(
   sanitizeFieldTypeAndAnnotations,
 );
 
+let openUnionSiblingGuards: Map<string, string> | null = null;
+
 type UnionMember = {
   typeStr: string;
+  associatedType: TypeDef;
   pyrightIgnore?: string;
 };
 
@@ -1778,6 +1808,7 @@ function collectUnionAssociatedTypes(
 
       return {
         typeStr,
+        associatedType,
         pyrightIgnore: isSelfReferringArrayOrMap
           ? "reportInvalidTypeForm"
           : undefined,
@@ -1786,12 +1817,8 @@ function collectUnionAssociatedTypes(
   );
 }
 
-function renderTypeAliasType(
-  unionName: string,
-  members: UnionMember[],
-): string {
+function renderUnionMembers(members: UnionMember[]): string {
   addImport("typing", "Union");
-  addImport("typing_extensions", "TypeAliasType");
 
   if (members.some((t) => t.pyrightIgnore)) {
     const renderedMembers = members.map(({ typeStr, pyrightIgnore }) =>
@@ -1799,15 +1826,39 @@ function renderTypeAliasType(
         ? `${typeStr},  # pyright: ignore[${pyrightIgnore}]`
         : `${typeStr},`,
     );
-    const unionType = `Union[\n${renderedMembers
+    return `Union[\n${renderedMembers
       .map((member) => `        ${member}`)
       .join("\n")}\n    ]`;
-    return `TypeAliasType("${unionName}", ${unionType})`;
   }
 
-  return `TypeAliasType("${unionName}", Union[${members
+  return `Union[${members.map((m) => m.typeStr).join(", ")}]`;
+}
+
+function renderTypeAliasType(
+  unionName: string,
+  members: UnionMember[],
+): string {
+  addImport("typing_extensions", "TypeAliasType");
+
+  return `TypeAliasType("${unionName}", ${renderUnionMembers(members)})`;
+}
+
+function renderOpenUnionDispatchTypeAliasType(
+  unionName: string,
+  members: UnionMember[],
+): string {
+  addImport("typing_extensions", "Annotated");
+  addImport("typing_extensions", "TypeAliasType");
+  addImport("pydantic", "");
+  addImport("functools", "partial");
+  addImport("utils.unions", "dispatch_open_union_members", true);
+
+  const unionType = renderUnionMembers(members);
+  const targets = members
+    .filter((m) => openUnionDispatchTarget(m.associatedType))
     .map((m) => m.typeStr)
-    .join(", ")}])`;
+    .join(", ");
+  return `TypeAliasType("${unionName}", Annotated[${unionType}, pydantic.WrapValidator(partial(dispatch_open_union_members, members=(${targets})))])`;
 }
 
 // @ts-ignore
@@ -1987,12 +2038,27 @@ function sanitizeUnionType(
     )}], ${discRef}(${lambda})]`;
   }
 
-  const members = collectUnionAssociatedTypes(
-    typeDef,
-    usageLocation,
-    owningModelInfo,
-    suffixForTypes,
-  );
+  const siblingGuards = context.Global.Config.PreserveUnknownFields
+    ? openUnionSiblingVariants(typeDef)
+    : new Map<string, string>();
+  const enclosingGuards = openUnionSiblingGuards;
+  if (siblingGuards.size > 0) {
+    openUnionSiblingGuards = siblingGuards;
+  }
+  let members: UnionMember[];
+  try {
+    members = collectUnionAssociatedTypes(
+      typeDef,
+      usageLocation,
+      owningModelInfo,
+      suffixForTypes,
+    );
+  } finally {
+    openUnionSiblingGuards = enclosingGuards;
+  }
+  if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
+    return renderOpenUnionDispatchTypeAliasType(unionName, members);
+  }
   return renderTypeAliasType(unionName, members);
 }
 registerTemplateFunc("sanitizeUnionType", sanitizeUnionType);

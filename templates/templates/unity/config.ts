@@ -63,6 +63,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -72,6 +76,10 @@ function getConfigFields(
         "The NuGet package ID, also used as the root namespace. https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-namespaces.",
       ValidationRegex: /^[\w\d._]+$/.source,
       ValidationMessage: "Letters, numbers, or ._ only",
+      ValidationExamples: {
+        valid: ["Acme", "Acme.Sdk", "Acme.Petstore.Client", "Acme_Sdk"],
+        invalid: ["", "Acme-Sdk", "Acme Sdk", "Acme/Sdk"],
+      },
     },
     disableNamespacePascalCasingApr2024: {
       Name: "disableNamespacePascalCasingApr2024",
@@ -90,6 +98,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     author: {
       Name: "author",
@@ -145,6 +157,10 @@ function getConfigFields(
         "The name of the default exception that is thrown when an API error occurs.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     multipartArrayFormat: {
       Name: "multipartArrayFormat",
