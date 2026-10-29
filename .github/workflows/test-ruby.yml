@@ -34,7 +34,6 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
             services/**/go.sum
       - name: Test
         env:
