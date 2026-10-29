@@ -1,0 +1,26 @@
+zSDKs/terraform-provider-testing/.speakeasy/gen.lock
+  s_4a1dec8ea4afc4::t_6f822124a564c3 2407
+zSDKs/terraform-provider-testing/internal/sdk/internal/utils/json.go
+  s_4a1dec8ea4afc4::t_bca0b5b3b715d5 10,15,148-175,191,591,593,598,600,772
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9a094b017acd6f1494ba16c35979c7ab85d9765",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_4a1dec8ea4afc4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2f95af03-7935-4b5e-98c0-ceff42d82284",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
