@@ -126,7 +126,7 @@ trackedFiles:
   internal/cli/intent_render.go:
     last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:b0e2860aa03588884166695a4904b025757f5b47
+    last_write_checksum: sha1:3fb76394b139bea4be94e851c18bf385c719dd5f
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -660,7 +660,7 @@ trackedFiles:
   internal/testclient/testclient.go:
     last_write_checksum: sha1:7107e59d336235c44af152c5a61ee3896a7841fa
   internal/usage/bodyschemas.go:
-    last_write_checksum: sha1:775249b69ed405ad072c16a76fe6113f375b3818
+    last_write_checksum: sha1:adccbb6c7ea1d8b94c7d167594b38cf58829f4b3
   internal/usage/schema.go:
     last_write_checksum: sha1:92fdc3775fa21a6a8283bcaa762beac6faf40e57
   scripts/install.ps1:
@@ -1124,7 +1124,7 @@ trackedFiles:
   tests/types_test.go:
     last_write_checksum: sha1:5ce31f08a3214779ed561d0f37279eb4d5202723
   tests/usage_test.go:
-    last_write_checksum: sha1:669cde3d70a1cad63c4d9ca19b4d1ec5db180f39
+    last_write_checksum: sha1:2ea9eb98d218af30b779b57082efdb2aea55f510
 examples:
   _operation_with_leading_and_trailing_underscores_:
     speakeasy-default-operation-with-leading-and-trailing-underscores:

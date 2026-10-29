@@ -1,0 +1,10 @@
+id: 1793246796-cae66c13
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: --schema on intent commands prints the pinned request variant, omits readOnly properties and converts OpenAPI 3.0 schemas to JSON Schema 2020-12
+author: TristanSpeakEasy
+date: "2026-10-29"

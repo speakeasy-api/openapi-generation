@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -259,17 +260,63 @@ func cliUniqueDefName(name string, taken map[string]any) string {
 	}
 }
 
+// CLIBodySchemaVariant requests an additional bundle rooted at one component
+// member of an operation's request body, keyed by CLIBodySchemaVariantKey.
+type CLIBodySchemaVariant struct {
+	OperationID    string
+	RequestVariant string
+}
+
+// CLIBodySchemaVariantKey is the CLIBodySchemas key of the bundle rooted at
+// a request variant such as "#/components/schemas/Name".
+func CLIBodySchemaVariantKey(operationID, requestVariant string) string {
+	return operationID + "#" + strings.TrimPrefix(requestVariant, "#/components/schemas/")
+}
+
+// PinnedRequestVariants lists the request variants pinned by single-route
+// operation commands; dispatch commands accept every routed variant.
+func (m *CLICommandManifest) PinnedRequestVariants() []CLIBodySchemaVariant {
+	if m == nil {
+		return nil
+	}
+	var out []CLIBodySchemaVariant
+	for _, cmd := range m.Commands {
+		if cmd.Source.Type != CLICommandSourceOperation || len(cmd.Source.Routes) != 1 {
+			continue
+		}
+		route := cmd.Source.Routes[0]
+		if route.RequestVariant != "" {
+			out = append(out, CLIBodySchemaVariant{OperationID: route.OperationID, RequestVariant: route.RequestVariant})
+		}
+	}
+	return out
+}
+
 // CollectCLIBodySchemas extracts a self-contained JSON Schema for every
 // operation's application/json request body, keyed by operationId. Each
 // schema bundles its transitive component dependencies under $defs with
 // rewritten references, so a CLI can print an exact, machine-readable
 // request-body schema (e.g. behind a --schema flag) with zero hand-authoring.
-func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *document.DocumentInfo) (map[string]string, error) {
+// Bundles describe what a client may send: readOnly properties are removed
+// and OpenAPI 3.0 schema constructs are rewritten to JSON Schema 2020-12.
+// Each requested variant that names a component adds a bundle rooted at it.
+func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *document.DocumentInfo, variants ...CLIBodySchemaVariant) (map[string]string, error) {
 	if docInfo == nil || docInfo.Doc == nil || docInfo.Doc.Paths == nil {
 		return nil, nil
 	}
 	doc := docInfo.Doc
 	resolver := newCLIExternalSchemaResolver(ctx, docInfo)
+
+	variantRefs := map[string][]string{}
+	for _, variant := range variants {
+		if !cliComponentRefValue.MatchString(variant.RequestVariant) || slices.Contains(variantRefs[variant.OperationID], variant.RequestVariant) {
+			continue
+		}
+		variantRefs[variant.OperationID] = append(variantRefs[variant.OperationID], variant.RequestVariant)
+	}
+	for _, refs := range variantRefs {
+		sort.Strings(refs)
+	}
 
 	// Decode every component schema to a plain value once.
 	components := map[string]any{}
@@ -311,11 +358,7 @@ func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *documen
 		return names, externals
 	}
 
-	// OpenAPI 3.1 request schemas are JSON Schema draft 2020-12; 3.0 Schema
-	// Objects are a distinct dialect (nullable, boolean exclusiveMinimum), so
-	// claiming 2020-12 there would misdescribe the schema. Only 3.1+ bundles
-	// carry the $schema marker.
-	isJSONSchemaDialect := strings.HasPrefix(doc.OpenAPI, "3.1")
+	isOpenAPI30 := strings.HasPrefix(doc.OpenAPI, "3.0")
 
 	out := map[string]string{}
 	addSchema := func(operationID, schema string) error {
@@ -393,222 +436,236 @@ func (e *Extensions) CollectCLIBodySchemas(ctx context.Context, docInfo *documen
 			if node == nil {
 				continue
 			}
-			root, err := decodeYAMLNode(node)
+			operationRoot, err := decodeYAMLNode(node)
 			if err != nil {
 				// A body schema that exists but cannot be decoded must not
 				// silently lose its --schema surface.
 				return nil, fmt.Errorf("decode request body schema for %s: %w", opID, err)
 			}
 
-			// Transitive closure of referenced components. A reference to a
-			// missing component must fail here: deferring to the post-rewrite
-			// dangling check would let a missing name that shadows a local
-			// $defs definition silently rebind to that definition.
-			defs := map[string]any{}
-			seen := map[string]bool{}
-			externalRefs := map[string]bool{}
-			var addExternal func(absRef string)
-			addExternal = func(absRef string) {
-				if externalRefs[absRef] {
-					return
-				}
-				externalRefs[absRef] = true
-				entry := resolver.schemas[absRef]
-				walkSchemaRefs(entry.value, func(ref string) string {
-					if target, ok := resolver.target(entry.docPath, ref); ok {
-						addExternal(target)
+			roots := []struct {
+				key   string
+				value any
+			}{{key: opID, value: operationRoot}}
+			for _, ref := range variantRefs[opID] {
+				roots = append(roots, struct {
+					key   string
+					value any
+				}{key: CLIBodySchemaVariantKey(opID, ref), value: map[string]any{"$ref": ref}})
+			}
+			for _, entry := range roots {
+				schemaKey, root := entry.key, entry.value
+				// Transitive closure of referenced components. A reference to a
+				// missing component must fail here: deferring to the post-rewrite
+				// dangling check would let a missing name that shadows a local
+				// $defs definition silently rebind to that definition.
+				defs := map[string]any{}
+				seen := map[string]bool{}
+				externalRefs := map[string]bool{}
+				var addExternal func(absRef string)
+				addExternal = func(absRef string) {
+					if externalRefs[absRef] {
+						return
 					}
-					return ref
-				})
-			}
-			resolveExternals := func(externals []string) error {
-				for _, ref := range externals {
-					absRef, err := resolver.resolve(ref, resolver.rootDocPath(), resolver.rootDoc)
-					if err != nil {
-						return fmt.Errorf("request body schema for %s references %q, which cannot be resolved: %w", opID, ref, err)
-					}
-					addExternal(absRef)
-				}
-				return nil
-			}
-			pending, externals := collectRefs(root)
-			if err := resolveExternals(externals); err != nil {
-				return nil, err
-			}
-			for len(pending) > 0 {
-				name := pending[0]
-				pending = pending[1:]
-				if seen[name] {
-					continue
-				}
-				seen[name] = true
-				component, found := components[name]
-				if !found {
-					return nil, fmt.Errorf("request body schema for %s references component %q, which does not exist in components.schemas", opID, name)
-				}
-				defs[name] = component
-				names, externals := collectRefs(component)
-				pending = append(pending, names...)
-				if err := resolveExternals(externals); err != nil {
-					return nil, err
-				}
-			}
-
-			bundled := map[string]any{}
-			if isJSONSchemaDialect {
-				bundled["$schema"] = "https://json-schema.org/draft/2020-12/schema"
-			}
-			rootMap, ok := root.(map[string]any)
-			if !ok {
-				// A non-object root is still a schema (an empty node means
-				// "anything"); emit it directly instead of silently dropping
-				// the operation's schema surface.
-				value := root
-				if value == nil {
-					value = true
-				}
-				encoded, err := json.Marshal(value)
-				if err != nil {
-					return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
-				}
-				if err := addSchema(opID, string(encoded)); err != nil {
-					return nil, err
-				}
-				continue
-			}
-			for k, v := range rootMap {
-				bundled[k] = v
-			}
-
-			// Preserve root-local definitions because their names and references
-			// are part of the document's public schema surface. OpenAPI 3.1
-			// keeps #/$defs and #/components/schemas as distinct namespaces,
-			// so a component may legally share a local definition's name;
-			// bundle such components under a deterministic numbered alias.
-			mergedDefs := map[string]any{}
-			if rootDefs, exists := rootMap["$defs"]; exists {
-				localDefs, isMap := rootDefs.(map[string]any)
-				if !isMap && (len(defs) > 0 || len(externalRefs) > 0) {
-					return nil, fmt.Errorf("request body schema for %s has a non-object $defs, so referenced components cannot be bundled into it", opID)
-				}
-				if isMap {
-					for name, definition := range localDefs {
-						mergedDefs[name] = definition
-					}
-				}
-			}
-			renames := map[string]string{}
-			names := make([]string, 0, len(defs))
-			for name := range defs {
-				names = append(names, name)
-			}
-			sort.Strings(names)
-			for _, name := range names {
-				target := name
-				if _, exists := mergedDefs[name]; exists {
-					for n := 2; ; n++ {
-						candidate := fmt.Sprintf("%s_%d", name, n)
-						if _, taken := mergedDefs[candidate]; taken {
-							continue
-						}
-						if _, taken := defs[candidate]; taken {
-							continue
-						}
-						target = candidate
-						break
-					}
-					renames[name] = target
-				}
-				mergedDefs[target] = defs[name]
-			}
-			externalAliases := map[string]string{}
-			externalDefs := map[string]*cliExternalSchema{}
-			absRefs := make([]string, 0, len(externalRefs))
-			for absRef := range externalRefs {
-				absRefs = append(absRefs, absRef)
-			}
-			sort.Strings(absRefs)
-			for _, absRef := range absRefs {
-				alias := cliUniqueDefName(cliExternalDefName(absRef), mergedDefs)
-				externalAliases[absRef] = alias
-				externalDefs[alias] = resolver.schemas[absRef]
-				mergedDefs[alias] = resolver.schemas[absRef].value
-			}
-			if len(mergedDefs) > 0 {
-				bundled["$defs"] = mergedDefs
-			}
-
-			// Rewrite component references to the bundled $defs (through the
-			// collision aliases) on a deep copy — the decoded components are
-			// shared across operations — then verify the bundle is
-			// internally complete: every reference the emitted schema makes
-			// must have a definition, otherwise the printed schema would
-			// dangle. Both passes walk schema positions only, so a $ref
-			// field inside example payload data is left untouched.
-			copied, err := cliDeepCopyJSON(bundled)
-			if err != nil {
-				return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
-			}
-			externalAlias := func(docPath, ref string) (string, bool) {
-				absRef, ok := resolver.target(docPath, ref)
-				if !ok {
-					return "", false
-				}
-				alias, ok := externalAliases[absRef]
-				return alias, ok
-			}
-			rootRewrite := func(ref string) string {
-				if m := cliComponentRefValue.FindStringSubmatch(ref); m != nil {
-					name := m[1]
-					if alias, ok := renames[name]; ok {
-						name = alias
-					}
-					return "#/$defs/" + name + m[2]
-				}
-				if alias, ok := externalAlias(resolver.rootDocPath(), ref); ok {
-					return "#/$defs/" + alias
-				}
-				return ref
-			}
-			copiedMap := copied.(map[string]any)
-			copiedDefs, _ := copiedMap["$defs"].(map[string]any)
-			delete(copiedMap, "$defs")
-			walkSchemaRefs(copiedMap, rootRewrite)
-			if copiedDefs != nil {
-				copiedMap["$defs"] = copiedDefs
-				for name, definition := range copiedDefs {
-					entry, external := externalDefs[name]
-					if !external {
-						walkSchemaRefs(definition, rootRewrite)
-						continue
-					}
-					walkSchemaRefs(definition, func(ref string) string {
-						if alias, ok := externalAlias(entry.docPath, ref); ok {
-							return "#/$defs/" + alias
+					externalRefs[absRef] = true
+					entry := resolver.schemas[absRef]
+					walkSchemaRefs(entry.value, func(ref string) string {
+						if target, ok := resolver.target(entry.docPath, ref); ok {
+							addExternal(target)
 						}
 						return ref
 					})
 				}
-			}
-			var dangling error
-			walkSchemaRefs(copied, func(ref string) string {
-				if rest, ok := strings.CutPrefix(ref, "#/$defs/"); ok && dangling == nil {
-					name, _, _ := strings.Cut(rest, "/")
-					if _, ok := mergedDefs[name]; !ok {
-						dangling = fmt.Errorf("request body schema for %s references component %q, which does not exist in components.schemas", opID, name)
+				resolveExternals := func(externals []string) error {
+					for _, ref := range externals {
+						absRef, err := resolver.resolve(ref, resolver.rootDocPath(), resolver.rootDoc)
+						if err != nil {
+							return fmt.Errorf("request body schema for %s references %q, which cannot be resolved: %w", opID, ref, err)
+						}
+						addExternal(absRef)
+					}
+					return nil
+				}
+				pending, externals := collectRefs(root)
+				if err := resolveExternals(externals); err != nil {
+					return nil, err
+				}
+				for len(pending) > 0 {
+					name := pending[0]
+					pending = pending[1:]
+					if seen[name] {
+						continue
+					}
+					seen[name] = true
+					component, found := components[name]
+					if !found {
+						return nil, fmt.Errorf("request body schema for %s references component %q, which does not exist in components.schemas", opID, name)
+					}
+					defs[name] = component
+					names, externals := collectRefs(component)
+					pending = append(pending, names...)
+					if err := resolveExternals(externals); err != nil {
+						return nil, err
 					}
 				}
-				return ref
-			})
-			if dangling != nil {
-				return nil, dangling
-			}
-			encoded, err := json.Marshal(copied)
-			if err != nil {
-				return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
-			}
-			if err := addSchema(opID, string(encoded)); err != nil {
-				return nil, err
+
+				bundled := map[string]any{"$schema": "https://json-schema.org/draft/2020-12/schema"}
+				rootMap, ok := root.(map[string]any)
+				if !ok {
+					// A non-object root is still a schema (an empty node means
+					// "anything"); emit it directly instead of silently dropping
+					// the operation's schema surface.
+					value := root
+					if value == nil {
+						value = true
+					}
+					encoded, err := json.Marshal(value)
+					if err != nil {
+						return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
+					}
+					if err := addSchema(schemaKey, string(encoded)); err != nil {
+						return nil, err
+					}
+					continue
+				}
+				for k, v := range rootMap {
+					bundled[k] = v
+				}
+
+				// Preserve root-local definitions because their names and references
+				// are part of the document's public schema surface. OpenAPI 3.1
+				// keeps #/$defs and #/components/schemas as distinct namespaces,
+				// so a component may legally share a local definition's name;
+				// bundle such components under a deterministic numbered alias.
+				mergedDefs := map[string]any{}
+				if rootDefs, exists := rootMap["$defs"]; exists {
+					localDefs, isMap := rootDefs.(map[string]any)
+					if !isMap && (len(defs) > 0 || len(externalRefs) > 0) {
+						return nil, fmt.Errorf("request body schema for %s has a non-object $defs, so referenced components cannot be bundled into it", opID)
+					}
+					if isMap {
+						for name, definition := range localDefs {
+							mergedDefs[name] = definition
+						}
+					}
+				}
+				renames := map[string]string{}
+				names := make([]string, 0, len(defs))
+				for name := range defs {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+				for _, name := range names {
+					target := name
+					if _, exists := mergedDefs[name]; exists {
+						for n := 2; ; n++ {
+							candidate := fmt.Sprintf("%s_%d", name, n)
+							if _, taken := mergedDefs[candidate]; taken {
+								continue
+							}
+							if _, taken := defs[candidate]; taken {
+								continue
+							}
+							target = candidate
+							break
+						}
+						renames[name] = target
+					}
+					mergedDefs[target] = defs[name]
+				}
+				externalAliases := map[string]string{}
+				externalDefs := map[string]*cliExternalSchema{}
+				absRefs := make([]string, 0, len(externalRefs))
+				for absRef := range externalRefs {
+					absRefs = append(absRefs, absRef)
+				}
+				sort.Strings(absRefs)
+				for _, absRef := range absRefs {
+					alias := cliUniqueDefName(cliExternalDefName(absRef), mergedDefs)
+					externalAliases[absRef] = alias
+					externalDefs[alias] = resolver.schemas[absRef]
+					mergedDefs[alias] = resolver.schemas[absRef].value
+				}
+				if len(mergedDefs) > 0 {
+					bundled["$defs"] = mergedDefs
+				}
+
+				// Rewrite component references to the bundled $defs (through the
+				// collision aliases) on a deep copy — the decoded components are
+				// shared across operations — then verify the bundle is
+				// internally complete: every reference the emitted schema makes
+				// must have a definition, otherwise the printed schema would
+				// dangle. Both passes walk schema positions only, so a $ref
+				// field inside example payload data is left untouched.
+				copied, err := cliDeepCopyJSON(bundled)
+				if err != nil {
+					return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
+				}
+				externalAlias := func(docPath, ref string) (string, bool) {
+					absRef, ok := resolver.target(docPath, ref)
+					if !ok {
+						return "", false
+					}
+					alias, ok := externalAliases[absRef]
+					return alias, ok
+				}
+				rootRewrite := func(ref string) string {
+					if m := cliComponentRefValue.FindStringSubmatch(ref); m != nil {
+						name := m[1]
+						if alias, ok := renames[name]; ok {
+							name = alias
+						}
+						return "#/$defs/" + name + m[2]
+					}
+					if alias, ok := externalAlias(resolver.rootDocPath(), ref); ok {
+						return "#/$defs/" + alias
+					}
+					return ref
+				}
+				copiedMap := copied.(map[string]any)
+				copiedDefs, _ := copiedMap["$defs"].(map[string]any)
+				delete(copiedMap, "$defs")
+				walkSchemaRefs(copiedMap, rootRewrite)
+				if copiedDefs != nil {
+					copiedMap["$defs"] = copiedDefs
+					for name, definition := range copiedDefs {
+						entry, external := externalDefs[name]
+						if !external {
+							walkSchemaRefs(definition, rootRewrite)
+							continue
+						}
+						walkSchemaRefs(definition, func(ref string) string {
+							if alias, ok := externalAlias(entry.docPath, ref); ok {
+								return "#/$defs/" + alias
+							}
+							return ref
+						})
+					}
+				}
+				var dangling error
+				walkSchemaRefs(copied, func(ref string) string {
+					if rest, ok := strings.CutPrefix(ref, "#/$defs/"); ok && dangling == nil {
+						name, _, _ := strings.Cut(rest, "/")
+						if _, ok := mergedDefs[name]; !ok {
+							dangling = fmt.Errorf("request body schema for %s references component %q, which does not exist in components.schemas", opID, name)
+						}
+					}
+					return ref
+				})
+				if dangling != nil {
+					return nil, dangling
+				}
+				if isOpenAPI30 {
+					walkSchemaObjects(copied, convertOpenAPI30Schema)
+				}
+				stripReadOnlyProperties(copied)
+				encoded, err := json.Marshal(copied)
+				if err != nil {
+					return nil, fmt.Errorf("marshal body schema for %s: %w", opID, err)
+				}
+				if err := addSchema(schemaKey, string(encoded)); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
