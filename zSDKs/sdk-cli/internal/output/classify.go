@@ -689,6 +689,7 @@ const (
 	ReasonCLIAsyncTimeout      = "CLI_ASYNC_TIMEOUT"
 	ReasonCLIAsyncUnknownState = "CLI_ASYNC_UNKNOWN_STATE"
 	ReasonCLIOutcomeFailed     = "CLI_OUTCOME_FAILED"
+	ReasonCLIContinuationLimit = "CLI_CONTINUATION_LIMIT"
 )
 
 type cliReasonError struct {
@@ -711,7 +712,7 @@ func normalizeCLIReason(reason string) string {
 	case ReasonCLIValidation, ReasonCLIConnection, ReasonCLIProtocol,
 		ReasonCLIRuntime, ReasonCLIUnavailable, ReasonCLIAuthentication,
 		ReasonCLIAsyncFailed, ReasonCLIAsyncTimeout, ReasonCLIAsyncUnknownState,
-		ReasonCLIOutcomeFailed:
+		ReasonCLIOutcomeFailed, ReasonCLIContinuationLimit:
 		return reason
 	}
 	return ReasonCLIRuntime
