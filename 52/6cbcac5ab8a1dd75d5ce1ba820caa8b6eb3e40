@@ -1,0 +1,45 @@
+templates/templates/go/auxiliary/{{getUtilsLocation}}/json.go.stmpl
+  h_9630b74bdac540 156-158,160
+  s_4a1dec8ea4afc4::t_8976b5956e9829 159,161
+templates/templates/cli/auxiliary/internal/output/output.go.stmpl
+  h_9630b74bdac540 189-198
+templates/templates/cli/auxiliary/internal/flagutil/metadata.go.stmpl
+  h_9630b74bdac540 2139-2141
+zSDKs/sdk-go/.speakeasy/gen.lock
+  s_4a1dec8ea4afc4::t_32005f39d63f0c 716
+zSDKs/sdk-go/internal/utils/json.go
+  s_4a1dec8ea4afc4::t_dd2c848ef0ebad 157-162
+zSDKs/terraform-provider-testing/.speakeasy/gen.lock
+  s_4a1dec8ea4afc4::t_a9f0837a8e3de3 2407
+zSDKs/terraform-provider-testing/internal/sdk/internal/utils/json.go
+  s_4a1dec8ea4afc4::t_b00a126962080a 155-160
+zSDKs/sdk-cli/.speakeasy/gen.lock
+  h_9630b74bdac540 255,287,603
+zSDKs/sdk-cli/internal/flagutil/metadata.go
+  h_9630b74bdac540 2141-2143
+zSDKs/sdk-cli/internal/output/output.go
+  h_9630b74bdac540 189-198
+zSDKs/sdk-cli/internal/sdk/sdkinternal/utils/json.go
+  h_9630b74bdac540 157-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "526cbcac5ab8a1dd75d5ce1ba820caa8b6eb3e40",
+  "prompts": {},
+  "humans": {
+    "h_9630b74bdac540": {
+      "author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  },
+  "sessions": {
+    "s_4a1dec8ea4afc4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2f95af03-7935-4b5e-98c0-ceff42d82284",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Tristan Cartledge <tristan@speakeasyapi.dev>"
+    }
+  }
+}
