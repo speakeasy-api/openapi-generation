@@ -186,8 +186,16 @@ func decodeWithNumbers(data []byte) (interface{}, error) {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	var parsed interface{}
-	err := dec.Decode(&parsed)
-	return parsed, err
+	if err := dec.Decode(&parsed); err != nil {
+		return nil, err
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		if err == nil {
+			err = errors.New("invalid character after top-level value")
+		}
+		return nil, err
+	}
+	return parsed, nil
 }
 
 func convertNumbers(v interface{}, conv func(json.Number) interface{}) interface{} {

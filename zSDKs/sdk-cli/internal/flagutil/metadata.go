@@ -2138,8 +2138,9 @@ func buildJSONField(cmd *cobra.Command, v reflect.Value, m FlagMeta) error {
 		}
 	}
 
-	// For interface{} fields, use standard json.Unmarshal since the SDK's custom
-	// unmarshaler doesn't handle unaddressable interface values.
+	// For interface{} fields, decode with the standard library (keeping numbers
+	// as json.Number) since the SDK's custom unmarshaler doesn't handle
+	// unaddressable interface values.
 	if fieldType.Kind() == reflect.Interface {
 		var parsed interface{}
 		if err := decodeJSONNumbers([]byte(val), &parsed); err != nil {

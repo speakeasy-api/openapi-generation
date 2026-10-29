@@ -153,7 +153,12 @@ var preservedNumbers atomic.Int32
 // float64 until the returned function is called. The setting is process-wide.
 func PreserveJSONNumbers() (restore func()) {
 	preservedNumbers.Add(1)
-	return func() { preservedNumbers.Add(-1) }
+	var released atomic.Bool
+	return func() {
+		if released.CompareAndSwap(false, true) {
+			preservedNumbers.Add(-1)
+		}
+	}
 }
 
 func decodeJSON(b []byte, v interface{}) error {
