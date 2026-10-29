@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.955.1] - 2026-10-29
+### :wrench: Chores
+- [`ca573c1`](https://github.com/speakeasy-api/openapi-generation/commit/ca573c18fc769bae06dc4af131fd9f5d14926619) - unbreak CI, fix PHP job overhead, and shrink the Go cache ([#176](https://github.com/speakeasy-api/openapi-generation/pull/176)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.955.0] - 2026-10-29
 ### :bee: New Features
 - [`0a9f76f`](https://github.com/speakeasy-api/openapi-generation/commit/0a9f76fbe61e0054f738c79e40d0b58a7fbcfd68) - **python**: accept unknown open-union variants in request input with preserveUnknownFields ([#171](https://github.com/speakeasy-api/openapi-generation/pull/171)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20839,3 +20844,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.9]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.8...v2.954.9
 [v2.954.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.9...v2.954.10
 [v2.955.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.10...v2.955.0
+[v2.955.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.0...v2.955.1
