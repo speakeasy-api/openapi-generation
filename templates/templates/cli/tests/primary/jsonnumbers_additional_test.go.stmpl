@@ -1,0 +1,121 @@
+package tests
+
+import (
+	"encoding/json"
+	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/flagutil"
+	"{{getGolangPackage}}/internal/output"
+	"{{getGolangPackage}}/internal/sdk/sdkinternal/utils"
+)
+
+type numberVariant struct {
+	Payload map[string]any `json:"payload"`
+	Extra   any            `json:"extra"`
+}
+
+// numberUnion decodes through the SDK utils the way generated unions do.
+type numberUnion struct {
+	Value *numberVariant
+}
+
+func (u *numberUnion) UnmarshalJSON(data []byte) error {
+	var v numberVariant
+	if err := utils.UnmarshalJSON(data, &v, "", true, nil); err != nil {
+		return err
+	}
+	u.Value = &v
+	return nil
+}
+
+func (u numberUnion) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.Value)
+}
+
+type numbersBody struct {
+	Plain  any         `json:"plain"`
+	Nested numberUnion `json:"nested"`
+}
+
+type numbersRequest struct {
+	Body numbersBody `json:"body"`
+}
+
+const largeNumbersBody = `{"plain":{"id":1234567890123456789},"nested":{"payload":{"maximum":9223372036854775807},"extra":[9007199254740993,-9007199254740993,1.5,"9007199254740993"]}}`
+
+func assertLargeNumbersPreserved(t *testing.T, v any) {
+	t.Helper()
+	encoded, err := json.Marshal(v)
+	require.NoError(t, err)
+	assert.Contains(t, string(encoded), `"id":1234567890123456789`)
+	assert.Contains(t, string(encoded), `"maximum":9223372036854775807`)
+	assert.Contains(t, string(encoded), `[9007199254740993,-9007199254740993,1.5,"9007199254740993"]`)
+}
+
+func newNumbersCommand(flagName string) *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.Flags().String(flagName, "", "body")
+	return cmd
+}
+
+func TestBuildRequestPreservesLargeIntegers(t *testing.T) {
+	t.Run("whole body", func(t *testing.T) {
+		cmd := newNumbersCommand("body")
+		require.NoError(t, cmd.Flags().Set("body", largeNumbersBody))
+		req, err := flagutil.BuildRequest[numbersBody](cmd, nil, "", "body")
+		require.NoError(t, err)
+		assertLargeNumbersPreserved(t, req)
+	})
+
+	t.Run("body field", func(t *testing.T) {
+		cmd := newNumbersCommand("body")
+		require.NoError(t, cmd.Flags().Set("body", largeNumbersBody))
+		req, err := flagutil.BuildRequest[numbersRequest](cmd, nil, "Body", "body")
+		require.NoError(t, err)
+		assertLargeNumbersPreserved(t, req.Body)
+	})
+
+	t.Run("request body", func(t *testing.T) {
+		cmd := newNumbersCommand("request-body")
+		require.NoError(t, cmd.Flags().Set("request-body", largeNumbersBody))
+		req, err := flagutil.BuildRequestBody[numbersBody](cmd, "request-body", "", true)
+		require.NoError(t, err)
+		assertLargeNumbersPreserved(t, req)
+	})
+
+	t.Run("trailing data is rejected", func(t *testing.T) {
+		cmd := newNumbersCommand("body")
+		require.NoError(t, cmd.Flags().Set("body", `{"plain":1} {"plain":2}`))
+		_, err := flagutil.BuildRequest[numbersBody](cmd, nil, "", "body")
+		require.Error(t, err)
+	})
+}
+
+func TestSDKDecodingKeepsFloat64OutsideRequestBuilding(t *testing.T) {
+	var v numberVariant
+	require.NoError(t, utils.UnmarshalJsonFromString(`{"extra":9007199254740993}`, &v, ""))
+	assert.IsType(t, float64(0), v.Extra)
+}
+
+func TestJqPreservesLargeIntegers(t *testing.T) {
+	raw := json.RawMessage(`{"id":1234567890123456789,"items":[9007199254740993,1.5]}`)
+
+	results, err := output.ApplyJqFilter(raw, ".id")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	encoded, err := json.Marshal(results[0])
+	require.NoError(t, err)
+	assert.Equal(t, "1234567890123456789", string(encoded))
+
+	results, err = output.ApplyJqFilter(raw, ".")
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	encoded, err = json.Marshal(results[0])
+	require.NoError(t, err)
+	assert.JSONEq(t, string(raw), string(encoded))
+	assert.Contains(t, string(encoded), "9007199254740993")
+}

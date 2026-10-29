@@ -1,0 +1,10 @@
+id: 1793244743-9c91ccaf
+features:
+    - core
+targets:
+    - go
+type: chore
+bump: patch
+description: add opt-in number-preserving decoding to the internal JSON utilities
+author: TristanSpeakEasy
+date: "2026-10-29"
