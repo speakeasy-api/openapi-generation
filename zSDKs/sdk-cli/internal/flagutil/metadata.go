@@ -1150,12 +1150,13 @@ func (e *decodeError) Unwrap() error { return e.err }
 // decodeErrorMessage drops everything from the first "could not unmarshal `"
 // to the last closing phrase: the input may itself contain a closing phrase,
 // and nested union errors repeat the pattern. Without a closing phrase the
-// rest of the message is dropped.
+// rest of the message is dropped. Parse inputs are masked first, so a value
+// containing these phrases cannot shift the cut.
 func decodeErrorMessage(err error) string {
-	msg := err.Error()
+	msg := maskQuotedParseInput(err.Error())
 	start := strings.Index(msg, unionDecodePrefix)
 	if start < 0 {
-		return maskQuotedParseInput(msg)
+		return msg
 	}
 	rest := msg[start+len(unionDecodePrefix):]
 	end := -1
@@ -1167,7 +1168,7 @@ func decodeErrorMessage(err error) string {
 	if end < 0 {
 		return msg[:start] + "could not unmarshal value"
 	}
-	return msg[:start] + "could not unmarshal value" + maskQuotedParseInput(rest[end+1:])
+	return msg[:start] + "could not unmarshal value" + rest[end+1:]
 }
 
 const quotedGoString = `"(?:[^"\\]|\\.)*"`
