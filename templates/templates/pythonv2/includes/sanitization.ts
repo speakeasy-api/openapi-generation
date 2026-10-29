@@ -1846,7 +1846,6 @@ function renderTypeAliasType(
 function renderOpenUnionDispatchTypeAliasType(
   unionName: string,
   members: UnionMember[],
-  dispatchMembers: UnionMember[],
 ): string {
   addImport("typing_extensions", "Annotated");
   addImport("typing_extensions", "TypeAliasType");
@@ -1855,7 +1854,7 @@ function renderOpenUnionDispatchTypeAliasType(
   addImport("utils.unions", "dispatch_open_union_members", true);
 
   const unionType = renderUnionMembers(members);
-  const targets = dispatchMembers
+  const targets = members
     .filter((m) => openUnionDispatchTarget(m.associatedType))
     .map((m) => m.typeStr)
     .join(", ");
@@ -2039,35 +2038,28 @@ function sanitizeUnionType(
     )}], ${discRef}(${lambda})]`;
   }
 
-  const collectMembers = () =>
-    collectUnionAssociatedTypes(
+  const siblingGuards = context.Global.Config.PreserveUnknownFields
+    ? openUnionSiblingVariants(typeDef)
+    : new Map<string, string>();
+  const enclosingGuards = openUnionSiblingGuards;
+  if (siblingGuards.size > 0) {
+    openUnionSiblingGuards = siblingGuards;
+  }
+  let members: UnionMember[];
+  try {
+    members = collectUnionAssociatedTypes(
       typeDef,
       usageLocation,
       owningModelInfo,
       suffixForTypes,
     );
-  const members = collectMembers();
-  const siblingGuards = context.Global.Config.PreserveUnknownFields
-    ? openUnionSiblingVariants(typeDef)
-    : new Map<string, string>();
-  let guardedMembers = members;
-  if (siblingGuards.size > 0) {
-    const enclosingGuards = openUnionSiblingGuards;
-    openUnionSiblingGuards = siblingGuards;
-    try {
-      guardedMembers = collectMembers();
-    } finally {
-      openUnionSiblingGuards = enclosingGuards;
-    }
+  } finally {
+    openUnionSiblingGuards = enclosingGuards;
   }
   if (isOpenUnionDispatchEligible(typeDef, owningModelInfo.Type)) {
-    return renderOpenUnionDispatchTypeAliasType(
-      unionName,
-      guardedMembers,
-      members,
-    );
+    return renderOpenUnionDispatchTypeAliasType(unionName, members);
   }
-  return renderTypeAliasType(unionName, guardedMembers);
+  return renderTypeAliasType(unionName, members);
 }
 registerTemplateFunc("sanitizeUnionType", sanitizeUnionType);
 

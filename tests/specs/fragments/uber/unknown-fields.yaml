@@ -192,6 +192,13 @@ components:
             - $ref: '#/components/schemas/Choice'
             - type: object
               additionalProperties: true
+        stepHistory:
+          description: A union of an open discriminated union and an array of another one, so a list is validated against the array member even when an item carries a discriminator value of the other union.
+          anyOf:
+            - $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                $ref: '#/components/schemas/HistoryStep'
         plainChoice:
           anyOf:
             - $ref: '#/components/schemas/TextFields'

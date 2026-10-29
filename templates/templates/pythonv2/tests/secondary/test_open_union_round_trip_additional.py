@@ -176,12 +176,15 @@ SIBLING_FIELDS = [
     ("nestedHistory", [[NOTE, {"kind": "text", "text": "t"}]]),
     ("historyByName", {"a": NOTE, "b": {"kind": "text", "text": "t"}}),
     ("historyByName", {"a": {"kind": "text", "text": "t"}, "b": NOTE}),
+    ("stepHistory", [{"kind": "text", "text": 3}, {"kind": "pause", "seconds": 1}]),
+    ("stepHistory", [{"kind": "pause", "seconds": 1}, {"kind": "text", "text": "t"}]),
 ]
 UNKNOWN_FIELDS = [
     ("nullableHistory", [{"kind": "future_step"}, None]),
     ("nestedHistory", [[{"kind": "future_step"}]]),
     ("historyByName", {"a": {"kind": "future_step"}}),
     ("freeformHistory", {"kind": "text", "text": 3}),
+    ("stepHistory", [{"kind": "future_step"}, {"kind": "pause", "seconds": 1}]),
 ]
 
 
