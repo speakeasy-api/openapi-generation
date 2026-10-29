@@ -820,6 +820,9 @@ func (g *Generator) flattenResponseObject(ctx context.Context, responseObj *ast.
 					// Separate headers from body fields
 					for _, field := range responseObj.Fields {
 						if field.Name != "Headers" {
+							if g.dedupeFlatResponseUnionMembers() && containsEqualType(associatedTypes, field.Type) {
+								continue
+							}
 							associatedTypes = append(associatedTypes, field.Type)
 						} else {
 							fields = append(fields, field)
@@ -827,24 +830,28 @@ func (g *Generator) flattenResponseObject(ctx context.Context, responseObj *ast.
 					}
 					responseObj.Fields = fields // Keep only header fields
 
-					// Create naming suffix based on envelope need
-					suffix := ""
-					if envelopeNeededStill {
-						suffix = "_Result"
-					}
+					if len(associatedTypes) == 1 {
+						flattenedResponseType = associatedTypes[0]
+					} else {
+						// Create naming suffix based on envelope need
+						suffix := ""
+						if envelopeNeededStill {
+							suffix = "_Result"
+						}
 
-					// Register union type for multiple possible response body types
-					flattenedResponseType = g.subsystem.Register.RegisterType(ctx, ast.NewType(&ast.TypeDef{
-						Type:            ast.DataTypeUnion,
-						Name:            id + "_" + ast.InternalTypeResponse + suffix,
-						Scope:           params.Scope,
-						AssociatedTypes: associatedTypes,
-					}, ast.ContextStack{
-						ast.ContextFrame{
-							Type:       ast.ContextTypeRequestResponse,
-							Identifier: ast.InternalTypeResponse,
-						},
-					}), false)
+						// Register union type for multiple possible response body types
+						flattenedResponseType = g.subsystem.Register.RegisterType(ctx, ast.NewType(&ast.TypeDef{
+							Type:            ast.DataTypeUnion,
+							Name:            id + "_" + ast.InternalTypeResponse + suffix,
+							Scope:           params.Scope,
+							AssociatedTypes: associatedTypes,
+						}, ast.ContextStack{
+							ast.ContextFrame{
+								Type:       ast.ContextTypeRequestResponse,
+								Identifier: ast.InternalTypeResponse,
+							},
+						}), false)
+					}
 				} else {
 					// One response body and headers
 					fields := ast.Fields{}
@@ -965,6 +972,20 @@ func (g *Generator) addHTTPMetaFields(ctx context.Context, resFormat string, htt
 	responseObj.Fields = responseFields
 
 	res.Type = g.subsystem.Register.RegisterType(ctx, responseObj, false)
+}
+
+// Go names union members by their type, so members with equal schemas collide.
+func (g *Generator) dedupeFlatResponseUnionMembers() bool {
+	return g.target.Target == "go"
+}
+
+func containsEqualType(types ast.TypeDefs, candidate *ast.TypeDef) bool {
+	for _, t := range types {
+		if t.IsEqual(candidate) == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func addSubResponse(subResps []*ast.SubResponse, subResp *ast.SubResponse) []*ast.SubResponse {
