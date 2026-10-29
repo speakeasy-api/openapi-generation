@@ -83,6 +83,20 @@ paths:
                 properties:
                   count:
                     type: integer
+  /contact:
+    get:
+      operationId: getContact
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+            application/vnd.acme+json:
+              schema:
+                type: string
+                format: email
 `
 
 func resolveFlatResponseTypes(t *testing.T, target string) map[string]*ast.TypeDef {
@@ -134,6 +148,12 @@ func TestFlatResponseCollapsesEqualContentTypesForGo(t *testing.T) {
 	for _, member := range events.AssociatedTypes {
 		assert.Equal(t, ast.DataTypeJsonL, member.Type)
 	}
+
+	contact := types["getContact"]
+	require.NotNil(t, contact)
+	require.Equal(t, ast.DataTypeUnion, contact.Type)
+	require.Len(t, contact.AssociatedTypes, 2)
+	assert.NotEqual(t, contact.AssociatedTypes[0].Format, contact.AssociatedTypes[1].Format)
 }
 
 func TestFlatResponseKeepsUnionForOtherTargets(t *testing.T) {
