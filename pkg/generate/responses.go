@@ -987,7 +987,7 @@ func containsEqualScalarBody(types ast.TypeDefs, candidate *ast.TypeDef) bool {
 		return false
 	}
 	for _, t := range types {
-		if isUnnamedScalarBody(t) && t.Format == candidate.Format && t.IsEqual(candidate) == nil {
+		if isUnnamedScalarBody(t) && t.IsEqual(candidate) == nil {
 			return true
 		}
 	}

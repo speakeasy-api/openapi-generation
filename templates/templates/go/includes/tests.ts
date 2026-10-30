@@ -250,7 +250,10 @@ function mutateAssertionValue(
   context?: ResponseAssertionContext,
   example?: any,
 ): string {
-  if (getResponseFormat() == "flat" && context?.totalResponses > 1) {
+  if (
+    getResponseFormat() == "flat" &&
+    responseType?.Type?.toString() === "union"
+  ) {
     value += `.${sanitizeFieldName(sanitizeUnionTypeName(fieldDef.Type))}`;
   }
 
