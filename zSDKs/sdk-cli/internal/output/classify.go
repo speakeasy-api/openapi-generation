@@ -452,6 +452,10 @@ func classifyStatuslessError(err error, origin ErrorOrigin) ErrorType {
 	if errors.As(err, &streamErr) {
 		return ErrorTypeAPI
 	}
+	var refused interface{ CLIRedirectRefused() bool }
+	if errors.As(err, &refused) && refused.CLIRedirectRefused() {
+		return ErrorTypeProtocol
+	}
 	if origin == ErrorOriginCLI {
 		if isConnectionError(err) {
 			return ErrorTypeConnection
@@ -684,6 +688,7 @@ const (
 	ReasonCLIAsyncFailed       = "CLI_ASYNC_FAILED"
 	ReasonCLIAsyncTimeout      = "CLI_ASYNC_TIMEOUT"
 	ReasonCLIAsyncUnknownState = "CLI_ASYNC_UNKNOWN_STATE"
+	ReasonCLIOutcomeFailed     = "CLI_OUTCOME_FAILED"
 )
 
 type cliReasonError struct {
@@ -705,7 +710,8 @@ func normalizeCLIReason(reason string) string {
 	switch reason {
 	case ReasonCLIValidation, ReasonCLIConnection, ReasonCLIProtocol,
 		ReasonCLIRuntime, ReasonCLIUnavailable, ReasonCLIAuthentication,
-		ReasonCLIAsyncFailed, ReasonCLIAsyncTimeout, ReasonCLIAsyncUnknownState:
+		ReasonCLIAsyncFailed, ReasonCLIAsyncTimeout, ReasonCLIAsyncUnknownState,
+		ReasonCLIOutcomeFailed:
 		return reason
 	}
 	return ReasonCLIRuntime

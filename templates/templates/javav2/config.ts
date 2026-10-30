@@ -14,21 +14,21 @@ function getTemplateDependencies() {
     },
     "com.fasterxml.jackson.core:jackson-databind": {
       name: "com.fasterxml.jackson.core:jackson-databind",
-      version: "2.22.1",
+      version: "2.22.4",
       cpe: "cpe:2.3:a:fasterxml:jackson-databind:*:*:*:*:*:java:*:*",
       ecosystem: "Maven",
       category: "runtime",
     },
     "com.fasterxml.jackson.datatype:jackson-datatype-jsr310": {
       name: "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
-      version: "2.22.0",
+      version: "2.22.4",
       cpe: "cpe:2.3:a:fasterxml:jackson-datatype-jsr310:*:*:*:*:*:java:*:*",
       ecosystem: "Maven",
       category: "runtime",
     },
     "com.fasterxml.jackson.datatype:jackson-datatype-jdk8": {
       name: "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
-      version: "2.22.0",
+      version: "2.22.4",
       cpe: "cpe:2.3:a:fasterxml:jackson-datatype-jdk8:*:*:*:*:*:java:*:*",
       ecosystem: "Maven",
       category: "runtime",
@@ -247,6 +247,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     templateVersion: {
       Name: "templateVersion",
@@ -255,6 +259,10 @@ function getConfigFields(
       Description: "The template version to use",
       ValidationRegex: /v2/.source,
       ValidationMessage: "Template version must be v2",
+      ValidationExamples: {
+        valid: ["v2"],
+        invalid: ["", "v1", "2"],
+      },
     },
     projectName: {
       Name: "projectName",
@@ -264,6 +272,10 @@ function getConfigFields(
         "Assigns Gradle rootProject.name, which gives a name to the Gradle build. https://docs.gradle.org/current/userguide/multi_project_builds.html#naming_recommendations",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["openapi", "acme-sdk", "acme.sdk"],
+        invalid: ["", "acme sdk", "acme/sdk"],
+      },
     },
     groupID: {
       Name: "groupID",
@@ -274,6 +286,10 @@ function getConfigFields(
       ValidationRegex: /^\w[\w\d.\-_]*$/.source,
       ValidationMessage:
         "Letters, numbers, or .-_ only. Must start with a letter",
+      ValidationExamples: {
+        valid: ["org.openapis", "com.acme", "com.acme-corp.sdk"],
+        invalid: ["", ".com.acme", "-acme", "com/acme", "com acme"],
+      },
     },
     artifactID: {
       Name: "artifactID",
@@ -284,6 +300,10 @@ function getConfigFields(
       ValidationRegex: /^[\w\d\/._-]+$/.source,
       ValidationMessage:
         "Letters, numbers, or .-_/ only, must start with a letter",
+      ValidationExamples: {
+        valid: ["openapi", "acme-sdk", "acme.sdk"],
+        invalid: ["", "acme sdk", " acme"],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -293,6 +313,17 @@ function getConfigFields(
         "The base package name for generated classes. If not present <groupId>.<artifactId> will be used.",
       ValidationRegex: "^[a-z_][a-z_0-9]*(\\.[a-z_][a-z_0-9]*)*$",
       ValidationMessage: "Lowercase letters, numbers, or ._ only",
+      ValidationExamples: {
+        valid: ["org.openapis.openapi", "com.acme.sdk", "com.acme_corp.sdk2"],
+        invalid: [
+          "",
+          "com.Acme.sdk",
+          "com.acme-corp.sdk",
+          "com.acme.",
+          "com..acme",
+          "1com.acme",
+        ],
+      },
     },
     ossrhURL: {
       Name: "ossrhURL",
@@ -311,6 +342,25 @@ function getConfigFields(
       ValidationRegex: /github\.com\/[a-zA-z\d_-]+?\/.+/.source,
       ValidationMessage:
         "Must be a valid github.com URL, including an owner and repo (e.g. github.com/owner/repo)",
+      ValidationExamples: {
+        valid: [
+          "github.com/owner/repo",
+          "github.com/acme/acme-java",
+          "https://github.com/acme/acme-java",
+          "http://github.com/acme/acme-java",
+          "HTTPS://WWW.github.com/acme/acme-java.GIT",
+          "www.github.com/acme/acme-java",
+          "github.com/acme/acme-java.git",
+          "github.com/acme_labs/acme-java/",
+        ],
+        invalid: [
+          "",
+          "gitlab.com/acme/acme-java",
+          "github.com/acme",
+          "github.com/acme/",
+          "git@github.com:acme/acme-java",
+        ],
+      },
     },
     companyName: {
       Name: "companyName",
@@ -349,6 +399,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     flattenGlobalSecurity: {
       Name: "flattenGlobalSecurity",
@@ -422,6 +476,10 @@ function getConfigFields(
         "The name of the default exception that is thrown when an API error occurs.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     enableCustomCodeRegions: {
       Name: "enableCustomCodeRegions",
@@ -501,6 +559,10 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage:
         "Must start with a capital letter and contain only letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     multipartArrayFormat: {
       Name: "multipartArrayFormat",

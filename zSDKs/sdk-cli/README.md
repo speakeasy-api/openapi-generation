@@ -243,7 +243,7 @@ In agent mode interactive prompts never launch, output defaults to TOON, and eve
 }
 ```
 
-`error_type` is one of `authentication_error`, `authorization_error`, `not_found`, `validation_error`, `rate_limit_error`, `server_error`, `api_error`, `connection_error`, `protocol_error`, `service_disabled`, `billing_disabled`, `runtime_error`, `unsupported_error`, `async_failed`, `async_timeout`, `async_unknown_state`. Classification reads the structured reason code at `$.details[*].reason`, then `$.status` in the error body (resolved against the nested `error` object when the body has one) before HTTP status, so a declared credential reason sent with HTTP 400 is not mistaken for request validation. `error_reason` carries the reason code found there, verbatim from a declared carrier when no declared rule matches it; it is absent for status-only API errors. Status-less local failures may use `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, or the async polling reasons `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, and `CLI_ASYNC_UNKNOWN_STATE`. `hints` preserves server guidance first, adds the most specific local taxonomy guidance, then typed CLI and command-specific guidance, removing exact duplicates. `exit_code` is always the code for the final `error_type` shown in the envelope: 1 runtime, 2 usage, or 3 authentication/authorization.
+`error_type` is one of `authentication_error`, `authorization_error`, `not_found`, `validation_error`, `rate_limit_error`, `server_error`, `api_error`, `connection_error`, `protocol_error`, `service_disabled`, `billing_disabled`, `runtime_error`, `unsupported_error`, `async_failed`, `async_timeout`, `async_unknown_state`. Classification reads the structured reason code at `$.details[*].reason`, then `$.status` in the error body (resolved against the nested `error` object when the body has one) before HTTP status, so a declared credential reason sent with HTTP 400 is not mistaken for request validation. `error_reason` carries the reason code found there, verbatim from a declared carrier when no declared rule matches it; it is absent for status-only API errors. Status-less local failures may use `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, the async polling reasons `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, and `CLI_ASYNC_UNKNOWN_STATE`, or `CLI_OUTCOME_FAILED` when a successful response reports a declared failure state; that envelope also carries `state` (the reported state) and, when the command declares an error pointer, `error` (the failure detail taken from the response). `hints` preserves server guidance first, adds the most specific local taxonomy guidance, then typed CLI and command-specific guidance, removing exact duplicates. `exit_code` is always the code for the final `error_type` shown in the envelope: 1 runtime, 2 usage, or 3 authentication/authorization.
 
 ```bash
 # "invite" declares hints for CLI_VALIDATION; a failing request returns them in the envelope
@@ -851,7 +851,7 @@ In human output modes, stdout is empty and the `[DRY-RUN]` block goes to stderr.
 - Request headers (sensitive values redacted)
 - Request body preview (sensitive fields redacted)
 
-With `--output-format json`, or with a caller-explicit `--jq`, stderr is silent and stdout is NDJSON: one compact preview object per would-be request. The jq filter is not applied, and command-declared jq presets do not select the JSON protocol.
+In machine modes (`--agent-mode`, `--output-format json`, `yaml` or `toon`, or a caller-explicit `--jq`), stderr is silent and stdout is NDJSON: one compact preview object per would-be request, whatever the output format. The jq filter is not applied, and command-declared jq presets do not select the JSON protocol.
 
 ```json
 {"dry_run":true,"request":{"method":"POST","url":"https://…","headers":{"Accept":["application/json"],…},"body":<JSON value | string | null>}}
@@ -884,7 +884,7 @@ If both `--dry-run` and `--debug` are set, `--dry-run` takes precedence and no n
 
 Sensitive information is automatically redacted in diagnostic output:
 - **Headers**: `Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`, and other security headers show `[REDACTED]`
-- **Body**: JSON fields named `password`, `secret`, `token`, `api_key`, `client_secret`, etc. show `[REDACTED]`
+- **Body**: JSON fields named `password`, `secret`, `token`, `api_key`, `client_secret`, etc., and fields named like sensitive headers (such as `Authorization`, `Cookie` or `X-Auth-Token`), show `[REDACTED]`. A JSON Schema stored under such a name keeps its structure, with `default`, `const`, `enum`, `example` and `examples` masked at every level
 - **Binary data**: binary media and canonical base64 strings are replaced with `<bytes:N>`
 - **URL query**: credential-like query parameters are replaced with `[REDACTED]`
 

@@ -46,6 +46,9 @@ func {{$initFuncName}}(parent *cobra.Command) error {
     parent.Annotations["speakeasy_stream_metadata"] = "{{escapeGoString $cliOp.StreamMetadataJSON}}"
     {{- end}}
     {{- end}}
+    {{- if and $cliOp $cliOp.OutcomeJSON}}
+    parent.Annotations["speakeasy_outcome"] = "{{escapeGoString $cliOp.OutcomeJSON}}"
+    {{- end}}
     {{- if or $hasSecurity $op.Request (hasPagination $op) (hasBinaryResponse $op) (and $cliOp $cliOp.Flags)}}
     cmd := parent // register flags on the parent
     {{- end}}
@@ -72,6 +75,9 @@ func {{$initFuncName}}(parent *cobra.Command) error {
             {{- if $cliOp.StreamMetadataJSON}}
             "speakeasy_stream_metadata": "{{escapeGoString $cliOp.StreamMetadataJSON}}",
             {{- end}}
+            {{- end}}
+            {{- if and $cliOp $cliOp.OutcomeJSON}}
+            "speakeasy_outcome": "{{escapeGoString $cliOp.OutcomeJSON}}",
             {{- end}}
         },
     }
@@ -330,6 +336,7 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
             NextURL: {{goStringLiteral $paginationProbe.NextURL}},
             Results: {{goStringLiteral $paginationProbe.Results}},
             HasLimit: {{$paginationProbe.HasLimit}},
+            Transformed: {{hasResponseTransform $op}},
         })
     }
     {{- end}}
@@ -342,11 +349,13 @@ func {{$runFuncName}}(cmd *cobra.Command, args []string) error {
     // Streaming response — iterate events and output incrementally.
     // Skip streaming iteration in dry-run mode (synthetic response has no stream).
     if !client.IsDryRun(cmd) {
+        stopProgress := output.StartRequestProgress(cmd)
         res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
         if err != nil {
+            stopProgress()
             return output.Error(cmd, err)
         }
-        return output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}")
+        return output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}", stopProgress)
     }
     {{- end}}
     {{- if not (operationHasDeferredBody $op)}}
@@ -483,6 +492,7 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
             NextURL: {{goStringLiteral $paginationProbe.NextURL}},
             Results: {{goStringLiteral $paginationProbe.Results}},
             HasLimit: {{$paginationProbe.HasLimit}},
+            Transformed: {{hasResponseTransform $op}},
         }); err != nil {
             return nil, err
         }
@@ -496,11 +506,13 @@ func {{$executeFuncName}}(cmd *cobra.Command, args []string, asyncIntent bool) (
     {{- end}}
     {{- if hasStreamingResponse $op}}
     if !client.IsDryRun(cmd) && !asyncIntent {
+        stopProgress := output.StartRequestProgress(cmd)
         res, err := s{{.Local.SubSDKAccessor}}.{{sanitizeMethodName $op}}({{templateSDKCallArgs $op $reqObjName}})
         if err != nil {
+            stopProgress()
             return nil, output.Error(cmd, err)
         }
-        if err := output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}"); err != nil {
+        if err := output.StreamResult(cmd, res, "{{getStreamingFieldName $op}}", stopProgress); err != nil {
             return nil, err
         }
         return nil, nil

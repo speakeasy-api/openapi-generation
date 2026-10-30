@@ -36,12 +36,16 @@ func (t Test) String() string {
         return "auth-custom-security-scheme-only"
     case TestAuthFunctionCallbacksOauthGlobalSecurity:
         return "auth-function-callbacks-oauth-global-security"
+    case TestAuthGlobalSecurityEmpty:
+        return "auth-global-security-empty"
     case TestAuthGlobalSecurityFieldsOrdering:
         return "auth-global-security-fields-ordering"
     case TestAuthGlobalSecurityFlattening:
         return "auth-global-security-flattening"
     case TestAuthGlobalSecurityFlatteningCallback:
         return "auth-global-security-flattening-callback"
+    case TestAuthGlobalSecurityFlatteningEmpty:
+        return "auth-global-security-flattening-empty"
     case TestAuthGlobalSecurityFlatteningEnvVarFallback:
         return "auth-global-security-flattening-env-var-fallback"
     case TestAuthGlobalSecurityOptionFieldsOrdering:
@@ -700,6 +704,8 @@ func (t Test) String() string {
         return "parameters-deep-object-query-params-map"
     case TestParametersDeepObjectQueryParamsObject:
         return "parameters-deep-object-query-params-object"
+    case TestParametersDefaultPathParams:
+        return "parameters-default-path-params"
     case TestParametersDefaultQueryParams:
         return "parameters-default-query-params"
     case TestParametersFormQueryParamsArray:
@@ -1502,6 +1508,8 @@ func (t Test) String() string {
         return "unions-weakly-typed-one-of-post-basic"
     case TestUnionsWeaklyTypedOneOfPostDeep:
         return "unions-weakly-typed-one-of-post-deep"
+    case TestUnknownFieldsJsonRoundTrip:
+        return "unknown-fields-json-round-trip"
     case TestWebhooksConsume:
         return "webhooks-consume"
     case TestWebhooksConsumeBadData:
@@ -1556,12 +1564,16 @@ func TestFromString(s string) Test {
         return TestAuthCustomSecuritySchemeOnly
     case "auth-function-callbacks-oauth-global-security":
         return TestAuthFunctionCallbacksOauthGlobalSecurity
+    case "auth-global-security-empty":
+        return TestAuthGlobalSecurityEmpty
     case "auth-global-security-fields-ordering":
         return TestAuthGlobalSecurityFieldsOrdering
     case "auth-global-security-flattening":
         return TestAuthGlobalSecurityFlattening
     case "auth-global-security-flattening-callback":
         return TestAuthGlobalSecurityFlatteningCallback
+    case "auth-global-security-flattening-empty":
+        return TestAuthGlobalSecurityFlatteningEmpty
     case "auth-global-security-flattening-env-var-fallback":
         return TestAuthGlobalSecurityFlatteningEnvVarFallback
     case "auth-global-security-option-fields-ordering":
@@ -2220,6 +2232,8 @@ func TestFromString(s string) Test {
         return TestParametersDeepObjectQueryParamsMap
     case "parameters-deep-object-query-params-object":
         return TestParametersDeepObjectQueryParamsObject
+    case "parameters-default-path-params":
+        return TestParametersDefaultPathParams
     case "parameters-default-query-params":
         return TestParametersDefaultQueryParams
     case "parameters-form-query-params-array":
@@ -3022,6 +3036,8 @@ func TestFromString(s string) Test {
         return TestUnionsWeaklyTypedOneOfPostBasic
     case "unions-weakly-typed-one-of-post-deep":
         return TestUnionsWeaklyTypedOneOfPostDeep
+    case "unknown-fields-json-round-trip":
+        return TestUnknownFieldsJsonRoundTrip
     case "webhooks-consume":
         return TestWebhooksConsume
     case "webhooks-consume-bad-data":
@@ -3059,9 +3075,11 @@ var testList = []Test{
     TestAuthCustomSecuritySchemeAppId,
     TestAuthCustomSecuritySchemeOnly,
     TestAuthFunctionCallbacksOauthGlobalSecurity,
+    TestAuthGlobalSecurityEmpty,
     TestAuthGlobalSecurityFieldsOrdering,
     TestAuthGlobalSecurityFlattening,
     TestAuthGlobalSecurityFlatteningCallback,
+    TestAuthGlobalSecurityFlatteningEmpty,
     TestAuthGlobalSecurityFlatteningEnvVarFallback,
     TestAuthGlobalSecurityOptionFieldsOrdering,
     TestAuthHoistedBasicAuth,
@@ -3391,6 +3409,7 @@ var testList = []Test{
     TestParametersDeepObjectQueryParamsDeepObject,
     TestParametersDeepObjectQueryParamsMap,
     TestParametersDeepObjectQueryParamsObject,
+    TestParametersDefaultPathParams,
     TestParametersDefaultQueryParams,
     TestParametersFormQueryParamsArray,
     TestParametersFormQueryParamsCamelObject,
@@ -3792,6 +3811,7 @@ var testList = []Test{
     TestUnionsUnionOfArrays,
     TestUnionsWeaklyTypedOneOfPostBasic,
     TestUnionsWeaklyTypedOneOfPostDeep,
+    TestUnknownFieldsJsonRoundTrip,
     TestWebhooksConsume,
     TestWebhooksConsumeBadData,
     TestWebhooksConsumeBadSignature,

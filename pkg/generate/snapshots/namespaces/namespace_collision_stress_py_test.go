@@ -2351,7 +2351,7 @@ class SDK(BaseSDK):
         http_headers: Optional[Mapping[str, str]] = None,
     ) -> models_.retries.Widget:
         r"""
-        :param retries:
+        :param retries_:
         :param retries: Override the default retry configuration for this method
         :param server_url: Override the default server URL for this method
         :param timeout_ms: Override the default request timeout configuration for this method in milliseconds
@@ -2434,7 +2434,7 @@ class SDK(BaseSDK):
         http_headers: Optional[Mapping[str, str]] = None,
     ) -> models_.retries.Widget:
         r"""
-        :param retries:
+        :param retries_:
         :param retries: Override the default retry configuration for this method
         :param server_url: Override the default server URL for this method
         :param timeout_ms: Override the default request timeout configuration for this method in milliseconds

@@ -65,7 +65,7 @@ function getTemplateDependencies() {
     // Runtime dependencies
     express: {
       name: "express",
-      version: "^5.1.0",
+      version: "^5.3.0",
       cpe: "cpe:2.3:a:expressjs:express:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "runtime",
@@ -223,7 +223,7 @@ function getTemplateDependencies() {
     },
     "@types/node": {
       name: "@types/node",
-      version: "^18.19.3",
+      version: "^20.19.0",
       cpe: "cpe:2.3:a:definitelytyped:types-node:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -253,7 +253,7 @@ function getTemplateDependencies() {
     },
     vitest: {
       name: "vitest",
-      version: "^3.2.6",
+      version: "^4.1.11",
       cpe: "cpe:2.3:a:vitest:vitest:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -303,6 +303,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     envVarPrefix: {
       Name: "envVarPrefix",
@@ -332,6 +336,15 @@ function getConfigFields(
       ValidationRegex: /^https?:\/\/.+$/.source,
       ValidationMessage:
         "Must be a valid URL starting with http:// or https://",
+      ValidationExamples: {
+        valid: ["https://acme-mcp.acme.workers.dev", "http://localhost:8787"],
+        invalid: [
+          "",
+          "acme-mcp.acme.workers.dev",
+          "ftp://acme.dev",
+          "https://",
+        ],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -341,6 +354,10 @@ function getConfigFields(
         "The npm package name. https://docs.npmjs.com/package-name-guidelines.",
       ValidationRegex: /^[\w\d._@\/-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["acme-sdk", "@acme/sdk", "@acme/sdk.core"],
+        invalid: ["", "acme sdk", "acme:sdk"],
+      },
     },
     version: {
       Name: "version",
@@ -349,6 +366,10 @@ function getConfigFields(
       Description: "The current version of the MCP Server",
       ValidationRegex: /^[\w\d._-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     dxtManifestOverlay: {
       Name: "dxtManifestOverlay",
@@ -377,13 +398,27 @@ function getConfigFields(
       Name: "mcpName",
       Required: false,
       Description:
-        "The unique identifier for the MCP server in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
+        "The unique identifier for the MCP server: a namespace and a server name separated by one slash, with the namespace usually in reverse-DNS format (e.g., 'io.github.username/server-name'). " +
         "This is required for publishing to the Anthropic MCP registry. " +
         "See: https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/publishing/publish-server.md",
-      ValidationRegex: /^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)*\/[a-z][a-z0-9\-]*$/
-        .source,
+      ValidationRegex: /^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/.source,
       ValidationMessage:
-        "Must be in reverse-DNS format (e.g., 'io.github.username/server-name')",
+        "Must be a namespace and a server name separated by one slash (e.g., 'io.github.username/server-name'): letters, numbers, '.' or '-' in the namespace, and also '_' in the server name",
+      ValidationExamples: {
+        valid: [
+          "io.github.acme/petstore-mcp",
+          "io.github.acme/2petstore",
+          "com.example/acme",
+          "io.github.acme-labs/petstore",
+          "io.github.Acme/petstore_mcp.v2",
+        ],
+        invalid: [
+          "",
+          "io.github.acme",
+          "acme/petstore/mcp",
+          "io.github.acme/petstore mcp",
+        ],
+      },
     },
     responseFormat: {
       Name: "responseFormat",
@@ -417,22 +452,6 @@ function getConfigFields(
       Description:
         "A list of flags that are considered advanced and should not be exposed to the user.",
       DefaultValue: [],
-      ValidationFunc: (value: any): string | null => {
-        if (!Array.isArray(value)) {
-          return "advancedFlags must be an array";
-        }
-        const validPattern = /^[a-zA-Z0-9]+$/;
-        for (let i = 0; i < value.length; i++) {
-          const item = value[i];
-          if (typeof item !== "string") {
-            return `advancedFlags[${i}] must be a string`;
-          }
-          if (!validPattern.test(item)) {
-            return `advancedFlags[${i}] must contain only letters or numbers`;
-          }
-        }
-        return null;
-      },
     },
     fixEnumNameSanitization: {
       Name: "fixEnumNameSanitization",
@@ -462,6 +481,29 @@ function getConfigFields(
       ValidationMessage: '"true" or "false" only',
     },
   };
+}
+
+// @ts-ignore
+function validateConfig(cfg: Record<string, any>): string {
+  const advancedFlags = cfg.advancedFlags;
+  if (advancedFlags === undefined || advancedFlags === null) {
+    return "";
+  }
+
+  if (!Array.isArray(advancedFlags)) {
+    return "advancedFlags must be an array";
+  }
+  const validPattern = /^[a-zA-Z0-9]+$/;
+  for (let i = 0; i < advancedFlags.length; i++) {
+    const item = advancedFlags[i];
+    if (typeof item !== "string") {
+      return `advancedFlags[${i}] must be a string`;
+    }
+    if (!validPattern.test(item)) {
+      return `advancedFlags[${i}] must contain only letters or numbers`;
+    }
+  }
+  return "";
 }
 
 /**

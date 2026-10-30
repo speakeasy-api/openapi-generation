@@ -8,9 +8,9 @@
 {{- addImport "internal/usage" true -}}
 {{- if isAnyInteractiveEnabled -}}
 {{- addImport "internal/interactive" true -}}
-{{- addImport "internal/output" true -}}
 {{- addImport "strings" -}}
 {{- end -}}
+{{- addImport "internal/output" true -}}
 {{- addImport "fmt" -}}
 {{- addImport "encoding/json" -}}
 {{- if isInteractiveAuthEnabled -}}
@@ -40,6 +40,7 @@ func initConfigureCmd(parent *cobra.Command) error {
     {{- end}}
     {{- if isAnyInteractiveEnabled}}
     cmd.Flags().String("{{defaultOutputFormatFlag}}", "", "Store the default output format without opening the form. Options: "+strings.Join(output.Formats, ", ")+". Pass an empty value to clear it.")
+    cmd.Flags().StringSlice("{{configureClearFlag}}", nil, "Remove stored values without opening the form (repeatable or comma-separated). Options: {{templateConfigureClearOptions}}")
     {{- end}}
     parent.AddCommand(cmd)
     return nil
@@ -53,6 +54,8 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
     if dryRunLocalNoop(cmd, "configure changes local settings only (no API request); nothing was changed.") {
         return nil
     }
+    defer output.PinOutputFormat(cmd)()
+    machineOutput := output.IsMachineMode(cmd)
     cfg := config.GetConfig()
     if cfg == nil {
         cfg = &config.Config{}
@@ -63,8 +66,9 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
     {{- end}}
     {{- if isAnyInteractiveEnabled}}
 
+    var cleared []string
     formMode := interactive.Resolve(cmd).SetupFormMode(flagutil.AnyFlagChanged(cmd, {{templateConfigureFlagNames}}))
-    if cmd.Flags().Changed("{{defaultOutputFormatFlag}}") {
+    if cmd.Flags().Changed("{{defaultOutputFormatFlag}}") || cmd.Flags().Changed("{{configureClearFlag}}") {
         formMode = interactive.FormOff
     }
     {{- end}}
@@ -169,10 +173,27 @@ func runConfigureCmd(cmd *cobra.Command, args []string) error {
         return fmt.Errorf("failed to save configuration: %w", err)
     }
 
+    if machineOutput {
+        result := map[string]any{"config_file": config.GetConfigPath()}
+        {{- if hasSecretCLIFields}}
+        result["keychain_stored"] = keychainStored
+        {{- end}}
+        {{- if isAnyInteractiveEnabled}}
+        if len(cleared) > 0 {
+            result["cleared"] = cleared
+        }
+        {{- end}}
+        return output.LocalResult(cmd, result)
+    }
     out{{if isAnyInteractiveEnabled}} :{{end}}= cmd.OutOrStdout()
     {{- if hasSecretCLIFields}}
     if keychainStored {
         fmt.Fprintln(out, "Secret credentials stored in OS keychain")
+    }
+    {{- end}}
+    {{- if isAnyInteractiveEnabled}}
+    for _, name := range cleared {
+        fmt.Fprintf(out, "Cleared --%s\n", name)
     }
     {{- end}}
     fmt.Fprintf(out, "Configuration saved to %s\n", config.GetConfigPath())

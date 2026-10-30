@@ -71,6 +71,9 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 			{{- if $c.AsyncJSON}}
 			"speakeasy_async": "{{escapeGoString $c.AsyncJSON}}",
 			{{- end}}
+			{{- if $c.OutcomeJSON}}
+			"speakeasy_outcome": "{{escapeGoString $c.OutcomeJSON}}",
+			{{- end}}
 			{{- if $c.StreamSelect}}
 			"speakeasy_stream_select": "{{escapeGoString $c.StreamSelect}}",
 			{{- if $c.StreamMetadataJSON}}
@@ -484,6 +487,15 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}
 	{{- end}}
 	{{- end}}
+	{{- end}}
+	{{- if and $c.BodyFlag $c.Implied}}
+	if err := flagutil.ApplyImpliedBody(cmd, "{{$c.BodyFlag}}", []flagutil.ImpliedBody{
+		{{- range $c.Implied}}
+		{Key: "{{escapeGoString .Key}}", Values: "{{escapeGoString .Values}}"},
+		{{- end}}
+	}); err != nil {
+		return err
+	}
 	{{- end}}
 	{{- if $c.AsyncJSON}}
 	if err := output.ValidateAsyncFlags(cmd); err != nil {

@@ -288,7 +288,7 @@ function getTemplateDependencies() {
     },
     express: {
       name: "express",
-      version: "^4.21.2",
+      version: "^4.22.3",
       cpe: "cpe:2.3:a:expressjs:express:*:*:*:*:*:node.js:*:*",
       ecosystem: "npm",
       category: "dev",
@@ -394,6 +394,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d._-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     additionalPackageJSON: {
       Name: "additionalPackageJSON",
@@ -409,6 +413,10 @@ function getConfigFields(
       ValidationRegex: /^v\d+$/.source,
       ValidationMessage:
         "Template version must be in the format v1, v2, and so on",
+      ValidationExamples: {
+        valid: ["v2", "v10"],
+        invalid: ["", "2", "V2", "v2.1"],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -418,6 +426,10 @@ function getConfigFields(
         "The npm package name. https://docs.npmjs.com/package-name-guidelines.",
       ValidationRegex: /^[\w\d._@\/-]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["acme-sdk", "@acme/sdk", "@acme/sdk.core"],
+        invalid: ["", "acme sdk", "acme:sdk"],
+      },
     },
     author: {
       Name: "author",
@@ -434,6 +446,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/customize-sdks/methods",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     flatteningOrder: {
       Name: "flatteningOrder",
@@ -509,6 +525,10 @@ function getConfigFields(
         "Controls the generated TypeScript server-sent event stream wrapper class name.",
       ValidationRegex: /^[A-Za-z_$][A-Za-z0-9_$]*$/.source,
       ValidationMessage: "Must be a valid TypeScript identifier",
+      ValidationExamples: {
+        valid: ["EventStream", "$Stream", "_Stream2"],
+        invalid: ["", "2Stream", "Event-Stream", "Event Stream"],
+      },
     },
     enumFormat: {
       Name: "enumFormat",
@@ -576,6 +596,10 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage:
         "Must start with a capital letter and contain only letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     baseErrorName: {
       Name: "baseErrorName",
@@ -587,6 +611,10 @@ function getConfigFields(
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage:
         "Must start with a capital letter and contain only letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     enableReactQuery: {
       Name: "enableReactQuery",
@@ -687,30 +715,6 @@ function getConfigFields(
       DefaultValue: [],
       Description:
         "Array of imports to add when usageSDKInit is configured. Each import should have 'package', 'import', and optionally 'type' fields.",
-      ValidationFunc: (value: any): string | null => {
-        if (!Array.isArray(value)) {
-          return "usageSDKInitImports must be an array";
-        }
-        for (let i = 0; i < value.length; i++) {
-          const item = value[i];
-          if (typeof item !== "object" || item === null) {
-            return `usageSDKInitImports[${i}] must be an object`;
-          }
-          if (!item.package || typeof item.package !== "string") {
-            return `usageSDKInitImports[${i}].package must be a non-empty string`;
-          }
-          if (!item.import || typeof item.import !== "string") {
-            return `usageSDKInitImports[${i}].import must be a non-empty string`;
-          }
-          if (
-            item.type &&
-            !["typeImport", "packageImport", "aliasImport"].includes(item.type)
-          ) {
-            return `usageSDKInitImports[${i}].type must be one of: typeImport, packageImport, aliasImport`;
-          }
-        }
-        return null;
-      },
     },
     sseFlatResponse: {
       Name: "sseFlatResponse",
@@ -893,6 +897,40 @@ function getConfigFields(
       ValidationMessage: "words or legacy only",
     },
   };
+}
+
+// @ts-ignore
+function validateConfig(cfg: Record<string, any>): string {
+  const usageSDKInitImports = cfg.usageSDKInitImports;
+  if (usageSDKInitImports === undefined || usageSDKInitImports === null) {
+    return "";
+  }
+
+  if (!Array.isArray(usageSDKInitImports)) {
+    return "usageSDKInitImports must be an array";
+  }
+  for (let i = 0; i < usageSDKInitImports.length; i++) {
+    const item = usageSDKInitImports[i];
+    if (typeof item !== "object" || item === null) {
+      return `usageSDKInitImports[${i}] must be an object`;
+    }
+    const pkg = item.package || item.Package;
+    const imp = item.import || item.Import;
+    const type = item.type || item.Type;
+    if (!pkg || typeof pkg !== "string") {
+      return `usageSDKInitImports[${i}].package must be a non-empty string`;
+    }
+    if (!imp || typeof imp !== "string") {
+      return `usageSDKInitImports[${i}].import must be a non-empty string`;
+    }
+    if (
+      type &&
+      !["typeImport", "packageImport", "aliasImport"].includes(type)
+    ) {
+      return `usageSDKInitImports[${i}].type must be one of: typeImport, packageImport, aliasImport`;
+    }
+  }
+  return "";
 }
 
 /** Represents the initial target implementation configuration presented to

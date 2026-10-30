@@ -14,7 +14,7 @@ features:
     additionalProperties: 0.0.2
     bigint: 0.0.1
     constsAndDefaults: 0.1.3
-    core: 3.57.2
+    core: 3.57.5
     customCodeRegions: 0.2.2
     customSecuritySchemes: 0.2.0
     decimal: 0.0.1
@@ -55,7 +55,7 @@ trackedFiles:
   USAGE.md:
     last_write_checksum: sha1:fbfd5c561abbbf7ddfaaf2c470f9405aea851c5c
   build.gradle:
-    last_write_checksum: sha1:b577e4b21e9facbdcb32a4e052f25060a5070561
+    last_write_checksum: sha1:fd944f72958f72269dcbdecf2161f7558c35921a
   docs/models/bar/Bike.md:
     last_write_checksum: sha1:eb80c64e76fad367879aec3fbf8eb5cad9adedf0
   docs/models/bar/Car.md:
@@ -511,7 +511,7 @@ trackedFiles:
   gradlew.bat:
     last_write_checksum: sha1:755607dcbac0ba8adba338ef00aafc1177ceb2b5
   publishing.gradle:
-    last_write_checksum: sha1:c62a7e5882a34d2fa79eb436d99efa74828f214a
+    last_write_checksum: sha1:51b6c709d3ad4164ccce8fc7eb514b765fbf27b7
   settings.gradle:
     last_write_checksum: sha1:b5b2f4aa4269fea383621740c89e1a847d952da9
   spring/openapi-spring-boot-autoconfigure/build.gradle:

@@ -98,6 +98,7 @@ interface IntentCmdCtx {
   ArgsHelp: string; // "Arguments:" section lines for the help page
   Flags: IntentBodyEntry[];
   PromptFlags: IntentBodyEntry[]; // required declared flags a preset does not cover (interactive prompting)
+  Implied: { Key: string; Values: string }[]; // flagutil.ImpliedBody rules from flag implies:
   PresetJSON: string; // JSON object merged into the body before user inputs
   // Partial-body preset merge (flagutil.PresetMerge): how the pinned request
   // variant is told apart from its union siblings, so a caller-supplied
@@ -136,6 +137,7 @@ interface IntentCmdCtx {
   AsyncMissingHandleTestJSON: string;
   AsyncFailureHint: string;
   StreamMetadataJSON: string;
+  OutcomeJSON: string; // terminal-state table carried via cobra annotation ("" = none)
   StreamSelect: string; // RFC 6901 pointer of output.stream.select ("" = none)
   StreamToggle: { Name: string; Key: string } | null;
   StreamKind: string; // "sse" | "jsonl" | "" — how the backing operation streams
@@ -201,6 +203,7 @@ interface CLIOperationFlagCtx {
 interface CLIOperationCtx {
   OperationID: string;
   StreamMetadataJSON: string;
+  OutcomeJSON: string;
   StreamSelect: string;
   Flags: CLIOperationFlagCtx[];
   BodyFlags: string[];
@@ -277,6 +280,21 @@ function intentFallbackFlag(entry: IntentBodyEntry): string {
     return `--${entry.Name} 1`;
   }
   return `--${entry.Name} ${intentExamplePlaceholder(entry.Name || "value")}`;
+}
+
+function intentImpliedRules(flags: any[]): { Key: string; Values: string }[] {
+  const rules: { Key: string; Values: string }[] = [];
+  for (const f of flags) {
+    const implies: any[] = f.Implies || [];
+    const key = intentPointerKey(f.Bind?.Pointer || "");
+    if (!implies.length || !key) continue;
+    const values: Record<string, any> = Object.create(null);
+    for (const implied of implies) {
+      values[intentPointerKey(implied.Bind?.Pointer || "")] = implied.Value;
+    }
+    rules.push({ Key: key, Values: JSON.stringify(values) });
+  }
+  return rules;
 }
 
 // Single-segment RFC 6901 pointer → top-level body key. Args, presets and
@@ -1289,6 +1307,7 @@ function collectIntentManifest(): IntentManifestCtx {
         .join("\n"),
       Flags: flags,
       PromptFlags: flags.filter((f) => f.Required && !f.PresetCovered),
+      Implied: intentImpliedRules(cmd.Flags || []),
       PresetJSON: presetJSON,
       CommandDisplay: path.join(" "),
       VariantLabel: (route?.RequestVariant || "").replace(
@@ -1335,6 +1354,7 @@ function collectIntentManifest(): IntentManifestCtx {
       AsyncFailureHint: cmd.Hints?.CLI_ASYNC_FAILED?.[0] || "",
       StreamSelect: cmd.Output?.Stream?.Pointer || "",
       StreamMetadataJSON: streamMetadataJSON(cmd.Output?.Stream?.Metadata),
+      OutcomeJSON: outcomeJSON(cmd.Output?.Outcome),
       StreamToggle:
         !dispatch && intentStreamKind(found.op).kind
           ? intentDefaultOnStreamToggle(flags, presetJSON)
@@ -1371,6 +1391,32 @@ function intentStreamKind(op: Operation): { kind: string; sentinel: string } {
     }
   }
   return { kind: "", sentinel: "" };
+}
+
+// outcomeJSON serializes output.outcome for the runtime. The states map
+// arrives from Go map iteration, so it is sorted for a deterministic file.
+function outcomeJSON(outcome: CLICommandOutcome | null | undefined): string {
+  if (!outcome) {
+    return "";
+  }
+  const states: Record<string, string> = Object.create(null);
+  for (const state of Object.keys(outcome.States || {}).sort()) {
+    states[state] = outcome.States[state];
+  }
+  return JSON.stringify({
+    ...(outcome.StatePointer ? { statePointer: outcome.StatePointer } : {}),
+    ...(outcome.StreamStatePointer
+      ? { streamStatePointer: outcome.StreamStatePointer }
+      : {}),
+    states,
+    ...(outcome.ErrorPointer ? { errorPointer: outcome.ErrorPointer } : {}),
+    ...(outcome.StreamErrorPointer
+      ? { streamErrorPointer: outcome.StreamErrorPointer }
+      : {}),
+    ...(outcome.ErrorMessageField
+      ? { errorMessageField: outcome.ErrorMessageField }
+      : {}),
+  });
 }
 
 function streamMetadataJSON(
@@ -1583,6 +1629,7 @@ function getCLIOperationCtx(op: Operation): CLIOperationCtx | null {
     OperationID: declared.OperationID,
     StreamSelect: declared.Output?.Stream?.Pointer || "",
     StreamMetadataJSON: streamMetadataJSON(declared.Output?.Stream?.Metadata),
+    OutcomeJSON: outcomeJSON(declared.Output?.Outcome),
     Flags: flags,
     BodyFlags: bodyFlags,
     CanonicalBodyFlag: bodyFlags[bodyFlags.length - 1] || "",
@@ -2030,6 +2077,53 @@ function templateArtifactTestMockJSON(variant: string, mime: string): string {
 registerTemplateFunc(
   "templateArtifactTestMockJSON",
   templateArtifactTestMockJSON,
+);
+
+// The artifact test command's first declared failure state and the discrete
+// pointer that carries it, when the command declares output.outcome.
+function artifactTestOutcome(): { pointer: string; state: string } | null {
+  const cmd = getArtifactTestCommand();
+  if (!cmd?.OutcomeJSON) return null;
+  const outcome = JSON.parse(cmd.OutcomeJSON);
+  if (!outcome.statePointer) return null;
+  const state = Object.keys(outcome.states || {})
+    .sort()
+    .find((candidate) => outcome.states[candidate] === "failure");
+  return state ? { pointer: outcome.statePointer, state } : null;
+}
+
+function templateArtifactTestOutcomeFailureState(): string {
+  return artifactTestOutcome()?.state || "";
+}
+registerTemplateFunc(
+  "templateArtifactTestOutcomeFailureState",
+  templateArtifactTestOutcomeFailureState,
+);
+
+// The inline artifact mock with the declared failure state set at the
+// outcome's state pointer.
+function templateArtifactTestOutcomeFailureJSON(mime: string): string {
+  const cmd = getArtifactTestCommand();
+  const outcome = artifactTestOutcome();
+  if (!cmd || !outcome) return "{}";
+  const body = JSON.parse(
+    artifactTestMockJSON(JSON.parse(cmd.ArtifactJSON), "inline", mime),
+  );
+  let value: any = outcome.state;
+  for (const segment of outcome.pointer.split("/").slice(1).reverse()) {
+    if (/^(0|[1-9][0-9]*)$/.test(segment)) {
+      const list: any[] = [];
+      list[Number(segment)] = value;
+      value = list;
+      continue;
+    }
+    value = { [segment.replace(/~1/g, "/").replace(/~0/g, "~")]: value };
+  }
+  return JSON.stringify(mergeIntentTestValue(body, value));
+}
+registerTemplateFunc(
+  "templateArtifactTestOutcomeFailureJSON",
+  templateArtifactTestOutcomeFailureJSON,
 );
 
 // Whether the artifact test command's pointer contains a [*]; only then can

@@ -39,6 +39,11 @@
       "id": "GO-2026-5932",
       "package": "golang.org/x/crypto",
       "reason": "x/crypto/openpgp is unmaintained by design and the advisory has no fixed version, so no bump can ever clear it. Not reachable: the generated Terraform provider does not import any golang.org/x/crypto/openpgp packages; x/crypto is only a transitive dep of the Terraform plugin stack"
+    },
+    {
+      "id": "GHSA-82fw-gwwq-j7x9",
+      "package": "vitest",
+      "reason": "Path traversal via @vitest/mocker redirect mocks - dev-only test runner, and generated tests never use redirect mocks or expose the mocker over a network. No fix exists on the 3.x line; the first patched release is 4.1.11, which drops Node 18 while the TypeScript SDK still supports Node 18 (RUNTIMES.md). The MCP server target, whose Node floor is already 20+, moved to 4.1.11; revisit when the SDK's Node floor moves to 20"
     }
   ]
 }

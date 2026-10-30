@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: b76f0639e425901fecb124d1ffa0f638
+  docChecksum: 542812afcb058d0bf283cdd12d4e3e4a
   docVersion: 0.1.0
   speakeasyVersion: internal
   generationVersion: internal
@@ -11,9 +11,9 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.2.0
+    cliCommands: 0.2.1
     constsAndDefaults: 0.0.0
-    core: 0.9.10
+    core: 0.9.22
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -23,9 +23,9 @@ features:
     errorUnions: 0.0.0
     errors: 0.2.1
     examples: 0.1.1
-    globalSecurity: 0.1.0
+    globalSecurity: 0.1.1
     globalServerURLs: 0.1.0
-    globals: 0.1.1
+    globals: 0.1.2
     groups: 0.1.0
     includes: 0.0.0
     methodSecurity: 0.0.0
@@ -37,7 +37,7 @@ features:
     pagination: 0.2.0
     responseFormat: 0.1.2
     retries: 0.1.1
-    serverEvents: 0.1.4
+    serverEvents: 0.1.5
     serverIDs: 0.0.0
     tests: 0.0.0
     unions: 0.1.3
@@ -52,7 +52,7 @@ trackedFiles:
   USAGE.md:
     last_write_checksum: sha1:99ff99ed97e23963b9b6596c6c695b3ae0df0e5b
   cmd/cli/main.go:
-    last_write_checksum: sha1:d6899a14abd11391a2c144413365cc60b6b351ea
+    last_write_checksum: sha1:2dc24fc3ab0bbb8943aa9f1928689751d324c250
   cmd/gendocs/main.go:
     last_write_checksum: sha1:35c39ad98d33d6683b5e687a0b750c4f9aded222
   cmd/gendocs/main_test.go:
@@ -60,13 +60,13 @@ trackedFiles:
   go.mod:
     last_write_checksum: sha1:15ced474cbb1ec803f17960c0b73f10ea969c22a
   internal/cli/auth.go:
-    last_write_checksum: sha1:5120764443e6565b7a63c06ad91d6323806cdfea
+    last_write_checksum: sha1:437aab6849f3bb917de447a4568e06217fe302c3
   internal/cli/binaryandstringupload.go:
     last_write_checksum: sha1:20d8028b7618e73dcf1763372f9145ea325b32b0
   internal/cli/chat.go:
-    last_write_checksum: sha1:9a9077f9bd0eb3ef19d36d461243215c50f3442b
+    last_write_checksum: sha1:e195b15f923b77ba9c19861e0145ba17dd896c2c
   internal/cli/configure.go:
-    last_write_checksum: sha1:91f681e0c0bb3ec3fccfe48939b8bb0b71d89619
+    last_write_checksum: sha1:3f4f3f60afb2647dcd09159d9f3b91894f9441dd
   internal/cli/createuser.go:
     last_write_checksum: sha1:5b60000059db85dcf4c90f5e67c37b7fff3cf852
   internal/cli/createwithunion.go:
@@ -74,7 +74,7 @@ trackedFiles:
   internal/cli/deleteuser.go:
     last_write_checksum: sha1:e6876685816745a290da3903a03a3afe8f0812e7
   internal/cli/getasset.go:
-    last_write_checksum: sha1:5a5d0784d2880dd248401b62b0579e6b21ff7c04
+    last_write_checksum: sha1:88824e116bf23f10a35e329a86917ccbc0daf7b2
   internal/cli/getbinarydefaultresponse.go:
     last_write_checksum: sha1:75df919b8b943ca85ed7299d14cd2c5ee7cb7b56
   internal/cli/getduplicateexportcollision.go:
@@ -98,7 +98,7 @@ trackedFiles:
   internal/cli/getrequestbodyflattenedaway.go:
     last_write_checksum: sha1:838104ae10009e9ffdbcd306fa70f305fae97e42
   internal/cli/getunionerrors.go:
-    last_write_checksum: sha1:df57c146632e0f8a7da8320909ea47ef6cfd18ee
+    last_write_checksum: sha1:9f78af4b41e0da80a177df6b91b15367a2218cb2
   internal/cli/getuser.go:
     last_write_checksum: sha1:945c33394e81a6e3f1725c06b6090fb364e56d98
   internal/cli/group/root.go:
@@ -124,9 +124,9 @@ trackedFiles:
   internal/cli/intent_produce.go:
     last_write_checksum: sha1:bd40954296ab4b5dd4265987e5c8918d46209528
   internal/cli/intent_render.go:
-    last_write_checksum: sha1:9b211c0615b4df7cad91ca9434669eebcc7282e3
+    last_write_checksum: sha1:78811930e627878b1fcaf41dd2a6fcd208a3003d
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:b0e2860aa03588884166695a4904b025757f5b47
+    last_write_checksum: sha1:9a0baf8595e51aef6bdbbd381cfede03ea73b55e
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -180,13 +180,13 @@ trackedFiles:
   internal/cli/postfile.go:
     last_write_checksum: sha1:f67d5ddcaa3ea921513ee6f97fe5eb8db9580aae
   internal/cli/renderasset.go:
-    last_write_checksum: sha1:c72bde224ebd3246cce2e14e5f04b1e3ed854ba2
+    last_write_checksum: sha1:6ac1b5552a2f82c3ee4a300084f75af0972bda96
   internal/cli/root.go:
     last_write_checksum: sha1:48f538b9ead4f7b896c5064555a05f04987b0e1c
   internal/cli/streammetadata/root.go:
     last_write_checksum: sha1:42a01737002d2daef8a33be267f7060659fdac65
   internal/cli/streammetadata/streammetadata.go:
-    last_write_checksum: sha1:4c706900a7fd6d2bfaa971da5d46a118b192e53f
+    last_write_checksum: sha1:43dea3efb32cb60d4b1bfd90454959678111c465
   internal/cli/tag1/auth.go:
     last_write_checksum: sha1:f25ba9acd8909779428dd8bc0a7eeab5f5a292a4
   internal/cli/tag1/deprecated1.go:
@@ -194,7 +194,7 @@ trackedFiles:
   internal/cli/tag1/intent_tag1-recent.go:
     last_write_checksum: sha1:74592793f72ae26ba75f9d72ca19e60a110277a1
   internal/cli/tag1/listtest1.go:
-    last_write_checksum: sha1:6c371c7823d0f5cac94bcd743fee8eae3f3ba491
+    last_write_checksum: sha1:109eb128e3a17f24e409be2be64a18dad523ebc0
   internal/cli/tag1/postfilewithencoding.go:
     last_write_checksum: sha1:42504ad3f87f4b026582420766aea07d693916b9
   internal/cli/tag1/root.go:
@@ -222,17 +222,19 @@ trackedFiles:
   internal/cli/version.go:
     last_write_checksum: sha1:ef4d924ad83b7b2e9e4698a9f0ac229bac4060d4
   internal/cli/whoami.go:
-    last_write_checksum: sha1:ad27d6ccfed17dd213951f981030b010ababbf79
+    last_write_checksum: sha1:8f5ecd625c08390068268fd6a174a9b541315b63
   internal/client/client.go:
-    last_write_checksum: sha1:58db154dfc3b80e998471223136423d3ffc1ca92
+    last_write_checksum: sha1:a9c5d6b2d6251fa62325f3668db8b1920596e0d3
+  internal/client/client_test.go:
+    last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
-    last_write_checksum: sha1:30b37c632ff875e00e6bce57caa64050dff89fcf
+    last_write_checksum: sha1:dfabb86f02652b9b844f164bb5bccd49d1d7acf2
   internal/clierrors/clierrors.go:
     last_write_checksum: sha1:e17fb3e33e439c6997834182011540427d760857
   internal/config/config.go:
-    last_write_checksum: sha1:7d3e1555d3be75dcd615fb460f44bf1a4da784dd
+    last_write_checksum: sha1:c0c089ffc6809d4affbb902c9c550ee12b99423a
   internal/config/keyring.go:
-    last_write_checksum: sha1:7c0201503038fee2f5eac51bc0f0189e06d3a224
+    last_write_checksum: sha1:893474c3d2734f82532552c53eb3782623933eb1
   internal/explorer/explorer.go:
     last_write_checksum: sha1:c149087aa4be52cdf0b3f9a41d8f0c6dbe47c53f
   internal/explorer/styles.go:
@@ -250,9 +252,9 @@ trackedFiles:
   internal/flagutil/flags.go:
     last_write_checksum: sha1:39da30c99a7c8b3c698639bdbb8d29deedb4458a
   internal/flagutil/metadata.go:
-    last_write_checksum: sha1:685a46249436d145135cf771d849f2478209c98e
+    last_write_checksum: sha1:4bd4be50c1613cc50c0886291d9fcbf57a3ac2a7
   internal/flagutil/preset.go:
-    last_write_checksum: sha1:a6cf90b7dd09d11ffbd438fc3aba76806de5752a
+    last_write_checksum: sha1:cbe756496ae3524857c4b985b095c91483e58b4c
   internal/forms/forms.go:
     last_write_checksum: sha1:c21352632fd50812eda8d9ac9159208e26c15cfa
   internal/interactive/interactive.go:
@@ -262,17 +264,17 @@ trackedFiles:
   internal/interactive/policy_test.go:
     last_write_checksum: sha1:770e41163c2746f200544c985e26c7be16aaedb9
   internal/output/agentmode.go:
-    last_write_checksum: sha1:5b8c409dde2bd954b9d96e158d5e651c77d1ef10
+    last_write_checksum: sha1:cd38c0ae31c1dccf601a85d43b6651568c8d41a3
   internal/output/artifact.go:
     last_write_checksum: sha1:9375a066c2b18e6e076c4c1bebdf5137ada58170
   internal/output/artifact_test.go:
     last_write_checksum: sha1:ae6f2716d40191d5a46f0f0b2d00802be46e878b
   internal/output/async.go:
-    last_write_checksum: sha1:e37ed62e5a320b897388e4d0dcfa3cdfe1ffa989
+    last_write_checksum: sha1:3fee77ef0cdf3414e9a903222a4a671b5ad90f2c
   internal/output/binary.go:
-    last_write_checksum: sha1:843f1fafc38ee03782e978f617a07bb543f06d3b
+    last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:11ad9caaff14fc584399c2f88b328d9cc74f92a9
+    last_write_checksum: sha1:db7e072a1c68803b44a68ab0c0a620170bb5c6d1
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -281,22 +283,24 @@ trackedFiles:
     last_write_checksum: sha1:313fa20ec561de744a818df99d4659ba715e0a86
   internal/output/jq.go:
     last_write_checksum: sha1:9e59e92439a8c6269a76be1fa44e85cbbf2dee59
+  internal/output/outcome.go:
+    last_write_checksum: sha1:5b7a3ad24255889f7a5cdc53478c237e7f358b85
   internal/output/output.go:
-    last_write_checksum: sha1:b75c9ee7521310aeb70a561d5cfc98bd6d3e9da6
+    last_write_checksum: sha1:ad43078f33c1cd610c08a6417d4b5143e9caace6
   internal/output/output_test.go:
-    last_write_checksum: sha1:fc3d380351e2c9e5ffb2bc663e948ab37755e167
+    last_write_checksum: sha1:84a8a6cf79bfa62ae9635f992bc7578a2bbbcce3
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
-    last_write_checksum: sha1:50e20984f8f640e4db4251547ad9490dbce74658
+    last_write_checksum: sha1:ef1ce0609772febe04419419ab06da121e649f27
   internal/output/pretty.go:
     last_write_checksum: sha1:b7c74bd93d4e8a464956f098724dc653e9f8e594
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:bafe2e29958d59888553e30527ce340600b94c94
+    last_write_checksum: sha1:0bab1d6cbb6a5d6dca122c8d57a14467dd3f9237
   internal/output/streaming_test.go:
-    last_write_checksum: sha1:9bb53612aa2a3e6d3da96f0c8f8e2ce4ba99b509
+    last_write_checksum: sha1:ed4ffe1ebf27f5b32e69d0d2e4a377d47e1655c4
   internal/output/streamproject.go:
     last_write_checksum: sha1:19d7dec64b1f78cbcfb5420cc4e968aa7aedadd0
   internal/sdk/.gitattributes:
@@ -440,7 +444,7 @@ trackedFiles:
   internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:7fb4d81daaf907f9894a74cbcda0474399461414
   internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:aa4756ca1e28c2fbefbbf10e588652e842e67e0d
+    last_write_checksum: sha1:601be5db5ea03d1206810ce26998975748283dd5
   internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:fa39c1f2ddb12ccafded76afcf4cd754aa6b4d21
   internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -662,11 +666,11 @@ trackedFiles:
   internal/usage/schema.go:
     last_write_checksum: sha1:92fdc3775fa21a6a8283bcaa762beac6faf40e57
   scripts/install.ps1:
-    last_write_checksum: sha1:9dcf40ea00ecb8ceda83d5056f57235b43cf658a
+    last_write_checksum: sha1:c03368407505979c2b4498d0d754c7bcda82769a
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:1cd92a695f091ca03b3410c2024bbbbeec39ce3f
+    last_write_checksum: sha1:4ca3d41f09f6dc66d58a3c2b8de36722bb7e9dc3
   tests/async_test.go:
     last_write_checksum: sha1:7feb37653f240d6b9c625f4476365b018f738a03
   tests/cli_harness_test.go:
@@ -678,7 +682,7 @@ trackedFiles:
   tests/dryrun_matrix_test.go:
     last_write_checksum: sha1:6351cc5e9154ee932714f0037bfc9ee1c560daf6
   tests/dryrun_response_test.go:
-    last_write_checksum: sha1:235778680891223a3aef5b236bef7d624cf498cd
+    last_write_checksum: sha1:5b51354ae4312320191d52915b7aee7f3bee69c5
   tests/echo_server_test.go:
     last_write_checksum: sha1:c2325d3d67e1aeeb81e76b0df4f79eedb38e8742
   tests/intenthint_test.go:
@@ -932,7 +936,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/models/operations/binaryandstringupload.go:
     last_write_checksum: sha1:abbd174263b69f5b19baaec3685c1cfd4375aea6
   tests/mockserver/internal/sdk/models/operations/chat.go:
-    last_write_checksum: sha1:d51dfc8a83c2049c9573f1336a4c420888065383
+    last_write_checksum: sha1:68425147994d2985f0a230579ce88d0b6d18704d
   tests/mockserver/internal/sdk/models/operations/createnamespaceconflict.go:
     last_write_checksum: sha1:c78a9d0dbb60e9e2e14aeb9d8d9ac5a6faf3c001
   tests/mockserver/internal/sdk/models/operations/createsinglenamespacefoopet.go:
@@ -1104,7 +1108,7 @@ trackedFiles:
   tests/readme_examples_test.go:
     last_write_checksum: sha1:441c213c8049299e7b3efd8cb7033e5885610a20
   tests/request_progress_test.go:
-    last_write_checksum: sha1:06772a2e9900b76d04fc16f62e6c86b52a29407e
+    last_write_checksum: sha1:9b64e6626ee244a6a36d1c1b8bb0b0d20ed48a6e
   tests/sdk_test.go:
     last_write_checksum: sha1:0ac872f31dea293b708409ea99d662eafa9725b5
   tests/singlebar_test.go:

@@ -44,7 +44,6 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
             services/**/go.sum
 
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -176,10 +175,35 @@ jobs:
     uses: ./.github/workflows/test-cli.yml
     with:
       test-group: "review"
+  test-cli-windows-installer:
+    needs: [detect-targets]
+    if: needs.detect-targets.outputs.run-cli == 'true'
+    name: Test CLI - windows installer (${{ matrix.shell }})
+    timeout-minutes: 15
+    runs-on: windows-latest
+    permissions:
+      contents: "read"
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test generated Windows installer (powershell)
+        if: matrix.shell == 'powershell'
+        shell: powershell
+        run: ./scripts/test-windows-installer.ps1
+      - name: Test generated Windows installer (pwsh)
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
+        run: ./scripts/test-windows-installer.ps1
   test-cli:
     if: always() && needs.detect-targets.outputs.run-cli == 'true'
     needs:
       - detect-targets
+      - test-cli-windows-installer
       - test-cli-primary
       - test-cli-secondary
       - test-cli-tertiary
@@ -1003,7 +1027,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
+            services/**/go.sum
       - name: Test
         env:
           SPEAKEASY_GENERATED_LICENSE: agpl-3.0-only

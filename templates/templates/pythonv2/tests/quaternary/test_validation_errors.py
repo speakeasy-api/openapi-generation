@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional, Union
 
 import httpx
 import pytest
-from pydantic import BeforeValidator, ValidationError
+from pydantic import BeforeValidator, TypeAdapter, ValidationError, WrapValidator
 from typing_extensions import Annotated
 
 from openapi.models import errors
@@ -16,7 +16,7 @@ from openapi.models.shared import (
 )
 from openapi.types import BaseModel
 from openapi.utils.serializers import ALLOW_UNKNOWN_UNION_VARIANTS, construct_unvalidated
-from openapi.utils.unions import parse_open_union
+from openapi.utils.unions import decline_sibling_variants, parse_open_union
 from openapi.utils.unmarshal_json_response import unmarshal_json_response
 
 
@@ -255,9 +255,59 @@ def test_open_union_missing_discriminator_raises():
         _dispatch({"id": "c1"}, lenient=True)
 
 
-def test_open_union_without_response_context_unknown_disc_raises():
-    with pytest.raises(ValueError):
-        _dispatch({"type": "future-step", "id": "c1"}, lenient=True, info=_Info(None))
+def test_open_union_without_response_context_unknown_disc_is_unknown():
+    result = _dispatch({"type": "future-step", "id": "c1"}, lenient=True, info=_Info(None))
+    assert isinstance(result, _UnknownStep)
+    assert result.raw == {"type": "future-step", "id": "c1"}
+
+
+_SIBLING_VARIANTS = (("kind", frozenset({"note"})), ("type", frozenset({"message"})))
+_GUARDED_STEP = TypeAdapter(
+    Annotated[
+        Union[_SearchStep, _UnknownStep],
+        BeforeValidator(
+            partial(
+                parse_open_union,
+                disc_key="type",
+                variants=_VARIANTS,
+                unknown_cls=_UnknownStep,
+                union_name="_Step",
+                lenient=False,
+            )
+        ),
+        WrapValidator(
+            partial(decline_sibling_variants, union_name="_Step", sibling_variants=_SIBLING_VARIANTS)
+        ),
+    ]
+)
+
+
+@pytest.mark.parametrize("value", [
+    {"type": "message", "id": "c1"},
+    {"type": "future-step", "kind": "note"},
+])
+def test_open_union_sibling_variant_is_declined_without_response_context(value):
+    with pytest.raises(ValidationError, match="belongs to another member of the enclosing union"):
+        _GUARDED_STEP.validate_python(value)
+
+
+def test_open_union_unrelated_disc_is_unknown_with_sibling_guard():
+    value = {"type": "future-step", "kind": ["note"]}
+    result = _GUARDED_STEP.validate_python(value)
+    assert isinstance(result, _UnknownStep)
+    assert result.raw == value
+
+
+def test_open_union_known_variant_is_kept_with_sibling_guard():
+    value = {"type": "search", "id": "c1", "arguments": {"queries": ["q"]}, "kind": "note"}
+    assert isinstance(_GUARDED_STEP.validate_python(value), _SearchStep)
+
+
+def test_open_union_sibling_variant_is_unknown_in_response():
+    result = _GUARDED_STEP.validate_python(
+        {"type": "message", "id": "c1"}, context={ALLOW_UNKNOWN_UNION_VARIANTS: True}
+    )
+    assert isinstance(result, _UnknownStep)
 
 
 def test_open_union_without_response_context_variant_error_propagates():

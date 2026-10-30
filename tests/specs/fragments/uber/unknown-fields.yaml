@@ -1,0 +1,403 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /anything/unknown-fields-group:
+    get:
+      operationId: echoGroupedFields
+      x-speakeasy-group: toJson
+      x-speakeasy-exclude-test-sdk: [ruby]
+      description: Belongs to a group named like a common model serialization method, so the group accessor must keep its name when models reserve that method name. Its query parameter has the same name, so method arguments and their documentation must keep it too.
+      parameters:
+        - name: toJson
+          in: query
+          required: false
+          description: Echoed back in the request URL.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The echoed request URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+  /anything/unknown-fields-query:
+    get:
+      operationId: echoOptionalJsonQuery
+      description: Echoes an optional JSON query parameter without changing its omission semantics.
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          content:
+            application/json:
+              schema:
+                title: UnknownFieldsQueryFilter
+                type: object
+                properties:
+                  label:
+                    type: string
+      responses:
+        '200':
+          description: The echoed request URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+  /anything/unknown-fields:
+    post:
+      operationId: echoUnknownFields
+      x-speakeasy-exclude-test-sdk: [javav2]
+      description: Echoes nested objects to exercise preservation of undeclared fields in requests and responses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FieldEnvelope'
+      responses:
+        '200':
+          description: The echoed JSON request and transport metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [json]
+                properties:
+                  json:
+                    $ref: '#/components/schemas/FieldEnvelope'
+        '400':
+          description: A structured error with additional server fields and a required const populated by its default.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, kind]
+                properties:
+                  message:
+                    type: string
+                  kind:
+                    type: string
+                    const: invalid
+                  detail:
+                    $ref: '#/components/schemas/FieldNode'
+  /anything/unknown-fields-flattened:
+    post:
+      operationId: echoFlattenedUnknownFields
+      description: Echoes a body small enough to be flattened into operation arguments, so undeclared fields can only travel in nested objects.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlattenedFields'
+      responses:
+        '200':
+          description: The echoed JSON request.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [json]
+                properties:
+                  json:
+                    $ref: '#/components/schemas/FlattenedFields'
+components:
+  schemas:
+    FieldEnvelope:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+        child:
+          $ref: '#/components/schemas/FieldNode'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldNode'
+        lookup:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldNode'
+        choice:
+          $ref: '#/components/schemas/Choice'
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Choice'
+        history:
+          description: A union of open discriminated unions sharing the discriminator property, holding earlier responses sent back as request input. History steps nest the other union.
+          anyOf:
+            - $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                $ref: '#/components/schemas/HistoryStep'
+            - type: array
+              items:
+                $ref: '#/components/schemas/Choice'
+            - type: string
+        nullableHistory:
+          description: A union of open discriminated unions held as nullable array items, so no member owns a value on its own.
+          anyOf:
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/Choice'
+                  - type: 'null'
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/HistoryStep'
+                  - type: 'null'
+        nestedHistory:
+          description: A union of open discriminated unions held two array levels deep.
+          anyOf:
+            - type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryStep'
+        historyByName:
+          description: A union of open discriminated unions held as map values.
+          anyOf:
+            - type: object
+              additionalProperties:
+                $ref: '#/components/schemas/Choice'
+            - type: object
+              additionalProperties:
+                $ref: '#/components/schemas/HistoryStep'
+        freeformHistory:
+          description: A union of open discriminated unions with a free-form object member, which accepts values that neither open union accepts.
+          anyOf:
+            - $ref: '#/components/schemas/HistoryStep'
+            - $ref: '#/components/schemas/Choice'
+            - type: object
+              additionalProperties: true
+        stepHistory:
+          description: A union of an open discriminated union and an array of another one, so a list is validated against the array member even when an item carries a discriminator value of the other union.
+          anyOf:
+            - $ref: '#/components/schemas/Choice'
+            - type: array
+              items:
+                $ref: '#/components/schemas/HistoryStep'
+        plainChoice:
+          anyOf:
+            - $ref: '#/components/schemas/TextFields'
+            - $ref: '#/components/schemas/NumberFields'
+        requiredOnly:
+          $ref: '#/components/schemas/RequiredFields'
+        composed:
+          allOf:
+            - $ref: '#/components/schemas/FieldNode'
+            - type: object
+              properties:
+                category:
+                  type: string
+        split:
+          $ref: '#/components/schemas/SplitFields'
+        empty:
+          $ref: '#/components/schemas/EmptyFields'
+        open:
+          $ref: '#/components/schemas/OpenFields'
+        typed:
+          $ref: '#/components/schemas/TypedFields'
+        typedNodes:
+          $ref: '#/components/schemas/TypedNodes'
+        closed:
+          $ref: '#/components/schemas/ClosedFields'
+        constant:
+          $ref: '#/components/schemas/ConstFields'
+        arbitrary: {}
+        futureKind:
+          type: string
+          enum: [first, second]
+          x-speakeasy-unknown-values: allow
+        futureCode:
+          type: integer
+          enum: [1, 2]
+          x-speakeasy-unknown-values: allow
+        methodNames:
+          type: object
+          properties:
+            toDict:
+              type: string
+            toJson:
+              type: string
+    FieldNode:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+        nullable:
+          type: [string, 'null']
+        child:
+          $ref: '#/components/schemas/FieldNode'
+    Choice:
+      oneOf:
+        - $ref: '#/components/schemas/TextChoice'
+        - $ref: '#/components/schemas/NumberChoice'
+      discriminator:
+        propertyName: kind
+        mapping:
+          text: '#/components/schemas/TextChoice'
+          number: '#/components/schemas/NumberChoice'
+    TextChoice:
+      type: object
+      required: [kind, text]
+      properties:
+        kind:
+          $ref: '#/components/schemas/TextChoiceKind'
+        text:
+          type: string
+    NumberChoice:
+      type: object
+      required: [kind, number]
+      properties:
+        kind:
+          $ref: '#/components/schemas/NumberChoiceKind'
+        number:
+          type: integer
+    HistoryStep:
+      oneOf:
+        - $ref: '#/components/schemas/NoteStep'
+        - $ref: '#/components/schemas/PauseStep'
+      discriminator:
+        propertyName: kind
+        mapping:
+          note: '#/components/schemas/NoteStep'
+          pause: '#/components/schemas/PauseStep'
+    NoteStep:
+      type: object
+      required: [kind, content]
+      properties:
+        kind:
+          $ref: '#/components/schemas/NoteStepKind'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Choice'
+    PauseStep:
+      type: object
+      required: [kind, seconds]
+      properties:
+        kind:
+          $ref: '#/components/schemas/PauseStepKind'
+        seconds:
+          type: integer
+    TextChoiceKind:
+      type: string
+      enum: [text]
+    NumberChoiceKind:
+      type: string
+      enum: [number]
+    NoteStepKind:
+      type: string
+      enum: [note]
+    PauseStepKind:
+      type: string
+      enum: [pause]
+    OpenFields:
+      type: object
+      additionalProperties: true
+      properties:
+        label:
+          type: string
+    TypedFields:
+      type: object
+      additionalProperties:
+        type: string
+      properties:
+        label:
+          type: string
+    TypedNodes:
+      type: object
+      description: Additional properties typed as an object schema, whose values can carry undeclared fields of their own.
+      additionalProperties:
+        $ref: '#/components/schemas/FieldNode'
+      properties:
+        label:
+          type: string
+    ClosedFields:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+    TextFields:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        label:
+          type: string
+    NumberFields:
+      type: object
+      required: [number]
+      properties:
+        number:
+          type: integer
+        label:
+          type: string
+    RequiredFields:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+    SplitFields:
+      type: object
+      properties:
+        label:
+          type: string
+        id:
+          type: string
+          readOnly: true
+        secret:
+          type: string
+          writeOnly: true
+    EmptyFields:
+      type: object
+      additionalProperties: false
+    ConstFields:
+      type: object
+      description: A required const alongside optional fields, one of them with a default, so values are populated by their defaults rather than by the caller.
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          const: fixed
+        label:
+          type: string
+        priority:
+          type: integer
+          default: 1
+    FlattenedFields:
+      type: object
+      description: A body with few enough properties to be flattened into operation arguments.
+      required: [label]
+      properties:
+        label:
+          type: string
+        child:
+          $ref: '#/components/schemas/FieldNode'

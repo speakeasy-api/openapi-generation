@@ -419,6 +419,11 @@ function encodePathParams(): boolean {
 }
 registerTemplateFunc("encodePathParams", encodePathParams);
 
+function applyPathParamDefaults(): boolean {
+  return !!context.Global.Config.FixFlags?.["applyPathParamDefaults"];
+}
+registerTemplateFunc("applyPathParamDefaults", applyPathParamDefaults);
+
 const allowReservedIgnoredWarnings = new Set<string>();
 
 function warnAllowReservedIgnored(annotation: ParamAnnotation) {

@@ -185,6 +185,93 @@ func TestDebugRedactsSensitiveResponseHeaders(t *testing.T) {
 	assert.NotContains(t, stderr, "secret123", "sensitive response cookie should be redacted")
 }
 
+func TestResolvedCredentialsScrubbedFromEchoedOutput(t *testing.T) {
+	const apiKey = `echoed<api>&key"4821`
+	// json.Encoder escapes <, > and & as \u003c, \u003e and \u0026, and " as \".
+	const jsonEscapedKey = `echoed\u003capi\u003e\u0026key\"4821`
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Echo-Key", r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "invalid key " + r.Header.Get("Authorization"),
+			"key":     r.Header.Get("Authorization"),
+		})
+	}))
+	defer s.Close()
+
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{name: "pretty error", args: []string{"methods", "method-get"}},
+		{name: "json error", args: []string{"--output-format", "json", "methods", "method-get"}},
+		{name: "debug", args: []string{"--debug", "methods", "method-get"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, append([]string{"--api-key-auth", apiKey}, tc.args...))
+			require.Error(t, err)
+
+			stderr := h.GetStderr()
+			assert.NotContains(t, stderr, apiKey)
+			assert.NotContains(t, stderr, jsonEscapedKey)
+			assert.NotContains(t, stderr, `key\"4821`)
+			assert.Contains(t, stderr, "[REDACTED]")
+		})
+	}
+}
+
+func TestResolvedCredentialsScrubbedFromJSONErrorEnvelopes(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		apiKey string
+		body   func(key string) []byte
+		check  func(t *testing.T, envelope map[string]interface{})
+	}{
+		{
+			name:   "scalar body with an escaped credential",
+			apiKey: `example"secret-91`,
+			body: func(key string) []byte {
+				data, _ := json.Marshal("invalid key " + key)
+				return data
+			},
+		},
+		{
+			name:   "numeric credential echo",
+			apiKey: "123456",
+			body: func(string) []byte {
+				return []byte(`{"message":"invalid key","echo":123456,"other":1234567}`)
+			},
+			check: func(t *testing.T, envelope map[string]interface{}) {
+				assert.Equal(t, "[REDACTED]", envelope["echo"])
+				assert.Equal(t, float64(1234567), envelope["other"])
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				_, _ = w.Write(tc.body(r.Header.Get("Authorization")))
+			}))
+			defer s.Close()
+
+			h := NewCLITestHarness(t)
+			err := h.RunWithServer(s.URL, []string{"--api-key-auth", tc.apiKey, "--output-format", "json", "methods", "method-get"})
+			require.Error(t, err)
+
+			stderr := h.GetStderr()
+			var envelope map[string]interface{}
+			require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(stderr)), &envelope), "error envelope must stay valid JSON: %s", stderr)
+			assert.NotContains(t, stderr, "secret-91")
+			if tc.check != nil {
+				tc.check(t, envelope)
+			}
+		})
+	}
+}
+
 func TestDryRunWithRequestBody(t *testing.T) {
 
 

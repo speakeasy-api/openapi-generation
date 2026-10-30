@@ -42,6 +42,7 @@ const (
 	TestAuthBearerAuthOperationWithPrefix
 	TestAuthBearerAuthOperationWithoutPrefix
 	TestAuthGlobalSecurityFieldsOrdering
+	TestAuthGlobalSecurityEmpty
 	TestAuthGlobalSecurityOptionFieldsOrdering
 	TestAuthOauth2Auth
 	TestAuthOpenIDConnectAuth
@@ -58,6 +59,7 @@ const (
 	TestAuthGlobalSecurityFlattening
 	TestAuthGlobalSecurityFlatteningCallback
 	TestAuthGlobalSecurityFlatteningEnvVarFallback
+	TestAuthGlobalSecurityFlatteningEmpty
 	TestAuthHoistedOperationAuthRetained
 	TestAuthCustomSecurityOptionAppId
 	TestAuthCustomSecuritySchemeAppId
@@ -135,6 +137,7 @@ const (
 	TestParametersCamelCase
 	TestParametersConstQueryParams
 	TestParametersDefaultQueryParams
+	TestParametersDefaultPathParams
 	TestMultiLevelGrouping
 	TestRequestBodiesPostEmptyObject
 	TestRequestBodiesPostApplicationJSONSimple
@@ -781,6 +784,7 @@ const (
 	TestJsonlStreamTimeoutStillBoundsSlowStream
 	TestJsonlStreamWithTimeoutStreamsToCompletion
 	TestSharedEnumConstructorDefault
+	TestUnknownFieldsJsonRoundTrip
 )
 
 func GetAllTests() []Test {

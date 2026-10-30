@@ -78,6 +78,14 @@ func populateParsedParameters(pathParams interface{}, globals interface{}, parse
 				globalsAlreadyPopulated = append(globalsAlreadyPopulated, fieldType.Name)
 			}
 		}
+		{{- if applyPathParamDefaults}}
+
+		if fieldType.Type.Kind() == reflect.String && valType.Len() == 0 {
+			if defaultValue := parseDefaultTag(fieldType); defaultValue != nil {
+				valType = reflect.ValueOf(*defaultValue).Convert(fieldType.Type)
+			}
+		}
+		{{- end}}
 
 		if ppTag.Serialization != "" {
 			vals, err := populateSerializedParams(ppTag, fieldType.Type, valType)

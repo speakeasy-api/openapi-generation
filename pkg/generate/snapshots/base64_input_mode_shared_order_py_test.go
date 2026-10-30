@@ -154,7 +154,10 @@ from base64order.types import (
     Base64FileInput,
     BaseModel,
     UNSET_SENTINEL,
+    current_exclude_none,
+    serialize_with_info,
 )
+from base64order.types.basemodel import current_filtered_dump
 from pydantic import model_serializer
 from typing import Optional, Union
 from typing_extensions import NotRequired, TypedDict
@@ -168,13 +171,20 @@ class Gadget2(BaseModel):
     image: Optional[Base64EncodedString] = None
 
     @model_serializer(mode="wrap")
+    def _serialize_model_with_info(self, handler, info):
+        return serialize_with_info(self.serialize_model, handler, info)
+
     def serialize_model(self, handler):
         optional_fields = set(["image"])
+        exclude_none = current_exclude_none()
+        skip_filtered = exclude_none is False or current_filtered_dump()
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
-            k = f.alias or n
+            k = f.alias if f.alias is not None else n
+            if k not in serialized and n not in serialized and skip_filtered:
+                continue
             val = serialized.get(k, serialized.get(n))
 
             if val != UNSET_SENTINEL:
@@ -214,7 +224,10 @@ from base64order.types import (
     Base64FileInput,
     BaseModel,
     UNSET_SENTINEL,
+    current_exclude_none,
+    serialize_with_info,
 )
+from base64order.types.basemodel import current_filtered_dump
 from pydantic import model_serializer
 from typing import Optional, Union
 from typing_extensions import NotRequired, TypedDict
@@ -231,13 +244,20 @@ class Thumbnail(BaseModel):
     image: Optional[Base64EncodedString] = None
 
     @model_serializer(mode="wrap")
+    def _serialize_model_with_info(self, handler, info):
+        return serialize_with_info(self.serialize_model, handler, info)
+
     def serialize_model(self, handler):
         optional_fields = set(["label", "image"])
+        exclude_none = current_exclude_none()
+        skip_filtered = exclude_none is False or current_filtered_dump()
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
-            k = f.alias or n
+            k = f.alias if f.alias is not None else n
+            if k not in serialized and n not in serialized and skip_filtered:
+                continue
             val = serialized.get(k, serialized.get(n))
 
             if val != UNSET_SENTINEL:
@@ -260,7 +280,10 @@ from base64order.types import (
     Base64FileInput,
     BaseModel,
     UNSET_SENTINEL,
+    current_exclude_none,
+    serialize_with_info,
 )
+from base64order.types.basemodel import current_filtered_dump
 import pydantic
 from pydantic import model_serializer
 from typing import Dict, List, Optional, Union
@@ -312,15 +335,22 @@ class Widget(BaseModel):
     ] = None
 
     @model_serializer(mode="wrap")
+    def _serialize_model_with_info(self, handler, info):
+        return serialize_with_info(self.serialize_model, handler, info)
+
     def serialize_model(self, handler):
         optional_fields = set(
             ["id", "thumbnail", "images", "imagesByName", "imageOrIndex", "imageOrFlag"]
         )
+        exclude_none = current_exclude_none()
+        skip_filtered = exclude_none is False or current_filtered_dump()
         serialized = handler(self)
         m = {}
 
         for n, f in type(self).model_fields.items():
-            k = f.alias or n
+            k = f.alias if f.alias is not None else n
+            if k not in serialized and n not in serialized and skip_filtered:
+                continue
             val = serialized.get(k, serialized.get(n))
 
             if val != UNSET_SENTINEL:
