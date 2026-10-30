@@ -252,6 +252,7 @@ function mutateAssertionValue(
 ): string {
   if (
     getResponseFormat() == "flat" &&
+    context?.totalResponses > 1 &&
     responseType?.Type?.toString() === "union"
   ) {
     value += `.${sanitizeFieldName(sanitizeUnionTypeName(fieldDef.Type))}`;
