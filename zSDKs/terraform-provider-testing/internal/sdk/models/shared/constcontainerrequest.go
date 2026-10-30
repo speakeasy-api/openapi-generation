@@ -80,5 +80,5 @@ func (c *ConstContainerRequest) GetEmptyMap() map[string]string {
 }
 
 func (c *ConstContainerRequest) GetFixedMap() map[string]int64 {
-	return map[string]int64{"min": 1, "max": 10}
+	return map[string]int64{"max": 10, "min": 1}
 }

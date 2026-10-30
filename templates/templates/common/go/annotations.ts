@@ -311,7 +311,9 @@ function templateConstsAndDefaultsAnnotation(
     if (fieldDef.Const) {
       return {
         Tag: "const",
-        Value: sanitizeValue(JSON.stringify(fieldDef.Const.Value)),
+        Value: sanitizeValue(
+          JSON.stringify(withSortedKeys(fieldDef.Const.Value)),
+        ),
       };
     }
 
