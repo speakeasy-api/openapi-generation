@@ -46,7 +46,7 @@ type ConstContainerRequest struct {
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	emptyMap map[string]string `const:"{}" json:"empty_map"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
-	fixedMap map[string]int64 `const:"{\"max\":10}" json:"fixed_map,omitempty"`
+	fixedMap map[string]int64 `const:"{\"max\":10,\"min\":1}" json:"fixed_map,omitempty"`
 }
 
 func (c ConstContainerRequest) MarshalJSON() ([]byte, error) {
@@ -80,5 +80,5 @@ func (c *ConstContainerRequest) GetEmptyMap() map[string]string {
 }
 
 func (c *ConstContainerRequest) GetFixedMap() map[string]int64 {
-	return map[string]int64{"max": 10}
+	return map[string]int64{"min": 1, "max": 10}
 }

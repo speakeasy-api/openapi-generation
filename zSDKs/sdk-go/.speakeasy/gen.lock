@@ -713,7 +713,7 @@ trackedFiles:
   internal/utils/headers.go:
     last_write_checksum: sha1:e529ca3d7ab96a091021bcd471ba2cbef50286b3
   internal/utils/json.go:
-    last_write_checksum: sha1:031133cd77b7fb3478635075efe7f830be401140
+    last_write_checksum: sha1:990470ab3df4c670d7110b3d598bd4c1185ffb53
   internal/utils/pathparams.go:
     last_write_checksum: sha1:a092fc31b7c8fac29c359ddfa8bf2e02763fa097
   internal/utils/queryparams.go:
@@ -1233,7 +1233,7 @@ trackedFiles:
   tests/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   tests/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:a79de1a199a6ae298f673b1aa07de4d7ee61eff5
+    last_write_checksum: sha1:66bc354bf281916b0ee3bb77bdb0f173d82dab38
   tests/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   tests/mockserver/internal/sdk/utils/sort.go:

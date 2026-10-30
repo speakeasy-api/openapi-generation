@@ -1733,9 +1733,10 @@ func constScalarMatchesType(val any, itemType *ast.TypeDef) bool {
 	switch itemType.Type {
 	case ast.DataTypeEnum:
 		return itemType.Enum != nil && slices.Contains(itemType.Enum.Values, fmt.Sprint(val))
-	case ast.DataTypeBoolean, ast.DataTypeInteger, ast.DataTypeInt32, ast.DataTypeNumber, ast.DataTypeFloat32,
-		ast.DataTypeString, ast.DataTypeDate, ast.DataTypeDateTime, ast.DataTypeUUID, ast.DataTypeDuration:
+	case ast.DataTypeInteger, ast.DataTypeInt32, ast.DataTypeNumber, ast.DataTypeFloat32:
 		return itemType.Format != "string" && defaultValueMatchesType(val, itemType.Type)
+	case ast.DataTypeBoolean, ast.DataTypeString, ast.DataTypeDate, ast.DataTypeDateTime, ast.DataTypeUUID, ast.DataTypeDuration:
+		return defaultValueMatchesType(val, itemType.Type)
 	default:
 		return false
 	}

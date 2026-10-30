@@ -5999,6 +5999,7 @@ components:
             type: integer
           const:
             max: 10
+            min: 1
       required:
         - name
         - empty_list
@@ -6039,6 +6040,7 @@ components:
             type: integer
           const:
             max: 10
+            min: 1
     DiscriminatedUnionCreateRequest:
       x-speakeasy-entity: DiscriminatedUnion
       type: object

@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: b5e0ebee357a2bc4151a20fb322e722c
+  docChecksum: 7e117218d1b4664bc4b4b9360bfcebcf
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -2422,7 +2422,7 @@ trackedFiles:
   internal/sdk/internal/utils/jq.go:
     last_write_checksum: sha1:2e75ed7a7db1f91e97dac1ac4ca7801b2beb69b5
   internal/sdk/internal/utils/json.go:
-    last_write_checksum: sha1:5d331461a0348861323c12b9489fefa388dd6a76
+    last_write_checksum: sha1:998dc779115be1a9c7ebebf7221a4d8424141c6f
   internal/sdk/internal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/internal/utils/oauth2_sessions.go:
@@ -3098,9 +3098,9 @@ trackedFiles:
   internal/sdk/models/shared/basicsearch.go:
     last_write_checksum: sha1:ebc8943a31148f7623c5f8ff940dd81c1b52f23d
   internal/sdk/models/shared/constcontainerrequest.go:
-    last_write_checksum: sha1:3cdb41c7b838e1c15dd0483ce7f685fdc6e7d480
+    last_write_checksum: sha1:08457751e87b9249244c6a938fbe5db31a5561e8
   internal/sdk/models/shared/constcontainerresponse.go:
-    last_write_checksum: sha1:d94a9a07729db01d47dd0ff890a363406d2169e5
+    last_write_checksum: sha1:6b4bad498e1a600df8da2db7d8e6e7ce1aa999aa
   internal/sdk/models/shared/discriminatedobject.go:
     last_write_checksum: sha1:9bb5641a1bcb27ec59c1f16d82d8a251ec733286
   internal/sdk/models/shared/discriminatedunionarraycreaterequest.go:
@@ -6051,10 +6051,10 @@ examples:
   create-const-container:
     speakeasy-default-create-const-container:
       requestBody:
-        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10}}
+        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
   get-const-container:
     speakeasy-default-get-const-container:
       parameters:
@@ -6062,7 +6062,7 @@ examples:
           id: "<id>"
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"min": 1, "max": 10}}
   delete-const-container:
     speakeasy-default-delete-const-container:
       parameters:
