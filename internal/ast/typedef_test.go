@@ -18,6 +18,46 @@ func TestTypeDef_IsEqualEnumGroups(t *testing.T) {
 	require.Error(t, original.IsEqual(cloned))
 }
 
+func TestTypeDef_IsEqualDiscriminatorMappingCount(t *testing.T) {
+	t.Parallel()
+
+	cat := &TypeDef{Type: DataTypeClass, Name: "Cat"}
+	dog := &TypeDef{Type: DataTypeClass, Name: "Dog"}
+
+	left := &TypeDef{
+		Type: DataTypeUnion,
+		Name: "LeftPet",
+		Discriminator: &Discriminator{
+			TypePropertyName: "kind",
+			Mapping: DiscriminatorMappings{
+				{Name: "cat", Type: cat},
+				{Name: "dog", Type: dog},
+			},
+		},
+		AssociatedTypes: TypeDefs{cat, dog},
+	}
+	right := &TypeDef{
+		Type: DataTypeUnion,
+		Name: "RightPet",
+		Discriminator: &Discriminator{
+			TypePropertyName: "kind",
+			Mapping: DiscriminatorMappings{
+				{Name: "cat", Type: cat},
+			},
+		},
+		AssociatedTypes: TypeDefs{cat},
+	}
+
+	require.NotPanics(t, func() {
+		err := left.IsEqual(right)
+		require.ErrorIs(t, err, ErrUnionDiscriminatorMismatch)
+		require.Contains(t, err.Error(), "expected 2 discriminator mappings")
+	})
+	require.NotPanics(t, func() {
+		require.ErrorIs(t, right.IsEqual(left), ErrUnionDiscriminatorMismatch)
+	})
+}
+
 func TestDiscriminatorMappings_Clone(t *testing.T) {
 	t.Parallel()
 

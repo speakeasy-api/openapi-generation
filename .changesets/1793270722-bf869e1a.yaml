@@ -1,0 +1,11 @@
+id: 1793270722-bf869e1a
+features:
+    - responseFormat
+    - unions
+targets:
+    - go
+type: fix
+bump: patch
+description: collapse flat response unions whose content types share one schema into that single type
+author: AshGodfrey
+date: "2026-10-29"
