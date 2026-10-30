@@ -1705,6 +1705,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/pythonv2/tests/primary/test_response_helpers.py":                                                    0o644,
 	"templates/pythonv2/tests/primary/test_retries.py":                                                             0o644,
 	"templates/pythonv2/tests/primary/test_retries_additional.py":                                                  0o644,
+	"templates/pythonv2/tests/primary/test_serializers_additional.py":                                              0o644,
 	"templates/pythonv2/tests/primary/test_servers.py":                                                             0o644,
 	"templates/pythonv2/tests/primary/test_telemetry.py.stmpl":                                                     0o644,
 	"templates/pythonv2/tests/primary/test_timeout_additional.py":                                                  0o644,
