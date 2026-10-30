@@ -363,6 +363,8 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "response-body-limit",
+    "timeout-operation-extension-is-respected",
   ].includes(test);
 }
 

@@ -66,12 +66,14 @@ public class Options {
 
         public Builder timeout(Duration timeout) throws IllegalArgumentException {
             Utils.checkNotNull(timeout, "timeout");
-            this.timeout = Optional.of(timeout);
-            return this;
+            return timeout(Optional.of(timeout));
         }
 
         public Builder timeout(Optional<Duration> timeout) throws IllegalArgumentException {
             Utils.checkNotNull(timeout, "timeout");
+            if (timeout.isPresent() && (timeout.get().isZero() || timeout.get().isNegative())) {
+                throw new IllegalArgumentException("timeout must be positive");
+            }
             this.timeout = timeout;
             return this;
         }

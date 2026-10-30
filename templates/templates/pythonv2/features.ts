@@ -434,11 +434,9 @@ function isTestSkipped(test: string): boolean {
     "event-stream-equivalent-number-lexemes",
     "event-stream-null-and-undeclared-fields",
     "parameters-default-path-params",
-    "response-body-limit-async",
-    "response-body-limit-sync",
-    "response-body-limit-within-limit",
-    "timeout-ms-override-is-respected-async",
     "timeout-sdk-default-is-respected",
+    "response-body-limit",
+    "timeout-operation-extension-is-respected",
   ].includes(test);
 }
 

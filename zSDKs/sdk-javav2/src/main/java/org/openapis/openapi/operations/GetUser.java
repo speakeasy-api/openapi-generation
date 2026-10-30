@@ -102,6 +102,10 @@ public class GetUser {
     }
 
     public static class Sync extends Base implements RequestOperation<GetUserRequest, GetUserResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -171,6 +175,9 @@ public class GetUser {
 
     public static class Async extends Base
             implements AsyncRequestOperation<GetUserRequest, org.openapis.openapi.models.operations.async.GetUserResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

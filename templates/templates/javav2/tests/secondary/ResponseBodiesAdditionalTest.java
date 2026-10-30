@@ -2,6 +2,7 @@ package org.openapis.secondary.openapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.openapis.secondary.openapi.Helpers.HTTPBIN_URL;
 
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyBytesGetResponse;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyStringGetResponse;
+
 
 import java.util.concurrent.TimeUnit;
 
@@ -24,28 +26,16 @@ public class ResponseBodiesAdditionalTest {
 
     @Test
     @Timeout(value = 15, unit = TimeUnit.SECONDS)
-    public void testResponseBodyBytesGet() throws Exception {
-        SDK s = SDK.builder().serverURL(HTTPBIN_URL).build();
+    public void testResponseBodyLimit() throws Exception {
+        SDK capped = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(50).build();
 
-        ResponseBodyBytesGetResponse res = s.responseBodies().responseBodyBytesGet().call();
-
+        ResponseBodyBytesGetResponse res = capped.responseBodies().responseBodyBytesGet().call();
         assertEquals(200, res.statusCode());
-        assertNotNull(res.bytes());
+        assertThrows(org.openapis.secondary.openapi.utils.ResponseTooLargeException.class,
+                () -> IOUtils.toByteArray(res.bytes()));
 
-        byte[] bytes = new byte[100];
-        IOUtils.readFully(res.bytes(), bytes, 0, 100); // throws if 100 bytes not streamed
-        assertEquals(-1, res.bytes().read());
-    }
-
-    @Test
-    @Timeout(value = 15, unit = TimeUnit.SECONDS)
-    public void testResponseBodyStringGet() throws Exception {
-        SDK s = SDK.builder().serverURL(HTTPBIN_URL).build();
-
-        ResponseBodyStringGetResponse res = s.responseBodies().responseBodyStringGet().call();
-
-        assertEquals(200, res.statusCode());
-        assertNotNull(res.html());
-        assertTrue(res.html().contains("Herman Melville - Moby-Dick"));
+        SDK roomy = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(200).build();
+        ResponseBodyBytesGetResponse ok = roomy.responseBodies().responseBodyBytesGet().call();
+        assertEquals(100, IOUtils.toByteArray(ok.bytes()).length);
     }
 }

@@ -95,6 +95,10 @@ public class Auth {
     }
 
     public static class Sync extends Base implements RequestlessOperation<AuthResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nonnull AuthSecurity security, Headers _headers) {
+            this(sdkConfiguration, security, null, _headers);
+        }
+
         public Sync(
                 @Nonnull SDKConfiguration sdkConfiguration,
                 @Nonnull AuthSecurity security,
@@ -169,6 +173,9 @@ public class Auth {
 
     public static class Async extends Base
             implements AsyncRequestlessOperation<org.openapis.openapi.models.operations.async.AuthResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nonnull AuthSecurity security, Headers _headers) {
+            this(sdkConfiguration, security, null, _headers);
+        }
 
         public Async(
                 @Nonnull SDKConfiguration sdkConfiguration,

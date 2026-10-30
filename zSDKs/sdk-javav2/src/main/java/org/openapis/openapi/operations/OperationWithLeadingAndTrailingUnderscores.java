@@ -105,6 +105,10 @@ public class OperationWithLeadingAndTrailingUnderscores {
             implements RequestOperation<
                     OperationWithLeadingAndTrailingUnderscoresRequest,
                     OperationWithLeadingAndTrailingUnderscoresResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -182,6 +186,9 @@ public class OperationWithLeadingAndTrailingUnderscores {
             implements AsyncRequestOperation<
                     OperationWithLeadingAndTrailingUnderscoresRequest,
                     org.openapis.openapi.models.operations.async.OperationWithLeadingAndTrailingUnderscoresResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

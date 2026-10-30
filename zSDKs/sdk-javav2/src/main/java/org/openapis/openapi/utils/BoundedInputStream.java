@@ -18,8 +18,8 @@ public final class BoundedInputStream extends FilterInputStream {
 
     public BoundedInputStream(InputStream in, long maxBytes) {
         super(in);
-        if (maxBytes < 0) {
-            throw new IllegalArgumentException("maxBytes must not be negative");
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("maxBytes must be positive");
         }
         this.maxBytes = maxBytes;
     }

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.Boolean;
+import java.lang.IllegalArgumentException;
 import java.lang.Long;
 import java.lang.String;
 import java.time.Duration;
@@ -294,16 +295,22 @@ public class SDK {
 
         /**
          * Sets the default request timeout for all operations. Individual calls can
-         * override it with their request builder's {@code timeout} method.
+         * override it with their request builder's {@code timeout} method, and an
+         * operation's {@code x-speakeasy-timeout} applies when neither is set.
+         * The timeout applies to each attempt when retries are configured.
          * <p>
          * The timeout bounds the time to receive the response headers. It does not
          * bound reading of the response body; use {@link #maxResponseBodyBytes(long)}
          * to protect against oversized bodies.
          *
-         * @param timeout The timeout to apply to every request.
+         * @param timeout The timeout to apply to every request; must be positive.
          * @return The builder instance.
          */
         public Builder timeout(Duration timeout) {
+            Utils.checkNotNull(timeout, "timeout");
+            if (timeout.isZero() || timeout.isNegative()) {
+                throw new IllegalArgumentException("timeout must be positive");
+            }
             this.sdkConfiguration.setTimeout(Optional.of(timeout));
             return this;
         }
@@ -312,16 +319,22 @@ public class SDK {
          * Caps the number of response body bytes the SDK will read for a single
          * response. Reading past the cap fails the call with
          * {@link ResponseTooLargeException} instead of growing memory.
+         * Event streams and JSON Lines responses are read incrementally and are not capped.
          * <p>
-         * Convenience method that calls {@link HTTPClient#setMaxResponseBodyBytes(long)}.
+         * The cap is applied to the HTTP client when the SDK is built, through
+         * {@link HTTPClient#setMaxResponseBodyBytes(long)}, so it takes effect
+         * however it is ordered with {@link #client(HTTPClient)}.
          * {@link SpeakeasyHTTPClient} honors this setting. If you are using a custom HTTP client,
          * it is up to the custom client to honor this setting.
          *
-         * @param maxBytes The maximum number of body bytes to read per response.
+         * @param maxBytes The maximum number of body bytes to read per response; must be positive.
          * @return The builder instance.
          */
         public Builder maxResponseBodyBytes(long maxBytes) {
-            this.sdkConfiguration.client().setMaxResponseBodyBytes(maxBytes);
+            if (maxBytes <= 0) {
+                throw new IllegalArgumentException("maxResponseBodyBytes must be positive");
+            }
+            this.sdkConfiguration.setMaxResponseBodyBytes(Optional.of(maxBytes));
             return this;
         }
 
@@ -497,6 +510,7 @@ public class SDK {
          * @return The SDK instance.
          */
         public SDK build() {
+            sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
             if (serverUrl == null || serverUrl.isBlank()) {
                 serverUrl = SERVERS[0];
                 sdkConfiguration.setServerIdx(0);

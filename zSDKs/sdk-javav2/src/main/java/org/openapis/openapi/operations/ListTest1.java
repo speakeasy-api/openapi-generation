@@ -152,6 +152,10 @@ public class ListTest1 {
     }
 
     public static class Sync extends Base implements RequestOperation<ListTest1Request, ListTest1Response> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
+            this(sdkConfiguration, serverURL, null, _headers);
+        }
+
         public Sync(
                 @Nonnull SDKConfiguration sdkConfiguration,
                 @Nullable String serverURL,
@@ -239,6 +243,9 @@ public class ListTest1 {
 
     public static class Async extends Base
             implements AsyncRequestOperation<ListTest1Request, org.openapis.openapi.models.operations.async.ListTest1Response> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
+            this(sdkConfiguration, serverURL, null, _headers);
+        }
 
         public Async(
                 @Nonnull SDKConfiguration sdkConfiguration,

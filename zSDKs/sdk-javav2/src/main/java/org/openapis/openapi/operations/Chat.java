@@ -113,6 +113,10 @@ public class Chat {
     }
 
     public static class Sync extends Base implements RequestOperation<ChatRequest, ChatResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -186,6 +190,9 @@ public class Chat {
 
     public static class Async extends Base
             implements AsyncRequestOperation<ChatRequest, org.openapis.openapi.models.operations.async.ChatResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

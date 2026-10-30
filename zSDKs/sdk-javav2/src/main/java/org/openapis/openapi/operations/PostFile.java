@@ -112,6 +112,10 @@ public class PostFile {
     }
 
     public static class Sync extends Base implements RequestOperation<PostFileRequest, PostFileResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -191,6 +195,9 @@ public class PostFile {
 
     public static class Async extends Base
             implements AsyncRequestOperation<PostFileRequest, org.openapis.openapi.models.operations.async.PostFileResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

@@ -109,6 +109,10 @@ public class GetRequestBodyFlattenedAway {
 
     public static class Sync extends Base
             implements RequestOperation<GetRequestBodyFlattenedAwayRequest, GetRequestBodyFlattenedAwayResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -177,6 +181,9 @@ public class GetRequestBodyFlattenedAway {
             implements AsyncRequestOperation<
                     GetRequestBodyFlattenedAwayRequest,
                     org.openapis.openapi.models.operations.async.GetRequestBodyFlattenedAwayResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

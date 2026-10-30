@@ -1659,6 +1659,8 @@ public final class Utils {
     public static <T> T unmarshal(HttpResponse<InputStream> response, TypeReference<T> typeReference) {
         try {
             return mapper().readValue(Utils.extractByteArrayFromBody(response), typeReference);
+        } catch (ResponseTooLargeException e) {
+            throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw SDKException.from("Error deserializing response body: " + e.getMessage(), response, e);
         }

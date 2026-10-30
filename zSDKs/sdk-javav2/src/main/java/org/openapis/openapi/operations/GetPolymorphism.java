@@ -101,6 +101,10 @@ public class GetPolymorphism {
     }
 
     public static class Sync extends Base implements RequestlessOperation<GetPolymorphismResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -171,6 +175,9 @@ public class GetPolymorphism {
 
     public static class Async extends Base
             implements AsyncRequestlessOperation<org.openapis.openapi.models.operations.async.GetPolymorphismResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

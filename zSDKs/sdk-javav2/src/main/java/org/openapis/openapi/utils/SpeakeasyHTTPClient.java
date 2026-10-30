@@ -53,6 +53,13 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
 
+    private static boolean isStreamingResponse(HttpResponse<?> response) {
+        return response.headers()
+                .firstValue("Content-Type")
+                .map(SpeakeasyHTTPClient::isStreamingMediaType)
+                .orElse(false);
+    }
+
     /**
      * Sets debug logging on or off for requests and responses including bodies for JSON content.
      * <p>
@@ -138,7 +145,9 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             throws IOException, InterruptedException, URISyntaxException {
         request = logRequest(request, isDebugLoggingEnabled());
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        if (!isStreamingResponse(response)) {
+            response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        }
         response = logResponse(response, isDebugLoggingEnabled());
         return response;
     }
@@ -149,7 +158,12 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         long maxBytes = maxResponseBodyBytes;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> // TODO: log responses when helper for Blob is setup
-                new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
+                new ResponseWithBody<>(
+                        response,
+                        publisher -> Blob.from(
+                                isStreamingResponse(response)
+                                        ? publisher
+                                        : ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 
     private HttpRequest logRequest(HttpRequest request, boolean logBody) {
@@ -186,7 +200,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
-        // only JSON or plain-text bodies are logged, so only those are buffered
         if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
             return response;
         }

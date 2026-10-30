@@ -115,6 +115,10 @@ public class Deprecated1 {
     }
 
     public static class Sync extends Base implements RequestlessOperation<Deprecated1Response> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
+            this(sdkConfiguration, serverURL, null, _headers);
+        }
+
         public Sync(
                 @Nonnull SDKConfiguration sdkConfiguration,
                 @Nullable String serverURL,
@@ -185,6 +189,9 @@ public class Deprecated1 {
 
     public static class Async extends Base
             implements AsyncRequestlessOperation<org.openapis.openapi.models.operations.async.Deprecated1Response> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
+            this(sdkConfiguration, serverURL, null, _headers);
+        }
 
         public Async(
                 @Nonnull SDKConfiguration sdkConfiguration,

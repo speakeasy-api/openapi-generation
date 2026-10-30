@@ -101,6 +101,10 @@ public class Validate {
     }
 
     public static class Sync extends Base implements RequestlessOperation<ValidateResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -170,6 +174,9 @@ public class Validate {
 
     public static class Async extends Base
             implements AsyncRequestlessOperation<org.openapis.openapi.models.operations.async.ValidateResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

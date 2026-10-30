@@ -113,6 +113,10 @@ public class RenderAsset {
     }
 
     public static class Sync extends Base implements RequestOperation<RenderAssetRequest, RenderAssetResponse> {
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
+
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);
         }
@@ -187,6 +191,9 @@ public class RenderAsset {
     public static class Async extends Base
             implements AsyncRequestOperation<
                     RenderAssetRequest, org.openapis.openapi.models.operations.async.RenderAssetResponse> {
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+            this(sdkConfiguration, null, _headers);
+        }
 
         public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             super(sdkConfiguration, options, _headers);

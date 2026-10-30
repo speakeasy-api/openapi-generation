@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
@@ -56,14 +55,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     private static Consumer<? super String> logger = System.out::println;
     {{- end}}
 
-    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(30);
-
     private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
 
     private final OkHttpClient client = new OkHttpClient.Builder()
             .followRedirects(false)
             .followSslRedirects(false)
-            .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
@@ -327,7 +323,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         Headers headers = new Headers(response.headers().toMultimap());
         ResponseBody body = response.body();
         InputStream in = body == null ? new ByteArrayInputStream(new byte[0]) : body.byteStream();
-        return new HttpResponse<>(request, response.code(), headers, BoundedInputStream.wrap(in, maxBodyBytes));
+        String contentType = response.header("Content-Type");
+        if (contentType == null || !isStreamingMediaType(contentType)) {
+            in = BoundedInputStream.wrap(in, maxBodyBytes);
+        }
+        return new HttpResponse<>(request, response.code(), headers, in);
     }
 
     private static void logRequest(HttpRequest request, boolean logBody) throws IOException {
@@ -492,6 +492,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
 
+    private static boolean isStreamingResponse(HttpResponse<?> response) {
+        return response.headers().firstValue("Content-Type").map(SpeakeasyHTTPClient::isStreamingMediaType).orElse(false);
+    }
+
     /**
      * Sets debug logging on or off for requests and responses including bodies for JSON content.
      * <p>
@@ -590,7 +594,9 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         }
 {{- end}}
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        if (!isStreamingResponse(response)) {
+            response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        }
 {{- if slf4jLoggingEnabled}}
         response = logResponse(response, isDebugLoggingEnabled());
 {{- else}}
@@ -616,7 +622,8 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response ->
                         // TODO: log responses when helper for Blob is setup
-                        new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
+                        new ResponseWithBody<>(response, publisher -> Blob.from(
+                                isStreamingResponse(response) ? publisher : ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 {{- end}}
 
@@ -665,7 +672,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
-        // only JSON or plain-text bodies are logged, so only those are buffered
+        {{- /* only JSON or plain-text bodies are logged, so only those are buffered */}}
         if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
             return response;
         }

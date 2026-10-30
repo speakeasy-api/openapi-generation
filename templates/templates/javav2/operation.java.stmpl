@@ -78,17 +78,9 @@ public class {{$className}} {
             {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
                     .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{range $i, $o := $options}}{{if $i}}, {{end}}{{javaImportLocal "utils.Options"}}.Option.{{optionEnumName $o.Name}}{{end}})));
             {{- $opts := "options"}}{{if $nullFriendlyParameters}}{{$opts = (print javaImportOptional ".ofNullable(options)")}}{{end}}
-            {{- if $java8}}
-            this.timeout = {{javaImportLocal "utils.Java8Compat"}}.or({{javaImportLocal "utils.Java8Compat"}}.or({{$opts}}
-                    .flatMap({{javaImportLocal "utils.Options"}}::timeout), sdkConfiguration::timeout), () -> {{if $op.Extensions.Timeout}}{{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}})){{else}}{{javaImportOptional}}.empty(){{end}});
+            this.timeout = {{templateTimeoutResolution $op $opts}};
             {{- else}}
-            this.timeout = {{$opts}}
-                    .flatMap({{javaImportLocal "utils.Options"}}::timeout)
-                    .or(sdkConfiguration::timeout){{if $op.Extensions.Timeout}}
-                    .or(() -> {{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}}))){{end}};
-            {{- end}}
-            {{- else}}
-            this.timeout = {{if $op.Extensions.Timeout}}{{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}})){{else}}sdkConfiguration.timeout(){{end}};
+            this.timeout = {{templateTimeoutResolution $op ""}};
             {{- end}}
             {{- if $retries}}
             this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
@@ -295,6 +287,7 @@ public class {{$className}} {
             {{- else}}
             implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
             {{- end}}
+{{- templateLegacyConstructor $op false "Sync"}}
         public Sync({{templateMethodParams $methodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
         }
@@ -422,6 +415,7 @@ public class {{$className}} {
         private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
         {{- end}}
 
+{{- templateLegacyConstructor $op true "Async"}}
         public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
             {{- if $retries}}
@@ -702,17 +696,9 @@ public class {{$className}} {
             {{if $nullFriendlyParameters}}{{javaImportOptional}}.ofNullable(options){{else}}options{{end}}
                     .ifPresent(o -> o.validate({{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{range $i, $o := $options}}{{if $i}}, {{end}}{{javaImportLocal "utils.Options"}}.Option.{{optionEnumName $o.Name}}{{end}})));
             {{- $opts := "options"}}{{if $nullFriendlyParameters}}{{$opts = (print javaImportOptional ".ofNullable(options)")}}{{end}}
-            {{- if $java8}}
-            this.timeout = {{javaImportLocal "utils.Java8Compat"}}.or({{javaImportLocal "utils.Java8Compat"}}.or({{$opts}}
-                    .flatMap({{javaImportLocal "utils.Options"}}::timeout), sdkConfiguration::timeout), () -> {{if $op.Extensions.Timeout}}{{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}})){{else}}{{javaImportOptional}}.empty(){{end}});
+            this.timeout = {{templateTimeoutResolution $op $opts}};
             {{- else}}
-            this.timeout = {{$opts}}
-                    .flatMap({{javaImportLocal "utils.Options"}}::timeout)
-                    .or(sdkConfiguration::timeout){{if $op.Extensions.Timeout}}
-                    .or(() -> {{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}}))){{end}};
-            {{- end}}
-            {{- else}}
-            this.timeout = {{if $op.Extensions.Timeout}}{{javaImportOptional}}.of({{javaImport "java.time.Duration"}}.ofMillis({{$op.Extensions.Timeout}})){{else}}sdkConfiguration.timeout(){{end}};
+            this.timeout = {{templateTimeoutResolution $op ""}};
             {{- end}}
             {{- if $retries}}
             this.retryStatusCodes = {{if $java8}}{{javaImportLocal "utils.Java8Compat"}}.listOf{{else}}{{javaImport "java.util.List"}}.of{{end}}({{- range $i, $v := $retries.StatusCodes -}}
@@ -915,6 +901,7 @@ public class {{$className}} {
             {{- else}}
             implements {{javaImportStatic "operations.Operations.RequestlessOperation" true}}<{{javaImportType $resType}}> {
             {{- end}}
+{{- templateLegacyConstructor $op false "Sync"}}
         public Sync({{templateMethodParams $methodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
         }
@@ -1043,6 +1030,7 @@ public class {{$className}} {
         private final {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler;
         {{- end}}
 
+{{- templateLegacyConstructor $op true "Async"}}
         public Async({{templateMethodParams $asyncMethodParams true 16 2}}) {
             super({{templateMethodCallArgs $methodParams true 18 2}});
             {{- if $retries}}

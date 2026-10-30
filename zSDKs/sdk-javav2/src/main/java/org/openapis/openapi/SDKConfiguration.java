@@ -182,6 +182,17 @@ public class SDKConfiguration {
         this.timeout = timeout;
     }
 
+    private Optional<Long> maxResponseBodyBytes = Optional.empty();
+
+    public Optional<Long> maxResponseBodyBytes() {
+        return maxResponseBodyBytes;
+    }
+
+    public void setMaxResponseBodyBytes(Optional<Long> maxResponseBodyBytes) {
+        Utils.checkNotNull(maxResponseBodyBytes, "maxResponseBodyBytes");
+        this.maxResponseBodyBytes = maxResponseBodyBytes;
+    }
+
     private ScheduledExecutorService retryScheduler = Executors.newSingleThreadScheduledExecutor();
 
     public ScheduledExecutorService retryScheduler() {

@@ -1196,12 +1196,8 @@ func (t Test) String() string {
         return "response-bodies-string-get"
     case TestResponseBodiesXMLGet:
         return "response-bodies-xml-get"
-    case TestResponseBodyLimitAsync:
-        return "response-body-limit-async"
-    case TestResponseBodyLimitSync:
-        return "response-body-limit-sync"
-    case TestResponseBodyLimitWithinLimit:
-        return "response-body-limit-within-limit"
+    case TestResponseBodyLimit:
+        return "response-body-limit"
     case TestRetriesAttemptCountBackoff:
         return "retries-attempt-count-backoff"
     case TestRetriesAttemptCountZero:
@@ -1402,8 +1398,8 @@ func (t Test) String() string {
         return "timeout-ms-override-allows-completion"
     case TestTimeoutMsOverrideIsRespected:
         return "timeout-ms-override-is-respected"
-    case TestTimeoutMsOverrideIsRespectedAsync:
-        return "timeout-ms-override-is-respected-async"
+    case TestTimeoutOperationExtensionIsRespected:
+        return "timeout-operation-extension-is-respected"
     case TestTimeoutSdkDefaultIsRespected:
         return "timeout-sdk-default-is-respected"
     case TestTransformJqRequestResponse:
@@ -2734,12 +2730,8 @@ func TestFromString(s string) Test {
         return TestResponseBodiesStringGet
     case "response-bodies-xml-get":
         return TestResponseBodiesXMLGet
-    case "response-body-limit-async":
-        return TestResponseBodyLimitAsync
-    case "response-body-limit-sync":
-        return TestResponseBodyLimitSync
-    case "response-body-limit-within-limit":
-        return TestResponseBodyLimitWithinLimit
+    case "response-body-limit":
+        return TestResponseBodyLimit
     case "retries-attempt-count-backoff":
         return TestRetriesAttemptCountBackoff
     case "retries-attempt-count-zero":
@@ -2940,8 +2932,8 @@ func TestFromString(s string) Test {
         return TestTimeoutMsOverrideAllowsCompletion
     case "timeout-ms-override-is-respected":
         return TestTimeoutMsOverrideIsRespected
-    case "timeout-ms-override-is-respected-async":
-        return TestTimeoutMsOverrideIsRespectedAsync
+    case "timeout-operation-extension-is-respected":
+        return TestTimeoutOperationExtensionIsRespected
     case "timeout-sdk-default-is-respected":
         return TestTimeoutSdkDefaultIsRespected
     case "transform-jq-request-response":
@@ -3675,9 +3667,7 @@ var testList = []Test{
     TestResponseBodiesReadOnly,
     TestResponseBodiesStringGet,
     TestResponseBodiesXMLGet,
-    TestResponseBodyLimitAsync,
-    TestResponseBodyLimitSync,
-    TestResponseBodyLimitWithinLimit,
+    TestResponseBodyLimit,
     TestRetriesAttemptCountBackoff,
     TestRetriesAttemptCountZero,
     TestRetriesBinaryRequestBody,
@@ -3778,7 +3768,7 @@ var testList = []Test{
     TestTestHooksError,
     TestTimeoutMsOverrideAllowsCompletion,
     TestTimeoutMsOverrideIsRespected,
-    TestTimeoutMsOverrideIsRespectedAsync,
+    TestTimeoutOperationExtensionIsRespected,
     TestTimeoutSdkDefaultIsRespected,
     TestTransformJqRequestResponse,
     TestUnionEnumArrayDeserialization,

@@ -12,8 +12,17 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
 import org.openapis.openapi.models.operations.CancelledRequestResponse;
+import org.openapis.openapi.models.operations.CancelledRequestWithOperationTimeoutResponse;
 
 public class TimeoutAdditionalTest {
+
+    private static void assertTimedOut(Throwable thrown) {
+        Throwable cause = thrown;
+        while (cause != null && !(cause instanceof HttpTimeoutException)) {
+            cause = cause.getCause();
+        }
+        assertNotNull(cause, "expected an HttpTimeoutException in the cause chain: " + thrown);
+    }
 
     @Test
     public void testTimeoutOverrideIsRespected() {
@@ -28,6 +37,15 @@ public class TimeoutAdditionalTest {
                 .call();
         });
         assertTrue(thrown.getCause() instanceof HttpTimeoutException, String.valueOf(thrown.getCause()));
+
+        ExecutionException async = assertThrows(ExecutionException.class, () -> {
+            s.async().cancellation().cancelledRequest()
+                .seconds(3L)
+                .timeout(Duration.ofMillis(1000))
+                .call()
+                .get();
+        });
+        assertTimedOut(async);
     }
 
     @Test
@@ -47,7 +65,7 @@ public class TimeoutAdditionalTest {
     }
 
     @Test
-    public void testSdkLevelTimeoutAppliesToEveryCall() {
+    public void testSdkDefaultTimeoutIsRespected() throws Exception {
         CommonHelpers.recordTest("timeout-sdk-default-is-respected");
 
         SDK s = SDK.builder().timeout(Duration.ofMillis(1000)).build();
@@ -56,25 +74,36 @@ public class TimeoutAdditionalTest {
             s.cancellation().cancelledRequest().seconds(3L).call();
         });
         assertTrue(thrown.getCause() instanceof HttpTimeoutException, String.valueOf(thrown.getCause()));
+
+        CancelledRequestResponse overridden = s.cancellation().cancelledRequest()
+            .seconds(2L)
+            .timeout(Duration.ofSeconds(5))
+            .call();
+        assertEquals(2L, overridden.object().get().delaySeconds());
     }
 
     @Test
-    public void testTimeoutOverrideIsRespectedAsync() {
-        CommonHelpers.recordTest("timeout-ms-override-is-respected-async");
+    public void testOperationTimeoutExtensionIsRespected() throws Exception {
+        CommonHelpers.recordTest("timeout-operation-extension-is-respected");
 
-        AsyncSDK s = SDK.builder().build().async();
+        SDK s = SDK.builder().build();
 
-        ExecutionException thrown = assertThrows(ExecutionException.class, () -> {
-            s.cancellation().cancelledRequest()
-                .seconds(3L)
-                .timeout(Duration.ofMillis(1000))
-                .call()
-                .get();
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> {
+            s.cancellation().cancelledRequestWithOperationTimeout().seconds(3L).call();
         });
-        Throwable cause = thrown.getCause();
-        while (cause != null && !(cause instanceof HttpTimeoutException)) {
-            cause = cause.getCause();
-        }
-        assertNotNull(cause, "expected an HttpTimeoutException in the cause chain: " + thrown.getCause());
+        assertTrue(thrown.getCause() instanceof HttpTimeoutException, String.valueOf(thrown.getCause()));
+
+        CancelledRequestWithOperationTimeoutResponse perCall = s.cancellation().cancelledRequestWithOperationTimeout()
+            .seconds(2L)
+            .timeout(Duration.ofSeconds(5))
+            .call();
+        assertEquals(2L, perCall.object().get().delaySeconds());
+
+        SDK withDefault = SDK.builder().timeout(Duration.ofSeconds(5)).build();
+        CancelledRequestWithOperationTimeoutResponse sdkDefault = withDefault.cancellation()
+            .cancelledRequestWithOperationTimeout()
+            .seconds(2L)
+            .call();
+        assertEquals(2L, sdkDefault.object().get().delaySeconds());
     }
 }
