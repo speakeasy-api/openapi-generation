@@ -201,7 +201,7 @@ func UnmarshalJSON(b []byte, v interface{}, tag reflect.StructTag, topLevel bool
 						}
 					}
 					constValue := field.Tag.Get("const")
-					if val != constValue {
+					if val != constValue && !constJSONValuesEqual(r, constValue) {
 						return fmt.Errorf("const field `%s` does not match expected value `%s` got `%s`", fieldName, constValue, val)
 					}
 
@@ -422,6 +422,66 @@ func implementsJSONMarshaler(v interface{}) bool {
 		return reflect.PtrTo(vType.Elem()).Implements(marshalerType)
 	}
 	return reflect.PtrTo(vType).Implements(marshalerType)
+}
+
+func constJSONValuesEqual(received json.RawMessage, constValue string) bool {
+	got, err := decodeJSONWithNumbers(received)
+	if err != nil {
+		return false
+	}
+	want, err := decodeJSONWithNumbers([]byte(constValue))
+	if err != nil {
+		return false
+	}
+	return jsonValuesEqual(got, want)
+}
+
+func decodeJSONWithNumbers(data []byte) (interface{}, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var value interface{}
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func jsonValuesEqual(a, b interface{}) bool {
+	switch av := a.(type) {
+	case json.Number:
+		bv, ok := b.(json.Number)
+		if !ok {
+			return false
+		}
+		ar, aok := new(big.Rat).SetString(av.String())
+		br, bok := new(big.Rat).SetString(bv.String())
+		return aok && bok && ar.Cmp(br) == 0
+	case map[string]interface{}:
+		bv, ok := b.(map[string]interface{})
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for key, value := range av {
+			other, ok := bv[key]
+			if !ok || !jsonValuesEqual(value, other) {
+				return false
+			}
+		}
+		return true
+	case []interface{}:
+		bv, ok := b.([]interface{})
+		if !ok || len(av) != len(bv) {
+			return false
+		}
+		for i := range av {
+			if !jsonValuesEqual(av[i], bv[i]) {
+				return false
+			}
+		}
+		return true
+	default:
+		return reflect.DeepEqual(a, b)
+	}
 }
 
 func handleDefaultConstValue(tagValue string, val interface{}, tag reflect.StructTag) json.RawMessage {
