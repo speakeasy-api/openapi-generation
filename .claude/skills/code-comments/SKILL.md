@@ -1,6 +1,6 @@
 ---
 name: code-comments
-description: Use before committing any code change in this repository — Go, TypeScript templates, shell scripts, YAML, mise tasks — and when reviewing a diff for comment noise. Triggers on writing or keeping `//` or `#` comments, doc comments, "why" explanations, reviewer notes, TODO/history notes, or comments that restate a name.
+description: Use while writing or editing any code in this repository — Go, TypeScript templates, shell scripts, YAML, mise tasks — not only before committing, and when reviewing a diff for comment noise. Triggers on writing or keeping `//` or `#` comments, doc comments, "why" explanations, reviewer notes, TODO/history notes, or comments that restate a name.
 ---
 
 # Code comments

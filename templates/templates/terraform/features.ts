@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.50.1",
+  core: "3.50.3",
   decimal: "1.0.0",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
@@ -36,7 +36,7 @@ const supportedFeatures = {
   sdkHooks: "0.1.1",
   hiddenGlobals: "0.1.0",
   globalSecurityFlattening: "0.1.0",
-  docs: "0.5.4",
+  docs: "0.5.5",
   intellisenseMarkdownSupport: "0.1.0",
   methodArguments: "0.0.0",
   deepObjectParams: "0.1.0",

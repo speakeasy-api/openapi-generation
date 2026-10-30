@@ -42,6 +42,7 @@ const (
 	TestAuthBearerAuthOperationWithPrefix
 	TestAuthBearerAuthOperationWithoutPrefix
 	TestAuthGlobalSecurityFieldsOrdering
+	TestAuthGlobalSecurityEmpty
 	TestAuthGlobalSecurityOptionFieldsOrdering
 	TestAuthOauth2Auth
 	TestAuthOpenIDConnectAuth
@@ -58,6 +59,7 @@ const (
 	TestAuthGlobalSecurityFlattening
 	TestAuthGlobalSecurityFlatteningCallback
 	TestAuthGlobalSecurityFlatteningEnvVarFallback
+	TestAuthGlobalSecurityFlatteningEmpty
 	TestAuthHoistedOperationAuthRetained
 	TestAuthCustomSecurityOptionAppId
 	TestAuthCustomSecuritySchemeAppId
@@ -135,6 +137,7 @@ const (
 	TestParametersCamelCase
 	TestParametersConstQueryParams
 	TestParametersDefaultQueryParams
+	TestParametersDefaultPathParams
 	TestMultiLevelGrouping
 	TestRequestBodiesPostEmptyObject
 	TestRequestBodiesPostApplicationJSONSimple
@@ -499,6 +502,9 @@ const (
 	TestEventStreamMalformedFrameStrict
 	TestEventStreamMalformedFrameLenient
 	TestEventStreamTruncatedBeforeSentinel
+	TestEventStreamAbsentRequiredUnion
+	TestEventStreamNullAndUndeclaredFields
+	TestEventStreamEquivalentNumberLexemes
 	TestTestHooks
 	TestTestHooksError
 	TestTestHooksBeforeCreateRequest
@@ -680,6 +686,8 @@ const (
 	TestClierrorsPlainModeClassified
 	TestClierrorsTypedReasons
 	TestClierrorsUnknownFlagSuggestion
+	TestClierrorsUnknownCommandSuggestion
+	TestClierrorsDryRunHintServerValidationOnly
 	TestErrorTaxonomyDeclaredRulesAndOrdering
 	TestErrorTaxonomyEveryClosedTypeHasAHint
 	TestErrorTaxonomyFallbackMessageOmitsRawBody
@@ -693,7 +701,6 @@ const (
 	TestErrorTaxonomyPrettyResidualDetails
 	TestErrorTaxonomyReservedKeysAndRenderedClassification
 	TestEventStreamConnectionRefusedStaysConnectionError
-	TestEventStreamTruncatedBeforeSentinelIsConnectionError
 	TestEventStreamDecodeFailureIsProtocolError
 	TestEventStreamDecodeFailureWithoutJsonErrorType
 	TestEventStreamErrorEventAgentMode
@@ -777,6 +784,7 @@ const (
 	TestJsonlStreamTimeoutStillBoundsSlowStream
 	TestJsonlStreamWithTimeoutStreamsToCompletion
 	TestSharedEnumConstructorDefault
+	TestUnknownFieldsJsonRoundTrip
 )
 
 func GetAllTests() []Test {

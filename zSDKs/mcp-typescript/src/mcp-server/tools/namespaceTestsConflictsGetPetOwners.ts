@@ -21,7 +21,7 @@ Returns both foo.PetOwner and bar.PetOwner in the response.`,
   tool: async (client, ctx) => {
     const [result] = await namespaceTestsConflictsGetPetOwners(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

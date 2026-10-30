@@ -8,7 +8,7 @@
 {{ genImports }}
 {{- addImport "../resources.js" "ResourceTemplateDefinition" }}
 {{- addImport "../resources.js" "formatResult" }}
-{{- addImport "@modelcontextprotocol/sdk/server/mcp.js" "ResourceTemplate" }}
+{{- addImport "@modelcontextprotocol/server" "ResourceTemplate" }}
 
 {{- if $hasCustomFile }}
 {{- addImport (printf "./%s.custom.js" .Local.Filename) "customizer" "aliasImport" }}
@@ -48,7 +48,7 @@ export const {{sanitizeMCPPrimitiveExport $op}}: ResourceTemplateDefinition = {
       {{      sanitizeFieldName .Name }},
       {{-   end }}
       {{- end }}
-      { {{constants.fetchOptions}}: { signal: extra.signal } },
+      { {{constants.fetchOptions}}: { signal: extra.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

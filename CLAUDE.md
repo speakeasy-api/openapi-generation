@@ -1,5 +1,7 @@
 Before creating or publishing any public artifact — PR titles/bodies, comments, review replies, commit messages, changesets, branch/file names, code comments and string literals, fixtures, docs — follow `.claude/skills/public-repo-communication/SKILL.md`: describe the change so it stands alone; never expose customer-derived identifiers, private paths/trackers, or workflow provenance.
 
+While writing or editing code — Go, TypeScript templates, shell scripts, YAML, mise tasks — follow `.claude/skills/code-comments/SKILL.md`: no narrative comments, no comments on clearly named constants or functions, never explain why a change was made or describe design; comment only non-obvious constraints the code cannot express, matching the file's existing comment density.
+
 ## Definitions
 
 ### Targets

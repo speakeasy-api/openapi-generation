@@ -169,8 +169,19 @@ function getSDKDocsJobs(sdk: SDK): Job[] {
 function collectSDKDocsJobs(group: SDKGroup, jobs: Job[]): void {
   const sdksWithOps = group.SDKs.filter((sdk) => sdk.SDK.Operations.length > 0);
 
+  const isMintlify = context.Global.Config.Documentation === "mintlify";
+
   for (const availableSdk of sdksWithOps) {
-    let title = group.Name;
+    let title =
+      isMintlify && group.Path
+        ? group.Path.split(".")
+            .map((p) =>
+              /\s/.test(p)
+                ? p.trim().replace(/\s+/g, " ")
+                : caser().ToPascal(sanitizeName(p)),
+            )
+            .join(".")
+        : group.Name;
     if (availableSdk.Deprecated) {
       title = `~~${title}~~`;
     }

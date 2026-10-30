@@ -529,14 +529,35 @@ function getOperationNonBodyUsageFlags(op: Operation): UsageFlagDef[] {
   return withAutoShorthands(op, flags, true);
 }
 
+// Mirrors the whole-body flag opcmd.go.stmpl registers.
+function getOperationWholeBodyUsageFlag(op: Operation): UsageFlagDef | null {
+  if (!op.Request) return null;
+  if (operationUsesMetadataFlags(op)) {
+    if (!templateHasBodyFlag(op)) return null;
+    return {
+      spec: usageFlagSpec("body", undefined, "body"),
+      help: bodyFlagDescription(op),
+    };
+  }
+  if (op.Request.IsRequestBody) {
+    const name = getRequestBodyFlagName(op.Request.RequestBody);
+    return {
+      spec: usageFlagSpec(name, undefined, name.replace(/-/g, "_")),
+      help: requestBodyDescription(op.Request.RequestBody),
+    };
+  }
+  return {
+    spec: usageFlagSpec("body", undefined, "body"),
+    help: "Request body (JSON)",
+  };
+}
+
 function getOperationFieldUsageFlags(op: Operation): UsageFlagDef[] {
   const flags = getOperationBodyFieldUsageFlags(op);
 
-  if (templateHasBodyFlag(op)) {
-    flags.push({
-      spec: usageFlagSpec("body", undefined, "body"),
-      help: templateBodyFlagDescription(op),
-    });
+  const bodyFlag = getOperationWholeBodyUsageFlag(op);
+  if (bodyFlag) {
+    flags.push(bodyFlag);
   }
 
   if (hasBodySchemaForOp(op)) {
@@ -1403,6 +1424,12 @@ function buildRootUsageCommand(): UsageCommandDef {
       commands: ["bash", "zsh", "fish", "powershell"].map((shell) => ({
         name: shell,
         help: `Generate the autocompletion script for ${shell}`,
+        flags: [
+          {
+            spec: usageFlagSpec("no-descriptions"),
+            help: "disable completion descriptions",
+          },
+        ],
         commands: [],
       })),
     });
@@ -1441,104 +1468,92 @@ function renderUsageFlag(flag: UsageFlagDef, indent: number): string[] {
   ];
 }
 
-function renderUsageCommand(
-  cmd: UsageCommandDef,
-  indent: number,
-  includeSettings = false,
-): string[] {
-  const lines: string[] = [];
-  const childLines: string[] = [];
-  for (const alias of cmd.aliases || []) {
-    childLines.push(`${"  ".repeat(indent + 1)}alias ${kdlQuoted(alias)}`);
-  }
-  for (const arg of cmd.args || []) {
-    const props: string[] = [];
-    pushIf(
-      props,
-      arg.help ? kdlPropAt("help", arg.help, "  ".repeat(indent + 2)) : "",
-    );
-    pushIf(props, arg.required ? kdlProp("required", true) : "");
-    pushIf(props, arg.variadic ? kdlProp("var", true) : "");
-    const line = `${"  ".repeat(indent + 1)}arg ${kdlQuoted(arg.name)}${
-      props.length ? ` ${props.join(" ")}` : ""
-    }`;
-    if (!arg.suggestions || arg.suggestions.length === 0) {
-      childLines.push(line);
-      continue;
-    }
-    childLines.push(
-      `${line} {`,
-      `${"  ".repeat(indent + 2)}suggestions ${arg.suggestions
-        .map(kdlQuoted)
-        .join(" ")}`,
-      `${"  ".repeat(indent + 1)}}`,
-    );
-  }
-  for (const flag of cmd.flags || []) {
-    if (flag.settings && !includeSettings) continue;
-    childLines.push(...renderUsageFlag(flag, indent + 1));
-  }
-  for (const child of cmd.commands || []) {
-    childLines.push(...renderUsageCommand(child, indent + 1));
-  }
-
+function renderUsageArg(arg: UsageArgDef, indent: number): string[] {
   const props: string[] = [];
   pushIf(
     props,
-    cmd.help ? kdlPropAt("help", cmd.help, "  ".repeat(indent + 1)) : "",
+    arg.help ? kdlPropAt("help", arg.help, "  ".repeat(indent + 1)) : "",
   );
-  if (childLines.length > 0) {
-    lines.push(
-      `${"  ".repeat(indent)}cmd ${kdlQuoted(cmd.name)}${
-        props.length ? ` ${props.join(" ")}` : ""
-      } {`,
-    );
-    lines.push(...childLines);
-    lines.push(`${"  ".repeat(indent)}}`);
-    return lines;
-  }
-
-  lines.push(
-    `${"  ".repeat(indent)}cmd ${kdlQuoted(cmd.name)}${
-      props.length ? ` ${props.join(" ")}` : ""
-    }`,
-  );
-  return lines;
+  pushIf(props, arg.required ? kdlProp("required", true) : "");
+  pushIf(props, arg.variadic ? kdlProp("var", true) : "");
+  const line = `${"  ".repeat(indent)}arg ${kdlQuoted(arg.name)}${
+    props.length ? ` ${props.join(" ")}` : ""
+  }`;
+  if (!arg.suggestions || arg.suggestions.length === 0) return [line];
+  return [
+    `${line} {`,
+    `${"  ".repeat(indent + 1)}suggestions ${arg.suggestions
+      .map(kdlQuoted)
+      .join(" ")}`,
+    `${"  ".repeat(indent)}}`,
+  ];
 }
 
-function collectCommandPathSchemas(
+function renderUsageRootHead(): string {
+  return [
+    `name ${kdlQuoted(getHumanCliName())}`,
+    `bin ${kdlQuoted(sanitizeCliName())}`,
+    `about ${kdlStringAt(usageRootAbout(), "  ")}`,
+    `version ${kdlQuoted(context.Global.Config.SDKVersion)}`,
+    `config {`,
+    `  file ${kdlQuoted(`~/.config/${sanitizeCliName()}/config.yaml`)}`,
+    `}`,
+  ].join("\n");
+}
+
+function renderUsageCommandHead(cmd: UsageCommandDef): string {
+  return `cmd ${kdlQuoted(cmd.name)}${
+    cmd.help ? ` ${kdlPropAt("help", cmd.help, "  ")}` : ""
+  }`;
+}
+
+function usageFlagKey(flag: UsageFlagDef): string {
+  return /(?:^|\s)--([^\s<]+)/.exec(flag.spec)?.[1] ?? flag.spec;
+}
+
+interface UsageNodeItem {
+  key: string;
+  text: string;
+  settings?: boolean;
+  hidden?: boolean;
+}
+
+// Rendered at indent 0; the runtime re-indents each line by depth.
+interface UsageNodeEntry {
+  head: string;
+  aliases: UsageNodeItem[];
+  args: UsageNodeItem[];
+  flags: UsageNodeItem[];
+  children: string[];
+}
+
+function collectUsageNodes(
   cmd: UsageCommandDef,
   path: string[],
-  out: Map<string, string>,
-  includeRootMetadata: boolean,
+  out: Map<string, UsageNodeEntry>,
+  isRoot: boolean,
 ) {
-  const lines: string[] = [];
-  if (includeRootMetadata) {
-    lines.push(`name ${kdlQuoted(getHumanCliName())}`);
-    lines.push(`bin ${kdlQuoted(sanitizeCliName())}`);
-    lines.push(`about ${kdlStringAt(usageRootAbout(), "  ")}`);
-    lines.push(`version ${kdlQuoted(context.Global.Config.SDKVersion)}`);
-    lines.push(`config {`);
-    lines.push(
-      `  file ${kdlQuoted(`~/.config/${sanitizeCliName()}/config.yaml`)}`,
-    );
-    lines.push(`}`);
-    for (const flag of cmd.flags || []) {
-      lines.push(...renderUsageFlag(flag, 0));
-    }
-    for (const child of cmd.commands || []) {
-      lines.push(...renderUsageCommand(child, 0));
-    }
-  } else {
-    lines.push(...renderUsageCommand(cmd, 0, true));
-  }
-  const schema = lines.join("\n") + "\n";
-  out.set(path.join(" "), schema);
-  for (const alias of cmd.aliases || []) {
-    out.set([...path.slice(0, -1), alias].join(" "), schema);
-  }
+  const depth = isRoot ? 0 : 1;
+  out.set(path.join(" "), {
+    head: isRoot ? renderUsageRootHead() : renderUsageCommandHead(cmd),
+    aliases: (cmd.aliases || []).map((alias) => ({
+      key: alias,
+      text: `${"  ".repeat(depth)}alias ${kdlQuoted(alias)}`,
+    })),
+    args: (cmd.args || []).map((arg) => ({
+      key: arg.name,
+      text: renderUsageArg(arg, depth).join("\n"),
+    })),
+    flags: (cmd.flags || []).map((flag) => ({
+      key: usageFlagKey(flag),
+      text: renderUsageFlag(flag, depth).join("\n"),
+      settings: flag.settings,
+      hidden: flag.hidden,
+    })),
+    children: (cmd.commands || []).map((child) => child.name),
+  });
   for (const child of cmd.commands || []) {
-    collectCommandPathSchemas(child, [...path, child.name], out, false);
+    collectUsageNodes(child, [...path, child.name], out, false);
   }
 }
 
@@ -2402,15 +2417,47 @@ registerTemplateFunc(
   templatePlannedUsageCmdName,
 );
 
-function templateUsageSchemaMap(): string {
-  const root = buildRootUsageCommand();
-  const schemas = new Map<string, string>();
-  collectCommandPathSchemas(root, [], schemas, true);
-  const entries = Array.from(schemas.entries()).map(
-    ([k, v]) => `${goStringLiteral(k)}: ${goTemplateSafeStringExpr(v)}`,
+function goUsageNodeItems(items: UsageNodeItem[]): string {
+  return `[]usageItem{ ${items
+    .map((item) => {
+      const fields = [
+        `key: ${goStringLiteral(item.key)}`,
+        `text: ${goTemplateSafeStringExpr(item.text)}`,
+      ];
+      if (item.settings) fields.push("settings: true");
+      if (item.hidden) fields.push("hidden: true");
+      return `{${fields.join(", ")} }`;
+    })
+    .join(", ")} }`;
+}
+
+function goUsageNodeEntry(node: UsageNodeEntry): string {
+  const fields = [`head: ${goTemplateSafeStringExpr(node.head)}`];
+  if (node.aliases.length) {
+    fields.push(`aliases: ${goUsageNodeItems(node.aliases)}`);
+  }
+  if (node.args.length) {
+    fields.push(`args: ${goUsageNodeItems(node.args)}`);
+  }
+  if (node.flags.length) {
+    fields.push(`flags: ${goUsageNodeItems(node.flags)}`);
+  }
+  if (node.children.length) {
+    fields.push(
+      `children: []string{ ${node.children.map(goStringLiteral).join(", ")} }`,
+    );
+  }
+  return `{ ${fields.join(", ")} }`;
+}
+
+function templateUsageNodeMap(): string {
+  const nodes = new Map<string, UsageNodeEntry>();
+  collectUsageNodes(buildRootUsageCommand(), [], nodes, true);
+  const entries = Array.from(nodes.entries()).map(
+    ([path, node]) => `${goStringLiteral(path)}: ${goUsageNodeEntry(node)}`,
   );
-  return `var usageSchemas = map[string]string{\n\t${entries.join(
+  return `var usageNodes = map[string]usageNode{\n\t${entries.join(
     ",\n\t",
   )},\n}`;
 }
-registerTemplateFunc("templateUsageSchemaMap", templateUsageSchemaMap);
+registerTemplateFunc("templateUsageNodeMap", templateUsageNodeMap);

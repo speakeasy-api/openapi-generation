@@ -58,6 +58,9 @@ type CLICommandInput struct {
 	// SuggestionsDeclared records that Enum came from the manifest, so help
 	// shows the whole authored list instead of the capped schema sample.
 	SuggestionsDeclared bool `json:"suggestionsDeclared,omitempty" yaml:"suggestionsDeclared,omitempty"`
+	// Implies lists root-level body values filled when the request body sets
+	// this bool flag's key to true and does not set the implied key itself.
+	Implies []CLICommandPreset `json:"implies,omitempty" yaml:"implies,omitempty"`
 	// RouteIDs lists the dispatch routes whose request variant declares this
 	// input's bound property. RequiredRouteIDs is the subset on which the
 	// property remains required after schema defaults and effective presets.
@@ -217,9 +220,11 @@ type CLICommandArtifact struct {
 }
 
 type CLICommandStreamMetadata struct {
-	Select  string `json:"select" yaml:"select"`
-	Pointer string `json:"pointer" yaml:"pointer"`
-	Label   string `json:"label" yaml:"label"`
+	Select   []string `json:"select" yaml:"select"`
+	Pointers []string `json:"pointers" yaml:"pointers"`
+	Label    string   `json:"label" yaml:"label"`
+	Complete []string `json:"complete,omitempty" yaml:"complete,omitempty"`
+	When     string   `json:"when,omitempty" yaml:"when,omitempty"`
 }
 
 // CLICommandStreamProjection selects the field of each streamed event whose
@@ -228,9 +233,9 @@ type CLICommandStreamMetadata struct {
 // CLI sees each event (the same root a per-event --jq filter sees); Pointer
 // is its RFC 6901 lowering, which the generated runtime evaluates.
 type CLICommandStreamProjection struct {
-	Metadata *CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Select   string                    `json:"select" yaml:"select"`
-	Pointer  string                    `json:"pointer" yaml:"pointer"`
+	Metadata []CLICommandStreamMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Select   string                     `json:"select" yaml:"select"`
+	Pointer  string                     `json:"pointer" yaml:"pointer"`
 }
 
 // CLICommandOutput groups output behavior for a declared command.
@@ -238,6 +243,30 @@ type CLICommandOutput struct {
 	Projection *CLICommandProjection       `json:"projection" yaml:"projection"`
 	Artifact   *CLICommandArtifact         `json:"artifact,omitempty" yaml:"artifact,omitempty"`
 	Stream     *CLICommandStreamProjection `json:"stream,omitempty" yaml:"stream,omitempty"`
+	Outcome    *CLICommandOutcome          `json:"outcome,omitempty" yaml:"outcome,omitempty"`
+}
+
+// CLICommandOutcome classifies the terminal state carried inside a
+// successful response so the generated command can fail (exit 1) when the
+// API reports failure with an HTTP success code. StatePointer addresses the
+// state in the discrete JSON response and StreamStatePointer the same state
+// inside streamed events; at least one is declared. States is keyed by the
+// API's enum value, exactly as async.states, and only the "failure"
+// classification changes runtime behavior. ErrorPointer optionally addresses
+// the failure detail (an object or an array of objects) whose
+// ErrorMessageField string is appended to the failure message. A
+// single-route intent without its own table inherits its operation entry's.
+type CLICommandOutcome struct {
+	StateFrom          string            `json:"stateFrom,omitempty" yaml:"stateFrom,omitempty"`
+	StatePointer       string            `json:"statePointer,omitempty" yaml:"statePointer,omitempty"`
+	StreamStateFrom    string            `json:"streamStateFrom,omitempty" yaml:"streamStateFrom,omitempty"`
+	StreamStatePointer string            `json:"streamStatePointer,omitempty" yaml:"streamStatePointer,omitempty"`
+	States             map[string]string `json:"states" yaml:"states"`
+	ErrorFrom          string            `json:"errorFrom,omitempty" yaml:"errorFrom,omitempty"`
+	ErrorPointer       string            `json:"errorPointer,omitempty" yaml:"errorPointer,omitempty"`
+	StreamErrorFrom    string            `json:"streamErrorFrom,omitempty" yaml:"streamErrorFrom,omitempty"`
+	StreamErrorPointer string            `json:"streamErrorPointer,omitempty" yaml:"streamErrorPointer,omitempty"`
+	ErrorMessageField  string            `json:"errorMessageField,omitempty" yaml:"errorMessageField,omitempty"`
 }
 
 // CLIOperation augments the generated command for one operation. Unlike an
@@ -504,6 +533,7 @@ var CLIRuntimeHintReasons = []string{
 	"CLI_ASYNC_FAILED",
 	"CLI_ASYNC_TIMEOUT",
 	"CLI_ASYNC_UNKNOWN_STATE",
+	"CLI_OUTCOME_FAILED",
 }
 
 // cliReservedCommandKeys are keys reserved for future capabilities. Each maps
@@ -522,9 +552,13 @@ var cliCommandKeys = []string{
 	"args", "flags", "preset", "hints", "examples", "help", "jq", "output", "async",
 }
 
-var cliOutputKeys = []string{"artifact", "stream"}
+var cliOutputKeys = []string{"artifact", "stream", "outcome"}
+
+var cliOutcomeKeys = []string{"statePointer", "streamStatePointer", "states", "errorPointer", "streamErrorPointer", "errorMessageField"}
 
 var cliOutputStreamKeys = []string{"select", "metadata"}
+
+var cliOutputStreamMetadataKeys = []string{"select", "label", "complete", "when"}
 
 var cliOperationKeys = []string{"output", "flags"}
 
@@ -540,7 +574,7 @@ var cliOperationReservedFlagNames = map[string]string{
 }
 
 var cliInputKeys = []string{
-	"to", "type", "required", "variadic", "shorthand", "summary", "default", "defaultFrom", "suggestions",
+	"to", "type", "required", "variadic", "shorthand", "summary", "default", "defaultFrom", "suggestions", "implies",
 }
 
 var (
@@ -775,17 +809,31 @@ func (d *cliManifestDecoder) decodeOperation(opID string, node *yaml.Node) (*CLI
 				return nil, err
 			}
 			if len(outputEntries) == 0 {
-				return nil, fmt.Errorf("line %d: operation %q output requires stream", entry.Value.Line, opID)
+				return nil, fmt.Errorf("line %d: operation %q output requires stream or outcome", entry.Value.Line, opID)
 			}
 			for _, outputEntry := range outputEntries {
-				if outputEntry.Key.Value != "stream" {
-					return nil, fmt.Errorf("line %d: operation %q output has unknown key %q%s", outputEntry.Key.Line, opID, outputEntry.Key.Value, cliDidYouMean(outputEntry.Key.Value, []string{"stream"}))
+				switch outputEntry.Key.Value {
+				case "stream":
+					stream, err := d.decodeStreamProjection("operation "+opID, outputEntry.Value)
+					if err != nil {
+						return nil, err
+					}
+					if op.Output == nil {
+						op.Output = &CLICommandOutput{}
+					}
+					op.Output.Stream = stream
+				case "outcome":
+					outcome, err := d.decodeOutcome("operation "+opID, outputEntry.Value)
+					if err != nil {
+						return nil, err
+					}
+					if op.Output == nil {
+						op.Output = &CLICommandOutput{}
+					}
+					op.Output.Outcome = outcome
+				default:
+					return nil, fmt.Errorf("line %d: operation %q output has unknown key %q%s", outputEntry.Key.Line, opID, outputEntry.Key.Value, cliDidYouMean(outputEntry.Key.Value, []string{"stream", "outcome"}))
 				}
-				stream, err := d.decodeStreamProjection("operation "+opID, outputEntry.Value)
-				if err != nil {
-					return nil, err
-				}
-				op.Output = &CLICommandOutput{Stream: stream}
 			}
 		case "flags":
 			flags, err := d.decodeInputs("operation "+opID, entry.Value, false)
@@ -824,6 +872,9 @@ func checkOperationInputs(opID string, flags []CLICommandInput) error {
 	shorthands := map[string]string{}
 	pointers := map[string]string{}
 	for _, flag := range flags {
+		if len(flag.Implies) > 0 {
+			return fmt.Errorf("operation %q flag %q: implies is only supported on x-speakeasy-cli-commands commands", opID, flag.Name)
+		}
 		if flag.Shorthand != "" {
 			if previous, ok := shorthands[flag.Shorthand]; ok {
 				return fmt.Errorf("operation %q: flags %q and %q both use shorthand -%s", opID, previous, flag.Name, flag.Shorthand)
@@ -943,7 +994,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 	}
 
 	if outputNode != nil {
-		artifact, stream, err := d.decodeOutput(key, outputNode)
+		artifact, stream, outcome, err := d.decodeOutput(key, outputNode)
 		if err != nil {
 			return nil, err
 		}
@@ -952,6 +1003,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		}
 		cmd.Output.Artifact = artifact
 		cmd.Output.Stream = stream
+		cmd.Output.Outcome = outcome
 	}
 	if cmd.Output != nil && cmd.Output.Projection != nil && cmd.Output.Artifact != nil {
 		return nil, fmt.Errorf("command %q declares both jq and output.artifact; the artifact declaration owns the command's default output (users can still project with --jq at runtime)", key)
@@ -965,6 +1017,9 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		}
 		if cmd.Output != nil && cmd.Output.Stream != nil {
 			return nil, fmt.Errorf("command %q declares both async and output.stream; async polling requires discrete JSON responses and cannot be combined with streamed output", key)
+		}
+		if cmd.Output != nil && cmd.Output.Outcome != nil {
+			return nil, fmt.Errorf("command %q declares both async and output.outcome; async.states already classifies the terminal poll state", key)
 		}
 	}
 
@@ -994,7 +1049,7 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 		if cmd.Output != nil && cmd.Output.Projection != nil {
 			illegal = append(illegal, "jq")
 		}
-		if cmd.Output != nil && (cmd.Output.Artifact != nil || cmd.Output.Stream != nil) {
+		if cmd.Output != nil && (cmd.Output.Artifact != nil || cmd.Output.Stream != nil || cmd.Output.Outcome != nil) {
 			illegal = append(illegal, "output")
 		}
 		if asyncNode != nil {
@@ -1326,38 +1381,125 @@ func cliDecodeBackoff(node *yaml.Node) (float64, error) {
 // capabilities beyond the command-level jq sugar: artifact (the result is a
 // written media file) and stream (the selected field of each streamed event
 // is written raw to stdout as it arrives).
-func (d *cliManifestDecoder) decodeOutput(cmdKey string, node *yaml.Node) (*CLICommandArtifact, *CLICommandStreamProjection, error) {
+func (d *cliManifestDecoder) decodeOutput(cmdKey string, node *yaml.Node) (*CLICommandArtifact, *CLICommandStreamProjection, *CLICommandOutcome, error) {
 	entries, err := cliMapEntries(node, fmt.Sprintf("command %q output", cmdKey))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	var (
 		artifact *CLICommandArtifact
 		stream   *CLICommandStreamProjection
+		outcome  *CLICommandOutcome
 	)
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "artifact":
 			artifact, err = d.decodeArtifact(cmdKey, entry.Value)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 		case "stream":
 			stream, err = d.decodeStreamProjection(cmdKey, entry.Value)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
+			}
+		case "outcome":
+			outcome, err = d.decodeOutcome(fmt.Sprintf("command %q", cmdKey), entry.Value)
+			if err != nil {
+				return nil, nil, nil, err
 			}
 		case "jq":
-			return nil, nil, fmt.Errorf("line %d: command %q: jq is declared at the command level (jq: <expression>), not under output", entry.Key.Line, cmdKey)
+			return nil, nil, nil, fmt.Errorf("line %d: command %q: jq is declared at the command level (jq: <expression>), not under output", entry.Key.Line, cmdKey)
 		default:
-			return nil, nil, fmt.Errorf("line %d: command %q output has unknown key %q%s", entry.Key.Line, cmdKey, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputKeys))
+			return nil, nil, nil, fmt.Errorf("line %d: command %q output has unknown key %q%s", entry.Key.Line, cmdKey, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputKeys))
 		}
 	}
-	if artifact == nil && stream == nil {
-		return nil, nil, fmt.Errorf("line %d: command %q: output must declare artifact or stream (the output capabilities beyond the command-level jq key)", node.Line, cmdKey)
+	if artifact == nil && stream == nil && outcome == nil {
+		return nil, nil, nil, fmt.Errorf("line %d: command %q: output must declare artifact, stream, or outcome (the output capabilities beyond the command-level jq key)", node.Line, cmdKey)
 	}
-	return artifact, stream, nil
+	return artifact, stream, outcome, nil
+}
+
+// decodeOutcome decodes an output.outcome declaration. Pointer resolvability
+// and enum coverage are checked during linking; this stage validates the
+// local grammar: at least one state pointer, a states table whose values are
+// the async classifications, and member-name error bindings.
+func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLICommandOutcome, error) {
+	entries, err := cliMapEntries(node, owner+" output.outcome")
+	if err != nil {
+		return nil, err
+	}
+	outcome := &CLICommandOutcome{States: map[string]string{}}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "statePointer":
+			outcome.StateFrom, outcome.StatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.statePointer")
+		case "streamStatePointer":
+			outcome.StreamStateFrom, outcome.StreamStatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.streamStatePointer")
+		case "states":
+			err = d.decodeOutcomeStates(owner, entry.Value, outcome.States)
+		case "errorPointer":
+			outcome.ErrorFrom, outcome.ErrorPointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.errorPointer")
+		case "streamErrorPointer":
+			outcome.StreamErrorFrom, outcome.StreamErrorPointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.streamErrorPointer")
+		case "errorMessageField":
+			outcome.ErrorMessageField, err = cliDecodeArtifactFieldName(entry.Value, "output.outcome.errorMessageField")
+		default:
+			return nil, fmt.Errorf("line %d: %s output.outcome has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutcomeKeys))
+		}
+		if err != nil {
+			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
+		}
+	}
+	if outcome.StatePointer == "" && outcome.StreamStatePointer == "" {
+		return nil, fmt.Errorf("line %d: %s output.outcome requires statePointer (the state in the JSON response) or streamStatePointer (the state inside streamed events)", node.Line, owner)
+	}
+	if len(outcome.States) == 0 {
+		return nil, fmt.Errorf("line %d: %s output.outcome requires states (a map from every API state to pending, success, failure, or handoff)", node.Line, owner)
+	}
+	hasFailure := false
+	for _, class := range outcome.States {
+		hasFailure = hasFailure || class == "failure"
+	}
+	if !hasFailure {
+		return nil, fmt.Errorf("line %d: %s output.outcome.states must classify at least one state as failure; the declaration exists to fail the command on that state", node.Line, owner)
+	}
+	if outcome.ErrorPointer != "" && outcome.StatePointer == "" {
+		return nil, fmt.Errorf("line %d: %s output.outcome.errorPointer requires statePointer; use streamErrorPointer for streamed events", node.Line, owner)
+	}
+	if outcome.StreamErrorPointer != "" && outcome.StreamStatePointer == "" {
+		return nil, fmt.Errorf("line %d: %s output.outcome.streamErrorPointer requires streamStatePointer", node.Line, owner)
+	}
+	if outcome.ErrorMessageField != "" && outcome.ErrorPointer == "" && outcome.StreamErrorPointer == "" {
+		return nil, fmt.Errorf("line %d: %s output.outcome.errorMessageField requires errorPointer or streamErrorPointer", node.Line, owner)
+	}
+	if (outcome.ErrorPointer != "" || outcome.StreamErrorPointer != "") && outcome.ErrorMessageField == "" {
+		outcome.ErrorMessageField = cliAsyncDefaultErrorMessageField
+	}
+	return outcome, nil
+}
+
+func (d *cliManifestDecoder) decodeOutcomeStates(owner string, node *yaml.Node, states map[string]string) error {
+	entries, err := cliMapEntries(node, owner+" output.outcome.states")
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		state, err := cliScalarString(entry.Key, "outcome state name")
+		if err != nil || strings.TrimSpace(state) == "" {
+			return fmt.Errorf("line %d: %s output.outcome.states keys must be non-empty strings", entry.Key.Line, owner)
+		}
+		class, err := cliScalarString(entry.Value, fmt.Sprintf("classification for outcome state %q", state))
+		if err != nil {
+			return err
+		}
+		if !cliContains(cliAsyncStateKind, class) {
+			return fmt.Errorf("line %d: %s output.outcome.states[%q] has unsupported classification %q (expected %s)", entry.Value.Line, owner, state, class, cliCandidateList(cliAsyncStateKind))
+		}
+		states[state] = class
+	}
+	return nil
 }
 
 // decodeArtifact decodes and validates an output.artifact declaration. The
@@ -2091,6 +2233,18 @@ func (d *cliManifestDecoder) decodeInput(cmdKey, name string, node *yaml.Node, i
 			}
 			input.Enum = values
 			input.SuggestionsDeclared = true
+		case "implies":
+			if isArg {
+				return nil, fmt.Errorf("line %d: command %q arg %q: implies is only valid on flags", entry.Value.Line, cmdKey, name)
+			}
+			implies, err := d.decodePresets(fmt.Sprintf("%s flag %s implies", cmdKey, name), entry.Value)
+			if err != nil {
+				return nil, err
+			}
+			if len(implies) == 0 {
+				return nil, fmt.Errorf("line %d: command %q flag %q: implies must set at least one body value", entry.Value.Line, cmdKey, name)
+			}
+			input.Implies = implies
 		case "mode":
 			return nil, fmt.Errorf("line %d: command %q input %q: mode lives inside the to: object and only \"set\" is part of v1 (append/merge are reserved capabilities)", entry.Key.Line, cmdKey, name)
 		default:
@@ -2110,6 +2264,16 @@ func (d *cliManifestDecoder) decodeInput(cmdKey, name string, node *yaml.Node, i
 		return nil, err
 	}
 	input.Bind = bind
+	if len(input.Implies) > 0 {
+		if bind.In != "body" || strings.Count(bind.Pointer, "/") != 1 {
+			return nil, fmt.Errorf("command %q flag %q: implies requires the flag to bind a root-level body property", cmdKey, name)
+		}
+		for _, implied := range input.Implies {
+			if implied.Bind.Pointer == bind.Pointer {
+				return nil, fmt.Errorf("command %q flag %q: implies cannot set the flag's own property %s", cmdKey, name, bind.Pointer)
+			}
+		}
+	}
 	return input, nil
 }
 
@@ -2460,42 +2624,101 @@ func cliMapKeys(m map[string]bool) []string {
 	return keys
 }
 
-func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) (*CLICommandStreamMetadata, error) {
+func (d *cliManifestDecoder) decodeStreamMetadata(node *yaml.Node) ([]CLICommandStreamMetadata, error) {
+	items := []*yaml.Node{node}
+	if node.Kind == yaml.SequenceNode {
+		if len(node.Content) == 0 {
+			return nil, fmt.Errorf("line %d: output.stream.metadata must list at least one field", node.Line)
+		}
+		items = node.Content
+	}
+
+	fields := make([]CLICommandStreamMetadata, 0, len(items))
+	labels := map[string]bool{}
+	statusLine := 0
+	incompleteLine := 0
+	for _, item := range items {
+		field, err := d.decodeStreamMetadataField(item)
+		if err != nil {
+			return nil, err
+		}
+		if labels[field.Label] {
+			return nil, fmt.Errorf("line %d: output.stream.metadata label %q is declared more than once", item.Line, field.Label)
+		}
+		labels[field.Label] = true
+		if field.Complete != nil {
+			if statusLine != 0 {
+				return nil, fmt.Errorf("line %d: output.stream.metadata declares complete on more than one field; only the stream's status field lists its complete values", item.Line)
+			}
+			statusLine = item.Line
+		}
+		if field.When != "" && incompleteLine == 0 {
+			incompleteLine = item.Line
+		}
+		fields = append(fields, field)
+	}
+	if incompleteLine != 0 && statusLine == 0 {
+		return nil, fmt.Errorf("line %d: output.stream.metadata when: incomplete requires a status field that lists its complete values", incompleteLine)
+	}
+	return fields, nil
+}
+
+func (d *cliManifestDecoder) decodeStreamMetadataField(node *yaml.Node) (CLICommandStreamMetadata, error) {
+	var field CLICommandStreamMetadata
 	entries, err := cliMapEntries(node, "output.stream.metadata")
 	if err != nil {
-		return nil, err
+		return field, err
 	}
-	metadata := &CLICommandStreamMetadata{}
 	for _, entry := range entries {
 		switch entry.Key.Value {
 		case "select":
-			value, err := cliScalarString(entry.Value, "output.stream.metadata.select")
+			paths, err := cliScalarOrStringList(entry.Value, "output.stream.metadata.select")
 			if err != nil {
-				return nil, err
+				return field, err
 			}
-			segments, err := cliParseSingularPath(value)
-			if err != nil {
-				return nil, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+			for _, path := range paths {
+				segments, err := cliParseSingularPath(path)
+				if err != nil {
+					return field, fmt.Errorf("line %d: output.stream.metadata.select: %w", entry.Value.Line, err)
+				}
+				field.Select = append(field.Select, path)
+				field.Pointers = append(field.Pointers, cliSegmentsToPointer(segments))
 			}
-			metadata.Select = value
-			metadata.Pointer = cliSegmentsToPointer(segments)
 		case "label":
 			value, err := cliScalarString(entry.Value, "output.stream.metadata.label")
 			if err != nil {
-				return nil, err
+				return field, err
 			}
 			for _, r := range value {
 				if !unicode.IsPrint(r) {
-					return nil, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
+					return field, fmt.Errorf("line %d: output.stream.metadata.label must contain only printable characters", entry.Value.Line)
 				}
 			}
-			metadata.Label = value
+			field.Label = value
+		case "complete":
+			values, err := cliScalarOrStringList(entry.Value, "output.stream.metadata.complete")
+			if err != nil {
+				return field, err
+			}
+			field.Complete = values
+		case "when":
+			value, err := cliScalarString(entry.Value, "output.stream.metadata.when")
+			if err != nil {
+				return field, err
+			}
+			if value != "incomplete" {
+				return field, fmt.Errorf("line %d: output.stream.metadata.when must be incomplete, got %q", entry.Value.Line, value)
+			}
+			field.When = value
 		default:
-			return nil, fmt.Errorf("line %d: output.stream.metadata has unknown key %q", entry.Key.Line, entry.Key.Value)
+			return field, fmt.Errorf("line %d: output.stream.metadata has unknown key %q%s", entry.Key.Line, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliOutputStreamMetadataKeys))
 		}
 	}
-	if metadata.Select == "" || strings.TrimSpace(metadata.Label) == "" {
-		return nil, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
+	if len(field.Select) == 0 || strings.TrimSpace(field.Label) == "" {
+		return field, fmt.Errorf("line %d: output.stream.metadata requires nonempty select and label", node.Line)
 	}
-	return metadata, nil
+	if field.Complete != nil && field.When != "" {
+		return field, fmt.Errorf("line %d: output.stream.metadata field %q lists complete values, so it is already reported only when incomplete; remove when", node.Line, field.Label)
+	}
+	return field, nil
 }

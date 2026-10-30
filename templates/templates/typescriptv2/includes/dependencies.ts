@@ -85,6 +85,10 @@ function templateDevDependencies(): string {
     sdkHasTests(context.Global.AST)
   ) {
     defaultDependencies["vitest"] = deps.vitest.version;
+    if (isMCPServerEnabled()) {
+      defaultDependencies["@modelcontextprotocol/client"] =
+        deps["@modelcontextprotocol/client"].version;
+    }
     defaultDependencies["@types/node"] = deps["@types/node"].version;
   }
 
@@ -119,6 +123,13 @@ function templateDependencies(): string {
   if (isMCPServerEnabled()) {
     defaultDependencies["@modelcontextprotocol/sdk"] =
       deps["@modelcontextprotocol/sdk"].version;
+    defaultDependencies["@modelcontextprotocol/server"] =
+      deps["@modelcontextprotocol/server"].version;
+    defaultDependencies["@modelcontextprotocol/server-legacy"] =
+      deps["@modelcontextprotocol/server-legacy"].version;
+    defaultDependencies["zod-to-json-schema"] =
+      deps["zod-to-json-schema"].version;
+    defaultDependencies["zod"] = deps.zodMCP.version;
   }
 
   if (isZodV4Mini()) {
@@ -191,6 +202,20 @@ function templateAdditionalPackageJSON(): string {
   }
 
   if (isMCPServerEnabled()) {
+    const engines = values.engines || {};
+    const nodeRange = engines.node || "";
+    values.engines = {
+      ...engines,
+      node: nodeRange
+        .split("||")
+        .map((range: string) => {
+          const branch = range
+            .trim()
+            .replace(/^(\S+)\s+-\s+(\S+)$/, ">=$1 <=$2");
+          return [branch, ">=20"].filter(Boolean).join(" ");
+        })
+        .join(" || "),
+    };
     values.bin = values.bin || {};
     values.bin["mcp"] = "bin/mcp-server.js";
   }

@@ -12,11 +12,11 @@ features:
     additionalProperties: 0.1.1
     bigint: 0.1.2
     constsAndDefaults: 0.2.2
-    core: 3.9.28
+    core: 3.9.29
     customSecuritySchemes: 0.1.0
     decimal: 0.1.1
     deprecations: 2.81.1
-    docs: 0.4.4
+    docs: 0.4.5
     enums: 2.82.3
     errorUnions: 0.1.0
     errors: 0.3.1

@@ -26,7 +26,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             cmd/**/go.sum
-            zSDKs/**/go.sum
+            services/**/go.sum
       - if: startsWith(inputs.target, 'mcp-')
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:

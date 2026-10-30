@@ -23,8 +23,7 @@ func initStreamMetadataCmd(parent *cobra.Command) error {
 	parent.Annotations["speakeasy_operation"] = "streamMetadata"
 	parent.Annotations["speakeasy_cli_promoted"] = "true"
 	parent.Annotations["speakeasy_stream_select"] = "/data/content"
-	parent.Annotations["speakeasy_stream_metadata_select"] = "/data/resource_id"
-	parent.Annotations["speakeasy_stream_metadata_label"] = "Resource ID"
+	parent.Annotations["speakeasy_stream_metadata"] = "[{\"label\":\"Resource ID\",\"pointers\":[\"/data/resource_id\"]}]"
 	return nil
 }
 
@@ -55,11 +54,13 @@ func runStreamMetadataCmd(cmd *cobra.Command, args []string) error {
 	// Streaming response — iterate events and output incrementally.
 	// Skip streaming iteration in dry-run mode (synthetic response has no stream).
 	if !client.IsDryRun(cmd) {
+		stopProgress := output.StartRequestProgress(cmd)
 		res, err := s.StreamMetadata.StreamMetadata(cmd.Context(), sdkOpts...)
 		if err != nil {
+			stopProgress()
 			return output.Error(cmd, err)
 		}
-		return output.StreamResult(cmd, res, "Object")
+		return output.StreamResult(cmd, res, "Object", stopProgress)
 	}
 	res, err := s.StreamMetadata.StreamMetadata(cmd.Context(), sdkOpts...)
 	if err != nil {

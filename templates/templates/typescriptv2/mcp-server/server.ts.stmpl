@@ -7,7 +7,7 @@
 {{- $coreName := sanitizeCoreSDKName }}
 {{- $hasServerExtensionFile := fileExists "src/mcp-server/server.extensions.ts" }}
 {{- $hasServers := (and $globalSDK.Servers $globalSDK.Servers.HasAbsoluteURL) -}}
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { {{$coreName}} } from "../core.js";
 import type { ConsoleLogger } from "./console-logger.js"; 
 import { MCPScope } from "./scopes.js";

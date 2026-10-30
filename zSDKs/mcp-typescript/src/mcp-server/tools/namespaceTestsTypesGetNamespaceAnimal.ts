@@ -21,7 +21,7 @@ The response can be either a foo.Dog or foo.Cat.`,
   tool: async (client, ctx) => {
     const [result] = await namespaceTestsTypesGetNamespaceAnimal(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

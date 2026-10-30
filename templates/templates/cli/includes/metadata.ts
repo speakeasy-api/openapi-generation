@@ -40,13 +40,20 @@ function isRequestBodyExpandable(op: Operation): boolean {
 registerTemplateFunc("isRequestBodyExpandable", isRequestBodyExpandable);
 
 /**
- * Check if an operation will generate flag metadata.
- * Returns false for operations with scalar request bodies or empty request types.
+ * Whether the operation command registers its inputs from flag metadata
+ * (BuildRequest) rather than one whole-body flag (BuildRequestBody). Mirrors
+ * templateFlagMetadataVar's decision about whether the operation emits a
+ * flag-metadata variable. Returns false for operations with scalar request
+ * bodies or empty request types.
+ * Side-effect free (no addImport), so it is safe to call while other files render.
  */
-function operationHasFlagMetadata(op: Operation): boolean {
-  return templateFlagMetadataVar(op) !== "";
+function operationUsesMetadataFlags(op: Operation): boolean {
+  const built = buildOperationMetadataEntries(op);
+  return (
+    built !== null && (built.entries.length > 0 || built.hadCandidateFields)
+  );
 }
-registerTemplateFunc("operationHasFlagMetadata", operationHasFlagMetadata);
+registerTemplateFunc("operationUsesMetadataFlags", operationUsesMetadataFlags);
 
 function getMixedRequestMetadataFields(op: Operation): FieldDef[] {
   const fields = op.Request.Field.Type.Fields || [];
@@ -990,6 +997,14 @@ registerTemplateFunc("templateEmptyBodyRequired", templateEmptyBodyRequired);
  * Generate the description for the --body flag.
  */
 function templateBodyFlagDescription(op: Operation): string {
+  return escapeGoString(bodyFlagDescription(op));
+}
+registerTemplateFunc(
+  "templateBodyFlagDescription",
+  templateBodyFlagDescription,
+);
+
+function bodyFlagDescription(op: Operation): string {
   const hasEmptyBody =
     op.Request?.RequestBody &&
     isEmptyRequestBodyClass(op.Request.RequestBody) &&
@@ -1000,12 +1015,8 @@ function templateBodyFlagDescription(op: Operation): string {
   if (hasBodySchemaForOp(op)) {
     description += " Use --schema to print the exact JSON Schema.";
   }
-  return escapeGoString(description);
+  return description;
 }
-registerTemplateFunc(
-  "templateBodyFlagDescription",
-  templateBodyFlagDescription,
-);
 
 /**
  * Generate the BuildRequest call expression (no `return` prefix).

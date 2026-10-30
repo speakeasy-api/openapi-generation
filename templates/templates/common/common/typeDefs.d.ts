@@ -2325,21 +2325,37 @@ declare global {
   };
 
   type CLICommandStreamMetadata = {
-    Select: string;
-    Pointer: string;
+    Select: string[];
+    Pointers: string[];
     Label: string;
+    Complete?: string[] | null;
+    When?: string;
   };
 
   type CLICommandStreamProjection = {
-    Metadata?: CLICommandStreamMetadata | null;
+    Metadata?: CLICommandStreamMetadata[] | null;
     Select: string;
     Pointer: string;
+  };
+
+  type CLICommandOutcome = {
+    StateFrom?: string;
+    StatePointer?: string;
+    StreamStateFrom?: string;
+    StreamStatePointer?: string;
+    States: Record<string, string>;
+    ErrorFrom?: string;
+    ErrorPointer?: string;
+    StreamErrorFrom?: string;
+    StreamErrorPointer?: string;
+    ErrorMessageField?: string;
   };
 
   type CLICommandOutput = {
     Projection: CLICommandProjection | null;
     Artifact?: CLICommandArtifact | null;
     Stream?: CLICommandStreamProjection | null;
+    Outcome?: CLICommandOutcome | null;
   };
 
   type CLICommandAsyncParameter = {
@@ -2692,6 +2708,10 @@ declare global {
     SecretName?: string;
     ValidationRegex?: string;
     ValidationMessage?: string;
+    ValidationExamples?: {
+      valid?: string[];
+      invalid?: string[];
+    };
   };
 
   type SDKGenConfigFields = Record<string, SDKGenConfigField>;

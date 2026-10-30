@@ -81,6 +81,9 @@ func ensureDPrint() {
 	// No-op for WASM - formatters are already stubbed
 }
 
+// Prewarm is a no-op for WASM - formatters are already stubbed
+func Prewarm() {}
+
 // Format is the main entry point - returns input unchanged for WASM (aside
 // from stripping the no-format marker) so binary size stays small.
 func Format(_ context.Context, target types.Target, fileName string, data []byte) ([]byte, error) {

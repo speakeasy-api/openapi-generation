@@ -134,6 +134,8 @@ func (s *Tag1) Deprecated1(ctx context.Context, opts ...operations.Option) (*ope
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -262,6 +264,8 @@ func (s *Tag1) Auth(ctx context.Context, security operations.AuthSecurity, opts 
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode == 401:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -272,6 +276,8 @@ func (s *Tag1) Auth(ctx context.Context, security operations.AuthSecurity, opts 
 	case httpRes.StatusCode == 403:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode == 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)

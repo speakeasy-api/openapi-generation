@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.16.1",
+  core: "3.16.4",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -12,7 +12,7 @@ const supportedFeatures = {
   serverIDs: "2.81.1",
   nameOverrides: "2.81.4",
   includes: "2.81.1",
-  docs: "0.7.4",
+  docs: "0.7.5",
   examples: "2.81.7",
   groups: "2.81.3",
   deprecations: "2.81.3",
@@ -27,11 +27,11 @@ const supportedFeatures = {
   bigint: "0.0.2",
   decimal: "0.1.1",
   devContainers: "2.90.0",
-  constsAndDefaults: "0.1.14",
+  constsAndDefaults: "0.1.15",
   additionalProperties: "0.1.3",
   downloadStreams: "0.1.3",
   tests: "0.16.8",
-  serverEvents: "0.1.10",
+  serverEvents: "0.1.11",
   serverEventsSentinels: "0.1.1",
   oauth2ClientCredentials: "1.1.6",
   oauth2Password: "0.1.3",
@@ -421,8 +421,15 @@ function isTestSkipped(test: string): boolean {
     "clierrors-unknown-flag-suggestion",
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
   ].includes(test);
 }
 

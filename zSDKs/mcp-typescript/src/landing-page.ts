@@ -11,13 +11,28 @@ import { toolNames } from "./tool-names.js";
 // Cloudflare-specific wrapper
 export function landingPage(req: Request): Response {
   const origin = new URL(req.url).origin;
-  return new Response(landingPageHTML(origin), {
+  return new Response(landingPageHTML(origin, "http", "cloudflare"), {
     headers: { "Content-Type": "text/html" },
   });
 }
 
 // express wrapper
 export function landingPageExpress(req: ExpressRequest, res: ExpressResponse) {
+  sendLandingPage(req, res, "sse");
+}
+
+export function landingPageExpressHTTP(
+  req: ExpressRequest,
+  res: ExpressResponse,
+) {
+  sendLandingPage(req, res, "http");
+}
+
+function sendLandingPage(
+  req: ExpressRequest,
+  res: ExpressResponse,
+  transport: "sse" | "http",
+) {
   const proto = req.get("x-forwarded-proto")?.split(",")[0]?.trim()
     || req.protocol;
   const host = req.get("host");
@@ -25,75 +40,96 @@ export function landingPageExpress(req: ExpressRequest, res: ExpressResponse) {
     res.status(400).send("Missing Host header");
     return;
   }
-  res.type("html").send(landingPageHTML(`${proto}://${host}`));
+  res.type("html").send(landingPageHTML(`${proto}://${host}`, transport));
 }
 
-export function landingPageHTML(origin: string): string {
+export function landingPageHTML(
+  origin: string,
+  transport: "sse" | "http" = "sse",
+  runtime: "node" | "cloudflare" = "node",
+): string {
   const o = origin;
+  const endpoint = transport === "sse" ? "sse" : "mcp";
+  const headers: Array<{ name: string; env: string }> = runtime === "cloudflare"
+    ? [
+      { "name": "x-username", "env": "USERNAME" },
+      { "name": "x-password", "env": "PASSWORD" },
+      { "name": "authorization", "env": "BEARER_AUTH" },
+      { "name": "api_key", "env": "MY_API_KEY" },
+      { "name": "x-oauth2", "env": "OAUTH2" },
+      { "name": "x-app-id", "env": "APP_ID" },
+      { "name": "x-secret", "env": "SECRET" },
+      { "name": "x-mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "x-client-credentials", "env": "CLIENT_CREDENTIALS" },
+    ]
+    : transport === "sse"
+    ? [
+      { "name": "username", "env": "USERNAME" },
+      { "name": "password", "env": "PASSWORD" },
+      { "name": "bearer-auth", "env": "BEARER_AUTH" },
+      { "name": "my-api-key", "env": "MY_API_KEY" },
+      { "name": "oauth2", "env": "OAUTH2" },
+      { "name": "app-id", "env": "APP_ID" },
+      { "name": "secret", "env": "SECRET" },
+      { "name": "mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "client-credentials", "env": "CLIENT_CREDENTIALS" },
+    ]
+    : [
+      { "name": "username", "env": "USERNAME" },
+      { "name": "password", "env": "PASSWORD" },
+      { "name": "bearer-auth", "env": "BEARER_AUTH" },
+      { "name": "my-api-key", "env": "MY_API_KEY" },
+      { "name": "oauth2", "env": "OAUTH2" },
+      { "name": "app-id", "env": "APP_ID" },
+      { "name": "secret", "env": "SECRET" },
+      { "name": "mobile-auth", "env": "MOBILE_AUTH" },
+      { "name": "client-credentials", "env": "CLIENT_CREDENTIALS" },
+      { "name": "query-param1", "env": "QUERY_PARAM1" },
+      { "name": "deprecated-query-param1", "env": "DEPRECATED_QUERY_PARAM1" },
+      { "name": "deprecated-query-param2", "env": "DEPRECATED_QUERY_PARAM2" },
+      { "name": "lone-query-param", "env": "LONE_QUERY_PARAM" },
+      { "name": "subdomain", "env": "SUBDOMAIN" },
+      { "name": "api-version", "env": "API_VERSION" },
+      { "name": "api-host-name", "env": "API_HOST_NAME" },
+      { "name": "api-port", "env": "API_PORT" },
+    ];
   const mcpConfig = {
-    "command": "npx",
-    "args": [
+    command: "npx",
+    args: [
       "-y",
       "mcp-remote@0.1.25",
-      `${o}/sse`,
-      "--header",
-      "server-index:${SERVER_INDEX}",
-      "--header",
-      "subdomain:${SUBDOMAIN}",
-      "--header",
-      "api-version:${API_VERSION}",
-      "--header",
-      "api-host-name:${API_HOST_NAME}",
-      "--header",
-      "api-port:${API_PORT}",
-      "--header",
-      "username:${USERNAME}",
-      "--header",
-      "password:${PASSWORD}",
-      "--header",
-      "bearer-auth:${BEARER_AUTH}",
-      "--header",
-      "my-api-key:${MY_API_KEY}",
-      "--header",
-      "oauth2:${OAUTH2}",
-      "--header",
-      "app-id:${APP_ID}",
-      "--header",
-      "secret:${SECRET}",
-      "--header",
-      "mobile-auth:${MOBILE_AUTH}",
-      "--header",
-      "client-credentials:${CLIENT_CREDENTIALS}",
-      "--header",
-      "query-param1:${QUERY_PARAM1}",
-      "--header",
-      "deprecated-query-param1:${DEPRECATED_QUERY_PARAM1}",
-      "--header",
-      "deprecated-query-param2:${DEPRECATED_QUERY_PARAM2}",
+      `${o}/${endpoint}`,
+      ...headers.flatMap(({ name, env }) => ["--header", `${name}:\${${env}}`]),
     ],
-    "env": {
-      "SERVER_INDEX": "YOUR_VALUE_HERE",
-      "SUBDOMAIN": "YOUR_VALUE_HERE",
-      "API_VERSION": "YOUR_VALUE_HERE",
-      "API_HOST_NAME": "YOUR_VALUE_HERE",
-      "API_PORT": "YOUR_VALUE_HERE",
-      "USERNAME": "YOUR_VALUE_HERE",
-      "PASSWORD": "YOUR_VALUE_HERE",
-      "BEARER_AUTH": "YOUR_VALUE_HERE",
-      "MY_API_KEY": "YOUR_VALUE_HERE",
-      "OAUTH2": "YOUR_VALUE_HERE",
-      "APP_ID": "YOUR_VALUE_HERE",
-      "SECRET": "YOUR_VALUE_HERE",
-      "MOBILE_AUTH": "YOUR_VALUE_HERE",
-      "CLIENT_CREDENTIALS": "YOUR_VALUE_HERE",
-      "QUERY_PARAM1": "YOUR_VALUE_HERE",
-      "DEPRECATED_QUERY_PARAM1": "YOUR_VALUE_HERE",
-      "DEPRECATED_QUERY_PARAM2": "YOUR_VALUE_HERE",
-    },
+    env: Object.fromEntries(headers.map(({ env }) => [env, "YOUR_VALUE_HERE"])),
   };
-  const codexConfig = `[mcp_servers.SDK]
-url = "${o}/sse"
-http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDOMAIN", "api-version" = "YOUR_API_VERSION", "api-host-name" = "YOUR_API_HOST_NAME", "api-port" = "YOUR_API_PORT", "username" = "YOUR_USERNAME", "password" = "YOUR_PASSWORD", "bearer-auth" = "YOUR_BEARER_AUTH", "my-api-key" = "YOUR_MY_API_KEY", "oauth2" = "YOUR_OAUTH2", "app-id" = "YOUR_APP_ID", "secret" = "YOUR_SECRET", "mobile-auth" = "YOUR_MOBILE_AUTH", "client-credentials" = "YOUR_CLIENT_CREDENTIALS", "query-param1" = "YOUR_QUERY_PARAM1", "deprecated-query-param1" = "YOUR_DEPRECATED_QUERY_PARAM1", "deprecated-query-param2" = "YOUR_DEPRECATED_QUERY_PARAM2" }`;
+  const cliHeaders = headers.map(({ name }) => `--header "${name}: ..."`).join(
+    " ",
+  );
+  const codexConfig = transport === "sse"
+    ? `[mcp_servers.SDK]
+command = ${JSON.stringify(mcpConfig.command)}
+args = ${JSON.stringify(mcpConfig.args)}
+env = { ${
+      Object.entries(mcpConfig.env).map(([name, value]) =>
+        `${JSON.stringify(name)} = ${JSON.stringify(value)}`
+      ).join(", ")
+    } }`
+    : `[mcp_servers.SDK]
+url = ${JSON.stringify(`${o}/${endpoint}`)}
+http_headers = { ${
+      headers.map(({ name, env }) =>
+        `${JSON.stringify(name)} = ${JSON.stringify(`YOUR_${env}`)}`
+      ).join(", ")
+    } }`;
+  const encodedConfig = encodeURIComponent(
+    btoa(
+      Array.from(
+        new TextEncoder().encode(JSON.stringify(mcpConfig)),
+        byte => String.fromCharCode(byte),
+      ).join(""),
+    ),
+  );
 
   return `
 <!DOCTYPE html>
@@ -731,7 +767,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                   </svg>
                 </button>
                 <div class="popover-menu hidden" id="popover-menu">
-                  <a class="popover-button install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+                  <a class="popover-button install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=${encodedConfig}">
                     Cursor
                   </a>
                   <button class="popover-button" onclick="showModal('claude-code')">
@@ -740,7 +776,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                   <button class="popover-button" onclick="showModal('claude-desktop')">
                     Claude Desktop
                   </button>
-                  <a class="popover-button install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+                  <a class="popover-button install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=${encodedConfig}">
                     VS Code
                   </a>
                   <button class="popover-button" onclick="showModal('gemini')">
@@ -763,7 +799,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
             </div>
           </header>
           <div class="install-targets">
-            <a tabindex="0" class="card install-target install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+            <a tabindex="0" class="card install-target install-link" href="cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=${encodedConfig}">
               <div class="target">
                 <img src="https://cursor.com/assets/images/logo.svg" alt="Cursor">
                 <span>Cursor</span>
@@ -785,7 +821,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                 <span>Claude Desktop</span>
               </div>
             </div>
-            <a tabindex="0" class="card install-target install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=">
+            <a tabindex="0" class="card install-target install-link" href="vscode://ms-vscode.vscode-mcp/install?name=SDK&config=${encodedConfig}">
               <div class="target">
                 <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <mask id="mask0" mask-type="alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
@@ -907,7 +943,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
                 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
               </svg>
             </button>
-            <code class="code-snippet" id="server-url">${o}/mcp</code>
+            <code class="code-snippet" id="server-url">${o}/${endpoint}</code>
           </div>
         </section>
 
@@ -964,7 +1000,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport sse SDK https://openapi-mcp-server.example.workers.dev/sse</code>
+          <code class="code-snippet language-json" id="claude-cli-cmd">claude mcp add --transport ${transport} SDK ${o}/${endpoint} ${cliHeaders}</code>
         </div>
       </div>
     </div>
@@ -1015,7 +1051,7 @@ http_headers = { "server-index" = "YOUR_SERVER_INDEX", "subdomain" = "YOUR_SUBDO
               <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
             </svg>
           </button>
-          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport sse SDK https://openapi-mcp-server.example.workers.dev/sse</code>
+          <code class="code-snippet language-json" id="gemini-config">gemini mcp add --transport ${transport} SDK ${o}/${endpoint} ${cliHeaders}</code>
         </div>
       </div>
     </div>

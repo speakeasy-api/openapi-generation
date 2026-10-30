@@ -6,20 +6,20 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 141d8be8c05cdfcbef25d30b67689996
+  configChecksum: a128d4089661743cc900fb9d30c2fb61
 features:
   go:
     acceptHeaders: 2.81.2
     additionalDependencies: 0.1.0
     additionalProperties: 0.1.3
     bigint: 0.0.2
-    constsAndDefaults: 0.1.14
-    core: 3.16.1
+    constsAndDefaults: 0.1.15
+    core: 3.16.4
     customSecuritySchemes: 0.1.0
     decimal: 0.1.1
     defaultEnabledRetries: 0.2.0
     deprecations: 2.81.3
-    docs: 0.7.4
+    docs: 0.7.5
     downloadStreams: 0.1.3
     enums: 2.82.2
     envVarSecurityUsage: 0.3.2
@@ -47,7 +47,7 @@ features:
     responseFormat: 0.1.2
     retries: 2.84.6
     sdkHooks: 0.3.1
-    serverEvents: 0.1.10
+    serverEvents: 0.1.11
     serverEventsSentinels: 0.1.1
     serverIDs: 2.81.1
     stringNumberFormats: 0.2.2
@@ -691,7 +691,7 @@ trackedFiles:
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
-    last_write_checksum: sha1:fbdda8d865e5f59cfb9e776d86ec0c4c1c5e5f8f
+    last_write_checksum: sha1:60722b013c55f8943a5a0d277d4867be3b5cd2ea
   group.go:
     last_write_checksum: sha1:669020440a45de422e8bbf697d13322d6602d603
   httpmetadata.go:
@@ -715,7 +715,7 @@ trackedFiles:
   internal/utils/json.go:
     last_write_checksum: sha1:785278d21e06d3c0b820630fc9d5ca38d364f9ee
   internal/utils/pathparams.go:
-    last_write_checksum: sha1:440aadb18d886ea0a79af0772eb65cdddc9eee60
+    last_write_checksum: sha1:a092fc31b7c8fac29c359ddfa8bf2e02763fa097
   internal/utils/queryparams.go:
     last_write_checksum: sha1:6625d7f77067bf181254067b89ae437f29cbeab9
   internal/utils/requestbody.go:
@@ -1289,7 +1289,7 @@ trackedFiles:
   types/pointers.go:
     last_write_checksum: sha1:fc2275ea006257ba9ba4ff6f2a2cdb6205371eef
   types/stream/stream.go:
-    last_write_checksum: sha1:08cba0dd035d9a9e3aca5df6ce9f1617796b4872
+    last_write_checksum: sha1:c2c34f5f7678390f0342c034e11cf321ddcea044
   updateuserop.go:
     last_write_checksum: sha1:32b193694bf28ab709ef1bdda9ff8a2d633c831f
   urlvalidationstresstestop.go:

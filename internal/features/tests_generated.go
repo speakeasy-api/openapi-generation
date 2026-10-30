@@ -36,12 +36,16 @@ func (t Test) String() string {
         return "auth-custom-security-scheme-only"
     case TestAuthFunctionCallbacksOauthGlobalSecurity:
         return "auth-function-callbacks-oauth-global-security"
+    case TestAuthGlobalSecurityEmpty:
+        return "auth-global-security-empty"
     case TestAuthGlobalSecurityFieldsOrdering:
         return "auth-global-security-fields-ordering"
     case TestAuthGlobalSecurityFlattening:
         return "auth-global-security-flattening"
     case TestAuthGlobalSecurityFlatteningCallback:
         return "auth-global-security-flattening-callback"
+    case TestAuthGlobalSecurityFlatteningEmpty:
+        return "auth-global-security-flattening-empty"
     case TestAuthGlobalSecurityFlatteningEnvVarFallback:
         return "auth-global-security-flattening-env-var-fallback"
     case TestAuthGlobalSecurityOptionFieldsOrdering:
@@ -144,6 +148,8 @@ func (t Test) String() string {
         return "clierrors-api-error-not-double-wrapped"
     case TestClierrorsDeclaredHintsFire:
         return "clierrors-declared-hints-fire"
+    case TestClierrorsDryRunHintServerValidationOnly:
+        return "clierrors-dry-run-hint-server-validation-only"
     case TestClierrorsFlagValuesNotRenderingFlags:
         return "clierrors-flag-values-not-rendering-flags"
     case TestClierrorsInvalidValuesDoNotStopPreparse:
@@ -154,6 +160,8 @@ func (t Test) String() string {
         return "clierrors-plain-mode-classified"
     case TestClierrorsTypedReasons:
         return "clierrors-typed-reasons"
+    case TestClierrorsUnknownCommandSuggestion:
+        return "clierrors-unknown-command-suggestion"
     case TestClierrorsUnknownFlagSuggestion:
         return "clierrors-unknown-flag-suggestion"
     case TestCollectionsContainingNull:
@@ -254,6 +262,8 @@ func (t Test) String() string {
         return "errors-union-of-errors"
     case TestErrorsUnionOfErrorsDiscriminated:
         return "errors-union-of-errors-discriminated"
+    case TestEventStreamAbsentRequiredUnion:
+        return "event-stream-absent-required-union"
     case TestEventStreamChatHeartbeatSkipsDataless:
         return "event-stream-chat-heartbeat-skips-dataless"
     case TestEventStreamChatJSON:
@@ -270,6 +280,8 @@ func (t Test) String() string {
         return "event-stream-decode-failure-without-json-error-type"
     case TestEventStreamDifferentDataSchemas:
         return "event-stream-different-data-schemas"
+    case TestEventStreamEquivalentNumberLexemes:
+        return "event-stream-equivalent-number-lexemes"
     case TestEventStreamErrorEventAgentMode:
         return "event-stream-error-event-agent-mode"
     case TestEventStreamErrorEventAgentModeFallback:
@@ -292,6 +304,8 @@ func (t Test) String() string {
         return "event-stream-mixed-data"
     case TestEventStreamMultilineData:
         return "event-stream-multiline-data"
+    case TestEventStreamNullAndUndeclaredFields:
+        return "event-stream-null-and-undeclared-fields"
     case TestEventStreamNumbersKeepPrecision:
         return "event-stream-numbers-keep-precision"
     case TestEventStreamOptionalDataField:
@@ -318,8 +332,6 @@ func (t Test) String() string {
         return "event-stream-timeout-still-bounds-slow-stream"
     case TestEventStreamTruncatedBeforeSentinel:
         return "event-stream-truncated-before-sentinel"
-    case TestEventStreamTruncatedBeforeSentinelIsConnectionError:
-        return "event-stream-truncated-before-sentinel-is-connection-error"
     case TestEventStreamUndiscriminatedErrorShapedVariantIsData:
         return "event-stream-undiscriminated-error-shaped-variant-is-data"
     case TestEventStreamUnionEventsRenderWireShape:
@@ -692,6 +704,8 @@ func (t Test) String() string {
         return "parameters-deep-object-query-params-map"
     case TestParametersDeepObjectQueryParamsObject:
         return "parameters-deep-object-query-params-object"
+    case TestParametersDefaultPathParams:
+        return "parameters-default-path-params"
     case TestParametersDefaultQueryParams:
         return "parameters-default-query-params"
     case TestParametersFormQueryParamsArray:
@@ -1494,6 +1508,8 @@ func (t Test) String() string {
         return "unions-weakly-typed-one-of-post-basic"
     case TestUnionsWeaklyTypedOneOfPostDeep:
         return "unions-weakly-typed-one-of-post-deep"
+    case TestUnknownFieldsJsonRoundTrip:
+        return "unknown-fields-json-round-trip"
     case TestWebhooksConsume:
         return "webhooks-consume"
     case TestWebhooksConsumeBadData:
@@ -1548,12 +1564,16 @@ func TestFromString(s string) Test {
         return TestAuthCustomSecuritySchemeOnly
     case "auth-function-callbacks-oauth-global-security":
         return TestAuthFunctionCallbacksOauthGlobalSecurity
+    case "auth-global-security-empty":
+        return TestAuthGlobalSecurityEmpty
     case "auth-global-security-fields-ordering":
         return TestAuthGlobalSecurityFieldsOrdering
     case "auth-global-security-flattening":
         return TestAuthGlobalSecurityFlattening
     case "auth-global-security-flattening-callback":
         return TestAuthGlobalSecurityFlatteningCallback
+    case "auth-global-security-flattening-empty":
+        return TestAuthGlobalSecurityFlatteningEmpty
     case "auth-global-security-flattening-env-var-fallback":
         return TestAuthGlobalSecurityFlatteningEnvVarFallback
     case "auth-global-security-option-fields-ordering":
@@ -1656,6 +1676,8 @@ func TestFromString(s string) Test {
         return TestClierrorsApiErrorNotDoubleWrapped
     case "clierrors-declared-hints-fire":
         return TestClierrorsDeclaredHintsFire
+    case "clierrors-dry-run-hint-server-validation-only":
+        return TestClierrorsDryRunHintServerValidationOnly
     case "clierrors-flag-values-not-rendering-flags":
         return TestClierrorsFlagValuesNotRenderingFlags
     case "clierrors-invalid-values-do-not-stop-preparse":
@@ -1666,6 +1688,8 @@ func TestFromString(s string) Test {
         return TestClierrorsPlainModeClassified
     case "clierrors-typed-reasons":
         return TestClierrorsTypedReasons
+    case "clierrors-unknown-command-suggestion":
+        return TestClierrorsUnknownCommandSuggestion
     case "clierrors-unknown-flag-suggestion":
         return TestClierrorsUnknownFlagSuggestion
     case "collections-containing-null":
@@ -1766,6 +1790,8 @@ func TestFromString(s string) Test {
         return TestErrorsUnionOfErrors
     case "errors-union-of-errors-discriminated":
         return TestErrorsUnionOfErrorsDiscriminated
+    case "event-stream-absent-required-union":
+        return TestEventStreamAbsentRequiredUnion
     case "event-stream-chat-heartbeat-skips-dataless":
         return TestEventStreamChatHeartbeatSkipsDataless
     case "event-stream-chat-json":
@@ -1782,6 +1808,8 @@ func TestFromString(s string) Test {
         return TestEventStreamDecodeFailureWithoutJsonErrorType
     case "event-stream-different-data-schemas":
         return TestEventStreamDifferentDataSchemas
+    case "event-stream-equivalent-number-lexemes":
+        return TestEventStreamEquivalentNumberLexemes
     case "event-stream-error-event-agent-mode":
         return TestEventStreamErrorEventAgentMode
     case "event-stream-error-event-agent-mode-fallback":
@@ -1804,6 +1832,8 @@ func TestFromString(s string) Test {
         return TestEventStreamMixedData
     case "event-stream-multiline-data":
         return TestEventStreamMultilineData
+    case "event-stream-null-and-undeclared-fields":
+        return TestEventStreamNullAndUndeclaredFields
     case "event-stream-numbers-keep-precision":
         return TestEventStreamNumbersKeepPrecision
     case "event-stream-optional-data-field":
@@ -1830,8 +1860,6 @@ func TestFromString(s string) Test {
         return TestEventStreamTimeoutStillBoundsSlowStream
     case "event-stream-truncated-before-sentinel":
         return TestEventStreamTruncatedBeforeSentinel
-    case "event-stream-truncated-before-sentinel-is-connection-error":
-        return TestEventStreamTruncatedBeforeSentinelIsConnectionError
     case "event-stream-undiscriminated-error-shaped-variant-is-data":
         return TestEventStreamUndiscriminatedErrorShapedVariantIsData
     case "event-stream-union-events-render-wire-shape":
@@ -2204,6 +2232,8 @@ func TestFromString(s string) Test {
         return TestParametersDeepObjectQueryParamsMap
     case "parameters-deep-object-query-params-object":
         return TestParametersDeepObjectQueryParamsObject
+    case "parameters-default-path-params":
+        return TestParametersDefaultPathParams
     case "parameters-default-query-params":
         return TestParametersDefaultQueryParams
     case "parameters-form-query-params-array":
@@ -3006,6 +3036,8 @@ func TestFromString(s string) Test {
         return TestUnionsWeaklyTypedOneOfPostBasic
     case "unions-weakly-typed-one-of-post-deep":
         return TestUnionsWeaklyTypedOneOfPostDeep
+    case "unknown-fields-json-round-trip":
+        return TestUnknownFieldsJsonRoundTrip
     case "webhooks-consume":
         return TestWebhooksConsume
     case "webhooks-consume-bad-data":
@@ -3043,9 +3075,11 @@ var testList = []Test{
     TestAuthCustomSecuritySchemeAppId,
     TestAuthCustomSecuritySchemeOnly,
     TestAuthFunctionCallbacksOauthGlobalSecurity,
+    TestAuthGlobalSecurityEmpty,
     TestAuthGlobalSecurityFieldsOrdering,
     TestAuthGlobalSecurityFlattening,
     TestAuthGlobalSecurityFlatteningCallback,
+    TestAuthGlobalSecurityFlatteningEmpty,
     TestAuthGlobalSecurityFlatteningEnvVarFallback,
     TestAuthGlobalSecurityOptionFieldsOrdering,
     TestAuthHoistedBasicAuth,
@@ -3097,11 +3131,13 @@ var testList = []Test{
     TestClierrorsAgentModeMatrix,
     TestClierrorsApiErrorNotDoubleWrapped,
     TestClierrorsDeclaredHintsFire,
+    TestClierrorsDryRunHintServerValidationOnly,
     TestClierrorsFlagValuesNotRenderingFlags,
     TestClierrorsInvalidValuesDoNotStopPreparse,
     TestClierrorsJsonOutputEnvelope,
     TestClierrorsPlainModeClassified,
     TestClierrorsTypedReasons,
+    TestClierrorsUnknownCommandSuggestion,
     TestClierrorsUnknownFlagSuggestion,
     TestCollectionsContainingNull,
     TestCollectionsMapInputAcceptsNonDictMapping,
@@ -3152,6 +3188,7 @@ var testList = []Test{
     TestErrorsStatusGetErrorXSpeakeasyErrorsNone,
     TestErrorsUnionOfErrors,
     TestErrorsUnionOfErrorsDiscriminated,
+    TestEventStreamAbsentRequiredUnion,
     TestEventStreamChatHeartbeatSkipsDataless,
     TestEventStreamChatJSON,
     TestEventStreamChatSentinelEvent,
@@ -3160,6 +3197,7 @@ var testList = []Test{
     TestEventStreamDecodeFailureIsProtocolError,
     TestEventStreamDecodeFailureWithoutJsonErrorType,
     TestEventStreamDifferentDataSchemas,
+    TestEventStreamEquivalentNumberLexemes,
     TestEventStreamErrorEventAgentMode,
     TestEventStreamErrorEventAgentModeFallback,
     TestEventStreamErrorEventExitsNonZero,
@@ -3171,6 +3209,7 @@ var testList = []Test{
     TestEventStreamMalformedFrameStrict,
     TestEventStreamMixedData,
     TestEventStreamMultilineData,
+    TestEventStreamNullAndUndeclaredFields,
     TestEventStreamNumbersKeepPrecision,
     TestEventStreamOptionalDataField,
     TestEventStreamPartialWithComments,
@@ -3184,7 +3223,6 @@ var testList = []Test{
     TestEventStreamTextData,
     TestEventStreamTimeoutStillBoundsSlowStream,
     TestEventStreamTruncatedBeforeSentinel,
-    TestEventStreamTruncatedBeforeSentinelIsConnectionError,
     TestEventStreamUndiscriminatedErrorShapedVariantIsData,
     TestEventStreamUnionEventsRenderWireShape,
     TestEventStreamUnionWithStandaloneComments,
@@ -3371,6 +3409,7 @@ var testList = []Test{
     TestParametersDeepObjectQueryParamsDeepObject,
     TestParametersDeepObjectQueryParamsMap,
     TestParametersDeepObjectQueryParamsObject,
+    TestParametersDefaultPathParams,
     TestParametersDefaultQueryParams,
     TestParametersFormQueryParamsArray,
     TestParametersFormQueryParamsCamelObject,
@@ -3772,6 +3811,7 @@ var testList = []Test{
     TestUnionsUnionOfArrays,
     TestUnionsWeaklyTypedOneOfPostBasic,
     TestUnionsWeaklyTypedOneOfPostDeep,
+    TestUnknownFieldsJsonRoundTrip,
     TestWebhooksConsume,
     TestWebhooksConsumeBadData,
     TestWebhooksConsumeBadSignature,

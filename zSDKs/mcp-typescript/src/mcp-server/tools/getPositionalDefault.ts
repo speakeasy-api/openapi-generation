@@ -27,7 +27,7 @@ Check that a default-backed path parameter can be supplied as an argument or omi
     const [result] = await getPositionalDefault(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

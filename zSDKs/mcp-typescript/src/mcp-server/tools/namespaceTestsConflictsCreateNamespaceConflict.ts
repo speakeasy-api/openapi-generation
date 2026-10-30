@@ -29,7 +29,7 @@ Uses foo.Pet in the request and bar.Pet in the response.`,
       const [result] = await namespaceTestsConflictsCreateNamespaceConflict(
         client,
         args.request,
-        { fetchOptions: { signal: ctx.signal } },
+        { fetchOptions: { signal: ctx.mcpReq.signal } },
       ).$inspect();
 
       if (!result.ok) {

@@ -406,10 +406,14 @@ func (s *SDK) OperationWithLeadingAndTrailingUnderscores(ctx context.Context, re
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode == 404:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 300 && httpRes.StatusCode < 400:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -420,6 +424,8 @@ func (s *SDK) OperationWithLeadingAndTrailingUnderscores(ctx context.Context, re
 	case httpRes.StatusCode >= 500 && httpRes.StatusCode < 600:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	default:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -1150,6 +1156,8 @@ func (s *SDK) GetRequestBodyFlattenedAway(ctx context.Context, request *operatio
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -1287,6 +1295,8 @@ func (s *SDK) GetFullyFlattenedRequest(ctx context.Context, request operations.G
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -1586,6 +1596,8 @@ func (s *SDK) TestEndpoint(ctx context.Context, request operations.TestEndpointR
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -2193,6 +2205,8 @@ func (s *SDK) DeleteUser(ctx context.Context, request operations.DeleteUserReque
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -2812,6 +2826,8 @@ func (s *SDK) GetBinaryDefaultResponse(ctx context.Context, opts ...operations.O
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -3117,6 +3133,8 @@ func (s *SDK) BinaryAndStringUpload(ctx context.Context, request operations.Bina
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -3242,6 +3260,8 @@ func (s *SDK) GetErrorInUnion(ctx context.Context, opts ...operations.Option) (*
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode == 500:
 		switch {
@@ -3896,6 +3916,8 @@ func (s *SDK) URLValidationStressTest(ctx context.Context, opts ...operations.Op
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)
@@ -4707,6 +4729,8 @@ func (s *SDK) GetPositionalDefault(ctx context.Context, request operations.GetPo
 	case httpRes.StatusCode == 200:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	case httpRes.StatusCode >= 400 && httpRes.StatusCode < 500:
 		rawBody, err := utils.ConsumeRawBody(httpRes)

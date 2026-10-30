@@ -282,6 +282,36 @@ function hasBase64FileInputField(typeDef: TypeDef): boolean {
 }
 registerTemplateFunc("hasBase64FileInputField", hasBase64FileInputField);
 
+function acceptsBase64FileInput(fieldDef: FieldDef): boolean {
+  return typeAcceptsBase64FileInput(fieldDef.Type);
+}
+
+function typeAcceptsBase64FileInput(
+  typeDef?: TypeDef,
+  visited: Record<string, boolean> = {},
+): boolean {
+  if (!typeDef) {
+    return false;
+  }
+  if (typeDef.Extensions?.Base64InputMode === "file") {
+    return true;
+  }
+  if (typeDef.Type.toString() !== "union") {
+    return false;
+  }
+
+  const uniqueID = typeDef.GetRegistrationIDOrType();
+  if (visited[uniqueID]) {
+    return false;
+  }
+  visited[uniqueID] = true;
+
+  return typeDef.AssociatedTypes.some((t) =>
+    typeAcceptsBase64FileInput(t, visited),
+  );
+}
+registerTemplateFunc("acceptsBase64FileInput", acceptsBase64FileInput);
+
 function base64FileInputFields(typeDef: TypeDef): FieldDef[] {
   const seen = new Set<string>();
   return typeDef.Fields.filter((f) => {

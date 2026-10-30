@@ -36,6 +36,7 @@ For more information about the API: [Speakeasy Docs](https://speakeasy.com/docs)
 <!-- Start Installation [installation] -->
 ## Installation
 
+The MCP server requires Node.js 22.18.0 or later because Gram is enabled.
 > [!TIP]
 > To finish publishing your MCP Server to npm and others you must [run your first generation action](https://www.speakeasy.com/docs/github-setup#step-by-step-guide).
 
@@ -57,7 +58,7 @@ The MCP bundle package includes the MCP server and all necessary configuration. 
 <details>
 <summary>Cursor</summary>
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsIngtdXNlcm5hbWU6JHtVU0VSTkFNRX0iLCItLWhlYWRlciIsIngtcGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImF1dGhvcml6YXRpb246JHtCRUFSRVJfQVVUSH0iLCItLWhlYWRlciIsImFwaV9rZXk6JHtNWV9BUElfS0VZfSIsIi0taGVhZGVyIiwieC1vYXV0aDI6JHtPQVVUSDJ9IiwiLS1oZWFkZXIiLCJ4LWFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsIngtc2VjcmV0OiR7U0VDUkVUfSIsIi0taGVhZGVyIiwieC1tb2JpbGUtYXV0aDoke01PQklMRV9BVVRIfSIsIi0taGVhZGVyIiwieC1jbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9Il19)
 
 Or manually:
 
@@ -186,7 +187,7 @@ Refer to [Official Windsurf documentation](https://docs.windsurf.com/windsurf/ca
 <details>
 <summary>VS Code</summary>
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20SDK%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9zc2UiLCItLWhlYWRlciIsInNlcnZlci1pbmRleDoke1NFUlZFUl9JTkRFWH0iLCItLWhlYWRlciIsInN1YmRvbWFpbjoke1NVQkRPTUFJTn0iLCItLWhlYWRlciIsImFwaS12ZXJzaW9uOiR7QVBJX1ZFUlNJT059IiwiLS1oZWFkZXIiLCJhcGktaG9zdC1uYW1lOiR7QVBJX0hPU1RfTkFNRX0iLCItLWhlYWRlciIsImFwaS1wb3J0OiR7QVBJX1BPUlR9IiwiLS1oZWFkZXIiLCJ1c2VybmFtZToke1VTRVJOQU1FfSIsIi0taGVhZGVyIiwicGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImJlYXJlci1hdXRoOiR7QkVBUkVSX0FVVEh9IiwiLS1oZWFkZXIiLCJteS1hcGkta2V5OiR7TVlfQVBJX0tFWX0iLCItLWhlYWRlciIsIm9hdXRoMjoke09BVVRIMn0iLCItLWhlYWRlciIsImFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsInNlY3JldDoke1NFQ1JFVH0iLCItLWhlYWRlciIsIm1vYmlsZS1hdXRoOiR7TU9CSUxFX0FVVEh9IiwiLS1oZWFkZXIiLCJjbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9IiwiLS1oZWFkZXIiLCJxdWVyeS1wYXJhbTE6JHtRVUVSWV9QQVJBTTF9IiwiLS1oZWFkZXIiLCJkZXByZWNhdGVkLXF1ZXJ5LXBhcmFtMToke0RFUFJFQ0FURURfUVVFUllfUEFSQU0xfSIsIi0taGVhZGVyIiwiZGVwcmVjYXRlZC1xdWVyeS1wYXJhbTI6JHtERVBSRUNBVEVEX1FVRVJZX1BBUkFNMn0iXX0=)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20SDK%20MCP&color=0098FF)](vscode://ms-vscode.vscode-mcp/install?name=SDK&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIm1jcC1yZW1vdGVAMC4xLjI1IiwiaHR0cHM6Ly9vcGVuYXBpLW1jcC1zZXJ2ZXIuZXhhbXBsZS53b3JrZXJzLmRldi9tY3AiLCItLWhlYWRlciIsIngtdXNlcm5hbWU6JHtVU0VSTkFNRX0iLCItLWhlYWRlciIsIngtcGFzc3dvcmQ6JHtQQVNTV09SRH0iLCItLWhlYWRlciIsImF1dGhvcml6YXRpb246JHtCRUFSRVJfQVVUSH0iLCItLWhlYWRlciIsImFwaV9rZXk6JHtNWV9BUElfS0VZfSIsIi0taGVhZGVyIiwieC1vYXV0aDI6JHtPQVVUSDJ9IiwiLS1oZWFkZXIiLCJ4LWFwcC1pZDoke0FQUF9JRH0iLCItLWhlYWRlciIsIngtc2VjcmV0OiR7U0VDUkVUfSIsIi0taGVhZGVyIiwieC1tb2JpbGUtYXV0aDoke01PQklMRV9BVVRIfSIsIi0taGVhZGVyIiwieC1jbGllbnQtY3JlZGVudGlhbHM6JHtDTElFTlRfQ1JFREVOVElBTFN9Il19)
 
 Or manually:
 
@@ -372,6 +373,9 @@ Then install with Claude Code CLI:
 claude mcp add SDK -- npx -y openapi start --server-index 0 --subdomain api --api-version 1 --api-host-name localhost --api-port 8080 --username  --password  --bearer-auth  --my-api-key  --oauth2  --app-id  --secret  --mobile-auth  --client-credentials  --query-param1  --deprecated-query-param1  --deprecated-query-param2 
 ```
 
+The worker serves MCP over Streamable HTTP at `/mcp` and legacy HTTP+SSE at `/sse`. Existing clients can keep their endpoints. Legacy Streamable HTTP and SSE clients retain session state in Durable Objects; modern protocol requests are handled statelessly.
+
+Keep the Durable Object binding, exported class, and `v1` migration in `wrangler.toml`: legacy Streamable HTTP and SSE sessions require them. Only modern protocol requests are stateless. Removing the binding disables legacy sessions; deleting the namespace also permanently destroys its stored data.
 
 
 

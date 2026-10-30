@@ -12,7 +12,7 @@ import {
 } from "ai";
 import { {{ .Local.EvalProvider.ImportName }} } from "{{ .Local.EvalProvider.Package }}";
 import { createMCPClient } from "@ai-sdk/mcp";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { InMemoryTransport } from "@modelcontextprotocol/server";
 import * as readline from "node:readline/promises";
 import { LocalContext } from "../../cli.js";
 import {

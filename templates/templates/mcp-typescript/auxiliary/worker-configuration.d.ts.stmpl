@@ -4,7 +4,8 @@
 // Runtime types generated with workerd@1.20250709.0 2025-07-15 nodejs_compat
 declare namespace Cloudflare {
 	interface Env {
-		{{sanitizeEnvVarName .Global.Config.PackageName}}_MCP: DurableObjectNamespace<import("./src/cloudflare-worker").{{sanitizeClassName .Global.Config.PackageName}}MCP>;
+		{{sanitizeEnvVarName .Global.Config.PackageName}}_MCP: DurableObjectNamespace;
+		ASSETS: Fetcher;
 	}
 }
 interface Env extends Cloudflare.Env {}

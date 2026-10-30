@@ -18,7 +18,7 @@ export const tool$groupSubGroupSubGroupOp: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await groupSubGroupSubGroupOp(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

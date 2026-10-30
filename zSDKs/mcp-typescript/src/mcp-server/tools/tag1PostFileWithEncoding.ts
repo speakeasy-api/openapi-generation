@@ -32,7 +32,7 @@ handling of comma-separated content types in encoding.`,
     const [result] = await tag1PostFileWithEncoding(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

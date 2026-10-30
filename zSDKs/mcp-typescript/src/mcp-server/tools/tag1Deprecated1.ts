@@ -18,7 +18,7 @@ export const tool$tag1Deprecated1: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await tag1Deprecated1(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

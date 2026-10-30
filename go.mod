@@ -1,6 +1,6 @@
 module github.com/speakeasy-api/openapi-generation/v2
 
-go 1.26.8
+go 1.26.10
 
 tool github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt
 

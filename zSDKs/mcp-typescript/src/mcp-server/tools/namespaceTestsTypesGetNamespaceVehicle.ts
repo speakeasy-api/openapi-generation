@@ -21,7 +21,7 @@ The response can be either a bar.Car or bar.Bike.`,
   tool: async (client, ctx) => {
     const [result] = await namespaceTestsTypesGetNamespaceVehicle(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

@@ -22,10 +22,9 @@ func initChatCmd(parent *cobra.Command) error {
 		Args:    cobra.NoArgs,
 		RunE:    runChatCmd,
 		Annotations: map[string]string{
-			"speakeasy_operation":              "chat",
-			"speakeasy_stream_select":          "/data/content",
-			"speakeasy_stream_metadata_select": "/data/resource_id",
-			"speakeasy_stream_metadata_label":  "Resource ID",
+			"speakeasy_operation":       "chat",
+			"speakeasy_stream_select":   "/data/content",
+			"speakeasy_stream_metadata": "[{\"label\":\"Resource ID\",\"pointers\":[\"/data/resource_id\"]}]",
 		},
 	}
 	cmd.Flags().String("request", "", "Request body as JSON [required]. Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.")
@@ -113,11 +112,13 @@ func runChatCmd(cmd *cobra.Command, args []string) error {
 	// Streaming response — iterate events and output incrementally.
 	// Skip streaming iteration in dry-run mode (synthetic response has no stream).
 	if !client.IsDryRun(cmd) {
+		stopProgress := output.StartRequestProgress(cmd)
 		res, err := s.Chat(cmd.Context(), *request, sdkOpts...)
 		if err != nil {
+			stopProgress()
 			return output.Error(cmd, err)
 		}
-		return output.StreamResult(cmd, res, "ChatStream")
+		return output.StreamResult(cmd, res, "ChatStream", stopProgress)
 	}
 	res, err := s.Chat(cmd.Context(), *request, sdkOpts...)
 	if err != nil {

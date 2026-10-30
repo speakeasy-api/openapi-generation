@@ -96,7 +96,3 @@ func formatRuby(ctx context.Context, _ string, data []byte) ([]byte, error) {
 
 	return stdout.Bytes(), nil
 }
-
-func init() {
-	go func() { _ = ensureRubyfmt() }()
-}

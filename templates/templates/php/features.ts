@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.9.28",
+  core: "3.9.29",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.81.12",
@@ -18,7 +18,7 @@ const supportedFeatures = {
   inputOutputModels: "2.83.0",
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
-  docs: "0.4.4",
+  docs: "0.4.5",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   sdkHooks: "0.3.0",
@@ -565,9 +565,17 @@ function isTestSkipped(test: string): boolean {
     "clierrors-unknown-flag-suggestion",
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "open-union-invalid-json-is-an-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
+    "parameters-default-path-params",
   ].includes(test);
 }
 

@@ -21,7 +21,7 @@ an integer field that should be unmarshaled from a string.`,
   tool: async (client, ctx) => {
     const [result] = await getNestedIntegerString(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

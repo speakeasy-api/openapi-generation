@@ -23,7 +23,7 @@ const supportedFeatures = {
   decimal: "0.1.0",
   multiLevelTagging: "2.86.1",
   //downloadStreams: "0.0.1",
-  docs: "0.5.4",
+  docs: "0.5.5",
   pagination: "0.2.12",
   urlBasedPagination: "0.0.1",
   unions: "1.2.3",
@@ -423,9 +423,17 @@ function isTestSkipped(test: string): boolean {
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "open-union-invalid-json-is-an-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
+    "parameters-default-path-params",
   ].includes(test);
 }
 

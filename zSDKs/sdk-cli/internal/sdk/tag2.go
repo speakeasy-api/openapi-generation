@@ -326,6 +326,8 @@ func (s *Tag2) PostTest(ctx context.Context, request operations.PostTest2Request
 	default:
 		if o.SkipDeserialization == nil || !*o.SkipDeserialization {
 			utils.DrainBody(httpRes)
+		} else if _, err := utils.ConsumeRawBody(httpRes); err != nil {
+			return nil, err
 		}
 	}
 

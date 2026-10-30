@@ -204,6 +204,10 @@ function getConfigFields(
       Description: "The current version of the SDK",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["0.0.1", "1.2.3", "1.2.3-beta.1"],
+        invalid: ["", "1.2.3 beta", "1.2.3/beta"],
+      },
     },
     packageName: {
       Name: "packageName",
@@ -213,6 +217,10 @@ function getConfigFields(
         "The distribution name of the Ruby Package. https://guides.rubygems.org/name-your-gem/ Use a lowercase name: a name that differs from its snake_case form only by case gets no gem-name entry file, so Bundler will not autoload it on case-sensitive filesystems.",
       ValidationRegex: /^[\w\d.\-_]+$/.source,
       ValidationMessage: "Letters, numbers, or .-_ only",
+      ValidationExamples: {
+        valid: ["openapi", "acme-sdk", "acme_sdk"],
+        invalid: ["", "acme sdk", "acme/sdk"],
+      },
     },
     author: {
       Name: "author",
@@ -238,9 +246,20 @@ function getConfigFields(
       DefaultValue: "OpenApiSdk",
       Description:
         "The top level module names for your sdk https://ruby-doc.org/3.2.6/syntax/modules_and_classes_rdoc.html",
-      ValidationRegex: /^([A-Z][a-z0-9]+)+$/.source,
+      ValidationRegex: /^[A-Z][A-Za-z0-9]*$/.source,
       ValidationMessage:
         "Module names should be PascalCase and have no special chars",
+      ValidationExamples: {
+        valid: ["AcmeRubySDK", "OpenAPI", "SDK", "Acme2", "A"],
+        invalid: [
+          "openApiSdk",
+          "Open_Api",
+          "Open::Api",
+          "Open-Api",
+          "2Acme",
+          "",
+        ],
+      },
     },
     additionalDependencies: {
       Name: "additionalDependencies",
@@ -260,6 +279,10 @@ function getConfigFields(
         "The maximum number of parameters a method can have before the resulting SDK endpoint is no longer 'flattened' and an input object is created instead. 0 will use input objects always. https://www.speakeasy.com/docs/using-speakeasy/create-client-sdks/customize-sdks/parameters/",
       ValidationRegex: /^\d+$/.source,
       ValidationMessage: "Numbers only",
+      ValidationExamples: {
+        valid: ["0", "4", "999"],
+        invalid: ["", "-1", "4.5", "four"],
+      },
     },
     flattenGlobalSecurity: {
       Name: "flattenGlobalSecurity",
@@ -304,6 +327,10 @@ function getConfigFields(
         "The name of the default exception that is thrown when an API error occurs.",
       ValidationRegex: /^[a-zA-Z0-9]*$/.source,
       ValidationMessage: "Must only contain letters and numbers",
+      ValidationExamples: {
+        valid: ["APIError", "SDKException", "AcmeError2", ""],
+        invalid: ["Acme_Error", "Acme-Error", "Acme Error", "Acme.Error"],
+      },
     },
     constFieldsAlwaysOptional: {
       Name: "constFieldsAlwaysOptional",

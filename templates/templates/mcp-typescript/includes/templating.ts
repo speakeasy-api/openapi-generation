@@ -722,8 +722,46 @@ function addHeadersToConfigVSCode(config: any, headerEntries: any[]) {
   return config;
 }
 
+function mcpRemoteHeaders(
+  runtime: "node" | "cloudflare",
+  transport: "http" | "sse" = "http",
+) {
+  const sdk = context.Global.AST.MainSDK;
+  const security = sdk.Security?.Type;
+  const nodeHeader = (fieldName: string) => {
+    const name = sanitizeMCPCLIFlag(fieldName);
+    return { name, env: caser().ToSNAKE(name) };
+  };
+  const entries =
+    runtime === "cloudflare"
+      ? getRemoteServerHeaders(security)
+          .flat()
+          .map((header) => ({
+            name: header.headerName,
+            env: caser().ToSNAKE(header.fieldName),
+          }))
+      : (security ? unnestSecurityEnvFields(security) : []).map((field) =>
+          nodeHeader(field.Name),
+        );
+  if (security && runtime === "node" && transport === "http") {
+    for (const field of sdk.Globals?.Fields ?? []) {
+      entries.push(nodeHeader(templateGlobalFieldName(field.Name)));
+    }
+    for (const variable of sdk.Servers?.GetVariables() ?? []) {
+      entries.push(nodeHeader(variable.Name));
+    }
+  }
+  return [...new Map(entries.map((header) => [header.name, header])).values()];
+}
+
+registerTemplateFunc(
+  "templateMcpLandingPageHeaders",
+  (runtime: "node" | "cloudflare", transport: "http" | "sse" = "http") =>
+    JSON.stringify(mcpRemoteHeaders(runtime, transport)),
+);
+
 function mcpRemoteConfigCommand(
-  endpointType: string = "sse",
+  endpointType: string = "mcp",
   clientType: string = "default",
   url?: string,
 ) {
@@ -733,10 +771,11 @@ function mcpRemoteConfigCommand(
     "https://example-cloudflare-worker.com";
 
   const headers: string[] = [];
-  const flags = gatherMCPFlags();
-  for (const flag of flags) {
-    let envVar = `${caser().ToSNAKE(flag.Name)}`;
-    headers.push("--header", `${flag.Name}:\${${envVar}}`);
+  for (const header of mcpRemoteHeaders(
+    context.Global.Config.CloudflareEnabled ? "cloudflare" : "node",
+    endpointType === "sse" ? "sse" : "http",
+  )) {
+    headers.push("--header", `${header.name}:\${${header.env}}`);
   }
 
   return [
@@ -772,7 +811,7 @@ function mcpIDEConfigObject(
     executor?: Executor;
   } = {},
 ) {
-  const { location = "readme", endpoint = "sse", executor = "npx" } = options;
+  const { location = "readme", endpoint = "mcp", executor = "npx" } = options;
 
   if (context.Global.Config.CloudflareEnabled && location === "landingpage") {
     const command = mcpRemoteConfigCommand(endpoint);
@@ -787,7 +826,7 @@ function templateMcpIDEConfig(options: MCPIDEConfigOptions = {}) {
   const {
     location = "readme",
     format = "json",
-    endpoint = "sse",
+    endpoint = "mcp",
     executor = "npx",
   } = options;
 
@@ -888,16 +927,17 @@ registerTemplateFunc(
 function mcpHttpHeadersTOML(
   options: { escapeForTemplateLiteral?: boolean } = {},
 ) {
-  const flags = gatherMCPFlags();
-  if (flags.length === 0) {
+  const fields = mcpRemoteHeaders(
+    context.Global.Config.CloudflareEnabled ? "cloudflare" : "node",
+  );
+  if (fields.length === 0) {
     return "http_headers = { }";
   }
 
   const headers: string[] = [];
-  for (const flag of flags) {
-    const envVar = `${caser().ToSNAKE(flag.Name)}`;
-    const placeholder = `YOUR_${envVar}`;
-    headers.push(`"${flag.Name}" = "${placeholder}"`);
+  for (const field of fields) {
+    const placeholder = `YOUR_${field.env}`;
+    headers.push(`"${field.name}" = "${placeholder}"`);
   }
 
   return `http_headers = { ${headers.join(", ")} }`;
@@ -910,8 +950,8 @@ function mcpRemoteConfigJS() {
   let js = `{
     "mcpServers": {
       "${mcpName()}": {
-        "type": "sse",
-        "url": \`\${o}/sse\``;
+        "type": "http",
+        "url": \`\${o}/mcp\``;
 
   if (headerEntries.length > 0) {
     js += `,
@@ -946,12 +986,14 @@ function mcpRemoteConfigJS() {
   return js;
 }
 
-function templateMcpCursorInstallationURL() {
-  const configString = base64Encode(
-    JSON.stringify(
-      mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
-    ),
-  );
+function templateMcpCursorInstallationURL(runtimeConfig = false) {
+  const configString = runtimeConfig
+    ? "${encodedConfig}"
+    : base64Encode(
+        JSON.stringify(
+          mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
+        ),
+      );
   const name = mcpName();
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${name}&config=${configString}`;
 }
@@ -969,12 +1011,14 @@ registerTemplateFunc(
   templateMcpCursorInstallationButton,
 );
 
-function templateMcpVSCodeInstallationURL() {
-  const configString = base64Encode(
-    JSON.stringify(
-      mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
-    ),
-  );
+function templateMcpVSCodeInstallationURL(runtimeConfig = false) {
+  const configString = runtimeConfig
+    ? "${encodedConfig}"
+    : base64Encode(
+        JSON.stringify(
+          mcpIDEConfigObject({ location: "landingpage", executor: "npx" }),
+        ),
+      );
   const name = mcpName();
   return `vscode://ms-vscode.vscode-mcp/install?name=${name}&config=${configString}`;
 }
@@ -1019,21 +1063,15 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
 
   // HTML format: uses ${o} placeholder for dynamic URL (for landing page)
   if (format === "html") {
-    const headers = getRemoteServerHeaders(
-      context.Global.AST.MainSDK.Security?.Type,
-    );
-    const headerArgs = headers.flatMap((header) =>
-      header.map((h) => `--header "${h.headerName}: ..."`),
-    );
     return [
       client,
       "mcp",
       "add",
       "--transport",
-      "sse",
+      "${transport}",
       mcpName(),
-      `\${o}/sse`,
-      ...headerArgs,
+      `\${o}/\${endpoint}`,
+      "${cliHeaders}",
     ].join(" ");
   }
 
@@ -1046,9 +1084,9 @@ function templateMcpCLICommand(options: MCPCLICommandOptions) {
       "mcp",
       "add",
       "--transport",
-      "sse",
+      "http",
       mcpName(),
-      `${cloudflareURL}/sse`,
+      `${cloudflareURL}/mcp`,
     ];
   } else {
     // Local configuration

@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.57.2",
+  core: "3.57.5",
   getRequestBodies: "2.81.1",
   flattening: "2.81.1",
   globalSecurity: "2.83.4",
@@ -19,7 +19,7 @@ const supportedFeatures = {
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
   multiLevelTagging: "2.86.3",
-  docs: "0.4.4",
+  docs: "0.4.5",
   unions: "0.3.10",
   sliceUnions: "0.0.2",
   pagination: "1.0.4",
@@ -471,9 +471,17 @@ function isTestSkipped(test: string): boolean {
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "open-union-invalid-json-is-an-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
+    "parameters-default-path-params",
   ].includes(test);
 }
 

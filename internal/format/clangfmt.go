@@ -139,7 +139,3 @@ func formatCSharp(ctx context.Context, fileName string, data []byte) ([]byte, er
 
 	return stdout.Bytes(), nil
 }
-
-func init() {
-	go func() { _ = ensureClangfmt() }()
-}

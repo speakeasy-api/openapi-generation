@@ -351,6 +351,11 @@ func TestArtifact_DryRunWritesNothing(t *testing.T) {
 	assert.Empty(t, entries, "JSON dry-run must not write a file")
 	_, err = os.Stat(filepath.Dir(jsonTarget))
 	assert.True(t, os.IsNotExist(err), "JSON dry-run must not create output directories")
+
+	rawHarness := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, rawHarness, server.URL, t.TempDir(), "--dry-run", "--raw-response"))
+	assert.Empty(t, rawHarness.GetStderr(), "--raw-response selects JSON output, so the preview belongs on stdout")
+	assert.Contains(t, rawHarness.GetStdout(), `"dry_run":true`)
 }
 
 func TestArtifact_MissingContentIsAnError(t *testing.T) {
@@ -596,4 +601,20 @@ func TestArtifact_InteractiveSuppressedByNonInteractiveAndAgentModes(t *testing.
 			assert.Empty(t, entries, "a suppressed prompt must not write an artifact")
 		})
 	}
+}
+
+// A declared failure state (output.outcome) fails the command before any
+// media is written.
+func TestArtifact_DeclaredFailureStateWritesNothing(t *testing.T) {
+	server := artifactTestServer(t, `{"id":"task-123","status":"failed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
+	dir := t.TempDir()
+	h := NewCLITestHarness(t)
+
+	err := runArtifact(t, h, server.URL, dir)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "ended in failure state "+"\"failed\"")
+	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+	entries, err := os.ReadDir(dir)
+	require.NoError(t, err)
+	assert.Empty(t, entries, "a failure state must not write the artifact")
 }

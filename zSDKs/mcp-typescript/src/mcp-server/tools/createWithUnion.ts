@@ -27,7 +27,7 @@ Test CLI generation for discriminated unions with dot-notation flags`,
     const [result] = await createWithUnion(
       client,
       args.request,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

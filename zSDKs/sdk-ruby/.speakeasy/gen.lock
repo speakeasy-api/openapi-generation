@@ -13,10 +13,10 @@ features:
   ruby:
     additionalProperties: 0.1.1
     constsAndDefaults: 0.1.4
-    core: 3.11.36
+    core: 3.11.37
     customSecuritySchemes: 0.1.0
     deprecations: 2.81.2
-    docs: 0.5.4
+    docs: 0.5.5
     enums: 2.82.4
     errors: 0.1.2
     examples: 2.81.8

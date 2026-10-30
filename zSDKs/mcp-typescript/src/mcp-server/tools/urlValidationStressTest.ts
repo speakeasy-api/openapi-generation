@@ -18,7 +18,7 @@ export const tool$urlValidationStressTest: ToolDefinition = {
   tool: async (client, ctx) => {
     const [result] = await urlValidationStressTest(
       client,
-      { fetchOptions: { signal: ctx.signal } },
+      { fetchOptions: { signal: ctx.mcpReq.signal } },
     ).$inspect();
 
     if (!result.ok) {

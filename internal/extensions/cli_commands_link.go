@@ -4,6 +4,7 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"slices"
@@ -132,7 +133,41 @@ func (d *cliManifestDecoder) linkManifest(manifest *CLICommandManifest) error {
 			return err
 		}
 	}
+	inheritOperationOutcomes(manifest)
 	return nil
+}
+
+// inheritOperationOutcomes gives a single-route intent without its own
+// output.outcome the table its operation entry declared, so a failure state
+// classified for the operation command also fails the intent. Async intents
+// keep async.states as their only classification.
+func inheritOperationOutcomes(manifest *CLICommandManifest) {
+	outcomes := map[string]*CLICommandOutcome{}
+	for i := range manifest.Operations {
+		if op := &manifest.Operations[i]; op.Output != nil && op.Output.Outcome != nil {
+			outcomes[op.OperationID] = op.Output.Outcome
+		}
+	}
+	if len(outcomes) == 0 {
+		return
+	}
+	for i := range manifest.Commands {
+		cmd := &manifest.Commands[i]
+		if cmd.Source.Type != CLICommandSourceOperation || len(cmd.Source.Routes) != 1 || cmd.Async != nil {
+			continue
+		}
+		if cmd.Output != nil && cmd.Output.Outcome != nil {
+			continue
+		}
+		outcome, ok := outcomes[cmd.Source.Routes[0].OperationID]
+		if !ok {
+			continue
+		}
+		if cmd.Output == nil {
+			cmd.Output = &CLICommandOutput{}
+		}
+		cmd.Output.Outcome = outcome
+	}
 }
 
 func (d *cliManifestDecoder) buildSchemaIndex() error {
@@ -397,6 +432,11 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 			return err
 		}
 	}
+	if cmd.Output != nil && cmd.Output.Outcome != nil {
+		if err := d.linkOutcome(owner, cmd.Output.Outcome, route.OperationID, opInfo); err != nil {
+			return err
+		}
+	}
 	artifactOpInfo := opInfo
 	artifactOpID := route.OperationID
 	projectionSchema := cliOperationProjectionSchema(opInfo)
@@ -487,6 +527,9 @@ func (d *cliManifestDecoder) linkSingleRouteCommand(cmd *CLICommand) error {
 		if err := d.linkInput(key, &cmd.Flags[i], variant, presetPointers, presetValues, false); err != nil {
 			return err
 		}
+		if err := d.linkImplies(key, &cmd.Flags[i], []*cliResolvedSchema{variant}); err != nil {
+			return err
+		}
 	}
 
 	d.checkSatisfiability(key, cmd, variant, presetPointers)
@@ -506,6 +549,11 @@ func (d *cliManifestDecoder) linkOperation(op *CLIOperation) error {
 	op.BodyRequired = opInfo.bodyRequired
 	if op.Output != nil && op.Output.Stream != nil {
 		if err := d.linkStreamProjection(fmt.Sprintf("operation %q", op.OperationID), op.Output.Stream, op.OperationID, opInfo); err != nil {
+			return err
+		}
+	}
+	if op.Output != nil && op.Output.Outcome != nil {
+		if err := d.linkOutcome(fmt.Sprintf("operation %q", op.OperationID), op.Output.Outcome, op.OperationID, opInfo); err != nil {
 			return err
 		}
 	}
@@ -550,6 +598,11 @@ func (d *cliManifestDecoder) linkDispatchCommand(cmd *CLICommand) error {
 	}
 	if cmd.Output != nil && cmd.Output.Stream != nil {
 		if err := d.linkStreamProjection(fmt.Sprintf("command %q", key), cmd.Output.Stream, operationID, opInfo); err != nil {
+			return err
+		}
+	}
+	if cmd.Output != nil && cmd.Output.Outcome != nil {
+		if err := d.linkOutcome(fmt.Sprintf("command %q", key), cmd.Output.Outcome, operationID, opInfo); err != nil {
 			return err
 		}
 	}
@@ -689,6 +742,15 @@ func (d *cliManifestDecoder) linkDispatchCommand(cmd *CLICommand) error {
 	}
 	for i := range cmd.Flags {
 		if err := d.linkDispatchInput(key, &cmd.Flags[i], links, false); err != nil {
+			return err
+		}
+		var variants []*cliResolvedSchema
+		for _, link := range links {
+			if cliContains(cmd.Flags[i].RouteIDs, link.route.ID) {
+				variants = append(variants, link.variant)
+			}
+		}
+		if err := d.linkImplies(key, &cmd.Flags[i], variants); err != nil {
 			return err
 		}
 	}
@@ -990,6 +1052,9 @@ func (d *cliManifestDecoder) linkAsync(cmdKey string, cmd *CLICommand, createInf
 				return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s is an open enum; every possible state must be classifiable at generation time", cmdKey, recipe.StateFrom, recipe.OperationID, response.code)
 			}
 			for _, value := range facts.enum {
+				if value == nil {
+					continue
+				}
 				state, ok := value.(string)
 				if !ok {
 					return nil, fmt.Errorf("command %q async.statePointer %s in poll operation %q response %s has a non-string enum member %v", cmdKey, recipe.StateFrom, recipe.OperationID, response.code, value)
@@ -1018,6 +1083,148 @@ func (d *cliManifestDecoder) linkAsync(cmdKey string, cmd *CLICommand, createInf
 	recipe.CreateResponseCode = createInfo.responseCode
 	recipe.ResponseCode = pollInfo.responseCode
 	return pollInfo, nil
+}
+
+// linkOutcome checks the state pointers against the operation's responses:
+// the JSON state must be a closed string enum that the states table covers
+// exactly, and the stream pointers must resolve in at least one event shape.
+func (d *cliManifestDecoder) linkOutcome(owner string, outcome *CLICommandOutcome, opID string, opInfo *cliOperationInfo) error {
+	if outcome.StatePointer != "" {
+		if len(opInfo.jsonResponses) == 0 {
+			return fmt.Errorf("%s output.outcome.statePointer %s: operation %q has no application/json 2xx response to inspect; a streaming-only operation declares streamStatePointer instead", owner, outcome.StateFrom, opID)
+		}
+		enumStates := map[string]bool{}
+		for _, response := range opInfo.jsonResponses {
+			stateFacts, err := d.linkAsyncResponsePointer(outcome.StateFrom, response.schema, true)
+			if err != nil {
+				return fmt.Errorf("%s output.outcome.statePointer %s in operation %q response %s: %w", owner, outcome.StateFrom, opID, response.code, err)
+			}
+			for _, facts := range stateFacts {
+				if facts.openEnum {
+					return fmt.Errorf("%s output.outcome.statePointer %s in operation %q response %s is an open enum; every possible state must be classifiable at generation time", owner, outcome.StateFrom, opID, response.code)
+				}
+				for _, value := range facts.enum {
+					if value == nil {
+						continue
+					}
+					state, ok := value.(string)
+					if !ok {
+						return fmt.Errorf("%s output.outcome.statePointer %s in operation %q response %s has a non-string enum member %v", owner, outcome.StateFrom, opID, response.code, value)
+					}
+					enumStates[state] = true
+				}
+			}
+		}
+		for state := range outcome.States {
+			if !enumStates[state] {
+				return fmt.Errorf("%s output.outcome.states classifies %q, which is not an enum member at %s in operation %q%s", owner, state, outcome.StateFrom, opID, cliDidYouMean(state, cliSortedKeys(enumStates)))
+			}
+		}
+		for state := range enumStates {
+			if _, classified := outcome.States[state]; !classified {
+				return fmt.Errorf("%s output.outcome.states does not classify enum member %q from %s in operation %q; classify every member as pending, success, failure, or handoff", owner, state, outcome.StateFrom, opID)
+			}
+		}
+		if outcome.ErrorPointer != "" {
+			resolved := false
+			candidates := map[string]bool{}
+			for _, response := range opInfo.jsonResponses {
+				found, names, err := d.linkOutcomeErrorPointer(outcome.ErrorFrom, response.schema)
+				if err != nil {
+					return fmt.Errorf("%s output.outcome.errorPointer %s in operation %q response %s: %w", owner, outcome.ErrorFrom, opID, response.code, err)
+				}
+				resolved = resolved || found
+				for _, name := range names {
+					candidates[name] = true
+				}
+			}
+			if !resolved {
+				return fmt.Errorf("%s output.outcome.errorPointer %s does not resolve in any application/json 2xx response variant of operation %q%s", owner, outcome.ErrorFrom, opID, cliDidYouMean(cliLastPathSegmentName(outcome.ErrorFrom), cliSortedKeys(candidates)))
+			}
+		}
+	}
+	if outcome.StreamStatePointer != "" {
+		if !opInfo.streamMediaSeen {
+			return fmt.Errorf("%s declares output.outcome.streamStatePointer, but operation %q has no streaming (text/event-stream or JSONL) success response", owner, opID)
+		}
+		walker, err := d.walkStreamSelection(owner, "output.outcome.streamStatePointer", outcome.StreamStateFrom, opInfo)
+		if err != nil {
+			return err
+		}
+		if err := d.linkOutcomeStreamStates(owner, outcome, opID, walker); err != nil {
+			return err
+		}
+		if outcome.StreamErrorPointer != "" {
+			if err := d.linkStreamSelection(owner, cliStreamDetailField, outcome.StreamErrorFrom, opInfo); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+const cliStreamDetailField = "output.outcome.streamErrorPointer"
+
+// linkOutcomeErrorPointer accepts failure detail that exists in only some
+// response variants (a failed union arm, say); the runtime treats absence as
+// no detail. It reports whether the path resolved anywhere in this response
+// and, when it did not, the property names seen where it went missing.
+func (d *cliManifestDecoder) linkOutcomeErrorPointer(path string, responseSchema any) (bool, []string, error) {
+	views, candidates, err := d.walkResponsePathViews(path, responseSchema, true)
+	if err != nil {
+		return false, nil, err
+	}
+	if len(views) == 0 {
+		return false, candidates, nil
+	}
+	facts, err := d.responseLeafFacts(views)
+	if err != nil {
+		return false, nil, err
+	}
+	for _, propertyFacts := range facts {
+		if len(propertyFacts.kinds) != 1 || (propertyFacts.kinds[0] != "object" && propertyFacts.kinds[0] != "array") {
+			return false, nil, stderrors.New("selected failure detail must be an object or an array in every response variant")
+		}
+	}
+	return true, nil, nil
+}
+
+// linkOutcomeStreamStates holds the states table to the enum the stream
+// pointer selects. A stream-only table must match that enum exactly; when
+// statePointer already pinned the table to the JSON enum, the stream enum may
+// be a subset of it, but every member must still be classified.
+func (d *cliManifestDecoder) linkOutcomeStreamStates(owner string, outcome *CLICommandOutcome, opID string, walker *cliStreamPathWalker) error {
+	if walker.stateOpen {
+		return fmt.Errorf("%s output.outcome.streamStatePointer %s in operation %q is an open enum; every possible state must be classifiable at generation time", owner, outcome.StreamStateFrom, opID)
+	}
+	if walker.resolved == 0 {
+		return nil
+	}
+	if walker.stateNoEnum || len(walker.stateEnum) == 0 {
+		d.warnf("%s output.outcome.streamStatePointer %s in operation %q does not select a closed string enum in every event shape; states cannot be verified at generation time, and a state missing from the table keeps exit 0 at runtime", owner, outcome.StreamStateFrom, opID)
+		return nil
+	}
+	if outcome.StatePointer == "" {
+		for _, state := range slices.Sorted(maps.Keys(outcome.States)) {
+			if !walker.stateEnum[state] {
+				return fmt.Errorf("%s output.outcome.states classifies %q, which is not an enum member at %s in operation %q%s", owner, state, outcome.StreamStateFrom, opID, cliDidYouMean(state, cliSortedKeys(walker.stateEnum)))
+			}
+		}
+	}
+	for _, state := range cliSortedKeys(walker.stateEnum) {
+		if _, classified := outcome.States[state]; !classified {
+			return fmt.Errorf("%s output.outcome.states does not classify enum member %q from %s in operation %q; classify every member as pending, success, failure, or handoff", owner, state, outcome.StreamStateFrom, opID)
+		}
+	}
+	return nil
+}
+
+func cliLastPathSegmentName(path string) string {
+	segments, err := cliParseSingularPath(path)
+	if err != nil || len(segments) == 0 || segments[len(segments)-1].IsIndex {
+		return ""
+	}
+	return segments[len(segments)-1].Name
 }
 
 // linkAsyncErrorBindings validates explicitly declared failure-detail
@@ -1111,63 +1318,145 @@ func cliAsyncErrorViewIsObject(view *cliResolvedSchema) bool {
 // a handle or state missing from even one response-union arm would otherwise
 // become a data-dependent runtime failure.
 func (d *cliManifestDecoder) linkAsyncResponsePointer(path string, responseSchema any, requireEnum bool) ([]*cliPropertyFacts, error) {
-	segments, err := cliParseSingularPath(path)
+	views, err := d.walkResponsePath(path, responseSchema)
 	if err != nil {
 		return nil, err
 	}
-	views, err := d.artifactExpand(responseSchema, 0)
+	facts, err := d.responseLeafFacts(views)
 	if err != nil {
 		return nil, err
 	}
-	if len(views) == 0 {
-		return nil, stderrors.New("response schema has no traversable object variant")
-	}
-	for i, segment := range segments {
-		var next []*cliResolvedSchema
-		for _, view := range views {
-			var child any
-			if segment.IsIndex {
-				if view.raw == nil || view.raw["type"] != "array" {
-					return nil, fmt.Errorf("segment %d ([%d]) does not address an array in every response variant", i+1, segment.Index)
-				}
-				child = view.raw["items"]
-				if child == nil {
-					return nil, fmt.Errorf("segment %d ([%d]) addresses an array without an items schema", i+1, segment.Index)
-				}
-			} else {
-				var ok bool
-				child, ok = view.properties[segment.Name]
-				if !ok {
-					return nil, fmt.Errorf("segment %d (.%s) does not resolve in every response variant%s", i+1, segment.Name, cliDidYouMean(segment.Name, view.propOrder))
-				}
-			}
-			expanded, err := d.artifactExpand(child, 0)
-			if err != nil {
-				return nil, fmt.Errorf("segment %d: %w", i+1, err)
-			}
-			if len(expanded) == 0 {
-				return nil, fmt.Errorf("segment %d does not resolve to a schema in every response variant", i+1)
-			}
-			next = append(next, expanded...)
-		}
-		views = next
-	}
-
-	facts := make([]*cliPropertyFacts, 0, len(views))
-	for _, view := range views {
-		propertyFacts, err := d.propertyFacts(view.raw, nil)
-		if err != nil {
-			return nil, err
-		}
+	for _, propertyFacts := range facts {
 		if len(propertyFacts.kinds) != 1 || propertyFacts.kinds[0] != "string" {
 			return nil, stderrors.New("selected value must be a string in every response variant")
 		}
 		if requireEnum && len(propertyFacts.enum) == 0 {
 			return nil, stderrors.New("selected state must declare a non-empty enum in every response variant")
 		}
-		facts = append(facts, propertyFacts)
 	}
 	return facts, nil
+}
+
+// walkResponsePath follows a singular path through every traversable variant
+// of a response schema and returns the leaf views.
+func (d *cliManifestDecoder) walkResponsePath(path string, responseSchema any) ([]*cliResolvedSchema, error) {
+	views, _, err := d.walkResponsePathViews(path, responseSchema, false)
+	return views, err
+}
+
+// walkResponsePathViews is walkResponsePath with a lenient mode that drops a
+// variant the path does not resolve in instead of failing; it then also
+// returns the property names available where the last variants were lost,
+// for did-you-mean when nothing resolved.
+func (d *cliManifestDecoder) walkResponsePathViews(path string, responseSchema any, lenient bool) ([]*cliResolvedSchema, []string, error) {
+	segments, err := cliParseSingularPath(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	views, err := d.artifactExpand(responseSchema, 0)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(views) == 0 {
+		return nil, nil, stderrors.New("response schema has no traversable object variant")
+	}
+	var candidates []string
+	for i, segment := range segments {
+		var next []*cliResolvedSchema
+		candidates = nil
+		for _, view := range views {
+			var child any
+			if segment.IsIndex {
+				if view.raw == nil || view.raw["type"] != "array" {
+					if lenient {
+						continue
+					}
+					return nil, nil, fmt.Errorf("segment %d ([%d]) does not address an array in every response variant", i+1, segment.Index)
+				}
+				child = view.raw["items"]
+				if child == nil {
+					return nil, nil, fmt.Errorf("segment %d ([%d]) addresses an array without an items schema", i+1, segment.Index)
+				}
+			} else {
+				var ok bool
+				child, ok = view.properties[segment.Name]
+				if !ok {
+					if lenient {
+						candidates = append(candidates, view.propOrder...)
+						continue
+					}
+					return nil, nil, fmt.Errorf("segment %d (.%s) does not resolve in every response variant%s", i+1, segment.Name, cliDidYouMean(segment.Name, view.propOrder))
+				}
+			}
+			expanded, err := d.artifactExpand(child, 0)
+			if err != nil {
+				return nil, nil, fmt.Errorf("segment %d: %w", i+1, err)
+			}
+			if len(expanded) == 0 {
+				if lenient {
+					continue
+				}
+				return nil, nil, fmt.Errorf("segment %d does not resolve to a schema in every response variant", i+1)
+			}
+			next = append(next, expanded...)
+		}
+		views = next
+		if len(views) == 0 {
+			break
+		}
+	}
+	return views, candidates, nil
+}
+
+// responseLeafFacts reports the facts of each non-null leaf view; a null
+// union arm or a "null" entry in a type list is accepted as absence.
+func (d *cliManifestDecoder) responseLeafFacts(views []*cliResolvedSchema) ([]*cliPropertyFacts, error) {
+	facts := make([]*cliPropertyFacts, 0, len(views))
+	for _, view := range views {
+		raw := cliWithoutNullType(view.raw)
+		if raw == nil {
+			continue
+		}
+		propertyFacts, err := d.propertyFacts(raw, nil)
+		if err != nil {
+			return nil, err
+		}
+		facts = append(facts, propertyFacts)
+	}
+	if len(facts) == 0 {
+		return nil, stderrors.New("selected value is always null")
+	}
+	return facts, nil
+}
+
+func cliWithoutNullType(schema map[string]any) map[string]any {
+	switch typ := schema["type"].(type) {
+	case string:
+		if typ == "null" {
+			return nil
+		}
+	case []any:
+		kept := make([]any, 0, len(typ))
+		for _, t := range typ {
+			if t != "null" {
+				kept = append(kept, t)
+			}
+		}
+		if len(kept) == len(typ) {
+			return schema
+		}
+		if len(kept) == 0 {
+			return nil
+		}
+		stripped := maps.Clone(schema)
+		if len(kept) == 1 {
+			stripped["type"] = kept[0]
+		} else {
+			stripped["type"] = kept
+		}
+		return stripped
+	}
+	return schema
 }
 
 func (d *cliManifestDecoder) requireStringSchema(schema any) error {
@@ -1748,19 +2037,30 @@ func (d *cliManifestDecoder) linkStreamProjection(owner string, stream *CLIComma
 	if err := d.linkStreamSelection(owner, "output.stream.select", stream.Select, opInfo); err != nil {
 		return err
 	}
-	if stream.Metadata != nil {
-		return d.linkStreamSelection(owner, "output.stream.metadata.select", stream.Metadata.Select, opInfo)
+	for _, field := range stream.Metadata {
+		for _, path := range field.Select {
+			if err := d.linkStreamSelection(owner, "output.stream.metadata.select", path, opInfo); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
 
 func (d *cliManifestDecoder) linkStreamSelection(owner, field, selectPath string, opInfo *cliOperationInfo) error {
+	_, err := d.walkStreamSelection(owner, field, selectPath, opInfo)
+	return err
+}
+
+// walkStreamSelection is linkStreamSelection returning the walker, so a
+// caller can inspect what the resolved leaves declared.
+func (d *cliManifestDecoder) walkStreamSelection(owner, field, selectPath string, opInfo *cliOperationInfo) (*cliStreamPathWalker, error) {
 	segments, err := cliParseSingularPath(selectPath)
 	if err != nil {
-		return fmt.Errorf("%s %s: %w", owner, field, err)
+		return nil, fmt.Errorf("%s %s: %w", owner, field, err)
 	}
 
-	walker := &cliStreamPathWalker{d: d, owner: owner, selectPath: selectPath, field: field}
+	walker := &cliStreamPathWalker{d: d, owner: owner, selectPath: selectPath, field: field, detail: field == cliStreamDetailField}
 	for _, schema := range opInfo.streamSchemas {
 		if schema == nil {
 			walker.unverifiable("the streaming response declares no schema")
@@ -1769,22 +2069,26 @@ func (d *cliManifestDecoder) linkStreamSelection(owner, field, selectPath string
 		walker.walk(schema, segments, nil)
 	}
 	if walker.err != nil {
-		return walker.err
+		return nil, walker.err
+	}
+	expected := "a string"
+	if walker.detail {
+		expected = "an object or array"
 	}
 	if walker.resolved == 0 {
 		if walker.unverified == 0 {
-			return fmt.Errorf("%s %s %s does not resolve in any event shape of the streaming response%s", owner, field, selectPath, walker.missSuggestion())
+			return nil, fmt.Errorf("%s %s %s does not resolve in any event shape of the streaming response%s", owner, field, selectPath, walker.missSuggestion())
 		}
-		d.warnf("%s %s %s could not be verified against the streaming response schema (%s); events without a string at that path are skipped at runtime", owner, field, selectPath, walker.firstReason)
-		return nil
+		d.warnf("%s %s %s could not be verified against the streaming response schema (%s); events without %s at that path are skipped at runtime", owner, field, selectPath, walker.firstReason, expected)
+		return walker, nil
 	}
 	if err := d.lintProjection(owner, field, cliSingularPathToJQ(segments), "the streaming response declares no event schema", cliOperationProjectionSchema(opInfo), true); err != nil {
-		return err
+		return nil, err
 	}
 	if walker.unverified > 0 {
-		d.warnf("%s %s %s resolves in %d event shape(s) but could not be verified in every arm (%s); unverified events without a string at that path are skipped at runtime", owner, field, selectPath, walker.resolved, walker.firstReason)
+		d.warnf("%s %s %s resolves in %d event shape(s) but could not be verified in every arm (%s); unverified events without %s at that path are skipped at runtime", owner, field, selectPath, walker.resolved, walker.firstReason, expected)
 	}
-	return nil
+	return walker, nil
 }
 
 func cliSingularPathToJQ(segments []cliPathSegment) string {
@@ -1815,11 +2119,16 @@ type cliStreamPathWalker struct {
 	owner      string
 	selectPath string
 	field      string
+	detail     bool // the leaf must be an object or array (failure detail)
 
-	resolved    int // arms where the full path resolved to a string/null leaf
+	resolved    int // arms where the full path resolved to an accepted leaf
 	unverified  int // arms the walk could not see through
 	firstReason string
 	err         error
+
+	stateEnum   map[string]bool // closed enum members declared at resolved string leaves
+	stateNoEnum bool            // a resolved string leaf declared no closed enum
+	stateOpen   bool            // a resolved string leaf declared an open enum
 
 	// missCandidates records, for the deepest segment that failed to resolve,
 	// the property names that were available (for did-you-mean).
@@ -1893,6 +2202,22 @@ func (w *cliStreamPathWalker) walk(schema any, segments []cliPathSegment, seen [
 		component, ok := w.d.schemaIndex.components[name]
 		if !ok {
 			w.err = fmt.Errorf("%s %s %s: referenced schema %q does not exist in components.schemas%s", w.owner, w.field, w.selectPath, name, cliDidYouMean(name, cliComponentNames(w.d.schemaIndex.components)))
+			return
+		}
+		if cliRefHasSiblingConstraints(schemaMap) {
+			if len(segments) == 0 {
+				w.checkLeaf(schemaMap, seen)
+				return
+			}
+			// The rewrite keeps seen free of name so its $ref branch still
+			// resolves; the marker stops a union that re-enters this
+			// reference from recursing forever.
+			marker := name + " (with siblings)"
+			if cliContains(seen, marker) {
+				w.unverifiable("schema reference cycle at " + name)
+				return
+			}
+			w.walk(cliRefSiblingsAsAllOf(schemaMap), segments, append(seen, marker))
 			return
 		}
 		w.walk(component, segments, append(seen, name))
@@ -2015,26 +2340,299 @@ type leafClass int
 const (
 	leafUnknown leafClass = iota // untyped: nothing provable
 	leafString                   // string or null
-	leafOther                    // provably not a string
+	leafOther                    // provably not the expected kind
+	leafDetail                   // object or array (failure detail)
 )
 
-// checkLeaf classifies the schema the full path resolved to. Strings and
-// nulls are what the raw writer emits; anything provably not a string is a
-// generation error naming the kind.
+// checkLeaf classifies the schema the full path resolved to.
 func (w *cliStreamPathWalker) checkLeaf(schemaMap map[string]any, seen []string) {
-	class, kind := w.classifyLeaf(schemaMap, seen)
+	var (
+		class leafClass
+		kind  string
+	)
+	if w.detail {
+		class, kind = w.classifyDetailLeaf(schemaMap, seen)
+	} else {
+		class, kind = w.classifyLeaf(schemaMap, seen)
+	}
 	switch class {
-	case leafString:
+	case leafString, leafDetail:
 		w.resolved++
+		if !w.detail {
+			w.recordLeafEnum(schemaMap, seen)
+		}
 	case leafOther:
-		if w.field == "output.stream.metadata.select" {
+		switch {
+		case w.detail:
+			w.err = fmt.Errorf("%s %s %s resolves to %s in one event shape; the failure detail must be an object or an array", w.owner, w.field, w.selectPath, kind)
+		case w.field == "output.stream.metadata.select":
 			w.err = fmt.Errorf("%s %s %s resolves to %s in one event shape; metadata must address a string field", w.owner, w.field, w.selectPath, kind)
-		} else {
+		default:
 			w.err = fmt.Errorf("%s %s %s resolves to %s in one event shape; the streamed projection writes string values raw, so select must address a string field", w.owner, w.field, w.selectPath, kind)
 		}
 	default:
 		w.unverifiable("the selected field is untyped")
 	}
+}
+
+func (w *cliStreamPathWalker) recordLeafEnum(schemaMap map[string]any, seen []string) {
+	values, closed, open := w.leafEnum(schemaMap, seen)
+	switch {
+	case open:
+		w.stateOpen = true
+	case !closed:
+		w.stateNoEnum = true
+	default:
+		if w.stateEnum == nil {
+			w.stateEnum = map[string]bool{}
+		}
+		for _, value := range values {
+			w.stateEnum[value] = true
+		}
+	}
+}
+
+// leafEnum reports the string members a string leaf is closed over. Every
+// keyword on the schema constrains conjunctively: a const, a closed enum, the
+// referenced component and each allOf arm contribute a member set, and the
+// leaf is closed over their intersection. Arms that only set a type constrain
+// nothing. A oneOf/anyOf then filters those members, or supplies them when no
+// other keyword does and every non-null arm is closed.
+func (w *cliStreamPathWalker) leafEnum(schemaMap map[string]any, seen []string) (values []string, closed, open bool) {
+	if unknownValues, ok := schemaMap["x-speakeasy-unknown-values"].(string); ok && unknownValues == "allow" {
+		return nil, false, true
+	}
+	var sources [][]string
+	if ref, ok := schemaMap["$ref"].(string); ok {
+		name := strings.TrimPrefix(ref, cliComponentRefPrefix)
+		if strings.HasPrefix(ref, cliComponentRefPrefix) && !cliContains(seen, name) {
+			if component, ok := w.d.schemaIndex.components[name].(map[string]any); ok {
+				refValues, refClosed, refOpen := w.leafEnum(component, append(seen, name))
+				if refOpen {
+					return nil, false, true
+				}
+				if refClosed {
+					sources = append(sources, refValues)
+				}
+			}
+		}
+	}
+	if constVal, ok := schemaMap["const"]; ok {
+		switch s := constVal.(type) {
+		case string:
+			sources = append(sources, []string{s})
+		case nil:
+			sources = append(sources, nil)
+		default:
+			return nil, false, false
+		}
+	}
+	if enum, ok := schemaMap["enum"].([]any); ok && len(enum) > 0 {
+		var members []string
+		for _, value := range enum {
+			if s, isString := value.(string); isString {
+				members = append(members, s)
+			}
+		}
+		sources = append(sources, members)
+	}
+	if allOf, ok := schemaMap["allOf"].([]any); ok {
+		for _, arm := range allOf {
+			armMap, ok := arm.(map[string]any)
+			if !ok {
+				continue
+			}
+			armValues, armClosed, armOpen := w.leafEnum(armMap, seen)
+			if armOpen {
+				return nil, false, true
+			}
+			if armClosed {
+				sources = append(sources, armValues)
+			}
+		}
+	}
+	closed = len(sources) > 0
+	if closed {
+		values = cliIntersectStrings(sources)
+	}
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		members, _ := schemaMap[keyword].([]any)
+		if len(members) == 0 {
+			continue
+		}
+		var arms []cliEnumArm
+		for _, member := range members {
+			memberMap, ok := member.(map[string]any)
+			if !ok {
+				continue
+			}
+			if types := cliSchemaTypes(memberMap); len(types) == 1 && types[0] == "null" {
+				continue
+			}
+			if cliSchemaIsAnnotationOnly(memberMap) {
+				continue
+			}
+			memberValues, memberClosed, memberOpen := w.leafEnum(memberMap, seen)
+			if memberOpen {
+				return nil, false, true
+			}
+			arms = append(arms, cliEnumArm{values: memberValues, closed: memberClosed})
+		}
+		if !closed {
+			for _, arm := range arms {
+				if !arm.closed {
+					return nil, false, false
+				}
+				for _, value := range arm.values {
+					if !cliContains(values, value) {
+						values = append(values, value)
+					}
+				}
+			}
+			closed = true
+		}
+		values = cliFilterUnionMembers(values, arms, keyword == "oneOf")
+	}
+	if !closed {
+		return nil, false, false
+	}
+	return values, true, false
+}
+
+// cliEnumArm is one oneOf/anyOf arm of a string leaf: the members it is
+// closed over, or any string when it is not closed.
+type cliEnumArm struct {
+	values []string
+	closed bool
+}
+
+// cliFilterUnionMembers keeps the candidates the union accepts: at least one
+// arm for anyOf, exactly one for oneOf. An arm that is not closed may carry
+// constraints that cannot be evaluated here, so a oneOf containing one only
+// requires a match, which keeps every possible member in the table.
+func cliFilterUnionMembers(candidates []string, arms []cliEnumArm, exactlyOne bool) []string {
+	for _, arm := range arms {
+		if !arm.closed {
+			exactlyOne = false
+		}
+	}
+	var out []string
+	for _, candidate := range candidates {
+		matches := 0
+		for _, arm := range arms {
+			if !arm.closed || cliContains(arm.values, candidate) {
+				matches++
+			}
+		}
+		if matches > 0 && (!exactlyOne || matches == 1) {
+			out = append(out, candidate)
+		}
+	}
+	return out
+}
+
+// cliIntersectStrings keeps the members of the first set present in every
+// other set, in first-set order.
+func cliIntersectStrings(sets [][]string) []string {
+	var out []string
+	for _, candidate := range sets[0] {
+		if cliContains(out, candidate) {
+			continue
+		}
+		keep := true
+		for _, other := range sets[1:] {
+			if !cliContains(other, candidate) {
+				keep = false
+				break
+			}
+		}
+		if keep {
+			out = append(out, candidate)
+		}
+	}
+	return out
+}
+
+// cliRefHasSiblingConstraints reports a reference whose siblings narrow the
+// referenced schema, so the leaf is checked here rather than at the target.
+func cliRefHasSiblingConstraints(schemaMap map[string]any) bool {
+	siblings := make(map[string]any, len(schemaMap))
+	for key, value := range schemaMap {
+		if key != "$ref" {
+			siblings[key] = value
+		}
+	}
+	return !cliSchemaIsAnnotationOnly(siblings)
+}
+
+// cliSchemaIsAnnotationOnly reports a schema that constrains nothing (an
+// allOf branch carrying only a description, say).
+func cliSchemaIsAnnotationOnly(schemaMap map[string]any) bool {
+	for _, key := range []string{"$ref", "type", "enum", "const", "oneOf", "anyOf", "allOf", "properties", "items", "x-speakeasy-unknown-values"} {
+		if _, present := schemaMap[key]; present {
+			return false
+		}
+	}
+	return true
+}
+
+// classifyDetailLeaf accepts object and array leaves; a null arm is neutral.
+func (w *cliStreamPathWalker) classifyDetailLeaf(schemaMap map[string]any, seen []string) (leafClass, string) {
+	if ref, ok := schemaMap["$ref"].(string); ok {
+		name := strings.TrimPrefix(ref, cliComponentRefPrefix)
+		if !strings.HasPrefix(ref, cliComponentRefPrefix) || cliContains(seen, name) {
+			return leafUnknown, ""
+		}
+		component, ok := w.d.schemaIndex.components[name].(map[string]any)
+		if !ok {
+			return leafUnknown, ""
+		}
+		return w.classifyDetailLeaf(component, append(seen, name))
+	}
+
+	var branches []any
+	if members := cliUnionMembers(schemaMap); members != nil {
+		branches = append(branches, members...)
+	}
+	if allOf, ok := schemaMap["allOf"].([]any); ok {
+		branches = append(branches, allOf...)
+	}
+	if len(branches) > 0 {
+		result := leafUnknown
+		for _, branch := range branches {
+			branchMap, ok := branch.(map[string]any)
+			if !ok {
+				continue
+			}
+			class, kind := w.classifyDetailLeaf(branchMap, seen)
+			switch class {
+			case leafOther:
+				return leafOther, kind
+			case leafDetail:
+				result = leafDetail
+			}
+		}
+		return result, ""
+	}
+
+	types := cliSchemaTypes(schemaMap)
+	_, hasProperties := schemaMap["properties"]
+	_, hasItems := schemaMap["items"]
+	if cliContains(types, "object") || cliContains(types, "array") || hasProperties || hasItems {
+		return leafDetail, ""
+	}
+	if constVal, ok := schemaMap["const"]; ok {
+		return leafOther, "a constant " + jsonValueKind(constVal)
+	}
+	if enum, ok := schemaMap["enum"].([]any); ok && len(enum) > 0 {
+		return leafOther, "an enum"
+	}
+	for _, typ := range types {
+		if typ != "null" {
+			return leafOther, cliKindArticle(cliSchemaTypeKind(typ))
+		}
+	}
+	return leafUnknown, ""
 }
 
 // classifyLeaf inspects a leaf schema: const/enum values, type (scalar or
@@ -2950,6 +3548,28 @@ func cliUnionMemberRefs(schema map[string]any) []string {
 	return refs
 }
 
+// cliRefSiblingsAsAllOf rewrites a reference with sibling keywords as an
+// implicit allOf: JSON Schema 2020-12 applies keywords beside $ref
+// conjunctively, and the existing composition (with its cycle detection via
+// seen) then handles the reference branch alongside the siblings.
+func cliRefSiblingsAsAllOf(schemaMap map[string]any) map[string]any {
+	branches := []any{map[string]any{"$ref": schemaMap["$ref"]}}
+	rest := map[string]any{}
+	for k, v := range schemaMap {
+		switch k {
+		case "$ref":
+		case "allOf":
+			if list, ok := v.([]any); ok {
+				branches = append(branches, list...)
+			}
+		default:
+			rest[k] = v
+		}
+	}
+	rest["allOf"] = branches
+	return rest
+}
+
 func cliTrimRefPrefixes(refs []string) []string {
 	out := make([]string, 0, len(refs))
 	for _, ref := range refs {
@@ -2990,25 +3610,7 @@ func (d *cliManifestDecoder) resolveObjectSchema(schema any, seen []string) (*cl
 			return nil, fmt.Errorf("referenced schema %q does not exist in components.schemas%s", name, cliDidYouMean(name, cliComponentNames(d.schemaIndex.components)))
 		}
 		if len(schemaMap) > 1 {
-			// JSON Schema 2020-12: keywords beside $ref apply conjunctively.
-			// Rewrite as an implicit allOf so the existing composition (and
-			// its cycle detection via seen) handles the reference branch
-			// alongside the siblings instead of discarding them.
-			branches := []any{map[string]any{"$ref": ref}}
-			rest := map[string]any{}
-			for k, v := range schemaMap {
-				switch k {
-				case "$ref":
-				case "allOf":
-					if list, ok := v.([]any); ok {
-						branches = append(branches, list...)
-					}
-				default:
-					rest[k] = v
-				}
-			}
-			rest["allOf"] = branches
-			resolved, err := d.resolveObjectSchema(rest, seen)
+			resolved, err := d.resolveObjectSchema(cliRefSiblingsAsAllOf(schemaMap), seen)
 			if err != nil {
 				return nil, err
 			}
@@ -3944,6 +4546,40 @@ func cliSortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// linkImplies checks a flag's implied values against every request variant
+// that declares the flag. Each implied property must exist on all of them and
+// normalize to the same value, because one runtime rule serves every route.
+func (d *cliManifestDecoder) linkImplies(cmdKey string, input *CLICommandInput, variants []*cliResolvedSchema) error {
+	if len(input.Implies) == 0 {
+		return nil
+	}
+	if input.Type != "bool" {
+		return fmt.Errorf("command %q flag %q: implies requires a bool flag, but the flag is %s", cmdKey, input.Name, input.Type)
+	}
+	for i := range input.Implies {
+		pointer := input.Implies[i].Bind.Pointer
+		name := cliPointerPropertyName(pointer)
+		var normalized any
+		for j, variant := range variants {
+			if _, declared := variant.properties[name]; !declared {
+				return fmt.Errorf("command %q flag %q: implied property %s is not declared by %s", cmdKey, input.Name, pointer, cliSchemaLabel(variant))
+			}
+			candidate := input.Implies[i]
+			if err := d.linkPreset(cmdKey, &candidate, variant); err != nil {
+				return fmt.Errorf("flag %q implies: %w", input.Name, err)
+			}
+			if j > 0 && !cliValuesEqual(normalized, candidate.Value) {
+				return fmt.Errorf("command %q flag %q: implied value for %s normalizes differently across request variants", cmdKey, input.Name, pointer)
+			}
+			normalized = candidate.Value
+		}
+		if len(variants) > 0 {
+			input.Implies[i].Value = normalized
+		}
+	}
+	return nil
 }
 
 func (d *cliManifestDecoder) linkPreset(cmdKey string, preset *CLICommandPreset, variant *cliResolvedSchema) error {

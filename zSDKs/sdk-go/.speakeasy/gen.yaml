@@ -43,6 +43,7 @@ go:
   enableSkipDeserialization: false
   envVarPrefix: SPEAKEASY
   fixFlags:
+    applyPathParamDefaults: true
     encodePathParams: true
   flattenGlobalSecurity: true
   forwardCompatibleEnumsByDefault: true

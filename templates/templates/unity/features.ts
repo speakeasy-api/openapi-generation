@@ -23,7 +23,7 @@ const supportedFeatures = {
   multiLevelTagging: "0.1.0",
   downloadStreams: "0.0.2",
   pagination: "0.2.2",
-  docs: "0.4.4",
+  docs: "0.4.5",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   unions: "0.0.9",
@@ -589,9 +589,17 @@ function isTestSkipped(test: string): boolean {
     "shared-enum-constructor-default",
     "cli-forbidden-without-credentials",
     "event-stream-truncated-before-sentinel",
-    "event-stream-truncated-before-sentinel-is-connection-error",
     "open-union-invalid-json-is-an-error",
     "cli-exit-codes-invalid-jq-before-request",
+    "clierrors-dry-run-hint-server-validation-only",
+    "clierrors-unknown-command-suggestion",
+    "event-stream-absent-required-union",
+    "event-stream-equivalent-number-lexemes",
+    "event-stream-null-and-undeclared-fields",
+    "auth-global-security-empty",
+    "auth-global-security-flattening-empty",
+    "unknown-fields-json-round-trip",
+    "parameters-default-path-params",
   ].includes(test);
 }
 

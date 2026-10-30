@@ -2,7 +2,7 @@
 {{- $globalSecurity := $globalSDK.Security }}
 {{- $serverMap := (and $globalSDK.Servers $globalSDK.Servers.ServerMap) -}}
 {{- $usageLocation := .Local.UsageLocation -}}
-createMCPServer({
+{{ if .Local.Factory }}createMCPServerFactory{{ else }}createMCPServer{{ end }}({
   logger,
   allowedTools: flags.tool,
   dynamic: flags.mode === "dynamic",

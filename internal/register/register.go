@@ -150,6 +150,7 @@ func (r *Register) RegisterType(ctx context.Context, typeDef *ast.TypeDef, isInp
 				if err := t.IsEqual(typeDef); err == nil {
 					// Supplement it. This is mostly for debugging purposes.
 					supplementErrorContextFrame(t, typeDef)
+					mergeBase64InputMode(t, typeDef)
 					return t
 				}
 			}
@@ -178,6 +179,7 @@ func (r *Register) RegisterType(ctx context.Context, typeDef *ast.TypeDef, isInp
 		case errors.Is(err, ast.ErrScopeMismatch):
 			// Special case for shared types that are used as errors they get moved to the errors scope
 			if typeDef.Scope == ast.ScopeShared && existing.Scope == ast.ScopeErrors || typeDef.Scope == ast.ScopeErrors && existing.Scope == ast.ScopeShared {
+				mergeBase64InputMode(existing, typeDef)
 				return existing
 			}
 			fallthrough
@@ -187,6 +189,8 @@ func (r *Register) RegisterType(ctx context.Context, typeDef *ast.TypeDef, isInp
 	}
 
 	// Found existing type make sure annotations are merged and return the existing type
+	mergeBase64InputMode(existing, typeDef)
+
 	for i, f := range typeDef.Fields {
 		for _, a := range f.Annotations {
 			if i >= len(existing.Fields) {
@@ -254,6 +258,40 @@ func (r *Register) UpdateRegisteredTypeToErrorsScopeLegacy(ctx context.Context, 
 	}
 
 	return r.RegisterType(ctx, typ, false)
+}
+
+func mergeBase64InputMode(target *ast.TypeDef, source *ast.TypeDef) {
+	if target == nil || source == nil || target == source {
+		return
+	}
+
+	if source.Extensions != nil && source.Extensions.Base64InputMode != "" {
+		target.EnsureExtensions()
+		if target.Extensions.Base64InputMode == "" {
+			target.Extensions.Base64InputMode = source.Extensions.Base64InputMode
+		}
+	}
+
+	mergeNestedBase64InputMode(target.ItemType, source.ItemType)
+
+	for i := range min(len(target.AssociatedTypes), len(source.AssociatedTypes)) {
+		mergeNestedBase64InputMode(target.AssociatedTypes[i], source.AssociatedTypes[i])
+	}
+
+	for i := range min(len(target.Fields), len(source.Fields)) {
+		if target.Fields[i] != nil && source.Fields[i] != nil {
+			mergeNestedBase64InputMode(target.Fields[i].Type, source.Fields[i].Type)
+		}
+	}
+}
+
+// Custom types are registered on their own and receive their merge there.
+func mergeNestedBase64InputMode(target *ast.TypeDef, source *ast.TypeDef) {
+	if target == nil || target.IsCustomType() {
+		return
+	}
+
+	mergeBase64InputMode(target, source)
 }
 
 func supplementErrorContextFrame(target *ast.TypeDef, source *ast.TypeDef) {

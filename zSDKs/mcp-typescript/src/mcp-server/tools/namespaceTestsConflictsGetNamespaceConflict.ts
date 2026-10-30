@@ -23,7 +23,7 @@ The SDK should properly import and alias both Pet types.`,
     tool: async (client, ctx) => {
       const [result] = await namespaceTestsConflictsGetNamespaceConflict(
         client,
-        { fetchOptions: { signal: ctx.signal } },
+        { fetchOptions: { signal: ctx.mcpReq.signal } },
       ).$inspect();
 
       if (!result.ok) {

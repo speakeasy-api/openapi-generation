@@ -863,11 +863,12 @@ function templateMCPFlagHeaderOverrides(security: TypeDef): string {
     if (seen.has(flagName)) continue;
     seen.add(flagName);
 
-    // Express/Node.js normalizes req.headers keys to lowercase, so we must
-    // lowercase the field name to match.
     const headerName = originalFieldName(field).toLowerCase();
     const fieldType = field.Type.Type.toString();
-    const header = `req.headers["${headerName}"]`;
+    const header =
+      headerName === flagName
+        ? `req.headers["${flagName}"]`
+        : `(req.headers["${flagName}"] ?? req.headers["${headerName}"])`;
     const fallback = `cliFlags["${flagName}"]`;
 
     let headerExpr: string;
@@ -881,7 +882,7 @@ function templateMCPFlagHeaderOverrides(security: TypeDef): string {
         headerExpr = `(typeof ${header} === "string" ? Number(${header}) : undefined)`;
         break;
       case "array":
-        headerExpr = `(typeof ${header} === "string" ? ${header}.split(",") : undefined)`;
+        headerExpr = `(typeof ${header} === "string" ? (${header} as string).split(",") : undefined)`;
         break;
       case "enum":
         headerExpr = `(${header} as string as typeof ${fallback})`;

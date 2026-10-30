@@ -1,0 +1,19 @@
+overlay: 1.0.0
+info:
+  title: Spaced tag names fixture
+  version: 0.0.0
+actions:
+  - target: $.paths
+    update:
+      /spaced-tag:
+        get:
+          operationId: getSpacedTag
+          tags: [Spaced Tag Name]
+          description: Operation grouped under a tag whose name contains spaces, so documentation that uses the tag name as a title keeps the spaces.
+          responses:
+            "200":
+              description: OK
+  - target: $.tags
+    update:
+      - name: Spaced Tag Name
+        description: A tag whose name contains spaces.

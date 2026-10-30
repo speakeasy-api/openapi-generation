@@ -7,6 +7,7 @@ package output
 import (
 	"encoding/json"
 	"errors"
+	"math/big"
 	"reflect"
 	"strings"
 
@@ -21,7 +22,17 @@ import (
 // "Object"). The function uses reflection to call Next()/Value()/Err()/Close()
 // on the stream field, handling both EventStream (Value() *T) and JsonLStream
 // (Value() (T, error)) signatures.
-func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) error {
+// stopProgress, when given, runs before anything is written: on the first
+// event, at end of stream, or before falling back to a single JSON result.
+func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string, stopProgress ...func()) error {
+	stop := func() {
+		for _, fn := range stopProgress {
+			if fn != nil {
+				fn()
+			}
+		}
+	}
+	defer stop()
 	if flagutil.DidDryRunRequest(cmd) {
 		return nil
 	}
@@ -43,16 +54,19 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	}
 	if v.Kind() != reflect.Struct {
 		// Fallback: not a struct envelope — output as regular result
+		stop()
 		return Result(cmd, res)
 	}
 	streamVal := v.FieldByName(streamFieldName)
 	if !streamVal.IsValid() {
 		// Fallback: stream field not found — output as regular result
+		stop()
 		return Result(cmd, res)
 	}
 	// Guard IsNil: only call on nillable kinds. Fall back to Result() for
 	// mixed-content operations where non-stream content may still exist.
 	if isNillable(streamVal) && streamVal.IsNil() {
+		stop()
 		return Result(cmd, res)
 	}
 
@@ -61,8 +75,10 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	valueMethod := streamVal.MethodByName("Value")
 	errMethod := streamVal.MethodByName("Err")
 	closeMethod := streamVal.MethodByName("Close")
+	rawMethod := streamVal.MethodByName("RawValue")
 	if !nextMethod.IsValid() || !valueMethod.IsValid() {
 		// Fallback: not a streaming type — output as regular result
+		stop()
 		return Result(cmd, res)
 	}
 
@@ -71,6 +87,11 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	}
 
 	projector := newStreamProjector(cmd)
+	outcomeCfg := activeOutcome(cmd)
+	if outcomeCfg != nil && outcomeCfg.StreamStatePointer == "" {
+		outcomeCfg = nil
+	}
+	var streamFailure *outcomeError
 
 	// Projected output already written must end with its terminating
 	// newline before any error is rendered. The primary error keeps the
@@ -104,6 +125,7 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 
 		// Call Next() bool
 		nextResults := nextMethod.Call(nil)
+		stop()
 		if !nextResults[0].Bool() {
 			break
 		}
@@ -131,11 +153,23 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 			}
 		}
 
+		var raw []byte
+		if rawMethod.IsValid() {
+			raw = rawMethod.Call(nil)[0].Bytes()
+		}
+
 		if len(valueResults) == 1 {
-			if body, isErr := streamErrorEvent(item); isErr {
+			if body, isErr := streamErrorEvent(item, raw); isErr {
 				return renderAfterFinish(&StreamEventError{Body: string(body)})
 			}
 		}
+
+		var frame map[string]interface{}
+		if outcomeCfg != nil && streamFailure == nil {
+			frame, _ = decodeStreamFrame(raw)
+			streamFailure = outcomeStreamFailure(cmd, outcomeCfg, item, frame)
+		}
+		item = wireStreamItem(item, raw, frame, format == "table" && jqExpr == "")
 
 		if projector != nil {
 			if err := projector.emit(out, item); err != nil {
@@ -155,6 +189,9 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 			return renderAfterFinish(errResults[0].Interface().(error))
 		}
 	}
+	if streamFailure != nil {
+		return renderAfterFinish(streamFailure)
+	}
 
 	if projector != nil {
 		if err := projector.finish(out); err != nil {
@@ -167,16 +204,163 @@ func StreamResult(cmd *cobra.Command, res interface{}, streamFieldName string) e
 	return nil
 }
 
-func streamErrorEvent(item interface{}) (json.RawMessage, bool) {
+type wireEvent struct {
+	data json.RawMessage
+}
+
+func (w wireEvent) MarshalJSON() ([]byte, error) {
+	return w.data, nil
+}
+
+// Re-encoding the decoded model drops undeclared fields and zero-fills absent ones.
+// frame is the wire object when the caller already decoded raw; nil decodes
+// it here, and only once the item is known to need it.
+func wireStreamItem(item interface{}, raw []byte, frame map[string]interface{}, table bool) interface{} {
+	keys, ok := envelopeKeys(reflect.ValueOf(item))
+	if len(raw) == 0 || !ok {
+		return item
+	}
+	typed, err := normalizeForOutput(item)
+	// Tables lay out the model's fields and sections, which the wire map loses.
+	if err == nil && table {
+		return item
+	}
+	wire := frame
+	if wire == nil {
+		if wire, ok = decodeStreamFrame(raw); !ok {
+			return item
+		}
+	}
+	for name := range wire {
+		if keys != nil && !keys[name] {
+			delete(wire, name)
+		}
+	}
+	data, err := json.Marshal(typedLeaves(wire, typed))
+	if err != nil {
+		return item
+	}
+	return wireEvent{data: data}
+}
+
+func decodeStreamFrame(raw []byte) (map[string]interface{}, bool) {
+	if len(raw) == 0 {
+		return nil, false
+	}
+	frame, err := decodeWithNumbers(raw)
+	wire, isObject := frame.(map[string]interface{})
+	if err != nil || !isObject {
+		return nil, false
+	}
+	return wire, true
+}
+
+// nil keys keep the whole frame: a union event that matched no member.
+func envelopeKeys(v reflect.Value) (map[string]bool, bool) {
+	v = derefValue(v)
+	if !v.IsValid() || v.Kind() != reflect.Struct {
+		return nil, false
+	}
+	for isUnionStruct(v.Type()) {
+		member := reflect.Value{}
+		for i := 0; i < v.NumField(); i++ {
+			if v.Type().Field(i).Tag.Get("union") == "member" && !v.Field(i).IsZero() {
+				member = derefValue(v.Field(i))
+				break
+			}
+		}
+		if !member.IsValid() || member.Kind() != reflect.Struct {
+			return nil, true
+		}
+		v = member
+	}
+	t := v.Type()
+	keys := map[string]bool{}
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if f.Tag.Get("additionalProperties") == "true" {
+			return nil, true
+		}
+		name := strings.Split(f.Tag.Get("json"), ",")[0]
+		if name == "-" || (name == "" && !f.IsExported()) {
+			continue
+		}
+		if name == "" {
+			name = f.Name
+		}
+		keys[name] = true
+	}
+	return keys, true
+}
+
+func typedLeaves(wire, typed interface{}) interface{} {
+	switch w := wire.(type) {
+	case nil:
+		return nil
+	case map[string]interface{}:
+		t, _ := typed.(map[string]interface{})
+		for k, v := range w {
+			w[k] = typedLeaves(v, t[k])
+		}
+		return w
+	case []interface{}:
+		t, _ := typed.([]interface{})
+		for i, v := range w {
+			var tv interface{}
+			if i < len(t) {
+				tv = t[i]
+			}
+			w[i] = typedLeaves(v, tv)
+		}
+		return w
+	}
+	switch typed.(type) {
+	case nil, map[string]interface{}, []interface{}:
+		if n, ok := wire.(json.Number); ok {
+			return canonicalNumber(n)
+		}
+		return wire
+	}
+	return typed
+}
+
+// Bigint and long-decimal lexemes are kept: float64 would change their value.
+func canonicalNumber(n json.Number) interface{} {
+	exact, ok := new(big.Rat).SetString(n.String())
+	if !ok {
+		return n
+	}
+	f, err := n.Float64()
+	if err != nil {
+		return n
+	}
+	shortest, err := json.Marshal(f)
+	if err != nil {
+		return n
+	}
+	if r, ok := new(big.Rat).SetString(string(shortest)); !ok || r.Cmp(exact) != 0 {
+		return n
+	}
+	return json.Number(shortest)
+}
+
+func streamErrorEvent(item interface{}, raw []byte) (json.RawMessage, bool) {
 	u, ok := errorUnionValue(reflect.ValueOf(item))
 	if !ok {
 		return nil, false
 	}
-	data, err := marshalJSON(u.Interface())
-	if err != nil {
+	if data, err := marshalJSON(u.Interface()); err == nil {
+		return data, true
+	}
+	if isUnionStruct(derefValue(reflect.ValueOf(item)).Type()) {
+		data, err := json.Marshal(wireStreamItem(item, raw, nil, false))
+		return data, err == nil
+	}
+	var frame map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &frame); err != nil || len(frame["data"]) == 0 {
 		return nil, false
 	}
-	return data, true
+	return frame["data"], true
 }
 
 func errorUnionValue(v reflect.Value) (reflect.Value, bool) {

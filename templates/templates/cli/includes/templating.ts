@@ -123,6 +123,14 @@ registerTemplateFunc("getRequestBodyFlagName", getRequestBodyFlagName);
  * Uses the type name to create a user-friendly description.
  */
 function templateRequestBodyDescription(field: FieldDef): string {
+  return escapeGoString(requestBodyDescription(field));
+}
+registerTemplateFunc(
+  "templateRequestBodyDescription",
+  templateRequestBodyDescription,
+);
+
+function requestBodyDescription(field: FieldDef): string {
   let desc = "";
 
   // Use the field's own description if available
@@ -146,18 +154,14 @@ function templateRequestBodyDescription(field: FieldDef): string {
     desc = "Request body as JSON";
   }
 
-  if (!field.Optional) {
+  if (!field.Optional && !field.Nullable) {
     desc += " [required]";
   }
   desc +=
     ". Can also be provided via stdin; @path reads a file, @- reads stdin to EOF.";
 
-  return escapeGoString(desc);
+  return desc;
 }
-registerTemplateFunc(
-  "templateRequestBodyDescription",
-  templateRequestBodyDescription,
-);
 
 /**
  * Check if an operation has any flags to register.

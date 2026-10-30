@@ -89,6 +89,7 @@ type EventStream[T any] struct {
 	first    bool
 	err      error
 	val      *T
+	raw      json.RawMessage
 	eventID  *string
 }
 
@@ -320,6 +321,7 @@ func (es *EventStream[T]) Next() bool {
 		}
 
 		es.val = &parsedEvent
+		es.raw = e
 
 		return true
 	}
@@ -338,6 +340,12 @@ func (es *EventStream[T]) endedBeforeSentinel() error {
 // Value returns the most recent event that was generated from a call to Next
 func (es *EventStream[T]) Value() *T {
 	return es.val
+}
+
+// RawValue returns the JSON that Value was decoded from: the frame's event,
+// data and retry, plus the last event id seen.
+func (es *EventStream[T]) RawValue() json.RawMessage {
+	return es.raw
 }
 
 // Err returns the first non-EOF error that was encountered
