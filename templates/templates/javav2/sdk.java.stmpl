@@ -335,7 +335,6 @@ package {{$pkg}};
          * @return The SDK instance.
          */
         public {{$sdkClassName}} build() {
-            sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
             {{- if .Local.Servers}}
             if (serverUrl == null || {{if isJava8}}{{javaImport (print (templatePackageName) ".utils.Java8Compat")}}.isBlank(serverUrl){{else}}serverUrl.isBlank(){{end}}) {
                 {{- if $serverMap}}
@@ -368,6 +367,7 @@ package {{$pkg}};
 
     {{if springBootStarterEnabled}}public{{else}}private{{end}} {{$sdkClassName}}(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
+        sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
         {{- if not $okHttp}}
             {{- range .Local.SubSDKs}}
                 {{- if ne .Type.Name ""}}

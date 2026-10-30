@@ -53,11 +53,12 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
 
-    private static boolean isStreamingResponse(HttpResponse<?> response) {
-        return response.headers()
-                .firstValue("Content-Type")
-                .map(SpeakeasyHTTPClient::isStreamingMediaType)
-                .orElse(false);
+    private static boolean isStreamingRequest(HttpRequest request) {
+        return request.headers()
+                .allValues("Accept")
+                .stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
     }
 
     /**
@@ -145,7 +146,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             throws IOException, InterruptedException, URISyntaxException {
         request = logRequest(request, isDebugLoggingEnabled());
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (!isStreamingResponse(response)) {
+        if (!isStreamingRequest(request)) {
             response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
         }
         response = logResponse(response, isDebugLoggingEnabled());
@@ -155,15 +156,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
         request = logRequest(request, isDebugLoggingEnabled());
-        long maxBytes = maxResponseBodyBytes;
+        long maxBytes = isStreamingRequest(request) ? Long.MAX_VALUE : maxResponseBodyBytes;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> // TODO: log responses when helper for Blob is setup
-                new ResponseWithBody<>(
-                        response,
-                        publisher -> Blob.from(
-                                isStreamingResponse(response)
-                                        ? publisher
-                                        : ReactiveUtils.limitBytes(publisher, maxBytes))));
+                new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 
     private HttpRequest logRequest(HttpRequest request, boolean logBody) {

@@ -570,7 +570,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/Obsolete.java:
     last_write_checksum: sha1:541701b93e32b700946cd99533c0419a38f46c7e
   src/main/java/org/openapis/openapi/SDK.java:
-    last_write_checksum: sha1:b59ba754b7c6131e76d882cc20312ebad25741db
+    last_write_checksum: sha1:e55adeb01b5aa807d10e4b68f7071e0e4b5e68f5
   src/main/java/org/openapis/openapi/SDKConfiguration.java:
     last_write_checksum: sha1:533829e96a2d9327d59b3c68f1f3ab7820c8c43a
   src/main/java/org/openapis/openapi/SecuritySource.java:
@@ -1550,7 +1550,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/SessionManager.java:
     last_write_checksum: sha1:cd253cbeb82fb7779b08caada453c4381f6d32ac
   src/main/java/org/openapis/openapi/utils/SpeakeasyHTTPClient.java:
-    last_write_checksum: sha1:e182e8d8e52273a2dcf111ffc4a496b3058a720b
+    last_write_checksum: sha1:90f440b4e2cef6a3dd32793754406e78680c7812
   src/main/java/org/openapis/openapi/utils/SpeakeasyLogger.java:
     last_write_checksum: sha1:ad239c8fec81792e27ec1ab349116d6c2e0998a1
   src/main/java/org/openapis/openapi/utils/SpeakeasyMetadata.java:

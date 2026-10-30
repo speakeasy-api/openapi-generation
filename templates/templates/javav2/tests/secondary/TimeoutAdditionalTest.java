@@ -65,5 +65,12 @@ public class TimeoutAdditionalTest {
             .timeout(Duration.ofSeconds(5))
             .call();
         assertEquals(200, res.statusCode());
+
+        SDK withDefault = SDK.builder().timeout(Duration.ofSeconds(5)).build();
+        CancelledRequestWithOperationTimeoutResponse sdkDefault = withDefault.cancellation()
+            .cancelledRequestWithOperationTimeout()
+            .seconds(2L)
+            .call();
+        assertEquals(200, sdkDefault.statusCode());
     }
 }

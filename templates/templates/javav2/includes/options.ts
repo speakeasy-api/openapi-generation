@@ -77,7 +77,14 @@ function templateTimeoutResolution(
       }))`
     : "";
   if (!optionsExpr) {
-    return extension || "sdkConfiguration.timeout()";
+    if (!extension) {
+      return "sdkConfiguration.timeout()";
+    }
+    return isJava8()
+      ? `${javaImportLocal(
+          "utils.Java8Compat",
+        )}.or(sdkConfiguration.timeout(), () -> ${extension})`
+      : `sdkConfiguration.timeout().or(() -> ${extension})`;
   }
   const perCall = `${optionsExpr}.flatMap(${javaImportLocal(
     "utils.Options",

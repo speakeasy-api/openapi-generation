@@ -510,7 +510,6 @@ public class SDK {
          * @return The SDK instance.
          */
         public SDK build() {
-            sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
             if (serverUrl == null || serverUrl.isBlank()) {
                 serverUrl = SERVERS[0];
                 sdkConfiguration.setServerIdx(0);
@@ -531,6 +530,7 @@ public class SDK {
 
     public SDK(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
+        sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
         this.tag1 = new Tag1(sdkConfiguration);
         this.obsolete = new Obsolete(sdkConfiguration);
         this.testGroup = new TestGroup(sdkConfiguration);

@@ -72,6 +72,12 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
+
+    private static boolean isStreamingRequest(HttpRequest request) {
+        return request.headers().get("Accept").stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
+    }
 {{- if asyncEnabled}}
     {{- /* streaming responses can remain idle between events
            keep unary async calls on the default client so sync
@@ -323,8 +329,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         Headers headers = new Headers(response.headers().toMultimap());
         ResponseBody body = response.body();
         InputStream in = body == null ? new ByteArrayInputStream(new byte[0]) : body.byteStream();
-        String contentType = response.header("Content-Type");
-        if (contentType == null || !isStreamingMediaType(contentType)) {
+        if (!isStreamingRequest(request)) {
             in = BoundedInputStream.wrap(in, maxBodyBytes);
         }
         return new HttpResponse<>(request, response.code(), headers, in);
@@ -492,8 +497,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
 
-    private static boolean isStreamingResponse(HttpResponse<?> response) {
-        return response.headers().firstValue("Content-Type").map(SpeakeasyHTTPClient::isStreamingMediaType).orElse(false);
+    private static boolean isStreamingRequest(HttpRequest request) {
+        return request.headers().allValues("Accept").stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
     }
 
     /**
@@ -594,7 +601,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         }
 {{- end}}
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (!isStreamingResponse(response)) {
+        if (!isStreamingRequest(request)) {
             response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
         }
 {{- if slf4jLoggingEnabled}}
@@ -618,12 +625,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             request = logRequest(request, true);
         }
   {{- end}}
-        long maxBytes = maxResponseBodyBytes;
+        long maxBytes = isStreamingRequest(request) ? Long.MAX_VALUE : maxResponseBodyBytes;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response ->
                         // TODO: log responses when helper for Blob is setup
-                        new ResponseWithBody<>(response, publisher -> Blob.from(
-                                isStreamingResponse(response) ? publisher : ReactiveUtils.limitBytes(publisher, maxBytes))));
+                        new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 {{- end}}
 
