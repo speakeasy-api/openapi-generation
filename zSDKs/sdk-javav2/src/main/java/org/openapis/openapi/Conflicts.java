@@ -26,6 +26,7 @@ import org.openapis.openapi.operations.GetPetOwners;
 import org.openapis.openapi.operations.GetTripleNamespaceConflict;
 import org.openapis.openapi.operations.PutNamespaceConflict;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class Conflicts {
     private static final Headers _headers = Headers.EMPTY;
@@ -70,8 +71,23 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamespaceConflictResponse getNamespaceConflictDirect() {
+        return getNamespaceConflict(null);
+    }
+
+    /**
+     * Get Namespace Conflict Test
+     *
+     * <p>This endpoint tests the x-speakeasy-model-namespace extension by returning
+     * a model that references two different Pet types from different namespaces.
+     * The SDK should properly import and alias both Pet types.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamespaceConflictResponse getNamespaceConflict(@Nullable Options options) {
         RequestlessOperation<GetNamespaceConflictResponse> operation =
-                new GetNamespaceConflict.Sync(sdkConfiguration, _headers);
+                new GetNamespaceConflict.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -97,7 +113,7 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public PutNamespaceConflictResponse putNamespaceConflictDirect() {
-        return putNamespaceConflict(null);
+        return putNamespaceConflict(null, null);
     }
 
     /**
@@ -111,8 +127,24 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public PutNamespaceConflictResponse putNamespaceConflict(@Nullable ObjWithRenamedProperties request) {
+        return putNamespaceConflict(request, null);
+    }
+
+    /**
+     * Put Property Name Conflicts Behind
+     *
+     * <p>This endpoint tests property name conflict resolution through
+     * x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public PutNamespaceConflictResponse putNamespaceConflict(
+            @Nullable ObjWithRenamedProperties request, @Nullable Options options) {
         RequestOperation<ObjWithRenamedProperties, PutNamespaceConflictResponse> operation =
-                new PutNamespaceConflict.Sync(sdkConfiguration, _headers);
+                new PutNamespaceConflict.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -139,8 +171,23 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public CreateNamespaceConflictResponse createNamespaceConflict(@Nonnull Pet request) {
+        return createNamespaceConflict(request, null);
+    }
+
+    /**
+     * Create Namespace Conflict Test
+     *
+     * <p>This endpoint tests creating with models from different namespaces.
+     * Uses foo.Pet in the request and bar.Pet in the response.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public CreateNamespaceConflictResponse createNamespaceConflict(@Nonnull Pet request, @Nullable Options options) {
         RequestOperation<Pet, CreateNamespaceConflictResponse> operation =
-                new CreateNamespaceConflict.Sync(sdkConfiguration, _headers);
+                new CreateNamespaceConflict.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -168,8 +215,23 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetTripleNamespaceConflictResponse getTripleNamespaceConflictDirect() {
+        return getTripleNamespaceConflict(null);
+    }
+
+    /**
+     * Get Triple Namespace Conflict Test
+     *
+     * <p>This endpoint tests the x-speakeasy-model-namespace extension by returning
+     * a model that references three different Pet types from different namespaces.
+     * The SDK should properly import and alias all three Pet types.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetTripleNamespaceConflictResponse getTripleNamespaceConflict(@Nullable Options options) {
         RequestlessOperation<GetTripleNamespaceConflictResponse> operation =
-                new GetTripleNamespaceConflict.Sync(sdkConfiguration, _headers);
+                new GetTripleNamespaceConflict.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -195,7 +257,22 @@ public class Conflicts {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetPetOwnersResponse getPetOwnersDirect() {
-        RequestlessOperation<GetPetOwnersResponse> operation = new GetPetOwners.Sync(sdkConfiguration, _headers);
+        return getPetOwners(null);
+    }
+
+    /**
+     * Get Pet Owners
+     *
+     * <p>This endpoint tests using PetOwner models from different namespaces.
+     * Returns both foo.PetOwner and bar.PetOwner in the response.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetPetOwnersResponse getPetOwners(@Nullable Options options) {
+        RequestlessOperation<GetPetOwnersResponse> operation =
+                new GetPetOwners.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

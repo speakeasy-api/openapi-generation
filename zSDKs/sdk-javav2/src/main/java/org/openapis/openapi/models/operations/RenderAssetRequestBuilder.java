@@ -6,18 +6,28 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.RenderAsset;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class RenderAssetRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private RenderAssetRequest request;
+    private final Options.Builder optionsBuilder;
 
     public RenderAssetRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public RenderAssetRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public RenderAssetRequestBuilder request(@Nonnull RenderAssetRequest request) {
@@ -42,8 +52,9 @@ public class RenderAssetRequestBuilder {
      * @return The response from the server.
      */
     public RenderAssetResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<RenderAssetRequest, RenderAssetResponse> operation =
-                new RenderAsset.Sync(sdkConfiguration, _headers);
+                new RenderAsset.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

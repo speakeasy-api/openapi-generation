@@ -1988,6 +1988,12 @@ declare global {
     All: Record<string, any>;
 
     /**
+     * x-speakeasy-timeout: default request timeout for the operation, in
+     * milliseconds.
+     */
+    Timeout?: number;
+
+    /**
      * x-speakeasy-exports entries declared on the operation; these alias the
      * operation's generated request type.
      */

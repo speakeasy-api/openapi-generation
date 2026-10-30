@@ -434,6 +434,9 @@ function isTestSkipped(test: string): boolean {
     "event-stream-equivalent-number-lexemes",
     "event-stream-null-and-undeclared-fields",
     "parameters-default-path-params",
+    "timeout-sdk-default-is-respected",
+    "response-body-limit",
+    "timeout-operation-extension-is-respected",
   ].includes(test);
 }
 

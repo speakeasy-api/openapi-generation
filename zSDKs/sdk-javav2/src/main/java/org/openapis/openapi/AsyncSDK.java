@@ -120,6 +120,7 @@ import org.openapis.openapi.operations.UpdateUser;
 import org.openapis.openapi.operations.UrlValidationStressTest;
 import org.openapis.openapi.operations.Validate;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.reactive.EventStream;
 
@@ -205,20 +206,32 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @param qp1 This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.
      * @return {@code CompletableFuture<OperationWithLeadingAndTrailingUnderscoresResponse>} - The async response
      */
     public CompletableFuture<OperationWithLeadingAndTrailingUnderscoresResponse>
             operationWithLeadingAndTrailingUnderscores(@Nonnull String qp1) {
+        return operationWithLeadingAndTrailingUnderscores(qp1, null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param qp1 This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.
+     * @param options additional options
+     * @return {@code CompletableFuture<OperationWithLeadingAndTrailingUnderscoresResponse>} - The async response
+     */
+    public CompletableFuture<OperationWithLeadingAndTrailingUnderscoresResponse>
+            operationWithLeadingAndTrailingUnderscores(@Nonnull String qp1, @Nullable Options options) {
         OperationWithLeadingAndTrailingUnderscoresRequest request =
                 new OperationWithLeadingAndTrailingUnderscoresRequest(qp1);
         AsyncRequestOperation<
                         OperationWithLeadingAndTrailingUnderscoresRequest,
                         OperationWithLeadingAndTrailingUnderscoresResponse>
                 operation = new OperationWithLeadingAndTrailingUnderscores.Async(
-                        sdkConfiguration, _headers);
+                        sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -244,8 +257,22 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<PostFileResponse>} - The async response
      */
     public CompletableFuture<PostFileResponse> postFile(@Nonnull PostFileRequest request) {
+        return postFile(request, null);
+    }
+
+    /**
+     * Post File
+     *
+     * <p>This is a test endpoint.
+     * It has a description.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<PostFileResponse>} - The async response
+     */
+    public CompletableFuture<PostFileResponse> postFile(@Nonnull PostFileRequest request, @Nullable Options options) {
         AsyncRequestOperation<PostFileRequest, PostFileResponse> operation =
-                new PostFile.Async(sdkConfiguration, _headers);
+                new PostFile.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -259,13 +286,23 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @return {@code CompletableFuture<GetPolymorphismResponse>} - The async response
      */
     public CompletableFuture<GetPolymorphismResponse> getPolymorphismDirect() {
+        return getPolymorphism(null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetPolymorphismResponse>} - The async response
+     */
+    public CompletableFuture<GetPolymorphismResponse> getPolymorphism(@Nullable Options options) {
         AsyncRequestlessOperation<GetPolymorphismResponse> operation =
-                new GetPolymorphism.Async(sdkConfiguration, _headers);
+                new GetPolymorphism.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -279,14 +316,25 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @return {@code CompletableFuture<GetRequestBodyFlattenedAwayResponse>} - The async response
      */
     public CompletableFuture<GetRequestBodyFlattenedAwayResponse> getRequestBodyFlattenedAwayDirect() {
+        return getRequestBodyFlattenedAway(null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetRequestBodyFlattenedAwayResponse>} - The async response
+     */
+    public CompletableFuture<GetRequestBodyFlattenedAwayResponse> getRequestBodyFlattenedAway(
+            @Nullable Options options) {
         GetRequestBodyFlattenedAwayRequest request = new GetRequestBodyFlattenedAwayRequest();
         AsyncRequestOperation<GetRequestBodyFlattenedAwayRequest, GetRequestBodyFlattenedAwayResponse> operation =
-                new GetRequestBodyFlattenedAway.Async(sdkConfiguration, _headers);
+                new GetRequestBodyFlattenedAway.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -314,7 +362,7 @@ public class AsyncSDK {
      */
     public CompletableFuture<GetFullyFlattenedRequestResponse> getFullyFlattenedRequest(
             @Nonnull String lang, @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
-        return getFullyFlattenedRequest(lang, null, requestBody);
+        return getFullyFlattenedRequest(lang, null, requestBody, null);
     }
 
     /**
@@ -326,13 +374,17 @@ public class AsyncSDK {
      * @param lang
      * @param maxLength
      * @param requestBody
+     * @param options additional options
      * @return {@code CompletableFuture<GetFullyFlattenedRequestResponse>} - The async response
      */
     public CompletableFuture<GetFullyFlattenedRequestResponse> getFullyFlattenedRequest(
-            @Nonnull String lang, @Nullable Long maxLength, @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
+            @Nonnull String lang,
+            @Nullable Long maxLength,
+            @Nonnull GetFullyFlattenedRequestRequestBody requestBody,
+            @Nullable Options options) {
         GetFullyFlattenedRequestRequest request = new GetFullyFlattenedRequestRequest(lang, maxLength, requestBody);
         AsyncRequestOperation<GetFullyFlattenedRequestRequest, GetFullyFlattenedRequestResponse> operation =
-                new GetFullyFlattenedRequest.Async(sdkConfiguration, _headers);
+                new GetFullyFlattenedRequest.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -356,7 +408,7 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<CreateWithUnionResponse>} - The async response
      */
     public CompletableFuture<CreateWithUnionResponse> createWithUnion(@Nonnull ShapeRequest shapeRequest) {
-        return createWithUnion(null, shapeRequest);
+        return createWithUnion(null, shapeRequest, null);
     }
 
     /**
@@ -366,13 +418,14 @@ public class AsyncSDK {
      *
      * @param dryRun If true, validates without creating
      * @param shapeRequest Request body with a discriminated union shape field
+     * @param options additional options
      * @return {@code CompletableFuture<CreateWithUnionResponse>} - The async response
      */
     public CompletableFuture<CreateWithUnionResponse> createWithUnion(
-            @Nullable Boolean dryRun, @Nonnull ShapeRequest shapeRequest) {
+            @Nullable Boolean dryRun, @Nonnull ShapeRequest shapeRequest, @Nullable Options options) {
         CreateWithUnionRequest request = new CreateWithUnionRequest(dryRun, shapeRequest);
         AsyncRequestOperation<CreateWithUnionRequest, CreateWithUnionResponse> operation =
-                new CreateWithUnion.Async(sdkConfiguration, _headers);
+                new CreateWithUnion.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -386,7 +439,7 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @param testName
      * @param requestBody
@@ -394,9 +447,22 @@ public class AsyncSDK {
      */
     public CompletableFuture<TestEndpointResponse> testEndpoint(
             @Nonnull String testName, @Nonnull TestEndpointRequestBody requestBody) {
+        return testEndpoint(testName, requestBody, null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param testName
+     * @param requestBody
+     * @param options additional options
+     * @return {@code CompletableFuture<TestEndpointResponse>} - The async response
+     */
+    public CompletableFuture<TestEndpointResponse> testEndpoint(
+            @Nonnull String testName, @Nonnull TestEndpointRequestBody requestBody, @Nullable Options options) {
         TestEndpointRequest request = new TestEndpointRequest(testName, requestBody);
         AsyncRequestOperation<TestEndpointRequest, TestEndpointResponse> operation =
-                new TestEndpoint.Async(sdkConfiguration, _headers);
+                new TestEndpoint.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -422,8 +488,22 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<CreateUserResponse>} - The async response
      */
     public CompletableFuture<CreateUserResponse> createUser(@Nonnull BaseUser request) {
+        return createUser(request, null);
+    }
+
+    /**
+     * Create User
+     *
+     * <p>Creates a new user in the system. Multiple named examples demonstrate
+     * different pairing scenarios for documentation generation.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<CreateUserResponse>} - The async response
+     */
+    public CompletableFuture<CreateUserResponse> createUser(@Nonnull BaseUser request, @Nullable Options options) {
         AsyncRequestOperation<BaseUser, CreateUserResponse> operation =
-                new CreateUser.Async(sdkConfiguration, _headers);
+                new CreateUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -443,9 +523,20 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetUserResponse>} - The async response
      */
     public CompletableFuture<GetUserResponse> getUser(@Nonnull String id) {
+        return getUser(id, null);
+    }
+
+    /**
+     * Get User
+     *
+     * @param id
+     * @param options additional options
+     * @return {@code CompletableFuture<GetUserResponse>} - The async response
+     */
+    public CompletableFuture<GetUserResponse> getUser(@Nonnull String id, @Nullable Options options) {
         GetUserRequest request = new GetUserRequest(id);
         AsyncRequestOperation<GetUserRequest, GetUserResponse> operation =
-                new GetUser.Async(sdkConfiguration, _headers);
+                new GetUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -466,9 +557,22 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<UpdateUserResponse>} - The async response
      */
     public CompletableFuture<UpdateUserResponse> updateUser(@Nonnull String id, @Nonnull User user) {
+        return updateUser(id, user, null);
+    }
+
+    /**
+     * Update User
+     *
+     * @param id
+     * @param user
+     * @param options additional options
+     * @return {@code CompletableFuture<UpdateUserResponse>} - The async response
+     */
+    public CompletableFuture<UpdateUserResponse> updateUser(
+            @Nonnull String id, @Nonnull User user, @Nullable Options options) {
         UpdateUserRequest request = new UpdateUserRequest(id, user);
         AsyncRequestOperation<UpdateUserRequest, UpdateUserResponse> operation =
-                new UpdateUser.Async(sdkConfiguration, _headers);
+                new UpdateUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -488,9 +592,20 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<DeleteUserResponse>} - The async response
      */
     public CompletableFuture<DeleteUserResponse> deleteUser(@Nonnull String id) {
+        return deleteUser(id, null);
+    }
+
+    /**
+     * Delete User
+     *
+     * @param id
+     * @param options additional options
+     * @return {@code CompletableFuture<DeleteUserResponse>} - The async response
+     */
+    public CompletableFuture<DeleteUserResponse> deleteUser(@Nonnull String id, @Nullable Options options) {
         DeleteUserRequest request = new DeleteUserRequest(id);
         AsyncRequestOperation<DeleteUserRequest, DeleteUserResponse> operation =
-                new DeleteUser.Async(sdkConfiguration, _headers);
+                new DeleteUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -509,7 +624,17 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<LoginResponse>} - The async response
      */
     public CompletableFuture<LoginResponse> loginDirect() {
-        AsyncRequestlessOperation<LoginResponse> operation = new Login.Async(sdkConfiguration, _headers);
+        return login(null);
+    }
+
+    /**
+     * Login
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<LoginResponse>} - The async response
+     */
+    public CompletableFuture<LoginResponse> login(@Nullable Options options) {
+        AsyncRequestlessOperation<LoginResponse> operation = new Login.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -528,7 +653,17 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<ValidateResponse>} - The async response
      */
     public CompletableFuture<ValidateResponse> validateDirect() {
-        AsyncRequestlessOperation<ValidateResponse> operation = new Validate.Async(sdkConfiguration, _headers);
+        return validate(null);
+    }
+
+    /**
+     * Validate
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<ValidateResponse>} - The async response
+     */
+    public CompletableFuture<ValidateResponse> validate(@Nullable Options options) {
+        AsyncRequestlessOperation<ValidateResponse> operation = new Validate.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -542,14 +677,26 @@ public class AsyncSDK {
     }
 
     /**
+     * Makes an async request(required parameters only).
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @return {@code EventStream<ChatResponse, ChatStream>} - The async response
+     */
+    public EventStream<ChatResponse, ChatStream> chat(@Nonnull ChatRequest request) {
+        return chat(request, null);
+    }
+
+    /**
      * Makes an async request that returns a reactive SSE publisher
      *
      * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
      * @return A reactive SSE publisher that emits events from the server.
      * Can be consumed using reactive streams toolkits such as RxJava, Project Reactor, or Java 9+ Flow API.
      */
-    public EventStream<ChatResponse, ChatStream> chat(@Nonnull ChatRequest request) {
-        AsyncRequestOperation<ChatRequest, ChatResponse> operation = new Chat.Async(sdkConfiguration, _headers);
+    public EventStream<ChatResponse, ChatStream> chat(@Nonnull ChatRequest request, @Nullable Options options) {
+        AsyncRequestOperation<ChatRequest, ChatResponse> operation =
+                new Chat.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(request).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},
@@ -567,13 +714,23 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @return {@code CompletableFuture<GetBinaryDefaultResponseResponse>} - The async response
      */
     public CompletableFuture<GetBinaryDefaultResponseResponse> getBinaryDefaultResponseDirect() {
+        return getBinaryDefaultResponse(null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetBinaryDefaultResponseResponse>} - The async response
+     */
+    public CompletableFuture<GetBinaryDefaultResponseResponse> getBinaryDefaultResponse(@Nullable Options options) {
         AsyncRequestlessOperation<GetBinaryDefaultResponseResponse> operation =
-                new GetBinaryDefaultResponse.Async(sdkConfiguration, _headers);
+                new GetBinaryDefaultResponse.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -599,8 +756,23 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<TestEnumFormatsResponse>} - The async response
      */
     public CompletableFuture<TestEnumFormatsResponse> testEnumFormats(@Nonnull TestEnumFormatsRequest request) {
+        return testEnumFormats(request, null);
+    }
+
+    /**
+     * Test x-speakeasy-enums in different formats
+     *
+     * <p>This endpoint tests the x-speakeasy-enums extension in both array and map formats,
+     * including partial map coverage and both string and integer enum types.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<TestEnumFormatsResponse>} - The async response
+     */
+    public CompletableFuture<TestEnumFormatsResponse> testEnumFormats(
+            @Nonnull TestEnumFormatsRequest request, @Nullable Options options) {
         AsyncRequestOperation<TestEnumFormatsRequest, TestEnumFormatsResponse> operation =
-                new TestEnumFormats.Async(sdkConfiguration, _headers);
+                new TestEnumFormats.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -614,15 +786,27 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @param request The request object containing all the parameters for the API call.
      * @return {@code CompletableFuture<BinaryAndStringUploadResponse>} - The async response
      */
     public CompletableFuture<BinaryAndStringUploadResponse> binaryAndStringUpload(
             @Nonnull BinaryAndStringUploadRequest request) {
+        return binaryAndStringUpload(request, null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<BinaryAndStringUploadResponse>} - The async response
+     */
+    public CompletableFuture<BinaryAndStringUploadResponse> binaryAndStringUpload(
+            @Nonnull BinaryAndStringUploadRequest request, @Nullable Options options) {
         AsyncRequestOperation<BinaryAndStringUploadRequest, BinaryAndStringUploadResponse> operation =
-                new BinaryAndStringUpload.Async(sdkConfiguration, _headers);
+                new BinaryAndStringUpload.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -641,8 +825,19 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetDuplicateExportCollisionResponse>} - The async response
      */
     public CompletableFuture<GetDuplicateExportCollisionResponse> getDuplicateExportCollisionDirect() {
+        return getDuplicateExportCollision(null);
+    }
+
+    /**
+     * Tests that a spec-defined error type colliding with a built-in SDK error name does not cause TS2308
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetDuplicateExportCollisionResponse>} - The async response
+     */
+    public CompletableFuture<GetDuplicateExportCollisionResponse> getDuplicateExportCollision(
+            @Nullable Options options) {
         AsyncRequestlessOperation<GetDuplicateExportCollisionResponse> operation =
-                new GetDuplicateExportCollision.Async(sdkConfiguration, _headers);
+                new GetDuplicateExportCollision.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -661,8 +856,18 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetNamedPrimitiveUnionResponse>} - The async response
      */
     public CompletableFuture<GetNamedPrimitiveUnionResponse> getNamedPrimitiveUnionDirect() {
+        return getNamedPrimitiveUnion(null);
+    }
+
+    /**
+     * Test named primitive union options using title and x-speakeasy-name-override
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamedPrimitiveUnionResponse>} - The async response
+     */
+    public CompletableFuture<GetNamedPrimitiveUnionResponse> getNamedPrimitiveUnion(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamedPrimitiveUnionResponse> operation =
-                new GetNamedPrimitiveUnion.Async(sdkConfiguration, _headers);
+                new GetNamedPrimitiveUnion.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -685,8 +890,20 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetEmptyObjectErrorResponse>} - The async response
      */
     public CompletableFuture<GetEmptyObjectErrorResponse> getEmptyObjectErrorDirect() {
+        return getEmptyObjectError(null);
+    }
+
+    /**
+     * Get Empty Object Error
+     *
+     * <p>This endpoint tests the behavior when an error response has an empty object schema.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetEmptyObjectErrorResponse>} - The async response
+     */
+    public CompletableFuture<GetEmptyObjectErrorResponse> getEmptyObjectError(@Nullable Options options) {
         AsyncRequestlessOperation<GetEmptyObjectErrorResponse> operation =
-                new GetEmptyObjectError.Async(sdkConfiguration, _headers);
+                new GetEmptyObjectError.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -700,13 +917,23 @@ public class AsyncSDK {
     }
 
     /**
-     * Makes an async request
+     * Makes an async request(required parameters only).
      *
      * @return {@code CompletableFuture<UrlValidationStressTestResponse>} - The async response
      */
     public CompletableFuture<UrlValidationStressTestResponse> urlValidationStressTestDirect() {
+        return urlValidationStressTest(null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<UrlValidationStressTestResponse>} - The async response
+     */
+    public CompletableFuture<UrlValidationStressTestResponse> urlValidationStressTest(@Nullable Options options) {
         AsyncRequestlessOperation<UrlValidationStressTestResponse> operation =
-                new UrlValidationStressTest.Async(sdkConfiguration, _headers);
+                new UrlValidationStressTest.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -753,9 +980,37 @@ public class AsyncSDK {
      */
     public CompletableFuture<ParenthesesInPathAllowedResponse> parenthesesInPathAllowed(
             @Nonnull String id, @Nonnull TemplateBracesTest templateBracesTest) {
+        return parenthesesInPathAllowed(id, templateBracesTest, null);
+    }
+
+    /**
+     * A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     * and \{\{ escaped curlies \}\} and `backticks`.
+     * and \`escaped backticks\` and double slashes\\
+     * and 'single quotes' and "double quotes".
+     * and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * <p>A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     * and \{\{ escaped curlies \}\} and `backticks`.
+     * and \`escaped backticks\` and double slashes\\
+     * and 'single quotes' and "double quotes".
+     * and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * @param id
+     * @param templateBracesTest A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     *         and \{\{ escaped curlies \}\} and `backticks`.
+     *         and \`escaped backticks\` and double slashes\\
+     *         and 'single quotes' and "double quotes".
+     *         and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<ParenthesesInPathAllowedResponse>} - The async response
+     */
+    public CompletableFuture<ParenthesesInPathAllowedResponse> parenthesesInPathAllowed(
+            @Nonnull String id, @Nonnull TemplateBracesTest templateBracesTest, @Nullable Options options) {
         ParenthesesInPathAllowedRequest request = new ParenthesesInPathAllowedRequest(id, templateBracesTest);
         AsyncRequestOperation<ParenthesesInPathAllowedRequest, ParenthesesInPathAllowedResponse> operation =
-                new ParenthesesInPathAllowed.Async(sdkConfiguration, _headers);
+                new ParenthesesInPathAllowed.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -780,8 +1035,21 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetNestedIntegerStringResponse>} - The async response
      */
     public CompletableFuture<GetNestedIntegerStringResponse> getNestedIntegerStringDirect() {
+        return getNestedIntegerString(null);
+    }
+
+    /**
+     * Test nested struct with integer:string tag
+     *
+     * <p>This endpoint tests the behavior when a deeply nested struct contains
+     * an integer field that should be unmarshaled from a string.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNestedIntegerStringResponse>} - The async response
+     */
+    public CompletableFuture<GetNestedIntegerStringResponse> getNestedIntegerString(@Nullable Options options) {
         AsyncRequestlessOperation<GetNestedIntegerStringResponse> operation =
-                new GetNestedIntegerString.Async(sdkConfiguration, _headers);
+                new GetNestedIntegerString.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -802,12 +1070,26 @@ public class AsyncSDK {
      * <p>Render a media asset from a text prompt.
      *
      * @param request The request object containing all the parameters for the API call.
+     * @return {@code EventStream<RenderAssetResponse, AssetStream>} - The async response
+     */
+    public EventStream<RenderAssetResponse, AssetStream> renderAsset(@Nonnull RenderAssetRequest request) {
+        return renderAsset(request, null);
+    }
+
+    /**
+     * Render Asset
+     *
+     * <p>Render a media asset from a text prompt.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
      * @return A reactive SSE publisher that emits events from the server.
      * Can be consumed using reactive streams toolkits such as RxJava, Project Reactor, or Java 9+ Flow API.
      */
-    public EventStream<RenderAssetResponse, AssetStream> renderAsset(@Nonnull RenderAssetRequest request) {
+    public EventStream<RenderAssetResponse, AssetStream> renderAsset(
+            @Nonnull RenderAssetRequest request, @Nullable Options options) {
         AsyncRequestOperation<RenderAssetRequest, RenderAssetResponse> operation =
-                new RenderAsset.Async(sdkConfiguration, _headers);
+                new RenderAsset.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(request).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},
@@ -835,7 +1117,7 @@ public class AsyncSDK {
      * @return {@code EventStream<GetAssetResponse, AssetStatusStream>} - The async response
      */
     public EventStream<GetAssetResponse, AssetStatusStream> getAsset(@Nonnull String id) {
-        return getAsset(id, null);
+        return getAsset(id, null, null);
     }
 
     /**
@@ -845,13 +1127,15 @@ public class AsyncSDK {
      *
      * @param id
      * @param stream
+     * @param options additional options
      * @return A reactive SSE publisher that emits events from the server.
      * Can be consumed using reactive streams toolkits such as RxJava, Project Reactor, or Java 9+ Flow API.
      */
-    public EventStream<GetAssetResponse, AssetStatusStream> getAsset(@Nonnull String id, @Nullable Boolean stream) {
+    public EventStream<GetAssetResponse, AssetStatusStream> getAsset(
+            @Nonnull String id, @Nullable Boolean stream, @Nullable Options options) {
         GetAssetRequest request = new GetAssetRequest(id, stream);
         AsyncRequestOperation<GetAssetRequest, GetAssetResponse> operation =
-                new GetAsset.Async(sdkConfiguration, _headers);
+                new GetAsset.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(request).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},
@@ -878,7 +1162,7 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetPositionalDefaultResponse>} - The async response
      */
     public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefaultDirect() {
-        return getPositionalDefault(null);
+        return getPositionalDefault(null, null);
     }
 
     /**
@@ -887,12 +1171,14 @@ public class AsyncSDK {
      * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
      *
      * @param id
+     * @param options additional options
      * @return {@code CompletableFuture<GetPositionalDefaultResponse>} - The async response
      */
-    public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefault(@Nullable String id) {
+    public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefault(
+            @Nullable String id, @Nullable Options options) {
         GetPositionalDefaultRequest request = new GetPositionalDefaultRequest(id);
         AsyncRequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> operation =
-                new GetPositionalDefault.Async(sdkConfiguration, _headers);
+                new GetPositionalDefault.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -919,8 +1205,22 @@ public class AsyncSDK {
      * @return {@code CompletableFuture<GetErrorOnlyExampleResponse>} - The async response
      */
     public CompletableFuture<GetErrorOnlyExampleResponse> getErrorOnlyExampleDirect() {
+        return getErrorOnlyExample(null);
+    }
+
+    /**
+     * Operation with example only on error response
+     *
+     * <p>This endpoint tests that when an operation has a named example only on
+     * an error response (not on the success response), we still generate
+     * a default example for the success response.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetErrorOnlyExampleResponse>} - The async response
+     */
+    public CompletableFuture<GetErrorOnlyExampleResponse> getErrorOnlyExample(@Nullable Options options) {
         AsyncRequestlessOperation<GetErrorOnlyExampleResponse> operation =
-                new GetErrorOnlyExample.Async(sdkConfiguration, _headers);
+                new GetErrorOnlyExample.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

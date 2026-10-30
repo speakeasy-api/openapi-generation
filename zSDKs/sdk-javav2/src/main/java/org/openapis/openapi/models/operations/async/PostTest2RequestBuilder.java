@@ -8,6 +8,7 @@ import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.PostTest2Request;
@@ -53,6 +54,11 @@ public class PostTest2RequestBuilder {
 
     public PostTest2RequestBuilder retryConfig(RetryConfig retryConfig) {
         this.optionsBuilder.retryConfig(retryConfig);
+        return this;
+    }
+
+    public PostTest2RequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 

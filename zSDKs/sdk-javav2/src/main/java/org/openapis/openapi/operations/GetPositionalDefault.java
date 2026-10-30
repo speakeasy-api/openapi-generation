@@ -8,12 +8,15 @@ import static org.openapis.openapi.operations.Operations.RequestOperation;
 import static org.openapis.openapi.utils.Exceptions.unchecked;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.InputStream;
 import java.lang.Exception;
 import java.lang.String;
 import java.lang.Throwable;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -29,6 +32,7 @@ import org.openapis.openapi.utils.Headers;
 import org.openapis.openapi.utils.Hook.AfterErrorContextImpl;
 import org.openapis.openapi.utils.Hook.AfterSuccessContextImpl;
 import org.openapis.openapi.utils.Hook.BeforeRequestContextImpl;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetPositionalDefault {
@@ -37,15 +41,19 @@ public class GetPositionalDefault {
         final SDKConfiguration sdkConfiguration;
         final String baseUrl;
         final SecuritySource securitySource;
+        final Optional<Duration> timeout;
         final HTTPClient client;
         final Headers _headers;
 
-        public Base(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+        public Base(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             this.sdkConfiguration = sdkConfiguration;
             this._headers = _headers;
             this.baseUrl = Utils.templateUrl(
                     this.sdkConfiguration.serverUrl(), this.sdkConfiguration.getServerVariableDefaults());
             this.securitySource = this.sdkConfiguration.securitySource();
+            Optional.ofNullable(options).ifPresent(o -> o.validate(List.of(Options.Option.TIMEOUT)));
+            this.timeout =
+                    Optional.ofNullable(options).flatMap(Options::timeout).or(sdkConfiguration::timeout);
             this.client = this.sdkConfiguration.client();
         }
 
@@ -82,7 +90,7 @@ public class GetPositionalDefault {
 
         <T> HttpRequest buildRequest(T request, Class<T> klass) throws Exception {
             String url = Utils.generateURL(klass, this.baseUrl, "/positionalDefault/{id}", request, null);
-            HTTPRequest req = new HTTPRequest(url, "GET");
+            HTTPRequest req = new HTTPRequest(url, "GET").timeout(this.timeout);
             req.addHeader("Accept", "*/*").addHeader("user-agent", SDKConfiguration.USER_AGENT);
             _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
             Utils.configureSecurity(req, this.sdkConfiguration.securitySource().getSecurity());
@@ -94,7 +102,11 @@ public class GetPositionalDefault {
     public static class Sync extends Base
             implements RequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> {
         public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
-            super(sdkConfiguration, _headers);
+            this(sdkConfiguration, null, _headers);
+        }
+
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
+            super(sdkConfiguration, options, _headers);
         }
 
         private HttpRequest onBuildRequest(GetPositionalDefaultRequest request) throws Exception {
@@ -161,9 +173,12 @@ public class GetPositionalDefault {
             implements AsyncRequestOperation<
                     GetPositionalDefaultRequest,
                     org.openapis.openapi.models.operations.async.GetPositionalDefaultResponse> {
-
         public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
-            super(sdkConfiguration, _headers);
+            this(sdkConfiguration, null, _headers);
+        }
+
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
+            super(sdkConfiguration, options, _headers);
         }
 
         private CompletableFuture<HttpRequest> onBuildRequest(GetPositionalDefaultRequest request) throws Exception {

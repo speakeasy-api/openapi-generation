@@ -5,10 +5,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.RootGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.RootGroupOpResponse;
 import org.openapis.openapi.operations.RootGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class Group {
     private static final Headers _headers = Headers.EMPTY;
@@ -57,7 +59,21 @@ public class Group {
      * @throws RuntimeException subclass if the API call fails
      */
     public RootGroupOpResponse rootGroupOpDirect() {
-        RequestlessOperation<RootGroupOpResponse> operation = new RootGroupOp.Sync(sdkConfiguration, _headers);
+        return rootGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's root level
+     *
+     * <p>'group' differs from 'TestGroup' in that it not only contains subgroups,
+     * but also an operation.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public RootGroupOpResponse rootGroupOp(@Nullable Options options) {
+        RequestlessOperation<RootGroupOpResponse> operation = new RootGroupOp.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

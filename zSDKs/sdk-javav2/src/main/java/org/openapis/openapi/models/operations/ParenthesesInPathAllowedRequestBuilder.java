@@ -6,11 +6,14 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.shared.TemplateBracesTest;
 import org.openapis.openapi.operations.ParenthesesInPathAllowed;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class ParenthesesInPathAllowedRequestBuilder {
@@ -18,11 +21,13 @@ public class ParenthesesInPathAllowedRequestBuilder {
     private final Headers _headers = new Headers();
     private final ParenthesesInPathAllowedRequest.Builder pojoBuilder;
     private ParenthesesInPathAllowedRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public ParenthesesInPathAllowedRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = ParenthesesInPathAllowedRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public ParenthesesInPathAllowedRequestBuilder id(@Nonnull String id) {
@@ -34,6 +39,11 @@ public class ParenthesesInPathAllowedRequestBuilder {
     public ParenthesesInPathAllowedRequestBuilder templateBracesTest(@Nonnull TemplateBracesTest templateBracesTest) {
         this.pojoBuilder.templateBracesTest(templateBracesTest);
         this._setterCalled = true;
+        return this;
+    }
+
+    public ParenthesesInPathAllowedRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -57,8 +67,9 @@ public class ParenthesesInPathAllowedRequestBuilder {
      * @return The response from the server.
      */
     public ParenthesesInPathAllowedResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<ParenthesesInPathAllowedRequest, ParenthesesInPathAllowedResponse> operation =
-                new ParenthesesInPathAllowed.Sync(sdkConfiguration, _headers);
+                new ParenthesesInPathAllowed.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

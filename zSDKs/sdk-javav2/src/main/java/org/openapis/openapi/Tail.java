@@ -5,10 +5,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.NestedGroupOpRequestBuilder;
 import org.openapis.openapi.models.operations.NestedGroupOpResponse;
 import org.openapis.openapi.operations.NestedGroupOp;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class Tail {
     private static final Headers _headers = Headers.EMPTY;
@@ -49,7 +51,21 @@ public class Tail {
      * @throws RuntimeException subclass if the API call fails
      */
     public NestedGroupOpResponse nestedGroupOpDirect() {
-        RequestlessOperation<NestedGroupOpResponse> operation = new NestedGroupOp.Sync(sdkConfiguration, _headers);
+        return nestedGroupOp(null);
+    }
+
+    /**
+     * An operation at the group's deepest level
+     *
+     * <p>Notice that 'group.flattened' has no operations.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public NestedGroupOpResponse nestedGroupOp(@Nullable Options options) {
+        RequestlessOperation<NestedGroupOpResponse> operation =
+                new NestedGroupOp.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }

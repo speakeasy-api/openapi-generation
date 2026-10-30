@@ -6,12 +6,14 @@ package org.openapis.openapi;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.openapis.openapi.utils.ResponseTooLargeException;
 import org.openapis.openapi.utils.reactive.ReactiveUtils;
 import reactor.adapter.JdkFlowAdapter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -637,5 +639,38 @@ public class ReactiveUtilsAdditionalTest {
         }
 
         assertTrue(cancelled.get(), "Source should be cancelled");
+    }
+
+    private static List<ByteBuffer> chunk(int size) {
+        return Collections.singletonList(ByteBuffer.wrap(new byte[size]));
+    }
+
+    @Test
+    void testLimitBytesPassesThroughWithinTheCap() {
+        Flow.Publisher<List<ByteBuffer>> source = JdkFlowAdapter.publisherToFlowPublisher(Flux.just(chunk(4), chunk(4)));
+
+        StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(ReactiveUtils.limitBytes(source, 8)))
+                .expectNextCount(2)
+                .verifyComplete();
+    }
+
+    @Test
+    void testLimitBytesFailsOncePastTheCapAndCancelsUpstream() {
+        AtomicBoolean cancelled = new AtomicBoolean();
+        Flux<List<ByteBuffer>> upstream = Flux.just(chunk(4), chunk(4), chunk(4))
+                .doOnCancel(() -> cancelled.set(true));
+        Flow.Publisher<List<ByteBuffer>> source = JdkFlowAdapter.publisherToFlowPublisher(upstream);
+
+        StepVerifier.create(JdkFlowAdapter.flowPublisherToFlux(ReactiveUtils.limitBytes(source, 7)))
+                .expectNextCount(1)
+                .expectError(ResponseTooLargeException.class)
+                .verify();
+        assertTrue(cancelled.get(), "upstream is cancelled when the cap trips");
+    }
+
+    @Test
+    void testLimitBytesUnboundedReturnsSource() {
+        Flow.Publisher<List<ByteBuffer>> source = JdkFlowAdapter.publisherToFlowPublisher(Flux.just(chunk(1)));
+        assertSame(source, ReactiveUtils.limitBytes(source, Long.MAX_VALUE));
     }
 }

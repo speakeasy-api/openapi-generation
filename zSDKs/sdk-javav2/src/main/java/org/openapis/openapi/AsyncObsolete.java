@@ -13,6 +13,7 @@ import org.openapis.openapi.models.operations.async.Deprecated1RequestBuilder;
 import org.openapis.openapi.models.operations.async.Deprecated1Response;
 import org.openapis.openapi.operations.Deprecated1;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 /**
  * A subSDK in which all operations are deprecated.
@@ -55,20 +56,21 @@ public class AsyncObsolete {
      */
     @Deprecated
     public CompletableFuture<Deprecated1Response> deprecated1Direct() {
-        return deprecated1(null);
+        return deprecated1(null, null);
     }
 
     /**
      * Deprecated Operation
      *
      * @param serverURL Overrides the server URL.
+     * @param options additional options
      * @return {@code CompletableFuture<Deprecated1Response>} - The async response
      * @deprecated method: This endpoint is deprecated.. Use getRequestBodyFlattenedAway instead.
      */
     @Deprecated
-    public CompletableFuture<Deprecated1Response> deprecated1(@Nullable String serverURL) {
+    public CompletableFuture<Deprecated1Response> deprecated1(@Nullable String serverURL, @Nullable Options options) {
         AsyncRequestlessOperation<Deprecated1Response> operation =
-                new Deprecated1.Async(sdkConfiguration, serverURL, _headers);
+                new Deprecated1.Async(sdkConfiguration, serverURL, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

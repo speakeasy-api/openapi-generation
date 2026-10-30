@@ -1196,6 +1196,8 @@ func (t Test) String() string {
         return "response-bodies-string-get"
     case TestResponseBodiesXMLGet:
         return "response-bodies-xml-get"
+    case TestResponseBodyLimit:
+        return "response-body-limit"
     case TestRetriesAttemptCountBackoff:
         return "retries-attempt-count-backoff"
     case TestRetriesAttemptCountZero:
@@ -1396,6 +1398,10 @@ func (t Test) String() string {
         return "timeout-ms-override-allows-completion"
     case TestTimeoutMsOverrideIsRespected:
         return "timeout-ms-override-is-respected"
+    case TestTimeoutOperationExtensionIsRespected:
+        return "timeout-operation-extension-is-respected"
+    case TestTimeoutSdkDefaultIsRespected:
+        return "timeout-sdk-default-is-respected"
     case TestTransformJqRequestResponse:
         return "transform-jq-request-response"
     case TestUnionEnumArrayDeserialization:
@@ -2724,6 +2730,8 @@ func TestFromString(s string) Test {
         return TestResponseBodiesStringGet
     case "response-bodies-xml-get":
         return TestResponseBodiesXMLGet
+    case "response-body-limit":
+        return TestResponseBodyLimit
     case "retries-attempt-count-backoff":
         return TestRetriesAttemptCountBackoff
     case "retries-attempt-count-zero":
@@ -2924,6 +2932,10 @@ func TestFromString(s string) Test {
         return TestTimeoutMsOverrideAllowsCompletion
     case "timeout-ms-override-is-respected":
         return TestTimeoutMsOverrideIsRespected
+    case "timeout-operation-extension-is-respected":
+        return TestTimeoutOperationExtensionIsRespected
+    case "timeout-sdk-default-is-respected":
+        return TestTimeoutSdkDefaultIsRespected
     case "transform-jq-request-response":
         return TestTransformJqRequestResponse
     case "union-enum-array-deserialization":
@@ -3655,6 +3667,7 @@ var testList = []Test{
     TestResponseBodiesReadOnly,
     TestResponseBodiesStringGet,
     TestResponseBodiesXMLGet,
+    TestResponseBodyLimit,
     TestRetriesAttemptCountBackoff,
     TestRetriesAttemptCountZero,
     TestRetriesBinaryRequestBody,
@@ -3755,6 +3768,8 @@ var testList = []Test{
     TestTestHooksError,
     TestTimeoutMsOverrideAllowsCompletion,
     TestTimeoutMsOverrideIsRespected,
+    TestTimeoutOperationExtensionIsRespected,
+    TestTimeoutSdkDefaultIsRespected,
     TestTransformJqRequestResponse,
     TestUnionEnumArrayDeserialization,
     TestUnionEnumNestedInArrayInUnion,

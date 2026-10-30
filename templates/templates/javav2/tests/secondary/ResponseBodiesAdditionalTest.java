@@ -2,6 +2,7 @@ package org.openapis.secondary.openapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.openapis.secondary.openapi.Helpers.HTTPBIN_URL;
 
@@ -47,5 +48,20 @@ public class ResponseBodiesAdditionalTest {
         assertEquals(200, res.statusCode());
         assertNotNull(res.html());
         assertTrue(res.html().contains("Herman Melville - Moby-Dick"));
+    }
+
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    public void testResponseBodyLimit() throws Exception {
+        SDK capped = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(50).build();
+
+        ResponseBodyBytesGetResponse res = capped.responseBodies().responseBodyBytesGet().call();
+        assertEquals(200, res.statusCode());
+        assertThrows(org.openapis.secondary.openapi.utils.ResponseTooLargeException.class,
+                () -> IOUtils.toByteArray(res.bytes()));
+
+        SDK roomy = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(200).build();
+        ResponseBodyBytesGetResponse ok = roomy.responseBodies().responseBodyBytesGet().call();
+        assertEquals(100, IOUtils.toByteArray(ok.bytes()).length);
     }
 }

@@ -7,11 +7,14 @@ import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.AssetStream;
 import org.openapis.openapi.models.operations.RenderAssetRequest;
 import org.openapis.openapi.operations.RenderAsset;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.reactive.EventStream;
 import org.reactivestreams.Publisher;
@@ -20,9 +23,16 @@ public class RenderAssetRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private RenderAssetRequest request;
+    private final Options.Builder optionsBuilder;
 
     public RenderAssetRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public RenderAssetRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public RenderAssetRequestBuilder request(@Nonnull RenderAssetRequest request) {
@@ -55,8 +65,9 @@ public class RenderAssetRequestBuilder {
      * @return A reactive streaming {@link Publisher} that emits typed events from the server.
      */
     public EventStream<RenderAssetResponse, AssetStream> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<RenderAssetRequest, RenderAssetResponse> operation =
-                new RenderAsset.Async(sdkConfiguration, _headers);
+                new RenderAsset.Async(sdkConfiguration, options, _headers);
         return EventStream.forSSE(
                 operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse),
                 new TypeReference<>() {},

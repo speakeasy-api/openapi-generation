@@ -2,12 +2,17 @@ package org.openapis.openapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.openapis.openapi.CommonHelpers.recordTest;
 
+import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -15,6 +20,10 @@ import org.openapis.openapi.SDK.Builder;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponse;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponseBody;
 import org.openapis.openapi.models.operations.ResponseBodyBytesGetResponse;
+import org.openapis.openapi.models.operations.JsonResponse;
+import org.openapis.openapi.models.shared.JsonEvent;
+import org.openapis.openapi.utils.EventStream;
+import org.openapis.openapi.utils.ResponseTooLargeException;
 import org.openapis.openapi.models.operations.ResponseBodyStringGetResponse;
 import org.openapis.openapi.models.shared.ObjWithAnyAdditionalProperties;
 import org.openapis.openapi.utils.Hook.AfterSuccess;
@@ -23,7 +32,26 @@ import org.openapis.openapi.utils.Hook.SdkInit;
 import org.openapis.openapi.utils.Hooks;
 import org.openapis.openapi.utils.Utils;
 
+
 public class ResponseBodiesAdditionalTest {
+
+    @Test
+    void testEventStreamsAreNotCapped() throws Exception {
+        SDK s = SDK.builder().maxResponseBodyBytes(16).serverURL(Helpers.HTTPBIN_URL).build();
+
+        JsonResponse res = s.eventstreams().json().call();
+        try (EventStream<JsonEvent> events = res.events()) {
+            assertEquals("Hello world!", events.stream()
+                    .map(x -> x.data().content())
+                    .collect(Collectors.joining()));
+        }
+    }
+
+    @Test
+    void testMaxResponseBodyBytesMustBePositive() {
+        assertThrows(IllegalArgumentException.class, () -> SDK.builder().maxResponseBodyBytes(0));
+        assertThrows(IllegalArgumentException.class, () -> SDK.builder().maxResponseBodyBytes(-1));
+    }
 
     @Test
     void testResponseBodyBytesGet() throws Exception {
@@ -42,6 +70,38 @@ public class ResponseBodiesAdditionalTest {
         IOUtils.readFully(res.bytes().get(), bytes, 0, 100); // throws if 100 bytes not  streamed.
         int bytesRead = res.bytes().get().read();
         assertEquals(-1, bytesRead);
+    }
+
+    @Test
+    void testResponseBodyLimit() throws Exception {
+        recordTest("response-body-limit");
+
+        SDK capped = SDK.builder().serverURL(Helpers.HTTPBIN_URL).maxResponseBodyBytes(50).build();
+
+        ResponseBodyBytesGetResponse res = capped.responseBodies().responseBodyBytesGet().call();
+        assertEquals(200, res.statusCode());
+        ResponseTooLargeException tooLarge = assertThrows(ResponseTooLargeException.class,
+                () -> IOUtils.toByteArray(res.bytes().get()));
+        assertEquals(50, tooLarge.maxBytes());
+
+        org.openapis.openapi.models.operations.async.ResponseBodyBytesGetResponse asyncRes =
+                capped.async().responseBodies().responseBodyBytesGet().call().get();
+        ExecutionException asyncThrown = assertThrows(ExecutionException.class,
+                () -> asyncRes.bytes().get().toByteArray().get());
+        assertTrue(asyncThrown.getCause() instanceof ResponseTooLargeException, String.valueOf(asyncThrown.getCause()));
+
+        SDK roomy = SDK.builder()
+                .serverURL(Helpers.HTTPBIN_URL)
+                .maxResponseBodyBytes(200)
+                .enableHTTPDebugLogging(true)
+                .build();
+        ResponseBodyBytesGetResponse ok = roomy.responseBodies().responseBodyBytesGet().call();
+        assertEquals(100, IOUtils.toByteArray(ok.bytes().get()).length);
+
+        SDK tiny = SDK.builder().maxResponseBodyBytes(8).build();
+        UncheckedIOException parsed = assertThrows(UncheckedIOException.class,
+                () -> tiny.retries().retriesGet().requestId(UUID.randomUUID().toString()).call());
+        assertTrue(parsed.getCause() instanceof ResponseTooLargeException, String.valueOf(parsed.getCause()));
     }
     
     @Test

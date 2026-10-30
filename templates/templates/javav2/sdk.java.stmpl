@@ -206,6 +206,56 @@ package {{$pkg}};
         }
 
         /**
+         * Sets the default request timeout for all operations. Individual calls can
+         * override it with their request builder's {@code timeout} method, and an
+         * operation's {@code x-speakeasy-timeout} applies when neither is set.
+         * The timeout applies to each attempt when retries are configured.
+         * <p>
+{{- if useOkHttp}}
+         * The timeout bounds the whole exchange, including reading the response
+         * body, in addition to the client's read timeout.
+{{- else}}
+         * The timeout bounds the time to receive the response headers. It does not
+         * bound reading of the response body; use {@link #maxResponseBodyBytes(long)}
+         * to protect against oversized bodies.
+{{- end}}
+         *
+         * @param timeout The timeout to apply to every request; must be positive.
+         * @return The builder instance.
+         */
+        public Builder timeout({{javaImport "java.time.Duration"}} timeout) {
+            {{javaImportUtils}}.checkNotNull(timeout, "timeout");
+            if (timeout.isZero() || timeout.isNegative()) {
+                throw new {{javaImport "java.lang.IllegalArgumentException"}}("timeout must be positive");
+            }
+            this.sdkConfiguration.setTimeout({{javaImportOptional}}.of(timeout));
+            return this;
+        }
+
+        /**
+         * Caps the number of response body bytes the SDK will read for a single
+         * response. Reading past the cap fails the call with
+         * {@link {{javaImportLocal "utils.ResponseTooLargeException"}}} instead of growing memory.
+         * Event streams and JSON Lines responses are read incrementally and are not capped.
+         * <p>
+         * The cap is applied to the HTTP client when the SDK is built, through
+         * {@link {{javaImportLocal "utils.HTTPClient"}}#setMaxResponseBodyBytes(long)}, so it takes effect
+         * however it is ordered with {@link #client(HTTPClient)}.
+         * {@link {{javaImportLocal "utils.SpeakeasyHTTPClient"}}} honors this setting. If you are using a custom HTTP client,
+         * it is up to the custom client to honor this setting.
+         *
+         * @param maxBytes The maximum number of body bytes to read per response; must be positive.
+         * @return The builder instance.
+         */
+        public Builder maxResponseBodyBytes(long maxBytes) {
+            if (maxBytes <= 0) {
+                throw new IllegalArgumentException("maxResponseBodyBytes must be positive");
+            }
+            this.sdkConfiguration.setMaxResponseBodyBytes({{javaImportOptional}}.of(maxBytes));
+            return this;
+        }
+
+        /**
          * Enables debug logging for HTTP requests and responses, including JSON body content.
          * <p>
          * Convenience method that calls {@link {{javaImportLocal "utils.HTTPClient"}}#enableDebugLogging(boolean)}.
@@ -317,6 +367,7 @@ package {{$pkg}};
 
     {{if springBootStarterEnabled}}public{{else}}private{{end}} {{$sdkClassName}}(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
+        sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
         {{- if not $okHttp}}
             {{- range .Local.SubSDKs}}
                 {{- if ne .Type.Name ""}}

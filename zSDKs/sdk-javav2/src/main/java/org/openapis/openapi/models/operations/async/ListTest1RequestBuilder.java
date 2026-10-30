@@ -14,6 +14,7 @@ import jakarta.annotation.Nullable;
 import java.lang.Long;
 import java.lang.String;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -25,6 +26,7 @@ import org.openapis.openapi.models.operations.ResultArray;
 import org.openapis.openapi.operations.ListTest1;
 import org.openapis.openapi.utils.Blob;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.pagination.AsyncPaginator;
 import org.openapis.openapi.utils.pagination.ResultsPageTracker;
@@ -38,11 +40,13 @@ public class ListTest1RequestBuilder {
     private final ListTest1Request.Builder pojoBuilder;
     private ListTest1Request request;
     private String serverURL;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public ListTest1RequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = ListTest1Request.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public ListTest1RequestBuilder page(long page) {
@@ -66,6 +70,11 @@ public class ListTest1RequestBuilder {
     public ListTest1RequestBuilder headerParam1(@Nonnull String headerParam1) {
         this.pojoBuilder.headerParam1(headerParam1);
         this._setterCalled = true;
+        return this;
+    }
+
+    public ListTest1RequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -94,8 +103,9 @@ public class ListTest1RequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<ListTest1Response> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<ListTest1Request, ListTest1Response> operation =
-                new ListTest1.Async(sdkConfiguration, serverURL, _headers);
+                new ListTest1.Async(sdkConfiguration, serverURL, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 
@@ -115,8 +125,9 @@ public class ListTest1RequestBuilder {
      */
     public Publisher<ListTest1Response> callAsPublisher() {
         ListTest1Request request = pojoBuilder.build();
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<ListTest1Request, ListTest1Response> operation =
-                new ListTest1.Async(sdkConfiguration, serverURL, _headers);
+                new ListTest1.Async(sdkConfiguration, serverURL, options, _headers);
 
         Flow.Publisher<HttpResponse<Blob>> asyncPaginator = new AsyncPaginator<>(
                 request,

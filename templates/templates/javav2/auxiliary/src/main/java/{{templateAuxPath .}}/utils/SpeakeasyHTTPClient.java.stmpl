@@ -17,9 +17,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-{{- if asyncEnabled}}
-
 import okhttp3.Call;
+{{- if asyncEnabled}}
 import okhttp3.Callback;
 {{- end}}
 import okhttp3.MediaType;
@@ -56,6 +55,8 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     private static Consumer<? super String> logger = System.out::println;
     {{- end}}
 
+    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
+
     private final OkHttpClient client = new OkHttpClient.Builder()
             .followRedirects(false)
             .followSslRedirects(false)
@@ -67,9 +68,35 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             {{jdkCompat "Set.of"}}("text/event-stream", "application/x-ndjson", "application/jsonl");
 
     private static boolean isStreamingMediaType(String value) {
-        int paramsIndex = value.indexOf(';');
-        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
-        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
+        String[] parts = value.split(";");
+        String mediaType = parts[0].trim().toLowerCase(Locale.ENGLISH);
+        if (!STREAMING_MEDIA_TYPES.contains(mediaType)) {
+            return false;
+        }
+        {{- /* a media range with q=0 is explicitly not acceptable, so it must not disable the cap */}}
+        for (int i = 1; i < parts.length; i++) {
+            String[] param = parts[i].split("=", 2);
+            if (param.length == 2
+                    && param[0].trim().equalsIgnoreCase("q")
+                    && isZeroQValue(param[1].trim())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isZeroQValue(String value) {
+        try {
+            return Double.parseDouble(value) == 0d;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isStreamingRequest(HttpRequest request) {
+        return request.headers().get("Accept").stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
     }
 {{- if asyncEnabled}}
     {{- /* streaming responses can remain idle between events
@@ -123,6 +150,19 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         localDebugEnabled = enabled;
     }
 
+    @Override
+    public void setMaxResponseBodyBytes(long maxBytes) {
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("maxBytes must be positive");
+        }
+        this.maxResponseBodyBytes = maxBytes;
+    }
+
+    @Override
+    public long maxResponseBodyBytes() {
+        return maxResponseBodyBytes;
+    }
+
     /**
      * When debug logging is enabled, this method controls the suppression of header values in the logs.
      * <p>
@@ -172,8 +212,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             logRequest(request, true);
         }
 {{- end}}
-        Response okResponse = client.newCall(toOkHttpRequest(request)).execute();
-        HttpResponse<InputStream> response = toResponse(request, okResponse);
+        Call call = client.newCall(toOkHttpRequest(request));
+        request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
+        Response okResponse = call.execute();
+        HttpResponse<InputStream> response = toResponse(request, okResponse, maxResponseBodyBytes);
 {{- if slf4jLoggingEnabled}}
         response = logResponse(response, isDebugLoggingEnabled());
 {{- else}}
@@ -198,6 +240,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             }
   {{- end}}
             Call call = asyncCallClient(request).newCall(toOkHttpRequest(request));
+            request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
             future.whenComplete((ignored, throwable) -> {
                 if (future.isCancelled()) {
                     call.cancel();
@@ -214,7 +257,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
                 @Override
                 public void onResponse(Call call, Response okResponse) {
                     try {
-                        HttpResponse<InputStream> response = toResponse(request, okResponse);
+                        HttpResponse<InputStream> response = toResponse(request, okResponse, maxResponseBodyBytes);
                         if (isDebugLoggingEnabled()) {
                             {{- /* debug logging buffers non-streaming bodies; keep that blocking work off OkHttp's dispatcher */}}
                             CompletableFuture.supplyAsync(() -> {
@@ -302,10 +345,13 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         };
     }
 
-    private static HttpResponse<InputStream> toResponse(HttpRequest request, Response response) {
+    private static HttpResponse<InputStream> toResponse(HttpRequest request, Response response, long maxBodyBytes) {
         Headers headers = new Headers(response.headers().toMultimap());
         ResponseBody body = response.body();
         InputStream in = body == null ? new ByteArrayInputStream(new byte[0]) : body.byteStream();
+        if (!isStreamingRequest(request)) {
+            in = BoundedInputStream.wrap(in, maxBodyBytes);
+        }
         return new HttpResponse<>(request, response.code(), headers, in);
     }
 
@@ -349,6 +395,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             {{- /* never buffer streaming responses */}}
             return response;
         }
+        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            {{- /* only JSON or plain-text bodies are logged, so only those are buffered */}}
+            return response;
+        }
 
         byte[] bytes;
         {{- /* buffer the response so logging does not consume it */}}
@@ -358,15 +408,12 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         response = new HttpResponse<>(response.request(), response.statusCode(), response.headers(),
                 new ByteArrayInputStream(bytes));
 
-        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-        {{- /* only log JSON or plain-text response bodies
-               debug output intentionally decodes supported text bodies as UTF-8 */}}
+        {{- /* debug output intentionally decodes supported text bodies as UTF-8 */}}
 {{- if slf4jLoggingEnabled}}
-            slf4jLogger.trace("Response body:\n{}", new String(bytes, StandardCharsets.UTF_8));
+        slf4jLogger.trace("Response body:\n{}", new String(bytes, StandardCharsets.UTF_8));
 {{- else}}
-            log("Response body:\n" + new String(bytes, StandardCharsets.UTF_8));
+        log("Response body:\n" + new String(bytes, StandardCharsets.UTF_8));
 {{- end}}
-        }
         return response;
     }
 
@@ -420,6 +467,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
@@ -427,6 +475,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.concurrent.CompletableFuture;
+{{- if asyncEnabled}}
+
+import {{templatePackageName}}.utils.reactive.ReactiveUtils;
+{{- end}}
 
 public class SpeakeasyHTTPClient implements HTTPClient {
 {{- if slf4jLoggingEnabled}}
@@ -448,15 +500,47 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     private static Consumer<? super String> logger = System.out::println;
     {{- end}}
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(30);
+
+    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
+
+    private final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
+            .build();
 
     private static final Set<String> STREAMING_MEDIA_TYPES =
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
 
     private static boolean isStreamingMediaType(String value) {
-        int paramsIndex = value.indexOf(';');
-        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
-        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
+        String[] parts = value.split(";");
+        String mediaType = parts[0].trim().toLowerCase(Locale.ENGLISH);
+        if (!STREAMING_MEDIA_TYPES.contains(mediaType)) {
+            return false;
+        }
+        {{- /* a media range with q=0 is explicitly not acceptable, so it must not disable the cap */}}
+        for (int i = 1; i < parts.length; i++) {
+            String[] param = parts[i].split("=", 2);
+            if (param.length == 2
+                    && param[0].trim().equalsIgnoreCase("q")
+                    && isZeroQValue(param[1].trim())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isZeroQValue(String value) {
+        try {
+            return Double.parseDouble(value) == 0d;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isStreamingRequest(HttpRequest request) {
+        return request.headers().allValues("Accept").stream()
+                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
     }
 
     /**
@@ -491,6 +575,19 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public void enableDebugLogging(boolean enabled) {
         localDebugEnabled = enabled;
+    }
+
+    @Override
+    public void setMaxResponseBodyBytes(long maxBytes) {
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("maxBytes must be positive");
+        }
+        this.maxResponseBodyBytes = maxBytes;
+    }
+
+    @Override
+    public long maxResponseBodyBytes() {
+        return maxResponseBodyBytes;
     }
 
     /**
@@ -543,7 +640,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             request = logRequest(request, true);
         }
 {{- end}}
-        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        if (!isStreamingRequest(request)) {
+            response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        }
 {{- if slf4jLoggingEnabled}}
         response = logResponse(response, isDebugLoggingEnabled());
 {{- else}}
@@ -565,10 +665,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             request = logRequest(request, true);
         }
   {{- end}}
+        long maxBytes = isStreamingRequest(request) ? Long.MAX_VALUE : maxResponseBodyBytes;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response ->
                         // TODO: log responses when helper for Blob is setup
-                        new ResponseWithBody<>(response, Blob::from));
+                        new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 {{- end}}
 
@@ -617,25 +718,26 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
+        {{- /* only JSON or plain-text bodies are logged, so only those are buffered */}}
+        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            return response;
+        }
 
         // make the response re-readable by loading the response body into a byte array
         // and allowing the InputStream to be read many times
         response = Utils.cache(response);
 
-        // only log the response body if logBody is true and the content type is JSON or plain text
-        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-            // the response is re-readable so we can read and close it without
-            // affecting later processing of the response.
+        // the response is re-readable so we can read and close it without
+        // affecting later processing of the response.
 
-            // note that in the case of text/plain a different encoding from UTF-8
-            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
-            // do not throw (substitution happens).
+        // note that in the case of text/plain a different encoding from UTF-8
+        // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+        // do not throw (substitution happens).
 {{- if slf4jLoggingEnabled}}
-            slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
+        slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
 {{- else}}
-            log("Response body:\n" + Utils.toUtf8AndClose(response.body()));
+        log("Response body:\n" + Utils.toUtf8AndClose(response.body()));
 {{- end}}
-        }
         return response;
     }
 

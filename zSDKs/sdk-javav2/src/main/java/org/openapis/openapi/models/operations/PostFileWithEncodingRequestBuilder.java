@@ -6,18 +6,28 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.PostFileWithEncoding;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class PostFileWithEncodingRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private PostFileWithEncodingRequest request;
+    private final Options.Builder optionsBuilder;
 
     public PostFileWithEncodingRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public PostFileWithEncodingRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public PostFileWithEncodingRequestBuilder request(@Nonnull PostFileWithEncodingRequest request) {
@@ -42,8 +52,9 @@ public class PostFileWithEncodingRequestBuilder {
      * @return The response from the server.
      */
     public PostFileWithEncodingResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<PostFileWithEncodingRequest, PostFileWithEncodingResponse> operation =
-                new PostFileWithEncoding.Sync(sdkConfiguration, _headers);
+                new PostFileWithEncoding.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

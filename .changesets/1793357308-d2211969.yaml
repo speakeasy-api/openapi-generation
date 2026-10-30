@@ -1,0 +1,10 @@
+id: 1793357308-d2211969
+features:
+    - core
+targets:
+    - javav2
+type: feat
+bump: minor
+description: add maxResponseBodyBytes to cap response body reads, set a default connect timeout, and buffer debug-logged bodies only for logged content types
+author: AshGodfrey
+date: "2026-10-30"

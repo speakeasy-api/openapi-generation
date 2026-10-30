@@ -1,0 +1,51 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+paths:
+  /delay/{seconds}#operationTimeout:
+    get:
+      operationId: cancelledRequestWithOperationTimeout
+      summary: Delay endpoint with an operation-level timeout
+      description: |-
+        Waits for the specified seconds before returning a response, like
+        cancelledRequest, but declares x-speakeasy-timeout on the operation.
+        Exercises the operation-level timeout extension: a call with no
+        per-call or SDK-wide timeout must fail once the extension's timeout
+        elapses, and a per-call or SDK-wide timeout must take precedence
+        over the extension.
+      x-speakeasy-timeout: 1000
+      servers:
+        - url: http://localhost:35456
+      tags:
+        - cancellation
+      parameters:
+        - name: seconds
+          in: path
+          required: true
+          description: Number of seconds to delay
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Successful delayed response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  delay_seconds:
+                    type: integer
+                required:
+                  - message
+                  - delay_seconds
+        "400":
+          description: Invalid delay seconds parameter

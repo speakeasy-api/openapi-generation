@@ -569,6 +569,55 @@ function templateMethodOverload(
 
 `;
   }
+  const optionsParamName = methodOptionsParameter().Name;
+  const withoutOptions = signatureParameters.filter(
+    (p) => p.Name != optionsParamName,
+  );
+  if (
+    withoutOptions.length != signatureParameters.length &&
+    withoutOptions.length != requiredParameters.length &&
+    withoutOptions.length > 0
+  ) {
+    const comments = templateComments(
+      operation.Comments || simpleComment("Makes a request."),
+      null,
+      1,
+      "method",
+      false,
+      operation,
+      withoutOptions,
+      "The response from the API call",
+      true,
+      false,
+      3,
+      getHoistedSecurityRemark(operation),
+    );
+    sig += comments;
+    if (operation.Comments?.Deprecated) {
+      sig += `    @${javaImportDeprecated()}\n`;
+    }
+    const args = signatureParameters.map((p) =>
+      p.Name == optionsParamName
+        ? context.Global.Config.NullFriendlyParameters
+          ? "null"
+          : `${javaImportOptional()}.empty()`
+        : p.Name,
+    );
+    sig += `    public ${javaImport(
+      sanitizeClass(operation.Response.Type, scope, false),
+    )} ${methodNameBase}(${templateMethodParams(
+      withoutOptions,
+      false,
+      12,
+      2,
+    )}) {
+        return ${allParamsMethodName}(${groupArgs(args, 3).join(
+          ",\n            ",
+        )});
+    }
+
+`;
+  }
   let returns = operation.Response.Type?.Comments?.Description;
   if (!returns) {
     returns = "The response from the API call";
