@@ -1648,22 +1648,23 @@ func (s *Schemas) checkDefaultConformsToType(ctx context.Context, field *ast.Fie
 		if v == nil {
 			continue
 		}
+
+		if pair.label == "const" && (field.Type.IsContainer() || field.Type.Type == ast.DataTypeClass) {
+			if !constContainerValueSupported(v.Value, field.Type) {
+				logging.LogWarning(ctx, "validation warning", errors.NewValidationWarning(
+					fmt.Sprintf("const value %v is not supported for type %q, only arrays without uniqueItems and maps of scalar values are supported, omitting const", v.Value, dataType),
+					schema.GetPropertyNode("Const"), nil,
+				))
+				*pair.val = nil
+			}
+			continue
+		}
+
 		// null is a valid default for nullable fields
 		if v.Value == nil && field.Nullable {
 			continue
 		}
 		if v.Value == nil {
-			continue
-		}
-
-		if pair.label == "const" && (field.Type.IsContainer() || field.Type.Type == ast.DataTypeClass) {
-			if !constContainerValueSupported(v.Value, field.Type) {
-				logging.LogWarning(ctx, "validation warning", errors.NewValidationWarning(
-					fmt.Sprintf("const value %v is not supported for type %q, only arrays and maps of scalar values are supported, omitting const", v.Value, dataType),
-					schema.GetPropertyNode("Const"), nil,
-				))
-				*pair.val = nil
-			}
 			continue
 		}
 
@@ -1689,12 +1690,15 @@ func (s *Schemas) checkDefaultConformsToType(ctx context.Context, field *ast.Fie
 }
 
 func constContainerValueSupported(val any, typ *ast.TypeDef) bool {
-	if typ.ContainsNull {
+	if val == nil || typ.ContainsNull {
 		return false
 	}
 
 	switch typ.Type {
-	case ast.DataTypeArray, ast.DataTypeSet:
+	case ast.DataTypeArray:
+		if typ.Validations != nil && typ.Validations.UniqueItems != nil && *typ.Validations.UniqueItems {
+			return false
+		}
 		items, ok := val.([]any)
 		if !ok {
 			return false
@@ -1729,14 +1733,9 @@ func constScalarMatchesType(val any, itemType *ast.TypeDef) bool {
 	switch itemType.Type {
 	case ast.DataTypeEnum:
 		return itemType.Enum != nil && slices.Contains(itemType.Enum.Values, fmt.Sprint(val))
-	case ast.DataTypeBoolean, ast.DataTypeInteger, ast.DataTypeInt32, ast.DataTypeBigInt,
-		ast.DataTypeNumber, ast.DataTypeFloat32, ast.DataTypeDecimal,
+	case ast.DataTypeBoolean, ast.DataTypeInteger, ast.DataTypeInt32, ast.DataTypeNumber, ast.DataTypeFloat32,
 		ast.DataTypeString, ast.DataTypeDate, ast.DataTypeDateTime, ast.DataTypeUUID, ast.DataTypeDuration:
-		dataType := itemType.Type
-		if itemType.Format == "string" {
-			dataType = ast.DataTypeString
-		}
-		return defaultValueMatchesType(val, dataType)
+		return itemType.Format != "string" && defaultValueMatchesType(val, itemType.Type)
 	default:
 		return false
 	}
