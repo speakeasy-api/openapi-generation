@@ -398,6 +398,20 @@ func LocalResult(cmd *cobra.Command, res interface{}) error {
 }
 
 func result(cmd *cobra.Command, res interface{}, allowArtifact bool) error {
+	failure := outcomeResultFailure(cmd, res)
+	if failure != nil && allowArtifact && activeArtifact(cmd) != nil {
+		return Error(cmd, failure)
+	}
+	if err := renderResult(cmd, res, allowArtifact); err != nil {
+		return err
+	}
+	if failure != nil {
+		return Error(cmd, failure)
+	}
+	return nil
+}
+
+func renderResult(cmd *cobra.Command, res interface{}, allowArtifact bool) error {
 	out := cmd.OutOrStdout()
 	colorFlag, _ := flagutil.GetStringFlag(cmd, "color")
 	colorize := ShouldColorize(colorFlag)
