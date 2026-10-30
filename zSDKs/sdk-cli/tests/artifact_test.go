@@ -147,7 +147,7 @@ func TestArtifact_OutKeepsRequestedExtension(t *testing.T) {
 	assert.Equal(t, artifactTestBytes, string(written))
 	_, err = os.Stat(filepath.Join(dir, "photo.png"))
 	assert.True(t, os.IsNotExist(err), "the requested path is not renamed")
-	assert.Contains(t, h.GetStderr(), "Note: photo.jpg contains image/png content; its extension does not match")
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Note: photo.jpg contains image/png content; its extension does not match"), h.GetStderr())
 }
 
 func TestArtifact_OutWithoutExtensionAppendsSilently(t *testing.T) {
@@ -183,6 +183,15 @@ func TestArtifact_ExtensionMismatchIsSilentInAgentMode(t *testing.T) {
 	assert.Equal(t, true, envelope["extension_mismatch"])
 	_, err := os.Stat(target)
 	assert.NoError(t, err)
+
+	matching := filepath.Join(dir, "photo.png")
+	h2 := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, h2, server.URL, dir, "--agent-mode", "--output-format", "json", "--out", matching))
+	envelope = map[string]any{}
+	require.NoError(t, json.Unmarshal([]byte(h2.GetStdout()), &envelope))
+	assert.Equal(t, matching, envelope["path"])
+	_, present := envelope["extension_mismatch"]
+	assert.False(t, present, "a matching extension omits extension_mismatch from the envelope")
 }
 
 func TestArtifact_OutDirectoryUsesDefaultName(t *testing.T) {

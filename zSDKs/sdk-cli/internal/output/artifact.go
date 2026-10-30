@@ -312,21 +312,35 @@ var artifactMediaExtensions = map[string]string{
 	"png": "png", "jpg": "jpg", "jpeg": "jpg", "gif": "gif", "webp": "webp", "bmp": "bmp",
 	"tif": "tif", "tiff": "tif", "heic": "heic", "heif": "heif", "avif": "avif", "svg": "svg",
 	"ico": "ico",
-	"wav": "wav", "wave": "wav", "mp3": "mp3", "ogg": "ogg", "oga": "ogg", "opus": "opus", "m4a": "m4a",
-	"aac": "aac", "flac": "flac", "pcm": "pcm", "l16": "l16",
+	"wav": "wav", "wave": "wav", "pcm": "wav", "l16": "wav", "mp3": "mp3", "ogg": "ogg", "oga": "ogg",
+	"opus": "ogg", "m4a": "m4a", "aac": "aac", "flac": "flac",
 	"mp4": "mp4", "m4v": "m4v", "webm": "webm", "mov": "mov", "mpg": "mpg", "mpeg": "mpg",
-	"avi": "avi", "mkv": "mkv",
+	"avi": "avi", "mkv": "mkv", "3gp": "3gp",
+}
+
+var artifactMimeExtensions = map[string]string{
+	"image/jpeg": "jpg", "image/jpg": "jpg", "image/icon": "ico", "image/microsoft.icon": "ico",
+	"image/ms-bmp": "bmp",
+	"audio/wave":   "wav", "audio/l16": "wav", "audio/pcm": "wav", "audio/mpeg": "mp3", "audio/mp3": "mp3",
+	"audio/vorbis": "ogg", "audio/mp4": "m4a",
+	"video/mpeg": "mpg", "video/quicktime": "mov", "video/msvideo": "avi", "video/matroska": "mkv",
+	"video/3gpp": "3gp",
 }
 
 func artifactOutPath(path, ext string) (string, bool) {
-	if ext == "" || strings.EqualFold(filepath.Ext(path), "."+ext) {
+	if ext == "" {
 		return path, false
 	}
-	current, ok := artifactMediaExtensions[strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")]
-	if !ok {
-		return path + "." + ext, false
+	currentExt := strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")
+	if currentExt == ext {
+		return path, false
 	}
-	return path, current != artifactMediaExtensions[ext]
+	current, known := artifactMediaExtensions[currentExt]
+	if !known {
+		return strings.TrimSuffix(path, ".") + "." + ext, false
+	}
+	returned, known := artifactMediaExtensions[ext]
+	return path, known && current != returned
 }
 
 func writeArtifactDefault(dir string, payload []byte, ext string, cfg *artifactConfig) (string, error) {
@@ -411,31 +425,10 @@ func artifactExtension(kind, mimeType string) string {
 	if !ok || top != kind {
 		return ""
 	}
-	switch base {
-	case "image/png":
-		return "png"
-	case "image/jpeg", "image/jpg":
-		return "jpg"
-	case "audio/wav", "audio/x-wav", "audio/l16", "audio/pcm":
-		return "wav"
-	case "audio/mpeg", "audio/mp3":
-		return "mp3"
-	case "audio/ogg", "audio/vorbis":
-		return "ogg"
-	case "audio/mp4", "audio/m4a":
-		return "m4a"
-	case "video/mp4":
-		return "mp4"
-	case "video/webm":
-		return "webm"
-	case "video/quicktime":
-		return "mov"
-	case "video/mpeg":
-		return "mpg"
-	case "image/x-icon", "image/vnd.microsoft.icon":
-		return "ico"
+	sub, _, _ = strings.Cut(strings.TrimPrefix(strings.TrimPrefix(sub, "x-"), "vnd."), "+")
+	if ext, ok := artifactMimeExtensions[top+"/"+sub]; ok {
+		return ext
 	}
-	sub, _, _ = strings.Cut(strings.TrimPrefix(sub, "x-"), "+")
 	var b strings.Builder
 	for _, r := range sub {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
