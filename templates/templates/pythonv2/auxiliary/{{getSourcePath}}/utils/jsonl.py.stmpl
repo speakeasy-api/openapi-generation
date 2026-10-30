@@ -110,7 +110,7 @@ async def stream_jsonl_events_async(
             buffer = buffer[position:]
             position = 0
 
-    if position != 0:
+    if buffer.strip():
         event = decoder(buffer.decode())
         yield event
 
@@ -145,7 +145,7 @@ def stream_jsonl_events(
             buffer = buffer[position:]
             position = 0
 
-    if position != 0:
+    if buffer.strip():
         event = decoder(buffer.decode())
         yield event
 
