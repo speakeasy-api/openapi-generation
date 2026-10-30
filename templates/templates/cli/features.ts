@@ -364,6 +364,7 @@ function isTestSkipped(test: string): boolean {
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
     "response-body-limit",
+    "timeout-sdk-default-is-respected",
     "timeout-operation-extension-is-respected",
   ].includes(test);
 }

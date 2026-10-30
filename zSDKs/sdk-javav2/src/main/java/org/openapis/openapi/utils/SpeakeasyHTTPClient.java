@@ -48,9 +48,26 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
 
     private static boolean isStreamingMediaType(String value) {
-        int paramsIndex = value.indexOf(';');
-        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
-        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
+        String[] parts = value.split(";");
+        String mediaType = parts[0].trim().toLowerCase(Locale.ENGLISH);
+        if (!STREAMING_MEDIA_TYPES.contains(mediaType)) {
+            return false;
+        }
+        for (int i = 1; i < parts.length; i++) {
+            String[] param = parts[i].split("=", 2);
+            if (param.length == 2 && param[0].trim().equalsIgnoreCase("q") && isZeroQValue(param[1].trim())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isZeroQValue(String value) {
+        try {
+            return Double.parseDouble(value) == 0d;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     private static boolean isStreamingRequest(HttpRequest request) {

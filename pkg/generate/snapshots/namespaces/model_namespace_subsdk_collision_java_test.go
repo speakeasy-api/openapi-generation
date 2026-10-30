@@ -29,10 +29,12 @@ package org.openapis.openapi;
 
 import static org.openapis.openapi.operations.Operations.RequestlessOperation;
 
+import jakarta.annotation.Nullable;
 import org.openapis.openapi.models.operations.CreatePetRequestBuilder;
 import org.openapis.openapi.models.operations.CreatePetResponse;
 import org.openapis.openapi.operations.CreatePet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 
 public class Pet {
@@ -64,14 +66,25 @@ public class Pet {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      * 
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public CreatePetResponse createPetDirect() {
+        return createPet(null);
+    }
+
+    /**
+     * Makes a request.
+     * 
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public CreatePetResponse createPet(@Nullable Options options) {
         RequestlessOperation<CreatePetResponse> operation
-            = new CreatePet.Sync(sdkConfiguration, _headers);
+            = new CreatePet.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
