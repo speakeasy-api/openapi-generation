@@ -2334,7 +2334,7 @@ function withSortedKeys(value: any): any {
     return value.map(withSortedKeys);
   }
   if (value !== null && typeof value === "object") {
-    const sorted: Record<string, any> = {};
+    const sorted: Record<string, any> = Object.create(null);
     for (const key of Object.keys(value).sort()) {
       sorted[key] = withSortedKeys(value[key]);
     }
