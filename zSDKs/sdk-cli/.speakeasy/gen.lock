@@ -58,7 +58,7 @@ trackedFiles:
   cmd/gendocs/main_test.go:
     last_write_checksum: sha1:80e37af8940a8575a635b643431bb16f204209bb
   go.mod:
-    last_write_checksum: sha1:71fb9f8c524ef421d59da72d2f047ce104e75ad5
+    last_write_checksum: sha1:15ced474cbb1ec803f17960c0b73f10ea969c22a
   internal/cli/auth.go:
     last_write_checksum: sha1:437aab6849f3bb917de447a4568e06217fe302c3
   internal/cli/binaryandstringupload.go:
@@ -470,7 +470,7 @@ trackedFiles:
   internal/sdk/models/operations/geterroronlyexample.go:
     last_write_checksum: sha1:55916aab358ca12649d5c0319eb05437f69c3538
   internal/sdk/models/operations/getfullyflattenedrequest.go:
-    last_write_checksum: sha1:07974d483523e4adcebc38a1cf9ac4da1f483b56
+    last_write_checksum: sha1:d50e9c5675ccacef5c02a28ec32fb46d2d098c8d
   internal/sdk/models/operations/getnamedprimitiveunion.go:
     last_write_checksum: sha1:978994805c30242b57757aee60120e6822cff1d2
   internal/sdk/models/operations/getnamespaceanimal.go:
