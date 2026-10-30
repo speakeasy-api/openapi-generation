@@ -83,6 +83,46 @@ paths:
                 properties:
                   count:
                     type: integer
+  /tags:
+    get:
+      operationId: listTags
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+            application/vnd.acme+json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /items:
+    get:
+      operationId: listItems
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+            application/vnd.acme+json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
   /contact:
     get:
       operationId: getContact
@@ -148,6 +188,17 @@ func TestFlatResponseCollapsesEqualContentTypesForGo(t *testing.T) {
 	for _, member := range events.AssociatedTypes {
 		assert.Equal(t, ast.DataTypeJsonL, member.Type)
 	}
+
+	tags := types["listTags"]
+	require.NotNil(t, tags)
+	require.Equal(t, ast.DataTypeArray, tags.Type)
+	require.NotNil(t, tags.ItemType)
+	assert.Equal(t, ast.DataTypeString, tags.ItemType.Type)
+
+	items := types["listItems"]
+	require.NotNil(t, items)
+	require.Equal(t, ast.DataTypeUnion, items.Type)
+	assert.Len(t, items.AssociatedTypes, 2)
 
 	contact := types["getContact"]
 	require.NotNil(t, contact)

@@ -979,8 +979,9 @@ func (g *Generator) dedupeFlatResponseUnionMembers() bool {
 	return g.target.Target == "go"
 }
 
-// Only unnamed scalar bodies collapse: a named inline object per status code is
-// deserialized into its own type, which must stay a member of the union.
+// Only unnamed scalar bodies, or containers of them, collapse: a named inline
+// object per status code is deserialized into its own type, which must stay a
+// member of the union.
 func containsEqualScalarBody(types ast.TypeDefs, candidate *ast.TypeDef) bool {
 	if !isUnnamedScalarBody(candidate) {
 		return false
@@ -994,7 +995,7 @@ func containsEqualScalarBody(types ast.TypeDefs, candidate *ast.TypeDef) bool {
 }
 
 func isUnnamedScalarBody(t *ast.TypeDef) bool {
-	if t == nil || t.Name != "" || t.ItemType != nil || len(t.Fields) > 0 || len(t.AssociatedTypes) > 0 {
+	if t == nil || t.Name != "" || len(t.Fields) > 0 || len(t.AssociatedTypes) > 0 {
 		return false
 	}
 	switch t.Type {
@@ -1002,7 +1003,9 @@ func isUnnamedScalarBody(t *ast.TypeDef) bool {
 		ast.DataTypeNumber, ast.DataTypeFloat32, ast.DataTypeDecimal, ast.DataTypeBoolean,
 		ast.DataTypeDate, ast.DataTypeDateTime, ast.DataTypeUUID, ast.DataTypeDuration,
 		ast.DataTypeBytes, ast.DataTypeResponseStream:
-		return true
+		return t.ItemType == nil
+	case ast.DataTypeArray, ast.DataTypeSet, ast.DataTypeMap:
+		return isUnnamedScalarBody(t.ItemType)
 	default:
 		return false
 	}
