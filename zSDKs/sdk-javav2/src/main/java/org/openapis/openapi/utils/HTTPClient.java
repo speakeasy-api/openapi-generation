@@ -13,7 +13,9 @@ import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.utils.Blob;
 
 public interface HTTPClient {
-    HttpClient client = HttpClient.newHttpClient();
+    HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(30))
+            .build();
 
     /**
      * Sends an HTTP request and returns the response.
@@ -78,5 +80,27 @@ public interface HTTPClient {
      */
     default boolean isDebugLoggingEnabled() {
         return false;
+    }
+
+    /**
+     * Caps the number of response body bytes read for a single response. Reading
+     * past the cap fails with {@link ResponseTooLargeException}.
+     * This is implemented in SpeakeasyHTTPClient but custom client
+     * implementations are free to honor this setting similarly if they wish.
+     *
+     * @param maxBytes maximum number of body bytes to read per response
+     */
+    default void setMaxResponseBodyBytes(long maxBytes) {
+        // do nothing
+    }
+
+    /**
+     * Returns the maximum number of response body bytes this client will read per
+     * response, or {@code Long.MAX_VALUE} when unbounded.
+     *
+     * @return maximum number of body bytes per response
+     */
+    default long maxResponseBodyBytes() {
+        return Long.MAX_VALUE;
     }
 }

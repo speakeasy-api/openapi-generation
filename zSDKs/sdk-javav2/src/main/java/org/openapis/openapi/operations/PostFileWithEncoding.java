@@ -9,6 +9,7 @@ import static org.openapis.openapi.utils.Exceptions.unchecked;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.io.InputStream;
 import java.lang.Exception;
 import java.lang.IllegalArgumentException;
@@ -17,6 +18,8 @@ import java.lang.String;
 import java.lang.Throwable;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -34,6 +37,7 @@ import org.openapis.openapi.utils.Headers;
 import org.openapis.openapi.utils.Hook.AfterErrorContextImpl;
 import org.openapis.openapi.utils.Hook.AfterSuccessContextImpl;
 import org.openapis.openapi.utils.Hook.BeforeRequestContextImpl;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.SerializedBody;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.Utils.JsonShape;
@@ -44,15 +48,19 @@ public class PostFileWithEncoding {
         final SDKConfiguration sdkConfiguration;
         final String baseUrl;
         final SecuritySource securitySource;
+        final Optional<Duration> timeout;
         final HTTPClient client;
         final Headers _headers;
 
-        public Base(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
+        public Base(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
             this.sdkConfiguration = sdkConfiguration;
             this._headers = _headers;
             this.baseUrl = Utils.templateUrl(
                     this.sdkConfiguration.serverUrl(), this.sdkConfiguration.getServerVariableDefaults());
             this.securitySource = this.sdkConfiguration.securitySource();
+            Optional.ofNullable(options).ifPresent(o -> o.validate(List.of(Options.Option.TIMEOUT)));
+            this.timeout =
+                    Optional.ofNullable(options).flatMap(Options::timeout).or(sdkConfiguration::timeout);
             this.client = this.sdkConfiguration.client();
         }
 
@@ -89,7 +97,7 @@ public class PostFileWithEncoding {
 
         <T, U> HttpRequest buildRequest(T request, TypeReference<U> typeReference) throws Exception {
             String url = Utils.generateURL(this.baseUrl, "/fileWithEncoding");
-            HTTPRequest req = new HTTPRequest(url, "POST");
+            HTTPRequest req = new HTTPRequest(url, "POST").timeout(this.timeout);
             Object convertedRequest = Utils.convertToShape(request, JsonShape.DEFAULT, typeReference);
             SerializedBody serializedRequestBody = Utils.serializeRequestBody(convertedRequest, "", "multipart", false);
             if (serializedRequestBody == null) {
@@ -106,8 +114,8 @@ public class PostFileWithEncoding {
 
     public static class Sync extends Base
             implements RequestOperation<PostFileWithEncodingRequest, PostFileWithEncodingResponse> {
-        public Sync(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
-            super(sdkConfiguration, _headers);
+        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
+            super(sdkConfiguration, options, _headers);
         }
 
         private HttpRequest onBuildRequest(PostFileWithEncodingRequest request) throws Exception {
@@ -186,8 +194,8 @@ public class PostFileWithEncoding {
                     PostFileWithEncodingRequest,
                     org.openapis.openapi.models.operations.async.PostFileWithEncodingResponse> {
 
-        public Async(@Nonnull SDKConfiguration sdkConfiguration, Headers _headers) {
-            super(sdkConfiguration, _headers);
+        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable Options options, Headers _headers) {
+            super(sdkConfiguration, options, _headers);
         }
 
         private CompletableFuture<HttpRequest> onBuildRequest(PostFileWithEncodingRequest request) throws Exception {

@@ -1196,6 +1196,12 @@ func (t Test) String() string {
         return "response-bodies-string-get"
     case TestResponseBodiesXMLGet:
         return "response-bodies-xml-get"
+    case TestResponseBodyLimitAsync:
+        return "response-body-limit-async"
+    case TestResponseBodyLimitSync:
+        return "response-body-limit-sync"
+    case TestResponseBodyLimitWithinLimit:
+        return "response-body-limit-within-limit"
     case TestRetriesAttemptCountBackoff:
         return "retries-attempt-count-backoff"
     case TestRetriesAttemptCountZero:
@@ -1396,6 +1402,10 @@ func (t Test) String() string {
         return "timeout-ms-override-allows-completion"
     case TestTimeoutMsOverrideIsRespected:
         return "timeout-ms-override-is-respected"
+    case TestTimeoutMsOverrideIsRespectedAsync:
+        return "timeout-ms-override-is-respected-async"
+    case TestTimeoutSdkDefaultIsRespected:
+        return "timeout-sdk-default-is-respected"
     case TestTransformJqRequestResponse:
         return "transform-jq-request-response"
     case TestUnionEnumArrayDeserialization:
@@ -2724,6 +2734,12 @@ func TestFromString(s string) Test {
         return TestResponseBodiesStringGet
     case "response-bodies-xml-get":
         return TestResponseBodiesXMLGet
+    case "response-body-limit-async":
+        return TestResponseBodyLimitAsync
+    case "response-body-limit-sync":
+        return TestResponseBodyLimitSync
+    case "response-body-limit-within-limit":
+        return TestResponseBodyLimitWithinLimit
     case "retries-attempt-count-backoff":
         return TestRetriesAttemptCountBackoff
     case "retries-attempt-count-zero":
@@ -2924,6 +2940,10 @@ func TestFromString(s string) Test {
         return TestTimeoutMsOverrideAllowsCompletion
     case "timeout-ms-override-is-respected":
         return TestTimeoutMsOverrideIsRespected
+    case "timeout-ms-override-is-respected-async":
+        return TestTimeoutMsOverrideIsRespectedAsync
+    case "timeout-sdk-default-is-respected":
+        return TestTimeoutSdkDefaultIsRespected
     case "transform-jq-request-response":
         return TestTransformJqRequestResponse
     case "union-enum-array-deserialization":
@@ -3655,6 +3675,9 @@ var testList = []Test{
     TestResponseBodiesReadOnly,
     TestResponseBodiesStringGet,
     TestResponseBodiesXMLGet,
+    TestResponseBodyLimitAsync,
+    TestResponseBodyLimitSync,
+    TestResponseBodyLimitWithinLimit,
     TestRetriesAttemptCountBackoff,
     TestRetriesAttemptCountZero,
     TestRetriesBinaryRequestBody,
@@ -3755,6 +3778,8 @@ var testList = []Test{
     TestTestHooksError,
     TestTimeoutMsOverrideAllowsCompletion,
     TestTimeoutMsOverrideIsRespected,
+    TestTimeoutMsOverrideIsRespectedAsync,
+    TestTimeoutSdkDefaultIsRespected,
     TestTransformJqRequestResponse,
     TestUnionEnumArrayDeserialization,
     TestUnionEnumNestedInArrayInUnion,

@@ -6,20 +6,30 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.foo.Pet;
 import org.openapis.openapi.operations.CreateSingleNamespaceFooPet;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class CreateSingleNamespaceFooPetRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
     private Pet request;
+    private final Options.Builder optionsBuilder;
 
     public CreateSingleNamespaceFooPetRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public CreateSingleNamespaceFooPetRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public CreateSingleNamespaceFooPetRequestBuilder request(@Nonnull Pet request) {
@@ -44,8 +54,9 @@ public class CreateSingleNamespaceFooPetRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<CreateSingleNamespaceFooPetResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<Pet, CreateSingleNamespaceFooPetResponse> operation =
-                new CreateSingleNamespaceFooPet.Async(sdkConfiguration, _headers);
+                new CreateSingleNamespaceFooPet.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

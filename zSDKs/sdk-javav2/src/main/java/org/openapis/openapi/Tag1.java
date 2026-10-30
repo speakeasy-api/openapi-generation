@@ -27,6 +27,7 @@ import org.openapis.openapi.operations.Deprecated1;
 import org.openapis.openapi.operations.ListTest1;
 import org.openapis.openapi.operations.PostFileWithEncoding;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 /**
  * The first tag.
@@ -70,7 +71,7 @@ public class Tag1 {
      */
     @Deprecated
     public Deprecated1Response deprecated1Direct() {
-        return deprecated1(null);
+        return deprecated1(null, null);
     }
 
     /**
@@ -83,8 +84,22 @@ public class Tag1 {
      */
     @Deprecated
     public Deprecated1Response deprecated1(@Nullable String serverURL) {
+        return deprecated1(serverURL, null);
+    }
+
+    /**
+     * Deprecated Operation
+     *
+     * @param serverURL Overrides the server URL.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     * @deprecated method: This endpoint is deprecated.. Use getRequestBodyFlattenedAway instead.
+     */
+    @Deprecated
+    public Deprecated1Response deprecated1(@Nullable String serverURL, @Nullable Options options) {
         RequestlessOperation<Deprecated1Response> operation =
-                new Deprecated1.Sync(sdkConfiguration, serverURL, _headers);
+                new Deprecated1.Sync(sdkConfiguration, serverURL, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -109,7 +124,21 @@ public class Tag1 {
      * @throws RuntimeException subclass if the API call fails
      */
     public AuthResponse auth(@Nonnull AuthSecurity security) {
-        RequestlessOperation<AuthResponse> operation = new Auth.Sync(sdkConfiguration, security, _headers);
+        return auth(security, null);
+    }
+
+    /**
+     * This operation aims at testing available OAuth2 scopes collection:
+     * - only operation with oauth2 authorizationCode security flow
+     * - belongs to a subSDK
+     *
+     * @param security The security details to use for authentication.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public AuthResponse auth(@Nonnull AuthSecurity security, @Nullable Options options) {
+        RequestlessOperation<AuthResponse> operation = new Auth.Sync(sdkConfiguration, security, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -152,7 +181,7 @@ public class Tag1 {
      * @throws RuntimeException subclass if the API call fails
      */
     public ListTest1Response listTest1(long page, @Nonnull QueryParam2 queryParam2, @Nonnull String headerParam1) {
-        return listTest1(page, null, queryParam2, headerParam1, null);
+        return listTest1(page, null, queryParam2, headerParam1, null, null);
     }
 
     /**
@@ -188,9 +217,47 @@ public class Tag1 {
             @Nonnull QueryParam2 queryParam2,
             @Nonnull String headerParam1,
             @Nullable String serverURL) {
+        return listTest1(page, queryParam1, queryParam2, headerParam1, serverURL, null);
+    }
+
+    /**
+     * Get Test1
+     *
+     * <p>This is a &lbrace;&lbrace;test&rbrace;&rbrace; endpoint.
+     * It has a description.
+     *
+     * <p>If set, this operation will use either Security#myApiKey or Security#option6 from the global
+     * security.
+     *
+     * @param page
+     * @param queryParam1 A long winded, multi-line description
+     *         for the query parameter number one.
+     *
+     * @param queryParam2 An [enum](https://enum.com) "query parameter"
+     *         that is not easily described in a single line.
+     *
+     *         **Available Values:**
+     *         | Value | Description |
+     *         |-------|-------------|
+     *         | 0     | No data     |
+     *         | 1     | Partial     |
+     *         | 2     | Complete    |
+     * @param headerParam1
+     * @param serverURL Overrides the server URL.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public ListTest1Response listTest1(
+            long page,
+            @Nullable String queryParam1,
+            @Nonnull QueryParam2 queryParam2,
+            @Nonnull String headerParam1,
+            @Nullable String serverURL,
+            @Nullable Options options) {
         ListTest1Request request = new ListTest1Request(page, queryParam1, queryParam2, headerParam1);
         RequestOperation<ListTest1Request, ListTest1Response> operation =
-                new ListTest1.Sync(sdkConfiguration, serverURL, _headers);
+                new ListTest1.Sync(sdkConfiguration, serverURL, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -225,8 +292,28 @@ public class Tag1 {
      * @throws RuntimeException subclass if the API call fails
      */
     public PostFileWithEncodingResponse postFileWithEncoding(@Nonnull PostFileWithEncodingRequest request) {
+        return postFileWithEncoding(request, null);
+    }
+
+    /**
+     * Post File With Encoding
+     *
+     * <p>This endpoint tests the encoding field with multipart/form-data content type.
+     * According to OpenAPI 3.0.3 spec, the encoding field is valid for both
+     * application/x-www-form-urlencoded and multipart/* media types.
+     *
+     * <p>This test includes multiple content types for the file field to verify
+     * handling of comma-separated content types in encoding.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public PostFileWithEncodingResponse postFileWithEncoding(
+            @Nonnull PostFileWithEncodingRequest request, @Nullable Options options) {
         RequestOperation<PostFileWithEncodingRequest, PostFileWithEncodingResponse> operation =
-                new PostFileWithEncoding.Sync(sdkConfiguration, _headers);
+                new PostFileWithEncoding.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 }

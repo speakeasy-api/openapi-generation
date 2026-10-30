@@ -206,6 +206,39 @@ package {{$pkg}};
         }
 
         /**
+         * Sets the default request timeout for all operations. Individual calls can
+         * override it with their request builder's {@code timeout} method.
+         * <p>
+         * The timeout bounds the time to receive the response headers. It does not
+         * bound reading of the response body; use {@link #maxResponseBodyBytes(long)}
+         * to protect against oversized bodies.
+         *
+         * @param timeout The timeout to apply to every request.
+         * @return The builder instance.
+         */
+        public Builder timeout({{javaImport "java.time.Duration"}} timeout) {
+            this.sdkConfiguration.setTimeout({{javaImportOptional}}.of(timeout));
+            return this;
+        }
+
+        /**
+         * Caps the number of response body bytes the SDK will read for a single
+         * response. Reading past the cap fails the call with
+         * {@link {{javaImportLocal "utils.ResponseTooLargeException"}}} instead of growing memory.
+         * <p>
+         * Convenience method that calls {@link {{javaImportLocal "utils.HTTPClient"}}#setMaxResponseBodyBytes(long)}.
+         * {@link {{javaImportLocal "utils.SpeakeasyHTTPClient"}}} honors this setting. If you are using a custom HTTP client,
+         * it is up to the custom client to honor this setting.
+         *
+         * @param maxBytes The maximum number of body bytes to read per response.
+         * @return The builder instance.
+         */
+        public Builder maxResponseBodyBytes(long maxBytes) {
+            this.sdkConfiguration.client().setMaxResponseBodyBytes(maxBytes);
+            return this;
+        }
+
+        /**
          * Enables debug logging for HTTP requests and responses, including JSON body content.
          * <p>
          * Convenience method that calls {@link {{javaImportLocal "utils.HTTPClient"}}#enableDebugLogging(boolean)}.

@@ -27,6 +27,7 @@ import org.openapis.openapi.operations.GetPetOwners;
 import org.openapis.openapi.operations.GetTripleNamespaceConflict;
 import org.openapis.openapi.operations.PutNamespaceConflict;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 
 public class AsyncConflicts {
     private static final Headers _headers = Headers.EMPTY;
@@ -70,8 +71,22 @@ public class AsyncConflicts {
      * @return {@code CompletableFuture<GetNamespaceConflictResponse>} - The async response
      */
     public CompletableFuture<GetNamespaceConflictResponse> getNamespaceConflictDirect() {
+        return getNamespaceConflict(null);
+    }
+
+    /**
+     * Get Namespace Conflict Test
+     *
+     * <p>This endpoint tests the x-speakeasy-model-namespace extension by returning
+     * a model that references two different Pet types from different namespaces.
+     * The SDK should properly import and alias both Pet types.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetNamespaceConflictResponse>} - The async response
+     */
+    public CompletableFuture<GetNamespaceConflictResponse> getNamespaceConflict(@Nullable Options options) {
         AsyncRequestlessOperation<GetNamespaceConflictResponse> operation =
-                new GetNamespaceConflict.Async(sdkConfiguration, _headers);
+                new GetNamespaceConflict.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -96,7 +111,7 @@ public class AsyncConflicts {
      * @return {@code CompletableFuture<PutNamespaceConflictResponse>} - The async response
      */
     public CompletableFuture<PutNamespaceConflictResponse> putNamespaceConflictDirect() {
-        return putNamespaceConflict(null);
+        return putNamespaceConflict(null, null);
     }
 
     /**
@@ -106,12 +121,13 @@ public class AsyncConflicts {
      * x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
      *
      * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
      * @return {@code CompletableFuture<PutNamespaceConflictResponse>} - The async response
      */
     public CompletableFuture<PutNamespaceConflictResponse> putNamespaceConflict(
-            @Nullable ObjWithRenamedProperties request) {
+            @Nullable ObjWithRenamedProperties request, @Nullable Options options) {
         AsyncRequestOperation<ObjWithRenamedProperties, PutNamespaceConflictResponse> operation =
-                new PutNamespaceConflict.Async(sdkConfiguration, _headers);
+                new PutNamespaceConflict.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -137,8 +153,23 @@ public class AsyncConflicts {
      * @return {@code CompletableFuture<CreateNamespaceConflictResponse>} - The async response
      */
     public CompletableFuture<CreateNamespaceConflictResponse> createNamespaceConflict(@Nonnull Pet request) {
+        return createNamespaceConflict(request, null);
+    }
+
+    /**
+     * Create Namespace Conflict Test
+     *
+     * <p>This endpoint tests creating with models from different namespaces.
+     * Uses foo.Pet in the request and bar.Pet in the response.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return {@code CompletableFuture<CreateNamespaceConflictResponse>} - The async response
+     */
+    public CompletableFuture<CreateNamespaceConflictResponse> createNamespaceConflict(
+            @Nonnull Pet request, @Nullable Options options) {
         AsyncRequestOperation<Pet, CreateNamespaceConflictResponse> operation =
-                new CreateNamespaceConflict.Async(sdkConfiguration, _headers);
+                new CreateNamespaceConflict.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(request).thenCompose(operation::handleResponse);
     }
 
@@ -165,8 +196,22 @@ public class AsyncConflicts {
      * @return {@code CompletableFuture<GetTripleNamespaceConflictResponse>} - The async response
      */
     public CompletableFuture<GetTripleNamespaceConflictResponse> getTripleNamespaceConflictDirect() {
+        return getTripleNamespaceConflict(null);
+    }
+
+    /**
+     * Get Triple Namespace Conflict Test
+     *
+     * <p>This endpoint tests the x-speakeasy-model-namespace extension by returning
+     * a model that references three different Pet types from different namespaces.
+     * The SDK should properly import and alias all three Pet types.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetTripleNamespaceConflictResponse>} - The async response
+     */
+    public CompletableFuture<GetTripleNamespaceConflictResponse> getTripleNamespaceConflict(@Nullable Options options) {
         AsyncRequestlessOperation<GetTripleNamespaceConflictResponse> operation =
-                new GetTripleNamespaceConflict.Async(sdkConfiguration, _headers);
+                new GetTripleNamespaceConflict.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 
@@ -191,7 +236,21 @@ public class AsyncConflicts {
      * @return {@code CompletableFuture<GetPetOwnersResponse>} - The async response
      */
     public CompletableFuture<GetPetOwnersResponse> getPetOwnersDirect() {
-        AsyncRequestlessOperation<GetPetOwnersResponse> operation = new GetPetOwners.Async(sdkConfiguration, _headers);
+        return getPetOwners(null);
+    }
+
+    /**
+     * Get Pet Owners
+     *
+     * <p>This endpoint tests using PetOwner models from different namespaces.
+     * Returns both foo.PetOwner and bar.PetOwner in the response.
+     *
+     * @param options additional options
+     * @return {@code CompletableFuture<GetPetOwnersResponse>} - The async response
+     */
+    public CompletableFuture<GetPetOwnersResponse> getPetOwners(@Nullable Options options) {
+        AsyncRequestlessOperation<GetPetOwnersResponse> operation =
+                new GetPetOwners.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

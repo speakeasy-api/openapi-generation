@@ -16,6 +16,8 @@ import java.lang.String;
 import java.lang.Throwable;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +38,7 @@ import org.openapis.openapi.utils.Headers;
 import org.openapis.openapi.utils.Hook.AfterErrorContextImpl;
 import org.openapis.openapi.utils.Hook.AfterSuccessContextImpl;
 import org.openapis.openapi.utils.Hook.BeforeRequestContextImpl;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class ListTest1 {
@@ -75,17 +78,27 @@ public class ListTest1 {
         final SDKConfiguration sdkConfiguration;
         final String baseUrl;
         final SecuritySource securitySource;
+        final Optional<Duration> timeout;
         final HTTPClient client;
         final Headers _headers;
         final Globals operationGlobals;
 
-        public Base(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
+        public Base(
+                @Nonnull SDKConfiguration sdkConfiguration,
+                @Nullable String serverURL,
+                @Nullable Options options,
+                Headers _headers) {
             this.sdkConfiguration = sdkConfiguration;
             this._headers = _headers;
             this.baseUrl = Optional.ofNullable(serverURL)
                     .filter(u -> !u.isBlank())
                     .orElse(Utils.templateUrl(LIST_TEST1_SERVERS.get(ListTest1Servers.MAIN), Map.of()));
             this.securitySource = this.sdkConfiguration.securitySource();
+            Optional.ofNullable(options).ifPresent(o -> o.validate(List.of(Options.Option.TIMEOUT)));
+            this.timeout = Optional.ofNullable(options)
+                    .flatMap(Options::timeout)
+                    .or(sdkConfiguration::timeout)
+                    .or(() -> Optional.of(Duration.ofMillis(50000)));
             this.client = this.sdkConfiguration.client();
             this.operationGlobals = new Globals();
             this.sdkConfiguration.globals
@@ -126,7 +139,7 @@ public class ListTest1 {
 
         <T> HttpRequest buildRequest(T request, Class<T> klass) throws Exception {
             String url = Utils.generateURL(klass, this.baseUrl, "/test1/{page}", request, this.operationGlobals);
-            HTTPRequest req = new HTTPRequest(url, "GET");
+            HTTPRequest req = new HTTPRequest(url, "GET").timeout(this.timeout);
             req.addHeader("Accept", "application/json").addHeader("user-agent", SDKConfiguration.USER_AGENT);
             _headers.forEach((k, list) -> list.forEach(v -> req.addHeader(k, v)));
 
@@ -139,8 +152,12 @@ public class ListTest1 {
     }
 
     public static class Sync extends Base implements RequestOperation<ListTest1Request, ListTest1Response> {
-        public Sync(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
-            super(sdkConfiguration, serverURL, _headers);
+        public Sync(
+                @Nonnull SDKConfiguration sdkConfiguration,
+                @Nullable String serverURL,
+                @Nullable Options options,
+                Headers _headers) {
+            super(sdkConfiguration, serverURL, options, _headers);
         }
 
         private HttpRequest onBuildRequest(ListTest1Request request) throws Exception {
@@ -223,8 +240,12 @@ public class ListTest1 {
     public static class Async extends Base
             implements AsyncRequestOperation<ListTest1Request, org.openapis.openapi.models.operations.async.ListTest1Response> {
 
-        public Async(@Nonnull SDKConfiguration sdkConfiguration, @Nullable String serverURL, Headers _headers) {
-            super(sdkConfiguration, serverURL, _headers);
+        public Async(
+                @Nonnull SDKConfiguration sdkConfiguration,
+                @Nullable String serverURL,
+                @Nullable Options options,
+                Headers _headers) {
+            super(sdkConfiguration, serverURL, options, _headers);
         }
 
         private CompletableFuture<HttpRequest> onBuildRequest(ListTest1Request request) throws Exception {

@@ -18,6 +18,7 @@ import java.lang.String;
 import java.lang.Throwable;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -95,6 +96,7 @@ public class PostTest2 {
         final SDKConfiguration sdkConfiguration;
         final String baseUrl;
         final SecuritySource securitySource;
+        final Optional<Duration> timeout;
         final List<String> retryStatusCodes;
         final RetryConfig retryConfig;
         final HTTPClient client;
@@ -114,7 +116,10 @@ public class PostTest2 {
                             POST_TEST2_SERVERS.get(PostTest2Servers.DEFAULT),
                             Map.of("port", "35123", "hostname", "localhost")));
             this.securitySource = this.sdkConfiguration.securitySource();
-            Optional.ofNullable(options).ifPresent(o -> o.validate(List.of(Options.Option.RETRY_CONFIG)));
+            Optional.ofNullable(options)
+                    .ifPresent(o -> o.validate(List.of(Options.Option.RETRY_CONFIG, Options.Option.TIMEOUT)));
+            this.timeout =
+                    Optional.ofNullable(options).flatMap(Options::timeout).or(sdkConfiguration::timeout);
             this.retryStatusCodes = List.of("404");
             this.retryConfig = Optional.ofNullable(options)
                     .flatMap(Options::retryConfig)
@@ -159,7 +164,7 @@ public class PostTest2 {
 
         <T, U> HttpRequest buildRequest(T request, Class<T> klass, TypeReference<U> typeReference) throws Exception {
             String url = Utils.generateURL(this.baseUrl, "/test2");
-            HTTPRequest req = new HTTPRequest(url, "POST");
+            HTTPRequest req = new HTTPRequest(url, "POST").timeout(this.timeout);
             Object convertedRequest = Utils.convertToShape(request, JsonShape.DEFAULT, typeReference);
             SerializedBody serializedRequestBody =
                     Utils.serializeRequestBody(convertedRequest, "test2Request", "json", false);

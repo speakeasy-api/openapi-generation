@@ -6,13 +6,16 @@ package org.openapis.openapi.models.operations.async;
 import static org.openapis.openapi.operations.Operations.AsyncRequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.models.operations.UpdateUserRequest;
 import org.openapis.openapi.models.shared.User;
 import org.openapis.openapi.operations.UpdateUser;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class UpdateUserRequestBuilder {
@@ -20,11 +23,13 @@ public class UpdateUserRequestBuilder {
     private final Headers _headers = new Headers();
     private final UpdateUserRequest.Builder pojoBuilder;
     private UpdateUserRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public UpdateUserRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = UpdateUserRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public UpdateUserRequestBuilder id(@Nonnull String id) {
@@ -36,6 +41,11 @@ public class UpdateUserRequestBuilder {
     public UpdateUserRequestBuilder user(@Nonnull User user) {
         this.pojoBuilder.user(user);
         this._setterCalled = true;
+        return this;
+    }
+
+    public UpdateUserRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -59,8 +69,9 @@ public class UpdateUserRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<UpdateUserResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestOperation<UpdateUserRequest, UpdateUserResponse> operation =
-                new UpdateUser.Async(sdkConfiguration, _headers);
+                new UpdateUser.Async(sdkConfiguration, options, _headers);
         return operation.doRequest(this._buildRequest()).thenCompose(operation::handleResponse);
     }
 }

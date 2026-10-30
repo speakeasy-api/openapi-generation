@@ -1,0 +1,10 @@
+id: 1793357308-562eaa46
+features:
+    - operationTimeout
+targets:
+    - javav2
+type: feat
+bump: minor
+description: support x-speakeasy-timeout, an SDK-wide timeout and a per-call timeout request builder option
+author: AshGodfrey
+date: "2026-10-30"

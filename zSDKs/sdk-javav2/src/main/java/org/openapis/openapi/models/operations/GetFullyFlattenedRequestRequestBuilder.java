@@ -9,9 +9,11 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.Long;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetFullyFlattenedRequest;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetFullyFlattenedRequestRequestBuilder {
@@ -19,11 +21,13 @@ public class GetFullyFlattenedRequestRequestBuilder {
     private final Headers _headers = new Headers();
     private final GetFullyFlattenedRequestRequest.Builder pojoBuilder;
     private GetFullyFlattenedRequestRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public GetFullyFlattenedRequestRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = GetFullyFlattenedRequestRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public GetFullyFlattenedRequestRequestBuilder lang(@Nonnull String lang) {
@@ -42,6 +46,11 @@ public class GetFullyFlattenedRequestRequestBuilder {
             @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
         this.pojoBuilder.requestBody(requestBody);
         this._setterCalled = true;
+        return this;
+    }
+
+    public GetFullyFlattenedRequestRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -65,8 +74,9 @@ public class GetFullyFlattenedRequestRequestBuilder {
      * @return The response from the server.
      */
     public GetFullyFlattenedRequestResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<GetFullyFlattenedRequestRequest, GetFullyFlattenedRequestResponse> operation =
-                new GetFullyFlattenedRequest.Sync(sdkConfiguration, _headers);
+                new GetFullyFlattenedRequest.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

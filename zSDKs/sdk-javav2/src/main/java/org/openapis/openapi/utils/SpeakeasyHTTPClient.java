@@ -12,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
@@ -20,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.openapis.openapi.utils.Blob;
+import org.openapis.openapi.utils.reactive.ReactiveUtils;
 
 public class SpeakeasyHTTPClient implements HTTPClient {
 
@@ -35,7 +37,12 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     // uppercase
     private static Set<String> redactedHeaders = Set.of("AUTHORIZATION", "X-API-KEY");
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(30);
+
+    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
+
+    private final HttpClient client =
+            HttpClient.newBuilder().connectTimeout(DEFAULT_CONNECT_TIMEOUT).build();
 
     private static final Set<String> STREAMING_MEDIA_TYPES =
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
@@ -80,6 +87,19 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         localDebugEnabled = enabled;
     }
 
+    @Override
+    public void setMaxResponseBodyBytes(long maxBytes) {
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("maxBytes must be positive");
+        }
+        this.maxResponseBodyBytes = maxBytes;
+    }
+
+    @Override
+    public long maxResponseBodyBytes() {
+        return maxResponseBodyBytes;
+    }
+
     /**
      * When debug logging is enabled, this method controls the suppression of header values in the logs.
      * <p>
@@ -117,7 +137,8 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     public HttpResponse<InputStream> send(HttpRequest request)
             throws IOException, InterruptedException, URISyntaxException {
         request = logRequest(request, isDebugLoggingEnabled());
-        var response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
         response = logResponse(response, isDebugLoggingEnabled());
         return response;
     }
@@ -125,9 +146,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
         request = logRequest(request, isDebugLoggingEnabled());
+        long maxBytes = maxResponseBodyBytes;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> // TODO: log responses when helper for Blob is setup
-                new ResponseWithBody<>(response, Blob::from));
+                new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
     }
 
     private HttpRequest logRequest(HttpRequest request, boolean logBody) {
@@ -164,21 +186,22 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
+        // only JSON or plain-text bodies are logged, so only those are buffered
+        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            return response;
+        }
 
         // make the response re-readable by loading the response body into a byte array
         // and allowing the InputStream to be read many times
         response = Utils.cache(response);
 
-        // only log the response body if logBody is true and the content type is JSON or plain text
-        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-            // the response is re-readable so we can read and close it without
-            // affecting later processing of the response.
+        // the response is re-readable so we can read and close it without
+        // affecting later processing of the response.
 
-            // note that in the case of text/plain a different encoding from UTF-8
-            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
-            // do not throw (substitution happens).
-            slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
-        }
+        // note that in the case of text/plain a different encoding from UTF-8
+        // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+        // do not throw (substitution happens).
+        slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
         return response;
     }
 

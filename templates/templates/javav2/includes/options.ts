@@ -34,10 +34,29 @@ function supportedMethodOptions(operation: Operation): JavaParam[] {
     });
   }
 
+  options.push({
+    Type: "java.time.Duration",
+    EnhancedType: "java.util.Optional<java.time.Duration>",
+    Name: "timeout",
+    Optional: true,
+    Nullable: false,
+    IncludedInSignature: false,
+    Util: false,
+    ParamType: "string",
+    Comment: "overrides the request timeout for this call",
+    HasItemType: false,
+  });
+
   return options;
 }
 
 registerTemplateFunc("supportedMethodOptions", supportedMethodOptions);
+
+function optionEnumName(name: string): string {
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+}
+
+registerTemplateFunc("optionEnumName", optionEnumName);
 
 function templateRequestBuilderCallOptions(
   options: JavaParam[],

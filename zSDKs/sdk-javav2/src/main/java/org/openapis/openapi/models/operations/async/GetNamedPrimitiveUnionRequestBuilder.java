@@ -5,18 +5,28 @@ package org.openapis.openapi.models.operations.async;
 
 import static org.openapis.openapi.operations.Operations.AsyncRequestlessOperation;
 
+import jakarta.annotation.Nullable;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.GetNamedPrimitiveUnion;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class GetNamedPrimitiveUnionRequestBuilder {
     private final SDKConfiguration sdkConfiguration;
     private final Headers _headers = new Headers();
+    private final Options.Builder optionsBuilder;
 
     public GetNamedPrimitiveUnionRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
+        this.optionsBuilder = Options.builder();
+    }
+
+    public GetNamedPrimitiveUnionRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
+        return this;
     }
 
     public GetNamedPrimitiveUnionRequestBuilder header(String name, String value) {
@@ -32,8 +42,9 @@ public class GetNamedPrimitiveUnionRequestBuilder {
      * @return The response from the server.
      */
     public CompletableFuture<GetNamedPrimitiveUnionResponse> call() {
+        Options options = optionsBuilder.build();
         AsyncRequestlessOperation<GetNamedPrimitiveUnionResponse> operation =
-                new GetNamedPrimitiveUnion.Async(sdkConfiguration, _headers);
+                new GetNamedPrimitiveUnion.Async(sdkConfiguration, options, _headers);
         return operation.doRequest().thenCompose(operation::handleResponse);
     }
 }

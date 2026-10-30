@@ -6,10 +6,13 @@ package org.openapis.openapi.models.operations;
 import static org.openapis.openapi.operations.Operations.RequestOperation;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.lang.String;
+import java.time.Duration;
 import org.openapis.openapi.SDKConfiguration;
 import org.openapis.openapi.operations.OperationWithLeadingAndTrailingUnderscores;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
 import org.openapis.openapi.utils.Utils;
 
 public class OperationWithLeadingAndTrailingUnderscoresRequestBuilder {
@@ -17,16 +20,23 @@ public class OperationWithLeadingAndTrailingUnderscoresRequestBuilder {
     private final Headers _headers = new Headers();
     private final OperationWithLeadingAndTrailingUnderscoresRequest.Builder pojoBuilder;
     private OperationWithLeadingAndTrailingUnderscoresRequest request;
+    private final Options.Builder optionsBuilder;
     private boolean _setterCalled;
 
     public OperationWithLeadingAndTrailingUnderscoresRequestBuilder(SDKConfiguration sdkConfiguration) {
         this.sdkConfiguration = sdkConfiguration;
         this.pojoBuilder = OperationWithLeadingAndTrailingUnderscoresRequest.builder();
+        this.optionsBuilder = Options.builder();
     }
 
     public OperationWithLeadingAndTrailingUnderscoresRequestBuilder qp1(@Nonnull String qp1) {
         this.pojoBuilder.qp1(qp1);
         this._setterCalled = true;
+        return this;
+    }
+
+    public OperationWithLeadingAndTrailingUnderscoresRequestBuilder timeout(Duration timeout) {
+        this.optionsBuilder.timeout(timeout);
         return this;
     }
 
@@ -50,11 +60,12 @@ public class OperationWithLeadingAndTrailingUnderscoresRequestBuilder {
      * @return The response from the server.
      */
     public OperationWithLeadingAndTrailingUnderscoresResponse call() {
+        Options options = optionsBuilder.build();
         RequestOperation<
                         OperationWithLeadingAndTrailingUnderscoresRequest,
                         OperationWithLeadingAndTrailingUnderscoresResponse>
                 operation = new OperationWithLeadingAndTrailingUnderscores.Sync(
-                        sdkConfiguration, _headers);
+                        sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(this._buildRequest()));
     }
 }

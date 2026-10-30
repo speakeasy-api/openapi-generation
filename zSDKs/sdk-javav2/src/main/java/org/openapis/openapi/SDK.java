@@ -12,6 +12,7 @@ import jakarta.annotation.Nullable;
 import java.lang.Boolean;
 import java.lang.Long;
 import java.lang.String;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,6 +122,8 @@ import org.openapis.openapi.operations.UrlValidationStressTest;
 import org.openapis.openapi.operations.Validate;
 import org.openapis.openapi.utils.HTTPClient;
 import org.openapis.openapi.utils.Headers;
+import org.openapis.openapi.utils.Options;
+import org.openapis.openapi.utils.ResponseTooLargeException;
 import org.openapis.openapi.utils.RetryConfig;
 import org.openapis.openapi.utils.SpeakeasyHTTPClient;
 import org.openapis.openapi.utils.Utils;
@@ -286,6 +289,39 @@ public class SDK {
          */
         public Builder retryConfig(RetryConfig retryConfig) {
             this.sdkConfiguration.setRetryConfig(Optional.of(retryConfig));
+            return this;
+        }
+
+        /**
+         * Sets the default request timeout for all operations. Individual calls can
+         * override it with their request builder's {@code timeout} method.
+         * <p>
+         * The timeout bounds the time to receive the response headers. It does not
+         * bound reading of the response body; use {@link #maxResponseBodyBytes(long)}
+         * to protect against oversized bodies.
+         *
+         * @param timeout The timeout to apply to every request.
+         * @return The builder instance.
+         */
+        public Builder timeout(Duration timeout) {
+            this.sdkConfiguration.setTimeout(Optional.of(timeout));
+            return this;
+        }
+
+        /**
+         * Caps the number of response body bytes the SDK will read for a single
+         * response. Reading past the cap fails the call with
+         * {@link ResponseTooLargeException} instead of growing memory.
+         * <p>
+         * Convenience method that calls {@link HTTPClient#setMaxResponseBodyBytes(long)}.
+         * {@link SpeakeasyHTTPClient} honors this setting. If you are using a custom HTTP client,
+         * it is up to the custom client to honor this setting.
+         *
+         * @param maxBytes The maximum number of body bytes to read per response.
+         * @return The builder instance.
+         */
+        public Builder maxResponseBodyBytes(long maxBytes) {
+            this.sdkConfiguration.client().setMaxResponseBodyBytes(maxBytes);
             return this;
         }
 
@@ -510,7 +546,7 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @param qp1 This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.
      * @return The response from the API call
@@ -518,13 +554,26 @@ public class SDK {
      */
     public OperationWithLeadingAndTrailingUnderscoresResponse operationWithLeadingAndTrailingUnderscores(
             @Nonnull String qp1) {
+        return operationWithLeadingAndTrailingUnderscores(qp1, null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param qp1 This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public OperationWithLeadingAndTrailingUnderscoresResponse operationWithLeadingAndTrailingUnderscores(
+            @Nonnull String qp1, @Nullable Options options) {
         OperationWithLeadingAndTrailingUnderscoresRequest request =
                 new OperationWithLeadingAndTrailingUnderscoresRequest(qp1);
         RequestOperation<
                         OperationWithLeadingAndTrailingUnderscoresRequest,
                         OperationWithLeadingAndTrailingUnderscoresResponse>
                 operation = new OperationWithLeadingAndTrailingUnderscores.Sync(
-                        sdkConfiguration, _headers);
+                        sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -551,7 +600,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public PostFileResponse postFile(@Nonnull PostFileRequest request) {
-        RequestOperation<PostFileRequest, PostFileResponse> operation = new PostFile.Sync(sdkConfiguration, _headers);
+        return postFile(request, null);
+    }
+
+    /**
+     * Post File
+     *
+     * <p>This is a test endpoint.
+     * It has a description.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public PostFileResponse postFile(@Nonnull PostFileRequest request, @Nullable Options options) {
+        RequestOperation<PostFileRequest, PostFileResponse> operation =
+                new PostFile.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -565,13 +630,25 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetPolymorphismResponse getPolymorphismDirect() {
-        RequestlessOperation<GetPolymorphismResponse> operation = new GetPolymorphism.Sync(sdkConfiguration, _headers);
+        return getPolymorphism(null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetPolymorphismResponse getPolymorphism(@Nullable Options options) {
+        RequestlessOperation<GetPolymorphismResponse> operation =
+                new GetPolymorphism.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -585,15 +662,26 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetRequestBodyFlattenedAwayResponse getRequestBodyFlattenedAwayDirect() {
+        return getRequestBodyFlattenedAway(null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetRequestBodyFlattenedAwayResponse getRequestBodyFlattenedAway(@Nullable Options options) {
         GetRequestBodyFlattenedAwayRequest request = new GetRequestBodyFlattenedAwayRequest();
         RequestOperation<GetRequestBodyFlattenedAwayRequest, GetRequestBodyFlattenedAwayResponse> operation =
-                new GetRequestBodyFlattenedAway.Sync(sdkConfiguration, _headers);
+                new GetRequestBodyFlattenedAway.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -622,7 +710,7 @@ public class SDK {
      */
     public GetFullyFlattenedRequestResponse getFullyFlattenedRequest(
             @Nonnull String lang, @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
-        return getFullyFlattenedRequest(lang, null, requestBody);
+        return getFullyFlattenedRequest(lang, null, requestBody, null);
     }
 
     /**
@@ -639,9 +727,30 @@ public class SDK {
      */
     public GetFullyFlattenedRequestResponse getFullyFlattenedRequest(
             @Nonnull String lang, @Nullable Long maxLength, @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
+        return getFullyFlattenedRequest(lang, maxLength, requestBody, null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * <p>If set, this operation will use either Security#option6 or Security#myApiKey from the global
+     * security.
+     *
+     * @param lang
+     * @param maxLength
+     * @param requestBody
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetFullyFlattenedRequestResponse getFullyFlattenedRequest(
+            @Nonnull String lang,
+            @Nullable Long maxLength,
+            @Nonnull GetFullyFlattenedRequestRequestBody requestBody,
+            @Nullable Options options) {
         GetFullyFlattenedRequestRequest request = new GetFullyFlattenedRequestRequest(lang, maxLength, requestBody);
         RequestOperation<GetFullyFlattenedRequestRequest, GetFullyFlattenedRequestResponse> operation =
-                new GetFullyFlattenedRequest.Sync(sdkConfiguration, _headers);
+                new GetFullyFlattenedRequest.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -666,7 +775,7 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public CreateWithUnionResponse createWithUnion(@Nonnull ShapeRequest shapeRequest) {
-        return createWithUnion(null, shapeRequest);
+        return createWithUnion(null, shapeRequest, null);
     }
 
     /**
@@ -680,9 +789,25 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public CreateWithUnionResponse createWithUnion(@Nullable Boolean dryRun, @Nonnull ShapeRequest shapeRequest) {
+        return createWithUnion(dryRun, shapeRequest, null);
+    }
+
+    /**
+     * Create with discriminated union request body
+     *
+     * <p>Test CLI generation for discriminated unions with dot-notation flags
+     *
+     * @param dryRun If true, validates without creating
+     * @param shapeRequest Request body with a discriminated union shape field
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public CreateWithUnionResponse createWithUnion(
+            @Nullable Boolean dryRun, @Nonnull ShapeRequest shapeRequest, @Nullable Options options) {
         CreateWithUnionRequest request = new CreateWithUnionRequest(dryRun, shapeRequest);
         RequestOperation<CreateWithUnionRequest, CreateWithUnionResponse> operation =
-                new CreateWithUnion.Sync(sdkConfiguration, _headers);
+                new CreateWithUnion.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -696,7 +821,7 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @param testName
      * @param requestBody
@@ -704,9 +829,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public TestEndpointResponse testEndpoint(@Nonnull String testName, @Nonnull TestEndpointRequestBody requestBody) {
+        return testEndpoint(testName, requestBody, null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param testName
+     * @param requestBody
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public TestEndpointResponse testEndpoint(
+            @Nonnull String testName, @Nonnull TestEndpointRequestBody requestBody, @Nullable Options options) {
         TestEndpointRequest request = new TestEndpointRequest(testName, requestBody);
         RequestOperation<TestEndpointRequest, TestEndpointResponse> operation =
-                new TestEndpoint.Sync(sdkConfiguration, _headers);
+                new TestEndpoint.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -733,7 +872,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public CreateUserResponse createUser(@Nonnull BaseUser request) {
-        RequestOperation<BaseUser, CreateUserResponse> operation = new CreateUser.Sync(sdkConfiguration, _headers);
+        return createUser(request, null);
+    }
+
+    /**
+     * Create User
+     *
+     * <p>Creates a new user in the system. Multiple named examples demonstrate
+     * different pairing scenarios for documentation generation.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public CreateUserResponse createUser(@Nonnull BaseUser request, @Nullable Options options) {
+        RequestOperation<BaseUser, CreateUserResponse> operation =
+                new CreateUser.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -754,8 +909,21 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetUserResponse getUser(@Nonnull String id) {
+        return getUser(id, null);
+    }
+
+    /**
+     * Get User
+     *
+     * @param id
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetUserResponse getUser(@Nonnull String id, @Nullable Options options) {
         GetUserRequest request = new GetUserRequest(id);
-        RequestOperation<GetUserRequest, GetUserResponse> operation = new GetUser.Sync(sdkConfiguration, _headers);
+        RequestOperation<GetUserRequest, GetUserResponse> operation =
+                new GetUser.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -777,9 +945,22 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public UpdateUserResponse updateUser(@Nonnull String id, @Nonnull User user) {
+        return updateUser(id, user, null);
+    }
+
+    /**
+     * Update User
+     *
+     * @param id
+     * @param user
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public UpdateUserResponse updateUser(@Nonnull String id, @Nonnull User user, @Nullable Options options) {
         UpdateUserRequest request = new UpdateUserRequest(id, user);
         RequestOperation<UpdateUserRequest, UpdateUserResponse> operation =
-                new UpdateUser.Sync(sdkConfiguration, _headers);
+                new UpdateUser.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -800,9 +981,21 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public DeleteUserResponse deleteUser(@Nonnull String id) {
+        return deleteUser(id, null);
+    }
+
+    /**
+     * Delete User
+     *
+     * @param id
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public DeleteUserResponse deleteUser(@Nonnull String id, @Nullable Options options) {
         DeleteUserRequest request = new DeleteUserRequest(id);
         RequestOperation<DeleteUserRequest, DeleteUserResponse> operation =
-                new DeleteUser.Sync(sdkConfiguration, _headers);
+                new DeleteUser.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -822,7 +1015,18 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public LoginResponse loginDirect() {
-        RequestlessOperation<LoginResponse> operation = new Login.Sync(sdkConfiguration, _headers);
+        return login(null);
+    }
+
+    /**
+     * Login
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public LoginResponse login(@Nullable Options options) {
+        RequestlessOperation<LoginResponse> operation = new Login.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -842,7 +1046,18 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public ValidateResponse validateDirect() {
-        RequestlessOperation<ValidateResponse> operation = new Validate.Sync(sdkConfiguration, _headers);
+        return validate(null);
+    }
+
+    /**
+     * Validate
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public ValidateResponse validate(@Nullable Options options) {
+        RequestlessOperation<ValidateResponse> operation = new Validate.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -856,14 +1071,26 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @param request The request object containing all the parameters for the API call.
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public ChatResponse chat(@Nonnull ChatRequest request) {
-        RequestOperation<ChatRequest, ChatResponse> operation = new Chat.Sync(sdkConfiguration, _headers);
+        return chat(request, null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public ChatResponse chat(@Nonnull ChatRequest request, @Nullable Options options) {
+        RequestOperation<ChatRequest, ChatResponse> operation = new Chat.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -877,14 +1104,25 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public GetBinaryDefaultResponseResponse getBinaryDefaultResponseDirect() {
+        return getBinaryDefaultResponse(null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetBinaryDefaultResponseResponse getBinaryDefaultResponse(@Nullable Options options) {
         RequestlessOperation<GetBinaryDefaultResponseResponse> operation =
-                new GetBinaryDefaultResponse.Sync(sdkConfiguration, _headers);
+                new GetBinaryDefaultResponse.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -911,8 +1149,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public TestEnumFormatsResponse testEnumFormats(@Nonnull TestEnumFormatsRequest request) {
+        return testEnumFormats(request, null);
+    }
+
+    /**
+     * Test x-speakeasy-enums in different formats
+     *
+     * <p>This endpoint tests the x-speakeasy-enums extension in both array and map formats,
+     * including partial map coverage and both string and integer enum types.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public TestEnumFormatsResponse testEnumFormats(@Nonnull TestEnumFormatsRequest request, @Nullable Options options) {
         RequestOperation<TestEnumFormatsRequest, TestEnumFormatsResponse> operation =
-                new TestEnumFormats.Sync(sdkConfiguration, _headers);
+                new TestEnumFormats.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -926,15 +1179,28 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @param request The request object containing all the parameters for the API call.
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public BinaryAndStringUploadResponse binaryAndStringUpload(@Nonnull BinaryAndStringUploadRequest request) {
+        return binaryAndStringUpload(request, null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public BinaryAndStringUploadResponse binaryAndStringUpload(
+            @Nonnull BinaryAndStringUploadRequest request, @Nullable Options options) {
         RequestOperation<BinaryAndStringUploadRequest, BinaryAndStringUploadResponse> operation =
-                new BinaryAndStringUpload.Sync(sdkConfiguration, _headers);
+                new BinaryAndStringUpload.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -954,8 +1220,19 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetDuplicateExportCollisionResponse getDuplicateExportCollisionDirect() {
+        return getDuplicateExportCollision(null);
+    }
+
+    /**
+     * Tests that a spec-defined error type colliding with a built-in SDK error name does not cause TS2308
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetDuplicateExportCollisionResponse getDuplicateExportCollision(@Nullable Options options) {
         RequestlessOperation<GetDuplicateExportCollisionResponse> operation =
-                new GetDuplicateExportCollision.Sync(sdkConfiguration, _headers);
+                new GetDuplicateExportCollision.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -975,8 +1252,19 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNamedPrimitiveUnionResponse getNamedPrimitiveUnionDirect() {
+        return getNamedPrimitiveUnion(null);
+    }
+
+    /**
+     * Test named primitive union options using title and x-speakeasy-name-override
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNamedPrimitiveUnionResponse getNamedPrimitiveUnion(@Nullable Options options) {
         RequestlessOperation<GetNamedPrimitiveUnionResponse> operation =
-                new GetNamedPrimitiveUnion.Sync(sdkConfiguration, _headers);
+                new GetNamedPrimitiveUnion.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -1000,8 +1288,21 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetEmptyObjectErrorResponse getEmptyObjectErrorDirect() {
+        return getEmptyObjectError(null);
+    }
+
+    /**
+     * Get Empty Object Error
+     *
+     * <p>This endpoint tests the behavior when an error response has an empty object schema.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetEmptyObjectErrorResponse getEmptyObjectError(@Nullable Options options) {
         RequestlessOperation<GetEmptyObjectErrorResponse> operation =
-                new GetEmptyObjectError.Sync(sdkConfiguration, _headers);
+                new GetEmptyObjectError.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -1015,14 +1316,25 @@ public class SDK {
     }
 
     /**
-     * Makes a request.
+     * Makes a request (required parameters only).
      *
      * @return The response from the API call
      * @throws RuntimeException subclass if the API call fails
      */
     public UrlValidationStressTestResponse urlValidationStressTestDirect() {
+        return urlValidationStressTest(null);
+    }
+
+    /**
+     * Makes a request.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public UrlValidationStressTestResponse urlValidationStressTest(@Nullable Options options) {
         RequestlessOperation<UrlValidationStressTestResponse> operation =
-                new UrlValidationStressTest.Sync(sdkConfiguration, _headers);
+                new UrlValidationStressTest.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -1070,9 +1382,38 @@ public class SDK {
      */
     public ParenthesesInPathAllowedResponse parenthesesInPathAllowed(
             @Nonnull String id, @Nonnull TemplateBracesTest templateBracesTest) {
+        return parenthesesInPathAllowed(id, templateBracesTest, null);
+    }
+
+    /**
+     * A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     * and \{\{ escaped curlies \}\} and `backticks`.
+     * and \`escaped backticks\` and double slashes\\
+     * and 'single quotes' and "double quotes".
+     * and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * <p>A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     * and \{\{ escaped curlies \}\} and `backticks`.
+     * and \`escaped backticks\` and double slashes\\
+     * and 'single quotes' and "double quotes".
+     * and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * @param id
+     * @param templateBracesTest A string with &lbrace;&lbrace; double braces &rbrace;&rbrace; and { single braces }
+     *         and \{\{ escaped curlies \}\} and `backticks`.
+     *         and \`escaped backticks\` and double slashes\\
+     *         and 'single quotes' and "double quotes".
+     *         and  \'escaped single quotes\' and \"escaped double quotes\".
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public ParenthesesInPathAllowedResponse parenthesesInPathAllowed(
+            @Nonnull String id, @Nonnull TemplateBracesTest templateBracesTest, @Nullable Options options) {
         ParenthesesInPathAllowedRequest request = new ParenthesesInPathAllowedRequest(id, templateBracesTest);
         RequestOperation<ParenthesesInPathAllowedRequest, ParenthesesInPathAllowedResponse> operation =
-                new ParenthesesInPathAllowed.Sync(sdkConfiguration, _headers);
+                new ParenthesesInPathAllowed.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -1098,8 +1439,22 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetNestedIntegerStringResponse getNestedIntegerStringDirect() {
+        return getNestedIntegerString(null);
+    }
+
+    /**
+     * Test nested struct with integer:string tag
+     *
+     * <p>This endpoint tests the behavior when a deeply nested struct contains
+     * an integer field that should be unmarshaled from a string.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetNestedIntegerStringResponse getNestedIntegerString(@Nullable Options options) {
         RequestlessOperation<GetNestedIntegerStringResponse> operation =
-                new GetNestedIntegerString.Sync(sdkConfiguration, _headers);
+                new GetNestedIntegerString.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 
@@ -1124,8 +1479,22 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public RenderAssetResponse renderAsset(@Nonnull RenderAssetRequest request) {
+        return renderAsset(request, null);
+    }
+
+    /**
+     * Render Asset
+     *
+     * <p>Render a media asset from a text prompt.
+     *
+     * @param request The request object containing all the parameters for the API call.
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public RenderAssetResponse renderAsset(@Nonnull RenderAssetRequest request, @Nullable Options options) {
         RequestOperation<RenderAssetRequest, RenderAssetResponse> operation =
-                new RenderAsset.Sync(sdkConfiguration, _headers);
+                new RenderAsset.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -1150,7 +1519,7 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetAssetResponse getAsset(@Nonnull String id) {
-        return getAsset(id, null);
+        return getAsset(id, null, null);
     }
 
     /**
@@ -1164,8 +1533,24 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetAssetResponse getAsset(@Nonnull String id, @Nullable Boolean stream) {
+        return getAsset(id, stream, null);
+    }
+
+    /**
+     * Get Asset
+     *
+     * <p>Get the current result of an asset job.
+     *
+     * @param id
+     * @param stream
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetAssetResponse getAsset(@Nonnull String id, @Nullable Boolean stream, @Nullable Options options) {
         GetAssetRequest request = new GetAssetRequest(id, stream);
-        RequestOperation<GetAssetRequest, GetAssetResponse> operation = new GetAsset.Sync(sdkConfiguration, _headers);
+        RequestOperation<GetAssetRequest, GetAssetResponse> operation =
+                new GetAsset.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -1189,7 +1574,7 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetPositionalDefaultResponse getPositionalDefaultDirect() {
-        return getPositionalDefault(null);
+        return getPositionalDefault(null, null);
     }
 
     /**
@@ -1202,9 +1587,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetPositionalDefaultResponse getPositionalDefault(@Nullable String id) {
+        return getPositionalDefault(id, null);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @param id
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetPositionalDefaultResponse getPositionalDefault(@Nullable String id, @Nullable Options options) {
         GetPositionalDefaultRequest request = new GetPositionalDefaultRequest(id);
         RequestOperation<GetPositionalDefaultRequest, GetPositionalDefaultResponse> operation =
-                new GetPositionalDefault.Sync(sdkConfiguration, _headers);
+                new GetPositionalDefault.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest(request));
     }
 
@@ -1232,8 +1631,23 @@ public class SDK {
      * @throws RuntimeException subclass if the API call fails
      */
     public GetErrorOnlyExampleResponse getErrorOnlyExampleDirect() {
+        return getErrorOnlyExample(null);
+    }
+
+    /**
+     * Operation with example only on error response
+     *
+     * <p>This endpoint tests that when an operation has a named example only on
+     * an error response (not on the success response), we still generate
+     * a default example for the success response.
+     *
+     * @param options additional options
+     * @return The response from the API call
+     * @throws RuntimeException subclass if the API call fails
+     */
+    public GetErrorOnlyExampleResponse getErrorOnlyExample(@Nullable Options options) {
         RequestlessOperation<GetErrorOnlyExampleResponse> operation =
-                new GetErrorOnlyExample.Sync(sdkConfiguration, _headers);
+                new GetErrorOnlyExample.Sync(sdkConfiguration, options, _headers);
         return operation.handleResponse(operation.doRequest());
     }
 }
