@@ -34,20 +34,34 @@ function supportedMethodOptions(operation: Operation): JavaParam[] {
     });
   }
 
-  options.push({
-    Type: "java.time.Duration",
-    EnhancedType: "java.util.Optional<java.time.Duration>",
-    Name: "timeout",
-    Optional: true,
-    Nullable: false,
-    IncludedInSignature: false,
-    Util: false,
-    ParamType: "string",
-    Comment: "overrides the request timeout for this call",
-    HasItemType: false,
-  });
+  if (!operationHasParameterNamed(operation, "timeout")) {
+    options.push({
+      Type: "java.time.Duration",
+      EnhancedType: "java.util.Optional<java.time.Duration>",
+      Name: "timeout",
+      Optional: true,
+      Nullable: false,
+      IncludedInSignature: false,
+      Util: false,
+      ParamType: "string",
+      Comment: "overrides the request timeout for this call",
+      HasItemType: false,
+    });
+  }
 
   return options;
+}
+
+function operationHasParameterNamed(
+  operation: Operation,
+  name: string,
+): boolean {
+  if (!operationParametersFlattened(operation) || !operation.Request?.Field) {
+    return false;
+  }
+  return parametersForType(operation.Request.Field.Type, true, false).some(
+    (p) => p.Name === name,
+  );
 }
 
 registerTemplateFunc("supportedMethodOptions", supportedMethodOptions);

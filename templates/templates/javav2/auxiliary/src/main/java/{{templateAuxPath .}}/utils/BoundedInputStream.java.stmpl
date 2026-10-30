@@ -43,7 +43,7 @@ public final class BoundedInputStream extends FilterInputStream {
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        int n = in.read(b, off, len);
+        int n = in.read(b, off, (int) Math.min(len, budget()));
         if (n > 0) {
             consumed(n);
         }
@@ -52,9 +52,13 @@ public final class BoundedInputStream extends FilterInputStream {
 
     @Override
     public long skip(long n) throws IOException {
-        long skipped = in.skip(n);
+        long skipped = in.skip(Math.min(n, budget()));
         consumed(skipped);
         return skipped;
+    }
+
+    private long budget() {
+        return Math.max(1, maxBytes - count + 1);
     }
 
     @Override

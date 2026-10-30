@@ -187,7 +187,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         }
 {{- end}}
         Call call = client.newCall(toOkHttpRequest(request));
-        request.timeout().ifPresent(t -> call.timeout().timeout(t.toMillis(), TimeUnit.MILLISECONDS));
+        request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
         Response okResponse = call.execute();
         HttpResponse<InputStream> response = toResponse(request, okResponse, maxResponseBodyBytes);
 {{- if slf4jLoggingEnabled}}
@@ -214,7 +214,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             }
   {{- end}}
             Call call = asyncCallClient(request).newCall(toOkHttpRequest(request));
-            request.timeout().ifPresent(t -> call.timeout().timeout(t.toMillis(), TimeUnit.MILLISECONDS));
+            request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
             future.whenComplete((ignored, throwable) -> {
                 if (future.isCancelled()) {
                     call.cancel();

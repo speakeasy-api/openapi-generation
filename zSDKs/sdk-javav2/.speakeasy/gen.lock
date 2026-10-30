@@ -1454,7 +1454,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/BlockingParser.java:
     last_write_checksum: sha1:bf0ba52a263a20dec6fcd0ca14bff6f4be1b4ae9
   src/main/java/org/openapis/openapi/utils/BoundedInputStream.java:
-    last_write_checksum: sha1:d10c621e1c530d9b223e6258dfce44df116444f3
+    last_write_checksum: sha1:f904bb18a727c48e46e39ad17b616eac2f424266
   src/main/java/org/openapis/openapi/utils/Constants.java:
     last_write_checksum: sha1:510c710c2affdccd02f7ae4ab28464dc2dc35c20
   src/main/java/org/openapis/openapi/utils/CopiableInputStream.java:
