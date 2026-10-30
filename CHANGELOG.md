@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.956.0] - 2026-10-30
+### :bee: New Features
+- [`3e1b521`](https://github.com/speakeasy-api/openapi-generation/commit/3e1b521d0ba2d99b6fc12f2c880ea509b127547d) - **cli**: fail commands on a declared terminal failure state (output.outcome) ([#134](https://github.com/speakeasy-api/openapi-generation/pull/134)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+### :bug: Bug Fixes
+- [`12ad3d9`](https://github.com/speakeasy-api/openapi-generation/commit/12ad3d96ec6a64516249af6a122e5ccaa88927e9) - **go**: collapse flat response unions whose content types share one schema ([#175](https://github.com/speakeasy-api/openapi-generation/pull/175)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.955.1] - 2026-10-29
 ### :wrench: Chores
 - [`ca573c1`](https://github.com/speakeasy-api/openapi-generation/commit/ca573c18fc769bae06dc4af131fd9f5d14926619) - unbreak CI, fix PHP job overhead, and shrink the Go cache ([#176](https://github.com/speakeasy-api/openapi-generation/pull/176)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20845,3 +20853,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.9...v2.954.10
 [v2.955.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.10...v2.955.0
 [v2.955.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.0...v2.955.1
+[v2.956.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.1...v2.956.0
