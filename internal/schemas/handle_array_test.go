@@ -2,18 +2,35 @@ package schemas
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/ast"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/features"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/testutils"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
+	"github.com/speakeasy-api/openapi-generation/v2/pkg/logging"
 	"github.com/speakeasy-api/openapi/pointer"
 	config "github.com/speakeasy-api/sdk-gen-config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+func assertSingleWarning(t *testing.T, warnings []error, expected string) {
+	t.Helper()
+	if expected == "" {
+		require.Empty(t, warnings)
+		return
+	}
+	var matched []error
+	for _, warning := range warnings {
+		if strings.Contains(warning.Error(), expected) {
+			matched = append(matched, warning)
+		}
+	}
+	require.Len(t, matched, 1, "warnings: %v", warnings)
+}
 
 // TestHandleArray tests the handleArray method with various array scenarios
 func TestHandleArray(t *testing.T) {
@@ -25,6 +42,8 @@ func TestHandleArray(t *testing.T) {
 		mockFeatures func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
 		isRequest    *bool                                // nil means use default (false), otherwise use specified value
 		expected     *ast.FieldDef
+		// expectedWarning, when set, must match exactly one logged validation warning
+		expectedWarning string
 	}{
 		{
 			name: "StringArray",
@@ -68,6 +87,308 @@ func TestHandleArray(t *testing.T) {
 					WithValidations(&ast.Validations{}).
 					Build()).
 				Build(),
+		},
+		{
+			name: "ArrayWithConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const:
+    - read
+    - write`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				WithConst(&ast.AnyValue{Value: []interface{}{"read", "write"}}).
+				Build(),
+		},
+		{
+			name: "ArrayWithEmptyConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const: []`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				WithConst(&ast.AnyValue{Value: []interface{}{}}).
+				Build(),
+		},
+		{
+			name: "ArrayWithConstFeatureUnsupported",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const: []`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+		},
+		{
+			name: "ArrayWithConstItemTypeMismatch",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const:
+    - 1`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "SetWithConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  uniqueItems: true
+  const:
+    - read`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{
+						UniqueItems: pointer.From(true),
+					}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "ArrayWithConstNull",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const: null`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "ArrayWithConstMixedItems",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const:
+    - read
+    - 1`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "ArrayWithConstBigIntItems",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: integer
+    format: bigint
+  const:
+    - 1`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+					features.FeatureBigInt:            true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("bigints",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeBigInt).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "ArrayWithConstUUIDItems",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+    format: uuid
+  const:
+    - 123e4567-e89b-12d3-a456-426614174000`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("uuids",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeUUID).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				WithConst(&ast.AnyValue{Value: []interface{}{"123e4567-e89b-12d3-a456-426614174000"}}).
+				Build(),
+		},
+		{
+			name: "ArrayWithDefaultAndConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  default:
+    - read
+  const:
+    - read`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+					features.FeatureDefaultArrays:     true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				WithDefault(&ast.AnyValue{Value: []interface{}{"read"}}).
+				WithOptional(true).
+				WithConst(&ast.AnyValue{Value: []interface{}{"read"}}).
+				Build(),
+		},
+		{
+			name: "NestedArrayWithConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: array
+    items:
+      type: string
+  const:
+    - - read`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("arrays",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(
+						testutils.NewTypeDef(ast.DataTypeArray).
+							WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 13, Column: 11}).WithValidations(&ast.Validations{}).Build()).
+							WithLocation(&yaml.Node{Line: 11, Column: 9}).
+							WithValidations(&ast.Validations{}).
+							Build(),
+					).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
 		},
 		{
 			name: "ArrayWithMinMaxItems",
@@ -164,6 +485,34 @@ func TestHandleArray(t *testing.T) {
 					WithValidations(&ast.Validations{}).
 					Build()).
 				Build(),
+		},
+		{
+			name: "ArrayWithConstNullableItems",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+    nullable: true
+  const:
+    - read`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithContainsNull(true).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
 		},
 		{
 			name: "ArrayWithExample",
@@ -311,9 +660,13 @@ TestSchema:
 				params.IsRequest = *tt.isRequest
 			}
 
+			warningLogger := logging.NewWarningLogger(false, nil)
+			ctx := logging.WithWarningLogger(context.Background(), warningLogger)
+
 			// Call HandleSchema - let it handle nullable extraction and routing
-			result, err := schemas.HandleSchema(context.Background(), params)
+			result, err := schemas.HandleSchema(ctx, params)
 			require.NoError(t, err)
+			assertSingleWarning(t, warningLogger.GetWarnings(), tt.expectedWarning)
 
 			// Use deep comparison from the working test
 			isEqual := testutils.DeepCompare(t, tt.expected, result)

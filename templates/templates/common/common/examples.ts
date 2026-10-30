@@ -547,7 +547,7 @@ function calculateExample(
 
     // If we have a const value always use this as nothing else is valid
     if (fieldDef.Const) {
-      example = fieldDef.Const.Value;
+      example = withSortedKeys(fieldDef.Const.Value);
     }
 
     // If we have no example try to find a source
@@ -2325,4 +2325,20 @@ function getExampleByName(examples: Example[], name: string): Example | null {
 
 function getExampleFileDeclaration() {
   return `${FILE_DIRECTIVE_KEY} ${EXAMPLE_FILE}`;
+}
+
+// Values decoded from the document into Go maps reach templates with an
+// unstable key order; rebuild them so rendered output is deterministic.
+function withSortedKeys(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(withSortedKeys);
+  }
+  if (value !== null && typeof value === "object") {
+    const sorted: Record<string, any> = Object.create(null);
+    for (const key of Object.keys(value).sort()) {
+      sorted[key] = withSortedKeys(value[key]);
+    }
+    return sorted;
+  }
+  return value;
 }
