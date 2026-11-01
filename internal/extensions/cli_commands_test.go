@@ -2200,6 +2200,7 @@ commands:
       CLI_ASYNC_FAILED: async failed
       CLI_ASYNC_TIMEOUT: async timeout
       CLI_ASYNC_UNKNOWN_STATE: async unknown state
+      CLI_OUTCOME_FAILED: outcome failed
 `)
 	require.NoError(t, err)
 	require.Len(t, manifest.Commands, 1)
@@ -3443,7 +3444,7 @@ commands:
   say:
     op: StreamTask
     output: {}
-`, "output must declare artifact or stream")
+`, "output must declare artifact, stream, or outcome")
 
 	requireDecodeError(t, `
 version: 1
@@ -5422,6 +5423,309 @@ operations:
 	require.Len(t, warnings, 2)
 	assert.Contains(t, warnings[1], "output.stream.metadata.select")
 	assert.Contains(t, warnings[1], "could not be verified")
+}
+
+const validOutcomeManifest = `
+version: 1
+commands:
+  check:
+    op: GetTask
+    output:
+      outcome:
+        statePointer: $.status
+        states:
+          in_progress: pending
+          completed: success
+          failed: failure
+          requires_action: handoff
+  follow:
+    op: StreamTask
+    args:
+      prompt: {to: $.prompt, variadic: true}
+    output:
+      stream:
+        select: $.data.delta.text
+      outcome:
+        streamStatePointer: $.data.reason
+        streamErrorPointer: $.data.error
+        states:
+          done: success
+          cancelled: failure
+operations:
+  GetTask:
+    output:
+      outcome:
+        statePointer: $.status
+        errorPointer: $.steps
+        states: {in_progress: pending, completed: success, failed: failure, requires_action: handoff}
+`
+
+func TestCLICommands_OutcomeDecodeAndLink(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, validOutcomeManifest)
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 2)
+
+	check := manifest.Commands[0].Output.Outcome
+	require.NotNil(t, check)
+	assert.Equal(t, "$.status", check.StateFrom)
+	assert.Equal(t, "/status", check.StatePointer)
+	assert.Empty(t, check.StreamStatePointer)
+	assert.Equal(t, map[string]string{"in_progress": "pending", "completed": "success", "failed": "failure", "requires_action": "handoff"}, check.States)
+	assert.Empty(t, check.ErrorPointer)
+	assert.Empty(t, check.ErrorMessageField)
+
+	follow := manifest.Commands[1].Output.Outcome
+	require.NotNil(t, follow)
+	assert.Empty(t, follow.StatePointer)
+	assert.Equal(t, "$.data.reason", follow.StreamStateFrom)
+	assert.Equal(t, "/data/reason", follow.StreamStatePointer)
+	assert.Equal(t, "/data/error", follow.StreamErrorPointer)
+	assert.Equal(t, "message", follow.ErrorMessageField)
+	assert.Equal(t, "/data/delta/text", manifest.Commands[1].Output.Stream.Pointer)
+
+	require.Len(t, manifest.Operations, 1)
+	op := manifest.Operations[0].Output.Outcome
+	require.NotNil(t, op)
+	assert.Equal(t, "/status", op.StatePointer)
+	assert.Equal(t, "/steps", op.ErrorPointer)
+	assert.Equal(t, "message", op.ErrorMessageField)
+}
+
+func TestCLICommands_OutcomeNullableLeaves(t *testing.T) {
+	spec := strings.Replace(cliCommandsTestSpec, "        status:\n          type: string\n          enum: [in_progress, completed, failed, requires_action]\n        steps:\n          type: array\n", "        status:\n          type: [string, \"null\"]\n          enum: [in_progress, completed, failed, requires_action, null]\n        steps:\n          type: [array, \"null\"]\n", 1)
+	require.NotEqual(t, cliCommandsTestSpec, spec)
+	manifest, _, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+	require.NoError(t, err)
+	require.Len(t, manifest.Operations, 1)
+	assert.Equal(t, "/steps", manifest.Operations[0].Output.Outcome.ErrorPointer)
+}
+
+func TestCLICommands_AsyncNullableState(t *testing.T) {
+	spec := strings.Replace(cliCommandsTestSpec, "        status:\n          type: string\n          enum: [in_progress, completed, failed, requires_action]\n", "        status:\n          type: [string, \"null\"]\n          enum: [in_progress, completed, failed, requires_action, null]\n", 1)
+	require.NotEqual(t, cliCommandsTestSpec, spec)
+	manifest, _, err := decodeCLIWithSpec(t, spec, strings.Replace(validAsyncManifest, "      params:\n        stream: false\n", "", 1))
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 1)
+	require.NotNil(t, manifest.Commands[0].Async)
+	assert.Equal(t, "/status", manifest.Commands[0].Async.StatePointer)
+}
+
+func TestCLICommands_OutcomeErrors(t *testing.T) {
+	base := validOutcomeManifest
+	for _, tc := range []struct {
+		name     string
+		manifest string
+		want     string
+	}{
+		{"no pointer", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress: pending", "        states:\n          in_progress: pending", 1), "requires statePointer (the state in the JSON response) or streamStatePointer"},
+		{"no failure class", strings.Replace(base, "          failed: failure\n          requires_action: handoff\n  follow", "          failed: success\n          requires_action: handoff\n  follow", 1), "must classify at least one state as failure"},
+		{"bad classification", strings.Replace(base, "failed: failure\n          requires_action", "failed: fatal\n          requires_action", 1), `output.outcome.states["failed"] has unsupported classification "fatal"`},
+		{"unknown key", strings.Replace(base, "        statePointer: $.status\n        states:", "        pointer: $.status\n        states:", 1), `output.outcome has unknown key "pointer"`},
+		{"not an enum member", strings.Replace(base, "          requires_action: handoff\n  follow", "          requires_action: handoff\n          exploded: failure\n  follow", 1), `classifies "exploded", which is not an enum member at $.status`},
+		{"unclassified enum member", strings.Replace(base, "          requires_action: handoff\n  follow", "  follow", 1), `does not classify enum member "requires_action"`},
+		{"state pointer not an enum", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress", "        statePointer: $.id\n        states:\n          in_progress", 1), "selected state must declare a non-empty enum"},
+		{"stream pointer on discrete operation", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress", "        streamStatePointer: $.status\n        states:\n          in_progress", 1), "has no streaming (text/event-stream or JSONL) success response"},
+		{"stream pointer misses every event", strings.Replace(base, "streamStatePointer: $.data.reason", "streamStatePointer: $.data.outcome", 1), "does not resolve in any event shape"},
+		{"error pointer must be object or array", strings.Replace(base, "errorPointer: $.steps", "errorPointer: $.id", 1), "selected failure detail must be an object or an array"},
+		{"error pointer misses every response variant", strings.Replace(base, "errorPointer: $.steps", "errorPointer: $.step", 1), `output.outcome.errorPointer $.step does not resolve in any application/json 2xx response variant of operation "GetTask" (did you mean "steps"?)`},
+		{"stream state not an enum member", strings.Replace(base, "          done: success\n          cancelled: failure", "          done: success\n          canceled: failure", 1), `output.outcome.states classifies "canceled", which is not an enum member at $.data.reason in operation "StreamTask" (did you mean "cancelled"?)`},
+		{"stream enum member unclassified", strings.Replace(base, "          done: success\n          cancelled: failure", "          cancelled: failure", 1), `output.outcome.states does not classify enum member "done" from $.data.reason in operation "StreamTask"`},
+		{"stream error pointer misses every event", strings.Replace(base, "streamErrorPointer: $.data.error", "streamErrorPointer: $.data.failure", 1), "output.outcome.streamErrorPointer $.data.failure does not resolve in any event shape"},
+		{"stream error pointer must be object or array", strings.Replace(base, "streamErrorPointer: $.data.error", "streamErrorPointer: $.data.event_id", 1), "resolves to a string in one event shape; the failure detail must be an object or an array"},
+		{"error pointer without state pointer", strings.Replace(base, "        streamStatePointer: $.data.reason\n", "        streamStatePointer: $.data.reason\n        errorPointer: $.data.reason\n", 1), "output.outcome.errorPointer requires statePointer"},
+		{"message field without pointer", strings.Replace(base, "        statePointer: $.status\n        states:\n          in_progress", "        statePointer: $.status\n        errorMessageField: detail\n        states:\n          in_progress", 1), "errorMessageField requires errorPointer or streamErrorPointer"},
+		{"async conflict", strings.TrimSuffix(validAsyncManifest, "\n") + "\n    output:\n      outcome:\n        statePointer: $.status\n        states: {in_progress: pending, completed: success, failed: failure, requires_action: handoff}\n", "declares both async and output.outcome"},
+		{"planned command", "version: 1\ncommands:\n  later:\n    planned: later\n    output:\n      outcome:\n        statePointer: $.status\n        states: {failed: failure}\n", "planned command and cannot declare output"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := decodeCLITest(t, tc.manifest)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
+}
+
+const cliOutcomeUnionTaskResult = `    TaskResult:
+      oneOf:
+        - $ref: '#/components/schemas/TaskSettled'
+        - $ref: '#/components/schemas/TaskFailed'
+    TaskSettled:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, failed, requires_action]
+    TaskFailed:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [in_progress, completed, failed, requires_action]
+        steps:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/NoteStep'
+              - $ref: '#/components/schemas/OutputStep'
+`
+
+func TestCLICommands_OutcomeErrorPointerAnyVariant(t *testing.T) {
+	start := strings.Index(cliCommandsTestSpec, "    TaskResult:\n")
+	end := strings.Index(cliCommandsTestSpec, "    NoteStep:\n")
+	require.True(t, start >= 0 && end > start)
+	spec := cliCommandsTestSpec[:start] + cliOutcomeUnionTaskResult + cliCommandsTestSpec[end:]
+
+	manifest, _, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+	require.NoError(t, err)
+	require.Len(t, manifest.Operations, 1)
+	assert.Equal(t, "/steps", manifest.Operations[0].Output.Outcome.ErrorPointer)
+
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, "errorPointer: $.steps", "errorPointer: $.id", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "selected failure detail must be an object or an array")
+
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, "errorPointer: $.steps", "errorPointer: $.detail", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `output.outcome.errorPointer $.detail does not resolve in any application/json 2xx response variant of operation "GetTask"`)
+}
+
+func TestCLICommands_OutcomeStreamStatesWithoutEnum(t *testing.T) {
+	manifest, warnings, err := decodeCLITest(t, strings.Replace(validOutcomeManifest, "streamStatePointer: $.data.reason", "streamStatePointer: $.data.event_id", 1))
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 2)
+	assert.Equal(t, "/data/event_id", manifest.Commands[1].Output.Outcome.StreamStatePointer)
+	require.Len(t, warnings, 1, warnings)
+	assert.Equal(t, `command "follow" output.outcome.streamStatePointer $.data.event_id in operation "StreamTask" does not select a closed string enum in every event shape; states cannot be verified at generation time, and a state missing from the table keeps exit 0 at runtime`, warnings[0])
+
+	_, warnings, err = decodeCLITest(t, validOutcomeManifest)
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+}
+
+func TestCLICommands_OutcomeInheritedFromOperation(t *testing.T) {
+	manifest, _, err := decodeCLITest(t, `
+version: 1
+commands:
+  check:
+    op: GetTask
+  own:
+    op: GetTask
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, completed: success, failed: failure, requires_action: failure}
+operations:
+  GetTask:
+    output:
+      outcome:
+        statePointer: $.status
+        errorPointer: $.steps
+        states: {in_progress: pending, completed: success, failed: failure, requires_action: handoff}
+`)
+	require.NoError(t, err)
+	require.Len(t, manifest.Commands, 2)
+	require.Len(t, manifest.Operations, 1)
+
+	inherited := manifest.Commands[0].Output.Outcome
+	require.NotNil(t, inherited)
+	assert.Equal(t, manifest.Operations[0].Output.Outcome, inherited)
+	assert.Equal(t, "/steps", inherited.ErrorPointer)
+
+	own := manifest.Commands[1].Output.Outcome
+	require.NotNil(t, own)
+	assert.Equal(t, "failure", own.States["requires_action"])
+	assert.Empty(t, own.ErrorPointer)
+
+	asyncManifest := strings.Replace(validAsyncManifest, "      params:\n        stream: false\n", "", 1)
+	async, _, err := decodeCLITest(t, strings.TrimSuffix(asyncManifest, "\n")+`
+operations:
+  CreateTask:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, completed: success, failed: failure, requires_action: handoff}
+`)
+	require.NoError(t, err)
+	require.Len(t, async.Commands, 1)
+	require.NotNil(t, async.Commands[0].Async)
+	if async.Commands[0].Output != nil {
+		assert.Nil(t, async.Commands[0].Output.Outcome, "an async intent keeps async.states as its only classification")
+	}
+}
+
+func TestCLICommands_OutcomeStreamStateOneOfExcludesOverlap(t *testing.T) {
+	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
+	require.Contains(t, cliCommandsTestSpec, stopReason)
+	const table = "          done: success\n          cancelled: failure"
+	require.Contains(t, validOutcomeManifest, table)
+
+	spec := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      oneOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, warnings, err := decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          extra: failure", 1))
+	require.NoError(t, err)
+	assert.Empty(t, warnings)
+
+	_, _, err = decodeCLIWithSpec(t, spec, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `output.outcome.states classifies "cancelled", which is not an enum member at $.data.reason`)
+
+	anyOf := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      anyOf:\n        - enum: [done, cancelled]\n        - enum: [cancelled, extra]\n", 1)
+	_, _, err = decodeCLIWithSpec(t, anyOf, strings.Replace(validOutcomeManifest, table, "          done: success\n          cancelled: failure\n          extra: failure", 1))
+	require.NoError(t, err)
+
+	unbounded := strings.Replace(cliCommandsTestSpec, stopReason, "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      oneOf:\n        - enum: [done, cancelled]\n        - type: string\n", 1)
+	_, _, err = decodeCLIWithSpec(t, unbounded, validOutcomeManifest)
+	require.NoError(t, err)
+}
+
+func TestCLICommands_OutcomeStreamStateRefSiblingCycle(t *testing.T) {
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+	spec := strings.Replace(cliCommandsTestSpec, stopArm, stopArm+"        - $ref: '#/components/schemas/TaskEvent'\n          properties:\n            reason:\n              enum: [done]\n", 1)
+
+	_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+	require.NoError(t, err)
+	require.NotEmpty(t, warnings)
+	for _, warning := range warnings {
+		assert.Contains(t, warning, "schema reference cycle at TaskEvent")
+	}
+}
+
+func TestCLICommands_OutcomeStreamStateAllOfIntersectsEnums(t *testing.T) {
+	const stopReason = "    StopReason:\n      type: string\n      enum: [done, cancelled]\n"
+	require.Contains(t, cliCommandsTestSpec, stopReason)
+	typoTable := strings.Replace(validOutcomeManifest, "          done: success\n          cancelled: failure", "          done: success\n          canceled: failure", 1)
+
+	const stopArm = "        - $ref: '#/components/schemas/StepStopEvent'\n"
+	require.Contains(t, cliCommandsTestSpec, stopArm)
+
+	for _, tc := range []struct {
+		name            string
+		schema          string
+		stopArmSiblings string
+	}{
+		{"type-only arm", "    StopReason:\n      allOf:\n        - type: string\n        - enum: [done, cancelled]\n", ""},
+		{"two enum arms", "    StopReason:\n      allOf:\n        - type: string\n          enum: [done, cancelled, extra]\n        - enum: [done, cancelled]\n", ""},
+		{"enum beside ref", "    StopReason:\n      $ref: '#/components/schemas/StopReasonBase'\n      enum: [done, cancelled]\n    StopReasonBase:\n      type: string\n      enum: [done, cancelled, extra]\n", ""},
+		{"properties beside ref on the path", "    StopReason:\n      type: string\n      enum: [done, cancelled, extra]\n", "          properties:\n            reason:\n              enum: [done, cancelled]\n"},
+		{"enum beside union with an unbounded arm", "    StopReason:\n      type: string\n      enum: [done, cancelled]\n      anyOf:\n        - type: string\n        - enum: [done]\n", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := strings.Replace(cliCommandsTestSpec, stopReason, tc.schema, 1)
+			spec = strings.Replace(spec, stopArm, stopArm+tc.stopArmSiblings, 1)
+
+			_, warnings, err := decodeCLIWithSpec(t, spec, validOutcomeManifest)
+			require.NoError(t, err)
+			assert.Empty(t, warnings)
+
+			_, _, err = decodeCLIWithSpec(t, spec, typoTable)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `output.outcome.states classifies "canceled", which is not an enum member at $.data.reason in operation "StreamTask" (did you mean "cancelled"?)`)
+		})
+	}
 }
 
 func TestCLICommands_FlagImplies(t *testing.T) {

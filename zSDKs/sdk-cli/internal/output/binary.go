@@ -23,6 +23,7 @@ func WriteToFile(cmd *cobra.Command, res interface{}, path string) error {
 	if flagutil.DidDryRunRequest(cmd) {
 		return nil
 	}
+	failure := outcomeResultFailure(cmd, res)
 	content := extractResultContent(res)
 
 	f, err := os.Create(path)
@@ -74,10 +75,16 @@ func WriteToFile(cmd *cobra.Command, res interface{}, path string) error {
 	if !IsMachineMode(cmd) {
 		fmt.Fprintf(cmd.ErrOrStderr(), "Wrote %s (%d bytes)%s", absPath, written.Size(), string(rune(10)))
 	}
-	return renderPathEnvelope(cmd, absPath, map[string]interface{}{
+	if err := renderPathEnvelope(cmd, absPath, map[string]interface{}{
 		"path":       absPath,
 		"size_bytes": written.Size(),
-	})
+	}); err != nil {
+		return err
+	}
+	if failure != nil {
+		return Error(cmd, failure)
+	}
+	return nil
 }
 
 // WriteBase64 encodes binary response content as base64 and prints it to stdout.
@@ -87,6 +94,7 @@ func WriteBase64(cmd *cobra.Command, res interface{}) error {
 	if flagutil.DidDryRunRequest(cmd) {
 		return nil
 	}
+	failure := outcomeResultFailure(cmd, res)
 	content := extractResultContent(res)
 	if content == nil {
 		return nil
@@ -116,6 +124,9 @@ func WriteBase64(cmd *cobra.Command, res interface{}) error {
 		fmt.Fprintln(w, base64.StdEncoding.EncodeToString(data))
 	}
 
+	if failure != nil {
+		return Error(cmd, failure)
+	}
 	return nil
 }
 
