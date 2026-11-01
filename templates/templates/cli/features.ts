@@ -49,7 +49,7 @@ const supportedFeatures = {
   transformJq: "0.0.0",
   jsonlResponses: "0.0.1",
   customCodeRegions: "0.0.1",
-  cliCommands: "0.2.1",
+  cliCommands: "0.3.0",
 };
 
 // @ts-ignore

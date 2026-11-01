@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	generationaccess "github.com/speakeasy-api/generation-context/access"
 
 	"github.com/speakeasy-api/openapi-generation/v2/internal/analytics"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/ast"
@@ -63,6 +64,11 @@ func TestResolveAST(input TestResolveASTInput) (*Generator, *ast.AST, error) {
 		if err != nil {
 			return nil, nil, err
 		}
+	}
+
+	ctx, err = resolveGenerationAccess(generationaccess.WithDirect(ctx), target, true)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Initialize the generator with proper configuration
@@ -161,7 +167,7 @@ func TestResolveAST(input TestResolveASTInput) (*Generator, *ast.AST, error) {
 		}
 	}
 
-	result, err := g.LoadAndValidateDoc(context.Background(), docInfo, &analytics.Data{}, "", false)
+	result, err := g.LoadAndValidateDoc(ctx, docInfo, &analytics.Data{}, "", false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -174,7 +180,7 @@ func TestResolveAST(input TestResolveASTInput) (*Generator, *ast.AST, error) {
 		return nil, nil, errors.New("fatal errors")
 	}
 
-	ast, err := g.resolveAST(context.Background(), docInfo, versioning.VersionInfo{}, &analytics.Data{})
+	ast, err := g.resolveAST(ctx, docInfo, versioning.VersionInfo{}, &analytics.Data{})
 	if err != nil {
 		return nil, nil, err
 	}
