@@ -196,7 +196,7 @@ func (d *cliManifestDecoder) linkContinuations(manifest *CLICommandManifest) err
 		}
 		owner := fmt.Sprintf("command %q", strings.Join(cmd.Path, " "))
 		if cmd.Continuation == nil || cmd.Source.Type != CLICommandSourceOperation {
-			if err := rejectUnusedContinueStates(owner, outcome); err != nil {
+			if err := rejectUnusedContinueStates(owner, outcome, "add continuation (on the command or its operation entry)"); err != nil {
 				return err
 			}
 			continue
@@ -210,7 +210,7 @@ func (d *cliManifestDecoder) linkContinuations(manifest *CLICommandManifest) err
 		if op.Continuation != nil || op.Output == nil {
 			continue
 		}
-		if err := rejectUnusedContinueStates(fmt.Sprintf("operation %q", op.OperationID), op.Output.Outcome); err != nil {
+		if err := rejectUnusedContinueStates(fmt.Sprintf("operation %q", op.OperationID), op.Output.Outcome, "an operation entry's outcome also applies to the generated operation command, so a recipe on an intent does not cover it; move continuation to the operation entry (single-route intents inherit it), move output.outcome to the intent,"); err != nil {
 			return err
 		}
 	}
@@ -220,7 +220,7 @@ func (d *cliManifestDecoder) linkContinuations(manifest *CLICommandManifest) err
 // rejectUnusedContinueStates refuses a continue classification that no
 // continuation recipe acts on: the command would otherwise exit 0 on a
 // response that says it is incomplete.
-func rejectUnusedContinueStates(owner string, outcome *CLICommandOutcome) error {
+func rejectUnusedContinueStates(owner string, outcome *CLICommandOutcome, remedy string) error {
 	if outcome == nil {
 		return nil
 	}
@@ -234,7 +234,7 @@ func rejectUnusedContinueStates(owner string, outcome *CLICommandOutcome) error 
 		return nil
 	}
 	sort.Strings(states)
-	return fmt.Errorf("%s classifies output.outcome state %q as continue but declares no continuation recipe; add continuation (on the command or its operation entry) or classify the state as pending, success, or failure", owner, states[0])
+	return fmt.Errorf("%s classifies output.outcome state %q as continue but declares no continuation recipe; %s or classify the state as pending, success, or failure", owner, states[0], remedy)
 }
 
 func (d *cliManifestDecoder) linkContinuation(owner string, recipe *CLICommandContinuation, opID string, outcome *CLICommandOutcome, flags []CLICommandInput, asyncCreates map[string]string) error {
