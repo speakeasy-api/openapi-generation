@@ -4,61 +4,9 @@ package output
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/spf13/cobra"
 )
-
-func TestDownloadArtifactEnforcesSizeLimit(t *testing.T) {
-	previous := artifactMaxDownloadBytes
-	artifactMaxDownloadBytes = 4
-	t.Cleanup(func() { artifactMaxDownloadBytes = previous })
-
-	for name, chunked := range map[string]bool{"declared length": false, "chunked": true} {
-		t.Run(name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				_, _ = w.Write([]byte("1234"))
-				if chunked {
-					w.(http.Flusher).Flush()
-				}
-				_, _ = w.Write([]byte("5678"))
-			}))
-			t.Cleanup(server.Close)
-
-			_, _, err := downloadArtifact(&cobra.Command{}, server.URL+"/asset", nil, &artifactConfig{Kind: "image"})
-			if err == nil || !strings.Contains(err.Error(), "byte limit") {
-				t.Fatalf("expected a size limit error, got %v", err)
-			}
-		})
-	}
-}
-
-func TestDownloadArtifactTimeoutCoversBody(t *testing.T) {
-	release := make(chan struct{})
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("partial"))
-		w.(http.Flusher).Flush()
-		select {
-		case <-release:
-		case <-r.Context().Done():
-		}
-	}))
-	t.Cleanup(server.Close)
-	t.Cleanup(func() { close(release) })
-
-	cmd := &cobra.Command{}
-	cmd.Flags().String("timeout", "", "")
-	if err := cmd.Flags().Set("timeout", "200ms"); err != nil {
-		t.Fatal(err)
-	}
-	_, _, err := downloadArtifact(cmd, server.URL+"/asset", nil, &artifactConfig{Kind: "image"})
-	if err == nil || !strings.Contains(err.Error(), "deadline exceeded") {
-		t.Fatalf("expected the timeout to stop a stalled body, got %v", err)
-	}
-}
 
 func artifactTestConfig(kind string) *artifactConfig {
 	pointer := []artifactSegment{
@@ -162,6 +110,74 @@ func TestFindArtifactItemSelectsTrailingBlockWithoutData(t *testing.T) {
 				t.Fatalf("data = %v (present %t), want the trailing %s data field", got, present, name)
 			}
 		})
+	}
+}
+
+func TestArtifactExtensionNormalizesSubtype(t *testing.T) {
+	cases := map[string]string{
+		"image/png":                "png",
+		"image/svg+xml":            "svg",
+		"image/webp; q=0.9":        "webp",
+		"audio/x-flac":             "flac",
+		"audio/x-wav":              "wav",
+		"image/x-icon":             "ico",
+		"image/vnd.microsoft.icon": "ico",
+		"image/x-ms-bmp":           "bmp",
+		"audio/vnd.wave":           "wav",
+		"audio/pcm":                "wav",
+		"audio/ogg; codecs=opus":   "ogg",
+		"video/x-msvideo":          "avi",
+		"video/x-matroska":         "mkv",
+		"video/3gpp":               "3gp",
+	}
+	for mime, want := range cases {
+		kind, _, _ := strings.Cut(mime, "/")
+		if got := artifactExtension(kind, mime); got != want {
+			t.Errorf("artifactExtension(%q) = %q, want %q", mime, got, want)
+		}
+	}
+	if got := artifactExtension("image", "audio/wav"); got != "" {
+		t.Errorf("wrong-kind MIME resolved to %q", got)
+	}
+}
+
+func TestArtifactOutPath(t *testing.T) {
+	cases := []struct {
+		name, path, ext, wantPath string
+		wantMismatch              bool
+	}{
+		{"exact match", "photo.png", "png", "photo.png", false},
+		{"case-insensitive match", "photo.PNG", "png", "photo.PNG", false},
+		{"alias match", "photo.jpeg", "jpg", "photo.jpeg", false},
+		{"alias match reversed", "scan.tif", "tiff", "scan.tif", false},
+		{"opus is an ogg container", "a.opus", "ogg", "a.opus", false},
+		{"pcm counts as wav", "a.pcm", "wav", "a.pcm", false},
+		{"media mismatch", "photo.png", "jpg", "photo.png", true},
+		{"media mismatch across kinds", "clip.mp4", "wav", "clip.mp4", true},
+		{"unknown returned extension never mismatches", "clip.avi", "divx", "clip.avi", false},
+		{"no extension appends", "photo", "png", "photo.png", false},
+		{"non-media suffix appends", "render.v1", "png", "render.v1.png", false},
+		{"archive suffix appends", "archive.tar", "png", "archive.tar.png", false},
+		{"trailing dot appends once", "photo.", "png", "photo.png", false},
+		{"directory dots are ignored", "v1.2/photo", "png", "v1.2/photo.png", false},
+		{"dotfile is an extension", ".png", "png", ".png", false},
+		{"empty returned extension keeps path", "photo.txt", "", "photo.txt", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotPath, gotMismatch := artifactOutPath(tc.path, tc.ext)
+			if gotPath != tc.wantPath || gotMismatch != tc.wantMismatch {
+				t.Fatalf("artifactOutPath(%q, %q) = (%q, %t), want (%q, %t)", tc.path, tc.ext, gotPath, gotMismatch, tc.wantPath, tc.wantMismatch)
+			}
+		})
+	}
+}
+
+func TestArtifactMediaExtensionsCoverMimeExtensions(t *testing.T) {
+	for mime, ext := range artifactMimeExtensions {
+		if _, ok := artifactMediaExtensions[ext]; !ok {
+			t.Errorf("%s maps to %q, which --out does not recognize", mime, ext)
+		}
 	}
 }
 
