@@ -224,7 +224,7 @@ trackedFiles:
   internal/cli/whoami.go:
     last_write_checksum: sha1:8f5ecd625c08390068268fd6a174a9b541315b63
   internal/client/client.go:
-    last_write_checksum: sha1:a9c5d6b2d6251fa62325f3668db8b1920596e0d3
+    last_write_checksum: sha1:0fdcb49230dd21d9e94cf2e1d20ea3c33519d45e
   internal/client/client_test.go:
     last_write_checksum: sha1:6e34b14aef184c0c61202f431b88717398e3f4ca
   internal/client/diagnostics.go:
@@ -250,7 +250,7 @@ trackedFiles:
   internal/flagutil/dispatch.go:
     last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:39da30c99a7c8b3c698639bdbb8d29deedb4458a
+    last_write_checksum: sha1:f5d24ad2f4de543ab0cfea1ca2d0f7459fa42e6a
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:4bd4be50c1613cc50c0886291d9fcbf57a3ac2a7
   internal/flagutil/preset.go:
@@ -266,11 +266,11 @@ trackedFiles:
   internal/output/agentmode.go:
     last_write_checksum: sha1:cd38c0ae31c1dccf601a85d43b6651568c8d41a3
   internal/output/artifact.go:
-    last_write_checksum: sha1:9375a066c2b18e6e076c4c1bebdf5137ada58170
+    last_write_checksum: sha1:c92f27e492aa8c3eeb26253b0b0d37c8a05cb7d0
   internal/output/artifact_test.go:
-    last_write_checksum: sha1:ae6f2716d40191d5a46f0f0b2d00802be46e878b
+    last_write_checksum: sha1:82692e5cd401a1a85088ddc39103b0497a2ed868
   internal/output/async.go:
-    last_write_checksum: sha1:3fee77ef0cdf3414e9a903222a4a671b5ad90f2c
+    last_write_checksum: sha1:7d8b2ac9cde78a7c9aa5e8a0ececd9ab808dcae6
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
@@ -670,9 +670,9 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:4ca3d41f09f6dc66d58a3c2b8de36722bb7e9dc3
+    last_write_checksum: sha1:930e89ccc41a6fcad6349675caa4331ece91f2ab
   tests/async_test.go:
-    last_write_checksum: sha1:7feb37653f240d6b9c625f4476365b018f738a03
+    last_write_checksum: sha1:dac2ec49f9bb6c9e5ff8923020f68eb8ab1cc421
   tests/cli_harness_test.go:
     last_write_checksum: sha1:df117b4662f080d7d46901e58065bd762d830ac6
   tests/common_helpers_test.go:

@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"openapi/internal/cli"
@@ -366,16 +367,155 @@ func TestArtifact_MissingContentIsAnError(t *testing.T) {
 	assert.Empty(t, entries)
 }
 
-func TestArtifact_URIDeliveryIsUnsupported(t *testing.T) {
-	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","uri":"https://media.example.test/asset"}]}]}`)
+const artifactTestURI = "https://media.example.test/asset"
+
+const artifactProbeHeader = "X-Artifact-Probe"
+
+type artifactRequestLog struct {
+	mu      sync.Mutex
+	headers map[string]http.Header
+}
+
+func (l *artifactRequestLog) record(key string, r *http.Request) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.headers == nil {
+		l.headers = map[string]http.Header{}
+	}
+	l.headers[key] = r.Header.Clone()
+}
+
+func (l *artifactRequestLog) get(key string) http.Header {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.headers[key]
+}
+
+func artifactAssetHandler(log *artifactRequestLog, key string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.record(key, r)
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write([]byte(artifactTestBytes))
+	}
+}
+
+func artifactOtherHost(t *testing.T, log *artifactRequestLog) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(artifactAssetHandler(log, "other"))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// artifactURIServer answers the artifact command with a URI-only block
+// pointing at uri(serverURL), serves /asset itself, redirects /moved to
+// redirectTo and answers /missing with 404.
+func artifactURIServer(t *testing.T, log *artifactRequestLog, uri func(string) string, redirectTo string) *httptest.Server {
+	t.Helper()
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/asset":
+			artifactAssetHandler(log, "api-origin")(w, r)
+		case "/moved":
+			http.Redirect(w, r, redirectTo, http.StatusFound)
+		case "/missing":
+			http.NotFound(w, r)
+		default:
+			log.record("api", r)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
+			_, _ = w.Write([]byte(strings.ReplaceAll(`{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","uri":"https://media.example.test/asset"}]}]}`, artifactTestURI, uri(server.URL))))
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func runArtifactWithProbe(t *testing.T, h *CLITestHarness, serverURL, dir string) error {
+	t.Helper()
+	return runArtifact(t, h, serverURL, dir, "--header", artifactProbeHeader+": secret")
+}
+
+func TestArtifact_URIOnAPIOriginIsDownloadedWithRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	server := artifactURIServer(t, log, func(base string) string { return base + "/asset?token=abc" }, "")
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
 
-	err := runArtifact(t, h, server.URL, dir)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "delivered by URI")
-	assert.Contains(t, err.Error(), "https://media.example.test/asset")
-	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, dir), h.GetStderr())
+
+	path := strings.TrimSpace(h.GetStdout())
+	assert.True(t, strings.HasSuffix(path, ".png"), "extension must follow the download's Content-Type: %q", path)
+	written, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+
+	api, asset := log.get("api"), log.get("api-origin")
+	require.NotNil(t, asset, "the URI was not fetched")
+	assert.Equal(t, "secret", api.Get(artifactProbeHeader))
+	for name, values := range api {
+		switch http.CanonicalHeaderKey(name) {
+		case "Accept", "Content-Type", "Content-Length", "Content-Encoding", "Idempotency-Key", "Accept-Encoding":
+			continue
+		}
+		assert.Equal(t, values, asset.Values(name), "header %s must be reused on the API origin", name)
+	}
+}
+
+func TestArtifact_URIOnAnotherOriginGetsNoRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	other := artifactOtherHost(t, log)
+	server := artifactURIServer(t, log, func(string) string { return other.URL + "/asset" }, "")
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("other")
+	require.NotNil(t, asset, "the URI was not fetched")
+	assert.Empty(t, asset.Get(artifactProbeHeader), "request headers must not reach another origin")
+	assert.NotEqual(t, log.get("api").Get("User-Agent"), asset.Get("User-Agent"))
+}
+
+func TestArtifact_RedirectToAnotherOriginDropsRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	other := artifactOtherHost(t, log)
+	server := artifactURIServer(t, log, func(base string) string { return base + "/moved" }, other.URL+"/asset")
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("other")
+	require.NotNil(t, asset, "the redirect was not followed")
+	assert.Empty(t, asset.Get(artifactProbeHeader), "request headers must not follow a redirect to another origin")
+	assert.Empty(t, asset.Get("Referer"))
+}
+
+func TestArtifact_URIDownloadRefusals(t *testing.T) {
+	for name, tc := range map[string]struct {
+		uri  func(base string) string
+		want string
+	}{
+		"plain http to a remote host": {func(string) string { return "http://media.example.test/asset" }, "only https URIs are downloaded"},
+		"non-http scheme":             {func(string) string { return "gs://bucket/asset?sig=secret" }, "cannot download; fetch it directly: gs://bucket/asset"},
+		"server error":                {func(base string) string { return base + "/missing" }, "the server returned 404"},
+		"redirect to plain http":      {func(base string) string { return base + "/moved" }, "only https URIs are downloaded"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			log := &artifactRequestLog{}
+			server := artifactURIServer(t, log, tc.uri, "http://media.example.test/asset")
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+
+			err := runArtifact(t, h, server.URL, dir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+			assert.NotContains(t, err.Error(), "secret", "URI query strings must not be printed")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+			entries, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			assert.Empty(t, entries)
+		})
+	}
 }
 
 // The content-block and job-identity shape is declaration-driven: the

@@ -4,8 +4,37 @@ package output
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
+
+func TestDownloadArtifactEnforcesSizeLimit(t *testing.T) {
+	previous := artifactMaxDownloadBytes
+	artifactMaxDownloadBytes = 4
+	t.Cleanup(func() { artifactMaxDownloadBytes = previous })
+
+	for name, chunked := range map[string]bool{"declared length": false, "chunked": true} {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = w.Write([]byte("1234"))
+				if chunked {
+					w.(http.Flusher).Flush()
+				}
+				_, _ = w.Write([]byte("5678"))
+			}))
+			t.Cleanup(server.Close)
+
+			_, _, err := downloadArtifact(&cobra.Command{}, server.URL+"/asset", nil, &artifactConfig{Kind: "image"})
+			if err == nil || !strings.Contains(err.Error(), "byte limit") {
+				t.Fatalf("expected a size limit error, got %v", err)
+			}
+		})
+	}
+}
 
 func artifactTestConfig(kind string) *artifactConfig {
 	pointer := []artifactSegment{
