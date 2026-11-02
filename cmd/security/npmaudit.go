@@ -120,7 +120,7 @@ func runNPMAuditScan(paths []string, threshold int, ignoreList []IgnoreEntry) ([
 			}
 		}
 
-		if err := parseNPMAudit(out, filepath.Base(dir), acc); err != nil {
+		if err := parseNPMAudit(out, filepath.Base(dir), loadInstalledVersions(dir), acc); err != nil {
 			return nil, acc.ignored, fmt.Errorf("failed to parse npm audit output in %s: %w", dir, err)
 		}
 	}
@@ -134,17 +134,51 @@ func runNPMAuditScan(paths []string, threshold int, ignoreList []IgnoreEntry) ([
 
 // parseNPMAudit ingests one npm audit JSON report into the accumulator.
 // Extracted from runNPMAuditScan to enable fixture-driven testing.
-func parseNPMAudit(out []byte, templateName string, acc *npmAuditAccumulator) error {
+func parseNPMAudit(out []byte, templateName string, installed map[string]string, acc *npmAuditAccumulator) error {
 	var report npmAuditReport
 	if err := json.Unmarshal(out, &report); err != nil {
 		return err
 	}
 	for _, vuln := range report.Vulnerabilities {
 		for _, raw := range vuln.Via {
-			acc.add(raw, vuln, templateName)
+			acc.add(raw, vuln, templateName, installed)
 		}
 	}
 	return nil
+}
+
+type npmLockfile struct {
+	Packages map[string]struct {
+		Version string `json:"version"`
+	} `json:"packages"`
+}
+
+// loadInstalledVersions maps each node_modules path in the directory's
+// package-lock.json to its installed version so npm audit findings carry the
+// version the advisory was matched against.
+func loadInstalledVersions(dir string) map[string]string {
+	b, err := os.ReadFile(filepath.Join(dir, "package-lock.json"))
+	if err != nil {
+		return nil
+	}
+	var lock npmLockfile
+	if err := json.Unmarshal(b, &lock); err != nil {
+		return nil
+	}
+	versions := make(map[string]string, len(lock.Packages))
+	for path, pkg := range lock.Packages {
+		versions[path] = pkg.Version
+	}
+	return versions
+}
+
+func installedVersion(nodes []string, installed map[string]string) string {
+	for _, node := range nodes {
+		if v := installed[node]; v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // npmAuditAccumulator collects findings from npm audit `via` entries across
@@ -160,7 +194,7 @@ type npmAuditAccumulator struct {
 // add processes one `via` entry from an npm audit report. `via` entries are
 // either strings (pointers to other packages in the report, ignored here) or
 // advisory objects carrying the metadata we surface.
-func (a *npmAuditAccumulator) add(raw json.RawMessage, vuln npmAuditVuln, templateName string) {
+func (a *npmAuditAccumulator) add(raw json.RawMessage, vuln npmAuditVuln, templateName string, installed map[string]string) {
 	var asString string
 	if err := json.Unmarshal(raw, &asString); err == nil {
 		return
@@ -183,7 +217,8 @@ func (a *npmAuditAccumulator) add(raw json.RawMessage, vuln npmAuditVuln, templa
 		id = fmt.Sprintf("npm-%d", adv.Source)
 	}
 
-	if isIgnored(id, adv.Name, "", a.ignoreList) {
+	version := installedVersion(vuln.Nodes, installed)
+	if isIgnored(id, adv.Name, version, a.ignoreList) {
 		a.ignored++
 		return
 	}
@@ -209,6 +244,7 @@ func (a *npmAuditAccumulator) add(raw json.RawMessage, vuln npmAuditVuln, templa
 		URL:          adv.URL,
 		Package:      adv.Name,
 		Ecosystem:    "npm",
+		Version:      version,
 		Range:        adv.Range,
 		Templates:    []string{templateName},
 		Source:       "npm-audit",
