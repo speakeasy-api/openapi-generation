@@ -1330,6 +1330,10 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 **Error path**: `Error()` also supports `--include-headers` — it extracts headers from the error's `RawResponse` field and injects them into JSON error output or appends a `Response Headers:` section in pretty mode.
 
+**Table format**: `-o table` renders the table, then the `Response Headers:` section.
+
+**Pagination (`--all`)**: each page carries its own headers, so `--include-headers` prints whole pages rather than individual items: one page object with `_response_headers` per page in json, yaml, toon and jq modes, and each page followed by its `Response Headers:` section in pretty mode (`outputPageWithHeaders()` in `paginated.go.stmpl`). When `-o table` merges every page's items into one table, a single `Response Headers (last page):` section follows it.
+
 **Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 12 tests covering: 5 functional tests matching auto-generated test IDs, 5 cross-cutting format tests (json, yaml, pretty, jq, no-flag regression), 1 core bug regression test (body extracted over headers), and 1 `--header` request injection test.
 
 ### Configuration & Auth

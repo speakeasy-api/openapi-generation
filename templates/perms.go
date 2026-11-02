@@ -204,6 +204,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/tests/primary/methods_additional_test.go.stmpl":                                                      0o644,
 	"templates/cli/tests/primary/optionalnullable_additional_test.go.stmpl":                                             0o644,
 	"templates/cli/tests/primary/outcome_additional_test.go.stmpl":                                                      0o644,
+	"templates/cli/tests/primary/pagination_headers_additional_test.go.stmpl":                                           0o644,
 	"templates/cli/tests/primary/pagination_test.go.stmpl":                                                              0o644,
 	"templates/cli/tests/primary/parameter_additional_test.go.stmpl":                                                    0o644,
 	"templates/cli/tests/primary/parameter_encoding_additional_test.go.stmpl":                                           0o644,
