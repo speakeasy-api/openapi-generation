@@ -495,3 +495,20 @@ func TestHeadersNonJSONRawBodyJq(t *testing.T) {
 	// jq should extract just the raw body string
 	assert.Equal(t, "\"this is not json\"", output)
 }
+
+func TestHeadersTableFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	t.Cleanup(s.Close)
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"--include-headers", "--output-format", "table", "--color", "never",
+		"response-headers", "response-headers",
+		"--include-required-header", "--status-code", "200",
+	}), h.GetStderr())
+	out := h.GetStdout()
+	assert.Equal(t, []string{"FIELD", "VALUE"}, strings.Fields(strings.Split(out, "\n")[0]), out)
+	assert.NotContains(t, out, "token: test-token", "table output, not the pretty printer")
+	assert.Contains(t, out, "Response Headers:")
+	assert.Contains(t, out, "X-Required-Header")
+}

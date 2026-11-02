@@ -2,7 +2,9 @@ package tests
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"{{getGolangPackage}}/internal/clierrors"
 )
@@ -981,4 +984,210 @@ func TestPaginationTableOutputFlushesRowsBeforeError(t *testing.T) {
 	assert.Equal(t, []string{"1", "alpha"}, strings.Fields(lines[1]))
 	assert.Equal(t, []string{"2", "beta"}, strings.Fields(lines[2]))
 	assert.NotEmpty(t, h.GetStderr(), "the page failure should be reported on stderr")
+}
+
+type objectPageRow map[string]any
+
+// newObjectPagesServer serves pagination-object-results-page-params: pages 0
+// and 1 carry object results, page 2 is empty and ends pagination. Every
+// response names its page in an X-Page header.
+func newObjectPagesServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	pages := map[string][]objectPageRow{
+		"0": {objectPageRow{"id": 1, "name": "alpha"}, objectPageRow{"id": 2, "name": "beta"}},
+		"1": {objectPageRow{"id": 3, "name": "gamma"}},
+	}
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		page := r.URL.Query().Get("page")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Page", page)
+		results := pages[page]
+		if results == nil {
+			results = []objectPageRow{}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"numPages": 2, "resultArray": results})
+	}))
+	t.Cleanup(s.Close)
+	return s
+}
+
+func objectPagesArgs(extra ...string) []string {
+	return append([]string{"pagination", "pagination-object-results-page-params", "--page", "0", "--all"}, extra...)
+}
+
+type responseHeaderSection struct {
+	label  string
+	values map[string]string
+}
+
+// parseResponseHeaderSections returns the human-format "Response Headers"
+// sections of out in order, with each header's value.
+func parseResponseHeaderSections(out string) []responseHeaderSection {
+	var sections []responseHeaderSection
+	inSection := false
+	for _, line := range strings.Split(out, "\n") {
+		if strings.HasPrefix(line, "Response Headers") && strings.HasSuffix(line, ":") {
+			sections = append(sections, responseHeaderSection{label: strings.TrimSuffix(line, ":"), values: map[string]string{}})
+			inSection = true
+			continue
+		}
+		name, value, found := strings.Cut(strings.TrimSpace(line), ":")
+		if !inSection || !strings.HasPrefix(line, "  ") || !found {
+			inSection = false
+			continue
+		}
+		sections[len(sections)-1].values[name] = strings.TrimSpace(value)
+	}
+	return sections
+}
+
+func TestPaginationAllIncludeHeaders(t *testing.T) {
+	t.Run("json emits whole pages", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--output-format", "json")), h.GetStderr())
+
+		lines := strings.Split(strings.TrimSpace(h.GetStdout()), "\n")
+		require.Len(t, lines, 3, h.GetStdout())
+		for i, line := range lines {
+			var page map[string]any
+			require.NoError(t, json.Unmarshal([]byte(line), &page), line)
+			assert.Contains(t, page, "resultArray", "with headers, whole pages are printed instead of items")
+			headers, ok := page["_response_headers"].(map[string]any)
+			require.True(t, ok, line)
+			assert.Equal(t, strconv.Itoa(i), headers["X-Page"])
+		}
+	})
+
+	t.Run("yaml emits one document per page", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--output-format", "yaml")), h.GetStderr())
+
+		dec := yaml.NewDecoder(strings.NewReader(h.GetStdout()))
+		var pages []map[string]any
+		for {
+			var page map[string]any
+			err := dec.Decode(&page)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			require.NoError(t, err, h.GetStdout())
+			pages = append(pages, page)
+		}
+		require.Len(t, pages, 3, h.GetStdout())
+		for i, page := range pages {
+			assert.Contains(t, page, "resultArray")
+			headers, ok := page["_response_headers"].(map[string]any)
+			require.True(t, ok, h.GetStdout())
+			assert.Equal(t, strconv.Itoa(i), headers["X-Page"])
+		}
+	})
+
+	t.Run("toon emits whole pages", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--output-format", "toon")), h.GetStderr())
+
+		out := h.GetStdout()
+		assert.Equal(t, 3, strings.Count(out, "_response_headers"), out)
+		assert.Equal(t, 3, strings.Count(out, "resultArray"), out)
+		for _, name := range []string{"alpha", "beta", "gamma"} {
+			assert.Contains(t, out, name)
+		}
+	})
+
+	t.Run("jq runs against each page", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--jq", `._response_headers."X-Page"`)), h.GetStderr())
+		assert.Equal(t, "\"0\"\n\"1\"\n\"2\"", strings.TrimSpace(h.GetStdout()))
+
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--jq", `.resultArray[].name`)), h.GetStderr())
+		assert.Equal(t, "\"alpha\"\n\"beta\"\n\"gamma\"", strings.TrimSpace(h.GetStdout()))
+
+		h = NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--jq", `.name`)), h.GetStderr())
+		assert.Equal(t, "null\nnull\nnull", strings.TrimSpace(h.GetStdout()), "an item-level filter sees the page, not the items")
+	})
+
+	t.Run("pretty prints headers after each page", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--output-format", "pretty", "--color", "never")), h.GetStderr())
+
+		out := h.GetStdout()
+		sections := parseResponseHeaderSections(out)
+		require.Len(t, sections, 3, out)
+		for i, section := range sections {
+			assert.Equal(t, "Response Headers", section.label)
+			assert.Equal(t, strconv.Itoa(i), section.values["X-Page"])
+		}
+		assert.Less(t, strings.Index(out, "alpha"), strings.Index(out, "Response Headers"), out)
+		assert.Contains(t, out, "gamma")
+	})
+
+	t.Run("table prints the last page's headers once", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--output-format", "table", "--color", "never")), h.GetStderr())
+
+		out := h.GetStdout()
+		assert.Equal(t, []string{"ID", "NAME"}, strings.Fields(strings.Split(out, "\n")[0]), out)
+		assert.Contains(t, out, "gamma")
+		sections := parseResponseHeaderSections(out)
+		require.Len(t, sections, 1, out)
+		assert.Equal(t, "Response Headers (last page)", sections[0].label)
+		assert.Equal(t, "2", sections[0].values["X-Page"])
+	})
+
+	t.Run("table with one page fetched keeps the plain label", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--include-headers", "--max-pages", "1", "--output-format", "table", "--color", "never")), h.GetStderr())
+
+		out := h.GetStdout()
+		assert.Contains(t, out, "beta")
+		assert.NotContains(t, out, "gamma")
+		sections := parseResponseHeaderSections(out)
+		require.Len(t, sections, 1, out)
+		assert.Equal(t, "Response Headers", sections[0].label)
+		assert.Equal(t, "0", sections[0].values["X-Page"])
+	})
+
+	t.Run("without the flag items are streamed", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(newObjectPagesServer(t).URL, objectPagesArgs("--output-format", "json")), h.GetStderr())
+		lines := strings.Split(strings.TrimSpace(h.GetStdout()), "\n")
+		require.Len(t, lines, 3, h.GetStdout())
+		assert.NotContains(t, h.GetStdout(), "_response_headers")
+		assert.NotContains(t, h.GetStdout(), "resultArray")
+	})
+}
+
+// Without a results field each page is rendered whole, the same way as a
+// single response, followed by that page's headers.
+func TestPaginationAllIncludeHeadersTableWithoutResultsField(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cursor := r.URL.Query().Get("cursor")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Page", cursor)
+		results := []int64{}
+		if cursor == "-1" {
+			results = []int64{0}
+		}
+		_ = json.NewEncoder(w).Encode(paginationPage{NumPages: 2, ResultArray: results})
+	}))
+	t.Cleanup(s.Close)
+	args := []string{"--include-headers", "--output-format", "table", "--color", "never", "pagination", "pagination-cursor-params", "--cursor", "-1"}
+
+	single := NewCLITestHarness(t)
+	require.NoError(t, single.RunWithServer(s.URL, args), single.GetStderr())
+
+	onePage := NewCLITestHarness(t)
+	require.NoError(t, onePage.RunWithServer(s.URL, append(args, "--all", "--max-pages", "1")), onePage.GetStderr())
+	assert.Equal(t, single.GetStdout(), onePage.GetStdout(), "a page renders like a single response")
+
+	all := NewCLITestHarness(t)
+	require.NoError(t, all.RunWithServer(s.URL, append(args, "--all")), all.GetStderr())
+	out := all.GetStdout()
+	assert.True(t, strings.HasPrefix(out, single.GetStdout()), out)
+	sections := parseResponseHeaderSections(out)
+	require.Len(t, sections, 2, out)
+	assert.Equal(t, "-1", sections[0].values["X-Page"])
+	assert.Equal(t, "0", sections[1].values["X-Page"])
 }

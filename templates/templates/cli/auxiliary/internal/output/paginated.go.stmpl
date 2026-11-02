@@ -196,9 +196,18 @@ func PaginatedResult(cmd *cobra.Command, res interface{}, contentFieldName, resu
 
 // outputPageWithHeaders prints one whole page with its response headers:
 // machine formats and jq get the page object with _response_headers, human
-// formats get the page followed by a headers section.
+// formats get the typed page followed by a headers section.
 func outputPageWithHeaders(out io.Writer, page interface{}, format, jqExpr string, colorize, jqRaw, rawJSON, first bool) error {
 	headers := extractResponseHeaders(page)
+	if jqExpr == "" && (format == "pretty" || format == "table") {
+		if content := extractResultContent(page); content != nil {
+			if err := outputOneItem(out, content, format, "", colorize, jqRaw, first); err != nil {
+				return err
+			}
+		}
+		printResponseHeadersPretty(out, headers, colorize)
+		return nil
+	}
 	var data interface{}
 	if rawBody := peekRawBody(page); rawJSON && len(rawBody) > 0 && json.Valid(rawBody) {
 		decoded, err := decodeWithNumbers(rawBody)
@@ -212,15 +221,6 @@ func outputPageWithHeaders(out io.Writer, page interface{}, format, jqExpr strin
 			return err
 		}
 		data = normalized
-	}
-	if jqExpr == "" && (format == "pretty" || format == "table") {
-		if data != nil {
-			if err := outputOneItem(out, data, format, "", colorize, jqRaw, first); err != nil {
-				return err
-			}
-		}
-		printResponseHeadersPretty(out, headers, colorize)
-		return nil
 	}
 	return outputOneItem(out, injectHeaders(data, headers), format, jqExpr, colorize, jqRaw, first)
 }

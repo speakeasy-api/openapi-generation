@@ -943,7 +943,7 @@ Hint: more pages available. Use --all to fetch all results, or --cursor for manu
 
 The manual flag is included only for cursor pagination. Offset/limit pagination emits no hint; target generators that support next-URL pagination can use the same probe without a manual flag.
 
-**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), and operation-option propagation.
+**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), operation-option propagation, and `--all --include-headers` in every output format (whole pages with `_response_headers`, one headers section per page in pretty output, last-page headers after a table, and pages without a results field rendered like single responses).
 
 ### Streaming (SSE & JSONL)
 
@@ -1334,7 +1334,7 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 **Pagination (`--all`)**: each page carries its own headers, so `--include-headers` prints whole pages rather than individual items: one page object with `_response_headers` per page in json, yaml, toon and jq modes, and each page followed by its `Response Headers:` section in pretty mode (`outputPageWithHeaders()` in `paginated.go.stmpl`). When `-o table` merges every page's items into one table, a single headers section follows it: `Response Headers (last page):` when more than one page was fetched, `Response Headers:` when there was only one.
 
-**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 12 tests covering: 5 functional tests matching auto-generated test IDs, 5 cross-cutting format tests (json, yaml, pretty, jq, no-flag regression), 1 core bug regression test (body extracted over headers), and 1 `--header` request injection test.
+**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 13 tests covering: 5 functional tests matching auto-generated test IDs, 6 cross-cutting format tests (json, yaml, pretty, table, jq, no-flag regression), 1 core bug regression test (body extracted over headers), and 1 `--header` request injection test.
 
 ### Configuration & Auth
 
