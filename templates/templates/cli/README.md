@@ -1245,7 +1245,7 @@ cli users list --retry-config '{"strategy":"backoff","backoff":{"initialInterval
 
 | Flag                        | Type                 | Gate    | Description                                     |
 | --------------------------- | -------------------- | ------- | ----------------------------------------------- |
-| `--timeout`                 | string (Go duration) | always  | Whole-operation timeout (e.g., `30s`, `100ms`)  |
+| `--timeout`                 | string (Go duration) | always  | Operation timeout, > 0 (e.g., `30s`, `100ms`)   |
 | `--no-retries`              | bool                 | retries | Disable all retries (overrides spec defaults)   |
 | `--retry-max-elapsed-time`  | string (Go duration) | retries | Cap total retry time (e.g., `5s`, `1m`)         |
 | `--retry-connection-errors` | bool                 | retries | Retry on connection errors (EOF, reset)         |

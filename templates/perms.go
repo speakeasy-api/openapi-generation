@@ -216,6 +216,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/tests/primary/retries_test.go.stmpl":                                                                 0o644,
 	"templates/cli/tests/primary/security_ranking_test.go.stmpl":                                                        0o644,
 	"templates/cli/tests/primary/servers_test.go.stmpl":                                                                 0o644,
+	"templates/cli/tests/primary/serverurl_timeout_additional_test.go.stmpl":                                            0o644,
 	"templates/cli/tests/primary/streammetadata_additional_test.go.stmpl":                                               0o644,
 	"templates/cli/tests/primary/stringconstraints_test.go.stmpl":                                                       0o644,
 	"templates/cli/tests/primary/table_additional_test.go.stmpl":                                                        0o644,
