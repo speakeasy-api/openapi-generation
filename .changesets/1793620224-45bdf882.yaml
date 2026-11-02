@@ -1,0 +1,10 @@
+id: 1793620224-45bdf882
+features:
+    - cliCommands
+targets:
+    - cli
+type: fix
+bump: patch
+description: report WAV content written to a .pcm artifact --out path as an extension mismatch; raw PCM responses (audio/pcm, audio/l16) now resolve to .pcm instead of .wav, so a genuine PCM payload at .pcm and a WAV payload at .wave stay warning-free
+author: AshGodfrey
+date: "2026-11-02"
