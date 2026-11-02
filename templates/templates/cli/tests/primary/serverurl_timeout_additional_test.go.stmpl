@@ -52,3 +52,19 @@ func TestTimeoutMustBePositive(t *testing.T) {
 	h := NewCLITestHarness(t)
 	require.NoError(t, h.RunRaw([]string{"--dry-run", "--timeout", "30s", "methods", "method-get"}), h.GetStderr())
 }
+
+func TestTimeoutFromEnvironmentMustBePositive(t *testing.T) {
+	const timeoutEnv = "{{.Global.Config.EnvVarPrefix}}_TIMEOUT"
+	for _, value := range []string{"0s", "-5s"} {
+		t.Run(value, func(t *testing.T) {
+			h := NewCLITestHarness(t).WithEnv(timeoutEnv, value)
+			err := h.RunRaw([]string{"--dry-run", "methods", "method-get"})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), `invalid --timeout value "`+value+`": must be greater than zero`)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		})
+	}
+
+	h := NewCLITestHarness(t).WithEnv(timeoutEnv, "30s")
+	require.NoError(t, h.RunRaw([]string{"--dry-run", "methods", "method-get"}), h.GetStderr())
+}
