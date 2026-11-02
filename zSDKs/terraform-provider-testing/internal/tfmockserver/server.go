@@ -588,10 +588,13 @@ func (h *ResourceHandler) handleDeleteWithConfig(w http.ResponseWriter, r *http.
 		pathParams[p] = r.PathValue(p)
 	}
 	var requestData map[string]interface{}
-	rawBody, _ := io.ReadAll(r.Body)
-	if len(rawBody) > 0 {
-		if err := json.Unmarshal(rawBody, &requestData); err != nil {
-			h.testingContext.Logf("🔴 [MOCK SERVER] DELETE - Failed to decode JSON: %v\n", err)
+	rawBody, readErr := io.ReadAll(r.Body)
+	if readErr != nil || len(rawBody) > 0 {
+		if readErr == nil {
+			readErr = json.Unmarshal(rawBody, &requestData)
+		}
+		if readErr != nil {
+			h.testingContext.Logf("🔴 [MOCK SERVER] DELETE - Failed to read or decode body: %v\n", readErr)
 			config.Requests.Append(CapturedRequest{
 				Method:     r.Method,
 				Path:       r.URL.Path,
