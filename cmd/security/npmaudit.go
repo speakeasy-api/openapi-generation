@@ -183,7 +183,7 @@ func (a *npmAuditAccumulator) add(raw json.RawMessage, vuln npmAuditVuln, templa
 		id = fmt.Sprintf("npm-%d", adv.Source)
 	}
 
-	if isIgnored(id, adv.Name, a.ignoreList) {
+	if isIgnored(id, adv.Name, "", a.ignoreList) {
 		a.ignored++
 		return
 	}
