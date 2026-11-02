@@ -227,6 +227,71 @@ func TestIntentRouteDispatchDefaultAndConditionalRequired(t *testing.T) {
 	assert.Empty(t, strings.TrimSpace(h.GetStdout()), "validation errors send no request")
 }
 
+// A caller-supplied body must still carry the intent's required inputs once
+// positional arguments, flags and implied values are merged into it. An
+// explicit null counts as missing: the SDK would send the zero value.
+func TestIntentSuppliedBodyRequiresDeclaredInputs(t *testing.T) {
+	recordTest("intent-supplied-body-requires-declared-inputs")
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	t.Cleanup(srv.Close)
+
+	for _, tc := range []struct {
+		name  string
+		args  []string
+		stdin string
+		want  string
+	}{
+		{name: "empty object", args: []string{"generate", "--body", `{}`}, want: `the request body from --body has no "input": pass the <prompt> argument or set "input" in the body`},
+		{name: "empty string", args: []string{"generate", "--body", ``}, want: `the request body from --body has no "input"`},
+		{name: "null body", args: []string{"generate", "--body", `null`}, want: `the request body from --body has no "input"`},
+		{name: "null input", args: []string{"generate", "--body", `{"input":null}`}, want: `the request body from --body has no "input"`},
+		{name: "body without input", args: []string{"generate", "--body", `{"model":"model-a"}`}, want: `the request body from --body has no "input"`},
+		{name: "implying flag unset", args: []string{"generate", "--body", `{"background":false}`}, want: `the request body from --body has no "input"`},
+		{name: "stdin body without input", args: []string{"generate"}, stdin: `{"model":"model-a"}`, want: `the request body from stdin has no "input"`},
+		{name: "dispatch null selector input", args: []string{"cli-intents", "cli-intent-run", "--agent-profile", "standard", "--body", `{"agent":null,"input":"x"}`}, want: "required flag --agent not set for the Agent variant"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunWithStdinServer(srv.URL, append([]string{"--dry-run"}, tc.args...), tc.stdin)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		})
+	}
+
+	t.Run("checked before sending", func(t *testing.T) {
+		h := NewCLITestHarness(t)
+		err := h.RunWithStdinServer(srv.URL, []string{"generate", "--body", `{"model":"model-a"}`}, "")
+		require.Error(t, err)
+		assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		assert.Zero(t, requests.Load(), "a body missing a required input must not be sent")
+	})
+
+	for _, tc := range []struct {
+		name  string
+		args  []string
+		stdin string
+		want  string
+	}{
+		{name: "body with input", args: []string{"generate", "--body", `{"input":"hello"}`}, want: `"input":"hello"`},
+		{name: "argument merged into body", args: []string{"generate", "hello", "--body", `{"model":"model-a"}`}, want: `"input":"hello"`},
+		{name: "stdin body with input", args: []string{"generate"}, stdin: `{"input":"hello"}`, want: `"input":"hello"`},
+		{name: "argument merged into stdin body", args: []string{"generate", "hello"}, stdin: `{}`, want: `"input":"hello"`},
+		{name: "implied value satisfies input", args: []string{"generate", "--body", `{"background":true}`}, want: `"input":"continue in the background"`},
+		{name: "dispatch selector input in body", args: []string{"cli-intents", "cli-intent-run", "--agent-profile", "standard", "--body", `{"agent":"helper","input":"x"}`}, want: `"agent":"helper"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithStdinServer(srv.URL, append([]string{"--dry-run"}, tc.args...), tc.stdin), h.GetStderr())
+			assert.Contains(t, h.GetStdout(), tc.want)
+		})
+	}
+}
+
 func TestIntentRouteDispatchBareInvocationIsUsageError(t *testing.T) {
 	recordTest("intent-route-dispatch-bare-help")
 	h := NewCLITestHarness(t)

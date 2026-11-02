@@ -858,6 +858,9 @@ func RequireBodyInputs(cmd *cobra.Command, bodyFlagName string, inputs []Require
 		cmd.SetIn(bytes.NewReader(data))
 		raw = data
 	}
+	if len(bytes.TrimSpace(raw)) == 0 {
+		raw = []byte("{}")
+	}
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil
@@ -883,13 +886,20 @@ func bodyHasPath(obj map[string]json.RawMessage, path []string) bool {
 		return false
 	}
 	if len(path) == 1 {
-		return true
+		return bodyValuePresent(raw)
 	}
 	var child map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &child); err != nil || child == nil {
 		return false
 	}
 	return bodyHasPath(child, path[1:])
+}
+
+// bodyValuePresent reports whether a body member carries a value. An explicit
+// null counts as absent: the SDK would send its type's zero value instead.
+func bodyValuePresent(raw json.RawMessage) bool {
+	trimmed := bytes.TrimSpace(raw)
+	return len(trimmed) > 0 && string(trimmed) != "null"
 }
 
 func DefaultBodyInput(cmd *cobra.Command, bodyFlags []string, key, flagName string, value any) error {
