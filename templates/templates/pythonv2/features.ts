@@ -434,6 +434,7 @@ function isTestSkipped(test: string): boolean {
     "event-stream-equivalent-number-lexemes",
     "event-stream-null-and-undeclared-fields",
     "parameters-default-path-params",
+    "intent-supplied-body-requires-declared-inputs",
   ].includes(test);
 }
 

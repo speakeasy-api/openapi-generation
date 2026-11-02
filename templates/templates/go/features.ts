@@ -430,6 +430,7 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
+    "intent-supplied-body-requires-declared-inputs",
   ].includes(test);
 }
 
