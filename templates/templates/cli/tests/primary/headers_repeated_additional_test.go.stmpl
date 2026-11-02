@@ -1,0 +1,105 @@
+package tests
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"{{getGolangPackage}}/internal/clierrors"
+)
+
+func TestHeadersRepeatedValuesAreAllSent(t *testing.T) {
+	var mu sync.Mutex
+	var got http.Header
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		got = r.Header.Clone()
+		mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(s.Close)
+
+	for _, tc := range []struct {
+		name    string
+		headers []string
+		want    map[string][]string
+	}{
+		{
+			name:    "same name",
+			headers: []string{"X-Foo: a", "X-Foo: b"},
+			want:    map[string][]string{"X-Foo": {"a", "b"}},
+		},
+		{
+			name:    "names differing in case",
+			headers: []string{"x-foo: a", "X-Foo: b", "X-FOO: c"},
+			want:    map[string][]string{"X-Foo": {"a", "b", "c"}},
+		},
+		{
+			name:    "single and repeated together",
+			headers: []string{"X-One: 1", "X-Two: a", "X-Two: b"},
+			want:    map[string][]string{"X-One": {"1"}, "X-Two": {"a", "b"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{"methods", "method-get"}
+			for _, h := range tc.headers {
+				args = append(args, "-H", h)
+			}
+			h := NewCLITestHarness(t)
+			require.NoError(t, h.RunWithServer(s.URL, args), h.GetStderr())
+			mu.Lock()
+			defer mu.Unlock()
+			for name, values := range tc.want {
+				assert.Equal(t, values, got.Values(name), name)
+			}
+		})
+	}
+}
+
+func TestHeadersRepeatedValuesInDryRun(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithStdinServerRaw("http://127.0.0.1:1", []string{
+		"--dry-run", "--output-format", "json",
+		"-H", "x-foo: a", "-H", "X-Foo: b",
+		"methods", "method-get",
+	}, ""))
+
+	var preview struct {
+		Request struct {
+			Headers http.Header `json:"headers"`
+		} `json:"request"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStdout())), &preview), h.GetStdout())
+	assert.Equal(t, []string{"a", "b"}, preview.Request.Headers.Values("X-Foo"))
+}
+
+func TestHeadersRejectInvalidNamesAndValues(t *testing.T) {
+	for _, tc := range []struct {
+		header string
+		want   string
+	}{
+		{header: "bad", want: `invalid header format "bad"`},
+		{header: "X A: b", want: `invalid header name "X A"`},
+		{header: ": b", want: `invalid header name ""`},
+		{header: "X-Foo: a\r\nX-Injected: 1", want: `invalid value for header "X-Foo"`},
+		{header: "X-Foo: a\x00b", want: `invalid value for header "X-Foo"`},
+	} {
+		t.Run(tc.header, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			err := h.RunRaw([]string{"--dry-run", "-H", tc.header, "methods", "method-get"})
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
+		})
+	}
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunRaw([]string{"--dry-run", "-H", "X-Tab:\ta\tb", "methods", "method-get"}), h.GetStderr())
+}

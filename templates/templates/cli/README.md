@@ -1489,7 +1489,7 @@ cli users list --header "X-Request-ID: abc-123"
 cli users list --header "X-Request-ID: abc-123" --header "X-Trace-ID: xyz"
 ```
 
-**Implementation**: The `--header` flag is registered as a `StringArray` persistent flag on the root command (`root.go.stmpl`). Each operation's run function (`opcmd.go.stmpl`) reads the flag and converts headers to `operations.WithSetHeaders(headerMap)`. Headers coexist with other flags — global headers, security headers, and custom `--header` values are all sent together.
+**Implementation**: The `--header` flag is registered as a `StringArray` persistent flag on the root command (`root.go.stmpl`). Each operation's run function (`opcmd.go.stmpl`) reads the flag and converts headers to `operations.WithSetHeaders(headerMap)`. Headers coexist with other flags — global headers, security headers, and custom `--header` values are all sent together. Header names are matched case-insensitively; repeating a header (`-H "X-Foo: a" -H "X-Foo: b"`) sends every value in order, applied by an HTTP client wrapper in `client.NewClient` because `WithSetHeaders` carries one value per name. Names must be HTTP tokens and values must not contain control characters other than tab; anything else is a usage error.
 
 ### JQ Transforms (`transformJq`)
 
