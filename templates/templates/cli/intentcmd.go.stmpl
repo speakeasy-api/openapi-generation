@@ -486,6 +486,27 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	{{- end}}
+	{{- $bodyRequired := false}}
+	{{- range $c.Args}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
+	{{- range $c.Flags}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
+	{{- if $bodyRequired}}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{{- range $c.Args}}
+			{{- if and .Required (not .PresetCovered)}}
+			{Path: []string{"{{escapeGoString .Key}}"}, Source: "the <{{escapeGoString .Name}}> argument"},
+			{{- end}}
+			{{- end}}
+			{{- range $c.Flags}}
+			{{- if and .Required (not .PresetCovered)}}
+			{Path: {{if .Path}}{{template "bodyPath" .Path}}{{else}}[]string{"{{escapeGoString .Key}}"}{{end}}, Source: "--{{escapeGoString .Name}}"},
+			{{- end}}
+			{{- end}}
+		}); err != nil {
+			return err
+		}
+	}
+	{{- end}}
 	{{- end}}
 	{{- end}}
 	{{- if and $c.BodyFlag $c.Implied}}

@@ -834,6 +834,63 @@ func MergePresetStdinBody(cmd *cobra.Command, m PresetMerge) error {
 	return nil
 }
 
+// RequiredBodyInput is a declared intent input whose body path must be
+// present in a caller-supplied request body.
+type RequiredBodyInput struct {
+	Path   []string
+	Source string
+}
+
+// RequireBodyInputs reports the first required input absent from the body in
+// --bodyFlagName or, when bodyFlagName is "", the body re-attached from stdin.
+func RequireBodyInputs(cmd *cobra.Command, bodyFlagName string, inputs []RequiredBodyInput) error {
+	source, raw := "stdin", []byte(nil)
+	if bodyFlagName != "" {
+		s, _ := GetStringFlag(cmd, bodyFlagName)
+		raw, source = []byte(s), "--"+bodyFlagName
+	} else {
+		in := cmd.InOrStdin()
+		if in == os.Stdin {
+			return nil
+		}
+		data, err := io.ReadAll(in)
+		if err != nil {
+			return fmt.Errorf("failed to read stdin: %w", err)
+		}
+		cmd.SetIn(bytes.NewReader(data))
+		raw = data
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &obj); err != nil || obj == nil {
+		return nil
+	}
+	for _, input := range inputs {
+		if !bodyHasPath(obj, input.Path) {
+			field := strings.Join(input.Path, ".")
+			return WithCLIValidation(fmt.Errorf("the request body from %s has no %q: pass %s or set %q in the body", source, field, input.Source, field))
+		}
+	}
+	return nil
+}
+
+func bodyHasPath(obj map[string]json.RawMessage, path []string) bool {
+	if len(path) == 0 {
+		return true
+	}
+	raw, present := obj[path[0]]
+	if !present {
+		return false
+	}
+	if len(path) == 1 {
+		return true
+	}
+	var child map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &child); err != nil || child == nil {
+		return false
+	}
+	return bodyHasPath(child, path[1:])
+}
+
 func DefaultBodyInput(cmd *cobra.Command, bodyFlags []string, key, flagName string, value any) error {
 	for _, name := range bodyFlags {
 		if name != "" && FlagChanged(cmd, name) {

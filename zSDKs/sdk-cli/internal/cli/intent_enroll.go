@@ -115,5 +115,12 @@ func runIntentEnrollCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{Path: []string{"email"}, Source: "--enrollment-email"},
+		}); err != nil {
+			return err
+		}
+	}
 	return runCreateUserCmd(cmd, nil)
 }
