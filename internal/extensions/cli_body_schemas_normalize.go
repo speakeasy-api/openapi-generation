@@ -116,6 +116,11 @@ func convertExclusiveBound(schema map[string]any, exclusiveKey, boundKey string)
 // member, or is an anyOf/oneOf whose non-null members are all readOnly.
 // Required entries are removed wherever the object, its allOf members or the
 // schemas they reference declare the property readOnly.
+//
+// Properties are deleted only after every readOnly check, because a check can
+// follow a $ref into a property deleted earlier in the walk. A $ref that
+// points inside a deleted property, such as
+// "#/$defs/Holder/properties/stamp/properties/x", is left dangling.
 func stripReadOnlyProperties(bundle any) {
 	s := readOnlyStripper{root: bundle, resolving: map[string]bool{}}
 	walkSchemaObjects(bundle, func(schema map[string]any) {
@@ -133,6 +138,11 @@ func stripReadOnlyProperties(bundle any) {
 			}
 		}
 	})
+	type readOnlyProperty struct {
+		props map[string]any
+		name  string
+	}
+	var matches []readOnlyProperty
 	walkSchemaObjects(bundle, func(schema map[string]any) {
 		props, ok := schema["properties"].(map[string]any)
 		if !ok {
@@ -140,10 +150,13 @@ func stripReadOnlyProperties(bundle any) {
 		}
 		for name, prop := range props {
 			if s.isReadOnly(prop) {
-				delete(props, name)
+				matches = append(matches, readOnlyProperty{props: props, name: name})
 			}
 		}
 	})
+	for _, m := range matches {
+		delete(m.props, m.name)
+	}
 }
 
 type readOnlyStripper struct {

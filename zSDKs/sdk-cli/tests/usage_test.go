@@ -585,6 +585,13 @@ func TestUsageSchema_IntentSchemaUsesPinnedVariant(t *testing.T) {
 	assert.Equal(t, "#/$defs/ChatModelRequest", schema["$ref"])
 	assert.NotContains(t, schema, "oneOf")
 	assert.NotContains(t, schema, "anyOf")
+	defs, ok := schema["$defs"].(map[string]any)
+	require.True(t, ok, h.GetStdout())
+	defNames := make([]string, 0, len(defs))
+	for name := range defs {
+		defNames = append(defNames, name)
+	}
+	assert.ElementsMatch(t, []string{"ChatModelRequest"}, defNames, "only the pinned member is bundled")
 }
 
 // Artifact intent commands document the output flags they register after
