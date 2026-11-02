@@ -219,6 +219,89 @@ func TestHandleArray(t *testing.T) {
 			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
 		},
 		{
+			name: "UniqueItemsArrayWithEmptyConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  uniqueItems: true
+  const: []`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{
+						UniqueItems: pointer.From(true),
+					}).
+					Build()).
+				WithConst(&ast.AnyValue{Value: []interface{}{}}).
+				Build(),
+		},
+		{
+			name: "SetFormatWithEmptyConst",
+			schemasYAML: `TestSchema:
+  type: array
+  format: set
+  items:
+    type: string
+  const: []`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig().WithTarget(types.Target{Target: "go"})
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureSets:              true,
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeSet).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				WithConst(&ast.AnyValue{Value: []interface{}{}}).
+				Build(),
+		},
+		{
+			name: "SetFormatWithConst",
+			schemasYAML: `TestSchema:
+  type: array
+  format: set
+  items:
+    type: string
+  const:
+    - read`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig().WithTarget(types.Target{Target: "go"})
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureSets:              true,
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeSet).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 12, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
 			name: "ArrayWithConstNull",
 			schemasYAML: `TestSchema:
   type: array

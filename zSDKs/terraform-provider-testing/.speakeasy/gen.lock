@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 7e117218d1b4664bc4b4b9360bfcebcf
+  docChecksum: f8647c8985caf59cadd9e2438073ca25
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -3098,9 +3098,9 @@ trackedFiles:
   internal/sdk/models/shared/basicsearch.go:
     last_write_checksum: sha1:ebc8943a31148f7623c5f8ff940dd81c1b52f23d
   internal/sdk/models/shared/constcontainerrequest.go:
-    last_write_checksum: sha1:9c257c5ba13e6c10ddc608feaf41b8f4a09450e4
+    last_write_checksum: sha1:040d3355c429964b952a6bb74e7fcb40971c3ebc
   internal/sdk/models/shared/constcontainerresponse.go:
-    last_write_checksum: sha1:c6ea7685379a02992ab06367f585c921571896d7
+    last_write_checksum: sha1:b1dab8efea26ccee13f869bb633e5c918032ee3e
   internal/sdk/models/shared/discriminatedobject.go:
     last_write_checksum: sha1:9bb5641a1bcb27ec59c1f16d82d8a251ec733286
   internal/sdk/models/shared/discriminatedunionarraycreaterequest.go:
@@ -6051,10 +6051,10 @@ examples:
   create-const-container:
     speakeasy-default-create-const-container:
       requestBody:
-        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
+        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
   get-const-container:
     speakeasy-default-get-const-container:
       parameters:
@@ -6062,7 +6062,7 @@ examples:
           id: "<id>"
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}}
   delete-const-container:
     speakeasy-default-delete-const-container:
       parameters:

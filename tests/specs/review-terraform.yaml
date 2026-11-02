@@ -5988,6 +5988,16 @@ components:
           const:
             - read
             - write
+        empty_set:
+          type: array
+          format: set
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              key:
+                type: string
+          const: []
         empty_map:
           type: object
           additionalProperties:
@@ -6004,6 +6014,7 @@ components:
         - name
         - empty_list
         - empty_map
+        - empty_set
     ConstContainerResponse:
       type: object
       additionalProperties: false
@@ -6029,6 +6040,16 @@ components:
           const:
             - read
             - write
+        empty_set:
+          type: array
+          format: set
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              key:
+                type: string
+          const: []
         empty_map:
           type: object
           additionalProperties:

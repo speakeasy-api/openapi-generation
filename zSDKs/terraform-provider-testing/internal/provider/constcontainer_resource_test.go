@@ -40,6 +40,7 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 						"empty_list": [ ],
 						"fixed_list": [ "read" , "write" ],
 						"empty_map": { },
+						"empty_set": [ ],
 						"fixed_map": { "min" : 1, "max" : 1e1 }
 					}`))
 				},
@@ -99,6 +100,7 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 	tfmockserver.AssertRequestBodyFieldEmptyArray(t, body, "empty_list")
 	tfmockserver.AssertRequestBodyFieldArray(t, body, "fixed_list", []any{"read", "write"})
 	tfmockserver.AssertRequestBodyField(t, body, "empty_map", map[string]any{})
+	tfmockserver.AssertRequestBodyFieldEmptyArray(t, body, "empty_set")
 	tfmockserver.AssertRequestBodyField(t, body, "fixed_map", map[string]any{"max": float64(10), "min": float64(1)})
-	require.Len(t, body, 5, "request body carries only name and the four const fields: %v", body)
+	require.Len(t, body, 6, "request body carries only name and the five const fields: %v", body)
 }

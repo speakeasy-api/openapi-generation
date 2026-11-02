@@ -37,6 +37,17 @@ func (e *ConstContainerResponseFixedList) UnmarshalJSON(data []byte) error {
 	}
 }
 
+type ConstContainerResponseEmptySet struct {
+	Key *string `json:"key,omitempty"`
+}
+
+func (c *ConstContainerResponseEmptySet) GetKey() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Key
+}
+
 type ConstContainerResponse struct {
 	ID   *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
@@ -44,6 +55,8 @@ type ConstContainerResponse struct {
 	emptyList []string `const:"[]" json:"empty_list,omitempty"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	fixedList []ConstContainerResponseFixedList `const:"[\"read\",\"write\"]" json:"fixed_list,omitempty"`
+	//lint:ignore U1000 accessed via reflection for JSON marshaling
+	emptySet []ConstContainerResponseEmptySet `const:"[]" json:"empty_set,omitempty"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	emptyMap map[string]string `const:"{}" json:"empty_map,omitempty"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
@@ -81,6 +94,10 @@ func (c *ConstContainerResponse) GetEmptyList() []string {
 
 func (c *ConstContainerResponse) GetFixedList() []ConstContainerResponseFixedList {
 	return []ConstContainerResponseFixedList{ConstContainerResponseFixedListRead, ConstContainerResponseFixedListWrite}
+}
+
+func (c *ConstContainerResponse) GetEmptySet() []ConstContainerResponseEmptySet {
+	return []ConstContainerResponseEmptySet{}
 }
 
 func (c *ConstContainerResponse) GetEmptyMap() map[string]string {

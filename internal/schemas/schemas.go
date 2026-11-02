@@ -1695,12 +1695,15 @@ func constContainerValueSupported(val any, typ *ast.TypeDef) bool {
 	}
 
 	switch typ.Type {
-	case ast.DataTypeArray:
-		if typ.Validations != nil && typ.Validations.UniqueItems != nil && *typ.Validations.UniqueItems {
-			return false
-		}
+	case ast.DataTypeArray, ast.DataTypeSet:
 		items, ok := val.([]any)
 		if !ok {
+			return false
+		}
+		if len(items) == 0 {
+			return true
+		}
+		if typ.Type == ast.DataTypeSet || (typ.Validations != nil && typ.Validations.UniqueItems != nil && *typ.Validations.UniqueItems) {
 			return false
 		}
 		for _, item := range items {
