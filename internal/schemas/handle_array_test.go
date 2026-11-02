@@ -247,6 +247,36 @@ func TestHandleArray(t *testing.T) {
 				Build(),
 		},
 		{
+			name: "UniqueItemsArrayWithEmptyConstAndMinItems",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  uniqueItems: true
+  minItems: 1
+  const: []`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{
+						UniqueItems: pointer.From(true),
+						MinItems:    pointer.From[int64](1),
+					}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
 			name: "SetFormatWithEmptyConst",
 			schemasYAML: `TestSchema:
   type: array
