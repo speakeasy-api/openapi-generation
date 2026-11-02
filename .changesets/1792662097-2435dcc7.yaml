@@ -6,6 +6,6 @@ targets:
     - cli
 type: fix
 bump: patch
-description: const values on array and map fields are emitted when marshaling and accepted when unmarshaling
+description: JSON unmarshaling compares array and map const values structurally instead of by exact text
 author: AshGodfrey
 date: "2026-10-22"

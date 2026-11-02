@@ -271,6 +271,42 @@ func TestHandleArray(t *testing.T) {
 			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
 		},
 		{
+			name: "ArrayWithConstEnumItemTypeMismatch",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: integer
+    enum:
+      - 1
+      - 2
+  const:
+    - "1"`,
+			schemaName: "TestSchema",
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+					features.FeatureEnums:             true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("enums",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewEnumTypeDef(ast.DataTypeInteger, []string{"1", "2"}, "").
+						WithScope(ast.ScopeShared).
+						WithRegistered().
+						WithOriginalNameFrozen().
+						WithContextStack(ast.ContextStack{}).
+						WithEnumUnderlyingLocation(&yaml.Node{Line: 11, Column: 9}).
+						Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
 			name: "ArrayWithConstBigIntItems",
 			schemasYAML: `TestSchema:
   type: array

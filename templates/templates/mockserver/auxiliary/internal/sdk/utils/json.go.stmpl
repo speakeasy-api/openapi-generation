@@ -199,7 +199,11 @@ func UnmarshalJSON(b []byte, v interface{}, tag reflect.StructTag, topLevel bool
 						}
 					}
 					constValue := field.Tag.Get("const")
-					if val != constValue && !(isJSONContainer(constValue) && constJSONValuesEqual(r, constValue)) {
+					matches := val == constValue
+					if isContainerKind(field.Type) {
+						matches = constJSONValuesEqual(r, constValue)
+					}
+					if !matches {
 						return fmt.Errorf("const field `%s` does not match expected value `%s` got `%s`", fieldName, constValue, val)
 					}
 
@@ -422,8 +426,13 @@ func implementsJSONMarshaler(v interface{}) bool {
 	return reflect.PtrTo(vType).Implements(marshalerType)
 }
 
-func isJSONContainer(value string) bool {
-	return strings.HasPrefix(value, "[") || strings.HasPrefix(value, "{")
+func isContainerKind(typ reflect.Type) bool {
+	switch dereferenceTypePointer(typ).Kind() {
+	case reflect.Slice, reflect.Map:
+		return true
+	default:
+		return false
+	}
 }
 
 func constJSONValuesEqual(received json.RawMessage, constValue string) bool {
