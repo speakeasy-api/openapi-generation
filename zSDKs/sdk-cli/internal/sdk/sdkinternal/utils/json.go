@@ -209,7 +209,7 @@ func UnmarshalJSON(b []byte, v interface{}, tag reflect.StructTag, topLevel bool
 			// If we receive a value for a const field ignore it but mark it as unmarshaled
 			if field.Tag.Get("const") != "" {
 				if r, ok := unmarshaled[fieldName]; ok {
-					if isContainerKind(field.Type) && bytes.Equal(bytes.TrimSpace(r), []byte("null")) && (optional || field.Type.Kind() == reflect.Ptr) {
+					if isContainerKind(field.Type) && bytes.Equal(bytes.TrimSpace(r), []byte("null")) && (optional || field.Type.Kind() == reflect.Ptr || optionalnullable.IsOptionalNullableType(field.Type)) {
 						delete(unmarshaled, fieldName)
 						continue
 					}
@@ -458,7 +458,11 @@ func implementsJSONMarshaler(v interface{}) bool {
 }
 
 func isContainerKind(typ reflect.Type) bool {
-	switch dereferenceTypePointer(typ).Kind() {
+	typ = dereferenceTypePointer(typ)
+	if optionalnullable.IsOptionalNullableType(typ) {
+		typ = dereferenceTypePointer(typ.Elem())
+	}
+	switch typ.Kind() {
 	case reflect.Slice, reflect.Map:
 		return true
 	default:
