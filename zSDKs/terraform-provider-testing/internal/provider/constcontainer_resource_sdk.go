@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	tfTypes "github.com/hashicorp/terraform-provider-testing/internal/provider/types"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/operations"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/shared"
 )
@@ -16,6 +17,15 @@ func (r *ConstContainerResourceModel) RefreshFromSharedConstContainerResponse(ct
 	if resp != nil {
 		r.ID = types.StringPointerValue(resp.ID)
 		r.Name = types.StringPointerValue(resp.Name)
+		r.NestedList = []tfTypes.ConstContainerRequestNestedList{}
+
+		for _, nestedListItem := range resp.NestedList {
+			var nestedList tfTypes.ConstContainerRequestNestedList
+
+			nestedList.Label = types.StringPointerValue(nestedListItem.Label)
+
+			r.NestedList = append(r.NestedList, nestedList)
+		}
 	}
 
 	return diags
@@ -53,8 +63,21 @@ func (r *ConstContainerResourceModel) ToSharedConstContainerRequest(ctx context.
 	var name string
 	name = r.Name.ValueString()
 
+	nestedList := make([]shared.ConstContainerRequestNestedList, 0, len(r.NestedList))
+	for nestedListIndex := range r.NestedList {
+		label := new(string)
+		if !r.NestedList[nestedListIndex].Label.IsUnknown() && !r.NestedList[nestedListIndex].Label.IsNull() {
+			*label = r.NestedList[nestedListIndex].Label.ValueString()
+		} else {
+			label = nil
+		}
+		nestedList = append(nestedList, shared.ConstContainerRequestNestedList{
+			Label: label,
+		})
+	}
 	out := shared.ConstContainerRequest{
-		Name: name,
+		Name:       name,
+		NestedList: nestedList,
 	}
 
 	return &out, diags

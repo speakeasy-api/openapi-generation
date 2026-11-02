@@ -8,4 +8,5 @@ provider "testing" {
 
 resource "testing_const_container" "test" {
   name = "test-const-container"
+  nested_list = [{ label = "first" }]
 }

@@ -41,7 +41,9 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 						"fixed_list": [ "read" , "write" ],
 						"empty_map": { },
 						"empty_set": [ ],
-						"fixed_map": { "min" : 1, "max" : 1e1 }
+						"fixed_map": { "min" : 1, "max" : 1e1 },
+						"templated_map": { "{{key}}": "value" },
+						"nested_list": [ { "tags": [ "fixed" ], "label": "first" } ]
 					}`))
 				},
 			},
@@ -77,6 +79,11 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 						tfjsonpath.New("name"),
 						knownvalue.StringExact("test-const-container"),
 					),
+					statecheck.ExpectKnownValue(
+						resourceAddress,
+						tfjsonpath.New("nested_list").AtSliceIndex(0).AtMapKey("label"),
+						knownvalue.StringExact("first"),
+					),
 				},
 			},
 			{
@@ -102,5 +109,7 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 	tfmockserver.AssertRequestBodyField(t, body, "empty_map", map[string]any{})
 	tfmockserver.AssertRequestBodyFieldEmptyArray(t, body, "empty_set")
 	tfmockserver.AssertRequestBodyField(t, body, "fixed_map", map[string]any{"max": float64(10), "min": float64(1)})
-	require.Len(t, body, 6, "request body carries only name and the five const fields: %v", body)
+	tfmockserver.AssertRequestBodyField(t, body, "templated_map", map[string]any{"{{key}}": "value"})
+	tfmockserver.AssertRequestBodyField(t, body, "nested_list", []any{map[string]any{"label": "first", "tags": []any{"fixed"}}})
+	require.Len(t, body, 8, "request body carries only name, nested_list and the six const fields: %v", body)
 }

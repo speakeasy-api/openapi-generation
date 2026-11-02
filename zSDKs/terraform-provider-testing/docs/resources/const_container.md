@@ -15,6 +15,11 @@ ConstContainer Resource
 ```terraform
 resource "testing_const_container" "my_constcontainer" {
   name = "...my_name..."
+  nested_list = [
+    {
+      label = "...my_label..."
+    }
+  ]
 }
 ```
 
@@ -25,9 +30,23 @@ resource "testing_const_container" "my_constcontainer" {
 
 - `name` (String) Requires replacement if changed.
 
+### Optional
+
+- `nested_list` (Attributes List) List of objects whose item schema declares a const array. The
+nested const must be hidden from the Terraform schema and sent
+for every item.
+Requires replacement if changed. (see [below for nested schema](#nestedatt--nested_list))
+
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedatt--nested_list"></a>
+### Nested Schema for `nested_list`
+
+Optional:
+
+- `label` (String) Requires replacement if changed.
 
 ## Import
 

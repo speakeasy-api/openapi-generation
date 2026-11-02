@@ -8,12 +8,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	speakeasy_listplanmodifier "github.com/hashicorp/terraform-provider-testing/internal/planmodifiers/listplanmodifier"
+	speakeasy_objectplanmodifier "github.com/hashicorp/terraform-provider-testing/internal/planmodifiers/objectplanmodifier"
 	speakeasy_stringplanmodifier "github.com/hashicorp/terraform-provider-testing/internal/planmodifiers/stringplanmodifier"
+	tfTypes "github.com/hashicorp/terraform-provider-testing/internal/provider/types"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk"
+	speakeasy_objectvalidators "github.com/hashicorp/terraform-provider-testing/internal/validators/objectvalidators"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -32,8 +39,9 @@ type ConstContainerResource struct {
 
 // ConstContainerResourceModel describes the resource data model.
 type ConstContainerResourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+	ID         types.String                              `tfsdk:"id"`
+	Name       types.String                              `tfsdk:"name"`
+	NestedList []tfTypes.ConstContainerRequestNestedList `tfsdk:"nested_list"`
 }
 
 func (r *ConstContainerResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -54,6 +62,38 @@ func (r *ConstContainerResource) Schema(ctx context.Context, req resource.Schema
 					speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
 				},
 				Description: `Requires replacement if changed.`,
+			},
+			"nested_list": schema.ListNestedAttribute{
+				Computed: true,
+				Optional: true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplaceIfConfigured(),
+					speakeasy_listplanmodifier.SuppressDiff(speakeasy_listplanmodifier.ExplicitSuppress),
+				},
+				NestedObject: schema.NestedAttributeObject{
+					Validators: []validator.Object{
+						speakeasy_objectvalidators.NotNull(),
+					},
+					PlanModifiers: []planmodifier.Object{
+						objectplanmodifier.RequiresReplaceIfConfigured(),
+						speakeasy_objectplanmodifier.SuppressDiff(speakeasy_objectplanmodifier.ExplicitSuppress),
+					},
+					Attributes: map[string]schema.Attribute{
+						"label": schema.StringAttribute{
+							Computed: true,
+							Optional: true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.RequiresReplaceIfConfigured(),
+								speakeasy_stringplanmodifier.SuppressDiff(speakeasy_stringplanmodifier.ExplicitSuppress),
+							},
+							Description: `Requires replacement if changed.`,
+						},
+					},
+				},
+				MarkdownDescription: `List of objects whose item schema declares a const array. The` + "\n" +
+					`nested const must be hidden from the Terraform schema and sent` + "\n" +
+					`for every item.` + "\n" +
+					`Requires replacement if changed.`,
 			},
 		},
 	}

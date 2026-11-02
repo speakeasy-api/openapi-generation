@@ -48,6 +48,34 @@ func (c *ConstContainerRequestEmptySet) GetKey() *string {
 	return c.Key
 }
 
+type ConstContainerRequestNestedList struct {
+	Label *string `json:"label,omitempty"`
+	//lint:ignore U1000 accessed via reflection for JSON marshaling
+	tags []string `const:"[\"fixed\"]" json:"tags,omitempty"`
+}
+
+func (c ConstContainerRequestNestedList) MarshalJSON() ([]byte, error) {
+	return utils.MarshalJSON(c, "", false)
+}
+
+func (c *ConstContainerRequestNestedList) UnmarshalJSON(data []byte) error {
+	if err := utils.UnmarshalJSON(data, &c, "", false, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *ConstContainerRequestNestedList) GetLabel() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Label
+}
+
+func (c *ConstContainerRequestNestedList) GetTags() []string {
+	return []string{"fixed"}
+}
+
 type ConstContainerRequest struct {
 	Name string `json:"name"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
@@ -60,6 +88,16 @@ type ConstContainerRequest struct {
 	emptyMap map[string]string `const:"{}" json:"empty_map"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	fixedMap map[string]int64 `const:"{\"max\":10,\"min\":1}" json:"fixed_map,omitempty"`
+	// Map const whose key contains template delimiters. The generated
+	// Go literal and struct tag must escape them.
+	//
+	//lint:ignore U1000 accessed via reflection for JSON marshaling
+	templatedMap map[string]string `const:"{\"{{key}}\":\"value\"}" json:"templated_map,omitempty"`
+	// List of objects whose item schema declares a const array. The
+	// nested const must be hidden from the Terraform schema and sent
+	// for every item.
+	//
+	NestedList []ConstContainerRequestNestedList `json:"nested_list,omitempty"`
 }
 
 func (c ConstContainerRequest) MarshalJSON() ([]byte, error) {
@@ -98,4 +136,15 @@ func (c *ConstContainerRequest) GetEmptyMap() map[string]string {
 
 func (c *ConstContainerRequest) GetFixedMap() map[string]int64 {
 	return map[string]int64{"max": 10, "min": 1}
+}
+
+func (c *ConstContainerRequest) GetTemplatedMap() map[string]string {
+	return map[string]string{"{{key}}": "value"}
+}
+
+func (c *ConstContainerRequest) GetNestedList() []ConstContainerRequestNestedList {
+	if c == nil {
+		return nil
+	}
+	return c.NestedList
 }

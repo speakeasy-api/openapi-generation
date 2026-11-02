@@ -1145,6 +1145,9 @@ function generateModelToSDKMethodBody(
       tfAccessor = `${tfAccessor}[${iterVariable}]`;
       for (let i = 0; i < targetTypeDef.ItemType.Fields.length; i++) {
         const field = targetTypeDef.ItemType.Fields[i];
+        if (field.Const) {
+          continue;
+        }
         const equivalent =
           fromTypeDef.ItemType?.Fields.find(
             (f) => sanitizeFieldName(field.Name) == sanitizeFieldName(f.Name),

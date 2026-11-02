@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	tfTypes "github.com/hashicorp/terraform-provider-testing/internal/provider/types"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk"
 )
 
@@ -28,8 +29,9 @@ type ConstContainerDataSource struct {
 
 // ConstContainerDataSourceModel describes the data model.
 type ConstContainerDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+	ID         types.String                               `tfsdk:"id"`
+	Name       types.String                               `tfsdk:"name"`
+	NestedList []tfTypes.ConstContainerResponseNestedList `tfsdk:"nested_list"`
 }
 
 // Metadata returns the data source type name.
@@ -48,6 +50,19 @@ func (r *ConstContainerDataSource) Schema(ctx context.Context, req datasource.Sc
 			},
 			"name": schema.StringAttribute{
 				Computed: true,
+			},
+			"nested_list": schema.ListNestedAttribute{
+				Computed: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"label": schema.StringAttribute{
+							Computed: true,
+						},
+					},
+				},
+				MarkdownDescription: `List of objects whose item schema declares a const array. The` + "\n" +
+					`nested const must be hidden from the Terraform schema and sent` + "\n" +
+					`for every item.`,
 			},
 		},
 	}

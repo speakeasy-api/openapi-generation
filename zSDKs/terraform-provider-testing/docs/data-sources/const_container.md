@@ -25,3 +25,13 @@ data "testing_const_container" "my_constcontainer" {
 
 - `id` (String) The ID of this resource.
 - `name` (String)
+- `nested_list` (Attributes List) List of objects whose item schema declares a const array. The
+nested const must be hidden from the Terraform schema and sent
+for every item. (see [below for nested schema](#nestedatt--nested_list))
+
+<a id="nestedatt--nested_list"></a>
+### Nested Schema for `nested_list`
+
+Read-Only:
+
+- `label` (String)

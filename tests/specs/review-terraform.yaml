@@ -6010,6 +6010,33 @@ components:
           const:
             max: 10
             min: 1
+        templated_map:
+          description: |
+            Map const whose key contains template delimiters. The generated
+            Go literal and struct tag must escape them.
+          type: object
+          additionalProperties:
+            type: string
+          const:
+            '{{key}}': value
+        nested_list:
+          description: |
+            List of objects whose item schema declares a const array. The
+            nested const must be hidden from the Terraform schema and sent
+            for every item.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+              tags:
+                type: array
+                items:
+                  type: string
+                const:
+                  - fixed
       required:
         - name
         - empty_list
@@ -6062,6 +6089,33 @@ components:
           const:
             max: 10
             min: 1
+        templated_map:
+          description: |
+            Map const whose key contains template delimiters. The generated
+            Go literal and struct tag must escape them.
+          type: object
+          additionalProperties:
+            type: string
+          const:
+            '{{key}}': value
+        nested_list:
+          description: |
+            List of objects whose item schema declares a const array. The
+            nested const must be hidden from the Terraform schema and sent
+            for every item.
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+              tags:
+                type: array
+                items:
+                  type: string
+                const:
+                  - fixed
     DiscriminatedUnionCreateRequest:
       x-speakeasy-entity: DiscriminatedUnion
       type: object

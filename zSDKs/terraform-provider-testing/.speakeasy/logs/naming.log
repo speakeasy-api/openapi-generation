@@ -2256,6 +2256,15 @@ DEBUG	discriminated: Renamed to "ConstContainerResponse_empty_set"
 	 registrationID: "scope:shared refType:Schemas refName:ConstContainerResponse originalName:empty_set"
 DEBUG	
 
+--- Renaming 2 types with name "nested_list" ---
+DEBUG	discriminated: Renamed to "ConstContainerRequest_nested_list" 
+	 labels: "original_name:nested_list scope:shared refName:ConstContainerRequest" 
+	 registrationID: "scope:shared refType:Schemas refName:ConstContainerRequest originalName:nested_list"
+DEBUG	discriminated: Renamed to "ConstContainerResponse_nested_list" 
+	 labels: "original_name:nested_list scope:shared refName:ConstContainerResponse" 
+	 registrationID: "scope:shared refType:Schemas refName:ConstContainerResponse originalName:nested_list"
+DEBUG	
+
 --- Renaming 3 types with name "tier" ---
 DEBUG	discriminated: Renamed to "create_import_defaulted_id_tier" 
 	 labels: "original_name:tier operation:create_import_defaulted_id data_type:enum parameter:pathParam" 
@@ -3834,10 +3843,12 @@ DeleteOasContentMediaTypeResponse (ContentType: string, StatusCode: int32, RawRe
 ConstContainerRequest (name: string, empty_list: array, fixed_list: array ...)
   ConstContainerRequestFixedList (enum: read, write, admin)
   ConstContainerRequestEmptySet (key: string)
+  ConstContainerRequestNestedList (label: string, tags: array)
 CreateConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
  ConstContainerResponse (id: string, name: string, empty_list: array ...)
    ConstContainerResponseFixedList (enum: read, write, admin)
    ConstContainerResponseEmptySet (key: string)
+   ConstContainerResponseNestedList (label: string, tags: array)
 GetConstContainerRequest (id: string)
 GetConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 DeleteConstContainerRequest (id: string)

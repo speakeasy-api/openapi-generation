@@ -771,7 +771,12 @@ function templateConstContainerValue(
   if (fieldDef.Type.Type.toString() === "map") {
     const entries = Object.entries(
       withSortedKeys(fieldDef.Const.Value ?? {}),
-    ).map(([key, value]) => `${JSON.stringify(key)}: ${renderItem(value)}`);
+    ).map(
+      ([key, value]) =>
+        `${JSON.stringify(key).replaceAll("{{", `{{"{{"}}`)}: ${renderItem(
+          value,
+        )}`,
+    );
     return `${containerType}{${entries.join(", ")}}`;
   }
 

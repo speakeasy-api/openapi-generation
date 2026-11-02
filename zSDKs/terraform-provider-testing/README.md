@@ -56,7 +56,7 @@ terraform {
   required_providers {
     testing = {
       source  = "hashicorp/testing"
-      version = "0.0.1"
+      version = "0.0.2"
     }
   }
 }

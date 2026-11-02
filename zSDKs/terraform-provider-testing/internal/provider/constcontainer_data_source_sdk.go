@@ -6,6 +6,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	tfTypes "github.com/hashicorp/terraform-provider-testing/internal/provider/types"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/operations"
 	"github.com/hashicorp/terraform-provider-testing/internal/sdk/models/shared"
 )
@@ -16,6 +17,15 @@ func (r *ConstContainerDataSourceModel) RefreshFromSharedConstContainerResponse(
 	if resp != nil {
 		r.ID = types.StringPointerValue(resp.ID)
 		r.Name = types.StringPointerValue(resp.Name)
+		r.NestedList = []tfTypes.ConstContainerResponseNestedList{}
+
+		for _, nestedListItem := range resp.NestedList {
+			var nestedList tfTypes.ConstContainerResponseNestedList
+
+			nestedList.Label = types.StringPointerValue(nestedListItem.Label)
+
+			r.NestedList = append(r.NestedList, nestedList)
+		}
 	}
 
 	return diags
