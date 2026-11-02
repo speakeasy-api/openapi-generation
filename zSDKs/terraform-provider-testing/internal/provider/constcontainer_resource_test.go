@@ -30,7 +30,8 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 			{
 				Endpoint: "GET /v0/constcontainer/{id}",
 				// Return the const values with whitespace, map key order and
-				// number formatting the client did not send.
+				// number formatting the client did not send, and null for an
+				// optional const container.
 				ResponseFuncWithStore: func(r *http.Request, w http.ResponseWriter, storedData map[string]any) {
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
@@ -38,7 +39,7 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 						"id": "` + tfmockserver.StoreKey + `",
 						"name": "` + storedData["name"].(string) + `",
 						"empty_list": [ ],
-						"fixed_list": [ "read" , "write" ],
+						"fixed_list": null,
 						"empty_map": { },
 						"empty_set": [ ],
 						"fixed_map": { "min" : 1, "max" : 1e1 },

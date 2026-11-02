@@ -1700,8 +1700,17 @@ func constContainerValueSupported(val any, typ *ast.TypeDef) bool {
 		if !ok {
 			return false
 		}
-		if len(items) == 0 {
-			return typ.Validations == nil || typ.Validations.MinItems == nil || *typ.Validations.MinItems <= 0
+		count := int64(len(items))
+		if typ.Validations != nil {
+			if typ.Validations.MinItems != nil && count < *typ.Validations.MinItems {
+				return false
+			}
+			if typ.Validations.MaxItems != nil && count > *typ.Validations.MaxItems {
+				return false
+			}
+		}
+		if count == 0 {
+			return true
 		}
 		if typ.Type == ast.DataTypeSet || (typ.Validations != nil && typ.Validations.UniqueItems != nil && *typ.Validations.UniqueItems) {
 			return false
