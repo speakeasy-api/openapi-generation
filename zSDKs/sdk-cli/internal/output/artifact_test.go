@@ -4,9 +4,126 @@ package output
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
+
+// apiResponseFrom stands in for the API response that delivered the URI.
+func apiResponseFrom(apiURL string) *http.Response {
+	return &http.Response{Request: httptest.NewRequest(http.MethodPost, apiURL, nil)}
+}
+
+func TestDownloadArtifactEnforcesSizeLimit(t *testing.T) {
+	previous := artifactMaxDownloadBytes
+	artifactMaxDownloadBytes = 4
+	t.Cleanup(func() { artifactMaxDownloadBytes = previous })
+
+	for name, tc := range map[string]struct {
+		chunked bool
+		want    string
+	}{
+		"declared length": {chunked: false, want: "8 bytes exceeds the 4 byte limit"},
+		"chunked":         {chunked: true, want: "the content exceeds the 4 byte limit"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/octet-stream")
+				_, _ = w.Write([]byte("1234"))
+				if tc.chunked {
+					w.(http.Flusher).Flush()
+				}
+				_, _ = w.Write([]byte("5678"))
+			}))
+			t.Cleanup(server.Close)
+
+			_, _, err := downloadArtifact(&cobra.Command{}, server.URL+"/asset", apiResponseFrom(server.URL+"/v1"), &artifactConfig{Kind: "image"})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("expected %q, got %v", tc.want, err)
+			}
+		})
+	}
+}
+
+func TestDownloadArtifactRefusesLoopbackForRemoteAPI(t *testing.T) {
+	var fetched atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		fetched.Store(true)
+		_, _ = w.Write([]byte("local secret"))
+	}))
+	t.Cleanup(server.Close)
+	localhostURL := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+
+	for name, apiResponse := range map[string]*http.Response{
+		"remote API":       apiResponseFrom("https://api.example.test/v1"),
+		"unknown API":      nil,
+		"remote plain API": apiResponseFrom("http://api.example.test/v1"),
+	} {
+		for _, uri := range []string{server.URL + "/admin/export", localhostURL + "/admin/export"} {
+			t.Run(name+" "+uri, func(t *testing.T) {
+				_, _, err := downloadArtifact(&cobra.Command{}, uri, apiResponse, &artifactConfig{Kind: "image"})
+				if err == nil || !strings.Contains(err.Error(), "a remote API cannot direct downloads to this machine") {
+					t.Fatalf("expected a loopback refusal, got %v", err)
+				}
+			})
+		}
+	}
+	if fetched.Load() {
+		t.Fatal("the loopback server must not be contacted")
+	}
+
+	data, _, err := downloadArtifact(&cobra.Command{}, server.URL+"/asset", apiResponseFrom(server.URL+"/v1"), &artifactConfig{Kind: "image"})
+	if err != nil || string(data) != "local secret" {
+		t.Fatalf("a loopback API may use loopback URIs: data=%q err=%v", data, err)
+	}
+}
+
+func TestArtifactDownloadTypeMatches(t *testing.T) {
+	for contentType, want := range map[string]bool{
+		"":                         true,
+		"image/png":                true,
+		"IMAGE/JPEG; q=1":          true,
+		"application/octet-stream": true,
+		"binary/octet-stream":      true,
+		"text/html; charset=utf-8": false,
+		"application/json":         false,
+		"audio/wav":                false,
+	} {
+		if got := artifactDownloadTypeMatches("image", contentType); got != want {
+			t.Errorf("artifactDownloadTypeMatches(image, %q) = %t, want %t", contentType, got, want)
+		}
+	}
+}
+
+func TestDownloadArtifactTimeoutCoversBody(t *testing.T) {
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = w.Write([]byte("partial"))
+		w.(http.Flusher).Flush()
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("timeout", "", "")
+	if err := cmd.Flags().Set("timeout", "200ms"); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := downloadArtifact(cmd, server.URL+"/asset", apiResponseFrom(server.URL+"/v1"), &artifactConfig{Kind: "image"})
+	if err == nil || !strings.Contains(err.Error(), "deadline exceeded") {
+		t.Fatalf("expected the timeout to stop a stalled body, got %v", err)
+	}
+}
 
 func artifactTestConfig(kind string) *artifactConfig {
 	pointer := []artifactSegment{

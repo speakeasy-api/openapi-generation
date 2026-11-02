@@ -433,11 +433,13 @@ const (
 	artifactAssetPath   = "/artifact-download-test/asset"
 	artifactMovedPath   = "/artifact-download-test/moved"
 	artifactMissingPath = "/artifact-download-test/missing"
+	artifactHTMLPath    = "/artifact-download-test/sign-in"
 )
 
 // artifactURIServer answers the artifact command with a URI-only block
 // pointing at uri(serverURL), serves artifactAssetPath itself, redirects
-// artifactMovedPath to redirectTo and answers artifactMissingPath with 404.
+// artifactMovedPath to redirectTo, answers artifactMissingPath with 404 and
+// artifactHTMLPath with an HTML page.
 func artifactURIServer(t *testing.T, log *artifactRequestLog, uri func(string) string, redirectTo string) *httptest.Server {
 	t.Helper()
 	var server *httptest.Server
@@ -449,6 +451,9 @@ func artifactURIServer(t *testing.T, log *artifactRequestLog, uri func(string) s
 			http.Redirect(w, r, redirectTo, http.StatusFound)
 		case artifactMissingPath:
 			http.NotFound(w, r)
+		case artifactHTMLPath:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte("<html>sign in</html>"))
 		default:
 			log.record("api", r)
 			w.Header().Set("Content-Type", "application/json")
@@ -532,6 +537,19 @@ func TestArtifact_URIOnAnotherOriginGetsNoRequestHeaders(t *testing.T) {
 	assertNoAPIHeaders(t, log.get("api"), asset)
 }
 
+func TestArtifact_SameOriginRedirectKeepsRequestHeadersWithoutReferer(t *testing.T) {
+	log := &artifactRequestLog{}
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactMovedPath }, artifactAssetPath)
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("api-origin")
+	require.NotNil(t, asset, "the redirect was not followed")
+	assert.Equal(t, "secret", asset.Get(artifactProbeHeader), "a same-origin redirect keeps the request headers")
+	assert.Empty(t, asset.Get("Referer"))
+}
+
 func TestArtifact_RedirectToAnotherOriginDropsRequestHeaders(t *testing.T) {
 	log := &artifactRequestLog{}
 	other := artifactOtherHost(t, log)
@@ -555,6 +573,7 @@ func TestArtifact_URIDownloadRefusals(t *testing.T) {
 		"non-http scheme":             {func(string) string { return "gs://bucket/asset?sig=secret" }, "cannot download; fetch it directly: gs://bucket/asset"},
 		"server error":                {func(base string) string { return base + artifactMissingPath }, "the server returned 404"},
 		"redirect to plain http":      {func(base string) string { return base + artifactMovedPath }, "only https URIs are downloaded"},
+		"html sign-in page":           {func(base string) string { return base + artifactHTMLPath }, "the server returned text/html content, not image"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			log := &artifactRequestLog{}

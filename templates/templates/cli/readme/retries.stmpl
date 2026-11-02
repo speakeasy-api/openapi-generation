@@ -78,6 +78,10 @@ Root-level retry policies apply only to safe HTTP methods: `GET`, `HEAD`, `OPTIO
 {{$c.Showcase}} --timeout 30s
 ```
 
+{{ if hasCliArtifacts -}}
+Commands that save media delivered by URI download it with a separate timeout of the same length, so the API call and the download each get the full budget.
+
+{{ end -}}
 {{ if eq $retryVisibility "none" -}}
 **Precedence**: `no_retries` > `retry_config` > `retry_max_elapsed_time`/`retry_connection_errors` > API specification defaults.
 {{ else -}}
