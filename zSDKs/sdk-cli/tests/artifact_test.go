@@ -123,7 +123,7 @@ func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	written, err := os.ReadFile(target)
 	require.NoError(t, err)
 	assert.Equal(t, artifactTestBytes, string(written))
-	assert.NotContains(t, h.GetStderr(), "Note: wrote", "an unchanged extension needs no rewrite note")
+	assert.NotContains(t, h.GetStderr(), "does not match", "a matching extension needs no mismatch note")
 
 	// Explicit destinations replace an existing file (matching the reference UX).
 	require.NoError(t, os.WriteFile(target, []byte("stale"), 0o644))
@@ -134,41 +134,64 @@ func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	assert.Equal(t, artifactTestBytes, string(written))
 }
 
-func TestArtifact_OutExtensionFollowsReturnedMime(t *testing.T) {
+func TestArtifact_OutKeepsRequestedExtension(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
+	target := filepath.Join(dir, "photo.jpg")
 
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", filepath.Join(dir, "photo.jpg")))
-	printed := strings.TrimSpace(h.GetStdout())
-	assert.Equal(t, filepath.Join(dir, "photo.png"), printed)
-	_, err := os.Stat(printed)
-	assert.NoError(t, err)
-	assert.Contains(t, h.GetStderr(), "Note: wrote image/png as photo.png (requested photo.jpg)")
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+	assert.Equal(t, target, strings.TrimSpace(h.GetStdout()))
+	written, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+	_, err = os.Stat(filepath.Join(dir, "photo.png"))
+	assert.True(t, os.IsNotExist(err), "the requested path is not renamed")
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Note: photo.jpg contains image/png content; its extension does not match"), h.GetStderr())
 }
 
 func TestArtifact_OutWithoutExtensionAppendsSilently(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
-	dir := t.TempDir()
-	h := NewCLITestHarness(t)
-	target := filepath.Join(dir, "photo")
+	for _, name := range []string{"photo", "photo.v1", "release-1.2"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+			target := filepath.Join(dir, name)
 
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
-	assert.Equal(t, target+".png", strings.TrimSpace(h.GetStdout()))
-	assert.NotContains(t, h.GetStderr(), "Note: wrote", "plain extension appends are not rewrites")
+			require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+			printed := strings.TrimSpace(h.GetStdout())
+			assert.Equal(t, target+".png", printed)
+			written, err := os.ReadFile(printed)
+			require.NoError(t, err)
+			assert.Equal(t, artifactTestBytes, string(written))
+			assert.NotContains(t, h.GetStderr(), "does not match", "an appended extension is not a mismatch")
+		})
+	}
 }
 
-func TestArtifact_ExtensionRewriteNoteIsSilentInAgentMode(t *testing.T) {
+func TestArtifact_ExtensionMismatchIsSilentInAgentMode(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
-	target := filepath.Join(dir, "photo.wrong")
+	target := filepath.Join(dir, "photo.jpg")
 
-	// Machine modes keep stderr silent on success; the final path is already
-	// the deliverable on stdout, so the human rewrite note is suppressed.
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--agent-mode", "--out", target))
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--agent-mode", "--output-format", "json", "--out", target))
 	assert.Empty(t, strings.TrimSpace(h.GetStderr()), "machine-mode success must keep stderr silent")
-	assert.Contains(t, h.GetStdout(), "photo.png")
+	var envelope map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &envelope))
+	assert.Equal(t, target, envelope["path"])
+	assert.Equal(t, true, envelope["extension_mismatch"])
+	_, err := os.Stat(target)
+	assert.NoError(t, err)
+
+	matching := filepath.Join(dir, "photo.png")
+	h2 := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, h2, server.URL, dir, "--agent-mode", "--output-format", "json", "--out", matching))
+	envelope = map[string]any{}
+	require.NoError(t, json.Unmarshal([]byte(h2.GetStdout()), &envelope))
+	assert.Equal(t, matching, envelope["path"])
+	_, present := envelope["extension_mismatch"]
+	assert.False(t, present, "a matching extension omits extension_mismatch from the envelope")
 }
 
 func TestArtifact_OutDirectoryUsesDefaultName(t *testing.T) {
