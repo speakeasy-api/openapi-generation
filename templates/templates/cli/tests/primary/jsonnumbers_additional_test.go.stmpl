@@ -96,9 +96,37 @@ func TestBuildRequestPreservesLargeIntegers(t *testing.T) {
 }
 
 func TestSDKDecodingKeepsFloat64OutsideRequestBuilding(t *testing.T) {
-	var v numberVariant
-	require.NoError(t, utils.UnmarshalJsonFromString(`{"extra":9007199254740993}`, &v, ""))
-	assert.IsType(t, float64(0), v.Extra)
+	assertSDKDecodesFloat64 := func(t *testing.T) {
+		t.Helper()
+		var v numberVariant
+		require.NoError(t, utils.UnmarshalJsonFromString(`{"extra":9007199254740993}`, &v, ""))
+		assert.IsType(t, float64(0), v.Extra)
+	}
+	assertSDKDecodesFloat64(t)
+
+	t.Run("after a successful build", func(t *testing.T) {
+		cmd := newNumbersCommand("body")
+		require.NoError(t, cmd.Flags().Set("body", largeNumbersBody))
+		_, err := flagutil.BuildRequest[numbersBody](cmd, nil, "", "body")
+		require.NoError(t, err)
+		assertSDKDecodesFloat64(t)
+	})
+
+	t.Run("after a failed build", func(t *testing.T) {
+		cmd := newNumbersCommand("body")
+		require.NoError(t, cmd.Flags().Set("body", `{"plain":`))
+		_, err := flagutil.BuildRequest[numbersBody](cmd, nil, "", "body")
+		require.Error(t, err)
+		assertSDKDecodesFloat64(t)
+	})
+
+	t.Run("after a request body build", func(t *testing.T) {
+		cmd := newNumbersCommand("request-body")
+		require.NoError(t, cmd.Flags().Set("request-body", largeNumbersBody))
+		_, err := flagutil.BuildRequestBody[numbersBody](cmd, "request-body", "", true)
+		require.NoError(t, err)
+		assertSDKDecodesFloat64(t)
+	})
 }
 
 func TestJqPreservesLargeIntegers(t *testing.T) {
