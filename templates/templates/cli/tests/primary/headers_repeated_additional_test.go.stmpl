@@ -85,7 +85,7 @@ func TestHeadersRejectInvalidNamesAndValues(t *testing.T) {
 		header string
 		want   string
 	}{
-		{header: "bad", want: `invalid header format "bad"`},
+		{header: "Authorization Bearer secret-token", want: `invalid --header value: expected "Key: Value"`},
 		{header: "X A: b", want: `invalid header name "X A"`},
 		{header: ": b", want: `invalid header name ""`},
 		{header: "X-Foo: a\r\nX-Injected: 1", want: `invalid value for header "X-Foo"`},
@@ -96,6 +96,7 @@ func TestHeadersRejectInvalidNamesAndValues(t *testing.T) {
 			err := h.RunRaw([]string{"--dry-run", "-H", tc.header, "methods", "method-get"})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.want)
+			assert.NotContains(t, err.Error(), "secret-token", "a malformed header can carry a credential, so its value is not echoed")
 			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 		})
 	}

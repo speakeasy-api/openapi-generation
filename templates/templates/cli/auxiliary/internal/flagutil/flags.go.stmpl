@@ -602,7 +602,7 @@ func ParseHeaderFlags(values []string) (http.Header, error) {
 	for _, h := range values {
 		k, v, ok := strings.Cut(h, ":")
 		if !ok {
-			return nil, WithCLIValidation(fmt.Errorf("invalid header format %q: expected \"Key: Value\"", h))
+			return nil, WithCLIValidation(fmt.Errorf("invalid --header value: expected \"Key: Value\" with a colon after the header name"))
 		}
 		name, value := strings.TrimSpace(k), strings.TrimSpace(v)
 		if !validHeaderName(name) {
