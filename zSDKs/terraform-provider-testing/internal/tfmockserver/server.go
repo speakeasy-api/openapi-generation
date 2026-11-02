@@ -586,11 +586,20 @@ func (h *ResourceHandler) handleDeleteWithConfig(w http.ResponseWriter, r *http.
 	for _, p := range config.params {
 		pathParams[p] = r.PathValue(p)
 	}
+	var requestData map[string]interface{}
+	if r.ContentLength != 0 {
+		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+			h.testingContext.Logf("🔴 [MOCK SERVER] DELETE - Failed to decode JSON: %v\n", err)
+			h.writeError(w, 400, "Invalid JSON data", "VALIDATION_ERROR")
+			return
+		}
+		h.testingContext.Logf("🔵 [MOCK SERVER] DELETE - Request body: %+v\n", requestData)
+	}
 	config.Requests.Append(CapturedRequest{
 		Method:     r.Method,
 		Path:       r.URL.Path,
 		PathParams: pathParams,
-		Body:       nil, // DELETE requests typically don't have a body
+		Body:       requestData,
 	})
 
 	h.testingContext.Logf("🔵 [MOCK SERVER] DELETE - Id: %s,\n", StoreKey)

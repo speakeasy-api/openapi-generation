@@ -56,7 +56,7 @@ terraform {
   required_providers {
     testing = {
       source  = "hashicorp/testing"
-      version = "0.0.2"
+      version = "0.0.1"
     }
   }
 }
@@ -103,6 +103,7 @@ Available configuration:
 * [testing_api_create_and_update](docs/resources/api_create_and_update.md)
 * [testing_basic](docs/resources/basic.md)
 * [testing_const_container](docs/resources/const_container.md)
+* [testing_const_empty_set_delete](docs/resources/const_empty_set_delete.md)
 * [testing_discriminated_union](docs/resources/discriminated_union.md)
 * [testing_discriminated_union_array](docs/resources/discriminated_union_array.md)
 * [testing_framework_type](docs/resources/framework_type.md)

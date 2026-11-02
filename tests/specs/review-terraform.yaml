@@ -5745,6 +5745,86 @@ paths:
       responses:
         '200':
           description: OK
+  /v0/constemptysetdelete:
+    put:
+      x-speakeasy-entity-operation: ConstEmptySetDelete#create,update
+      description: |
+        Create or replace a resource whose desired state is a set of objects.
+        One operation serves create and update; deletion goes through a
+        separate operation whose request body declares the same set with an
+        empty const value.
+      operationId: create-const-empty-set-delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConstEmptySetDeleteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstEmptySetDeleteResponse'
+  /v0/constemptysetdelete/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      x-speakeasy-entity-operation:
+        terraform-datasource: null
+        terraform-resource: ConstEmptySetDelete#read
+      description: Get a const empty set delete resource
+      operationId: get-const-empty-set-delete
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstEmptySetDeleteResponse'
+        '404':
+          description: Not Found
+  /v1/constemptysetdelete/teardown:
+    put:
+      x-speakeasy-entity-operation: ConstEmptySetDelete#delete
+      description: |
+        Delete the resource by replacing its group set with an empty set. The
+        request body declares the set property with `format: set` and
+        `const: []`, so Terraform must hide it and send an empty array instead
+        of the groups held in state. The operation lives under a different
+        API version prefix from the entity's other operations.
+      operationId: delete-const-empty-set-delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                scope_id:
+                  type: string
+                groups:
+                  type: array
+                  format: set
+                  items:
+                    $ref: '#/components/schemas/ConstEmptySetDeleteGroup'
+                  const: []
+              required:
+                - scope_id
+                - groups
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstEmptySetDeleteResponse'
 components:
   parameters:
     GlobalBoolean:
@@ -6116,6 +6196,63 @@ components:
                   type: string
                 const:
                   - fixed
+    ConstEmptySetDeleteGroup:
+      type: object
+      additionalProperties: false
+      properties:
+        provider:
+          type: string
+        region:
+          type: string
+        replicas:
+          type: integer
+      required:
+        - provider
+        - region
+    ConstEmptySetDeleteRequest:
+      type: object
+      additionalProperties: false
+      x-speakeasy-entity: ConstEmptySetDelete
+      properties:
+        scope_id:
+          type: string
+        groups:
+          type: array
+          format: set
+          items:
+            $ref: '#/components/schemas/ConstEmptySetDeleteGroup'
+      required:
+        - scope_id
+        - groups
+    ConstEmptySetDeleteResponse:
+      type: object
+      additionalProperties: false
+      x-speakeasy-entity: ConstEmptySetDelete
+      properties:
+        id:
+          type: string
+        scope_id:
+          type: string
+        groups:
+          type: array
+          format: set
+          items:
+            $ref: '#/components/schemas/ConstEmptySetDeleteGroup'
+        supported_actions:
+          description: |
+            Response-only const array. It must stay off the request model,
+            be hidden from the Terraform schema, and be checked when the
+            response is decoded.
+          type: array
+          items:
+            type: string
+          readOnly: true
+          const:
+            - replace
+      required:
+        - id
+        - scope_id
+        - groups
     DiscriminatedUnionCreateRequest:
       x-speakeasy-entity: DiscriminatedUnion
       type: object

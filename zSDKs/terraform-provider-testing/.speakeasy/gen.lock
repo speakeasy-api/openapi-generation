@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: a0a27db9e77dc544c3bf600ce831af52
+  docChecksum: 645a6255443dd07cc5e84f7ec7134634
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -285,6 +285,12 @@ trackedFiles:
     last_write_checksum: sha1:dc82e240078029b62b56bb695067d4c5e9cb4264
   examples/resources/testing_const_container/resource.tf:
     last_write_checksum: sha1:e99fed339d5e89b5fd901103358d29986496d02a
+  examples/resources/testing_const_empty_set_delete/import-by-string-id.tf:
+    last_write_checksum: sha1:5e2fa4d90023d6fd8023b8df472dc294c2610004
+  examples/resources/testing_const_empty_set_delete/import.sh:
+    last_write_checksum: sha1:7f1db4230b8685d1674c91ab6d0834483d1388d7
+  examples/resources/testing_const_empty_set_delete/resource.tf:
+    last_write_checksum: sha1:3f758caa89921c6e250892c31cc357ee5b137c10
   examples/resources/testing_discriminated_union/import-by-string-id.tf:
     last_write_checksum: sha1:61473f31485ac280bfa6943e7580d1bdd1e43413
   examples/resources/testing_discriminated_union/import.sh:
@@ -781,6 +787,10 @@ trackedFiles:
     last_write_checksum: sha1:65ef61f51490dba8ecc6d5d0f3428fb632f1d76d
   internal/provider/constcontainer_resource_sdk.go:
     last_write_checksum: sha1:1742253997f1ad0e00600193af22ec233d4c9016
+  internal/provider/constemptysetdelete_resource.go:
+    last_write_checksum: sha1:c3fafc720d57f71f6b2cf165b9e96e347711c078
+  internal/provider/constemptysetdelete_resource_sdk.go:
+    last_write_checksum: sha1:e4011063b10ba78613522aab7b958a801a850764
   internal/provider/discriminatedunion_data_source.go:
     last_write_checksum: sha1:dd97963488cb1994321bf5e3f813917c80a7d7b5
   internal/provider/discriminatedunion_data_source_sdk.go:
@@ -1084,7 +1094,7 @@ trackedFiles:
   internal/provider/patch_resource_sdk.go:
     last_write_checksum: sha1:9b583e2ac47191350373ce5a86408c118bd606b1
   internal/provider/provider.go:
-    last_write_checksum: sha1:8b1723df0915047021b8fd1b267f93dc19808e67
+    last_write_checksum: sha1:61dd2f3795c80f9758d2788d91afc2b1dda4a885
   internal/provider/reflect/diags.go:
     last_write_checksum: sha1:ace8bc53054bb1d8ee8689acf3e4323de75a6297
   internal/provider/reflect/doc.go:
@@ -1237,6 +1247,8 @@ trackedFiles:
     last_write_checksum: sha1:458f9b9dd282edcdd630ceea677772735874d669
   internal/provider/types/const_container_response_nested_list.go:
     last_write_checksum: sha1:7090951d7f68ab5f6994376600b38b2470079383
+  internal/provider/types/const_empty_set_delete_group.go:
+    last_write_checksum: sha1:cd350a23a4944c1d3dcbca450daa9d4b799bfeae
   internal/provider/types/credential.go:
     last_write_checksum: sha1:0f481ec7276acf4c15b64e3a7453e4bddc2dfa1c
   internal/provider/types/credential1.go:
@@ -2463,6 +2475,8 @@ trackedFiles:
     last_write_checksum: sha1:0fdbac8d615b203c4f6054f9f44176e1c4ce564a
   internal/sdk/models/operations/createconstcontainer.go:
     last_write_checksum: sha1:892a2934f9b5cc0d5e40335502d20c3750702b95
+  internal/sdk/models/operations/createconstemptysetdelete.go:
+    last_write_checksum: sha1:a0fae74d349d3ea63d3df50ba944230a3379e0a3
   internal/sdk/models/operations/creatediscriminatedunion.go:
     last_write_checksum: sha1:68d916f8c709a15e2a564066dbc9317502aecf13
   internal/sdk/models/operations/creatediscriminatedunionarray.go:
@@ -2613,6 +2627,8 @@ trackedFiles:
     last_write_checksum: sha1:2d991f9ce3b49547f88d3ed69a9a4e01ccc135a8
   internal/sdk/models/operations/deleteconstcontainer.go:
     last_write_checksum: sha1:443d6380ef9a4f9405c655078371ab2c13e633fa
+  internal/sdk/models/operations/deleteconstemptysetdelete.go:
+    last_write_checksum: sha1:67e766f608bf87fb1c06b22916fce98ed38d048c
   internal/sdk/models/operations/deletecustomplanmodifiers.go:
     last_write_checksum: sha1:8bcb2a4f56d57265de023e41d21617f5b88a7bc6
   internal/sdk/models/operations/deletediscriminatedunion.go:
@@ -2755,6 +2771,8 @@ trackedFiles:
     last_write_checksum: sha1:73ada8ac1a2cec3987eb5b93f78f815934067b9d
   internal/sdk/models/operations/getconstcontainer.go:
     last_write_checksum: sha1:c4ac02b538bdf08901d302a4d4c07a6a18cb2536
+  internal/sdk/models/operations/getconstemptysetdelete.go:
+    last_write_checksum: sha1:0fd0c404cc7659c8ee1f1453adf5be9a55443f03
   internal/sdk/models/operations/getcustomplanmodifiers.go:
     last_write_checksum: sha1:c6f5938cb6330969450186336a3085558bcd6d1c
   internal/sdk/models/operations/getdiscriminatedunion.go:
@@ -3105,6 +3123,12 @@ trackedFiles:
     last_write_checksum: sha1:ddd4ad7779260d9e7a9ac96c5918c4e5345c66d2
   internal/sdk/models/shared/constcontainerresponse.go:
     last_write_checksum: sha1:4d97877805a1493c13e7d36ad58fc1ed13c8293d
+  internal/sdk/models/shared/constemptysetdeletegroup.go:
+    last_write_checksum: sha1:d33860be5d32e993a1907c5f4a9b85f849357a8e
+  internal/sdk/models/shared/constemptysetdeleterequest.go:
+    last_write_checksum: sha1:1823ce955c667bf3702f098e162b9fa0bac9d8a4
+  internal/sdk/models/shared/constemptysetdeleteresponse.go:
+    last_write_checksum: sha1:49ba49af13fb530bb278d8559e23e0b191c8b1ed
   internal/sdk/models/shared/discriminatedobject.go:
     last_write_checksum: sha1:9bb5641a1bcb27ec59c1f16d82d8a251ec733286
   internal/sdk/models/shared/discriminatedunionarraycreaterequest.go:
@@ -3610,7 +3634,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:f390c541016ad47b4744f87a396fc36e8590d9f4
+    last_write_checksum: sha1:d2ae7d2c0b4faa1fa52da3725944f1fc12be1c6d
   internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   internal/sdk/types/date.go:
@@ -6072,4 +6096,26 @@ examples:
       parameters:
         path:
           id: "<id>"
+  create-const-empty-set-delete:
+    speakeasy-default-create-const-empty-set-delete:
+      requestBody:
+        application/json: {"scope_id": "<id>", "groups": []}
+      responses:
+        "200":
+          application/json: {"id": "<id>", "scope_id": "<id>", "groups": [{"provider": "<value>", "region": "<value>"}], "supported_actions": ["replace"]}
+  get-const-empty-set-delete:
+    speakeasy-default-get-const-empty-set-delete:
+      parameters:
+        path:
+          id: "<id>"
+      responses:
+        "200":
+          application/json: {"id": "<id>", "scope_id": "<id>", "groups": [], "supported_actions": ["replace"]}
+  delete-const-empty-set-delete:
+    speakeasy-default-delete-const-empty-set-delete:
+      requestBody:
+        application/json: {"scope_id": "<id>", "groups": []}
+      responses:
+        "200":
+          application/json: {"id": "<id>", "scope_id": "<id>", "groups": [], "supported_actions": ["replace"]}
 examplesVersion: 1.0.2

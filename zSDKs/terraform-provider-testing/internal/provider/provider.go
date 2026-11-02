@@ -809,6 +809,7 @@ func (p *TestingProvider) Resources(ctx context.Context) []func() resource.Resou
 		NewAPICreateAndUpdateResource,
 		NewBasicResource,
 		NewConstContainerResource,
+		NewConstEmptySetDeleteResource,
 		NewDiscriminatedUnionResource,
 		NewDiscriminatedUnionArrayResource,
 		NewFrameworkTypeResource,

@@ -175,6 +175,9 @@ DEBUG	prepend_op_id: Renamed to "list_x_client_filter_ResponseBody"
 DEBUG	prepend_op_id: Renamed to "list_x_client_filter_array_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:list_x_client_filter_array requestResponse:response" 
 	 registrationID: "scope:operations operation:list-x-client-filter-array requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: Renamed to "delete_const_empty_set_delete_request" 
+	 labels: "original_name:request operation:delete_const_empty_set_delete" 
+	 registrationID: "scope:operations operation:delete-const-empty-set-delete requestResponse:request originalName:RequestBody"
 DEBUG	
 
 --- Renaming 2 types with name "Transformed" ---
@@ -2413,6 +2416,9 @@ DEBUG	prepend_op_id: N/A rename "list_x_client_filter_ResponseBody"
 DEBUG	prepend_op_id: N/A rename "list_x_client_filter_array_ResponseBody" 
 	 labels: "original_name:ResponseBody operation:list_x_client_filter_array requestResponse:response" 
 	 registrationID: "scope:operations operation:list-x-client-filter-array requestResponse:response responseStatusCode:200 responseMediaType:application/json originalName:ResponseBody"
+DEBUG	prepend_op_id: N/A rename "delete_const_empty_set_delete_request" 
+	 labels: "original_name:request operation:delete_const_empty_set_delete" 
+	 registrationID: "scope:operations operation:delete-const-empty-set-delete requestResponse:request originalName:RequestBody"
 DEBUG	
 
 Sdk (SDK empty)
@@ -3853,6 +3859,14 @@ GetConstContainerRequest (id: string)
 GetConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 DeleteConstContainerRequest (id: string)
 DeleteConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response)
+ConstEmptySetDeleteRequest (scope_id: string, groups: set)
+  ConstEmptySetDeleteGroup (provider: string, region: string, replicas: integer)
+CreateConstEmptySetDeleteResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
+ ConstEmptySetDeleteResponse (id: string, scope_id: string, groups: set ...)
+GetConstEmptySetDeleteRequest (id: string)
+GetConstEmptySetDeleteResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
+DeleteConstEmptySetDeleteRequest (scope_id: string, groups: set)
+DeleteConstEmptySetDeleteResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 Globals (globalBoolean: boolean, globalBooleanWithDefault: boolean, globalEnumFloat32: float32 ...)
 UpdateXGlobalsGlobals (globalBoolean: boolean, globalBooleanWithDefault: boolean, globalEnumFloat32: float32 ...)
 
