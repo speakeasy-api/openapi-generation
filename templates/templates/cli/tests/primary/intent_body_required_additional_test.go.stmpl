@@ -35,6 +35,11 @@ func TestIntentSuppliedBodyRequiresDeclaredInputs(t *testing.T) {
 			want: `the request body from --body has no "input": pass the <prompt> argument or set "input" in the body`,
 		},
 		{
+			name: "null body",
+			args: []string{"generate", "--body", `null`},
+			want: `the request body from --body has no "input"`,
+		},
+		{
 			name: "body without input",
 			args: []string{"generate", "--body", `{"model":"model-a"}`},
 			want: `the request body from --body has no "input"`,

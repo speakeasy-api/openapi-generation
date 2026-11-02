@@ -859,8 +859,11 @@ func RequireBodyInputs(cmd *cobra.Command, bodyFlagName string, inputs []Require
 		raw = data
 	}
 	var obj map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &obj); err != nil || obj == nil {
+	if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil
+	}
+	if obj == nil {
+		obj = map[string]json.RawMessage{}
 	}
 	for _, input := range inputs {
 		if !bodyHasPath(obj, input.Path) {

@@ -486,6 +486,18 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- if and $c.BodyFlag $c.Implied}}
+	if err := flagutil.ApplyImpliedBody(cmd, "{{$c.BodyFlag}}", []flagutil.ImpliedBody{
+		{{- range $c.Implied}}
+		{Key: "{{escapeGoString .Key}}", Values: "{{escapeGoString .Values}}"},
+		{{- end}}
+	}); err != nil {
+		return err
+	}
+	{{- end}}
+	{{- if and (not $c.Dispatch) $c.BodyFlag}}
 	{{- $bodyRequired := false}}
 	{{- range $c.Args}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
 	{{- range $c.Flags}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
@@ -507,16 +519,6 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	{{- end}}
-	{{- end}}
-	{{- end}}
-	{{- if and $c.BodyFlag $c.Implied}}
-	if err := flagutil.ApplyImpliedBody(cmd, "{{$c.BodyFlag}}", []flagutil.ImpliedBody{
-		{{- range $c.Implied}}
-		{Key: "{{escapeGoString .Key}}", Values: "{{escapeGoString .Values}}"},
-		{{- end}}
-	}); err != nil {
-		return err
-	}
 	{{- end}}
 	{{- if $c.AsyncJSON}}
 	if err := output.ValidateAsyncFlags(cmd); err != nil {
