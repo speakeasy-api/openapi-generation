@@ -8,7 +8,8 @@ import (
 )
 
 type GetConstContainerRequest struct {
-	ID string `pathParam:"style=simple,explode=false,name=id"`
+	ID    string   `pathParam:"style=simple,explode=false,name=id"`
+	Scope []string `queryParam:"style=form,explode=true,name=scope"`
 }
 
 func (g *GetConstContainerRequest) GetID() string {
@@ -16,6 +17,13 @@ func (g *GetConstContainerRequest) GetID() string {
 		return ""
 	}
 	return g.ID
+}
+
+func (g *GetConstContainerRequest) GetScope() []string {
+	if g == nil {
+		return nil
+	}
+	return g.Scope
 }
 
 type GetConstContainerResponse struct {

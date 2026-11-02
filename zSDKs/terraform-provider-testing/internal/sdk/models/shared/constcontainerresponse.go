@@ -89,11 +89,17 @@ type ConstContainerResponse struct {
 	emptyMap map[string]string `const:"{}" json:"empty_map,omitempty"`
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
 	fixedMap map[string]int64 `const:"{\"max\":10,\"min\":1}" json:"fixed_map,omitempty"`
-	// Map const whose key contains template delimiters. The generated
-	// Go literal and struct tag must escape them.
+	// Map const whose keys and values contain template delimiters,
+	// quotes, backslashes and a newline. The generated Go literal and
+	// struct tag must escape them and round-trip them on the wire.
 	//
 	//lint:ignore U1000 accessed via reflection for JSON marshaling
-	templatedMap map[string]string `const:"{\"{{key}}\":\"value\"}" json:"templated_map,omitempty"`
+	templatedMap map[string]string `const:"{\"quo\\\"te\\\\back\":\"line\\nbreak\",\"{{key}}\":\"value\"}" json:"templated_map,omitempty"`
+	// Nullable array with an empty const. A response may carry null for
+	// it, which must decode as absent rather than a const mismatch.
+	//
+	//lint:ignore U1000 accessed via reflection for JSON marshaling
+	nullableList []string `const:"[]" json:"nullable_list"`
 	// List of objects whose item schema declares a const array. The
 	// nested const must be hidden from the Terraform schema and sent
 	// for every item.
@@ -147,7 +153,11 @@ func (c *ConstContainerResponse) GetFixedMap() map[string]int64 {
 }
 
 func (c *ConstContainerResponse) GetTemplatedMap() map[string]string {
-	return map[string]string{"{{key}}": "value"}
+	return map[string]string{"quo\"te\\back": "line\nbreak", "{{key}}": "value"}
+}
+
+func (c *ConstContainerResponse) GetNullableList() []string {
+	return []string{}
 }
 
 func (c *ConstContainerResponse) GetNestedList() []ConstContainerResponseNestedList {

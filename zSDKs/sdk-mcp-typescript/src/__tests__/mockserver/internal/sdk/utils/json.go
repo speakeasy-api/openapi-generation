@@ -172,14 +172,11 @@ func UnmarshalJSON(b []byte, v interface{}, tag reflect.StructTag, topLevel bool
 			fieldVal := val.Field(i)
 
 			fieldName := field.Name
-			optional := false
 
 			jsonTag := field.Tag.Get("json")
 			if jsonTag != "" {
 				for _, tag := range strings.Split(jsonTag, ",") {
-					if tag == "omitempty" || tag == "omitzero" {
-						optional = true
-					} else {
+					if tag != "omitempty" && tag != "omitzero" {
 						fieldName = tag
 					}
 				}
@@ -194,7 +191,7 @@ func UnmarshalJSON(b []byte, v interface{}, tag reflect.StructTag, topLevel bool
 			// If we receive a value for a const field ignore it but mark it as unmarshaled
 			if field.Tag.Get("const") != "" {
 				if r, ok := unmarshaled[fieldName]; ok {
-					if isContainerKind(field.Type) && bytes.Equal(bytes.TrimSpace(r), []byte("null")) && (optional || field.Type.Kind() == reflect.Ptr || optionalnullable.IsOptionalNullableType(field.Type)) {
+					if isContainerKind(field.Type) && bytes.Equal(bytes.TrimSpace(r), []byte("null")) {
 						delete(unmarshaled, fieldName)
 						continue
 					}

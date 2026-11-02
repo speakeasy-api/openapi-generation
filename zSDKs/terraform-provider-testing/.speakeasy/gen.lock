@@ -1,7 +1,7 @@
 lockVersion: 2.0.0
 id: review-sdk-test-id
 management:
-  docChecksum: 645a6255443dd07cc5e84f7ec7134634
+  docChecksum: 52db7940c5b8f2e1032a13a3f84626ae
   docVersion: 0.0.1
   speakeasyVersion: internal
   generationVersion: internal
@@ -54,7 +54,7 @@ trackedFiles:
   examples/data-sources/testing_basic/data-source.tf:
     last_write_checksum: sha1:02bc159abd38449bcddcff2ed9eb7daf0b5cf5b4
   examples/data-sources/testing_const_container/data-source.tf:
-    last_write_checksum: sha1:a45dc527c9b2b2404f3ce3797f8a0c3009de47dd
+    last_write_checksum: sha1:c9d73d56cf6105882eaea310da3bba6b1b60c82a
   examples/data-sources/testing_discriminated_union/data-source.tf:
     last_write_checksum: sha1:a21b63c90ce67e7b78e103fb57e8b55ba8ab4073
   examples/data-sources/testing_framework_type/data-source.tf:
@@ -780,11 +780,11 @@ trackedFiles:
   internal/provider/basic_resource_sdk.go:
     last_write_checksum: sha1:c7327b7ec6b530ccb4ba940c83953e7b58b092a4
   internal/provider/constcontainer_data_source.go:
-    last_write_checksum: sha1:a6dc05d0e18d792fe568ae34a06528de71e0e82b
+    last_write_checksum: sha1:adf9e08cf64bc77225f07361d4c8201b6d355b1c
   internal/provider/constcontainer_data_source_sdk.go:
-    last_write_checksum: sha1:11bd69185d0dd245e66a897fec5da3a6bbacb62a
+    last_write_checksum: sha1:e025e23a41dc09acbaad5fa4f1f805bd15dd55df
   internal/provider/constcontainer_resource.go:
-    last_write_checksum: sha1:65ef61f51490dba8ecc6d5d0f3428fb632f1d76d
+    last_write_checksum: sha1:c84b662f5167a29ae64dcde0a01652e661d44357
   internal/provider/constcontainer_resource_sdk.go:
     last_write_checksum: sha1:1742253997f1ad0e00600193af22ec233d4c9016
   internal/provider/constemptysetdelete_resource.go:
@@ -2438,7 +2438,7 @@ trackedFiles:
   internal/sdk/internal/utils/jq.go:
     last_write_checksum: sha1:2e75ed7a7db1f91e97dac1ac4ca7801b2beb69b5
   internal/sdk/internal/utils/json.go:
-    last_write_checksum: sha1:ebb6408cfb986bea1aaf510ff1b830b7d7b4a1bb
+    last_write_checksum: sha1:ad8147f0769042e18fc1e9f1bfab2db8ecac713f
   internal/sdk/internal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/internal/utils/oauth2_sessions.go:
@@ -2770,7 +2770,7 @@ trackedFiles:
   internal/sdk/models/operations/getbasic.go:
     last_write_checksum: sha1:73ada8ac1a2cec3987eb5b93f78f815934067b9d
   internal/sdk/models/operations/getconstcontainer.go:
-    last_write_checksum: sha1:c4ac02b538bdf08901d302a4d4c07a6a18cb2536
+    last_write_checksum: sha1:558633acfdf5a314fc1fdc4a580949f6ab6a90e0
   internal/sdk/models/operations/getconstemptysetdelete.go:
     last_write_checksum: sha1:0fd0c404cc7659c8ee1f1453adf5be9a55443f03
   internal/sdk/models/operations/getcustomplanmodifiers.go:
@@ -3120,9 +3120,9 @@ trackedFiles:
   internal/sdk/models/shared/basicsearch.go:
     last_write_checksum: sha1:ebc8943a31148f7623c5f8ff940dd81c1b52f23d
   internal/sdk/models/shared/constcontainerrequest.go:
-    last_write_checksum: sha1:ddd4ad7779260d9e7a9ac96c5918c4e5345c66d2
+    last_write_checksum: sha1:1cf8e117d1b1a8ce9fe2a7e36bcb59eb6052a12e
   internal/sdk/models/shared/constcontainerresponse.go:
-    last_write_checksum: sha1:4d97877805a1493c13e7d36ad58fc1ed13c8293d
+    last_write_checksum: sha1:ab518fe68f26a5fc1ee473a2fc1d47ffa571efd3
   internal/sdk/models/shared/constemptysetdeletegroup.go:
     last_write_checksum: sha1:d33860be5d32e993a1907c5f4a9b85f849357a8e
   internal/sdk/models/shared/constemptysetdeleterequest.go:
@@ -3634,7 +3634,7 @@ trackedFiles:
   internal/sdk/retry/config.go:
     last_write_checksum: sha1:102d1953fbd7e9f312c4442c71ccca2eaaeaa27d
   internal/sdk/sdk.go:
-    last_write_checksum: sha1:d2ae7d2c0b4faa1fa52da3725944f1fc12be1c6d
+    last_write_checksum: sha1:cb8f4e761171f2f355a69d1cb043075c79f9fa20
   internal/sdk/types/bigint.go:
     last_write_checksum: sha1:49b004005d0461fb04b846eca062b070b0360b31
   internal/sdk/types/date.go:
@@ -6079,18 +6079,20 @@ examples:
   create-const-container:
     speakeasy-default-create-const-container:
       requestBody:
-        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"{{key}}": "value"}}
+        application/json: {"name": "<value>", "empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"quo\"te\\back": "line\nbreak", "{{key}}": "value"}, "nullable_list": []}
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"{{key}}": "value"}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"quo\"te\\back": "line\nbreak", "{{key}}": "value"}, "nullable_list": []}
   get-const-container:
     speakeasy-default-get-const-container:
       parameters:
         path:
           id: "<id>"
+        query:
+          scope: ["all"]
       responses:
         "200":
-          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"{{key}}": "value"}}
+          application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"quo\"te\\back": "line\nbreak", "{{key}}": "value"}, "nullable_list": []}
   delete-const-container:
     speakeasy-default-delete-const-container:
       parameters:

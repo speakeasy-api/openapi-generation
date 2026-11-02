@@ -37,8 +37,13 @@ func (r *ConstContainerDataSourceModel) ToOperationsGetConstContainerRequest(ctx
 	var id string
 	id = r.ID.ValueString()
 
+	scope := make([]string, 0, len(r.Scope))
+	for scopeIndex := range r.Scope {
+		scope = append(scope, r.Scope[scopeIndex].ValueString())
+	}
 	out := operations.GetConstContainerRequest{
-		ID: id,
+		ID:    id,
+		Scope: scope,
 	}
 
 	return &out, diags

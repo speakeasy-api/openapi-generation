@@ -562,7 +562,7 @@ func (s *Schemas) handleArray(ctx context.Context, params Params, nullable bool)
 		Optional: nullable,
 		Nullable: nullable,
 	}
-	fieldDef = s.handleContainerMetaData(ctx, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultArrays), features.FeatureConstArrays)
+	fieldDef = s.handleContainerMetaData(ctx, params, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultArrays), features.FeatureConstArrays)
 
 	// We need to inherit the multipart annotations
 	if itemField != nil {
@@ -816,7 +816,7 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 
 				typeDef.Extensions = extensions
 
-				return s.handleContainerMetaData(ctx, &ast.FieldDef{
+				return s.handleContainerMetaData(ctx, params, &ast.FieldDef{
 					Name:     fieldName,
 					Type:     ast.NewType(typeDef, nil),
 					Optional: nullable,
@@ -889,7 +889,7 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 
 				typeDef.Extensions = extensions
 
-				return s.handleContainerMetaData(ctx, &ast.FieldDef{
+				return s.handleContainerMetaData(ctx, params, &ast.FieldDef{
 					Name:     fieldName,
 					Type:     ast.NewType(typeDef, nil),
 					Optional: nullable,
@@ -1296,7 +1296,7 @@ func (s *Schemas) handleObject(ctx context.Context, params Params, nullable bool
 		Nullable: nullable,
 	}
 
-	fieldDef = s.handleContainerMetaData(ctx, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultObjects), features.FeatureConstObjects)
+	fieldDef = s.handleContainerMetaData(ctx, params, fieldDef, nullable, schema, s.Subsystem.Features.IsFeatureSupported(ctx, features.FeatureDefaultObjects), features.FeatureConstObjects)
 
 	s.setCachedType(fieldType, &params)
 
@@ -2828,9 +2828,16 @@ func (s *Schemas) handleFieldDefMetaData(ctx context.Context, fieldDef *ast.Fiel
 	return fieldDef
 }
 
-func (s *Schemas) handleContainerMetaData(ctx context.Context, fieldDef *ast.FieldDef, nullable bool, schema *oas3.Schema, defaultSupported bool, constFeature features.Feature) *ast.FieldDef {
+func (s *Schemas) handleContainerMetaData(ctx context.Context, params Params, fieldDef *ast.FieldDef, nullable bool, schema *oas3.Schema, defaultSupported bool, constFeature features.Feature) *ast.FieldDef {
 	applyDefault := schema.Default != nil && defaultSupported
 	applyConst := schema.Const != nil && s.Subsystem.Features.IsFeatureSupported(ctx, constFeature)
+	if applyConst && params.ParamType != "" {
+		logging.LogWarning(ctx, "validation warning", errors.NewValidationWarning(
+			fmt.Sprintf("const on a %s parameter of type %q is not supported, only request and response body properties honor container const values, omitting const", params.ParamType, fieldDef.Type.Type),
+			schema.GetPropertyNode("Const"), nil,
+		))
+		applyConst = false
+	}
 	if !applyDefault && !applyConst {
 		return fieldDef
 	}

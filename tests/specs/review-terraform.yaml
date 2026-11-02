@@ -5727,8 +5727,20 @@ paths:
           type: string
     get:
       x-speakeasy-entity-operation: ConstContainer#read
-      description: Get a const container resource
+      description: |
+        Get a const container resource. The query parameter declares an
+        array const, which lives on the parameter path rather than a request
+        body property, to pin how container consts on parameters surface.
       operationId: get-const-container
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+            const:
+              - all
       responses:
         '200':
           description: OK
@@ -6092,13 +6104,24 @@ components:
             min: 1
         templated_map:
           description: |
-            Map const whose key contains template delimiters. The generated
-            Go literal and struct tag must escape them.
+            Map const whose keys and values contain template delimiters,
+            quotes, backslashes and a newline. The generated Go literal and
+            struct tag must escape them and round-trip them on the wire.
           type: object
           additionalProperties:
             type: string
           const:
             '{{key}}': value
+            'quo"te\back': "line\nbreak"
+        nullable_list:
+          description: |
+            Nullable array with an empty const. A response may carry null for
+            it, which must decode as absent rather than a const mismatch.
+          type: array
+          nullable: true
+          items:
+            type: string
+          const: []
         nested_list:
           description: |
             List of objects whose item schema declares a const array. The
@@ -6122,6 +6145,7 @@ components:
         - empty_list
         - empty_map
         - empty_set
+        - nullable_list
     ConstContainerResponse:
       type: object
       additionalProperties: false
@@ -6171,13 +6195,24 @@ components:
             min: 1
         templated_map:
           description: |
-            Map const whose key contains template delimiters. The generated
-            Go literal and struct tag must escape them.
+            Map const whose keys and values contain template delimiters,
+            quotes, backslashes and a newline. The generated Go literal and
+            struct tag must escape them and round-trip them on the wire.
           type: object
           additionalProperties:
             type: string
           const:
             '{{key}}': value
+            'quo"te\back': "line\nbreak"
+        nullable_list:
+          description: |
+            Nullable array with an empty const. A response may carry null for
+            it, which must decode as absent rather than a const mismatch.
+          type: array
+          nullable: true
+          items:
+            type: string
+          const: []
         nested_list:
           description: |
             List of objects whose item schema declares a const array. The
@@ -6196,6 +6231,8 @@ components:
                   type: string
                 const:
                   - fixed
+      required:
+        - nullable_list
     ConstEmptySetDeleteGroup:
       type: object
       additionalProperties: false

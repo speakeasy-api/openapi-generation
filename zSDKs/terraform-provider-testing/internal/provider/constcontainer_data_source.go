@@ -32,6 +32,7 @@ type ConstContainerDataSourceModel struct {
 	ID         types.String                               `tfsdk:"id"`
 	Name       types.String                               `tfsdk:"name"`
 	NestedList []tfTypes.ConstContainerResponseNestedList `tfsdk:"nested_list"`
+	Scope      []types.String                             `queryParam:"style=form,explode=true,name=scope" tfsdk:"scope"`
 }
 
 // Metadata returns the data source type name.
@@ -63,6 +64,10 @@ func (r *ConstContainerDataSource) Schema(ctx context.Context, req datasource.Sc
 				MarkdownDescription: `List of objects whose item schema declares a const array. The` + "\n" +
 					`nested const must be hidden from the Terraform schema and sent` + "\n" +
 					`for every item.`,
+			},
+			"scope": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
 			},
 		},
 	}

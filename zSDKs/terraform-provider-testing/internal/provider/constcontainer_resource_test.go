@@ -16,7 +16,9 @@ import (
 
 // The request schema declares const values on array and map properties. The
 // provider must hide them from the resource schema and send them verbatim,
-// and a read must accept the const values however the server formats them.
+// and a read must accept the const values however the server formats them,
+// including null for a nullable one. The read operation's const array query
+// parameter is not injected: container consts apply to body properties only.
 func TestConstContainerResourceLifecycle(t *testing.T) {
 	t.Parallel()
 
@@ -43,7 +45,8 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 						"empty_map": { },
 						"empty_set": [ ],
 						"fixed_map": { "min" : 1, "max" : 1e1 },
-						"templated_map": { "{{key}}": "value" },
+						"templated_map": { "{{key}}": "value", "quo\"te\\back": "line\nbreak" },
+						"nullable_list": null,
 						"nested_list": [ { "tags": [ "fixed" ], "label": "first" } ]
 					}`))
 				},
@@ -110,7 +113,14 @@ func TestConstContainerResourceLifecycle(t *testing.T) {
 	tfmockserver.AssertRequestBodyField(t, body, "empty_map", map[string]any{})
 	tfmockserver.AssertRequestBodyFieldEmptyArray(t, body, "empty_set")
 	tfmockserver.AssertRequestBodyField(t, body, "fixed_map", map[string]any{"max": float64(10), "min": float64(1)})
-	tfmockserver.AssertRequestBodyField(t, body, "templated_map", map[string]any{"{{key}}": "value"})
+	tfmockserver.AssertRequestBodyField(t, body, "templated_map", map[string]any{"{{key}}": "value", "quo\"te\\back": "line\nbreak"})
+	tfmockserver.AssertRequestBodyFieldEmptyArray(t, body, "nullable_list")
 	tfmockserver.AssertRequestBodyField(t, body, "nested_list", []any{map[string]any{"label": "first", "tags": []any{"fixed"}}})
-	require.Len(t, body, 8, "request body carries only name, nested_list and the six const fields: %v", body)
+	require.Len(t, body, 9, "request body carries only name, nested_list and the seven const fields: %v", body)
+
+	gets := endpoints.Get[0].Requests.All()
+	require.NotEmpty(t, gets)
+	for _, get := range gets {
+		require.Empty(t, get.Query, "read sends no query parameters: %v", get.Query)
+	}
 }

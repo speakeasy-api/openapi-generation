@@ -3855,7 +3855,7 @@ CreateConstContainerResponse (ContentType: string, StatusCode: int32, RawRespons
    ConstContainerResponseFixedList (enum: read, write, admin)
    ConstContainerResponseEmptySet (key: string)
    ConstContainerResponseNestedList (label: string, tags: array)
-GetConstContainerRequest (id: string)
+GetConstContainerRequest (id: string, scope: array)
 GetConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response ...)
 DeleteConstContainerRequest (id: string)
 DeleteConstContainerResponse (ContentType: string, StatusCode: int32, RawResponse: response)

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -33,6 +34,7 @@ type CapturedRequest struct {
 	Method     string
 	Path       string
 	PathParams map[string]string
+	Query      url.Values
 	Body       map[string]any
 }
 
@@ -515,6 +517,7 @@ func (h *ResourceHandler) handleGetWithConfig(w http.ResponseWriter, r *http.Req
 		Method:     r.Method,
 		Path:       r.URL.Path,
 		PathParams: pathParams,
+		Query:      r.URL.Query(),
 		Body:       nil, // GET requests typically don't have a body
 	})
 

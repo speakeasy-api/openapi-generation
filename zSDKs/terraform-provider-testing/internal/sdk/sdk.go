@@ -42331,7 +42331,9 @@ func (s *SDK) CreateConstContainer(ctx context.Context, request shared.ConstCont
 
 }
 
-// GetConstContainer - Get a const container resource
+// GetConstContainer - Get a const container resource. The query parameter declares an
+// array const, which lives on the parameter path rather than a request
+// body property, to pin how container consts on parameters surface.
 func (s *SDK) GetConstContainer(ctx context.Context, request operations.GetConstContainerRequest, opts ...operations.Option) (*operations.GetConstContainerResponse, error) {
 	o := operations.Options{}
 	supportedOptions := []string{
@@ -42382,6 +42384,10 @@ func (s *SDK) GetConstContainer(ctx context.Context, request operations.GetConst
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", s.sdkConfiguration.UserAgent)
+
+	if err := utils.PopulateQueryParams(ctx, req, request, nil, nil); err != nil {
+		return nil, fmt.Errorf("error populating query params: %w", err)
+	}
 
 	if err := utils.PopulateSecurity(ctx, req, s.sdkConfiguration.Security); err != nil {
 		return nil, err

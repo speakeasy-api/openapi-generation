@@ -41,6 +41,7 @@ func TestHandleArray(t *testing.T) {
 		fixes        *config.Fixes                        // nil means use default
 		mockFeatures func() *testutils.MockFeaturesConfig // nil means use default (all features supported)
 		isRequest    *bool                                // nil means use default (false), otherwise use specified value
+		paramType    ParamType                            // empty means a body property
 		expected     *ast.FieldDef
 		// expectedWarning, when set, must match exactly one logged validation warning
 		expectedWarning string
@@ -334,6 +335,33 @@ func TestHandleArray(t *testing.T) {
 					Build()).
 				Build(),
 			expectedWarning: "only arrays without uniqueItems and maps of scalar values are supported, omitting const",
+		},
+		{
+			name: "QueryParameterArrayWithConst",
+			schemasYAML: `TestSchema:
+  type: array
+  items:
+    type: string
+  const:
+    - all`,
+			schemaName: "TestSchema",
+			paramType:  ParamTypeQuery,
+			mockFeatures: func() *testutils.MockFeaturesConfig {
+				config := testutils.NewMockFeaturesConfig()
+				config.SupportedFeatures = map[features.Feature]bool{
+					features.FeatureConstArrays:       true,
+					features.FeatureConstsAndDefaults: true,
+				}
+				return config
+			},
+			expected: testutils.NewFieldDef("strings",
+				testutils.NewTypeDef(ast.DataTypeArray).
+					WithItemType(testutils.NewTypeDef(ast.DataTypeString).WithLocation(&yaml.Node{Line: 11, Column: 9}).WithValidations(&ast.Validations{}).Build()).
+					WithLocation(&yaml.Node{Line: 9, Column: 7}).
+					WithValidations(&ast.Validations{}).
+					Build()).
+				Build(),
+			expectedWarning: "only request and response body properties honor container const values, omitting const",
 		},
 		{
 			name: "SetFormatWithEmptyConst",
@@ -864,6 +892,7 @@ TestSchema:
 
 			// Create test parameters
 			params := CreateTestParams(testSchema, common.DocInfo)
+			params.ParamType = tt.paramType
 			if tt.isRequest != nil {
 				params.IsRequest = *tt.isRequest
 			}

@@ -1835,7 +1835,7 @@ trackedFiles:
   test/mockserver/internal/sdk/types/stream/stream.go:
     last_write_checksum: sha1:c48811a5243fa7f9e23c67966b140c52614b58bd
   test/mockserver/internal/sdk/utils/json.go:
-    last_write_checksum: sha1:4fed9401b417236d862fb7245abef44b3c11fda4
+    last_write_checksum: sha1:22904cb9788737f288acdab97255bc78d37531bc
   test/mockserver/internal/sdk/utils/reflect.go:
     last_write_checksum: sha1:1e3a0ca0387685b6b21c0a6a75650b8611c76ee3
   test/mockserver/internal/sdk/utils/sort.go:
