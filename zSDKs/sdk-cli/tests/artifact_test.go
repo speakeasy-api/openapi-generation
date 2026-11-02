@@ -406,19 +406,25 @@ func artifactOtherHost(t *testing.T, log *artifactRequestLog) *httptest.Server {
 	return server
 }
 
+const (
+	artifactAssetPath   = "/artifact-download-test/asset"
+	artifactMovedPath   = "/artifact-download-test/moved"
+	artifactMissingPath = "/artifact-download-test/missing"
+)
+
 // artifactURIServer answers the artifact command with a URI-only block
-// pointing at uri(serverURL), serves /asset itself, redirects /moved to
-// redirectTo and answers /missing with 404.
+// pointing at uri(serverURL), serves artifactAssetPath itself, redirects
+// artifactMovedPath to redirectTo and answers artifactMissingPath with 404.
 func artifactURIServer(t *testing.T, log *artifactRequestLog, uri func(string) string, redirectTo string) *httptest.Server {
 	t.Helper()
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/asset":
+		case artifactAssetPath:
 			artifactAssetHandler(log, "api-origin")(w, r)
-		case "/moved":
+		case artifactMovedPath:
 			http.Redirect(w, r, redirectTo, http.StatusFound)
-		case "/missing":
+		case artifactMissingPath:
 			http.NotFound(w, r)
 		default:
 			log.record("api", r)
@@ -436,9 +442,35 @@ func runArtifactWithProbe(t *testing.T, h *CLITestHarness, serverURL, dir string
 	return runArtifact(t, h, serverURL, dir, "--header", artifactProbeHeader+": secret")
 }
 
+// Headers the downloader sets itself, whatever the API request carried.
+var artifactDownloaderHeaders = map[string]bool{
+	"Accept":          true,
+	"Accept-Encoding": true,
+	"Content-Length":  true,
+	"Content-Type":    true,
+	"Idempotency-Key": true,
+}
+
+// assertNoAPIHeaders checks that no header the API request carried reached
+// the download, apart from headers the downloader sets itself.
+func assertNoAPIHeaders(t *testing.T, api, download http.Header) {
+	t.Helper()
+	require.Equal(t, "secret", api.Get(artifactProbeHeader))
+	for name := range api {
+		if artifactDownloaderHeaders[http.CanonicalHeaderKey(name)] {
+			continue
+		}
+		if name == "User-Agent" {
+			assert.NotEqual(t, api.Get(name), download.Get(name), "the API User-Agent must not reach another origin")
+			continue
+		}
+		assert.Empty(t, download.Values(name), "header %s must not reach another origin", name)
+	}
+}
+
 func TestArtifact_URIOnAPIOriginIsDownloadedWithRequestHeaders(t *testing.T) {
 	log := &artifactRequestLog{}
-	server := artifactURIServer(t, log, func(base string) string { return base + "/asset?token=abc" }, "")
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactAssetPath + "?token=abc" }, "")
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
 
@@ -454,8 +486,7 @@ func TestArtifact_URIOnAPIOriginIsDownloadedWithRequestHeaders(t *testing.T) {
 	require.NotNil(t, asset, "the URI was not fetched")
 	assert.Equal(t, "secret", api.Get(artifactProbeHeader))
 	for name, values := range api {
-		switch http.CanonicalHeaderKey(name) {
-		case "Accept", "Content-Type", "Content-Length", "Content-Encoding", "Idempotency-Key", "Accept-Encoding":
+		if artifactDownloaderHeaders[http.CanonicalHeaderKey(name)] {
 			continue
 		}
 		assert.Equal(t, values, asset.Values(name), "header %s must be reused on the API origin", name)
@@ -472,21 +503,20 @@ func TestArtifact_URIOnAnotherOriginGetsNoRequestHeaders(t *testing.T) {
 
 	asset := log.get("other")
 	require.NotNil(t, asset, "the URI was not fetched")
-	assert.Empty(t, asset.Get(artifactProbeHeader), "request headers must not reach another origin")
-	assert.NotEqual(t, log.get("api").Get("User-Agent"), asset.Get("User-Agent"))
+	assertNoAPIHeaders(t, log.get("api"), asset)
 }
 
 func TestArtifact_RedirectToAnotherOriginDropsRequestHeaders(t *testing.T) {
 	log := &artifactRequestLog{}
 	other := artifactOtherHost(t, log)
-	server := artifactURIServer(t, log, func(base string) string { return base + "/moved" }, other.URL+"/asset")
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactMovedPath }, other.URL+"/asset")
 	h := NewCLITestHarness(t)
 
 	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
 
 	asset := log.get("other")
 	require.NotNil(t, asset, "the redirect was not followed")
-	assert.Empty(t, asset.Get(artifactProbeHeader), "request headers must not follow a redirect to another origin")
+	assertNoAPIHeaders(t, log.get("api"), asset)
 	assert.Empty(t, asset.Get("Referer"))
 }
 
@@ -497,8 +527,8 @@ func TestArtifact_URIDownloadRefusals(t *testing.T) {
 	}{
 		"plain http to a remote host": {func(string) string { return "http://media.example.test/asset" }, "only https URIs are downloaded"},
 		"non-http scheme":             {func(string) string { return "gs://bucket/asset?sig=secret" }, "cannot download; fetch it directly: gs://bucket/asset"},
-		"server error":                {func(base string) string { return base + "/missing" }, "the server returned 404"},
-		"redirect to plain http":      {func(base string) string { return base + "/moved" }, "only https URIs are downloaded"},
+		"server error":                {func(base string) string { return base + artifactMissingPath }, "the server returned 404"},
+		"redirect to plain http":      {func(base string) string { return base + artifactMovedPath }, "only https URIs are downloaded"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			log := &artifactRequestLog{}

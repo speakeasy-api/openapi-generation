@@ -35,6 +35,30 @@ func TestDownloadArtifactEnforcesSizeLimit(t *testing.T) {
 	}
 }
 
+func TestDownloadArtifactTimeoutCoversBody(t *testing.T) {
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("partial"))
+		w.(http.Flusher).Flush()
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("timeout", "", "")
+	if err := cmd.Flags().Set("timeout", "200ms"); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := downloadArtifact(cmd, server.URL+"/asset", nil, &artifactConfig{Kind: "image"})
+	if err == nil || !strings.Contains(err.Error(), "deadline exceeded") {
+		t.Fatalf("expected the timeout to stop a stalled body, got %v", err)
+	}
+}
+
 func artifactTestConfig(kind string) *artifactConfig {
 	pointer := []artifactSegment{
 		{Field: "steps"},

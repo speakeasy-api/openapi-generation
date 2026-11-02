@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"{{getGolangPackage}}/internal/config"
 	"{{getGolangPackage}}/internal/flagutil"
 )
 
@@ -214,9 +215,11 @@ func renderArtifactEnvelope(cmd *cobra.Command, absPath string, envelope map[str
 
 var artifactMaxDownloadBytes int64 = 1 << 30
 
-// Headers of the API request that describe its body rather than the caller.
+// Headers of the API request that describe its body or its response
+// negotiation rather than the caller.
 var artifactBodyHeaders = map[string]bool{
 	"Accept":           true,
+	"Accept-Encoding":  true,
 	"Content-Encoding": true,
 	"Content-Length":   true,
 	"Content-Type":     true,
@@ -251,6 +254,11 @@ func downloadArtifact(cmd *cobra.Command, rawURI string, apiResponse *http.Respo
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if timeout := artifactDownloadTimeout(cmd); timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("cannot download the %s from %s: %w", cfg.Kind, shown, err)
@@ -265,7 +273,6 @@ func downloadArtifact(cmd *cobra.Command, rawURI string, apiResponse *http.Respo
 	req.Header.Set("Accept", "*/*")
 
 	client := &http.Client{
-		Transport: artifactDownloadTransport(cmd),
 		CheckRedirect: func(next *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
 				return errors.New("stopped after 10 redirects")
@@ -329,19 +336,24 @@ func artifactDisplayURL(u *url.URL) string {
 	return (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path}).String()
 }
 
-func artifactDownloadTransport(cmd *cobra.Command) http.RoundTripper {
-	timeoutFlag, _ := flagutil.GetStringFlag(cmd, "timeout")
-	timeout, err := time.ParseDuration(timeoutFlag)
-	if err != nil || timeout <= 0 {
-		return http.DefaultTransport
+// artifactDownloadTimeout bounds the whole download, body included, with the
+// timeout the API call used: --timeout, then config, then the generated default.
+func artifactDownloadTimeout(cmd *cobra.Command) time.Duration {
+	value, changed := flagutil.GetStringFlag(cmd, "timeout")
+	if !changed || value == "" {
+		value = config.GetString("timeout")
 	}
-	transport, ok := http.DefaultTransport.(*http.Transport)
-	if !ok {
-		return http.DefaultTransport
+	if value != "" {
+		if timeout, err := time.ParseDuration(value); err == nil && timeout > 0 {
+			return timeout
+		}
+		return 0
 	}
-	bounded := transport.Clone()
-	bounded.ResponseHeaderTimeout = timeout
-	return bounded
+	{{- if cliDefaultTimeout}}
+	return defaultOperationTimeout
+	{{- else}}
+	return 0
+	{{- end}}
 }
 
 func artifactCandidates(node interface{}, segs []artifactSegment) []interface{} {

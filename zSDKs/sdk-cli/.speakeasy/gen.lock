@@ -266,9 +266,9 @@ trackedFiles:
   internal/output/agentmode.go:
     last_write_checksum: sha1:cd38c0ae31c1dccf601a85d43b6651568c8d41a3
   internal/output/artifact.go:
-    last_write_checksum: sha1:c92f27e492aa8c3eeb26253b0b0d37c8a05cb7d0
+    last_write_checksum: sha1:e77b749fb2e1184066ec04664d420407124c33c1
   internal/output/artifact_test.go:
-    last_write_checksum: sha1:82692e5cd401a1a85088ddc39103b0497a2ed868
+    last_write_checksum: sha1:d98707c3193239a50f2a3a66c181f28d65b2e519
   internal/output/async.go:
     last_write_checksum: sha1:7d8b2ac9cde78a7c9aa5e8a0ececd9ab808dcae6
   internal/output/binary.go:
@@ -670,7 +670,7 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:930e89ccc41a6fcad6349675caa4331ece91f2ab
+    last_write_checksum: sha1:cbf7e49f1435a57e3dce21720d7394b15dd9c325
   tests/async_test.go:
     last_write_checksum: sha1:dac2ec49f9bb6c9e5ff8923020f68eb8ab1cc421
   tests/cli_harness_test.go:
