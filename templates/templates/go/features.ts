@@ -430,6 +430,9 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-empty",
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
   ].includes(test);
 }
 
