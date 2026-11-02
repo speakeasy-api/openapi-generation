@@ -67,7 +67,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(DisriminatedUnionWithOneMember.DisriminatedUnionWithOneMemberConverter))]
-    public class DisriminatedUnionWithOneMember
+    public partial class DisriminatedUnionWithOneMember
     {
         public DisriminatedUnionWithOneMember(DisriminatedUnionWithOneMemberType type)
         {
@@ -89,6 +89,12 @@ namespace Speakeasy.OpenAPI
             res.ExhaustiveObject = type1;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="DisriminatedUnionWithOneMember"/>. Equivalent to <c>CreateType1(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// </summary>
+        public static implicit operator DisriminatedUnionWithOneMember?(ExhaustiveObject? value) => value is null ? null : CreateType1(value);
 
         public class DisriminatedUnionWithOneMemberConverter : JsonConverter
         {

@@ -85,7 +85,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(Any.AnyConverter))]
-    public class Any : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Any : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Any(AnyType type)
         {
@@ -133,6 +133,16 @@ namespace Speakeasy.OpenAPI
             res.Str = str;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// </summary>
+        public static implicit operator Any?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// </summary>
+        public static implicit operator Any?(string? value) => value is null ? null : CreateStr(value);
 
         public class AnyConverter : JsonConverter
         {

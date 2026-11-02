@@ -13,12 +13,11 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System;
 
-    public interface IEmpty
-    {
+    public partial interface IEmpty {
         public ITail Tail { get; }
     }
 
-    public class Empty : IEmpty
+    public partial class Empty : IEmpty
     {
         /// <summary>
         /// SDK Configuration.

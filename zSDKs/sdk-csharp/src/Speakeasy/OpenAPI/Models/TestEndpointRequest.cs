@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class TestEndpointRequest
+    public partial class TestEndpointRequest
     {
         [SpeakeasyMetadata("pathParam:style=simple,explode=false,name=testName")]
         public string TestName { get; set; } = default!;

@@ -85,7 +85,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(Content.ContentConverter))]
-    public class Content : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Content : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Content(ContentType type)
         {
@@ -132,6 +132,16 @@ namespace Speakeasy.OpenAPI
             res.AssetImageBlock = image;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateText(value)</c>.
+        /// </summary>
+        public static implicit operator Content?(AssetTextBlock? value) => value is null ? null : CreateText(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateImage(value)</c>.
+        /// </summary>
+        public static implicit operator Content?(AssetImageBlock? value) => value is null ? null : CreateImage(value);
 
         public class ContentConverter : JsonConverter
         {

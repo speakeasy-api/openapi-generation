@@ -76,7 +76,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(ChatRequest.ChatRequestConverter))]
-    public class ChatRequest
+    public partial class ChatRequest
     {
         public ChatRequest(ChatRequestType type)
         {
@@ -108,6 +108,16 @@ namespace Speakeasy.OpenAPI
             res.ChatAgentRequest = chatAgentRequest;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="ChatRequest"/>. Equivalent to <c>CreateChatModelRequest(value)</c>.
+        /// </summary>
+        public static implicit operator ChatRequest?(ChatModelRequest? value) => value is null ? null : CreateChatModelRequest(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="ChatRequest"/>. Equivalent to <c>CreateChatAgentRequest(value)</c>.
+        /// </summary>
+        public static implicit operator ChatRequest?(ChatAgentRequest? value) => value is null ? null : CreateChatAgentRequest(value);
 
         public class ChatRequestConverter : JsonConverter
         {

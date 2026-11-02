@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class OperationWithLeadingAndTrailingUnderscoresResponse
+    public partial class OperationWithLeadingAndTrailingUnderscoresResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

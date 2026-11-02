@@ -89,7 +89,7 @@ namespace Speakeasy.OpenAPI.Bar
     /// A non-discriminated union of vehicle types in the bar namespace.
     /// </summary>
     [JsonConverter(typeof(Vehicle.VehicleConverter))]
-    public class Vehicle : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Vehicle : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Vehicle(VehicleType type)
         {
@@ -137,6 +137,16 @@ namespace Speakeasy.OpenAPI.Bar
             res.Bike = bike;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateCar(value)</c>.
+        /// </summary>
+        public static implicit operator Vehicle?(Car? value) => value is null ? null : CreateCar(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateBike(value)</c>.
+        /// </summary>
+        public static implicit operator Vehicle?(Bike? value) => value is null ? null : CreateBike(value);
 
         public class VehicleConverter : JsonConverter
         {

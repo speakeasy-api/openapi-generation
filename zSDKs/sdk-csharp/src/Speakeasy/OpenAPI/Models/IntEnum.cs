@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI
     /// An integer enum property.
     /// </summary>
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class IntEnum : IEquatable<IntEnum>, IOpenEnum<long>
+    public partial class IntEnum : IEquatable<IntEnum>, IOpenEnum<long>
     {
         public static readonly IntEnum First = new IntEnum(1);
         public static readonly IntEnum Second = new IntEnum(2);

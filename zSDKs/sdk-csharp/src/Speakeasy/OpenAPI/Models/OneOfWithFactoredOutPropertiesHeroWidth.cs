@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class OneOfWithFactoredOutPropertiesHeroWidth : IEquatable<OneOfWithFactoredOutPropertiesHeroWidth>, IOpenEnum<long>
+    public partial class OneOfWithFactoredOutPropertiesHeroWidth : IEquatable<OneOfWithFactoredOutPropertiesHeroWidth>, IOpenEnum<long>
     {
         public static readonly OneOfWithFactoredOutPropertiesHeroWidth FourHundredAndEighty = new OneOfWithFactoredOutPropertiesHeroWidth(480);
         public static readonly OneOfWithFactoredOutPropertiesHeroWidth SevenHundredAndTwenty = new OneOfWithFactoredOutPropertiesHeroWidth(720);

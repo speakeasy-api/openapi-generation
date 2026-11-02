@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// OK.
     /// </summary>
     [JsonConverter(typeof(GetErrorInUnionInternalServerError.GetErrorInUnionInternalServerErrorConverter))]
-    public class GetErrorInUnionInternalServerError : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class GetErrorInUnionInternalServerError : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public GetErrorInUnionInternalServerError(GetErrorInUnionInternalServerErrorType type)
         {

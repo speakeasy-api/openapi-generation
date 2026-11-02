@@ -121,7 +121,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(CircularUnion.CircularUnionConverter))]
-    public class CircularUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class CircularUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public CircularUnion(CircularUnionType type)
         {
@@ -217,6 +217,36 @@ namespace Speakeasy.OpenAPI
             res.Number = number;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateMapOfCircularUnion(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion?(Dictionary<string, CircularUnion>? value) => value is null ? null : CreateMapOfCircularUnion(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion?(string? value) => value is null ? null : CreateStr(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateInteger(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion(long value) => CreateInteger(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateBoolean(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion(bool value) => CreateBoolean(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateArrayOfCircularUnion(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion?(List<CircularUnion>? value) => value is null ? null : CreateArrayOfCircularUnion(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateNumber(value)</c>.
+        /// </summary>
+        public static implicit operator CircularUnion(double value) => CreateNumber(value);
 
         public class CircularUnionConverter : JsonConverter
         {

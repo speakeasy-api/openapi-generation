@@ -97,7 +97,7 @@ namespace Speakeasy.OpenAPI
     /// A form field schema that can be recursive - the array type variant contains an array of RecursiveFormField items.
     /// </summary>
     [JsonConverter(typeof(RecursiveFormField.RecursiveFormFieldConverter))]
-    public class RecursiveFormField : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class RecursiveFormField : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public RecursiveFormField(RecursiveFormFieldType type)
         {
@@ -156,6 +156,21 @@ namespace Speakeasy.OpenAPI
             res.RecursiveFormFieldArray = array;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateText(value)</c>.
+        /// </summary>
+        public static implicit operator RecursiveFormField?(RecursiveFormFieldText? value) => value is null ? null : CreateText(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateNumber(value)</c>.
+        /// </summary>
+        public static implicit operator RecursiveFormField?(RecursiveFormFieldNumber? value) => value is null ? null : CreateNumber(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateArray(value)</c>.
+        /// </summary>
+        public static implicit operator RecursiveFormField?(RecursiveFormFieldArray? value) => value is null ? null : CreateArray(value);
 
         public class RecursiveFormFieldConverter : JsonConverter
         {

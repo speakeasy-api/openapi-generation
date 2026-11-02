@@ -89,7 +89,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// A discriminated union of animal types in the foo namespace.
     /// </summary>
     [JsonConverter(typeof(Animal.AnimalConverter))]
-    public class Animal : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Animal : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Animal(AnimalType type)
         {
@@ -140,6 +140,18 @@ namespace Speakeasy.OpenAPI.Foo
             res.Cat = cat;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Animal"/>. Equivalent to <c>CreateDog(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// </summary>
+        public static implicit operator Animal?(Dog? value) => value is null ? null : CreateDog(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Animal"/>. Equivalent to <c>CreateCat(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// </summary>
+        public static implicit operator Animal?(Cat? value) => value is null ? null : CreateCat(value);
 
         public class AnimalConverter : JsonConverter
         {

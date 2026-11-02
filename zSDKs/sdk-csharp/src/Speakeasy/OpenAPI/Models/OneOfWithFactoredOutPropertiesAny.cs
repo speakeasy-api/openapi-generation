@@ -85,7 +85,7 @@ namespace Speakeasy.OpenAPI
     }
 
     [JsonConverter(typeof(OneOfWithFactoredOutPropertiesAny.OneOfWithFactoredOutPropertiesAnyConverter))]
-    public class OneOfWithFactoredOutPropertiesAny : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class OneOfWithFactoredOutPropertiesAny : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public OneOfWithFactoredOutPropertiesAny(OneOfWithFactoredOutPropertiesAnyType type)
         {
@@ -133,6 +133,16 @@ namespace Speakeasy.OpenAPI
             res.Str = str;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="OneOfWithFactoredOutPropertiesAny"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// </summary>
+        public static implicit operator OneOfWithFactoredOutPropertiesAny?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="OneOfWithFactoredOutPropertiesAny"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// </summary>
+        public static implicit operator OneOfWithFactoredOutPropertiesAny?(string? value) => value is null ? null : CreateStr(value);
 
         public class OneOfWithFactoredOutPropertiesAnyConverter : JsonConverter
         {

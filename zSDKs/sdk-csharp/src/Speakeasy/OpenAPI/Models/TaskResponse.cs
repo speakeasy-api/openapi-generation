@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A task response containing deeply nested structures with string-encoded integers.
     /// </summary>
-    public class TaskResponse
+    public partial class TaskResponse
     {
         /// <summary>
         /// A task object with nested policy.

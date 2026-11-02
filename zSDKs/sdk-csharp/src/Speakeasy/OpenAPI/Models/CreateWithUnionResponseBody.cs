@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class CreateWithUnionResponseBody
+    public partial class CreateWithUnionResponseBody
     {
         [JsonProperty("id", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Id { get; set; }

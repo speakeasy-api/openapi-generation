@@ -75,11 +75,13 @@ csharp:
   outputModelSuffix: output
   packageName: Speakeasy.OpenAPI
   packageTags: Speakeasy API SDK-Generation
+  partialClasses: true
   presenceAwareJsonSerialization: true
   respectTitlesForPrimitiveUnionMembers: true
   responseFormat: envelope-http
   schemaValidation: lenient
   sourceDirectory: src
   targetFramework: netstandard2.0
+  unionImplicitConversions: true
   unionStrategy: populated-fields
   useNodatime: true

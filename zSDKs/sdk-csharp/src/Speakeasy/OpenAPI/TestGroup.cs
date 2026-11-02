@@ -13,14 +13,13 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System;
 
-    public interface ITestGroup
-    {
+    public partial interface ITestGroup {
         public ITag2 Tag2 { get; }
 
         public ITag3 Tag3 { get; }
     }
 
-    public class TestGroup : ITestGroup
+    public partial class TestGroup : ITestGroup
     {
         /// <summary>
         /// SDK Configuration.

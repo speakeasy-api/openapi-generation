@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI.Baz
     /// <summary>
     /// A pet in the baz namespace with completely different schema.
     /// </summary>
-    public class Pet
+    public partial class Pet
     {
         [JsonProperty("petId", Required = Newtonsoft.Json.Required.Always)]
         public long PetId { get; set; } = default!;

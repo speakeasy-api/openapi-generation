@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// Something went wrong.
     /// </summary>
     [JsonConverter(typeof(ClientError.ClientErrorConverter))]
-    public class ClientError : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class ClientError : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public ClientError(ClientErrorType type)
         {

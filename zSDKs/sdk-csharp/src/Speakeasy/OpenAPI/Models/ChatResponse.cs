@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    public class ChatResponse
+    public partial class ChatResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Request body with a discriminated union shape field.
     /// </summary>
-    public class ShapeRequest
+    public partial class ShapeRequest
     {
         /// <summary>
         /// Name for the shape.

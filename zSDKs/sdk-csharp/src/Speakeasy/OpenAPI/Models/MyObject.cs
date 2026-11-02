@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class MyObject
+    public partial class MyObject
     {
     }
 }

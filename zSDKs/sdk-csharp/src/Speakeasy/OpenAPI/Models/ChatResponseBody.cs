@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A stream containing chat completion tokens.
     /// </summary>
-    public class ChatResponseBody
+    public partial class ChatResponseBody
     {
         [JsonProperty("data", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Data { get; set; }

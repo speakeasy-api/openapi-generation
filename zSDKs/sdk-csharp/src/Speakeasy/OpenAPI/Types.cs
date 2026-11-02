@@ -21,8 +21,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ITypes
-    {
+    public partial interface ITypes {
         /// <summary>
         /// Get Namespace Types Test.
         /// </summary>
@@ -87,7 +86,7 @@ namespace Speakeasy.OpenAPI
         );
     }
 
-    public class Types : ITypes
+    public partial class Types : ITypes
     {
         /// <summary>
         /// SDK Configuration.

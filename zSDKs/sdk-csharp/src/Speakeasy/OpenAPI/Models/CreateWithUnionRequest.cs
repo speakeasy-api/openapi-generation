@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class CreateWithUnionRequest
+    public partial class CreateWithUnionRequest
     {
         /// <summary>
         /// If true, validates without creating.

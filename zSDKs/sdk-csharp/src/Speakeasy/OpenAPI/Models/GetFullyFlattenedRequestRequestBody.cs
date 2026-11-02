@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetFullyFlattenedRequestRequestBody
+    public partial class GetFullyFlattenedRequestRequestBody
     {
         [JsonProperty("name", Required = Newtonsoft.Json.Required.Always)]
         public string Name { get; set; } = default!;

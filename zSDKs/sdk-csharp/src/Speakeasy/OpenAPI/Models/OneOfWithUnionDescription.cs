@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// A union of two types.
     /// </summary>
     [JsonConverter(typeof(OneOfWithUnionDescription.OneOfWithUnionDescriptionConverter))]
-    public class OneOfWithUnionDescription : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class OneOfWithUnionDescription : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public OneOfWithUnionDescription(OneOfWithUnionDescriptionType type)
         {
@@ -136,6 +136,16 @@ namespace Speakeasy.OpenAPI
             res.SimpleObject = simpleObject;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateExhaustiveObject(value)</c>.
+        /// </summary>
+        public static implicit operator OneOfWithUnionDescription?(ExhaustiveObject? value) => value is null ? null : CreateExhaustiveObject(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// </summary>
+        public static implicit operator OneOfWithUnionDescription?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
 
         public class OneOfWithUnionDescriptionConverter : JsonConverter
         {

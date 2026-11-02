@@ -18,8 +18,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ISubGroup
-    {
+    public partial interface ISubGroup {
         public IEmpty Empty { get; }
         /// <summary>
         /// An operation at the group's top level.
@@ -32,7 +31,7 @@ namespace Speakeasy.OpenAPI
         public Task<SubGroupOpResponse> SubGroupOpAsync(CancellationToken? cancellationToken = null);
     }
 
-    public class SubGroup : ISubGroup
+    public partial class SubGroup : ISubGroup
     {
         /// <summary>
         /// SDK Configuration.

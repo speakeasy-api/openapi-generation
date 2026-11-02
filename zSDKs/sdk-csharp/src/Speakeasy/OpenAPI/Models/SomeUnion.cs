@@ -97,7 +97,7 @@ namespace Speakeasy.OpenAPI
     /// A union demonstrating title and x-speakeasy-name-override on primitive types.
     /// </summary>
     [JsonConverter(typeof(SomeUnion.SomeUnionConverter))]
-    public class SomeUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class SomeUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public SomeUnion(SomeUnionType type)
         {
@@ -157,6 +157,21 @@ namespace Speakeasy.OpenAPI
             res.Foo = foo;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyString(value)</c>.
+        /// </summary>
+        public static implicit operator SomeUnion?(string? value) => value is null ? null : CreateMyString(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyObject(value)</c>.
+        /// </summary>
+        public static implicit operator SomeUnion?(MyObject? value) => value is null ? null : CreateMyObject(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateFoo(value)</c>.
+        /// </summary>
+        public static implicit operator SomeUnion(bool value) => CreateFoo(value);
 
         public class SomeUnionConverter : JsonConverter
         {

@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI.Bar
     /// Status of a pet in the bar namespace.
     /// </summary>
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class PetStatus : IEquatable<PetStatus>, IOpenEnum<string>
+    public partial class PetStatus : IEquatable<PetStatus>, IOpenEnum<string>
     {
         public static readonly PetStatus Available = new PetStatus("available");
         public static readonly PetStatus Adopted = new PetStatus("adopted");

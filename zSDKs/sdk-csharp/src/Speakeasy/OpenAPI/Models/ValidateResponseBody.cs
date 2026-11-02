@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class ValidateResponseBody
+    public partial class ValidateResponseBody
     {
         [JsonProperty("valid", Required = Newtonsoft.Json.Required.DisallowNull)]
         public bool? Valid { get; set; }

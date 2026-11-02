@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class UpdateUserRequest
+    public partial class UpdateUserRequest
     {
         [SpeakeasyMetadata("pathParam:style=simple,explode=false,name=id")]
         public string Id { get; set; } = default!;

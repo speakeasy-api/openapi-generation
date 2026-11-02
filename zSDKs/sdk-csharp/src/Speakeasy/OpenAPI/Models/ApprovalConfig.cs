@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Approval configuration with escalation.
     /// </summary>
-    public class ApprovalConfig
+    public partial class ApprovalConfig
     {
         [JsonProperty("approvers", Required = Newtonsoft.Json.Required.Always)]
         public List<string> Approvers { get; set; } = default!;

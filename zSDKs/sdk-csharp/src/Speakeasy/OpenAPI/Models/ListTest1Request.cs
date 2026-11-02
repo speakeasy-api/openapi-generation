@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class ListTest1Request
+    public partial class ListTest1Request
     {
         [SpeakeasyMetadata("pathParam:style=simple,explode=false,name=page")]
         public long Page { get; set; } = default!;

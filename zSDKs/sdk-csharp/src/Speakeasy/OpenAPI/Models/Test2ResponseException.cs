@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class Test2ResponseExceptionPayload
+    public partial class Test2ResponseExceptionPayload
     {
         [JsonProperty("test2", Required = Newtonsoft.Json.Required.Default, NullValueHandling = NullValueHandling.Include)]
         public OptionalNullable<string?> Test2 { get; set; }
@@ -33,7 +33,7 @@ namespace Speakeasy.OpenAPI
         public HTTPMetadata HttpMeta { get; set; } = new();
     }
 
-    public class Test2ResponseException : SDKBaseException
+    public partial class Test2ResponseException : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

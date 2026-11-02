@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class TestEndpointRequestBody
+    public partial class TestEndpointRequestBody
     {
         [JsonProperty("test", Required = Newtonsoft.Json.Required.Always)]
         public string Test { get; set; } = default!;
