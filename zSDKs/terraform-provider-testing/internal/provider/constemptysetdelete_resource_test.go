@@ -1,6 +1,7 @@
 package provider_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -121,4 +122,34 @@ func TestConstEmptySetDeleteResourceLifecycle(t *testing.T) {
 	tfmockserver.AssertRequestBodyField(t, deletes[0], "scope_id", "scope-1")
 	tfmockserver.AssertRequestBodyFieldEmptyArray(t, deletes[0], "groups")
 	require.Len(t, deletes[0], 2, "delete body carries only scope_id and the const empty set: %v", deletes[0])
+}
+
+func TestConstEmptySetDeleteResourceRejectsWrongResponseConst(t *testing.T) {
+	t.Parallel()
+
+	endpoints := tfmockserver.ResourceEndpoints{
+		Create: tfmockserver.Endpoints{
+			{
+				Endpoint:        "PUT /v0/constemptysetdelete",
+				ResponseOverlay: map[string]any{"supported_actions": []any{"delete"}},
+			},
+		},
+	}
+
+	mockServer := tfmockserver.StartServer(endpoints, t)
+	defer mockServer.Close()
+
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ConfigDirectory:          config.StaticDirectory("testdata/TestConstEmptySetDeleteResourceLifecycle"),
+				ProtoV6ProviderFactories: provider.GetTestProviders(),
+				ConfigVariables: config.Variables{
+					"server_url": config.StringVariable(mockServer.URL),
+					"replicas":   config.IntegerVariable(2),
+				},
+				ExpectError: regexp.MustCompile(`(?s)const field.*supported_actions.*does\s+not match`),
+			},
+		},
+	})
 }

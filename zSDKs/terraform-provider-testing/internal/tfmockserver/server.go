@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -587,9 +588,16 @@ func (h *ResourceHandler) handleDeleteWithConfig(w http.ResponseWriter, r *http.
 		pathParams[p] = r.PathValue(p)
 	}
 	var requestData map[string]interface{}
-	if r.ContentLength != 0 {
-		if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+	rawBody, _ := io.ReadAll(r.Body)
+	if len(rawBody) > 0 {
+		if err := json.Unmarshal(rawBody, &requestData); err != nil {
 			h.testingContext.Logf("🔴 [MOCK SERVER] DELETE - Failed to decode JSON: %v\n", err)
+			config.Requests.Append(CapturedRequest{
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				PathParams: pathParams,
+				Body:       nil,
+			})
 			h.writeError(w, 400, "Invalid JSON data", "VALIDATION_ERROR")
 			return
 		}
