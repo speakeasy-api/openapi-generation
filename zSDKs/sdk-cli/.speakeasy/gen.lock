@@ -670,7 +670,7 @@ trackedFiles:
   scripts/install.sh:
     last_write_checksum: sha1:ba255d220bc830375d4f2bc34a7ca01e0a0a8fe2
   tests/artifact_test.go:
-    last_write_checksum: sha1:cbf7e49f1435a57e3dce21720d7394b15dd9c325
+    last_write_checksum: sha1:619b9b9d17fd1e94176f5e97fbdddf63a8fbe9a9
   tests/async_test.go:
     last_write_checksum: sha1:dac2ec49f9bb6c9e5ff8923020f68eb8ab1cc421
   tests/cli_harness_test.go:

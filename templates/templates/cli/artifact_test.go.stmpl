@@ -449,22 +449,25 @@ func runArtifactWithProbe(t *testing.T, h *CLITestHarness, serverURL, dir string
 	return runArtifact(t, h, serverURL, dir, "--header", artifactProbeHeader+": secret")
 }
 
-// Headers the downloader sets itself, whatever the API request carried.
-var artifactDownloaderHeaders = map[string]bool{
-	"Accept":          true,
-	"Accept-Encoding": true,
-	"Content-Length":  true,
-	"Content-Type":    true,
-	"Idempotency-Key": true,
+// Headers of the API request a same-origin download does not reuse.
+var artifactNotForwardedHeaders = map[string]bool{
+	"Accept":           true,
+	"Accept-Encoding":  true,
+	"Content-Encoding": true,
+	"Content-Length":   true,
+	"Content-Type":     true,
+	"Idempotency-Key":  true,
+	"Referer":          true,
 }
 
 // assertNoAPIHeaders checks that no header the API request carried reached
-// the download, apart from headers the downloader sets itself.
+// the download, apart from the ones the downloader sets itself.
 func assertNoAPIHeaders(t *testing.T, api, download http.Header) {
 	t.Helper()
 	require.Equal(t, "secret", api.Get(artifactProbeHeader))
 	for name := range api {
-		if artifactDownloaderHeaders[http.CanonicalHeaderKey(name)] {
+		switch http.CanonicalHeaderKey(name) {
+		case "Accept", "Accept-Encoding":
 			continue
 		}
 		if name == "User-Agent" {
@@ -493,7 +496,7 @@ func TestArtifact_URIOnAPIOriginIsDownloadedWithRequestHeaders(t *testing.T) {
 	require.NotNil(t, asset, "the URI was not fetched")
 	assert.Equal(t, "secret", api.Get(artifactProbeHeader))
 	for name, values := range api {
-		if artifactDownloaderHeaders[http.CanonicalHeaderKey(name)] {
+		if artifactNotForwardedHeaders[http.CanonicalHeaderKey(name)] {
 			continue
 		}
 		assert.Equal(t, values, asset.Values(name), "header %s must be reused on the API origin", name)
