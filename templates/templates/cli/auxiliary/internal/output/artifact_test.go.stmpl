@@ -3,6 +3,7 @@ package output
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -108,6 +109,74 @@ func TestFindArtifactItemSelectsTrailingBlockWithoutData(t *testing.T) {
 				t.Fatalf("data = %v (present %t), want the trailing %s data field", got, present, name)
 			}
 		})
+	}
+}
+
+func TestArtifactExtensionNormalizesSubtype(t *testing.T) {
+	cases := map[string]string{
+		"image/png":                "png",
+		"image/svg+xml":            "svg",
+		"image/webp; q=0.9":        "webp",
+		"audio/x-flac":             "flac",
+		"audio/x-wav":              "wav",
+		"image/x-icon":             "ico",
+		"image/vnd.microsoft.icon": "ico",
+		"image/x-ms-bmp":           "bmp",
+		"audio/vnd.wave":           "wav",
+		"audio/pcm":                "wav",
+		"audio/ogg; codecs=opus":   "ogg",
+		"video/x-msvideo":          "avi",
+		"video/x-matroska":         "mkv",
+		"video/3gpp":               "3gp",
+	}
+	for mime, want := range cases {
+		kind, _, _ := strings.Cut(mime, "/")
+		if got := artifactExtension(kind, mime); got != want {
+			t.Errorf("artifactExtension(%q) = %q, want %q", mime, got, want)
+		}
+	}
+	if got := artifactExtension("image", "audio/wav"); got != "" {
+		t.Errorf("wrong-kind MIME resolved to %q", got)
+	}
+}
+
+func TestArtifactOutPath(t *testing.T) {
+	cases := []struct {
+		name, path, ext, wantPath string
+		wantMismatch             bool
+	}{
+		{"exact match", "photo.png", "png", "photo.png", false},
+		{"case-insensitive match", "photo.PNG", "png", "photo.PNG", false},
+		{"alias match", "photo.jpeg", "jpg", "photo.jpeg", false},
+		{"alias match reversed", "scan.tif", "tiff", "scan.tif", false},
+		{"opus is an ogg container", "a.opus", "ogg", "a.opus", false},
+		{"pcm counts as wav", "a.pcm", "wav", "a.pcm", false},
+		{"media mismatch", "photo.png", "jpg", "photo.png", true},
+		{"media mismatch across kinds", "clip.mp4", "wav", "clip.mp4", true},
+		{"unknown returned extension never mismatches", "clip.avi", "divx", "clip.avi", false},
+		{"no extension appends", "photo", "png", "photo.png", false},
+		{"non-media suffix appends", "render.v1", "png", "render.v1.png", false},
+		{"archive suffix appends", "archive.tar", "png", "archive.tar.png", false},
+		{"trailing dot appends once", "photo.", "png", "photo.png", false},
+		{"directory dots are ignored", "v1.2/photo", "png", "v1.2/photo.png", false},
+		{"dotfile is an extension", ".png", "png", ".png", false},
+		{"empty returned extension keeps path", "photo.txt", "", "photo.txt", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotPath, gotMismatch := artifactOutPath(tc.path, tc.ext)
+			if gotPath != tc.wantPath || gotMismatch != tc.wantMismatch {
+				t.Fatalf("artifactOutPath(%q, %q) = (%q, %t), want (%q, %t)", tc.path, tc.ext, gotPath, gotMismatch, tc.wantPath, tc.wantMismatch)
+			}
+		})
+	}
+}
+
+func TestArtifactMediaExtensionsCoverMimeExtensions(t *testing.T) {
+	for mime, ext := range artifactMimeExtensions {
+		if _, ok := artifactMediaExtensions[ext]; !ok {
+			t.Errorf("%s maps to %q, which --out does not recognize", mime, ext)
+		}
 	}
 }
 
