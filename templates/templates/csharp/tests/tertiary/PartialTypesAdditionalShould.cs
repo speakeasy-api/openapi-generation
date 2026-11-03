@@ -42,6 +42,19 @@ public class PartialTypesAdditionalShould
     }
 
     [Fact]
+    public void ExposeAuxiliaryErrorMembersFromPartialDeclarations()
+    {
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.BadGateway);
+        var defaultError = new SDKException("bad gateway", response, "");
+        var validationError = new ResponseValidationException("invalid", response, "", new System.Exception("cause"));
+
+        Assert.True(defaultError.IsServerError);
+        Assert.True(defaultError.IsDefault);
+        Assert.True(validationError.IsServerError);
+        Assert.True(validationError.HasCause);
+    }
+
+    [Fact]
     public void ExposeSdkMembersFromPartialDeclarations()
     {
         ISDK sdk = new SDK();

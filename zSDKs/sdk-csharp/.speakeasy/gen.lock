@@ -1330,7 +1330,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/RequestTimeoutError.cs:
     last_write_checksum: sha1:daab644ae4064d645bdfd93cc12a46e4dcc26dc8
   src/Speakeasy/OpenAPI/Models/ResponseValidationException.cs:
-    last_write_checksum: sha1:dae477219de939f4d741be6f59c4e58efb0f4dd7
+    last_write_checksum: sha1:e3a8d8245f7cbeb172170176890a309f1a648750
   src/Speakeasy/OpenAPI/Models/ResultArray.cs:
     last_write_checksum: sha1:0ec76eeaea26de44ade177593cae179da3c51868
   src/Speakeasy/OpenAPI/Models/ReviewTask.cs:
@@ -1338,9 +1338,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/RootGroupOpResponse.cs:
     last_write_checksum: sha1:cf10d13320bbdf7322789e766ed9ff729ed8734e
   src/Speakeasy/OpenAPI/Models/SDKBaseException.cs:
-    last_write_checksum: sha1:6fab351fb3de5e75f323d750d023019133a32641
+    last_write_checksum: sha1:779941d8809f647c169404fe98253933c625a05b
   src/Speakeasy/OpenAPI/Models/SDKException.cs:
-    last_write_checksum: sha1:1e88e912d13d7eaaee4a465905f8782780670703
+    last_write_checksum: sha1:4a809172e959d30cf9cf3334291079d9345e10df
   src/Speakeasy/OpenAPI/Models/Security.cs:
     last_write_checksum: sha1:8415796e05f041ec88ea5e7b750492bde3d52ddb
   src/Speakeasy/OpenAPI/Models/SecurityOption2.cs:
