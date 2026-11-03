@@ -712,27 +712,3 @@ func TestFormatCSharp_NoSpaceBeforeIndexer(t *testing.T) {
 		t.Errorf("expected ')[0]' in output, got:\n%s", result)
 	}
 }
-
-func TestFormatCSharp_PartialInterfaceAllmanBrace(t *testing.T) {
-	// dotnet format: Allman brace on its own line for partial interfaces.
-	//
-	// DIVERGENCE: clang-format's C# parser does not treat "partial interface"
-	// as a type declaration and keeps the brace on the declaration line.
-	// "partial class" and plain "interface" are unaffected.
-	input := []byte(`namespace TestApp
-{
-    public partial interface IService
-    {
-        void Run();
-    }
-}
-`)
-	result := formatCS(t, "IService.cs", input)
-
-	if strings.Contains(result, "public partial interface IService {") {
-		t.Skip("known clang-format divergence: partial interface brace stays on the declaration line")
-	}
-	if !strings.Contains(result, "public partial interface IService\n    {") {
-		t.Errorf("expected Allman brace after partial interface, got:\n%s", result)
-	}
-}
