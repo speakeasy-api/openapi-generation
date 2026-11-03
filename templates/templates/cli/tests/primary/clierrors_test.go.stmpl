@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"{{getGolangPackage}}/internal/clierrors"
 	"{{getGolangPackage}}/internal/output"
 )
 
@@ -30,9 +31,11 @@ func agentEnvelope(t *testing.T, stderr string) map[string]interface{} {
 func TestCLIErrorAgentModeMatrix(t *testing.T) {
 	recordTest("clierrors-agent-mode-matrix")
 
+	const timeoutEnv = "{{.Global.Config.EnvVarPrefix}}_TIMEOUT"
 	cases := []struct {
 		name    string
 		args    []string
+		env     map[string]string
 		wantMsg string
 	}{
 		{name: "malformed --body JSON", args: []string{"--agent-mode", "request-bodies", "request-body-post-flag-defaults-body-merge", "--body", "{"}, wantMsg: "failed to parse --body"},
@@ -41,13 +44,29 @@ func TestCLIErrorAgentModeMatrix(t *testing.T) {
 		{name: "unknown command, flag after the failing token", args: []string{"no-such-command", "--agent-mode"}, wantMsg: "unknown command"},
 		{name: "invalid flag value", args: []string{"--agent-mode", "errors", "status-get-error", "--status-code", "not-a-number"}, wantMsg: "invalid argument"},
 		{name: "invalid --timeout", args: []string{"--agent-mode", "--timeout", "soon", "errors", "status-get-error", "--status-code", "400"}, wantMsg: "invalid --timeout"},
+		{name: "zero --timeout", args: []string{"--agent-mode", "--dry-run", "--timeout", "0", "methods", "method-get"}, wantMsg: `invalid --timeout value "0": must be a positive Go duration`},
+		{name: "zero duration --timeout", args: []string{"--agent-mode", "--dry-run", "--timeout", "0s", "methods", "method-get"}, wantMsg: `invalid --timeout value "0s": must be a positive Go duration`},
+		{name: "negative --timeout", args: []string{"--agent-mode", "--dry-run", "--timeout", "-5s", "methods", "method-get"}, wantMsg: `invalid --timeout value "-5s": must be a positive Go duration`},
+		{name: "negative millisecond --timeout", args: []string{"--agent-mode", "--dry-run", "--timeout", "-1ms", "methods", "method-get"}, wantMsg: `invalid --timeout value "-1ms": must be a positive Go duration`},
+		{name: "zero timeout from environment", args: []string{"--agent-mode", "--dry-run", "methods", "method-get"}, env: map[string]string{timeoutEnv: "0s"}, wantMsg: `invalid --timeout value "0s": must be a positive Go duration`},
+		{name: "negative timeout from environment", args: []string{"--agent-mode", "--dry-run", "methods", "method-get"}, env: map[string]string{timeoutEnv: "-5s"}, wantMsg: `invalid --timeout value "-5s": must be a positive Go duration`},
+		{name: "--server-url without scheme", args: []string{"--agent-mode", "--dry-run", "--server-url", "localhost:8080", "methods", "method-get"}, wantMsg: `invalid --server-url "localhost:8080": the URL must start with http:// or https://`},
+		{name: "--server-url host only", args: []string{"--agent-mode", "--dry-run", "--server-url", "example.com", "methods", "method-get"}, wantMsg: `invalid --server-url "example.com": the URL must start with http:// or https://`},
+		{name: "--server-url ftp scheme", args: []string{"--agent-mode", "--dry-run", "--server-url", "ftp://example.com", "methods", "method-get"}, wantMsg: `invalid --server-url "ftp://example.com": unsupported scheme "ftp": use http or https`},
+		{name: "--server-url file scheme", args: []string{"--agent-mode", "--dry-run", "--server-url", "file:///etc/hosts", "methods", "method-get"}, wantMsg: `invalid --server-url "file:///etc/hosts": unsupported scheme "file": use http or https`},
+		{name: "--server-url without host", args: []string{"--agent-mode", "--dry-run", "--server-url", "http://", "methods", "method-get"}, wantMsg: `invalid --server-url "http://": the URL has no host`},
+		{name: "--server-url port only", args: []string{"--agent-mode", "--dry-run", "--server-url", "https://:8443", "methods", "method-get"}, wantMsg: `invalid --server-url "https://:8443": the URL has no host`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			resetAgentMode(t)
 			h := NewCLITestHarness(t)
+			for key, value := range tc.env {
+				h = h.WithEnv(key, value)
+			}
 			err := h.RunRaw(tc.args)
 			require.Error(t, err)
+			assert.Equal(t, clierrors.ExitUsage, clierrors.ExitCode(err))
 			assert.True(t, output.IsRendered(err), "a CLI error rendered in the envelope must be marked so main prints nothing further")
 
 			envelope := agentEnvelope(t, h.GetStderr())
@@ -60,6 +79,31 @@ func TestCLIErrorAgentModeMatrix(t *testing.T) {
 			hints, _ := envelope["hints"].([]interface{})
 			assert.NotEmpty(t, hints, "validation errors carry the built-in hints")
 			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+		})
+	}
+}
+
+func TestServerURLAndTimeoutAcceptValidValues(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		env     map[string]string
+		wantURL string
+	}{
+		{name: "http server URL", args: []string{"--server-url", "http://localhost:8080"}, wantURL: "http://localhost:8080/"},
+		{name: "uppercase scheme server URL", args: []string{"--server-url", "HTTPS://Example.com/v1"}, wantURL: "https://Example.com/v1/"},
+		{name: "positive --timeout", args: []string{"--server-url", "http://localhost:8080", "--timeout", "30s"}, wantURL: "http://localhost:8080/"},
+		{name: "positive timeout from environment", args: []string{"--server-url", "http://localhost:8080"}, env: map[string]string{"{{.Global.Config.EnvVarPrefix}}_TIMEOUT": "30s"}, wantURL: "http://localhost:8080/"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewCLITestHarness(t)
+			for key, value := range tc.env {
+				h = h.WithEnv(key, value)
+			}
+			require.NoError(t, h.RunRaw(append(append([]string{"--dry-run", "-o", "json"}, tc.args...), "methods", "method-get")), h.GetStderr())
+			previews := primaryDryRunPreviews(t, h.GetStdout())
+			require.Len(t, previews, 1, h.GetStdout())
+			assert.True(t, strings.HasPrefix(previews[0].Request.URL, tc.wantURL), "preview targets %s, got %s", tc.wantURL, previews[0].Request.URL)
 		})
 	}
 }
