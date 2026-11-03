@@ -518,9 +518,13 @@ func renderResult(cmd *cobra.Command, res interface{}, allowArtifact bool) error
 		if format == "json" || format == "yaml" || format == "toon" || jqExpr != "" {
 			return outputWithHeaders(out, content, headers, format, jqExpr, colorize, jqRaw)
 		}
-		// Pretty mode: print body content, then headers section
+		// Pretty and table modes: print body content, then headers section
 		if content != nil {
-			if err := prettyPrint(out, content, colorize); err != nil {
+			if format == "table" {
+				if err := printTable(out, content); err != nil {
+					return err
+				}
+			} else if err := prettyPrint(out, content, colorize); err != nil {
 				return err
 			}
 		}
@@ -1319,6 +1323,10 @@ func outputWithHeaders(out io.Writer, content interface{}, headers http.Header, 
 // printResponseHeadersPretty prints HTTP response headers in aligned key-value
 // format, similar to prettyPrint but as a separate section.
 func printResponseHeadersPretty(w io.Writer, headers http.Header, colorize bool) {
+	printResponseHeadersPrettyLabel(w, headers, colorize, "Response Headers")
+}
+
+func printResponseHeadersPrettyLabel(w io.Writer, headers http.Header, colorize bool, label string) {
 	if len(headers) == 0 {
 		return
 	}
@@ -1339,7 +1347,6 @@ func printResponseHeadersPretty(w io.Writer, headers http.Header, colorize bool)
 	}
 
 	fmt.Fprintln(w)
-	label := "Response Headers"
 	if colorize {
 		label = colorKey + label + colorReset
 	}

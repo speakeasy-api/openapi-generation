@@ -870,7 +870,7 @@ Dry-run does not depend on agent environment detection. Successful previews use 
 
 **CLI-originated errors** (`ExecuteRoot` in `root.go.stmpl`, `CLIError` in `agentmode.go.stmpl`): every CLI error is classified, including compatibility-mode errors that main still prints. Flag/argument/JSON parsing failures, Cobra usage errors, invalid option values, and local input/config failures are typed as `CLI_VALIDATION` at their structural boundaries (`flagutil.WithCLIValidation`); an error carrying a `clierrors.ExitCoder` classifies from its code (`ExitAuth` → `CLI_AUTHENTICATION`, `ExitUsage` → `CLI_VALIDATION`). `AgentModeError(cmd, message, hints)` is `validation_error` / `CLI_VALIDATION`. Runtimes may attach `CLIReason()` and `CLIHints()`; command hints append after them. `output.InstallErrorHandling` composes final-tree Cobra flag/Args handlers and pre-validates required/flag-group contracts; the root gets `cobra.NoArgs` so cobra's root-only `legacyArgs` check never runs, and the `Args` wrapper turns a rejected positional on any command with subcommands into `output.UnknownSubcommandError` (one-line message, suggestions as hints). On parent commands that reject positionals (the root, generated and synthesized groups), the flag error handler validates the positionals it already has through the same `Args` path first, so a typo followed by the intended leaf's flags reports the command rather than the flag; leaves and parents that accept positionals keep the flag error. Because the root no longer relies on `root.Find` rejecting stray tokens, `installHelpTopicCheck` wraps the built-in `help` command so `cli help genreate` still prints `Unknown help topic` plus root usage (exit 0, as cobra did). `output.UsageHelpError` is the reusable exported helper for incomplete hand-written/generated commands: plain mode writes full help to stderr then `Error: ...`; agent mode, explicit JSON or `--jq`, and explicit TOON when `classifiedErrors` is enabled return one envelope with a command-specific `--help` hint. `ExecuteRoot` snapshots rendering flags before Cobra can reject an early command. Rendered diagnostics return one sentinel containing the classification, so `main.go` never prints a second copy.
 
-The closed reason namespace is `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, and `CLI_AUTHENTICATION`; it mirrors `CLIRuntimeHintReasons` in `internal/extensions/cli_commands.go`. Interactive prompt cancellation and TUI/explorer failures deliberately remain untyped and therefore exit as runtime failures.
+The closed reason namespace is `CLI_VALIDATION`, `CLI_CONNECTION`, `CLI_PROTOCOL`, `CLI_RUNTIME`, `CLI_UNAVAILABLE`, `CLI_AUTHENTICATION`, `CLI_ASYNC_FAILED`, `CLI_ASYNC_TIMEOUT`, `CLI_ASYNC_UNKNOWN_STATE`, `CLI_OUTCOME_FAILED`, and `CLI_CONTINUATION_LIMIT`; it mirrors `CLIRuntimeHintReasons` in `internal/extensions/cli_commands.go`. Interactive prompt cancellation and TUI/explorer failures deliberately remain untyped and therefore exit as runtime failures.
 
 ### Exit Codes and Error Boundaries
 
@@ -943,7 +943,7 @@ Hint: more pages available. Use --all to fetch all results, or --cursor for manu
 
 The manual flag is included only for cursor pagination. Offset/limit pagination emits no hint; target generators that support next-URL pagination can use the same probe without a manual flag.
 
-**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), and operation-option propagation.
+**Hand-written tests**: `tests/primary/pagination_test.go.stmpl` covers `--all` with offset/limit, cursor, NDJSON, jq, pretty format, truthful hints, structured/agent silence, exact request caps, continuation cycles (including cursor coercion and empty-results termination), operation-option propagation, and `--all --include-headers` in every output format (whole pages with `_response_headers`, one headers section per page in pretty output, last-page headers after a table, and pages without a results field rendered like single responses).
 
 ### Streaming (SSE & JSONL)
 
@@ -1330,7 +1330,11 @@ cli response-headers response-headers --status-code 200 --include-headers --outp
 
 **Error path**: `Error()` also supports `--include-headers` — it extracts headers from the error's `RawResponse` field and injects them into JSON error output or appends a `Response Headers:` section in pretty mode.
 
-**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 12 tests covering: 5 functional tests matching auto-generated test IDs, 5 cross-cutting format tests (json, yaml, pretty, jq, no-flag regression), 1 core bug regression test (body extracted over headers), and 1 `--header` request injection test.
+**Table format**: `-o table` renders the table, then the `Response Headers:` section.
+
+**Pagination (`--all`)**: each page carries its own headers, so `--include-headers` prints whole pages rather than individual items: one page object with `_response_headers` per page in json, yaml, toon and jq modes, and each page followed by its `Response Headers:` section in pretty mode (`outputPageWithHeaders()` in `paginated.go.stmpl`). When `-o table` merges every page's items into one table, a single headers section follows it: `Response Headers (last page):` when more than one page was fetched, `Response Headers:` when there was only one.
+
+**Hand-written tests**: `tests/primary/headers_additional_test.go.stmpl` — 17 tests covering: 5 functional tests matching auto-generated test IDs, 7 cross-cutting format tests (json, yaml, toon, pretty, table, jq, no-flag regression), 1 core bug regression test (body extracted over headers), 1 large-integer precision test, 2 non-JSON raw body tests (plain and jq), and 1 `--header` request injection test.
 
 ### Configuration & Auth
 
