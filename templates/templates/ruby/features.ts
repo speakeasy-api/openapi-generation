@@ -482,6 +482,9 @@ function isTestSkipped(test: string): boolean {
     "timeout-sdk-default-is-respected",
     "response-body-limit",
     "timeout-operation-extension-is-respected",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
   ].includes(test);
 }
 

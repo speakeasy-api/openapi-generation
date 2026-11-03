@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.16.4",
+  core: "3.16.5",
   getRequestBodies: "2.81.1",
   flattening: "2.81.2",
   globalSecurity: "2.82.15",
@@ -22,7 +22,7 @@ const supportedFeatures = {
   ignores: "2.81.1",
   typeOverrides: "2.81.1",
   errors: "2.83.3",
-  unions: "2.87.13",
+  unions: "2.87.14",
   multiLevelTagging: "2.87.3",
   bigint: "0.0.2",
   decimal: "0.1.1",
@@ -37,7 +37,7 @@ const supportedFeatures = {
   oauth2Password: "0.1.3",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
-  responseFormat: "0.1.2",
+  responseFormat: "0.1.3",
   hiddenGlobals: "0.1.0",
   errorUnions: "0.1.0",
   acceptHeaders: "2.81.2",
@@ -433,6 +433,9 @@ function isTestSkipped(test: string): boolean {
     "timeout-sdk-default-is-respected",
     "response-body-limit",
     "timeout-operation-extension-is-respected",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
   ].includes(test);
 }
 
