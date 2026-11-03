@@ -6,7 +6,9 @@ package org.openapis.openapi.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -75,6 +77,12 @@ public class Retries {
 
         } catch (IOException e) {
             if (e instanceof ConnectException && retryConnectError) {
+                throw e;
+            }
+            if (e instanceof HttpConnectTimeoutException && retryConnectError) {
+                throw e;
+            }
+            if (e instanceof HttpTimeoutException && retryReadTimeoutError) {
                 throw e;
             }
             String message = e.getMessage();

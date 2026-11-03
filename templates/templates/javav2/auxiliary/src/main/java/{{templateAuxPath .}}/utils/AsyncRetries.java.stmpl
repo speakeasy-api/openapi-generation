@@ -12,6 +12,9 @@ import java.io.InterruptedIOException;
 import java.net.ConnectException;
 {{- if $okHttp}}
 import java.net.SocketTimeoutException;
+{{- else}}
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 {{- end}}
 import {{javaHttpResponseFqn}};
 import java.time.Duration;
@@ -140,6 +143,8 @@ public class AsyncRetries {
         return (isConnectTimeout(e) && backoff.retryConnectError())
                 || (isReadTimeout(e) && backoff.retryReadTimeoutError());
         {{- else}}
+        if (e instanceof HttpConnectTimeoutException && backoff.retryConnectError()) return true;
+        if (e instanceof HttpTimeoutException && backoff.retryReadTimeoutError()) return true;
         String message = e.getMessage();
         if (message == null) return false;
         return (message.contains("Connect timed out") && backoff.retryConnectError())
@@ -393,6 +398,9 @@ import java.io.InterruptedIOException;
 import java.net.ConnectException;
 {{- if $okHttp}}
 import java.net.SocketTimeoutException;
+{{- else}}
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 {{- end}}
 import {{javaHttpResponseFqn}};
 import java.time.Duration;
@@ -488,6 +496,8 @@ public class AsyncRetries {
         return (isConnectTimeout(e) && backoff.retryConnectError())
                 || (isReadTimeout(e) && backoff.retryReadTimeoutError());
         {{- else}}
+        if (e instanceof HttpConnectTimeoutException && backoff.retryConnectError()) return true;
+        if (e instanceof HttpTimeoutException && backoff.retryReadTimeoutError()) return true;
         String message = e.getMessage();
         if (message == null) return false;
         return (message.contains("Connect timed out") && backoff.retryConnectError())

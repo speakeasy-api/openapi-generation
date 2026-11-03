@@ -7,11 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.openapis.secondary.openapi.models.operations.CancelledRequestResponse;
 import org.openapis.secondary.openapi.models.operations.CancelledRequestWithOperationTimeoutResponse;
+import org.openapis.secondary.openapi.models.operations.JsonResponse;
+import org.openapis.secondary.openapi.models.components.JsonEvent;
+import org.openapis.secondary.openapi.utils.EventStream;
 
 /**
  * Timeouts on the okhttp arm. The resolved timeout is applied to the OkHttp
@@ -72,5 +76,18 @@ public class TimeoutAdditionalTest {
             .seconds(2L)
             .call();
         assertEquals(200, sdkDefault.statusCode());
+    }
+
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    public void testStreamingResponseOutlivesTimeout() throws Exception {
+        SDK s = SDK.builder().timeout(Duration.ofMillis(300)).build();
+
+        JsonResponse res = s.eventstreams().json().call();
+        try (EventStream<JsonEvent> events = res.events()) {
+            assertEquals("Hello world!", events.stream()
+                    .map(x -> x.data().content())
+                    .collect(Collectors.joining()));
+        }
     }
 }

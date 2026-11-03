@@ -313,7 +313,8 @@ public class SDK {
         /**
          * Caps the body bytes read per response; reading past the cap throws
          * {@link ResponseTooLargeException}. Streaming responses are not capped.
-         * Custom HTTP clients must enforce the cap themselves.
+         * A custom HTTP client must implement {@code setMaxResponseBodyBytes} and report the cap from
+         * {@code maxResponseBodyBytes}; otherwise building the SDK throws {@code IllegalStateException}.
          *
          * @param maxBytes The maximum number of body bytes to read per response; must be positive.
          * @return The builder instance.
@@ -518,7 +519,13 @@ public class SDK {
 
     public SDK(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
-        sdkConfiguration.maxResponseBodyBytes().ifPresent(sdkConfiguration.client()::setMaxResponseBodyBytes);
+        if (sdkConfiguration.maxResponseBodyBytes().isPresent()) {
+            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().get();
+            sdkConfiguration.client().setMaxResponseBodyBytes(maxResponseBodyBytes);
+            if (sdkConfiguration.client().maxResponseBodyBytes() != maxResponseBodyBytes) {
+                throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
+            }
+        }
         this.tag1 = new Tag1(sdkConfiguration);
         this.obsolete = new Obsolete(sdkConfiguration);
         this.testGroup = new TestGroup(sdkConfiguration);

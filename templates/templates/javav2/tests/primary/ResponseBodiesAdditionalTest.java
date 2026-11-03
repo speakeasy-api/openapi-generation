@@ -29,6 +29,7 @@ import org.openapis.openapi.models.shared.ObjWithAnyAdditionalProperties;
 import org.openapis.openapi.utils.Hook.AfterSuccess;
 import org.openapis.openapi.utils.Hook.BeforeRequest;
 import org.openapis.openapi.utils.Hook.SdkInit;
+import org.openapis.openapi.utils.HTTPClient;
 import org.openapis.openapi.utils.Hooks;
 import org.openapis.openapi.utils.Utils;
 
@@ -51,6 +52,14 @@ public class ResponseBodiesAdditionalTest {
     void testMaxResponseBodyBytesMustBePositive() {
         assertThrows(IllegalArgumentException.class, () -> SDK.builder().maxResponseBodyBytes(0));
         assertThrows(IllegalArgumentException.class, () -> SDK.builder().maxResponseBodyBytes(-1));
+    }
+
+    @Test
+    void testMaxResponseBodyBytesRequiresAnEnforcingClient() {
+        HTTPClient passthrough = new HTTPClient() {};
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> SDK.builder().client(passthrough).maxResponseBodyBytes(50).build());
+        assertTrue(e.getMessage().contains("maxResponseBodyBytes"));
     }
 
     @Test

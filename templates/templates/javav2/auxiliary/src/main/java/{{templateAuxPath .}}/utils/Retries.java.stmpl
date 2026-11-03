@@ -12,6 +12,8 @@ import {{templatePackageName}}.utils.transport.HttpResponse;
 {{- else}}
 import java.net.http.HttpResponse;
 import java.net.http.HttpRequest;
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 {{- end}}
 import java.net.ConnectException;
 {{- if $okHttp}}
@@ -141,6 +143,12 @@ public class Retries {
                 throw e;
             }
         {{- else}}
+            if(e instanceof HttpConnectTimeoutException && retryConnectError) {
+                throw e;
+            }
+            if(e instanceof HttpTimeoutException && retryReadTimeoutError) {
+                throw e;
+            }
             String message = e.getMessage();
             if(message != null) {
                 if(message.contains("Connect timed out") && retryConnectError) {
@@ -384,6 +392,8 @@ import {{templatePackageName}}.utils.transport.HttpResponse;
 {{- else}}
 import java.io.InputStream;
 import java.net.http.HttpResponse;
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 {{- end}}
 import java.net.ConnectException;
 {{- if $okHttp}}
@@ -497,6 +507,12 @@ public class Retries {
                 throw e;
             }
         {{- else}}
+            if(e instanceof HttpConnectTimeoutException && retryConnectError) {
+                throw e;
+            }
+            if(e instanceof HttpTimeoutException && retryReadTimeoutError) {
+                throw e;
+            }
             String message = e.getMessage();
             if(message != null) {
                 if(message.contains("Connect timed out") && retryConnectError) {
