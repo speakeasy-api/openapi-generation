@@ -17,7 +17,7 @@
   {{- $unknownRawMember = printf "%sRaw" $unknownMember}}
   {{- $isUnknownMember = printf "Is%s" $unknownMember}}
 {{- end}}
-    public class {{$unionType}}
+    public {{templatePartialModifier}}class {{$unionType}}
     {
         private {{$unionType}}(string value) { Value = value; }
 

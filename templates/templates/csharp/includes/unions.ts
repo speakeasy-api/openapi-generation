@@ -201,6 +201,9 @@ function templateUnionImplicitConversions(typeDef: TypeDef): string {
           "/// Like the factory, this sets the discriminator property on the passed instance.",
         );
       }
+      if (!c.IsValueType) {
+        lines.push("/// A null value converts to a null reference.");
+      }
       lines.push("/// </summary>");
       if (c.IsValueType) {
         lines.push(

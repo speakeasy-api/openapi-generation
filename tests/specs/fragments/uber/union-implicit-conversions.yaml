@@ -40,9 +40,7 @@ components:
       required: [kind, base, height]
     ImplicitConversionShape:
       x-speakeasy-include: true
-      description: >-
-        Discriminated union whose members are distinct object schemas. Each
-        member can be converted to the union without naming the variant.
+      description: Discriminated union whose members are distinct object schemas.
       oneOf:
         - $ref: '#/components/schemas/ImplicitConversionCircle'
         - $ref: '#/components/schemas/ImplicitConversionSquare'
@@ -57,8 +55,8 @@ components:
       x-speakeasy-include: true
       description: >-
         Discriminated union with two discriminator values mapped to the same
-        schema. That schema has no single discriminator value to infer, so it
-        gets no conversion; the other member does.
+        schema, so a value of that schema does not determine a single
+        discriminator value.
       oneOf:
         - $ref: '#/components/schemas/ImplicitConversionCircle'
         - $ref: '#/components/schemas/ImplicitConversionSquare'
@@ -76,10 +74,9 @@ components:
     ImplicitConversionNested:
       x-speakeasy-include: true
       description: >-
-        Undiscriminated union whose members include other unions. Members of
-        the inner unions convert to the outer union only when reachable through
-        exactly one inner union and not also a direct member: the circle
-        converts, the square is a direct member, and the triangle is reachable
+        Undiscriminated union whose members include other unions. One object
+        schema is reachable only through one inner union, one is both a direct
+        member and reachable through an inner union, and one is reachable
         through both inner unions.
       oneOf:
         - $ref: '#/components/schemas/ImplicitConversionShape'
@@ -89,8 +86,8 @@ components:
       x-speakeasy-include: true
       description: >-
         Undiscriminated union of a string, an integer, a number, an array of
-        objects and a free-form object. A whole-number argument must resolve to
-        the integer member rather than the number member.
+        objects and a free-form object. A whole-number value matches both the
+        integer and number members.
       oneOf:
         - type: string
         - type: integer
@@ -109,9 +106,7 @@ components:
         - type: 'null'
     ImplicitConversionWithAny:
       x-speakeasy-include: true
-      description: >-
-        Union with an unconstrained member. Only the constrained member can be
-        converted to the union.
+      description: Union of a string member and an unconstrained member.
       oneOf:
         - type: string
         - {}
@@ -133,8 +128,7 @@ components:
       x-speakeasy-include: true
       description: >-
         Union of two inner unions whose array members differ only in item
-        nullability. Nullable reference annotations do not distinguish C#
-        conversion signatures, so neither array converts to the outer union.
+        nullability.
       oneOf:
         - $ref: '#/components/schemas/ImplicitConversionStringListOrInteger'
         - $ref: '#/components/schemas/ImplicitConversionNullableStringListOrBoolean'
@@ -161,11 +155,10 @@ components:
     ImplicitConversionDeepNested:
       x-speakeasy-include: true
       description: >-
-        Union nested several levels deep. The string is reachable through both
-        outer members and through both members of the inner union, so it does
-        not convert to the outer union even though only one inner union keeps a
-        string conversion. The boolean and number are each reachable through a
-        single path two levels deep and convert.
+        Union nested several levels deep. The string type is reachable through
+        both outer members and through both members of the inner union; the
+        boolean and number types are each reachable through a single path two
+        levels deep.
       anyOf:
         - $ref: '#/components/schemas/ImplicitConversionStringOrInteger'
         - $ref: '#/components/schemas/ImplicitConversionDeepInner'
