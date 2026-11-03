@@ -48,7 +48,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
 
     private static boolean isStreamingMediaType(String value) {
-        String[] parts = value.split(";");
+        String[] parts = value.split(";", -1);
         String mediaType = parts[0].trim().toLowerCase(Locale.ENGLISH);
         if (!STREAMING_MEDIA_TYPES.contains(mediaType)) {
             return false;
