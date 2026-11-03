@@ -87,13 +87,7 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, e
 		if err != nil {
 			return nil, err
 		}
-		repeated := http.Header{}
-		for name, values := range headers {
-			if len(values) > 1 {
-				repeated[name] = values
-			}
-		}
-		if len(repeated) > 0 {
+		if repeated := flagutil.RepeatedHeaders(headers); len(repeated) > 0 {
 			httpClient = &repeatedHeaderClient{next: httpClient, headers: repeated}
 		}
 	}
@@ -101,7 +95,8 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, e
 	return sdk.New(sdkOpts...), nil
 }
 
-// repeatedHeaderClient sends every value of a header repeated with --header.
+// repeatedHeaderClient sends every value of a header repeated with --header on
+// requests tagged with flagutil.RepeatedHeadersMarker.
 // operations.WithSetHeaders carries only one value per header.
 type repeatedHeaderClient struct {
 	next    HTTPClient
@@ -109,6 +104,11 @@ type repeatedHeaderClient struct {
 }
 
 func (c *repeatedHeaderClient) Do(req *http.Request) (*http.Response, error) {
+	if req.Header.Get(flagutil.RepeatedHeadersMarker) == "" {
+		return c.next.Do(req)
+	}
+	req = req.Clone(req.Context())
+	req.Header.Del(flagutil.RepeatedHeadersMarker)
 	for name, values := range c.headers {
 		req.Header[name] = append([]string(nil), values...)
 	}

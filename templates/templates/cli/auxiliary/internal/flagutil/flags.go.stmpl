@@ -616,6 +616,23 @@ func ParseHeaderFlags(values []string) (http.Header, error) {
 	return headers, nil
 }
 
+// RepeatedHeadersMarker tags the requests an operation builds itself, so the
+// remaining values of a repeated --header reach only those requests and not
+// the requests SDK hooks send through the same client, such as OAuth token
+// calls.
+const RepeatedHeadersMarker = "X-Cli-Repeated-Headers"
+
+// RepeatedHeaders returns the headers given more than once.
+func RepeatedHeaders(headers http.Header) http.Header {
+	repeated := http.Header{}
+	for name, values := range headers {
+		if len(values) > 1 {
+			repeated[name] = values
+		}
+	}
+	return repeated
+}
+
 func validHeaderName(name string) bool {
 	if name == "" {
 		return false

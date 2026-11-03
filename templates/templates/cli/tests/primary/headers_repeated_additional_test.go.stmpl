@@ -46,6 +46,11 @@ func TestHeadersRepeatedValuesAreAllSent(t *testing.T) {
 			headers: []string{"X-One: 1", "X-Two: a", "X-Two: b"},
 			want:    map[string][]string{"X-One": {"1"}, "X-Two": {"a", "b"}},
 		},
+		{
+			name:    "surrounding whitespace trimmed before validation",
+			headers: []string{"X-Edge: \ta\r\n", "X-Edge:b \r"},
+			want:    map[string][]string{"X-Edge": {"a", "b"}},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			args := []string{"methods", "method-get"}
@@ -59,6 +64,7 @@ func TestHeadersRepeatedValuesAreAllSent(t *testing.T) {
 			for name, values := range tc.want {
 				assert.Equal(t, values, got.Values(name), name)
 			}
+			assert.Empty(t, got.Values("X-Cli-Repeated-Headers"))
 		})
 	}
 }
@@ -78,6 +84,7 @@ func TestHeadersRepeatedValuesInDryRun(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(strings.TrimSpace(h.GetStdout())), &preview), h.GetStdout())
 	assert.Equal(t, []string{"a", "b"}, preview.Request.Headers.Values("X-Foo"))
+	assert.Empty(t, preview.Request.Headers.Values("X-Cli-Repeated-Headers"))
 }
 
 func TestHeadersRejectInvalidNamesAndValues(t *testing.T) {

@@ -358,6 +358,9 @@ func PrepareCallOpts(cmd *cobra.Command) ([]operations.Option, error) {
 		for name, values := range headers {
 			headerMap[name] = values[0]
 		}
+		if len(flagutil.RepeatedHeaders(headers)) > 0 {
+			headerMap[flagutil.RepeatedHeadersMarker] = "1"
+		}
 		opts = append(opts, operations.WithSetHeaders(headerMap))
 	}
 	return opts, nil
