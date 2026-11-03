@@ -2,11 +2,6 @@ package {{templatePackageName}}.utils;
 
 import java.io.IOException;
 
-/**
- * Thrown when a response body exceeds the configured maximum number of bytes.
- *
- * @see HTTPClient#setMaxResponseBodyBytes(long)
- */
 public class ResponseTooLargeException extends IOException {
 
     private static final long serialVersionUID = 1L;

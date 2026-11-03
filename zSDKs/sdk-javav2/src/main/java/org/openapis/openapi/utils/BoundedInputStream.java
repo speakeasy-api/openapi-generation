@@ -7,10 +7,6 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * An {@code InputStream} that fails with {@link ResponseTooLargeException} once
- * more than {@code maxBytes} have been read from the underlying stream.
- */
 public final class BoundedInputStream extends FilterInputStream {
 
     private final long maxBytes;
@@ -24,10 +20,6 @@ public final class BoundedInputStream extends FilterInputStream {
         this.maxBytes = maxBytes;
     }
 
-    /**
-     * Wraps {@code in} so that reading past {@code maxBytes} fails. A value of
-     * {@code Long.MAX_VALUE} returns {@code in} unchanged.
-     */
     public static InputStream wrap(InputStream in, long maxBytes) {
         if (maxBytes == Long.MAX_VALUE) {
             return in;

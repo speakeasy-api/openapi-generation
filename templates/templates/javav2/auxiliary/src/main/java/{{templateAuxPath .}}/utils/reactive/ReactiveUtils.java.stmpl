@@ -119,12 +119,7 @@ public final class ReactiveUtils {
 
     /**
      * Fails the stream with {@link ResponseTooLargeException} once more than
-     * {@code maxBytes} have been emitted. A limit of {@code Long.MAX_VALUE} returns
-     * the source unchanged.
-     *
-     * @param source   the source publisher emitting response body chunks
-     * @param maxBytes the maximum number of bytes to pass downstream
-     * @return a publisher that enforces the byte limit
+     * {@code maxBytes} have been emitted.
      */
     public static Flow.Publisher<List<ByteBuffer>> limitBytes(Flow.Publisher<List<ByteBuffer>> source, long maxBytes) {
         Objects.requireNonNull(source, "Source publisher cannot be null");

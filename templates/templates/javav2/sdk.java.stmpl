@@ -206,18 +206,10 @@ package {{$pkg}};
         }
 
         /**
-         * Sets the default request timeout for all operations. Individual calls can
-         * override it with their request builder's {@code timeout} method, and an
-         * operation's {@code x-speakeasy-timeout} applies when neither is set.
-         * The timeout applies to each attempt when retries are configured.
-         * <p>
-{{- if useOkHttp}}
-         * The timeout bounds the whole exchange, including reading the response
-         * body, in addition to the client's read timeout.
-{{- else}}
-         * The timeout bounds the time to receive the response headers. It does not
-         * bound reading of the response body; use {@link #maxResponseBodyBytes(long)}
-         * to protect against oversized bodies.
+         * Sets the default timeout for each request attempt. A per-call {@code timeout}
+         * takes precedence; this takes precedence over {@code x-speakeasy-timeout}.
+{{- if not useOkHttp}}
+         * It bounds the wait for response headers, not the body read.
 {{- end}}
          *
          * @param timeout The timeout to apply to every request; must be positive.
@@ -233,16 +225,9 @@ package {{$pkg}};
         }
 
         /**
-         * Caps the number of response body bytes the SDK will read for a single
-         * response. Reading past the cap fails the call with
-         * {@link {{javaImportLocal "utils.ResponseTooLargeException"}}} instead of growing memory.
-         * Event streams and JSON Lines responses are read incrementally and are not capped.
-         * <p>
-         * The cap is applied to the HTTP client when the SDK is built, through
-         * {@link {{javaImportLocal "utils.HTTPClient"}}#setMaxResponseBodyBytes(long)}, so it takes effect
-         * however it is ordered with {@link #client(HTTPClient)}.
-         * {@link {{javaImportLocal "utils.SpeakeasyHTTPClient"}}} honors this setting. If you are using a custom HTTP client,
-         * it is up to the custom client to honor this setting.
+         * Caps the body bytes read per response; reading past the cap throws
+         * {@link {{javaImportLocal "utils.ResponseTooLargeException"}}}. Streaming responses are not capped.
+         * Custom HTTP clients must enforce the cap themselves.
          *
          * @param maxBytes The maximum number of body bytes to read per response; must be positive.
          * @return The builder instance.

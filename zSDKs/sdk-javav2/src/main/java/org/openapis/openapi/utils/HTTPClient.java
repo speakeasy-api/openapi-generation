@@ -83,22 +83,14 @@ public interface HTTPClient {
     }
 
     /**
-     * Caps the number of response body bytes read for a single response. Reading
-     * past the cap fails with {@link ResponseTooLargeException}.
-     * This is implemented in SpeakeasyHTTPClient but custom client
-     * implementations are free to honor this setting similarly if they wish.
+     * Caps the body bytes read per response. The default implementation ignores it.
      *
      * @param maxBytes maximum number of body bytes to read per response
      */
-    default void setMaxResponseBodyBytes(long maxBytes) {
-        // do nothing
-    }
+    default void setMaxResponseBodyBytes(long maxBytes) {}
 
     /**
-     * Returns the maximum number of response body bytes this client will read per
-     * response, or {@code Long.MAX_VALUE} when unbounded.
-     *
-     * @return maximum number of body bytes per response
+     * @return maximum number of body bytes read per response, or {@code Long.MAX_VALUE} when unbounded
      */
     default long maxResponseBodyBytes() {
         return Long.MAX_VALUE;
