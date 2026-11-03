@@ -22,6 +22,11 @@ function typeDefKey(typeDef: TypeDef): string {
 }
 
 // @ts-ignore
+function isValueType(typeDef: TypeDef): boolean {
+  return !canTypeBeNull(typeDef) && !typeDef.Enum?.Open;
+}
+
+// @ts-ignore
 function factorySetsDiscriminator(
   member: TypeDef,
   discriminatorProperty: string,
