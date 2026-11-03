@@ -376,14 +376,16 @@ func (d *cliManifestDecoder) linkContinuationTargetPath(owner, opID string, bind
 		if err != nil {
 			return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
 		}
-		if facts.readOnly {
-			return fmt.Errorf("%s continuation.bind.to %s names readOnly property %q in request body variant %s of operation %q", owner, binding.To, name, cliSchemaLabel(variant), opID)
-		}
+		readOnly := facts.readOnly
 		if leaf := d.continuationTargetLeaf(prop); leaf != nil {
 			facts, err = d.propertyFacts(leaf, nil)
 			if err != nil {
 				return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
 			}
+			readOnly = readOnly || facts.readOnly
+		}
+		if readOnly {
+			return fmt.Errorf("%s continuation.bind.to %s names readOnly property %q in request body variant %s of operation %q", owner, binding.To, name, cliSchemaLabel(variant), opID)
 		}
 		if len(facts.kinds) != 1 || facts.kinds[0] != "string" {
 			return fmt.Errorf("%s continuation.bind.to %s must name a string property in request body variant %s of operation %q", owner, binding.To, cliSchemaLabel(variant), opID)

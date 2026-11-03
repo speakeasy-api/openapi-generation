@@ -6068,6 +6068,16 @@ operations:
                 - type: string
                 - type: "null"
 `, ""},
+		{"readOnly arm of a nullable union", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                  readOnly: true
+                - type: "null"
+`, `names readOnly property "cursor"`},
 		{"string or integer union", `
         options:
           type: object
