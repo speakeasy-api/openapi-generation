@@ -82,7 +82,9 @@ public class Retries {
             if (e instanceof HttpConnectTimeoutException && retryConnectError) {
                 throw e;
             }
-            if (e instanceof HttpTimeoutException && retryReadTimeoutError) {
+            if (e instanceof HttpTimeoutException
+                    && !(e instanceof HttpConnectTimeoutException)
+                    && retryReadTimeoutError) {
                 throw e;
             }
             String message = e.getMessage();

@@ -127,9 +127,11 @@ public class TimeoutAdditionalTest {
 
     @Test
     public void testStreamingResponseOutlivesTimeout() throws Exception {
-        SDK s = SDK.builder().timeout(Duration.ofMillis(300)).build();
+        SDK s = SDK.builder().timeout(Duration.ofMillis(2000)).build();
 
-        JsonResponse res = s.eventstreams().json().call();
+        JsonResponse res = s.eventstreams().json()
+                .header("event-interval-ms", "1000")
+                .call();
         try (EventStream<JsonEvent> events = res.events()) {
             assertEquals("Hello world!", events.stream()
                     .map(x -> x.data().content())

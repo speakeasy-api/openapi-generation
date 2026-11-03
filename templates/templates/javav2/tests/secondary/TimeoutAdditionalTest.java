@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.InterruptedIOException;
 import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -81,13 +83,33 @@ public class TimeoutAdditionalTest {
     @Test
     @Timeout(value = 15, unit = TimeUnit.SECONDS)
     public void testStreamingResponseOutlivesTimeout() throws Exception {
-        SDK s = SDK.builder().timeout(Duration.ofMillis(300)).build();
+        SDK s = SDK.builder().timeout(Duration.ofMillis(2000)).build();
 
-        JsonResponse res = s.eventstreams().json().call();
+        JsonResponse res = s.eventstreams().json()
+                .header("event-interval-ms", "1000")
+                .call();
         try (EventStream<JsonEvent> events = res.events()) {
             assertEquals("Hello world!", events.stream()
                     .map(x -> x.data().content())
                     .collect(Collectors.joining()));
         }
+    }
+
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    public void testStreamingHeaderWaitIsBounded() throws Exception {
+        SDK s = SDK.builder().timeout(Duration.ofMillis(500)).build();
+        String delayHeaders = "{\"delay_count\": 1, \"delay_ms\": 3000}";
+
+        assertTimedOut(assertThrows(RuntimeException.class, () -> s.eventstreams().json()
+                .header("request-id", "stream-header-wait-" + UUID.randomUUID())
+                .header("fault-settings", delayHeaders)
+                .call()));
+
+        assertTimedOut(assertThrows(ExecutionException.class, () -> s.toAsync().eventstreams().json()
+                .header("request-id", "stream-header-wait-async-" + UUID.randomUUID())
+                .header("fault-settings", delayHeaders)
+                .call()
+                .get()));
     }
 }

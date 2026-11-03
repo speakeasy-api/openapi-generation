@@ -30,6 +30,10 @@ func pushChunks(rw http.ResponseWriter, chunks []string) {
 }
 
 func pushEvents(rw http.ResponseWriter, events [][]string) {
+	pushEventsEvery(rw, events, 100*time.Millisecond)
+}
+
+func pushEventsEvery(rw http.ResponseWriter, events [][]string, interval time.Duration) {
 	for _, event := range events {
 		for _, line := range event {
 			fmt.Fprintln(rw, line)
@@ -40,14 +44,22 @@ func pushEvents(rw http.ResponseWriter, events [][]string) {
 			f.Flush()
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(interval)
 	}
 }
 
-func HandleEventStreamJSON(rw http.ResponseWriter, _ *http.Request) {
+// HandleEventStreamJSON streams four JSON events 100ms apart. An
+// event-interval-ms request header widens the spacing so a stream can outlast
+// a client timeout by a wide margin.
+func HandleEventStreamJSON(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "text/event-stream")
 
-	pushEvents(rw, [][]string{
+	interval := 100 * time.Millisecond
+	if ms, err := strconv.Atoi(r.Header.Get("event-interval-ms")); err == nil && ms > 0 && ms <= 5000 {
+		interval = time.Duration(ms) * time.Millisecond
+	}
+
+	pushEventsEvery(rw, [][]string{
 		{
 			`data: {"content": "Hello"}`,
 		},
@@ -63,7 +75,7 @@ func HandleEventStreamJSON(rw http.ResponseWriter, _ *http.Request) {
 		{
 			`data: {"content": "!"}`,
 		},
-	})
+	}, interval)
 }
 
 // HandleEventStreamMalformed emits a well-formed frame followed by a frame

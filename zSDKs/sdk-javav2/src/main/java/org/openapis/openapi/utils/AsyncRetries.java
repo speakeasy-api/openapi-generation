@@ -92,7 +92,9 @@ public class AsyncRetries {
     private boolean shouldRetryIOException(Throwable e, BackoffStrategy backoff) {
         if (e instanceof ConnectException && backoff.retryConnectError()) return true;
         if (e instanceof HttpConnectTimeoutException && backoff.retryConnectError()) return true;
-        if (e instanceof HttpTimeoutException && backoff.retryReadTimeoutError()) return true;
+        if (e instanceof HttpTimeoutException
+                && !(e instanceof HttpConnectTimeoutException)
+                && backoff.retryReadTimeoutError()) return true;
         String message = e.getMessage();
         if (message == null) return false;
         return (message.contains("Connect timed out") && backoff.retryConnectError())
