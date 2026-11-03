@@ -31,7 +31,7 @@ func TestDownloadArtifactEnforcesSizeLimit(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/octet-stream")
+				w.Header().Set("Content-Type", "application/octet-stream")
 				_, _ = w.Write([]byte("1234"))
 				if tc.chunked {
 					w.(http.Flusher).Flush()
@@ -56,14 +56,17 @@ func TestDownloadArtifactRefusesLoopbackForRemoteAPI(t *testing.T) {
 		_, _ = w.Write([]byte("local secret"))
 	}))
 	t.Cleanup(server.Close)
-	localhostURL := strings.Replace(server.URL, "127.0.0.1", "localhost", 1)
+	var uris []string
+	for _, host := range []string{"127.0.0.1", "localhost", "localhost.", "LOCALHOST", "app.localhost"} {
+		uris = append(uris, strings.Replace(server.URL, "127.0.0.1", host, 1)+"/admin/export")
+	}
 
 	for name, apiResponse := range map[string]*http.Response{
 		"remote API":       apiResponseFrom("https://api.example.test/v1"),
 		"unknown API":      nil,
 		"remote plain API": apiResponseFrom("http://api.example.test/v1"),
 	} {
-		for _, uri := range []string{server.URL + "/admin/export", localhostURL + "/admin/export"} {
+		for _, uri := range uris {
 			t.Run(name+" "+uri, func(t *testing.T) {
 				_, _, err := downloadArtifact(&cobra.Command{}, uri, apiResponse, &artifactConfig{Kind: "image"})
 				if err == nil || !strings.Contains(err.Error(), "a remote API cannot direct downloads to this machine") {

@@ -357,8 +357,11 @@ func artifactCheckDownloadURL(u *url.URL, apiOnLoopback bool) error {
 	return fmt.Errorf("unsupported URI scheme %q", u.Scheme)
 }
 
+// artifactIsLoopbackHost matches loopback IPs and the names reserved for
+// loopback: localhost and *.localhost, with or without a trailing dot.
 func artifactIsLoopbackHost(host string) bool {
-	if strings.EqualFold(host, "localhost") {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
 		return true
 	}
 	ip := net.ParseIP(host)
