@@ -772,47 +772,108 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 
     private static final class DeadlinePublisher implements Flow.Publisher<List<ByteBuffer>> {
         private final Flow.Publisher<List<ByteBuffer>> source;
-        private final long remainingNanos;
+        private final ScheduledFuture<?> deadline;
+        private DeadlineSubscriber subscriber;
+        private boolean expired;
 
         DeadlinePublisher(Flow.Publisher<List<ByteBuffer>> source, long remainingNanos) {
             this.source = source;
-            this.remainingNanos = remainingNanos;
+            this.deadline = DEADLINES.schedule(this::expire, remainingNanos, TimeUnit.NANOSECONDS);
         }
 
         @Override
-        public void subscribe(Flow.Subscriber<? super List<ByteBuffer>> subscriber) {
-            source.subscribe(new DeadlineSubscriber(subscriber, remainingNanos));
+        public void subscribe(Flow.Subscriber<? super List<ByteBuffer>> downstream) {
+            DeadlineSubscriber s = new DeadlineSubscriber(downstream, deadline);
+            boolean late;
+            synchronized (this) {
+                late = expired;
+                if (!late) {
+                    subscriber = s;
+                }
+            }
+            if (late) {
+                downstream.onSubscribe(new Flow.Subscription() {
+                    @Override
+                    public void request(long n) {
+                    }
+
+                    @Override
+                    public void cancel() {
+                    }
+                });
+                downstream.onError(timeoutException(null));
+                return;
+            }
+            source.subscribe(s);
+        }
+
+        private void expire() {
+            DeadlineSubscriber s;
+            synchronized (this) {
+                expired = true;
+                s = subscriber;
+            }
+            if (s != null) {
+                s.expire();
+                return;
+            }
+            source.subscribe(new Flow.Subscriber<List<ByteBuffer>>() {
+                @Override
+                public void onSubscribe(Flow.Subscription subscription) {
+                    subscription.cancel();
+                }
+
+                @Override
+                public void onNext(List<ByteBuffer> item) {
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                }
+
+                @Override
+                public void onComplete() {
+                }
+            });
         }
     }
 
     private static final class DeadlineSubscriber implements Flow.Subscriber<List<ByteBuffer>> {
         private final Flow.Subscriber<? super List<ByteBuffer>> downstream;
-        private final long remainingNanos;
+        private final ScheduledFuture<?> deadline;
         private Flow.Subscription upstream;
-        private ScheduledFuture<?> deadline;
+        private boolean subscribed;
+        private boolean expirePending;
         private boolean done;
 
-        DeadlineSubscriber(Flow.Subscriber<? super List<ByteBuffer>> downstream, long remainingNanos) {
+        DeadlineSubscriber(Flow.Subscriber<? super List<ByteBuffer>> downstream, ScheduledFuture<?> deadline) {
             this.downstream = downstream;
-            this.remainingNanos = remainingNanos;
+            this.deadline = deadline;
         }
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
-            this.upstream = subscription;
-            this.deadline = DEADLINES.schedule(this::expire, remainingNanos, TimeUnit.NANOSECONDS);
+            boolean expireNow;
+            synchronized (this) {
+                upstream = subscription;
+                subscribed = true;
+                expireNow = expirePending;
+            }
             downstream.onSubscribe(new Flow.Subscription() {
                 @Override
                 public void request(long n) {
-                    upstream.request(n);
+                    subscription.request(n);
                 }
 
                 @Override
                 public void cancel() {
                     deadline.cancel(false);
-                    upstream.cancel();
+                    subscription.cancel();
                 }
             });
+            if (expireNow) {
+                expire();
+            }
         }
 
         @Override
@@ -840,15 +901,21 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             }
         }
 
-        private void expire() {
+        void expire() {
+            Flow.Subscription toCancel;
             synchronized (this) {
+                if (!subscribed) {
+                    expirePending = true;
+                    return;
+                }
                 if (done) {
                     return;
                 }
                 done = true;
                 downstream.onError(timeoutException(null));
+                toCancel = upstream;
             }
-            upstream.cancel();
+            toCancel.cancel();
         }
     }
 

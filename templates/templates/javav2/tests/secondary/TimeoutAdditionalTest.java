@@ -93,5 +93,17 @@ public class TimeoutAdditionalTest {
             }
         }));
         assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(3), "body read was not cut at the timeout");
+
+        long asyncStarted = System.nanoTime();
+        assertTimedOut(assertThrows(RuntimeException.class, () -> {
+            try (EventStream<JsonEvent> events = s.toAsync().eventstreams().json()
+                    .header("event-interval-ms", "1000")
+                    .call()
+                    .get(10, TimeUnit.SECONDS)) {
+                for (JsonEvent event : events) {
+                }
+            }
+        }));
+        assertTrue(System.nanoTime() - asyncStarted < TimeUnit.SECONDS.toNanos(3), "async body read was not cut at the timeout");
     }
 }

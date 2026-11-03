@@ -144,6 +144,19 @@ public class TimeoutAdditionalTest {
         ExecutionException asyncThrown = assertThrows(ExecutionException.class,
                 () -> asyncRaw.body().toByteArray().get());
         assertTimedOut(asyncThrown);
+
+        HttpResponse<Blob> unread = s.async().eventstreams().json()
+                .header("event-interval-ms", "1000")
+                .call()
+                .rawResponse()
+                .get();
+        Thread.sleep(2000);
+        long readStarted = System.nanoTime();
+        ExecutionException lateThrown = assertThrows(ExecutionException.class,
+                () -> unread.body().toByteArray().get());
+        assertTimedOut(lateThrown);
+        assertTrue(System.nanoTime() - readStarted < TimeUnit.MILLISECONDS.toNanos(500),
+                "a body read after the deadline did not fail immediately");
     }
 
     @Test
