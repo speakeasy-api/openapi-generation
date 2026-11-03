@@ -97,6 +97,7 @@ func TestHeadersRejectInvalidNamesAndValues(t *testing.T) {
 		{header: ": b", want: `invalid header name ""`},
 		{header: "X-Foo: a\r\nX-Injected: 1", want: `invalid value for header "X-Foo"`},
 		{header: "X-Foo: a\x00b", want: `invalid value for header "X-Foo"`},
+		{header: "x-cli-repeated-headers: 1", want: `invalid header name "x-cli-repeated-headers": reserved for internal use`},
 	} {
 		t.Run(tc.header, func(t *testing.T) {
 			h := NewCLITestHarness(t)

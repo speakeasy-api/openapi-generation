@@ -613,6 +613,9 @@ func ParseHeaderFlags(values []string) (http.Header, error) {
 		if !validHeaderValue(value) {
 			return nil, WithCLIValidation(fmt.Errorf("invalid value for header %q: control characters such as CR or LF are not allowed", name))
 		}
+		if http.CanonicalHeaderKey(name) == RepeatedHeadersMarker {
+			return nil, WithCLIValidation(fmt.Errorf("invalid header name %q: reserved for internal use", name))
+		}
 		headers.Add(name, value)
 	}
 	return headers, nil
