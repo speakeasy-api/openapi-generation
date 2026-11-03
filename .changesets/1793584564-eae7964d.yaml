@@ -1,0 +1,10 @@
+id: 1793584564-eae7964d
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: --all honours --include-headers by printing each page with its response headers, and table output with --include-headers renders a table followed by the headers. With --all --include-headers, --jq now runs against each page object instead of each item
+author: TristanSpeakEasy
+date: "2026-11-02"
