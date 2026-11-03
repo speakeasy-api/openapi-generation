@@ -892,7 +892,7 @@ actions:
           type: string
     continuationWidget:
       type: object
-      required: [id, status]
+      required: [status]
       properties:
         id:
           type: string

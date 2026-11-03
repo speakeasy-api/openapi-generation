@@ -347,45 +347,93 @@ func (d *cliManifestDecoder) linkContinuationResultPath(owner, field, path, opID
 // writable string property in every request-body variant, so a resume value
 // always lands in a field the API accepts.
 func (d *cliManifestDecoder) linkContinuationTarget(owner, opID string, binding *CLICommandContinuationBinding, bodySchema any) error {
-	bodyMap, _ := bodySchema.(map[string]any)
-	unionMap, _ := d.unionBodySchema(bodyMap)
-	rawVariants := cliUnionMembers(unionMap)
-	if len(rawVariants) == 0 {
-		rawVariants = []any{bodySchema}
-	} else if shared := cliUnionSharedSchema(unionMap); shared != nil {
-		for i, member := range rawVariants {
-			memberMap, _ := member.(map[string]any)
-			rawVariants[i] = cliConjoinSchemas(memberMap, shared)
-		}
-	}
-	for i, raw := range rawVariants {
-		current := raw
-		for depth, name := range binding.ToPath {
-			variant, err := d.resolveObjectSchema(current, nil)
-			if err != nil {
-				return fmt.Errorf("%s continuation.bind.to %s: request body variant %d of operation %q: %w", owner, binding.To, i+1, opID, err)
-			}
-			prop, exists := variant.properties[name]
-			if !exists {
-				return fmt.Errorf("%s continuation.bind.to %s: property %q is absent from request body variant %s of operation %q%s", owner, binding.To, name, cliSchemaLabel(variant), opID, cliDidYouMean(name, variant.propOrder))
-			}
-			if depth < len(binding.ToPath)-1 {
-				current = prop
-				continue
-			}
-			facts, err := d.propertyFacts(prop, nil)
-			if err != nil {
-				return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
-			}
-			if facts.readOnly {
-				return fmt.Errorf("%s continuation.bind.to %s names readOnly property %q in request body variant %s of operation %q", owner, binding.To, name, cliSchemaLabel(variant), opID)
-			}
-			if len(facts.kinds) != 1 || facts.kinds[0] != "string" {
-				return fmt.Errorf("%s continuation.bind.to %s must name a string property in request body variant %s of operation %q", owner, binding.To, cliSchemaLabel(variant), opID)
-			}
+	for i, raw := range d.continuationTargetVariants(bodySchema) {
+		if err := d.linkContinuationTargetPath(owner, opID, binding, raw, 0, i+1); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+func (d *cliManifestDecoder) linkContinuationTargetPath(owner, opID string, binding *CLICommandContinuationBinding, schema any, depth, bodyVariant int) error {
+	name := binding.ToPath[depth]
+	for _, raw := range d.continuationTargetVariants(schema) {
+		variant, err := d.resolveObjectSchema(raw, nil)
+		if err != nil {
+			return fmt.Errorf("%s continuation.bind.to %s: request body variant %d of operation %q: %w", owner, binding.To, bodyVariant, opID, err)
+		}
+		prop, exists := variant.properties[name]
+		if !exists {
+			return fmt.Errorf("%s continuation.bind.to %s: property %q is absent from request body variant %s of operation %q%s", owner, binding.To, name, cliSchemaLabel(variant), opID, cliDidYouMean(name, variant.propOrder))
+		}
+		if depth < len(binding.ToPath)-1 {
+			if err := d.linkContinuationTargetPath(owner, opID, binding, prop, depth+1, bodyVariant); err != nil {
+				return err
+			}
+			continue
+		}
+		facts, err := d.propertyFacts(prop, nil)
+		if err != nil {
+			return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
+		}
+		if facts.readOnly {
+			return fmt.Errorf("%s continuation.bind.to %s names readOnly property %q in request body variant %s of operation %q", owner, binding.To, name, cliSchemaLabel(variant), opID)
+		}
+		if leaf := d.continuationTargetLeaf(prop); leaf != nil {
+			facts, err = d.propertyFacts(leaf, nil)
+			if err != nil {
+				return fmt.Errorf("%s continuation.bind.to %s in request body variant %s of operation %q: %w", owner, binding.To, cliSchemaLabel(variant), opID, err)
+			}
+		}
+		if len(facts.kinds) != 1 || facts.kinds[0] != "string" {
+			return fmt.Errorf("%s continuation.bind.to %s must name a string property in request body variant %s of operation %q", owner, binding.To, cliSchemaLabel(variant), opID)
+		}
+	}
+	return nil
+}
+
+// continuationTargetLeaf drops null from a target's type list or union, so a
+// nullable string accepts a resume value; it returns nil when nothing changes.
+func (d *cliManifestDecoder) continuationTargetLeaf(prop any) any {
+	leaf := prop
+	if variants := d.continuationTargetVariants(prop); len(variants) == 1 {
+		leaf = variants[0]
+	}
+	if leafMap, ok := leaf.(map[string]any); ok {
+		if stripped := cliWithoutNullType(leafMap); stripped != nil {
+			leaf = stripped
+		}
+	}
+	if reflect.DeepEqual(leaf, prop) {
+		return nil
+	}
+	return leaf
+}
+
+// continuationTargetVariants expands an object union into its members, each
+// conjoined with the keywords the union declares beside oneOf/anyOf. A
+// null-only member is skipped: there is no object to write into.
+func (d *cliManifestDecoder) continuationTargetVariants(schema any) []any {
+	schemaMap, _ := schema.(map[string]any)
+	unionMap, _ := d.unionBodySchema(schemaMap)
+	members := cliUnionMembers(unionMap)
+	if len(members) == 0 {
+		return []any{schema}
+	}
+	shared := cliUnionSharedSchema(unionMap)
+	variants := make([]any, 0, len(members))
+	for _, member := range members {
+		memberMap, _ := member.(map[string]any)
+		if types := cliSchemaTypes(memberMap); len(types) == 1 && types[0] == "null" {
+			continue
+		}
+		if shared != nil {
+			variants = append(variants, cliConjoinSchemas(memberMap, shared))
+		} else {
+			variants = append(variants, member)
+		}
+	}
+	return variants
 }
 
 // inheritOperationOutcomes gives a single-route intent without its own

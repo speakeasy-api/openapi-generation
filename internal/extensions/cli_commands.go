@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1591,9 +1592,9 @@ func (d *cliManifestDecoder) decodeContinuation(owner string, node *yaml.Node) (
 		case "bind":
 			bindNode = entry.Value
 		case "merge":
-			recipe.MergeFrom, recipe.Merge, err = cliDecodeContinuationPaths(entry.Value, "continuation.merge")
+			recipe.MergeFrom, recipe.Merge, err = cliDecodeContinuationPaths(entry.Value, "continuation.merge", true)
 		case "sum":
-			recipe.SumFrom, recipe.Sum, err = cliDecodeContinuationPaths(entry.Value, "continuation.sum")
+			recipe.SumFrom, recipe.Sum, err = cliDecodeContinuationPaths(entry.Value, "continuation.sum", true)
 		case "maxHops":
 			if entry.Value.Kind != yaml.ScalarNode || entry.Value.Tag != "!!int" {
 				err = stderrors.New("continuation.maxHops must be an integer of at least 1")
@@ -1646,7 +1647,7 @@ func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.
 		case "from":
 			binding.From, binding.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.from")
 		case "streamFrom":
-			binding.StreamFrom, binding.StreamPointers, err = cliDecodeContinuationPaths(entry.Value, "continuation.bind.streamFrom")
+			binding.StreamFrom, binding.StreamPointers, err = cliDecodeContinuationPaths(entry.Value, "continuation.bind.streamFrom", false)
 		case "to":
 			var segments []CLICommandAsyncPathSegment
 			binding.To, binding.ToPointer, segments, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.to")
@@ -1677,7 +1678,7 @@ func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.
 
 // cliDecodeContinuationPaths accepts one singular JSONPath or a list of them
 // and returns the authored paths with their RFC 6901 lowerings.
-func cliDecodeContinuationPaths(node *yaml.Node, what string) ([]string, []string, error) {
+func cliDecodeContinuationPaths(node *yaml.Node, what string, propertiesOnly bool) ([]string, []string, error) {
 	items := []*yaml.Node{node}
 	if node.Kind == yaml.SequenceNode {
 		if len(node.Content) == 0 {
@@ -1687,9 +1688,12 @@ func cliDecodeContinuationPaths(node *yaml.Node, what string) ([]string, []strin
 	}
 	var authored, pointers []string
 	for _, item := range items {
-		from, pointer, _, err := cliDecodeAsyncPointer(item, what)
+		from, pointer, segments, err := cliDecodeAsyncPointer(item, what)
 		if err != nil {
 			return nil, nil, err
+		}
+		if propertiesOnly && slices.ContainsFunc(segments, func(segment CLICommandAsyncPathSegment) bool { return segment.IsIndex }) {
+			return nil, nil, fmt.Errorf("%s %s must name object properties only", what, from)
 		}
 		if cliContains(pointers, pointer) {
 			return nil, nil, fmt.Errorf("%s lists %s more than once", what, from)

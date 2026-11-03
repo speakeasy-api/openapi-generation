@@ -5958,6 +5958,8 @@ func TestCLICommands_ContinuationErrors(t *testing.T) {
 		{"to not a string", strings.Replace(base, "        - from: $.resumeToken\n          to: $.resumeToken\n", "        - from: $.resumeToken\n          to: $.budget\n", 1), "must name a string property"},
 		{"merge not an array", strings.Replace(base, "merge: $.steps", "merge: $.id", 1), "continuation.merge $.id in operation \"ComposeWidget\" response 200 must select an array"},
 		{"sum not a number", strings.Replace(base, "sum: [$.usage.inputUnits, $.usage.outputUnits]", "sum: [$.id]", 1), "must select a number"},
+		{"indexed merge", strings.Replace(base, "merge: $.steps", "merge: $.steps[0].parts", 1), "continuation.merge $.steps[0].parts must name object properties only"},
+		{"indexed sum", strings.Replace(base, "sum: [$.usage.inputUnits, $.usage.outputUnits]", "sum: [$.usage.inputUnits, \"$.steps[0].units\"]", 1), "continuation.sum $.steps[0].units must name object properties only"},
 		{"merge on stream op", strings.Replace(base, "      maxHops: 4\n", "      maxHops: 4\n      merge: $.data.widget.steps\n", 1), "apply to application/json responses"},
 		{"bad classification", strings.Replace(base, "more_required: continue, budget_reached: success, completed: success, failed: failure}\n    continuation", "more_required: resume, budget_reached: success, completed: success, failed: failure}\n    continuation", 1), `has unsupported classification "resume"`},
 		{"reserved flag", strings.Replace(base, "      previous-id: {to: $.previousId}\n", "      previous-id: {to: $.previousId}\n      auto-continue: {to: $.prompt}\n", 1), "auto-continue"},
@@ -6029,6 +6031,105 @@ operations:
 `)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"resumeToken"}, manifest.Operations[0].Continuation.Bind[0].ToPath)
+}
+
+func TestCLICommands_ContinuationTargetSchemas(t *testing.T) {
+	manifest := `
+version: 1
+operations:
+  ComposeWidget:
+    output:
+      outcome:
+        statePointer: $.status
+        states: {in_progress: pending, more_required: continue, budget_reached: success, completed: success, failed: failure}
+    continuation:
+      bind:
+        - from: $.resumeToken
+          to: $.options.cursor
+`
+	for _, tc := range []struct {
+		name    string
+		options string
+		wantErr string
+	}{
+		{"nullable type list", `
+        options:
+          type: object
+          properties:
+            cursor:
+              type: [string, "null"]
+`, ""},
+		{"nullable anyOf", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                - type: "null"
+`, ""},
+		{"string or integer union", `
+        options:
+          type: object
+          properties:
+            cursor:
+              anyOf:
+                - type: string
+                - type: integer
+`, "must name a string property"},
+		{"nested object union", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+                mode: {type: string, const: fast}
+            - type: object
+              properties:
+                cursor: {type: string}
+                depth: {type: integer}
+            - type: "null"
+`, ""},
+		{"nested union member without the target", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+            - type: object
+              properties:
+                depth: {type: integer}
+`, `property "cursor" is absent from request body variant`},
+		{"nested union member with a non-string target", `
+        options:
+          oneOf:
+            - type: object
+              properties:
+                cursor: {type: string}
+            - type: object
+              properties:
+                cursor: {type: integer}
+`, "must name a string property"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := strings.Replace(cliContinuationTestSpec, `
+        options:
+          type: object
+          properties:
+            cursor:
+              type: string
+`, tc.options, 1)
+			require.NotEqual(t, cliContinuationTestSpec, spec)
+			decoded, _, err := decodeCLIWithSpec(t, spec, manifest)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"options", "cursor"}, decoded.Operations[0].Continuation.Bind[0].ToPath)
+		})
+	}
 }
 
 func TestCLICommands_ContinuationAsyncStatesRejectContinue(t *testing.T) {
