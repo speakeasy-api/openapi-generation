@@ -411,9 +411,15 @@ function templatePagination(op: Operation): string {
             op.Extensions.Pagination.Outputs.NumPages,
           )}', JSON.parse(response_data)).search\n`;
         }
-        response += `${indent}if num_pages.nil? || num_pages[0] <= request_page
+        if (op.Extensions.Pagination.Outputs.Results) {
+          response += `${indent}if !num_pages.nil? && num_pages[0].is_a?(Numeric) && num_pages[0] <= request_page
     next nil
   end\n`;
+        } else {
+          response += `${indent}if num_pages.nil? || num_pages[0] <= request_page
+    next nil
+  end\n`;
+        }
       }
     }
 

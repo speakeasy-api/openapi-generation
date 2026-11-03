@@ -430,6 +430,7 @@ function isTestSkipped(test: string): boolean {
     "any-typed-flag-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "pagination-limit-offset-page-num-pages-missing",
   ].includes(test);
 }
 

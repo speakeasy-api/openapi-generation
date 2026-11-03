@@ -208,6 +208,39 @@ public class PaginationShould
     }
 
     [Fact]
+    public async Task PaginationLimitOffsetPageNumPagesMissing()
+    {
+        CommonHelpers.RecordTest("pagination-limit-offset-page-num-pages-missing");
+        var sdk = new SDK(serverUrl: Helpers.HttpBinUrl);
+
+        // the test service omits numPages on the first page and returns null on
+        // the second, so termination must fall back to the result length
+        var res = await sdk.Pagination.PaginationLimitOffsetPageNumPagesMissingAsync(page: 1, limit: 7);
+
+        Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
+        Assert.NotNull(res.Res);
+        Assert.False(res.Res.NumPages.IsSet);
+        Assert.Equal(new List<long> { 0, 1, 2, 3, 4, 5, 6 }, res.Res.ResultArray);
+
+        var nextRes = await res.Next!();
+        Assert.NotNull(nextRes);
+        Assert.Equal(HttpStatusCode.OK, nextRes.HttpMeta.Response.StatusCode);
+        Assert.NotNull(nextRes.Res);
+        Assert.True(nextRes.Res.NumPages.IsNull);
+        Assert.Equal(new List<long> { 7, 8, 9, 10, 11, 12, 13 }, nextRes.Res.ResultArray);
+
+        var lastRes = await nextRes.Next!();
+        Assert.NotNull(lastRes);
+        Assert.Equal(HttpStatusCode.OK, lastRes.HttpMeta.Response.StatusCode);
+        Assert.NotNull(lastRes.Res);
+        Assert.Equal(3L, lastRes.Res.NumPages.Value);
+        Assert.Equal(new List<long> { 14, 15, 16, 17, 18, 19 }, lastRes.Res.ResultArray);
+
+        var nullRes = await lastRes.Next!();
+        Assert.Null(nullRes);
+    }
+
+    [Fact]
     public async Task PaginationLimitOffsetDeepOutputsPageBody()
     {
         CommonHelpers.RecordTest("pagination-limit-offset-deep-outputs-page-body");
