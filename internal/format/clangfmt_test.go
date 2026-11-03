@@ -744,3 +744,29 @@ func TestFormatCSharp_PartialInterfaceAllmanBrace(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatCSharp_PartialInterfaceBracePreservesCommentsAndStrings(t *testing.T) {
+	input := []byte(`namespace TestApp
+{
+    /// <summary>
+    /// partial interface IService {
+    /// </summary>
+    public class Example
+    {
+        // public partial interface IComment {
+        public string Value = "public partial interface IString {";
+    }
+}
+`)
+	result := formatCS(t, "Example.cs", input)
+
+	for _, want := range []string{
+		"    /// partial interface IService {\n    /// </summary>",
+		"        // public partial interface IComment {\n",
+		`"public partial interface IString {";`,
+	} {
+		if !strings.Contains(result, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, result)
+		}
+	}
+}
