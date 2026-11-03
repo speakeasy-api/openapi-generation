@@ -39,3 +39,4 @@ csharp:
   sourceDirectory: SDK
   defaultErrorName: SDKException
   useNodatime: true
+  partialTypes: true

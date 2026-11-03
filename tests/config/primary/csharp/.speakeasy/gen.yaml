@@ -49,4 +49,3 @@ csharp:
   enableFormatting: true
   useNodatime: false
   unionImplicitConversions: true
-  partialTypes: true

@@ -188,16 +188,4 @@ public class UnionImplicitConversionsAdditionalShould
             JsonConvert.SerializeObject(nested, Utilities.GetDefaultJsonSerializerSettings())
         );
     }
-
-    [Fact]
-    public void ExposeMembersFromPartialDeclarations()
-    {
-        var circle = new ImplicitConversionCircle { Kind = "circle", Radius = 2 };
-        ImplicitConversionShape shape = 3.0;
-        Openapi.ISDK sdk = new Openapi.SDK();
-
-        Assert.Equal(4.0, circle.Diameter);
-        Assert.Equal(3.0, shape.ImplicitConversionCircle!.Radius);
-        Assert.Equal("partial", sdk.PartialClassMarker());
-    }
 }

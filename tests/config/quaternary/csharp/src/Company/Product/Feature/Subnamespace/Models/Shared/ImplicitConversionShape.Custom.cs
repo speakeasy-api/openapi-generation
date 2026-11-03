@@ -1,11 +1,6 @@
 #nullable enable
-namespace Openapi.Models.Shared
+namespace Company.Product.Feature.Subnamespace.Models.Shared
 {
-    public partial class ImplicitConversionCircle
-    {
-        public double Diameter => Radius * 2;
-    }
-
     public partial class ImplicitConversionShape
     {
         public static implicit operator ImplicitConversionShape(double radius) =>
