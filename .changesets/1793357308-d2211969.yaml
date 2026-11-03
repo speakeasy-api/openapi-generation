@@ -5,6 +5,6 @@ targets:
     - javav2
 type: feat
 bump: minor
-description: add maxResponseBodyBytes to cap response body reads (building the SDK fails if a custom HTTP client does not enforce it), set a default connect timeout, and buffer debug-logged bodies only for logged content types
+description: add an opt-in maxResponseBodyBytes cap on response body reads (building the SDK fails if a custom HTTP client does not enforce it), set a 30s default connect timeout, and buffer debug-logged bodies only for logged content types
 author: AshGodfrey
 date: "2026-10-30"

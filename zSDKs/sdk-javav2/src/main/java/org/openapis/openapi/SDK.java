@@ -296,7 +296,7 @@ public class SDK {
         /**
          * Sets the default timeout for each request attempt. A per-call {@code timeout}
          * takes precedence; this takes precedence over {@code x-speakeasy-timeout}.
-         * It bounds the wait for response headers, not the body read.
+         * It bounds the whole call, including reading the response body.
          *
          * @param timeout The timeout to apply to every request; must be positive.
          * @return The builder instance.

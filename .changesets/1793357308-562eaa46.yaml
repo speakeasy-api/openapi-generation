@@ -5,6 +5,6 @@ targets:
     - javav2
 type: feat
 bump: minor
-description: support x-speakeasy-timeout, an SDK-wide timeout and a per-call timeout request builder option; timeouts are retried per attempt on both client arms, and on the OkHttp arm a streaming response is bounded only until its headers arrive
+description: honour x-speakeasy-timeout and add an SDK-wide and per-call timeout; the timeout bounds the whole call including the response body and streams, on both HTTP clients, and existing SDKs whose spec declares x-speakeasy-timeout start enforcing it
 author: AshGodfrey
 date: "2026-10-30"

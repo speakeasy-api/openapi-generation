@@ -642,9 +642,6 @@ const (
 	TestOpenUnionSmartUnionInterop
 	TestTimeoutMsOverrideIsRespected
 	TestTimeoutMsOverrideAllowsCompletion
-	TestTimeoutSdkDefaultIsRespected
-	TestTimeoutOperationExtensionIsRespected
-	TestResponseBodyLimit
 	TestRequestExtrasExtraQueryAppended
 	TestRequestExtrasExtraQueryMerged
 	TestRequestExtrasExtraQueryNullishArrays

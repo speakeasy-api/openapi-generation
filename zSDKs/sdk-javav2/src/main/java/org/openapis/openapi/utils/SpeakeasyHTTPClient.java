@@ -3,6 +3,7 @@
  */
 package org.openapis.openapi.utils;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -11,13 +12,20 @@ import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.openapis.openapi.utils.Blob;
@@ -38,6 +46,8 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     private static Set<String> redactedHeaders = Set.of("AUTHORIZATION", "X-API-KEY");
 
     private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(30);
+
+    private static final ScheduledThreadPoolExecutor DEADLINES = deadlineScheduler();
 
     private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
 
@@ -162,9 +172,14 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     public HttpResponse<InputStream> send(HttpRequest request)
             throws IOException, InterruptedException, URISyntaxException {
         request = logRequest(request, isDebugLoggingEnabled());
+        long startNanos = System.nanoTime();
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
         if (!isStreamingRequest(request)) {
             response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
+        }
+        long remainingNanos = remainingNanos(request, startNanos);
+        if (remainingNanos != Long.MAX_VALUE) {
+            response = new ResponseWithBody<>(response, in -> new DeadlineInputStream(in, remainingNanos));
         }
         response = logResponse(response, isDebugLoggingEnabled());
         return response;
@@ -174,9 +189,178 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
         request = logRequest(request, isDebugLoggingEnabled());
         long maxBytes = isStreamingRequest(request) ? Long.MAX_VALUE : maxResponseBodyBytes;
+        long startNanos = System.nanoTime();
+        HttpRequest sent = request;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
-                .thenApply(response -> // TODO: log responses when helper for Blob is setup
-                new ResponseWithBody<>(response, publisher -> Blob.from(ReactiveUtils.limitBytes(publisher, maxBytes))));
+                .thenApply(response -> {
+                    long remainingNanos = remainingNanos(sent, startNanos);
+                    // TODO: log responses when helper for Blob is setup
+                    return new ResponseWithBody<>(response, publisher -> {
+                        Flow.Publisher<List<ByteBuffer>> limited = ReactiveUtils.limitBytes(publisher, maxBytes);
+                        return Blob.from(
+                                remainingNanos == Long.MAX_VALUE
+                                        ? limited
+                                        : new DeadlinePublisher(limited, remainingNanos));
+                    });
+                });
+    }
+
+    private static ScheduledThreadPoolExecutor deadlineScheduler() {
+        ScheduledThreadPoolExecutor scheduler = new ScheduledThreadPoolExecutor(1, r -> {
+            Thread thread = new Thread(r, "speakeasy-request-deadline");
+            thread.setDaemon(true);
+            return thread;
+        });
+        scheduler.setRemoveOnCancelPolicy(true);
+        return scheduler;
+    }
+
+    private static long remainingNanos(HttpRequest request, long startNanos) {
+        if (!request.timeout().isPresent()) {
+            return Long.MAX_VALUE;
+        }
+        return Math.max(0, request.timeout().get().toNanos() - (System.nanoTime() - startNanos));
+    }
+
+    private static HttpTimeoutException timeoutException(Throwable cause) {
+        HttpTimeoutException e = new HttpTimeoutException("request timed out");
+        if (cause != null) {
+            e.initCause(cause);
+        }
+        return e;
+    }
+
+    private static final class DeadlineInputStream extends FilterInputStream {
+        private final ScheduledFuture<?> deadline;
+        private volatile boolean expired;
+
+        DeadlineInputStream(InputStream in, long remainingNanos) {
+            super(in);
+            this.deadline = DEADLINES.schedule(this::expire, remainingNanos, TimeUnit.NANOSECONDS);
+        }
+
+        private void expire() {
+            expired = true;
+            try {
+                in.close();
+            } catch (IOException ignored) {}
+        }
+
+        @Override
+        public int read() throws IOException {
+            try {
+                return finish(in.read());
+            } catch (IOException e) {
+                throw expired ? timeoutException(e) : e;
+            }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            try {
+                return finish(in.read(b, off, len));
+            } catch (IOException e) {
+                throw expired ? timeoutException(e) : e;
+            }
+        }
+
+        private int finish(int n) throws IOException {
+            if (expired) {
+                throw timeoutException(null);
+            }
+            if (n == -1) {
+                deadline.cancel(false);
+            }
+            return n;
+        }
+
+        @Override
+        public void close() throws IOException {
+            deadline.cancel(false);
+            super.close();
+        }
+    }
+
+    private static final class DeadlinePublisher implements Flow.Publisher<List<ByteBuffer>> {
+        private final Flow.Publisher<List<ByteBuffer>> source;
+        private final long remainingNanos;
+
+        DeadlinePublisher(Flow.Publisher<List<ByteBuffer>> source, long remainingNanos) {
+            this.source = source;
+            this.remainingNanos = remainingNanos;
+        }
+
+        @Override
+        public void subscribe(Flow.Subscriber<? super List<ByteBuffer>> subscriber) {
+            source.subscribe(new DeadlineSubscriber(subscriber, remainingNanos));
+        }
+    }
+
+    private static final class DeadlineSubscriber implements Flow.Subscriber<List<ByteBuffer>> {
+        private final Flow.Subscriber<? super List<ByteBuffer>> downstream;
+        private final long remainingNanos;
+        private Flow.Subscription upstream;
+        private ScheduledFuture<?> deadline;
+        private boolean done;
+
+        DeadlineSubscriber(Flow.Subscriber<? super List<ByteBuffer>> downstream, long remainingNanos) {
+            this.downstream = downstream;
+            this.remainingNanos = remainingNanos;
+        }
+
+        @Override
+        public void onSubscribe(Flow.Subscription subscription) {
+            this.upstream = subscription;
+            this.deadline = DEADLINES.schedule(this::expire, remainingNanos, TimeUnit.NANOSECONDS);
+            downstream.onSubscribe(new Flow.Subscription() {
+                @Override
+                public void request(long n) {
+                    upstream.request(n);
+                }
+
+                @Override
+                public void cancel() {
+                    deadline.cancel(false);
+                    upstream.cancel();
+                }
+            });
+        }
+
+        @Override
+        public synchronized void onNext(List<ByteBuffer> item) {
+            if (!done) {
+                downstream.onNext(item);
+            }
+        }
+
+        @Override
+        public synchronized void onError(Throwable throwable) {
+            if (!done) {
+                done = true;
+                deadline.cancel(false);
+                downstream.onError(throwable);
+            }
+        }
+
+        @Override
+        public synchronized void onComplete() {
+            if (!done) {
+                done = true;
+                deadline.cancel(false);
+                downstream.onComplete();
+            }
+        }
+
+        private void expire() {
+            synchronized (this) {
+                if (done) {
+                    return;
+                }
+                done = true;
+                downstream.onError(timeoutException(null));
+            }
+            upstream.cancel();
+        }
     }
 
     private HttpRequest logRequest(HttpRequest request, boolean logBody) {

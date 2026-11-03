@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.openapis.openapi.SDK.Builder;
+import org.openapis.openapi.models.errors.APIException;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponse;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponseBody;
 import org.openapis.openapi.models.operations.ResponseBodyBytesGetResponse;
@@ -55,6 +56,16 @@ public class ResponseBodiesAdditionalTest {
     }
 
     @Test
+    void testErrorResponseOverTheCapKeepsTheCause() {
+        SDK capped = SDK.builder().maxResponseBodyBytes(8).build();
+
+        APIException thrown = assertThrows(APIException.class,
+                () -> capped.errors().statusGetXSpeakeasyErrors(404L));
+        assertEquals(404, thrown.code());
+        assertTrue(thrown.getCause() instanceof ResponseTooLargeException, String.valueOf(thrown.getCause()));
+    }
+
+    @Test
     void testMaxResponseBodyBytesRequiresAnEnforcingClient() {
         HTTPClient passthrough = new HTTPClient() {};
         IllegalStateException e = assertThrows(IllegalStateException.class,
@@ -83,8 +94,6 @@ public class ResponseBodiesAdditionalTest {
 
     @Test
     void testResponseBodyLimit() throws Exception {
-        recordTest("response-body-limit");
-
         SDK capped = SDK.builder().serverURL(Helpers.HTTPBIN_URL).maxResponseBodyBytes(50).build();
 
         ResponseBodyBytesGetResponse res = capped.responseBodies().responseBodyBytesGet().call();

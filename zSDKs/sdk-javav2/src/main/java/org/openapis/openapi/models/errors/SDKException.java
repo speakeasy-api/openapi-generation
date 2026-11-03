@@ -35,7 +35,7 @@ public class SDKException extends SDKBaseException {
         } catch (IOException e) {
             // Gracefully handle IOExceptions that occur while reading the body
             // by returning an error without a body.
-            return new SDKException(message, rawResponse.statusCode(), null, rawResponse, cause);
+            return new SDKException(message, rawResponse.statusCode(), null, rawResponse, cause != null ? cause : e);
         }
     }
 

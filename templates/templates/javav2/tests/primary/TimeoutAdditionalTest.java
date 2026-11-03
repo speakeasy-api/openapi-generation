@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.openapis.openapi.models.operations.CancelledRequestResponse;
@@ -84,8 +83,6 @@ public class TimeoutAdditionalTest {
 
     @Test
     public void testSdkDefaultTimeoutIsRespected() throws Exception {
-        CommonHelpers.recordTest("timeout-sdk-default-is-respected");
-
         SDK s = SDK.builder().timeout(Duration.ofMillis(1000)).build();
 
         UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> {
@@ -102,8 +99,6 @@ public class TimeoutAdditionalTest {
 
     @Test
     public void testOperationTimeoutExtensionIsRespected() throws Exception {
-        CommonHelpers.recordTest("timeout-operation-extension-is-respected");
-
         SDK s = SDK.builder().build();
 
         UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> {
@@ -126,17 +121,29 @@ public class TimeoutAdditionalTest {
     }
 
     @Test
-    public void testStreamingResponseOutlivesTimeout() throws Exception {
-        SDK s = SDK.builder().timeout(Duration.ofMillis(2000)).build();
+    public void testTimeoutBoundsTheResponseBody() throws Exception {
+        SDK s = SDK.builder().timeout(Duration.ofMillis(1500)).build();
 
         JsonResponse res = s.eventstreams().json()
                 .header("event-interval-ms", "1000")
                 .call();
-        try (EventStream<JsonEvent> events = res.events()) {
-            assertEquals("Hello world!", events.stream()
-                    .map(x -> x.data().content())
-                    .collect(Collectors.joining()));
-        }
+        long started = System.nanoTime();
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> {
+            try (EventStream<JsonEvent> events = res.events()) {
+                events.stream().forEach(x -> { });
+            }
+        });
+        assertTimedOut(thrown);
+        assertTrue(System.nanoTime() - started < TimeUnit.SECONDS.toNanos(3), "body read was not cut at the timeout");
+
+        HttpResponse<Blob> asyncRaw = s.async().eventstreams().json()
+                .header("event-interval-ms", "1000")
+                .call()
+                .rawResponse()
+                .get();
+        ExecutionException asyncThrown = assertThrows(ExecutionException.class,
+                () -> asyncRaw.body().toByteArray().get());
+        assertTimedOut(asyncThrown);
     }
 
     @Test
