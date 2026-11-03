@@ -141,12 +141,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateExhaustiveObject(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator OneOfWithUnionDescription?(ExhaustiveObject? value) => value is null ? null : CreateExhaustiveObject(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator OneOfWithUnionDescription?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
 
         public class OneOfWithUnionDescriptionConverter : JsonConverter

@@ -141,12 +141,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="OneOfWithFactoredOutProperties"/>. Equivalent to <c>CreateOneOfWithFactoredOutPropertiesExhaustiveObject(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator OneOfWithFactoredOutProperties?(OneOfWithFactoredOutPropertiesExhaustiveObject? value) => value is null ? null : CreateOneOfWithFactoredOutPropertiesExhaustiveObject(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithFactoredOutProperties"/>. Equivalent to <c>CreateOneOfWithFactoredOutPropertiesSimpleObject(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator OneOfWithFactoredOutProperties?(OneOfWithFactoredOutPropertiesSimpleObject? value) => value is null ? null : CreateOneOfWithFactoredOutPropertiesSimpleObject(value);
 
         public class OneOfWithFactoredOutPropertiesConverter : JsonConverter

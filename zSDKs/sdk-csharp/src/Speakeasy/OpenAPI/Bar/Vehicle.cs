@@ -142,12 +142,14 @@ namespace Speakeasy.OpenAPI.Bar
         /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateCar(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Vehicle?(Car? value) => value is null ? null : CreateCar(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateBike(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Vehicle?(Bike? value) => value is null ? null : CreateBike(value);
 
         public class VehicleConverter : JsonConverter

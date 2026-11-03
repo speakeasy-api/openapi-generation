@@ -375,6 +375,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/IOpenEnum.cs.stmpl":                                    0o644,
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/IOpenUnion.cs.stmpl":                                   0o644,
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/IsoDateTimeSerializer.cs.stmpl":                        0o644,
+	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/NotNullIfNotNullAttribute.cs.stmpl":                    0o644,
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/OpenEnumConverter.cs.stmpl":                            0o644,
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/OptionalNullable.cs.stmpl":                             0o644,
 	"templates/csharp/auxiliary/{{ getSDKTopLevelFolder }}/Utils/OptionalNullableJsonConverter.cs.stmpl":                0o644,

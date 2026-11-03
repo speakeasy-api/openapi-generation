@@ -162,12 +162,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyString(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator SomeUnion?(string? value) => value is null ? null : CreateMyString(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyObject(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator SomeUnion?(MyObject? value) => value is null ? null : CreateMyObject(value);
 
         /// <summary>

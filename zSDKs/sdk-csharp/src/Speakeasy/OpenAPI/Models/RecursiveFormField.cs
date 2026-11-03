@@ -161,18 +161,21 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateText(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator RecursiveFormField?(RecursiveFormFieldText? value) => value is null ? null : CreateText(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateNumber(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator RecursiveFormField?(RecursiveFormFieldNumber? value) => value is null ? null : CreateNumber(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="RecursiveFormField"/>. Equivalent to <c>CreateArray(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator RecursiveFormField?(RecursiveFormFieldArray? value) => value is null ? null : CreateArray(value);
 
         public class RecursiveFormFieldConverter : JsonConverter

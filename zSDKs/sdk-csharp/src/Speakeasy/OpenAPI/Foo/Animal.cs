@@ -146,6 +146,7 @@ namespace Speakeasy.OpenAPI.Foo
         /// Like the factory, this sets the discriminator property on the passed instance.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Animal?(Dog? value) => value is null ? null : CreateDog(value);
 
         /// <summary>
@@ -153,6 +154,7 @@ namespace Speakeasy.OpenAPI.Foo
         /// Like the factory, this sets the discriminator property on the passed instance.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Animal?(Cat? value) => value is null ? null : CreateCat(value);
 
         public class AnimalConverter : JsonConverter

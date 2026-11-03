@@ -222,12 +222,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateMapOfCircularUnion(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator CircularUnion?(Dictionary<string, CircularUnion>? value) => value is null ? null : CreateMapOfCircularUnion(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateStr(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator CircularUnion?(string? value) => value is null ? null : CreateStr(value);
 
         /// <summary>
@@ -244,6 +246,7 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateArrayOfCircularUnion(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator CircularUnion?(List<CircularUnion>? value) => value is null ? null : CreateArrayOfCircularUnion(value);
 
         /// <summary>

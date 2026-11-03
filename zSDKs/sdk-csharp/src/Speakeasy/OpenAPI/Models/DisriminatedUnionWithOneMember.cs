@@ -95,6 +95,7 @@ namespace Speakeasy.OpenAPI
         /// Like the factory, this sets the discriminator property on the passed instance.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator DisriminatedUnionWithOneMember?(ExhaustiveObject? value) => value is null ? null : CreateType1(value);
 
         public class DisriminatedUnionWithOneMemberConverter : JsonConverter

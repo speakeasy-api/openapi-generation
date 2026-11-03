@@ -137,12 +137,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateText(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Content?(AssetTextBlock? value) => value is null ? null : CreateText(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateImage(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Content?(AssetImageBlock? value) => value is null ? null : CreateImage(value);
 
         public class ContentConverter : JsonConverter

@@ -137,12 +137,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="Step"/>. Equivalent to <c>CreateNote(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Step?(AssetNoteStep? value) => value is null ? null : CreateNote(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Step"/>. Equivalent to <c>CreateOutput(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator Step?(AssetOutputStep? value) => value is null ? null : CreateOutput(value);
 
         public class StepConverter : JsonConverter

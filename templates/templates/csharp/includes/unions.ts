@@ -210,11 +210,9 @@ function templateUnionImplicitConversions(typeDef: TypeDef): string {
           `public static implicit operator ${className}(${c.ParamType} value) => ${call};`,
         );
       } else {
-        if (!isNetstandard2()) {
-          lines.push(
-            `[return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]`,
-          );
-        }
+        lines.push(
+          `[return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]`,
+        );
         lines.push(
           `public static implicit operator ${className}?(${c.ParamType}? value) => value is null ? null : ${call};`,
         );
@@ -227,3 +225,29 @@ registerTemplateFunc(
   "templateUnionImplicitConversions",
   templateUnionImplicitConversions,
 );
+
+let cachedHasAnyNullableUnionImplicitConversion: boolean | null = null;
+
+// @ts-ignore
+function hasAnyNullableUnionImplicitConversion(): boolean {
+  if (cachedHasAnyNullableUnionImplicitConversion !== null) {
+    return cachedHasAnyNullableUnionImplicitConversion;
+  }
+  cachedHasAnyNullableUnionImplicitConversion = false;
+  if (context.Global.Config.UnionImplicitConversions !== true) {
+    return cachedHasAnyNullableUnionImplicitConversion;
+  }
+  for (const [, models] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    for (const [, types] of sequencedMapEntries(models)) {
+      for (const t of types) {
+        if (getUnionImplicitConversions(t).some((c) => !c.IsValueType)) {
+          cachedHasAnyNullableUnionImplicitConversion = true;
+          return cachedHasAnyNullableUnionImplicitConversion;
+        }
+      }
+    }
+  }
+  return cachedHasAnyNullableUnionImplicitConversion;
+}

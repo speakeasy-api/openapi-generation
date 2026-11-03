@@ -113,12 +113,14 @@ namespace Speakeasy.OpenAPI
         /// Implicitly converts a value to <see cref="ChatRequest"/>. Equivalent to <c>CreateChatModelRequest(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator ChatRequest?(ChatModelRequest? value) => value is null ? null : CreateChatModelRequest(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="ChatRequest"/>. Equivalent to <c>CreateChatAgentRequest(value)</c>.
         /// A null value converts to a null reference.
         /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
         public static implicit operator ChatRequest?(ChatAgentRequest? value) => value is null ? null : CreateChatAgentRequest(value);
 
         public class ChatRequestConverter : JsonConverter
