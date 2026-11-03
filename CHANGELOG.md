@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.956.5] - 2026-11-03
+### :bug: Bug Fixes
+- [`84a9dce`](https://github.com/speakeasy-api/openapi-generation/commit/84a9dce6d77475be3cc9cec348eb329e50e74632) - **cli**: validate --server-url scheme and host and require a positive --timeout ([#180](https://github.com/speakeasy-api/openapi-generation/pull/180)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.956.4] - 2026-11-03
 ### :bug: Bug Fixes
 - [`d3b32bb`](https://github.com/speakeasy-api/openapi-generation/commit/d3b32bb2bab60315a87b293d91842b686255e0af) - **cli**: emit usable request schemas for intent commands ([#173](https://github.com/speakeasy-api/openapi-generation/pull/173)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20878,3 +20883,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.956.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.1...v2.956.2
 [v2.956.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.2...v2.956.3
 [v2.956.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.3...v2.956.4
+[v2.956.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.4...v2.956.5
