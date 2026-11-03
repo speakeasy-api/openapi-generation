@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.956.4] - 2026-11-03
+### :bug: Bug Fixes
+- [`d3b32bb`](https://github.com/speakeasy-api/openapi-generation/commit/d3b32bb2bab60315a87b293d91842b686255e0af) - **cli**: emit usable request schemas for intent commands ([#173](https://github.com/speakeasy-api/openapi-generation/pull/173)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.956.3] - 2026-11-03
 ### :bug: Bug Fixes
 - [`d98f828`](https://github.com/speakeasy-api/openapi-generation/commit/d98f8287d14a679c483a645dda356538241c3459) - **cli**: report WAV content written to a .pcm artifact path as a mismatch ([#184](https://github.com/speakeasy-api/openapi-generation/pull/184)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20872,3 +20877,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.956.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.0...v2.956.1
 [v2.956.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.1...v2.956.2
 [v2.956.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.2...v2.956.3
+[v2.956.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.3...v2.956.4
