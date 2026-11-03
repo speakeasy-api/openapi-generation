@@ -606,6 +606,24 @@ func TestPaginationAllWithJq(t *testing.T) {
 	}
 }
 
+func TestPaginationAllJqKeepsLargeIntegers(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("page") == "0" {
+			_, _ = w.Write([]byte(`{"numPages":1,"resultArray":[{"id":1234567890123456789,"name":"alpha"},{"id":9007199254740993,"name":"beta"}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"numPages":1,"resultArray":[]}`))
+	}))
+	defer s.Close()
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"pagination", "pagination-object-results-page-params",
+		"--page", "0", "--all", "--jq", ".id",
+	}), h.GetStderr())
+	assert.Equal(t, "1234567890123456789\n9007199254740993", strings.TrimSpace(h.GetStdout()))
+}
+
 // TestPaginationAllPrettyFormat verifies --all with pretty output format.
 func TestPaginationAllPrettyFormat(t *testing.T) {
 	s := newPaginationServer()

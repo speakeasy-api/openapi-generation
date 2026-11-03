@@ -311,7 +311,7 @@ var artifactMediaExtensions = map[string]string{
 	"png": "png", "jpg": "jpg", "jpeg": "jpg", "gif": "gif", "webp": "webp", "bmp": "bmp",
 	"tif": "tif", "tiff": "tif", "heic": "heic", "heif": "heif", "avif": "avif", "svg": "svg",
 	"ico": "ico",
-	"wav": "wav", "wave": "wav", "pcm": "wav", "l16": "wav", "mp3": "mp3", "ogg": "ogg", "oga": "ogg",
+	"wav": "wav", "wave": "wav", "pcm": "pcm", "l16": "pcm", "mp3": "mp3", "ogg": "ogg", "oga": "ogg",
 	"opus": "ogg", "m4a": "m4a", "aac": "aac", "flac": "flac",
 	"mp4": "mp4", "m4v": "m4v", "webm": "webm", "mov": "mov", "mpg": "mpg", "mpeg": "mpg",
 	"avi": "avi", "mkv": "mkv", "3gp": "3gp",
@@ -320,7 +320,7 @@ var artifactMediaExtensions = map[string]string{
 var artifactMimeExtensions = map[string]string{
 	"image/jpeg": "jpg", "image/jpg": "jpg", "image/icon": "ico", "image/microsoft.icon": "ico",
 	"image/ms-bmp": "bmp",
-	"audio/wave": "wav", "audio/l16": "wav", "audio/pcm": "wav", "audio/mpeg": "mp3", "audio/mp3": "mp3",
+	"audio/wave": "wav", "audio/l16": "pcm", "audio/pcm": "pcm", "audio/mpeg": "mp3", "audio/mp3": "mp3",
 	"audio/vorbis": "ogg", "audio/mp4": "m4a",
 	"video/mpeg": "mpg", "video/quicktime": "mov", "video/msvideo": "avi", "video/matroska": "mkv",
 	"video/3gpp": "3gp",
