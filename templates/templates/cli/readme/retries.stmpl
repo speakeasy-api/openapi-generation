@@ -72,7 +72,7 @@ Root-level retry policies apply only to safe HTTP methods: `GET`, `HEAD`, `OPTIO
 
 ### Timeout
 
-`timeout` and `--timeout` bound the whole operation, including retry sleeps:
+`timeout` and `--timeout` bound the API call, including retry sleeps:
 
 ```bash
 {{$c.Showcase}} --timeout 30s

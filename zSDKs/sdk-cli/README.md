@@ -796,7 +796,7 @@ retry_max_elapsed_time: 1m
 
 ### Timeout
 
-`timeout` and `--timeout` bound the whole operation, including retry sleeps:
+`timeout` and `--timeout` bound the API call, including retry sleeps:
 
 ```bash
 cli get-duplicate-export-collision --timeout 30s
