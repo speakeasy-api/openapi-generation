@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.956.2] - 2026-11-03
+### :bug: Bug Fixes
+- [`bab07a0`](https://github.com/speakeasy-api/openapi-generation/commit/bab07a04923d7aee5996c9849bcf45b7151ded7c) - **cli**: preserve large integers in JSON bodies and jq output ([#172](https://github.com/speakeasy-api/openapi-generation/pull/172)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.956.1] - 2026-11-02
 ### :bug: Bug Fixes
 - [`4f63c56`](https://github.com/speakeasy-api/openapi-generation/commit/4f63c564676487ce30e6cce38345984dab3de0f3) - **cli**: write an artifact --out path exactly as given ([#109](https://github.com/speakeasy-api/openapi-generation/pull/109)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20860,3 +20865,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.955.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.0...v2.955.1
 [v2.956.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.1...v2.956.0
 [v2.956.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.0...v2.956.1
+[v2.956.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.1...v2.956.2
