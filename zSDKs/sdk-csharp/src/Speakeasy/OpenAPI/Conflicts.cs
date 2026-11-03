@@ -22,7 +22,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface IConflicts {
+    public partial interface IConflicts
+    {
         /// <summary>
         /// Get Namespace Conflict Test.
         /// </summary>

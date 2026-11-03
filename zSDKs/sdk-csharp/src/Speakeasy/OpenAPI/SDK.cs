@@ -74,7 +74,8 @@ namespace Speakeasy.OpenAPI
     /// This document will show case as many of our features as possible in as little operations/models as possible.<br/>
     /// This will then generate a SDK that we can more easily review than the test SDKs based on uber.yaml spec.
     /// </remarks>
-    public partial interface ISDK {
+    public partial interface ISDK
+    {
         /// <summary>
         /// The first tag.
         /// </summary>

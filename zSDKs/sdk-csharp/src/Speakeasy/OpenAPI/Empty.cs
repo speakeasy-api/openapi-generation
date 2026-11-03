@@ -13,7 +13,8 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System;
 
-    public partial interface IEmpty {
+    public partial interface IEmpty
+    {
         public ITail Tail { get; }
     }
 

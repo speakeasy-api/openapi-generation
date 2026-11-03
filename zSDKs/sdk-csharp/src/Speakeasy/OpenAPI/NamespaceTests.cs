@@ -13,7 +13,8 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System;
 
-    public partial interface INamespaceTests {
+    public partial interface INamespaceTests
+    {
         public IConflicts Conflicts { get; }
 
         public ISingleFoo SingleFoo { get; }

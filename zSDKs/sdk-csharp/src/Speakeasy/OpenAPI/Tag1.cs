@@ -25,7 +25,8 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// The first tag.
     /// </summary>
-    public partial interface ITag1 {
+    public partial interface ITag1
+    {
         /// <summary>
         /// Deprecated Operation.
         /// </summary>

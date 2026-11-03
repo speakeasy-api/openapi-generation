@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"regexp"
 	"sync"
 	"sync/atomic"
 
@@ -137,5 +138,16 @@ func formatCSharp(ctx context.Context, fileName string, data []byte) ([]byte, er
 		return data, nil
 	}
 
-	return stdout.Bytes(), nil
+	return wrapPartialInterfaceBraces(stdout.Bytes()), nil
+}
+
+// clang-format does not parse `partial interface` as a type declaration, so
+// the Allman brace rule leaves its opening brace on the declaration line.
+var partialInterfaceBrace = regexp.MustCompile(`(?m)^([ \t]*)(\S[^\n]*\bpartial interface\b[^\n{]*?)[ \t]*\{[ \t]*$`)
+
+func wrapPartialInterfaceBraces(data []byte) []byte {
+	if !bytes.Contains(data, []byte("partial interface")) {
+		return data
+	}
+	return partialInterfaceBrace.ReplaceAll(data, []byte("${1}${2}\n${1}{"))
 }

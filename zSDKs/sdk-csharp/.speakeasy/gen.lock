@@ -976,9 +976,9 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Baz/Pet.cs:
     last_write_checksum: sha1:c2bbea5b3ca15b65478e9d0c3dc54e6833a10eaa
   src/Speakeasy/OpenAPI/Conflicts.cs:
-    last_write_checksum: sha1:8fab4af6f0157308d9128dfa311ebc626fa31673
+    last_write_checksum: sha1:52d9010d86589eaf94355e521f743208af3f0c5f
   src/Speakeasy/OpenAPI/Empty.cs:
-    last_write_checksum: sha1:535c6a6e8a836e0863c64852d36d7f2030a6d841
+    last_write_checksum: sha1:942cb56dd9509691f5f8712a25c0d5ec7cb1829c
   src/Speakeasy/OpenAPI/Foo/Address.cs:
     last_write_checksum: sha1:0f78ebf740d3e6a19d0bdce8c1c17db9ce2a6021
   src/Speakeasy/OpenAPI/Foo/Animal.cs:
@@ -1004,7 +1004,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Foo/PetSpecies.cs:
     last_write_checksum: sha1:d453679d6aada9be7448ead997a9c24df2458da0
   src/Speakeasy/OpenAPI/Group.cs:
-    last_write_checksum: sha1:0008ab0e816495d44f877803bcdb2d3428d0acab
+    last_write_checksum: sha1:4688eb93fba778a22d6721d8192c950124ded2b3
   src/Speakeasy/OpenAPI/Hooks/ClientCredentials/ClientCredentials.cs:
     last_write_checksum: sha1:9a0f01c6e6590c47b7ec4134249a51aaf1fbe764
   src/Speakeasy/OpenAPI/Hooks/HookTypes.cs:
@@ -1428,33 +1428,33 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Models/VariantRecord.cs:
     last_write_checksum: sha1:3cd16d11931b18bf26cf0e1d38d6b347c8ebffc6
   src/Speakeasy/OpenAPI/NamespaceTests.cs:
-    last_write_checksum: sha1:ee9b436d76bf21a467698cf4f77fc40c9afeb093
+    last_write_checksum: sha1:93d046a7a422f435df20c1012914c48f3c5384c7
   src/Speakeasy/OpenAPI/Obsolete.cs:
-    last_write_checksum: sha1:c7f81b362ffe6f7f2c24113846ac7c79feca32e8
+    last_write_checksum: sha1:75f6a290d5396a7c37f47393067febb586712297
   src/Speakeasy/OpenAPI/SDK.cs:
-    last_write_checksum: sha1:abaa374bef116c277c67da88be816f0b61acebcd
+    last_write_checksum: sha1:d4e1a0b746353fcb6cc3dbe60d62134df68690da
   src/Speakeasy/OpenAPI/SDKConfig.cs:
     last_write_checksum: sha1:3773a28e55af09936d058f1e74f5766932871730
   src/Speakeasy/OpenAPI/SingleBar.cs:
-    last_write_checksum: sha1:115c05d239d8ca42fc522b504a8480cb4b1faf95
+    last_write_checksum: sha1:68e13b55ccf160c47c7690b5f593bf233fced1cb
   src/Speakeasy/OpenAPI/SingleFoo.cs:
-    last_write_checksum: sha1:83caf98278617cdecf8bf28fc3349a72aed153ec
+    last_write_checksum: sha1:4a1e129886cc6e81171a9fea045232fcced9878d
   src/Speakeasy/OpenAPI/Speakeasy.OpenAPI.csproj:
     last_write_checksum: sha1:a07d1ac6c583afff62c8d70757081fc8627da6e9
   src/Speakeasy/OpenAPI/SubGroup.cs:
-    last_write_checksum: sha1:6a0e95b9a11478408046d20c44f5ae36d4862187
+    last_write_checksum: sha1:0caf3e6cb836f564d6577ebfac50c5f4207c5c34
   src/Speakeasy/OpenAPI/Tag1.cs:
-    last_write_checksum: sha1:64607fba1d044e1fe42d58a2e837b0411ae9387d
+    last_write_checksum: sha1:a87df579104a18448485c5e12a45650a27f04314
   src/Speakeasy/OpenAPI/Tag2.cs:
-    last_write_checksum: sha1:0bdd89276a5e410a237d1ec9e620dc9c35477ac2
+    last_write_checksum: sha1:49ad95f5f80de93f046390ec90f6d86f39b0ccbb
   src/Speakeasy/OpenAPI/Tag3.cs:
-    last_write_checksum: sha1:acec530da64d997f31c352dc1dfd3867e3dce778
+    last_write_checksum: sha1:86d2afac2ebabe0df62717c4b9d66d1fc6b53ad0
   src/Speakeasy/OpenAPI/Tail.cs:
-    last_write_checksum: sha1:b59244d5f2beb7b880df78ac8e7fae7407a9ba02
+    last_write_checksum: sha1:453f9dc054c59f0bdbe051ca9e4bceb596111912
   src/Speakeasy/OpenAPI/TestGroup.cs:
-    last_write_checksum: sha1:075231df7a142cacb8aeb43588a5ef07b0c0ed7d
+    last_write_checksum: sha1:68b1babf5601870be1cc1cedbc9a7e161d111cc5
   src/Speakeasy/OpenAPI/Types.cs:
-    last_write_checksum: sha1:43a891997d85403418f32debd2b85bfa3a094c7f
+    last_write_checksum: sha1:7775fbb89f62699087683cf47642c3ead6b62861
   src/Speakeasy/OpenAPI/Utils/AnyDeserializer.cs:
     last_write_checksum: sha1:0132e56c9b583ca2b8ec632c9ef924600dd0cd68
   src/Speakeasy/OpenAPI/Utils/BigIntStrConverter.cs:

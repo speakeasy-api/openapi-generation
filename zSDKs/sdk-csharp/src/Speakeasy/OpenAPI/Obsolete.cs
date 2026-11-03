@@ -21,7 +21,8 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A subSDK in which all operations are deprecated.
     /// </summary>
-    public partial interface IObsolete {
+    public partial interface IObsolete
+    {
         /// <summary>
         /// Deprecated Operation.
         /// </summary>

@@ -18,7 +18,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface ISubGroup {
+    public partial interface ISubGroup
+    {
         public IEmpty Empty { get; }
         /// <summary>
         /// An operation at the group's top level.

@@ -18,7 +18,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface ITail {
+    public partial interface ITail
+    {
         /// <summary>
         /// An operation at the group's deepest level.
         /// </summary>

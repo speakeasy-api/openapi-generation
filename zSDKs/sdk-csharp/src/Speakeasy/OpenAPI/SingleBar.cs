@@ -20,7 +20,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface ISingleBar {
+    public partial interface ISingleBar
+    {
         /// <summary>
         /// Get Single Namespace Bar Pet.
         /// </summary>

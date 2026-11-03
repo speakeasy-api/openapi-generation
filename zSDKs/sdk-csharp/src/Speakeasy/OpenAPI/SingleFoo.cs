@@ -21,7 +21,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface ISingleFoo {
+    public partial interface ISingleFoo
+    {
         /// <summary>
         /// Get Single Namespace Foo Pet.
         /// </summary>

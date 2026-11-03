@@ -21,7 +21,8 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public partial interface ITypes {
+    public partial interface ITypes
+    {
         /// <summary>
         /// Get Namespace Types Test.
         /// </summary>
