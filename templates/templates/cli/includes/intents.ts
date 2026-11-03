@@ -26,7 +26,7 @@ interface IntentBodyEntry {
   Summary?: string;
   Type?: string; // string | int | float | bool (string when absent)
   Variadic?: boolean; // positional consumes the remaining tokens
-  Required?: boolean; // enforced when the body is built from inputs
+  Required?: boolean; // the bound body key must be present in the final body
   PresetCovered?: boolean; // a preset already satisfies the bound pointer
   DefaultValue?: any; // displayed default (preset, declared, or schema)
   HasDefault?: boolean;
@@ -1000,8 +1000,8 @@ function collectIntentManifest(): IntentManifestCtx {
         new Set([bodyFlag].filter((name) => name !== "")),
       );
     }
-    // A supplied whole body satisfies declared input requirements;
-    // interactive prompting reads it as a body source.
+    // Interactive prompting treats a supplied whole body as the source of
+    // declared inputs.
     for (const flag of flags) {
       flag.SatisfiedBy = Array.from(
         new Set([bodyFlag].filter((name) => name !== "")),

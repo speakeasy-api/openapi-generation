@@ -224,6 +224,8 @@ actions:
             background:
               to: $.background
               summary: Return immediately and run in the background
+              implies:
+                $.input: continue in the background
             stream:
               to: $.stream
               type: bool

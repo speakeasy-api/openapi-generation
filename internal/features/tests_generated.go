@@ -490,6 +490,8 @@ func (t Test) String() string {
         return "intent-route-dispatch-interactive-plan"
     case TestIntentRouteDispatchOverrideOnce:
         return "intent-route-dispatch-override-once"
+    case TestIntentSuppliedBodyRequiresDeclaredInputs:
+        return "intent-supplied-body-requires-declared-inputs"
     case TestIntentsDiscriminatedPartialBody:
         return "intents-discriminated-partial-body"
     case TestIntentsForeignSelectorAgentEnvelope:
@@ -2024,6 +2026,8 @@ func TestFromString(s string) Test {
         return TestIntentRouteDispatchInteractivePlan
     case "intent-route-dispatch-override-once":
         return TestIntentRouteDispatchOverrideOnce
+    case "intent-supplied-body-requires-declared-inputs":
+        return TestIntentSuppliedBodyRequiresDeclaredInputs
     case "intents-discriminated-partial-body":
         return TestIntentsDiscriminatedPartialBody
     case "intents-foreign-selector-agent-envelope":
@@ -3314,6 +3318,7 @@ var testList = []Test{
     TestIntentRouteDispatchHelpUsage,
     TestIntentRouteDispatchInteractivePlan,
     TestIntentRouteDispatchOverrideOnce,
+    TestIntentSuppliedBodyRequiresDeclaredInputs,
     TestIntentsDiscriminatedPartialBody,
     TestIntentsForeignSelectorAgentEnvelope,
     TestIntentsForeignSelectorUsageError,
