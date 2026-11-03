@@ -40,6 +40,7 @@ import org.openapis.openapi.models.operations.PaginationLimitOffsetOffsetParamsR
 import org.openapis.openapi.models.operations.PaginationLimitOffsetOptionalPageParamsResponse;
 import org.openapis.openapi.models.operations.PaginationLimitOffsetPageBodyNullableResponse;
 import org.openapis.openapi.models.operations.PaginationLimitOffsetPageBodyResponse;
+import org.openapis.openapi.models.operations.PaginationLimitOffsetPageNumPagesMissingResponse;
 import org.openapis.openapi.models.operations.PaginationOffsetNullableResponse;
 import org.openapis.openapi.models.operations.PaginationLimitOffsetPageParamsResponse;
 import org.openapis.openapi.models.operations.PaginationURLParamsResponse;
@@ -152,6 +153,45 @@ public class PaginationAdditionalTest {
                         List.of(14L, 15L, 16L, 17L, 18L, 19L),
                         List.of()),
                 pages);
+    }
+
+    @Test
+    void paginationLimitOffsetPageNumPagesMissing() throws Exception {
+        recordTest("pagination-limit-offset-page-num-pages-missing");
+
+        SDK s = SDK.builder().serverURL(Helpers.HTTPBIN_URL).build();
+
+        // the test service omits numPages on the first page and returns null on
+        // the second, so termination must fall back to the result length
+        Iterator<PaginationLimitOffsetPageNumPagesMissingResponse> iterator = s.pagination()
+                .paginationLimitOffsetPageNumPagesMissing()
+                .page(1)
+                .limit(7L)
+                .callAsIterable().iterator();
+
+        assertTrue(iterator.hasNext());
+        PaginationLimitOffsetPageNumPagesMissingResponse res = iterator.next();
+        assertEquals(200, res.statusCode());
+        assertTrue(res.res().isPresent());
+        assertFalse(res.res().get().numPages().isPresent());
+        assertEquals(List.of(0L, 1L, 2L, 3L, 4L, 5L, 6L), res.res().get().resultArray());
+
+        assertTrue(iterator.hasNext());
+        PaginationLimitOffsetPageNumPagesMissingResponse nextRes = iterator.next();
+        assertEquals(200, nextRes.statusCode());
+        assertTrue(nextRes.res().isPresent());
+        assertTrue(nextRes.res().get().numPages().isPresent());
+        assertNull(nextRes.res().get().numPages().get());
+        assertEquals(List.of(7L, 8L, 9L, 10L, 11L, 12L, 13L), nextRes.res().get().resultArray());
+
+        assertTrue(iterator.hasNext());
+        PaginationLimitOffsetPageNumPagesMissingResponse lastRes = iterator.next();
+        assertEquals(200, lastRes.statusCode());
+        assertTrue(lastRes.res().isPresent());
+        assertEquals(3L, lastRes.res().get().numPages().get());
+        assertEquals(List.of(14L, 15L, 16L, 17L, 18L, 19L), lastRes.res().get().resultArray());
+
+        assertFalse(iterator.hasNext());
     }
 
     @Test

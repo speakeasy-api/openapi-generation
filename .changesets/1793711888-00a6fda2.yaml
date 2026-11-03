@@ -1,0 +1,13 @@
+id: 1793711888-00a6fda2
+features:
+    - pagination
+targets:
+    - csharp
+    - unity
+    - php
+    - ruby
+type: fix
+bump: patch
+description: keep paginating on the result length when a response omits or nulls numPages
+author: AshGodfrey
+date: "2026-11-03"

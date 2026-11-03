@@ -140,6 +140,39 @@ final class PaginationTest extends TestCase
         ], $pages);
     }
 
+    public function testPaginationLimitOffsetPageNumPagesMissing(): void
+    {
+        CommonHelpers::recordTest('pagination-limit-offset-page-num-pages-missing');
+
+        $sdk = \OpenAPI\OpenAPI\SDK::builder()->setServerUrl(Helpers::getHttpBinUrl())->build();
+
+        $this->assertInstanceOf(\OpenAPI\OpenAPI\SDK::class, $sdk);
+
+        // the test service omits numPages on the first page and returns null on
+        // the second, so termination must fall back to the result length
+        $responses = $sdk->pagination->paginationLimitOffsetPageNumPagesMissing(page: 1, limit: 7);
+
+        $pages = [];
+        $numPages = [];
+        $last = null;
+        foreach ($responses as $response) {
+            $this->assertEquals(200, $response->httpMeta->response->getStatusCode());
+            $this->assertNotNull($response->res);
+            $pages[] = $response->res->resultArray;
+            $numPages[] = $response->res->numPages;
+            $last = $response;
+        }
+
+        $this->assertEquals([
+            [0, 1, 2, 3, 4, 5, 6],
+            [7, 8, 9, 10, 11, 12, 13],
+            [14, 15, 16, 17, 18, 19],
+        ], $pages);
+        $this->assertSame([null, null, 3], $numPages);
+        $this->assertNotNull($last);
+        $this->assertNull(($last->next)());
+    }
+
     public function testPaginationLimitOffsetDeepOutputsPageBody(): void
     {
         CommonHelpers::recordTest('pagination-limit-offset-deep-outputs-page-body');

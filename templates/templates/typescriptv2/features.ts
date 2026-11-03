@@ -439,6 +439,7 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-nested-union",
     "unions-body-variant-overloads-open-enum",
     "request-bodies-base64-file-input-raw-bytes",
+    "pagination-limit-offset-page-num-pages-missing",
   ].includes(test);
 }
 

@@ -164,6 +164,39 @@ module OpenApiSDK
       )
     end
 
+    def test_pagination_limit_offset_page_num_pages_missing
+      record_test("pagination-limit-offset-page-num-pages-missing")
+
+      assert_instance_of(OpenApiSDK::SDK, @sdk)
+
+      # the test service omits numPages on the first page and returns null on
+      # the second, so termination must fall back to the result length
+      responses = @sdk
+        .pagination
+        .pagination_limit_offset_page_num_pages_missing(page: 1, limit: 7)
+
+      pages = []
+      num_pages = []
+      last = nil
+      responses.each do |response|
+        assert(response)
+        assert(response.http_meta)
+        assert(response.http_meta.response)
+        assert_equal(200, response.http_meta.response.status)
+        assert(response.res)
+        pages << response.res.result_array
+        num_pages << response.res.num_pages
+        last = response
+      end
+
+      assert_equal(
+        [[0, 1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12, 13], [14, 15, 16, 17, 18, 19]],
+        pages
+      )
+      assert_equal([nil, nil, 3], num_pages)
+      assert_nil(T.must(last).next_page.call)
+    end
+
     def test_pagination_limit_offset_deep_outputs_page_body
       record_test("pagination-limit-offset-deep-outputs-page-body")
 
