@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class ContentType
+    public partial class ContentType
     {
         private ContentType(string value)
         {
@@ -135,11 +135,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateText(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Content?(AssetTextBlock? value) => value is null ? null : CreateText(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Content"/>. Equivalent to <c>CreateImage(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Content?(AssetImageBlock? value) => value is null ? null : CreateImage(value);
 

@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class OneOfWithFactoredOutPropertiesAnyType
+    public partial class OneOfWithFactoredOutPropertiesAnyType
     {
         private OneOfWithFactoredOutPropertiesAnyType(string value)
         {
@@ -136,11 +136,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithFactoredOutPropertiesAny"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator OneOfWithFactoredOutPropertiesAny?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithFactoredOutPropertiesAny"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator OneOfWithFactoredOutPropertiesAny?(string? value) => value is null ? null : CreateStr(value);
 

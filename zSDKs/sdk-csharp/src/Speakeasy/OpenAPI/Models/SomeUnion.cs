@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class SomeUnionType
+    public partial class SomeUnionType
     {
         private SomeUnionType(string value)
         {
@@ -160,11 +160,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyString(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator SomeUnion?(string? value) => value is null ? null : CreateMyString(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="SomeUnion"/>. Equivalent to <c>CreateMyObject(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator SomeUnion?(MyObject? value) => value is null ? null : CreateMyObject(value);
 

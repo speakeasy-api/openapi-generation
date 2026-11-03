@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class DetailUnionType
+    public partial class DetailUnionType
     {
         private DetailUnionType(string value)
         {
@@ -139,11 +139,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="DetailUnion"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator DetailUnion?(string? value) => value is null ? null : CreateStr(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="DetailUnion"/>. Equivalent to <c>CreateDetail(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator DetailUnion?(Detail? value) => value is null ? null : CreateDetail(value);
 

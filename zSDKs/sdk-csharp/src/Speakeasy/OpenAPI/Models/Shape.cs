@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class ShapeType
+    public partial class ShapeType
     {
         private ShapeType(string value)
         {
@@ -143,12 +143,14 @@ namespace Speakeasy.OpenAPI
         /// <summary>
         /// Implicitly converts a value to <see cref="Shape"/>. Equivalent to <c>CreateCircle(value)</c>.
         /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Shape?(Circle? value) => value is null ? null : CreateCircle(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Shape"/>. Equivalent to <c>CreateRectangle(value)</c>.
         /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Shape?(Rectangle? value) => value is null ? null : CreateRectangle(value);
 

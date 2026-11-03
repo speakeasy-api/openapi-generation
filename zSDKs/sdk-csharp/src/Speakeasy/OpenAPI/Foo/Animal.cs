@@ -18,7 +18,7 @@ namespace Speakeasy.OpenAPI.Foo
     using System.Numerics;
     using System.Reflection;
 
-    public class AnimalType
+    public partial class AnimalType
     {
         private AnimalType(string value)
         {
@@ -144,12 +144,14 @@ namespace Speakeasy.OpenAPI.Foo
         /// <summary>
         /// Implicitly converts a value to <see cref="Animal"/>. Equivalent to <c>CreateDog(value)</c>.
         /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Animal?(Dog? value) => value is null ? null : CreateDog(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Animal"/>. Equivalent to <c>CreateCat(value)</c>.
         /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Animal?(Cat? value) => value is null ? null : CreateCat(value);
 

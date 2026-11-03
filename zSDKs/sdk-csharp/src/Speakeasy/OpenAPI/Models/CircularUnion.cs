@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class CircularUnionType
+    public partial class CircularUnionType
     {
         private CircularUnionType(string value)
         {
@@ -220,11 +220,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateMapOfCircularUnion(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator CircularUnion?(Dictionary<string, CircularUnion>? value) => value is null ? null : CreateMapOfCircularUnion(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator CircularUnion?(string? value) => value is null ? null : CreateStr(value);
 
@@ -240,6 +242,7 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="CircularUnion"/>. Equivalent to <c>CreateArrayOfCircularUnion(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator CircularUnion?(List<CircularUnion>? value) => value is null ? null : CreateArrayOfCircularUnion(value);
 

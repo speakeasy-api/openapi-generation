@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class GetUnionErrorsInternalServerErrorType
+    public partial class GetUnionErrorsInternalServerErrorType
     {
         private GetUnionErrorsInternalServerErrorType(string value)
         {

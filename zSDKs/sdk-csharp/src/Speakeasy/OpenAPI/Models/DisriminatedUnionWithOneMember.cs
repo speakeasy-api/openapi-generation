@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class DisriminatedUnionWithOneMemberType
+    public partial class DisriminatedUnionWithOneMemberType
     {
         private DisriminatedUnionWithOneMemberType(string value)
         {
@@ -93,6 +93,7 @@ namespace Speakeasy.OpenAPI
         /// <summary>
         /// Implicitly converts a value to <see cref="DisriminatedUnionWithOneMember"/>. Equivalent to <c>CreateType1(value)</c>.
         /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator DisriminatedUnionWithOneMember?(ExhaustiveObject? value) => value is null ? null : CreateType1(value);
 

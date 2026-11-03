@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class OneOfWithUnionDescriptionType
+    public partial class OneOfWithUnionDescriptionType
     {
         private OneOfWithUnionDescriptionType(string value)
         {
@@ -139,11 +139,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateExhaustiveObject(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator OneOfWithUnionDescription?(ExhaustiveObject? value) => value is null ? null : CreateExhaustiveObject(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="OneOfWithUnionDescription"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator OneOfWithUnionDescription?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
 

@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class ClientErrorType
+    public partial class ClientErrorType
     {
         private ClientErrorType(string value)
         {

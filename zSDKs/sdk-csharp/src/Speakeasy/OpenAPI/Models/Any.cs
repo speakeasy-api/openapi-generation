@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class AnyType
+    public partial class AnyType
     {
         private AnyType(string value)
         {
@@ -136,11 +136,13 @@ namespace Speakeasy.OpenAPI
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateSimpleObject(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Any?(SimpleObject? value) => value is null ? null : CreateSimpleObject(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Any"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Any?(string? value) => value is null ? null : CreateStr(value);
 

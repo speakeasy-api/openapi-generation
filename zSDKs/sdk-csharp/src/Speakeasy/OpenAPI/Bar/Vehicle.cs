@@ -18,7 +18,7 @@ namespace Speakeasy.OpenAPI.Bar
     using System.Numerics;
     using System.Reflection;
 
-    public class VehicleType
+    public partial class VehicleType
     {
         private VehicleType(string value)
         {
@@ -140,11 +140,13 @@ namespace Speakeasy.OpenAPI.Bar
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateCar(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Vehicle?(Car? value) => value is null ? null : CreateCar(value);
 
         /// <summary>
         /// Implicitly converts a value to <see cref="Vehicle"/>. Equivalent to <c>CreateBike(value)</c>.
+        /// A null value converts to a null reference.
         /// </summary>
         public static implicit operator Vehicle?(Bike? value) => value is null ? null : CreateBike(value);
 
