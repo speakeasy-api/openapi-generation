@@ -7,7 +7,7 @@ namespace {{ getSDKNamespace }}
 {{templateSDKImports .Local false }}
     {{- templateComments .Local.Comments 1 "class"}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
-    public {{templatePartial}}interface {{ $interfaceName }}
+    public {{templatePartialModifier}}interface {{ $interfaceName }}
     {
     {{- range $idx, $sub := .Local.SubSDKs}}
       {{- if ne $sub.Type.Name "" -}}
@@ -21,7 +21,7 @@ namespace {{ getSDKNamespace }}
     {{- end }}
     }
     {{- templateComments .Local.Comments 1 "class"}}
-    public {{templatePartial}}class {{ $sdkName }}: {{ $interfaceName }}
+    public {{templatePartialModifier}}class {{ $sdkName }}: {{ $interfaceName }}
     {
     {{- range .Local.Operations }}
       {{- if .Servers}}

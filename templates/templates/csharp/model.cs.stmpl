@@ -4,7 +4,7 @@
 
     {{- templateComments .Local.Comments 1 "class" false}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
-    public {{templatePartial}}class {{ $className }}
+    public {{templatePartialModifier}}class {{ $className }}
     {
       {{- if .Local.Extensions.Pagination }}
         public Func<Task<{{ $className }}?>>? Next {get;set;}

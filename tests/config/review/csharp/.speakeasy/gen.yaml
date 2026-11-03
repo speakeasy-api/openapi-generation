@@ -75,7 +75,7 @@ csharp:
   outputModelSuffix: output
   packageName: Speakeasy.OpenAPI
   packageTags: Speakeasy API SDK-Generation
-  partialClasses: true
+  partialTypes: true
   presenceAwareJsonSerialization: true
   respectTitlesForPrimitiveUnionMembers: true
   responseFormat: envelope-http

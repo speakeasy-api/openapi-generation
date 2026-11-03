@@ -115,3 +115,57 @@ components:
       oneOf:
         - type: string
         - {}
+    ImplicitConversionStringListOrInteger:
+      x-speakeasy-include: true
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: integer
+    ImplicitConversionNullableStringListOrBoolean:
+      x-speakeasy-include: true
+      oneOf:
+        - type: array
+          items:
+            type: [string, 'null']
+        - type: boolean
+    ImplicitConversionNullableItems:
+      x-speakeasy-include: true
+      description: >-
+        Union of two inner unions whose array members differ only in item
+        nullability. Nullable reference annotations do not distinguish C#
+        conversion signatures, so neither array converts to the outer union.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringListOrInteger'
+        - $ref: '#/components/schemas/ImplicitConversionNullableStringListOrBoolean'
+    ImplicitConversionStringOrInteger:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: integer
+    ImplicitConversionStringOrBoolean:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: boolean
+    ImplicitConversionStringOrNumber:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: number
+    ImplicitConversionDeepInner:
+      x-speakeasy-include: true
+      anyOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringOrBoolean'
+        - $ref: '#/components/schemas/ImplicitConversionStringOrNumber'
+    ImplicitConversionDeepNested:
+      x-speakeasy-include: true
+      description: >-
+        Union nested several levels deep. The string is reachable through both
+        outer members and through both members of the inner union, so it does
+        not convert to the outer union even though only one inner union keeps a
+        string conversion. The boolean and number are each reachable through a
+        single path two levels deep and convert.
+      anyOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringOrInteger'
+        - $ref: '#/components/schemas/ImplicitConversionDeepInner'

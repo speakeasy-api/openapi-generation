@@ -295,8 +295,8 @@ function getConfigFields(
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
-    partialClasses: {
-      Name: "partialClasses",
+    partialTypes: {
+      Name: "partialTypes",
       Required: false,
       DefaultValue: false,
       Description:

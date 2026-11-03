@@ -135,6 +135,61 @@ public class UnionImplicitConversionsAdditionalShould
     }
 
     [Fact]
+    public void SkipCollectionsDifferingOnlyInItemNullability()
+    {
+        Assert.Equal(
+            new[]
+            {
+                nameof(Boolean),
+                nameof(ImplicitConversionNullableStringListOrBoolean),
+                nameof(ImplicitConversionStringListOrInteger),
+                nameof(Int64),
+            },
+            ImplicitConversionSources<ImplicitConversionNullableItems>()
+        );
+    }
+
+    [Fact]
+    public void SkipSourcesReachableThroughSeveralNestedUnions()
+    {
+        Assert.Equal(
+            new[]
+            {
+                nameof(Boolean),
+                nameof(Double),
+                nameof(ImplicitConversionDeepInner),
+                nameof(ImplicitConversionStringOrBoolean),
+                nameof(ImplicitConversionStringOrInteger),
+                nameof(ImplicitConversionStringOrNumber),
+                nameof(Int64),
+            },
+            ImplicitConversionSources<ImplicitConversionDeepNested>()
+        );
+    }
+
+    [Fact]
+    public void ConvertUniqueSourceSeveralLevelsDeep()
+    {
+        ImplicitConversionDeepNested nested = true;
+
+        Assert.Equal(ImplicitConversionDeepNestedType.ImplicitConversionDeepInner, nested.Type);
+        Assert.Equal(
+            ImplicitConversionDeepInnerType.ImplicitConversionStringOrBoolean,
+            nested.ImplicitConversionDeepInner!.Type
+        );
+        Assert.True(nested.ImplicitConversionDeepInner.ImplicitConversionStringOrBoolean!.Boolean);
+        Assert.Equal(
+            JsonConvert.SerializeObject(
+                ImplicitConversionDeepNested.CreateImplicitConversionDeepInner(
+                    ImplicitConversionDeepInner.CreateImplicitConversionStringOrBoolean(
+                        ImplicitConversionStringOrBoolean.CreateBoolean(true)
+                    )
+                ), Utilities.GetDefaultJsonSerializerSettings()),
+            JsonConvert.SerializeObject(nested, Utilities.GetDefaultJsonSerializerSettings())
+        );
+    }
+
+    [Fact]
     public void ExposeMembersFromPartialDeclarations()
     {
         var circle = new ImplicitConversionCircle { Kind = "circle", Radius = 2 };

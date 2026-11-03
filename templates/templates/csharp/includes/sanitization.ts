@@ -865,6 +865,9 @@ registerTemplateFunc("isReferenceType", isReferenceType);
 
 // @ts-ignore
 function isValueType(typeDef: TypeDef): boolean {
+  if (typeDef.Type.toString() === "enum") {
+    return !typeDef.Enum?.Open;
+  }
   return [
     "integer",
     "int32",
@@ -875,11 +878,8 @@ function isValueType(typeDef: TypeDef): boolean {
     "boolean",
     "date",
     "date-time",
-    "enum",
   ].includes(typeDef.Type.toString());
 }
-
-registerTemplateFunc("isValueType", isValueType);
 
 // @ts-ignore
 function sanitizePackageId(name: string): string {

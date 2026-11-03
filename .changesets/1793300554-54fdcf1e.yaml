@@ -6,6 +6,6 @@ targets:
     - csharp
 type: feat
 bump: patch
-description: add unionImplicitConversions and partialClasses options for C#
+description: add unionImplicitConversions and partialTypes options for C#
 author: 2ynn
 date: "2026-10-29"

@@ -1,9 +1,10 @@
 interface UnionConversion {
   Member: TypeDef;
   ParamType: string;
+  SignatureKey: string;
   IsValueType: boolean;
   MutatesArgument: boolean;
-  Call: (arg: string) => string;
+  FactoryCall: (arg: string) => string;
 }
 
 const nonConvertibleUnionMemberTypes = [
@@ -16,22 +17,8 @@ const nonConvertibleUnionMemberTypes = [
 const nonConvertibleUnionParamTypes = ["object", "dynamic"];
 
 // @ts-ignore
-function templatePartial(): string {
-  return context.Global.Config.PartialClasses === true ? "partial " : "";
-}
-registerTemplateFunc("templatePartial", templatePartial);
-
-// @ts-ignore
-function unionTypeKey(typeDef: TypeDef): string {
+function typeDefKey(typeDef: TypeDef): string {
   return `${typeDef.Type}:${typeDef.OutputLocation}/${typeDef.Name}`;
-}
-
-// @ts-ignore
-function isUnionMemberValueType(typeDef: TypeDef): boolean {
-  if (typeDef.Type.toString() === "enum") {
-    return !typeDef.Enum?.Open;
-  }
-  return isValueType(typeDef);
 }
 
 // @ts-ignore
@@ -46,11 +33,35 @@ function factorySetsDiscriminator(
   return !field?.Const;
 }
 
+// C# signatures ignore nullable reference annotations (List<string?> collides with List<string>), but int? and int stay distinct.
+// @ts-ignore
+function conversionSignatureKey(
+  typeDef: TypeDef,
+  usageLocation: string,
+): string {
+  const type = typeDef.Type.toString();
+  if (type !== "array" && type !== "map") {
+    return sanitizeType(typeDef, false, usageLocation);
+  }
+  const item = conversionSignatureKey(typeDef.ItemType, usageLocation);
+  const nullable =
+    typeDef.ContainsNull && isValueType(typeDef.ItemType) ? "?" : "";
+  return type === "array"
+    ? `List<${item}${nullable}>`
+    : `Dictionary<string, ${item}${nullable}>`;
+}
+
+// @ts-ignore
+function incrementCount(counts: Map<string, number>, key: string, by: number) {
+  counts.set(key, (counts.get(key) ?? 0) + by);
+}
+
 // Filters avoid CS0553 (object source), CS1964 (dynamic source), CS0555 (self source) and CS0557 (duplicate source).
 // @ts-ignore
 function directUnionConversions(typeDef: TypeDef): {
-  all: string[];
-  kept: UnionConversion[];
+  candidates: UnionConversion[];
+  sourceCounts: Map<string, number>;
+  conversions: UnionConversion[];
 } {
   const discriminator = typeDef.Discriminator;
   const members = discriminator?.Mapping
@@ -77,24 +88,26 @@ function directUnionConversions(typeDef: TypeDef): {
       return {
         Member: m.Type,
         ParamType: sanitizeType(m.Type, false, m.Type.OutputLocation),
-        IsValueType: isUnionMemberValueType(m.Type),
+        SignatureKey: conversionSignatureKey(m.Type, m.Type.OutputLocation),
+        IsValueType: isValueType(m.Type),
         MutatesArgument: m.MutatesArgument,
-        Call: (arg: string) => `${factory}(${arg})`,
+        FactoryCall: (arg: string) => `${factory}(${arg})`,
       };
     });
 
-  const counts = new Map<string, number>();
+  const sourceCounts = new Map<string, number>();
   for (const c of candidates) {
-    counts.set(c.ParamType, (counts.get(c.ParamType) ?? 0) + 1);
+    incrementCount(sourceCounts, c.SignatureKey, 1);
   }
-  const selfKey = unionTypeKey(typeDef);
+  const selfKey = typeDefKey(typeDef);
 
   return {
-    all: candidates.map((c) => c.ParamType),
-    kept: candidates.filter(
+    candidates,
+    sourceCounts,
+    conversions: candidates.filter(
       (c) =>
-        counts.get(c.ParamType) === 1 &&
-        unionTypeKey(c.Member) !== selfKey &&
+        sourceCounts.get(c.SignatureKey) === 1 &&
+        typeDefKey(c.Member) !== selfKey &&
         !nonConvertibleUnionParamTypes.includes(c.ParamType),
     ),
   };
@@ -105,44 +118,60 @@ function directUnionConversions(typeDef: TypeDef): {
 function collectUnionConversions(
   typeDef: TypeDef,
   visited: Set<string>,
-): UnionConversion[] {
-  const selfKey = unionTypeKey(typeDef);
+): { conversions: UnionConversion[]; sourceCounts: Map<string, number> } {
+  const selfKey = typeDefKey(typeDef);
   if (visited.has(selfKey) || isUnionOfErrors(typeDef)) {
-    return [];
+    return { conversions: [], sourceCounts: new Map() };
   }
   visited = new Set(visited).add(selfKey);
 
-  const { all, kept } = directUnionConversions(typeDef);
+  const direct = directUnionConversions(typeDef);
 
   const nested: UnionConversion[] = [];
-  for (const direct of kept) {
-    if (direct.Member.Type.toString() !== "union") {
+  const nestedSourceCounts = new Map<string, number>();
+  for (const candidate of direct.candidates) {
+    if (candidate.Member.Type.toString() !== "union") {
       continue;
     }
-    for (const inner of collectUnionConversions(direct.Member, visited)) {
+    const inner = collectUnionConversions(candidate.Member, visited);
+    for (const [key, count] of inner.sourceCounts) {
+      incrementCount(nestedSourceCounts, key, count);
+    }
+    if (!direct.conversions.includes(candidate)) {
+      continue;
+    }
+    for (const conversion of inner.conversions) {
       nested.push({
-        ...inner,
-        MutatesArgument: direct.MutatesArgument || inner.MutatesArgument,
-        Call: (arg: string) =>
-          direct.Call(`${direct.ParamType}.${inner.Call(arg)}`),
+        ...conversion,
+        MutatesArgument:
+          candidate.MutatesArgument || conversion.MutatesArgument,
+        FactoryCall: (arg: string) =>
+          candidate.FactoryCall(
+            `${candidate.ParamType}.${conversion.FactoryCall(arg)}`,
+          ),
       });
     }
   }
 
-  const nestedCounts = new Map<string, number>();
-  for (const n of nested) {
-    nestedCounts.set(n.ParamType, (nestedCounts.get(n.ParamType) ?? 0) + 1);
+  const sourceCounts = new Map(direct.sourceCounts);
+  for (const [key, count] of nestedSourceCounts) {
+    if (!sourceCounts.has(key)) {
+      sourceCounts.set(key, count);
+    }
   }
 
-  return [
-    ...kept,
-    ...nested.filter(
-      (n) =>
-        !all.includes(n.ParamType) &&
-        nestedCounts.get(n.ParamType) === 1 &&
-        unionTypeKey(n.Member) !== selfKey,
-    ),
-  ];
+  return {
+    conversions: [
+      ...direct.conversions,
+      ...nested.filter(
+        (n) =>
+          sourceCounts.get(n.SignatureKey) === 1 &&
+          !direct.sourceCounts.has(n.SignatureKey) &&
+          typeDefKey(n.Member) !== selfKey,
+      ),
+    ],
+    sourceCounts,
+  };
 }
 
 // @ts-ignore
@@ -153,7 +182,7 @@ function getUnionImplicitConversions(typeDef: TypeDef): UnionConversion[] {
   ) {
     return [];
   }
-  return collectUnionConversions(typeDef, new Set());
+  return collectUnionConversions(typeDef, new Set()).conversions;
 }
 
 // @ts-ignore
@@ -162,7 +191,7 @@ function templateUnionImplicitConversions(typeDef: TypeDef): string {
 
   return getUnionImplicitConversions(typeDef)
     .map((c) => {
-      const call = c.Call("value");
+      const call = c.FactoryCall("value");
       const lines = [
         "/// <summary>",
         `/// Implicitly converts a value to <see cref="${className}"/>. Equivalent to <c>${call}</c>.`,
