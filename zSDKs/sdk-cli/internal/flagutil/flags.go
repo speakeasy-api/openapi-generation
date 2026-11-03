@@ -644,8 +644,17 @@ func validHeaderValue(value string) bool {
 }
 
 func ValidateServerURL(value string) error {
-	if _, err := url.Parse(value); err != nil {
+	u, err := url.Parse(value)
+	if err != nil {
 		return serverURLValidationError{value: value, error: err}
+	}
+	switch {
+	case u.Scheme == "" || u.Opaque != "":
+		return serverURLValidationError{value: value, error: fmt.Errorf("the URL must start with http:// or https://")}
+	case u.Scheme != "http" && u.Scheme != "https":
+		return serverURLValidationError{value: value, error: fmt.Errorf("unsupported scheme %q: use http or https", u.Scheme)}
+	case u.Hostname() == "":
+		return serverURLValidationError{value: value, error: fmt.Errorf("the URL has no host")}
 	}
 	return nil
 }

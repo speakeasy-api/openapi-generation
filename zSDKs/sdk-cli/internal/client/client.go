@@ -62,6 +62,9 @@ func NewClient(cmd *cobra.Command, allowedSecurityFields ...string) (*sdk.SDK, e
 		if err != nil {
 			return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid --timeout value %q: %w", timeoutStr, err))
 		}
+		if timeout <= 0 {
+			return nil, flagutil.WithCLIValidation(fmt.Errorf("invalid --timeout value %q: must be a positive Go duration", timeoutStr))
+		}
 		sdkOpts = append(sdkOpts, sdk.WithTimeout(timeout))
 	} // Retry configuration
 	retryConfig, err := buildRetryConfig(cmd)

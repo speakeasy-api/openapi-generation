@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -33,6 +34,62 @@ func TestRequestBodyPostApplicationJSONMapOfAny(t *testing.T) {
 	assert.Contains(t, output, `"mapElemString"`)
 	assert.Contains(t, output, `"string-test"`)
 	assert.Contains(t, output, `"mapElemBool"`)
+}
+
+const largeIntegerBody = `{"id":1234567890123456789}`
+
+// newRawEchoServer writes each request body back unchanged, so large integers
+// reach the CLI exactly as it sent them. The returned func reports the last
+// body the server received.
+func newRawEchoServer(t *testing.T) (*httptest.Server, func() string) {
+	t.Helper()
+	var received atomic.Value
+	received.Store("")
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		received.Store(string(body))
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Echo", "raw")
+		if len(body) == 0 {
+			body = []byte(`{}`)
+		}
+		_, _ = w.Write(body)
+	}))
+	t.Cleanup(s.Close)
+	return s, func() string { return received.Load().(string) }
+}
+
+func TestRequestBodyPostApplicationJSONMapOfAnyLargeIntegers(t *testing.T) {
+	t.Run("request and response keep every digit", func(t *testing.T) {
+		recordTest("request-bodies-post-application-json-map-of-any-large-integers")
+		s, received := newRawEchoServer(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{"request-bodies", "request-body-post-application-json-map-of-any",
+			"--request", largeIntegerBody,
+		}), h.GetStderr())
+		assert.JSONEq(t, largeIntegerBody, received())
+		assert.Contains(t, received(), "1234567890123456789")
+		assert.Contains(t, h.GetStdout(), "1234567890123456789")
+	})
+
+	t.Run("jq keeps every digit", func(t *testing.T) {
+		recordTest("request-bodies-post-application-json-map-of-any-large-integers-jq")
+		s, received := newRawEchoServer(t)
+		h := NewCLITestHarness(t)
+		require.NoError(t, h.RunWithServer(s.URL, []string{"request-bodies", "request-body-post-application-json-map-of-any",
+			"--request", largeIntegerBody, "--jq", ".id",
+		}), h.GetStderr())
+		assert.Contains(t, received(), "1234567890123456789")
+		assert.Equal(t, "1234567890123456789", strings.TrimSpace(h.GetStdout()))
+	})
+}
+
+func TestAnyTypedFlagKeepsLargeIntegers(t *testing.T) {
+	recordTest("any-typed-flag-large-integers")
+	s, received := newRawEchoServer(t)
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{"echo-unknown-fields", "--label", "numbers", "--arbitrary", `{"id":1234567890123456789,"items":[9007199254740993]}`}), h.GetStderr())
+	assert.Contains(t, received(), `"arbitrary":{"id":1234567890123456789,"items":[9007199254740993]}`)
 }
 
 // --- Inferred Optional Request Wrapper (GET with optional query params) ---
