@@ -1,0 +1,10 @@
+id: 1793244742-f68592ed
+features:
+    - core
+targets:
+    - cli
+type: fix
+bump: patch
+description: preserve integers beyond 2^53 in request bodies, JSON-valued flags and --jq output
+author: TristanSpeakEasy
+date: "2026-10-29"

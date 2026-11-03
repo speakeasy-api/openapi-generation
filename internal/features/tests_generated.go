@@ -6,6 +6,8 @@ func (t Test) String() string {
     switch(t) {
     case TestAgentModeDoesNotLeakBetweenInvocations:
         return "agent-mode-does-not-leak-between-invocations"
+    case TestAnyTypedFlagLargeIntegers:
+        return "any-typed-flag-large-integers"
     case TestAuthAPIKeyAuthGlobal:
         return "auth-api-key-auth-global"
     case TestAuthBasicAuth:
@@ -914,6 +916,10 @@ func (t Test) String() string {
         return "request-bodies-post-application-json-map-object-camel-case"
     case TestRequestBodiesPostApplicationJSONMapOfAny:
         return "request-bodies-post-application-json-map-of-any"
+    case TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegers:
+        return "request-bodies-post-application-json-map-of-any-large-integers"
+    case TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegersJq:
+        return "request-bodies-post-application-json-map-of-any-large-integers-jq"
     case TestRequestBodiesPostApplicationJSONMapOfArray:
         return "request-bodies-post-application-json-map-of-array"
     case TestRequestBodiesPostApplicationJSONMapOfArrayCamelCase:
@@ -1534,6 +1540,8 @@ func TestFromString(s string) Test {
     switch(s) {
     case "agent-mode-does-not-leak-between-invocations":
         return TestAgentModeDoesNotLeakBetweenInvocations
+    case "any-typed-flag-large-integers":
+        return TestAnyTypedFlagLargeIntegers
     case "auth-api-key-auth-global":
         return TestAuthAPIKeyAuthGlobal
     case "auth-basic-auth":
@@ -2442,6 +2450,10 @@ func TestFromString(s string) Test {
         return TestRequestBodiesPostApplicationJSONMapObjectCamelCase
     case "request-bodies-post-application-json-map-of-any":
         return TestRequestBodiesPostApplicationJSONMapOfAny
+    case "request-bodies-post-application-json-map-of-any-large-integers":
+        return TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegers
+    case "request-bodies-post-application-json-map-of-any-large-integers-jq":
+        return TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegersJq
     case "request-bodies-post-application-json-map-of-array":
         return TestRequestBodiesPostApplicationJSONMapOfArray
     case "request-bodies-post-application-json-map-of-array-camel-case":
@@ -3060,6 +3072,7 @@ func TestFromString(s string) Test {
 
 var testList = []Test{
     TestAgentModeDoesNotLeakBetweenInvocations,
+    TestAnyTypedFlagLargeIntegers,
     TestAuthAPIKeyAuthGlobal,
     TestAuthBasicAuth,
     TestAuthBasicAuthEmpty,
@@ -3514,6 +3527,8 @@ var testList = []Test{
     TestRequestBodiesPostApplicationJSONMapObject,
     TestRequestBodiesPostApplicationJSONMapObjectCamelCase,
     TestRequestBodiesPostApplicationJSONMapOfAny,
+    TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegers,
+    TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegersJq,
     TestRequestBodiesPostApplicationJSONMapOfArray,
     TestRequestBodiesPostApplicationJSONMapOfArrayCamelCase,
     TestRequestBodiesPostApplicationJSONMapOfMap,
