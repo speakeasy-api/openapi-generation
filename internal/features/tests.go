@@ -661,6 +661,7 @@ const (
 	// suite (exit codes, pre-request classification, catalogs, intents,
 	// dispatch, streams, artifacts, security ranking, request shape).
 	TestAgentModeDoesNotLeakBetweenInvocations
+	TestAnyTypedFlagLargeIntegers
 	TestCatalogListsValues
 	TestCatalogRejectsPositionalArgument
 	TestCatalogStructuredOutput
@@ -743,6 +744,8 @@ const (
 	TestPreRequestRealConnectionFailures
 	TestPreRequestSilentStdinWithFlagInputReportsMissingRootUnionBody
 	TestPreRequestValidationEnvelopeMatrix
+	TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegers
+	TestRequestBodiesPostApplicationJSONMapOfAnyLargeIntegersJq
 	TestRequestShapeBodyAgentVariant
 	TestRequestShapeBodyAndWholeBodyFlagRejected
 	TestRequestShapeBodyBothSelectorsRejected
