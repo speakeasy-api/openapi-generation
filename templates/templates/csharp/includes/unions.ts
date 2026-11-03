@@ -1,7 +1,7 @@
 interface UnionConversion {
   Member: TypeDef;
   ParamType: string;
-  SignatureKey: string;
+  ParamTypeIgnoringNullableReferences: string;
   IsValueType: boolean;
   MutatesArgument: boolean;
   FactoryCall: (arg: string) => string;
@@ -22,11 +22,6 @@ function typeDefKey(typeDef: TypeDef): string {
 }
 
 // @ts-ignore
-function isValueType(typeDef: TypeDef): boolean {
-  return !canTypeBeNull(typeDef) && !typeDef.Enum?.Open;
-}
-
-// @ts-ignore
 function factorySetsDiscriminator(
   member: TypeDef,
   discriminatorProperty: string,
@@ -38,9 +33,9 @@ function factorySetsDiscriminator(
   return !field?.Const;
 }
 
-// C# signatures ignore nullable reference annotations (List<string?> collides with List<string>), but int? and int stay distinct.
+// C# treats List<string?> and List<string> as one parameter type, but List<int?> and List<int> as two.
 // @ts-ignore
-function conversionSignatureKey(
+function sanitizeTypeIgnoringNullableReferences(
   typeDef: TypeDef,
   usageLocation: string,
 ): string {
@@ -48,17 +43,15 @@ function conversionSignatureKey(
   if (type !== "array" && type !== "map") {
     return sanitizeType(typeDef, false, usageLocation);
   }
-  const item = conversionSignatureKey(typeDef.ItemType, usageLocation);
+  const item = sanitizeTypeIgnoringNullableReferences(
+    typeDef.ItemType,
+    usageLocation,
+  );
   const nullable =
     typeDef.ContainsNull && isValueType(typeDef.ItemType) ? "?" : "";
   return type === "array"
     ? `List<${item}${nullable}>`
     : `Dictionary<string, ${item}${nullable}>`;
-}
-
-// @ts-ignore
-function incrementCount(counts: Map<string, number>, key: string, by: number) {
-  counts.set(key, (counts.get(key) ?? 0) + by);
 }
 
 // Filters avoid CS0553 (object source), CS1964 (dynamic source), CS0555 (self source) and CS0557 (duplicate source).
@@ -93,7 +86,8 @@ function directUnionConversions(typeDef: TypeDef): {
       return {
         Member: m.Type,
         ParamType: sanitizeType(m.Type, false, m.Type.OutputLocation),
-        SignatureKey: conversionSignatureKey(m.Type, m.Type.OutputLocation),
+        ParamTypeIgnoringNullableReferences:
+          sanitizeTypeIgnoringNullableReferences(m.Type, m.Type.OutputLocation),
         IsValueType: isValueType(m.Type),
         MutatesArgument: m.MutatesArgument,
         FactoryCall: (arg: string) => `${factory}(${arg})`,
@@ -102,7 +96,8 @@ function directUnionConversions(typeDef: TypeDef): {
 
   const sourceCounts = new Map<string, number>();
   for (const c of candidates) {
-    incrementCount(sourceCounts, c.SignatureKey, 1);
+    const type = c.ParamTypeIgnoringNullableReferences;
+    sourceCounts.set(type, (sourceCounts.get(type) ?? 0) + 1);
   }
   const selfKey = typeDefKey(typeDef);
 
@@ -111,7 +106,7 @@ function directUnionConversions(typeDef: TypeDef): {
     sourceCounts,
     conversions: candidates.filter(
       (c) =>
-        sourceCounts.get(c.SignatureKey) === 1 &&
+        sourceCounts.get(c.ParamTypeIgnoringNullableReferences) === 1 &&
         typeDefKey(c.Member) !== selfKey &&
         !nonConvertibleUnionParamTypes.includes(c.ParamType),
     ),
@@ -140,7 +135,7 @@ function collectUnionConversions(
     }
     const inner = collectUnionConversions(candidate.Member, visited);
     for (const [key, count] of inner.sourceCounts) {
-      incrementCount(nestedSourceCounts, key, count);
+      nestedSourceCounts.set(key, (nestedSourceCounts.get(key) ?? 0) + count);
     }
     if (!direct.conversions.includes(candidate)) {
       continue;
@@ -170,8 +165,8 @@ function collectUnionConversions(
       ...direct.conversions,
       ...nested.filter(
         (n) =>
-          sourceCounts.get(n.SignatureKey) === 1 &&
-          !direct.sourceCounts.has(n.SignatureKey) &&
+          sourceCounts.get(n.ParamTypeIgnoringNullableReferences) === 1 &&
+          !direct.sourceCounts.has(n.ParamTypeIgnoringNullableReferences) &&
           typeDefKey(n.Member) !== selfKey,
       ),
     ],
