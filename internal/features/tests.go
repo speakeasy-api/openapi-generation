@@ -726,6 +726,7 @@ const (
 	TestIntentRouteDispatchHelpUsage
 	TestIntentRouteDispatchInteractivePlan
 	TestIntentRouteDispatchOverrideOnce
+	TestIntentSuppliedBodyRequiresDeclaredInputs
 	TestIntentsDiscriminatedPartialBody
 	TestIntentsForeignSelectorAgentEnvelope
 	TestIntentsForeignSelectorUsageError

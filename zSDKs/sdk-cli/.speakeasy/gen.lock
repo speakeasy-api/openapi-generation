@@ -11,9 +11,9 @@ features:
   cli:
     additionalProperties: 0.0.1
     bigint: 0.0.0
-    cliCommands: 0.3.3
+    cliCommands: 0.4.0
     constsAndDefaults: 0.0.0
-    core: 0.9.25
+    core: 0.9.26
     customSecuritySchemes: 0.0.0
     decimal: 0.0.0
     deprecations: 0.0.0
@@ -116,17 +116,17 @@ trackedFiles:
   internal/cli/group/subgroup/subgroupop.go:
     last_write_checksum: sha1:ab20e116aca23e190a4a7b25e01c2e73d0114495
   internal/cli/intent_enroll.go:
-    last_write_checksum: sha1:0b9f2ab0e65a37413096390bffc7793ad7bb54cc
+    last_write_checksum: sha1:5a199e80a2c20d4ad93cea6161373fe39568be59
   internal/cli/intent_invite.go:
-    last_write_checksum: sha1:793f73ebb8278cf397e5a6a0fefb0ce1d34ffb08
+    last_write_checksum: sha1:8a1121586d6aa97edc667093e1e4ed82f38a4f35
   internal/cli/intent_observe.go:
-    last_write_checksum: sha1:73bb5c7809ee73702a3284ab1ac1bc74c064f4f7
+    last_write_checksum: sha1:cddbc60661ef784d83541d5a8ec123c6f3f21f83
   internal/cli/intent_produce.go:
-    last_write_checksum: sha1:bd40954296ab4b5dd4265987e5c8918d46209528
+    last_write_checksum: sha1:3f9c26342fb11ecf6e43a5a49ce8eef86137c7df
   internal/cli/intent_render.go:
-    last_write_checksum: sha1:78811930e627878b1fcaf41dd2a6fcd208a3003d
+    last_write_checksum: sha1:7ff18b23e57a0efaa15e601580e4f0dd092e9231
   internal/cli/intent_say.go:
-    last_write_checksum: sha1:b2e6a049a1cdb5cdbd6153fee6a1754a552b5b38
+    last_write_checksum: sha1:60585bc3c772b7bdf2bd622d37d077e4b8633207
   internal/cli/intents.go:
     last_write_checksum: sha1:997b951af6d215576d30574a54022937beedd890
   internal/cli/intents_order_test.go:
@@ -248,9 +248,9 @@ trackedFiles:
   internal/flagutil/async.go:
     last_write_checksum: sha1:525661b017176efba84d594a151050721c17a585
   internal/flagutil/dispatch.go:
-    last_write_checksum: sha1:fecd48dd69b4743ff5c6c1329a2071fe49d9423e
+    last_write_checksum: sha1:09c97c1354f7e904e5070a2485e7ddea2e3ec254
   internal/flagutil/flags.go:
-    last_write_checksum: sha1:7d5c9060ce09a13ecad44ee089b752362e83f959
+    last_write_checksum: sha1:e0bcc3610675881019d2c223ef2af72a14bfacfa
   internal/flagutil/metadata.go:
     last_write_checksum: sha1:6b5346045d47cdcdbb58e360b40f3000ff5d934c
   internal/flagutil/preset.go:
@@ -274,7 +274,7 @@ trackedFiles:
   internal/output/binary.go:
     last_write_checksum: sha1:6fd77172cad1bd29dc9f157b931345f96a172223
   internal/output/classify.go:
-    last_write_checksum: sha1:db7e072a1c68803b44a68ab0c0a620170bb5c6d1
+    last_write_checksum: sha1:b21e34c493f5e773cdffcf0e3670af2c6e8bbffa
   internal/output/color.go:
     last_write_checksum: sha1:c6f41f9691f6209f480d153c15c3424d8ca5883d
   internal/output/errortable.go:
@@ -286,19 +286,19 @@ trackedFiles:
   internal/output/outcome.go:
     last_write_checksum: sha1:5b7a3ad24255889f7a5cdc53478c237e7f358b85
   internal/output/output.go:
-    last_write_checksum: sha1:9e6af60c9e95197fbcff2de1677b7ec1363c2a36
+    last_write_checksum: sha1:880e6cdb3fb0c576cec847ca439436ff76d03b4e
   internal/output/output_test.go:
     last_write_checksum: sha1:84a8a6cf79bfa62ae9635f992bc7578a2bbbcce3
   internal/output/outputitems.go:
     last_write_checksum: sha1:d327eee8d9a395821fef201257e033bae50cda51
   internal/output/paginated.go:
-    last_write_checksum: sha1:1b9199c3e3a17a95e70e93d0a90006b3b7371520
+    last_write_checksum: sha1:70807d12e53d96ab73ac7cd0cf0a4515ea8ea93b
   internal/output/pretty.go:
     last_write_checksum: sha1:b7c74bd93d4e8a464956f098724dc653e9f8e594
   internal/output/progress.go:
     last_write_checksum: sha1:f8b839f9394602fe9c30feb3d7155af6235663be
   internal/output/streaming.go:
-    last_write_checksum: sha1:0bab1d6cbb6a5d6dca122c8d57a14467dd3f9237
+    last_write_checksum: sha1:2a61d494008a17f1db0b7b1c3ae0f93fe73e50ca
   internal/output/streaming_test.go:
     last_write_checksum: sha1:ed4ffe1ebf27f5b32e69d0d2e4a377d47e1655c4
   internal/output/streamproject.go:
