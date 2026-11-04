@@ -71,11 +71,12 @@ function templateTimeoutResolution(
   optionsExpr: string,
 ): string {
   const optional = javaImportOptional();
-  const extension = operation.Extensions.Timeout
-    ? `${optional}.of(${javaImport("java.time.Duration")}.ofMillis(${
-        operation.Extensions.Timeout
-      }))`
-    : "";
+  const extension =
+    operationTimeoutEnforced() && operation.Extensions.Timeout
+      ? `${optional}.of(${javaImport("java.time.Duration")}.ofMillis(${
+          operation.Extensions.Timeout
+        }))`
+      : "";
   if (!optionsExpr) {
     if (!extension) {
       return "sdkConfiguration.timeout()";
@@ -101,6 +102,11 @@ function templateTimeoutResolution(
 }
 
 registerTemplateFunc("templateTimeoutResolution", templateTimeoutResolution);
+
+function operationTimeoutEnforced(): boolean {
+  const value = context.Global.Config.EnforceOperationTimeout;
+  return value === true || value === "true";
+}
 
 function templateLegacyConstructor(
   operation: Operation,
