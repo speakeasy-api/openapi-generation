@@ -359,6 +359,9 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
+            synchronized (this) {
+                upstream = subscription;
+            }
             downstream.onSubscribe(new Flow.Subscription() {
                 @Override
                 public void request(long n) {
@@ -373,7 +376,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             });
             boolean expireNow;
             synchronized (this) {
-                upstream = subscription;
                 subscribed = true;
                 expireNow = expirePending;
             }
@@ -412,16 +414,18 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             synchronized (this) {
                 if (!subscribed) {
                     expirePending = true;
+                    toCancel = upstream;
+                } else if (done) {
                     return;
+                } else {
+                    done = true;
+                    downstream.onError(timeoutException(null));
+                    toCancel = upstream;
                 }
-                if (done) {
-                    return;
-                }
-                done = true;
-                downstream.onError(timeoutException(null));
-                toCancel = upstream;
             }
-            toCancel.cancel();
+            if (toCancel != null) {
+                toCancel.cancel();
+            }
         }
     }
 
