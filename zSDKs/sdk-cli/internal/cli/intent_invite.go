@@ -178,6 +178,13 @@ func runIntentInviteCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{Path: []string{"email"}, Source: "the <email> argument"},
+		}); err != nil {
+			return err
+		}
+	}
 	if f := cmd.Flag("jq"); f != nil && !f.Changed {
 		_ = f.Value.Set(".id")
 	}

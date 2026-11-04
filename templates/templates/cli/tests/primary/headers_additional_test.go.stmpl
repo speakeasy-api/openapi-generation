@@ -322,6 +322,38 @@ func TestHeadersYAMLFormat(t *testing.T) {
 	assert.Contains(t, output, "X-Required-Header: required")
 }
 
+func TestHeadersIncludeHeadersKeepsLargeIntegers(t *testing.T) {
+	run := func(t *testing.T, args ...string) string {
+		t.Helper()
+		s, _ := newRawEchoServer(t)
+		h := NewCLITestHarness(t)
+		args = append(args, "request-bodies", "request-body-post-application-json-map-of-any", "--request", largeIntegerBody)
+		require.NoError(t, h.RunWithServer(s.URL, args), h.GetStderr())
+		return h.GetStdout()
+	}
+
+	t.Run("json", func(t *testing.T) {
+		out := run(t, "--include-headers", "--output-format", "json")
+		var parsed map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal([]byte(out), &parsed), out)
+		assert.Equal(t, "1234567890123456789", string(parsed["id"]))
+		assert.Contains(t, parsed, "_response_headers")
+	})
+
+	t.Run("jq", func(t *testing.T) {
+		out := run(t, "--include-headers", "--jq", ".id")
+		assert.Equal(t, "1234567890123456789", strings.TrimSpace(out))
+	})
+
+	// YAML renders the typed response, so the body matches plain -o yaml.
+	t.Run("yaml", func(t *testing.T) {
+		out := run(t, "--include-headers", "--output-format", "yaml")
+		plain := run(t, "--output-format", "yaml")
+		assert.Contains(t, out, "X-Echo: raw")
+		assert.Contains(t, out, strings.TrimSpace(plain))
+	})
+}
+
 func TestHeadersToonFormat(t *testing.T) {
 	s := newResponseHeadersTestServer()
 	defer s.Close()
@@ -494,4 +526,21 @@ func TestHeadersNonJSONRawBodyJq(t *testing.T) {
 
 	// jq should extract just the raw body string
 	assert.Equal(t, "\"this is not json\"", output)
+}
+
+func TestHeadersTableFormat(t *testing.T) {
+	s := newResponseHeadersTestServer()
+	t.Cleanup(s.Close)
+
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunWithServer(s.URL, []string{
+		"--include-headers", "--output-format", "table", "--color", "never",
+		"response-headers", "response-headers",
+		"--include-required-header", "--status-code", "200",
+	}), h.GetStderr())
+	out := h.GetStdout()
+	assert.Equal(t, []string{"FIELD", "VALUE"}, strings.Fields(strings.Split(out, "\n")[0]), out)
+	assert.NotContains(t, out, "token: test-token", "table output, not the pretty printer")
+	assert.Contains(t, out, "Response Headers:")
+	assert.Contains(t, out, "X-Required-Header")
 }

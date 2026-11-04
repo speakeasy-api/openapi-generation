@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class Test2Request
+    public partial class Test2Request
     {
         /// <summary>
         /// A simple object that uses all our supported primitive types and enums and has optional properties.<br/>

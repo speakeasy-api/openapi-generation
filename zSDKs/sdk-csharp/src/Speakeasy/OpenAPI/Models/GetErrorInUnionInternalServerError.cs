@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class GetErrorInUnionInternalServerErrorType
+    public partial class GetErrorInUnionInternalServerErrorType
     {
         private GetErrorInUnionInternalServerErrorType(string value)
         {
@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// OK.
     /// </summary>
     [JsonConverter(typeof(GetErrorInUnionInternalServerError.GetErrorInUnionInternalServerErrorConverter))]
-    public class GetErrorInUnionInternalServerError : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class GetErrorInUnionInternalServerError : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public GetErrorInUnionInternalServerError(GetErrorInUnionInternalServerErrorType type)
         {

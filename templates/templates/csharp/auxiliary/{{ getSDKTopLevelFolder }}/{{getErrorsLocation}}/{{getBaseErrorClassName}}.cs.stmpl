@@ -10,7 +10,7 @@ namespace {{getScopeNamespace "errors" true}}
     /// <summary>
     /// Base Exception for API Errors.
     /// </summary>
-    public class {{$className}} : Exception
+    public {{templatePartialModifier}}class {{$className}} : Exception
     {
         /// <summary>
         /// Error Message

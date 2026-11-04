@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class ResultArray
+    public partial class ResultArray
     {
         [JsonProperty("test1", Required = Newtonsoft.Json.Required.Always)]
         public string Test1 { get; set; } = default!;

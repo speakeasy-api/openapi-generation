@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.959.0] - 2026-11-04
+### :bee: New Features
+- [`1346f22`](https://github.com/speakeasy-api/openapi-generation/commit/1346f22ee8628e6b1ffbaa1f6f779e9558cb5fff) - **csharp**: union implicit conversions and partial types ([#186](https://github.com/speakeasy-api/openapi-generation/pull/186)) *(commit by [@2ynn](https://github.com/2ynn))*
+
+
+## [v2.958.1] - 2026-11-04
+### :bug: Bug Fixes
+- [`9be2cea`](https://github.com/speakeasy-api/openapi-generation/commit/9be2cea34b64bbdf4b5bb2db28b8dd87ab409117) - **typescript,mcp,terraform**: raise dependency floors to patched releases ([#185](https://github.com/speakeasy-api/openapi-generation/pull/185)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.958.0] - 2026-11-04
+### :bee: New Features
+- [`5d58d62`](https://github.com/speakeasy-api/openapi-generation/commit/5d58d62b0c2530b55d8cb72e4680372ff33d2d58) - **cli**: download URI-delivered artifact content ([#183](https://github.com/speakeasy-api/openapi-generation/pull/183)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.957.0] - 2026-11-03
+### :bee: New Features
+- [`0d93240`](https://github.com/speakeasy-api/openapi-generation/commit/0d93240aa2c642141556a08390f1869845eea3cc) - **cli**: continue cut-off responses with a declared continuation recipe ([#142](https://github.com/speakeasy-api/openapi-generation/pull/142)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.7] - 2026-11-03
+### :bug: Bug Fixes
+- [`b8eaf55`](https://github.com/speakeasy-api/openapi-generation/commit/b8eaf552c49a9cb311df81e82e89363542f2dd38) - **cli**: include response headers with --all and keep table output with --include-headers ([#182](https://github.com/speakeasy-api/openapi-generation/pull/182)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.6] - 2026-11-03
+### :bug: Bug Fixes
+- [`e7dd4a0`](https://github.com/speakeasy-api/openapi-generation/commit/e7dd4a03916628adb678ca55042a457adaee6267) - **cli**: require declared intent inputs in a supplied request body ([#179](https://github.com/speakeasy-api/openapi-generation/pull/179)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.5] - 2026-11-03
+### :bug: Bug Fixes
+- [`84a9dce`](https://github.com/speakeasy-api/openapi-generation/commit/84a9dce6d77475be3cc9cec348eb329e50e74632) - **cli**: validate --server-url scheme and host and require a positive --timeout ([#180](https://github.com/speakeasy-api/openapi-generation/pull/180)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.4] - 2026-11-03
+### :bug: Bug Fixes
+- [`d3b32bb`](https://github.com/speakeasy-api/openapi-generation/commit/d3b32bb2bab60315a87b293d91842b686255e0af) - **cli**: emit usable request schemas for intent commands ([#173](https://github.com/speakeasy-api/openapi-generation/pull/173)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.3] - 2026-11-03
+### :bug: Bug Fixes
+- [`d98f828`](https://github.com/speakeasy-api/openapi-generation/commit/d98f8287d14a679c483a645dda356538241c3459) - **cli**: report WAV content written to a .pcm artifact path as a mismatch ([#184](https://github.com/speakeasy-api/openapi-generation/pull/184)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.956.2] - 2026-11-03
+### :bug: Bug Fixes
+- [`bab07a0`](https://github.com/speakeasy-api/openapi-generation/commit/bab07a04923d7aee5996c9849bcf45b7151ded7c) - **cli**: preserve large integers in JSON bodies and jq output ([#172](https://github.com/speakeasy-api/openapi-generation/pull/172)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
+## [v2.956.1] - 2026-11-02
+### :bug: Bug Fixes
+- [`4f63c56`](https://github.com/speakeasy-api/openapi-generation/commit/4f63c564676487ce30e6cce38345984dab3de0f3) - **cli**: write an artifact --out path exactly as given ([#109](https://github.com/speakeasy-api/openapi-generation/pull/109)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
+## [v2.956.0] - 2026-10-30
+### :bee: New Features
+- [`3e1b521`](https://github.com/speakeasy-api/openapi-generation/commit/3e1b521d0ba2d99b6fc12f2c880ea509b127547d) - **cli**: fail commands on a declared terminal failure state (output.outcome) ([#134](https://github.com/speakeasy-api/openapi-generation/pull/134)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+### :bug: Bug Fixes
+- [`12ad3d9`](https://github.com/speakeasy-api/openapi-generation/commit/12ad3d96ec6a64516249af6a122e5ccaa88927e9) - **go**: collapse flat response unions whose content types share one schema ([#175](https://github.com/speakeasy-api/openapi-generation/pull/175)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
+
+
 ## [v2.955.1] - 2026-10-29
 ### :wrench: Chores
 - [`ca573c1`](https://github.com/speakeasy-api/openapi-generation/commit/ca573c18fc769bae06dc4af131fd9f5d14926619) - unbreak CI, fix PHP job overhead, and shrink the Go cache ([#176](https://github.com/speakeasy-api/openapi-generation/pull/176)) *(commit by [@AshGodfrey](https://github.com/AshGodfrey))*
@@ -20845,3 +20908,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.954.10]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.9...v2.954.10
 [v2.955.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.954.10...v2.955.0
 [v2.955.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.0...v2.955.1
+[v2.956.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.955.1...v2.956.0
+[v2.956.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.0...v2.956.1
+[v2.956.2]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.1...v2.956.2
+[v2.956.3]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.2...v2.956.3
+[v2.956.4]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.3...v2.956.4
+[v2.956.5]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.4...v2.956.5
+[v2.956.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.5...v2.956.6
+[v2.956.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.6...v2.956.7
+[v2.957.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.7...v2.957.0
+[v2.958.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.957.0...v2.958.0
+[v2.958.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.958.0...v2.958.1
+[v2.959.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.958.1...v2.959.0

@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"openapi/internal/cli"
@@ -123,7 +124,7 @@ func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	written, err := os.ReadFile(target)
 	require.NoError(t, err)
 	assert.Equal(t, artifactTestBytes, string(written))
-	assert.NotContains(t, h.GetStderr(), "Note: wrote", "an unchanged extension needs no rewrite note")
+	assert.NotContains(t, h.GetStderr(), "does not match", "a matching extension needs no mismatch note")
 
 	// Explicit destinations replace an existing file (matching the reference UX).
 	require.NoError(t, os.WriteFile(target, []byte("stale"), 0o644))
@@ -134,41 +135,64 @@ func TestArtifact_OutFileIsUsedAndOverwritten(t *testing.T) {
 	assert.Equal(t, artifactTestBytes, string(written))
 }
 
-func TestArtifact_OutExtensionFollowsReturnedMime(t *testing.T) {
+func TestArtifact_OutKeepsRequestedExtension(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
+	target := filepath.Join(dir, "photo.jpg")
 
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", filepath.Join(dir, "photo.jpg")))
-	printed := strings.TrimSpace(h.GetStdout())
-	assert.Equal(t, filepath.Join(dir, "photo.png"), printed)
-	_, err := os.Stat(printed)
-	assert.NoError(t, err)
-	assert.Contains(t, h.GetStderr(), "Note: wrote image/png as photo.png (requested photo.jpg)")
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+	assert.Equal(t, target, strings.TrimSpace(h.GetStdout()))
+	written, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+	_, err = os.Stat(filepath.Join(dir, "photo.png"))
+	assert.True(t, os.IsNotExist(err), "the requested path is not renamed")
+	assert.Equal(t, 1, strings.Count(h.GetStderr(), "Note: photo.jpg contains image/png content; its extension does not match"), h.GetStderr())
 }
 
 func TestArtifact_OutWithoutExtensionAppendsSilently(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
-	dir := t.TempDir()
-	h := NewCLITestHarness(t)
-	target := filepath.Join(dir, "photo")
+	for _, name := range []string{"photo", "photo.v1", "release-1.2"} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+			target := filepath.Join(dir, name)
 
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
-	assert.Equal(t, target+".png", strings.TrimSpace(h.GetStdout()))
-	assert.NotContains(t, h.GetStderr(), "Note: wrote", "plain extension appends are not rewrites")
+			require.NoError(t, runArtifact(t, h, server.URL, dir, "--out", target))
+			printed := strings.TrimSpace(h.GetStdout())
+			assert.Equal(t, target+".png", printed)
+			written, err := os.ReadFile(printed)
+			require.NoError(t, err)
+			assert.Equal(t, artifactTestBytes, string(written))
+			assert.NotContains(t, h.GetStderr(), "does not match", "an appended extension is not a mismatch")
+		})
+	}
 }
 
-func TestArtifact_ExtensionRewriteNoteIsSilentInAgentMode(t *testing.T) {
+func TestArtifact_ExtensionMismatchIsSilentInAgentMode(t *testing.T) {
 	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","data":"YXJ0aWZhY3QtYnl0ZXM=","mime_type":"image/png"}]}]}`)
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
-	target := filepath.Join(dir, "photo.wrong")
+	target := filepath.Join(dir, "photo.jpg")
 
-	// Machine modes keep stderr silent on success; the final path is already
-	// the deliverable on stdout, so the human rewrite note is suppressed.
-	require.NoError(t, runArtifact(t, h, server.URL, dir, "--agent-mode", "--out", target))
+	require.NoError(t, runArtifact(t, h, server.URL, dir, "--agent-mode", "--output-format", "json", "--out", target))
 	assert.Empty(t, strings.TrimSpace(h.GetStderr()), "machine-mode success must keep stderr silent")
-	assert.Contains(t, h.GetStdout(), "photo.png")
+	var envelope map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &envelope))
+	assert.Equal(t, target, envelope["path"])
+	assert.Equal(t, true, envelope["extension_mismatch"])
+	_, err := os.Stat(target)
+	assert.NoError(t, err)
+
+	matching := filepath.Join(dir, "photo.png")
+	h2 := NewCLITestHarness(t)
+	require.NoError(t, runArtifact(t, h2, server.URL, dir, "--agent-mode", "--output-format", "json", "--out", matching))
+	envelope = map[string]any{}
+	require.NoError(t, json.Unmarshal([]byte(h2.GetStdout()), &envelope))
+	assert.Equal(t, matching, envelope["path"])
+	_, present := envelope["extension_mismatch"]
+	assert.False(t, present, "a matching extension omits extension_mismatch from the envelope")
 }
 
 func TestArtifact_OutDirectoryUsesDefaultName(t *testing.T) {
@@ -366,16 +390,207 @@ func TestArtifact_MissingContentIsAnError(t *testing.T) {
 	assert.Empty(t, entries)
 }
 
-func TestArtifact_URIDeliveryIsUnsupported(t *testing.T) {
-	server := artifactTestServer(t, `{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","uri":"https://media.example.test/asset"}]}]}`)
+const artifactTestURI = "https://media.example.test/asset"
+
+const artifactProbeHeader = "X-Artifact-Probe"
+
+type artifactRequestLog struct {
+	mu      sync.Mutex
+	headers map[string]http.Header
+}
+
+func (l *artifactRequestLog) record(key string, r *http.Request) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.headers == nil {
+		l.headers = map[string]http.Header{}
+	}
+	l.headers[key] = r.Header.Clone()
+}
+
+func (l *artifactRequestLog) get(key string) http.Header {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.headers[key]
+}
+
+func artifactAssetHandler(log *artifactRequestLog, key string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.record(key, r)
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write([]byte(artifactTestBytes))
+	}
+}
+
+func artifactOtherHost(t *testing.T, log *artifactRequestLog) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(artifactAssetHandler(log, "other"))
+	t.Cleanup(server.Close)
+	return server
+}
+
+const (
+	artifactAssetPath   = "/artifact-download-test/asset"
+	artifactMovedPath   = "/artifact-download-test/moved"
+	artifactMissingPath = "/artifact-download-test/missing"
+	artifactHTMLPath    = "/artifact-download-test/sign-in"
+)
+
+// artifactURIServer answers the artifact command with a URI-only block
+// pointing at uri(serverURL), serves artifactAssetPath itself, redirects
+// artifactMovedPath to redirectTo, answers artifactMissingPath with 404 and
+// artifactHTMLPath with an HTML page.
+func artifactURIServer(t *testing.T, log *artifactRequestLog, uri func(string) string, redirectTo string) *httptest.Server {
+	t.Helper()
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case artifactAssetPath:
+			artifactAssetHandler(log, "api-origin")(w, r)
+		case artifactMovedPath:
+			http.Redirect(w, r, redirectTo, http.StatusFound)
+		case artifactMissingPath:
+			http.NotFound(w, r)
+		case artifactHTMLPath:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte("<html>sign in</html>"))
+		default:
+			log.record("api", r)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
+			_, _ = w.Write([]byte(strings.ReplaceAll(`{"id":"task-123","status":"completed","steps":[{"content":[{"type":"image","uri":"https://media.example.test/asset"}]}]}`, artifactTestURI, uri(server.URL))))
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func runArtifactWithProbe(t *testing.T, h *CLITestHarness, serverURL, dir string) error {
+	t.Helper()
+	return runArtifact(t, h, serverURL, dir, "--header", artifactProbeHeader+": secret")
+}
+
+// Headers of the API request a same-origin download does not reuse.
+var artifactNotForwardedHeaders = map[string]bool{
+	"Accept":           true,
+	"Accept-Encoding":  true,
+	"Content-Encoding": true,
+	"Content-Length":   true,
+	"Content-Type":     true,
+	"Idempotency-Key":  true,
+	"Referer":          true,
+}
+
+// assertNoAPIHeaders checks that no header the API request carried reached
+// the download, apart from the ones the downloader sets itself.
+func assertNoAPIHeaders(t *testing.T, api, download http.Header) {
+	t.Helper()
+	require.Equal(t, "secret", api.Get(artifactProbeHeader))
+	for name := range api {
+		switch http.CanonicalHeaderKey(name) {
+		case "Accept", "Accept-Encoding":
+			continue
+		}
+		if name == "User-Agent" {
+			assert.NotEqual(t, api.Get(name), download.Get(name), "the API User-Agent must not reach another origin")
+			continue
+		}
+		assert.Empty(t, download.Values(name), "header %s must not reach another origin", name)
+	}
+}
+
+func TestArtifact_URIOnAPIOriginIsDownloadedWithRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactAssetPath + "?token=abc" }, "")
 	dir := t.TempDir()
 	h := NewCLITestHarness(t)
 
-	err := runArtifact(t, h, server.URL, dir)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "delivered by URI")
-	assert.Contains(t, err.Error(), "https://media.example.test/asset")
-	assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, dir), h.GetStderr())
+
+	path := strings.TrimSpace(h.GetStdout())
+	assert.True(t, strings.HasSuffix(path, ".png"), "extension must follow the download's Content-Type: %q", path)
+	written, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, artifactTestBytes, string(written))
+
+	api, asset := log.get("api"), log.get("api-origin")
+	require.NotNil(t, asset, "the URI was not fetched")
+	assert.Equal(t, "secret", api.Get(artifactProbeHeader))
+	for name, values := range api {
+		if artifactNotForwardedHeaders[http.CanonicalHeaderKey(name)] {
+			continue
+		}
+		assert.Equal(t, values, asset.Values(name), "header %s must be reused on the API origin", name)
+	}
+}
+
+func TestArtifact_URIOnAnotherOriginGetsNoRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	other := artifactOtherHost(t, log)
+	server := artifactURIServer(t, log, func(string) string { return other.URL + "/asset" }, "")
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("other")
+	require.NotNil(t, asset, "the URI was not fetched")
+	assertNoAPIHeaders(t, log.get("api"), asset)
+}
+
+func TestArtifact_SameOriginRedirectKeepsRequestHeadersWithoutReferer(t *testing.T) {
+	log := &artifactRequestLog{}
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactMovedPath }, artifactAssetPath)
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("api-origin")
+	require.NotNil(t, asset, "the redirect was not followed")
+	assert.Equal(t, "secret", asset.Get(artifactProbeHeader), "a same-origin redirect keeps the request headers")
+	assert.Empty(t, asset.Get("Referer"))
+}
+
+func TestArtifact_RedirectToAnotherOriginDropsRequestHeaders(t *testing.T) {
+	log := &artifactRequestLog{}
+	other := artifactOtherHost(t, log)
+	server := artifactURIServer(t, log, func(base string) string { return base + artifactMovedPath }, other.URL+"/asset")
+	h := NewCLITestHarness(t)
+
+	require.NoError(t, runArtifactWithProbe(t, h, server.URL, t.TempDir()), h.GetStderr())
+
+	asset := log.get("other")
+	require.NotNil(t, asset, "the redirect was not followed")
+	assertNoAPIHeaders(t, log.get("api"), asset)
+	assert.Empty(t, asset.Get("Referer"))
+}
+
+func TestArtifact_URIDownloadRefusals(t *testing.T) {
+	for name, tc := range map[string]struct {
+		uri  func(base string) string
+		want string
+	}{
+		"plain http to a remote host": {func(string) string { return "http://media.example.test/asset" }, "only https URIs are downloaded"},
+		"non-http scheme":             {func(string) string { return "gs://bucket/asset?sig=secret" }, "cannot download; fetch it directly: gs://bucket/asset"},
+		"server error":                {func(base string) string { return base + artifactMissingPath }, "the server returned 404"},
+		"redirect to plain http":      {func(base string) string { return base + artifactMovedPath }, "only https URIs are downloaded"},
+		"html sign-in page":           {func(base string) string { return base + artifactHTMLPath }, "the server returned text/html content, not image"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			log := &artifactRequestLog{}
+			server := artifactURIServer(t, log, tc.uri, "http://media.example.test/asset")
+			dir := t.TempDir()
+			h := NewCLITestHarness(t)
+
+			err := runArtifact(t, h, server.URL, dir)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+			assert.NotContains(t, err.Error(), "secret", "URI query strings must not be printed")
+			assert.Empty(t, strings.TrimSpace(h.GetStdout()))
+			entries, err := os.ReadDir(dir)
+			require.NoError(t, err)
+			assert.Empty(t, entries)
+		})
+	}
 }
 
 // The content-block and job-identity shape is declaration-driven: the

@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class ShapeType
+    public partial class ShapeType
     {
         private ShapeType(string value)
         {
@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// A discriminated union of shape types.
     /// </summary>
     [JsonConverter(typeof(Shape.ShapeConverter))]
-    public class Shape : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class Shape : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public Shape(ShapeType type)
         {
@@ -139,6 +139,22 @@ namespace Speakeasy.OpenAPI
             res.Rectangle = rectangle;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Shape"/>. Equivalent to <c>CreateCircle(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Shape?(Circle? value) => value is null ? null : CreateCircle(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="Shape"/>. Equivalent to <c>CreateRectangle(value)</c>.
+        /// Like the factory, this sets the discriminator property on the passed instance.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator Shape?(Rectangle? value) => value is null ? null : CreateRectangle(value);
 
         public class ShapeConverter : JsonConverter
         {

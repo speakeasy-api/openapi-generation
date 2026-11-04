@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Numerics;
     using System.Reflection;
 
-    public class DetailUnionType
+    public partial class DetailUnionType
     {
         private DetailUnionType(string value)
         {
@@ -88,7 +88,7 @@ namespace Speakeasy.OpenAPI
     /// Contains parameter or domain specific information related to the error and why it occurred.
     /// </summary>
     [JsonConverter(typeof(DetailUnion.DetailUnionConverter))]
-    public class DetailUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
+    public partial class DetailUnion : Speakeasy.OpenAPI.Utils.IOpenUnion
     {
         public DetailUnion(DetailUnionType type)
         {
@@ -136,6 +136,20 @@ namespace Speakeasy.OpenAPI
             res.Detail = detail;
             return res;
         }
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="DetailUnion"/>. Equivalent to <c>CreateStr(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator DetailUnion?(string? value) => value is null ? null : CreateStr(value);
+
+        /// <summary>
+        /// Implicitly converts a value to <see cref="DetailUnion"/>. Equivalent to <c>CreateDetail(value)</c>.
+        /// A null value converts to a null reference.
+        /// </summary>
+        [return:System.Diagnostics.CodeAnalysis.NotNullIfNotNull("value")]
+        public static implicit operator DetailUnion?(Detail? value) => value is null ? null : CreateDetail(value);
 
         public class DetailUnionConverter : JsonConverter
         {

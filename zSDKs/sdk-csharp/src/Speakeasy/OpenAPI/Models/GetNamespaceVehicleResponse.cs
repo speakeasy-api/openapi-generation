@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Bar;
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetNamespaceVehicleResponse
+    public partial class GetNamespaceVehicleResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

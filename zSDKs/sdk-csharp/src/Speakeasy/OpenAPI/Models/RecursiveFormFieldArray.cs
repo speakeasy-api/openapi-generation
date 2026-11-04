@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// An array field that contains nested form fields.
     /// </summary>
-    public class RecursiveFormFieldArray
+    public partial class RecursiveFormFieldArray
     {
         [JsonProperty("type", Required = Newtonsoft.Json.Required.Always)]
         public string Type { get; } = "array";

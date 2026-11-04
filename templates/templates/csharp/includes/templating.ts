@@ -6,6 +6,13 @@ function templateConstName(name: string, prefix: string) {
 registerTemplateFunc("templateConstName", templateConstName);
 
 // @ts-ignore
+function templatePartialModifier(): string {
+  return context.Global.Config.PartialTypes === true ? "partial " : "";
+}
+
+registerTemplateFunc("templatePartialModifier", templatePartialModifier);
+
+// @ts-ignore
 function sanitizeScopeName(name: string) {
   return caser().ToPascal(name);
 }

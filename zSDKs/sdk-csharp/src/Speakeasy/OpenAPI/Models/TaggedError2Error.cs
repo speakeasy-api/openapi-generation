@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class TaggedError2Error
+    public partial class TaggedError2Error
     {
         [JsonProperty("message", Required = Newtonsoft.Json.Required.Always)]
         public string Message { get; set; } = default!;

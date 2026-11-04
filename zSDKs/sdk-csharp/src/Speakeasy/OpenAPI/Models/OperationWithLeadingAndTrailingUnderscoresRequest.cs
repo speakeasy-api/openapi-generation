@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class OperationWithLeadingAndTrailingUnderscoresRequest
+    public partial class OperationWithLeadingAndTrailingUnderscoresRequest
     {
         /// <summary>
         /// This parameter will not be filled in with the queryParam1 global because it uses x-speakeasy-name-override which results in a non-matching name.

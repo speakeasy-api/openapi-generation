@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Foo;
     using Speakeasy.OpenAPI.Utils;
 
-    public class CreateSingleNamespaceFooPetResponse
+    public partial class CreateSingleNamespaceFooPetResponse
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();

@@ -22,7 +22,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface IConflicts
+    public partial interface IConflicts
     {
         /// <summary>
         /// Get Namespace Conflict Test.
@@ -112,7 +112,7 @@ namespace Speakeasy.OpenAPI
         public Task<GetPetOwnersResponse> GetPetOwnersAsync(CancellationToken? cancellationToken = null);
     }
 
-    public class Conflicts : IConflicts
+    public partial class Conflicts : IConflicts
     {
         /// <summary>
         /// SDK Configuration.

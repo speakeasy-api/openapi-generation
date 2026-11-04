@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class SecurityOption4
+    public partial class SecurityOption4
     {
         [JsonProperty("appId", Required = Newtonsoft.Json.Required.Always)]
         [SpeakeasyMetadata("security:scheme=true,type=http,subType=custom,name=appId")]

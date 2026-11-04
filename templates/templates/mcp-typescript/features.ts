@@ -5,7 +5,7 @@ const supportedFeatures = {
   additionalProperties: "0.1.1",
   bigint: "0.1.0",
   constsAndDefaults: "0.1.2",
-  core: "2.0.3",
+  core: "2.0.4",
   customSecuritySchemes: "0.1.1",
   decimal: "0.1.0",
   deepObjectParams: "0.1.0",
@@ -691,6 +691,10 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "intent-supplied-body-requires-declared-inputs",
   ].includes(test);
 }
 

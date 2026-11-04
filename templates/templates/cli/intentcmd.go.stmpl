@@ -74,6 +74,9 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 			{{- if $c.OutcomeJSON}}
 			"speakeasy_outcome": "{{escapeGoString $c.OutcomeJSON}}",
 			{{- end}}
+			{{- if $c.ContinuationJSON}}
+			"speakeasy_continuation": "{{escapeGoString $c.ContinuationJSON}}",
+			{{- end}}
 			{{- if $c.StreamSelect}}
 			"speakeasy_stream_select": "{{escapeGoString $c.StreamSelect}}",
 			{{- if $c.StreamMetadataJSON}}
@@ -156,6 +159,10 @@ func InitIntent{{$c.FuncName}}(parent *cobra.Command) error {
 		Kind: "string",
 	})
 	cmd.Flags().Bool("raw-response", false, "Print the raw API response instead of writing the {{$c.ArtifactKind}} to a file")
+	{{- end}}
+	{{- if $c.ContinuationJSON}}
+	cmd.Flags().Bool("auto-continue", {{$c.ContinuationDefault}}, "Keep sending the request while the response asks to continue, and combine the responses")
+	cmd.Flags().Int("max-continuations", {{$c.ContinuationMaxHops}}, "Maximum number of responses to request when continuing automatically")
 	{{- end}}
 	{{- if $c.AsyncJSON}}
 	cmd.Flags().String("resume", "", "Resume polling an existing operation by ID instead of creating one")
@@ -250,7 +257,7 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}
 	{{- if $c.HasSchema}}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
-		return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $c.OpID}})
+		return usage.EmitBodySchema(cmd.OutOrStdout(), {{goStringLiteral $c.SchemaKey}})
 	}
 	{{- end}}
 	{{- if $c.ArtifactJSON}}
@@ -496,6 +503,29 @@ func runIntent{{$c.FuncName}}Cmd(cmd *cobra.Command, args []string) error {
 	}); err != nil {
 		return err
 	}
+	{{- end}}
+	{{- if and (not $c.Dispatch) $c.BodyFlag}}
+	{{- $bodyRequired := false}}
+	{{- range $c.Args}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
+	{{- range $c.Flags}}{{if and .Required (not .PresetCovered)}}{{$bodyRequired = true}}{{end}}{{end}}
+	{{- if $bodyRequired}}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{{- range $c.Args}}
+			{{- if and .Required (not .PresetCovered)}}
+			{Path: []string{"{{escapeGoString .Key}}"}, Source: "the <{{escapeGoString .Name}}> argument"},
+			{{- end}}
+			{{- end}}
+			{{- range $c.Flags}}
+			{{- if and .Required (not .PresetCovered)}}
+			{Path: {{if .Path}}{{template "bodyPath" .Path}}{{else}}[]string{"{{escapeGoString .Key}}"}{{end}}, Source: "--{{escapeGoString .Name}}"},
+			{{- end}}
+			{{- end}}
+		}); err != nil {
+			return err
+		}
+	}
+	{{- end}}
 	{{- end}}
 	{{- if $c.AsyncJSON}}
 	if err := output.ValidateAsyncFlags(cmd); err != nil {

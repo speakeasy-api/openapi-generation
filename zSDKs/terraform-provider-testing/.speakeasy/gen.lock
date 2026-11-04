@@ -15,7 +15,7 @@ features:
     constObjects: 0.1.0
     constsAndDefaults: 0.3.2
     contentMediaTypeApplicationJSON: 0.1.1
-    core: 3.50.3
+    core: 3.50.5
     customCodeRegions: 0.1.1
     customSecuritySchemes: 0.1.2
     deepObjectParams: 0.1.0
@@ -692,7 +692,7 @@ trackedFiles:
   examples/resources/testing_x_wrapped_attribute/resource.tf:
     last_write_checksum: sha1:40d7f3658495fad3dc9e3e2ac5856266268b58b6
   go.mod:
-    last_write_checksum: sha1:63913c24e4c7ff051e77c66626af279020bc4fb6
+    last_write_checksum: sha1:e424ba8d92cab6490ac7c3c713f6baa844fc875b
   internal/planmodifiers/boolplanmodifier/suppress_diff.go:
     last_write_checksum: sha1:3454bf0a277768b5d23ed4f7752666f9752effbb
   internal/planmodifiers/boolplanmodifier/use_config_value.go:
@@ -2438,7 +2438,7 @@ trackedFiles:
   internal/sdk/internal/utils/jq.go:
     last_write_checksum: sha1:2e75ed7a7db1f91e97dac1ac4ca7801b2beb69b5
   internal/sdk/internal/utils/json.go:
-    last_write_checksum: sha1:ad8147f0769042e18fc1e9f1bfab2db8ecac713f
+    last_write_checksum: sha1:27c84516c074f27711ead24a292bdc2474c1092d
   internal/sdk/internal/utils/oauth2_credentials.go:
     last_write_checksum: sha1:f9218b6b3dbd11494cc353bf22eb37f0ca654a7d
   internal/sdk/internal/utils/oauth2_sessions.go:
@@ -6088,8 +6088,6 @@ examples:
       parameters:
         path:
           id: "<id>"
-        query:
-          scope: ["all"]
       responses:
         "200":
           application/json: {"empty_list": [], "fixed_list": ["read", "write"], "empty_set": [], "empty_map": {}, "fixed_map": {"max": 10, "min": 1}, "templated_map": {"quo\"te\\back": "line\nbreak", "{{key}}": "value"}, "nullable_list": []}

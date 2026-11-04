@@ -21,7 +21,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ISingleFoo
+    public partial interface ISingleFoo
     {
         /// <summary>
         /// Get Single Namespace Foo Pet.
@@ -61,7 +61,7 @@ namespace Speakeasy.OpenAPI
         );
     }
 
-    public class SingleFoo : ISingleFoo
+    public partial class SingleFoo : ISingleFoo
     {
         /// <summary>
         /// SDK Configuration.

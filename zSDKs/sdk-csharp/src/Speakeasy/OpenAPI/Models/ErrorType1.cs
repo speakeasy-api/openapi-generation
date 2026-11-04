@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class ErrorType1Payload
+    public partial class ErrorType1Payload
     {
         /// <summary>
         /// Error code.
@@ -38,7 +38,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// An error of type one.
     /// </summary>
-    public class ErrorType1 : SDKBaseException
+    public partial class ErrorType1 : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

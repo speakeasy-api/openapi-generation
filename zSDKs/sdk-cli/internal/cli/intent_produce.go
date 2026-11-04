@@ -170,6 +170,13 @@ func runIntentProduceCmd(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{Path: []string{"prompt"}, Source: "the <prompt> argument"},
+		}); err != nil {
+			return err
+		}
+	}
 	if err := output.ValidateAsyncFlags(cmd); err != nil {
 		return err
 	}

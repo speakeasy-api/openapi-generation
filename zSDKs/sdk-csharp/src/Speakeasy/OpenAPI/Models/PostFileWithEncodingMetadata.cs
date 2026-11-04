@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// JSON metadata about the file.
     /// </summary>
-    public class PostFileWithEncodingMetadata
+    public partial class PostFileWithEncodingMetadata
     {
         [JsonProperty("title", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string? Title { get; set; }

@@ -278,6 +278,20 @@ func TestSchemaFlagStillPrintsBodySchema(t *testing.T) {
 	assert.Equal(t, 0, *count, "printing the body schema must not send a request")
 }
 
+func TestSchemaFlagOmitsReadOnlyProperties(t *testing.T) {
+	h := NewCLITestHarness(t)
+	require.NoError(t, h.RunBare([]string{"echo-unknown-fields", "--schema"}), h.GetStderr())
+
+	var schema map[string]any
+	require.NoError(t, json.Unmarshal([]byte(h.GetStdout()), &schema), h.GetStdout())
+	splitFields, ok := schema["$defs"].(map[string]any)["SplitFields"].(map[string]any)
+	require.True(t, ok, h.GetStdout())
+	props := splitFields["properties"].(map[string]any)
+	assert.NotContains(t, props, "id", "readOnly properties are not request fields")
+	assert.Contains(t, props, "label")
+	assert.Contains(t, props, "secret", "writeOnly properties are request fields")
+}
+
 func TestGroupCommandNamesUseSourceSegments(t *testing.T) {
 	tests := []struct {
 		name string

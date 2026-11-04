@@ -434,6 +434,10 @@ function isTestSkipped(test: string): boolean {
     "event-stream-equivalent-number-lexemes",
     "event-stream-null-and-undeclared-fields",
     "parameters-default-path-params",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "intent-supplied-body-requires-declared-inputs",
   ].includes(test);
 }
 

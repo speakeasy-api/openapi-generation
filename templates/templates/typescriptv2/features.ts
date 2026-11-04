@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.31.8",
+  core: "3.31.9",
   flattening: "2.82.1",
   globalSecurity: "2.82.16",
   methodSecurity: "2.82.8",
@@ -427,6 +427,10 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "any-typed-flag-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers",
+    "request-bodies-post-application-json-map-of-any-large-integers-jq",
+    "intent-supplied-body-requires-declared-inputs",
   ].includes(test);
 }
 

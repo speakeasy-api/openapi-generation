@@ -23,7 +23,7 @@ namespace Speakeasy.OpenAPI
     /// A simple object that uses all our supported primitive types and enums and has optional properties.<br/>
     /// <see href="https://speakeasy.com">A link to the external docs.</see>
     /// </summary>
-    public class ExhaustiveObject
+    public partial class ExhaustiveObject
     {
         /// <summary>
         /// A string property.

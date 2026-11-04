@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Raised if the response data could not be deserialized into the expected model.
     /// </summary>
-    public class ResponseValidationException : SDKBaseException
+    public partial class ResponseValidationException : SDKBaseException
     {
 
         public ResponseValidationException(

@@ -2,7 +2,7 @@
 {{- $className := sanitizeClassName .Local.Name false }}
 {{- $baseErrorName := getBaseErrorClassName }}
 {{- $isErrorEnvelope := eq getResponseFormat "envelope-http" }}
-    public class {{$className}}Payload
+    public {{templatePartialModifier}}class {{$className}}Payload
     {
 {{- range $index, $field := .Local.Fields }}
   {{- with $field}}
@@ -23,7 +23,7 @@
 
     {{- templateComments .Local.Comments 1 "class"}}
     {{- templateDeprecationAnnotation .Local.Comments 1 "class"}}
-    public class {{$className}} : {{$baseErrorName}}
+    public {{templatePartialModifier}}class {{$className}} : {{$baseErrorName}}
     {
         /// <summary>
         ///  The original data that was passed to this exception.

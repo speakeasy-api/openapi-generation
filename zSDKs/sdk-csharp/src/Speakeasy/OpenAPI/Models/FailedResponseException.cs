@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class FailedResponseExceptionPayload
+    public partial class FailedResponseExceptionPayload
     {
         [JsonIgnore]
         public HTTPMetadata HttpMeta { get; set; } = new();
@@ -23,7 +23,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// An error response with an empty object schema.
     /// </summary>
-    public class FailedResponseException : SDKBaseException
+    public partial class FailedResponseException : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class OneOfWithFactoredOutPropertiesIcon : IEquatable<OneOfWithFactoredOutPropertiesIcon>, IOpenEnum<string>
+    public partial class OneOfWithFactoredOutPropertiesIcon : IEquatable<OneOfWithFactoredOutPropertiesIcon>, IOpenEnum<string>
     {
         public static readonly OneOfWithFactoredOutPropertiesIcon Tick = new OneOfWithFactoredOutPropertiesIcon("tick");
         public static readonly OneOfWithFactoredOutPropertiesIcon ThumbsUp = new OneOfWithFactoredOutPropertiesIcon("thumbs-up");

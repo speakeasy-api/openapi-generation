@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// <summary>
     /// An organization with nested inline schemas in the foo namespace.
     /// </summary>
-    public class Organization
+    public partial class Organization
     {
         [JsonProperty("name", Required = Newtonsoft.Json.Required.Always)]
         public string Name { get; set; } = default!;

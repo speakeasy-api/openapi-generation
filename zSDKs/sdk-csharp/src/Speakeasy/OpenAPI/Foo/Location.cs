@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// <summary>
     /// Deeply nested inline object should also end up in foo namespace.
     /// </summary>
-    public class Location
+    public partial class Location
     {
         [JsonProperty("latitude", Required = Newtonsoft.Json.Required.Always)]
         public double Latitude { get; set; } = default!;

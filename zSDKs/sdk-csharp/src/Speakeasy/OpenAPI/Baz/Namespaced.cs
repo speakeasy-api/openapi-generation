@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI.Baz
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class Namespaced
+    public partial class Namespaced
     {
         [JsonProperty("namespace", Required = Newtonsoft.Json.Required.DisallowNull)]
         public string Namespace { get; } = "baz";

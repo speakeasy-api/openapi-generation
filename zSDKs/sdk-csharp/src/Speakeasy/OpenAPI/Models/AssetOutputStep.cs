@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System.Collections.Generic;
 
-    public class AssetOutputStep
+    public partial class AssetOutputStep
     {
         [JsonProperty("type", Required = Newtonsoft.Json.Required.Always)]
         public string Type { get; } = "output";

@@ -76,7 +76,7 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 		return usage.EmitSchema(cmd, cmd.OutOrStdout())
 	}
 	if requested, _ := cmd.Flags().GetBool("schema"); requested {
-		return usage.EmitBodySchema(cmd.OutOrStdout(), "chat")
+		return usage.EmitBodySchema(cmd.OutOrStdout(), "chat#ChatModelRequest")
 	}
 	bodySurfaces := []string{"request"}
 	for _, surface := range bodySurfaces {
@@ -166,6 +166,13 @@ func runIntentSayCmd(cmd *cobra.Command, args []string) error {
 			if err := flagutil.MergePresetStdinBody(cmd, intentSayPreset); err != nil {
 				return err
 			}
+		}
+	}
+	if bodySupplied {
+		if err := flagutil.RequireBodyInputs(cmd, suppliedBodyFlag, []flagutil.RequiredBodyInput{
+			{Path: []string{"prompt"}, Source: "the <prompt> argument"},
+		}); err != nil {
+			return err
 		}
 	}
 	return runChatCmd(cmd, nil)
