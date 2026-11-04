@@ -117,6 +117,14 @@ func resolveOutputFormat(cmd *cobra.Command) string {
 	return flagutil.ResolveOutputFormat(cmd, config.GetString("output-format"), IsAgentMode())
 }
 
+// configuredTimeout returns the timeout setting: --timeout, then env/config.
+func configuredTimeout(cmd *cobra.Command) string {
+	if value, changed := flagutil.GetStringFlag(cmd, "timeout"); changed && value != "" {
+		return value
+	}
+	return config.GetString("timeout")
+}
+
 // EffectiveOutputFormat returns the format the command renders with.
 func EffectiveOutputFormat(cmd *cobra.Command) string {
 	return resolveOutputFormat(cmd)
