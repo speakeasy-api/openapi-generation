@@ -610,6 +610,8 @@ function isTestSkipped(test: string): boolean {
     "unions-body-variant-overloads-non-discriminated",
     "unions-body-variant-overloads-renamed-argument",
     "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
   ].includes(test);
 }
 

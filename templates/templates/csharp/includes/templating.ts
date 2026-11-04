@@ -208,16 +208,20 @@ function getMethodArguments(operation: Operation): MethodArgument[] {
   return args;
 }
 
-function templateMethodExceptionComments(op: Operation): string[] {
+function nonNullMethodParamNames(op: Operation): string[] {
+  return getMethodParameters(op)
+    .filter((f) => !f.Optional && !f.Nullable && canTypeBeNull(f.Type))
+    .map((f) => sanitizeMethodParamName(f.Name));
+}
+
+function templateMethodExceptionComments(
+  op: Operation,
+  nonNullFieldNames: string[] = nonNullMethodParamNames(op),
+): string[] {
   const exceptions: Record<string, { codes: string[]; description: string }> =
     {};
   let isDefaultExceptionOverridden = false;
   const defaultExceptionCodes: string[] = [];
-
-  // Collect arguments that should not be null
-  const nonNullFieldNames = getMethodParameters(op)
-    .filter((f) => !f.Optional && !f.Nullable && canTypeBeNull(f.Type))
-    .map((f) => sanitizeMethodParamName(f.Name));
 
   switch (nonNullFieldNames.length) {
     case 0:
@@ -343,6 +347,24 @@ function templateMethodDefinition(
   indent: number,
   isDeclaration: boolean = false,
 ): string {
+  return templateMethodSignature(
+    op,
+    owningClassName,
+    indent,
+    getMethodArguments(op),
+    nonNullMethodParamNames(op),
+    isDeclaration ? "" : "async ",
+  );
+}
+
+function templateMethodSignature(
+  op: Operation,
+  owningClassName: string,
+  indent: number,
+  args: MethodArgument[],
+  nonNullParamNames: string[],
+  modifiers: string,
+): string {
   const methodName = sanitizeMethodName(op, true);
 
   let resultTypeName = "";
@@ -352,13 +374,11 @@ function templateMethodDefinition(
     task += `<${resultTypeName}>`;
   }
 
-  const methodAccess = `public ${isDeclaration ? "" : "async "}`;
-  const definition = `${methodAccess} ${task} ${methodName}(`;
+  const definition = `public ${modifiers} ${task} ${methodName}(`;
 
-  const args: MethodArgument[] = getMethodArguments(op);
   const params: string[] = args.map((a) => templateMethodArgument(a, true));
   const returns = templateReturnsComment(resultTypeName, op.Response.Type, 0);
-  const exceptions = templateMethodExceptionComments(op);
+  const exceptions = templateMethodExceptionComments(op, nonNullParamNames);
   const comments = indentLines(
     [
       "",
@@ -391,6 +411,121 @@ ${templateIndent(indent)}${definition}${params.join(", ")})`;
 
 registerTemplateFunc("templateMethodDefinition", templateMethodDefinition);
 
+function uniqueParamName(candidate: string, taken: string[]): string {
+  let name = candidate;
+  for (let i = 2; taken.includes(name); i++) {
+    name = `${candidate}${i}`;
+  }
+  return name;
+}
+
+// Optional bodies are skipped: the variant parameter would be required and sit among optional ones (CS1737).
+// @ts-ignore
+function bodyVariantOverloadTargets(op: Operation): {
+  bodyIndex: number;
+  conversions: UnionConversion[];
+} {
+  const none = { bodyIndex: -1, conversions: [] };
+  if (context.Global.Config.BodyVariantOverloads !== true) {
+    return none;
+  }
+  const params = getMethodParameters(op);
+  const bodyIndex = params.findIndex((f) => op.Arguments.IsBodyField(f));
+  const body = params[bodyIndex];
+  if (
+    !body ||
+    body.Optional ||
+    body.Nullable ||
+    body.Type.Type.toString() !== "union" ||
+    isUnionOfErrors(body.Type)
+  ) {
+    return none;
+  }
+  return {
+    bodyIndex,
+    conversions: directUnionConversions(body.Type).conversions,
+  };
+}
+
+// @ts-ignore
+function templateMethodOverloads(
+  op: Operation,
+  owningClassName: string,
+  indent: number,
+  isDeclaration: boolean = false,
+  methodComments: CommentDef | null | undefined = getMethodComments(op),
+): string {
+  const { bodyIndex, conversions } = bodyVariantOverloadTargets(op);
+  if (conversions.length === 0) {
+    return "";
+  }
+
+  const methodName = sanitizeMethodName(op, true);
+  const canonical = getMethodArguments(op);
+  const bodyArg = canonical[bodyIndex];
+  const otherNames = canonical
+    .filter((_, i) => i !== bodyIndex)
+    .map((a) => a.Name);
+  const nonNullNames = nonNullMethodParamNames(op);
+  const comments = templateComments(methodComments, indent, "method");
+
+  return conversions
+    .map((c) => {
+      const name = uniqueParamName(
+        sanitizePrivateClassName(c.MemberName),
+        otherNames,
+      );
+      const description = extractParamDescription(
+        c.Member.Comments,
+        getTypeFallbackDescription(c.Member, ""),
+      );
+      const args = canonical.map((a, i) =>
+        i === bodyIndex
+          ? {
+              Type: sanitizeType(c.Member, false, ""),
+              Name: name,
+              Optional: false,
+              Default: "",
+              Description: c.MutatesArgument
+                ? `${description} The discriminator property is set on the passed instance.`
+                : description,
+            }
+          : a,
+      );
+      const nullable = canTypeBeNull(c.Member);
+      const nonNull = nullable
+        ? nonNullNames.map((n) => (n === bodyArg.Name ? name : n))
+        : nonNullNames.filter((n) => n !== bodyArg.Name);
+      const signature = templateMethodSignature(
+        op,
+        owningClassName,
+        indent,
+        args,
+        nonNull,
+        isDeclaration ? "" : "async ",
+      );
+      if (isDeclaration) {
+        return `${comments}${signature};`;
+      }
+
+      const forwarded = args
+        .map((a, i) =>
+          i === bodyIndex ? `${bodyArg.Type}.${c.FactoryCall(name)}` : a.Name,
+        )
+        .join(", ");
+      const call = `await ${methodName}(${forwarded});`;
+      const bodyLines = [
+        ...(nullable ? [templateArgumentNullCheck(name)] : []),
+        op.Response.Type ? `return ${call}` : call,
+      ];
+      return `${comments}${signature}
+${indentLines(["{", indentLines(bodyLines, 1), "}"], indent)}`;
+    })
+    .join("");
+}
+
+registerTemplateFunc("templateMethodOverloads", templateMethodOverloads);
+
 function canFieldHaveDefaultValue(field: FieldDef): boolean {
   return (
     field.Default &&
@@ -421,17 +556,18 @@ function canFieldBeNull(field: FieldDef): boolean {
 
 registerTemplateFunc("canFieldBeNull", canFieldBeNull);
 
+function templateArgumentNullCheck(name: string): string {
+  return `if (${name} == null) throw new ArgumentNullException(nameof(${name}));`;
+}
+
 // @ts-ignore
 function templateMethodArgumentsNullCheck(
   operation: Operation,
   indent: number,
 ): string {
-  const lines = getMethodParameters(operation)
-    .filter((f) => !f.Optional && !f.Nullable && canTypeBeNull(f.Type))
-    .map((f) => {
-      const fieldName = sanitizeMethodParamName(f.Name);
-      return `if (${fieldName} == null) throw new ArgumentNullException(nameof(${fieldName}));`;
-    });
+  const lines = nonNullMethodParamNames(operation).map(
+    templateArgumentNullCheck,
+  );
 
   if (lines.length > 0) {
     return "\n" + indentLines(lines, indent);
@@ -1323,15 +1459,22 @@ function getFieldFallbackDescription(
   fieldDef: FieldDef,
   usageLocation: string,
 ): string {
-  switch (fieldDef.Type.Type.toString()) {
+  return getTypeFallbackDescription(fieldDef.Type, usageLocation);
+}
+
+function getTypeFallbackDescription(
+  typeDef: TypeDef,
+  usageLocation: string,
+): string {
+  switch (typeDef.Type.toString()) {
     case "class":
     case "enum":
       const className = sanitizeType(
-        fieldDef.Type,
+        typeDef,
         false,
         usageLocation,
         "",
-        fieldDef.Type.OutputLocation != usageLocation,
+        typeDef.OutputLocation != usageLocation,
       );
 
       return `A <see cref="${className}"/> parameter.`;

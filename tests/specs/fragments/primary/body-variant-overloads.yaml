@@ -294,6 +294,127 @@ paths:
                 required:
                   - ok
 
+  /anything/body-variant-overloads/optional:
+    post:
+      operationId: bodyVariantOverloadsOptional
+      description: >-
+        Same union body as the discriminated operation but optional.
+        Per-variant overloads must not be emitted for an optional request body.
+      tags:
+        - unions
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/parameter-name-clash/{nonDiscriminatedVariantA}:
+    post:
+      operationId: bodyVariantOverloadsParameterNameClash
+      description: >-
+        Exercises a union request body whose member would be named like an
+        existing method parameter. The path parameter deliberately shares its
+        name with the NonDiscriminatedVariantA member, so targets that name
+        the per-variant overload parameter after the member must rename it to
+        avoid a collision.
+      tags:
+        - unions
+      parameters:
+        - in: path
+          name: nonDiscriminatedVariantA
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NonDiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/server-url:
+    post:
+      operationId: bodyVariantOverloadsServerUrl
+      description: >-
+        Exercises a union request body on an operation with its own servers.
+        Per-variant overloads must keep the server URL parameter and forward
+        it to the canonical method.
+      servers:
+        - url: http://localhost:35456
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscriminatedVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
+  /anything/body-variant-overloads/open-enum:
+    post:
+      operationId: bodyVariantOverloadsOpenEnum
+      description: >-
+        Exercises a required request body whose schema is a oneOf of an open
+        enum and a number. A null open enum value passed to its per-variant
+        overload must be rejected with an error naming the variant parameter
+        rather than sent as an empty union.
+      tags:
+        - unions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BodyVariantOpenEnumBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  json:
+                    $ref: "#/components/schemas/BodyVariantOpenEnumBody"
+                required:
+                  - json
 
 components:
   schemas:
@@ -612,3 +733,19 @@ components:
             - b
         beta:
           type: string
+
+    BodyVariantOpenEnumBody:
+      x-speakeasy-include: true
+      description: A union of an open enum and a number.
+      oneOf:
+        - $ref: "#/components/schemas/BodyVariantOpenStatus"
+        - type: number
+
+    BodyVariantOpenStatus:
+      x-speakeasy-include: true
+      description: An open enum used as a request body union member.
+      type: string
+      enum:
+        - active
+        - inactive
+      x-speakeasy-unknown-values: allow

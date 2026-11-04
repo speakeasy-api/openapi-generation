@@ -1420,10 +1420,14 @@ func (t Test) String() string {
         return "unions-bigint-str-decimal"
     case TestUnionsBodyVariantOverloadsDiscriminated:
         return "unions-body-variant-overloads-discriminated"
+    case TestUnionsBodyVariantOverloadsNestedUnion:
+        return "unions-body-variant-overloads-nested-union"
     case TestUnionsBodyVariantOverloadsNonBodyArguments:
         return "unions-body-variant-overloads-non-body-arguments"
     case TestUnionsBodyVariantOverloadsNonDiscriminated:
         return "unions-body-variant-overloads-non-discriminated"
+    case TestUnionsBodyVariantOverloadsOpenEnum:
+        return "unions-body-variant-overloads-open-enum"
     case TestUnionsBodyVariantOverloadsRenamedArgument:
         return "unions-body-variant-overloads-renamed-argument"
     case TestUnionsBodyVariantOverloadsRequestBody:
@@ -2968,10 +2972,14 @@ func TestFromString(s string) Test {
         return TestUnionsBigintStrDecimal
     case "unions-body-variant-overloads-discriminated":
         return TestUnionsBodyVariantOverloadsDiscriminated
+    case "unions-body-variant-overloads-nested-union":
+        return TestUnionsBodyVariantOverloadsNestedUnion
     case "unions-body-variant-overloads-non-body-arguments":
         return TestUnionsBodyVariantOverloadsNonBodyArguments
     case "unions-body-variant-overloads-non-discriminated":
         return TestUnionsBodyVariantOverloadsNonDiscriminated
+    case "unions-body-variant-overloads-open-enum":
+        return TestUnionsBodyVariantOverloadsOpenEnum
     case "unions-body-variant-overloads-renamed-argument":
         return TestUnionsBodyVariantOverloadsRenamedArgument
     case "unions-body-variant-overloads-request-body":
@@ -3807,8 +3815,10 @@ var testList = []Test{
     TestUnionsArrayOfDiscriminatedUnionsMap,
     TestUnionsBigintStrDecimal,
     TestUnionsBodyVariantOverloadsDiscriminated,
+    TestUnionsBodyVariantOverloadsNestedUnion,
     TestUnionsBodyVariantOverloadsNonBodyArguments,
     TestUnionsBodyVariantOverloadsNonDiscriminated,
+    TestUnionsBodyVariantOverloadsOpenEnum,
     TestUnionsBodyVariantOverloadsRenamedArgument,
     TestUnionsBodyVariantOverloadsRequestBody,
     TestUnionsCircularReferenceRecursiveOneOf,

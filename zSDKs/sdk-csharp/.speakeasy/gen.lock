@@ -6,7 +6,7 @@ management:
   speakeasyVersion: internal
   generationVersion: internal
   releaseVersion: 0.0.1
-  configChecksum: 418190f5fc55ce0743f124ccabfd8f06
+  configChecksum: 32b2e2e6cc08d8d7fb71890a899beee2
   repoURL: https://github.com/speakeasy-sdks/test-sdk
   installationURL: https://github.com/speakeasy-sdks/test-sdk
 features:
@@ -1432,7 +1432,7 @@ trackedFiles:
   src/Speakeasy/OpenAPI/Obsolete.cs:
     last_write_checksum: sha1:75f6a290d5396a7c37f47393067febb586712297
   src/Speakeasy/OpenAPI/SDK.cs:
-    last_write_checksum: sha1:d4e1a0b746353fcb6cc3dbe60d62134df68690da
+    last_write_checksum: sha1:049d6eebd2cf5819ee2ad86ce50a5400c849099d
   src/Speakeasy/OpenAPI/SDKConfig.cs:
     last_write_checksum: sha1:3773a28e55af09936d058f1e74f5766932871730
   src/Speakeasy/OpenAPI/SingleBar.cs:

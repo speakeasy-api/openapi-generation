@@ -36,3 +36,4 @@ csharp:
   useNodatime: true
   partialTypes: true
   unionImplicitConversions: true
+  bodyVariantOverloads: true
