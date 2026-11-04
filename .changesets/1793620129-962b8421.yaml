@@ -1,0 +1,12 @@
+id: 1793620129-962b8421
+features:
+    - core
+targets:
+    - typescriptv2
+    - mcp-typescript
+    - terraform
+type: fix
+bump: patch
+description: raise dependency floors to patched releases of zod, body-parser, fast-uri, the hono node adapter, functions tooling, and golang.org/x/net
+author: AshGodfrey
+date: "2026-11-02"

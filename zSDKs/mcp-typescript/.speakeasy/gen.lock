@@ -58,7 +58,7 @@ trackedFiles:
   manifest.json:
     last_write_checksum: sha1:21c466edb4930e35172f9684728e020312e88dea
   package.json:
-    last_write_checksum: sha1:54f9720c0126bb69e772016bfab3bfa9a01cb4da
+    last_write_checksum: sha1:e061f712de053b510ff7fc28de5e054137cf7e38
   server.json:
     last_write_checksum: sha1:cdd68ed3cc00a507a2bc71e85823fe10482e2527
   src/__tests__/assertions.ts:
