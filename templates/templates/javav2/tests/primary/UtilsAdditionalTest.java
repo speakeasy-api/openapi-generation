@@ -17,6 +17,8 @@ import java.net.http.HttpClient.Version;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -482,6 +484,16 @@ public class UtilsAdditionalTest {
     
     private static final class MyHttpResponse implements HttpResponse<InputStream> {
 
+        private final InputStream body;
+
+        MyHttpResponse() {
+            this(new ByteArrayInputStream("hello there".getBytes(StandardCharsets.UTF_8)));
+        }
+
+        MyHttpResponse(InputStream body) {
+            this.body = body;
+        }
+
         @Override
         public int statusCode() {
             return 234;
@@ -504,7 +516,7 @@ public class UtilsAdditionalTest {
 
         @Override
         public InputStream body() {
-            return new ByteArrayInputStream("hello there".getBytes(StandardCharsets.UTF_8));
+            return body;
         }
 
         @Override
@@ -732,6 +744,19 @@ public class UtilsAdditionalTest {
         assertEquals(0, Utils.enhancedHash((Object[]) null));
         assertEquals(Utils.enhancedHash(1), Utils.enhancedHash(1.0));
         assertEquals(Utils.enhancedHash(1, null), Utils.enhancedHash(1.0, null));
+    }
+
+    @Test
+    void testUnmarshalSurfacesBodyTimeoutsAsUncheckedIO() {
+        InputStream timingOut = new InputStream() {
+            @Override
+            public int read() throws IOException {
+                throw new HttpTimeoutException("request timed out");
+            }
+        };
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class,
+                () -> Utils.unmarshal(new MyHttpResponse(timingOut), new TypeReference<Map<String, Object>>() {}));
+        assertTrue(thrown.getCause() instanceof HttpTimeoutException, String.valueOf(thrown.getCause()));
     }
 
     @Test

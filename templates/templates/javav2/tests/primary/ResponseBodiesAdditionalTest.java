@@ -21,7 +21,10 @@ import org.openapis.openapi.models.errors.APIException;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponse;
 import org.openapis.openapi.models.operations.ResponseBodyAdditionalPropertiesAnyPostResponseBody;
 import org.openapis.openapi.models.operations.ResponseBodyBytesGetResponse;
+import org.openapis.openapi.models.operations.ChatRequestBody;
+import org.openapis.openapi.models.operations.ChatResponse;
 import org.openapis.openapi.models.operations.JsonResponse;
+import org.openapis.openapi.models.shared.ChatCompletionStream;
 import org.openapis.openapi.models.shared.JsonEvent;
 import org.openapis.openapi.utils.EventStream;
 import org.openapis.openapi.utils.ResponseTooLargeException;
@@ -47,6 +50,24 @@ public class ResponseBodiesAdditionalTest {
                     .map(x -> x.data().content())
                     .collect(Collectors.joining()));
         }
+    }
+
+    @Test
+    void testJsonOrStreamOperationCapsOnlyJsonResponses() throws Exception {
+        SDK s = SDK.builder().maxResponseBodyBytes(16).serverURL(Helpers.HTTPBIN_URL).build();
+
+        ChatResponse streamed = s.eventstreams().chat()
+                .request(ChatRequestBody.builder().prompt("Print test content").build())
+                .call();
+        assertEquals("text/event-stream", streamed.contentType());
+        try (EventStream<ChatCompletionStream> events = streamed.events()) {
+            assertEquals(5, events.toList().size());
+        }
+
+        UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> s.eventstreams().chat()
+                .request(ChatRequestBody.builder().prompt("Print test content").stream(false).build())
+                .call());
+        assertTrue(thrown.getCause() instanceof ResponseTooLargeException, String.valueOf(thrown.getCause()));
     }
 
     @Test

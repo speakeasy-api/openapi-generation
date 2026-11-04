@@ -138,6 +138,23 @@ function templateLegacyConstructor(
 
 registerTemplateFunc("templateLegacyConstructor", templateLegacyConstructor);
 
+function withoutOptionsParam(params: JavaParam[]): JavaParam[] {
+  const optionsName = methodOptionsParameter().Name;
+  return params.filter((p) => p.Name != optionsName);
+}
+
+registerTemplateFunc("withoutOptionsParam", withoutOptionsParam);
+
+function legacyOverloadArgs(params: JavaParam[]): string[] {
+  const optionsName = methodOptionsParameter().Name;
+  const emptyOptions = context.Global.Config.NullFriendlyParameters
+    ? "null"
+    : `${javaImportOptional()}.empty()`;
+  return params.map((p) => (p.Name == optionsName ? emptyOptions : p.Name));
+}
+
+registerTemplateFunc("legacyOverloadArgs", legacyOverloadArgs);
+
 function optionEnumName(name: string): string {
   return name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
 }

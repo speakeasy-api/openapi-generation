@@ -58,26 +58,9 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             Set.of("text/event-stream", "application/x-ndjson", "application/jsonl");
 
     private static boolean isStreamingMediaType(String value) {
-        String[] parts = value.split(";", -1);
-        String mediaType = parts[0].trim().toLowerCase(Locale.ENGLISH);
-        if (!STREAMING_MEDIA_TYPES.contains(mediaType)) {
-            return false;
-        }
-        for (int i = 1; i < parts.length; i++) {
-            String[] param = parts[i].split("=", 2);
-            if (param.length == 2 && param[0].trim().equalsIgnoreCase("q") && isZeroQValue(param[1].trim())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean isZeroQValue(String value) {
-        try {
-            return Double.parseDouble(value) == 0d;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        int paramsIndex = value.indexOf(';');
+        String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
+        return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
     }
 
     private static boolean isStreamingRequest(HttpRequest request) {
@@ -86,6 +69,14 @@ public class SpeakeasyHTTPClient implements HTTPClient {
                 .stream()
                 .flatMap(value -> java.util.Arrays.stream(value.split(",")))
                 .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
+    }
+
+    private static boolean isStreamingResponse(HttpRequest request, HttpResponse<?> response) {
+        return isStreamingRequest(request)
+                && response.headers()
+                        .firstValue("Content-Type")
+                        .map(SpeakeasyHTTPClient::isStreamingMediaType)
+                        .orElse(false);
     }
 
     /**
@@ -174,7 +165,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         request = logRequest(request, isDebugLoggingEnabled());
         long startNanos = System.nanoTime();
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (!isStreamingRequest(request)) {
+        if (!isStreamingResponse(request, response)) {
             response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
         }
         long remainingNanos = remainingNanos(request, startNanos);
@@ -188,11 +179,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public CompletableFuture<HttpResponse<Blob>> sendAsync(HttpRequest request) {
         request = logRequest(request, isDebugLoggingEnabled());
-        long maxBytes = isStreamingRequest(request) ? Long.MAX_VALUE : maxResponseBodyBytes;
         long startNanos = System.nanoTime();
         HttpRequest sent = request;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> {
+                    long maxBytes = isStreamingResponse(sent, response) ? Long.MAX_VALUE : maxResponseBodyBytes;
                     long remainingNanos = remainingNanos(sent, startNanos);
                     // TODO: log responses when helper for Blob is setup
                     return new ResponseWithBody<>(response, publisher -> {

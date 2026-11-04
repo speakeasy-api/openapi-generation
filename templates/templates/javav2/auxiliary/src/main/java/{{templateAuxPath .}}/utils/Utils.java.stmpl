@@ -1769,7 +1769,12 @@ public final class Utils {
             return mapper().readValue(
                     Utils.extractByteArrayFromBody(response),
                     typeReference);
-        } catch (ResponseTooLargeException e) {
+{{- if $okHttp}}
+        } catch (java.net.SocketTimeoutException e) {
+            throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(
+                    "Error deserializing response body: " + e.getMessage(), response, e);
+{{- end}}
+        } catch (ResponseTooLargeException | java.io.InterruptedIOException{{if not $okHttp}} | java.net.http.HttpTimeoutException{{end}} e) {
             throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(

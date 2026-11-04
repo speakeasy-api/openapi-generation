@@ -34,6 +34,18 @@
             {{- templateMethodCallArgs (collectRequiredArgs $signatureParameters $op) false 16 3}});
     }
     {{- end}}
+    {{- $withoutOptions := withoutOptionsParam $signatureParameters}}
+    {{- if and (ne (len $withoutOptions) (len $signatureParameters)) (ne (len $withoutOptions) (len $requiredParameters)) (gt (len $withoutOptions) 0)}}
+    {{- "\n"}}
+{{templateCommentsForOperation $op "Makes an async request" $withoutOptions (print $asyncResponseType " - The async response")}}
+    {{- if and ($op.Comments) ($op.Comments.Deprecated)}}
+    {{templateDeprecatedAnnotation $op}}
+    {{- end}}
+    public {{$asyncResponseType}} {{$methodName}}({{templateMethodParams $withoutOptions false 12 2}}) {
+        return {{$methodName}}(
+            {{- templateMethodCallArgs (legacyOverloadArgs $signatureParameters) false 16 3}});
+    }
+    {{- end}}
 
 {{- "\n"}}
 {{- if (isStreamingOperation $op)}}

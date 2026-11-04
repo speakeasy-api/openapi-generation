@@ -121,6 +121,20 @@ public class AsyncConflicts {
      * x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
      *
      * @param request The request object containing all the parameters for the API call.
+     * @return {@code CompletableFuture<PutNamespaceConflictResponse>} - The async response
+     */
+    public CompletableFuture<PutNamespaceConflictResponse> putNamespaceConflict(
+            @Nullable ObjWithRenamedProperties request) {
+        return putNamespaceConflict(request, null);
+    }
+
+    /**
+     * Put Property Name Conflicts Behind
+     *
+     * <p>This endpoint tests property name conflict resolution through
+     * x-speakeasy-name-override and x-speakeasy-model-namespace extensions.
+     *
+     * @param request The request object containing all the parameters for the API call.
      * @param options additional options
      * @return {@code CompletableFuture<PutNamespaceConflictResponse>} - The async response
      */

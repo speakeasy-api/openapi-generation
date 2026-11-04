@@ -526,12 +526,16 @@ public class SDK {
                 throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
             }
         }
+        HTTPClient configuredClient = sdkConfiguration.client();
         this.tag1 = new Tag1(sdkConfiguration);
         this.obsolete = new Obsolete(sdkConfiguration);
         this.testGroup = new TestGroup(sdkConfiguration);
         this.group = new Group(sdkConfiguration);
         this.namespaceTests = new NamespaceTests(sdkConfiguration);
         sdkConfiguration = sdkConfiguration.hooks().sdkInit(sdkConfiguration);
+        if (sdkConfiguration.maxResponseBodyBytes().isPresent() && sdkConfiguration.client() != configuredClient) {
+            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().get());
+        }
         this.asyncSDK = new AsyncSDK(this, sdkConfiguration);
         this.sdkConfiguration = sdkConfiguration;
     }

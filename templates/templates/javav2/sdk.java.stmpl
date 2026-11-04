@@ -358,6 +358,7 @@ package {{$pkg}};
                 throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
             }
         }
+        {{javaImportLocal "utils.HTTPClient"}} configuredClient = sdkConfiguration.client();
         {{- if not $okHttp}}
             {{- range .Local.SubSDKs}}
                 {{- if ne .Type.Name ""}}
@@ -377,6 +378,9 @@ package {{$pkg}};
         sdkConfiguration.setClient(data.client());
             {{- end}}
         {{- end}}
+        if (sdkConfiguration.maxResponseBodyBytes().isPresent() && sdkConfiguration.client() != configuredClient) {
+            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().get());
+        }
         {{- if $okHttp}}
             {{- range .Local.SubSDKs}}
               {{- if ne .Type.Name ""}}

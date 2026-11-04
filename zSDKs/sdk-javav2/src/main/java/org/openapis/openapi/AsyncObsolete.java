@@ -63,6 +63,18 @@ public class AsyncObsolete {
      * Deprecated Operation
      *
      * @param serverURL Overrides the server URL.
+     * @return {@code CompletableFuture<Deprecated1Response>} - The async response
+     * @deprecated method: This endpoint is deprecated.. Use getRequestBodyFlattenedAway instead.
+     */
+    @Deprecated
+    public CompletableFuture<Deprecated1Response> deprecated1(@Nullable String serverURL) {
+        return deprecated1(serverURL, null);
+    }
+
+    /**
+     * Deprecated Operation
+     *
+     * @param serverURL Overrides the server URL.
      * @param options additional options
      * @return {@code CompletableFuture<Deprecated1Response>} - The async response
      * @deprecated method: This endpoint is deprecated.. Use getRequestBodyFlattenedAway instead.

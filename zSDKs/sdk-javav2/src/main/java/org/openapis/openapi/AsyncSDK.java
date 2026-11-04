@@ -374,6 +374,22 @@ public class AsyncSDK {
      * @param lang
      * @param maxLength
      * @param requestBody
+     * @return {@code CompletableFuture<GetFullyFlattenedRequestResponse>} - The async response
+     */
+    public CompletableFuture<GetFullyFlattenedRequestResponse> getFullyFlattenedRequest(
+            @Nonnull String lang, @Nullable Long maxLength, @Nonnull GetFullyFlattenedRequestRequestBody requestBody) {
+        return getFullyFlattenedRequest(lang, maxLength, requestBody, null);
+    }
+
+    /**
+     * Makes an async request
+     *
+     * <p>If set, this operation will use either Security#option6 or Security#myApiKey from the global
+     * security.
+     *
+     * @param lang
+     * @param maxLength
+     * @param requestBody
      * @param options additional options
      * @return {@code CompletableFuture<GetFullyFlattenedRequestResponse>} - The async response
      */
@@ -409,6 +425,20 @@ public class AsyncSDK {
      */
     public CompletableFuture<CreateWithUnionResponse> createWithUnion(@Nonnull ShapeRequest shapeRequest) {
         return createWithUnion(null, shapeRequest, null);
+    }
+
+    /**
+     * Create with discriminated union request body
+     *
+     * <p>Test CLI generation for discriminated unions with dot-notation flags
+     *
+     * @param dryRun If true, validates without creating
+     * @param shapeRequest Request body with a discriminated union shape field
+     * @return {@code CompletableFuture<CreateWithUnionResponse>} - The async response
+     */
+    public CompletableFuture<CreateWithUnionResponse> createWithUnion(
+            @Nullable Boolean dryRun, @Nonnull ShapeRequest shapeRequest) {
+        return createWithUnion(dryRun, shapeRequest, null);
     }
 
     /**
@@ -1127,6 +1157,19 @@ public class AsyncSDK {
      *
      * @param id
      * @param stream
+     * @return {@code EventStream<GetAssetResponse, AssetStatusStream>} - The async response
+     */
+    public EventStream<GetAssetResponse, AssetStatusStream> getAsset(@Nonnull String id, @Nullable Boolean stream) {
+        return getAsset(id, stream, null);
+    }
+
+    /**
+     * Get Asset
+     *
+     * <p>Get the current result of an asset job.
+     *
+     * @param id
+     * @param stream
      * @param options additional options
      * @return A reactive SSE publisher that emits events from the server.
      * Can be consumed using reactive streams toolkits such as RxJava, Project Reactor, or Java 9+ Flow API.
@@ -1163,6 +1206,18 @@ public class AsyncSDK {
      */
     public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefaultDirect() {
         return getPositionalDefault(null, null);
+    }
+
+    /**
+     * Get an item with a default path identifier
+     *
+     * <p>Check that a default-backed path parameter can be supplied as an argument or omitted.
+     *
+     * @param id
+     * @return {@code CompletableFuture<GetPositionalDefaultResponse>} - The async response
+     */
+    public CompletableFuture<GetPositionalDefaultResponse> getPositionalDefault(@Nullable String id) {
+        return getPositionalDefault(id, null);
     }
 
     /**
