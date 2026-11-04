@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.959.1] - 2026-11-04
+### :bug: Bug Fixes
+- [`688b60b`](https://github.com/speakeasy-api/openapi-generation/commit/688b60b9052c10e20c1993dd373bcb033a48743b) - **cli**: send every value of a repeated --header and validate header names and values ([#181](https://github.com/speakeasy-api/openapi-generation/pull/181)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.959.0] - 2026-11-04
 ### :bee: New Features
 - [`1346f22`](https://github.com/speakeasy-api/openapi-generation/commit/1346f22ee8628e6b1ffbaa1f6f779e9558cb5fff) - **csharp**: union implicit conversions and partial types ([#186](https://github.com/speakeasy-api/openapi-generation/pull/186)) *(commit by [@2ynn](https://github.com/2ynn))*
@@ -20920,3 +20925,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.958.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.957.0...v2.958.0
 [v2.958.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.958.0...v2.958.1
 [v2.959.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.958.1...v2.959.0
+[v2.959.1]: https://github.com/speakeasy-api/openapi-generation/compare/v2.959.0...v2.959.1
