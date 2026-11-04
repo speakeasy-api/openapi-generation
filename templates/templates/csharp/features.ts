@@ -1,6 +1,6 @@
 //@ts-ignore
 const supportedFeatures = {
-  core: "3.15.29",
+  core: "3.15.30",
   getRequestBodies: "2.81.1",
   flattening: "2.81.3",
   methodArguments: "0.2.1",
@@ -26,7 +26,7 @@ const supportedFeatures = {
   docs: "0.5.5",
   pagination: "0.2.12",
   urlBasedPagination: "0.0.1",
-  unions: "1.2.3",
+  unions: "1.2.4",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   additionalProperties: "0.0.2",
