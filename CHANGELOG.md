@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.958.0] - 2026-11-04
+### :bee: New Features
+- [`5d58d62`](https://github.com/speakeasy-api/openapi-generation/commit/5d58d62b0c2530b55d8cb72e4680372ff33d2d58) - **cli**: download URI-delivered artifact content ([#183](https://github.com/speakeasy-api/openapi-generation/pull/183)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
+
+
 ## [v2.957.0] - 2026-11-03
 ### :bee: New Features
 - [`0d93240`](https://github.com/speakeasy-api/openapi-generation/commit/0d93240aa2c642141556a08390f1869845eea3cc) - **cli**: continue cut-off responses with a declared continuation recipe ([#142](https://github.com/speakeasy-api/openapi-generation/pull/142)) *(commit by [@TristanSpeakEasy](https://github.com/TristanSpeakEasy))*
@@ -20902,3 +20907,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [v2.956.6]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.5...v2.956.6
 [v2.956.7]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.6...v2.956.7
 [v2.957.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.956.7...v2.957.0
+[v2.958.0]: https://github.com/speakeasy-api/openapi-generation/compare/v2.957.0...v2.958.0
