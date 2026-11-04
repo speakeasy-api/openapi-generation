@@ -291,7 +291,7 @@ function getConfigFields(
       Required: false,
       DefaultValue: false,
       Description:
-        "Generate implicit conversion operators from each union member type (and members of nested unions) to the union type, so a member value can be assigned directly instead of calling the Create* factory. Members that would be ambiguous are skipped.",
+        "Generate implicit conversion operators from each union member type (and members of nested unions) to the union type, so a member value can be assigned directly instead of calling the Create* factory. Members that would be ambiguous are skipped, so a spec change that makes a member ambiguous removes its conversion. Enabling the option, or adding a union member, can change which overload existing caller code binds to.",
       ValidationRegex: /^(true|false)$/.source,
       ValidationMessage: "true or false only",
     },
