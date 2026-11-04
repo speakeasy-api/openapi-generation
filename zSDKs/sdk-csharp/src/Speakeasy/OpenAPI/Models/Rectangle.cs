@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A rectangle shape.
     /// </summary>
-    public class Rectangle
+    public partial class Rectangle
     {
         /// <summary>
         /// Shape type discriminator.

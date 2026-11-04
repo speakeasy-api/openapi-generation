@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Color : IEquatable<Color>, IOpenEnum<string>
+    public partial class Color : IEquatable<Color>, IOpenEnum<string>
     {
         public static readonly Color Red = new Color("red");
         public static readonly Color Green = new Color("green");

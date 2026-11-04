@@ -1,0 +1,164 @@
+openapi: 3.1.0
+security:
+  - apiKeyAuth: []
+  - oauth2: []
+  - clientCredentials: [read, write]
+  - customSchemeAppId: []
+  - basicHttp: []
+  - accessToken: []
+  - {}
+components:
+  schemas:
+    ImplicitConversionCircle:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        radius:
+          type: number
+      required: [kind, radius]
+    ImplicitConversionSquare:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        side:
+          type: number
+      required: [kind, side]
+    ImplicitConversionTriangle:
+      x-speakeasy-include: true
+      type: object
+      properties:
+        kind:
+          type: string
+        base:
+          type: number
+        height:
+          type: number
+      required: [kind, base, height]
+    ImplicitConversionShape:
+      x-speakeasy-include: true
+      description: Discriminated union whose members are distinct object schemas.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - $ref: '#/components/schemas/ImplicitConversionTriangle'
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: '#/components/schemas/ImplicitConversionCircle'
+          square: '#/components/schemas/ImplicitConversionSquare'
+          triangle: '#/components/schemas/ImplicitConversionTriangle'
+    ImplicitConversionAliasedShape:
+      x-speakeasy-include: true
+      description: >-
+        Discriminated union with two discriminator values mapped to the same
+        schema, so a value of that schema does not determine a single
+        discriminator value.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+      discriminator:
+        propertyName: kind
+        mapping:
+          circle: '#/components/schemas/ImplicitConversionCircle'
+          round: '#/components/schemas/ImplicitConversionCircle'
+          square: '#/components/schemas/ImplicitConversionSquare'
+    ImplicitConversionPolygon:
+      x-speakeasy-include: true
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - $ref: '#/components/schemas/ImplicitConversionTriangle'
+    ImplicitConversionNested:
+      x-speakeasy-include: true
+      description: >-
+        Undiscriminated union whose members include other unions. One object
+        schema is reachable only through one inner union, one is both a direct
+        member and reachable through an inner union, and one is reachable
+        through both inner unions.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionShape'
+        - $ref: '#/components/schemas/ImplicitConversionPolygon'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+    ImplicitConversionPrimitives:
+      x-speakeasy-include: true
+      description: >-
+        Undiscriminated union of a string, an integer, a number, an array of
+        objects and a free-form object. A whole-number value matches both the
+        integer and number members.
+      oneOf:
+        - type: string
+        - type: integer
+        - type: number
+        - type: array
+          items:
+            $ref: '#/components/schemas/ImplicitConversionCircle'
+        - type: object
+          additionalProperties: true
+    ImplicitConversionNullable:
+      x-speakeasy-include: true
+      description: Nullable union of two object schemas.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionCircle'
+        - $ref: '#/components/schemas/ImplicitConversionSquare'
+        - type: 'null'
+    ImplicitConversionWithAny:
+      x-speakeasy-include: true
+      description: Union of a string member and an unconstrained member.
+      oneOf:
+        - type: string
+        - {}
+    ImplicitConversionStringListOrInteger:
+      x-speakeasy-include: true
+      oneOf:
+        - type: array
+          items:
+            type: string
+        - type: integer
+    ImplicitConversionNullableStringListOrBoolean:
+      x-speakeasy-include: true
+      oneOf:
+        - type: array
+          items:
+            type: [string, 'null']
+        - type: boolean
+    ImplicitConversionNullableItems:
+      x-speakeasy-include: true
+      description: >-
+        Union of two inner unions whose array members differ only in item
+        nullability.
+      oneOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringListOrInteger'
+        - $ref: '#/components/schemas/ImplicitConversionNullableStringListOrBoolean'
+    ImplicitConversionStringOrInteger:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: integer
+    ImplicitConversionStringOrBoolean:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: boolean
+    ImplicitConversionStringOrNumber:
+      x-speakeasy-include: true
+      anyOf:
+        - type: string
+        - type: number
+    ImplicitConversionDeepInner:
+      x-speakeasy-include: true
+      anyOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringOrBoolean'
+        - $ref: '#/components/schemas/ImplicitConversionStringOrNumber'
+    ImplicitConversionDeepNested:
+      x-speakeasy-include: true
+      description: >-
+        Union nested several levels deep. The string type is reachable through
+        both outer members and through both members of the inner union; the
+        boolean and number types are each reachable through a single path two
+        levels deep.
+      anyOf:
+        - $ref: '#/components/schemas/ImplicitConversionStringOrInteger'
+        - $ref: '#/components/schemas/ImplicitConversionDeepInner'

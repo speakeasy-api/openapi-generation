@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class SimpleObject
+    public partial class SimpleObject
     {
         /// <summary>
         /// A string property.

@@ -18,7 +18,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface IGroup
+    public partial interface IGroup
     {
         public ISubGroup SubGroup { get; }
         /// <summary>
@@ -36,7 +36,7 @@ namespace Speakeasy.OpenAPI
         public Task<RootGroupOpResponse> RootGroupOpAsync(CancellationToken? cancellationToken = null);
     }
 
-    public class Group : IGroup
+    public partial class Group : IGroup
     {
         /// <summary>
         /// SDK Configuration.

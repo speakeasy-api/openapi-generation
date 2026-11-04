@@ -19,7 +19,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class ListTest1ResponseBody
+    public partial class ListTest1ResponseBody
     {
         [JsonProperty("resultArray", Required = Newtonsoft.Json.Required.Always)]
         public List<ResultArray> ResultArray { get; set; } = default!;

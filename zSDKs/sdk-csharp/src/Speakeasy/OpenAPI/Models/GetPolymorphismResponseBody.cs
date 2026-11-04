@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetPolymorphismResponseBody
+    public partial class GetPolymorphismResponseBody
     {
         /// <summary>
         /// A union of two types.

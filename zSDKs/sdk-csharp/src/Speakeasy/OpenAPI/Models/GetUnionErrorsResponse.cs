@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Threading.Tasks;
 
-    public class GetUnionErrorsResponse
+    public partial class GetUnionErrorsResponse
     {
         public Func<Task<GetUnionErrorsResponse?>>? Next { get; set; }
         [JsonIgnore]

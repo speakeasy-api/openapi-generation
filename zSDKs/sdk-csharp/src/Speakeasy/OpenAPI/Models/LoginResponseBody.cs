@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class LoginResponseBody
+    public partial class LoginResponseBody
     {
         [JsonProperty("token", Required = Newtonsoft.Json.Required.Always)]
         public string Token { get; set; } = default!;

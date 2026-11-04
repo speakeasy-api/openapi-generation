@@ -12,7 +12,7 @@ namespace Speakeasy.OpenAPI
     using Newtonsoft.Json;
     using Speakeasy.OpenAPI.Utils;
 
-    public class ChatAgentRequest
+    public partial class ChatAgentRequest
     {
         [JsonProperty("agent", Required = Newtonsoft.Json.Required.Always)]
         public string Agent { get; set; } = default!;

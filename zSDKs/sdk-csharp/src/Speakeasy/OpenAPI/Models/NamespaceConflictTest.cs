@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// A model that references both foo.Pet and bar.Pet to test import aliasing.
     /// </summary>
-    public class NamespaceConflictTest
+    public partial class NamespaceConflictTest
     {
         /// <summary>
         /// A pet in the foo namespace.

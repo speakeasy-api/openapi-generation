@@ -16,7 +16,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetUnionErrorsResponseBody
+    public partial class GetUnionErrorsResponseBody
     {
         [JsonProperty("pages", Required = Newtonsoft.Json.Required.Always)]
         public List<string> Pages { get; set; } = default!;

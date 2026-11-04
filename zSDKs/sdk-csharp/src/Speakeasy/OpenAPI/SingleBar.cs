@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ISingleBar
+    public partial interface ISingleBar
     {
         /// <summary>
         /// Get Single Namespace Bar Pet.
@@ -40,7 +40,7 @@ namespace Speakeasy.OpenAPI
         );
     }
 
-    public class SingleBar : ISingleBar
+    public partial class SingleBar : ISingleBar
     {
         /// <summary>
         /// SDK Configuration.

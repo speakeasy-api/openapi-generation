@@ -48,3 +48,4 @@ csharp:
   enableCancellationToken: true
   enableFormatting: true
   useNodatime: false
+  unionImplicitConversions: true

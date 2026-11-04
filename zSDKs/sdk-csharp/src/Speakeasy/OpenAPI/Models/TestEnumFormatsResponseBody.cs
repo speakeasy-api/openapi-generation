@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class TestEnumFormatsResponseBody
+    public partial class TestEnumFormatsResponseBody
     {
         [JsonProperty("message", Required = Newtonsoft.Json.Required.Always)]
         public string Message { get; set; } = default!;

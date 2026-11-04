@@ -24,7 +24,7 @@ using Xunit;
 public class TestHelpers
 {
 
-    public class AuthenticateOutputs
+    public partial class AuthenticateOutputs
     {
         public string Token { get; set; } = default!;
     }
@@ -74,7 +74,7 @@ public class TestHelpers
         };
     }
 
-    public class UserSetupOutputs
+    public partial class UserSetupOutputs
     {
         public User User { get; set; } = new();
     }
@@ -123,7 +123,7 @@ public class TestHelpers
         };
     }
 
-    public class UserTeardownInputs
+    public partial class UserTeardownInputs
     {
         public string Id { get; set; } = default!;
     }

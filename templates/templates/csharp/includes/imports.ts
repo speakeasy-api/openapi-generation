@@ -115,6 +115,10 @@ function templateModelImports(model: CSharpModel): string {
     imports = getTypeImports(imports, associated, "", false);
   }
 
+  for (const conversion of getUnionImplicitConversions(model.Type)) {
+    imports = getTypeImports(imports, conversion.Member, "", false);
+  }
+
   if (model.Type.Comments?.Deprecated) {
     imports = addImport(imports, "System", false);
   }

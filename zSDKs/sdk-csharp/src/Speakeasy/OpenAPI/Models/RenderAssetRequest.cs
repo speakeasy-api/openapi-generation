@@ -13,7 +13,7 @@ namespace Speakeasy.OpenAPI
     using Speakeasy.OpenAPI.Utils;
     using System.Collections.Generic;
 
-    public class RenderAssetRequest
+    public partial class RenderAssetRequest
     {
         [JsonProperty("prompt", Required = Newtonsoft.Json.Required.Always)]
         public string Prompt { get; set; } = default!;

@@ -14,7 +14,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Threading.Tasks;
 
-    public class ListTest1Response
+    public partial class ListTest1Response
     {
         public Func<Task<ListTest1Response?>>? Next { get; set; }
         [JsonIgnore]

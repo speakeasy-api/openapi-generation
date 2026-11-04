@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class UserPassAuth
+    public partial class UserPassAuth
     {
         [SpeakeasyMetadata("security:scheme=true,type=http,subType=basic,name=username")]
         public string Username { get; set; } = default!;

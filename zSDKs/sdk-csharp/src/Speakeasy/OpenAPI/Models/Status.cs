@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     using System.Linq;
 
     [JsonConverter(typeof(OpenEnumConverter))]
-    public class Status : IEquatable<Status>, IOpenEnum<string>
+    public partial class Status : IEquatable<Status>, IOpenEnum<string>
     {
         public static readonly Status InProgress = new Status("in_progress");
         public static readonly Status Completed = new Status("completed");

@@ -34,3 +34,5 @@ csharp:
   presenceAwareJsonSerialization: false
   responseFormat: envelope
   useNodatime: true
+  partialTypes: true
+  unionImplicitConversions: true

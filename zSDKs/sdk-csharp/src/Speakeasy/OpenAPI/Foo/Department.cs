@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI.Foo
     /// <summary>
     /// Inline department in array items should end up in foo namespace.
     /// </summary>
-    public class Department
+    public partial class Department
     {
         [JsonProperty("deptName", Required = Newtonsoft.Json.Required.Always)]
         public string DeptName { get; set; } = default!;

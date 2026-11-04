@@ -15,7 +15,7 @@ namespace Speakeasy.OpenAPI
     using System;
     using System.Net.Http;
 
-    public class BadRequestResponseExceptionPayload
+    public partial class BadRequestResponseExceptionPayload
     {
         /// <summary>
         /// HTTP status code.
@@ -60,7 +60,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// Bad Request.
     /// </summary>
-    public class BadRequestResponseException : SDKBaseException
+    public partial class BadRequestResponseException : SDKBaseException
     {
         /// <summary>
         ///  The original data that was passed to this exception.

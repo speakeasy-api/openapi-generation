@@ -712,3 +712,61 @@ func TestFormatCSharp_NoSpaceBeforeIndexer(t *testing.T) {
 		t.Errorf("expected ')[0]' in output, got:\n%s", result)
 	}
 }
+
+func TestFormatCSharp_PartialInterfaceAllmanBrace(t *testing.T) {
+	input := []byte(`namespace TestApp
+{
+    public partial interface IService
+    {
+        void Run();
+    }
+
+    internal partial interface IRepository : IService
+    {
+        object Get();
+    }
+
+    public partial class Service : IService
+    {
+        public void Run() { }
+    }
+}
+`)
+	result := formatCS(t, "IService.cs", input)
+
+	for _, want := range []string{
+		"    public partial interface IService\n    {\n        void Run();",
+		"    internal partial interface IRepository : IService\n    {\n        object Get();",
+		"    public partial class Service : IService\n    {",
+	} {
+		if !strings.Contains(result, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, result)
+		}
+	}
+}
+
+func TestFormatCSharp_PartialInterfaceBracePreservesCommentsAndStrings(t *testing.T) {
+	input := []byte(`namespace TestApp
+{
+    /// <summary>
+    /// partial interface IService {
+    /// </summary>
+    public class Example
+    {
+        // public partial interface IComment {
+        public string Value = "public partial interface IString {";
+    }
+}
+`)
+	result := formatCS(t, "Example.cs", input)
+
+	for _, want := range []string{
+		"    /// partial interface IService {\n    /// </summary>",
+		"        // public partial interface IComment {\n",
+		`"public partial interface IString {";`,
+	} {
+		if !strings.Contains(result, want) {
+			t.Errorf("expected %q in output, got:\n%s", want, result)
+		}
+	}
+}

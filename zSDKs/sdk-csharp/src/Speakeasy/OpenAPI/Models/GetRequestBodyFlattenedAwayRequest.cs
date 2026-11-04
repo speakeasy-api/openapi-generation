@@ -11,7 +11,7 @@ namespace Speakeasy.OpenAPI
 {
     using Speakeasy.OpenAPI.Utils;
 
-    public class GetRequestBodyFlattenedAwayRequest
+    public partial class GetRequestBodyFlattenedAwayRequest
     {
         [SpeakeasyMetadata("queryParam:style=form,explode=true,name=loneQueryParam")]
         public string? LoneQueryParam { get; set; }

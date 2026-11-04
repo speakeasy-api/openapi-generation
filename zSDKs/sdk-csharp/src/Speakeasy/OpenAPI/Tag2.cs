@@ -20,7 +20,7 @@ namespace Speakeasy.OpenAPI
     using System.Threading;
     using System.Threading.Tasks;
 
-    public interface ITag2
+    public partial interface ITag2
     {
         /// <summary>
         /// Post Test2.
@@ -55,7 +55,7 @@ namespace Speakeasy.OpenAPI
         );
     }
 
-    public class Tag2 : ITag2
+    public partial class Tag2 : ITag2
     {
         /// <summary>
         /// Server identifiers available for the postTest2 operation.

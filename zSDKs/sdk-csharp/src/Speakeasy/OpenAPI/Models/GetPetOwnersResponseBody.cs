@@ -17,7 +17,7 @@ namespace Speakeasy.OpenAPI
     /// <summary>
     /// OK.
     /// </summary>
-    public class GetPetOwnersResponseBody
+    public partial class GetPetOwnersResponseBody
     {
         /// <summary>
         /// A pet owner in the foo namespace.
