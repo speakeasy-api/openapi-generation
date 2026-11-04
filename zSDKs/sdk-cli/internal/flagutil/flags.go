@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -1101,6 +1102,33 @@ func mergeBodyPath(obj map[string]json.RawMessage, path []string, pointer, field
 	}
 	obj[key] = encoded
 	return nil
+}
+
+// URLOrigin returns scheme://host:port with the default port filled in.
+func URLOrigin(u *url.URL) string {
+	scheme := strings.ToLower(u.Scheme)
+	port := u.Port()
+	if port == "" {
+		switch scheme {
+		case "https":
+			port = "443"
+		case "http":
+			port = "80"
+		}
+	}
+	return scheme + "://" + net.JoinHostPort(asciiLower(u.Hostname()), port)
+}
+
+// asciiLower folds only A-Z. Unicode case folding would equate hosts the
+// transport dials as different IDNA names (U+0130 "İ" and "i").
+func asciiLower(s string) string {
+	b := []byte(s)
+	for i, c := range b {
+		if 'A' <= c && c <= 'Z' {
+			b[i] = c + ('a' - 'A')
+		}
+	}
+	return string(b)
 }
 
 func SetBodyPath(body map[string]any, path []string, value any) {
