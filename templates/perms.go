@@ -198,6 +198,7 @@ var fileMode = map[string]fs.FileMode{
 	"templates/cli/tests/primary/forms_test.go.stmpl":                                                                   0o644,
 	"templates/cli/tests/primary/globals_additional_test.go.stmpl":                                                      0o644,
 	"templates/cli/tests/primary/headers_additional_test.go.stmpl":                                                      0o644,
+	"templates/cli/tests/primary/headers_repeated_additional_test.go.stmpl":                                             0o644,
 	"templates/cli/tests/primary/hooks_additional_test.go.stmpl":                                                        0o644,
 	"templates/cli/tests/primary/intents_test.go.stmpl":                                                                 0o644,
 	"templates/cli/tests/primary/jsonlstreaming_test.go.stmpl":                                                          0o644,
