@@ -165,7 +165,6 @@ func (r *continuationRun) capture(payload interface{}, stream bool) {
 			if value, ok := outcomePointer(payload, pointer); ok {
 				if text, isString := value.(string); isString && text != "" {
 					r.values[binding.To] = text
-					break
 				}
 			}
 		}

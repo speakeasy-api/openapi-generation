@@ -1045,6 +1045,19 @@ func TestOutcomeStreamStatePointerOrder(t *testing.T) {
 }
 
 {{- if hasCliContinuations}}
+func TestContinuationBindingPointerOrder(t *testing.T) {
+	run := &continuationRun{
+		cfg: &continuationConfig{Bind: []continuationBinding{
+			{StreamPointers: []string{"/first", "/last"}, To: "token"},
+		}},
+		outcome: &outcomeConfig{}, values: map[string]string{},
+	}
+	run.capture(map[string]interface{}{"first": "older", "last": "newer"}, true)
+	if got := run.values["token"]; got != "newer" {
+		t.Fatalf("token = %q, want last present binding value", got)
+	}
+}
+
 func TestContinuationRequestCondition(t *testing.T) {
 	for _, tc := range []struct {
 		name string
