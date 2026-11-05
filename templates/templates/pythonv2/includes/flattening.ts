@@ -477,10 +477,25 @@ registerTemplateFunc(
 
 // Renders the impl-body expression that assembles the unmarshal payload.
 // With **body_kwargs as the catch-all impl param, the dict already carries
-// the OAS-keyed body fields; pass it through directly.
+// the body fields; keys renamed in method signatures (e.g. `type_`) are
+// mapped back to their model field names.
 // @ts-ignore
 function templateBodyVariantImplBodyDict(op: Operation): string {
-  return "dict(body_kwargs)";
+  const renamedKeys = getMergedBodyFields(op)
+    .map((m) => [m.paramName, sanitizeFieldName(m.field.Name)])
+    .filter(([paramName, fieldName]) => paramName !== fieldName)
+    .map(
+      ([paramName, fieldName]) =>
+        `"${escapePythonStringContent(
+          paramName,
+        )}": "${escapePythonStringContent(fieldName)}"`,
+    );
+  if (renamedKeys.length === 0) {
+    return "dict(body_kwargs)";
+  }
+  return `{ {${renamedKeys.join(
+    ", ",
+  )}}.get(k, k): v for k, v in body_kwargs.items()}`;
 }
 registerTemplateFunc(
   "templateBodyVariantImplBodyDict",

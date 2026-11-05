@@ -18,7 +18,7 @@ paths:
         a merged-kwarg impl signature with all args defaulted to UNSET, and runtime
         XOR guards for variant-exclusive fields. Independent of other targets.
       tags:
-        - requestBodies
+        - unions
       parameters:
         - in: path
           name: variant_id
@@ -76,7 +76,7 @@ paths:
         explicit discriminator. Variants are detected via `Type.AssociatedTypes` and
         overload kwargs are emitted without `Literal[...]` discriminator narrowing.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:
@@ -103,7 +103,7 @@ paths:
         Exercises composition between pythonv2 `bodyVariantOverloads`,
         `x-speakeasy-sse-overload`, and positional path parameters.
       tags:
-        - requestBodies
+        - unions
       x-speakeasy-sse-overload: true
       parameters:
         - name: id
@@ -142,7 +142,7 @@ paths:
         method signatures must stay valid when body properties share names with
         those options.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:
@@ -171,7 +171,7 @@ paths:
         signatures. Every variant must stay accepted by the generated method
         signatures.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:
@@ -200,7 +200,7 @@ paths:
         has a different scalar type in each variant. Every variant must stay
         accepted by the generated method signatures.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:
@@ -230,7 +230,7 @@ paths:
         the required parameter, and parameter arguments passed alongside it must
         reach the HTTP request.
       tags:
-        - requestBodies
+        - unions
       parameters:
         - in: path
           name: item_id
@@ -281,7 +281,7 @@ paths:
         property is a single-value enum in each variant. Every generated overload
         must remain reachable.
       tags:
-        - requestBodies
+        - unions
       requestBody:
         required: true
         content:

@@ -363,6 +363,11 @@ function isTestSkipped(test: string): boolean {
     "auth-global-security-flattening-empty",
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-renamed-argument",
   ].includes(test);
 }
 

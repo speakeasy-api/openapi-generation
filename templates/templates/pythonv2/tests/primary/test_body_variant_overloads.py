@@ -10,6 +10,8 @@ import pytest
 import openapi
 from openapi import SDK
 
+from .common_helpers import record_test
+
 PRELUDE = """\
 from typing import Any
 
@@ -27,17 +29,17 @@ s = SDK()
 
 INVALID_CALLS = {
     "unknown_flattened_kwarg": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id", kind="model", model="m", input="i", unknown_field=1
 )
 """,
     "nested_typed_dict_typo": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id", kind="model", model="m", input="i", generation_config={"temprature": 0.5}
 )
 """,
     "request_typed_dict_typo": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id",
     request={
         "variant_id": "id",
@@ -51,18 +53,18 @@ s.request_bodies.body_variant_overloads_discriminated(
 )
 """,
     "mixed_variant_fields": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id", kind="model", model="m", agent="a", input="i"
 )
 """,
     "unknown_flattened_kwarg_with_stream": """
-s.request_bodies.body_variant_overloads_sse_with_path(
+s.unions.body_variant_overloads_sse_with_path(
     "id", kind="model", model="m", input="i", stream=True, unknown_field=1
 )
 """,
     "nested_typed_dict_typo_with_bool_stream": """
 def call(stream: bool) -> None:
-    s.request_bodies.body_variant_overloads_sse_with_path(
+    s.unions.body_variant_overloads_sse_with_path(
         "id",
         kind="model",
         model="m",
@@ -75,24 +77,24 @@ def call(stream: bool) -> None:
 
 VALID_CALLS = {
     "flattened_kwargs": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id", kind="model", model="m", input="i", generation_config={"temperature": 0.5}
 )
 """,
     "stream_true": """
-s.request_bodies.body_variant_overloads_sse_with_path(
+s.unions.body_variant_overloads_sse_with_path(
     "id", kind="model", model="m", input="i", stream=True
 )
 """,
     "bool_stream": """
 def call(stream: bool) -> None:
-    s.request_bodies.body_variant_overloads_sse_with_path(
+    s.unions.body_variant_overloads_sse_with_path(
         "id", kind="model", model="m", input="i", stream=stream
     )
 """,
     "typed_dict_spread": """
 params: BodyVariantModelTypedDict = {"kind": "model", "model": "m", "input": "i"}
-s.request_bodies.body_variant_overloads_discriminated("id", **params)
+s.unions.body_variant_overloads_discriminated("id", **params)
 """,
     "typed_dict_spread_with_stream": """
 def call(stream: bool) -> None:
@@ -102,23 +104,23 @@ def call(stream: bool) -> None:
         "input": "i",
         "stream": stream,
     }
-    s.request_bodies.body_variant_overloads_sse_with_path("id", **params)
+    s.unions.body_variant_overloads_sse_with_path("id", **params)
 """,
     "none_for_optional_fields": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id", kind="model", model="m", input="i", background=None, generation_config=None
 )
 """,
     "subset_variant_typed_dict_spread": """
 params: SubsetVariantBaseTypedDict = {"name": "n", "type": "t"}
-s.request_bodies.body_variant_overloads_subset_variants(**params)
+s.unions.body_variant_overloads_subset_variants(**params)
 """,
     "untyped_dict_spread": """
 body: dict[str, Any] = {"kind": "model", "model": "m", "input": "i"}
-s.request_bodies.body_variant_overloads_discriminated("id", **body)
+s.unions.body_variant_overloads_discriminated("id", **body)
 """,
     "request_with_non_body_kwarg": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id",
     request={
         "variant_id": "id",
@@ -128,7 +130,7 @@ s.request_bodies.body_variant_overloads_discriminated(
 )
 """,
     "request_with_nullable_non_body_kwarg": """
-s.request_bodies.body_variant_overloads_discriminated(
+s.unions.body_variant_overloads_discriminated(
     "id",
     request={
         "variant_id": "id",
@@ -140,19 +142,19 @@ s.request_bodies.body_variant_overloads_discriminated(
     "disjoint_field_types_typed_dict_spread": """
 text: DisjointFieldTypesStringTypedDict = {"name": "n", "type": "t", "value": "v"}
 number: DisjointFieldTypesIntegerTypedDict = {"name": "n", "type": "t", "value": 1}
-s.request_bodies.body_variant_overloads_disjoint_field_types(**text)
-s.request_bodies.body_variant_overloads_disjoint_field_types(**number)
+s.unions.body_variant_overloads_disjoint_field_types(**text)
+s.unions.body_variant_overloads_disjoint_field_types(**number)
 """,
     "single_value_enum_discriminator": """
-s.request_bodies.body_variant_overloads_single_value_enum_discriminator(
+s.unions.body_variant_overloads_single_value_enum_discriminator(
     kind="a", alpha="x"
 )
-s.request_bodies.body_variant_overloads_single_value_enum_discriminator(
+s.unions.body_variant_overloads_single_value_enum_discriminator(
     kind="b", beta="y"
 )
 """,
     "request_satisfies_required_query_param": """
-s.request_bodies.body_variant_overloads_renamed_params(
+s.unions.body_variant_overloads_renamed_params(
     "id",
     request={
         "item_id": "id",
@@ -230,7 +232,7 @@ def overload_headers(method_name: str, sub_sdk: object) -> list[str]:
 
 
 def unpack_overload_ignores(method_name: str) -> dict[str, list[bool]]:
-    headers = overload_headers(method_name, SDK().request_bodies)
+    headers = overload_headers(method_name, SDK().unions)
     return {
         name: [
             "# pyright: ignore[reportOverlappingOverload]" in header.splitlines()[0]
@@ -257,7 +259,7 @@ def test_body_variant_overloads_ignore_overlap_after_first_unpack(method_name: s
 
 def test_body_variant_overloads_skip_unpack_for_single_value_enum_discriminators():
     headers = overload_headers(
-        "body_variant_overloads_single_value_enum_discriminator", SDK().request_bodies
+        "body_variant_overloads_single_value_enum_discriminator", SDK().unions
     )
 
     assert headers
@@ -277,7 +279,7 @@ def mock_sdk(sent: list[httpx.Request]) -> SDK:
 
 def send_discriminated_with_request(**kwargs) -> httpx.Request:
     sent: list[httpx.Request] = []
-    mock_sdk(sent).request_bodies.body_variant_overloads_discriminated(
+    mock_sdk(sent).unions.body_variant_overloads_discriminated(
         "from-argument",
         request={
             "variant_id": "from-request",
@@ -290,6 +292,7 @@ def send_discriminated_with_request(**kwargs) -> httpx.Request:
 
 
 def test_body_variant_overloads_apply_non_body_arguments_to_request():
+    record_test("unions-body-variant-overloads-non-body-arguments")
     sent = send_discriminated_with_request(
         x_trace_id="from-argument", include_meta=True, tags=("a", "b")
     )
@@ -308,7 +311,7 @@ def test_body_variant_overloads_keep_request_values_for_none_arguments():
 
 def test_body_variant_overloads_apply_renamed_arguments_to_request():
     sent: list[httpx.Request] = []
-    mock_sdk(sent).request_bodies.body_variant_overloads_renamed_params(
+    mock_sdk(sent).unions.body_variant_overloads_renamed_params(
         "from-argument",
         request={
             "item_id": "from-request",
@@ -330,7 +333,7 @@ def test_body_variant_overloads_apply_renamed_arguments_to_request():
 
 def test_body_variant_overloads_send_renamed_flattened_arguments():
     sent: list[httpx.Request] = []
-    mock_sdk(sent).request_bodies.body_variant_overloads_renamed_params(
+    mock_sdk(sent).unions.body_variant_overloads_renamed_params(
         "id",
         count=1,
         search="term",
@@ -342,3 +345,77 @@ def test_body_variant_overloads_send_renamed_flattened_arguments():
 
     assert sent[0].url.params["q"] == "term"
     assert sent[0].headers["X-Request-Ref"] == "ref"
+
+
+def test_body_variant_overloads_send_each_discriminated_variant():
+    record_test("unions-body-variant-overloads-discriminated")
+    sent: list[httpx.Request] = []
+    sdk = mock_sdk(sent)
+
+    sdk.unions.body_variant_overloads_discriminated(
+        "id", kind="model", model="m", input="i"
+    )
+    sdk.unions.body_variant_overloads_discriminated(
+        "id", kind="agent", agent="a", input="i"
+    )
+
+    assert [json.loads(request.content) for request in sent] == [
+        {"kind": "model", "model": "m", "input": "i"},
+        {"kind": "agent", "agent": "a", "input": "i"},
+    ]
+
+
+def test_body_variant_overloads_send_each_non_discriminated_variant():
+    record_test("unions-body-variant-overloads-non-discriminated")
+    sent: list[httpx.Request] = []
+    sdk = mock_sdk(sent)
+
+    sdk.unions.body_variant_overloads_non_discriminated(alpha="a", shared=1)
+    sdk.unions.body_variant_overloads_non_discriminated(gamma="g", c_only=True)
+
+    assert [json.loads(request.content) for request in sent] == [
+        {"alpha": "a", "shared": 1},
+        {"gamma": "g", "c_only": True},
+    ]
+
+
+def test_body_variant_overloads_match_request_body():
+    record_test("unions-body-variant-overloads-request-body")
+    sent: list[httpx.Request] = []
+    sdk = mock_sdk(sent)
+
+    sdk.unions.body_variant_overloads_discriminated(
+        "id", kind="model", model="m", input="i", type_="t", background=True
+    )
+    sdk.unions.body_variant_overloads_discriminated(
+        "id",
+        request={
+            "variant_id": "id",
+            "discriminated_variant_body": {
+                "kind": "model",
+                "model": "m",
+                "input": "i",
+                "type": "t",
+                "background": True,
+            },
+        }
+    )
+
+    assert json.loads(sent[0].content) == json.loads(sent[1].content)
+    assert json.loads(sent[0].content)["type"] == "t"
+
+
+def test_body_variant_overloads_send_renamed_body_arguments():
+    record_test("unions-body-variant-overloads-renamed-argument")
+    sent: list[httpx.Request] = []
+    sdk = mock_sdk(sent)
+
+    sdk.unions.body_variant_overloads_reserved_field_names(
+        alpha="a", retries_=3, timeout_ms_=5
+    )
+    sdk.unions.body_variant_overloads_reserved_field_names(beta="b", server_url_="u")
+
+    assert [json.loads(request.content) for request in sent] == [
+        {"alpha": "a", "retries": 3, "timeout_ms": 5},
+        {"beta": "b", "server_url": "u"},
+    ]

@@ -5,6 +5,6 @@ targets:
     - pythonv2
 type: fix
 bump: patch
-description: report unknown keyword arguments on body-variant overloads and send path, query and header arguments passed with them
+description: report unknown keyword arguments on body-variant overloads, send path, query and header arguments passed with them, and send body fields whose argument names are renamed (`type_`, `retries_`)
 author: 2ynn
 date: "2026-10-22"

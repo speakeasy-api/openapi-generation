@@ -45,7 +45,7 @@ func TestIntentPresetMergeMatrix(t *testing.T) {
 		DiscriminatorKey:     "kind",
 		DiscriminatorValue:   `"model"`,
 		DiscriminatorAliases: []string{`"model"`, `"llm"`},
-		Escape:               "cli request-bodies body-variant-overloads-discriminated",
+		Escape:               "cli unions body-variant-overloads-discriminated",
 	}
 	noPreset := flagutil.PresetMerge{Command: "alias", Variant: "CliIntentModelRequest", Foreign: []string{"agent"}}
 	nestedPreset := flagutil.PresetMerge{
