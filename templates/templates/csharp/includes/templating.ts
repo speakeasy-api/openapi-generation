@@ -492,7 +492,7 @@ function templateMethodOverloads(
             }
           : a,
       );
-      const nullable = canTypeBeNull(c.Member);
+      const nullable = !c.IsValueType;
       const nonNull = nullable
         ? nonNullNames.map((n) => (n === bodyArg.Name ? name : n))
         : nonNullNames.filter((n) => n !== bodyArg.Name);
