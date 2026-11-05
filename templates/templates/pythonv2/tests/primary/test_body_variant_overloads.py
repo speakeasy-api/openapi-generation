@@ -75,6 +75,15 @@ def call(stream: bool) -> None:
 """,
 }
 
+INVALID_CALL_ERRORS = {
+    "unknown_flattened_kwarg": 'No overloads for "body_variant_overloads_discriminated"',
+    "nested_typed_dict_typo": '"temprature" is an undefined item',
+    "request_typed_dict_typo": 'parameter "request"',
+    "mixed_variant_fields": 'No overloads for "body_variant_overloads_discriminated"',
+    "unknown_flattened_kwarg_with_stream": 'No overloads for "body_variant_overloads_sse_with_path"',
+    "nested_typed_dict_typo_with_bool_stream": '"temprature" is an undefined item',
+}
+
 VALID_CALLS = {
     "flattened_kwargs": """
 s.unions.body_variant_overloads_discriminated(
@@ -208,7 +217,11 @@ def run_pyright(tmp_path: Path, cases: dict[str, str]) -> dict[str, list[str]]:
 def test_body_variant_overloads_reject_invalid_calls(tmp_path: Path):
     errors = run_pyright(tmp_path, INVALID_CALLS)
 
-    assert [name for name, messages in errors.items() if not messages] == []
+    assert {
+        name: messages
+        for name, messages in errors.items()
+        if not any(INVALID_CALL_ERRORS[name] in message for message in messages)
+    } == {}
 
 
 def test_body_variant_overloads_accept_valid_calls(tmp_path: Path):
@@ -301,6 +314,11 @@ def test_body_variant_overloads_apply_non_body_arguments_to_request():
     assert sent.headers["X-Trace-ID"] == "from-argument"
     assert sent.url.params["include_meta"] == "true"
     assert sent.url.params.get_list("tags") == ["a", "b"]
+
+
+def test_body_variant_overloads_reject_body_fields_with_request():
+    with pytest.raises(ValueError, match="'request' and body fields"):
+        send_discriminated_with_request(background=True)
 
 
 def test_body_variant_overloads_keep_request_values_for_none_arguments():
@@ -398,7 +416,7 @@ def test_body_variant_overloads_match_request_body():
                 "type": "t",
                 "background": True,
             },
-        }
+        },
     )
 
     assert json.loads(sent[0].content) == json.loads(sent[1].content)
