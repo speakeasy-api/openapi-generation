@@ -657,6 +657,11 @@ const (
 	TestReactQueryKeyOptInInfersQueryType
 	TestReactQueryKeyIncludesParametersAndRequestBody
 	TestReactQueryBuildersKeyDistinctBodies
+	TestUnionsBodyVariantOverloadsDiscriminated
+	TestUnionsBodyVariantOverloadsNonDiscriminated
+	TestUnionsBodyVariantOverloadsRequestBody
+	TestUnionsBodyVariantOverloadsNonBodyArguments
+	TestUnionsBodyVariantOverloadsRenamedArgument
 
 	// Custom CLI-target behaviour tests recorded by the generated CLI test
 	// suite (exit codes, pre-request classification, catalogs, intents,
