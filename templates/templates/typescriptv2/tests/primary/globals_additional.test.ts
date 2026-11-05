@@ -1,7 +1,7 @@
 import { vi, expect, test, afterEach } from "vitest";
 
 import { SDK } from "../index.js";
-import { resetEnv } from "../lib/env.js";
+import { envSchema, resetEnv } from "../lib/env.js";
 import { HTTPClient } from "../lib/http.js";
 import { GlobalPathParameterGetResponse } from "../sdk/models/operations/globalpathparameterget.js";
 import { GlobalsHeaderGetResponse } from "../sdk/models/operations/globalsheaderget.js";
@@ -238,5 +238,17 @@ test("Test Debug Env Var False Keeps Logging Off", async () => {
 
     expect(res.httpMeta.response.status).toBe(200);
     expect(group).toHaveBeenCalled();
+  }
+
+  for (const value of [true, 1]) {
+    expect(envSchema.parse({ SPEAKEASY_DEBUG: value }).SPEAKEASY_DEBUG).toBe(
+      true,
+    );
+  }
+
+  for (const value of [false, 0]) {
+    expect(envSchema.parse({ SPEAKEASY_DEBUG: value }).SPEAKEASY_DEBUG).toBe(
+      false,
+    );
   }
 });

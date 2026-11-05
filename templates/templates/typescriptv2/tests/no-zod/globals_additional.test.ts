@@ -239,4 +239,12 @@ test("Test Debug Env Var False Keeps Logging Off", async () => {
     expect(res.httpMeta.response.status).toBe(200);
     expect(group).toHaveBeenCalled();
   }
+
+  resetEnv();
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+  vi.stubEnv("SPEAKEASY_OAUTH2", "Bearer set-after-construction");
+
+  const res = await sdk.auth.globalBearerAuth();
+
+  expect(res.token?.token).toBe("set-after-construction");
 });

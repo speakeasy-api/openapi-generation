@@ -59,11 +59,13 @@ export const envSchema: z.ZodMiniType<Env, unknown> = z.object({
   SPEAKEASY_DEPRECATED_QUERY_PARAM2: z.optional(z.string()),
   SPEAKEASY_LONE_QUERY_PARAM: z.optional(z.string()),
 
-  SPEAKEASY_DEBUG: z.optional(z.pipe(z.string(), z.transform(parseEnvFlag))),
+  SPEAKEASY_DEBUG: z.optional(z.pipe(z.unknown(), z.transform(parseEnvFlag))),
 });
 
-function parseEnvFlag(value: string): boolean {
-  return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
+function parseEnvFlag(value: unknown): boolean {
+  return ["true", "1", "yes", "on"].includes(
+    String(value).trim().toLowerCase(),
+  );
 }
 
 /**
