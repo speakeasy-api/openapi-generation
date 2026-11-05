@@ -1,0 +1,163 @@
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace {{.Local.Namespace}};
+
+internal sealed class ObjectJsonConverter : JsonConverter<object>
+{
+    public override object? Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
+    {
+        switch (reader.TokenType)
+        {
+            case JsonTokenType.Null:
+                return null;
+            case JsonTokenType.True:
+                return true;
+            case JsonTokenType.False:
+                return false;
+            case JsonTokenType.String:
+                return reader.GetString();
+            case JsonTokenType.Number:
+                if (reader.TryGetInt64(out var l))
+                {
+                    return l;
+                }
+                return reader.GetDouble();
+            case JsonTokenType.StartObject:
+            {
+                var dict = new Dictionary<string, object?>();
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                {
+                    var key = reader.GetString()!;
+                    reader.Read();
+                    dict[key] = Read(ref reader, typeof(object), options);
+                }
+                return dict;
+            }
+            case JsonTokenType.StartArray:
+            {
+                var list = new List<object?>();
+                while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                {
+                    list.Add(Read(ref reader, typeof(object), options));
+                }
+                return list;
+            }
+            default:
+                throw new JsonException($"Unexpected token: {reader.TokenType}");
+        }
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer,
+        object value,
+        JsonSerializerOptions options
+    )
+    {
+        switch (value)
+        {
+            case null:
+                writer.WriteNullValue();
+                return;
+            case JsonElement el:
+                el.WriteTo(writer);
+                return;
+            case string s:
+                writer.WriteStringValue(s);
+                return;
+            case bool b:
+                writer.WriteBooleanValue(b);
+                return;
+            case byte by:
+                writer.WriteNumberValue(by);
+                return;
+            case sbyte sb:
+                writer.WriteNumberValue(sb);
+                return;
+            case short sh:
+                writer.WriteNumberValue(sh);
+                return;
+            case ushort us:
+                writer.WriteNumberValue(us);
+                return;
+            case int i:
+                writer.WriteNumberValue(i);
+                return;
+            case uint ui:
+                writer.WriteNumberValue(ui);
+                return;
+            case long lv:
+                writer.WriteNumberValue(lv);
+                return;
+            case ulong ul:
+                writer.WriteNumberValue(ul);
+                return;
+            case float f:
+                writer.WriteNumberValue(f);
+                return;
+            case double d:
+                writer.WriteNumberValue(d);
+                return;
+            case decimal m:
+                writer.WriteNumberValue(m);
+                return;
+            case DateTime dt:
+                writer.WriteStringValue(dt);
+                return;
+            case DateTimeOffset dto:
+                writer.WriteStringValue(dto);
+                return;
+            case Guid g:
+                writer.WriteStringValue(g);
+                return;
+        }
+
+        if (value is System.Collections.IDictionary dict)
+        {
+            writer.WriteStartObject();
+            foreach (System.Collections.DictionaryEntry kv in dict)
+            {
+                writer.WritePropertyName(kv.Key?.ToString() ?? "");
+                if (kv.Value is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else
+                {
+                    Write(writer, kv.Value, options);
+                }
+            }
+            writer.WriteEndObject();
+            return;
+        }
+        if (value is System.Collections.IEnumerable seq && !(value is string))
+        {
+            writer.WriteStartArray();
+            foreach (var item in seq)
+            {
+                if (item is null)
+                {
+                    writer.WriteNullValue();
+                }
+                else
+                {
+                    Write(writer, item, options);
+                }
+            }
+            writer.WriteEndArray();
+            return;
+        }
+
+        var type = value.GetType();
+        var info = options.GetTypeInfo(type);
+        JsonSerializer.Serialize(writer, value, info);
+    }
+}

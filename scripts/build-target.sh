@@ -203,7 +203,12 @@ function create_test_spec() {
     else
         cp -r "./tests/tests/uber/"* "./testSDKs/${target_dir_name}/.speakeasy/" 2>/dev/null || true
     fi
-    cp -r "./tests/.hooks/${target}/${variant}/"* "./testSDKs/${target_dir_name}/" 2>/dev/null || true
+    local hooks_target="${target}"
+    if [[ ! -d "./tests/.hooks/${target}" && -d "./tests/.hooks/${target%v2}" ]]; then
+        # If ./hooks/<target>v2/ test hook folder does not exist, fall back to ./hooks/<target>/
+        hooks_target="${target%v2}"
+    fi
+    cp -r "./tests/.hooks/${hooks_target}/${variant}/"* "./testSDKs/${target_dir_name}/" 2>/dev/null || true
 
     run_cmd "${SCRIPT_DIR}/build-openapi-document.sh" "${target}" "${variant}"
     rewrite_test_service_urls "./testSDKs/${target_dir_name}"

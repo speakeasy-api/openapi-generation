@@ -10,7 +10,6 @@ using Openapi;
 using Openapi.Models.Operations;
 using Openapi.Models.Shared;
 using Openapi.Utils;
-using Newtonsoft.Json;
 
 public class OpenEnumsShould
 {
@@ -68,7 +67,7 @@ public class OpenEnumsShould
         var jsonKnown = await Helpers.GetSerializedBodyJson(themeKnown);
         Assert.Equal("{\"color\":\"red\",\"heroWidth\":480,\"icon\":\"tick\"}", jsonKnown);
 
-        var deserializedKnown = JsonConvert.DeserializeObject<Theme>(jsonKnown);
+        var deserializedKnown = Compat.DeserializeJson<Theme>(jsonKnown);
         Assert.Equal(themeKnown.Color, deserializedKnown.Color);
         Assert.Equal(themeKnown.Icon, deserializedKnown.Icon);
         Assert.Equal(themeKnown.HeroWidth, deserializedKnown.HeroWidth);
@@ -88,7 +87,7 @@ public class OpenEnumsShould
         var jsonUnknown = await Helpers.GetSerializedBodyJson(themeUnknown);
         Assert.Equal("{\"color\":\"yellow\",\"heroWidth\":514,\"icon\":\"tick\"}", jsonUnknown);
 
-        var deserializedUnknown = JsonConvert.DeserializeObject<Theme>(jsonUnknown);
+        var deserializedUnknown = Compat.DeserializeJson<Theme>(jsonUnknown);
         Assert.Equal(themeUnknown.Color, deserializedUnknown.Color);
         Assert.Equal(themeUnknown.Icon, deserializedUnknown.Icon);
         Assert.Equal(themeUnknown.HeroWidth, deserializedUnknown.HeroWidth);
@@ -261,9 +260,7 @@ public class OpenEnumsShould
     {
         // Presence-aware SDKs read with DateParseHandling.None, so ISO-shaped unknown
         // values reach OpenEnumConverter as raw strings and round-trip unchanged.
-        var parsed = JsonConvert.DeserializeObject<Color>(
-            "\"2024-01-02T03:04:05Z\"",
-            Utilities.GetDefaultJsonDeserializerSettings());
+        var parsed = Compat.DeserializeWithDefaultSettings<Color>("\"2024-01-02T03:04:05Z\"");
         Assert.NotNull(parsed);
         Assert.False(parsed!.IsKnown());
         Assert.Equal("2024-01-02T03:04:05Z", parsed.Value);
@@ -274,19 +271,15 @@ public class OpenEnumsShould
     public void FractionalValuesForIntegralOpenEnums()
     {
         // long-typed and int-typed open enums must reject fractional wire values
-        Assert.Throws<JsonSerializationException>(() =>
-            JsonConvert.DeserializeObject<HeroWidth>(
-                "719.5", Utilities.GetDefaultJsonDeserializerSettings()));
-        Assert.Throws<JsonSerializationException>(() =>
-            JsonConvert.DeserializeObject<Int32Enum>(
-                "1.7", Utilities.GetDefaultJsonDeserializerSettings()));
+        Compat.AssertThrowsJsonSerializationException(() =>
+            Compat.DeserializeWithDefaultSettings<HeroWidth>("719.5"));
+        Compat.AssertThrowsJsonSerializationException(() =>
+            Compat.DeserializeWithDefaultSettings<Int32Enum>("1.7"));
 
         // Integral-valued doubles and long-to-int narrowing still coerce.
-        var wholeDouble = JsonConvert.DeserializeObject<HeroWidth>(
-            "2160.0", Utilities.GetDefaultJsonDeserializerSettings());
+        var wholeDouble = Compat.DeserializeWithDefaultSettings<HeroWidth>("2160.0");
         Assert.Equal(HeroWidth.Of(2160), wholeDouble);
-        var narrowed = JsonConvert.DeserializeObject<Int32Enum>(
-            "7", Utilities.GetDefaultJsonDeserializerSettings());
+        var narrowed = Compat.DeserializeWithDefaultSettings<Int32Enum>("7");
         Assert.Equal(Int32Enum.Of(7), narrowed);
     }
 }

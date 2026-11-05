@@ -18,6 +18,7 @@ using Xunit;
 
 public class OptionalNullableFieldsShould
 {
+{{- if not isCsharpV2}}
     // ── OptionalNullable<T> struct surface ──────────────────────────────────
 
     [Fact]
@@ -257,6 +258,7 @@ public class OptionalNullableFieldsShould
 
         public bool ShouldSerializeField() => Field.IsSet;
     }
+{{- end}}
 
     // ── Optional + nullable: absent/null/value remain distinct ─────────────
 

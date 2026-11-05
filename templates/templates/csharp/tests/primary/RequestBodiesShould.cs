@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Openapi;
 using Openapi.Models.Operations;
 using Openapi.Models.Shared;
@@ -271,7 +270,7 @@ public class RequestBodiesShould
                 },
                 {
                     "mapElemObject",
-                    new { property = "property-test" }
+                    new Dictionary<string, object> { { "property", "property-test" } }
                 },
                 {
                     "mapElemString",
@@ -1264,13 +1263,13 @@ public class RequestBodiesShould
         var res = await sdk.RequestBodies.RequestBodyPutMultipartDeepAsync(obj);
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
-        Assert.Equal(Utilities.ToString(obj.Arr), res.Res!.Form.Arr);
-        Assert.Equal("true", res.Res!.Form.Bool);
-        Assert.Equal("1", res.Res!.Form.Int);
-        Assert.Equal(Utilities.ToString(obj.Map), res.Res!.Form.Map);
-        Assert.Equal("1.1", res.Res!.Form.Num);
-        Assert.Equal(Utilities.ToString(obj.Obj), res.Res!.Form.Obj);
-        Assert.Equal("test", res.Res!.Form.Str);
+        Assert.Equal(Compat.ToString(obj.Arr), res.Res.Form.Arr);
+        Assert.Equal("true", res.Res.Form.Bool);
+        Assert.Equal("1", res.Res.Form.Int);
+        Assert.Equal(Compat.ToString(obj.Map), res.Res.Form.Map);
+        Assert.Equal("1.1", res.Res.Form.Num);
+        Assert.Equal(Compat.ToString(obj.Obj), res.Res.Form.Obj);
+        Assert.Equal("test", res.Res.Form.Str);
     }
 
     [Fact]
@@ -1391,14 +1390,14 @@ public class RequestBodiesShould
         var res = await sdk.RequestBodies.RequestBodyPostFormDeepAsync(obj);
 
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
-        Assert.NotNull(res.Res!);
-        Assert.Equal(Utilities.ToString(obj.Arr), res.Res!.Form.Arr);
-        Assert.Equal("true", res.Res!.Form.Bool);
-        Assert.Equal("1", res.Res!.Form.Int);
-        Assert.Equal(Utilities.ToString(obj.Map), res.Res!.Form.Map);
-        Assert.Equal("1.1", res.Res!.Form.Num);
-        Assert.Equal(Utilities.ToString(obj.Obj), res.Res!.Form.Obj);
-        Assert.Equal("test", res.Res!.Form.Str);
+        Assert.NotNull(res.Res);
+        Assert.Equal(Compat.ToString(obj.Arr), res.Res.Form.Arr);
+        Assert.Equal("true", res.Res.Form.Bool);
+        Assert.Equal("1", res.Res.Form.Int);
+        Assert.Equal(Compat.ToString(obj.Map), res.Res.Form.Map);
+        Assert.Equal("1.1", res.Res.Form.Num);
+        Assert.Equal(Compat.ToString(obj.Obj), res.Res.Form.Obj);
+        Assert.Equal("test", res.Res.Form.Str);
     }
 
     [Fact]
@@ -1666,11 +1665,8 @@ public class RequestBodiesShould
         CommonHelpers.RecordTest("request-bodies-complex-number-types-required-missing");
 
         var incompleteJson = "{}";
-        var ex = Assert.Throws<JsonSerializationException>(
-            () => JsonConvert.DeserializeObject<ComplexNumberTypes>(
-                incompleteJson,
-                Utilities.GetDefaultJsonDeserializerSettings()
-            )
+        var ex = Compat.AssertThrowsJsonSerializationException(
+            () => Compat.DeserializeWithDefaultSettings<ComplexNumberTypes>(incompleteJson)
         );
         Assert.Contains("Required property", ex.Message);
     }

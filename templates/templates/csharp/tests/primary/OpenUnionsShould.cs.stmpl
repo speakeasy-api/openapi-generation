@@ -1,18 +1,22 @@
 using System.Collections.Generic;
+{{- if not isCsharpV2}}
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+{{- end}}
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using Xunit;
 
 public class OpenUnionsShould
 {
+{{- if not isCsharpV2}}
     private static readonly JsonSerializerSettings Settings =
         Utilities.GetDefaultJsonDeserializerSettings();
+{{- end}}
 
     private static Vehicle Deserialize(string json)
     {
-        return JsonConvert.DeserializeObject<Vehicle>(json, Settings)!;
+        return Compat.DeserializeWithDefaultSettings<Vehicle>(json)!;
     }
 
     [Fact]
@@ -34,7 +38,7 @@ public class OpenUnionsShould
         Assert.Equal("red", bike.Bike!.Colour);
         Assert.False(bike.IsUnknown());
 
-        var restored = Deserialize(JsonConvert.SerializeObject(car));
+        var restored = Deserialize(Compat.SerializeJson(car));
         Assert.Equal(VehicleType.Car.ToString(), restored.Type.ToString());
         Assert.NotNull(restored.Car);
     }
@@ -54,19 +58,16 @@ public class OpenUnionsShould
         Assert.Null(v.Bike);
         Assert.NotNull(v.UnknownRaw);
 
-        var raw = (JObject)v.UnknownRaw!;
-        Assert.Equal("spaceship", (string?)raw["vehicleType"]);
-        Assert.Equal(9000, (int?)raw["thrust"]);
+        var raw = v.UnknownRaw;
+        Assert.Equal("spaceship", Compat.RawString(raw, "vehicleType"));
+        Assert.Equal(9000, Compat.RawInt(raw, "thrust"));
         // Date-time-shaped strings stay raw strings, offset untouched.
-        Assert.Equal(JTokenType.String, raw["launchedAt"]!.Type);
-        Assert.Equal("2024-01-02T03:04:05+02:00", (string?)raw["launchedAt"]);
+        Assert.True(Compat.RawIsString(raw, "launchedAt"));
+        Assert.Equal("2024-01-02T03:04:05+02:00", Compat.RawString(raw, "launchedAt"));
 
-        var serialized = JsonConvert.SerializeObject(v);
+        var serialized = Compat.SerializeJson(v);
         Assert.Contains("2024-01-02T03:04:05+02:00", serialized);
-        // JToken.Parse would date-coerce launchedAt and break DeepEquals; parse
-        // through the SDK settings (DateParseHandling.None) like the SDK does.
-        var reparsed = JsonConvert.DeserializeObject<JToken>(serialized, Settings)!;
-        Assert.True(JToken.DeepEquals(reparsed, raw));
+        Assert.True(Compat.RawEquals(raw, serialized));
         var restored = Deserialize(serialized);
         Assert.True(restored.IsUnknown());
     }
@@ -93,8 +94,8 @@ public class OpenUnionsShould
             Assert.NotNull(v.UnknownRaw);
 
             // Primitive raw values must round-trip as valid JSON of the same shape.
-            var serialized = JsonConvert.SerializeObject(v);
-            Assert.True(JToken.DeepEquals(JToken.Parse(serialized), JToken.Parse(payload)));
+            var serialized = Compat.SerializeJson(v);
+            Assert.True(Compat.RawEquals(Compat.ParseRaw(serialized), payload));
         }
     }
 
@@ -105,7 +106,7 @@ public class OpenUnionsShould
 
         // Known "bike" discriminator with the required "colour" field missing: the
         // known variant keeps strict validation and must not be masked as Unknown.
-        Assert.ThrowsAny<JsonException>(
+        Compat.AssertThrowsAnyJsonException(
             () => Deserialize("{\"vehicleType\":\"bike\",\"wheelsType\":\"two\"}")
         );
     }
@@ -115,11 +116,10 @@ public class OpenUnionsShould
     {
         CommonHelpers.RecordTest("open-union-embedded");
 
-        var vehicles = JsonConvert.DeserializeObject<List<Vehicle>>(
+        var vehicles = Compat.DeserializeUnregistered<List<Vehicle>>(
             "[{\"vehicleType\":\"car\",\"wheelsType\":\"four\"},"
                 + "{\"vehicleType\":\"spaceship\",\"thrust\":9000},"
-                + "{\"vehicleType\":\"bike\",\"wheelsType\":\"two\",\"colour\":\"green\"}]",
-            Settings
+                + "{\"vehicleType\":\"bike\",\"wheelsType\":\"two\",\"colour\":\"green\"}]"
         )!;
         Assert.Equal(3, vehicles.Count);
 
@@ -127,7 +127,7 @@ public class OpenUnionsShould
         Assert.NotNull(vehicles[0].Car);
 
         Assert.True(vehicles[1].IsUnknown());
-        Assert.Equal("spaceship", (string?)vehicles[1].UnknownRaw!["vehicleType"]);
+        Assert.Equal("spaceship", Compat.RawString(vehicles[1].UnknownRaw, "vehicleType"));
 
         Assert.False(vehicles[2].IsUnknown());
         Assert.Equal("green", vehicles[2].Bike!.Colour);
@@ -144,12 +144,9 @@ public class OpenUnionsShould
         Assert.Null(vehicle.UnknownRaw);
 
         var ex = Assert.Throws<System.InvalidOperationException>(
-            () => JsonConvert.SerializeObject(vehicle)
+            () => Compat.SerializeJson(vehicle)
         );
-        Assert.Equal(
-            "Unknown union value has no raw payload; construct via CreateUnknown(JToken).",
-            ex.Message
-        );
+        Assert.Equal(Compat.UnknownNoRawPayloadMessage, ex.Message);
     }
 
     [Fact]
@@ -172,18 +169,42 @@ public class OpenUnionsShould
         );
         Assert.NotNull(predicateVariant.IsUnknown);
 
-        var raw = JObject.Parse("{\"future\":true}");
+        var raw = Compat.ParseRaw("{\"future\":true}");
         var unknown = OpenUnionHelperNameCollision.CreateUnknown(raw);
         Assert.True(unknown.IsUnknown1());
-        Assert.Same(raw, unknown.Unknown1Raw);
-        Assert.True(
-            JToken.DeepEquals(
-                raw,
-                JToken.Parse(JsonConvert.SerializeObject(unknown))
-            )
-        );
-
+        Compat.AssertSameRaw(raw, unknown.Unknown1Raw);
+        Assert.True(Compat.RawEquals(raw, Compat.SerializeJson(unknown)));
     }
+
+    [Fact]
+    public void LoseToGenuineSiblingMatchInUnion()
+    {
+        CommonHelpers.RecordTest("open-union-smart-union-interop");
+
+        // An open union variant can always "succeed" by producing Unknown, so a
+        // sibling with a genuine match must win over it.
+        var text = Compat.DeserializeWithDefaultSettings<History>("\"hello\"")!;
+        Assert.Equal("hello", text.Str);
+        Assert.Null(text.Choice);
+        Assert.False(text.IsUnknown());
+
+        // A known discriminator still picks the open union variant.
+        var choice = Compat.DeserializeWithDefaultSettings<History>(
+            "{\"kind\":\"text\",\"text\":\"hi\"}"
+        )!;
+        Assert.NotNull(choice.Choice);
+        Assert.False(choice.Choice!.IsUnknown());
+        Assert.Equal("hi", choice.Choice.TextChoice!.Text);
+
+        // With no genuine match, the open union variant keeps its Unknown value.
+        var future = Compat.DeserializeWithDefaultSettings<History>(
+            "{\"kind\":\"future\",\"payload\":1}"
+        )!;
+        Assert.NotNull(future.Choice);
+        Assert.True(future.Choice!.IsUnknown());
+        Assert.Equal("future", Compat.RawString(future.Choice.UnknownRaw, "kind"));
+    }
+{{- if not isCsharpV2}}
 
     [Fact]
     public void LoseToGenuineSiblingMatchInSmartUnion()
@@ -209,4 +230,5 @@ public class OpenUnionsShould
         Assert.Equal(typeof(Vehicle), vehicleWinner?.Type);
         Assert.False(((Vehicle)vehicleValue!).IsUnknown());
     }
+{{- end}}
 }

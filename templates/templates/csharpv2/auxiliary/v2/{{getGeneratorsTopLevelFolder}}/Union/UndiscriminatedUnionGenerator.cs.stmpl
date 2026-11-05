@@ -1,0 +1,134 @@
+#nullable enable
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Union;
+
+[Generator]
+public class UndiscriminatedUnionGenerator : UnionGeneratorBase
+{
+    private const string AttributeName =
+        "{{getGeneratorsPackageId}}.Union.GenerateUndiscriminatedUnionConverterAttribute";
+
+    protected override string AttributeFullName => AttributeName;
+
+    protected override bool NullFailsAsJsonException => {{if useSmartUnion}}true{{else}}false{{end}};
+
+    private protected override string GenerateReadVariantLogic(UnionModel model)
+    {
+        // For each candidate variant:
+        // - Optionally guard deserialization with a structural hint (presence of a distinctive JSON property).
+        //   The hint is the first [JsonPropertyName]-annotated property on the type — this is a heuristic.
+        //   IMPROVEMENT: using any [JsonPropertyName] property as a "distinctive" marker is fragile.
+        //   A more reliable approach would be a dedicated attribute to mark the key discriminating field.
+        // - Attempt deserialization; swallow JsonException (type mismatch).
+        // - On success, record the AdditionalProperties count as the overflow score.
+        var tryBlocksList = model.Properties
+            .Select((prop, i) =>
+            {
+                var index = i + 1;
+
+                string distinctiveCheck = "";
+                string distinctiveCheckClose = "";
+                if (prop.DistinctiveJsonPropertyName != null)
+                {
+                    // Guard the property probe behind a ValueKind check —
+                    // TryGetProperty throws InvalidOperationException when the
+                    // root is not an Object (mixed-primitive / array-variant
+                    // unions hit this on Number/Array/String roots).
+                    distinctiveCheck = $"if (jsonDoc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object && jsonDoc.RootElement.TryGetProperty(\"{prop.DistinctiveJsonPropertyName}\", out _))\n" + "{\n";
+                    distinctiveCheckClose = "}\n";
+                }
+
+                // Score variants by structural fit against the variant's metadata, recursing
+                // through nested objects and array/collection elements (see UnionScoring.Score).
+                // Overflow = JSON keys the variant does not declare; Missing = variant properties
+                // absent from the JSON. Root objects that tie on overflow — and array-of-object
+                // variants, whose Array root exposed no top-level signal at all — are separated by
+                // their nested structure and by Missing, so the tightest structural match wins
+                // instead of declaration order.
+                var overflowLine =
+                    $"var score{index} = global::{{getModelNamespace ""}}.UnionScoring.Score(jsonDoc.RootElement, _ti{prop.Name}, options);";
+
+                // Value-type variants: JsonTypeInfo<T> Deserialize returns T
+                // (non-nullable). JSON null throws JsonException — caught
+                // below. Skip null check (would warn CS0472/CS8073).
+                // Reference-type variants: keep null guard.
+                var isUnknown = prop.IsOpenUnion
+                    ? $"((global::{OpenUnionInterfaceName})value{index}).IsUnknown()"
+                    : "false";
+                var addLine = $"candidates.Add((value{index}, {isUnknown}, score{index}.Unknown, score{index}.Overflow, score{index}.Missing, {index}));";
+                var lbrace = "{";
+                var rbrace = "}";
+                var addCandidate = prop.IsValueType
+                    ? $"{overflowLine}\n                    {addLine}"
+                    : $"if (value{index} != null)\n                    {lbrace}\n                        {overflowLine}\n                        {addLine}\n                    {rbrace}";
+
+                // clang-format off
+                var blockCode = $$"""
+                {{interp "distinctiveCheck"}}
+                try
+                {
+                    var value{{interp "index"}} = System.Text.Json.JsonSerializer.Deserialize(jsonText, _ti{{interp "prop.Name"}});
+                    {{interp "addCandidate"}}
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                }
+                {{interp "distinctiveCheckClose"}}
+                """;
+                // clang-format on
+                return blockCode;
+            })
+            .ToList();
+
+        var tryBlocks = string.Join("\n\n", tryBlocksList);
+
+        // Best match = genuine match over Unknown, then fewest nested Unknown, then fewest overflow, then fewest missing, then earliest declaration order.
+        var selectionLogic = string.Join(
+            "\n",
+            model.Properties.Select((prop, i) =>
+            {
+                var index = i + 1;
+                var propType = prop.FullyQualifiedType.TrimEnd('?');
+                var methodName = prop.FactoryMethodName ?? $"Create{prop.Name}";
+                return $"if (bestMatch.index == {index}) return {model.FullyQualifiedName}.{methodName}(({propType})bestMatch.value);";
+            })
+        );
+
+        // clang-format off
+        var noMatch = model.Open
+            ? $$"""
+                reader = readerCopy;
+                return {{interp "model.FullyQualifiedName"}}.CreateUnknown(jsonDoc.RootElement.Clone());
+                """
+            : "throw new System.Text.Json.JsonException($\"Could not deserialize into any supported types for {nameof(" + model.Name + ")}\");";
+        // clang-format on
+
+        // IMPROVEMENT: `reader = readerCopy` is only set inside the `candidates.Count > 0` branch.
+        // On the no-match path (throw), the reader is left unadvanced, which is technically valid
+        // (the exception terminates deserialization) but can confuse callers that try/catch.
+        // clang-format off
+        return $$"""
+            var readerCopy = reader;
+            using var jsonDoc = System.Text.Json.JsonDocument.ParseValue(ref readerCopy);
+            var jsonText = jsonDoc.RootElement.GetRawText();
+
+            var candidates = new System.Collections.Generic.List<(object value, bool isUnknown, int unknownCount, int overflowCount, int missingCount, int index)>();
+
+            {{interp "tryBlocks"}}
+
+            if (candidates.Count > 0)
+            {
+                var bestMatch = candidates.OrderBy(c => c.isUnknown).ThenBy(c => c.unknownCount).ThenBy(c => c.overflowCount).ThenBy(c => c.missingCount).ThenBy(c => c.index).First();
+                reader = readerCopy;
+
+                {{interp "selectionLogic"}}
+            }
+
+            {{interp "noMatch"}}
+            """;
+        // clang-format on
+    }
+}

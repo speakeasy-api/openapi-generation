@@ -1,5 +1,5 @@
 #nullable enable
-namespace {{getScopeNamespace "utils"}}
+namespace {{if isCsharpV2}}{{getModelNamespace ""}}{{else}}{{getScopeNamespace "utils"}}{{end}}
 {
     public interface IOpenUnion
     {

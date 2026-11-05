@@ -1,0 +1,72 @@
+name: Test CSharp v2
+on:
+  workflow_call:
+    inputs:
+      test-group:
+        required: true
+        type: string
+    secrets:
+      BOT_REPO_TOKEN:
+        required: true
+env:
+  GOPRIVATE: "github.com/speakeasy-api"
+  SPEAKEASY_DEBUG: "true"
+jobs:
+  test-csharpv2:
+    timeout-minutes: 15
+    name: Test CSharp v2 - ${{ inputs.test-group }}
+    runs-on: ubicloud-standard-4-ubuntu-2404
+    permissions:
+      contents: "read"
+      id-token: "write"
+      actions: "read"
+    steps:
+      - name: Configure git for private modules
+        env:
+          GIT_AUTH_TOKEN: ${{ secrets.BOT_REPO_TOKEN }}
+        run: git config --global url."https://speakeasybot:${GIT_AUTH_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      # Add this step to install the compatible libssl1.1
+      - name: Install libssl1.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          sudo dpkg -i libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+          rm libssl1.1_1.1.0g-2ubuntu4_amd64.deb
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        env:
+          # Prevent "Unable to locate dotnet CLI" transient errors
+          # Reference: https://github.com/dotnet/sdk/issues/44957
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/.dotnet
+        with:
+          dotnet-version: |
+            5.x
+            6.x
+            8.x
+            10.x
+
+      - name: Verify dotnet versions installed
+        run: dotnet --list-sdks
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            cmd/**/go.sum
+            zSDKs/**/go.sum
+            services/**/go.sum
+      - name: Test
+        run: USAGE_GROUP=all TARGET=${{ inputs.test-group }} make test-csharpv2
+      - name: git diff
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Unexpected changes after code generation:"
+            git status --porcelain
+            git diff
+            echo "Run 'make build-csharpv2' command and commit these changes."
+            exit 1
+          fi

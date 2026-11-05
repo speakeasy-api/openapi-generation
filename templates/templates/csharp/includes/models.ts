@@ -96,7 +96,9 @@ function templateFieldType(
   }
   if (needsOptionalNullableWrapper(fieldDef)) {
     const inner = sanitizeType(fieldDef.Type, true, usageLocation);
-    return `OptionalNullable<${inner}>`;
+    return isCsharpV2()
+      ? `global::${getModelNamespace("")}.OptionalNullable<${inner}>`
+      : `OptionalNullable<${inner}>`;
   }
   return sanitizeType(fieldDef.Type, fallbackOptional, usageLocation);
 }
@@ -129,7 +131,7 @@ function templateShouldSerialize(
   fieldDef: FieldDef,
   className: string,
 ): string {
-  if (!needsOptionalNullableWrapper(fieldDef)) return "";
+  if (isCsharpV2() || !needsOptionalNullableWrapper(fieldDef)) return "";
   const name = sanitizeFieldName(fieldDef.Name, className);
   return `\n        public bool ShouldSerialize${name}() => ${name}.IsSet;`;
 }

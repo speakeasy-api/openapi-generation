@@ -1,0 +1,10 @@
+namespace {{getGeneratorsPackageId}}.Serialization;
+
+internal enum SerializationFormat
+{
+    Json = 0,
+    Multipart = 1,
+    Form = 2,
+    Raw = 3,
+    String = 4,
+}
