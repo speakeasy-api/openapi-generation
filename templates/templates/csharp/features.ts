@@ -26,7 +26,7 @@ const supportedFeatures = {
   docs: "0.5.5",
   pagination: "0.2.12",
   urlBasedPagination: "0.0.1",
-  unions: "1.2.4",
+  unions: "1.2.5",
   webhooks: "1.0.0",
   callbacks: "1.0.0",
   additionalProperties: "0.0.2",
