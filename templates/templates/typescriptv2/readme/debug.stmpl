@@ -13,5 +13,5 @@ const sdk = new {{$sdkName}}({ {{constants.debugLogger}}: console });
 ```
 {{- if .Global.Config.EnvVarPrefix }}
 
-You can also enable a default debug logger by setting an environment variable `{{ templateDebugEnvVar }}` to true.
+You can also enable a default debug logger by setting an environment variable `{{ templateDebugEnvVar }}` to `true`, `1`, `yes` or `on` (case-insensitive). Any other value leaves it off.
 {{- end }}
