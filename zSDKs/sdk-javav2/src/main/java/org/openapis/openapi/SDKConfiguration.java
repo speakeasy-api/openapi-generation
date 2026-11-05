@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.openapis.openapi.hooks.ClientCredentialsHook;
@@ -181,17 +180,6 @@ public class SDKConfiguration {
     public void setTimeout(Optional<Duration> timeout) {
         Utils.checkNotNull(timeout, "timeout");
         this.timeout = timeout;
-    }
-
-    private OptionalLong maxResponseBodyBytes = OptionalLong.empty();
-
-    public OptionalLong maxResponseBodyBytes() {
-        return maxResponseBodyBytes;
-    }
-
-    public void setMaxResponseBodyBytes(OptionalLong maxResponseBodyBytes) {
-        Utils.checkNotNull(maxResponseBodyBytes, "maxResponseBodyBytes");
-        this.maxResponseBodyBytes = maxResponseBodyBytes;
     }
 
     private ScheduledExecutorService retryScheduler = Executors.newSingleThreadScheduledExecutor();

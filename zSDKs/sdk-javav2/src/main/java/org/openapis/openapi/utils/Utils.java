@@ -1659,7 +1659,7 @@ public final class Utils {
     public static <T> T unmarshal(HttpResponse<InputStream> response, TypeReference<T> typeReference) {
         try {
             return mapper().readValue(Utils.extractByteArrayFromBody(response), typeReference);
-        } catch (ResponseTooLargeException | java.io.InterruptedIOException | java.net.http.HttpTimeoutException e) {
+        } catch (java.io.InterruptedIOException | java.net.http.HttpTimeoutException e) {
             throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw SDKException.from("Error deserializing response body: " + e.getMessage(), response, e);
@@ -1673,8 +1673,7 @@ public final class Utils {
                 Throwable cause = err instanceof java.util.concurrent.CompletionException && err.getCause() != null
                         ? err.getCause()
                         : err;
-                if (cause instanceof ResponseTooLargeException
-                        || cause instanceof java.io.InterruptedIOException
+                if (cause instanceof java.io.InterruptedIOException
                         || cause instanceof java.net.http.HttpTimeoutException) {
                     throw new java.io.UncheckedIOException((java.io.IOException) cause);
                 }

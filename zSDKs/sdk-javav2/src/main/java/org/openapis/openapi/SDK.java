@@ -17,7 +17,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.Consumer;
 import org.openapis.openapi.models.operations.BinaryAndStringUploadRequest;
 import org.openapis.openapi.models.operations.BinaryAndStringUploadRequestBuilder;
@@ -125,7 +124,6 @@ import org.openapis.openapi.operations.Validate;
 import org.openapis.openapi.utils.HTTPClient;
 import org.openapis.openapi.utils.Headers;
 import org.openapis.openapi.utils.Options;
-import org.openapis.openapi.utils.ResponseTooLargeException;
 import org.openapis.openapi.utils.RetryConfig;
 import org.openapis.openapi.utils.SpeakeasyHTTPClient;
 import org.openapis.openapi.utils.Utils;
@@ -308,23 +306,6 @@ public class SDK {
                 throw new IllegalArgumentException("timeout must be positive");
             }
             this.sdkConfiguration.setTimeout(Optional.of(timeout));
-            return this;
-        }
-
-        /**
-         * Caps the body bytes read per response; reading past the cap throws
-         * {@link ResponseTooLargeException}. Streaming responses are not capped.
-         * A custom HTTP client must implement {@code setMaxResponseBodyBytes} and report the cap from
-         * {@code maxResponseBodyBytes}; otherwise building the SDK throws {@code IllegalStateException}.
-         *
-         * @param maxBytes The maximum number of body bytes to read per response; must be positive.
-         * @return The builder instance.
-         */
-        public Builder maxResponseBodyBytes(long maxBytes) {
-            if (maxBytes <= 0) {
-                throw new IllegalArgumentException("maxResponseBodyBytes must be positive");
-            }
-            this.sdkConfiguration.setMaxResponseBodyBytes(OptionalLong.of(maxBytes));
             return this;
         }
 
@@ -520,23 +501,12 @@ public class SDK {
 
     public SDK(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
-        if (sdkConfiguration.maxResponseBodyBytes().isPresent()) {
-            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().getAsLong();
-            sdkConfiguration.client().setMaxResponseBodyBytes(maxResponseBodyBytes);
-            if (sdkConfiguration.client().maxResponseBodyBytes() != maxResponseBodyBytes) {
-                throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
-            }
-        }
-        HTTPClient configuredClient = sdkConfiguration.client();
         this.tag1 = new Tag1(sdkConfiguration);
         this.obsolete = new Obsolete(sdkConfiguration);
         this.testGroup = new TestGroup(sdkConfiguration);
         this.group = new Group(sdkConfiguration);
         this.namespaceTests = new NamespaceTests(sdkConfiguration);
         sdkConfiguration = sdkConfiguration.hooks().sdkInit(sdkConfiguration);
-        if (sdkConfiguration.maxResponseBodyBytes().isPresent() && sdkConfiguration.client() != configuredClient) {
-            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().getAsLong());
-        }
         this.asyncSDK = new AsyncSDK(this, sdkConfiguration);
         this.sdkConfiguration = sdkConfiguration;
     }

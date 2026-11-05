@@ -3,7 +3,6 @@
  */
 package org.openapis.openapi.utils.reactive;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +11,6 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import org.openapis.openapi.utils.ResponseTooLargeException;
 
 // Internal API only
 
@@ -113,18 +111,6 @@ public final class ReactiveUtils {
     }
 
     /**
-     * Fails the stream with {@link ResponseTooLargeException} once more than
-     * {@code maxBytes} have been emitted.
-     */
-    public static Flow.Publisher<List<ByteBuffer>> limitBytes(Flow.Publisher<List<ByteBuffer>> source, long maxBytes) {
-        Objects.requireNonNull(source, "Source publisher cannot be null");
-        if (maxBytes == Long.MAX_VALUE) {
-            return source;
-        }
-        return new ByteLimitPublisher(source, maxBytes);
-    }
-
-    /**
      * Internal implementation of async mapping publisher.
      */
     private static class AsyncMappingPublisher<T, R> implements Flow.Publisher<R> {
@@ -175,82 +161,6 @@ public final class ReactiveUtils {
         @Override
         public void subscribe(Flow.Subscriber<? super R> subscriber) {
             source.subscribe(new FlatteningSubscriber<>(subscriber, flattener));
-        }
-    }
-
-    private static final class ByteLimitPublisher implements Flow.Publisher<List<ByteBuffer>> {
-        private final Flow.Publisher<List<ByteBuffer>> source;
-        private final long maxBytes;
-
-        ByteLimitPublisher(Flow.Publisher<List<ByteBuffer>> source, long maxBytes) {
-            this.source = source;
-            this.maxBytes = maxBytes;
-        }
-
-        @Override
-        public void subscribe(Flow.Subscriber<? super List<ByteBuffer>> subscriber) {
-            source.subscribe(new ByteLimitSubscriber(subscriber, maxBytes));
-        }
-    }
-
-    private static final class ByteLimitSubscriber implements Flow.Subscriber<List<ByteBuffer>> {
-        private final Flow.Subscriber<? super List<ByteBuffer>> downstream;
-        private final long maxBytes;
-        private long count;
-        private Flow.Subscription upstream;
-        private volatile boolean cancelled = false;
-
-        ByteLimitSubscriber(Flow.Subscriber<? super List<ByteBuffer>> downstream, long maxBytes) {
-            this.downstream = downstream;
-            this.maxBytes = maxBytes;
-        }
-
-        @Override
-        public void onSubscribe(Flow.Subscription subscription) {
-            this.upstream = subscription;
-            downstream.onSubscribe(new Flow.Subscription() {
-                @Override
-                public void request(long n) {
-                    if (!cancelled) {
-                        upstream.request(n);
-                    }
-                }
-
-                @Override
-                public void cancel() {
-                    cancelled = true;
-                    upstream.cancel();
-                }
-            });
-        }
-
-        @Override
-        public void onNext(List<ByteBuffer> item) {
-            if (cancelled) return;
-            for (ByteBuffer buffer : item) {
-                count += buffer.remaining();
-            }
-            if (count > maxBytes) {
-                cancelled = true;
-                upstream.cancel();
-                downstream.onError(new ResponseTooLargeException(maxBytes));
-                return;
-            }
-            downstream.onNext(item);
-        }
-
-        @Override
-        public void onError(Throwable throwable) {
-            if (!cancelled) {
-                downstream.onError(throwable);
-            }
-        }
-
-        @Override
-        public void onComplete() {
-            if (!cancelled) {
-                downstream.onComplete();
-            }
         }
     }
 

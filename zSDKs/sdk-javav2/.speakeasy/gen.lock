@@ -570,9 +570,9 @@ trackedFiles:
   src/main/java/org/openapis/openapi/Obsolete.java:
     last_write_checksum: sha1:541701b93e32b700946cd99533c0419a38f46c7e
   src/main/java/org/openapis/openapi/SDK.java:
-    last_write_checksum: sha1:0512d1c998d936b3cae2143ee6e49013b7af6d31
+    last_write_checksum: sha1:f2081dc3978361c45e0c252c88755a8fd87ff854
   src/main/java/org/openapis/openapi/SDKConfiguration.java:
-    last_write_checksum: sha1:4b00e19cecbed030b463444294c3014d560a0c1a
+    last_write_checksum: sha1:775147ad608d6a6498716c553d648359d3c57015
   src/main/java/org/openapis/openapi/SecuritySource.java:
     last_write_checksum: sha1:585318f59f58aee0e32a66f3fdd81129784940ab
   src/main/java/org/openapis/openapi/SingleBar.java:
@@ -628,7 +628,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/models/errors/SDKBaseException.java:
     last_write_checksum: sha1:ad4df631881555bd52a3a172f9d8c6750075dba2
   src/main/java/org/openapis/openapi/models/errors/SDKException.java:
-    last_write_checksum: sha1:d4214921df0f6f62566a1df2303577cb0e1a0e43
+    last_write_checksum: sha1:4188f708c11149d04315e224c5d42e8c65e919d5
   src/main/java/org/openapis/openapi/models/errors/Test2ResponseException.java:
     last_write_checksum: sha1:66de2d1b9219f351d09fe6f78461ca329b7edfc4
   src/main/java/org/openapis/openapi/models/foo/Address.java:
@@ -1453,8 +1453,6 @@ trackedFiles:
     last_write_checksum: sha1:ec5952a42c29f400aec9c38915cc7f3f983bafd7
   src/main/java/org/openapis/openapi/utils/BlockingParser.java:
     last_write_checksum: sha1:bf0ba52a263a20dec6fcd0ca14bff6f4be1b4ae9
-  src/main/java/org/openapis/openapi/utils/BoundedInputStream.java:
-    last_write_checksum: sha1:f0ab2ed400ffad60f630cd35687bd8f857fd4bd6
   src/main/java/org/openapis/openapi/utils/Constants.java:
     last_write_checksum: sha1:510c710c2affdccd02f7ae4ab28464dc2dc35c20
   src/main/java/org/openapis/openapi/utils/CopiableInputStream.java:
@@ -1474,7 +1472,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/Globals.java:
     last_write_checksum: sha1:d56c4fa0ff9237ab2f91d48418e7b4e6e880275a
   src/main/java/org/openapis/openapi/utils/HTTPClient.java:
-    last_write_checksum: sha1:22c31815ddbec652bf85532b06bcb23be0111916
+    last_write_checksum: sha1:f3b366b6748a096563d4b966a91929e12340e7c2
   src/main/java/org/openapis/openapi/utils/HTTPRequest.java:
     last_write_checksum: sha1:4fe75a19cbd1303eedfdd6bb9be6f000846eee61
   src/main/java/org/openapis/openapi/utils/HasSecurity.java:
@@ -1531,8 +1529,6 @@ trackedFiles:
     last_write_checksum: sha1:ff555549db26098c21cb39ce467a314bafef812e
   src/main/java/org/openapis/openapi/utils/Response.java:
     last_write_checksum: sha1:e7e550c0a85ac99c41d14aaf8b1f6f5b36100274
-  src/main/java/org/openapis/openapi/utils/ResponseTooLargeException.java:
-    last_write_checksum: sha1:937da61930e20c642ec4afd8b1093cf87b069a61
   src/main/java/org/openapis/openapi/utils/ResponseWithBody.java:
     last_write_checksum: sha1:a4caae39bd488a72a5c66199382478123c4019c2
   src/main/java/org/openapis/openapi/utils/Retries.java:
@@ -1550,7 +1546,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/SessionManager.java:
     last_write_checksum: sha1:cd253cbeb82fb7779b08caada453c4381f6d32ac
   src/main/java/org/openapis/openapi/utils/SpeakeasyHTTPClient.java:
-    last_write_checksum: sha1:cca1c808596d4114830f3ac3ddb04d9a4e40cc4e
+    last_write_checksum: sha1:a4d7475bb09b4220854cf8491c6311ab294ca19f
   src/main/java/org/openapis/openapi/utils/SpeakeasyLogger.java:
     last_write_checksum: sha1:ad239c8fec81792e27ec1ab349116d6c2e0998a1
   src/main/java/org/openapis/openapi/utils/SpeakeasyMetadata.java:
@@ -1566,7 +1562,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/Utf8UrlEncoder.java:
     last_write_checksum: sha1:f06edd881fa04c30e27cd1fe5ffb69113de0dec8
   src/main/java/org/openapis/openapi/utils/Utils.java:
-    last_write_checksum: sha1:b4dabfeb4716ea54a59ead3fcf9732f8893425a4
+    last_write_checksum: sha1:96de2318cc1519bde29bb319f67589dd025d8170
   src/main/java/org/openapis/openapi/utils/pagination/AsyncPaginator.java:
     last_write_checksum: sha1:65e815550248cc3f806e8c642024c4fe7246bb91
   src/main/java/org/openapis/openapi/utils/pagination/CursorTracker.java:
@@ -1586,7 +1582,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/reactive/EventStream.java:
     last_write_checksum: sha1:ce974c4816d7ba2819ab8bc08b67960c17d723d2
   src/main/java/org/openapis/openapi/utils/reactive/ReactiveUtils.java:
-    last_write_checksum: sha1:30d300be56af9db53ad66dd119708701fcec038d
+    last_write_checksum: sha1:68e8c08bdbe7c443fb1343991f2b49395abd1827
   src/test/java/org/openapis/openapi/ConflictsTests.java:
     last_write_checksum: sha1:c0b4f2a5238b277a065161cc0b075163f5c93ff8
   src/test/java/org/openapis/openapi/SDKTests.java:

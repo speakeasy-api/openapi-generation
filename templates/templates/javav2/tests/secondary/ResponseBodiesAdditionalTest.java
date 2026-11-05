@@ -10,14 +10,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.openapis.secondary.openapi.models.components.ChatCompletionStream;
-import org.openapis.secondary.openapi.models.operations.ChatRequestBody;
-import org.openapis.secondary.openapi.models.operations.ChatResponse;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyBytesGetResponse;
 import org.openapis.secondary.openapi.models.operations.ResponseBodyStringGetResponse;
-import org.openapis.secondary.openapi.utils.EventStream;
 import org.openapis.secondary.openapi.utils.Headers;
-import org.openapis.secondary.openapi.utils.ResponseTooLargeException;
 import org.openapis.secondary.openapi.utils.Utils;
 import org.openapis.secondary.openapi.utils.transport.HttpRequest;
 import org.openapis.secondary.openapi.utils.transport.HttpResponse;
@@ -28,7 +23,6 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -65,48 +59,6 @@ public class ResponseBodiesAdditionalTest {
         assertEquals(200, res.statusCode());
         assertNotNull(res.html());
         assertTrue(res.html().contains("Herman Melville - Moby-Dick"));
-    }
-
-    @Test
-    @Timeout(value = 15, unit = TimeUnit.SECONDS)
-    public void testResponseBodyLimit() throws Exception {
-        SDK capped = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(50).build();
-
-        ResponseBodyBytesGetResponse res = capped.responseBodies().responseBodyBytesGet().call();
-        assertEquals(200, res.statusCode());
-        assertThrows(org.openapis.secondary.openapi.utils.ResponseTooLargeException.class,
-                () -> IOUtils.toByteArray(res.bytes()));
-
-        SDK roomy = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(200).build();
-        ResponseBodyBytesGetResponse ok = roomy.responseBodies().responseBodyBytesGet().call();
-        assertEquals(100, IOUtils.toByteArray(ok.bytes()).length);
-    }
-
-    @Test
-    @Timeout(value = 15, unit = TimeUnit.SECONDS)
-    public void testJsonOrStreamOperationCapsOnlyJsonResponses() throws Exception {
-        SDK s = SDK.builder().serverURL(HTTPBIN_URL).maxResponseBodyBytes(16).build();
-
-        ChatResponse streamed = s.eventstreams().chat()
-                .request(ChatRequestBody.builder().prompt("Print test content").build())
-                .call();
-        assertEquals("text/event-stream", streamed.contentType());
-        try (EventStream<ChatCompletionStream> events = streamed.events()) {
-            assertEquals(5, events.toList().size());
-        }
-
-        UncheckedIOException thrown = assertThrows(UncheckedIOException.class, () -> s.eventstreams().chat()
-                .request(ChatRequestBody.builder().prompt("Print test content").stream(false).build())
-                .call());
-        assertTrue(thrown.getCause() instanceof ResponseTooLargeException, String.valueOf(thrown.getCause()));
-
-        ExecutionException asyncThrown = assertThrows(ExecutionException.class, () -> s.toAsync().eventstreams().chat()
-                .request(ChatRequestBody.builder().prompt("Print test content").stream(false).build())
-                .call()
-                .get());
-        assertTrue(asyncThrown.getCause() instanceof UncheckedIOException, String.valueOf(asyncThrown.getCause()));
-        assertTrue(asyncThrown.getCause().getCause() instanceof ResponseTooLargeException,
-                String.valueOf(asyncThrown.getCause().getCause()));
     }
 
     @Test

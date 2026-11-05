@@ -81,18 +81,4 @@ public interface HTTPClient {
     default boolean isDebugLoggingEnabled() {
         return false;
     }
-
-    /**
-     * Caps the body bytes read per response. The default implementation ignores it.
-     *
-     * @param maxBytes maximum number of body bytes to read per response
-     */
-    default void setMaxResponseBodyBytes(long maxBytes) {}
-
-    /**
-     * @return maximum number of body bytes read per response, or {@code Long.MAX_VALUE} when unbounded
-     */
-    default long maxResponseBodyBytes() {
-        return Long.MAX_VALUE;
-    }
 }

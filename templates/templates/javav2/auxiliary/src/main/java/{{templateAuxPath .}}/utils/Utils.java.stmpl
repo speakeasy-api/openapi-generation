@@ -1774,7 +1774,7 @@ public final class Utils {
             throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(
                     "Error deserializing response body: " + e.getMessage(), response, e);
 {{- end}}
-        } catch (ResponseTooLargeException | java.io.InterruptedIOException{{if not $okHttp}} | java.net.http.HttpTimeoutException{{end}} e) {
+        } catch (java.io.InterruptedIOException{{if not $okHttp}} | java.net.http.HttpTimeoutException{{end}} e) {
             throw new java.io.UncheckedIOException(e);
         } catch (Exception e) {
             throw {{javaImport (print getErrorsPackage "." getDefaultErrorClassName)}}.from(
@@ -1792,8 +1792,7 @@ public final class Utils {
                         Throwable cause = err instanceof java.util.concurrent.CompletionException && err.getCause() != null
                                 ? err.getCause()
                                 : err;
-                        if (cause instanceof ResponseTooLargeException
-                                || cause instanceof java.io.InterruptedIOException
+                        if (cause instanceof java.io.InterruptedIOException
                                 || cause instanceof java.net.http.HttpTimeoutException) {
                             throw new java.io.UncheckedIOException((java.io.IOException) cause);
                         }

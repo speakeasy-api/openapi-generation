@@ -54,8 +54,6 @@ import org.openapis.openapi.utils.Hooks.FailEarlyException;
 import org.openapis.openapi.utils.JSON;
 import org.openapis.openapi.utils.QueryParameter;
 import org.openapis.openapi.utils.TypedObject;
-import org.openapis.openapi.utils.BoundedInputStream;
-import org.openapis.openapi.utils.ResponseTooLargeException;
 import org.openapis.openapi.utils.ResponseWithBody;
 import org.openapis.openapi.utils.Utils;
 import org.openapis.openapi.utils.Utils.JsonShape;
@@ -783,23 +781,4 @@ public class UtilsAdditionalTest {
                 String.valueOf(asyncThrown.getCause().getCause()));
     }
 
-    @Test
-    void testBoundedInputStreamFailsOnlyPastTheCap() throws IOException {
-        byte[] data = "0123456789".getBytes(StandardCharsets.UTF_8);
-
-        InputStream exact = BoundedInputStream.wrap(new ByteArrayInputStream(data), data.length);
-        assertEquals(data.length, exact.readAllBytes().length);
-
-        InputStream over = BoundedInputStream.wrap(new ByteArrayInputStream(data), data.length - 1);
-        ResponseTooLargeException e = assertThrows(ResponseTooLargeException.class, over::readAllBytes);
-        assertEquals(data.length - 1, e.maxBytes());
-
-        InputStream skipped = BoundedInputStream.wrap(new ByteArrayInputStream(data), 4);
-        assertEquals(4, skipped.skip(4));
-        assertThrows(ResponseTooLargeException.class, skipped::read);
-
-        InputStream source = new ByteArrayInputStream(data);
-        assertTrue(source == BoundedInputStream.wrap(source, Long.MAX_VALUE));
-        assertThrows(IllegalArgumentException.class, () -> new BoundedInputStream(source, 0));
-    }
 }

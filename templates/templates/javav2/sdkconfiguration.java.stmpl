@@ -244,17 +244,6 @@ package {{$pkg}};
         {{javaImportUtils}}.checkNotNull(timeout, "timeout");
         this.timeout = timeout;
     }
-
-    private {{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes = {{javaImport "java.util.OptionalLong"}}.empty();
-
-    public {{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes() {
-        return maxResponseBodyBytes;
-    }
-
-    public void setMaxResponseBodyBytes({{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes) {
-        {{javaImportUtils}}.checkNotNull(maxResponseBodyBytes, "maxResponseBodyBytes");
-        this.maxResponseBodyBytes = maxResponseBodyBytes;
-    }
     {{- if asyncEnabled}}
     private {{javaImport "java.util.concurrent.ScheduledExecutorService"}} retryScheduler = {{javaImport "java.util.concurrent.Executors"}}.newSingleThreadScheduledExecutor();
     

@@ -41,7 +41,7 @@ public class {{$className}} extends {{getBaseErrorClassName}} {
             // Gracefully handle IOExceptions that occur while reading the body
             // by returning an error without a body.
             return new {{$className}}(
-                    message, rawResponse.statusCode(), null, rawResponse, cause != null ? cause : e);
+                    message, rawResponse.statusCode(), null, rawResponse, cause);
         }
     }
     

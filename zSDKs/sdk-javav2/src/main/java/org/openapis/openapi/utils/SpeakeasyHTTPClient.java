@@ -16,7 +16,6 @@ import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -30,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.openapis.openapi.utils.Blob;
-import org.openapis.openapi.utils.reactive.ReactiveUtils;
 
 public class SpeakeasyHTTPClient implements HTTPClient {
 
@@ -50,8 +48,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 
     private static final ScheduledThreadPoolExecutor DEADLINES = deadlineScheduler();
 
-    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
-
     private final HttpClient client =
             HttpClient.newBuilder().connectTimeout(DEFAULT_CONNECT_TIMEOUT).build();
 
@@ -62,22 +58,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         int paramsIndex = value.indexOf(';');
         String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
-    }
-
-    private static boolean isStreamingRequest(HttpRequest request) {
-        return request.headers()
-                .allValues("Accept")
-                .stream()
-                .flatMap(value -> Arrays.stream(value.split(",")))
-                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
-    }
-
-    private static boolean isStreamingResponse(HttpRequest request, HttpResponse<?> response) {
-        return isStreamingRequest(request)
-                && response.headers()
-                        .firstValue("Content-Type")
-                        .map(SpeakeasyHTTPClient::isStreamingMediaType)
-                        .orElse(false);
     }
 
     /**
@@ -112,19 +92,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public void enableDebugLogging(boolean enabled) {
         localDebugEnabled = enabled;
-    }
-
-    @Override
-    public void setMaxResponseBodyBytes(long maxBytes) {
-        if (maxBytes <= 0) {
-            throw new IllegalArgumentException("maxBytes must be positive");
-        }
-        this.maxResponseBodyBytes = maxBytes;
-    }
-
-    @Override
-    public long maxResponseBodyBytes() {
-        return maxResponseBodyBytes;
     }
 
     /**
@@ -166,9 +133,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         request = logRequest(request, isDebugLoggingEnabled());
         long startNanos = System.nanoTime();
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (!isStreamingResponse(request, response)) {
-            response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
-        }
         long remainingNanos = remainingNanos(request, startNanos);
         if (remainingNanos != Long.MAX_VALUE) {
             response = new ResponseWithBody<>(response, in -> new DeadlineInputStream(in, remainingNanos));
@@ -184,16 +148,14 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         HttpRequest sent = request;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> {
-                    long maxBytes = isStreamingResponse(sent, response) ? Long.MAX_VALUE : maxResponseBodyBytes;
                     long remainingNanos = remainingNanos(sent, startNanos);
                     // TODO: log responses when helper for Blob is setup
-                    return new ResponseWithBody<>(response, publisher -> {
-                        Flow.Publisher<List<ByteBuffer>> limited = ReactiveUtils.limitBytes(publisher, maxBytes);
-                        return Blob.from(
-                                remainingNanos == Long.MAX_VALUE
-                                        ? limited
-                                        : new DeadlinePublisher(limited, remainingNanos));
-                    });
+                    return new ResponseWithBody<>(
+                            response,
+                            publisher -> Blob.from(
+                                    remainingNanos == Long.MAX_VALUE
+                                            ? publisher
+                                            : new DeadlinePublisher(publisher, remainingNanos)));
                 });
     }
 

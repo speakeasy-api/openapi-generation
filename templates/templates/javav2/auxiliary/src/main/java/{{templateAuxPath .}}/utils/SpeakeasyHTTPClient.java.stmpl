@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+{{- if asyncEnabled}}
 import java.util.Arrays;
+{{- end}}
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
@@ -56,8 +58,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     private static Consumer<? super String> logger = System.out::println;
     {{- end}}
 
-    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
-
     private final OkHttpClient client = new OkHttpClient.Builder()
             .followRedirects(false)
             .followSslRedirects(false)
@@ -72,17 +72,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         int paramsIndex = value.indexOf(';');
         String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
-    }
-
-    private static boolean isStreamingRequest(HttpRequest request) {
-        return request.headers().get("Accept").stream()
-                .flatMap(value -> Arrays.stream(value.split(",")))
-                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
-    }
-
-    private static boolean isStreamingResponse(HttpRequest request, Response response) {
-        String contentType = response.header("Content-Type");
-        return contentType != null && isStreamingRequest(request) && isStreamingMediaType(contentType);
     }
 {{- if asyncEnabled}}
     {{- /* streaming responses can remain idle between events
@@ -134,19 +123,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public void enableDebugLogging(boolean enabled) {
         localDebugEnabled = enabled;
-    }
-
-    @Override
-    public void setMaxResponseBodyBytes(long maxBytes) {
-        if (maxBytes <= 0) {
-            throw new IllegalArgumentException("maxBytes must be positive");
-        }
-        this.maxResponseBodyBytes = maxBytes;
-    }
-
-    @Override
-    public long maxResponseBodyBytes() {
-        return maxResponseBodyBytes;
     }
 
     /**
@@ -201,7 +177,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         Call call = client.newCall(toOkHttpRequest(request));
         request.timeout().ifPresent(t -> call.timeout().timeout(t.toNanos(), TimeUnit.NANOSECONDS));
         Response okResponse = call.execute();
-        HttpResponse<InputStream> response = toResponse(request, okResponse, maxResponseBodyBytes);
+        HttpResponse<InputStream> response = toResponse(request, okResponse);
 {{- if slf4jLoggingEnabled}}
         response = logResponse(response, isDebugLoggingEnabled());
 {{- else}}
@@ -243,7 +219,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
                 @Override
                 public void onResponse(Call call, Response okResponse) {
                     try {
-                        HttpResponse<InputStream> response = toResponse(request, okResponse, maxResponseBodyBytes);
+                        HttpResponse<InputStream> response = toResponse(request, okResponse);
                         if (isDebugLoggingEnabled()) {
                             {{- /* debug logging buffers non-streaming bodies; keep that blocking work off OkHttp's dispatcher */}}
                             CompletableFuture.supplyAsync(() -> {
@@ -331,13 +307,10 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         };
     }
 
-    private static HttpResponse<InputStream> toResponse(HttpRequest request, Response response, long maxBodyBytes) {
+    private static HttpResponse<InputStream> toResponse(HttpRequest request, Response response) {
         Headers headers = new Headers(response.headers().toMultimap());
         ResponseBody body = response.body();
         InputStream in = body == null ? new ByteArrayInputStream(new byte[0]) : body.byteStream();
-        if (!isStreamingResponse(request, response)) {
-            in = BoundedInputStream.wrap(in, maxBodyBytes);
-        }
         return new HttpResponse<>(request, response.code(), headers, in);
     }
 
@@ -457,7 +430,6 @@ import java.nio.ByteBuffer;
 {{- end}}
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 {{- if asyncEnabled}}
 import java.util.List;
@@ -474,10 +446,6 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-{{- if asyncEnabled}}
-
-import {{templatePackageName}}.utils.reactive.ReactiveUtils;
-{{- end}}
 
 public class SpeakeasyHTTPClient implements HTTPClient {
 {{- if slf4jLoggingEnabled}}
@@ -503,8 +471,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 
     private static final ScheduledThreadPoolExecutor DEADLINES = deadlineScheduler();
 
-    private volatile long maxResponseBodyBytes = Long.MAX_VALUE;
-
     private final HttpClient client = HttpClient.newBuilder()
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT)
             .build();
@@ -516,19 +482,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         int paramsIndex = value.indexOf(';');
         String mediaType = paramsIndex == -1 ? value : value.substring(0, paramsIndex);
         return STREAMING_MEDIA_TYPES.contains(mediaType.trim().toLowerCase(Locale.ENGLISH));
-    }
-
-    private static boolean isStreamingRequest(HttpRequest request) {
-        return request.headers().allValues("Accept").stream()
-                .flatMap(value -> Arrays.stream(value.split(",")))
-                .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
-    }
-
-    private static boolean isStreamingResponse(HttpRequest request, HttpResponse<?> response) {
-        return isStreamingRequest(request)
-                && response.headers().firstValue("Content-Type")
-                        .map(SpeakeasyHTTPClient::isStreamingMediaType)
-                        .orElse(false);
     }
 
     /**
@@ -563,19 +516,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
     @Override
     public void enableDebugLogging(boolean enabled) {
         localDebugEnabled = enabled;
-    }
-
-    @Override
-    public void setMaxResponseBodyBytes(long maxBytes) {
-        if (maxBytes <= 0) {
-            throw new IllegalArgumentException("maxBytes must be positive");
-        }
-        this.maxResponseBodyBytes = maxBytes;
-    }
-
-    @Override
-    public long maxResponseBodyBytes() {
-        return maxResponseBodyBytes;
     }
 
     /**
@@ -630,9 +570,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 {{- end}}
         long startNanos = System.nanoTime();
         HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
-        if (!isStreamingResponse(request, response)) {
-            response = new ResponseWithBody<>(response, in -> BoundedInputStream.wrap(in, maxResponseBodyBytes));
-        }
         long remainingNanos = remainingNanos(request, startNanos);
         if (remainingNanos != Long.MAX_VALUE) {
             response = new ResponseWithBody<>(response, in -> new DeadlineInputStream(in, remainingNanos));
@@ -662,15 +599,11 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         HttpRequest sent = request;
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofPublisher())
                 .thenApply(response -> {
-                    long maxBytes = isStreamingResponse(sent, response) ? Long.MAX_VALUE : maxResponseBodyBytes;
                     long remainingNanos = remainingNanos(sent, startNanos);
                     // TODO: log responses when helper for Blob is setup
-                    return new ResponseWithBody<>(response, publisher -> {
-                        Flow.Publisher<List<ByteBuffer>> limited = ReactiveUtils.limitBytes(publisher, maxBytes);
-                        return Blob.from(remainingNanos == Long.MAX_VALUE
-                                ? limited
-                                : new DeadlinePublisher(limited, remainingNanos));
-                    });
+                    return new ResponseWithBody<>(response, publisher -> Blob.from(remainingNanos == Long.MAX_VALUE
+                            ? publisher
+                            : new DeadlinePublisher(publisher, remainingNanos)));
                 });
     }
 {{- end}}
