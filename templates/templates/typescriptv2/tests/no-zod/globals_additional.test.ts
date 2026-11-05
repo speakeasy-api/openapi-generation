@@ -217,7 +217,7 @@ test("Test Debug Env Var False Keeps Logging Off", async () => {
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "groupEnd").mockImplementation(() => {});
 
-  for (const value of ["false", "0", "off", "no", ""]) {
+  for (const value of ["false", "0", "off", "no", "", "debug", "FALSE"]) {
     resetEnv();
     vi.stubEnv("SPEAKEASY_DEBUG", value);
 
@@ -228,12 +228,15 @@ test("Test Debug Env Var False Keeps Logging Off", async () => {
     expect(group).not.toHaveBeenCalled();
   }
 
-  resetEnv();
-  vi.stubEnv("SPEAKEASY_DEBUG", "true");
+  for (const value of ["true", "1", "yes", "on", "TRUE", "Yes", " on "]) {
+    group.mockClear();
+    resetEnv();
+    vi.stubEnv("SPEAKEASY_DEBUG", value);
 
-  const sdk = new SDK({ serverURL: HTTPBIN_URL });
-  const res = await sdk.globals.globalsQueryParameterGet("local");
+    const sdk = new SDK({ serverURL: HTTPBIN_URL });
+    const res = await sdk.globals.globalsQueryParameterGet("local");
 
-  expect(res.httpMeta.response.status).toBe(200);
-  expect(group).toHaveBeenCalled();
+    expect(res.httpMeta.response.status).toBe(200);
+    expect(group).toHaveBeenCalled();
+  }
 });

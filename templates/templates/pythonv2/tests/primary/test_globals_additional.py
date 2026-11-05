@@ -218,7 +218,7 @@ def test_debug_env_var_false_keeps_logging_off(monkeypatch, caplog):
 
     caplog.set_level(logging.DEBUG, logger="openapi")
 
-    for value in ["false", "0", "off", "no", ""]:
+    for value in ["false", "0", "off", "no", "", "debug", "FALSE"]:
         monkeypatch.setenv("SPEAKEASY_DEBUG", value)
 
         s = SDK(server_url=HTTPBIN_URL, global_path_param=1)
@@ -227,10 +227,12 @@ def test_debug_env_var_false_keeps_logging_off(monkeypatch, caplog):
         assert res.http_meta.response.status_code == 200
         assert not [r for r in caplog.records if r.name == "openapi"]
 
-    monkeypatch.setenv("SPEAKEASY_DEBUG", "true")
+    for value in ["true", "1", "yes", "on", "TRUE", "Yes", " on "]:
+        caplog.clear()
+        monkeypatch.setenv("SPEAKEASY_DEBUG", value)
 
-    s = SDK(server_url=HTTPBIN_URL, global_path_param=1)
-    res = s.globals.global_path_parameter_get()
+        s = SDK(server_url=HTTPBIN_URL, global_path_param=1)
+        res = s.globals.global_path_parameter_get()
 
-    assert res.http_meta.response.status_code == 200
-    assert [r for r in caplog.records if r.name == "openapi"]
+        assert res.http_meta.response.status_code == 200
+        assert [r for r in caplog.records if r.name == "openapi"]
