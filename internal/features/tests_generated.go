@@ -188,6 +188,8 @@ func (t Test) String() string {
         return "customclient-request-parameters-retained"
     case TestCustomclientRequestParametersRetainedLegacy:
         return "customclient-request-parameters-retained-legacy"
+    case TestDebugEnvVarFalseKeepsLoggingOff:
+        return "debug-env-var-false-keeps-logging-off"
     case TestDuplicateHeaderParameterAtOperationLevelDoesNotError:
         return "duplicate-header-parameter-at-operation-level-does-not-error"
     case TestDuplicateHeaderParameterAtPathLevelDoesNotError:
@@ -1726,6 +1728,8 @@ func TestFromString(s string) Test {
         return TestCustomclientRequestParametersRetained
     case "customclient-request-parameters-retained-legacy":
         return TestCustomclientRequestParametersRetainedLegacy
+    case "debug-env-var-false-keeps-logging-off":
+        return TestDebugEnvVarFalseKeepsLoggingOff
     case "duplicate-header-parameter-at-operation-level-does-not-error":
         return TestDuplicateHeaderParameterAtOperationLevelDoesNotError
     case "duplicate-header-parameter-at-path-level-does-not-error":
@@ -3171,6 +3175,7 @@ var testList = []Test{
     TestCustomCodeRegionSubSdkMethodWithImports,
     TestCustomclientRequestParametersRetained,
     TestCustomclientRequestParametersRetainedLegacy,
+    TestDebugEnvVarFalseKeepsLoggingOff,
     TestDuplicateHeaderParameterAtOperationLevelDoesNotError,
     TestDuplicateHeaderParameterAtPathLevelDoesNotError,
     TestDuplicatePathParameterAtOperationLevelDoesNotError,

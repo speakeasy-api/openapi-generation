@@ -96,6 +96,7 @@ const (
 	TestGlobalsOptionalPathParameterOperationRequired
 	TestGlobalsOptionalPathParameterPathRequired
 	TestGlobalsKebabCaseParamGet
+	TestDebugEnvVarFalseKeepsLoggingOff
 	TestHeadersOverrideRequestHeaders
 	TestHeadersEmptyResponseBodyWithHeaders
 	TestHeadersErrorResponseHeadersNone

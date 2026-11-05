@@ -364,6 +364,7 @@ function isTestSkipped(test: string): boolean {
     "unknown-fields-json-round-trip",
     "parameters-default-path-params",
     "hooks-client-credentials-scopes-from-env",
+    "debug-env-var-false-keeps-logging-off",
   ].includes(test);
 }
 

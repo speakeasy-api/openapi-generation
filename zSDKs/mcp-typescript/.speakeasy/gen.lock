@@ -16,7 +16,7 @@ features:
     additionalProperties: 0.1.1
     bigint: 0.1.0
     constsAndDefaults: 0.1.2
-    core: 2.0.4
+    core: 2.0.5
     customSecuritySchemes: 0.1.1
     decimal: 0.1.0
     defaultEnabledRetries: 0.1.0
@@ -562,7 +562,7 @@ trackedFiles:
   src/lib/encodings.ts:
     last_write_checksum: sha1:9b859366c917d31f7ee533176f71631872fb05fa
   src/lib/env.ts:
-    last_write_checksum: sha1:f69b3149ec8937b83ccd0f14901ef80762a4c08d
+    last_write_checksum: sha1:154a9997ab1105d0379b0711f2c59cda36746fec
   src/lib/files.ts:
     last_write_checksum: sha1:795c14026405d547bfc47012f7ad9666e530fa7f
   src/lib/http.ts:
