@@ -1,6 +1,9 @@
 package {{templatePackageName}}.utils.reactive;
+{{- if asyncEnabled}}
 
 import java.nio.ByteBuffer;
+{{- else}}
+{{end}}
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +15,9 @@ import java.util.function.Function;
 {{- if isJava8}}
 import {{templatePackageName}}.utils.Java8Compat;
 {{- end}}
+{{- if asyncEnabled}}
 import {{templatePackageName}}.utils.ResponseTooLargeException;
+{{- end}}
 
 // Internal API only
 
@@ -116,6 +121,7 @@ public final class ReactiveUtils {
     public static <T> Flow.Publisher<T> concat(List<Flow.Publisher<T>> pubs) {
         return new ConcatPublisher<>(pubs);
     }
+{{- if asyncEnabled}}
 
     /**
      * Fails the stream with {@link ResponseTooLargeException} once more than
@@ -128,6 +134,7 @@ public final class ReactiveUtils {
         }
         return new ByteLimitPublisher(source, maxBytes);
     }
+{{- end}}
 
     /**
      * Internal implementation of async mapping publisher.
@@ -182,6 +189,7 @@ public final class ReactiveUtils {
             source.subscribe(new FlatteningSubscriber<>(subscriber, flattener));
         }
     }
+{{- if asyncEnabled}}
 
     private static final class ByteLimitPublisher implements Flow.Publisher<List<ByteBuffer>> {
         private final Flow.Publisher<List<ByteBuffer>> source;
@@ -258,6 +266,7 @@ public final class ReactiveUtils {
             }
         }
     }
+{{- end}}
 
     /**
      * Internal implementation of concatenating publisher.

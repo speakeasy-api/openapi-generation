@@ -141,6 +141,12 @@ public class ResponseBodiesAdditionalTest {
         UncheckedIOException parsed = assertThrows(UncheckedIOException.class,
                 () -> tiny.retries().retriesGet().requestId(UUID.randomUUID().toString()).call());
         assertTrue(parsed.getCause() instanceof ResponseTooLargeException, String.valueOf(parsed.getCause()));
+
+        ExecutionException asyncParsed = assertThrows(ExecutionException.class,
+                () -> tiny.async().retries().retriesGet().requestId(UUID.randomUUID().toString()).call().get());
+        assertTrue(asyncParsed.getCause() instanceof UncheckedIOException, String.valueOf(asyncParsed.getCause()));
+        assertTrue(asyncParsed.getCause().getCause() instanceof ResponseTooLargeException,
+                String.valueOf(asyncParsed.getCause().getCause()));
     }
     
     @Test

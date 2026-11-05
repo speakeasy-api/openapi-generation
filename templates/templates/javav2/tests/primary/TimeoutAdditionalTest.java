@@ -1,6 +1,7 @@
 package org.openapis.openapi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -157,6 +159,43 @@ public class TimeoutAdditionalTest {
         assertTimedOut(lateThrown);
         assertTrue(System.nanoTime() - readStarted < TimeUnit.MILLISECONDS.toNanos(500),
                 "a body read after the deadline did not fail immediately");
+    }
+
+    @Test
+    public void testAsyncBodyTimeoutCallbackDoesNotDelayOtherDeadlines() throws Exception {
+        SDK blocking = SDK.builder().timeout(Duration.ofMillis(1500)).build();
+        SDK other = SDK.builder().timeout(Duration.ofMillis(2000)).build();
+
+        AtomicReference<String> callbackThread = new AtomicReference<>();
+        HttpResponse<Blob> blockingRaw = blocking.async().eventstreams().json()
+                .header("event-interval-ms", "2000")
+                .call()
+                .rawResponse()
+                .get();
+        CompletableFuture<Void> blocked = blockingRaw.body().toByteArray().handle((bytes, error) -> {
+            callbackThread.set(Thread.currentThread().getName());
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return null;
+        });
+
+        HttpResponse<Blob> otherRaw = other.async().eventstreams().json()
+                .header("event-interval-ms", "2000")
+                .call()
+                .rawResponse()
+                .get();
+        long started = System.nanoTime();
+        ExecutionException thrown = assertThrows(ExecutionException.class,
+                () -> otherRaw.body().toByteArray().get());
+        assertTimedOut(thrown);
+        assertTrue(System.nanoTime() - started < TimeUnit.MILLISECONDS.toNanos(3500),
+                "a blocking timeout callback on one SDK delayed another SDK's body deadline");
+
+        blocked.get();
+        assertNotEquals("speakeasy-request-deadline", callbackThread.get());
     }
 
     @Test

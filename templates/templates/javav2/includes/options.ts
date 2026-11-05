@@ -34,23 +34,32 @@ function supportedMethodOptions(operation: Operation): JavaParam[] {
     });
   }
 
-  if (!operationHasParameterNamed(operation, "timeout")) {
-    options.push({
-      Type: "java.time.Duration",
-      EnhancedType: "java.util.Optional<java.time.Duration>",
-      Name: "timeout",
-      Optional: true,
-      Nullable: false,
-      IncludedInSignature: false,
-      Util: false,
-      ParamType: "string",
-      Comment: "overrides the request timeout for this call",
-      HasItemType: false,
-    });
-  }
+  options.push({
+    Type: "java.time.Duration",
+    EnhancedType: "java.util.Optional<java.time.Duration>",
+    Name: "timeout",
+    Optional: true,
+    Nullable: false,
+    IncludedInSignature: false,
+    Util: false,
+    ParamType: "string",
+    Comment: "overrides the request timeout for this call",
+    HasItemType: false,
+  });
 
   return options;
 }
+
+function requestBuilderMethodOptions(operation: Operation): JavaParam[] {
+  return supportedMethodOptions(operation).filter(
+    (option) => !operationHasParameterNamed(operation, option.Name),
+  );
+}
+
+registerTemplateFunc(
+  "requestBuilderMethodOptions",
+  requestBuilderMethodOptions,
+);
 
 function operationHasParameterNamed(
   operation: Operation,
@@ -172,9 +181,6 @@ function templateRequestBuilderCallOptions(
   indent: number = 1,
   inlineReturn?: boolean,
 ): string {
-  if (options.length == 0) {
-    return "";
-  }
   const optionsParam = methodOptionsParameter();
   const optionsLines: string[] = [];
   if (inlineReturn) {

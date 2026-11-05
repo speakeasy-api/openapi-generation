@@ -16,6 +16,7 @@ import java.net.http.HttpTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -67,7 +68,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         return request.headers()
                 .allValues("Accept")
                 .stream()
-                .flatMap(value -> java.util.Arrays.stream(value.split(",")))
+                .flatMap(value -> Arrays.stream(value.split(",")))
                 .anyMatch(SpeakeasyHTTPClient::isStreamingMediaType);
     }
 
@@ -340,6 +341,7 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         private final ScheduledFuture<?> deadline;
         private Flow.Subscription upstream;
         private boolean subscribed;
+        private boolean emitting;
         private boolean expirePending;
         private boolean done;
 
@@ -350,8 +352,13 @@ public class SpeakeasyHTTPClient implements HTTPClient {
 
         @Override
         public void onSubscribe(Flow.Subscription subscription) {
+            boolean expired;
             synchronized (this) {
                 upstream = subscription;
+                expired = done;
+            }
+            if (expired) {
+                subscription.cancel();
             }
             downstream.onSubscribe(new Flow.Subscription() {
                 @Override
@@ -365,57 +372,83 @@ public class SpeakeasyHTTPClient implements HTTPClient {
                     subscription.cancel();
                 }
             });
-            boolean expireNow;
+            boolean signal;
             synchronized (this) {
                 subscribed = true;
-                expireNow = expirePending;
+                signal = expirePending;
+                expirePending = false;
             }
-            if (expireNow) {
-                expire();
+            if (signal) {
+                downstream.onError(timeoutException(null));
             }
         }
 
         @Override
-        public synchronized void onNext(List<ByteBuffer> item) {
-            if (!done) {
+        public void onNext(List<ByteBuffer> item) {
+            synchronized (this) {
+                if (done) {
+                    return;
+                }
+                emitting = true;
+            }
+            boolean signal;
+            try {
                 downstream.onNext(item);
+            } finally {
+                synchronized (this) {
+                    emitting = false;
+                    signal = subscribed && expirePending;
+                    if (signal) {
+                        expirePending = false;
+                    }
+                }
+            }
+            if (signal) {
+                downstream.onError(timeoutException(null));
             }
         }
 
         @Override
-        public synchronized void onError(Throwable throwable) {
-            if (!done) {
+        public void onError(Throwable throwable) {
+            synchronized (this) {
+                if (done) {
+                    return;
+                }
                 done = true;
-                deadline.cancel(false);
-                downstream.onError(throwable);
             }
+            deadline.cancel(false);
+            downstream.onError(throwable);
         }
 
         @Override
-        public synchronized void onComplete() {
-            if (!done) {
+        public void onComplete() {
+            synchronized (this) {
+                if (done) {
+                    return;
+                }
                 done = true;
-                deadline.cancel(false);
-                downstream.onComplete();
             }
+            deadline.cancel(false);
+            downstream.onComplete();
         }
 
         void expire() {
             Flow.Subscription toCancel;
+            boolean signal;
             synchronized (this) {
-                if (!subscribed) {
-                    expirePending = true;
-                    toCancel = upstream;
-                } else if (done) {
+                if (done) {
                     return;
-                } else {
-                    done = true;
-                    downstream.onError(timeoutException(null));
-                    toCancel = upstream;
                 }
+                done = true;
+                toCancel = upstream;
+                signal = subscribed && !emitting;
+                expirePending = !signal;
             }
             if (toCancel != null) {
                 toCancel.cancel();
+            }
+            if (signal) {
+                CompletableFuture.runAsync(() -> downstream.onError(timeoutException(null)));
             }
         }
     }

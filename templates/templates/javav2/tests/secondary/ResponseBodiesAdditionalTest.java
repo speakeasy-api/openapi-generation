@@ -28,6 +28,7 @@ import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -98,6 +99,14 @@ public class ResponseBodiesAdditionalTest {
                 .request(ChatRequestBody.builder().prompt("Print test content").stream(false).build())
                 .call());
         assertTrue(thrown.getCause() instanceof ResponseTooLargeException, String.valueOf(thrown.getCause()));
+
+        ExecutionException asyncThrown = assertThrows(ExecutionException.class, () -> s.toAsync().eventstreams().chat()
+                .request(ChatRequestBody.builder().prompt("Print test content").stream(false).build())
+                .call()
+                .get());
+        assertTrue(asyncThrown.getCause() instanceof UncheckedIOException, String.valueOf(asyncThrown.getCause()));
+        assertTrue(asyncThrown.getCause().getCause() instanceof ResponseTooLargeException,
+                String.valueOf(asyncThrown.getCause().getCause()));
     }
 
     @Test

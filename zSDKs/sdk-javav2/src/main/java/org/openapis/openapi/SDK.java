@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import org.openapis.openapi.models.operations.BinaryAndStringUploadRequest;
 import org.openapis.openapi.models.operations.BinaryAndStringUploadRequestBuilder;
@@ -323,7 +324,7 @@ public class SDK {
             if (maxBytes <= 0) {
                 throw new IllegalArgumentException("maxResponseBodyBytes must be positive");
             }
-            this.sdkConfiguration.setMaxResponseBodyBytes(Optional.of(maxBytes));
+            this.sdkConfiguration.setMaxResponseBodyBytes(OptionalLong.of(maxBytes));
             return this;
         }
 
@@ -520,7 +521,7 @@ public class SDK {
     public SDK(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
         if (sdkConfiguration.maxResponseBodyBytes().isPresent()) {
-            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().get();
+            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().getAsLong();
             sdkConfiguration.client().setMaxResponseBodyBytes(maxResponseBodyBytes);
             if (sdkConfiguration.client().maxResponseBodyBytes() != maxResponseBodyBytes) {
                 throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
@@ -534,7 +535,7 @@ public class SDK {
         this.namespaceTests = new NamespaceTests(sdkConfiguration);
         sdkConfiguration = sdkConfiguration.hooks().sdkInit(sdkConfiguration);
         if (sdkConfiguration.maxResponseBodyBytes().isPresent() && sdkConfiguration.client() != configuredClient) {
-            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().get());
+            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().getAsLong());
         }
         this.asyncSDK = new AsyncSDK(this, sdkConfiguration);
         this.sdkConfiguration = sdkConfiguration;

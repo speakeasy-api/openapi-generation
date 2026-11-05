@@ -570,9 +570,9 @@ trackedFiles:
   src/main/java/org/openapis/openapi/Obsolete.java:
     last_write_checksum: sha1:541701b93e32b700946cd99533c0419a38f46c7e
   src/main/java/org/openapis/openapi/SDK.java:
-    last_write_checksum: sha1:fff50c10df233ad9bb9c26cf4ebe3f77fb7bd02e
+    last_write_checksum: sha1:0512d1c998d936b3cae2143ee6e49013b7af6d31
   src/main/java/org/openapis/openapi/SDKConfiguration.java:
-    last_write_checksum: sha1:533829e96a2d9327d59b3c68f1f3ab7820c8c43a
+    last_write_checksum: sha1:4b00e19cecbed030b463444294c3014d560a0c1a
   src/main/java/org/openapis/openapi/SecuritySource.java:
     last_write_checksum: sha1:585318f59f58aee0e32a66f3fdd81129784940ab
   src/main/java/org/openapis/openapi/SingleBar.java:
@@ -1550,7 +1550,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/SessionManager.java:
     last_write_checksum: sha1:cd253cbeb82fb7779b08caada453c4381f6d32ac
   src/main/java/org/openapis/openapi/utils/SpeakeasyHTTPClient.java:
-    last_write_checksum: sha1:b87c15de43b7be47e9c151f1559fd563b1663350
+    last_write_checksum: sha1:cca1c808596d4114830f3ac3ddb04d9a4e40cc4e
   src/main/java/org/openapis/openapi/utils/SpeakeasyLogger.java:
     last_write_checksum: sha1:ad239c8fec81792e27ec1ab349116d6c2e0998a1
   src/main/java/org/openapis/openapi/utils/SpeakeasyMetadata.java:
@@ -1566,7 +1566,7 @@ trackedFiles:
   src/main/java/org/openapis/openapi/utils/Utf8UrlEncoder.java:
     last_write_checksum: sha1:f06edd881fa04c30e27cd1fe5ffb69113de0dec8
   src/main/java/org/openapis/openapi/utils/Utils.java:
-    last_write_checksum: sha1:48deec5b10fbc40779a1fe1ca8ca0b2449adc6a6
+    last_write_checksum: sha1:b4dabfeb4716ea54a59ead3fcf9732f8893425a4
   src/main/java/org/openapis/openapi/utils/pagination/AsyncPaginator.java:
     last_write_checksum: sha1:65e815550248cc3f806e8c642024c4fe7246bb91
   src/main/java/org/openapis/openapi/utils/pagination/CursorTracker.java:

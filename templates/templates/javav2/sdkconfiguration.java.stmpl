@@ -245,13 +245,13 @@ package {{$pkg}};
         this.timeout = timeout;
     }
 
-    private {{javaImportOptional}}<Long> maxResponseBodyBytes = {{javaImportOptional}}.empty();
+    private {{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes = {{javaImport "java.util.OptionalLong"}}.empty();
 
-    public {{javaImportOptional}}<Long> maxResponseBodyBytes() {
+    public {{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes() {
         return maxResponseBodyBytes;
     }
 
-    public void setMaxResponseBodyBytes({{javaImportOptional}}<Long> maxResponseBodyBytes) {
+    public void setMaxResponseBodyBytes({{javaImport "java.util.OptionalLong"}} maxResponseBodyBytes) {
         {{javaImportUtils}}.checkNotNull(maxResponseBodyBytes, "maxResponseBodyBytes");
         this.maxResponseBodyBytes = maxResponseBodyBytes;
     }

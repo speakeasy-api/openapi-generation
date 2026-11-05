@@ -235,7 +235,7 @@ package {{$pkg}};
             if (maxBytes <= 0) {
                 throw new IllegalArgumentException("maxResponseBodyBytes must be positive");
             }
-            this.sdkConfiguration.setMaxResponseBodyBytes({{javaImportOptional}}.of(maxBytes));
+            this.sdkConfiguration.setMaxResponseBodyBytes({{javaImport "java.util.OptionalLong"}}.of(maxBytes));
             return this;
         }
 
@@ -352,7 +352,7 @@ package {{$pkg}};
     {{if springBootStarterEnabled}}public{{else}}private{{end}} {{$sdkClassName}}(SDKConfiguration sdkConfiguration) {
         sdkConfiguration.initialize();
         if (sdkConfiguration.maxResponseBodyBytes().isPresent()) {
-            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().get();
+            long maxResponseBodyBytes = sdkConfiguration.maxResponseBodyBytes().getAsLong();
             sdkConfiguration.client().setMaxResponseBodyBytes(maxResponseBodyBytes);
             if (sdkConfiguration.client().maxResponseBodyBytes() != maxResponseBodyBytes) {
                 throw new IllegalStateException("the configured HTTPClient does not enforce maxResponseBodyBytes");
@@ -379,7 +379,7 @@ package {{$pkg}};
             {{- end}}
         {{- end}}
         if (sdkConfiguration.maxResponseBodyBytes().isPresent() && sdkConfiguration.client() != configuredClient) {
-            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().get());
+            sdkConfiguration.client().setMaxResponseBodyBytes(sdkConfiguration.maxResponseBodyBytes().getAsLong());
         }
         {{- if $okHttp}}
             {{- range .Local.SubSDKs}}

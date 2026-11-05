@@ -183,10 +183,9 @@ function methodParameters(
     });
   }
 
-  const optionParameters = supportedMethodOptions(operation);
-  if (optionParameters.length > 0) {
+  if (supportedMethodOptions(operation).length > 0) {
     parameters.push(methodOptionsParameter());
-    parameters.push(...optionParameters);
+    parameters.push(...requestBuilderMethodOptions(operation));
   }
 
   return parameters;
@@ -1226,14 +1225,13 @@ function templateOperationInit(
   isAsync: boolean = false,
 ): string {
   const code = [];
-  if (initOptions) {
-    const opts = templateRequestBuilderCallOptions(
-      supportedMethodOptions(op.Operation),
-      3,
+  if (initOptions && supportedMethodOptions(op.Operation).length > 0) {
+    code.push(
+      templateRequestBuilderCallOptions(
+        requestBuilderMethodOptions(op.Operation),
+        3,
+      ),
     );
-    if (opts) {
-      code.push(opts);
-    }
   }
   const resType = isAsync
     ? javaImportTypeAsync(op.Operation.Response.Type)
