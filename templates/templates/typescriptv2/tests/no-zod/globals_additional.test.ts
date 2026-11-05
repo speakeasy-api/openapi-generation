@@ -1,7 +1,7 @@
 import { vi, expect, test, afterEach } from "vitest";
 
 import { SDK } from "../index.js";
-import { resetEnv } from "../lib/env.js";
+import { env, resetEnv } from "../lib/env.js";
 import { HTTPClient } from "../lib/http.js";
 import { GlobalPathParameterGetResponse } from "../sdk/models/operations/globalpathparameterget.js";
 import { GlobalsHeaderGetResponse } from "../sdk/models/operations/globalsheaderget.js";
@@ -13,6 +13,7 @@ import { recordTest, HTTPBIN_URL } from "./common_helpers.js";
 afterEach(() => {
   resetEnv();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -247,4 +248,19 @@ test("Test Debug Env Var False Keeps Logging Off", async () => {
   const res = await sdk.auth.globalBearerAuth();
 
   expect(res.token?.token).toBe("set-after-construction");
+
+  for (const [value, expected] of [
+    [true, true],
+    [1, true],
+    [false, false],
+    [0, false],
+  ]) {
+    resetEnv();
+    vi.stubGlobal("process", { env: { SPEAKEASY_DEBUG: value } });
+
+    const debug = env().SPEAKEASY_DEBUG;
+
+    vi.unstubAllGlobals();
+    expect(debug).toBe(expected);
+  }
 });
