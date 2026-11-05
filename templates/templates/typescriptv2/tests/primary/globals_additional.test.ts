@@ -13,6 +13,7 @@ import { recordTest, HTTPBIN_URL } from "./common_helpers.js";
 afterEach(() => {
   resetEnv();
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 test("Test Globals Query Parameter Get Uses Global", async () => {
@@ -207,4 +208,32 @@ test("Test Globals Kebab Case Param Get", async () => {
 
   expect(res.httpMeta.response.status).toBe(200);
   expect(res.res?.args["kebab-case-param"]).toBe("kebab-case-value");
+});
+
+test("Test Debug Env Var False Keeps Logging Off", async () => {
+  recordTest("debug-env-var-false-keeps-logging-off");
+
+  const group = vi.spyOn(console, "group").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(() => {});
+  vi.spyOn(console, "groupEnd").mockImplementation(() => {});
+
+  for (const value of ["false", "0", "off", "no", ""]) {
+    resetEnv();
+    vi.stubEnv("SPEAKEASY_DEBUG", value);
+
+    const sdk = new SDK({ serverURL: HTTPBIN_URL });
+    const res = await sdk.globals.globalsQueryParameterGet("local");
+
+    expect(res.httpMeta.response.status).toBe(200);
+    expect(group).not.toHaveBeenCalled();
+  }
+
+  resetEnv();
+  vi.stubEnv("SPEAKEASY_DEBUG", "true");
+
+  const sdk = new SDK({ serverURL: HTTPBIN_URL });
+  const res = await sdk.globals.globalsQueryParameterGet("local");
+
+  expect(res.httpMeta.response.status).toBe(200);
+  expect(group).toHaveBeenCalled();
 });

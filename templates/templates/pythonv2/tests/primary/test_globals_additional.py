@@ -1,3 +1,5 @@
+import logging
+
 from openapi import SDK
 
 from .common_helpers import *
@@ -209,3 +211,26 @@ def test_globals_kebab_case_param_get():
     assert res.http_meta.response.status_code == 200
     assert res.res is not None
     assert res.res.args["kebab-case-param"] == "kebab-case-value"
+
+
+def test_debug_env_var_false_keeps_logging_off(monkeypatch, caplog):
+    record_test("debug-env-var-false-keeps-logging-off")
+
+    caplog.set_level(logging.DEBUG, logger="openapi")
+
+    for value in ["false", "0", "off", "no", ""]:
+        monkeypatch.setenv("SPEAKEASY_DEBUG", value)
+
+        s = SDK(server_url=HTTPBIN_URL, global_path_param=1)
+        res = s.globals.global_path_parameter_get()
+
+        assert res.http_meta.response.status_code == 200
+        assert not [r for r in caplog.records if r.name == "openapi"]
+
+    monkeypatch.setenv("SPEAKEASY_DEBUG", "true")
+
+    s = SDK(server_url=HTTPBIN_URL, global_path_param=1)
+    res = s.globals.global_path_parameter_get()
+
+    assert res.http_meta.response.status_code == 200
+    assert [r for r in caplog.records if r.name == "openapi"]

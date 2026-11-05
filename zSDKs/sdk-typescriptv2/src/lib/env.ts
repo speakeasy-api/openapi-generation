@@ -59,8 +59,12 @@ export const envSchema: z.ZodMiniType<Env, unknown> = z.object({
   SPEAKEASY_DEPRECATED_QUERY_PARAM2: z.optional(z.string()),
   SPEAKEASY_LONE_QUERY_PARAM: z.optional(z.string()),
 
-  SPEAKEASY_DEBUG: z.optional(z.coerce.boolean()),
+  SPEAKEASY_DEBUG: z.optional(z.pipe(z.string(), z.transform(parseEnvFlag))),
 });
+
+function parseEnvFlag(value: string): boolean {
+  return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
+}
 
 /**
  * Checks for the existence of the Deno global object to determine the environment.

@@ -55,8 +55,12 @@ export const envSchema: z.ZodType<Env> = z.object({
   SPK_DEPRECATED_QUERY_PARAM2: z.string().optional(),
   SPK_LONE_QUERY_PARAM: z.string().optional(),
 
-  SPK_DEBUG: z.coerce.boolean().optional(),
+  SPK_DEBUG: z.string().transform(parseEnvFlag).optional(),
 });
+
+function parseEnvFlag(value: string): boolean {
+  return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
+}
 
 let envMemo: Env | undefined = undefined;
 /**
