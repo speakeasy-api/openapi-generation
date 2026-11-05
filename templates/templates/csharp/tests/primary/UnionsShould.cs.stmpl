@@ -283,11 +283,8 @@ public class UnionsShould
         // Deserialization should fail since TypedObjectOneOf is non-nullable. TypedObjectOneOf
         // is generated open so its converter tolerates null (Unknown fallback): the failure
         // surfaces from the envelope's Required.Always presence validation on the `json` property.
-        var ex = Assert.Throws<JsonSerializationException>(
-            () => ResponseBodyDeserializer.DeserializeNotNull<TypedObjectOneOfPostRes>(
-                "{\"json\": null}",
-                NullValueHandling.Ignore
-            )
+        var ex = Compat.AssertThrowsJsonSerializationException(
+            () => Compat.DeserializeJson<TypedObjectOneOfPostRes>("{\"json\": null}")
         );
 
         Assert.StartsWith("Required property 'json' expects a value but got null", ex.Message);
@@ -303,7 +300,7 @@ public class UnionsShould
         var bodyLess = new TypedObjectOneOf(TypedObjectOneOfType.Obj1);
 
         var ex = Assert.Throws<InvalidOperationException>(
-            () => JsonConvert.SerializeObject(bodyLess)
+            () => Compat.SerializeJson(bodyLess)
         );
         Assert.Contains("no variant value was set", ex.Message);
     }
@@ -480,7 +477,7 @@ public class UnionsShould
         foreach (var test in tests)
         {
             var req = test.arg;
-            var serializedBody = RequestBodySerializer.Serialize(
+            var serializedBody = Compat.SerializeRequestBody(
                 req,
                 "Request",
                 "json",
@@ -554,7 +551,7 @@ public class UnionsShould
         foreach (var test in tests)
         {
             NullableOneOfRefInObject req = (NullableOneOfRefInObject)test.arg;
-            var serializedBody = RequestBodySerializer.Serialize(
+            var serializedBody = Compat.SerializeRequestBody(
                 req,
                 "Request",
                 "json",
@@ -867,7 +864,7 @@ public class UnionsShould
         };
 
         var req1 = UnionNestedEnumsFormRequestBody.CreateNestedEnumArray(obj1);
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "form", false, false);
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "form", false, false);
         var form1 = HttpUtility.UrlDecode(await serializedForm1.ReadAsStringAsync());
         Assert.Equal("enums[]=one&enums[]=two&tags=one,two", form1);
 
@@ -885,7 +882,7 @@ public class UnionsShould
         };
 
         var req2 = UnionNestedEnumsFormRequestBody.CreateNestedEnumMap(obj2);
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "form", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "form", false, false);
         var form2 = HttpUtility.UrlDecode(await serializedForm2.ReadAsStringAsync());
         Assert.Equal("enums={\"key2\":\"two\",\"key3\":\"three\"}&tags=two,three", form2);
 
@@ -907,7 +904,7 @@ public class UnionsShould
         };
 
         var req1 = new UnionNestedEnumsMultipartRequestBody() { Enums = Enums.CreateArrayOfEnum(enumArray) };
-        var serializedForm1 = RequestBodySerializer.Serialize(req1, "Request", "multipart", false, false);
+        var serializedForm1 = Compat.SerializeRequestBody(req1, "Request", "multipart", false, false);
         var form1 = await serializedForm1.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form1);
         Assert.Contains("[\"one\",\"two\"]", form1);
@@ -922,7 +919,7 @@ public class UnionsShould
         };
 
         var req2 = new UnionNestedEnumsMultipartRequestBody() { Enums = Enums.CreateMapOfEnum(enumMap) };
-        var serializedForm2 = RequestBodySerializer.Serialize(req2, "Request", "multipart", false, false);
+        var serializedForm2 = Compat.SerializeRequestBody(req2, "Request", "multipart", false, false);
         var form2 = await serializedForm2.ReadAsStringAsync();
         Assert.Contains("Content-Disposition: form-data; name=enums", form2);
         Assert.Contains("{\"key2\":\"two\",\"key3\":\"three\"}", form2);
@@ -1065,8 +1062,8 @@ public class UnionsShould
         Assert.Equal(HttpStatusCode.OK, res.HttpMeta.Response.StatusCode);
         Assert.NotNull(res.Object);
         Assert.Equal(
-            JsonConvert.SerializeObject(payload),
-            JsonConvert.SerializeObject(res.Object!.Json.Value)
+            Compat.SerializeJson(payload),
+            Compat.SerializeJson(res.Object!.Json.Value)
         );
     }
 
@@ -1253,7 +1250,7 @@ public class UnionsShould
             new List<Nestedenum> { Nestedenum.Abc }
         );
         var val = new OneOfCollectionEnumRes { Json = enumArray };
-        var json = JsonConvert.SerializeObject(val, Utilities.GetDefaultJsonSerializerSettings());
+        var json = Compat.SerializeWithDefaultSettings(val);
         Assert.Equal("{\"json\":[\"abc\"]}", json);
     }
 
@@ -1286,10 +1283,7 @@ public class UnionsShould
 
         // Deserialize an array of enums wrapped in a union response.
         var json = "{\"json\":[\"abc\",\"def\"]}";
-        var res = JsonConvert.DeserializeObject<OneOfCollectionEnumRes>(
-            json,
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var res = Compat.DeserializeWithDefaultSettings<OneOfCollectionEnumRes>(json)!;
         Assert.NotNull(res.Json);
         Assert.NotNull(res.Json.ArrayOfNestedenum);
         Assert.Equal(2, res.Json.ArrayOfNestedenum.Count);
@@ -1303,11 +1297,8 @@ public class UnionsShould
                 new List<Nestedenum> { Nestedenum.Abc, Nestedenum.Def }
             ),
         };
-        var serialized = JsonConvert.SerializeObject(original, Utilities.GetDefaultJsonSerializerSettings());
-        var deserialized = JsonConvert.DeserializeObject<OneOfCollectionEnumRes>(
-            serialized,
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var serialized = Compat.SerializeWithDefaultSettings(original);
+        var deserialized = Compat.DeserializeWithDefaultSettings<OneOfCollectionEnumRes>(serialized)!;
         Assert.Equal(2, deserialized.Json.ArrayOfNestedenum.Count);
         Assert.Equal(Nestedenum.Abc, deserialized.Json.ArrayOfNestedenum[0]);
         Assert.Equal(Nestedenum.Def, deserialized.Json.ArrayOfNestedenum[1]);
@@ -1318,8 +1309,6 @@ public class UnionsShould
     {
         CommonHelpers.RecordTest("smart-union-nullable-collection-item");
 
-        var settings = Utilities.GetDefaultJsonDeserializerSettings();
-
         // When a union member holds a collection of a non-nullable nested union, a null
         // element/value in the payload makes that nested union fail to deserialize. Resolving
         // the outer union must treat that as "this member does not match" and move on to the
@@ -1329,10 +1318,7 @@ public class UnionsShould
         // Array case: SmartUnionArrayWithUnionItems.items is List<union>,
         // SmartUnionArrayWithNullableItems.items is List<string?>. Payload {"items":[null]}
         // only fits SmartUnionArrayWithNullableItems, so it must win.
-        var arr = JsonConvert.DeserializeObject<SmartUnionNullableArrayItem>(
-            "{\"items\":[null]}",
-            settings
-        )!;
+        var arr = Compat.DeserializeWithDefaultSettings<SmartUnionNullableArrayItem>("{\"items\":[null]}")!;
         Assert.Equal(
             SmartUnionNullableArrayItemType.SmartUnionArrayWithNullableItems.ToString(),
             arr.Type.ToString()
@@ -1347,10 +1333,7 @@ public class UnionsShould
         // SmartUnionMapWithUnionValues.entries is Dictionary<string, union>,
         // SmartUnionMapWithNullableValues.entries is Dictionary<string, string?>. Payload
         // {"entries":{"k":null}} only fits SmartUnionMapWithNullableValues, so it must win.
-        var map = JsonConvert.DeserializeObject<SmartUnionNullableMapItem>(
-            "{\"entries\":{\"k\":null}}",
-            settings
-        )!;
+        var map = Compat.DeserializeWithDefaultSettings<SmartUnionNullableMapItem>("{\"entries\":{\"k\":null}}")!;
         Assert.Equal(
             SmartUnionNullableMapItemType.SmartUnionMapWithNullableValues.ToString(),
             map.Type.ToString()
@@ -1372,10 +1355,7 @@ public class UnionsShould
         // OptionalNullable<T>. Scoring must unwrap the boxed wrapper before recursing;
         // a still-wrapped value crashes the entire pick (TargetException on the object
         // field, InvalidCastException on the array field) instead of resolving.
-        var union = JsonConvert.DeserializeObject<SmartUnionWrappedComplex>(
-            "{\"meta\":{\"name\":\"x\"},\"tags\":[\"a\",\"b\"],\"extras\":{\"k\":\"v\"}}",
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var union = Compat.DeserializeWithDefaultSettings<SmartUnionWrappedComplex>("{\"meta\":{\"name\":\"x\"},\"tags\":[\"a\",\"b\"],\"extras\":{\"k\":\"v\"}}")!;
 
         Assert.Equal(
             SmartUnionWrappedComplexType.SmartUnionWrappedComplexMember.ToString(),
@@ -1391,20 +1371,14 @@ public class UnionsShould
 
         // Explicit null for every wrapped field: the wrapper converter consumes the nulls
         // (IsSet && IsNull) and the member still wins over the note-only sibling.
-        var allNull = JsonConvert.DeserializeObject<SmartUnionWrappedComplex>(
-            "{\"meta\":null,\"tags\":null,\"extras\":null}",
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var allNull = Compat.DeserializeWithDefaultSettings<SmartUnionWrappedComplex>("{\"meta\":null,\"tags\":null,\"extras\":null}")!;
         Assert.NotNull(allNull.SmartUnionWrappedComplexMember);
         Assert.True(allNull.SmartUnionWrappedComplexMember!.Meta.IsNull);
         Assert.True(allNull.SmartUnionWrappedComplexMember!.Tags.IsNull);
         Assert.True(allNull.SmartUnionWrappedComplexMember!.Extras.IsNull);
 
         // The sibling still wins its own payload.
-        var note = JsonConvert.DeserializeObject<SmartUnionWrappedComplex>(
-            "{\"note\":\"hi\"}",
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var note = Compat.DeserializeWithDefaultSettings<SmartUnionWrappedComplex>("{\"note\":\"hi\"}")!;
         Assert.NotNull(note.SmartUnionWrappedPlainNote);
         Assert.Equal("hi", note.SmartUnionWrappedPlainNote!.Note);
     }
@@ -1470,10 +1444,7 @@ public class UnionsShould
         CommonHelpers.RecordTest("smart-union-nested-union-vs-nested-union");
 
         NestedUnion Deser(string json) =>
-            JsonConvert.DeserializeObject<NestedUnion>(
-                json,
-                Utilities.GetDefaultJsonDeserializerSettings()
-            )!;
+            Compat.DeserializeWithDefaultSettings<NestedUnion>(json)!;
 
         // Both outer members wrap a nested union: PaymentUnion -> PaymentMethod
         // (CardPayment | TransferPayment), ShipmentUnion -> ShipmentMethod
@@ -1505,6 +1476,7 @@ public class UnionsShould
         Assert.Null(skipShipping.SelectedEvent.ShipmentUnion);
     }
 
+{{- if not isCsharpV2}}
     [Fact]
     public void SmartUnionNullableUnionNullableFields()
     {
@@ -1629,6 +1601,8 @@ public class UnionsShould
         Assert.Null(PickWinnerType(pool, "{\"foo\":null}"));
     }
 
+{{- end}}
+
     [Fact]
     public void SmartUnion_AllCandidatesFail_OpenUnionFallsBackToUnknown()
     {
@@ -1638,14 +1612,12 @@ public class UnionsShould
         // eliminates both at PreCheck. SmartUnionOpenEnumsJson is a response union and the
         // primary config sets forwardCompatibleUnionsByDefault: tagged-and-untagged, so the
         // no-winner case falls back to the Unknown sentinel instead of throwing.
-        var res = JsonConvert.DeserializeObject<SmartUnionOpenEnumsJson>(
-            "{}",
-            Utilities.GetDefaultJsonDeserializerSettings()
-        )!;
+        var res = Compat.DeserializeWithDefaultSettings<SmartUnionOpenEnumsJson>("{}")!;
         Assert.True(res.IsUnknown());
         Assert.Equal(SmartUnionOpenEnumsJsonType.Unknown.ToString(), res.Type.ToString());
         Assert.NotNull(res.UnknownRaw);
     }
+{{- if not isCsharpV2}}
 
     [Fact]
     public void SmartUnion_AllCandidatesFail_ClosedUnionStillThrows()
@@ -1743,6 +1715,8 @@ public class UnionsShould
         );
     }
 
+{{- end}}
+
     [Fact]
     public async Task DiscriminatedMultipleMemberships()
     {
@@ -1766,6 +1740,7 @@ public class UnionsShould
         Assert.Equal("four", answer.Car!.WheelsType);
     }
 
+{{- if not isCsharpV2}}
     [Fact]
     public void ScoreUnion_PopulatedPrimitivePreferredOverCoerced()
     {
@@ -2074,4 +2049,5 @@ public class UnionsShould
         [JsonProperty("foo")]
         public string Foo { get; set; }
     }
+{{- end}}
 }

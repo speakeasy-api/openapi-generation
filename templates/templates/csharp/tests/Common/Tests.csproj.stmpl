@@ -14,6 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\{{getProjectFilePath}}" />
+    {{templateTestProjectReferences}}
   </ItemGroup>
 </Project>

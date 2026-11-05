@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"io/fs"
 	"path"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
 	esbuild "github.com/evanw/esbuild/pkg/api"
+	"github.com/speakeasy-api/openapi-generation/v2/internal/templatedir"
 	"github.com/speakeasy-api/openapi-generation/v2/internal/types"
 	"github.com/speakeasy-api/openapi-generation/v2/templates"
 )
@@ -37,13 +39,12 @@ type CallContext struct {
 func New(target types.Target, file string) (*Executor, error) {
 	vm := goja.New()
 	registry := require.NewRegistryWithLoader(templateSourceLoader)
-	// NOTE: embed.FS access must always use forward slashes, even on Windows.
-	scriptPath := path.Join("templates", target.Template, file)
 
 	registry.Enable(vm)
 	console.Enable(vm)
 
-	jsData, err := templateSourceLoader(scriptPath)
+	// NOTE: embed.FS access must always use forward slashes, even on Windows.
+	scriptPath, jsData, err := resolveTemplateScript(target.Template, file)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +127,28 @@ func (e *Executor) ToValue(i any) goja.Value {
 	defer e.mutex.Unlock()
 
 	return e.vm.ToValue(i)
+}
+
+// resolveTemplateScript resolves file for primaryTemplate, falling back to the
+// baseTemplate declared in template.yaml if the file is absent from the primary.
+func resolveTemplateScript(primaryTemplate, file string) (string, []byte, error) {
+	cfg, err := templatedir.LoadConfig(primaryTemplate)
+	if err != nil {
+		return "", nil, err
+	}
+
+	candidates := []string{path.Join(templatedir.TemplateRoot, primaryTemplate, file)}
+	if cfg.BaseTemplate != "" {
+		candidates = append(candidates, path.Join(templatedir.TemplateRoot, cfg.BaseTemplate, file))
+	}
+
+	for _, scriptPath := range candidates {
+		if jsData, err := templateSourceLoader(scriptPath); err == nil {
+			return scriptPath, jsData, nil
+		}
+	}
+
+	return "", nil, fmt.Errorf("unable to read template path templates/%s/%s: %w", primaryTemplate, file, fs.ErrNotExist)
 }
 
 // Enables require() of template TypeScript source files.

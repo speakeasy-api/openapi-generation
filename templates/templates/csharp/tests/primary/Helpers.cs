@@ -160,7 +160,7 @@ public class Helpers
 
     public static async Task<string> GetSerializedBodyJson(object request, string format = "")
     {
-        var serializedBody = RequestBodySerializer.Serialize(request, "Request", "json", false, false, format);
+        var serializedBody = Compat.SerializeRequestBody(request, "Request", "json", false, false, format);
         Assert.NotNull(serializedBody);
         return await serializedBody.ReadAsStringAsync();
     }
@@ -474,7 +474,7 @@ public class Helpers
         var fieldType = obj.GetType().GetProperty(propName)!.PropertyType;
         Assert.False(
             fieldType.IsGenericType
-                && fieldType.GetGenericTypeDefinition() == typeof(OptionalNullable<>),
+                && fieldType.GetGenericTypeDefinition() == Compat.OptionalNullableType,
             $"{obj.GetType().Name}.{propName} must not be wrapped in OptionalNullable<T>"
         );
     }

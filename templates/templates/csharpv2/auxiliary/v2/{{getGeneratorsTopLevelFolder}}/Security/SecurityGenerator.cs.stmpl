@@ -1,0 +1,312 @@
+#nullable enable
+using System.Collections.Immutable;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using {{getGeneratorsPackageId}};
+using static {{getGeneratorsPackageId}}.Helpers;
+
+namespace {{getGeneratorsPackageId}}.Security;
+
+[Generator]
+public class SecurityGenerator : IIncrementalGenerator
+{
+    private const string AttributeFullName =
+        "{{getGeneratorsPackageId}}.Params.SecurityParamAttribute";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var props = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                AttributeFullName,
+                predicate: static (s, _) => s is PropertyDeclarationSyntax,
+                transform: static (ctx, _) => ExtractModel(ctx)
+            )
+            .Where(static m => m is not null)
+            .Collect();
+
+        context.RegisterSourceOutput(props, static (spc, models) => Emit(models!, spc));
+    }
+
+    private static SecurityPropModel? ExtractModel(GeneratorAttributeSyntaxContext ctx)
+    {
+        if (ctx.TargetSymbol is not IPropertySymbol prop) return null;
+        if (prop.ContainingType is not INamedTypeSymbol containingType) return null;
+
+        var attr = ctx.Attributes[0];
+        var option = false;
+        var scheme = false;
+        var composite = false;
+        string? secType = null, subType = null, headerQueryName = null;
+
+        foreach (var arg in attr.NamedArguments)
+        {
+            switch (arg.Key)
+            {
+                case "Option":    option    = arg.Value.Value is true; break;
+                case "Scheme":    scheme    = arg.Value.Value is true; break;
+                case "Composite": composite = arg.Value.Value is true; break;
+                case "Type":      secType   = arg.Value.Value as string; break;
+                case "SubType":   subType   = arg.Value.Value as string; break;
+                case "Name":      headerQueryName = arg.Value.Value as string; break;
+            }
+        }
+
+        var containingNs = containingType.ContainingNamespace;
+        var containingFqn = containingNs.IsGlobalNamespace
+            ? $"global::{containingType.Name}"
+            : $"global::{containingNs.ToDisplayString()}.{containingType.Name}";
+        var containingNsDecl = NamespaceDeclaration(containingNs);
+
+        // Unwrap Nullable<T> for value types; reference types are already unwrapped.
+        var rawType = prop.Type;
+        if (rawType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+            rawType = nullable.TypeArguments[0];
+
+        string? propTypeName = null;
+        string? propTypeFqn = null;
+        if (rawType is INamedTypeSymbol named && named.TypeKind == TypeKind.Class && named.SpecialType != SpecialType.System_String)
+        {
+            propTypeName = named.Name;
+            var propNs = named.ContainingNamespace;
+            propTypeFqn = propNs.IsGlobalNamespace
+                ? $"global::{named.Name}"
+                : $"global::{propNs.ToDisplayString()}.{named.Name}";
+        }
+
+        return new SecurityPropModel(
+            ContainingTypeFqn: containingFqn,
+            ContainingTypeName: containingType.Name,
+            ContainingTypeNsDecl: containingNsDecl,
+            PropName: prop.Name,
+            PropTypeName: propTypeName,
+            PropTypeFqn: propTypeFqn,
+            Option: option,
+            Scheme: scheme,
+            Composite: composite,
+            SecType: secType,
+            SubType: subType,
+            HeaderQueryName: headerQueryName
+        );
+    }
+
+    private static void Emit(ImmutableArray<SecurityPropModel> allModels, SourceProductionContext spc)
+    {
+        var byType = allModels
+            .GroupBy(m => m.ContainingTypeFqn)
+            .ToList();
+
+        foreach (var group in byType)
+        {
+            var props = group.ToList();
+            var first = props[0];
+            var source = GenerateApplier(
+                first.ContainingTypeName,
+                first.ContainingTypeFqn,
+                first.ContainingTypeNsDecl,
+                props);
+            spc.AddSource($"{first.ContainingTypeName}Applier.g.cs", source);
+        }
+    }
+
+    private static string GenerateApplier(
+        string typeName,
+        string typeFqn,
+        string typeNsDecl,
+        System.Collections.Generic.List<SecurityPropModel> props)
+    {
+        var isBasicLeaf = props.All(p =>
+            !p.Scheme && !p.Option && (p.HeaderQueryName == "username" || p.HeaderQueryName == "password"));
+        var isFlatBasic = props.Count > 0 && props.All(p =>
+            p.Scheme && p.SubType == "basic" && p.PropTypeName == null);
+
+        var body = props.Any(p => p.Option)
+            ? GenerateOptionBody(props)
+            : (isBasicLeaf || isFlatBasic)
+                ? GenerateBasicAuthBody(props)
+                : GenerateSchemeBody(props);
+
+        // clang-format off
+        return $$"""
+            #nullable enable
+            {{interp "typeNsDecl"}}public static class {{interp "typeName"}}Applier
+            {
+                public static System.Net.Http.HttpRequestMessage Apply(System.Func<{{interp "typeFqn"}}?> source, System.Net.Http.HttpRequestMessage request, System.Collections.Generic.List<string>? allowedFields = null)
+                {
+                    var security = source();
+                    if (security == null) return request;
+            {{interp "body"}}        return request;
+                }
+            }
+            """;
+        // clang-format on
+    }
+
+    private static string GenerateOptionBody(System.Collections.Generic.List<SecurityPropModel> props)
+    {
+        var lines = new System.Text.StringBuilder();
+        foreach (var prop in props.Where(p => p.Option))
+        {
+            if (prop.PropTypeName == null) continue;
+            lines.AppendLine($"        if (security.{prop.PropName} != null)");
+            lines.AppendLine($"            return {prop.PropTypeName}Applier.Apply(() => security.{prop.PropName}, request);");
+        }
+        return lines.ToString();
+    }
+
+    private static string GenerateSchemeBody(System.Collections.Generic.List<SecurityPropModel> props)
+    {
+        var schemeProps = props.Where(p => p.Scheme).ToList();
+        if (schemeProps.Count == 0) return string.Empty;
+
+        var anyComposite = schemeProps.Any(p => p.Composite);
+        var sb = new System.Text.StringBuilder();
+
+        if (anyComposite)
+        {
+            foreach (var prop in schemeProps)
+            {
+                var inner = SchemeApplicationBody(prop);
+                if (string.IsNullOrEmpty(inner)) continue;
+
+                sb.AppendLine($"        if (security.{prop.PropName} != null && (allowedFields == null || allowedFields.Contains(\"{prop.PropName}\")))");
+                sb.AppendLine("        {");
+                sb.Append(inner);
+                if (!inner.EndsWith("\n")) sb.AppendLine();
+                sb.AppendLine("        }");
+            }
+            return sb.ToString();
+        }
+
+        var emittable = schemeProps
+            .Select(p => (Prop: p, Inner: SchemeApplicationBody(p)))
+            .Where(t => !string.IsNullOrEmpty(t.Inner))
+            .ToList();
+        if (emittable.Count == 0) return string.Empty;
+
+        sb.AppendLine("        if (allowedFields != null)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            foreach (var __af in allowedFields)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                switch (__af)");
+        sb.AppendLine("                {");
+        foreach (var (prop, inner) in emittable)
+        {
+            sb.AppendLine($"                    case \"{prop.PropName}\":");
+            sb.AppendLine($"                        if (security.{prop.PropName} != null)");
+            sb.AppendLine("                        {");
+            sb.Append(inner);
+            if (!inner.EndsWith("\n")) sb.AppendLine();
+            sb.AppendLine("                            return request;");
+            sb.AppendLine("                        }");
+            sb.AppendLine("                        break;");
+        }
+        sb.AppendLine("                }");
+        sb.AppendLine("            }");
+        sb.AppendLine("            return request;");
+        sb.AppendLine("        }");
+
+        var first = true;
+        foreach (var prop in schemeProps)
+        {
+            var inner = SchemeApplicationBody(prop);
+            if (string.IsNullOrEmpty(inner)) continue;
+            sb.AppendLine($"        {(first ? "if" : "else if")} (security.{prop.PropName} != null)");
+            sb.AppendLine("        {");
+            sb.Append(inner);
+            if (!inner.EndsWith("\n")) sb.AppendLine();
+            sb.AppendLine("        }");
+            first = false;
+        }
+        return sb.ToString();
+    }
+
+    private static string GenerateBasicAuthBody(System.Collections.Generic.List<SecurityPropModel> props)
+    {
+        var userProp = props.FirstOrDefault(p => p.HeaderQueryName == "username");
+        var passProp = props.FirstOrDefault(p => p.HeaderQueryName == "password");
+        if (userProp == null || passProp == null) return string.Empty;
+
+        var userName = userProp.PropName;
+        var passName = passProp.PropName;
+
+        // clang-format off
+        return $$"""
+                    var auth = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{security.{{interp "userName"}}}:{security.{{interp "passName"}}}"));
+                    request.Headers.Add("Authorization", $"Basic {auth}");
+
+            """;
+        // clang-format on
+    }
+
+    private static string SchemeApplicationBody(SecurityPropModel prop)
+    {
+        var key      = prop.HeaderQueryName ?? string.Empty;
+        var propName = prop.PropName;
+
+        // clang-format off
+        return (prop.SecType, prop.SubType) switch
+        {
+            ("http", "bearer")      => BearerBody(key, propName),
+            ("http", "basic")       => prop.PropTypeName != null
+                                           ? NestedBasicBody(propName)
+                                           : string.Empty,
+            ("http", "custom")      => string.Empty,
+            ("apiKey", "header")    => $$"""            request.Headers.Add("{{interp "key"}}", security.{{interp "propName"}});""",
+            ("apiKey", "cookie")    => $$"""            request.Headers.Add("cookie", $"{{interp "key"}}={security.{{interp "propName"}}}");""",
+            ("apiKey", "query")     => QueryParamBody(key, propName),
+            ("openIdConnect", _)    => BearerBody(key, propName),
+            ("oauth2", var st) when st != "client_credentials"
+                                    => BearerBody(key, propName),
+            _                       => string.Empty,
+        };
+        // clang-format on
+    }
+
+    // clang-format off
+    private static string BearerBody(string key, string propName) =>
+        $$"""
+                    var __v = security.{{interp "propName"}}!;
+                    if (!__v.StartsWith("bearer ", System.StringComparison.OrdinalIgnoreCase))
+                        __v = $"Bearer {__v}";
+                    request.Headers.Add("{{interp "key"}}", __v);
+        """;
+    // clang-format on
+
+    // clang-format off
+    private static string NestedBasicBody(string propName) =>
+        $$"""
+                    var __auth = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{security.{{interp "propName"}}!.Username}:{security.{{interp "propName"}}!.Password}"));
+                    request.Headers.Add("Authorization", $"Basic {__auth}");
+        """;
+    // clang-format on
+
+    // clang-format off
+    private static string QueryParamBody(string key, string propName) =>
+        $$"""
+                    if (request.RequestUri != null)
+                    {
+                        var __ub = new System.UriBuilder(request.RequestUri);
+                        var __q = System.Web.HttpUtility.ParseQueryString(__ub.Query);
+                        __q.Add("{{interp "key"}}", security.{{interp "propName"}});
+                        __ub.Query = __q.ToString();
+                        request.RequestUri = __ub.Uri;
+                    }
+        """;
+    // clang-format on
+
+    private sealed record SecurityPropModel(
+        string ContainingTypeFqn,
+        string ContainingTypeName,
+        string ContainingTypeNsDecl,
+        string PropName,
+        string? PropTypeName,
+        string? PropTypeFqn,
+        bool Option,
+        bool Scheme,
+        bool Composite,
+        string? SecType,
+        string? SubType,
+        string? HeaderQueryName
+    );
+}

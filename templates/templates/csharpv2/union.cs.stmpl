@@ -1,0 +1,12 @@
+{{- $unknownMember := ""}}
+{{- $unknownValue := ""}}
+{{- if .Local.Type.IsUnionOpen}}
+  {{- $unknownMember = openUnionUnknownMemberName .Local.Type}}
+  {{- $unknownValue = openUnionUnknownValue .Local.Type}}
+{{- end}}
+{{- $data := dict "Type" .Local.Type "Comments" .Local.Comments "UnknownMember" $unknownMember "UnknownValue" $unknownValue}}
+{{- if .Local.Type.Discriminator}}
+  {{- templateString "union-discr.cs.stmpl" $data}}
+{{- else}}
+  {{- templateString "union-undiscr.cs.stmpl" $data}}
+{{- end}}

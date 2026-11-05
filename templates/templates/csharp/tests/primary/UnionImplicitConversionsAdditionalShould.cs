@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Newtonsoft.Json;
 using Openapi.Models.Shared;
 using Openapi.Utils;
 using Xunit;
@@ -29,11 +28,11 @@ public class UnionImplicitConversionsAdditionalShould
         Assert.Same(circle, shape.ImplicitConversionCircle);
         Assert.Equal("circle", circle.Kind);
         Assert.Equal(
-            JsonConvert.SerializeObject(
+            Compat.SerializeWithDefaultSettings(
                 ImplicitConversionShape.CreateCircle(
                     new ImplicitConversionCircle { Kind = "", Radius = 2 }
-                ), Utilities.GetDefaultJsonSerializerSettings()),
-            JsonConvert.SerializeObject(shape, Utilities.GetDefaultJsonSerializerSettings())
+                )),
+            Compat.SerializeWithDefaultSettings(shape)
         );
     }
 
@@ -46,13 +45,13 @@ public class UnionImplicitConversionsAdditionalShould
         Assert.Equal(ImplicitConversionShapeType.Circle, nested.ImplicitConversionShape!.Type);
         Assert.Equal(1.0, nested.ImplicitConversionShape.ImplicitConversionCircle!.Radius);
         Assert.Equal(
-            JsonConvert.SerializeObject(
+            Compat.SerializeWithDefaultSettings(
                 ImplicitConversionNested.CreateImplicitConversionShape(
                     ImplicitConversionShape.CreateCircle(
                         new ImplicitConversionCircle { Kind = "", Radius = 1 }
                     )
-                ), Utilities.GetDefaultJsonSerializerSettings()),
-            JsonConvert.SerializeObject(nested, Utilities.GetDefaultJsonSerializerSettings())
+                )),
+            Compat.SerializeWithDefaultSettings(nested)
         );
     }
 
@@ -107,8 +106,8 @@ public class UnionImplicitConversionsAdditionalShould
         Assert.Equal(2.5, fromDouble.Number);
         Assert.Single(fromList.ArrayOfImplicitConversionCircle!);
         Assert.Equal("value", fromMap.MapOfAny!["key"]);
-        Assert.Equal("5", JsonConvert.SerializeObject(fromInt, Utilities.GetDefaultJsonSerializerSettings()));
-        Assert.Equal("\"text\"", JsonConvert.SerializeObject(fromString, Utilities.GetDefaultJsonSerializerSettings()));
+        Assert.Equal("5", Compat.SerializeWithDefaultSettings(fromInt));
+        Assert.Equal("\"text\"", Compat.SerializeWithDefaultSettings(fromString));
     }
 
     [Fact]
@@ -179,13 +178,13 @@ public class UnionImplicitConversionsAdditionalShould
         );
         Assert.True(nested.ImplicitConversionDeepInner.ImplicitConversionStringOrBoolean!.Boolean);
         Assert.Equal(
-            JsonConvert.SerializeObject(
+            Compat.SerializeWithDefaultSettings(
                 ImplicitConversionDeepNested.CreateImplicitConversionDeepInner(
                     ImplicitConversionDeepInner.CreateImplicitConversionStringOrBoolean(
                         ImplicitConversionStringOrBoolean.CreateBoolean(true)
                     )
-                ), Utilities.GetDefaultJsonSerializerSettings()),
-            JsonConvert.SerializeObject(nested, Utilities.GetDefaultJsonSerializerSettings())
+                )),
+            Compat.SerializeWithDefaultSettings(nested)
         );
     }
 }

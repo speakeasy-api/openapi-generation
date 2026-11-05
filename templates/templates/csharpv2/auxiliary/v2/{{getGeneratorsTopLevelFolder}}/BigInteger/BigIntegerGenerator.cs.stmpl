@@ -1,0 +1,290 @@
+#nullable enable
+using System.Linq;
+using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
+
+namespace {{getGeneratorsPackageId}}.BigInteger;
+
+[Generator]
+public class BigIntegerGenerator : IIncrementalGenerator
+{
+    private const string AttributeFullName =
+        "{{getGeneratorsPackageId}}.BigInteger.GenerateBigIntegerConverterAttribute";
+
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        // This generator is triggered by an assembly-level attribute, not a type-level one.
+        // The compilation provider is used to check for the attribute on the assembly symbol.
+        // The generated converters are emitted once per assembly (not once per type).
+        var compilationProvider = context.CompilationProvider
+            .Select(static (comp, _) => HasAttribute(comp));
+
+        context.RegisterSourceOutput(
+            compilationProvider,
+            static (spc, hasAttribute) =>
+            {
+                if (hasAttribute)
+                    Execute(spc);
+            }
+        );
+    }
+
+    // Checks whether [assembly: GenerateBigIntegerConverter] is present.
+    private static bool HasAttribute(Compilation compilation)
+    {
+        return compilation
+            .Assembly.GetAttributes()
+            .Any(a => a.AttributeClass?.ToDisplayString() == AttributeFullName);
+    }
+
+    private static void Execute(SourceProductionContext context)
+    {
+        var source = GenerateBigIntegerConverters();
+        context.AddSource("BigIntegerJsonConverters.g.cs", SourceText.From(source, Encoding.UTF8));
+    }
+
+    private static string GenerateBigIntegerConverters()
+    {
+        // clang-format off
+        return $$"""
+            #nullable enable
+            namespace {{getScopeNamespace "utils" true}};
+
+            using System;
+            using System.Buffers;
+            using System.Collections.Generic;
+            using System.Globalization;
+            using System.Numerics;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+
+            // Wire shape: JSON number. Used for OpenAPI `format: bigint`.
+            // Read accepts string OR number tokens (resilient to producers that string-encode).
+            public sealed class BigIntegerJsonConverter : JsonConverter<BigInteger>
+            {
+                public override BigInteger Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    return BigIntegerConverterHelpers.ReadValue(ref reader);
+                }
+
+                public override void Write(Utf8JsonWriter writer, BigInteger value, JsonSerializerOptions options)
+                {
+                    // STJ has no WriteNumberValue(BigInteger). WriteRawValue emits unescaped numeric literal.
+                    writer.WriteRawValue(value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            // Wire shape: JSON string. Used for OpenAPI `format: bigintStr`.
+            public sealed class BigIntegerStringJsonConverter : JsonConverter<BigInteger>
+            {
+                public override BigInteger Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    return BigIntegerConverterHelpers.ReadValue(ref reader);
+                }
+
+                public override void Write(Utf8JsonWriter writer, BigInteger value, JsonSerializerOptions options)
+                {
+                    writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            internal static class BigIntegerConverterHelpers
+            {
+                public static BigInteger ReadValue(ref Utf8JsonReader reader)
+                {
+                    if (reader.TokenType == JsonTokenType.String)
+                    {
+                        var s = reader.GetString();
+                        if (BigInteger.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                        {
+                            return parsed;
+                        }
+                        throw new JsonException($"Cannot parse BigInteger from string: {s}");
+                    }
+                    if (reader.TokenType == JsonTokenType.Number)
+                    {
+                        if (reader.TryGetInt64(out var i64))
+                        {
+                            return new BigInteger(i64);
+                        }
+                        if (reader.TryGetUInt64(out var u64))
+                        {
+                            return new BigInteger(u64);
+                        }
+                        // Fallback: read raw decimal text and parse.
+                        var raw = System.Text.Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray());
+                        if (BigInteger.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                        {
+                            return parsed;
+                        }
+                        throw new JsonException($"Cannot parse BigInteger from numeric token: {raw}");
+                    }
+                    throw new JsonException($"Unexpected token type for BigInteger: {reader.TokenType}");
+                }
+            }
+
+            // Factory pattern. Property attribute `[JsonConverter(typeof(BigIntegerJsonConverterFactory))]`
+            // works for BigInteger, BigInteger?, List<BigInteger>, and Dictionary<TKey, BigInteger>.
+            public sealed class BigIntegerJsonConverterFactory : JsonConverterFactory
+            {
+                public override bool CanConvert(Type t) => BigIntegerFactoryHelpers.CanConvert(t);
+
+                public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+                {
+                    return BigIntegerFactoryHelpers.Create(t, useStringWire: false);
+                }
+            }
+
+            public sealed class BigIntegerStringJsonConverterFactory : JsonConverterFactory
+            {
+                public override bool CanConvert(Type t) => BigIntegerFactoryHelpers.CanConvert(t);
+
+                public override JsonConverter? CreateConverter(Type t, JsonSerializerOptions options)
+                {
+                    return BigIntegerFactoryHelpers.Create(t, useStringWire: true);
+                }
+            }
+
+            internal static class BigIntegerFactoryHelpers
+            {
+                public static bool CanConvert(Type t)
+                {
+                    if (t == typeof(BigInteger) || t == typeof(BigInteger?))
+                        return true;
+                    if (!t.IsGenericType)
+                        return false;
+                    var def = t.GetGenericTypeDefinition();
+                    if (def == typeof(List<>) && t.GetGenericArguments()[0] == typeof(BigInteger))
+                        return true;
+                    if (def == typeof(Dictionary<,>) && t.GetGenericArguments()[1] == typeof(BigInteger))
+                        return IsSupportedDictKey(t.GetGenericArguments()[0]);
+                    return false;
+                }
+
+                private static bool IsSupportedDictKey(Type k) =>
+                    k == typeof(string) || k == typeof(int) || k == typeof(long) ||
+                    k == typeof(Guid) || k == typeof(short) || k == typeof(byte) ||
+                    k == typeof(uint) || k == typeof(ulong) || k == typeof(ushort);
+
+                public static JsonConverter Create(Type t, bool useStringWire)
+                {
+                    if (t == typeof(BigInteger))
+                    {
+                        return useStringWire
+                            ? (JsonConverter)new BigIntegerStringJsonConverter()
+                            : new BigIntegerJsonConverter();
+                    }
+                    if (t == typeof(BigInteger?))
+                    {
+                        return useStringWire
+                            ? (JsonConverter)new NullableBigIntegerJsonConverter(new BigIntegerStringJsonConverter())
+                            : new NullableBigIntegerJsonConverter(new BigIntegerJsonConverter());
+                    }
+                    var def = t.GetGenericTypeDefinition();
+                    if (def == typeof(List<>))
+                    {
+                        var inner = useStringWire
+                            ? (JsonConverter<BigInteger>)new BigIntegerStringJsonConverter()
+                            : new BigIntegerJsonConverter();
+                        return new ListBigIntegerJsonConverter(inner);
+                    }
+                    var keyType = t.GetGenericArguments()[0];
+                    var innerScalar = useStringWire
+                        ? (JsonConverter<BigInteger>)new BigIntegerStringJsonConverter()
+                        : new BigIntegerJsonConverter();
+                    if (keyType == typeof(string)) return new DictionaryBigIntegerJsonConverter<string>(innerScalar);
+                    if (keyType == typeof(int))    return new DictionaryBigIntegerJsonConverter<int>(innerScalar);
+                    if (keyType == typeof(long))   return new DictionaryBigIntegerJsonConverter<long>(innerScalar);
+                    if (keyType == typeof(Guid))   return new DictionaryBigIntegerJsonConverter<Guid>(innerScalar);
+                    if (keyType == typeof(short))  return new DictionaryBigIntegerJsonConverter<short>(innerScalar);
+                    if (keyType == typeof(byte))   return new DictionaryBigIntegerJsonConverter<byte>(innerScalar);
+                    if (keyType == typeof(uint))   return new DictionaryBigIntegerJsonConverter<uint>(innerScalar);
+                    if (keyType == typeof(ulong))  return new DictionaryBigIntegerJsonConverter<ulong>(innerScalar);
+                    if (keyType == typeof(ushort)) return new DictionaryBigIntegerJsonConverter<ushort>(innerScalar);
+                    throw new NotSupportedException($"Dictionary key type not supported for BigInteger converter: {keyType}");
+                }
+            }
+
+            internal sealed class NullableBigIntegerJsonConverter : JsonConverter<BigInteger?>
+            {
+                private readonly JsonConverter<BigInteger> _inner;
+                public NullableBigIntegerJsonConverter(JsonConverter<BigInteger> inner) { _inner = inner; }
+
+                public override BigInteger? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType == JsonTokenType.Null) return null;
+                    return _inner.Read(ref reader, typeof(BigInteger), options);
+                }
+
+                public override void Write(Utf8JsonWriter writer, BigInteger? value, JsonSerializerOptions options)
+                {
+                    if (value is null) { writer.WriteNullValue(); return; }
+                    _inner.Write(writer, value.Value, options);
+                }
+            }
+
+            internal sealed class ListBigIntegerJsonConverter : JsonConverter<List<BigInteger>>
+            {
+                private readonly JsonConverter<BigInteger> _inner;
+                public ListBigIntegerJsonConverter(JsonConverter<BigInteger> inner) { _inner = inner; }
+
+                public override List<BigInteger> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartArray)
+                        throw new JsonException($"Expected StartArray for List<BigInteger>, got {reader.TokenType}");
+                    var list = new List<BigInteger>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                    {
+                        list.Add(_inner.Read(ref reader, typeof(BigInteger), options));
+                    }
+                    return list;
+                }
+
+                public override void Write(Utf8JsonWriter writer, List<BigInteger> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartArray();
+                    foreach (var v in value)
+                    {
+                        _inner.Write(writer, v, options);
+                    }
+                    writer.WriteEndArray();
+                }
+            }
+
+            internal sealed class DictionaryBigIntegerJsonConverter<TKey> : JsonConverter<Dictionary<TKey, BigInteger>>
+                where TKey : notnull
+            {
+                private readonly JsonConverter<BigInteger> _inner;
+                public DictionaryBigIntegerJsonConverter(JsonConverter<BigInteger> inner) { _inner = inner; }
+
+                public override Dictionary<TKey, BigInteger> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        throw new JsonException($"Expected StartObject for Dictionary<,BigInteger>, got {reader.TokenType}");
+                    var dict = new Dictionary<TKey, BigInteger>();
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                    {
+                        var keyStr = reader.GetString()!;
+                        var key = (TKey)Convert.ChangeType(keyStr, typeof(TKey), CultureInfo.InvariantCulture);
+                        reader.Read();
+                        dict[key] = _inner.Read(ref reader, typeof(BigInteger), options);
+                    }
+                    return dict;
+                }
+
+                public override void Write(Utf8JsonWriter writer, Dictionary<TKey, BigInteger> value, JsonSerializerOptions options)
+                {
+                    writer.WriteStartObject();
+                    foreach (var kvp in value)
+                    {
+                        writer.WritePropertyName(Convert.ToString(kvp.Key, CultureInfo.InvariantCulture)!);
+                        _inner.Write(writer, kvp.Value, options);
+                    }
+                    writer.WriteEndObject();
+                }
+            }
+            """;
+        // clang-format on
+    }
+}

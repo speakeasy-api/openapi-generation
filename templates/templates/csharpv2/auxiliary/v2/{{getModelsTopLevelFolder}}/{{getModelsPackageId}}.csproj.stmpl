@@ -1,0 +1,43 @@
+{{- $testGroup := .Global.AST.MainSDK.TestGroup -}}
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+{{- if isNetstandard2}}
+    <TargetFrameworks>netstandard2.0;{{.Global.Config.DotnetVersion}}</TargetFrameworks>
+    <LangVersion>10.0</LangVersion>
+{{- else}}
+    <TargetFramework>{{.Global.Config.DotnetVersion}}</TargetFramework>
+{{- end}}
+    <Nullable>enable</Nullable>
+    <NoWarn>1591{{if $testGroup}};0618{{end}}</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+{{- if isNetstandard2}}
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+{{- end}}
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+{{templateSDKDependencies}}
+{{- if isNetstandard2}}
+{{templateNetstandard2Dependencies}}
+{{- end}}
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="{{getGeneratorsProjectReference}}"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      UndefineProperties="TargetFramework;RuntimeIdentifier;SelfContained;PublishAot"
+                      AdditionalProperties="WarningsNotAsErrors=RS1041" />
+  </ItemGroup>
+
+</Project>

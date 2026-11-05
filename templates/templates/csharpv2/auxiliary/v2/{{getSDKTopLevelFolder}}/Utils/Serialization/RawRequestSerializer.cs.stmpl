@@ -1,0 +1,32 @@
+#nullable enable
+namespace {{getScopeNamespace "utils"}}.Serialization
+{
+    using System;
+    using System.Net.Http;
+
+    internal static class RawRequestSerializer
+    {
+        public const string MediaType = "application/octet-stream";
+
+        public static HttpContent Serialize(object? body)
+        {
+            if (body is byte[] bytes)
+            {
+                return SerializeBytes(bytes);
+            }
+
+            throw new Exception(
+                "Cannot serialize request body of type "
+                    + (body?.GetType().Name ?? "null")
+                    + " with serialization method raw"
+            );
+        }
+
+        private static HttpContent SerializeBytes(byte[] request)
+        {
+            var content = new ByteArrayContent(request);
+            content.Headers.Add("Content-Type", MediaType);
+            return content;
+        }
+    }
+}

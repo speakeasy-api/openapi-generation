@@ -83,10 +83,11 @@ function targettest_sdk() {
 }
 
 function test_usage_file() {
-    # Test USAGE.md templating (running 'tests/testusage.go' for the primary spec)
+    # Test USAGE.md templating (running 'tests/testusage.go' for the given spec)
     local -r target="$1"
-    print_msg_with_ctx "${SNIPPETS_ICON} {blue}{bold}Testing Usage Example Selection{reset}" "target=${target}|variant=primary"
-    pushd "${PROJECT_ROOT}" > /dev/null && run_cmd go run ./tests -lang "${target}" -mode usage -group primary || exit 1; popd > /dev/null
+    local -r variant="${2:-primary}"
+    print_msg_with_ctx "${SNIPPETS_ICON} {blue}{bold}Testing Usage Example Selection{reset}" "target=${target}|variant=${variant}"
+    pushd "${PROJECT_ROOT}" > /dev/null && run_cmd go run ./tests -lang "${target}" -mode usage -group "${variant}" || exit 1; popd > /dev/null
 }
 
 function test_standalone_usage() {
@@ -123,6 +124,11 @@ function test_target() {
         else
             test_usage_file "${target}"
         fi
+    fi
+
+    # csharpv2 quaternary targets netstandard2.0: AOT-publish its net8 asset too
+    if [[ "${target}" == "csharpv2" && " ${variants[@]} " =~ " quaternary " && "${skip_primary_usage}" != "true" ]]; then
+        test_usage_file "${target}" quaternary
     fi
 
     # Run standalone usage tests if not skipped

@@ -16,6 +16,7 @@ ALL_TARGETS=(
   "javav2"
   "go"
   "csharp"
+  "csharpv2"
   "php"
   "ruby"
   "terraform"

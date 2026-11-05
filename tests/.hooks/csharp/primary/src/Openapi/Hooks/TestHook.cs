@@ -9,7 +9,6 @@ namespace Openapi.Hooks
     using System.Threading.Tasks;
     using System.Text;
     using System.Web;
-    using Newtonsoft.Json;
     using Openapi.Models.Errors;
     using Openapi.Models.Shared;
     using Openapi.Utils;

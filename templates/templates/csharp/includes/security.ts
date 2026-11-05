@@ -252,3 +252,31 @@ function templateHoistedSecurityRemark(
 
   return remark(`one of ${fieldList.join(", ")}, or ${last}`);
 }
+
+// @ts-ignore
+function templateApplyOpSecurity(_op: Operation): string {
+  return `new SecurityMetadata(() => security).Apply(httpRequest)`;
+}
+
+registerTemplateFunc("templateApplyOpSecurity", templateApplyOpSecurity);
+
+// @ts-ignore
+function templateApplyGlobalSecurity(op: Operation): string {
+  const hoisted = op.HoistedSecurityConfig;
+  const allowedFields =
+    hoisted && !hoisted.Equivalent
+      ? `, new string[] { ${hoisted.Fields.map(
+          (f) => `"${sanitizeFieldName(f.Name)}"`,
+        ).join(", ")} }`
+      : "";
+  return `
+if (SDKConfiguration.SecuritySource != null)
+{
+    httpRequest = new SecurityMetadata(SDKConfiguration.SecuritySource${allowedFields}).Apply(httpRequest);
+}`;
+}
+
+registerTemplateFunc(
+  "templateApplyGlobalSecurity",
+  templateApplyGlobalSecurity,
+);
