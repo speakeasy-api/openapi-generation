@@ -356,22 +356,23 @@ test("test client credentials scopes from environment variable", async () => {
   const httpClient = newRequestRecorderClient(log);
   const tokenUrl = "/clientcredentials/alt/token";
 
-  const sdk = new SDK({
-    serverURL: HTTPBIN_URL,
-    httpClient,
-    security: {
-      clientCredentials: {
-        clientID: "speakeasy-sdks",
-        clientSecret: "supersecret-" + randSeq(10),
-        tokenURL: tokenUrl,
+  const newSDK = (tokenURL: string) =>
+    new SDK({
+      serverURL: HTTPBIN_URL,
+      httpClient,
+      security: {
+        clientCredentials: {
+          clientID: "speakeasy-sdks",
+          clientSecret: "supersecret-" + randSeq(10),
+          tokenURL,
 {{- range $f := collectClientCredentialsAdditionalFields }}
-        {{ sanitizeFieldName (originalFieldName $f) }}: "",
+          {{ sanitizeFieldName (originalFieldName $f) }}: "",
 {{- end }}
+        },
       },
-    },
-  });
+    });
 
-  const res = await sdk.hooks.authenticatedRequest({});
+  const res = await newSDK(tokenUrl).hooks.authenticatedRequest({});
   expect(res.httpMeta.response.status).toBe(200);
 
   const tokenRequests = log.filter(
@@ -380,6 +381,18 @@ test("test client credentials scopes from environment variable", async () => {
       entry.body.includes("scope=alt%3Aone+alt%3Atwo"),
   );
   expect(tokenRequests).toHaveLength(1);
+
+  vi.stubEnv("SPEAKEASY_SCOPES", "");
+
+  const emptyScopesRes = await newSDK(
+    `${tokenUrl}?skip_scopes=true`,
+  ).hooks.authenticatedRequest({});
+  expect(emptyScopesRes.httpMeta.response.status).toBe(200);
+
+  const unscopedTokenRequests = log.filter(
+    (entry) => entry.url.includes(tokenUrl) && !entry.body.includes("scope="),
+  );
+  expect(unscopedTokenRequests).toHaveLength(1);
 });
 
 test("test hooks available oauth2 scopes", () => {
