@@ -449,21 +449,21 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
-        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-            return response;
-        }
 
         // make the response re-readable by loading the response body into a byte array
         // and allowing the InputStream to be read many times
         response = Utils.cache(response);
 
-        // the response is re-readable so we can read and close it without
-        // affecting later processing of the response.
+        // only log the response body if logBody is true and the content type is JSON or plain text
+        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            // the response is re-readable so we can read and close it without
+            // affecting later processing of the response.
 
-        // note that in the case of text/plain a different encoding from UTF-8
-        // may be in use but we just log the bytes as UTF-8. Unexpected encodings
-        // do not throw (substitution happens).
-        slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
+            // note that in the case of text/plain a different encoding from UTF-8
+            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+            // do not throw (substitution happens).
+            slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
+        }
         return response;
     }
 

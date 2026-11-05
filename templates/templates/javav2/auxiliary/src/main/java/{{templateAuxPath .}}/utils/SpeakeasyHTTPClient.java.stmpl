@@ -354,9 +354,6 @@ public class SpeakeasyHTTPClient implements HTTPClient {
             {{- /* never buffer streaming responses */}}
             return response;
         }
-        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-            return response;
-        }
 
         byte[] bytes;
         {{- /* buffer the response so logging does not consume it */}}
@@ -366,11 +363,15 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         response = new HttpResponse<>(response.request(), response.statusCode(), response.headers(),
                 new ByteArrayInputStream(bytes));
 
+        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+        {{- /* only log JSON or plain-text response bodies
+               debug output intentionally decodes supported text bodies as UTF-8 */}}
 {{- if slf4jLoggingEnabled}}
-        slf4jLogger.trace("Response body:\n{}", new String(bytes, StandardCharsets.UTF_8));
+            slf4jLogger.trace("Response body:\n{}", new String(bytes, StandardCharsets.UTF_8));
 {{- else}}
-        log("Response body:\n" + new String(bytes, StandardCharsets.UTF_8));
+            log("Response body:\n" + new String(bytes, StandardCharsets.UTF_8));
 {{- end}}
+        }
         return response;
     }
 
@@ -917,25 +918,25 @@ public class SpeakeasyHTTPClient implements HTTPClient {
         if (isStreamingMediaType(contentType)) {
             return response;
         }
-        if (!logBody || !(contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
-            return response;
-        }
 
         // make the response re-readable by loading the response body into a byte array
         // and allowing the InputStream to be read many times
         response = Utils.cache(response);
 
-        // the response is re-readable so we can read and close it without
-        // affecting later processing of the response.
+        // only log the response body if logBody is true and the content type is JSON or plain text
+        if (logBody && (contentType.startsWith("application/json") || contentType.startsWith("text/plain"))) {
+            // the response is re-readable so we can read and close it without
+            // affecting later processing of the response.
 
-        // note that in the case of text/plain a different encoding from UTF-8
-        // may be in use but we just log the bytes as UTF-8. Unexpected encodings
-        // do not throw (substitution happens).
+            // note that in the case of text/plain a different encoding from UTF-8
+            // may be in use but we just log the bytes as UTF-8. Unexpected encodings
+            // do not throw (substitution happens).
 {{- if slf4jLoggingEnabled}}
-        slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
+            slf4jLogger.trace("Response body:\n{}", Utils.toUtf8AndClose(response.body()));
 {{- else}}
-        log("Response body:\n" + Utils.toUtf8AndClose(response.body()));
+            log("Response body:\n" + Utils.toUtf8AndClose(response.body()));
 {{- end}}
+        }
         return response;
     }
 

@@ -5,6 +5,6 @@ targets:
     - javav2
 type: feat
 bump: minor
-description: set a 30s default connect timeout on the JDK HTTP client and buffer debug-logged response bodies only for logged content types
+description: set a 30s default connect timeout on the JDK HTTP client
 author: AshGodfrey
 date: "2026-10-30"
