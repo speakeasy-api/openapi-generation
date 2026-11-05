@@ -1,0 +1,10 @@
+id: 1793845889-006c1e67
+features:
+    - flattening
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: generate body-variant overloads for request bodies with a property named request
+author: 2ynn
+date: "2026-11-04"

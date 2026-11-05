@@ -1230,6 +1230,7 @@ function templateMethodComments(
   op: Operation,
   fieldsOverride?: FieldDef[],
   indent: number = 2,
+  paramNamesOverride?: string[],
 ): string {
   const fields =
     fieldsOverride && fieldsOverride.length > 0
@@ -1237,7 +1238,7 @@ function templateMethodComments(
       : op.Arguments?.Sorted ?? [];
   return templateCommentDef(
     op.Comments,
-    getMethodParamDescriptions(op, fields),
+    getMethodParamDescriptions(op, fields, paramNamesOverride),
     indent,
     true,
     getHoistedSecurityRemark(op),
@@ -1379,11 +1380,12 @@ registerTemplateFunc("getSDKParamDescriptions", getSDKParamDescriptions);
 function getMethodParamDescriptions(
   op: Operation,
   fields: FieldDef[],
+  paramNames?: string[],
 ): string[] {
-  const descriptions = fields.map((field) => {
+  const descriptions = fields.map((field, i) => {
     let description = "";
 
-    const fieldName = sanitizeParameterName(field.Name);
+    const fieldName = paramNames?.[i] ?? sanitizeParameterName(field.Name);
     if (fieldName === "request") {
       description = "The request object to send.";
     } else if (field.Comments && field.Comments.Description) {

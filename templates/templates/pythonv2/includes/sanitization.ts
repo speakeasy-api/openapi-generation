@@ -2486,6 +2486,15 @@ function rewriteMethodLocals(op: Operation, methodSource: string): string {
     externalNames.delete("request");
   }
 
+  // Body-variant overloads suffix body fields that clash with method arguments (`request_`).
+  if (shouldEmitBodyVariantOverloads(op)) {
+    for (const merged of getMergedBodyFields(op)) {
+      if (merged.paramName.endsWith("_")) {
+        externalNames.add(merged.paramName.slice(0, -1));
+      }
+    }
+  }
+
   // 3. FUNC_LOCALS pass: strip _ suffix when no collision
   const rewrites: string[] = [];
   for (const local of FUNC_LOCALS) {

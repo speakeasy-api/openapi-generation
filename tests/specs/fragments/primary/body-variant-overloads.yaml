@@ -138,9 +138,9 @@ paths:
       operationId: bodyVariantOverloadsReservedFieldNames
       description: >-
         Exercises a oneOf-of-classes request body whose variants declare properties
-        named like per-call method options (retries, timeout, server URL). Generated
-        method signatures must stay valid when body properties share names with
-        those options.
+        named like per-call method options (retries, timeout, server URL) or like the
+        whole-request argument (request). Generated method signatures must stay valid
+        when body properties share names with those arguments.
       tags:
         - unions
       requestBody:
@@ -515,6 +515,8 @@ components:
         beta:
           type: string
         server_url:
+          type: string
+        request:
           type: string
 
     SubsetVariantBody:
