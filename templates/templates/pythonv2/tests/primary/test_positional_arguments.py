@@ -54,6 +54,6 @@ def test_body_variant_overloads_compose_with_sse_and_positional_path_params():
     assert "stream: Union[Literal[False], None] = None" in source
     assert "stream: Literal[True]" in source
     assert ") -> models.operations.BodyVariantOverloadsSSEWithPathResponse:" in source
-    assert '_request_kwargs["StreamingVariantBody"] = _body_kwargs' in source
+    assert '_request_kwargs["streaming_variant_body"] = _body_kwargs' in source
     assert "request.streaming_variant_body" in source
     assert 'getattr(\n                getattr(request, "streaming_variant_body", None), "stream", False\n            )\n            is True' in source

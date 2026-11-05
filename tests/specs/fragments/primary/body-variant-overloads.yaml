@@ -36,6 +36,13 @@ paths:
             type: array
             items:
               type: string
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type:
+              - string
+              - "null"
         - in: header
           name: X-Trace-ID
           required: false

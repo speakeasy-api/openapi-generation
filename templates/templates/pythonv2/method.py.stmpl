@@ -66,6 +66,9 @@
         self{{range getPythonMethodPositionalArgs $op}},
         {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
         {{templateBodyVariantRequestKwarg $op false}},
+{{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
+        {{templateBodyVariantNonBodyImplArguments $op}},
+{{- end}}
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}}
     ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
 {{- templateMethodComments $op}}
@@ -115,20 +118,22 @@
 
     {{- end }}
     {{ end }}
-    {{/* Body-variant fallback overload. Keeps `**dict` spread callers valid without adding overlapping TypedDict Unpack overloads that collapse hover output. */}}
-    {{- addImport "typing" "Any" }}
+    {{- range $variantIdx, $variant := getBodyVariants $op }}
+    {{- if shouldEmitBodyVariantUnpackOverload $op $variantIdx $sseTypes }}
+    {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (Unpack): {{ $variant.name }}. Must follow every expanded overload, otherwise it overlaps the stream=True overloads. */}}
     @overload
-    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(
+    {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}({{templateBodyVariantUnpackOverloadIgnore $op $variantIdx $sseTypes}}
         self{{range getPythonMethodPositionalArgs $op}},
         {{sanitizeParameterName .Name}}: {{sanitizeInputParameterType . (dict "optional" (isArgumentOptional $op .) "iterableCollections" true)}}{{templateInputParamDefault $op .}}{{end}}, *,
-        {{templateBodyVariantRequestKwarg $op true}},
 {{- if hasBodyVariantKeywordOnlyNonBodyParams $op}}
-        {{templateBodyVariantNonBodyImplArguments $op}},
+        {{templateBodyVariantNonBodyOverloadArguments $op}},
 {{- end}}
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
-        **body_kwargs: Any,
+        {{templateBodyVariantUnpackOverloadArguments $op $variantIdx}},
     ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
-{{- templateMethodComments $op (getBodyVariantImplFieldDefs $op)}}
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+    {{ end }}
+    {{- end }}
 
 {{- end }}
     {{/* Actual implementation: accepts any bool value for stream */}}
@@ -213,6 +218,9 @@
                 request if isinstance(request, BaseModel)
                 else utils_.unmarshal(cast(Any, request), {{$variantRequestType}}),
             )
+{{- with templateBodyVariantRequestOverrides $op}}
+{{.}}
+{{- end}}
         else:
             _body_kwargs = {{templateBodyVariantImplBodyDict $op}}
             _body_kwargs = {k: v for k, v in _body_kwargs.items() if v is not UNSET}
