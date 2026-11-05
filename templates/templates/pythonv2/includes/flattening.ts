@@ -384,20 +384,22 @@ registerTemplateFunc(
 
 // Renders runtime XOR guards for mutually-exclusive variant-exclusive
 // fields. Emitted at the top of the impl body so misuse fails fast with a
-// clear ValueError. Returns an empty string when there are no incompatible
-// pairs.
+// clear ValueError. `request` excludes every body field. Returns an empty
+// string when the body has no fields.
 // @ts-ignore
 function templateBodyVariantXorGuards(op: Operation): string {
-  const pairs = getMutuallyExclusiveFieldPairs(op);
-  if (pairs.length === 0) {
+  if (getMergedBodyFields(op).length === 0) {
     return "";
   }
 
   // Body fields arrive via the impl's `**body_kwargs` catch-all (keyed by
   // their original OAS property name). Presence check is membership; missing
   // keys mean the caller omitted the field.
-  const lines: string[] = [];
-  for (const [a, b] of pairs) {
+  const lines: string[] = [
+    `        if request is not UNSET and body_kwargs:\n` +
+      `            raise ValueError("Cannot supply both 'request' and body fields.")`,
+  ];
+  for (const [a, b] of getMutuallyExclusiveFieldPairs(op)) {
     lines.push(
       `        if "${a}" in body_kwargs and "${b}" in body_kwargs:\n` +
         `            raise ValueError("Cannot supply both '${a}' and '${b}'.")`,
