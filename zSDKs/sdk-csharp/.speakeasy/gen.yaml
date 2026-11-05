@@ -42,6 +42,7 @@ csharp:
       version: 106.12.0
   author: Speakeasy
   baseErrorName: SDKBaseException
+  bodyVariantOverloads: true
   clientServerStatusCodesAsErrors: true
   customCasings:
     mcp:
