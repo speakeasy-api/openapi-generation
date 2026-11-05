@@ -299,6 +299,32 @@ namespace Speakeasy.OpenAPI
         /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
         public Task<ChatResponse> ChatAsync(ChatRequest request, CancellationToken? cancellationToken = null);
 
+        /// <param name="chatModelRequest">A <see cref="ChatModelRequest"/> parameter.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="ChatResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="chatModelRequest"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="ResponseValidationException">The response body could not be deserialized.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public Task<ChatResponse> ChatAsync(
+            ChatModelRequest chatModelRequest,
+            CancellationToken? cancellationToken = null
+        );
+
+        /// <param name="chatAgentRequest">A <see cref="ChatAgentRequest"/> parameter.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="ChatResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="chatAgentRequest"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="ResponseValidationException">The response body could not be deserialized.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public Task<ChatResponse> ChatAsync(
+            ChatAgentRequest chatAgentRequest,
+            CancellationToken? cancellationToken = null
+        );
+
         /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
         /// <returns>An awaitable task that returns a <see cref="GetBinaryDefaultResponseResponse"/> response envelope when completed.</returns>
         /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
@@ -2535,6 +2561,40 @@ namespace Speakeasy.OpenAPI
             }
 
             throw new SDKException("Unknown status code received", httpRequest, httpResponse, await Utilities.ReadContentAsStringAsync(httpResponse));
+        }
+
+        /// <param name="chatModelRequest">A <see cref="ChatModelRequest"/> parameter.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="ChatResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="chatModelRequest"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="ResponseValidationException">The response body could not be deserialized.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public async Task<ChatResponse> ChatAsync(
+            ChatModelRequest chatModelRequest,
+            CancellationToken? cancellationToken = null
+        )
+        {
+            if (chatModelRequest == null) throw new ArgumentNullException(nameof(chatModelRequest));
+            return await ChatAsync(ChatRequest.CreateChatModelRequest(chatModelRequest), cancellationToken);
+        }
+
+        /// <param name="chatAgentRequest">A <see cref="ChatAgentRequest"/> parameter.</param>
+        /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>
+        /// <returns>An awaitable task that returns a <see cref="ChatResponse"/> response envelope when completed.</returns>
+        /// <exception cref="ArgumentNullException">The required parameter <paramref name="chatAgentRequest"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">The operation was aborted via the provided cancellation token.</exception>
+        /// <exception cref="HttpRequestException">The HTTP request failed due to network issues.</exception>
+        /// <exception cref="ResponseValidationException">The response body could not be deserialized.</exception>
+        /// <exception cref="SDKException">Default API Exception. Thrown when the API returns a 4XX or 5XX response.</exception>
+        public async Task<ChatResponse> ChatAsync(
+            ChatAgentRequest chatAgentRequest,
+            CancellationToken? cancellationToken = null
+        )
+        {
+            if (chatAgentRequest == null) throw new ArgumentNullException(nameof(chatAgentRequest));
+            return await ChatAsync(ChatRequest.CreateChatAgentRequest(chatAgentRequest), cancellationToken);
         }
 
         /// <param name="cancellationToken">An optional cancellation token to signal when the operation should be aborted.</param>

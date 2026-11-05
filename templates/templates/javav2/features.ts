@@ -488,6 +488,13 @@ function isTestSkipped(test: string): boolean {
     "intent-supplied-body-requires-declared-inputs",
     "hooks-client-credentials-scopes-from-env",
     "debug-env-var-false-keeps-logging-off",
+    "unions-body-variant-overloads-discriminated",
+    "unions-body-variant-overloads-non-body-arguments",
+    "unions-body-variant-overloads-non-discriminated",
+    "unions-body-variant-overloads-renamed-argument",
+    "unions-body-variant-overloads-request-body",
+    "unions-body-variant-overloads-nested-union",
+    "unions-body-variant-overloads-open-enum",
   ].includes(test);
 }
 
