@@ -1,0 +1,10 @@
+id: 1793846019-c192a74b
+features:
+    - flattening
+targets:
+    - pythonv2
+type: fix
+bump: patch
+description: generate body-variant overloads when a parameter shares a name with a body property
+author: 2ynn
+date: "2026-11-04"

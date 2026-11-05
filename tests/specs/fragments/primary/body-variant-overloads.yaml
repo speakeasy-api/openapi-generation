@@ -302,6 +302,41 @@ paths:
                   - ok
 
 
+  /anything/body-variant-overloads/parameter-shares-field-name:
+    post:
+      operationId: bodyVariantOverloadsParameterSharesFieldName
+      description: >-
+        Exercises a oneOf-of-classes request body on an operation whose query
+        parameter has the same name as a property of every variant. Generated
+        method signatures must keep both arguments, and each value must reach its
+        own location in the HTTP request.
+      tags:
+        - unions
+      parameters:
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubsetVariantBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+
 components:
   schemas:
     DiscriminatedVariantBody:
