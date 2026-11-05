@@ -1,6 +1,7 @@
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { SDK } from "../index.js";
+import { resetEnv } from "../lib/env.js";
 import { TestHooksRes } from "../sdk/models/operations/testhooks.js";
 
 import {
@@ -17,6 +18,11 @@ import {
   ClientCredentialsOAuth2Scope,
   OAuth2Scope,
 } from "../hooks/{{getOAuth2ScopesFileName}}.js";
+
+afterEach(() => {
+  resetEnv();
+  vi.unstubAllEnvs();
+});
 
 test("Test hooks", async () => {
   recordTest("test-hooks");
@@ -339,6 +345,41 @@ test("test client credentials option successfully authenticates with alt token u
       entry.body.includes("scope=alt%3Aone+alt%3Atwo"),
   );
   expect(tokenRequests).toHaveLength(2);
+});
+
+test("test client credentials scopes from environment variable", async () => {
+  recordTest("hooks-client-credentials-scopes-from-env");
+
+  vi.stubEnv("SPEAKEASY_SCOPES", "alt:one,alt:two");
+
+  const log: RequestLogEntry[] = [];
+  const httpClient = newRequestRecorderClient(log);
+  const tokenUrl = "/clientcredentials/alt/token";
+
+  const sdk = new SDK({
+    serverURL: HTTPBIN_URL,
+    httpClient,
+    security: {
+      clientCredentials: {
+        clientID: "speakeasy-sdks",
+        clientSecret: "supersecret-" + randSeq(10),
+        tokenURL: tokenUrl,
+{{- range $f := collectClientCredentialsAdditionalFields }}
+        {{ sanitizeFieldName (originalFieldName $f) }}: "",
+{{- end }}
+      },
+    },
+  });
+
+  const res = await sdk.hooks.authenticatedRequest({});
+  expect(res.httpMeta.response.status).toBe(200);
+
+  const tokenRequests = log.filter(
+    (entry) =>
+      entry.url.includes(tokenUrl) &&
+      entry.body.includes("scope=alt%3Aone+alt%3Atwo"),
+  );
+  expect(tokenRequests).toHaveLength(1);
 });
 
 test("test hooks available oauth2 scopes", () => {

@@ -483,6 +483,7 @@ function isTestSkipped(test: string): boolean {
     "request-bodies-post-application-json-map-of-any-large-integers",
     "request-bodies-post-application-json-map-of-any-large-integers-jq",
     "intent-supplied-body-requires-declared-inputs",
+    "hooks-client-credentials-scopes-from-env",
   ].includes(test);
 }
 
