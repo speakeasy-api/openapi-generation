@@ -16,6 +16,12 @@ declare global {
   }
 }
 
+type StreamIterator<T> = ReadableStream<T> extends {
+  [Symbol.asyncIterator](options?: any): infer I;
+  [Symbol.asyncIterator](): any;
+} ? I
+  : never;
+
 export type SseMessage<T> = {
   data?: T | undefined;
   event?: string | null | undefined;
@@ -86,9 +92,7 @@ export class Stream<T> extends ReadableStream<T> {
 
   // Use ReadableStream's iterator return type instead of `any` so stream events
   // keep their generated type in for-await loops.
-  override [Symbol.asyncIterator](): ReturnType<
-    ReadableStream<T>[typeof Symbol.asyncIterator]
-  > {
+  override [Symbol.asyncIterator](): StreamIterator<T> {
     const fn = (ReadableStream.prototype as any)[Symbol.asyncIterator];
     if (typeof fn === "function") return fn.call(this);
     const reader = this.getReader();
@@ -101,7 +105,7 @@ export class Stream<T> extends ReadableStream<T> {
         }
         return { done: false, value: r.value };
       },
-      throw: async (e) => {
+      throw: async (e?: unknown) => {
         await reader.cancel(e);
         reader.releaseLock();
         return { done: true, value: undefined };
@@ -114,7 +118,7 @@ export class Stream<T> extends ReadableStream<T> {
       [Symbol.asyncIterator]() {
         return this;
       },
-    } as ReturnType<ReadableStream<T>[typeof Symbol.asyncIterator]>;
+    } as unknown as StreamIterator<T>;
   }
 }
 

@@ -1,0 +1,10 @@
+id: 1793874550-8300499c
+features:
+    - serverEvents
+targets:
+    - typescriptv2
+type: fix
+bump: patch
+description: event streams type-check for consumers whose TypeScript and Node.js type definitions declare an async-disposable ReadableStream iterator
+author: AshGodfrey
+date: "2026-11-05"
