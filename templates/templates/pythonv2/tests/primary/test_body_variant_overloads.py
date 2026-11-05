@@ -437,3 +437,23 @@ def test_body_variant_overloads_send_renamed_body_arguments():
         {"alpha": "a", "retries": 3, "timeout_ms": 5},
         {"beta": "b", "server_url": "u"},
     ]
+
+
+def test_body_variant_overloads_send_body_field_named_request():
+    sent: list[httpx.Request] = []
+    mock_sdk(sent).unions.body_variant_overloads_reserved_field_names(
+        beta="b", request_="r"
+    )
+
+    assert json.loads(sent[0].content) == {"beta": "b", "request": "r"}
+
+
+def test_body_variant_overloads_document_renamed_body_field():
+    headers = overload_headers(
+        "body_variant_overloads_reserved_field_names", SDK().unions
+    )
+    docs = inspect.getdoc(SDK().unions.body_variant_overloads_reserved_field_names)
+
+    assert any("request_: Optional[str] = ..." in header for header in headers)
+    assert ":param request_:" in docs
+    assert "The request object to send." not in docs

@@ -87,7 +87,7 @@
         {{templateBodyVariantExpandedOverloadArguments $op $variantIdx "false"}},
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
     ) -> {{$sseTypes.jsonResponseType}}:
-{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx) 2 (getBodyVariantOverloadParamNames $op $variantIdx)}}
 
     {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (expanded, stream=True): {{ $variant.name }}. */}}
     @overload
@@ -100,7 +100,7 @@
         {{templateBodyVariantExpandedOverloadArguments $op $variantIdx "true"}},
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
     ) -> {{$sseTypes.sseResponseType}}:
-{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx) 2 (getBodyVariantOverloadParamNames $op $variantIdx)}}
 
     {{- else }}
     {{/* Body-variant overload {{ $variantIdx }}/{{ $variantCount }} (expanded): {{ $variant.name }}. */}}
@@ -114,7 +114,7 @@
         {{templateBodyVariantExpandedOverloadArguments $op $variantIdx}},
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
     ){{templateMethodReturnType $op}}:
-{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx) 2 (getBodyVariantOverloadParamNames $op $variantIdx)}}
 
     {{- end }}
     {{ end }}
@@ -131,7 +131,7 @@
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
         {{templateBodyVariantUnpackOverloadArguments $op $variantIdx}},
     ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
-{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx)}}
+{{- templateMethodComments $op (getBodyVariantOverloadFieldDefs $op $variantIdx) 2 (getBodyVariantOverloadParamNames $op $variantIdx)}}
     {{ end }}
     {{- end }}
 
@@ -148,7 +148,7 @@
 {{templateCommonMethodParams $op $pagination $canOverrideAcceptHeader}},
         {{templateBodyVariantImplArguments $op}},
     ){{if $sseTypes}} -> Union[{{$sseTypes.jsonResponseType}}, {{$sseTypes.sseResponseType}}]{{else}}{{templateMethodReturnType $op}}{{end}}:
-{{- templateMethodComments $op (getBodyVariantImplFieldDefs $op)}}
+{{- templateMethodComments $op (getBodyVariantImplFieldDefs $op) 2 (getBodyVariantImplParamNames $op)}}
 {{templateBodyVariantXorGuards $op}}
 {{- else }}
     {{ asyncOnly "async " }}def {{sanitizeMethodName $op}}{{ asyncOnlyInBothMode "_async" }}(

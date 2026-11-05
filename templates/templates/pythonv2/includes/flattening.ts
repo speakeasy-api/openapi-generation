@@ -209,7 +209,7 @@ function getMergedBodyFields(op: Operation): MergedBodyField[] {
       if (!byName[field.Name]) {
         order.push(field.Name);
         byName[field.Name] = {
-          paramName: sanitizeParameterName(field.Name),
+          paramName: bodyVariantFieldParamName(field),
           field,
           fieldsByVariant: [field],
           variantNames: [variant.name],
@@ -274,6 +274,12 @@ function variantFieldAtomicTypes(field: FieldDef): string[] {
     return [cls];
   }
   return [cls, td];
+}
+
+// The impl signature takes the whole request as `request`.
+function bodyVariantFieldParamName(field: FieldDef): string {
+  const name = sanitizeParameterName(field.Name);
+  return name === "request" ? `${name}_` : name;
 }
 
 function getBodyVariantNonBodyParamFields(op: Operation): FieldDef[] {
@@ -432,6 +438,23 @@ registerTemplateFunc(
   getBodyVariantOverloadFieldDefs,
 );
 
+// @ts-ignore
+function getBodyVariantOverloadParamNames(
+  op: Operation,
+  variantIdx: number,
+): string[] {
+  const variant = getBodyVariants(op)[variantIdx];
+  return variant
+    ? getBodyVariantKeywordOnlyNonBodyParamFields(op)
+        .map((field) => sanitizeParameterName(field.Name))
+        .concat(variant.fields.map(bodyVariantFieldParamName))
+    : [];
+}
+registerTemplateFunc(
+  "getBodyVariantOverloadParamNames",
+  getBodyVariantOverloadParamNames,
+);
+
 // Returns the FieldDef list for the impl signature, one entry per merged
 // kwarg. Uses the representative field captured at merge time, which keeps
 // the docstring stable and matches the kwarg order in the signature.
@@ -444,6 +467,17 @@ function getBodyVariantImplFieldDefs(op: Operation): FieldDef[] {
 registerTemplateFunc(
   "getBodyVariantImplFieldDefs",
   getBodyVariantImplFieldDefs,
+);
+
+// @ts-ignore
+function getBodyVariantImplParamNames(op: Operation): string[] {
+  return getBodyVariantKeywordOnlyNonBodyParamFields(op)
+    .map((field) => sanitizeParameterName(field.Name))
+    .concat(getMergedBodyFields(op).map((m) => m.paramName));
+}
+registerTemplateFunc(
+  "getBodyVariantImplParamNames",
+  getBodyVariantImplParamNames,
 );
 
 // Renders the typed `request: Union[Model, ModelTypedDict]` kwarg used by
@@ -746,7 +780,7 @@ function templateBodyVariantExpandedOverloadArguments(
 
   const lines: string[] = [];
   for (const field of variant.fields) {
-    const paramName = sanitizeParameterName(field.Name);
+    const paramName = bodyVariantFieldParamName(field);
 
     if (streamType !== "" && field.Name === sseStreamFieldName(op)) {
       lines.push(
@@ -866,7 +900,7 @@ function getBodyVariantUnpackOverloadModes(
     const narrowed = variant.fields.some(
       (field) =>
         (sseTypes && field.Name === sseStreamFieldName(op)) ||
-        sanitizeParameterName(field.Name) !== sanitizeFieldName(field.Name) ||
+        bodyVariantFieldParamName(field) !== sanitizeFieldName(field.Name) ||
         bodyVariantDiscriminatorNarrowed(variant, field),
     );
     if (collides || !narrowed) {
