@@ -1422,6 +1422,9 @@ function outcomeJSON(outcome: CLICommandOutcome | null | undefined): string {
     ...(outcome.StreamStatePointer
       ? { streamStatePointer: outcome.StreamStatePointer }
       : {}),
+    ...(outcome.StreamStatePointers?.length && !outcome.StreamStatePointer
+      ? { streamStatePointers: outcome.StreamStatePointers }
+      : {}),
     states,
     ...(outcome.ErrorPointer ? { errorPointer: outcome.ErrorPointer } : {}),
     ...(outcome.StreamErrorPointer
@@ -1457,6 +1460,14 @@ function continuationJSON(
       to: binding.To,
       toPath: binding.ToPath,
       ...(binding.Optional ? { optional: true } : {}),
+      ...(binding.UnlessRequest
+        ? {
+            unlessRequest: {
+              pointer: binding.UnlessRequest.Pointer,
+              equals: binding.UnlessRequest.Equals,
+            },
+          }
+        : {}),
       ...(binding.Flag ? { flag: binding.Flag } : {}),
     })),
     ...(recipe.Merge?.length ? { merge: recipe.Merge } : {}),

@@ -258,16 +258,18 @@ type CLICommandOutput struct {
 // ErrorMessageField string is appended to the failure message. A
 // single-route intent without its own table inherits its operation entry's.
 type CLICommandOutcome struct {
-	StateFrom          string            `json:"stateFrom,omitempty" yaml:"stateFrom,omitempty"`
-	StatePointer       string            `json:"statePointer,omitempty" yaml:"statePointer,omitempty"`
-	StreamStateFrom    string            `json:"streamStateFrom,omitempty" yaml:"streamStateFrom,omitempty"`
-	StreamStatePointer string            `json:"streamStatePointer,omitempty" yaml:"streamStatePointer,omitempty"`
-	States             map[string]string `json:"states" yaml:"states"`
-	ErrorFrom          string            `json:"errorFrom,omitempty" yaml:"errorFrom,omitempty"`
-	ErrorPointer       string            `json:"errorPointer,omitempty" yaml:"errorPointer,omitempty"`
-	StreamErrorFrom    string            `json:"streamErrorFrom,omitempty" yaml:"streamErrorFrom,omitempty"`
-	StreamErrorPointer string            `json:"streamErrorPointer,omitempty" yaml:"streamErrorPointer,omitempty"`
-	ErrorMessageField  string            `json:"errorMessageField,omitempty" yaml:"errorMessageField,omitempty"`
+	StateFrom           string            `json:"stateFrom,omitempty" yaml:"stateFrom,omitempty"`
+	StatePointer        string            `json:"statePointer,omitempty" yaml:"statePointer,omitempty"`
+	StreamStateFroms    []string          `json:"streamStateFroms,omitempty" yaml:"streamStateFroms,omitempty"`
+	StreamStateFrom     string            `json:"streamStateFrom,omitempty" yaml:"streamStateFrom,omitempty"`
+	StreamStatePointers []string          `json:"streamStatePointers,omitempty" yaml:"streamStatePointers,omitempty"`
+	StreamStatePointer  string            `json:"streamStatePointer,omitempty" yaml:"streamStatePointer,omitempty"`
+	States              map[string]string `json:"states" yaml:"states"`
+	ErrorFrom           string            `json:"errorFrom,omitempty" yaml:"errorFrom,omitempty"`
+	ErrorPointer        string            `json:"errorPointer,omitempty" yaml:"errorPointer,omitempty"`
+	StreamErrorFrom     string            `json:"streamErrorFrom,omitempty" yaml:"streamErrorFrom,omitempty"`
+	StreamErrorPointer  string            `json:"streamErrorPointer,omitempty" yaml:"streamErrorPointer,omitempty"`
+	ErrorMessageField   string            `json:"errorMessageField,omitempty" yaml:"errorMessageField,omitempty"`
 }
 
 // CLIOperation augments the generated command for one operation. Unlike an
@@ -290,15 +292,23 @@ type CLIOperation struct {
 // Flag is the command's declared flag bound to the same body path, resolved
 // during linking for resume hints.
 type CLICommandContinuationBinding struct {
-	From           string   `json:"from,omitempty" yaml:"from,omitempty"`
-	Pointer        string   `json:"pointer,omitempty" yaml:"pointer,omitempty"`
-	StreamFrom     []string `json:"streamFrom,omitempty" yaml:"streamFrom,omitempty"`
-	StreamPointers []string `json:"streamPointers,omitempty" yaml:"streamPointers,omitempty"`
-	To             string   `json:"to" yaml:"to"`
-	ToPointer      string   `json:"toPointer" yaml:"toPointer"`
-	ToPath         []string `json:"toPath" yaml:"toPath"`
-	Optional       bool     `json:"optional,omitempty" yaml:"optional,omitempty"`
-	Flag           string   `json:"flag,omitempty" yaml:"flag,omitempty"`
+	From           string                                  `json:"from,omitempty" yaml:"from,omitempty"`
+	Pointer        string                                  `json:"pointer,omitempty" yaml:"pointer,omitempty"`
+	StreamFrom     []string                                `json:"streamFrom,omitempty" yaml:"streamFrom,omitempty"`
+	StreamPointers []string                                `json:"streamPointers,omitempty" yaml:"streamPointers,omitempty"`
+	To             string                                  `json:"to" yaml:"to"`
+	ToPointer      string                                  `json:"toPointer" yaml:"toPointer"`
+	ToPath         []string                                `json:"toPath" yaml:"toPath"`
+	Optional       bool                                    `json:"optional,omitempty" yaml:"optional,omitempty"`
+	Flag           string                                  `json:"flag,omitempty" yaml:"flag,omitempty"`
+	UnlessRequest  *CLICommandContinuationRequestCondition `json:"unlessRequest,omitempty" yaml:"unlessRequest,omitempty"`
+}
+
+type CLICommandContinuationRequestCondition struct {
+	Path          string `json:"path" yaml:"path"`
+	Pointer       string `json:"pointer" yaml:"pointer"`
+	Equals        any    `json:"equals" yaml:"equals"`
+	equalsPresent bool
 }
 
 // CLICommandContinuation re-sends a command's request while the response's
@@ -606,7 +616,7 @@ var cliOperationKeys = []string{"output", "flags", "continuation"}
 
 var (
 	cliContinuationKeys        = []string{"bind", "merge", "sum", "maxHops", "default"}
-	cliContinuationBindingKeys = []string{"from", "streamFrom", "to", "optional"}
+	cliContinuationBindingKeys = []string{"from", "streamFrom", "to", "optional", "unlessRequest"}
 	// cliOutcomeStateKind extends the async classifications with continue,
 	// which only a continuation recipe acts on; async polling has no resume
 	// value to send.
@@ -1098,8 +1108,10 @@ func (d *cliManifestDecoder) decodeCommand(key string, path []string, id string,
 	if overrideNode != nil && routesNode == nil {
 		return nil, fmt.Errorf("line %d: command %q: override is only valid with a routes: dispatch map", overrideNode.Line, key)
 	}
-	if continuationNode != nil && len(cmd.Source.Routes) > 1 {
-		return nil, fmt.Errorf("line %d: command %q: continuation requires a single-operation command; dispatch commands with several routes cannot declare it", continuationNode.Line, key)
+	if continuationNode != nil && cmd.Source.Type == CLICommandSourceOperation {
+		if _, ok := cliSingleOperationID(cmd); !ok {
+			return nil, fmt.Errorf("line %d: command %q: continuation requires all dispatch routes to use the same operation", continuationNode.Line, key)
+		}
 	}
 
 	// Group tags categorize top-level command groups (help categories are
@@ -1511,7 +1523,11 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 		case "statePointer":
 			outcome.StateFrom, outcome.StatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.statePointer")
 		case "streamStatePointer":
-			outcome.StreamStateFrom, outcome.StreamStatePointer, _, err = cliDecodeAsyncPointer(entry.Value, "output.outcome.streamStatePointer")
+			outcome.StreamStateFroms, outcome.StreamStatePointers, err = cliDecodeContinuationPaths(entry.Value, "output.outcome.streamStatePointer", false)
+			if err == nil && len(outcome.StreamStateFroms) == 1 {
+				outcome.StreamStateFrom = outcome.StreamStateFroms[0]
+				outcome.StreamStatePointer = outcome.StreamStatePointers[0]
+			}
 		case "states":
 			err = d.decodeOutcomeStates(owner, entry.Value, outcome.States)
 		case "errorPointer":
@@ -1527,7 +1543,7 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 			return nil, fmt.Errorf("line %d: %s: %w", entry.Value.Line, owner, err)
 		}
 	}
-	if outcome.StatePointer == "" && outcome.StreamStatePointer == "" {
+	if outcome.StatePointer == "" && outcome.StreamStatePointer == "" && len(outcome.StreamStatePointers) == 0 {
 		return nil, fmt.Errorf("line %d: %s output.outcome requires statePointer (the state in the JSON response) or streamStatePointer (the state inside streamed events)", node.Line, owner)
 	}
 	if len(outcome.States) == 0 {
@@ -1543,7 +1559,7 @@ func (d *cliManifestDecoder) decodeOutcome(owner string, node *yaml.Node) (*CLIC
 	if outcome.ErrorPointer != "" && outcome.StatePointer == "" {
 		return nil, fmt.Errorf("line %d: %s output.outcome.errorPointer requires statePointer; use streamErrorPointer for streamed events", node.Line, owner)
 	}
-	if outcome.StreamErrorPointer != "" && outcome.StreamStatePointer == "" {
+	if outcome.StreamErrorPointer != "" && outcome.StreamStatePointer == "" && len(outcome.StreamStatePointers) == 0 {
 		return nil, fmt.Errorf("line %d: %s output.outcome.streamErrorPointer requires streamStatePointer", node.Line, owner)
 	}
 	if outcome.ErrorMessageField != "" && outcome.ErrorPointer == "" && outcome.StreamErrorPointer == "" {
@@ -1636,6 +1652,57 @@ func (d *cliManifestDecoder) decodeContinuation(owner string, node *yaml.Node) (
 	return recipe, nil
 }
 
+func (d *cliManifestDecoder) decodeContinuationRequestCondition(owner string, node *yaml.Node) (*CLICommandContinuationRequestCondition, error) {
+	entries, err := cliMapEntries(node, owner+" continuation.bind.unlessRequest")
+	if err != nil {
+		return nil, err
+	}
+	condition := &CLICommandContinuationRequestCondition{}
+	for _, entry := range entries {
+		switch entry.Key.Value {
+		case "path":
+			condition.Path, condition.Pointer, _, err = cliDecodeAsyncPointer(entry.Value, "continuation.bind.unlessRequest.path")
+		case "equals":
+			if !cliYAMLScalar(entry.Value) {
+				err = stderrors.New("continuation.bind.unlessRequest.equals must be a scalar")
+			} else {
+				err = entry.Value.Decode(&condition.Equals)
+				condition.equalsPresent = err == nil
+			}
+		default:
+			return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest has unknown key %q", entry.Key.Line, owner, entry.Key.Value)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	if condition.Path == "" {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires path", node.Line, owner)
+	}
+	if !condition.equalsPresent {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest requires equals", node.Line, owner)
+	}
+	var numeric float64
+	switch value := condition.Equals.(type) {
+	case int:
+		numeric = float64(value)
+	case int64:
+		numeric = float64(value)
+	case uint64:
+		numeric = float64(value)
+	case float64:
+		numeric = value
+	}
+	if math.IsNaN(numeric) || math.IsInf(numeric, 0) || math.Abs(numeric) > 9007199254740991 {
+		return nil, fmt.Errorf("line %d: %s continuation.bind.unlessRequest.equals numbers must be finite and between -9007199254740991 and 9007199254740991", node.Line, owner)
+	}
+	return condition, nil
+}
+
+func cliYAMLScalar(node *yaml.Node) bool {
+	return node != nil && node.Kind == yaml.ScalarNode && slices.Contains([]string{"!!str", "!!int", "!!float", "!!bool", "!!null"}, node.Tag)
+}
+
 func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.Node) (*CLICommandContinuationBinding, error) {
 	entries, err := cliMapEntries(node, owner+" continuation.bind entry")
 	if err != nil {
@@ -1660,6 +1727,8 @@ func (d *cliManifestDecoder) decodeContinuationBinding(owner string, node *yaml.
 			}
 		case "optional":
 			binding.Optional, err = cliScalarBool(entry.Value, "continuation.bind.optional")
+		case "unlessRequest":
+			binding.UnlessRequest, err = d.decodeContinuationRequestCondition(owner, entry.Value)
 		default:
 			return nil, fmt.Errorf("line %d: %s continuation.bind has unknown key %q%s", entry.Key.Line, owner, entry.Key.Value, cliDidYouMean(entry.Key.Value, cliContinuationBindingKeys))
 		}

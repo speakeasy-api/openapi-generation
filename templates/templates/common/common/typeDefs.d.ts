@@ -2343,6 +2343,8 @@ declare global {
     StatePointer?: string;
     StreamStateFrom?: string;
     StreamStatePointer?: string;
+    StreamStateFroms?: string[];
+    StreamStatePointers?: string[];
     States: Record<string, string>;
     ErrorFrom?: string;
     ErrorPointer?: string;
@@ -2430,6 +2432,12 @@ declare global {
     }[];
   };
 
+  type CLICommandContinuationRequestCondition = {
+    Path: string;
+    Pointer: string;
+    Equals: string | number | boolean | null;
+  };
+
   type CLICommandContinuationBinding = {
     From?: string;
     Pointer?: string;
@@ -2439,6 +2447,7 @@ declare global {
     ToPointer: string;
     ToPath: string[];
     Optional?: boolean;
+    UnlessRequest?: CLICommandContinuationRequestCondition | null;
     Flag?: string;
   };
 
