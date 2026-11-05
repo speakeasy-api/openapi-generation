@@ -375,12 +375,11 @@ test("test client credentials scopes from environment variable", async () => {
   const res = await newSDK(tokenUrl).hooks.authenticatedRequest({});
   expect(res.httpMeta.response.status).toBe(200);
 
-  const tokenRequests = log.filter(
-    (entry) =>
-      entry.url.includes(tokenUrl) &&
-      entry.body.includes("scope=alt%3Aone+alt%3Atwo"),
-  );
+  const tokenRequests = log.filter((entry) => entry.url.includes(tokenUrl));
   expect(tokenRequests).toHaveLength(1);
+  expect(new URLSearchParams(tokenRequests[0]?.body).get("scope")).toBe(
+    "alt:one alt:two",
+  );
 
   vi.stubEnv("SPEAKEASY_SCOPES", "");
 
