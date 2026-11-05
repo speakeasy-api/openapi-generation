@@ -209,7 +209,7 @@ function getMergedBodyFields(op: Operation): MergedBodyField[] {
       if (!byName[field.Name]) {
         order.push(field.Name);
         byName[field.Name] = {
-          paramName: bodyVariantFieldParamName(field),
+          paramName: bodyVariantFieldParamName(op, field),
           field,
           fieldsByVariant: [field],
           variantNames: [variant.name],
@@ -276,10 +276,16 @@ function variantFieldAtomicTypes(field: FieldDef): string[] {
   return [cls, td];
 }
 
-// The impl signature takes the whole request as `request`.
-function bodyVariantFieldParamName(field: FieldDef): string {
+// The impl signature takes the whole request as `request`, next to the
+// operation's own parameters.
+function bodyVariantFieldParamName(op: Operation, field: FieldDef): string {
   const name = sanitizeParameterName(field.Name);
-  return name === "request" ? `${name}_` : name;
+  const taken =
+    name === "request" ||
+    getBodyVariantNonBodyMethodFields(op).some(
+      (param) => sanitizeParameterName(param.Name) === name,
+    );
+  return taken ? `${name}_` : name;
 }
 
 function getBodyVariantNonBodyParamFields(op: Operation): FieldDef[] {
@@ -296,9 +302,6 @@ function getBodyVariantNonBodyMethodFields(op: Operation): FieldDef[] {
   }
   if (op?.Request?.Field?.Name) {
     bodyFieldNames.add(op.Request.Field.Name);
-  }
-  for (const merged of getMergedBodyFields(op)) {
-    bodyFieldNames.add(merged.field.Name);
   }
 
   return (op?.Arguments?.Sorted ?? []).filter(
@@ -447,7 +450,9 @@ function getBodyVariantOverloadParamNames(
   return variant
     ? getBodyVariantKeywordOnlyNonBodyParamFields(op)
         .map((field) => sanitizeParameterName(field.Name))
-        .concat(variant.fields.map(bodyVariantFieldParamName))
+        .concat(
+          variant.fields.map((field) => bodyVariantFieldParamName(op, field)),
+        )
     : [];
 }
 registerTemplateFunc(
@@ -780,7 +785,7 @@ function templateBodyVariantExpandedOverloadArguments(
 
   const lines: string[] = [];
   for (const field of variant.fields) {
-    const paramName = bodyVariantFieldParamName(field);
+    const paramName = bodyVariantFieldParamName(op, field);
 
     if (streamType !== "" && field.Name === sseStreamFieldName(op)) {
       lines.push(
@@ -900,7 +905,8 @@ function getBodyVariantUnpackOverloadModes(
     const narrowed = variant.fields.some(
       (field) =>
         (sseTypes && field.Name === sseStreamFieldName(op)) ||
-        bodyVariantFieldParamName(field) !== sanitizeFieldName(field.Name) ||
+        bodyVariantFieldParamName(op, field) !==
+          sanitizeFieldName(field.Name) ||
         bodyVariantDiscriminatorNarrowed(variant, field),
     );
     if (collides || !narrowed) {

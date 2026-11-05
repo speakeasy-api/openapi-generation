@@ -457,3 +457,25 @@ def test_body_variant_overloads_document_renamed_body_field():
     assert any("request_: Optional[str] = ..." in header for header in headers)
     assert ":param request_:" in docs
     assert "The request object to send." not in docs
+
+
+def test_body_variant_overloads_send_parameter_and_body_field_with_same_name():
+    sent: list[httpx.Request] = []
+    sdk = mock_sdk(sent)
+
+    sdk.unions.body_variant_overloads_parameter_shares_field_name(
+        name="from-query", name_="from-body"
+    )
+    sdk.unions.body_variant_overloads_parameter_shares_field_name(
+        request={"name": "from-request", "subset_variant_body": {"name": "from-body"}},
+        name="from-query",
+    )
+
+    assert [request.url.params["name"] for request in sent] == [
+        "from-query",
+        "from-query",
+    ]
+    assert [json.loads(request.content) for request in sent] == [
+        {"name": "from-body"},
+        {"name": "from-body"},
+    ]
