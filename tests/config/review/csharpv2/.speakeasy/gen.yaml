@@ -8,12 +8,13 @@ generation:
   fixes:
     nameResolutionDec2023: true
     nameResolutionFeb2025: true
-    parameterOrderingFeb2024: false
+    parameterOrderingFeb2024: true
     requestResponseComponentNamesFeb2024: true
     securityFeb2025: true
     sharedErrorComponentsApr2025: true
-    sharedNestedComponentsJan2026: false
+    sharedNestedComponentsJan2026: true
     nameOverrideFeb2026: true
+    openSingleValueEnumsOct2026: true
   auth:
     oAuth2ClientCredentialsEnabled: true
     oAuth2PasswordEnabled: false
@@ -41,6 +42,7 @@ csharp:
       version: 106.12.0
   author: Speakeasy
   baseErrorName: SDKBaseException
+  bodyVariantOverloads: false
   clientServerStatusCodesAsErrors: true
   defaultErrorName: SDKException
   description: test description
@@ -71,6 +73,7 @@ csharp:
   outputModelSuffix: output
   packageName: Speakeasy.OpenAPI
   packageTags: Speakeasy API SDK-Generation
+  partialTypes: true
   presenceAwareJsonSerialization: true
   respectTitlesForPrimitiveUnionMembers: true
   responseFormat: envelope-http
@@ -78,5 +81,6 @@ csharp:
   sourceDirectory: src
   targetFramework: dotnetVersion
   templateVersion: v2
+  unionImplicitConversions: true
   unionStrategy: populated-fields
   useNodatime: false
