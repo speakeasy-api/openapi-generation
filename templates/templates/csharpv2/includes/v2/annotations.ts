@@ -39,7 +39,7 @@ function getAnnotationImports(
 }
 
 // @ts-ignore
-function getStjConverterAttribute(typeDef: TypeDef): string {
+function getStjConverterFactory(typeDef: TypeDef): string {
   const utilsNs = getScopeNamespace("utils", true);
 
   // Descend through array/map containers to inspect the element type.
@@ -53,28 +53,35 @@ function getStjConverterAttribute(typeDef: TypeDef): string {
   }
   if (!leaf) return "";
 
-  const converterAttr = (factory: string) =>
-    `[System.Text.Json.Serialization.JsonConverter(typeof(global::${utilsNs}.${factory}))]`;
+  const factory = (name: string) => `global::${utilsNs}.${name}`;
 
   const t = leaf.Type.toString();
   if (t === "bigint") {
-    return converterAttr(
+    return factory(
       leaf.Format === "string"
         ? "BigIntegerStringJsonConverterFactory"
         : "BigIntegerJsonConverterFactory",
     );
   }
   if (t === "decimal") {
-    return converterAttr(
+    return factory(
       leaf.Format === "string"
         ? "DecimalStringJsonConverterFactory"
         : "DecimalJsonConverterFactory",
     );
   }
   if (t === "date-time") {
-    return converterAttr("DateTimeJsonConverterFactory");
+    return factory("DateTimeJsonConverterFactory");
   }
   return "";
+}
+
+// @ts-ignore
+function getStjConverterAttribute(typeDef: TypeDef): string {
+  const factory = getStjConverterFactory(typeDef);
+  return factory
+    ? `[System.Text.Json.Serialization.JsonConverter(typeof(${factory}))]`
+    : "";
 }
 
 // @ts-ignore

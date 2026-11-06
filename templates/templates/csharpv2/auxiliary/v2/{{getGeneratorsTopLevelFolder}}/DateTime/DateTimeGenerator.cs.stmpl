@@ -78,6 +78,33 @@ public class DateTimeGenerator : IIncrementalGenerator
                 }
             }
 
+{{- if requiresNodatime}}
+
+            // Wire shape: ISO 8601 calendar date ("yyyy-MM-dd"). Used for OpenAPI `format: date`
+            // under NodaTime. Registered on the options, so STJ applies it to LocalDate?,
+            // List<LocalDate> and Dictionary<string, LocalDate> as well.
+            public sealed class LocalDateJsonConverter : JsonConverter<NodaTime.LocalDate>
+            {
+                public override NodaTime.LocalDate Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType != JsonTokenType.String)
+                        throw new JsonException($"Unexpected token type for LocalDate: {reader.TokenType}");
+                    var s = reader.GetString() ?? "";
+                    var result = NodaTime.Text.LocalDatePattern.Iso.Parse(s);
+                    if (result.Success)
+                    {
+                        return result.Value;
+                    }
+                    throw new JsonException($"Cannot parse LocalDate from string: {s}");
+                }
+
+                public override void Write(Utf8JsonWriter writer, NodaTime.LocalDate value, JsonSerializerOptions options)
+                {
+                    writer.WriteStringValue(NodaTime.Text.LocalDatePattern.Iso.Format(value));
+                }
+            }
+{{- end}}
+
             public sealed class DateTimeJsonConverterFactory : JsonConverterFactory
             {
                 public override bool CanConvert(Type t) => DateTimeFactoryHelpers.CanConvert(t);

@@ -296,6 +296,9 @@ function getJsonContextConverters(): string[] {
     `global::${utilsNs}.BigIntegerJsonConverterFactory`,
     `global::${utilsNs}.DecimalJsonConverterFactory`,
     `global::${utilsNs}.DateTimeJsonConverterFactory`,
+    ...(requiresNodatime()
+      ? [`global::${utilsNs}.LocalDateJsonConverter`]
+      : []),
   ];
 }
 
@@ -549,7 +552,20 @@ interface UnionVariant {
   FieldName: string; // PascalCase property name (+ "Payload" for errors)
   FieldType: string; // C# type expression for property declaration
   CsType: string; // FQN for JsonTypeInfo<T> generic arg
+  TypeInfo: string; // JsonTypeInfo<CsType> expression over the factory's `options`
   DiscriminatorValues: string[]; // disc-mapping names that resolve to this variant; empty for undiscriminated
+}
+
+// A union variant has no property to carry a string-wire converter attribute, so
+// `format: string` bigint/decimal variants get a JsonTypeInfo built over the
+// string-wire converter instead of the options' default number-wire one.
+function unionVariantTypeInfo(variantType: TypeDef): string {
+  const csType = csharpTypeForJsonContext(variantType);
+  const factory = getStjConverterFactory(variantType);
+  if (!factory.endsWith("StringJsonConverterFactory")) {
+    return `(System.Text.Json.Serialization.Metadata.JsonTypeInfo<${csType}>)options.GetTypeInfo(typeof(${csType}))!`;
+  }
+  return `System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateValueInfo<${csType}>(options, new ${factory}().CreateConverter(typeof(${csType}), options)!)`;
 }
 
 // Single source of truth for union-variant derivation. Consumed by
@@ -583,6 +599,7 @@ function getUnionVariants(typeDef: TypeDef): UnionVariant[] {
         FieldName: fieldName,
         FieldType: fieldType,
         CsType: csharpTypeForJsonContext(variantType),
+        TypeInfo: unionVariantTypeInfo(variantType),
         DiscriminatorValues: [],
       };
       byField.set(fieldName, entry);
