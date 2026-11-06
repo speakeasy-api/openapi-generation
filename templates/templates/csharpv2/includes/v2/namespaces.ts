@@ -28,20 +28,26 @@ function getModelsProjectReference(): string {
 registerTemplateFunc("getModelsProjectReference", getModelsProjectReference);
 
 // Tests bind the netstandard2.0 asset of both SDK and Models; referencing Models
-// only transitively would resolve it for the Tests TFM instead.
+// only transitively would resolve it for the Tests TFM instead. That asset's
+// IAsyncEnumerable<T> comes from Microsoft.Bcl.AsyncInterfaces, which the net8.0
+// Tests restore does not pull in transitively (CS0012).
 // @ts-ignore
 function templateTestProjectReferences(): string {
   if (!isNetstandard2()) {
     return `<ProjectReference Include="..\\${getProjectFilePath()}" />`;
   }
-  return [getProjectFilePath(), getModelsFilePath()]
-    .map(
-      (path) =>
-        `<ProjectReference Include="..\\${path}">
+  const references = [getProjectFilePath(), getModelsFilePath()].map(
+    (path) =>
+      `<ProjectReference Include="..\\${path}">
       <SetTargetFramework>TargetFramework=netstandard2.0</SetTargetFramework>
     </ProjectReference>`,
-    )
-    .join("\n    ");
+  );
+  if (context.Global.Config.DotnetVersion == "net8.0") {
+    references.push(
+      `<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />`,
+    );
+  }
+  return references.join("\n    ");
 }
 
 unregisterTemplateFunc("templateTestProjectReferences");
