@@ -167,8 +167,10 @@ type BadRequestResponseError struct {
 var _ error = &BadRequestResponseError{}
 
 func (e *BadRequestResponseError) Error() string {
-	if e.Message != nil {
-		return *e.Message
+	if e != nil {
+		if e.Message != nil {
+			return *e.Message
+		}
 	}
 
 	data, _ := json.Marshal(e)

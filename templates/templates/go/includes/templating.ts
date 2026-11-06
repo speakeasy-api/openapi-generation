@@ -863,11 +863,11 @@ return *${access}`;
     return `return ${access}`;
   }
 
-  const lines: string[] = [];
+  const lines: string[] = [`if ${errorObject} != nil {`];
   let expr = errorObject;
   let owner = errorType;
   let leaf = "";
-  let openBlocks = 0;
+  let openBlocks = 1;
   const indent = () => "\t".repeat(openBlocks);
 
   path.forEach((field, hop) => {
@@ -912,9 +912,6 @@ return *${access}`;
       path[path.length - 1],
     )}`,
   );
-  if (openBlocks === 0) {
-    return lines.join("\n");
-  }
   while (openBlocks > 0) {
     openBlocks--;
     lines.push(`${indent()}}`);

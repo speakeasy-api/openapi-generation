@@ -3,6 +3,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"example.com/openapi-go-sdk/internal/utils"
 )
 
@@ -39,5 +40,10 @@ type ErrorType2 struct {
 var _ error = &ErrorType2{}
 
 func (e *ErrorType2) Error() string {
-	return e.Error_.Message
+	if e != nil {
+		return e.Error_.Message
+	}
+
+	data, _ := json.Marshal(e)
+	return string(data)
 }

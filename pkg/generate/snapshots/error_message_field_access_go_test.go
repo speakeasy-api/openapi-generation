@@ -125,9 +125,11 @@ type ConflictError struct {
 var _ error = &ConflictError{}
 
 func (e *ConflictError) Error() string {
-	if v0 := e.ErrorInfo; v0 != nil {
-		if v0.GetMessage() != nil {
-			return *v0.GetMessage()
+	if e != nil {
+		if v0 := e.ErrorInfo; v0 != nil {
+			if v0.GetMessage() != nil {
+				return *v0.GetMessage()
+			}
 		}
 	}
 
@@ -399,7 +401,12 @@ func (u BadRequest) MarshalJSON() ([]byte, error) {
 func (u BadRequest) Error() string {
 	switch u.Type {
 	case BadRequestTypeFailure:
-		return u.WidgetFailure.Error.Message
+		if u.WidgetFailure != nil {
+			return u.WidgetFailure.Error.Message
+		}
+
+		data, _ := json.Marshal(u.WidgetFailure)
+		return string(data)
 	case BadRequestTypeRejection:
 		data, _ := json.Marshal(u.WidgetRejection)
 		return string(data)

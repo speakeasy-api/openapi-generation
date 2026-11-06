@@ -77,7 +77,7 @@ trackedFiles:
   authop.go:
     last_write_checksum: sha1:fa2bb0e63a2630c9f0a02ff6ade9607a349d752f
   badrequestresponseerror.go:
-    last_write_checksum: sha1:9eeadac9b6bdd33a58adf303e484fde14fe2efbe
+    last_write_checksum: sha1:bd8dcf04f96bd7369cf10c9a134d519d6677fceb
   bar/bike.go:
     last_write_checksum: sha1:926178f5c0e7415500fafcfc2004d5efa8bb7356
   bar/car.go:
@@ -619,7 +619,7 @@ trackedFiles:
   errortype1.go:
     last_write_checksum: sha1:ab84d4fd1f8c27b62791463bbc052d288b930db2
   errortype2.go:
-    last_write_checksum: sha1:484e70151aaedde2c8db657b5baf2f9b17b7f94a
+    last_write_checksum: sha1:f6047d675cd257e73bc9bd11075120c84aaaab0d
   escalation.go:
     last_write_checksum: sha1:191befebaa2a2fe0b8d5ed7982b97c1f73c3dbf9
   exhaustiveobject.go:
@@ -653,7 +653,7 @@ trackedFiles:
   getemptyobjecterrorop.go:
     last_write_checksum: sha1:28e4586ea75ef0c90c5fb912153f041400c66129
   geterrorinunionop.go:
-    last_write_checksum: sha1:c3cd603fd25f2464e44c0c1d78645a4c5035a803
+    last_write_checksum: sha1:266b3474021616373766885842c5687dda36b987
   geterroronlyexampleop.go:
     last_write_checksum: sha1:f5300cd22e15fa0ccf6600fb8d505c7758203bce
   getfullyflattenedrequestop.go:
@@ -687,7 +687,7 @@ trackedFiles:
   gettriplenamespaceconflictop.go:
     last_write_checksum: sha1:dde51c485a4c22de5d0897ba2df1186d9663ceb2
   getunionerrorsop.go:
-    last_write_checksum: sha1:de29caddbb61660dca6efd13c1ad57bd78925e7b
+    last_write_checksum: sha1:f4c305f430fa70c0d4b6056050fb4cefa28325ff
   getuserop.go:
     last_write_checksum: sha1:ee6b964345d6dacfa261ceab9d4377c3c0dc7e21
   go.mod:
@@ -785,7 +785,7 @@ trackedFiles:
   renderassetop.go:
     last_write_checksum: sha1:a788e389967e88581337759b330af30c4e562bf8
   requesttimeouterror.go:
-    last_write_checksum: sha1:6dcfa87051dd87c572bcc2177289369b1168ad1d
+    last_write_checksum: sha1:4749648528aaf316126646737bbfda9802e5f4ea
   responsevalidationerror.go:
     last_write_checksum: sha1:20c3c29540d71569cba85300ddb6a55ecddd2e9c
   retry/config.go:
@@ -823,9 +823,9 @@ trackedFiles:
   tag3.go:
     last_write_checksum: sha1:01c2cbab58b2ac9635116a687f199e8cd7a6c5b6
   taggederror1.go:
-    last_write_checksum: sha1:a0b13ca99e3c4097cd06a7eebffec4ed8f4c439b
+    last_write_checksum: sha1:0a5cd84a121d7a6c2591e575064d7020af956ffd
   taggederror2.go:
-    last_write_checksum: sha1:d0d699198a8928a3a4d0b9b12cacabc8456ba520
+    last_write_checksum: sha1:5d1cbbc4e5f336982282cebb0d20b9ef57b01842
   tail.go:
     last_write_checksum: sha1:18aa629f78e1076f1505b5a981bbabb1a81d740c
   taskresponse.go:

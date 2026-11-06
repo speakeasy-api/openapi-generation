@@ -151,8 +151,10 @@ type EnumMessageError struct {
 var _ error = &EnumMessageError{}
 
 func (e *EnumMessageError) Error() string {
-	if e.Status != nil {
-		return fmt.Sprint(*e.Status)
+	if e != nil {
+		if e.Status != nil {
+			return fmt.Sprint(*e.Status)
+		}
 	}
 
 	data, _ := json.Marshal(e)
@@ -181,8 +183,10 @@ type IntegerMessageError struct {
 var _ error = &IntegerMessageError{}
 
 func (e *IntegerMessageError) Error() string {
-	if e.Code != nil {
-		return fmt.Sprint(*e.Code)
+	if e != nil {
+		if e.Code != nil {
+			return fmt.Sprint(*e.Code)
+		}
 	}
 
 	data, _ := json.Marshal(e)
@@ -266,10 +270,12 @@ type WrappedCauseError struct {
 var _ error = &WrappedCauseError{}
 
 func (e *WrappedCauseError) Error() string {
-	if v0 := e.Cause; v0 != nil {
-		if v1, ok := v0.Inner.Get(); ok && v1 != nil {
-			if v2, ok := v1.Message.Get(); ok && v2 != nil {
-				return *v2
+	if e != nil {
+		if v0 := e.Cause; v0 != nil {
+			if v1, ok := v0.Inner.Get(); ok && v1 != nil {
+				if v2, ok := v1.Message.Get(); ok && v2 != nil {
+					return *v2
+				}
 			}
 		}
 	}

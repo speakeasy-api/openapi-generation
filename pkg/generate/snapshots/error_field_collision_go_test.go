@@ -280,7 +280,12 @@ func (u GatewayTimeout) MarshalJSON() ([]byte, error) {
 func (u GatewayTimeout) Error() string {
 	switch u.Type {
 	case GatewayTimeoutTypeError:
-		return u.ErrorInfo.Message
+		if u.ErrorInfo != nil {
+			return u.ErrorInfo.Message
+		}
+
+		data, _ := json.Marshal(u.ErrorInfo)
+		return string(data)
 	case GatewayTimeoutTypeOther:
 		data, _ := json.Marshal(u.OtherError)
 		return string(data)
@@ -424,7 +429,12 @@ func (u ServiceUnavailable) MarshalJSON() ([]byte, error) {
 func (u ServiceUnavailable) Error() string {
 	switch u.Type {
 	case ServiceUnavailableTypeAlpha:
-		return u.AlphaError.Message
+		if u.AlphaError != nil {
+			return u.AlphaError.Message
+		}
+
+		data, _ := json.Marshal(u.AlphaError)
+		return string(data)
 	case ServiceUnavailableTypeBeta:
 		data, _ := json.Marshal(u.BetaError)
 		return string(data)
@@ -448,8 +458,10 @@ type BadGatewayError struct {
 var _ error = &BadGatewayError{}
 
 func (e *BadGatewayError) Error() string {
-	if e.Error_.Message != nil {
-		return *e.Error_.Message
+	if e != nil {
+		if e.Error_.Message != nil {
+			return *e.Error_.Message
+		}
 	}
 
 	data, _ := json.Marshal(e)
@@ -465,8 +477,10 @@ type InternalServerError struct {
 var _ error = &InternalServerError{}
 
 func (e *InternalServerError) Error() string {
-	if e.ErrorInfo.Message != nil {
-		return *e.ErrorInfo.Message
+	if e != nil {
+		if e.ErrorInfo.Message != nil {
+			return *e.ErrorInfo.Message
+		}
 	}
 
 	data, _ := json.Marshal(e)

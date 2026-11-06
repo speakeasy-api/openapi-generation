@@ -271,6 +271,16 @@ func TestUnionOfErrorsDiscriminated(t *testing.T) {
 	assert.Equal(t, "Error2", err2.Error())
 }
 
+func TestErrorMessageNilReceiverAndUnionMember(t *testing.T) {
+	var nilErr *apierrors.NestedNullableOptionalErrorMessage
+	assert.Equal(t, "null", nilErr.Error())
+
+	u := apierrors.ErrorUnionDiscriminatedPostResponseBody{
+		Type: apierrors.ErrorUnionDiscriminatedPostResponseBodyTypeTag2,
+	}
+	assert.Equal(t, "null", u.Error())
+}
+
 func TestOptionalNullableErrorMessage(t *testing.T) {
 	recordTest("errors-optional-nullable-error-message")
 
