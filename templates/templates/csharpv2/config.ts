@@ -32,12 +32,6 @@ function getCompileCommands(
   config: GeneratorInitialConfiguration,
 ): RunnerCommands {
   const commands = [];
-  const packageName = config.LangCfg["packageName"];
-  const sourceDirectory = config.LangCfg["sourceDirectory"];
-  const packagePath = packageName.replaceAll(".", "/");
-  const projectFilePath = `${
-    sourceDirectory ? `${sourceDirectory}/` : ""
-  }${packagePath}/${packageName}.csproj`;
 
   if (!config.LangCfg["enableFormatting"]) {
     commands.push({
@@ -51,7 +45,6 @@ function getCompileCommands(
     command: "dotnet",
     args: [
       '{{if eq .Usage "true"}}publish{{else}}build{{end}}',
-      `{{if ne .Usage "true"}}${projectFilePath}{{end}}`,
       "-c",
       `{{if eq .Usage "true"}}Release{{else}}${
         config.Publish ? "Release" : "Debug"
@@ -62,10 +55,10 @@ function getCompileCommands(
       //     IL2xxx/IL3xxx in .NET 8 whereas the CLI flag does.
       //   - CS0618/CS1591 are pre-suppressed via NoWarn in testproject.csproj
       '{{if eq .Usage "true"}}-warnaserror{{end}}',
-      // BuildInParallel=false serializes project-graph builds. dotnet publish otherwise
-      // parallelizes Models.dll writes from multiple reference paths, triggering MSB3026
-      // file-lock races.
-      '{{if eq .Usage "true"}}-p:BuildInParallel=false{{end}}',
+      // BuildInParallel=false serializes project-graph builds. dotnet build/publish otherwise
+      // parallelizes Models.dll and Generators writes from multiple reference paths, triggering
+      // MSB3026/MSB4018 file-lock races.
+      "-p:BuildInParallel=false",
       // -nodeReuse:false prevents MSBuild from leaving long-lived `/nodemode:1` workers
       // after the command completes. Orphans inherit the parent shell's stdout and can
       // hang the parent after the generator finishes. Applied to both build and publish.
