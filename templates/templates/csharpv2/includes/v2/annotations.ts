@@ -123,6 +123,17 @@ function templateJSONAnnotation(
 }
 
 // @ts-ignore
+function v2RequiredEligible(fieldDef: FieldDef): boolean {
+  const annotation = getJsonAnnotation(fieldDef);
+  return (
+    annotation !== undefined &&
+    !annotation.Ignore &&
+    !fieldDef.Const &&
+    !fieldDef.IsAdditionalProperties
+  );
+}
+
+// @ts-ignore
 function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
   const resolved: string[] = [];
 
@@ -141,6 +152,9 @@ function templateFieldAnnotations(fieldDef: FieldDef, indent: number): string {
   }
 
   if (!jsonIgnored) {
+    if (!fieldDef.Optional && v2RequiredEligible(fieldDef)) {
+      resolved.push("[System.Text.Json.Serialization.JsonRequired]");
+    }
     if (needsOptionalNullableWrapper(fieldDef)) {
       const decimalStrConverter = optionalNullableDecimalStrConverter(fieldDef);
       const converter = decimalStrConverter
