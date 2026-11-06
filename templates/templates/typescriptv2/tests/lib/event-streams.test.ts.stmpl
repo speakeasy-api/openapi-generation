@@ -1,8 +1,7 @@
 {{- if isFeatureUsed "serverEvents"}}
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import ts from "typescript";
 import { expect, test } from "vitest";
 import { {{eventStreamClassName}} } from "../../lib/event-streams.js";
@@ -98,9 +97,7 @@ test.each([
 ])(
   "type-checks where ReadableStream iteration is async-disposable: $description",
   ({ sdkCount }) => {
-    const source = fileURLToPath(
-      new URL("../../lib/event-streams.ts", import.meta.url),
-    );
+    const source = resolve(__dirname, "../../lib/event-streams.ts");
     const dir = mkdtempSync(join(tmpdir(), "event-streams-"));
     try {
       const files: string[] = [];
@@ -159,6 +156,10 @@ async function withoutNativeStreamIteration(
   }
 }
 
+function dispose(iterator: object): Promise<void> {
+  return (iterator as any)[(Symbol as any).asyncDispose]();
+}
+
 test("fallback iterator cancels the stream and releases its lock when disposed", async () => {
   await withoutNativeStreamIteration(async () => {
     let cancelled: unknown;
@@ -171,10 +172,9 @@ test("fallback iterator cancels the stream and releases its lock when disposed",
       }),
       (m) => ({ done: false, value: { data: m.data } }),
     );
-    {
-      await using events = stream[Symbol.asyncIterator]();
-      expect((await events.next()).value).toEqual({ data: "x" });
-    }
+    const events = stream[Symbol.asyncIterator]();
+    expect((await events.next()).value).toEqual({ data: "x" });
+    await dispose(events);
     expect(cancelled).toBe("done");
     expect(stream.locked).toBe(false);
   });
@@ -189,11 +189,9 @@ test("fallback iterator releases its lock and disposes cleanly after a failed re
       }),
       (m) => ({ done: false, value: { data: m.data } }),
     );
-    const consume = async () => {
-      await using events = stream[Symbol.asyncIterator]();
-      await events.next();
-    };
-    await expect(consume()).rejects.toBe(failure);
+    const events = stream[Symbol.asyncIterator]();
+    await expect(events.next()).rejects.toBe(failure);
+    await dispose(events);
     expect(stream.locked).toBe(false);
   });
 });
