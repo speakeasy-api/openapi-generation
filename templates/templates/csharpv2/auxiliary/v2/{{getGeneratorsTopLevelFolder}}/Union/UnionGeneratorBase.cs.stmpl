@@ -62,11 +62,15 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
             .Where(p => p.Name != unknownRawMember)
             .Select(p =>
             {
-                var discValues = p.GetAttributes()
+                var discAttributes = p.GetAttributes()
                     .Where(a => a.AttributeClass?.ToDisplayString() == DiscriminatorValueAttributeName)
-                    .Select(a => a.ConstructorArguments.FirstOrDefault().Value as string)
-                    .Where(v => v != null)
-                    .Select(v => v!)
+                    .Where(a => a.ConstructorArguments.FirstOrDefault().Value is string)
+                    .ToList();
+                var discValues = discAttributes
+                    .Select(a => (string)a.ConstructorArguments[0].Value!)
+                    .ToEquatableArray();
+                var discFactories = discAttributes
+                    .Select(a => a.NamedArguments.FirstOrDefault(n => n.Key == "Factory").Value.Value as string ?? "")
                     .ToEquatableArray();
 
                 var distinctiveJsonProp = GetDistinctiveJsonPropertyName(p.Type);
@@ -80,6 +84,7 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
                     Name: p.Name,
                     FullyQualifiedType: p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     DiscriminatorValues: discValues,
+                    DiscriminatorFactories: discFactories,
                     DistinctiveJsonPropertyName: distinctiveJsonProp,
                     FactoryMethodName: factoryMethodName,
                     HasAdditionalProperties: hasAdditionalProperties,
@@ -352,6 +357,7 @@ public abstract class UnionGeneratorBase : IIncrementalGenerator
         string Name,
         string FullyQualifiedType,
         EquatableArray<string> DiscriminatorValues,
+        EquatableArray<string> DiscriminatorFactories, // per-value factory, parallel to DiscriminatorValues; "" if unset
         string? DistinctiveJsonPropertyName,  // first [JsonPropertyName] on the variant type, for structural hinting
         string? FactoryMethodName,            // matched static Create* method on the union class
         bool HasAdditionalProperties,         // whether the variant type exposes AdditionalProperties
