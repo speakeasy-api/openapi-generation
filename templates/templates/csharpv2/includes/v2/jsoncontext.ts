@@ -2,14 +2,51 @@ function getJsonContextBucketPrefix(
   outputLocation: string,
   modelNamespace: string = "",
 ): string {
-  if (outputLocation) {
-    const lastSegment = outputLocation.split("/").pop();
-    if (lastSegment) {
-      return sanitizeClassName(lastSegment);
-    }
+  const prefix = outputLocation
+    ? getJsonContextBucketPrefixes().get(outputLocation) ??
+      leafBucketPrefix(outputLocation)
+    : "";
+  return prefix || modelNamespace.split(".").pop() || getScopePath("models");
+}
+
+function leafBucketPrefix(outputLocation: string): string {
+  const lastSegment = outputLocation.split("/").pop();
+  return lastSegment ? sanitizeClassName(lastSegment) : "";
+}
+
+// Every JsonTypeInfo name shares the JsonTypeInfos class, so output locations
+// whose last segment sanitizes to the same prefix fall back to their full path.
+let _jsonContextBucketPrefixes: Map<string, string> | undefined;
+function getJsonContextBucketPrefixes(): Map<string, string> {
+  if (_jsonContextBucketPrefixes) return _jsonContextBucketPrefixes;
+
+  const locationsByLeaf = new Map<string, string[]>();
+  for (const [outputLocation] of sequencedMapEntries(
+    context.Global.AST.BucketedTypes,
+  )) {
+    if (!outputLocation) continue;
+    const leaf = leafBucketPrefix(outputLocation);
+    if (!leaf) continue;
+    const locations = locationsByLeaf.get(leaf) ?? [];
+    locations.push(outputLocation);
+    locationsByLeaf.set(leaf, locations);
   }
 
-  return modelNamespace.split(".").pop() || getScopePath("models");
+  const prefixes = new Map<string, string>();
+  for (const [leaf, locations] of locationsByLeaf) {
+    for (const outputLocation of locations) {
+      prefixes.set(
+        outputLocation,
+        locations.length > 1
+          ? sanitizeClassName(
+              outputLocation.split("/").filter(Boolean).join(" "),
+            )
+          : leaf,
+      );
+    }
+  }
+  _jsonContextBucketPrefixes = prefixes;
+  return prefixes;
 }
 
 function getJsonContextClassName(outputLocation: string): string {
