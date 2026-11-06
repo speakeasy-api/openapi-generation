@@ -60,7 +60,7 @@ jobs:
             zSDKs/**/go.sum
             services/**/go.sum
       - name: Test
-        run: USAGE_GROUP=all TARGET=${{ inputs.test-group }} make test-csharpv2
+        run: TARGET=${{ inputs.test-group }} make test-csharpv2-aot
       - name: git diff
         run: |
           if [ -n "$(git status --porcelain)" ]; then

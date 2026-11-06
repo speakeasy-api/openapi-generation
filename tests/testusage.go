@@ -297,10 +297,15 @@ func buildCommand(lang, group string, run bool) string {
 	command := ""
 
 	switch lang {
-	case "csharp", "csharpv2":
+	case "csharp":
 		command = "dotnet build"
 		if run {
 			command += " && dotnet run"
+		}
+	case "csharpv2":
+		command = "dotnet build"
+		if run {
+			command = "dotnet publish -c Release --use-current-runtime -o bin/native -nodeReuse:false && ./bin/native/testusage"
 		}
 	case "go":
 		command = "export GOROOT= && go build"
